@@ -48,7 +48,10 @@ Little-endian. Reader: [`ruse_edat.py`](../ruse_edat.py).
 - `nextSibling` is relative to the entry start; 0 = last sibling. Full path = concatenated fragments (backslashes).
 
 Files are stored contiguously, with no gaps, overlaps or container-level compression. Offsets and sizes are u32, so a pack is at most 4 GB.
-**Writer to-do:** confirm the data order equals the trie order, and how new fragments are split in the trie.
+**Writer proven (2026-09-28):** `src/rusemod/edat.py` rebuilds ZZ_GladPatchableWin.dat **byte-identical**
+(741 members) and correctly replaces a member with a different-length blob (patches every entry's offset/size,
+relays the data section, keeps the trie intact). Verified by [`tools/verify_writer.py`](../tools/verify_writer.py).
+**Writer to-do (adding files):** how new fragments are split into the trie.
 
 **Packs in build 190852**
 

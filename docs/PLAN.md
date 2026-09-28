@@ -250,6 +250,12 @@ Checked later, when needed: joining a lobby via `+connect_lobby` (M3), and mount
 
 **This plan is a living document.** We adjust it together as we learn.
 
+**Progress (2026-09-28):** C1 passed (lossless NDF round-trip). First real library landed: `src/rusemod/`
+(EDAT + NDF read/write with an editable object model). [`tools/verify_writer.py`](tools/verify_writer.py)
+proves, read-only against the install, that the archive rebuilds byte-identical, a value edit applies as a
+minimal in-place change, and the edited archive reads back with all other members intact. Remaining for M1:
+`.dic`/scenario/mapinfo readers, the VFS and asset registry, and the `ruse` CLI. Not yet verified: in-game load (C2).
+
 ## 8. Risks
 
 | Risk | Impact | Mitigation / early warning |
