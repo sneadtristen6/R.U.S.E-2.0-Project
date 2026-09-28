@@ -468,12 +468,11 @@ v1 needs no server. A join code names the game build, the mods and their exact v
   long, and the fingerprint check makes them unnecessary.
 - **v2 (optional service):** short codes, and direct transfer of unpublished mods.
 
-### Decisions for you (§12)
+### Decided (2026-09-28)
 
-1. **A published mod version never changes;** a fix is always a new version. A version number then always means the
-   same files, which is what keeps join codes short. Recommended.
-2. **Join codes carry mod names, versions and the fingerprint** instead of the whole lockfile: about half the length,
-   and still checked end to end by the fingerprint. Recommended.
+1. **A published mod version never changes;** a fix is always a new version, so a version number always means the same
+   files (like a store's item number).
+2. **Join codes carry mod names, versions and the fingerprint** instead of the whole lockfile.
 
 ## 13. Interop with RUSE-Mod-Manager (`.rmod`)
 

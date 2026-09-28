@@ -128,24 +128,105 @@ Requirements derived from that:
 - Unknown bytes are kept raw so round trips stay exact. For example, some NDF bools store `0x4E` instead of 0/1.
 
 ### L2 Game model
-- **Build detection:** Steam `appmanifest_21970.acf` build id, RUSE.exe timestamp, `DATAREVISION` and pack hashes.
-- **VFS:** mounts the six core packs, the map packs and nested packs (`.ipk .ppk .apk .mpk .gpk`) the way
-  the engine does, including mount points such as `MapDat:` and `Datasmap`. The result is one file tree per build.
-- **Asset registry** (SQLite, one per build) records:
-  - every file: pack, path, size, hash, type
-  - every named NDF object: export path, class, file
-  - every reference: object→object, object→file path, object→localisation key, import→export
 
-  It powers search, "find usages", impact analysis and safe cloning.
-- **Object graph:** NDF objects across all files.
-  - Named objects are addressed by the engine's own export paths (`$/GFX/Everything/Descriptor_Unit_...`).
-  - Unnamed sub-objects are addressed by their path from the nearest named owner (`...:Weapons[2].Ammunition`).
-  - Objects shared by several owners are flagged, so a patch never changes another unit by accident.
-- **Schema DB:** the types observed for each class/property across all NDF files, plus community annotation files:
-  - English names for the French properties (`Puissance` → Power, `PorteeMaximale` → MaxRange)
-  - units, ranges, enum labels (nations 0–6) and editor hints
+Built from the install once per game build (read-only), then cached. Everything above it (the mod builder, launcher,
+Studio, CLI) asks the game model instead of opening packs itself. This is the next thing to build (M1); it's written
+out here so it can be built straight from this section.
 
-  The schema DB drives the editors and validation.
+**Build detection**
+- The **build key** is the Steam build id (`buildid` in `steamapps/appmanifest_21970.acf`) plus the data revision (the
+  folder under `Data\PC`, e.g. `190852`).
+- Every start runs a quick check (pack sizes and dates). Full pack hashes are computed once per build and cached. If
+  they don't match the known values for that build, something changed the install (a tool that patches the live game,
+  for example), and the launcher offers Steam's repair (L5).
+- A new build key means a new game model. The old one is kept, because rebasing mods needs both
+  ([MOD_FORMAT.md](MOD_FORMAT.md) §11).
+
+**One combined file view (VFS)**
+
+The game sees one tree of files assembled from many packs. We rebuild that tree the same way.
+
+| Layer | Packs | Mounted |
+|---|---|---|
+| core | the six packs in `Data\PC\<rev>\`, names hard-coded in RUSE.exe | always |
+| map | the 32 packs `Maps\PC\DataMap<Name>_v09.dat` | only while that map is loaded: its `clustermap.cpp` mounts `MapDat:\DataMap<Name>_v09.dat` at `Datasmap` |
+| nested | the 217 packs inside other packs (`.ipk .apk .mpk .gpk`, some `.ppk`) | by whatever refers to them, e.g. `TResourceDescriptorPythonPack 'Eugen.ipk'` |
+
+- Every file has two addresses:
+  - **location**, where its bytes are: `pack!path`, with another `!path` inside a nested pack, e.g.
+    `ZZ_Win.dat!genpython\eugen.ipk!…`
+  - **game path**, what the engine asks for: lowercase with `/`, plus the mount point for map files. The original
+    spelling is kept for display.
+- **No clashes to resolve so far** (checked against `listings/`): no path appears in two core packs. 56 paths repeat
+  across map packs (every map has its own `output\div_map.tgv_pc`, for example), which is fine because only one map is
+  mounted at a time. The one open case is `mapinfo.cpp`, which exists in both `genglad\patchable` and
+  `genglad\nonpatchable` (identical today). Which copy the game reads matters once we add maps; one in-game test (M6)
+  settles it.
+
+**The index** (SQLite, one file per build, in the tool's cache folder; it replaces the "asset registry" of earlier drafts)
+
+| Table | One row per | Main columns |
+|---|---|---|
+| `pack` | archive, nested ones included | name, location, size, SHA-256, layer, parent pack |
+| `file` | file in any pack | location, game path, size, SHA-1, type (read from its first bytes), map name for map files |
+| `ndf` | NDF file | file; object, class, property and string counts; has TOPO; SHA-1 of the uncompressed bytes |
+| `object` | NDF object | file, index, class, export path (if named), stable address (below), shared flag |
+| `owner` | pair of (unnamed object, named owner) | which named objects reach it; more than one row means shared |
+| `ref` | reference | from object + property path → an object, an import path, a file path or a text hash |
+| `import` | IMPR entry | file, path, and the object it resolves to in another file (if found) |
+| `prop_seen` | class + property + type | how often it appears, min and max for numbers, an example (feeds the schema DB) |
+| `text` | `.dic` entry | file, language, hash, the text itself |
+| `script` | `.xyz` module | file, module name, source MD5 |
+
+It has to answer these in well under a second:
+- where is this object used, and what does this unit use
+- which units have a property above or below some value
+- which files mention a path
+- what cloning an object would copy and what it would share ([MOD_FORMAT.md](MOD_FORMAT.md) §10.5)
+- where each text is used, and which texts nothing uses
+
+Size guess: about 2,200 NDF files, and `everything.cpp` alone has 63,686 objects, so a few hundred thousand objects and
+around a million references: tens of MB. It should build in about a minute (the whole-game verify reads everything in 24 s).
+
+**A stable name for every object**
+
+Mods, the index and the editors all use one address per object, in this order of preference:
+1. **Export path** for named objects: `$/GFX/Everything/Descriptor_Unit_Tourelle_MG_US`.
+2. **Owner path** for unnamed sub-objects: the nearest named owner, then property names and list positions,
+   `…Descriptor_Unit_X:WeaponManager.Turrets[0]`. If there are several paths, the shortest wins, then the one that
+   comes first in the file.
+3. **Selector** instead of a list position when it picks out exactly one item: `Turrets[class=TTurretTwoAxisDescriptor]`.
+   It survives game updates that reorder lists. The index works out the best selector for every list item.
+4. **Last resort:** `<game path of the file>#<object index>` for objects no named object reaches. Marked unstable; the
+   index counts them, so we learn how common they are.
+
+Shared objects are addressed through the owner whose export path sorts first, and flagged with the full owner list.
+It's the same idea as RUSE-Mod-Manager's three tiers ([LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)), built once
+and tested.
+
+**Schema DB:** the types observed for each class/property across all NDF files (the `prop_seen` table), plus community
+annotation files:
+- English names for the French properties (`Puissance` → Power, `PorteeMaximale` → MaxRange)
+- units, ranges, enum labels (nations 0–6) and editor hints
+
+```toml
+# schema/annotations/units.toml
+[TUniteAuSolDescriptor.VitesseLineaire]
+name  = "Speed"
+group = "Movement"
+```
+
+The schema DB drives the editors and validation.
+
+**Done when (M1):**
+- the index builds for build 190852 in about a minute or less
+- every file in the 38 packs and 217 nested packs is in it, and the counts match `listings/`
+- every NDF object is in it and every local reference resolves; the share of imports that resolve is reported
+- a report lists repeated paths, shared objects and last-resort addresses
+- the CLI can list files, dump any object by its address, and show where it's used
+
+**Decision for you (L2):** keep all game text in the index (unit names and descriptions, in every language), so you
+can search by name and see where each text is used? It costs some disk space (a guess: tens of MB). Recommended.
 
 ### L3 Mod system
 - **Package** ([MOD_FORMAT.md](MOD_FORMAT.md)): a manifest plus readable sources: NDF-style text patches, CSV text,
@@ -219,6 +300,11 @@ Requirements derived from that:
   - Native code (runtime extender plugins) is never taken from peers.
 
 **How multiplayer stays in sync**
+
+In short: everyone in a modded match plays through the launcher. The launcher's job is to make every player's game
+files match; the match itself runs on R.U.S.E.'s own Steam multiplayer, like any other match. Players without the
+launcher can still play normal (vanilla) matches, but not modded ones.
+
 - R.U.S.E. multiplayer is lockstep ([FORMATS.md](FORMATS.md) §10: `TDesynchroChecker`). The PCs only send each other
   the players' orders; every PC runs the whole battle itself from its own copy of the game data. The battles stay
   identical only if every gameplay number is identical. One different price, speed or range and they drift apart, and
