@@ -168,6 +168,7 @@ class Ndf:
         self.props = self._props()
         self.objects = self._objects()
         self.exports = _name_tree(self._sec("EXPR"), self.trans)   # object index -> export path
+        self.imports = _name_tree(self._sec("IMPR"), self.trans)   # import index -> path in another file
         self._by_export = {v: k for k, v in self.exports.items()}
         self._prop_index = {name: i for i, (name, _cls) in enumerate(self.props)}
 

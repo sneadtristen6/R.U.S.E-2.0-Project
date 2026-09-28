@@ -19,6 +19,16 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
 
 ## Code so far
 
+- **The `ruse` tool** (`src/rusemod/cli.py`): with `PYTHONPATH=src`, run `py -3 -m rusemod <command>`
+  (or `pip install -e .` once, then just `ruse <command>`). It never writes into the game folder.
+  ```
+  ruse detect                                   find R.U.S.E. through Steam, show build and branch
+  ruse ls ZZ_GladPatchableWin.dat gfx           list files in a pack (nested packs: ZZ_Win.dat!eugen.ipk)
+  ruse names ZZ_GladPatchableWin.dat Sherman    list named objects
+  ruse dump ZZ_GladPatchableWin.dat everything.cpp.gladndfbin Tourelle_MG   show data as text
+  ruse extract ZZ_GladPatchableWin.dat mapinfo  copy files out, into extracted/ (ignored by git)
+  ```
+
 - [`ruse_edat.py`](ruse_edat.py): read-only EDAT archive reader.
   ```
   py -3 ruse_edat.py list    <archive.dat>

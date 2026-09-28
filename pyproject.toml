@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rusemod"
+version = "0.0.1"
+description = "Read and write R.U.S.E. game data; the core of the R.U.S.E. mod platform."
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+[project.scripts]
+ruse = "rusemod.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
