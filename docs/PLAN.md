@@ -436,7 +436,7 @@ volunteer from the R.U.S.E. community: with a join code, joining takes them a co
 | 16 | Join codes | Game build + mod ids + versions + fingerprint; a published mod version never changes | about half the length of a full lockfile, checked end to end | the whole compressed lockfile |
 | 17 | Extra-pack test | Moved up to M2 as check C3 | without it, every new unit name rebuilds the 2.3 GB ZZ_Win.dat | test in M5/M6 |
 | 18 | Mod language details | A `final` pass; `when mod` blocks; WARNO's spellings; readable text keys | proven in Factorio, KSP ModuleManager and WARNO ([RESEARCH.md](RESEARCH.md) §5) | our own spellings, made-up hash keys |
-| 19 | New nations | A real 8th nation (China, for RUSE 2.0): the runtime extender (ADR 3, M10) lifts the 7-nation limit, and the data gets an 8th entry wherever it has 7. Owner's call, 2026-09-28 | RUSE 2.0 wants a real nation, not a renamed one | China takes over one of the 7 slots (the fallback if the scan shows it's too big) |
+| 19 | New nations | A real 8th nation (China, for RUSE 2.0): the runtime extender (ADR 3, M10) lifts the 7-nation limit, and the data gets an 8th entry wherever it has 7. Owner's call, 2026-09-28 | RUSE 2.0 wants a real nation, not a renamed one. **No faction is ever given up** (owner, 2026-09-28): there is no swap fallback; if the job turns out big, China comes later, never by replacing a nation | China takes over one of the 7 slots (**rejected**: it loses a faction) |
 | 20 | Testing multiplayer alone | Solo tests S1–S2 (L6) until there's a second player; one real 2-PC match before the first public release | the owner has no second player yet; most of the risk (same build everywhere, the join flow) can be tested on one PC | wait for a friend |
 
 ## 7. Roadmap
@@ -649,7 +649,7 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 | TOPO / NDF writer fidelity | can't add objects | C1 first; byte-identical gate |
 | Instance launch fails | must touch the install | C2 first. Fallback: in-place swap with journal + backup (players), full copy (dev) |
 | ~~Map-pack header checksum enforced and unknown~~ | — | retired: it's a random GUID, not a hash (FORMATS §6) |
-| 7 nations hard-coded | no China for RUSE 2.0 | M10 step 1 (a read-only scan) sizes the job early; fallback: China takes over one of the 7 slots |
+| 7 nations hard-coded | no China for RUSE 2.0 | size the job early (M10 step 1, the data scan; step 2, the program side) and follow what worked elsewhere (RESEARCH.md §6). No swap fallback: the owner keeps all 7 factions, so China waits rather than replacing one |
 | SPK model format complexity | no new models | export first; static meshes before skinned ones |
 | Terrain can't be written | no new maps / islands | reading is solved elsewhere, writing is not: M1.5 tests re-encoding early; M8 sized by the result |
 | Python 2.5 toolchain | no new scripts | route known: compile with a real CPython 2.5.1 (a download, so your OK first); uncompyle6 to decompile |

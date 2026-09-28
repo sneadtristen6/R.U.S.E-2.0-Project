@@ -149,8 +149,10 @@ other games whose number of factions was fixed.
    modded copy, ADR 3). Principle 1 holds.
 
 **First step (read-only, data only):** `tools/nation_scan.py` counts, in the shipped data, every structure sized to the
-7 nations and every kind of object tagged with a `Nationalite`. It sizes the data work for China, and gives the
-fallback (China takes over one slot) a concrete list too.
+7 nations and every kind of object tagged with a `Nationalite`. It sizes the data work for China.
+
+**Not for us:** the Red Dragon route (swapping a nation out for the new one). The owner keeps all 7 factions
+(PLAN.md decision 19), so China is only ever added.
 
 Sources: ModDB R.U.S.E. mods (https://www.moddb.com/games/ruse/mods) and *Ruse Overhaul*
 (https://www.moddb.com/mods/ruse-overhaul-mod); *Wargame: Asia in Conflict* (https://www.moddb.com/mods/wargame-asia-in-conflict);
