@@ -148,6 +148,7 @@ class Errors(unittest.TestCase):
         self.check("when mod x ( patch $/X ( P = 1 )", "never closed")
         self.check("A is TX ( P = 1 )\nA is TX ( P = 2 )", "m.rndf:2:1", "declared twice")
         self.check("patch $/X ( P = (1, 2, 3) )", "exactly 2 values")
+        self.check("export D is clone ~/C ( )", "~/C must be declared earlier")
 
 
 class TextModsThroughTheEngine(unittest.TestCase):

@@ -175,8 +175,15 @@ class Parser:
         self.expect("is")
         if self.is_("clone"):
             self.next()
+            src_tok = self.peek()
             source = self.target_ref()
-            namespace = source.rsplit("/", 1)[0] if source.startswith("$/") else DEFAULT_NAMESPACE
+            if source.startswith("~/"):  # a copy of something declared earlier in this file: same namespace
+                local = source[2:].split(":")[0]
+                if local not in self.declared:
+                    raise self.error(f"~/{local} must be declared earlier in this file to be cloned", src_tok)
+                namespace = self.declared[local].rsplit("/", 1)[0]
+            else:
+                namespace = source.rsplit("/", 1)[0]
             full = f"{namespace}/{name.text}"
             self._declare(name, full)
             return [self.op("clone", name.line, target=full, source=source, body=self.body())]

@@ -3,7 +3,7 @@
   mod folders (mod.toml + src/**/*.rndf)  ->  load order  ->  the pack's data files into the engine's model
   ->  run the mods  ->  write changed files back  ->  rebuilt pack + fingerprint
 
-Value changes work end to end today; adding or removing objects is the bridge's next step (rusemod.model).
+Value changes, new objects (clones, new units) and deletes all go through rusemod.model.
 """
 from __future__ import annotations
 
@@ -96,11 +96,13 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0") -> BuildResult:
                                                   f"({', '.join(p.rsplit(chr(92), 1)[-1] for p in shadows)})"))
     if run.errors:
         return result
+    notes: list = []
     try:
-        changed = save(base, run.game, loaded)
+        changed = save(base, run.game, loaded, run.created, notes)
     except ModelError as exc:
         result.findings.append(Finding("error", str(exc)))
         return result
+    result.findings += [Finding("note", n) for n in notes]
     result.changed = {members[p]: data for p, data in changed.items()}
     result.fingerprint = fingerprint(build_id, changed)
     return result

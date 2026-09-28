@@ -74,6 +74,7 @@ class Obj:
     cls: str
     props: dict = field(default_factory=dict)
     origin: tuple | None = field(default=None, compare=False)  # (game file, object index) it was read from; None = new
+    copied_from: tuple | None = field(default=None, compare=False)  # for copies: the origin of what was copied
 
 
 @dataclass
@@ -131,6 +132,7 @@ class Result:
     game: Game
     findings: list
     trail: dict         # (object, path) -> [(op, value after)]
+    created: dict = field(default_factory=dict)  # new object name -> the create / clone operation, in order
 
     def _level(self, level):
         return [f for f in self.findings if f.level == level]
@@ -205,7 +207,7 @@ class Engine:
             except PatchError as exc:
                 self._find("error", str(exc), op)
         self._finish()
-        return Result(self.game, self.findings, dict(self.trail))
+        return Result(self.game, self.findings, dict(self.trail), dict(self.created))
 
     @staticmethod
     def _when_ok(op: Op, present: dict) -> bool:
@@ -566,10 +568,10 @@ def _walk_value(v):
 def _fresh(obj: Obj) -> Obj:
     """A deep copy that counts as new: it and its owned parts forget which game file they came from."""
     new = copy.deepcopy(obj)
-    new.origin = None
+    new.copied_from, new.origin = new.origin, None
     for v in _walk_obj(new):
         if isinstance(v, Inline):
-            v.obj.origin = None
+            v.obj.copied_from, v.obj.origin = v.obj.origin, None
     return new
 
 

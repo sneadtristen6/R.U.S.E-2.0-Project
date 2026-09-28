@@ -7,7 +7,7 @@ from fixtures import make_ndf, val
 from rusemod import Ndf
 from rusemod.dic import name_to_key
 from rusemod.model import ModelError, load, save
-from rusemod.patch import Engine, Inline, Ref
+from rusemod.patch import Engine, Inline, Op, Ref, num
 from rusemod.resolve import ModInfo
 from rusemod.rndf import parse
 
@@ -50,14 +50,23 @@ OBJECTS = [
 ]
 FILES = {
     UNITS: make_ndf(objects=OBJECTS, classes=CLASSES, props=PROPS, strings=["Old title"],
-                    exports={0: "A", 3: "B"}, imports=["VersionOption/ShowOfficialMap"], compress=True),
+                    exports={0: "A", 3: "B"}, imports=["VersionOption/ShowOfficialMap"], topo=[0, 3], compress=True),
 }
+MENU = make_ndf(objects=[(0, [(0, val(0x11, struct.pack("<I", 1) + imported(0)))])], classes=["TMenu"],
+                props=[("Units", 0)], exports={0: "Menu"}, imports=["A"], topo=[0])
 
 
-def build(text, files=FILES):
+def build(text, files=FILES, ops=None):
     base, loaded = load(files)
-    result = Engine(base).run([(ModInfo("m"), parse(text, file="m.rndf", mod="m"))])
+    result = Engine(base).run([(ModInfo("m"), ops if ops is not None else parse(text, file="m.rndf", mod="m"))])
     return base, loaded, result
+
+
+def build_and_save(text, files=FILES, ops=None):
+    base, loaded, result = build(text, files, ops)
+    assert result.errors == [], [f.message for f in result.errors]
+    notes = []
+    return save(base, result.game, loaded, result.created, notes), notes
 
 
 def reread(out, path=UNITS):
@@ -123,15 +132,18 @@ class WritingBack(unittest.TestCase):
         self.assertEqual(struct.unpack("<III", ndf.objects[0].get(7).payload), (0xBBBBBBBB, 3, 0))
         self.assertEqual(struct.unpack("<III", ndf.objects[3].get(8).payload), (0xBBBBBBBB, 0xFFFFFFFF, 0xFFFFFFFF))
 
-    def test_replacing_an_owned_part_is_reported(self):
-        base, loaded, result = build("patch $/B ( Weapon = $/A )")  # B's own weapon part would be left unused
-        with self.assertRaisesRegex(ModelError, r"#4 \(TWeapon\) is gone after the mods ran"):
-            save(base, result.game, loaded)
+    def test_a_replaced_part_stays_in_the_file_unused(self):
+        out, _ = build_and_save("patch $/B ( Weapon = $/A )")  # B's own weapon part #4 is left unused
+        ndf = reread(out)
+        self.assertEqual(len(ndf.objects), 5)  # nothing removed: no index moves
+        self.assertEqual(struct.unpack("<III", ndf.objects[3].get(2).payload), (0xBBBBBBBB, 0, 0))
 
-    def test_new_objects_are_reported_as_the_next_step(self):
-        base, loaded, result = build("export C is clone $/A ( ProductionPrice = [1, 1, 1, 1, 1] )")
-        with self.assertRaisesRegex(ModelError, "next step"):
-            save(base, result.game, loaded)
+    def test_refs_to_unnamed_objects_in_other_files_are_refused(self):
+        other = make_ndf(objects=[(0, [(0, i32(1))])], classes=["T"], props=[("X", 0)], exports={0: "O"})
+        base, loaded, result = build("", {**FILES, OTHER: other},
+                                     ops=[Op("set", "$/O", "X", Ref(f"{UNITS}#2"), mod="m")])
+        with self.assertRaisesRegex(ModelError, "unnamed object in another file"):
+            save(base, result.game, loaded, result.created)
 
     def test_same_property_name_in_two_classes_keeps_each_objects_own_entry(self):
         # PROP has "Cost" twice: entry 0 for class TA, entry 1 for class TB. Changing B's other value must not move
@@ -149,6 +161,67 @@ class WritingBack(unittest.TestCase):
         base, loaded, result = build("patch $/A ( Show = $/Somewhere/Else )")
         self.assertTrue(result.errors)  # the engine already says it's dangling
         self.assertIn("still refers to $/Somewhere/Else", result.errors[0].message)
+
+
+
+class NewObjects(unittest.TestCase):
+    def test_clone_a_unit(self):
+        out, _ = build_and_save("export C is clone $/A ( ProductionPrice = [1, 1, 1, 1, 1] )")
+        ndf, orig = reread(out), Ndf(FILES[UNITS])
+        self.assertEqual(len(ndf.objects), 7)                       # C at #5, its copied weapon part at #6
+        self.assertEqual(struct.unpack("<II", ndf._sec("CHNK")), (0, 7))
+        self.assertEqual(ndf.exports[5], "$/C")
+        self.assertEqual(ndf.topo, [0, 3, 5])                       # named: in; the part's source #1 wasn't
+        c, part = ndf.objects[5], ndf.objects[6]
+        self.assertEqual(ndf.classes[c.cls], "TUniteAuSolDescriptor")
+        self.assertEqual(c.get(0).int_list(), [1] * 5)
+        self.assertEqual(c.get(1).payload, orig.objects[0].get(1).payload)          # Speed copied as is
+        self.assertEqual(struct.unpack("<III", c.get(2).payload), (0xBBBBBBBB, 6, 1))  # its own weapon part
+        self.assertEqual(c.get(5).payload, b"\x4e")
+        self.assertEqual(c.get(7).payload, orig.objects[0].get(7).payload)          # the same import
+        self.assertEqual(struct.unpack("<III", part.get(3).payload), (0xBBBBBBBB, 2, 2))  # shared ammo stays shared
+        for i in range(5):                                          # everything that was there is untouched
+            self.assertEqual([(p, v.encode()) for p, v in ndf.objects[i].props],
+                             [(p, v.encode()) for p, v in orig.objects[i].props])
+
+    def test_clone_of_a_clone_goes_to_the_same_file(self):
+        out, _ = build_and_save("export C is clone $/A ( )\nexport D is clone ~/C ( ProductionPrice = [2, 2, 2, 2, 2] )")
+        ndf = reread(out)
+        self.assertEqual((ndf.exports[5], ndf.exports[7]), ("$/C", "$/D"))
+        self.assertEqual(ndf.objects[7].get(0).int_list(), [2] * 5)
+
+    def test_a_new_object_of_a_new_class(self):
+        ops = [Op("create", "$/Z", cls="TRadar", body=[Op("set", path="Range", value=num(3000))], mod="m")]
+        out, _ = build_and_save("", ops=ops)
+        ndf = reread(out)
+        z = ndf.objects[5]
+        self.assertEqual((ndf.classes[z.cls], ndf.props[z.props[0][0]]), ("TRadar", ("Range", 3)))
+        self.assertEqual(z.get(z.props[0][0]).scalar(), 3000)
+        self.assertEqual(ndf.exports[5], "$/Z")
+
+    def test_a_list_in_another_file_picks_up_the_new_unit(self):
+        out, _ = build_and_save("export C is clone $/A ( )\npatch $/Menu ( Units += [~/C] )", {**FILES, OTHER: MENU})
+        menu = Ndf(out[OTHER])
+        self.assertEqual(menu.imports, {0: "$/A", 1: "$/C"})       # the new unit is imported by name
+        items = menu.objects[0].get(0).payload
+        self.assertEqual(struct.unpack_from("<I", items)[0], 2)
+        self.assertEqual(struct.unpack_from("<III", items, 4 + 12), (0x09, 0xAAAAAAAA, 1))
+
+    def test_delete_keeps_indices(self):
+        out, notes = build_and_save("delete $/B")
+        ndf = reread(out)
+        self.assertEqual(len(ndf.objects), 5)
+        self.assertNotIn(3, ndf.exports)
+        self.assertEqual(ndf.topo, [0])
+        self.assertIn("$/B is deleted", notes[0])
+
+    def test_own_gives_a_unit_its_own_copy_of_a_shared_part(self):
+        out, _ = build_and_save("patch own $/A:Weapon.Ammo ( Puissance = 1 )")
+        ndf = reread(out)
+        self.assertEqual(len(ndf.objects), 6)                       # the copy is new object #5
+        self.assertEqual(struct.unpack("<III", ndf.objects[1].get(3).payload), (0xBBBBBBBB, 5, 2))
+        self.assertEqual(ndf.objects[5].get(4).scalar(), 1)
+        self.assertEqual(ndf.objects[2].get(4).scalar(), 40)       # B still uses the shared original
 
 
 if __name__ == "__main__":
