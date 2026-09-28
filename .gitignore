@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Build / runtime output
+/build/
+/cache/
+/instances/
+/dist/
+
+# NEVER commit Eugen's game files or anything extracted from the install (copyright).
+# Our own source and docs are fine; raw game data is not.
+*.dat
+*.ndfbin
+*.gladndfbin
+*.truendfbin
+*.ndf
+*.dic
+*.tgv
+*.tgv_pc
+*.spk
+*.spkpc
+*.ess
+*.xyz
+*.ipk
+*.ppk
+*.apk
+*.mpk
+*.gpk
+*.baf
+*.boobspc
+*.scenario
+*.win
+*.kdt
+*.dec
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
+
+# Keep: docs/, *.py source, listings/*.txt (these are archive file *names*, not game content)
+!listings/*.txt
