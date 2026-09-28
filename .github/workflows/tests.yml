@@ -1,0 +1,24 @@
+# Runs the tests on every push and pull request, on Windows (players' PCs) and Linux (Steam Deck).
+# The tests use small made-up files, so no game files are needed here.
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run tests
+        env:
+          PYTHONPATH: src
+        run: python -m unittest discover -s tests -v

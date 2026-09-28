@@ -30,4 +30,5 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
 - [`tools/topo_check.py`](tools/topo_check.py), [`tools/dic_check.py`](tools/dic_check.py): read-only checks of the
   TOPO and text-file leads from [docs/RESEARCH.md](docs/RESEARCH.md) §5.
 - [`tests/`](tests): tests on small made-up files, no game needed: `py -3 -m unittest discover -s tests` (with `PYTHONPATH=src`).
+  GitHub runs them on every push, on Windows and Linux ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)).
 - [`prototypes/spike-2026-09-28/`](prototypes/spike-2026-09-28): throwaway spike code (NDF object parser, script reader, PE analysis).
