@@ -30,7 +30,7 @@ Content is built on top of it: **RUSE 2.0** (balance, units, tactics, nation ros
 These rules decide every design question.
 
 1. **Never modify the Steam install.** Modded play runs from a *modded instance*: a folder of hard links
-   to the original files plus our rebuilt packs (check C2 must confirm this works).
+   to the original files plus our rebuilt packs (confirmed by check C2 on 2026-09-28).
 2. **Lossless first.** A format is only written after it round-trips byte-identically on every shipped file.
 3. **Mods are changes to named things**, never byte offsets or list positions, so they combine and survive updates.
 4. **Deterministic builds.** Same game version + same mods = same result on every PC. Lockstep multiplayer depends on it.
@@ -253,8 +253,15 @@ Checked later, when needed: joining a lobby via `+connect_lobby` (M3), and mount
 **Progress (2026-09-28):** C1 passed (lossless NDF round-trip). First real library landed: `src/rusemod/`
 (EDAT + NDF read/write with an editable object model). [`tools/verify_writer.py`](tools/verify_writer.py)
 proves, read-only against the install, that the archive rebuilds byte-identical, a value edit applies as a
-minimal in-place change, and the edited archive reads back with all other members intact. Remaining for M1:
-`.dic`/scenario/mapinfo readers, the VFS and asset registry, and the `ruse` CLI. Not yet verified: in-game load (C2).
+minimal in-place change, and the edited archive reads back with all other members intact.
+
+**C2 passed (2026-09-28): the game loads our rebuilt archives.** [`tools/make_test_instance.py`](tools/make_test_instance.py)
+set all 134 building prices to $1 and built a modded instance (`.dat` archives hard-linked, other files copied,
+`steam_appid.txt`). Launched directly from the instance with Steam running, the game showed every building at $1.
+The Steam install was verified untouched afterwards. This validates the member writer (including our own zlib
+re-compression), the data mapping, and the instance deployment model. **M0 is complete.**
+
+Remaining for M1: `.dic`/scenario/mapinfo readers, the VFS and asset registry, and the `ruse` CLI.
 
 ## 8. Risks
 
