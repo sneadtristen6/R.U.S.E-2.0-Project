@@ -7,6 +7,7 @@ For every .dic (magic TRA) in every pack, reports:
   - whether keys are sorted
   - how many keys decode to names with the 6-bit scheme (Wargame's, via moddingSuite), with examples
   - how many files there are per language folder
+  - the writer: adding one entry (in memory) keeps every original text readable and unchanged
 Nothing is written.
 
   set PYTHONPATH=<repo>\src  &&  py -3 tools\dic_check.py [game_dir]
@@ -19,7 +20,9 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 from rusemod import Edat  # noqa: E402
-from rusemod.dic import Dic  # noqa: E402
+from rusemod.dic import Dic, name_to_key  # noqa: E402
+
+PROBE_KEY = name_to_key("ZZPROBE9")  # a key no shipped file should use
 
 DEFAULT_GAME = r"D:\Steam\steamapps\common\R.U.S.E"
 LANG = re.compile(r"\\translations\\([^\\]+)\\|\\(dev)\\", re.I)
@@ -62,6 +65,12 @@ def main():
                 t["files with keys sorted"] += keys == sorted(keys)
                 t["files with every text after the table"] += all(e.offset >= table_end for e in dic.entries)
                 t["entries sharing a text"] += sum(c for c in offsets.values() if c > 1)
+                if PROBE_KEY not in {e.key for e in dic.entries}:
+                    probe = Dic(raw)
+                    probe.add(PROBE_KEY, "probe")
+                    again = Dic(probe.to_bytes())
+                    t["files where adding an entry keeps every old text"] += (
+                        all(again.text(e.key) == e.text for e in dic.entries) and again.text(PROBE_KEY) == "probe")
                 for e in dic.entries:
                     end = e.offset + 2 * e.length
                     t["texts followed by a UTF-16 null"] += raw[end:end + 2] == b"\0\0"
@@ -85,6 +94,8 @@ def main():
     if undecoded:
         print("keys that don't decode (examples):\n  " + "\n  ".join(undecoded))
     print(f"files per language folder: {dict(langs)}")
+    print(f"writer check, files where adding an entry keeps every old text: "
+          f"{t['files where adding an entry keeps every old text']} of {t['files']}")
     return 0 if not failures else 1
 
 

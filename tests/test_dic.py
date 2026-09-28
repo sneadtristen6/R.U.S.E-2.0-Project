@@ -61,5 +61,45 @@ class Reading(unittest.TestCase):
             Dic(b"TRA\0" + struct.pack("<I", 1000))
 
 
+class Writing(unittest.TestCase):
+    def setUp(self):
+        self.raw = make_dic([(MP01_KEY, "Blitz"), (name_to_key("M_D_02"), "Second")])
+
+    def test_unchanged_writes_back_identical(self):
+        self.assertEqual(Dic(self.raw).to_bytes(), self.raw)
+
+    def test_adding_keeps_every_old_text_and_the_order(self):
+        dic = Dic(self.raw)
+        dic.add(name_to_key("R2MARINE"), "US Marines")
+        again = Dic(dic.to_bytes())
+        self.assertEqual({e.name: e.text for e in again.entries},
+                         {"M_D_01": "Blitz", "M_D_02": "Second", "R2MARINE": "US Marines"})
+        keys = [e.key for e in again.entries]
+        self.assertEqual(keys, sorted(keys))
+        self.assertEqual(again.raw[-2:], b"\0\0")  # new texts end with a UTF-16 null
+
+    def test_changing_a_text(self):
+        dic = Dic(self.raw)
+        dic.set_text(MP01_KEY, "Blitzkrieg")
+        self.assertEqual(Dic(dic.to_bytes()).text(MP01_KEY), "Blitzkrieg")
+        self.assertEqual(Dic(dic.to_bytes()).text(name_to_key("M_D_02")), "Second")
+
+    def test_shared_texts_stay_shared(self):
+        raw = bytearray(make_dic([(1, "same"), (2, "same")]))
+        struct.pack_into("<I", raw, 8 + 16 + 8, struct.unpack_from("<I", raw, 8 + 8)[0])
+        dic = Dic(bytes(raw))
+        dic.add(3, "new")
+        again = Dic(dic.to_bytes())
+        self.assertEqual(again.entries[0].offset, again.entries[1].offset)
+        self.assertEqual([e.text for e in again.entries], ["same", "same", "new"])
+
+    def test_key_rules(self):
+        dic = Dic(self.raw)
+        with self.assertRaises(KeyError):
+            dic.add(MP01_KEY, "twice")
+        with self.assertRaises(KeyError):
+            dic.set_text(name_to_key("NOPE"), "x")
+
+
 if __name__ == "__main__":
     unittest.main()

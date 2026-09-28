@@ -50,7 +50,11 @@ class DicEntry:
 
 
 class Dic:
-    """A read-only view of one .dic file."""
+    """One .dic file: read it, change or add texts, write it back.
+
+    Writing keeps every original text byte where it was (only shifted past the grown table) and appends new or
+    changed texts at the end, each followed by a UTF-16 null. An unchanged file writes back byte-identical.
+    """
 
     def __init__(self, raw: bytes):
         if raw[:3] != b"TRA":
@@ -67,7 +71,44 @@ class Dic:
                 raise ValueError(f"entry {i}: text at {off} (+{2 * n} bytes) runs past the end of the file")
             self.entries.append(DicEntry(key, off, n, raw[off:off + 2 * n].decode("utf-16-le", "replace")))
         self._by_key = {e.key: e for e in self.entries}
+        self._table_end = 8 + 16 * count
+        self._new: dict[int, str] = {}  # key -> text added or changed since reading
 
     def text(self, key: int) -> str | None:
+        if key in self._new:
+            return self._new[key]
         e = self._by_key.get(key)
         return e.text if e else None
+
+    def set_text(self, key: int, text: str) -> None:
+        """Change an existing entry's text."""
+        if key not in self._by_key and key not in self._new:
+            raise KeyError(f"no entry with key {key:#x}; use add()")
+        self._new[key] = text
+
+    def add(self, key: int, text: str) -> None:
+        """Add a new entry. Keys must be unique."""
+        if key in self._by_key or key in self._new:
+            raise KeyError(f"key {key:#x} ({key_to_name(key)}) is already used; use set_text()")
+        self._new[key] = text
+
+    def to_bytes(self) -> bytes:
+        if not self._new:
+            return self.raw
+        keys = sorted(set(self._by_key) | set(self._new))
+        table_end = 8 + 16 * len(keys)
+        shift = table_end - self._table_end
+        blob = bytearray(self.raw[self._table_end:])  # the original texts, untouched
+        table = bytearray()
+        for key in keys:
+            if key in self._new:
+                text = self._new[key]
+                off = table_end + len(blob)
+                blob += text.encode("utf-16-le") + b"\0\0"
+                table += struct.pack("<QII", key, off, len(text.encode("utf-16-le")) // 2)
+            else:
+                e = self._by_key[key]
+                if e.offset < self._table_end:
+                    raise ValueError(f"key {key:#x}: text inside the table; can't move it safely")
+                table += struct.pack("<QII", key, e.offset + shift, e.length)
+        return self.raw[:4] + struct.pack("<I", len(keys)) + bytes(table) + bytes(blob)

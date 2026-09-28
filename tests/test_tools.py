@@ -79,6 +79,7 @@ class EndToEnd(unittest.TestCase):
             self.assertIn("keys that decode to names: 1 of 1", out)
             self.assertIn("M_D_01 = 'Blitz'", out)
             self.assertIn("'us': 1", out)
+            self.assertIn("keeps every old text: 1 of 1", out)
 
 
 if __name__ == "__main__":
