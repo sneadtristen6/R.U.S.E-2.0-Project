@@ -590,16 +590,17 @@ C4 changed values that already exist. C5 adds something new: a copy of the M4 Sh
        py -3 -m rusemod build examples\cloned-unit --instance D:\RUSE-Instances\c5-clone
 
    Expect one note, "…Descriptor_Unit_R2_Sherman_Test gets its own DescriptorId … -> …, ClassNameForDebug
-   'Unit_M4_Sherman' -> 'Unit_R2_Sherman_Test', PositionInMenu 3xx -> 3yy", no warnings or errors, and
-   `changed:` the unit data file.
+   'Unit_M4_Sherman' -> 'Unit_R2_Sherman_Test', PositionInMenu … -> …", no warnings or errors, and `changed:` the
+   unit data file. The new PositionInMenu is where to look: row = slot ÷ 100, column = the last two digits.
 3. **In game** (owner): launch `RUSE.exe` from the instance with Steam running, start a skirmish as the US in a mode
    where the Sherman is available, build an armour factory and open its menu.
-   - **Pass:** a second Sherman at the new slot (row 3, column yy), costing 1, next to the normal one at its usual
-     price. Build it: it drives and fights like a Sherman.
+   - **Pass:** a second Sherman at the new slot, costing 1, in the same row as the normal one (which keeps its usual
+     price). Build it: it drives and fights like a Sherman.
    - Record the result, a screenshot of the menu, the build output and how long it took, here or in FORMATS.md.
 4. **If it fails**, record what happened and when:
-   - **The copy isn't in the menu:** its column may be past the last one the menu shows. Give it a free slot in a row
-     with room (from D), e.g. add `PositionInMenu = 205` to the clone in `units.rndf`, and rebuild.
+   - **The copy isn't in the menu:** its column may be past the last one the menu shows. Give it a free slot in
+     another row this menu already uses (D lists them) by adding `PositionInMenu = <slot>` to the clone in
+     `units.rndf`, and rebuild.
    - **The game crashes** at start or when the menu opens: the likely suspect is the debug-info copy of the unit data,
      which doesn't have the new unit (builds leave it as shipped). Next try: mirror new objects into it.
    - **Wrong price, or the original changed too:** send the build output.
