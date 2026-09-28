@@ -605,13 +605,15 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
      likely needs the ZZ_Win.dat rebuild.
    - ~~C3 step 2~~ **passed 2026-09-28:** a renamed map pack loads when the data names it (§7 "Result"). New maps
      can ship their own pack. Reusable instance builder: `src/rusemod/instance.py` (tested).
+   - **Next: C4 (§7), needs the owner at the game:** build `examples/half-price-buildings` with `ruse build
+     --instance` and check in-game that every building costs half. Proves the whole text-mod pipeline.
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the
    `ruse` tool (detect, ls, names, dump, extract), the `.dic` reader/writer, load order, the mod rules engine
-   (all of MOD_FORMAT §10), the `.rndf` reader, fingerprints and join codes (see README "Code so far").
-   Next: the adapter between game files and the engine's model (reading, and writing value changes; adding objects
-   waits for the TOPO check), so a text mod can build a real pack.
+   (all of MOD_FORMAT §10), the `.rndf` reader, fingerprints and join codes (see README "Code so far"), and the
+   bridge between game files and the engine for value changes, with `ruse build` (C4 is ready).
+   Next: the bridge adds and removes objects (TOPO rule from the PC check), so a cloned unit can be built (M2).
 4. **You:** the open decisions in §9 (name, UI stack, outreach timing, the unit to clone in M2).
 
 **How the two sessions share the work**
