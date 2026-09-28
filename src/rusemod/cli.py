@@ -5,7 +5,7 @@
   ruse names <pack> [filter]           list the named objects in a pack's data files
   ruse dump <pack> <file> [filter]     show one data file as text
   ruse extract <pack> <filter> [--out DIR]   copy files out of a pack (default folder: extracted/)
-  ruse build <mod>... [--pack P] [--out FILE | --instance DIR]   build mods into a pack or a modded copy
+  ruse build <mod>... [--pack P] [--out FILE|DIR] [--instance DIR]   build mods into packs or a modded copy
 
 A pack can be a path, or just its name (`ZZ_GladPatchableWin.dat`), found in the game folder. Packs inside packs are
 reached with `!`: `ZZ_Win.dat!eugen.ipk`. Nothing here ever writes into the game folder.
@@ -21,7 +21,8 @@ import re
 import sys
 from pathlib import Path
 
-from .build import BuildError, build_pack, load_mod
+from . import loc
+from .build import BuildError, build_pack, load_mod, needs_text_pack
 from .edat import Edat
 from .lock import fingerprint_text
 from .ndf import Ndf
@@ -185,10 +186,13 @@ def cmd_build(args) -> int:
     except (BuildError, RndfError, OSError) as exc:
         raise UserError(str(exc)) from None
     pack_path = _find_pack(args.pack, args)
+    text_path = _find_pack(loc.PACK, args) if needs_text_pack(mods) else None
     build_id = build_of(_game_dir(args)) or "0"  # the fingerprint includes the game build
-    with Edat.open(str(pack_path)) as arc:
+    with contextlib.ExitStack() as stack:
+        arc = stack.enter_context(Edat.open(str(pack_path)))
+        text_arc = stack.enter_context(Edat.open(str(text_path))) if text_path else None
         try:
-            result = build_pack(arc, mods, build_id)
+            result = build_pack(arc, mods, build_id, text_arc)
         except ResolveError as exc:
             raise UserError(f"load order: {exc}") from None
         print("load order: " + " -> ".join(result.order))
@@ -201,22 +205,44 @@ def cmd_build(args) -> int:
             return 2
         for path in result.changed:
             print(f"changed: {path}")
-        if not result.changed:
-            print("The mods change nothing in this pack.")
+        if result.text_changed:
+            names: dict[str, int] = {}
+            for path in result.text_changed:
+                name = path.rsplit("\\", 1)[-1]
+                names[name] = names.get(name, 0) + 1
+            print(f"texts: {len(result.text_changed)} file(s) in {text_path.name} ("
+                  + ", ".join(f"{n} ×{c}" for n, c in sorted(names.items())) + ")")
+        if not result.changed and not result.text_changed:
+            print("The mods change nothing in these packs.")
             return 0
         print(f"fingerprint: {fingerprint_text(result.fingerprint)}")
+        rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, result.text_changed)]
+        rebuilt = [(path, a, changed) for path, a, changed in rebuilt if changed]
         if args.out:
             out = Path(args.out)
-            with out.open("wb") as f:
-                arc.write_to(f, result.changed)
-            print(f"wrote {out}")
+            if out.suffix.lower() == ".dat":
+                if len(rebuilt) > 1:
+                    raise UserError("these mods rebuild two packs (unit data and texts): give --out a folder")
+                targets = [(out, rebuilt[0][1], rebuilt[0][2])]
+            else:
+                out.mkdir(parents=True, exist_ok=True)
+                targets = [(out / path.name, a, changed) for path, a, changed in rebuilt]
+            for target, a, changed in targets:
+                with target.open("wb") as f:
+                    a.write_to(f, changed)
+                print(f"wrote {target}")
         if args.instance:
             from .instance import build_instance
             game = _game_dir(args)
-            new_pack = arc.to_bytes(result.changed)
-            counts = build_instance(str(game), args.instance,
-                                    replace={str(pack_path.resolve().relative_to(game.resolve())): new_pack})
-            print(f"modded copy ready: {args.instance}  {counts}")
+            replace = {}
+            for path, a, changed in rebuilt:
+                rel = str(path.resolve().relative_to(game.resolve()))
+                replace[rel] = (lambda f, a=a, changed=changed: a.write_to(f, changed))
+            copied = build_instance(str(game), args.instance, replace=replace)
+            print(f"modded copy ready: {args.instance}  {copied}")
+            if copied.get("full copies"):
+                print(f"note: {args.instance} is on another drive than the game, so its {copied['full copies']} packs "
+                      f"are full copies, which take disk space. On the game's drive they'd be free.")
     return 0
 
 
@@ -246,7 +272,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("build", help="build mods into a rebuilt pack or a modded copy of the game")
     p.add_argument("mods", nargs="+", help="mod folders (with mod.toml) or single .rndf files")
     p.add_argument("--pack", default="ZZ_GladPatchableWin.dat", help="the pack the mods change (default: the unit data)")
-    p.add_argument("--out", help="write the rebuilt pack here")
+    p.add_argument("--out", help="write the rebuilt pack to this .dat file, or every rebuilt pack into this folder")
     p.add_argument("--instance", help="build a modded copy of the game in this folder (never the Steam install)")
     p.add_argument("--all", action="store_true", help="show every note, without collapsing similar ones")
     p.set_defaults(fn=cmd_build)

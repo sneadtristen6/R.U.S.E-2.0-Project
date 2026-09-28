@@ -1,0 +1,6 @@
+// C5's Sherman copy (costs 1, own id and menu slot), now with its own name from text/baseunite.csv.
+export Descriptor_Unit_R2_Sherman_Named is clone $/GFX/Everything/Descriptor_Unit_M4_Sherman
+(
+    ProductionPrice = [1, 1, 1, 1, 1]
+    NameInMenuToken = loc('c6.sherman.name')
+)

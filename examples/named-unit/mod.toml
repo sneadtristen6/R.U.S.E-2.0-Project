@@ -1,0 +1,9 @@
+# Check C6 (docs/PLAN.md §7): a new unit with its own name in the game's build menu.
+[mod]
+id          = "named-unit"
+name        = "Named unit (test)"
+version     = "0.1.0"
+authors     = ["RUSE Mod Platform"]
+license     = "MIT"
+description = "C5's Sherman copy, costing 1, with its own name. Proves new text reaches the game. Not a balance mod."
+text_prefix = "C6"

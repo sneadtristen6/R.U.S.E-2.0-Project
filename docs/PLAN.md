@@ -621,6 +621,27 @@ C4 changed values that already exist. C5 adds something new: a copy of the M4 Sh
      which doesn't have the new unit (builds leave it as shipped). Next try: mirror new objects into it.
    - **Wrong price, or the original changed too:** send the build output.
 
+### C6: a new unit with its own name (ready to run, after C5)
+
+C5 proves a new unit works. C6 gives it its own name through the new text step: C5's Sherman copy with the name
+"Sherman C6-Test" ([`examples/named-unit/`](../examples/named-unit/): the unit in `src/units.rndf`, the name in
+`text/baseunite.csv`). Every language shows the English name (a missing language falls back to `us`).
+
+1. **Build** (a few minutes: the text pack, ZZ_Win.dat, is 2.3 GB and gets rebuilt into the copy, so the drive needs
+   that much free space):
+
+       set PYTHONPATH=<repo>\src
+       py -3 -m rusemod build examples\named-unit --instance D:\RUSE-Instances\c6-named
+
+   Expect the fresh-identity note from C5, `texts: 11 file(s) in ZZ_Win.dat (baseunite.dic ×11)` (ten languages and
+   `dev`), no warnings or errors.
+2. **In game** (owner): skirmish as the US, armour factory menu.
+   - **Pass:** the new Sherman copy (costing 1) is called "Sherman C6-Test"; the normal Sherman keeps its name.
+   - Record the result, a screenshot, the build output and how long the build took.
+3. **If the name is blank or shows a code:** unit names may not come from `baseunite.dic` (RUSE-Mod-Manager's note).
+   Check which `.dic` holds the Sherman's own name key (`ruse dump` shows it on `NameInMenuToken`), rename
+   `text/baseunite.csv` to that dictionary, and rebuild.
+
 **This plan is a living document.** We adjust it together as we learn.
 
 **Progress (2026-09-28):** C1 passed (lossless NDF round-trip). First real library landed: `src/rusemod/`
@@ -710,6 +731,7 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
         US armour factory's menu.
      5. **Nation scan** (read-only, no game launch needed): `py -3 tools\nation_scan.py > nations.txt`. Record its
         summary and the starred lines of B in FORMATS.md §3: that's the data side of the new nation (decision 19).
+     6. **C6, a unit with its own name** (§7 C6), after C5: one build, then look for "Sherman C6-Test" in the menu.
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the
@@ -720,10 +742,12 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    (the PC's rule) and imports; deleted ones keep every index; clones get their own id, debug name and build-menu
    slot (`rusemod.identity`, MOD_FORMAT §10.5). **C5 is ready for the PC** (§7).
    ~~Also from C4: the `*_debuginfo` notes~~ **done:** debug-info copies are left as shipped, similar notes collapse.
-   Next (cloud): names for new units (text mods: `text/*.csv` into the game's `.dic` files), whatever C5 turns up,
-   and the new nation: ~~M10 step 1~~ **done:** what other games' modders learned about adding nations
-   (RESEARCH.md §6) and `tools/nation_scan.py` (the data side; the PC runs it, item 1). Then the launcher (M3). The
-   owner's order (2026-09-28): the mod system, then the launcher.
+   ~~Next (cloud): names for new units~~ **done:** text mods (`text/*.csv` into the game's `.dic` files, `loc()` in
+   `.rndf`, `rusemod.loc`); `ruse build` rebuilds ZZ_Win.dat too when mods have texts, streamed into the modded copy.
+   Modded copies now keep the last working copy until a new one is complete, and fall back to full copies on another
+   drive. **C6 is ready for the PC** (§7). Also done: the new nation's step 1 (RESEARCH.md §6, `tools/nation_scan.py`).
+   Next (cloud): the launcher (M3), per the owner's order (the mod system, then the launcher), and whatever C5/C6
+   turn up.
 4. **You:** the open decisions in §9 (name, UI stack, outreach timing, the unit to clone in M2, a second player).
 
 **How the two sessions share the work**

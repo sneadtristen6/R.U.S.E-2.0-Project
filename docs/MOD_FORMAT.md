@@ -167,10 +167,20 @@ when mod better-ai
 
 ## 6. Localisation (`text/*.csv`)
 
+Built: `src/rusemod/loc.py`, run by `ruse build` (PLAN.md §7, C6).
+
 ```csv
 key,game_key,us,fr,ger,ita,spa,pol
 r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Marines de EE. UU.,Piechota morska USA
 ```
+
+- **The file name picks the game dictionary:** `text/baseunite.csv` goes into every `baseunite.dic` (unit names; the
+  game has 112 dictionaries per language). A name the game doesn't have is an error.
+- **Using a text:** `NameInMenuToken = loc('r2.unit.us_marines.name')` in a `.rndf` file becomes that row's game key.
+  A `loc()` that no mod in the set defines is an error.
+- **Where it goes:** all texts live in `ZZ_Win.dat`, so a mod with texts also rebuilds that 2.3 GB pack (streamed, in
+  the modded copy) until the game can load a pack of ours for text (PLAN.md L5, M10). Texts are cosmetic: they don't
+  change the fingerprint (§10.8). The `dev` folder gets the `us` text.
 
 - **Language columns** use the game's own language folders: `us fr ger ita spa pol cz ru jpn sc` (from
   RUSE-Mod-Manager's notes; `tools/dic_check.py` confirms them on the game). The usual codes are accepted too:

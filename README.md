@@ -10,7 +10,8 @@ Status: **M0 done; M1 next** (the design for M1–M3 is written up). Nothing her
 the terrain mesh and tile files can be read and rewritten losslessly (`rusemod.tms`, `rusemod.tmst`), and the map
 pack "checksum" turned out to be a random ID. Next on the PC: in-game terrain tests (a raised mesa, swapped tiles,
 checkerboard tiles), the TGU1 texture codec, and **C5, a new unit in the build menu** (ready to run, PLAN.md §7).
-On the cloud side, the C4 fixes and adding units are done; next are names for new units (PLAN.md §10).
+On the cloud side, adding units and naming them are done (C5 and C6 are ready to run); next is the launcher
+(PLAN.md §10).
 Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19); the order is the mod system, then the
 launcher; multiplayer is tested solo until there's a second player (decision 20).
 The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.md §6.
@@ -40,7 +41,9 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
   `.rndf` files, shows the load order and every error / warning / note, and writes nothing if there's an error.
   Value changes work end to end (C4). New objects work too: a copied unit gets its own id, debug name and build-menu
   slot ([`src/rusemod/identity.py`](src/rusemod/identity.py)); the in-game test is C5
-  ([`examples/cloned-unit/`](examples/cloned-unit/), PLAN.md §7).
+  ([`examples/cloned-unit/`](examples/cloned-unit/), PLAN.md §7). New units get their own names from a mod's
+  `text/*.csv` ([`src/rusemod/loc.py`](src/rusemod/loc.py); in-game test C6,
+  [`examples/named-unit/`](examples/named-unit/)).
 
 - [`ruse_edat.py`](ruse_edat.py): read-only EDAT archive reader.
   ```

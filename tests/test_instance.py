@@ -60,6 +60,47 @@ class InstanceTest(unittest.TestCase):
         self.assertFalse(os.path.exists(self.dst))
         self.assertFalse(os.path.exists(self.dst + ".partial"))
 
+    def test_a_big_file_can_be_written_by_a_function(self):
+        chunks = [b"PART1", b"PART2"]
+        counts = build_instance(self.game, self.dst, replace={
+            os.path.join("Data", "PC", "1", "B.dat"): lambda f: [f.write(c) for c in chunks]})
+        with open(os.path.join(self.dst, "Data", "PC", "1", "B.dat"), "rb") as f:
+            self.assertEqual(f.read(), b"PART1PART2")
+        self.assertEqual(counts["written"], 1)
+
+    def test_the_last_working_copy_stays_until_the_new_one_is_complete(self):
+        build_instance(self.game, self.dst, replace={os.path.join("Data", "PC", "1", "B.dat"): b"FIRST"})
+
+        def fail(_f):
+            raise OSError("disk full")
+
+        with self.assertRaises(OSError):
+            build_instance(self.game, self.dst, replace={os.path.join("Data", "PC", "1", "B.dat"): fail})
+        with open(os.path.join(self.dst, "Data", "PC", "1", "B.dat"), "rb") as f:
+            self.assertEqual(f.read(), b"FIRST")  # the first build is still there, whole
+        self.assertFalse(os.path.exists(self.dst + ".partial"))
+        build_instance(self.game, self.dst, replace={os.path.join("Data", "PC", "1", "B.dat"): b"SECOND"})
+        with open(os.path.join(self.dst, "Data", "PC", "1", "B.dat"), "rb") as f:
+            self.assertEqual(f.read(), b"SECOND")
+        self.assertFalse(os.path.exists(self.dst + ".old"))
+
+    def test_another_drive_gets_full_copies(self):
+        real_link = os.link
+
+        def no_links(_a, _b):
+            raise OSError(18, "Invalid cross-device link")
+
+        os.link = no_links
+        try:
+            counts = build_instance(self.game, self.dst)
+        finally:
+            os.link = real_link
+        self.assertEqual(counts, {"linked": 0, "copied": 2, "written": 0, "full copies": 3})
+        a = os.path.join(self.dst, "Data", "PC", "1", "A.dat")
+        self.assertFalse(os.path.samefile(a, os.path.join(self.game, "Data", "PC", "1", "A.dat")))
+        with open(a, "rb") as f:
+            self.assertEqual(f.read(), b"archive A")
+
 
 if __name__ == "__main__":
     unittest.main()

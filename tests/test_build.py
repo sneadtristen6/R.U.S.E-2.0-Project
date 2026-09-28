@@ -8,7 +8,9 @@ import unittest
 from pathlib import Path
 
 from fixtures import make_edat, make_ndf, val
-from rusemod import Edat, Ndf
+from test_dic import make_dic
+from rusemod import Edat, Ndf, loc
+from rusemod.dic import Dic, name_to_key
 from rusemod.build import BuildError, build_pack, load_mod
 from rusemod.cli import main
 
@@ -156,6 +158,86 @@ class BuildCommand(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertIn("Nothing was written.", out)
             self.assertFalse(Path(d, "out.dat").exists())
+
+
+SHERMAN_KEY = name_to_key("SHERMAN")
+UNIT_NDF = make_ndf(objects=[(0, [(0, val(0x02, struct.pack("<i", 187))), (1, val(0x1D, struct.pack("<Q", SHERMAN_KEY)))])],
+                    classes=["TUniteAuSolDescriptor"], props=[("DescriptorId", 0), ("NameInMenuToken", 0)],
+                    exports={0: "Sherman"}, topo=[0])
+UNIT_PACK = make_edat([("dir", "genglad\\patchable\\gfx\\", [("file", "everything.cpp.gladndfbin", UNIT_NDF)])])
+TEXT_PACK = make_edat([("dir", "genlocalisation\\ww2\\localisation\\", [
+    ("dir", "translations\\", [("dir", f"{lang}\\", [("file", "baseunite.dic", make_dic([(SHERMAN_KEY, f"Sherman {lang}")]))])
+                               for lang in ("us", "fr")]),
+    ("dir", "dev\\", [("file", "baseunite.dic", make_dic([(SHERMAN_KEY, "Sherman dev")]))])]),
+    ("file", "other.bin", b"untouched")])
+NAMED = {"units.rndf": "export Test is clone $/Sherman ( NameInMenuToken = loc('c6.test.name') )"}
+NAMES = "key,us,fr\nc6.test.name,Test Sherman,Sherman d'essai\n"
+
+
+def text_of(pack, lang, key):
+    arc = Edat(pack)
+    return Dic(arc.read(arc.find(loc.member("baseunite", lang)))).text(key)
+
+
+class Texts(unittest.TestCase):
+    def mod(self, d, names=NAMES, prefix='text_prefix = "C6"\n'):
+        folder = write_mod(d, "named", NAMED, extra=prefix)
+        (folder / "text").mkdir()
+        (folder / "text" / "baseunite.csv").write_text(names, encoding="utf-8")
+        return load_mod(folder)
+
+    def test_a_new_unit_gets_its_own_name(self):
+        with tempfile.TemporaryDirectory() as d:
+            mod = self.mod(d)
+            self.assertEqual((mod[0].text_prefix, [r.key for r in mod[0].texts]), ("C6", ["c6.test.name"]))
+            result = build_pack(Edat(UNIT_PACK), [mod], text_arc=Edat(TEXT_PACK))
+        self.assertEqual(result.errors, [])
+        new_key = name_to_key("C6000001")
+        ndf = Ndf(result.changed[UNITS])
+        self.assertEqual(struct.unpack("<Q", ndf.objects[1].get(1).payload)[0], new_key)  # the clone points at it
+        self.assertEqual(struct.unpack("<Q", ndf.objects[0].get(1).payload)[0], SHERMAN_KEY)  # the Sherman doesn't
+        rebuilt = Edat(TEXT_PACK).to_bytes(result.text_changed)
+        self.assertEqual(text_of(rebuilt, "us", new_key), "Test Sherman")
+        self.assertEqual(text_of(rebuilt, "fr", new_key), "Sherman d'essai")
+        self.assertEqual(text_of(rebuilt, "dev", new_key), "Test Sherman")
+        self.assertEqual(text_of(rebuilt, "us", SHERMAN_KEY), "Sherman us")
+        self.assertTrue(any("isn't in the ger" in f.message for f in result.findings))  # the made-up game has 2 languages
+
+    def test_mistakes(self):
+        with tempfile.TemporaryDirectory() as d:
+            result = build_pack(Edat(UNIT_PACK), [self.mod(d)])
+            self.assertIn("it wasn't given", result.errors[0].message)
+        with tempfile.TemporaryDirectory() as d:
+            result = build_pack(Edat(UNIT_PACK), [self.mod(d, names="key,us\nother.key,x\n")], text_arc=Edat(TEXT_PACK))
+            self.assertIn("loc('c6.test.name') has no text", result.errors[0].message)
+        with tempfile.TemporaryDirectory() as d:
+            result = build_pack(Edat(UNIT_PACK), [self.mod(d, prefix="")], text_arc=Edat(TEXT_PACK))
+            self.assertIn("set text_prefix", result.errors[0].message)
+
+    def test_ruse_build_rebuilds_both_packs(self):
+        with tempfile.TemporaryDirectory() as d:
+            game = Path(d, "R.U.S.E")
+            (game / "Data" / "PC" / "190852").mkdir(parents=True)
+            (game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").write_bytes(UNIT_PACK)
+            (game / "Data" / "PC" / "190852" / "ZZ_Win.dat").write_bytes(TEXT_PACK)
+            folder = write_mod(d, "named", NAMED, extra='text_prefix = "C6"\n')
+            (folder / "text").mkdir()
+            (folder / "text" / "baseunite.csv").write_text(NAMES, encoding="utf-8")
+            code, out = BuildCommand.run_cli(self, "--game", str(game), "build", str(folder),
+                                             "--instance", str(Path(d, "copy")))
+            self.assertEqual(code, 0, out)
+            self.assertIn("texts: 3 file(s) in ZZ_Win.dat (baseunite.dic ×3)", out)
+            copy = Path(d, "copy", "Data", "PC", "190852")
+            self.assertEqual(text_of((copy / "ZZ_Win.dat").read_bytes(), "us", name_to_key("C6000001")), "Test Sherman")
+            rebuilt = Edat((copy / "ZZ_Win.dat").read_bytes())
+            self.assertEqual(bytes(rebuilt.read(rebuilt.find("other.bin"))), b"untouched")
+            self.assertEqual((game / "Data" / "PC" / "190852" / "ZZ_Win.dat").read_bytes(), TEXT_PACK)  # install untouched
+
+            code, out = BuildCommand.run_cli(self, "--game", str(game), "build", str(folder), "--out", str(Path(d, "o.dat")))
+            self.assertEqual(code, 2)  # two packs don't fit in one file
+            code, out = BuildCommand.run_cli(self, "--game", str(game), "build", str(folder), "--out", str(Path(d, "packs")))
+            self.assertEqual(code, 0, out)
+            self.assertTrue(Path(d, "packs", "ZZ_Win.dat").is_file() and Path(d, "packs", "ZZ_GladPatchableWin.dat").is_file())
 
 
 class Examples(unittest.TestCase):
