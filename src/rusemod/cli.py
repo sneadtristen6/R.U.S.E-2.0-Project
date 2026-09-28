@@ -5,6 +5,7 @@
   ruse names <pack> [filter]           list the named objects in a pack's data files
   ruse dump <pack> <file> [filter]     show one data file as text
   ruse extract <pack> <filter> [--out DIR]   copy files out of a pack (default folder: extracted/)
+  ruse build <mod>... [--pack P] [--out FILE | --instance DIR]   build mods into a pack or a modded copy
 
 A pack can be a path, or just its name (`ZZ_GladPatchableWin.dat`), found in the game folder. Packs inside packs are
 reached with `!`: `ZZ_Win.dat!eugen.ipk`. Nothing here ever writes into the game folder.
@@ -19,9 +20,13 @@ import os
 import sys
 from pathlib import Path
 
+from .build import BuildError, build_pack, load_mod
 from .edat import Edat
+from .lock import fingerprint_text
 from .ndf import Ndf
-from .steam import data_revisions, find_game
+from .resolve import ResolveError
+from .rndf import RndfError
+from .steam import build_of, data_revisions, find_game
 from .text import NdfText
 
 
@@ -153,6 +158,47 @@ def cmd_extract(args) -> int:
     return 0
 
 
+def cmd_build(args) -> int:
+    try:
+        mods = [load_mod(m) for m in args.mods]
+    except (BuildError, RndfError, OSError) as exc:
+        raise UserError(str(exc)) from None
+    pack_path = _find_pack(args.pack, args)
+    build_id = build_of(_game_dir(args)) or "0"  # the fingerprint includes the game build
+    with Edat.open(str(pack_path)) as arc:
+        try:
+            result = build_pack(arc, mods, build_id)
+        except ResolveError as exc:
+            raise UserError(f"load order: {exc}") from None
+        print("load order: " + " -> ".join(result.order))
+        for f in result.findings:
+            print(f"  {f.level:7}  {f.message}")
+        counts = {lvl: sum(1 for f in result.findings if f.level == lvl) for lvl in ("error", "warning", "note")}
+        print(f"{counts['error']} error(s), {counts['warning']} warning(s), {counts['note']} note(s)")
+        if result.errors:
+            print("Nothing was written.")
+            return 2
+        for path in result.changed:
+            print(f"changed: {path}")
+        if not result.changed:
+            print("The mods change nothing in this pack.")
+            return 0
+        print(f"fingerprint: {fingerprint_text(result.fingerprint)}")
+        if args.out:
+            out = Path(args.out)
+            with out.open("wb") as f:
+                arc.write_to(f, result.changed)
+            print(f"wrote {out}")
+        if args.instance:
+            from .instance import build_instance
+            game = _game_dir(args)
+            new_pack = arc.to_bytes(result.changed)
+            counts = build_instance(str(game), args.instance,
+                                    replace={str(pack_path.resolve().relative_to(game.resolve())): new_pack})
+            print(f"modded copy ready: {args.instance}  {counts}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="ruse", description="Tools for R.U.S.E. game data. Nothing here modifies the game.")
     ap.add_argument("--game", help="the R.U.S.E. folder (default: found through Steam, or $RUSE_GAME)")
@@ -176,6 +222,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("filter", help="part of the file path, e.g. gfx\\\\everything")
     p.add_argument("--out", default="extracted", help="where to put them (default: extracted/, ignored by git)")
     p.set_defaults(fn=cmd_extract)
+    p = sub.add_parser("build", help="build mods into a rebuilt pack or a modded copy of the game")
+    p.add_argument("mods", nargs="+", help="mod folders (with mod.toml) or single .rndf files")
+    p.add_argument("--pack", default="ZZ_GladPatchableWin.dat", help="the pack the mods change (default: the unit data)")
+    p.add_argument("--out", help="write the rebuilt pack here")
+    p.add_argument("--instance", help="build a modded copy of the game in this folder (never the Steam install)")
+    p.set_defaults(fn=cmd_build)
     return ap
 
 

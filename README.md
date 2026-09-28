@@ -30,7 +30,11 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
   ruse names ZZ_GladPatchableWin.dat Sherman    list named objects
   ruse dump ZZ_GladPatchableWin.dat everything.cpp.gladndfbin Tourelle_MG   show data as text
   ruse extract ZZ_GladPatchableWin.dat mapinfo  copy files out, into extracted/ (ignored by git)
+  ruse build mymod/ other.rndf --instance D:\RUSE-Instances\test   build mods into a modded copy of the game
   ```
+  `build` takes mod folders (`mod.toml` + `src/**/*.rndf`, [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md)) or single
+  `.rndf` files, shows the load order and every error / warning / note, and writes nothing if there's an error.
+  Value changes work end to end; adding new objects (units) is the next step.
 
 - [`ruse_edat.py`](ruse_edat.py): read-only EDAT archive reader.
   ```

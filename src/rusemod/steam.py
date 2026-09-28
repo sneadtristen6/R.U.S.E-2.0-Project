@@ -105,6 +105,14 @@ def find_game(roots: list[Path] | None = None) -> dict | None:
     return None
 
 
+def build_of(game_dir: Path) -> str | None:
+    """The Steam build id of the game in `game_dir`, from the manifest two folders up (steamapps/)."""
+    acf = Path(game_dir).resolve().parent.parent / f"appmanifest_{APP_ID}.acf"
+    if not acf.is_file():
+        return None
+    return parse_vdf(acf.read_text(encoding="utf-8", errors="replace")).get("appstate", {}).get("buildid")
+
+
 def data_revisions(game_dir: Path) -> list[str]:
     pc = Path(game_dir) / "Data" / "PC"
     return sorted(p.name for p in pc.iterdir() if p.is_dir() and p.name.isdigit()) if pc.is_dir() else []
