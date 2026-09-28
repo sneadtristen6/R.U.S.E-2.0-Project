@@ -173,7 +173,7 @@ r2.unit.us_marines.name,US Marines,Marines US,US-Marines,Marines USA,Marines de 
 - `files/replace/<game path>.<source ext>` replaces an existing file. For example,
   `files/replace/gen/ww2/res3d/…/sherman.tgv.png` is cooked to that `.tgv`.
 - `files/add/mods/<mod id>/<name>.<source ext>` adds a new file, referenced from `.rndf` by its game path.
-- Which pack receives new files depends on whether NDF can mount an extra pack (checked in M5/M6). The preferred
+- Which pack receives new files depends on whether NDF can mount an extra pack (tested in M2). The preferred
   answer is a mod-owned pack mounted by NDF.
 
 ## 8. Maps

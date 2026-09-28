@@ -332,11 +332,8 @@ search by name and see where each text is used. It costs some disk space (a gues
   | game closes right after starting | "R.U.S.E. closed right after starting with RUSE 2.0. [Play vanilla] [Save a report]" | keeps the report for the mod's author |
   | antivirus or Windows blocks a file | "Windows or your antivirus is blocking a file: …. [How to fix this]" | links a help page |
 
-  **Decisions for you (launcher)**
-  1. **Test early (M2, not M5/M6) whether the game can load an extra pack of ours.** If it can, mods ship small packs
-     and never rebuild the 2.3 GB one. If it can't, every new unit name costs a 2.3 GB rebuild. Recommended.
-  2. **Ratings and comments need a small server,** so v1 skips them: screenshots, descriptions and download counts
-     only. Recommended.
+  **Decided (2026-09-28):** test in M2 (moved up from M5/M6) whether the game can load an extra pack of ours. If it
+  can, mods ship small packs and never rebuild the 2.3 GB one.
 - **Studio (modders):**
   - content browser, reference viewer, schema-driven property editor
   - unit editor with a clone wizard
@@ -431,7 +428,7 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 |---|---|---|---|---|
 | **M0 Foundations** | repo, ADRs, docs, dev environment; checks C1–C2 | decisions recorded, both checks answered | 2–3 | low |
 | **M1 Core I/O** | EDAT r/w, NDF r/w incl. TOPO, `.dic` r/w, `.xyz` read, scenario/mapinfo read, VFS, registry, CLI `dump`/`verify` | every shipped file of these types round-trips byte-identically | 4–6 | medium |
-| **M2 Mod system slice** | text NDF (dump the whole game, compile patches), package v1, resolver, builder, instances, fingerprint, `.rmod` import | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test. This proves the tool, not a balance mod | 4–6 | medium |
+| **M2 Mod system slice** | text NDF (dump the whole game, compile patches), package v1, resolver, builder, instances, fingerprint, `.rmod` import, extra-pack mount test | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test. This proves the tool, not a balance mod | 4–6 | medium |
 | **M3 Launcher v1** | mod index, mod sets, join codes, one-click join, updates | public alpha on GitHub, ModDB, Nexus | 3–5 | low |
 | **M4 Studio v1** | content browser, reference viewer, property/unit editor, clone wizard, validation, diff/rebase | a non-programmer builds a balance mod + a new unit | 5–8 | low–medium |
 | **M5 Textures & icons** | TGV r/w, UI icon/flag pipeline | retextured unit with its own icon in-game | 3–5 | medium |
@@ -460,7 +457,8 @@ uncertainty sits in M7, M8, M10 and M11.
 | C1 | Does rewriting `everything.cpp` unchanged come out byte-identical? This decodes TOPO. | no |
 | C2 | Does RUSE.exe run from a hard-linked instance with `steam_appid.txt`? It creates files outside the install; the install itself is not changed. | yes (run the game) |
 
-Checked later, when needed: joining a lobby via `+connect_lobby` (M3), and mounting an extra pack from NDF data (M5/M6).
+Checked later, when needed: joining a lobby via `+connect_lobby` (M3). Mounting an extra pack from NDF data moved up
+to **M2** (decided 2026-09-28): without it, every new unit name costs a 2.3 GB rebuild (L5).
 
 **This plan is a living document.** We adjust it together as we learn.
 

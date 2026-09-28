@@ -267,7 +267,8 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 
 1. TOPO semantics — needed only for adding/removing objects (value edits are already byte-exact, C1 passed).
 2. Is the Maps\PC header checksum enforced, and how is it computed?
-3. Can NDF mount an extra data pack at startup (not just map packs)?
+3. Can NDF mount an extra data pack at startup (not just map packs)? **Tested in M2:** without it, every mod with new
+   text (every new unit name) rebuilds the 2.3 GB ZZ_Win.dat, since all `.dic` files live there ([PLAN.md](PLAN.md) L5).
 4. Does RUSE.exe run from a hard-linked instance with `steam_appid.txt`?
 5. `TGU1` texture payload encoding. **Known externally:** custom JPEG-like codec shared by `.tgv` (flags 257) and
    terrain `.tmst` (flags 256); decoded in RUSE-Mod-Manager's `terrain_codec.py` (GPLv3; format knowledge
