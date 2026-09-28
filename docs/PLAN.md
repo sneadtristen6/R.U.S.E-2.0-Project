@@ -40,6 +40,9 @@ These rules decide every design question.
 8. **Version-aware by default.** Everything records the game build it came from. An update triggers a rebase, not breakage.
 9. **Plugins everywhere.** Formats, importers, editors and validators register through one plugin API, and first-party features use it too.
 10. **Respect ownership.** A legitimate Steam copy is required. Mods ship as changes, not copies of the game.
+11. **Study the game freely, commit nothing of it.** We read Eugen's files (data and scripts) to learn from them
+    (see [ENGINE_NOTES.md](ENGINE_NOTES.md)); no game file is ever stored in the repo (`.gitignore` enforces this).
+12. **Tool before content.** Build the platform first; unit stats, balance and rosters wait until it's usable.
 
 ## 3. What we know (evidence as of 2026-09-28)
 
@@ -214,7 +217,7 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 |---|---|---|---|---|
 | **M0 Foundations** | repo, ADRs, docs, dev environment; checks C1–C2 | decisions recorded, both checks answered | 2–3 | low |
 | **M1 Core I/O** | EDAT r/w, NDF r/w incl. TOPO, `.dic` r/w, `.xyz` read, scenario/mapinfo read, VFS, registry, CLI `dump`/`verify` | every shipped file of these types round-trips byte-identically | 4–6 | medium |
-| **M2 Mod system slice** | text NDF (dump the whole game, compile patches), package v1, resolver, builder, instances, fingerprint, `.rmod` import | a mod with balance changes + 1 cloned unit (reused visuals) works in-game and in a 2-PC match | 4–6 | medium |
+| **M2 Mod system slice** | text NDF (dump the whole game, compile patches), package v1, resolver, builder, instances, fingerprint, `.rmod` import | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test. This proves the tool, not a balance mod | 4–6 | medium |
 | **M3 Launcher v1** | mod index, mod sets, join codes, one-click join, updates | public alpha on GitHub, ModDB, Nexus | 3–5 | low |
 | **M4 Studio v1** | content browser, reference viewer, property/unit editor, clone wizard, validation, diff/rebase | a non-programmer builds a balance mod + a new unit | 5–8 | low–medium |
 | **M5 Textures & icons** | TGV r/w, UI icon/flag pipeline | retextured unit with its own icon in-game | 3–5 | medium |
@@ -225,8 +228,13 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 | **M10 Runtime extender** | proxy DLL, pack overlay, lobby tagging, 8th-nation research | opt-in extender works on the current build | 3 spike + 6–10 | high |
 | **M11 Sound** | `.ess` codec, WAV import | a replaced sound plays in-game | 4–10 | high |
 
-**Content track** runs alongside and dogfoods the platform:
-- **RUSE 2.0 Core** starts after M2 (balance, cloned units, tactics) and grows with every milestone.
+**Content comes after the tool.** Per the owner's direction (2026-09-28), no balance/unit-stat/roster
+**content** is produced until the tool is usable (through M4). Value changes before then exist only to test the
+pipeline, never as shipped balance. Study of Eugen's own data and scripts for design ideas is encouraged
+throughout (see [ENGINE_NOTES.md](ENGINE_NOTES.md)) — read-only, nothing from the install is committed.
+
+**Content track** (starts after M4, then dogfoods each later milestone):
+- **RUSE 2.0 Core** — balance, cloned units, tactics — begins once Studio (M4) exists.
 - **Pacific Island Defense** needs M5–M7, plus M9 for a custom mode. US vs Japan fits the existing nation slots.
 
 **Totals:** the first public release (M0–M3) is about 13–20 sessions. The full vision is many months, and the
