@@ -177,6 +177,10 @@ Requirements derived from that:
   - detects the game and build
   - browses and installs mods from the index; manages mod sets and join codes
   - one-click join, updates, instances, self-update
+  - **Steam integration (HOI4-style):** the user sets Steam's Launch Options once to
+    `"<path>\launcher.exe" %command%`, so Steam's Play button opens our launcher instead of the game, and Steam
+    lobby invites (`+connect_lobby`) route through it for mod sync before joining. No change to RUSE.exe.
+    Later the launcher can offer to set this for the user (with their OK). To verify when the launcher exists.
 - **Studio (modders):**
   - content browser, reference viewer, schema-driven property editor
   - unit editor with a clone wizard
