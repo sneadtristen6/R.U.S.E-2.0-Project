@@ -157,6 +157,7 @@ Requirements derived from that:
   - add/replace file
 - **Resolver:** dependencies with version ranges, optional dependencies, load-after and topological sort.
   On a conflict the last mod wins and a warning is shown; an explicit `override` silences it.
+  The exact rules for every operation and every conflict are in [MOD_FORMAT.md](MOD_FORMAT.md) §10.
 - **Builder:** resolve → load base (per build) → apply IR in order → validate → cook → pack → fingerprint → output manifest.
   - cook: the NDF writer (incl. TOPO/IMPR/EXPR) and asset conversion
   - pack: the EDAT writer, with fixed ordering

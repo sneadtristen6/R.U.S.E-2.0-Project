@@ -112,6 +112,24 @@ patch $/GFX/Everything/SomeProductionList      // illustrative path
                  value=~/Descriptor_Unit_R2_US_Marines)              // positional insert
 )
 
+// Every object of a class at once, for balance passes (§10.2)
+patch every TBatimentDescriptor
+(
+    ProductionPrice *= 0.9
+)
+
+// Something this unit shares with other units: say who the change is for (§10.5)
+patch own $/GFX/Everything/Descriptor_Unit_M4_Sherman:Weapons[0].Ammunition   // `own`: only this unit
+(
+    Puissance += 10
+)
+
+// Replacing another mod's value on purpose: no warning (§10.4)
+patch $/GFX/Everything/Descriptor_Unit_M4_Sherman
+(
+    override ProductionPrice = [25, 25, 25, 25, 25]
+)
+
 // Brand-new object from scratch (every property explicit)
 Ammo_R2_Flamethrower is TAmmunition
 (
@@ -222,12 +240,16 @@ depends only on the game build, the mods and their order.
 - **Deleting is risky.** Game scripts look objects up by name (`Database.GetObject`, [ENGINE_NOTES.md](ENGINE_NOTES.md)),
   which the validator can only partly check. Hiding a unit (`ShowInMenu = [0, 0, 0, 0, 0]`) is usually the safer choice.
 - A target that doesn't exist in this game build is an error that suggests a rebase (§11). It's never skipped silently.
+- **`patch every <class>`** applies its body to every object of that class that exists at that point in the load order,
+  including clones from mods loaded earlier. Objects that lack a property the body does math on are skipped and listed
+  in the report, instead of stopping the build.
 
 ### 10.3 Numbers
 
 - Literals are read as exact decimals: `1.10` is exactly 1.10, not the nearest binary fraction.
 - When several operations change the same number, the whole chain is computed exactly and **rounded once**, when the
-  value is written: integers round half away from zero (52.5 → 53), `float32` values to the nearest float32.
+  value is written: integers round the school way, half away from zero (52.5 → 53, like Excel's `ROUND`), `float32`
+  values to the nearest float32.
 - Same inputs, same answer on every PC. Multiplayer depends on it (§10.9).
 
 ### 10.4 When two mods touch the same thing
@@ -357,14 +379,12 @@ Classified automatically and conservatively:
 - normalised text (UTF-8, LF)
 - fingerprints over canonical content, not raw bytes
 
-### Decisions for you (§10)
+### Decided (2026-09-28)
 
-1. **Rounding:** half away from zero (52.5 → 53)? Recommended.
-2. **Shared sub-objects:** make editing one through a unit an error unless the patch says `own` or `shared`
-   (recommended), or only warn?
-3. **Patch, then a later mod deletes the object:** warning (recommended) or error?
-4. **Patching many objects at once:** add a form like `patch every TBatimentDescriptor ( ProductionPrice *= 0.9 )`
-   for balance passes? Recommended. It follows the same rules: it reaches whatever exists at that point in the load order.
+1. **Rounding:** the school way, half away from zero (52.5 → 53), the same as Excel's `ROUND`.
+2. **Shared sub-objects:** editing one through a unit is an error unless the patch says `own` or `shared` (§10.5).
+3. **Patch, then a later mod deletes the object:** a warning (§10.4).
+4. **Patching many objects at once:** `patch every <class>` exists (§5, §10.2) for balance passes.
 
 ## 11. Game updates
 
