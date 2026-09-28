@@ -431,17 +431,18 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 
 | Milestone | Deliverables | Exit criteria | Est. | Risk |
 |---|---|---|---|---|
-| **M0 Foundations** | repo, ADRs, docs, dev environment; checks C1–C2 | decisions recorded, both checks answered | 2–3 | low |
-| **M1 Core I/O** | EDAT r/w, NDF r/w incl. TOPO, `.dic` r/w, `.xyz` read, scenario/mapinfo read, VFS, registry, CLI `dump`/`verify` | every shipped file of these types round-trips byte-identically | 4–6 | medium |
-| **M2 Mod system slice** | text NDF (dump the whole game, compile patches), package v1, resolver, builder, instances, fingerprint, `.rmod` import, extra-pack mount test | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test. This proves the tool, not a balance mod | 4–6 | medium |
-| **M3 Launcher v1** | mod index, mod sets, join codes, one-click join, updates | public alpha on GitHub, ModDB, Nexus | 3–5 | low |
-| **M4 Studio v1** | content browser, reference viewer, property/unit editor, clone wizard, validation, diff/rebase | a non-programmer builds a balance mod + a new unit | 5–8 | low–medium |
-| **M5 Textures & icons** | TGV r/w, UI icon/flag pipeline | retextured unit with its own icon in-game | 3–5 | medium |
-| **M6 Maps I** | map cloning, scenario editor, capture-zone/AI-layer rebuild, island maps on existing terrain | a new map listed and playable in multiplayer | 5–8 | medium–high |
-| **M7 Models** | SPK → glTF, Blender bridge, glTF → SPK (static, then skinned/animated) | a new vehicle model in-game | 6–12 | high |
-| **M8 Maps II / terrain** | terrain texture + heights + scenery, maps from scratch, tropical scenery set | a new island map built from a heightmap | 8–15+ | high |
-| **M9 Scripting** | `.xyz` decompile, Python 2.5 compile route, mission/mode scripting | a new game mode (e.g. Island Defense) | 4–8 | medium–high |
-| **M10 Runtime extender** | proxy DLL, pack overlay, lobby tagging, 8th-nation research | opt-in extender works on the current build | 3 spike + 6–10 | high |
+| **M0 Foundations** ✅ | repo, docs; EDAT + NDF read/write; whole-game byte-identical check (38 archives, 2,176 NDF files); modded-instance launch | **done 2026-09-28** (C1, C2 passed) | — | — |
+| **M1 Core tools** | combined file view + index (L2); `.dic` r/w ✅ and `ruse` CLI basics ✅ (cloud session); scenario / AI-layer / capture-zone readers (our own code, informed by [LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)) | every shipped file of these types round-trips byte-identically | 2–4 (was 4–6) | low |
+| **M1.5 Frontier tests** (new) | short, capped tests of the riskiest unknowns: re-encode one terrain texture tile (`TGU1`) and one terrain mesh (`.tms`); read one 3D model (SPK) section table | clear yes/no: can we write new terrain? can we read models? Decides how big Pacific maps can be | ~3 | high (that's the point) |
+| **M2 Mod system slice** | package v1; `.rndf` reader ✅, rules engine ✅, load order ✅, fingerprint + join codes ✅ (cloud session); the adapter between game files and the engine; `.rmod` import; extra-pack mount test (C3); instances already proven by C2 | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test. This proves the tool, not a balance mod | 2–4 (was 4–6) | medium |
+| **M3 Launcher v1** | Steam auto-detect ✅ (`ruse detect`), one-click install into instances, modpacks, join codes; also installs the `.rmod` mods players already have, combinable and without patching the live install | first public alpha on GitHub, ModDB, Nexus | 3–5 | low |
+| **M4 Studio v1** | content browser, reference viewer, property/unit editor; clone **any** class with its **own** visuals, wired into menus, upgrades and AI; validation, diff/rebase | a non-programmer builds a new unit | 5–8 | low–medium |
+| **M5 Textures & icons** | TGV r/w including a game-valid `TGU1` encoder (nobody has one), UI icon/flag pipeline | retextured unit with its own icon in-game | 3–5 | medium |
+| **M6 Maps I** | map cloning, scenario editor, capture-zone compiler, AI layers, island maps on existing terrain | a new map listed and playable in multiplayer | 4–6 (was 5–8: formats now understood) | medium |
+| **M7 Models** | SPK → glTF, Blender bridge, glTF → SPK (static, then skinned/animated). A first for R.U.S.E. | a new vehicle model in-game | 6–12 | high |
+| **M8 Terrain / new maps** | terrain writer (heights + texture), heightmap import, maps from scratch, tropical scenery set | a new island map built from a heightmap | 8–15+ (sized by M1.5) | high |
+| **M9 Scripting** | `.xyz` decompile, compile via a real CPython 2.5.1 (known route), mission/mode scripting | a new game mode (e.g. Island Defense) | 3–6 (was 4–8) | medium |
+| **M10 Runtime extender** | **parked.** Only revisit with Eugen's backing | — | — | parked |
 | **M11 Sound** | `.ess` codec, WAV import | a replaced sound plays in-game | 4–10 | high |
 
 **Content comes after the tool.** Per the owner's direction (2026-09-28), no balance/unit-stat/roster
@@ -451,10 +452,16 @@ throughout (see [ENGINE_NOTES.md](ENGINE_NOTES.md)) — read-only, nothing from 
 
 **Content track** (starts after M4, then dogfoods each later milestone):
 - **RUSE 2.0 Core** — balance, cloned units, tactics — begins once Studio (M4) exists.
-- **Pacific Island Defense** needs M5–M7, plus M9 for a custom mode. US vs Japan fits the existing nation slots.
+- **Pacific Island Defense** needs M5–M8 (new islands need the terrain writer), plus M9 for a custom mode.
+  US vs Japan fits the existing nation slots. M1.5 tells us early whether brand-new islands are realistic.
 
-**Totals:** the first public release (M0–M3) is about 13–20 sessions. The full vision is many months, and the
-uncertainty sits in M7, M8, M10 and M11.
+**Totals:** M0 is done. The first public release (M1, M1.5, M2, M3) is about 10–16 sessions. The full vision is
+many months; the uncertainty sits in M7, M8 and M11 (M10 is parked).
+
+**Plan revision 2026-09-28 (PC session)**, after M0, the research, the LittleGroove study and the cloud session's
+code: M0 closed; M1/M2 shrink (reader/writer, instances, `.dic`, CLI basics, rules engine, join codes done); M6/M9
+risk drops (formats and compile route understood); new M1.5 tests the frontier early; the launcher gains immediate
+value by installing existing `.rmod` mods safely; M10 parked.
 
 ### M0 checks (only two up front; everything else is checked when a milestone needs it)
 | Check | Question | Needs you? |
@@ -534,8 +541,8 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 | Map-pack header checksum enforced and unknown | edited map packs rejected | test in M6 |
 | 7 nations hard-coded | no new nations | Pacific needs none; "variant" mods reuse slots; research in M10 |
 | SPK model format complexity | no new models | export first; static meshes before skinned ones |
-| Terrain formats unknown | no new terrain | M8 is late on purpose; cooperate with the RUSE-Mod-Manager team (they decode terrain chunks) |
-| Python 2.5 toolchain | no new scripts | uncompyle6 to decompile; old CPython 2.5 or a bytecode assembler to compile (a download, so your OK first) |
+| Terrain can't be written | no new maps / islands | reading is solved elsewhere, writing is not: M1.5 tests re-encoding early; M8 sized by the result |
+| Python 2.5 toolchain | no new scripts | route known: compile with a real CPython 2.5.1 (a download, so your OK first); uncompyle6 to decompile |
 | Game updates | mods and tools break | per-build registry, rebase, byte-pattern hooks, CI on fixtures |
 | Non-determinism across PCs | desyncs | canonical fingerprints, bundled runtime, 2-PC tests |
 | Community split | low adoption | `.rmod` import/export; talk to LittleGroove and Prolution; publish everywhere |
@@ -544,7 +551,8 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 | Small team (you + AI) | work stalls | docs, ADRs, tests, open source, contributor guide |
 | WebGL unstable in the embedded webview | 3D map/model viewer blocked | prototype a three.js scene in pywebview early (cheap spike) |
 | Antivirus / SmartScreen distrust of the installer | players scared off | Nuitka, signing at first public release, trust builds over releases |
-| Reinventing formats others already decoded | wasted credits | read RUSE-Mod-Manager's modules first ([RESEARCH.md](RESEARCH.md)); settle the license question before map work |
+| Publishing Eugen-owned content (RUSE-Mod-Manager reset its public history "for Eugen Systems compliance") | takedown | `.gitignore` blocks game files; never commit extracted assets or decoded game scripts; check before each push |
+| Reinventing formats others already decoded | wasted credits | study RUSE-Mod-Manager's approach first ([LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)); write our own (MIT, never copy) |
 
 ## 9. Open decisions
 
