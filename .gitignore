@@ -36,6 +36,20 @@ venv/
 *.win
 *.kdt
 *.dec
+*.tms
+*.tmst_pc
+*.tmst_chunk_pc
+*.sdb
+*.fpkpc
+*.sourcefileid
+*.shc
+*.webm
+*.ttf
+*.ttc
+*.exe
+*.dll
+# The game also ships .png and .xml files; our own are allowed, so extract game files only into /extracted/.
+/extracted/
 
 # Editors / OS
 .vscode/

@@ -402,7 +402,7 @@ desync log lines)
 | T5 cosmetic only | A has one changed text string (`.dic`), later a texture (M5) | no desync | the cosmetic list is right |
 | T6 join through the launcher | Steam invite → launcher → `+connect_lobby` | joins with the right mods | the whole join flow (M3) |
 
-## 6. Key design decisions (to become ADRs in M0)
+## 6. Key design decisions (this table is the decision record)
 
 | ADR | Decision | Choice | Why | Alternatives |
 |---|---|---|---|---|
@@ -419,6 +419,10 @@ desync log lines)
 | 11 | Modpack / lockfile | Modrinth `.mrpack` shape (`files[]` with path, hashes, download mirrors, size; `dependencies`) | proven, tiny packs, host-anywhere | our own format |
 | 12 | Mod hosting | GitHub Releases now; Thunderstore once real mods exist; CurseForge last (needs a proxy server) | cheapest path that still scales | CurseForge first |
 | 13 | Code signing | deferred to first public release; Azure Trusted Signing, then free SignPath | costs money; no instant trust anyway | sign from day one |
+| 14 | Mod conflicts | Fixed load order; every pair of operations has a defined result (error, warning or note); math is exact and rounds once, half away from zero | predictable, identical on every PC | last mod wins, nothing else |
+| 15 | Shared data in clones | A clone copies only what its source owns; editing shared data through one unit needs `own` or `shared` | no silent changes to other units | silent shared edits |
+| 16 | Join codes | Game build + mod ids + versions + fingerprint; a published mod version never changes | about half the length of a full lockfile, checked end to end | the whole compressed lockfile |
+| 17 | Extra-pack test | Moved up to M2 as check C3 | without it, every new unit name rebuilds the 2.3 GB ZZ_Win.dat | test in M5/M6 |
 
 ## 7. Roadmap
 
@@ -460,20 +464,64 @@ uncertainty sits in M7, M8, M10 and M11.
 Checked later, when needed: joining a lobby via `+connect_lobby` (M3). Mounting an extra pack from NDF data moved up
 to **M2** (decided 2026-09-28): without it, every new unit name costs a 2.3 GB rebuild (L5).
 
+### C3: can the game load an extra pack of ours? (moved up; can run now)
+
+**Why:** all game text (`.dic`) lives in ZZ_Win.dat (2.3 GB). Without an extra pack, every mod that adds text, which
+means every new unit name, rebuilds that whole pack (L5). With one, a mod ships a small pack of its own.
+
+**Known so far** ([FORMATS.md](FORMATS.md) §1, §5, §6):
+- RUSE.exe hard-codes the six core pack names and doesn't scan for extra `.dat` files.
+- Map packs are mounted by NDF data: each map's `clustermap.cpp` has `TClusterMountMapDataPack{ DataPack
+  'MapDat:\DataMap<Name>_v09.dat', DatasMapDirectory 'GenDatasmap/<Name>', MountingPoint 'Datasmap' }`.
+- Script packs are registered by NDF too (`TResourceDescriptorPythonPack 'Eugen.ipk'`, `TClusterAddPythonPath`).
+- Likely places for startup-time mounting: `genglad\patchable\clusterinitialisationpatchable.cpp` and
+  `genglad\patchable\clusters\*.cpp` (names from `listings/`).
+
+**Steps, cheapest first.** All in an instance; the Steam install is never touched.
+1. **Survey (read-only):** list every NDF class whose name contains `Mount`, `DataPack`, `Pack` or `Cluster`, across
+   all NDF files: where each is used and with which properties. Search RUSE.exe's strings for the same words. Record
+   what's found in FORMATS.md.
+2. **Renamed map pack.** Proves a pack is found by the name in the data, and shows whether a pack's name is checked:
+   - in an instance, copy `Maps\PC\DataMapTwoIslands_v09.dat` to a new name of the same length, e.g.
+     `DataMapTwoIslandz_v09.dat`, then delete the original name from the instance's `Maps\PC` (that only removes the
+     instance's hard link; the Steam file is untouched);
+   - in `genglad\patchable\map\twoislands\clustermap.cpp`, change the `DataPack` text to the new name. Same length, so
+     nothing else in the file moves. If the text lives in the STRG table (types 0x07 / 0x1C), the writer copies STRG
+     verbatim today, so this needs a small helper that patches it in place; first check nothing else in that file
+     uses the same string;
+   - launch and start a skirmish on Two Islands. If it loads, packs are found by the name in the data (and a copied
+     pack's header checksum doesn't depend on its file name). If not, write down the exact error.
+3. **Startup mount.** If step 1 finds a mount object that runs at startup, point it at a small pack of our own holding
+   one changed `.dic` string (a unit's name), and look for that name in-game. If this needs a new object or list item
+   rather than a changed string, stop and write it down: adding objects waits for TOPO (FORMATS.md open question 1).
+4. Write the result into FORMATS.md (open question 3) and MOD_FORMAT.md §7.
+
+**What the results mean**
+- Step 3 works: mods ship small packs, and ZZ_Win.dat is never rebuilt for text.
+- Only step 2 works: map mods can ship packs of their own; text needs another route (the runtime extender's pack
+  overlay, M10) or the 2.3 GB rebuild.
+- Neither: the 2.3 GB rebuild stays until the runtime extender (M10).
+
 **This plan is a living document.** We adjust it together as we learn.
 
 **Progress (2026-09-28):** C1 passed (lossless NDF round-trip). First real library landed: `src/rusemod/`
-(EDAT + NDF read/write with an editable object model). [`tools/verify_writer.py`](tools/verify_writer.py)
+(EDAT + NDF read/write with an editable object model). [`tools/verify_writer.py`](../tools/verify_writer.py)
 proves, read-only against the install, that the archive rebuilds byte-identical, a value edit applies as a
 minimal in-place change, and the edited archive reads back with all other members intact.
 
-**C2 passed (2026-09-28): the game loads our rebuilt archives.** [`tools/make_test_instance.py`](tools/make_test_instance.py)
+**C2 passed (2026-09-28): the game loads our rebuilt archives.** [`tools/make_test_instance.py`](../tools/make_test_instance.py)
 set all 134 building prices to $1 and built a modded instance (`.dat` archives hard-linked, other files copied,
 `steam_appid.txt`). Launched directly from the instance with Steam running, the game showed every building at $1.
 The Steam install was verified untouched afterwards. This validates the member writer (including our own zlib
 re-compression), the data mapping, and the instance deployment model. **M0 is complete.**
 
-Remaining for M1: `.dic`/scenario/mapinfo readers, the VFS and asset registry, and the `ruse` CLI.
+**Design written up (2026-09-28, cloud session, no game files needed):** the exact rules for how mods combine
+([MOD_FORMAT.md](MOD_FORMAT.md) §10), the fingerprint and join codes (§12), the multiplayer flow and a 2-PC test plan
+(L6), the game model ready to build (L2), and the launcher screen by screen (L5). The owner's decisions are recorded
+next to each, and in §6 below.
+
+Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and the index (specified in L2), and the
+`ruse` CLI.
 
 ## 8. Risks
 
@@ -501,14 +549,18 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the VFS and asset registry, a
 1. Working name. Ideas: *RUSE Reforged*, *OpenRUSE*, *RUSE Forever* (a nod to FAF).
 2. ~~License~~ **Decided: MIT.** We study RUSE-Mod-Manager's approach (terrain, `TGU1`, scenarios, AI layers,
    capture zones) as reference and write our own, better version. Never copy its code.
-3. GitHub account/org and repo, and the project folder on disk (git isn't installed yet).
+3. ~~GitHub account/org and repo, project folder, git~~ **Done:** github.com/sneadtristen6/Ruse-Mod-Platform.
 4. UI stack: confirm web UI vs Qt.
 5. Outreach timing. Recommended: LittleGroove now (align on `.rmod` import/export), Eugen after the M2 demo.
 6. Which unit to clone as the M2 test (suggestion: a US infantry unit, for Pacific later).
 
 ## 10. Next steps
 
-1. **You:** pick the name, license and folder; install git; create the GitHub repo.
-2. **Me:** write the ADRs; set up the repo skeleton, test harness and CLI stub (M0).
-3. **Checks:** C1 (no game launch needed), then C2 with you running the game.
-4. **Then M1.**
+Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on paper (Progress, §7).
+
+1. **PC session, now:** run **C3** (§7): can the game load an extra pack of ours? Steps 1–2 need only the existing
+   `src/rusemod` code plus a small string-patch helper.
+2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
+   writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
+3. **Cloud sessions (no game needed):** tests on small made-up files that run on every push, and the CLI skeleton.
+4. **You:** the open decisions in §9 (name, UI stack, outreach timing, the unit to clone in M2).

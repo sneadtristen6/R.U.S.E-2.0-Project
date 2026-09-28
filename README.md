@@ -3,7 +3,7 @@
 A foundational modding platform and player launcher for R.U.S.E. (Eugen Systems, 2010), built for the long run:
 new units, maps, models, missions and one-click modded multiplayer. The content goals on top are RUSE 2.0 and Pacific Island Defense.
 
-Status: **planning / M0**. Nothing here modifies the game install.
+Status: **M0 done; M1 next** (the design for M1–M3 is written up). Nothing here modifies the game install.
 
 | Doc | What it covers |
 |---|---|

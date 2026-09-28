@@ -9,8 +9,9 @@ File paths refer to their repo.
 - A Tk desktop app for one job: patch an existing R.U.S.E. install with `.rmod` mods.
 - Format/engine code lives in `source/ruse_mod_engine/` (49 files); the rest are ~20 editor tabs that mix UI with logic.
 - No tests and no CI anywhere.
-- Single maintainer, reactive release cadence. Public history was "reset for Eugen Systems compliance" at v1.0.160.
-  ⚠ Worth finding out what Eugen asked for before our public release.
+- Single maintainer, reactive release cadence. The public history starts at v1.0.160 (2026-07-03) with the commit note
+  "history reset for Eugen Systems compliance", two months after Eugen bought R.U.S.E. back from Ubisoft (announced
+  2026-05-05). It doesn't say what prompted it.
 
 ## By area: what it does, where it stops
 

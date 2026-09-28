@@ -64,7 +64,7 @@ relays the data section, keeps the trie intact). Verified by [`tools/verify_writ
 | ZZ_GladNotPatchableWin.dat | 0.1 MB | 39 | config/UI/sound/system NDF |
 | ZZ_GladPatchableWin.dat | 3.5 MB | 741 | gameplay NDF: unit DB, maps, scenarios, scenery, AI |
 | ZZ_Win.dat | 2.3 GB | 24,058 | textures, sounds, meshes, anims, UI, localisation, scripts, shader cache |
-| Maps\PC\DataMap\<Name\>_v09.dat | 23–148 MB | ~50 each | per-map terrain, textures, mesh, baked data (33 packs) |
+| Maps\PC\DataMap\<Name\>_v09.dat | 23–148 MB | ~50 each | per-map terrain, textures, mesh, baked data (32 packs) |
 
 RUSE.exe hard-codes the six core pack names, `Data\PC`, `Maps/PC`, `MapDat` and
 `####DATAREVISION####00190852####DATAREVISION####`. It does not scan for extra `.dat` files.
@@ -269,7 +269,7 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 2. Is the Maps\PC header checksum enforced, and how is it computed?
 3. Can NDF mount an extra data pack at startup (not just map packs)? **Tested in M2:** without it, every mod with new
    text (every new unit name) rebuilds the 2.3 GB ZZ_Win.dat, since all `.dic` files live there ([PLAN.md](PLAN.md) L5).
-4. Does RUSE.exe run from a hard-linked instance with `steam_appid.txt`?
+4. ~~Does RUSE.exe run from a hard-linked instance with `steam_appid.txt`?~~ **Answered: yes (C2, 2026-09-28).**
 5. `TGU1` texture payload encoding. **Known externally:** custom JPEG-like codec shared by `.tgv` (flags 257) and
    terrain `.tmst` (flags 256); decoded in RUSE-Mod-Manager's `terrain_codec.py` (GPLv3; format knowledge
    reportedly CC0 by ProLution, unconfirmed). See [RESEARCH.md](RESEARCH.md).
