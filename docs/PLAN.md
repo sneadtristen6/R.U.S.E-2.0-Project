@@ -765,7 +765,6 @@ squad for each job, and defends the sky mostly from the ground.
 | Flamethrower Squad | flamethrower | |
 | Guerrillas | recon | resistance fighters behind Japanese lines |
 | Mortar Team | support: artillery | |
-| Dadao Squad (optional) | elite close assault | the 29th Army's "big sword" units, 1933 and 1937 |
 
 The game already ships a Simplified Chinese language (`sc`, FORMATS.md §4), so Chinese players get the names in
 Chinese; the other nine languages get the English or local names.
