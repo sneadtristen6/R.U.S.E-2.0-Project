@@ -133,6 +133,12 @@ Built from the install once per game build (read-only), then cached. Everything 
 Studio, CLI) asks the game model instead of opening packs itself. This is the next thing to build (M1); it's written
 out here so it can be built straight from this section.
 
+**Built (cloud session, 2026-09-28): the index**, `src/rusemod/index.py` and `ruse index`: every table below except
+`script`, the stable addresses (with class selectors), owners, imports resolved across files, and the questions
+(`find`, `show`, `where`, `filter`, `texts`, `clone`, `report`). Debug-info copies are indexed but left out of answers.
+Not yet: the `script` table, the quick start-up check of the packs, the schema annotation files, and the comparison
+with `listings/`. The PC runs it on the real game (§10 item 1.8).
+
 **Build detection**
 - The **build key** is the Steam build id (`buildid` in `steamapps/appmanifest_21970.acf`) plus the data revision (the
   folder under `Data\PC`, e.g. `190852`).
@@ -446,7 +452,7 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 | Milestone | Deliverables | Exit criteria | Est. | Risk |
 |---|---|---|---|---|
 | **M0 Foundations** ✅ | repo, docs; EDAT + NDF read/write; whole-game byte-identical check (38 archives, 2,176 NDF files); modded-instance launch | **done 2026-09-28** (C1, C2 passed) | — | — |
-| **M1 Core tools** | combined file view + index (L2); `.dic` r/w ✅ and `ruse` CLI basics ✅ (cloud session); scenario / AI-layer / capture-zone readers (our own code, informed by [LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)) | every shipped file of these types round-trips byte-identically | 2–4 (was 4–6) | low |
+| **M1 Core tools** | combined file view + index (L2) ✅ (cloud session; the PC runs it); `.dic` r/w ✅ and `ruse` CLI basics ✅ (cloud session); scenario / AI-layer / capture-zone readers (our own code, informed by [LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)) | every shipped file of these types round-trips byte-identically | 2–4 (was 4–6) | low |
 | **M1.5 Frontier tests** (new) | short, capped tests of the riskiest unknowns: re-encode one terrain texture tile (`TGU1`) and one terrain mesh (`.tms`); read one 3D model (SPK) section table | clear yes/no: can we write new terrain? can we read models? Decides how big Pacific maps can be | ~3 | high (that's the point) |
 | **M2 Mod system slice** | package v1; `.rndf` reader ✅, rules engine ✅, load order ✅, fingerprint + join codes ✅ (cloud session); the adapter between game files and the engine; `.rmod` import; extra-pack mount test (C3); instances already proven by C2 | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test (until there's a second player, the solo tests S1–S2 in L6 stand in; the 2-PC test comes before the first public release). This proves the tool, not a balance mod | 2–4 (was 4–6) | medium |
 | **M3 Launcher v1** | Steam auto-detect ✅ (`ruse detect`), the window ✅ (v0.1: game status, mod sets, Play; `rusemod.launcher`), one-click install into instances, modpacks, join codes; also installs the `.rmod` mods players already have, combinable and without patching the live install | first public alpha on GitHub, ModDB, Nexus | 3–5 | low |
@@ -741,6 +747,14 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
           `mods = ["<repo>/examples/half-price-buildings"]` (forward slashes). Pick it and press Play: the Details box
           shows the build, then the game starts from `D:\RUSE-Instances\half-price` with every building at half price.
         - Record what worked and anything confusing on the screen.
+     8. **The game index** (read-only, no game launch):
+        - `py -3 -m rusemod index build`: indexes every pack, file, object, reference and text (target: about a
+          minute). Record its counts, time and file size here or in FORMATS.md, and whether the file counts match
+          `listings/` (38 packs, 217 nested).
+        - Try it: `py -3 -m rusemod index show $/GFX/Everything/Descriptor_Unit_M4_Sherman` (its values, owner,
+          what uses it and what it uses), `... index clone $/GFX/Everything/Descriptor_Unit_M4_Sherman` (what a copy
+          copies and shares), `... index filter TUniteAuSolDescriptor ProductionPrice[0] gt 100`, `... index texts
+          Sherman`. Note anything wrong or slow.
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the
@@ -760,7 +774,9 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    starts Steam if needed and starts the game; Vanilla starts through Steam. Mod sets are hand-written files for now
    (`%LOCALAPPDATA%\RUSE Mod Platform\sets\*.toml`, see `rusemod/launcher/api.py`). Plus the 3D check page. The PC
    tries both (item 1.7).
-   Next (cloud), launcher steps, one at a time: installing mods into the launcher's library (from a folder or zip,
+   **The game index done (2026-09-28)**: `rusemod.index`, `ruse index` (L2 "Built"). The PC runs it (item 1.8).
+   The owner (2026-09-28): the launcher stays at v0.1 for now; the core tools come first.
+   Later (cloud), launcher steps, one at a time: installing mods into the launcher's library (from a folder or zip,
    then RUSE-Mod-Manager's `.rmod`), mod sets made on screen, the join-a-friend screen (join codes), then the
    installer (Nuitka + Inno Setup) and browsing the mod index. And whatever C5/C6 turn up.
 4. **You:** the open decisions in §9 (name, outreach timing, the unit to clone in M2, a second player).

@@ -36,6 +36,11 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
   ruse dump ZZ_GladPatchableWin.dat everything.cpp.gladndfbin Tourelle_MG   show data as text
   ruse extract ZZ_GladPatchableWin.dat mapinfo  copy files out, into extracted/ (ignored by git)
   ruse build mymod/ other.rndf --instance D:\RUSE-Instances\test   build mods into a modded copy of the game
+  ruse index build                              index the whole game once per game build (read-only)
+  ruse index show $/GFX/Everything/Descriptor_Unit_M4_Sherman   an object, what uses it and what it uses
+  ruse index filter TUniteAuSolDescriptor ProductionPrice[0] gt 100   units by their numbers
+  ruse index clone $/GFX/Everything/Descriptor_Unit_M4_Sherman   what a copy would copy and share
+  ruse index texts Sherman                      search the game's texts
   ```
   `build` takes mod folders (`mod.toml` + `src/**/*.rndf`, [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md)) or single
   `.rndf` files, shows the load order and every error / warning / note, and writes nothing if there's an error.

@@ -6,6 +6,8 @@
   ruse dump <pack> <file> [filter]     show one data file as text
   ruse extract <pack> <filter> [--out DIR]   copy files out of a pack (default folder: extracted/)
   ruse build <mod>... [--pack P] [--out FILE|DIR] [--instance DIR]   build mods into packs or a modded copy
+  ruse index build                     index the whole game (once per game build; about a minute)
+  ruse index find|show|where|filter|texts|clone|report ...   ask the index (see `ruse index -h`)
 
 A pack can be a path, or just its name (`ZZ_GladPatchableWin.dat`), found in the game folder. Packs inside packs are
 reached with `!`: `ZZ_Win.dat!eugen.ipk`. Nothing here ever writes into the game folder.
@@ -167,6 +169,88 @@ def cmd_build(args) -> int:
     return 2 if result.errors else 0
 
 
+_OPS = {"gt": ">", "ge": ">=", "lt": "<", "le": "<=", "eq": "=", "ne": "!="}
+
+
+def _number(x) -> str:
+    return str(int(x)) if x == int(x) else repr(x)
+
+
+def cmd_index(args) -> int:
+    from .index import Index, build_index, default_path
+    path = Path(args.index) if args.index else None
+    if args.action == "build":
+        game = _game_dir(args)
+        print(f"indexing {game} (read-only)")
+        built = build_index(game, path, say=print)
+        ix = Index(built)
+        report = ix.report()
+        ix.close()
+        print(f"index: {built}  ({report['seconds']} s)")
+        for key, value in sorted(report["counts"].items()):
+            print(f"  {key}: {value}")
+        for game_path, n in report["repeated paths"]:
+            print(f"  in {n} packs: {game_path}")
+        return 0
+    try:
+        ix = Index(path or default_path(_game_dir(args)))
+    except FileNotFoundError as exc:
+        raise UserError(str(exc)) from None
+    try:
+        if args.action == "find":
+            for address, cls in ix.find(args.words, limit=args.limit):
+                print(f"{address}  ({cls})")
+        elif args.action == "show":
+            try:
+                o = ix.show(args.address)
+            except KeyError as exc:
+                raise UserError(str(exc.args[0])) from None
+            print(f"{o['address']}  ({o['class']})")
+            print(f"file: {o['file']}  object #{o['index']}")
+            if not o["stable"]:
+                print("address: last resort (no named object reaches it)")
+            if o["owners"]:
+                print(("shared by: " if o["shared"] else "owner: ") + ", ".join(o["owners"]))
+            for vpath, num, text in o["values"]:
+                print(f"  {vpath} = {_number(num) if num is not None else text}")
+            for address, rpath in ix.used_by(o["address"]):
+                print(f"used by: {address}  ({rpath})")
+            for rpath, kind, what in ix.uses(o["address"]):
+                print(f"uses: {rpath} -> {what}  ({kind})")
+        elif args.action == "where":
+            for address, rpath, target in ix.where_file(args.fragment, limit=args.limit):
+                print(f"{address}  {rpath} -> {target}")
+        elif args.action == "filter":
+            op = _OPS.get(args.op, args.op)
+            try:
+                rows = ix.filter(args.cls, args.path, op, float(args.number), limit=args.limit)
+            except ValueError as exc:
+                raise UserError(f"{exc} (use < <= = >= > != or gt ge eq le lt ne)") from None
+            for address, num in rows:
+                print(f"{address}  {_number(num)}")
+        elif args.action == "texts":
+            for name, dictionary, text in ix.texts(args.words, lang=args.lang, limit=args.limit):
+                print(f"{name}  ({dictionary})  {text}")
+        elif args.action == "clone":
+            try:
+                plan = ix.clone_plan(args.address)
+            except KeyError as exc:
+                raise UserError(str(exc.args[0])) from None
+            print("copied (the clone gets its own): " + (", ".join(plan["copied"]) or "nothing"))
+            print("shared (stays shared): " + (", ".join(plan["shared"]) or "nothing"))
+            print("references (keep pointing at the originals): " + (", ".join(plan["references"]) or "nothing"))
+        elif args.action == "report":
+            report = ix.report()
+            print(f"build {report['build']}, indexed in {report['seconds']} s")
+            for key, value in sorted(report["counts"].items()):
+                print(f"  {key}: {value}")
+            for game_path, n in report["repeated paths"]:
+                print(f"  in {n} packs: {game_path}")
+    finally:
+        ix.close()
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="ruse", description="Tools for R.U.S.E. game data. Nothing here modifies the game.")
     ap.add_argument("--game", help="the R.U.S.E. folder (default: found through Steam, or $RUSE_GAME)")
@@ -197,6 +281,31 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--instance", help="build a modded copy of the game in this folder (never the Steam install)")
     p.add_argument("--all", action="store_true", help="show every note, without collapsing similar ones")
     p.set_defaults(fn=cmd_build)
+    p = sub.add_parser("index", help="the game index: find anything in the game data, and where it's used")
+    p.add_argument("--index", help="the index file (default: the one for this game build, in the platform folder)")
+    p.set_defaults(fn=cmd_index)
+    isub = p.add_subparsers(dest="action", required=True)
+    isub.add_parser("build", help="index the whole game (read-only; about a minute)")
+    q = isub.add_parser("find", help="objects whose address or class contains these words")
+    q.add_argument("words")
+    q = isub.add_parser("show", help="one object: its values, owners, what uses it and what it uses")
+    q.add_argument("address", help="e.g. $/GFX/Everything/Descriptor_Unit_M4_Sherman")
+    q = isub.add_parser("where", help="the data that mentions a file path")
+    q.add_argument("fragment", help="part of the path, e.g. sherman.tgv")
+    q = isub.add_parser("filter", help="objects of a class whose number compares, e.g. TUniteAuSolDescriptor "
+                                        "ProductionPrice[0] gt 30")
+    q.add_argument("cls")
+    q.add_argument("path")
+    q.add_argument("op", help="gt ge eq le lt ne (or > >= = <= < !=, quoted in a Windows prompt)")
+    q.add_argument("number")
+    q = isub.add_parser("texts", help="game texts containing these words")
+    q.add_argument("words")
+    q.add_argument("--lang", default="us", help="language folder (default: us)")
+    q = isub.add_parser("clone", help="what cloning an object would copy, share and keep pointing at")
+    q.add_argument("address")
+    isub.add_parser("report", help="counts, repeated paths, shared objects, imports resolved")
+    for name in ("find", "where", "filter", "texts"):
+        isub.choices[name].add_argument("--limit", type=int, default=100, help="at most this many (default 100)")
     return ap
 
 

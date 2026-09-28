@@ -27,20 +27,13 @@ import webbrowser
 from pathlib import Path
 
 from ..build import BuildError, build_and_write, load_mod
+from ..home import default_home
 from ..rndf import RndfError
 from ..steam import build_of, find_game
 
 STEAM_PLAY = "steam://rungameid/21970"
 STEAM_OPEN = "steam://open/main"
 _SET_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
-
-
-def default_home() -> Path:
-    if os.environ.get("RUSE_PLATFORM_HOME"):
-        return Path(os.environ["RUSE_PLATFORM_HOME"])
-    if os.environ.get("LOCALAPPDATA"):
-        return Path(os.environ["LOCALAPPDATA"]) / "RUSE Mod Platform"
-    return Path.home() / ".local" / "share" / "ruse-mod-platform"
 
 
 def _open_url(url: str) -> None:
