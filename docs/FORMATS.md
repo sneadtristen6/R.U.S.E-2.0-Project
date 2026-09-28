@@ -90,7 +90,7 @@ Prototype parser: [`prototypes/spike-2026-09-28/obje.py`](../prototypes/spike-20
 | STRG, TRAN | `u32 len + string` |
 | CHNK | always `(0, objectCount)` |
 | IMPR / EXPR | name trees. Node = `u32 tranIndex, s32 leaf (-1 = none), u32 childCount, u32 childOffset[]` (offsets relative to the offset array). EXPR names objects (`$/GFX/Everything/Descriptor_Unit_Tourelle_MG_US`); IMPR lists imports |
-| TOPO | 🟡 an index structure, present in 164 files. In everything.cpp it is 2,772 u32 (far fewer than the 63,686 objects), so **not** a per-object permutation; likely a roots/topology index. Copy-verbatim is correct for value edits (proven: see below). Must be decoded only before adding/removing objects (M2) |
+| TOPO | ✅ enough to add objects. u32 object indices. **Checked on all 2,176 NDF files (2026-09-28, `tools/topo_check.py`):** every named (exported) object is in TOPO (2,176/2,176) and no unreferenced object is ever missing; some files also list referenced, unnamed objects. No single order rule: (class, index) holds in 1,601 files, plain index in 1,600, grouped by class in 1,700; the rest look like Eugen's compile order, so the order is probably irrelevant. **Rule for adding:** a new named object goes into TOPO; a cloned object goes in if its source is in TOPO; append. Confirm in-game with the M2 cloned-unit test |
 
 **OBJE:** objects stored in sequence. Each is `u32 classIndex`, then repeated `(u32 propertyIndex, value)`
 until `propertyIndex == 0xABABABAB`. A value is `u32 typeCode` + payload.
@@ -163,10 +163,18 @@ others: the Normandy mission). Whether players can control them in skirmish is u
 `TRA\0`, `u32 count`, then `count × (u64 hash, u32 byteOffset, u32 lengthInUtf16Chars)`, **sorted by hash**, then
 UTF-16LE strings. Verified on all 1,232 `TRA` files. NDF refers to strings by the same 64-bit hash (type 0x1D).
 For new strings we can choose unused hash values, so we don't need to know Eugen's hash function.
-**Leads (2026-09-28, [RESEARCH.md](RESEARCH.md) §5; `tools/dic_check.py` checks them on every file):** keys are
-packed names, not hashes (up to 8 characters, 6 bits each, as in Wargame): two known R.U.S.E. keys decode to `M_D_01`
-and `M_D_30`. Offsets count from the file start and entries can share a text. RUSE-Mod-Manager reads the 4th magic
-byte as a version and says shipped files have 1, not 0.
+**Verified on all 1,232 files (2026-09-28, `tools/dic_check.py`), 132,077 entries:**
+- The 4th magic byte is **0 in every file** (RUSE-Mod-Manager's note that shipped files use 1 doesn't hold for this build).
+- Keys are sorted everywhere; every text sits after the table (offsets from the file start); texts have no UTF-16 null.
+- 33,965 entries share a text with another entry.
+- **Keys are packed names, not hashes** (6 bits per character, as in Wargame): 130,845 of 132,077 decode, e.g.
+  `64muIaV4q3` = "Afrikakorps". New keys can be minted with `name_to_key()`.
+- The 1,232 that don't decode are **one special entry per file, key `0x8000000000000000`: the list of characters that
+  file uses** (e.g. `" AIENSdDLirloeT…"`), probably so the game preloads those glyphs. **A writer must add any new
+  character to it.**
+- Languages: `us`, `fr`, `ger`, `ita`, `spa`, `pol`, `ru`, `cz`, `jpn`, `sc`: 112 files each, plus `dev` (48) and
+  per-map script dictionaries (64).
+- Writer check: adding an entry keeps every existing text readable and unchanged in all 1,232 files.
 Other magics: `DICS` (18) and `DICV` (13) in `genvideos\…` (probably subtitles/video dictionaries) ❔.
 
 ## 5. Python scripts (`.xyz`, `.ipk`)
@@ -269,12 +277,24 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 
 ## Open questions (ordered by impact)
 
-1. TOPO semantics — needed only for adding/removing objects (value edits are already byte-exact, C1 passed).
-   **Lead (2026-09-28):** moddingSuite (MIT) treats TOPO as the file's top-level objects, sorted by class, and adds
-   every new top-level object to it. `tools/topo_check.py` tests that on every file.
+1. ~~TOPO semantics~~ **Answered enough to add objects (2026-09-28):** see the TOPO row in §2. Final proof: the M2
+   cloned-unit test in-game.
 2. Is the Maps\PC header checksum enforced, and how is it computed?
-3. Can NDF mount an extra data pack at startup (not just map packs)? **Tested in M2:** without it, every mod with new
-   text (every new unit name) rebuilds the 2.3 GB ZZ_Win.dat, since all `.dic` files live there ([PLAN.md](PLAN.md) L5).
+3. Can NDF mount an extra data pack at startup (not just map packs)? Without it, every mod with new text (every new
+   unit name) rebuilds the 2.3 GB ZZ_Win.dat, since all `.dic` files live there ([PLAN.md](PLAN.md) L5).
+   **C3 step 1 survey (2026-09-28, `tools/c3_survey.py`, read-only):**
+   - The only pack-mounting class is `TClusterMountMapDataPack` (43 objects, one per map's `clustermap.cpp`), run by
+     `$/ClusterTerrain/MapInstance/Load`, i.e. **when a map loads**, not at startup. Fields: `DataPack`
+     (`'MapDat:\DataMap<Name>_v09.dat'`), `MapDirectory` (`'DataDir:\Test\Map<Name>'`), `DatasMapDirectory`,
+     `AdditionalPackDescriptorSection` (`'PC'`), `MountingPoint` (`'Datasmap'`).
+   - Resource packs (meshes, textures, proxies, animations, sounds, scripts, video) are declared by `TResourceDescriptor*Pack`
+     objects with a path **inside the already-mounted files**, e.g. `PackName = 'Pack\GFXDescriptor\Skeleton_Common.spk'`,
+     loaded through `TClusterInitialisationWithSubClusters_LoadResourcePack` (668 objects).
+   - No startup-time object that mounts an arbitrary `.dat` was found. One lead: `TClusterInitialisationDataPath` in
+     `clusterbootstrapgame.cpp` has `RoamingDataDirectory = 'TestOption/LocalDataPath'` (a test option naming a local
+     data folder; purpose unknown).
+   - **Meaning so far:** a new map can ship its own map pack (C3 step 2 checks this in-game); game-wide text still needs
+     the ZZ_Win.dat rebuild (our streaming writer makes that practical) unless the `LocalDataPath` lead pans out.
 4. ~~Does RUSE.exe run from a hard-linked instance with `steam_appid.txt`?~~ **Answered: yes (C2, 2026-09-28).**
 5. `TGU1` texture payload encoding. **Known externally:** custom JPEG-like codec shared by `.tgv` (flags 257) and
    terrain `.tmst` (flags 256); decoded in RUSE-Mod-Manager's `terrain_codec.py` (GPLv3; format knowledge

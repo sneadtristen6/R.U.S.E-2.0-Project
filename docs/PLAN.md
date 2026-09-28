@@ -568,10 +568,17 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 
 Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on paper (Progress, §7).
 
-1. **PC session, now:** run **C3** (§7): can the game load an extra pack of ours? The tools for steps 1–2 are ready:
-   `tools/c3_survey.py` and `Ndf.set_string()`.
-   Then two quick read-only checks, a few minutes each: `tools/topo_check.py` (if TOPO follows moddingSuite's rule,
-   adding new units is unblocked) and `tools/dic_check.py` (text files and keys). Record the results in FORMATS.md.
+1. **PC session:** ~~C3 step 1, TOPO check, text-file check~~ **done 2026-09-28**, results in FORMATS.md:
+   - **TOPO:** adding objects is unblocked. Rule: a new named object goes in; a clone goes in if its source is; append
+     (order looks irrelevant). Final proof = the M2 cloned-unit test in-game.
+   - **Text (`.dic`):** layout and writer confirmed on all 1,232 files; keys are readable names; 10 languages. **For the
+     text writer (cloud session):** each file has one special entry, key `0x8000000000000000`, listing every character
+     the file uses. Adding text with a new character must add it there.
+   - **C3 step 1:** the only mounting class is `TClusterMountMapDataPack`, run when a map loads. No startup mount of an
+     arbitrary pack was found (one lead: `TestOption/LocalDataPath`). So maps can ship their own pack; game-wide text
+     likely needs the ZZ_Win.dat rebuild.
+   - **Next, needs the owner at the game:** C3 step 2 (renamed map pack, §7) to prove a map pack is found by the name
+     in the data.
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the

@@ -520,6 +520,7 @@ v1 needs no server. A join code names the game build, the mods and their exact v
 1. Which pack receives new files and new NDF objects (depends on whether NDF can mount an extra pack)?
 2. Can a mod add a whole new NDF file, or only objects inside existing ones?
 3. How does the engine react to duplicate export names across files?
-4. Language list and `.dic` file set per language.
+4. ~~Language list~~ **Answered (FORMATS.md §4):** `us`, `fr`, `ger`, `ita`, `spa`, `pol`, `ru`, `cz`, `jpn`, `sc`
+   (112 `.dic` files each). New text must also update each file's character list (key `0x8000000000000000`).
 5. The exact gameplay/cosmetic split (depends on what the desync checker hashes).
 6. Scenario source format: design it once the binary format is decoded (M6).
