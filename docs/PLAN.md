@@ -563,6 +563,47 @@ French barracks 25 → 13, artillery factory 35/30 → 18/15, HQ 140 → 70). Bu
   - Decide whether rules should touch `_debuginfo` at all. `patch every` also rewrote `everything_debuginfo`, and
     the game ran fine with it. C2 left it alone, and it's unknown whether the game reads it.
 
+### C5: a new unit in the build menu (ready to run)
+
+C4 changed values that already exist. C5 adds something new: a copy of the M4 Sherman
+([`examples/cloned-unit/`](../examples/cloned-unit/)) that costs 1, with its own name, id and menu slot
+(MOD_FORMAT.md §10.5, "Fresh identity"). It is the "1 cloned unit (reused visuals)" of the M2 exit test.
+
+1. **Two read-only checks** (they only read the game):
+
+       set PYTHONPATH=<repo>\src
+       py -3 tools\names_check.py
+       py -3 tools\identity_check.py > identity.txt
+
+   - `names_check`: A must say every EXPR and IMPR tree rebuilt byte-identical, with no "miss" lines. The build
+     writes the clone's name into that tree.
+   - `identity_check` (`identity.txt`):
+     - **A** lists, for each unit class, the values no two units share. "NOT refreshed: check it" means the build
+       copies that one as is. If it's an id number (a name ending in `Id`), add it to `IDS` in
+       `src/rusemod/identity.py`; otherwise note it with the results.
+     - **D** shows every build menu, row by row. Note the Sherman's row and how many columns it has.
+     - **F** shows the Sherman and what a copy of it gets. If the Sherman is missing, not in a factory, or an upgrade
+       (`UpgradeRequire` set), pick another US tank from D and change the name in
+       `examples/cloned-unit/src/units.rndf`.
+2. **Build** (about 30 s):
+
+       py -3 -m rusemod build examples\cloned-unit --instance D:\RUSE-Instances\c5-clone
+
+   Expect one note, "…Descriptor_Unit_R2_Sherman_Test gets its own DescriptorId … -> …, ClassNameForDebug
+   'Unit_M4_Sherman' -> 'Unit_R2_Sherman_Test', PositionInMenu 3xx -> 3yy", no warnings or errors, and
+   `changed:` the unit data file.
+3. **In game** (owner): launch `RUSE.exe` from the instance with Steam running, start a skirmish as the US in a mode
+   where the Sherman is available, build an armour factory and open its menu.
+   - **Pass:** a second Sherman at the new slot (row 3, column yy), costing 1, next to the normal one at its usual
+     price. Build it: it drives and fights like a Sherman.
+   - Record the result, a screenshot of the menu, the build output and how long it took, here or in FORMATS.md.
+4. **If it fails**, record what happened and when:
+   - **The copy isn't in the menu:** its column may be past the last one the menu shows. Give it a free slot in a row
+     with room (from D), e.g. add `PositionInMenu = 205` to the clone in `units.rndf`, and rebuild.
+   - **The game crashes** at start or when the menu opens: the likely suspect is the debug-info copy of the unit data,
+     which doesn't have the new unit (builds leave it as shipped). Next try: mirror new objects into it.
+   - **Wrong price, or the original changed too:** send the build output.
+
 **This plan is a living document.** We adjust it together as we learn.
 
 **Progress (2026-09-28):** C1 passed (lossless NDF round-trip). First real library landed: `src/rusemod/`
@@ -614,7 +655,8 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 3. ~~GitHub account/org and repo, project folder, git~~ **Done:** github.com/sneadtristen6/Ruse-Mod-Platform.
 4. UI stack: confirm web UI vs Qt.
 5. Outreach timing. Recommended: LittleGroove now (align on `.rmod` import/export), Eugen after the M2 demo.
-6. Which unit to clone as the M2 test (suggestion: a US infantry unit, for Pacific later).
+6. Which unit to clone as the M2 test (suggestion: a US infantry unit, for Pacific later). **C5 uses the M4 Sherman**:
+   a tank is easy to spot in its menu, and C5 only tests the pipeline. Infantry can follow once C5 passes.
 
 ## 10. Next steps
 
@@ -645,14 +687,19 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
      3. **Checker:** the same with `checker` makes every tile a coloured ZIPO checkerboard (colour = detail level).
         If it shows, terrain textures can be written without a TGU1 encoder.
      Build each into an instance with `rusemod.instance.build_instance(..., replace={r"Maps\PC\DataMapTwoIslands_v09.dat": pack})`.
+     4. **C5, a new unit** (§7 C5): two read-only checks, one build, then look for a second Sherman, costing 1, in the
+        US armour factory's menu.
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the
    `ruse` tool (detect, ls, names, dump, extract), the `.dic` reader/writer, load order, the mod rules engine
    (all of MOD_FORMAT §10), the `.rndf` reader, fingerprints and join codes (see README "Code so far"), and the
    bridge between game files and the engine for value changes, with `ruse build` (C4 is ready).
-   Next: the bridge adds and removes objects (TOPO rule from the PC check), so a cloned unit can be built (M2).
+   ~~Next: the bridge adds and removes objects~~ **done 2026-09-28:** new objects get their export name, TOPO entry
+   (the PC's rule) and imports; deleted ones keep every index; clones get their own id, debug name and build-menu
+   slot (`rusemod.identity`, MOD_FORMAT §10.5). **C5 is ready for the PC** (§7).
    ~~Also from C4: the `*_debuginfo` notes~~ **done:** debug-info copies are left as shipped, similar notes collapse.
+   Next (cloud): names for new units (text mods: `text/*.csv` into the game's `.dic` files), and whatever C5 turns up.
 4. **You:** the open decisions in §9 (name, UI stack, outreach timing, the unit to clone in M2).
 
 **How the two sessions share the work**

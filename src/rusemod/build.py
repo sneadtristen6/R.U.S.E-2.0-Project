@@ -73,11 +73,16 @@ class BuildResult:
         return [f for f in self.findings if f.level == "error"]
 
 
-def build_pack(arc: Edat, mods: list, build_id: str = "0") -> BuildResult:
-    """Run `mods` [(ModInfo, ops)] on the data files of `arc`. Nothing is written; see BuildResult.changed."""
-    order = load_order([m for m, _ in mods])
-    by_id = {m.id: (m, ops) for m, ops in mods}
-    result = BuildResult(order=[m.id for m in order])
+@dataclass
+class PackModel:
+    base: object          # the engine's model (patch.Game) of the pack's data files
+    loaded: dict          # game path -> model.NdfFile, for writing back
+    members: dict         # game path -> member path in the pack
+    shadows: list         # debug-info copies, left as shipped
+
+
+def load_pack(arc: Edat) -> PackModel:
+    """The data files of `arc` as the engine's model, the way builds see them (debug-info copies left out)."""
     members, files, shadows = {}, {}, []
     for e in arc.entries:
         start = arc.data_offset + e.offset
@@ -89,6 +94,16 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0") -> BuildResult:
             files[game_path(e.path)] = bytes(arc.read(e))
             members[game_path(e.path)] = e.path
     base, loaded = load(files)
+    return PackModel(base, loaded, members, shadows)
+
+
+def build_pack(arc: Edat, mods: list, build_id: str = "0") -> BuildResult:
+    """Run `mods` [(ModInfo, ops)] on the data files of `arc`. Nothing is written; see BuildResult.changed."""
+    order = load_order([m for m, _ in mods])
+    by_id = {m.id: (m, ops) for m, ops in mods}
+    result = BuildResult(order=[m.id for m in order])
+    pack = load_pack(arc)
+    base, loaded, members, shadows = pack.base, pack.loaded, pack.members, pack.shadows
     run = Engine(base).run([by_id[m.id] for m in order])
     result.findings = [Finding("note", n) for n in base.notes] + list(run.findings)
     if shadows:

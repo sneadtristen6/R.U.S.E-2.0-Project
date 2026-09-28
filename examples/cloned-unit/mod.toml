@@ -1,0 +1,8 @@
+# Check C5 (docs/PLAN.md §7): a new unit, copied from an existing one, in the game's build menu.
+[mod]
+id          = "cloned-unit"
+name        = "Cloned unit (test)"
+version     = "0.1.0"
+authors     = ["RUSE Mod Platform"]
+license     = "MIT"
+description = "A copy of the M4 Sherman that costs 1. Proves a new unit builds and shows up in-game. Not a balance mod."

@@ -158,5 +158,16 @@ class BuildCommand(unittest.TestCase):
             self.assertFalse(Path(d, "out.dat").exists())
 
 
+class Examples(unittest.TestCase):
+    def test_every_example_mod_loads(self):
+        root = Path(__file__).resolve().parent.parent / "examples"
+        folders = sorted(p for p in root.iterdir() if (p / "mod.toml").is_file())
+        self.assertTrue(folders)
+        for folder in folders:
+            info, ops = load_mod(folder)
+            self.assertEqual(info.id, folder.name)
+            self.assertTrue(ops, folder.name)
+
+
 if __name__ == "__main__":
     unittest.main()

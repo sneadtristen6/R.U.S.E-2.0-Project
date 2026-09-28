@@ -274,6 +274,23 @@ class Engine:
                 self._prop_op(body_op, name, every=False, own_object=True)
             except PatchError as exc:
                 self._find("error", str(exc), body_op)
+        if op.kind == "clone":
+            self._fresh_identity(op, name)
+
+    def _fresh_identity(self, op: Op, name: str) -> None:
+        """A clone gets its own id, debug name and build-menu slot (MOD_FORMAT §10.5, rusemod.identity), except for
+        any it sets itself. Reported as a note, and in the history of each value."""
+        from .identity import refresh
+        own = {m.group(0) for b in op.body if (m := re.match(r"[A-Za-z_][A-Za-z0-9_]*", b.path or ""))}
+        changed = refresh(self.game, name, op.source, skip=own, new=self.created)
+        if not changed:
+            return
+        fresh = copy.copy(op)
+        fresh.kind = "fresh identity"
+        for prop, _old, new in changed:
+            self.trail[(name, prop)].append((fresh, copy.deepcopy(new)))
+        parts = ", ".join(f"{prop} {show(old)} -> {show(new)}" for prop, old, new in changed)
+        self._find("note", f"{op.at()}: {name} gets its own {parts} (set any of these in the clone to choose)", op)
 
     def _delete_object(self, op: Op) -> None:
         name = op.target
@@ -506,6 +523,11 @@ class Engine:
                 elif isinstance(v, Ref) and v.target is not None and v.target not in self.game.objects:
                     why = f", which {self.deleted[v.target].at()} deleted" if v.target in self.deleted else ""
                     self._find("error", f"{name} still refers to {v.target}{why}")
+        new = [n for n in self.created if n in self.game.objects]
+        if new:
+            from .identity import clashes
+            for name, message in clashes(self.game, new):
+                self._find("warning", message, self.created[name])
 
 
 def _round(v: Num) -> Decimal:

@@ -321,8 +321,19 @@ A unit is one named object plus unnamed sub-objects (weapon slots, turrets and s
   say), the clone points to the same one.
 - **Named objects are never copied.** References to anything with its own export path, and imports (`$/…` from other
   files), keep pointing to the original.
-- **Fresh identity:** the clone gets its new export name, plus fresh values for whatever must be unique per unit (an id
-  number, its text hash). Which properties those are is recorded per class in the schema DB, confirmed from the data in M2.
+- **Fresh identity** (built: `src/rusemod/identity.py`): the clone gets its new export name, plus fresh values for
+  what must differ between units:
+  - `DescriptorId`, `TrackingId`: one more than the highest in the game, if the class uses them as ids (no two of its
+    objects share a value).
+  - `ClassNameForDebug`: the clone's own name, written like the source's (`Descriptor_Unit_R2_X` gives `Unit_R2_X`),
+    with `_2`, `_3`, … added if that's taken.
+  - `PositionInMenu` (slot = row × 100 + column): units with the same `Nationalite` and `Factory` share a build menu.
+    The copied slot is kept if it's free in the clone's menu; otherwise the clone goes after the last unit of the
+    same row.
+  - Anything the clone sets itself is kept. The build report lists every fresh value, and warns when a new object
+    ends up sharing one with another object (after a later patch, say).
+  - The name shown in game (`NameInMenuToken`) stays the source's until text mods can supply names (§6).
+  - `tools/identity_check.py` checks these rules against the real game (PLAN.md §7, C5).
 - **A copy of that moment:** a clone copies its source as it is at that point in the load order. Later patches to the
   source don't reach the clone, and patches to the clone never reach the source.
 - **Giving a clone its own weapon:** clone the weapon or ammunition too, and point the clone at the copy:

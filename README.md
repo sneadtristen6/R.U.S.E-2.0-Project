@@ -8,8 +8,9 @@ Status: **M0 done; M1 next** (the design for M1–M3 is written up). Nothing her
 **Current stage (2026-09-28):** C4 passed: a mod written as text (`examples/half-price-buildings`), built by
 `ruse build`, worked in-game. C3 passed too (new maps can ship their own pack). The M1.5 terrain work has started:
 the terrain mesh and tile files can be read and rewritten losslessly (`rusemod.tms`, `rusemod.tmst`), and the map
-pack "checksum" turned out to be a random ID. Next: in-game terrain tests on the PC (a raised mesa, swapped tiles,
-checkerboard tiles), the TGU1 texture codec, and on the cloud side the C4 fixes and M2 clones (PLAN.md §10).
+pack "checksum" turned out to be a random ID. Next on the PC: in-game terrain tests (a raised mesa, swapped tiles,
+checkerboard tiles), the TGU1 texture codec, and **C5, a new unit in the build menu** (ready to run, PLAN.md §7).
+On the cloud side, the C4 fixes and adding units are done; next are names for new units (PLAN.md §10).
 The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.md §6.
 
 | Doc | What it covers |
@@ -35,7 +36,9 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
   ```
   `build` takes mod folders (`mod.toml` + `src/**/*.rndf`, [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md)) or single
   `.rndf` files, shows the load order and every error / warning / note, and writes nothing if there's an error.
-  Value changes work end to end; adding new objects (units) is the next step.
+  Value changes work end to end (C4). New objects work too: a copied unit gets its own id, debug name and build-menu
+  slot ([`src/rusemod/identity.py`](src/rusemod/identity.py)); the in-game test is C5
+  ([`examples/cloned-unit/`](examples/cloned-unit/), PLAN.md §7).
 
 - [`ruse_edat.py`](ruse_edat.py): read-only EDAT archive reader.
   ```
@@ -46,8 +49,9 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
 - [`listings/`](listings): full file lists of all 38 archives (build 190852).
 - **Mod rules engine** ([`src/rusemod/patch.py`](src/rusemod/patch.py), [`src/rusemod/resolve.py`](src/rusemod/resolve.py)):
   load order and every rule in [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md) §10 (stacking, rounding, the conflict table,
-  clones, shared parts, `patch every`, the final pass, `when mod`), tested on made-up data. Hooking it to the real
-  game files comes in M2.
+  clones, shared parts, `patch every`, the final pass, `when mod`), tested on made-up data. It runs on the real game
+  files through the bridge ([`src/rusemod/model.py`](src/rusemod/model.py)), which writes changed values, new objects
+  and deletes back into them.
 - **Fingerprints and join codes** ([`src/rusemod/lock.py`](src/rusemod/lock.py)): the multiplayer "seal number" and
   the pasteable join code from [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md) §12.
 - **Mod file reader** ([`src/rusemod/rndf.py`](src/rusemod/rndf.py)): reads `.rndf` mod text (MOD_FORMAT §5, WARNO
@@ -59,6 +63,9 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
 - [`tools/c3_survey.py`](tools/c3_survey.py): check C3 step 1, a read-only survey of how the game mounts packs.
 - [`tools/topo_check.py`](tools/topo_check.py), [`tools/dic_check.py`](tools/dic_check.py): read-only checks of the
   TOPO and text-file leads from [docs/RESEARCH.md](docs/RESEARCH.md) §5.
+- [`tools/names_check.py`](tools/names_check.py), [`tools/identity_check.py`](tools/identity_check.py): read-only
+  checks before adding units: the object-name writer against every shipped file, and the fresh-identity rules
+  (ids, debug names, build menus) against the unit data.
 - [`tests/`](tests): tests on small made-up files, no game needed: `py -3 -m unittest discover -s tests` (with `PYTHONPATH=src`).
   GitHub runs them on every push, on Windows and Linux ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)).
 - [`prototypes/spike-2026-09-28/`](prototypes/spike-2026-09-28): throwaway spike code (NDF object parser, script reader, PE analysis).

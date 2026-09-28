@@ -1,0 +1,7 @@
+// A copy of the M4 Sherman that costs 1 in every game mode, so it's easy to spot in the US armour factory.
+// The build gives it its own DescriptorId, debug name (Unit_R2_Sherman_Test) and the next free slot in the Sherman's
+// row of the build menu; the build report shows the values. It keeps the Sherman's name and icon for now.
+export Descriptor_Unit_R2_Sherman_Test is clone $/GFX/Everything/Descriptor_Unit_M4_Sherman
+(
+    ProductionPrice = [1, 1, 1, 1, 1]
+)
