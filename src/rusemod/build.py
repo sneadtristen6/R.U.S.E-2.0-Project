@@ -10,16 +10,20 @@ from __future__ import annotations
 
 import re
 import tomllib
+from contextlib import ExitStack
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import loc
 from .edat import Edat
-from .lock import fingerprint
+from .lock import fingerprint, fingerprint_text
 from .model import ModelError, game_path, load, save
 from .patch import Engine, Finding, Text, _walk_obj
-from .resolve import ModInfo, load_order
+from .resolve import ModInfo, ResolveError, load_order
 from .rndf import parse
+from .steam import build_of, data_revisions
+
+DEFAULT_PACK = "ZZ_GladPatchableWin.dat"  # the unit data
 
 _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 # The game ships "_debuginfo" copies of a few data files that repeat every name of the main file. The game runs with
@@ -187,4 +191,112 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
             return result
         result.findings += [Finding("note", n) for n in text_notes]
         result.text_changed = {entries[p.lower()].path: data for p, data in text_changed.items()}
+    return result
+
+
+def find_pack(game: Path, name: str) -> Path | None:
+    """A pack by path, or by name in the game folder (newest data revision first found, then Maps\\PC)."""
+    p = Path(name)
+    if p.is_file():
+        return p
+    candidates = [game / "Data" / "PC" / rev / name for rev in data_revisions(game)] + [game / "Maps" / "PC" / name]
+    for c in candidates:
+        if c.is_file():
+            return c
+    for folder in {c.parent for c in candidates if c.parent.is_dir()}:  # case-insensitive match
+        for f in folder.iterdir():
+            if f.name.lower() == name.lower():
+                return f
+    return None
+
+
+_NAMES = re.compile(r"\$/\S+|\S+#\d+")
+
+
+def report_lines(findings, show_all: bool = False, keep: int = 3):
+    """Errors first, then warnings, then notes. Findings that differ only in object names are collapsed to the
+    first `keep` plus a count, unless show_all."""
+    out = []
+    for level in ("error", "warning", "note"):
+        groups: dict[str, list] = {}
+        for f in findings:
+            if f.level == level:
+                groups.setdefault(_NAMES.sub("…", f.message), []).append(f)
+        for items in groups.values():
+            shown = items if show_all else items[:keep]
+            out += [f"  {level:7}  {f.message}" for f in shown]
+            if len(items) > len(shown):
+                out.append(f"  {level:7}  … and {len(items) - len(shown)} more like this (--all shows them)")
+    return out
+
+
+def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Path | None = None,
+                    instance: Path | None = None, say=print, show_all: bool = False) -> BuildResult:
+    """Build `mods` [(ModInfo, ops)] against the game at `game` and write the result: rebuilt packs to `out` (a .dat
+    file, or a folder for several packs) and/or a modded copy at `instance`. This is `ruse build`, and the launcher's
+    Play. `say` gets every report line as it comes. Nothing is written when the build has errors. Problems the user
+    can fix raise BuildError."""
+    pack_path = find_pack(game, pack)
+    if pack_path is None:
+        raise BuildError(f"No pack called {pack!r} in {game}.")
+    text_path = None
+    if needs_text_pack(mods):
+        text_path = find_pack(game, loc.PACK)
+        if text_path is None:
+            raise BuildError(f"These mods add texts, which go into {loc.PACK}, but {game} doesn't have it.")
+    build_id = build_of(game) or "0"  # the fingerprint includes the game build
+    with ExitStack() as stack:
+        arc = stack.enter_context(Edat.open(str(pack_path)))
+        text_arc = stack.enter_context(Edat.open(str(text_path))) if text_path else None
+        try:
+            result = build_pack(arc, mods, build_id, text_arc)
+        except ResolveError as exc:
+            raise BuildError(f"load order: {exc}") from None
+        say("load order: " + " -> ".join(result.order))
+        for line in report_lines(result.findings, show_all=show_all):
+            say(line)
+        counts = {lvl: sum(1 for f in result.findings if f.level == lvl) for lvl in ("error", "warning", "note")}
+        say(f"{counts['error']} error(s), {counts['warning']} warning(s), {counts['note']} note(s)")
+        if result.errors:
+            say("Nothing was written.")
+            return result
+        for path in result.changed:
+            say(f"changed: {path}")
+        if result.text_changed:
+            names: dict[str, int] = {}
+            for path in result.text_changed:
+                name = path.rsplit("\\", 1)[-1]
+                names[name] = names.get(name, 0) + 1
+            say(f"texts: {len(result.text_changed)} file(s) in {text_path.name} ("
+                + ", ".join(f"{n} ×{c}" for n, c in sorted(names.items())) + ")")
+        if not result.changed and not result.text_changed:
+            say("The mods change nothing in these packs.")
+            return result
+        say(f"fingerprint: {fingerprint_text(result.fingerprint)}")
+        rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, result.text_changed)]
+        rebuilt = [(path, a, changed) for path, a, changed in rebuilt if changed]
+        if out is not None:
+            out = Path(out)
+            if out.suffix.lower() == ".dat":
+                if len(rebuilt) > 1:
+                    raise BuildError("these mods rebuild two packs (unit data and texts): give --out a folder")
+                targets = [(out, rebuilt[0][1], rebuilt[0][2])]
+            else:
+                out.mkdir(parents=True, exist_ok=True)
+                targets = [(out / path.name, a, changed) for path, a, changed in rebuilt]
+            for target, a, changed in targets:
+                with target.open("wb") as f:
+                    a.write_to(f, changed)
+                say(f"wrote {target}")
+        if instance is not None:
+            from .instance import build_instance
+            replace = {}
+            for path, a, changed in rebuilt:
+                rel = str(path.resolve().relative_to(Path(game).resolve()))
+                replace[rel] = (lambda f, a=a, changed=changed: a.write_to(f, changed))
+            copied = build_instance(str(game), str(instance), replace=replace)
+            say(f"modded copy ready: {instance}  {copied}")
+            if copied.get("full copies"):
+                say(f"note: {instance} is on another drive than the game, so its {copied['full copies']} packs are "
+                    f"full copies, which take disk space. On the game's drive they'd be free.")
     return result

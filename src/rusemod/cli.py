@@ -17,18 +17,15 @@ from __future__ import annotations
 import argparse
 import contextlib
 import os
-import re
 import sys
 from pathlib import Path
 
-from . import loc
-from .build import BuildError, build_pack, load_mod, needs_text_pack
+from .build import BuildError, build_and_write, find_pack, load_mod
+from .build import report_lines  # noqa: F401  (kept here for callers of rusemod.cli.report_lines)
 from .edat import Edat
-from .lock import fingerprint_text
 from .ndf import Ndf
-from .resolve import ResolveError
 from .rndf import RndfError
-from .steam import build_of, data_revisions, find_game
+from .steam import find_game
 from .text import NdfText
 
 
@@ -52,15 +49,10 @@ def _find_pack(name: str, args) -> Path:
     if p.is_file():
         return p
     game = _game_dir(args)
-    candidates = [game / "Data" / "PC" / rev / name for rev in data_revisions(game)] + [game / "Maps" / "PC" / name]
-    for c in candidates:
-        if c.is_file():
-            return c
-    for folder in {c.parent for c in candidates if c.parent.is_dir()}:  # case-insensitive match
-        for f in folder.iterdir():
-            if f.name.lower() == name.lower():
-                return f
-    raise UserError(f"No pack called {name!r} in {game}.")
+    found = find_pack(game, name)
+    if found is None:
+        raise UserError(f"No pack called {name!r} in {game}.")
+    return found
 
 
 @contextlib.contextmanager
@@ -160,90 +152,19 @@ def cmd_extract(args) -> int:
     return 0
 
 
-_NAMES = re.compile(r"\$/\S+|\S+#\d+")
-
-
-def report_lines(findings, show_all: bool = False, keep: int = 3):
-    """Errors first, then warnings, then notes. Findings that differ only in object names are collapsed to the
-    first `keep` plus a count, unless show_all."""
-    out = []
-    for level in ("error", "warning", "note"):
-        groups: dict[str, list] = {}
-        for f in findings:
-            if f.level == level:
-                groups.setdefault(_NAMES.sub("…", f.message), []).append(f)
-        for items in groups.values():
-            shown = items if show_all else items[:keep]
-            out += [f"  {level:7}  {f.message}" for f in shown]
-            if len(items) > len(shown):
-                out.append(f"  {level:7}  … and {len(items) - len(shown)} more like this (--all shows them)")
-    return out
-
-
 def cmd_build(args) -> int:
     try:
         mods = [load_mod(m) for m in args.mods]
     except (BuildError, RndfError, OSError) as exc:
         raise UserError(str(exc)) from None
-    pack_path = _find_pack(args.pack, args)
-    text_path = _find_pack(loc.PACK, args) if needs_text_pack(mods) else None
-    build_id = build_of(_game_dir(args)) or "0"  # the fingerprint includes the game build
-    with contextlib.ExitStack() as stack:
-        arc = stack.enter_context(Edat.open(str(pack_path)))
-        text_arc = stack.enter_context(Edat.open(str(text_path))) if text_path else None
-        try:
-            result = build_pack(arc, mods, build_id, text_arc)
-        except ResolveError as exc:
-            raise UserError(f"load order: {exc}") from None
-        print("load order: " + " -> ".join(result.order))
-        for line in report_lines(result.findings, show_all=args.all):
-            print(line)
-        counts = {lvl: sum(1 for f in result.findings if f.level == lvl) for lvl in ("error", "warning", "note")}
-        print(f"{counts['error']} error(s), {counts['warning']} warning(s), {counts['note']} note(s)")
-        if result.errors:
-            print("Nothing was written.")
-            return 2
-        for path in result.changed:
-            print(f"changed: {path}")
-        if result.text_changed:
-            names: dict[str, int] = {}
-            for path in result.text_changed:
-                name = path.rsplit("\\", 1)[-1]
-                names[name] = names.get(name, 0) + 1
-            print(f"texts: {len(result.text_changed)} file(s) in {text_path.name} ("
-                  + ", ".join(f"{n} ×{c}" for n, c in sorted(names.items())) + ")")
-        if not result.changed and not result.text_changed:
-            print("The mods change nothing in these packs.")
-            return 0
-        print(f"fingerprint: {fingerprint_text(result.fingerprint)}")
-        rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, result.text_changed)]
-        rebuilt = [(path, a, changed) for path, a, changed in rebuilt if changed]
-        if args.out:
-            out = Path(args.out)
-            if out.suffix.lower() == ".dat":
-                if len(rebuilt) > 1:
-                    raise UserError("these mods rebuild two packs (unit data and texts): give --out a folder")
-                targets = [(out, rebuilt[0][1], rebuilt[0][2])]
-            else:
-                out.mkdir(parents=True, exist_ok=True)
-                targets = [(out / path.name, a, changed) for path, a, changed in rebuilt]
-            for target, a, changed in targets:
-                with target.open("wb") as f:
-                    a.write_to(f, changed)
-                print(f"wrote {target}")
-        if args.instance:
-            from .instance import build_instance
-            game = _game_dir(args)
-            replace = {}
-            for path, a, changed in rebuilt:
-                rel = str(path.resolve().relative_to(game.resolve()))
-                replace[rel] = (lambda f, a=a, changed=changed: a.write_to(f, changed))
-            copied = build_instance(str(game), args.instance, replace=replace)
-            print(f"modded copy ready: {args.instance}  {copied}")
-            if copied.get("full copies"):
-                print(f"note: {args.instance} is on another drive than the game, so its {copied['full copies']} packs "
-                      f"are full copies, which take disk space. On the game's drive they'd be free.")
-    return 0
+    pack = str(_find_pack(args.pack, args))
+    game = _game_dir(args)
+    try:
+        result = build_and_write(game, mods, pack=pack, out=Path(args.out) if args.out else None,
+                                 instance=Path(args.instance) if args.instance else None, show_all=args.all)
+    except BuildError as exc:
+        raise UserError(str(exc)) from None
+    return 2 if result.errors else 0
 
 
 def build_parser() -> argparse.ArgumentParser:

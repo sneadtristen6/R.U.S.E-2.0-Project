@@ -10,8 +10,8 @@ Status: **M0 done; M1 next** (the design for M1–M3 is written up). Nothing her
 the terrain mesh and tile files can be read and rewritten losslessly (`rusemod.tms`, `rusemod.tmst`), and the map
 pack "checksum" turned out to be a random ID. Next on the PC: in-game terrain tests (a raised mesa, swapped tiles,
 checkerboard tiles), the TGU1 texture codec, and **C5, a new unit in the build menu** (ready to run, PLAN.md §7).
-On the cloud side, adding units and naming them are done (C5 and C6 are ready to run); next is the launcher
-(PLAN.md §10).
+On the cloud side, adding units and naming them are done (C5 and C6 are ready to run), and the launcher v0.1
+exists (home screen and Play; the PC tries it, PLAN.md §10 item 1.7).
 Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19); the order is the mod system, then the
 launcher; multiplayer is tested solo until there's a second player (decision 20).
 The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.md §6.
@@ -45,6 +45,11 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
   `text/*.csv` ([`src/rusemod/loc.py`](src/rusemod/loc.py); in-game test C6,
   [`examples/named-unit/`](examples/named-unit/)).
 
+- **The launcher** ([`src/rusemod/launcher/`](src/rusemod/launcher/), v0.1): a desktop window built like a web page.
+  It finds the game, lists your mod sets and has a big Play button that builds the set's modded copy and starts the
+  game (Vanilla starts through Steam). Once: `py -3 -m pip install pywebview`, then `py -3 -m rusemod.launcher`
+  (`--spike` opens the 3D check). The screens also open in a normal browser with made-up data:
+  `src/rusemod/launcher/ui/index.html?fake`.
 - [`ruse_edat.py`](ruse_edat.py): read-only EDAT archive reader.
   ```
   py -3 ruse_edat.py list    <archive.dat>

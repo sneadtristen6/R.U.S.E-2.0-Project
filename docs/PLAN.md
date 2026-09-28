@@ -419,7 +419,7 @@ volunteer from the R.U.S.E. community: with a join code, joining takes them a co
 | ADR | Decision | Choice | Why | Alternatives |
 |---|---|---|---|---|
 | 1 | Core language | Python 3.11+ with type hints | runs inside Blender; same language as community tools; fastest for reverse engineering; AI-friendly | C#/.NET, Rust |
-| 2 | UI stack | Web UI (TypeScript, three.js for 3D) in a desktop window (pywebview), served by the local service | best 3D and UI ecosystem; one UI codebase for Launcher and Studio; runs on Linux/Deck | Qt / PySide6 |
+| 2 | UI stack | Web UI (TypeScript, three.js for 3D) in a desktop window (pywebview), served by the local service. **Confirmed by the owner 2026-09-28.** v0.1 uses plain JavaScript with no build step, and pywebview's bridge instead of a separate service; TypeScript once the screens grow | best 3D and UI ecosystem; one UI codebase for Launcher and Studio; runs on Linux/Deck | Qt / PySide6 |
 | 3 | Runtime extender | C++ x64 proxy DLL, optional, instance-only | exe has no DRM/ASLR; `version.dll` is imported | none (repack only) |
 | 4 | Deployment | Modded instances via hard links | never touch the Steam install; mod sets side by side | in-place swap with backups (fallback) |
 | 5 | Mod identity | Engine export paths + owner paths + selectors | stable across updates, human-readable | indices (.rmod `index_map`) |
@@ -449,7 +449,7 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 | **M1 Core tools** | combined file view + index (L2); `.dic` r/w ✅ and `ruse` CLI basics ✅ (cloud session); scenario / AI-layer / capture-zone readers (our own code, informed by [LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)) | every shipped file of these types round-trips byte-identically | 2–4 (was 4–6) | low |
 | **M1.5 Frontier tests** (new) | short, capped tests of the riskiest unknowns: re-encode one terrain texture tile (`TGU1`) and one terrain mesh (`.tms`); read one 3D model (SPK) section table | clear yes/no: can we write new terrain? can we read models? Decides how big Pacific maps can be | ~3 | high (that's the point) |
 | **M2 Mod system slice** | package v1; `.rndf` reader ✅, rules engine ✅, load order ✅, fingerprint + join codes ✅ (cloud session); the adapter between game files and the engine; `.rmod` import; extra-pack mount test (C3); instances already proven by C2 | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test (until there's a second player, the solo tests S1–S2 in L6 stand in; the 2-PC test comes before the first public release). This proves the tool, not a balance mod | 2–4 (was 4–6) | medium |
-| **M3 Launcher v1** | Steam auto-detect ✅ (`ruse detect`), one-click install into instances, modpacks, join codes; also installs the `.rmod` mods players already have, combinable and without patching the live install | first public alpha on GitHub, ModDB, Nexus | 3–5 | low |
+| **M3 Launcher v1** | Steam auto-detect ✅ (`ruse detect`), the window ✅ (v0.1: game status, mod sets, Play; `rusemod.launcher`), one-click install into instances, modpacks, join codes; also installs the `.rmod` mods players already have, combinable and without patching the live install | first public alpha on GitHub, ModDB, Nexus | 3–5 | low |
 | **M4 Studio v1** | content browser, reference viewer, property/unit editor; clone **any** class with its **own** visuals, wired into menus, upgrades and AI; validation, diff/rebase | a non-programmer builds a new unit | 5–8 | low–medium |
 | **M5 Textures & icons** | TGV r/w including a game-valid `TGU1` encoder (nobody has one), UI icon/flag pipeline | retextured unit with its own icon in-game | 3–5 | medium |
 | **M6 Maps I** | map cloning, scenario editor, capture-zone compiler, AI layers, island maps on existing terrain | a new map listed and playable in multiplayer | 4–6 (was 5–8: formats now understood) | medium |
@@ -691,7 +691,7 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 2. ~~License~~ **Decided: MIT.** We study RUSE-Mod-Manager's approach (terrain, `TGU1`, scenarios, AI layers,
    capture zones) as reference and write our own, better version. Never copy its code.
 3. ~~GitHub account/org and repo, project folder, git~~ **Done:** github.com/sneadtristen6/Ruse-Mod-Platform.
-4. UI stack: confirm web UI vs Qt.
+4. ~~UI stack~~ **Decided (owner, 2026-09-28): web-style** (ADR 2). The launcher v0.1 is built that way.
 5. Outreach timing. Recommended: LittleGroove now (align on `.rmod` import/export), Eugen after the M2 demo.
 6. Which unit to clone as the M2 test (suggestion: a US infantry unit, for Pacific later). **C5 uses the M4 Sherman**:
    a tank is easy to spot in its menu, and C5 only tests the pipeline. Infantry can follow once C5 passes.
@@ -732,6 +732,15 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
      5. **Nation scan** (read-only, no game launch needed): `py -3 tools\nation_scan.py > nations.txt`. Record its
         summary and the starred lines of B in FORMATS.md §3: that's the data side of the new nation (decision 19).
      6. **C6, a unit with its own name** (§7 C6), after C5: one build, then look for "Sherman C6-Test" in the menu.
+     7. **Launcher v0.1 and the 3D check** (needs the owner at the PC):
+        - Once: `py -3 -m pip install pywebview` (Windows 10/11 already have the web engine it uses).
+        - `py -3 -m rusemod.launcher --spike`: a rotating island. Record the lines in the box (WebGL 2, GPU, frames per
+          second). **Pass: 30+ frames per second.** It loads the 3D library from the internet, so the PC must be online.
+        - `py -3 -m rusemod.launcher`: the home screen should say "Found R.U.S.E. on D: (build …)". Press "Open mod
+          sets folder" and save a file `half-price.toml` there with `name = "Half-price test"` and
+          `mods = ["<repo>/examples/half-price-buildings"]` (forward slashes). Pick it and press Play: the Details box
+          shows the build, then the game starts from `D:\RUSE-Instances\half-price` with every building at half price.
+        - Record what worked and anything confusing on the screen.
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the
@@ -746,9 +755,15 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    `.rndf`, `rusemod.loc`); `ruse build` rebuilds ZZ_Win.dat too when mods have texts, streamed into the modded copy.
    Modded copies now keep the last working copy until a new one is complete, and fall back to full copies on another
    drive. **C6 is ready for the PC** (§7). Also done: the new nation's step 1 (RESEARCH.md §6, `tools/nation_scan.py`).
-   Next (cloud): the launcher (M3), per the owner's order (the mod system, then the launcher), and whatever C5/C6
-   turn up.
-4. **You:** the open decisions in §9 (name, UI stack, outreach timing, the unit to clone in M2, a second player).
+   **Launcher v0.1 done (2026-09-28):** the window (web-style, decided by the owner) with the home screen: finds the
+   game (or "Choose folder…"), lists mod sets, and Play builds the set's modded copy (the same code as `ruse build`),
+   starts Steam if needed and starts the game; Vanilla starts through Steam. Mod sets are hand-written files for now
+   (`%LOCALAPPDATA%\RUSE Mod Platform\sets\*.toml`, see `rusemod/launcher/api.py`). Plus the 3D check page. The PC
+   tries both (item 1.7).
+   Next (cloud), launcher steps, one at a time: installing mods into the launcher's library (from a folder or zip,
+   then RUSE-Mod-Manager's `.rmod`), mod sets made on screen, the join-a-friend screen (join codes), then the
+   installer (Nuitka + Inno Setup) and browsing the mod index. And whatever C5/C6 turn up.
+4. **You:** the open decisions in §9 (name, outreach timing, the unit to clone in M2, a second player).
 
 **How the two sessions share the work**
 - **Cloud session:** research and design, nothing that needs the game files. It writes its results into these docs.

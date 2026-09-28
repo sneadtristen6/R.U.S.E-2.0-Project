@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>3D check</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #101315; color: #e9e4d4; font: 14px "Segoe UI", system-ui, sans-serif; }
+    canvas { display: block; }
+    #hud { position: fixed; left: 14px; top: 12px; max-width: 560px; padding: 10px 14px; line-height: 1.55;
+           background: rgba(0, 0, 0, 0.6); border-radius: 8px; }
+    #hud b { color: #c8a64b; }
+  </style>
+  <!-- the 3D library (three.js, MIT) comes from the internet for this check; the real Studio will ship its own copy -->
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <div id="hud"><b>3D check</b><br>Loading the 3D library…</div>
+  <script type="module">
+    // PLAN.md risk "WebGL in the embedded window": can the launcher window draw a map-sized 3D scene smoothly?
+    // Pass: a rotating island with water, at 30+ frames per second. Record the lines shown in the box.
+    const hud = document.getElementById("hud");
+    const show = (lines) => { hud.innerHTML = "<b>3D check</b><br>" + lines.join("<br>"); };
+    let THREE;
+    try {
+      THREE = await import("three");
+    } catch (e) {
+      show(["Couldn't load the 3D library (three.js). Is this PC online?", String(e)]);
+      throw e;
+    }
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(innerWidth, innerHeight);
+    document.body.append(renderer.domElement);
+    const gl = renderer.getContext();
+    const info = gl.getExtension("WEBGL_debug_renderer_info");
+    const gpu = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    const webgl2 = typeof WebGL2RenderingContext !== "undefined" && gl instanceof WebGL2RenderingContext;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x9fb8c8);
+    scene.fog = new THREE.Fog(0x9fb8c8, 260, 620);
+    const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 1, 2000);
+
+    // an island: 256 x 256 squares, heights from a few waves, coloured by height (sand, grass, rock)
+    const size = 400, cells = 256;
+    const ground = new THREE.PlaneGeometry(size, size, cells, cells);
+    ground.rotateX(-Math.PI / 2);
+    const pos = ground.attributes.position, colors = [];
+    const color = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), z = pos.getZ(i), r = Math.hypot(x, z) / (size / 2);
+      let h = 38 * (1 - r * r) - 12;
+      h += 6 * Math.sin(x * 0.05) * Math.cos(z * 0.06) + 3 * Math.sin(x * 0.13 + z * 0.09);
+      pos.setY(i, h);
+      if (h < 1.5) color.set(0xd9c79a); else if (h < 18) color.set(0x5f8a45); else color.set(0x8a8175);
+      colors.push(color.r, color.g, color.b);
+    }
+    ground.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    ground.computeVertexNormals();
+    scene.add(new THREE.Mesh(ground, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 })));
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000).rotateX(-Math.PI / 2),
+      new THREE.MeshStandardMaterial({ color: 0x2d6f8f, transparent: true, opacity: 0.8, roughness: 0.3 }));
+    scene.add(water);
+    scene.add(new THREE.HemisphereLight(0xdfeaf2, 0x3a3326, 0.9));
+    const sun = new THREE.DirectionalLight(0xfff1d6, 1.6);
+    sun.position.set(120, 200, 80);
+    scene.add(sun);
+
+    const triangles = cells * cells * 2 + 2;
+    let frames = 0, fps = 0, last = performance.now();
+    addEventListener("resize", () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+    renderer.setAnimationLoop((t) => {
+      const a = t * 0.00012;
+      camera.position.set(Math.cos(a) * 330, 150, Math.sin(a) * 330);
+      camera.lookAt(0, 0, 0);
+      renderer.render(scene, camera);
+      frames++;
+      if (t - last >= 1000) {
+        fps = Math.round((frames * 1000) / (t - last));
+        frames = 0;
+        last = t;
+        show([`WebGL 2: ${webgl2 ? "yes" : "no"}`, `GPU: ${gpu}`, `frames per second: ${fps}`,
+              `triangles: ${triangles.toLocaleString()}`, "Pass: a rotating island, 30+ frames per second."]);
+      }
+    });
+  </script>
+</body>
+</html>
