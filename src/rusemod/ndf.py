@@ -163,6 +163,7 @@ class Ndf:
             self._toc[name] = (ff, off, size)
         self.classes = self._strs("CLAS")
         self.strings = self._strs("STRG")
+        self._strg_dirty = False
         self.trans = self._strs("TRAN")
         self.props = self._props()
         self.objects = self._objects()
@@ -218,6 +219,15 @@ class Ndf:
     def prop_name(self, index: int) -> str:
         return self.props[index][0]
 
+    def set_string(self, index: int, text: str) -> None:
+        """Change entry `index` of the STRG table (what string/path values, types 0x07/0x1C, point at).
+
+        Every value in this file that points at the entry changes with it, so check who uses it first.
+        """
+        text.encode("latin-1")  # STRG is latin-1: fail now, not at write time
+        self.strings[index] = text
+        self._strg_dirty = True
+
     # --- serialization ---
     def _encode_obje(self) -> bytes:
         buf = bytearray()
@@ -230,6 +240,9 @@ class Ndf:
 
     def to_logical(self) -> bytes:
         sections = {name: (self._encode_obje() if name == "OBJE" else self._sec(name)) for name in self._order}
+        if self._strg_dirty:
+            sections["STRG"] = b"".join(struct.pack("<I", len(s.encode("latin-1"))) + s.encode("latin-1")
+                                        for s in self.strings)
         blob = bytearray()
         layout = []  # (name, offset, size)
         for name in self._order:

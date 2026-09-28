@@ -480,15 +480,16 @@ means every new unit name, rebuilds that whole pack (L5). With one, a mod ships 
 **Steps, cheapest first.** All in an instance; the Steam install is never touched.
 1. **Survey (read-only):** list every NDF class whose name contains `Mount`, `DataPack`, `Pack` or `Cluster`, across
    all NDF files: where each is used and with which properties. Search RUSE.exe's strings for the same words. Record
-   what's found in FORMATS.md.
+   what's found in FORMATS.md. **Ready to run:** [`tools/c3_survey.py`](../tools/c3_survey.py) does all of this
+   (`py -3 tools\c3_survey.py > c3_survey.txt`).
 2. **Renamed map pack.** Proves a pack is found by the name in the data, and shows whether a pack's name is checked:
    - in an instance, copy `Maps\PC\DataMapTwoIslands_v09.dat` to a new name of the same length, e.g.
      `DataMapTwoIslandz_v09.dat`, then delete the original name from the instance's `Maps\PC` (that only removes the
      instance's hard link; the Steam file is untouched);
    - in `genglad\patchable\map\twoislands\clustermap.cpp`, change the `DataPack` text to the new name. Same length, so
-     nothing else in the file moves. If the text lives in the STRG table (types 0x07 / 0x1C), the writer copies STRG
-     verbatim today, so this needs a small helper that patches it in place; first check nothing else in that file
-     uses the same string;
+     nothing else in the file moves. If the text lives in the STRG table (types 0x07 / 0x1C), use
+     `Ndf.set_string(index, text)` (added for this, tested in `tests/`); the survey's "used Nx in file" note shows
+     whether anything else in that file shares the string;
    - launch and start a skirmish on Two Islands. If it loads, packs are found by the name in the data (and a copied
      pack's header checksum doesn't depend on its file name). If not, write down the exact error.
 3. **Startup mount.** If step 1 finds a mount object that runs at startup, point it at a small pack of our own holding

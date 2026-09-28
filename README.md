@@ -26,4 +26,6 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
   py -3 ruse_edat.py extract <archive.dat> <substring> <out_dir>
   ```
 - [`listings/`](listings): full file lists of all 38 archives (build 190852).
+- [`tools/c3_survey.py`](tools/c3_survey.py): check C3 step 1, a read-only survey of how the game mounts packs.
+- [`tests/`](tests): tests on small made-up files, no game needed: `py -3 -m unittest discover -s tests` (with `PYTHONPATH=src`).
 - [`prototypes/spike-2026-09-28/`](prototypes/spike-2026-09-28): throwaway spike code (NDF object parser, script reader, PE analysis).
