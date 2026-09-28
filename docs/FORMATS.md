@@ -294,8 +294,11 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
    - No startup-time object that mounts an arbitrary `.dat` was found. One lead: `TClusterInitialisationDataPath` in
      `clusterbootstrapgame.cpp` has `RoamingDataDirectory = 'TestOption/LocalDataPath'` (a test option naming a local
      data folder; purpose unknown).
-   - **Meaning so far:** a new map can ship its own map pack (C3 step 2 checks this in-game); game-wide text still needs
-     the ZZ_Win.dat rebuild (our streaming writer makes that practical) unless the `LocalDataPath` lead pans out.
+   - **C3 step 2 passed (in-game, 2026-09-28):** with Two Islands' pack present only under a new name
+     (`DataMapTwoIslandz_v09.dat`) and `clustermap.cpp` pointing at it, the map loaded and played normally. **A map pack
+     is found by the name in the data; its file name isn't checked.** New maps can ship their own pack.
+   - Game-wide text still needs the ZZ_Win.dat rebuild (our streaming writer makes that practical) unless the
+     `LocalDataPath` lead pans out.
 4. ~~Does RUSE.exe run from a hard-linked instance with `steam_appid.txt`?~~ **Answered: yes (C2, 2026-09-28).**
 5. `TGU1` texture payload encoding. **Known externally:** custom JPEG-like codec shared by `.tgv` (flags 257) and
    terrain `.tmst` (flags 256); decoded in RUSE-Mod-Manager's `terrain_codec.py` (GPLv3; format knowledge

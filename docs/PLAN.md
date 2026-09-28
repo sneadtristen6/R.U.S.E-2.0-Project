@@ -511,6 +511,16 @@ means every new unit name, rebuilds that whole pack (L5). With one, a mod ships 
   overlay, M10) or the 2.3 GB rebuild.
 - Neither: the 2.3 GB rebuild stays until the runtime extender (M10).
 
+**Result (2026-09-28): step 2 passed; step 3 has no route found so far.**
+- **Step 1** (survey): the only mounting class is `TClusterMountMapDataPack`, run when a map loads; no startup mount
+  of an arbitrary pack exists in the data (FORMATS.md open question 3; one lead left: `TestOption/LocalDataPath`).
+- **Step 2** ([`tools/make_c3_instance.py`](../tools/make_c3_instance.py)): in an instance, Two Islands' pack existed
+  only as `DataMapTwoIslandz_v09.dat` and `clustermap.cpp` named it. The owner played "(6) Centre de gravite" on it:
+  **loaded and played normally.** So a map pack is found by the name in the data, and its file name isn't checked.
+- **Meaning:** new maps ship their own pack (no core-pack rebuild). Game-wide text still needs the ZZ_Win.dat rebuild,
+  which the streaming writer handles (M10 is parked). Open: whether an *edited* map pack's header checksum is enforced
+  (this test used unchanged content), tested in M6.
+
 **This plan is a living document.** We adjust it together as we learn.
 
 **Progress (2026-09-28):** C1 passed (lossless NDF round-trip). First real library landed: `src/rusemod/`
@@ -578,8 +588,8 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    - **C3 step 1:** the only mounting class is `TClusterMountMapDataPack`, run when a map loads. No startup mount of an
      arbitrary pack was found (one lead: `TestOption/LocalDataPath`). So maps can ship their own pack; game-wide text
      likely needs the ZZ_Win.dat rebuild.
-   - **Next, needs the owner at the game:** C3 step 2 (renamed map pack, §7) to prove a map pack is found by the name
-     in the data.
+   - ~~C3 step 2~~ **passed 2026-09-28:** a renamed map pack loads when the data names it (§7 "Result"). New maps
+     can ship their own pack. Reusable instance builder: `src/rusemod/instance.py` (tested).
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the

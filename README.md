@@ -5,9 +5,10 @@ new units, maps, models, missions and one-click modded multiplayer. The content 
 
 Status: **M0 done; M1 next** (the design for M1–M3 is written up). Nothing here modifies the game install.
 
-**Current stage (2026-09-28):** C3 step 1, the TOPO check and the text-file check are done (results in
-[docs/FORMATS.md](docs/FORMATS.md)); adding new objects is unblocked. Next: C3 step 2 in-game (needs the owner at the
-game), then M1 on the PC.
+**Current stage (2026-09-28):** C3 is done (a renamed map pack loads in-game, so new maps can ship their own pack),
+and the TOPO and text-file checks passed (adding new objects is unblocked; results in [docs/FORMATS.md](docs/FORMATS.md)).
+Next: M1 on the PC (the combined file view and index; scenario / AI-layer / capture-zone readers), and the M1.5
+frontier tests.
 The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.md §6.
 
 | Doc | What it covers |
