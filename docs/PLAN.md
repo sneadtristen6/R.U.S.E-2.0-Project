@@ -466,8 +466,8 @@ throughout (see [ENGINE_NOTES.md](ENGINE_NOTES.md)) — read-only, nothing from 
 
 **Content track** (starts after M4, then dogfoods each later milestone):
 - **RUSE 2.0 Core** — balance, cloned units, tactics — begins once Studio (M4) exists. It includes a new nation,
-  **China** (owner, 2026-09-28), which needs M10 for the nation itself and M5 for its flag and icons. China is an
-  infantry nation (§11): its squads can borrow the game's infantry models at first; its own models need M7.
+  **China** (owner, 2026-09-28), which needs M10 for the nation itself and M5 for its flag and icons. China is
+  infantry first (§11): its units can borrow the game's models at first; its own models need M7.
 - **Pacific Island Defense** needs M5–M8 (new islands need the terrain writer), plus M9 for a custom mode.
   US vs Japan fits the existing nation slots. M1.5 tells us early whether brand-new islands are realistic.
 
@@ -748,9 +748,10 @@ built yet. **The rule for all of it: as simple as R.U.S.E. already is.** Every n
 - Ten ruses, in four kinds: reveal (Spy, Decryption), hide (Radio Silence, Camouflage Net), decoy (Decoy Building,
   Decoy Offensive, Reverted Intel) and behaviour (Blitz, Terror, Fanaticism). A new card about every 2 minutes.
 
-**China: an infantry nation (owner, 2026-09-28).** In WWII China's strength was its infantry, so in RUSE 2.0 China
-fields **infantry only: no tanks, no planes.** Every job other nations give to vehicles (anti-tank, artillery,
-anti-aircraft) is done by an infantry team. China wins with ambushes, towns, numbers and the right squad for each job.
+**China: infantry first (owner, 2026-09-28).** In WWII China's strength was its infantry, so in RUSE 2.0 infantry is
+China's focus. It also gets a few light tanks and one medium (not the focus), **good mobile anti-aircraft** and
+**solid artillery**. Planes: none so far (to confirm with the owner). China wins with ambushes, towns, numbers and
+the right squad for each job.
 
 **China's infantry (draft names).** Until China has its own models (M7), each squad borrows an existing infantry look
 (the 88th Division can use the German heavy infantry: its German helmets are accurate).
@@ -764,11 +765,32 @@ anti-aircraft) is done by an infantry team. China wins with ambushes, towns, num
 | Flamethrower Squad | flamethrower | |
 | Guerrillas | recon | resistance fighters behind Japanese lines |
 | Mortar Team | support: artillery | |
-| AA Machine-Gun Team | support: anti-air | |
 | Dadao Squad (optional) | elite close assault | the 29th Army's "big sword" units, 1933 and 1937 |
 
 The game already ships a Simplified Chinese language (`sc`, FORMATS.md §4), so Chinese players get the names in
 Chinese; the other nine languages get the English or local names.
+
+**China's vehicles and guns (draft; not the focus).** R.U.S.E.'s eras (1939, 1942, 1945) decide what's in the menu,
+so China only ever has one or two of each at a time. Much of China's real equipment came from Germany and Sweden
+before 1937, the Soviet Union from 1937 to 1941 (about 1,600 guns and 82 T-26 tanks) and the US from late 1941. So both Soviet and
+American artillery are historical, in different eras.
+
+| Unit | Type | Era | History | Looks like (for now) |
+|---|---|---|---|---|
+| Vickers 6-ton | light tank | 1939 | about 20 bought in 1935–36 | the UK's "Vickers" unit, if it's this tank (check) |
+| T-26 | light tank | 1939–42 | 82 from Soviet aid | the Soviet T-26 |
+| M3A3 Stuart | light tank | 1945 | 1st Provisional Tank Group, Burma 1944–45 | the US M3A1 Stuart |
+| M4A4 Sherman | medium tank (the only one) | 1945 | same | the US M4 Sherman |
+| 20 mm Solothurn truck | mobile anti-aircraft | 1939–42 | the Solothurn was China's main AA gun at Shanghai and Nanjing (1937); the truck is game licence | a light AA vehicle |
+| Bofors 40 mm half-track | mobile anti-aircraft | 1945 | 80 Bofors 40 mm guns came through Lend-Lease; the half-track is game licence | a US AA half-track |
+| 15 cm sFH 18 | heavy howitzer | 1939 | bought from Germany | the German sFH 18 |
+| Bofors 75 mm mountain gun | light gun | 1939–42 | bought from Sweden | a 75 mm gun |
+| Soviet 76 mm gun | field gun | 1942 | Soviet aid | the Soviet ZiS-3 |
+| 75 mm pack howitzer | light howitzer | 1945 | US Lend-Lease, carried by mules in Burma | a light gun |
+| 3.7 cm Pak 36 | anti-tank gun | 1939–42 | bought from Germany | the German Pak 36 |
+
+China had almost no mobile anti-aircraft in real life; the owner wants it strong (China has no planes so far), so
+the two AA vehicles take that liberty.
 
 **Infantry: one strength, one weakness each**
 
@@ -781,7 +803,6 @@ Chinese; the other nine languages get the English or local names.
 | Flamethrower | infantry and forts in cover | very short range; fragile |
 | Guerrilla (recon) | hidden scouting and harassment; cheap | real fights |
 | Mortar team | hitting units behind cover from far away | helpless up close |
-| AA team | planes | weak against ground units |
 
 **Towns: the game's town bonus is enough (owner).** No new rule. The urban squad holds towns with numbers the game
 already has: more health, harder to pin down, and high damage at short range (fights in towns are short range because
@@ -811,7 +832,8 @@ enemy plane, and every enemy gun that fires, inside its large listening radius s
 you answer with your own units. It replaces the idea of a fort that shoots shells down (no WWII weapon could, and the
 game almost certainly can't treat a shell as a target). Historical: China's *jing bao* warning network had observers
 listening for planes and phoning in their position and heading; it warned the Flying Tigers before their first fight
-(December 1941). Armies found enemy guns by sound too (sound ranging). For every nation; it fits China best.
+(December 1941). Armies found enemy guns by sound too (sound ranging). **China only** (owner): its signature
+building.
 
 **Kamikaze (Japan, owner):** a plane that dives into its target: huge damage to one target, and the plane is lost.
 Historically from October 1944 (Leyte Gulf), mostly against ships, which fits Pacific maps with the US Navy's ships.
@@ -824,12 +846,17 @@ recorded by Mandarin speakers (volunteers or paid). Until then China borrows an 
 2. What does the UK's forward warning post detect, and does artillery already reveal itself when it fires? (the
    Listening Post)
 3. Can a plane be set to be lost when it attacks? (kamikaze; otherwise it needs the add-on, M10)
-4. Can an infantry weapon fire indirectly or at planes? (China's mortar and AA teams)
+4. Can an infantry weapon fire indirectly? (China's mortar team)
 
 Sources: R.U.S.E. terrain and ambush rules (https://ruse.fandom.com/wiki/Ambush,
 https://ruse.fandom.com/wiki/Strategies_and_Tactics), ruses (https://ruse.fandom.com/wiki/Ruses); the Sihang Warehouse
 (https://en.wikipedia.org/wiki/Defense_of_Sihang_Warehouse); China's warning network
 (https://historynet.com/american-volunteer-group-claire-l-chennault-and-the-flying-tigers/,
 https://warfarehistorynetwork.com/article/top-flying-tiger-general-claire-chennault/); the first kamikaze attacks
-(https://www.history.com/this-day-in-history/october-25/first-kamikaze-attack-of-the-war-begins); the unit lists in
-RUSE-Mod-Manager's class catalog (facts only).
+(https://www.history.com/this-day-in-history/october-25/first-kamikaze-attack-of-the-war-begins); China's guns
+(https://en.wikipedia.org/wiki/15_cm_sFH_18, https://en.wikipedia.org/wiki/Bofors_75_mm_mountain_gun,
+https://en.wikipedia.org/wiki/Solothurn_ST-5, https://www.navweaps.com/Weapons/WNUS_4cm-56_mk12.php,
+https://historynet.com/the-m-1-75mm-pack-howitzer/) and Soviet aid
+(https://www.gw2ru.com/history/232540-how-the-ussr-helped-china-in-the-war-against-japan-photos); Chinese armour
+(https://en.wikipedia.org/wiki/Vickers_6-ton, https://en.wikipedia.org/wiki/T-26); the unit lists in RUSE-Mod-Manager's
+class catalog (facts only).
