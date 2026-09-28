@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 import dic_check  # noqa: E402
 import identity_check  # noqa: E402
 import names_check  # noqa: E402
+import nation_scan  # noqa: E402
 import topo_check  # noqa: E402
 from rusemod import Ndf  # noqa: E402
 
@@ -134,6 +135,36 @@ class IdentityCheck(unittest.TestCase):
             code, out = run(identity_check, root, "$/Descriptor_Unit_Nope")
         self.assertEqual(code, 1)
         self.assertIn("not found", out)
+
+
+def seven(values=range(7)):
+    return val(0x11, struct.pack("<I", len(values)) + b"".join(i32(v) for v in values))
+
+
+class NationScan(unittest.TestCase):
+    def test_runs_on_a_fake_game(self):
+        ndf = make_ndf(
+            objects=[(0, [(0, i32(1))]), (0, []), (0, [(0, i32(6))]),        # GER, US (not written), JAP units
+                     (1, [(1, seven()), (3, i32(0x3F))]),                     # a per-nation list and bit field
+                     (2, [(2, seven())])],                                    # 7 weapons: 7 by coincidence
+            classes=["TUniteAuSolDescriptor", "TMapNations", "TWeaponSet"],
+            props=[("Nationalite", 0), ("SubClusterNationaliteList", 1), ("Weapons", 2),
+                   ("BitFieldNationaliteIfNotSkirmish", 1)])
+        with tempfile.TemporaryDirectory() as root:
+            pack_dir = os.path.join(root, "Data", "PC", "190852")
+            os.makedirs(pack_dir)
+            with open(os.path.join(pack_dir, "ZZ_GladPatchableWin.dat"), "wb") as f:
+                f.write(make_edat([("dir", "gfx\\", [("file", "everything.cpp.gladndfbin", ndf),
+                                                     ("file", "everything_debuginfo.cpp.gladndfbin", ndf)])]))
+            code, out = run(nation_scan, root)
+        self.assertEqual(code, 0, out)
+        self.assertIn("NDF files: 1 (skipped 1 debug-info copies)", out)
+        self.assertIn("TUniteAuSolDescriptor (3): US 1, GER 1, JAP 1", out)
+        self.assertIn("* TMapNations.SubClusterNationaliteList: 1 object(s) in 1 file(s)", out)
+        self.assertIn("  TWeaponSet.Weapons: 1 object(s) in 1 file(s)", out)
+        self.assertIn("TMapNations.BitFieldNationaliteIfNotSkirmish: 0x3F ×1", out)
+        self.assertIn("an 8th entry in 1 named per-nation structure(s) (1 objects, 1 files)", out)
+        self.assertIn("Chinese versions of 1 kind(s) of nation-tagged objects; 1 bit field(s)", out)
 
 
 if __name__ == "__main__":

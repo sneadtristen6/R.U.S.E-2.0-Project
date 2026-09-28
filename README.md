@@ -65,6 +65,8 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
 - [`tools/c3_survey.py`](tools/c3_survey.py): check C3 step 1, a read-only survey of how the game mounts packs.
 - [`tools/topo_check.py`](tools/topo_check.py), [`tools/dic_check.py`](tools/dic_check.py): read-only checks of the
   TOPO and text-file leads from [docs/RESEARCH.md](docs/RESEARCH.md) §5.
+- [`tools/nation_scan.py`](tools/nation_scan.py): read-only count of everything in the game data built around the
+  7 nations (the data side of adding China, [docs/RESEARCH.md](docs/RESEARCH.md) §6).
 - [`tools/names_check.py`](tools/names_check.py), [`tools/identity_check.py`](tools/identity_check.py): read-only
   checks before adding units: the object-name writer against every shipped file, and the fresh-identity rules
   (ids, debug names, build menus) against the unit data.

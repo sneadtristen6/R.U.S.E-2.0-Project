@@ -456,7 +456,7 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 | **M7 Models** | SPK → glTF, Blender bridge, glTF → SPK (static, then skinned/animated). A first for R.U.S.E. | a new vehicle model in-game | 6–12 | high |
 | **M8 Terrain / new maps** | terrain writer (heights + texture), heightmap import, maps from scratch, tropical scenery set | a new island map built from a heightmap | 8–15+ (sized by M1.5) | high |
 | **M9 Scripting** | `.xyz` decompile, compile via a real CPython 2.5.1 (known route), mission/mode scripting | a new game mode (e.g. Island Defense) | 3–6 (was 4–8) | medium |
-| **M10 Runtime extender** | **Un-parked 2026-09-28 (owner): RUSE 2.0 gets a real 8th nation, China.** The proxy DLL in the modded copy only (L4) raises the 7-nation limit; the data gets an 8th entry wherever it has 7 (every map's nation list, flags, menus). Later the same DLL can mount extra packs (no 2.3 GB rebuilds) and tag lobbies. **Step 1:** a read-only scan of RUSE.exe for the code that uses its nation table, which sizes the job | China can be picked in a skirmish, with its own flag and units | unknown until the scan | high |
+| **M10 Runtime extender** | **Un-parked 2026-09-28 (owner): RUSE 2.0 gets a real 8th nation, China.** The proxy DLL in the modded copy only (L4) raises the 7-nation limit; the data gets an 8th entry wherever it has 7 (every map's nation list, flags, menus). Later the same DLL can mount extra packs (no 2.3 GB rebuilds) and tag lobbies. **Step 1 (data):** `tools/nation_scan.py` counts every per-nation structure in the game data (read-only). **Step 2 (program):** find every place the game program assumes 7 nations, as the Red Alert 2 modders did before lifting their limit ([RESEARCH.md](RESEARCH.md) §6: what other games' modders learned) | China can be picked in a skirmish, with its own flag and units | unknown until the scan | high |
 | **M11 Sound** | `.ess` codec, WAV import | a replaced sound plays in-game | 4–10 | high |
 
 **Content comes after the tool.** Per the owner's direction (2026-09-28), no balance/unit-stat/roster
@@ -708,6 +708,8 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
      Build each into an instance with `rusemod.instance.build_instance(..., replace={r"Maps\PC\DataMapTwoIslands_v09.dat": pack})`.
      4. **C5, a new unit** (§7 C5): two read-only checks, one build, then look for a second Sherman, costing 1, in the
         US armour factory's menu.
+     5. **Nation scan** (read-only, no game launch needed): `py -3 tools\nation_scan.py > nations.txt`. Record its
+        summary and the starred lines of B in FORMATS.md §3: that's the data side of the new nation (decision 19).
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the
@@ -719,8 +721,9 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    slot (`rusemod.identity`, MOD_FORMAT §10.5). **C5 is ready for the PC** (§7).
    ~~Also from C4: the `*_debuginfo` notes~~ **done:** debug-info copies are left as shipped, similar notes collapse.
    Next (cloud): names for new units (text mods: `text/*.csv` into the game's `.dic` files), whatever C5 turns up,
-   and M10 step 1 for the new nation (a read-only scan of RUSE.exe for the code that uses the nation table; the PC
-   runs it). Then the launcher (M3). The owner's order (2026-09-28): the mod system, then the launcher.
+   and the new nation: ~~M10 step 1~~ **done:** what other games' modders learned about adding nations
+   (RESEARCH.md §6) and `tools/nation_scan.py` (the data side; the PC runs it, item 1). Then the launcher (M3). The
+   owner's order (2026-09-28): the mod system, then the launcher.
 4. **You:** the open decisions in §9 (name, UI stack, outreach timing, the unit to clone in M2, a second player).
 
 **How the two sessions share the work**

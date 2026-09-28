@@ -120,3 +120,43 @@ Sources: the repositories linked above; RUSE-Mod-Manager at https://github.com/L
 HOI4 checksum threads on the Paradox forums (https://forum.paradoxplaza.com/forum/threads/checksum-multiplayer-problem.1076652/);
 r2modman profile codes (https://deepwiki.com/ebkr/r2modmanPlus/6.3-profile-import-and-export).
 
+## 6. Adding a new nation: what other games' modders learned (2026-09-28)
+
+The owner wants a real new nation (China) in RUSE 2.0, not a renamed one (PLAN.md decision 19). **We found no mod that
+adds a nation to R.U.S.E.:** the ones on ModDB (Ruse Overhaul and others) rebalance the seven. So the lessons come from
+other games whose number of factions was fixed.
+
+| Game | The limit | What modders did | Lesson for us |
+|---|---|---|---|
+| **Wargame: Red Dragon** (Eugen, the studio's next game after R.U.S.E.) | its nation list | We found no mod that added a nation. The biggest nation mod, *Asia in Conflict*, **replaces** some existing nations with Asian ones. Modders describe Red Dragon's modding as limited by the engine. | The closest game to ours, by the same studio: nations were swapped, not added. Fits FORMATS.md §3 (the nation list is in the program). |
+| **C&C: Yuri's Revenge** (*Ares*) | *"You could not add to, remove or reorder the 10 countries or 3 sides"* | Ares, an add-on that loads with the game and never changes the game's file, allows *"up to 16 fully functional countries and sides"*, each with its own flag, UI, score screen and AI settings. | A runtime add-on can lift a hard-coded faction limit; 16 is plenty. But limits hide in many places: *"Certain flags work properly for up to 32 countries, and yet others fail after merely 16"*. Every place that assumes the old number has to be found. |
+| **Medieval II: Total War** (*M2TWEOP*, then *M2EX*) | 31 factions | M2TWEOP hooks the game in memory and lifted many limits, but not this one: *"distinct limits that have not been breached due to their complexity, most notably the limit of factions"*. A newer tool, M2EX, removed it almost 20 years after the game came out, with a much bigger rework (64-bit). | The faction count tends to be the hardest limit to move, harder than units or maps. Size it before committing. |
+| **Supreme Commander: Forged Alliance** (*Nomads*, a 5th faction) | 4 factions | Played through the FAF community launcher as a "featured mod", which keeps everyone on the same version automatically. | A new faction in multiplayer needs everyone on the exact same version, which is the launcher's job. Ours already does it (fingerprint and join codes, PLAN.md L6). |
+
+**What this tells us for China:**
+1. **The data side is the known part**, and our tools can do most of it: an 8th entry wherever the data has a fixed 7
+   (every map's `SubClusterNationaliteList`, flag-icon lists, per-nation mesh packs, the
+   `BitFieldNationaliteIfNotSkirmish` bit field, all in [FORMATS.md](FORMATS.md) §3). `tools/nation_scan.py` counts
+   them, so the data job has a size before anything else.
+2. **The program side is the real question.** With the nation list in the program (FORMATS.md §3) and Red Dragon's
+   modders swapping nations rather than adding them, R.U.S.E. most likely needs the runtime add-on (PLAN.md ADR 3,
+   M10). Ares shows that approach can work.
+3. **Find every place that assumes 7 before changing anything** (Ares' lesson), and expect the count itself to be the
+   stubborn part (Medieval II's lesson). That's M10 step 2, after the data scan.
+4. **Everyone in a match needs the identical add-on and data** (Nomads). The launcher's fingerprint covers the data;
+   the add-on gets the same treatment.
+5. **The add-on never touches the Steam install** (Ares doesn't change the game's file either; ours sits only in the
+   modded copy, ADR 3). Principle 1 holds.
+
+**First step (read-only, data only):** `tools/nation_scan.py` counts, in the shipped data, every structure sized to the
+7 nations and every kind of object tagged with a `Nationalite`. It sizes the data work for China, and gives the
+fallback (China takes over one slot) a concrete list too.
+
+Sources: ModDB R.U.S.E. mods (https://www.moddb.com/games/ruse/mods) and *Ruse Overhaul*
+(https://www.moddb.com/mods/ruse-overhaul-mod); *Wargame: Asia in Conflict* (https://www.moddb.com/mods/wargame-asia-in-conflict);
+Red Dragon mods on ModDB (https://www.moddb.com/games/wargame-red-dragon1/mods); Ares sides and countries
+(https://ares-developers.github.io/Ares-docs/new/sidescountries/index.html) and the Ares page on the C&C wiki
+(https://cnc.fandom.com/wiki/Ares); M2TWEOP (https://wiki.twcenter.net/index.php?title=M2TW_Engine_Overhaul_Project,
+https://github.com/EOP-Labs/M2TWEOP-library) and M2EX (https://www.moddb.com/news/the-mapsize-region-and-faction-limits-have-been-broken);
+FAF Nomads (https://github.com/FAForever/nomads).
+
