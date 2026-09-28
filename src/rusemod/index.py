@@ -396,7 +396,7 @@ class Index:
         self.path = Path(path)
         if not self.path.is_file():
             raise FileNotFoundError(f"no index at {self.path}; build it first (ruse index build)")
-        self.db = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True)
+        self.db = sqlite3.connect(self.path.resolve().as_uri() + "?mode=ro", uri=True)  # read-only; safe on Windows paths
 
     def close(self) -> None:
         self.db.close()
