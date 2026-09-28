@@ -16,7 +16,8 @@ Game build examined: Steam re-release, data revision **190852**, RUSE.exe built 
 | Map support files (`save.boobspc`, `output.sdb`) | Maps\PC | per map | 🟡 checksums known | P1 |
 | Scenario (`.scenario`) | DataMap_Win | 102 | ❔ (RUSE-Mod-Manager edits it) | P1 |
 | AI map grids (`mapinfo.win`) | DataMap_Win | 34 | ❔ (RUSE-Mod-Manager edits layers) | P1 |
-| Terrain (`.tms`, `.tmst_pc`, `.tmst_chunk_pc`) | Maps\PC | per map | ❔ | P2 |
+| Terrain mesh (`.tms`) | Maps\PC | 64 (hi + low per map) | ✅ R W RT (not yet tried in-game) | P1 |
+| Terrain tiles (`.tmst_pc` + `.tmst_chunk_pc`) | Maps\PC | 64 sets, 29,254 tiles | ✅ container R W RT; TGU1 body 🟡 | P1 |
 | Textures (`.tgv`, `.tgv_pc`) | ZZ_Win, Maps\PC | 3,831 + maps | 🟡 header | P1 |
 | Meshes (`.spk`, `.spkpc`, `MESHPCPC`) | ZZ_Win, Maps\PC | 82 + maps | ❔ | P1 |
 | Animations (`.apk`, `.baf`) | ZZ_Win | 53 / 43 | ❔ | P2 |
@@ -230,11 +231,112 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 | `output.sdb` | ✅ `SDB\r\n` + MD5 of the whole file with the 16-byte hash (at 5–20) removed |
 | `.scenario` | `SCENARIO\r\n` + 16 bytes (not an MD5 of the rest) + records (`AREA`, zones, …) ❔ |
 | `mapinfo.win` | `INFOIA\r\n` + 16 bytes (not an MD5 of the rest) + AI grids (concealment and movement-blocking layers) ❔ |
-| `.tms` | `TMSG`, u32 3, `PC\0\0`, … ❔ (terrain streaming index?) |
-| `.tmst_chunk_pc` | u32 id, u32 1, u32 1, u32 0x200, then high-entropy data (7.9 bits/byte), not raw deflate ❔; RUSE-Mod-Manager's team decodes these chunks for reference images |
+| `.tms`, `.tmst_pc`, `.tmst_chunk_pc` | ✅ terrain mesh and texture tiles: see "Terrain" below |
 | `.kdt` | starts `EUG0` ❔ |
 | `.fpkpc` | `SFXS` ❔ |
-| `.sourcefileid` | begins "Size" ❔ |
+| `.sourcefileid` | begins "Size" ❔; only for div_map, env_map faces and occlusioninfo (source-asset size/MD5), none for terrain |
+
+### Terrain (M1.5, 2026-09-28; code `rusemod.tms`, `rusemod.tmst`; checks `tools/verify_tms.py`, `tools/verify_tmst.py`)
+
+**How the game uses it** (from `genglad\patchable\map\<map>\mapterrain.cpp.gladndfbin`, class `TTerrainLoader`):
+- Two terrain loaders per map, both covering the same square. **HighDef** is used for the close camera:
+  `HighDef.TMS` (mesh) + `HighDef.TMST` (tiles), 6×6 cells of 327,680 units on Two Islands, 5 detail levels.
+  **LowDef** is used for the far camera: `Lowdef.TMS` + `LowDef.TMST`, 3×3 cells of 655,360 units, 4 levels.
+- Each loader also has a whole-map **global texture**, a plain PNG in the pack: `Terrain.png` (HighDef,
+  64 px per cell, max 2048) and `TerrainWithUnit.png` (LowDef, 128 px per cell). It is drawn where tiles aren't streamed in.
+- The water simulation reads other files (`WaterInputs`, `WaterAcceleration`, `RiverIndirectionSurface` as `.tgv_pc`).
+- The player's `GroundQuality` option picks scenery density (`TDecorsHabilleurCaseLevelConfig`).
+
+**Heights live in 3 places:** `highdef.tms`, `lowdef.tms` (an independent, coarser mesh: shared points differ by up
+to 6,224 units) and `occlusioninfo_terrainonly.kdt` (NDF `TStreamedMeshKdTree`, same bounds as highdef, 197,703
+triangles, compressed `Storage` not decoded yet; probably what picking, line of sight and maybe pathing use). An edit
+must change both `.tms` files; whether gameplay follows the `.kdt` is the next thing to learn.
+
+#### Mesh (`.tms`, magic `TMSG`), little-endian
+
+Header (0x368 bytes):
+
+| off | type | meaning |
+|---|---|---|
+| 0x00 | 4s | `TMSG` (the file also ends with `TMSG`) |
+| 0x04 | u32 | version 3 |
+| 0x08 | 4s | `PC\0\0` |
+| 0x0C | u32 | file size |
+| 0x10 | u32 ×3 | grid_w, grid_h (cells), patches per cell side = 8 |
+| 0x1C | f32 ×2 | cell width, cell height (world units) |
+| 0x24 | (u32 off, u32 len) ×3 | cell table (at 0x368, 48 B per cell), patch tables, geometry pool; contiguous |
+| 0x3C | 512 B | vertex type, zero-padded: `$/M3D/System/VERTEXTYPE/TVertex__PositionIn4w_4w__NormalIn01_4ubn` |
+| 0x23C | f32 ×6 | bounds min x,y,z / max x,y,z (world units; also the quantization range) |
+| 0x254 | (u32 off, u32 len) ×2 | skirt descriptor (548 B), skirt data |
+| 0x264 | — | zero up to 0x368 |
+
+- **Cell record** (48 B, row-major): `flags, vb_off, vb_len, vertex_count, list0 (off, len, index_count), list1 (off, len,
+  index_count), patch_off, patch_len`, all u32, offsets relative to their section. Flags: bit 0 = list 0 (always),
+  bit 1 = list 1, bit 2 = 32-bit patch table. The pool holds per cell: vertex buffer, list 0, list 1, each 4-aligned.
+- **Triangle lists:** u32 byte count, then zlib ended by a sync flush (no final block, no Adler). Data = u16 running
+  differences (index k = sum of the first k+1 values, mod 65536). List 0 = the whole ground; list 1 repeats the
+  list-0 triangles under water.
+- **Patch table** (8×8 = 64 records): `vstart, vcount, i0start, i0count, i1start, i1count` (u16, or u32 with flag bit 2),
+  then f32 zlo, f32 zhi. zhi = highest max(z, water) of the patch; zlo = lowest z, or exactly 0.0 without list 1.
+- **Vertex buffer `VBUF`:** `VBUF`, u16 8, u8 0xA1 ❔, u16 stride 12, u16 2 elements, u8 flags 2; u32 length + a
+  predictor stream; then per element `SUBP`, u16 12, u8 kind, u8 3 ❔, u8 mode 2, u16 bytes per vertex, u16 offset,
+  3 zero bytes, u32 length, the stream. Position = kind 8 (4 × u16) at 0, starting with u16 mask 0xFFFF, u16 0.
+  Normal = kind 4 (4 × u8) at 8.
+- **Predictor:** vertices 0 and 1 have parent 0; then a 0 byte = previous vertex, else `0x80|hi, lo` = that many
+  vertices back. Mode 2: value = (stored + parent's value) & mask, per component.
+- **Vertex meaning:** (x, y, z, water) quantized 0..32767 over the header bounds (x, y span the full range whatever the
+  aspect ratio; every file uses the full z range). Water = water-surface height on the z scale (the map's base level,
+  e.g. 18,000 on Two Islands). Normal byte = round((n+1)·127.5), 4th byte 128; close to area-weighted face normals.
+- **LZ stream** (vertex streams): 20-byte header `u8 1, u8 0x14, u8 method (8 = bytes, 16 = u16 units), u8 shift,
+  u32 unit count, u32 literal count, u32 token count, u16 literal base, u16 token base`. u32 control words from 0x14,
+  read from the lowest bit: 0 = copy the next literal, 1 = one token; a final single 1 bit ends the stream, then 4–7
+  zero bytes. Tokens by the first byte's low bits: `11` + bit 2 clear = 2 B (len bits 3–6 + 4, dist bits 7–15 + 1);
+  `11` + bit 2 set = 3 B (len bits 3–10 + 4, dist bits 11–23 + 1); else bit 2 set = 1 B (len low 2 bits + 1, dist
+  bits 3–7 + 1); else 2 B (len low 2 bits + 1, dist bits 3–15 + 1). Units, overlapping copies allowed, max distance 8192.
+- **Skirt:** a curtain from the map edge down to −3000 (own z scale, −3000..zmax); a second submesh ❔. Not edited.
+
+Proven: all 64 files (1,390 cells) rebuild byte-identical; every cell re-encoded with our own LZ re-reads identical
+(0.957× size, not byte-identical to Eugen's encoder); a mesa edit on Two Islands re-reads with exactly the new heights.
+Open: in-game acceptance; `.kdt` copy; water list not rebuilt after edits; edge vertices skipped; raising above the
+file's top height needs re-quantizing (edits are clamped).
+
+#### Texture tiles (`.tmst_pc` index + `.tmst_chunk_pc` store)
+
+A tile set is a pyramid of 512×512 DXT1 tiles over the grid of cells. LowDef has half the cells per side, and its
+level k matches HighDef level k+1 in area.
+
+| off | type | meaning (`.tmst_pc`) |
+|---|---|---|
+| 0x00 | 4s | `TMST` (also the footer) |
+| 0x04 | u32 | version 3 |
+| 0x08 | 4s | `PC\0\0` |
+| 0x0C | u32 | size of this file |
+| 0x10 | u32 | key: opaque per set, also the record separator in the store (not CRC32/Adler/MD5 of the data; keep it) |
+| 0x14 / 0x18 | u32 | grid width / height in cells |
+| 0x1C | u32 | depth 3 (tiles per cell: 1, 2×2, 4×4) |
+| 0x20 | u32 | size of the store (the only cross-reference; the writer updates it) |
+| 0x24 / 0x28 | u32 | offset (0x4C) and length of the record table |
+| 0x2C | u32 | 0 ❔ |
+| 0x30–0x3C | u32 ×4 | (0x44, 0) and (0x48, 0): the empty ATEX and KEYS bodies (inferred) |
+| 0x40 | 12 B | `ATEX` `KEYS` `TEXF` |
+| 0x4C | (u32 off, u32 size) × n | one per tile, n = 1 + gw·gh·(1+4+16) |
+
+- **Placement:** record 0 is a whole-map overview (next power of two of 64 px per HighDef cell). Then the levels coarse
+  to fine: 1 tile per cell, 2×2, 4×4; cells row-major, tiles inside a cell row-major; x right, y down (the orientation
+  of `terrain.png`). The proof is statistical (tile size vs terrain.png detail, r 0.68–0.89; the best layout in 32/32
+  maps) plus the store order. No pixels were decoded, so a flip inside a tile wouldn't show.
+- **Store:** `key`, then each record followed by `key`; records padded to 4 (the padding counts in the index size).
+  The store order differs from the index order: column by column, overview last. Always go through the index.
+- **Record** = a full TGV (see §7): `1, 1, w, h, w, h, u16 1 mip, u16 4, "DXT1", u32 0x28, u32 size`, then the payload.
+  The payload is always **TGU1**: `"TGU1", u32 5, u32 w/4, u32 h/4, u32 80, u32 40, u32 block count, u32 256 (terrain;
+  .tgv uses 257), u32 unpacked size`, then zlib ending in a sync flush. The TGU1 body is being decoded (codec work in progress).
+- **Integrity:** no other pack member records the terrain files' sizes, hashes or names (every member of all 32
+  packs was searched). The pack's 16-byte header ID isn't a hash (see the table above).
+
+Proven: unchanged rebuild byte-identical for 64/64 sets and 32/32 whole packs (2.2 GB, about 41 s); replaced tiles of
+any size re-read correctly, with every other tile unchanged.
+Open (in-game): does the loader accept our rebuilt store (mirror test) and a **ZIPO** tile (raw DXT1 + zlib) instead
+of TGU1? If ZIPO works, writing terrain textures needs no TGU1 encoder.
 
 ## 7. Textures (`.tgv`, `.tgv_pc`)
 
@@ -250,6 +352,10 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 
 - Formats: A8R8(G8B8) 1,315 · DXT5 1,195 · DXT1 1,192 · L8 124 · A8L8 5.
 - Mip payloads start with `ZIPO` + u32 uncompressed size (+ zlib, as in Wargame) or with `TGU1` + u32 ❔ (second variant, to decode).
+- ✅ The offset table starts at `align4(28 + name length)`: all mip offsets, then all mip sizes; payloads and the
+  file are 4-aligned. With several mips, mip 0 is the smallest. ZIPO = `"ZIPO", u32 unpacked size, zlib` ending in a
+  sync flush with no final block (some recorded a byte short of `00 00 ff ff`; inflate doesn't mind); DXT data inside
+  is the raw row-major block array. Python zlib level 9 + sync flush reproduces some shipped streams byte-exactly.
 
 ## 8. Meshes, animations, UI ❔
 

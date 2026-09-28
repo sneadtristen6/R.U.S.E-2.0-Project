@@ -5,10 +5,11 @@ new units, maps, models, missions and one-click modded multiplayer. The content 
 
 Status: **M0 done; M1 next** (the design for M1–M3 is written up). Nothing here modifies the game install.
 
-**Current stage (2026-09-28):** C3 is done (a renamed map pack loads in-game, so new maps can ship their own pack),
-and the TOPO and text-file checks passed (adding new objects is unblocked; results in [docs/FORMATS.md](docs/FORMATS.md)).
-Next: M1 on the PC (the combined file view and index; scenario / AI-layer / capture-zone readers), and the M1.5
-frontier tests.
+**Current stage (2026-09-28):** C4 passed: a mod written as text (`examples/half-price-buildings`), built by
+`ruse build`, worked in-game. C3 passed too (new maps can ship their own pack). The M1.5 terrain work has started:
+the terrain mesh and tile files can be read and rewritten losslessly (`rusemod.tms`, `rusemod.tmst`), and the map
+pack "checksum" turned out to be a random ID. Next: in-game terrain tests on the PC (a raised mesa, swapped tiles,
+checkerboard tiles), the TGU1 texture codec, and on the cloud side the C4 fixes and M2 clones (PLAN.md §10).
 The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.md §6.
 
 | Doc | What it covers |
@@ -51,6 +52,10 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
   the pasteable join code from [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md) §12.
 - **Mod file reader** ([`src/rusemod/rndf.py`](src/rusemod/rndf.py)): reads `.rndf` mod text (MOD_FORMAT §5, WARNO
   spellings) into operations for the engine, with errors that give file, line and column.
+- **Terrain** ([`src/rusemod/tms.py`](src/rusemod/tms.py), [`src/rusemod/tmst.py`](src/rusemod/tmst.py)): read and
+  write the terrain mesh (heights, with a height-edit tool) and the texture-tile store. Proven lossless on every map
+  by [`tools/verify_tms.py`](tools/verify_tms.py) and [`tools/verify_tmst.py`](tools/verify_tmst.py) (which also build
+  the in-game test packs). Not yet tried in the game.
 - [`tools/c3_survey.py`](tools/c3_survey.py): check C3 step 1, a read-only survey of how the game mounts packs.
 - [`tools/topo_check.py`](tools/topo_check.py), [`tools/dic_check.py`](tools/dic_check.py): read-only checks of the
   TOPO and text-file leads from [docs/RESEARCH.md](docs/RESEARCH.md) §5.

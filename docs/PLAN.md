@@ -522,7 +522,7 @@ means every new unit name, rebuilds that whole pack (L5). With one, a mod ships 
   random GUID, not a hash of the contents (FORMATS §6), so edited packs can't fail on it. The M1.5 terrain test
   confirms this in-game.
 
-### C4: a text mod through the whole pipeline (ready to run on the PC)
+### C4: a text mod through the whole pipeline (passed 2026-09-28)
 
 C2 proved the game loads a pack we rebuilt with a script. C4 proves the real pipeline: a mod written as text
 ([`examples/half-price-buildings/`](../examples/half-price-buildings/)), put through load order, the rules engine and the
@@ -536,6 +536,28 @@ bridge, then written into a modded copy.
 - Launch `RUSE.exe` from the instance with Steam running, start a skirmish, open the build menu: every building costs
   half of normal (x.5 rounds up).
 - Record the result, the build's output and how long it took, in FORMATS.md or here.
+
+**Result (2026-09-28): C4 passed.** The owner launched the instance and the build menu showed every building at half
+price. Before launch, a check confirmed all 134 priced buildings halved and rounded up in the rebuilt pack (e.g.
+French barracks 25 → 13, artillery factory 35/30 → 18/15, HQ 140 → 70). Build output, 33 s:
+
+    load order: half-price-buildings
+    note  $/GFX/Everything/... is named in both ...everything.cpp.gladndfbin and ...everything_debuginfo.cpp.gladndfbin  (×10,762)
+    note  half-price-buildings (src/prices.rndf:4): $/GFX/Everything/Descriptor_Building_DalleBatimentDepot has no ProductionPrice; skipped
+    note  half-price-buildings (src/prices.rndf:4): genglad/patchable/gfx/everything_debuginfo.cpp.gladndfbin#63542 has no ProductionPrice; skipped
+    0 error(s), 0 warning(s), 10764 note(s)
+    changed: genglad\patchable\gfx\everything.cpp.gladndfbin
+    changed: genglad\patchable\gfx\everything_debuginfo.cpp.gladndfbin
+    fingerprint: S1HP-X6PM
+    modded copy ready: D:\RUSE-Instances\c4-half-price  {'linked': 37, 'copied': 23, 'written': 1}
+
+- **The whole text-mod pipeline works in-game.**
+- **To fix (cloud session):**
+  - The duplicate-name notes are noise. The game's `*_debuginfo.cpp.gladndfbin` files (everything, vfx_bank, …)
+    repeat every name of their main file. Treat `_debuginfo` files as shadows: don't report their names, and hide or
+    collapse the notes in normal output.
+  - Decide whether rules should touch `_debuginfo` at all. `patch every` also rewrote `everything_debuginfo`, and
+    the game ran fine with it. C2 left it alone, and it's unknown whether the game reads it.
 
 **This plan is a living document.** We adjust it together as we learn.
 
@@ -606,8 +628,19 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
      likely needs the ZZ_Win.dat rebuild.
    - ~~C3 step 2~~ **passed 2026-09-28:** a renamed map pack loads when the data names it (§7 "Result"). New maps
      can ship their own pack. Reusable instance builder: `src/rusemod/instance.py` (tested).
-   - **Next: C4 (§7), needs the owner at the game:** build `examples/half-price-buildings` with `ruse build
-     --instance` and check in-game that every building costs half. Proves the whole text-mod pipeline.
+   - ~~C4~~ **passed 2026-09-28:** the half-price mod built with `ruse build` worked in-game (§7 "Result").
+   - **M1.5 terrain, started 2026-09-28** (FORMATS §6 "Terrain"): readers and writers for the terrain mesh
+     (`rusemod.tms`) and the tile container (`rusemod.tmst`), proven lossless on all 64 sets. The map pack's
+     "checksum" is a random GUID, so it can't block edits. A TGU1 texture codec (`rusemod.tgu1`, `rusemod.dxt`) is in
+     progress.
+   - **Next on the PC, needs the owner at the game** (one instance per test, map Two Islands, "(6) Centre de gravite"):
+     1. **Mesa:** `py -3 tools\verify_tms.py --pack TwoIslands --out DIR` builds a pack with a flat-topped hill at the map
+        centre. Is it drawn, and do units climb it or clip through (the `.kdt` copy isn't updated)?
+     2. **Mirror:** `py -3 tools\verify_tmst.py --make-test TwoIslands OUT.dat mirror` swaps every tile with its
+        left-right twin (the game's own tile bytes). Proves the game reads our rebuilt tile store.
+     3. **Checker:** the same with `checker` makes every tile a coloured ZIPO checkerboard (colour = detail level).
+        If it shows, terrain textures can be written without a TGU1 encoder.
+     Build each into an instance with `rusemod.instance.build_instance(..., replace={r"Maps\PC\DataMapTwoIslands_v09.dat": pack})`.
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the
@@ -615,6 +648,8 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    (all of MOD_FORMAT §10), the `.rndf` reader, fingerprints and join codes (see README "Code so far"), and the
    bridge between game files and the engine for value changes, with `ruse build` (C4 is ready).
    Next: the bridge adds and removes objects (TOPO rule from the PC check), so a cloned unit can be built (M2).
+   Also from C4: hide the ×10,762 duplicate-name notes caused by `*_debuginfo` files, and decide whether rules touch
+   those files (§7 C4 "To fix").
 4. **You:** the open decisions in §9 (name, UI stack, outreach timing, the unit to clone in M2).
 
 **How the two sessions share the work**
