@@ -56,6 +56,21 @@ class NdfFile:
             else:
                 self.names[i] = f"{self.path}#{i}"
         self.index_of = {name: i for i, name in self.names.items()}
+        # which PROP entry objects of each class use for each property name (the same name exists once per class)
+        self.prop_for: dict[tuple[int, str], int] = {}
+        for o in self.ndf.objects:
+            for pi, _v in o.props:
+                self.prop_for.setdefault((o.cls, self.ndf.prop_name(pi)), pi)
+
+    def prop_index(self, cls: int, name: str, where: str) -> int:
+        """The PROP entry to use for property `name` on an object of class `cls`."""
+        if (cls, name) in self.prop_for:
+            return self.prop_for[(cls, name)]
+        same_class = [pi for pi, (n, c) in enumerate(self.ndf.props) if n == name and c == cls]
+        if len(same_class) == 1:
+            return same_class[0]
+        raise ModelError(f"{where}: can't tell which {name} property objects of class "
+                         f"{self.ndf.classes[cls]} use in this file (no object of that class sets it)")
 
     # --- NDF -> model ---
     def obj(self, i: int, seen=()) -> Obj:
@@ -207,14 +222,15 @@ def save(base: Game, result: Game, loaded: dict[str, NdfFile]) -> dict[str, byte
                                  f"replaced); removing objects is the next step")
             if a.props == b.props:
                 continue
-            original = {nf.ndf.prop_name(pi): v for pi, v in nobj.props}
+            original = {nf.ndf.prop_name(pi): (pi, v) for pi, v in nobj.props}
             props = []
             for name, value in b.props.items():
-                pi = nf.ndf._prop_index.get(name)
-                if pi is None:
-                    raise ModelError(f"{path} #{i}: property {name} isn't in this file's property table yet")
-                keep = name in a.props and a.props[name] == value
-                props.append((pi, original[name] if keep else nf.encode(value, f"{path} #{i}.{name}")))
+                where = f"{path} #{i}.{name}"
+                if name in original:  # existing property: keep its own PROP entry
+                    pi, old = original[name]
+                    props.append((pi, old if a.props.get(name) == value else nf.encode(value, where)))
+                else:  # newly set property: the entry objects of this class use
+                    props.append((nf.prop_index(nobj.cls, name, where), nf.encode(value, where)))
             nobj.props = props
             changed = True
         if changed:

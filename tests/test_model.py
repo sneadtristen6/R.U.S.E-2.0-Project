@@ -131,6 +131,18 @@ class WritingBack(unittest.TestCase):
         with self.assertRaisesRegex(ModelError, "next step"):
             save(base, result.game, loaded)
 
+    def test_same_property_name_in_two_classes_keeps_each_objects_own_entry(self):
+        # PROP has "Cost" twice: entry 0 for class TA, entry 1 for class TB. Changing B's other value must not move
+        # its Cost to TA's entry, and setting Cost on an A that lacked it must use TA's entry.
+        files = {UNITS: make_ndf(
+            objects=[(0, [(0, i32(1))]), (1, [(1, i32(2)), (2, i32(3))]), (0, [])],
+            classes=["TA", "TB"], props=[("Cost", 0), ("Cost", 1), ("Other", 1)], exports={0: "A", 1: "B", 2: "A2"})}
+        base, loaded, result = build("patch $/B ( Other = 30 )\npatch $/A2 ( Cost = 7 )", files)
+        self.assertEqual(result.errors, [])
+        ndf = reread(save(base, result.game, loaded))
+        self.assertEqual([(pi, v.scalar()) for pi, v in ndf.objects[1].props], [(1, 2), (2, 30)])
+        self.assertEqual([(pi, v.scalar()) for pi, v in ndf.objects[2].props], [(0, 7)])
+
     def test_refs_to_unimported_objects_are_reported(self):
         base, loaded, result = build("patch $/A ( Show = $/Somewhere/Else )")
         self.assertTrue(result.errors)  # the engine already says it's dangling
