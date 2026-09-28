@@ -171,7 +171,8 @@ For new strings we can choose unused hash values, so we don't need to know Eugen
   `64muIaV4q3` = "Afrikakorps". New keys can be minted with `name_to_key()`.
 - The 1,232 that don't decode are **one special entry per file, key `0x8000000000000000`: the list of characters that
   file uses** (e.g. `" AIENSdDLirloeT…"`), probably so the game preloads those glyphs. **A writer must add any new
-  character to it.**
+  character to it.** moddingSuite (Wargame) rebuilds it as every character, most used first, which matches the
+  example; our writer (`src/rusemod/dic.py`) keeps the list as it is and adds new characters at the end.
 - Languages: `us`, `fr`, `ger`, `ita`, `spa`, `pol`, `ru`, `cz`, `jpn`, `sc`: 112 files each, plus `dev` (48) and
   per-map script dictionaries (64).
 - Writer check: adding an entry keeps every existing text readable and unchanged in all 1,232 files.

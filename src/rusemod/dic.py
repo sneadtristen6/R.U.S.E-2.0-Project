@@ -1,8 +1,9 @@
 """Localisation tables (.dic, magic 'TRA'): reading, and the text-key codec. See docs/FORMATS.md §4.
 
 Layout: b"TRA" + u8 version, u32 count, then count x (u64 key, u32 byte offset, u32 length in UTF-16 characters)
-sorted by key, then the UTF-16LE texts. Offsets count from the start of the file, and several entries can share one
-text. (Offsets and sharing as reported by RUSE-Mod-Manager's notes; `tools/dic_check.py` verifies them on the game.)
+sorted by key, then the UTF-16LE texts, with no terminating null. Offsets count from the start of the file, and
+several entries can share one text. Each shipped file also has one entry with key 0x8000000000000000 (`GLYPH_KEY`)
+listing every character the file uses. (All checked on the 1,232 shipped files with `tools/dic_check.py`.)
 
 Keys are not hashes: like Wargame's (moddingSuite `Utils.CreateLocalisationHash`, MIT), a key packs a name of up to
 8 characters, 6 bits each (0-9, A-Z, _, a-z). R.U.S.E.'s multiplayer map-name keys decode to M_D_01 .. M_D_30.
@@ -13,6 +14,7 @@ import struct
 from dataclasses import dataclass
 
 _CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"  # codes 1..63; 0 is never used
+GLYPH_KEY = 1 << 63  # the entry listing the characters a file uses (Wargame's "glyph" entry, per moddingSuite)
 
 
 def key_to_name(key: int) -> str | None:
@@ -53,7 +55,9 @@ class Dic:
     """One .dic file: read it, change or add texts, write it back.
 
     Writing keeps every original text byte where it was (only shifted past the grown table) and appends new or
-    changed texts at the end, each followed by a UTF-16 null. An unchanged file writes back byte-identical.
+    changed texts at the end, like the game's own (no terminating null). Characters that aren't in the file's
+    character list yet are added to the end of it; the rest of the list is kept as it is. (moddingSuite rebuilds the
+    whole list, most used first; appending changes less.) An unchanged file writes back byte-identical.
     """
 
     def __init__(self, raw: bytes):
@@ -80,6 +84,11 @@ class Dic:
         e = self._by_key.get(key)
         return e.text if e else None
 
+    @property
+    def glyphs(self) -> str | None:
+        """The file's character list, or None if it has none."""
+        return self.text(GLYPH_KEY)
+
     def set_text(self, key: int, text: str) -> None:
         """Change an existing entry's text."""
         if key not in self._by_key and key not in self._new:
@@ -95,17 +104,26 @@ class Dic:
     def to_bytes(self) -> bytes:
         if not self._new:
             return self.raw
-        keys = sorted(set(self._by_key) | set(self._new))
+        new = dict(self._new)
+        glyphs = self.glyphs
+        if glyphs is not None:
+            missing = []
+            for key, text in new.items():
+                if key != GLYPH_KEY:
+                    missing += [c for c in text if c not in glyphs and c not in missing]
+            if missing:
+                new[GLYPH_KEY] = glyphs + "".join(missing)
+        keys = sorted(set(self._by_key) | set(new))
         table_end = 8 + 16 * len(keys)
         shift = table_end - self._table_end
         blob = bytearray(self.raw[self._table_end:])  # the original texts, untouched
         table = bytearray()
         for key in keys:
-            if key in self._new:
-                text = self._new[key]
+            if key in new:
+                data = new[key].encode("utf-16-le")
                 off = table_end + len(blob)
-                blob += text.encode("utf-16-le") + b"\0\0"
-                table += struct.pack("<QII", key, off, len(text.encode("utf-16-le")) // 2)
+                blob += data
+                table += struct.pack("<QII", key, off, len(data) // 2)
             else:
                 e = self._by_key[key]
                 if e.offset < self._table_end:

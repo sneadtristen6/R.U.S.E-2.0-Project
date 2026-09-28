@@ -2,7 +2,7 @@
 import struct
 import unittest
 
-from rusemod.dic import Dic, key_to_name, name_to_key
+from rusemod.dic import GLYPH_KEY, Dic, key_to_name, name_to_key
 
 # A real R.U.S.E. key, from RUSE-Mod-Manager's notes: the first multiplayer map's name.
 MP01_KEY = struct.unpack("<Q", bytes.fromhex("42503ae505000000"))[0]
@@ -76,7 +76,7 @@ class Writing(unittest.TestCase):
                          {"M_D_01": "Blitz", "M_D_02": "Second", "R2MARINE": "US Marines"})
         keys = [e.key for e in again.entries]
         self.assertEqual(keys, sorted(keys))
-        self.assertEqual(again.raw[-2:], b"\0\0")  # new texts end with a UTF-16 null
+        self.assertTrue(again.raw.endswith("US Marines".encode("utf-16-le")))  # no terminating null, like the game
 
     def test_changing_a_text(self):
         dic = Dic(self.raw)
@@ -92,6 +92,21 @@ class Writing(unittest.TestCase):
         again = Dic(dic.to_bytes())
         self.assertEqual(again.entries[0].offset, again.entries[1].offset)
         self.assertEqual([e.text for e in again.entries], ["same", "same", "new"])
+
+    def test_new_characters_join_the_character_list(self):
+        dic = Dic(make_dic([(MP01_KEY, "Blitz"), (GLYPH_KEY, "Btilz")]))
+        dic.add(name_to_key("R2MARINE"), "Blitzkrieg!")
+        again = Dic(dic.to_bytes())
+        self.assertEqual(again.glyphs, "Btilzkreg!")  # the old list kept as it was, new characters at the end
+        self.assertEqual(again.entries[-1].key, GLYPH_KEY)  # it sorts last
+
+    def test_known_characters_leave_the_list_alone(self):
+        raw = make_dic([(MP01_KEY, "Blitz"), (GLYPH_KEY, "Btilz")])
+        dic = Dic(raw)
+        dic.add(name_to_key("R2MARINE"), "zilB")
+        again = Dic(dic.to_bytes())
+        self.assertEqual(again.glyphs, "Btilz")
+        self.assertEqual(again.raw[again.entries[-1].offset:][:10], "Btilz".encode("utf-16-le"))  # old bytes reused
 
     def test_key_rules(self):
         dic = Dic(self.raw)

@@ -573,7 +573,8 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
      (order looks irrelevant). Final proof = the M2 cloned-unit test in-game.
    - **Text (`.dic`):** layout and writer confirmed on all 1,232 files; keys are readable names; 10 languages. **For the
      text writer (cloud session):** each file has one special entry, key `0x8000000000000000`, listing every character
-     the file uses. Adding text with a new character must add it there.
+     the file uses. Adding text with a new character must add it there. **Done (cloud session):** the writer now adds
+     new characters to the end of that list and stores texts without a null, like the game.
    - **C3 step 1:** the only mounting class is `TClusterMountMapDataPack`, run when a map loads. No startup mount of an
      arbitrary pack was found (one lead: `TestOption/LocalDataPath`). So maps can ship their own pack; game-wide text
      likely needs the ZZ_Win.dat rebuild.

@@ -20,7 +20,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 from rusemod import Edat  # noqa: E402
-from rusemod.dic import Dic, name_to_key  # noqa: E402
+from rusemod.dic import GLYPH_KEY, Dic, name_to_key  # noqa: E402
 
 PROBE_KEY = name_to_key("ZZPROBE9")  # a key no shipped file should use
 
@@ -65,6 +65,9 @@ def main():
                 t["files with keys sorted"] += keys == sorted(keys)
                 t["files with every text after the table"] += all(e.offset >= table_end for e in dic.entries)
                 t["entries sharing a text"] += sum(c for c in offsets.values() if c > 1)
+                if dic.glyphs is not None:
+                    used = {c for e in dic.entries if e.key != GLYPH_KEY for c in e.text}
+                    t["files whose character list covers every character they use"] += used <= set(dic.glyphs)
                 if PROBE_KEY not in {e.key for e in dic.entries}:
                     probe = Dic(raw)
                     probe.add(PROBE_KEY, "probe")
@@ -94,6 +97,8 @@ def main():
     if undecoded:
         print("keys that don't decode (examples):\n  " + "\n  ".join(undecoded))
     print(f"files per language folder: {dict(langs)}")
+    print(f"files whose character list covers every character they use: "
+          f"{t['files whose character list covers every character they use']} of {t['files']}")
     print(f"writer check, files where adding an entry keeps every old text: "
           f"{t['files where adding an entry keeps every old text']} of {t['files']}")
     return 0 if not failures else 1
