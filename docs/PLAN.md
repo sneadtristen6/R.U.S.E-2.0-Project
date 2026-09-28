@@ -180,7 +180,7 @@ The game sees one tree of files assembled from many packs. We rebuild that tree 
 | `owner` | pair of (unnamed object, named owner) | which named objects reach it; more than one row means shared |
 | `ref` | reference | from object + property path → an object, an import path, a file path or a text hash |
 | `import` | IMPR entry | file, path, and the object it resolves to in another file (if found) |
-| `prop_seen` | class + property + type | how often it appears, min and max for numbers, an example (feeds the schema DB) |
+| `prop_seen` | class + property + type | how often it appears, min and max for numbers, an example (feeds the schema DB); a list's items as `Prop[]` |
 | `text` | `.dic` entry | file, language, hash, the text itself |
 | `script` | `.xyz` module | file, module name, source MD5 |
 
@@ -345,7 +345,16 @@ search by name and see where each text is used. It costs some disk space (a gues
   and building by kind, nation and name; a unit's values in groups (cost, combat, movement…), its parts (its own or
   shared) and what uses it; all from the game index, which the Studio can also build. A language selector keeps the
   game's names by default and shows the tool, property names and units' in-game names in any of the game's ten
-  languages (decision 21). Next: copying a unit into a mod.
+  languages (decision 21).
+  **v0.2 (2026-09-28): edit in place.** The owner: a unit's page is where its stats get changed, not a copy step.
+  Pick or make a mod at the top (new mods go in `<platform folder>\mods\`); every number on a unit's page is a box.
+  A change is saved at once in the mod's `src/studio.rndf`, an ordinary `.rndf` file (MOD_FORMAT §2), and shows
+  "was …" with Undo; changed units are marked in the list. Whole-number stats stay whole (rounded like the build),
+  yes/no values are checkboxes. A unit's own parts (its gun, its turret) and the named objects it uses (weapons, ammo)
+  open on their own page and edit the same way; for a named object several units use, the page says the change
+  reaches all of them. Not yet: parts shared with other units without a name (they'd need the "just this unit / all
+  of them" choice, MOD_FORMAT §10.5), ids and nation (locked), texts and names. "Play with this mod" builds the mod
+  into its own modded copy (`RUSE-Instances\studio-<mod>`) and starts the game, like the launcher.
   - content browser, reference viewer, schema-driven property editor
   - unit editor with a clone wizard
   - scenario/map workshop
@@ -462,7 +471,7 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 | **M1.5 Frontier tests** (new) | short, capped tests of the riskiest unknowns: re-encode one terrain texture tile (`TGU1`) and one terrain mesh (`.tms`); read one 3D model (SPK) section table | clear yes/no: can we write new terrain? can we read models? Decides how big Pacific maps can be | ~3 | high (that's the point) |
 | **M2 Mod system slice** | package v1; `.rndf` reader ✅, rules engine ✅, load order ✅, fingerprint + join codes ✅ (cloud session); the adapter between game files and the engine; `.rmod` import; extra-pack mount test (C3); instances already proven by C2 | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test (until there's a second player, the solo tests S1–S2 in L6 stand in; the 2-PC test comes before the first public release). This proves the tool, not a balance mod | 2–4 (was 4–6) | medium |
 | **M3 Launcher v1** | Steam auto-detect ✅ (`ruse detect`), the window ✅ (v0.1: game status, mod sets, Play; `rusemod.launcher`), one-click install into instances, modpacks, join codes; also installs the `.rmod` mods players already have, combinable and without patching the live install | first public alpha on GitHub, ModDB, Nexus | 3–5 | low |
-| **M4 Studio v1** | content browser ✅ and unit view ✅ (v0.1, with the language selector), property/unit editor; clone **any** class with its **own** visuals, wired into menus, upgrades and AI; validation, diff/rebase | a non-programmer builds a new unit | 5–8 | low–medium |
+| **M4 Studio v1** | content browser ✅ and unit view ✅ (v0.1, with the language selector), property editor ✅ (v0.2: numbers, in place, saved as a mod, Play), unit editor; clone **any** class with its **own** visuals, wired into menus, upgrades and AI; validation, diff/rebase | a non-programmer builds a new unit | 5–8 | low–medium |
 | **M5 Textures & icons** | TGV r/w including a game-valid `TGU1` encoder (nobody has one), UI icon/flag pipeline | retextured unit with its own icon in-game | 3–5 | medium |
 | **M6 Maps I** | map cloning, scenario editor, capture-zone compiler, AI layers, island maps on existing terrain | a new map listed and playable in multiplayer | 4–6 (was 5–8: formats now understood) | medium |
 | **M7 Models** | SPK → glTF, Blender bridge, glTF → SPK (static, then skinned/animated). A first for R.U.S.E. | a new vehicle model in-game | 6–12 | high |
@@ -761,9 +770,11 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
           what uses it and what it uses), `... index clone $/GFX/Everything/Descriptor_Unit_M4_Sherman` (what a copy
           copies and shares), `... index filter TUniteAuSolDescriptor ProductionPrice[0] gt 100`, `... index texts
           Sherman`. Note anything wrong or slow.
-     9. **Studio v0.1** (after item 8; needs pywebview like the launcher): `py -3 -m rusemod.studio`. Browse units,
-        open the M4 Sherman, switch the language (top right) through a few languages. Record anything wrong,
-        slow or badly translated (translations are in `src/rusemod/labels.toml`).
+     9. **Studio v0.2** (after item 8; needs pywebview like the launcher; build the index again first, it now
+        records list types): `py -3 -m rusemod.studio`. Browse units, open the M4 Sherman, switch the language (top
+        right) through a few languages. Then make a mod ("Mod" menu → "New mod…", call it `studio-test`), set the
+        M4 Sherman's price to 1 in every box, press "Play with this mod" and check the price in a skirmish. Record
+        anything wrong, slow or badly translated (translations are in `src/rusemod/labels.toml`).
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the
@@ -786,8 +797,11 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    **The game index done (2026-09-28)**: `rusemod.index`, `ruse index` (L2 "Built"). The PC runs it (item 1.8).
    The owner (2026-09-28): the launcher stays at v0.1 for now; the core tools come first.
    **Studio v0.1 done (2026-09-28)**: browse units, a unit's values, parts and users, the language selector with
-   the game's names by default (decision 21). The PC tries it (item 1.9). Next (cloud): copying a unit into a mod
-   from the Studio (writes the `.rndf` clone and names), then changing a unit's numbers.
+   the game's names by default (decision 21). **v0.2 done (2026-09-28)**: the owner asked to edit units right on
+   their page instead of copying them first: numbers are edited in place, saved in the mod's `src/studio.rndf`,
+   and "Play with this mod" starts it (L5). The PC tries it (item 1.9). Next (cloud), once the owner picks: parts
+   shared by several units ("just this unit" or "all of them"), names, moving a unit to another menu or nation,
+   then new units (copies).
    Later (cloud), launcher steps, one at a time: installing mods into the launcher's library (from a folder or zip,
    then RUSE-Mod-Manager's `.rmod`), mod sets made on screen, the join-a-friend screen (join codes), then the
    installer (Nuitka + Inno Setup) and browsing the mod index. And whatever C5/C6 turn up.

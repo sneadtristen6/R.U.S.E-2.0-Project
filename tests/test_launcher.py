@@ -101,6 +101,15 @@ class Launcher(unittest.TestCase):
         later = api.job(j["id"], since=j["count"])
         self.assertEqual(later["lines"], [])  # `since` skips the lines already shown
 
+    def test_play_folders_builds_its_own_copy(self):  # the Studio's Play: one mod folder, no mod set
+        mod = write_mod(self.tmp.name, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
+        api = self.api()
+        j = wait_for(api, api.play_folders("econ-half", [str(mod)], "studio-econ-half")["job"])
+        self.assertEqual(j["state"], "done", j)
+        copy = self.instances / "studio-econ-half"
+        self.assertEqual(price((copy / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes()), [53] * 5)
+        self.assertEqual(self.started, [copy / "RUSE.exe"])
+
     def test_steam_is_started_first_when_it_isnt_running(self):
         mod = write_mod(self.tmp.name, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
         self.mod_set("half", [mod])

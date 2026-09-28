@@ -20,6 +20,7 @@ ruse2-core/
   src/                     text patches (.rndf), any folder structure
     units/marines.rndf
     balance/tanks.rndf
+    studio.rndf            the Studio's changes (it rewrites this file; hand-written ones go in the others)
   text/                    localisation tables (.csv)
     units.csv
   files/

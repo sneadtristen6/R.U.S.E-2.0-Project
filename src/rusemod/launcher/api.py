@@ -169,6 +169,14 @@ class LauncherApi:
             threading.Thread(target=self._play, args=(job, chosen), daemon=True).start()
         return {"job": job.id}
 
+    def play_folders(self, name: str, folders: list[str], copy_id: str) -> dict:
+        """Build these mod folders into the modded copy `copy_id` and start the game from it (the Studio's Play)."""
+        job = Job()
+        self._jobs[job.id] = job
+        chosen = {"id": copy_id, "name": name, "mods": [str(f) for f in folders]}
+        threading.Thread(target=self._play, args=(job, chosen), daemon=True).start()
+        return {"job": job.id}
+
     def job(self, job_id: str, since: int = 0) -> dict:
         job = self._jobs.get(job_id)
         return job.view(since) if job else {"id": job_id, "state": "failed", "message": "unknown job", "lines": [],
@@ -199,7 +207,7 @@ class LauncherApi:
                 job.say(f"Building the modded copy of R.U.S.E. for {chosen['name']} in {instance}…")
                 result = build_and_write(game, mods, instance=instance, say=job.say)
                 if result.errors:
-                    raise BuildError("The mods in this set have errors (listed above). Nothing was changed.")
+                    raise BuildError("These mods have errors (listed above). Nothing was changed.")
                 exe = next((p for p in instance.iterdir() if p.name.lower() == "ruse.exe"), None) \
                     if instance.is_dir() else None
                 if exe is None:

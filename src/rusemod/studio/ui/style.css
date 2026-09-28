@@ -8,6 +8,8 @@
   --accent: #c8a64b;
   --accent-dark: #8f7530;
   --shared: #6fa3c7;
+  --ok: #93c47d;
+  --error: #e8836f;
   --radius: 8px;
   color-scheme: dark;
 }
@@ -28,8 +30,16 @@ button:disabled { cursor: default; opacity: 0.5; }
        border-bottom: 1px solid var(--line); }
 .brand { font-weight: 700; letter-spacing: 0.06em; font-size: 17px; }
 .brand span { color: var(--accent); }
-.lang { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--muted); }
-.lang select { background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--radius); padding: 5px 8px; }
+.lang, .pick-mod { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.lang { margin-left: auto; }
+.lang select, .pick-mod select { background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--radius);
+                                 padding: 5px 8px; }
+.pick-mod select { max-width: 300px; color: var(--text); }
+.top .primary { padding: 6px 14px; }
+.new-mod { display: flex; gap: 8px; padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.new-mod input { width: 320px; padding: 6px 10px; background: var(--panel-hi); border: 1px solid var(--line);
+                 border-radius: var(--radius); }
+.new-mod button { padding: 6px 14px; font-size: 14px; }
 
 .layout { flex: 1; display: grid; grid-template-columns: 330px 1fr; min-height: 0; }
 .browser { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-right: 1px solid var(--line);
@@ -52,6 +62,10 @@ button:disabled { cursor: default; opacity: 0.5; }
 .address { display: flex; align-items: center; gap: 10px; margin: 6px 0 4px; }
 .address code { color: var(--muted); font: 12px Consolas, "Cascadia Mono", monospace; overflow-wrap: anywhere; }
 .address button, .ghost { padding: 3px 10px; font-size: 12px; background: transparent; border: 1px solid var(--line); }
+.link { padding: 0 6px; background: none; border: 0; color: var(--accent); text-decoration: underline; font-size: 12px; }
+.notice { max-width: 780px; margin: 10px 0 0; padding: 8px 12px; background: var(--panel); border-left: 3px solid var(--line);
+          border-radius: 0 var(--radius) var(--radius) 0; color: var(--muted); }
+.notice.warn { border-left-color: var(--accent); color: var(--text); }
 .meta { color: var(--muted); margin-bottom: 14px; }
 .primary { padding: 9px 18px; border: 0; background: linear-gradient(180deg, var(--accent), var(--accent-dark));
            color: #15181b; font-weight: 700; }
@@ -64,11 +78,31 @@ button:disabled { cursor: default; opacity: 0.5; }
 .group th { width: 45%; font-weight: 500; }
 .group th small { display: block; color: var(--muted); font: 11px Consolas, monospace; }
 .group td { font-variant-numeric: tabular-nums; }
+.group tr.edited th { box-shadow: inset 3px 0 0 var(--accent); }
+.boxes { display: flex; flex-wrap: wrap; gap: 4px; }
+.boxes input[type="number"] { width: 5.5em; padding: 2px 6px; background: var(--panel-hi); border: 1px solid var(--line);
+                              border-radius: 6px; font-variant-numeric: tabular-nums; }
+.boxes input:disabled { opacity: 0.6; }
+.boxes input[type="checkbox"] { width: 16px; height: 16px; margin: 3px 0; accent-color: var(--accent); }
+tr.edited .boxes input[type="number"] { border-color: var(--accent); }
+.boxes input[aria-invalid="true"] { border-color: var(--error); outline-color: var(--error); }
+.was { margin-top: 3px; font-size: 12px; color: var(--muted); }
+.was:empty { display: none; }
 
 .parts { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 4px; max-width: 780px; }
 .parts button { width: 100%; text-align: left; padding: 6px 10px; background: var(--panel); border: 1px solid var(--line); }
 .badge { float: right; font-size: 11px; color: var(--muted); }
 .badge.shared { color: var(--shared); }
+.badge.edited { color: var(--accent); }
+.unit-list button.edited .name { color: var(--accent); }
+
+.play-panel { position: relative; border-top: 1px solid var(--line); background: #0f1113; }
+.play-panel pre { margin: 0; max-height: 180px; overflow: auto; padding: 10px 20px; font-size: 12px; }
+.play-panel button { position: absolute; top: 8px; right: 16px; background: var(--panel); }
+.status { min-height: 28px; padding: 5px 20px; border-top: 1px solid var(--line); background: var(--panel); color: var(--muted);
+          font-size: 12px; overflow-wrap: anywhere; }
+.status.ok { color: var(--ok); }
+.status.error { color: var(--error); }
 
 .no-index { position: fixed; inset: 60px 0 0 0; display: flex; flex-direction: column; align-items: center;
             justify-content: center; gap: 14px; background: var(--bg); }

@@ -9,10 +9,20 @@
 <body>
   <header class="top">
     <div class="brand">RUSE <span>Studio</span></div>
+    <label class="pick-mod"><span id="mod-label">Mod</span>
+      <select id="mod"></select>
+    </label>
+    <button id="play" type="button" class="primary" disabled></button>
     <label class="lang"><span id="lang-label">Language</span>
       <select id="lang"></select>
     </label>
   </header>
+
+  <form id="new-mod" class="new-mod hidden">
+    <input id="new-mod-name" autocomplete="off" maxlength="60" required>
+    <button id="new-mod-create" type="submit" class="primary"></button>
+    <button id="new-mod-cancel" type="button" class="ghost"></button>
+  </form>
 
   <main class="layout">
     <aside class="browser">
@@ -27,6 +37,12 @@
       <p id="pick" class="muted"></p>
     </section>
   </main>
+
+  <section id="play-panel" class="play-panel hidden">
+    <pre id="play-log"></pre>
+    <button id="play-log-close" type="button" class="ghost"></button>
+  </section>
+  <footer id="status" class="status" role="status"></footer>
 
   <section id="no-index" class="no-index hidden">
     <p id="no-index-text"></p>

@@ -13,7 +13,8 @@ Built read-only from the install (`build_index`), queried through `Index`. Table
   owner      (unnamed object, named object that reaches it); more than one owner = shared
   ref        from object + property path to: an object, an import path, a file path, or a text key
   import     every IMPR entry and the object it resolves to in another file (when found)
-  prop_seen  class + property + type: how often, min and max for numbers, an example (feeds the schema DB)
+  prop_seen  class + property + type: how often, min and max for numbers, an example (feeds the schema DB); a list's
+             items are listed as `Prop[]`
   value      the numbers and texts of every object's properties (top level; list items up to 16), for filters
   text       every .dic entry: file, language, dictionary, key, key name, text
 
@@ -41,7 +42,7 @@ from .edat import Edat
 from .ndf import SCALAR, Ndf, decode, sub_values
 from .steam import build_of, data_revisions
 
-FORMAT = "1"
+FORMAT = "2"
 TYPES = {0x00: "bool", 0x01: "int8", 0x02: "int32", 0x03: "uint32", 0x05: "float32", 0x06: "float64", 0x07: "string",
          0x08: "wide string", 0x09: "reference", 0x0B: "vec3f", 0x0C: "float4", 0x0D: "color32", 0x11: "list",
          0x12: "map", 0x13: "int64", 0x14: "blob", 0x18: "int16", 0x19: "uint16", 0x1A: "guid", 0x1C: "path",
@@ -214,6 +215,9 @@ class _Builder:
             cls, oid = ndf.classes[o.cls], first + i
             for pi, v in o.props:
                 self._seen(cls, ndf.prop_name(pi), v, ndf)
+                if v.tc == 0x11:  # a list's items too, as `Prop[]` (the Studio needs to know whole numbers)
+                    for x in sub_values(v):
+                        self._seen(cls, ndf.prop_name(pi) + "[]", x, ndf)
             for path, x in values[i]:
                 tc = x.tc
                 if tc == 0x09:
@@ -489,6 +493,10 @@ class Index:
             ORDER BY o.address""", list(classes)).fetchall()
         return [{"address": a, "class": c, "nation": int(n or 0), "factory": None if f is None else int(f),
                  "slot": None if s is None else int(s), "key": k} for a, c, n, f, s, k in rows]
+
+    def prop_types(self, cls: str) -> dict:
+        """Property -> the value type objects of `cls` use for it ("int32", "float32", "list"…), the most common one."""
+        return dict(self.db.execute("SELECT prop, type FROM prop_seen WHERE class = ? ORDER BY count, type", (cls,)))
 
     def names(self, keys, lang: str) -> dict:
         """Key name -> its text in one language, preferring the unit-name dictionary (baseunite)."""

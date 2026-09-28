@@ -55,10 +55,13 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
   game (Vanilla starts through Steam). Once: `py -3 -m pip install pywebview`, then `py -3 -m rusemod.launcher`
   (`--spike` opens the 3D check). The screens also open in a normal browser with made-up data:
   `src/rusemod/launcher/ui/index.html?fake`.
-- **The Studio** ([`src/rusemod/studio/`](src/rusemod/studio/), v0.1): the modders' tool, in the same kind of
+- **The Studio** ([`src/rusemod/studio/`](src/rusemod/studio/), v0.2): the modders' tool, in the same kind of
   window. Browse every unit and building, see a unit's values, parts and what uses it, and pick a language: the
   game's own names by default, or any of the game's ten languages ([`src/rusemod/labels.toml`](src/rusemod/labels.toml)).
-  `py -3 -m rusemod.studio` (after `ruse index build`).
+  Pick or make a mod and change a unit's numbers right on its page: each change is saved in the mod's
+  `src/studio.rndf` (with Undo), and "Play with this mod" builds it and starts the game.
+  `py -3 -m rusemod.studio` (after `ruse index build`). Made-up data in a normal browser:
+  `src/rusemod/studio/ui/index.html?fake`.
 - [`ruse_edat.py`](ruse_edat.py): read-only EDAT archive reader.
   ```
   py -3 ruse_edat.py list    <archive.dat>
