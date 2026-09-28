@@ -34,7 +34,7 @@ Little-endian. Reader: [`ruse_edat.py`](../ruse_edat.py).
 |---|---|---|
 | 0x00 | char[4] | `edat` |
 | 0x04 | u32 | version = 1 |
-| 0x08 | u8[16] | checksum: all zero in Data\PC packs; set in Maps\PC packs (algorithm ❔, see §6) |
+| 0x08 | u8[16] | "checksum": all zero in Data\PC packs; in Maps\PC packs a random GUID, not a hash (see §6) |
 | 0x18 | u8 | 0 |
 | 0x19 | u32 | dictionary offset (always 0x40D) |
 | 0x1D | u32 | dictionary length |
@@ -225,7 +225,7 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 
 | File | What we know |
 |---|---|
-| Map pack header checksum | ❔ 16 bytes at 0x08; not MD5 or SHA-1 of the data, dictionary, tail or whole file. Need to test whether it is enforced |
+| Map pack header "checksum" | ✅ **not a checksum: a random ID.** The 16 bytes at 0x08 are a Windows GUID (`uuid.UUID(bytes_le=…)`), version 4 with the RFC variant, in all 32 map packs (chance by accident ≈ 64⁻³¹). The game can't check it against the contents. Gamma and Gam_Ostfriesland share one (same pack). Every other archive has zeros there. Edits keep it; a new map gets a fresh `uuid4()`. Its use (map identity in multiplayer or replays?) ❔ |
 | `save.boobspc` | ✅ bytes 0–15 = MD5 of bytes 16..end; then version string `0.6`; uncompressed. RUSE.exe checks it ("Le Checksum du Boobs est invalide") |
 | `output.sdb` | ✅ `SDB\r\n` + MD5 of the whole file with the 16-byte hash (at 5–20) removed |
 | `.scenario` | `SCENARIO\r\n` + 16 bytes (not an MD5 of the rest) + records (`AREA`, zones, …) ❔ |
@@ -280,7 +280,9 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 
 1. ~~TOPO semantics~~ **Answered enough to add objects (2026-09-28):** see the TOPO row in §2. Final proof: the M2
    cloned-unit test in-game.
-2. Is the Maps\PC header checksum enforced, and how is it computed?
+2. ~~Is the Maps\PC header checksum enforced, and how is it computed?~~ **Answered (2026-09-28): it isn't a checksum**,
+   it's a random GUID per pack (see §6), so it can't be checked against the contents. The M1.5 in-game terrain test
+   confirms that an edited pack loads.
 3. Can NDF mount an extra data pack at startup (not just map packs)? Without it, every mod with new text (every new
    unit name) rebuilds the 2.3 GB ZZ_Win.dat, since all `.dic` files live there ([PLAN.md](PLAN.md) L5).
    **C3 step 1 survey (2026-09-28, `tools/c3_survey.py`, read-only):**

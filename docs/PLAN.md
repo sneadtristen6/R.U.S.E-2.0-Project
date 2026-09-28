@@ -518,8 +518,9 @@ means every new unit name, rebuilds that whole pack (L5). With one, a mod ships 
   only as `DataMapTwoIslandz_v09.dat` and `clustermap.cpp` named it. The owner played "(6) Centre de gravite" on it:
   **loaded and played normally.** So a map pack is found by the name in the data, and its file name isn't checked.
 - **Meaning:** new maps ship their own pack (no core-pack rebuild). Game-wide text still needs the ZZ_Win.dat rebuild,
-  which the streaming writer handles (M10 is parked). Open: whether an *edited* map pack's header checksum is enforced
-  (this test used unchanged content), tested in M6.
+  which the streaming writer handles (M10 is parked). The map pack's header "checksum" turned out to be a
+  random GUID, not a hash of the contents (FORMATS §6), so edited packs can't fail on it. The M1.5 terrain test
+  confirms this in-game.
 
 ### C4: a text mod through the whole pipeline (ready to run on the PC)
 
@@ -563,7 +564,7 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 |---|---|---|
 | TOPO / NDF writer fidelity | can't add objects | C1 first; byte-identical gate |
 | Instance launch fails | must touch the install | C2 first. Fallback: in-place swap with journal + backup (players), full copy (dev) |
-| Map-pack header checksum enforced and unknown | edited map packs rejected | test in M6 |
+| ~~Map-pack header checksum enforced and unknown~~ | — | retired: it's a random GUID, not a hash (FORMATS §6) |
 | 7 nations hard-coded | no new nations | Pacific needs none; "variant" mods reuse slots; research in M10 |
 | SPK model format complexity | no new models | export first; static meshes before skinned ones |
 | Terrain can't be written | no new maps / islands | reading is solved elsewhere, writing is not: M1.5 tests re-encoding early; M8 sized by the result |
