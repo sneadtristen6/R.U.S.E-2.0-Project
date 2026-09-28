@@ -265,9 +265,12 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 2. Is the Maps\PC header checksum enforced, and how is it computed?
 3. Can NDF mount an extra data pack at startup (not just map packs)?
 4. Does RUSE.exe run from a hard-linked instance with `steam_appid.txt`?
-5. `TGU1` texture payload encoding.
-6. `.scenario` and `mapinfo.win` structure (RUSE-Mod-Manager already edits them; compare notes).
-7. SPK mesh section table.
-8. Terrain streaming (`.tms`, `.tmst_chunk_pc`) and `save.boobspc` body.
+5. `TGU1` texture payload encoding. **Known externally:** custom JPEG-like codec shared by `.tgv` (flags 257) and
+   terrain `.tmst` (flags 256); decoded in RUSE-Mod-Manager's `terrain_codec.py` (GPLv3; format knowledge
+   reportedly CC0 by ProLution, unconfirmed). See [RESEARCH.md](RESEARCH.md).
+6. `.scenario` and AI-layer structure. **Known externally:** RUSE-Mod-Manager `scenario.py`, `sdb.py`; capture zones in `kdt.py`.
+7. SPK mesh section table. Partial reference: kilivan4iK/warno-blender-plugin (WARNO/RD/SD2 layouts, no license).
+8. Terrain streaming (`.tms`, `.tmst_chunk_pc`) and `save.boobspc` body. **Known externally:** RUSE-Mod-Manager
+   `terrain_codec.py`, `terrain_mesh.py`, `terrain_relief.py`, `terrain_tiles.py`.
 9. `DICS`/`DICV` dictionaries.
 10. `.ess` codec.

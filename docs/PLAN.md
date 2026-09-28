@@ -227,7 +227,12 @@ Requirements derived from that:
 | 5 | Mod identity | Engine export paths + owner paths + selectors | stable across updates, human-readable | indices (.rmod `index_map`) |
 | 6 | Source format | NDF-style text + CSV + standard asset formats | familiar to Eugen modders (WARNO/SD2 use text NDF); git-friendly | JSON / YAML |
 | 7 | Determinism | Fingerprint over canonical content, bundled runtime, fixed ordering | lockstep multiplayer | hashes of raw bytes only |
-| 8 | License | MIT | maximum reuse by community tools and Eugen | GPLv3 |
+| 8 | License | MIT (**under review**) | maximum reuse by community tools and Eugen | GPLv3, to reuse RUSE-Mod-Manager's map codecs directly ([RESEARCH.md](RESEARCH.md) §4) |
+| 9 | Packaging & install | Nuitka onefile + Inno Setup, built by GitHub Actions | faster start and fewer antivirus false positives than PyInstaller | PyInstaller, Briefcase |
+| 10 | Updates | Velopack (spike first), fallback tufup | single self-updating installer | manual downloads |
+| 11 | Modpack / lockfile | Modrinth `.mrpack` shape (`files[]` with path, hashes, download mirrors, size; `dependencies`) | proven, tiny packs, host-anywhere | our own format |
+| 12 | Mod hosting | GitHub Releases now; Thunderstore once real mods exist; CurseForge last (needs a proxy server) | cheapest path that still scales | CurseForge first |
+| 13 | Code signing | deferred to first public release; Azure Trusted Signing, then free SignPath | costs money; no instant trust anyway | sign from day one |
 
 ## 7. Roadmap
 
@@ -300,11 +305,17 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the VFS and asset registry, a
 | Legal | takedown | ship no game files; ask Eugen for an OK |
 | Malicious mods | user harm | scripts only from the index or with consent; signed releases; no native code from peers |
 | Small team (you + AI) | work stalls | docs, ADRs, tests, open source, contributor guide |
+| WebGL unstable in the embedded webview | 3D map/model viewer blocked | prototype a three.js scene in pywebview early (cheap spike) |
+| Antivirus / SmartScreen distrust of the installer | players scared off | Nuitka, signing at first public release, trust builds over releases |
+| Reinventing formats others already decoded | wasted credits | read RUSE-Mod-Manager's modules first ([RESEARCH.md](RESEARCH.md)); settle the license question before map work |
 
 ## 9. Open decisions
 
 1. Working name. Ideas: *RUSE Reforged*, *OpenRUSE*, *RUSE Forever* (a nod to FAF).
-2. License. Recommended: MIT.
+2. **License (decide before map work).** RUSE-Mod-Manager (GPLv3) already decodes terrain, the `TGU1` texture codec,
+   scenarios, AI layers and capture zones. Options: (a) ask LittleGroove / ProLution for permission to reuse under
+   MIT; (b) switch to GPLv3 and reuse their code directly; (c) stay MIT and re-implement from their format knowledge.
+   Recommended: try (a) first, fall back to (b). See [RESEARCH.md](RESEARCH.md) §4.
 3. GitHub account/org and repo, and the project folder on disk (git isn't installed yet).
 4. UI stack: confirm web UI vs Qt.
 5. Outreach timing. Recommended: LittleGroove now (align on `.rmod` import/export), Eugen after the M2 demo.

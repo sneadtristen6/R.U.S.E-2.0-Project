@@ -225,6 +225,9 @@ sha256  = "…"
 source  = "index"      # or a direct URL
 ```
 
+- **Shape follows Modrinth's `.mrpack`** (see [RESEARCH.md](RESEARCH.md)): each resolved file lists `path`,
+  `hashes` (sha1 + sha512), `downloads` (one or more HTTPS mirrors) and `fileSize`, so packs stay tiny and files can
+  live on any host. The TOML above is the human-edited form; the launcher stores the resolved JSON.
 - **Join code v1:** `RUSE1:` + base32 of the compressed canonical lockfile plus a checksum. It's self-contained, so no server is needed.
   It's typically 60–150 characters, fine for Steam chat or Discord.
 - **v2 (optional service):** short codes, and direct transfer of unpublished mods.
