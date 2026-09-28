@@ -466,11 +466,11 @@ SHA-256 over, in this order:
   the Steam build id, "\n"
   for each gameplay file (§10.8) the mod set changes, adds or deletes,
   sorted by its lowercase game path with "/" separators:
-    the path, "\n", then the SHA-256 of its canonical content (or the word "deleted")
+    the path, "\n", the SHA-256 of its canonical content as 64 hex characters (or the word "deleted"), "\n"
 ```
 
-- **Canonical content:** NDF files are hashed uncompressed (their logical bytes), so compression settings can't change
-  the fingerprint. Every other file is hashed as written.
+- **Canonical content:** NDF files are hashed uncompressed (their logical bytes, with the header's "compressed" flag
+  cleared), so compression can't change the fingerprint. Every other file is hashed as written.
 - **Only changed files count.** Everything else is pinned by the Steam build id, so a fingerprint takes seconds, not a
   pass over 3 GB of game data.
 - **Cosmetic files are left out**, so two players with different skins still match.
@@ -497,6 +497,8 @@ v1 needs no server. A join code names the game build, the mods and their exact v
 - Changed from the first draft, which put the whole compressed lockfile in the code: the file hashes made codes about twice as
   long, and the fingerprint check makes them unnecessary.
 - **v2 (optional service):** short codes, and direct transfer of unpublished mods.
+- **Built:** [`src/rusemod/lock.py`](../src/rusemod/lock.py), tested in `tests/test_lock.py`. Reading a code forgives
+  spaces, lower case, dashes, and I / L / O typed for 1 / 0.
 
 ### Decided (2026-09-28)
 

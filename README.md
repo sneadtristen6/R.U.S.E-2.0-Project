@@ -40,6 +40,8 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
   load order and every rule in [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md) §10 (stacking, rounding, the conflict table,
   clones, shared parts, `patch every`, the final pass, `when mod`), tested on made-up data. Hooking it to the real
   game files comes in M2.
+- **Fingerprints and join codes** ([`src/rusemod/lock.py`](src/rusemod/lock.py)): the multiplayer "seal number" and
+  the pasteable join code from [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md) §12.
 - **Mod file reader** ([`src/rusemod/rndf.py`](src/rusemod/rndf.py)): reads `.rndf` mod text (MOD_FORMAT §5, WARNO
   spellings) into operations for the engine, with errors that give file, line and column.
 - [`tools/c3_survey.py`](tools/c3_survey.py): check C3 step 1, a read-only survey of how the game mounts packs.
