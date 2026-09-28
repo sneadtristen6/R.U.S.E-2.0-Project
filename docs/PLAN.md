@@ -564,3 +564,11 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** tests on small made-up files that run on every push, and the CLI skeleton.
 4. **You:** the open decisions in §9 (name, UI stack, outreach timing, the unit to clone in M2).
+
+**How the two sessions share the work**
+- **Cloud session:** research and design, nothing that needs the game files. It writes its results into these docs.
+- **PC session:** everything that needs the game: running checks and tests, building against the install, editing
+  files on the PC.
+- **GitHub `main` is the shared state.** The sessions can't see each other's chats, so anything the other one needs
+  goes into the repo. Pull `main` before starting, push to it when done, and keep README's "Current stage" line and
+  this section up to date.

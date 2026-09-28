@@ -5,6 +5,9 @@ new units, maps, models, missions and one-click modded multiplayer. The content 
 
 Status: **M0 done; M1 next** (the design for M1–M3 is written up). Nothing here modifies the game install.
 
+**Current stage (2026-09-28):** next action is check **C3** in [docs/PLAN.md](docs/PLAN.md) §7, run on the PC.
+The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.md §6.
+
 | Doc | What it covers |
 |---|---|
 | [docs/PLAN.md](docs/PLAN.md) | vision, principles, architecture, roadmap, risks, open decisions |
