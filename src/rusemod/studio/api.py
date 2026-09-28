@@ -92,7 +92,8 @@ class StudioApi:
         self._jobs: dict[str, Job] = {}
         self._units: list | None = None  # every unit and building, read once per index
         self._window = None  # set by the window (a folder dialog for "Open a mod folder")
-        self._saving = threading.Lock()  # the window calls from several threads; one change to the file at a time
+        self._saving = threading.RLock()  # the window calls from several threads: one change to the file at a time,
+        # and no reading it mid-change (Windows can't replace a file that's open)
 
     # --- where things are ---
     def _game(self) -> Path | None:
@@ -246,7 +247,10 @@ class StudioApi:
 
     def _edits(self) -> ModEdits | None:
         folder = self._mod_dir()
-        return ModEdits(folder) if folder else None
+        if folder is None:
+            return None
+        with self._saving:
+            return ModEdits(folder)
 
     def mods(self) -> dict:
         """The mods the Studio knows: the ones made here, and folders opened before. Plus the one being edited."""

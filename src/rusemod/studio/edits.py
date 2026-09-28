@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import re
+import time
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -122,7 +123,14 @@ class ModEdits:
         self.file.parent.mkdir(parents=True, exist_ok=True)
         part = self.file.with_name(self.file.name + ".partial")
         part.write_text("".join(out), encoding="utf-8")
-        os.replace(part, self.file)  # never half a file, even if the Studio stops mid-write
+        for attempt in range(20):  # never half a file, even if the Studio stops mid-write
+            try:
+                os.replace(part, self.file)
+                return
+            except PermissionError:  # Windows: something (an antivirus, an editor) has the file open for a moment
+                if attempt == 19:
+                    raise
+                time.sleep(0.05)
 
 
 def _natural(s: str):
