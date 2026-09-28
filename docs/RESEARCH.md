@@ -92,3 +92,31 @@ Stack sources:
 4. **Lockfile/modpack = `.mrpack` shape.** Don't invent our own.
 5. **Spike early, cheaply:** a three.js scene in pywebview, and a Nuitka + Velopack hello-world build.
 6. **Signing and CurseForge cost money or setup.** Defer both until there's a public release and real mods.
+
+## 5. Prior art for the next steps (2026-09-28, second pass)
+
+Who already solved pieces of what we build next, what we take from them, and whether their code can be reused.
+**Reuse rule:** MIT code can be reused with credit; GPL and CC BY-SA code is read for ideas only, never copied.
+
+| Our next step | Who did it | License | What we take |
+|---|---|---|---|
+| Finding the game | RUSE-Mod-Manager `steam.py`; [python-vdf](https://github.com/ValvePython/vdf) | GPLv3 (ideas); MIT | registry `SteamPath` → `libraryfolders.vdf`, looked for in **both** `config/` and `steamapps/` → `appmanifest_21970.acf`. It also tells the `compat` branch from the current one by build id. python-vdf for the launcher |
+| Adding objects (TOPO) | [moddingSuite](https://github.com/enohka/moddingSuite) `NdfbinReader.cs`, `NdfbinWriter.cs` (Wargame; lists R.U.S.E. too) | MIT | TOPO = the file's "top objects": their indices, written sorted by class; every new top-level object is added to it. **Check:** `tools/topo_check.py` |
+| Text files (`.dic`) | RUSE-Mod-Manager `dic.py`; moddingSuite `TradManager.cs` (Wargame's `TRAD`) | GPLv3 (ideas); MIT | offsets count from the file start; several entries can share one text; keys sorted; 10 language folders (`us fr ger ita spa pol cz ru jpn sc`, plus `dev`); a new entry can be added without touching the old text block. **Check:** `tools/dic_check.py` |
+| Text keys | moddingSuite `Utils.CreateLocalisationHash` | MIT | not a hash: a name of up to 8 characters, 6 bits each (0-9, A-Z, _, a-z). Two R.U.S.E. keys from RUSE-Mod-Manager's notes decode to `M_D_01` and `M_D_30`. Now in `src/rusemod/dic.py` |
+| Text form of NDF (`dump`, `.rndf`) | [tree-sitter-ndf](https://github.com/Ulibos/tree-sitter-ndf) + [ndf-parse](https://github.com/Ulibos/ndf-parse) (WARNO); moddingSuite `NdfTextWriter.cs` | MIT | WARNO's spelling: `export X is T ( … )`, `MAP [ … ]`, `RGBA[…]`, `GUID:{…}`, `nil`, `true`/`false`, `$/…` and `~/…` references, `//`, `/* */` and `(* *)` comments. The grammar is a ready reference for ours |
+| Mod patch language | KSP [ModuleManager](https://github.com/sarbian/ModuleManager/wiki/Module-Manager-Syntax) | CC BY-SA (ideas only) | almost our operator set: `@` edit, `+` copy, `-` delete, `*=` `+=`, wildcards and `:HAS` filters (our `patch every`). Extra ideas: a FINAL pass, patches that apply only if another mod is present (`:NEEDS`), edit-or-create (`%`) |
+| Load order | [Factorio](https://lua-api.factorio.com/latest/auxiliary/data-lifecycle.html) | docs | dependency depth first, then natural name order (like ours); three passes (data, updates, final fixes) so mods can adjust each other without declaring dependencies |
+| Multiplayer check | Paradox (HOI4) checksum | docs | a checksum over the game files, shown in-game; mods change it, DLC doesn't. Windows/Linux file-name case differences broke it for cross-platform play; our fingerprint lowercases paths, so it can't |
+| Share-a-mod-set codes | r2modman / Thunderstore profile codes | docs | codes are temporary and stored on Thunderstore's server; they carry mods, versions and settings. Ours need no server and don't expire, but carry no settings |
+
+**Changes this suggests** (for the owner to decide):
+1. A `final` pass for balance mods, so they apply after every unit mod without listing them (Factorio, ModuleManager).
+2. Patches that apply only when another mod is present, for compatibility patches (ModuleManager `:NEEDS`).
+3. Spell values the WARNO way (`RGBA[…]`, `GUID:{…}`, `nil`) so Eugen modders feel at home.
+4. New text keys as readable names (`R2U00001`) instead of made-up numbers, and show every key's name in the index.
+
+Sources: the repositories linked above; RUSE-Mod-Manager at https://github.com/LittleGroove/RUSE-Mod-Manager (v1.1.9);
+HOI4 checksum threads on the Paradox forums (https://forum.paradoxplaza.com/forum/threads/checksum-multiplayer-problem.1076652/);
+r2modman profile codes (https://deepwiki.com/ebkr/r2modmanPlus/6.3-profile-import-and-export).
+

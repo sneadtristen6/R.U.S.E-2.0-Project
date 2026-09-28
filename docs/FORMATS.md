@@ -163,6 +163,10 @@ others: the Normandy mission). Whether players can control them in skirmish is u
 `TRA\0`, `u32 count`, then `count × (u64 hash, u32 byteOffset, u32 lengthInUtf16Chars)`, **sorted by hash**, then
 UTF-16LE strings. Verified on all 1,232 `TRA` files. NDF refers to strings by the same 64-bit hash (type 0x1D).
 For new strings we can choose unused hash values, so we don't need to know Eugen's hash function.
+**Leads (2026-09-28, [RESEARCH.md](RESEARCH.md) §5; `tools/dic_check.py` checks them on every file):** keys are
+packed names, not hashes (up to 8 characters, 6 bits each, as in Wargame): two known R.U.S.E. keys decode to `M_D_01`
+and `M_D_30`. Offsets count from the file start and entries can share a text. RUSE-Mod-Manager reads the 4th magic
+byte as a version and says shipped files have 1, not 0.
 Other magics: `DICS` (18) and `DICV` (13) in `genvideos\…` (probably subtitles/video dictionaries) ❔.
 
 ## 5. Python scripts (`.xyz`, `.ipk`)
@@ -266,6 +270,8 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 ## Open questions (ordered by impact)
 
 1. TOPO semantics — needed only for adding/removing objects (value edits are already byte-exact, C1 passed).
+   **Lead (2026-09-28):** moddingSuite (MIT) treats TOPO as the file's top-level objects, sorted by class, and adds
+   every new top-level object to it. `tools/topo_check.py` tests that on every file.
 2. Is the Maps\PC header checksum enforced, and how is it computed?
 3. Can NDF mount an extra data pack at startup (not just map packs)? **Tested in M2:** without it, every mod with new
    text (every new unit name) rebuilds the 2.3 GB ZZ_Win.dat, since all `.dic` files live there ([PLAN.md](PLAN.md) L5).

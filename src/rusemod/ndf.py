@@ -266,3 +266,34 @@ class Ndf:
             return bytes(header) + struct.pack("<I", len(body)) + zlib.compress(body, level)
         struct.pack_into("<I", header, 12, flags & ~0x80)
         return bytes(header) + body
+
+
+# --- walking values (for indexes and checks) ---
+def sub_values(v: Value) -> list[Value]:
+    """The values directly inside a list (0x11), map (0x12: key, value, key, value, ...) or pair (0x22)."""
+    b, out = v.payload, []
+    if v.tc in (0x11, 0x12):
+        cnt, p = struct.unpack_from("<I", b, 0)[0], 4
+        for _ in range(cnt * (2 if v.tc == 0x12 else 1)):
+            x, p = _read_value(b, p)
+            out.append(x)
+    elif v.tc == 0x22:
+        x, p = _read_value(b, 0)
+        out = [x, _read_value(b, p)[0]]
+    return out
+
+
+def iter_values(v: Value):
+    """`v` and every value nested inside it, depth first."""
+    yield v
+    for x in sub_values(v):
+        yield from iter_values(x)
+
+
+def local_ref(v: Value) -> int | None:
+    """The object index a local reference (0x09, 0xBBBBBBBB) points at; None for anything else or null."""
+    if v.tc == 0x09 and struct.unpack_from("<I", v.payload)[0] == 0xBBBBBBBB:
+        inst = struct.unpack_from("<I", v.payload, 4)[0]
+        return None if inst == 0xFFFFFFFF else inst
+    return None
+

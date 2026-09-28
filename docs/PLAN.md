@@ -559,8 +559,10 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 
 Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on paper (Progress, §7).
 
-1. **PC session, now:** run **C3** (§7): can the game load an extra pack of ours? Steps 1–2 need only the existing
-   `src/rusemod` code plus a small string-patch helper.
+1. **PC session, now:** run **C3** (§7): can the game load an extra pack of ours? The tools for steps 1–2 are ready:
+   `tools/c3_survey.py` and `Ndf.set_string()`.
+   Then two quick read-only checks, a few minutes each: `tools/topo_check.py` (if TOPO follows moddingSuite's rule,
+   adding new units is unblocked) and `tools/dic_check.py` (text files and keys). Record the results in FORMATS.md.
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** tests on small made-up files that run on every push, and the CLI skeleton.

@@ -69,13 +69,14 @@ def val(tc: int, payload: bytes) -> bytes:
 
 
 def make_ndf(objects, classes, props, strings=(), trans=("$",), exports=None, imports=None,
-             compress=False) -> bytes:
+             topo=(), compress=False) -> bytes:
     """Build an NDF binary.
 
     objects: list of (class index, [(property index, encoded value)]), values made with `val`.
     props:   list of (property name, class index).
     exports: {object index: name}; imports: [name]. Both become one-level name trees under trans[0] ("$"),
              so export paths read "$/<name>". Names are added to TRAN automatically.
+    topo:    object indices for the TOPO table.
     """
     trans = list(trans)
 
@@ -101,7 +102,7 @@ def make_ndf(objects, classes, props, strings=(), trans=("$",), exports=None, im
         obje += struct.pack("<I", 0xABABABAB)
     body = {
         "OBJE": obje,
-        "TOPO": b"",
+        "TOPO": b"".join(struct.pack("<I", i) for i in topo),
         "CHNK": struct.pack("<II", 0, len(objects)),
         "CLAS": strs(classes),
         "PROP": b"".join(struct.pack("<I", len(n)) + n.encode("latin-1") + struct.pack("<I", c) for n, c in props),
