@@ -184,22 +184,187 @@ maps/R2_Iwo/
 
 ## 10. Build semantics
 
-- **Load order:**
-  1. dependencies
-  2. `load.after` / `load.before`
-  3. mod id (alphabetical, so the order is deterministic)
-- **Conflicts:** two mods setting the same property → the later one wins, with a warning. An `override` on the operation
-  silences the warning. Arithmetic operations compose in load order. Patching a deleted object is an error.
-- **Gameplay vs cosmetic** is classified automatically and conservatively:
-  - Gameplay: any change to NDF, scenarios, `mapinfo.win`, map packs or scripts. These must match in multiplayer.
-  - Cosmetic: texture, model, sound, video or font replacements that change no NDF. These may differ per player.
-  - The rules get refined after 2-PC tests.
-- **Determinism:**
-  - stable ordering everywhere, no timestamps
-  - canonical number formatting
-  - fixed compression settings (or uncompressed NDF, which the engine accepts)
-  - normalised text (UTF-8, LF)
-  - fingerprints over canonical content, not raw bytes
+A mod is a list of instructions ("set this", "multiply that", "clone this unit"), never a copy of game files.
+Every build starts from the untouched game and replays the instructions of every mod in a fixed order, so the result
+depends only on the game build, the mods and their order.
+
+### 10.1 Steps
+
+1. **Resolve:** pick the mods and versions and put them in load order (§10.6).
+2. **Read:** turn each mod's `.rndf`, `.csv` and `files/` entries into operations (the patch IR, [PLAN.md](PLAN.md) L3).
+   Every operation remembers its mod, file and line.
+3. **Apply:** start from the base game for this build and apply the operations one at a time: mods in load order;
+   inside a mod, files sorted by path; inside a file, top to bottom.
+4. **Check, cook, pack, fingerprint** ([PLAN.md](PLAN.md) L3).
+
+**One rule explains most of what follows:** every operation sees the game exactly as the operations before it left it.
+
+### 10.2 Operations
+
+| Operation | Written as | Works on | Result | Error when |
+|---|---|---|---|---|
+| set | `P = v` | any property | the value becomes `v`, converted to the property's type (§5). An absent property is added | the object doesn't exist; `v` can't convert |
+| multiply | `P *= k` | a number, or each item of a list of numbers | value × k | the property is absent (below) or not numeric |
+| add | `P += n` | a number, or each item of a list of numbers | value + n | same as multiply |
+| append | `P += [a, b]` | a list | the items go at the end, in the order written | the property isn't a list |
+| remove | `P -= [a]` | a list | every item equal to `a` is removed | never; if nothing matched, a warning |
+| insert | `P.insert(after=x, value=v)` (also `before=`, `at=`) | a list | `v` goes next to the first item equal to `x` | `x` isn't in the list |
+| delete property | `delete P` | any property | the property is removed, so the engine uses its built-in default | never |
+| create | `Name is Class ( … )` | nothing yet | a new object with exactly the properties written | the name is taken; the engine doesn't know the class |
+| clone | `Name is clone Src ( … )` | an object | a copy of `Src` (§10.5), then the body is applied to the copy | `Src` doesn't exist; the name is taken |
+| delete object | `delete Obj` | an object | the object is removed | anything still refers to it once all mods have run (the validator's dangling-reference check) |
+| replace file | `files/replace/<game path>` | a game file | the whole file is replaced | the game file doesn't exist |
+| add file | `files/add/mods/<mod id>/…` | nothing yet | a new file | the path is taken |
+
+- `+=` with a number is arithmetic; `+=` with a list `[…]` appends. It's the only operator with two meanings.
+- **Math on an absent property is an error**, because the engine's default isn't stored in the data (FORMATS.md §3:
+  a default `Nationalite` of 0 is simply not written). The fix is to `set` it first.
+- **Deleting is risky.** Game scripts look objects up by name (`Database.GetObject`, [ENGINE_NOTES.md](ENGINE_NOTES.md)),
+  which the validator can only partly check. Hiding a unit (`ShowInMenu = [0, 0, 0, 0, 0]`) is usually the safer choice.
+- A target that doesn't exist in this game build is an error that suggests a rebase (§11). It's never skipped silently.
+
+### 10.3 Numbers
+
+- Literals are read as exact decimals: `1.10` is exactly 1.10, not the nearest binary fraction.
+- When several operations change the same number, the whole chain is computed exactly and **rounded once**, when the
+  value is written: integers round half away from zero (52.5 → 53), `float32` values to the nearest float32.
+- Same inputs, same answer on every PC. Multiplayer depends on it (§10.9).
+
+### 10.4 When two mods touch the same thing
+
+Three levels:
+- **Error:** the build stops and nothing is deployed. The message names both mods, files and lines.
+- **Warning:** the build goes ahead; the build report and the launcher's mod-set screen show it. `override` in front of
+  the later operation (`override ProductionPrice = […]`) says "I mean it" and turns that warning into a note.
+- **Note:** only in the build report.
+
+Mod A loads before mod B, and both touch the same property, list, object or file:
+
+| A does → B does | Result | Level |
+|---|---|---|
+| set → set | B's value wins | warning (none if the values are equal) |
+| set → multiply / add | B's math runs on A's value | note |
+| multiply / add → set | B's value wins; A's change is lost | warning |
+| multiply / add → multiply / add | both apply, in load order (the order matters when × and + mix) | note |
+| delete property → set | B puts a value back | warning |
+| delete property → multiply / add | nothing to calculate with | **error** |
+| set or math → delete property | A's change is lost | warning |
+| append → append | both sets of items are added, A's first | none |
+| append → remove (the same item) | B takes A's item out again | warning |
+| remove → append (the same item) | B puts the item back | warning |
+| remove → insert next to that item | the anchor is gone | **error** |
+| set whole list → append / remove / insert | B edits A's new list | note |
+| append / remove / insert → set whole list | A's list edits are lost | warning |
+| patch object → delete object | A's changes are thrown away | warning |
+| delete object → patch, clone or refer to it | the object is gone | **error** (the clash RUSE-Mod-Manager can't see) |
+| create / clone → create / clone with the same name | two objects can't share a name | **error** |
+| replace file → replace file | B's file wins | warning |
+| replace file → patch inside that file | B's patch runs on A's replacement | note |
+
+Also:
+- In a list of references, an item that's already there isn't added twice (a note). Lists of plain values keep duplicates.
+- Every final value keeps its history: for any property, the report shows the chain of operations that produced it
+  (mod, file, line, and the value after each step).
+- `[conflicts]` in a manifest (§3) is checked before anything is applied: if either mod lists the other, combining them
+  is an error.
+
+### 10.5 Clones: what's copied, what's shared
+
+A unit is one named object plus unnamed sub-objects (weapon slots, turrets and so on), linked by references.
+- **Owned sub-objects are copied.** An unnamed sub-object belongs to the source when the only way to reach it from any
+  named object is through the source.
+- **Shared sub-objects are not copied.** If other named objects also reach it (several units using one weapon object,
+  say), the clone points to the same one.
+- **Named objects are never copied.** References to anything with its own export path, and imports (`$/…` from other
+  files), keep pointing to the original.
+- **Fresh identity:** the clone gets its new export name, plus fresh values for whatever must be unique per unit (an id
+  number, its text hash). Which properties those are is recorded per class in the schema DB, confirmed from the data in M2.
+- **A copy of that moment:** a clone copies its source as it is at that point in the load order. Later patches to the
+  source don't reach the clone, and patches to the clone never reach the source.
+- **Giving a clone its own weapon:** clone the weapon or ammunition too, and point the clone at the copy:
+  `Weapons[0].Ammunition = ~/Ammo_R2_Flamethrower`.
+
+**Editing a shared sub-object through one unit** (`…Descriptor_Unit_X:Weapons[0].Ammunition`, when that ammunition is
+used by other units too) would silently change every unit that uses it. So it's an error unless the patch says which
+it means:
+- `own`: give this unit its own copy first, then change the copy.
+- `shared`: change it for every unit that uses it. The error message lists them, so the author can decide.
+
+### 10.6 Load order and dependencies
+
+1. **Versions:** each mod states the versions it accepts for its dependencies (§3). The resolver picks, for every mod,
+   the newest version that all ranges accept. If none fits, the error names the mods that disagree.
+   A mod set's lockfile (§12) pins exact versions, so a saved set never changes by itself.
+2. **Order:** the mods and their rules form a graph:
+   - a dependency loads before the mod that needs it
+   - so does an optional dependency, when it's present
+   - `load.after` / `load.before` add more arrows
+
+   The builder walks the graph, and when several mods are free to go next it takes them alphabetically by id, so the
+   order is always the same. A loop (A after B, B after A) is an error that names the loop.
+3. **Mods that must not combine** (`[conflicts]`) stop the build before anything is applied.
+
+A mod meant to apply to units that other mods add (a balance pass, say) has to load after them: declare them as
+optional dependencies, or use `load.after`.
+
+### 10.7 Worked example
+
+Three mods on build 190852. The prices are invented; the object names come from FORMATS.md and
+`tools/make_test_instance.py`.
+
+```ndf
+// mod "econ-half" (loads first)
+patch $/GFX/Everything/Descriptor_Building_BatimentAdministratif
+(
+    ProductionPrice *= 0.5
+)
+
+// mod "hardcore" (loads second)
+patch $/GFX/Everything/Descriptor_Building_BatimentAdministratif
+(
+    ProductionPrice += 5
+)
+
+// mod "mg-nest" (loads third)
+Descriptor_Unit_R2_MG_Nest is clone $/GFX/Everything/Descriptor_Unit_Tourelle_MG_US
+(
+    ProductionPrice = [20, 20, 20, 20, 20]
+)
+```
+
+- With a base price of 105: econ-half then hardcore gives 105 × 0.5 + 5 = 57.5 → **58**. The other way round,
+  (105 + 5) × 0.5 = **55**. Same mods, different order, different game. That's why the order is fixed and recorded.
+- Both are math, so there's no warning, only a note showing the chain.
+- The MG nest copies the turret's own sub-objects. Anything the turret shares with other units, and every named
+  object it points to, stays shared.
+- Add a fourth mod that deletes `Descriptor_Unit_Tourelle_MG_US`:
+  - loaded **before** mg-nest: error. mg-nest clones an object that no longer exists.
+  - loaded **after** mg-nest: the clone is fine, but anything that still refers to the turret (a build menu, for
+    example) makes the validator stop the build until the fourth mod removes those references too.
+
+### 10.8 Gameplay vs cosmetic
+
+Classified automatically and conservatively:
+- Gameplay: any change to NDF, scenarios, `mapinfo.win`, map packs or scripts. These must match in multiplayer.
+- Cosmetic: texture, model, sound, video or font replacements that change no NDF. These may differ per player.
+- The rules get refined after 2-PC tests.
+
+### 10.9 Determinism
+
+- stable ordering everywhere, no timestamps
+- canonical number formatting
+- fixed compression settings (or uncompressed NDF, which the engine accepts)
+- normalised text (UTF-8, LF)
+- fingerprints over canonical content, not raw bytes
+
+### Decisions for you (§10)
+
+1. **Rounding:** half away from zero (52.5 → 53)? Recommended.
+2. **Shared sub-objects:** make editing one through a unit an error unless the patch says `own` or `shared`
+   (recommended), or only warn?
+3. **Patch, then a later mod deletes the object:** warning (recommended) or error?
+4. **Patching many objects at once:** add a form like `patch every TBatimentDescriptor ( ProductionPrice *= 0.9 )`
+   for balance passes? Recommended. It follows the same rules: it reaches whatever exists at that point in the load order.
 
 ## 11. Game updates
 
