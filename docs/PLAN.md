@@ -750,8 +750,8 @@ built yet. **The rule for all of it: as simple as R.U.S.E. already is.** Every n
 
 **China: infantry first (owner, 2026-09-28).** In WWII China's strength was its infantry, so in RUSE 2.0 infantry is
 China's focus. It also gets a few light tanks and one medium (not the focus), **good mobile anti-aircraft** and
-**solid artillery**. Planes: none so far (to confirm with the owner). China wins with ambushes, towns, numbers and
-the right squad for each job.
+**solid artillery**, and a small, weak air force (below). China wins with ambushes, towns, numbers and the right
+squad for each job, and defends the sky mostly from the ground.
 
 **China's infantry (draft names).** Until China has its own models (M7), each squad borrows an existing infantry look
 (the 88th Division can use the German heavy infantry: its German helmets are accurate).
@@ -789,8 +789,20 @@ American artillery are historical, in different eras.
 | 75 mm pack howitzer | light howitzer | 1945 | US Lend-Lease, carried by mules in Burma | a light gun |
 | 3.7 cm Pak 36 | anti-tank gun | 1939–42 | bought from Germany | the German Pak 36 |
 
-China had almost no mobile anti-aircraft in real life; the owner wants it strong (China has no planes so far), so
-the two AA vehicles take that liberty.
+China had almost no mobile anti-aircraft in real life; the owner wants it strong (China's air force is weak), so the
+two AA vehicles take that liberty.
+
+**China's air: small and weak on purpose (owner's idea, cloud's proposal, 2026-09-28).** No planes at all would leave
+China blind (R.U.S.E. scouting leans on planes) and let enemies mass bombers wherever the AA isn't. So China gets a
+token air force it isn't tempted to lean on:
+- **Fighters only, no bombers.** The I-16 (Soviet aid; the Soviet I-16 look is an exact match) in 1939–42. For 1945,
+  either the I-16 stays or the Flying Tigers' P-40 comes in, still weaker than the other nations' 1945 fighters (to
+  decide).
+- **One expensive airfield.** If the game can cap a building at one per player, cap it (check 5); if not, a high price
+  does the job.
+- It fits the rest: the Listening Post sees planes coming, the mobile AA shoots them down, and the few fighters chase
+  off enemy recon planes.
+- If playtests show China is fine without planes, the airfield goes: removing is easier than adding later.
 
 **Infantry: one strength, one weakness each**
 
@@ -847,6 +859,7 @@ recorded by Mandarin speakers (volunteers or paid). Until then China borrows an 
    Listening Post)
 3. Can a plane be set to be lost when it attacks? (kamikaze; otherwise it needs the add-on, M10)
 4. Can an infantry weapon fire indirectly? (China's mortar team)
+5. Can the game cap how many of a building a player has, e.g. one airfield? (China's air)
 
 Sources: R.U.S.E. terrain and ambush rules (https://ruse.fandom.com/wiki/Ambush,
 https://ruse.fandom.com/wiki/Strategies_and_Tactics), ruses (https://ruse.fandom.com/wiki/Ruses); the Sihang Warehouse
