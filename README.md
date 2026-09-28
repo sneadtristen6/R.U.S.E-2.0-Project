@@ -11,6 +11,8 @@ the terrain mesh and tile files can be read and rewritten losslessly (`rusemod.t
 pack "checksum" turned out to be a random ID. Next on the PC: in-game terrain tests (a raised mesa, swapped tiles,
 checkerboard tiles), the TGU1 texture codec, and **C5, a new unit in the build menu** (ready to run, PLAN.md §7).
 On the cloud side, the C4 fixes and adding units are done; next are names for new units (PLAN.md §10).
+Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19); the order is the mod system, then the
+launcher; multiplayer is tested solo until there's a second player (decision 20).
 The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.md §6.
 
 | Doc | What it covers |

@@ -402,6 +402,18 @@ desync log lines)
 | T5 cosmetic only | A has one changed text string (`.dic`), later a texture (M5) | no desync | the cosmetic list is right |
 | T6 join through the launcher | Steam invite → launcher → `+connect_lobby` | joins with the right mods | the whole join flow (M3) |
 
+**Solo tests (one PC, no second player)** cover most of the risk until a second player is available (decision 20):
+
+| Test | Setup | Expected | What it tells us |
+|---|---|---|---|
+| S1 same build twice | build the same mods twice, into two new modded copies, from scratch | the rebuilt packs are identical byte for byte, same fingerprint | the build gives the same result every time (lockstep needs it); GitHub already runs the tests on Windows and Linux |
+| S2 join flow on one PC | copy A's mod set gives a join code; a fresh copy B takes it (M3) | B ends up identical to A, same fingerprint | everything the launcher does to match two players |
+
+What still needs a second player: a real match (T1–T5 above), to see that the game itself stays in sync. One Steam
+account can't join its own game, and Steam Family Sharing doesn't let two people play one copy at the same time. So
+the second player is either a second Steam account with its own copy of R.U.S.E. (on an old laptop, say), or a
+volunteer from the R.U.S.E. community: with a join code, joining takes them a couple of minutes.
+
 ## 6. Key design decisions (this table is the decision record)
 
 | ADR | Decision | Choice | Why | Alternatives |
@@ -424,6 +436,8 @@ desync log lines)
 | 16 | Join codes | Game build + mod ids + versions + fingerprint; a published mod version never changes | about half the length of a full lockfile, checked end to end | the whole compressed lockfile |
 | 17 | Extra-pack test | Moved up to M2 as check C3 | without it, every new unit name rebuilds the 2.3 GB ZZ_Win.dat | test in M5/M6 |
 | 18 | Mod language details | A `final` pass; `when mod` blocks; WARNO's spellings; readable text keys | proven in Factorio, KSP ModuleManager and WARNO ([RESEARCH.md](RESEARCH.md) §5) | our own spellings, made-up hash keys |
+| 19 | New nations | A real 8th nation (China, for RUSE 2.0): the runtime extender (ADR 3, M10) lifts the 7-nation limit, and the data gets an 8th entry wherever it has 7. Owner's call, 2026-09-28 | RUSE 2.0 wants a real nation, not a renamed one | China takes over one of the 7 slots (the fallback if the scan shows it's too big) |
+| 20 | Testing multiplayer alone | Solo tests S1–S2 (L6) until there's a second player; one real 2-PC match before the first public release | the owner has no second player yet; most of the risk (same build everywhere, the join flow) can be tested on one PC | wait for a friend |
 
 ## 7. Roadmap
 
@@ -434,7 +448,7 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 | **M0 Foundations** ✅ | repo, docs; EDAT + NDF read/write; whole-game byte-identical check (38 archives, 2,176 NDF files); modded-instance launch | **done 2026-09-28** (C1, C2 passed) | — | — |
 | **M1 Core tools** | combined file view + index (L2); `.dic` r/w ✅ and `ruse` CLI basics ✅ (cloud session); scenario / AI-layer / capture-zone readers (our own code, informed by [LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)) | every shipped file of these types round-trips byte-identically | 2–4 (was 4–6) | low |
 | **M1.5 Frontier tests** (new) | short, capped tests of the riskiest unknowns: re-encode one terrain texture tile (`TGU1`) and one terrain mesh (`.tms`); read one 3D model (SPK) section table | clear yes/no: can we write new terrain? can we read models? Decides how big Pacific maps can be | ~3 | high (that's the point) |
-| **M2 Mod system slice** | package v1; `.rndf` reader ✅, rules engine ✅, load order ✅, fingerprint + join codes ✅ (cloud session); the adapter between game files and the engine; `.rmod` import; extra-pack mount test (C3); instances already proven by C2 | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test. This proves the tool, not a balance mod | 2–4 (was 4–6) | medium |
+| **M2 Mod system slice** | package v1; `.rndf` reader ✅, rules engine ✅, load order ✅, fingerprint + join codes ✅ (cloud session); the adapter between game files and the engine; `.rmod` import; extra-pack mount test (C3); instances already proven by C2 | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test (until there's a second player, the solo tests S1–S2 in L6 stand in; the 2-PC test comes before the first public release). This proves the tool, not a balance mod | 2–4 (was 4–6) | medium |
 | **M3 Launcher v1** | Steam auto-detect ✅ (`ruse detect`), one-click install into instances, modpacks, join codes; also installs the `.rmod` mods players already have, combinable and without patching the live install | first public alpha on GitHub, ModDB, Nexus | 3–5 | low |
 | **M4 Studio v1** | content browser, reference viewer, property/unit editor; clone **any** class with its **own** visuals, wired into menus, upgrades and AI; validation, diff/rebase | a non-programmer builds a new unit | 5–8 | low–medium |
 | **M5 Textures & icons** | TGV r/w including a game-valid `TGU1` encoder (nobody has one), UI icon/flag pipeline | retextured unit with its own icon in-game | 3–5 | medium |
@@ -442,7 +456,7 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 | **M7 Models** | SPK → glTF, Blender bridge, glTF → SPK (static, then skinned/animated). A first for R.U.S.E. | a new vehicle model in-game | 6–12 | high |
 | **M8 Terrain / new maps** | terrain writer (heights + texture), heightmap import, maps from scratch, tropical scenery set | a new island map built from a heightmap | 8–15+ (sized by M1.5) | high |
 | **M9 Scripting** | `.xyz` decompile, compile via a real CPython 2.5.1 (known route), mission/mode scripting | a new game mode (e.g. Island Defense) | 3–6 (was 4–8) | medium |
-| **M10 Runtime extender** | **parked.** Only revisit with Eugen's backing | — | — | parked |
+| **M10 Runtime extender** | **Un-parked 2026-09-28 (owner): RUSE 2.0 gets a real 8th nation, China.** The proxy DLL in the modded copy only (L4) raises the 7-nation limit; the data gets an 8th entry wherever it has 7 (every map's nation list, flags, menus). Later the same DLL can mount extra packs (no 2.3 GB rebuilds) and tag lobbies. **Step 1:** a read-only scan of RUSE.exe for the code that uses its nation table, which sizes the job | China can be picked in a skirmish, with its own flag and units | unknown until the scan | high |
 | **M11 Sound** | `.ess` codec, WAV import | a replaced sound plays in-game | 4–10 | high |
 
 **Content comes after the tool.** Per the owner's direction (2026-09-28), no balance/unit-stat/roster
@@ -451,12 +465,14 @@ pipeline, never as shipped balance. Study of Eugen's own data and scripts for de
 throughout (see [ENGINE_NOTES.md](ENGINE_NOTES.md)) — read-only, nothing from the install is committed.
 
 **Content track** (starts after M4, then dogfoods each later milestone):
-- **RUSE 2.0 Core** — balance, cloned units, tactics — begins once Studio (M4) exists.
+- **RUSE 2.0 Core** — balance, cloned units, tactics — begins once Studio (M4) exists. It includes a new nation,
+  **China** (owner, 2026-09-28), which needs M10 for the nation itself and M5 for its flag and icons. Its first units
+  can reuse the game's models (China's real army used German, Soviet and American equipment); its own models need M7.
 - **Pacific Island Defense** needs M5–M8 (new islands need the terrain writer), plus M9 for a custom mode.
   US vs Japan fits the existing nation slots. M1.5 tells us early whether brand-new islands are realistic.
 
 **Totals:** M0 is done. The first public release (M1, M1.5, M2, M3) is about 10–16 sessions. The full vision is
-many months; the uncertainty sits in M7, M8 and M11 (M10 is parked).
+many months; the uncertainty sits in M7, M8, M10 and M11 (M10's size is known once its step 1 scan has run).
 
 **Plan revision 2026-09-28 (PC session)**, after M0, the research, the LittleGroove study and the cloud session's
 code: M0 closed; M1/M2 shrink (reader/writer, instances, `.dic`, CLI basics, rules engine, join codes done); M6/M9
@@ -518,7 +534,7 @@ means every new unit name, rebuilds that whole pack (L5). With one, a mod ships 
   only as `DataMapTwoIslandz_v09.dat` and `clustermap.cpp` named it. The owner played "(6) Centre de gravite" on it:
   **loaded and played normally.** So a map pack is found by the name in the data, and its file name isn't checked.
 - **Meaning:** new maps ship their own pack (no core-pack rebuild). Game-wide text still needs the ZZ_Win.dat rebuild,
-  which the streaming writer handles (M10 is parked). The map pack's header "checksum" turned out to be a
+  which the streaming writer handles (until the runtime extender, M10, can mount packs). The map pack's header "checksum" turned out to be a
   random GUID, not a hash of the contents (FORMATS §6), so edited packs can't fail on it. The M1.5 terrain test
   confirms this in-game.
 
@@ -633,7 +649,7 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 | TOPO / NDF writer fidelity | can't add objects | C1 first; byte-identical gate |
 | Instance launch fails | must touch the install | C2 first. Fallback: in-place swap with journal + backup (players), full copy (dev) |
 | ~~Map-pack header checksum enforced and unknown~~ | — | retired: it's a random GUID, not a hash (FORMATS §6) |
-| 7 nations hard-coded | no new nations | Pacific needs none; "variant" mods reuse slots; research in M10 |
+| 7 nations hard-coded | no China for RUSE 2.0 | M10 step 1 (a read-only scan) sizes the job early; fallback: China takes over one of the 7 slots |
 | SPK model format complexity | no new models | export first; static meshes before skinned ones |
 | Terrain can't be written | no new maps / islands | reading is solved elsewhere, writing is not: M1.5 tests re-encoding early; M8 sized by the result |
 | Python 2.5 toolchain | no new scripts | route known: compile with a real CPython 2.5.1 (a download, so your OK first); uncompyle6 to decompile |
@@ -658,6 +674,8 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 5. Outreach timing. Recommended: LittleGroove now (align on `.rmod` import/export), Eugen after the M2 demo.
 6. Which unit to clone as the M2 test (suggestion: a US infantry unit, for Pacific later). **C5 uses the M4 Sherman**:
    a tank is easy to spot in its menu, and C5 only tests the pipeline. Infantry can follow once C5 passes.
+7. A second player for the 2-PC tests (L6), needed before the first public release: a second Steam account with its
+   own copy on another PC, or a community volunteer. Until then the solo tests S1–S2 stand in.
 
 ## 10. Next steps
 
@@ -700,8 +718,10 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    (the PC's rule) and imports; deleted ones keep every index; clones get their own id, debug name and build-menu
    slot (`rusemod.identity`, MOD_FORMAT §10.5). **C5 is ready for the PC** (§7).
    ~~Also from C4: the `*_debuginfo` notes~~ **done:** debug-info copies are left as shipped, similar notes collapse.
-   Next (cloud): names for new units (text mods: `text/*.csv` into the game's `.dic` files), and whatever C5 turns up.
-4. **You:** the open decisions in §9 (name, UI stack, outreach timing, the unit to clone in M2).
+   Next (cloud): names for new units (text mods: `text/*.csv` into the game's `.dic` files), whatever C5 turns up,
+   and M10 step 1 for the new nation (a read-only scan of RUSE.exe for the code that uses the nation table; the PC
+   runs it). Then the launcher (M3). The owner's order (2026-09-28): the mod system, then the launcher.
+4. **You:** the open decisions in §9 (name, UI stack, outreach timing, the unit to clone in M2, a second player).
 
 **How the two sessions share the work**
 - **Cloud session:** research and design, nothing that needs the game files. It writes its results into these docs.
