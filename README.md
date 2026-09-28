@@ -36,6 +36,10 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
   py -3 ruse_edat.py extract <archive.dat> <substring> <out_dir>
   ```
 - [`listings/`](listings): full file lists of all 38 archives (build 190852).
+- **Mod rules engine** ([`src/rusemod/patch.py`](src/rusemod/patch.py), [`src/rusemod/resolve.py`](src/rusemod/resolve.py)):
+  load order and every rule in [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md) §10 (stacking, rounding, the conflict table,
+  clones, shared parts, `patch every`, the final pass, `when mod`), tested on made-up data. Hooking it to the real
+  game files comes in M2.
 - [`tools/c3_survey.py`](tools/c3_survey.py): check C3 step 1, a read-only survey of how the game mounts packs.
 - [`tools/topo_check.py`](tools/topo_check.py), [`tools/dic_check.py`](tools/dic_check.py): read-only checks of the
   TOPO and text-file leads from [docs/RESEARCH.md](docs/RESEARCH.md) §5.
