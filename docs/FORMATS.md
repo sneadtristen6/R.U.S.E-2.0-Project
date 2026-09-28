@@ -46,6 +46,7 @@ Little-endian. Reader: [`ruse_edat.py`](../ruse_edat.py).
 - **dir:** `u32 headerLen` (≠ 0; children start at entry + headerLen), `u32 nextSibling`, `cstring fragment`
 - **file:** `u32 0`, `u32 nextSibling`, `u32 offset` (from data offset), `u32 size`, `u8 flag` (always 0 seen), `cstring fragment`
 - `nextSibling` is relative to the entry start; 0 = last sibling. Full path = concatenated fragments (backslashes).
+- An **empty archive** has a single root entry with `headerLen = 1` (shorter than the entry itself = "no children").
 
 Files are stored contiguously, with no gaps, overlaps or container-level compression. Offsets and sizes are u32, so a pack is at most 4 GB.
 **Writer proven (2026-09-28):** `src/rusemod/edat.py` rebuilds ZZ_GladPatchableWin.dat **byte-identical**
@@ -119,8 +120,11 @@ until `propertyIndex == 0xABABABAB`. A value is `u32 typeCode` + payload.
 | 0x1F | int2 | 8 |
 | 0x21 | float2 | 8 |
 | 0x22 | pair | key value, value |
+| 0x14 | blob | u32 length + raw bytes (e.g. zlib capture-zone mesh data in `.kdt`) |
+| 0x1E | zip blob | u32 length + u8 flag + length bytes (u32 size + zlib); only in the shader cache |
 
-No other codes occur in the 1,982 shipped files, and every file parses exactly to the end of OBJE.
+No other codes occur. **Whole-game verification (`tools/verify_all.py`, 2026-09-28):** all 38 archives, 217 nested
+archives (74 of them empty) and 2,176 NDF files (incl. `.kdt` and the shader cache) round-trip byte-identically.
 
 **Lossless writer proven (C1, 2026-09-28).** [`prototypes/spike-2026-09-28/roundtrip.py`](../prototypes/spike-2026-09-28/roundtrip.py)
 re-encodes every OBJE value of everything.cpp from its decoded form and reproduces the original OBJE bytes

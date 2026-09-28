@@ -78,9 +78,12 @@ def _read_value(b: bytes, p: int) -> tuple[Value, int]:
         n = _FIXED[tc]
         return Value(tc, b[p:p + n]), p + n
     start = p
-    if tc == 0x08:  # wide string
+    if tc in (0x08, 0x14):  # wide string (UTF-16) / blob (raw bytes, e.g. zlib data in .kdt): u32 length + bytes
         ln = struct.unpack_from("<I", b, p)[0]
         end = p + 4 + ln
+    elif tc == 0x1E:  # zip blob (seen only in the shader cache): u32 length + u8 flag + length bytes (u32 size + zlib)
+        ln = struct.unpack_from("<I", b, p)[0]
+        end = p + 5 + ln
     elif tc == 0x09:  # reference
         sub = struct.unpack_from("<I", b, p)[0]
         end = p + (12 if sub == 0xBBBBBBBB else 8)

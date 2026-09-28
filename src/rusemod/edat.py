@@ -6,8 +6,10 @@ patches each file entry's (offset, size) fields, so an unchanged rebuild is byte
 """
 from __future__ import annotations
 
+import mmap
 import struct
 from dataclasses import dataclass
+from typing import BinaryIO, Iterator
 
 MAGIC = b"edat"
 DICT_OFFSET = 0x40D  # constant across every shipped pack
@@ -23,7 +25,9 @@ class Entry:
 
 
 class Edat:
-    def __init__(self, raw: bytes):
+    """An EDAT archive over `raw`: bytes (small/nested archives) or a read-only mmap (files; see `open`)."""
+
+    def __init__(self, raw: bytes | mmap.mmap):
         if raw[:4] != MAGIC:
             raise ValueError(f"not an EDAT archive: {raw[:4]!r}")
         self.version = struct.unpack_from("<I", raw, 4)[0]
@@ -38,8 +42,29 @@ class Edat:
 
     @classmethod
     def open(cls, path: str) -> "Edat":
-        with open(path, "rb") as f:
-            return cls(f.read())
+        """Memory-map the file read-only: members are read on demand, so multi-GB packs cost no RAM up front."""
+        f = open(path, "rb")
+        try:
+            mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        except Exception:
+            f.close()
+            raise
+        arc = cls(mm)
+        arc._file = f
+        return arc
+
+    def close(self) -> None:
+        if isinstance(self.raw, mmap.mmap):
+            self.raw.close()
+        f = getattr(self, "_file", None)
+        if f is not None:
+            f.close()
+
+    def __enter__(self) -> "Edat":
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self.close()
 
     def _cstr(self, pos: int) -> tuple[str, int]:
         end = self._dict.index(b"\0", pos)
@@ -48,14 +73,18 @@ class Edat:
     def _walk(self, pos: int, prefix: str) -> None:
         d = self._dict
         while True:
+            if pos + 8 > len(d):  # empty directory (e.g. an archive with no files): nothing below it
+                return
             head_len, next_sib = struct.unpack_from("<II", d, pos)
             if head_len == 0:  # file
                 offset, size, flag = struct.unpack_from("<IIB", d, pos + 8)
                 frag, _ = self._cstr(pos + 17)
                 self.entries.append(Entry(prefix + frag, offset, size, flag, pos + 8))
             else:  # directory
-                frag, _ = self._cstr(pos + 8)
-                self._walk(pos + head_len, prefix + frag)
+                frag, frag_end = self._cstr(pos + 8)
+                # A header shorter than its own name means "no children" (empty archives use head_len = 1).
+                if head_len >= frag_end - pos:
+                    self._walk(pos + head_len, prefix + frag)
             if next_sib == 0:
                 return
             pos += next_sib
@@ -71,29 +100,40 @@ class Edat:
         start = self.data_offset + entry.offset
         return self.raw[start:start + entry.size]
 
-    def to_bytes(self, replace: dict[str, bytes] | None = None) -> bytes:
-        """Rebuild the archive. `replace` maps a path suffix -> new member bytes.
+    def iter_chunks(self, replace: dict[str, bytes] | None = None) -> Iterator[bytes]:
+        """Stream the rebuilt archive. `replace` maps a path suffix -> new member bytes.
 
         Members keep their original storage order (by offset). Unchanged members are copied verbatim, so
-        with no replacements the result is byte-identical to the original file.
+        with no replacements the output is byte-identical to the original file. Only one member is held in
+        memory at a time, so this works for multi-GB packs.
         """
         replace = replace or {}
-        targets = {}
-        for suffix in replace:
-            targets[self.find(suffix).dict_pos] = replace[suffix]
+        targets = {self.find(suffix).dict_pos: blob for suffix, blob in replace.items()}
+        order = sorted(self.entries, key=lambda e: e.offset)
 
+        # Lay out first (sizes only) so the header/dictionary can be written before the data.
         new_dict = bytearray(self._dict)
-        data = bytearray()
-        for e in sorted(self.entries, key=lambda e: e.offset):
-            blob = targets.get(e.dict_pos)
-            if blob is None:
-                blob = self.read(e)
-            new_off = len(data)
-            data += blob
-            struct.pack_into("<II", new_dict, e.dict_pos, new_off, len(blob))
+        pos = 0
+        for e in order:
+            size = len(targets[e.dict_pos]) if e.dict_pos in targets else e.size
+            struct.pack_into("<II", new_dict, e.dict_pos, pos, size)
+            pos += size
 
-        out = bytearray(self.raw[:self.data_offset])
-        out[self.dict_offset:self.dict_offset + self.dict_len] = new_dict
-        struct.pack_into("<I", out, 0x25, len(data))  # data_len
-        out += data
-        return bytes(out)
+        head = bytearray(self.raw[:self.data_offset])
+        head[self.dict_offset:self.dict_offset + self.dict_len] = new_dict
+        struct.pack_into("<I", head, 0x25, pos)  # data_len
+        yield bytes(head)
+        for e in order:
+            yield targets[e.dict_pos] if e.dict_pos in targets else self.read(e)
+
+    def to_bytes(self, replace: dict[str, bytes] | None = None) -> bytes:
+        """Rebuild the whole archive in memory (fine for small packs; use `write_to` for big ones)."""
+        return b"".join(self.iter_chunks(replace))
+
+    def write_to(self, out: BinaryIO, replace: dict[str, bytes] | None = None) -> int:
+        """Stream the rebuilt archive to an open binary file. Returns bytes written."""
+        n = 0
+        for chunk in self.iter_chunks(replace):
+            out.write(chunk)
+            n += len(chunk)
+        return n

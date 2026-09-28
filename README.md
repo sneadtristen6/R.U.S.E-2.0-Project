@@ -11,6 +11,7 @@ Status: **planning / M0**. Nothing here modifies the game install.
 | [docs/FORMATS.md](docs/FORMATS.md) | what we know about every game file format (the project's memory) |
 | [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md) | draft spec of the mod package format |
 | [docs/RESEARCH.md](docs/RESEARCH.md) | what others already built, and the chosen tech stack |
+| [docs/LITTLEGROOVE_STUDY.md](docs/LITTLEGROOVE_STUDY.md) | what RUSE-Mod-Manager does, where it stops, and how we go further |
 | [docs/ENGINE_NOTES.md](docs/ENGINE_NOTES.md) | ideas learned from studying the game's own files (esp. its Python scripting layer) |
 
 ## Code so far
