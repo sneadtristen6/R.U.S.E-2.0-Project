@@ -220,6 +220,20 @@ class Ndf:
     def prop_name(self, index: int) -> str:
         return self.props[index][0]
 
+    def string_index(self, text: str) -> int | None:
+        """The STRG entry holding `text` (the first, if several do), or None."""
+        try:
+            return self.strings.index(text)
+        except ValueError:
+            return None
+
+    def add_string(self, text: str) -> int:
+        """Append a STRG entry and return its index (existing entries keep theirs)."""
+        text.encode("latin-1")
+        self.strings.append(text)
+        self._strg_dirty = True
+        return len(self.strings) - 1
+
     def set_string(self, index: int, text: str) -> None:
         """Change entry `index` of the STRG table (what string/path values, types 0x07/0x1C, point at).
 

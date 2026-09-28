@@ -73,6 +73,7 @@ class Raw:
 class Obj:
     cls: str
     props: dict = field(default_factory=dict)
+    origin: tuple | None = field(default=None, compare=False)  # (game file, object index) it was read from; None = new
 
 
 @dataclass
@@ -257,7 +258,7 @@ class Engine:
         if op.kind == "clone":
             if op.source not in self.game.objects:
                 raise self._missing(op.source, op, "clones")
-            obj = copy.deepcopy(self.game.objects[op.source])  # owned sub-objects copied, references kept
+            obj = _fresh(self.game.objects[op.source])  # owned sub-objects copied, references kept
         else:
             obj = Obj(op.cls or "?")
         self.game.objects[name] = obj
@@ -376,7 +377,7 @@ class Engine:
                         f"{op.at()}: {owner}:{'.'.join(walked + [step])} is {val.target}, which {users} places use; "
                         f"say `own` (this one only gets its own copy) or `shared` (change it for all of them)")
                 if users > 1 and op.share == "own":
-                    copy_ = Inline(copy.deepcopy(self.game.objects[val.target]))
+                    copy_ = Inline(_fresh(self.game.objects[val.target]))
                     holder[key] = copy_
                     obj, walked = copy_.obj, walked + [step]
                 else:
@@ -559,6 +560,16 @@ def _walk_value(v):
         yield from _walk_value(v.b)
     elif isinstance(v, Inline):
         yield from _walk_obj(v.obj)
+
+
+def _fresh(obj: Obj) -> Obj:
+    """A deep copy that counts as new: it and its owned parts forget which game file they came from."""
+    new = copy.deepcopy(obj)
+    new.origin = None
+    for v in _walk_obj(new):
+        if isinstance(v, Inline):
+            v.obj.origin = None
+    return new
 
 
 def _walk_obj(obj: Obj):
