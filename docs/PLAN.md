@@ -225,8 +225,8 @@ The schema DB drives the editors and validation.
 - a report lists repeated paths, shared objects and last-resort addresses
 - the CLI can list files, dump any object by its address, and show where it's used
 
-**Decision for you (L2):** keep all game text in the index (unit names and descriptions, in every language), so you
-can search by name and see where each text is used? It costs some disk space (a guess: tens of MB). Recommended.
+**Decided (2026-09-28):** the index keeps all game text (unit names and descriptions, in every language), so you can
+search by name and see where each text is used. It costs some disk space (a guess: tens of MB).
 
 ### L3 Mod system
 - **Package** ([MOD_FORMAT.md](MOD_FORMAT.md)): a manifest plus readable sources: NDF-style text patches, CSV text,
@@ -279,6 +279,64 @@ can search by name and see where each text is used? It costs some disk space (a 
     `"<path>\launcher.exe" %command%`, so Steam's Play button opens our launcher instead of the game, and Steam
     lobby invites (`+connect_lobby`) route through it for mod sync before joining. No change to RUSE.exe.
     Later the launcher can offer to set this for the user (with their OK). To verify when the launcher exists.
+
+  **The player's journey, screen by screen** (judged against the north star in §1: download, install, play)
+  1. **Install:** one installer; no Python or Git needed. It opens the launcher when it's done.
+  2. **Find the game (first run, automatic):** Steam's folder from the Windows registry → `steamapps\libraryfolders.vdf`
+     → the library holding `appmanifest_21970.acf` → `steamapps\common\R.U.S.E`. The player sees "Found R.U.S.E. on D:
+     (build 24687178)". Only if that fails: "Choose folder…". It has to be a Steam install (principle 10).
+  3. **Check the game:** a known build with untouched packs is ready. Changed packs (a tool that patches the live game,
+     for example) get a **Restore original files** button, which starts Steam's own file check (`steam://validate/21970`).
+     A new game build: mods are checked against it before the first Play (rebase).
+  4. **Where modded copies go:** a folder on the game's drive, `<drive>:\RUSE-Instances` by default, because sharing
+     files with the game (hard links) only works on one drive. The launcher shows how much space that takes.
+  5. **Steam's Play button (optional):** "Want Steam's Play button to open this launcher? [Show me how] [Skip]".
+     v1 shows the steps; doing it for the player comes later, with their OK.
+  6. **Home:** one big Play button with the active mod set ("Vanilla", "RUSE 2.0"), a switcher for mod sets,
+     Join a friend, and Browse mods.
+  7. **Browse:** mods from the index, with screenshots, description, author, and badges: "works with your game
+     version", "multiplayer: must match" or "looks only", "contains scripts".
+  8. **Install:** "This also installs: X (required)". It downloads from the first mirror that works, checks every
+     file's hash, builds the modded copy in a side folder, and swaps it in only when it's complete (so a half-built
+     copy never shows up). Then: "Installed. [Play]".
+  9. **Play:** rebuilds only what changed (cache), starts Steam if it isn't running, then starts R.U.S.E. from the
+     modded copy.
+  10. **Join a friend:** paste a code, or it's read from the clipboard when a Steam invite opens the launcher (steps in L6).
+  11. **Back to vanilla:** the "Vanilla" set runs the untouched Steam install. Uninstalling the launcher leaves the
+      game exactly as Steam installed it; the uninstaller explains how to clear the Launch Options line.
+  12. **Updates:** launcher updates download in the background and install when it closes. Mod updates show a badge.
+      A mod set used with friends can be locked, so it only updates when the player chooses (the whole group has to
+      update together). After a game update, mods that can't follow yet are paused with a message instead of
+      breaking the game.
+
+  **Disk space, a known cost:** an untouched modded copy costs almost nothing (hard links). A mod that only changes
+  unit data rebuilds just the 3.5 MB `ZZ_GladPatchableWin.dat`. But a change to anything inside `ZZ_Win.dat` means a
+  rebuilt 2.3 GB copy of that pack: textures, sounds, most scripts, and **text**. All `.dic` text lives in ZZ_Win ([FORMATS.md](FORMATS.md) §4),
+  so every new unit with its own name triggers it. The cache keeps one copy per distinct result and hard-links it into
+  every modded copy that uses it, but it's still heavy. This goes away if NDF data can mount an extra pack of our own
+  (FORMATS.md open question 3): mods would then ship small packs of their own. Hence decision 1 below.
+
+  **When something goes wrong** (multiplayer mismatches and desyncs are in L6)
+
+  | What went wrong | The player sees | The launcher |
+  |---|---|---|
+  | game not found | "We couldn't find R.U.S.E. Is it installed through Steam? [Open in Steam] [Choose folder…]" | waits |
+  | game files changed by another tool | "Your R.U.S.E. files were changed by another mod tool. [Restore original files]" | starts Steam's file check |
+  | modded folder on another drive | "Mods need … GB here, because this drive can't share files with the game. [Continue] [Choose another folder]" | makes a full copy instead of hard links |
+  | not enough space | "Not enough space on D: (needs … GB, … GB free)." | changes nothing until there's room |
+  | Steam not running | nothing | starts Steam, then the game |
+  | download failed | "Couldn't download RUSE 2.0 Core. Check your internet and try again." | tries every mirror first |
+  | file damaged or tampered with | "The download of RUSE 2.0 Core didn't match its checksum, so it was deleted." | never installs an unchecked file |
+  | two mods clash | "RUSE 2.0 Core and Old Units can't be used together: Old Units deletes a unit RUSE 2.0 Core changes. Remove one of them." | keeps the last working modded copy as it was |
+  | game updated, mod not ready | "RUSE 2.0 Core doesn't support the new game version yet. Play vanilla, or wait for an update." | pauses that mod set |
+  | game closes right after starting | "R.U.S.E. closed right after starting with RUSE 2.0. [Play vanilla] [Save a report]" | keeps the report for the mod's author |
+  | antivirus or Windows blocks a file | "Windows or your antivirus is blocking a file: …. [How to fix this]" | links a help page |
+
+  **Decisions for you (launcher)**
+  1. **Test early (M2, not M5/M6) whether the game can load an extra pack of ours.** If it can, mods ship small packs
+     and never rebuild the 2.3 GB one. If it can't, every new unit name costs a 2.3 GB rebuild. Recommended.
+  2. **Ratings and comments need a small server,** so v1 skips them: screenshots, descriptions and download counts
+     only. Recommended.
 - **Studio (modders):**
   - content browser, reference viewer, schema-driven property editor
   - unit editor with a clone wizard
