@@ -20,20 +20,20 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 
-INT_RANGES = {"int8": (-2**7, 2**7 - 1), "int16": (-2**15, 2**15 - 1), "uint16": (0, 2**16 - 1),
+INT_RANGES = {"bool": (0, 255), "int8": (-2**7, 2**7 - 1), "int16": (-2**15, 2**15 - 1), "uint16": (0, 2**16 - 1),
               "int32": (-2**31, 2**31 - 1), "uint32": (0, 2**32 - 1), "int64": (-2**63, 2**63 - 1)}
 
 
 # --- the game model ---
 @dataclass
 class Num:
-    kind: str          # int8 int16 uint16 int32 uint32 int64 float32 float64
+    kind: str          # bool int8 int16 uint16 int32 uint32 int64 float32 float64
     value: Decimal
 
 
 @dataclass
 class Text:
-    kind: str          # string wstr path key
+    kind: str          # string wstr path key loc
     value: str
 
 
@@ -55,6 +55,12 @@ class ListV:
 @dataclass
 class MapV:
     pairs: list        # [(key value, value)]
+
+
+@dataclass
+class PairV:
+    a: object
+    b: object
 
 
 @dataclass
@@ -548,6 +554,9 @@ def _walk_value(v):
         for k, x in v.pairs:
             yield from _walk_value(k)
             yield from _walk_value(x)
+    elif isinstance(v, PairV):
+        yield from _walk_value(v.a)
+        yield from _walk_value(v.b)
     elif isinstance(v, Inline):
         yield from _walk_obj(v.obj)
 
