@@ -211,7 +211,8 @@ It's the same idea as RUSE-Mod-Manager's three tiers ([LITTLEGROOVE_STUDY.md](LI
 and tested.
 
 **Schema DB:** the types observed for each class/property across all NDF files (the `prop_seen` table), plus community
-annotation files:
+annotation files. **Started (2026-09-28): `src/rusemod/labels.toml`**, display names in the game's ten languages for
+41 properties, their groups, the nations and the Studio's own words; the game's names stay the default (decision 21):
 - English names for the French properties (`Puissance` → Power, `PorteeMaximale` → MaxRange)
 - units, ranges, enum labels (nations 0–6) and editor hints
 
@@ -340,7 +341,11 @@ search by name and see where each text is used. It costs some disk space (a gues
 
   **Decided (2026-09-28):** test in M2 (moved up from M5/M6) whether the game can load an extra pack of ours. If it
   can, mods ship small packs and never rebuild the 2.3 GB one.
-- **Studio (modders):**
+- **Studio (modders):** **v0.1 built (2026-09-28, `rusemod.studio`, `py -3 -m rusemod.studio`):** browse every unit
+  and building by kind, nation and name; a unit's values in groups (cost, combat, movement…), its parts (its own or
+  shared) and what uses it; all from the game index, which the Studio can also build. A language selector keeps the
+  game's names by default and shows the tool, property names and units' in-game names in any of the game's ten
+  languages (decision 21). Next: copying a unit into a mod.
   - content browser, reference viewer, schema-driven property editor
   - unit editor with a clone wizard
   - scenario/map workshop
@@ -444,6 +449,7 @@ volunteer from the R.U.S.E. community: with a join code, joining takes them a co
 | 18 | Mod language details | A `final` pass; `when mod` blocks; WARNO's spellings; readable text keys | proven in Factorio, KSP ModuleManager and WARNO ([RESEARCH.md](RESEARCH.md) §5) | our own spellings, made-up hash keys |
 | 19 | New nations | A real 8th nation (China, for RUSE 2.0): the runtime extender (ADR 3, M10) lifts the 7-nation limit, and the data gets an 8th entry wherever it has 7. Owner's call, 2026-09-28 | RUSE 2.0 wants a real nation, not a renamed one. **No faction is ever given up** (owner, 2026-09-28): there is no swap fallback; if the job turns out big, China comes later, never by replacing a nation | China takes over one of the 7 slots (**rejected**: it loses a faction) |
 | 20 | Testing multiplayer alone | Solo tests S1–S2 (L6) until there's a second player; one real 2-PC match before the first public release | the owner has no second player yet; most of the risk (same build everywhere, the join flow) can be tested on one PC | wait for a friend |
+| 21 | Display language in the tools | The game's own names are the default everywhere (mods use them); every modder can pick any of the game's ten languages for the tools, property names and unit names. Owner's call, 2026-09-28 | the community is international; no one language forced on modders | English by default |
 
 ## 7. Roadmap
 
@@ -456,7 +462,7 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 | **M1.5 Frontier tests** (new) | short, capped tests of the riskiest unknowns: re-encode one terrain texture tile (`TGU1`) and one terrain mesh (`.tms`); read one 3D model (SPK) section table | clear yes/no: can we write new terrain? can we read models? Decides how big Pacific maps can be | ~3 | high (that's the point) |
 | **M2 Mod system slice** | package v1; `.rndf` reader ✅, rules engine ✅, load order ✅, fingerprint + join codes ✅ (cloud session); the adapter between game files and the engine; `.rmod` import; extra-pack mount test (C3); instances already proven by C2 | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test (until there's a second player, the solo tests S1–S2 in L6 stand in; the 2-PC test comes before the first public release). This proves the tool, not a balance mod | 2–4 (was 4–6) | medium |
 | **M3 Launcher v1** | Steam auto-detect ✅ (`ruse detect`), the window ✅ (v0.1: game status, mod sets, Play; `rusemod.launcher`), one-click install into instances, modpacks, join codes; also installs the `.rmod` mods players already have, combinable and without patching the live install | first public alpha on GitHub, ModDB, Nexus | 3–5 | low |
-| **M4 Studio v1** | content browser, reference viewer, property/unit editor; clone **any** class with its **own** visuals, wired into menus, upgrades and AI; validation, diff/rebase | a non-programmer builds a new unit | 5–8 | low–medium |
+| **M4 Studio v1** | content browser ✅ and unit view ✅ (v0.1, with the language selector), property/unit editor; clone **any** class with its **own** visuals, wired into menus, upgrades and AI; validation, diff/rebase | a non-programmer builds a new unit | 5–8 | low–medium |
 | **M5 Textures & icons** | TGV r/w including a game-valid `TGU1` encoder (nobody has one), UI icon/flag pipeline | retextured unit with its own icon in-game | 3–5 | medium |
 | **M6 Maps I** | map cloning, scenario editor, capture-zone compiler, AI layers, island maps on existing terrain | a new map listed and playable in multiplayer | 4–6 (was 5–8: formats now understood) | medium |
 | **M7 Models** | SPK → glTF, Blender bridge, glTF → SPK (static, then skinned/animated). A first for R.U.S.E. | a new vehicle model in-game | 6–12 | high |
@@ -755,6 +761,9 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
           what uses it and what it uses), `... index clone $/GFX/Everything/Descriptor_Unit_M4_Sherman` (what a copy
           copies and shares), `... index filter TUniteAuSolDescriptor ProductionPrice[0] gt 100`, `... index texts
           Sherman`. Note anything wrong or slow.
+     9. **Studio v0.1** (after item 8; needs pywebview like the launcher): `py -3 -m rusemod.studio`. Browse units,
+        open the M4 Sherman, switch the language (top right) through a few languages. Record anything wrong,
+        slow or badly translated (translations are in `src/rusemod/labels.toml`).
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the
@@ -776,6 +785,9 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    tries both (item 1.7).
    **The game index done (2026-09-28)**: `rusemod.index`, `ruse index` (L2 "Built"). The PC runs it (item 1.8).
    The owner (2026-09-28): the launcher stays at v0.1 for now; the core tools come first.
+   **Studio v0.1 done (2026-09-28)**: browse units, a unit's values, parts and users, the language selector with
+   the game's names by default (decision 21). The PC tries it (item 1.9). Next (cloud): copying a unit into a mod
+   from the Studio (writes the `.rndf` clone and names), then changing a unit's numbers.
    Later (cloud), launcher steps, one at a time: installing mods into the launcher's library (from a folder or zip,
    then RUSE-Mod-Manager's `.rmod`), mod sets made on screen, the join-a-friend screen (join codes), then the
    installer (Nuitka + Inno Setup) and browsing the mod index. And whatever C5/C6 turn up.

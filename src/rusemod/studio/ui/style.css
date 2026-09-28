@@ -1,0 +1,76 @@
+:root {
+  --bg: #15181b;
+  --panel: #1d2226;
+  --panel-hi: #252b30;
+  --line: #333b41;
+  --text: #e9e4d4;
+  --muted: #9aa3a8;
+  --accent: #c8a64b;
+  --accent-dark: #8f7530;
+  --shared: #6fa3c7;
+  --radius: 8px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+             font: 14px/1.45 "Segoe UI", system-ui, sans-serif; }
+body { display: flex; flex-direction: column; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; border-radius: var(--radius); }
+button:disabled { cursor: default; opacity: 0.5; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+
+.top { display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: var(--panel);
+       border-bottom: 1px solid var(--line); }
+.brand { font-weight: 700; letter-spacing: 0.06em; font-size: 17px; }
+.brand span { color: var(--accent); }
+.lang { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.lang select { background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--radius); padding: 5px 8px; }
+
+.layout { flex: 1; display: grid; grid-template-columns: 330px 1fr; min-height: 0; }
+.browser { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-right: 1px solid var(--line);
+           min-height: 0; }
+.browser input { width: 100%; padding: 8px 10px; background: var(--panel); border: 1px solid var(--line);
+                 border-radius: var(--radius); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { padding: 3px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; font-size: 12px; }
+.chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.unit-list { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1; }
+.unit-list button { width: 100%; text-align: left; padding: 7px 10px; background: none; border: 1px solid transparent; }
+.unit-list button:hover { background: var(--panel); }
+.unit-list button[aria-current="true"] { background: var(--panel-hi); border-color: var(--line);
+                                         box-shadow: inset 3px 0 0 var(--accent); }
+.unit-list .name { display: block; }
+.unit-list .sub { display: block; font-size: 11px; color: var(--muted); }
+
+.detail { padding: 24px 32px; overflow: auto; }
+.detail h1 { margin: 0; font-size: 26px; }
+.address { display: flex; align-items: center; gap: 10px; margin: 6px 0 4px; }
+.address code { color: var(--muted); font: 12px Consolas, "Cascadia Mono", monospace; overflow-wrap: anywhere; }
+.address button, .ghost { padding: 3px 10px; font-size: 12px; background: transparent; border: 1px solid var(--line); }
+.meta { color: var(--muted); margin-bottom: 14px; }
+.primary { padding: 9px 18px; border: 0; background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+           color: #15181b; font-weight: 700; }
+.note { margin-left: 8px; color: var(--muted); font-size: 12px; }
+
+.group { margin-top: 22px; }
+.group h2 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+.group table { border-collapse: collapse; width: 100%; max-width: 780px; }
+.group th, .group td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.group th { width: 45%; font-weight: 500; }
+.group th small { display: block; color: var(--muted); font: 11px Consolas, monospace; }
+.group td { font-variant-numeric: tabular-nums; }
+
+.parts { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 4px; max-width: 780px; }
+.parts button { width: 100%; text-align: left; padding: 6px 10px; background: var(--panel); border: 1px solid var(--line); }
+.badge { float: right; font-size: 11px; color: var(--muted); }
+.badge.shared { color: var(--shared); }
+
+.no-index { position: fixed; inset: 60px 0 0 0; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 14px; background: var(--bg); }
+.no-index pre { max-width: 760px; max-height: 240px; overflow: auto; padding: 10px; background: #0f1113;
+                border: 1px solid var(--line); border-radius: var(--radius); font-size: 12px; }

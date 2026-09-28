@@ -476,6 +476,32 @@ class Index:
                                   ORDER BY t.dictionary, t.name LIMIT ?""",
                                (lang, dictionary, dictionary, limit)).fetchall()
 
+    def units(self, classes) -> list[dict]:
+        """Named objects of `classes` (units, buildings…) with their nation, factory, menu slot and name key."""
+        marks = ",".join("?" * len(classes))
+        rows = self.db.execute(f"""
+            SELECT o.address, o.class,
+              (SELECT num FROM value WHERE object = o.id AND path = 'Nationalite'),
+              (SELECT num FROM value WHERE object = o.id AND path = 'Factory'),
+              (SELECT num FROM value WHERE object = o.id AND path = 'PositionInMenu'),
+              (SELECT text FROM value WHERE object = o.id AND path = 'NameInMenuToken')
+            FROM object o WHERE o.class IN ({marks}) AND o.shadow = 0 AND o.export IS NOT NULL
+            ORDER BY o.address""", list(classes)).fetchall()
+        return [{"address": a, "class": c, "nation": int(n or 0), "factory": None if f is None else int(f),
+                 "slot": None if s is None else int(s), "key": k} for a, c, n, f, s, k in rows]
+
+    def names(self, keys, lang: str) -> dict:
+        """Key name -> its text in one language, preferring the unit-name dictionary (baseunite)."""
+        keys = [k for k in set(keys) if k]
+        out = {}
+        for start in range(0, len(keys), 500):
+            chunk = keys[start:start + 500]
+            marks = ",".join("?" * len(chunk))
+            for name, text in self.db.execute(f"""SELECT name, text FROM text WHERE lang = ? AND name IN ({marks})
+                                                  ORDER BY dictionary = 'baseunite'""", [lang] + chunk):
+                out[name] = text
+        return out
+
     def clone_plan(self, address: str) -> dict:
         """What cloning this object would do (MOD_FORMAT §10.5): its owned parts are copied, parts other named
         objects reach too are shared, named objects and imports stay references."""

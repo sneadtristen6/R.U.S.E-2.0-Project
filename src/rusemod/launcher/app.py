@@ -7,25 +7,12 @@ the web engine it uses, WebView2).
 from __future__ import annotations
 
 import argparse
-import functools
-import http.server
-import threading
 from pathlib import Path
 
+from ..webui import serve
 from .api import LauncherApi
 
 UI = Path(__file__).with_name("ui")
-
-
-def serve(folder: Path) -> tuple[http.server.ThreadingHTTPServer, str]:
-    """Serve `folder` on a free port of 127.0.0.1 (this PC only). Returns the server and its address."""
-    class Quiet(http.server.SimpleHTTPRequestHandler):
-        def log_message(self, *args):
-            pass
-
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Quiet, directory=str(folder)))
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    return server, f"http://127.0.0.1:{server.server_address[1]}"
 
 
 def main(argv=None) -> int:

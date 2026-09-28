@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RUSE Studio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">RUSE <span>Studio</span></div>
+    <label class="lang"><span id="lang-label">Language</span>
+      <select id="lang"></select>
+    </label>
+  </header>
+
+  <main class="layout">
+    <aside class="browser">
+      <input id="search" type="search" autocomplete="off">
+      <div id="kinds" class="chips" role="group"></div>
+      <div id="nations" class="chips" role="group"></div>
+      <div id="count" class="muted small"></div>
+      <ul id="unit-list" class="unit-list"></ul>
+    </aside>
+
+    <section id="detail" class="detail" aria-live="polite">
+      <p id="pick" class="muted"></p>
+    </section>
+  </main>
+
+  <section id="no-index" class="no-index hidden">
+    <p id="no-index-text"></p>
+    <button id="build-index" type="button" class="primary"></button>
+    <pre id="build-log" class="hidden"></pre>
+  </section>
+
+  <script src="fake-api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

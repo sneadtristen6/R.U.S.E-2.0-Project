@@ -22,12 +22,12 @@ import sys
 import threading
 import time
 import tomllib
-import uuid
 import webbrowser
 from pathlib import Path
 
 from ..build import BuildError, build_and_write, load_mod
 from ..home import default_home
+from ..webui import Job
 from ..rndf import RndfError
 from ..steam import build_of, find_game
 
@@ -52,19 +52,6 @@ def _steam_running() -> bool:
         return True
     out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq steam.exe", "/NH"], capture_output=True, text=True)
     return "steam.exe" in out.stdout.lower()
-
-
-class Job:
-    def __init__(self):
-        self.id = uuid.uuid4().hex[:8]
-        self.state, self.lines, self.message = "running", [], ""
-
-    def say(self, line: str) -> None:
-        self.lines.append(line)
-
-    def view(self, since: int = 0) -> dict:
-        return {"id": self.id, "state": self.state, "message": self.message, "lines": self.lines[since:],
-                "count": len(self.lines)}
 
 
 class LauncherApi:
