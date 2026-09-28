@@ -20,6 +20,20 @@ Content is built on top of it: **RUSE 2.0** (balance, units, tactics, nation ros
 - It survives game updates and years of maintenance by a small team (you + AI), and stays open to contributors.
 - It runs on the existing Steam multiplayer. No game servers of our own.
 
+**North star: the player experience (like Minecraft + CurseForge)**
+1. Download one installer and run it. It finds R.U.S.E. on its own.
+2. Browse mods in the launcher: screenshots, descriptions, ratings.
+3. Click **Install**; required mods come along automatically.
+4. Click **Play**.
+- Modpacks (e.g. RUSE 2.0) install in one click and get their own instance, the way CurseForge does it.
+- Joining a friend's modded game = clicking the Steam invite; the launcher fetches what's missing.
+- A player **never** unzips files, copies anything into game folders, edits configs, or has to "verify game files".
+- There's always a one-click way back to vanilla.
+
+What that requires: the launcher ships as a single installer (no Python or Git needed); it auto-detects the Steam
+library; installs, dependencies and updates are automatic; errors are in plain language. Longer term, publish on
+CurseForge itself if they add R.U.S.E.
+
 **Non-goals (for now)**
 - A standalone game. Eugen's assets can't leave R.U.S.E. without their permission.
 - Redistributing Eugen's files, cheats, piracy, or bypassing ownership checks.
@@ -43,6 +57,8 @@ These rules decide every design question.
 11. **Study the game freely, commit nothing of it.** We read Eugen's files (data and scripts) to learn from them
     (see [ENGINE_NOTES.md](ENGINE_NOTES.md)); no game file is ever stored in the repo (`.gitignore` enforces this).
 12. **Tool before content.** Build the platform first; unit stats, balance and rosters wait until it's usable.
+13. **New players first.** If a step can be automated, a player never sees it. Judge every launcher feature by
+    the north star above: download, install, play.
 
 ## 3. What we know (evidence as of 2026-09-28)
 
