@@ -466,8 +466,8 @@ throughout (see [ENGINE_NOTES.md](ENGINE_NOTES.md)) — read-only, nothing from 
 
 **Content track** (starts after M4, then dogfoods each later milestone):
 - **RUSE 2.0 Core** — balance, cloned units, tactics — begins once Studio (M4) exists. It includes a new nation,
-  **China** (owner, 2026-09-28), which needs M10 for the nation itself and M5 for its flag and icons. Its first units
-  can reuse the game's models (China's real army used German, Soviet and American equipment); its own models need M7.
+  **China** (owner, 2026-09-28), which needs M10 for the nation itself and M5 for its flag and icons. China is an
+  infantry nation (§11): its squads can borrow the game's infantry models at first; its own models need M7.
 - **Pacific Island Defense** needs M5–M8 (new islands need the terrain writer), plus M9 for a custom mode.
   US vs Japan fits the existing nation slots. M1.5 tells us early whether brand-new islands are realistic.
 
@@ -748,31 +748,24 @@ built yet. **The rule for all of it: as simple as R.U.S.E. already is.** Every n
 - Ten ruses, in four kinds: reveal (Spy, Decryption), hide (Radio Silence, Camouflage Net), decoy (Decoy Building,
   Decoy Offensive, Reverted Intel) and behaviour (Blitz, Terror, Fanaticism). A new card about every 2 minutes.
 
-**China in one line:** lots of cheap, tough infantry and ambushes; light tanks bought from several countries; good
-anti-tank guns; air support from American volunteers. Strong in towns and forests, weak in open tank battles.
+**China: an infantry nation (owner, 2026-09-28).** In WWII China's strength was its infantry, so in RUSE 2.0 China
+fields **infantry only: no tanks, no planes.** Every job other nations give to vehicles (anti-tank, artillery,
+anti-aircraft) is done by an infantry team. China wins with ambushes, towns, numbers and the right squad for each job.
 
-**Roster (draft names; all real Chinese WWII equipment or units).** Until China has its own models (M7), each unit
-looks like the existing unit it's copied from.
+**China's infantry (draft names).** Until China has its own models (M7), each squad borrows an existing infantry look
+(the 88th Division can use the German heavy infantry: its German helmets are accurate).
 
-| Unit | Role | History | Looks like (for now) |
-|---|---|---|---|
-| NRA Rifle Squad | light infantry | National Revolutionary Army regulars | a light infantry squad |
-| 88th Division Infantry | heavy infantry, anti-tank | German-trained division, Shanghai 1937 | German heavy infantry (their German helmets are accurate) |
-| Dadao Assault Squad | assault (towns) | the 29th Army's "big sword" units, 1933 and 1937 | a light infantry squad |
-| Sharpshooters | sniper | | Japan's sniper, another nation's look |
-| Flamethrower Squad | flamethrower | | infantry with the flame tanks' weapon |
-| Guerrillas | recon, hidden | resistance fighters behind Japanese lines | Italy's recon infantry |
-| Vickers 6-ton | light tank (1939) | about 20 bought in 1935–36 | the UK's "Vickers" unit, if it's this tank (check) |
-| T-26 | light tank (1939) | about 80–90 bought from the Soviet Union, 1938 | the Soviet T-26 |
-| Sd.Kfz. 221 | armoured car | 18 bought; used as mobile pillboxes at Shanghai | the German Sd.Kfz. 222 |
-| M3A3 Stuart | light tank (1945) | 1st Provisional Tank Group, Burma 1944–45 | the US M3A1 Stuart |
-| M4A4 Sherman | medium tank (1945) | same | the US M4 Sherman |
-| 3.7 cm Pak 36 | anti-tank gun | bought from Germany | the German Pak 36 |
-| 15 cm sFH 18 | heavy artillery | bought from Germany | the German sFH 18 |
-| 20 mm Flak 30 | anti-aircraft | bought from Germany | the German Flak 30 |
-| I-16 | fighter | Soviet aid to the Chinese Air Force | the Soviet I-16 |
-| Flying Tigers P-40 | fighter-bomber | American Volunteer Group, 1941–42 | the US P-40 |
-| B-25 Mitchell | bomber | Chinese-American Composite Wing, 1943–45 | the US B-25 |
+| Squad | Type | History |
+|---|---|---|
+| NRA Rifle Squad | light | National Revolutionary Army regulars |
+| 88th Division Infantry | heavy | German-trained division, Shanghai 1937 |
+| Sihang Defenders | urban | the 88th Division battalion that held the Sihang Warehouse in Shanghai in late October 1937 ("the Eight Hundred Heroes") |
+| Sharpshooters | sniper | |
+| Flamethrower Squad | flamethrower | |
+| Guerrillas | recon | resistance fighters behind Japanese lines |
+| Mortar Team | support: artillery | |
+| AA Machine-Gun Team | support: anti-air | |
+| Dadao Squad (optional) | elite close assault | the 29th Army's "big sword" units, 1933 and 1937 |
 
 The game already ships a Simplified Chinese language (`sc`, FORMATS.md §4), so Chinese players get the names in
 Chinese; the other nine languages get the English or local names.
@@ -782,55 +775,61 @@ Chinese; the other nine languages get the English or local names.
 | Type | Good at | Bad at |
 |---|---|---|
 | Light (riflemen) | cheap and fast; ambushes from forests and towns | tanks in the open |
-| Heavy (anti-tank) | tanks, up close | slower; weaker against infantry |
-| Assault (towns) | fighting inside towns: short range, high damage | open ground: everything outranges it |
+| Heavy | tanks up close, and holds its own against infantry | slow and expensive |
+| Urban | holding towns: tough, hard to pin down, deadly at the short range towns force | slow and outranged in the open |
 | Sniper | infantry at long range; hard to spot | anything with armour; dies fast up close |
 | Flamethrower | infantry and forts in cover | very short range; fragile |
 | Guerrilla (recon) | hidden scouting and harassment; cheap | real fights |
+| Mortar team | hitting units behind cover from far away | helpless up close |
+| AA team | planes | weak against ground units |
 
-**The "city stat": no new number first.** Inside towns, buildings block sight, so fights happen at short range. A unit
-with short range and high damage is therefore strong in a town and weak in the open without any new rule; that's the
-assault squad. If that turns out not to be enough, step two is a real town bonus, like the forest's +25%. That depends
-on whether the forest bonus is a number in the data (then it can be set per unit) or a rule inside the program
-(check 1 below).
+**Towns: the game's town bonus is enough (owner).** No new rule. The urban squad holds towns with numbers the game
+already has: more health, harder to pin down, and high damage at short range (fights in towns are short range because
+buildings block sight).
 
 **Flamethrower infantry:** an infantry squad carrying the flame weapon the flame tanks already have (the US Sherman
 flamethrower, the Italian L6/40 Lanciafiamme), with a short range.
 
 **New ruses (draft; for every nation, like the ten existing ones):**
-- **Counter-Battery:** enemy artillery that fires in the sector is revealed.
+- **Counter-Battery:** enemy artillery that fires in the sector is revealed (optional: the Listening Post covers most of it).
 - **Monsoon:** planes can't attack in the sector (the Burma monsoon grounded air forces).
 - **Tunnel Warfare:** your infantry in the sector's towns stays hidden after it fires (the tunnel villages of
   northern China). Needs balancing: it may be too strong.
 
-Whether new ruses are possible at all depends on whether ruses are data or program (check 2).
+Whether new ruses are possible at all depends on whether ruses are data or program (check 1).
 
 **Pacific forts (draft):**
-- **Coconut-log bunker:** very tough against artillery, weak against flamethrowers and assault infantry
+- **Coconut-log bunker:** very tough against artillery, weak against flamethrowers and close assault
   (Tarawa, Peleliu). Looks like Japan's buried bunker for now.
 - **Cave position:** hidden until it fires; tough; narrow field of fire (Iwo Jima).
 - **Coastal battery:** long-range gun against ships and landing craft; weak against bombers.
 - **Jungle watchtower:** sees far, including into nearby forests; fragile. Looks like the UK's forward warning post.
 - **Wufu Line bunker (China):** a concrete pillbox from the line built west of Shanghai with German advisers (1930s).
 
-**Against late-game artillery: a Sound-Ranging Post, not a fort that shoots shells down.** No WWII weapon could shoot
-down shells, and the game almost certainly can't treat a shell as a target. Real armies found enemy guns by
-listening for them and watching for the flash (sound ranging and flash spotting). So: a post that reveals any enemy
-artillery firing within a large radius, so it can be hit back. The same answer, simple and historical; it could be
-both this building and the Counter-Battery ruse. Optional (the owner: "could be left easily").
+**Listening Post (the owner's pick, against late-game artillery and air raids).** A building that warns you: every
+enemy plane, and every enemy gun that fires, inside its large listening radius shows on your map. It doesn't shoot;
+you answer with your own units. It replaces the idea of a fort that shoots shells down (no WWII weapon could, and the
+game almost certainly can't treat a shell as a target). Historical: China's *jing bao* warning network had observers
+listening for planes and phoning in their position and heading; it warned the Flying Tigers before their first fight
+(December 1941). Armies found enemy guns by sound too (sound ranging). For every nation; it fits China best.
+
+**Kamikaze (Japan, owner):** a plane that dives into its target: huge damage to one target, and the plane is lost.
+Historically from October 1944 (Leyte Gulf), mostly against ships, which fits Pacific maps with the US Navy's ships.
 
 **Voices and sounds:** needs the game's sound format decoded first (M11, last and riskiest). Then Chinese voice lines
 recorded by Mandarin speakers (volunteers or paid). Until then China borrows an existing voice set.
 
 **Checks before designing numbers** (PC, read-only, with `ruse dump` / `ruse names`):
-1. Is the forest/town bonus a number per unit or weapon in the data, or a rule in the program? (the city stat)
-2. Are ruses data (one object per ruse) or program? (new ruses)
-3. Does artillery already reveal itself when it fires? (the counter-battery design)
-4. What is the UK's "Vickers" unit? (a look for the Vickers 6-ton)
+1. Are ruses data (one object per ruse) or program? (new ruses)
+2. What does the UK's forward warning post detect, and does artillery already reveal itself when it fires? (the
+   Listening Post)
+3. Can a plane be set to be lost when it attacks? (kamikaze; otherwise it needs the add-on, M10)
+4. Can an infantry weapon fire indirectly or at planes? (China's mortar and AA teams)
 
 Sources: R.U.S.E. terrain and ambush rules (https://ruse.fandom.com/wiki/Ambush,
-https://ruse.fandom.com/wiki/Strategies_and_Tactics), ruses (https://ruse.fandom.com/wiki/Ruses); Chinese armour
-(https://en.wikipedia.org/wiki/Vickers_6-ton, https://en.wikipedia.org/wiki/T-26,
-https://tanks-encyclopedia.com/ww2/china/panzer-i-ausf-a-Chinese-service/,
-https://military-history.fandom.com/wiki/Development_of_Chinese_armoured_forces_(1927%E2%80%9345)); the unit lists in
+https://ruse.fandom.com/wiki/Strategies_and_Tactics), ruses (https://ruse.fandom.com/wiki/Ruses); the Sihang Warehouse
+(https://en.wikipedia.org/wiki/Defense_of_Sihang_Warehouse); China's warning network
+(https://historynet.com/american-volunteer-group-claire-l-chennault-and-the-flying-tigers/,
+https://warfarehistorynetwork.com/article/top-flying-tiger-general-claire-chennault/); the first kamikaze attacks
+(https://www.history.com/this-day-in-history/october-25/first-kamikaze-attack-of-the-war-begins); the unit lists in
 RUSE-Mod-Manager's class catalog (facts only).
