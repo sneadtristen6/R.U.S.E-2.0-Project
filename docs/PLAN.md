@@ -790,17 +790,15 @@ American artillery are historical, in different eras.
 China had almost no mobile anti-aircraft in real life; the owner wants it strong (China's air force is weak), so the
 two AA vehicles take that liberty.
 
-**China's air: small and weak on purpose (owner's idea, cloud's proposal, 2026-09-28).** No planes at all would leave
-China blind (R.U.S.E. scouting leans on planes) and let enemies mass bombers wherever the AA isn't. So China gets a
-token air force it isn't tempted to lean on:
-- **Fighters only, no bombers.** The I-16 (Soviet aid; the Soviet I-16 look is an exact match) in 1939–42. For 1945,
-  either the I-16 stays or the Flying Tigers' P-40 comes in, still weaker than the other nations' 1945 fighters (to
-  decide).
-- **One expensive airfield.** If the game can cap a building at one per player, cap it (check 4); if not, a high price
-  does the job.
-- It fits the rest: the Listening Post sees planes coming, the mobile AA shoots them down, and the few fighters chase
-  off enemy recon planes.
-- If playtests show China is fine without planes, the airfield goes: removing is easier than adding later.
+**China's air: small and weak on purpose (decided 2026-09-28).** No planes at all would leave China blind (R.U.S.E.
+scouting leans on planes) and unable to chase off the enemy scout planes that find its hidden infantry. So:
+- **Fighters and recon planes only, no bombers.** The fighter is the I-16 in every era (Soviet aid; the game's Soviet
+  I-16 is an exact match). The recon plane borrows an existing look, picked when it's built.
+- **One expensive airfield.** If the game can cap a building at one per player, cap it (check 4); if not, the high
+  price does the job.
+- It works with the rest: the Listening Post sees planes coming, the mobile AA shoots them down, the fighters chase
+  off scouts anywhere on the map.
+- If playtests show China is fine without planes, the airfield goes.
 
 **Infantry: one strength, one weakness each**
 
