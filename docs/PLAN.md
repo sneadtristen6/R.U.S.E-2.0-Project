@@ -764,7 +764,6 @@ squad for each job, and defends the sky mostly from the ground.
 | Sharpshooters | sniper | |
 | Flamethrower Squad | flamethrower | |
 | Guerrillas | recon | resistance fighters behind Japanese lines |
-| Mortar Team | support: artillery | |
 
 The game already ships a Simplified Chinese language (`sc`, FORMATS.md §4), so Chinese players get the names in
 Chinese; the other nine languages get the English or local names.
@@ -797,7 +796,7 @@ token air force it isn't tempted to lean on:
 - **Fighters only, no bombers.** The I-16 (Soviet aid; the Soviet I-16 look is an exact match) in 1939–42. For 1945,
   either the I-16 stays or the Flying Tigers' P-40 comes in, still weaker than the other nations' 1945 fighters (to
   decide).
-- **One expensive airfield.** If the game can cap a building at one per player, cap it (check 5); if not, a high price
+- **One expensive airfield.** If the game can cap a building at one per player, cap it (check 4); if not, a high price
   does the job.
 - It fits the rest: the Listening Post sees planes coming, the mobile AA shoots them down, and the few fighters chase
   off enemy recon planes.
@@ -813,7 +812,6 @@ token air force it isn't tempted to lean on:
 | Sniper | infantry at long range; hard to spot | anything with armour; dies fast up close |
 | Flamethrower | infantry and forts in cover | very short range; fragile |
 | Guerrilla (recon) | hidden scouting and harassment; cheap | real fights |
-| Mortar team | hitting units behind cover from far away | helpless up close |
 
 **Towns: the game's town bonus is enough (owner).** No new rule. The urban squad holds towns with numbers the game
 already has: more health, harder to pin down, and high damage at short range (fights in towns are short range because
@@ -857,8 +855,7 @@ recorded by Mandarin speakers (volunteers or paid). Until then China borrows an 
 2. What does the UK's forward warning post detect, and does artillery already reveal itself when it fires? (the
    Listening Post)
 3. Can a plane be set to be lost when it attacks? (kamikaze; otherwise it needs the add-on, M10)
-4. Can an infantry weapon fire indirectly? (China's mortar team)
-5. Can the game cap how many of a building a player has, e.g. one airfield? (China's air)
+4. Can the game cap how many of a building a player has, e.g. one airfield? (China's air)
 
 Sources: R.U.S.E. terrain and ambush rules (https://ruse.fandom.com/wiki/Ambush,
 https://ruse.fandom.com/wiki/Strategies_and_Tactics), ruses (https://ruse.fandom.com/wiki/Ruses); the Sihang Warehouse
