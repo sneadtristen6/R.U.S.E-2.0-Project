@@ -110,7 +110,7 @@ Who already solved pieces of what we build next, what we take from them, and whe
 | Multiplayer check | Paradox (HOI4) checksum | docs | a checksum over the game files, shown in-game; mods change it, DLC doesn't. Windows/Linux file-name case differences broke it for cross-platform play; our fingerprint lowercases paths, so it can't |
 | Share-a-mod-set codes | r2modman / Thunderstore profile codes | docs | codes are temporary and stored on Thunderstore's server; they carry mods, versions and settings. Ours need no server and don't expire, but carry no settings |
 
-**Changes this suggests** (for the owner to decide):
+**Changes this suggests** (all four decided 2026-09-28; now in [MOD_FORMAT.md](MOD_FORMAT.md) §5, §6 and §10.6):
 1. A `final` pass for balance mods, so they apply after every unit mod without listing them (Factorio, ModuleManager).
 2. Patches that apply only when another mod is present, for compatibility patches (ModuleManager `:NEEDS`).
 3. Spell values the WARNO way (`RGBA[…]`, `GUID:{…}`, `nil`) so Eugen modders feel at home.

@@ -43,6 +43,7 @@ version     = "0.1.0"               # semver
 authors     = ["you"]
 license     = "CC-BY-4.0"           # the mod content's license (author's choice)
 description = "Balance, new units and tactics for RUSE 2.0."
+text_prefix = "R2"                  # start of the text keys this mod creates (§6)
 platform    = ">=0.1, <0.2"         # platform versions this mod works with
 
 [game]
@@ -138,28 +139,48 @@ Ammo_R2_Flamethrower is TAmmunition
 )
 
 delete $/GFX/Everything/Descriptor_Unit_Unwanted
+
+// Runs after every mod's normal changes, so it reaches units other mods add too (§10.6)
+final patch every TUniteAuSolDescriptor
+(
+    SeuilMort *= 1.1
+)
+
+// Only when another mod is in the set: a compatibility patch (§10.6)
+when mod better-ai
+(
+    patch $/GFX/Everything/Descriptor_Unit_M4_Sherman ( ProductionPrice += 5 )   // +5 on each era's price
+)
 ```
 
 **Values**
 - **Type follows the schema:** when you patch an existing property, the literal is converted to that property's
-  type, so `ProductionTime = 10` just works. Explicit forms are available where ambiguous:
-  `int8() int16() uint16() uint32() int64() f64() str('…') wstr("…") path('…') guid('{…}')
-  vec3(x,y,z) float4(a,b,c,d) color(r,g,b,a) int2(a,b) float2(a,b) hash(0x…)`.
-- Lists are `[a, b]`, maps `MAP[(k, v), …]`, pairs `(a, b)`.
-- References are `$/…` export paths, `~/Name` for mod-local objects, and `null`.
-- `loc('key')` refers to a row in `text/*.csv`. The builder assigns an unused 64-bit hash and writes it to NDF and every `.dic`.
-- Comments are `//` and `/* */`. Files are UTF-8.
+  type, so `ProductionTime = 10` just works. Explicit forms are spelled the way Eugen's own text NDF (WARNO) spells
+  them wherever it has one: `Float2[a, b]`, `Float3[x, y, z]`, `Float4[a, b, c, d]`, `Int2[a, b]`, `RGBA[r, g, b, a]`,
+  `GUID:{…}`. Ours cover the types WARNO's text doesn't tell apart: `int8() int16() uint16() uint32() int64() f64()
+  str('…') wstr("…") path('…')`, and text keys `key(M_D_01)` (or `key(0x…)` for one that isn't a name).
+- Lists are `[a, b]`, maps `MAP [ (k, v), … ]`, pairs `(a, b)`, booleans `true` / `false`.
+- References are `$/…` export paths, `~/Name` for mod-local objects, and `nil`.
+- `loc('key')` refers to a row in `text/*.csv` (§6).
+- `export` in front of a new named object is allowed, as in WARNO; every named object a mod creates is exported anyway.
+- Comments are `//`, `/* */` and `(* *)`. Files are UTF-8.
 
 ## 6. Localisation (`text/*.csv`)
 
 ```csv
-key,en,fr,de,it,es,pl
-r2.unit.us_marines.name,US Marines,Marines US,US-Marines,Marines USA,Marines de EE. UU.,Piechota morska USA
+key,game_key,us,fr,ger,ita,spa,pol
+r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Marines de EE. UU.,Piechota morska USA
 ```
 
-- Language columns match the languages the game ships (to be enumerated in M1).
-- Missing cells fall back to `en`.
-- Existing game strings can be overridden with `game:<hash>` keys.
+- **Language columns** use the game's own language folders: `us fr ger ita spa pol cz ru jpn sc` (from
+  RUSE-Mod-Manager's notes; `tools/dic_check.py` confirms them on the game). The usual codes are accepted too:
+  `en de it es pl cs ja zh`. Missing cells fall back to `us`.
+- **Text keys are readable names.** The game's keys pack a name of up to 8 characters (0-9, A-Z, _, a-z) into a
+  number ([RESEARCH.md](RESEARCH.md) §5). Each row gets one: the `game_key` column sets it (`R2MARINE`), or when it's
+  empty, the builder makes one from the manifest's `text_prefix` plus a number, assigned in sorted `key` order so it's
+  the same on every PC (`R2000001`, `R2000002`, …). A key the game or another mod in the set already uses is an error
+  that names both.
+- Existing game texts can be overridden by name, `game:M_D_01`, or by number, `game:0x…`, for a key that isn't a name.
 
 ## 7. Assets
 
@@ -212,7 +233,8 @@ depends only on the game build, the mods and their order.
 2. **Read:** turn each mod's `.rndf`, `.csv` and `files/` entries into operations (the patch IR, [PLAN.md](PLAN.md) L3).
    Every operation remembers its mod, file and line.
 3. **Apply:** start from the base game for this build and apply the operations one at a time: mods in load order;
-   inside a mod, files sorted by path; inside a file, top to bottom.
+   inside a mod, files sorted by path; inside a file, top to bottom. Then the `final` operations, in the same order
+   (§10.6).
 4. **Check, cook, pack, fingerprint** ([PLAN.md](PLAN.md) L3).
 
 **One rule explains most of what follows:** every operation sees the game exactly as the operations before it left it.
@@ -325,9 +347,13 @@ it means:
    The builder walks the graph, and when several mods are free to go next it takes them alphabetically by id, so the
    order is always the same. A loop (A after B, B after A) is an error that names the loop.
 3. **Mods that must not combine** (`[conflicts]`) stop the build before anything is applied.
-
-A mod meant to apply to units that other mods add (a balance pass, say) has to load after them: declare them as
-optional dependencies, or use `load.after`.
+4. **Final pass:** operations marked `final` (§5) run after every mod's normal operations, again in load order. So a
+   balance pass marked `final` reaches the units every other mod adds, without listing those mods. (Factorio's
+   final-fixes stage and ModuleManager's `:FINAL` work the same way; [RESEARCH.md](RESEARCH.md) §5.)
+5. **Conditional blocks:** `when mod <id> ( … )` applies its contents only if that mod is in the set; `when not mod`
+   is the opposite, and a version range can follow the id (`when mod better-ai >=1.2`). A mod named in a `when`
+   counts as an optional dependency, so a compatibility patch always runs after the mod it patches. (Like
+   ModuleManager's `:NEEDS`.)
 
 ### 10.7 Worked example
 
@@ -394,6 +420,10 @@ The builder sorts every file a mod set changes into one of two groups. Authors n
 2. **Shared sub-objects:** editing one through a unit is an error unless the patch says `own` or `shared` (§10.5).
 3. **Patch, then a later mod deletes the object:** a warning (§10.4).
 4. **Patching many objects at once:** `patch every <class>` exists (§5, §10.2) for balance passes.
+5. **A final pass** for balance mods (§10.6).
+6. **Conditional blocks** for compatibility patches, `when mod <id>` (§10.6).
+7. **WARNO's spellings** for values, references and comments (§5).
+8. **Readable text keys** (§6).
 
 ## 11. Game updates
 
