@@ -20,6 +20,9 @@ from .resolve import ModInfo, load_order
 from .rndf import parse
 
 _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+# The game ships "_debuginfo" copies of a few data files that repeat every name of the main file. The game runs with
+# them untouched (C2) or rewritten (C4); builds leave them exactly as shipped (PLAN.md §7, C4).
+SHADOW = re.compile(r"_debuginfo\.cpp\.[a-z]*ndfbin$")
 
 
 class BuildError(Exception):
@@ -75,16 +78,22 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0") -> BuildResult:
     order = load_order([m for m, _ in mods])
     by_id = {m.id: (m, ops) for m, ops in mods}
     result = BuildResult(order=[m.id for m in order])
-    members, files = {}, {}
+    members, files, shadows = {}, {}, []
     for e in arc.entries:
         start = arc.data_offset + e.offset
         head = arc.raw[start:start + 12]
         if head[:4] == b"EUG0" and head[8:12] == b"CNDF":
+            if SHADOW.search(game_path(e.path)):
+                shadows.append(e.path)
+                continue
             files[game_path(e.path)] = bytes(arc.read(e))
             members[game_path(e.path)] = e.path
     base, loaded = load(files)
     run = Engine(base).run([by_id[m.id] for m in order])
     result.findings = [Finding("note", n) for n in base.notes] + list(run.findings)
+    if shadows:
+        result.findings.insert(0, Finding("note", f"left {len(shadows)} debug-info copies as shipped "
+                                                  f"({', '.join(p.rsplit(chr(92), 1)[-1] for p in shadows)})"))
     if run.errors:
         return result
     try:

@@ -149,6 +149,11 @@ requirement, and the engine doesn't check member bytes against anything we chang
 **Naval units exist:** `Descriptor_Unit_Battleship`, `_Destroyer` and `_LCVP` (ships named USS Texas, Nevada, Arkansas and
 others: the Normandy mission). Whether players can control them in skirmish is untested.
 
+**Debug-info copies:** ZZ_GladPatchableWin ships `*_debuginfo.cpp.gladndfbin` next to four data files (`everything`,
+`vfx_bank`, `visibility`, `ia\launcher`). They repeat every export name of their main file; two are the same size as
+their main file, the other two are larger. The game ran with them untouched while the main file was modded (C2) and
+with them rewritten too (C4), so which one it reads, if any, is unknown. `ruse build` leaves them as shipped.
+
 ## 3. Nations
 
 - `Nationalite` is an int32 on unit, infantry, aircraft, building, truck and acknowledgement descriptors.

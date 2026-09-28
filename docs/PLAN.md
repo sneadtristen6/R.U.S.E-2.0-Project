@@ -552,7 +552,11 @@ French barracks 25 → 13, artillery factory 35/30 → 18/15, HQ 140 → 70). Bu
     modded copy ready: D:\RUSE-Instances\c4-half-price  {'linked': 37, 'copied': 23, 'written': 1}
 
 - **The whole text-mod pipeline works in-game.**
-- **To fix (cloud session):**
+- **Fixed (cloud session, 2026-09-28):** builds now leave the four `*_debuginfo` copies exactly as shipped (they're
+  skipped, so no duplicate names and `patch every` can't reach them; C2 showed the game runs with them untouched), and
+  similar notes collapse to three plus a count (`ruse build --all` shows every one). If a later test shows the game
+  reads these copies (e.g. a cloned unit misbehaving), builds can mirror changes into them instead.
+- **Was to fix:**
   - The duplicate-name notes are noise. The game's `*_debuginfo.cpp.gladndfbin` files (everything, vfx_bank, …)
     repeat every name of their main file. Treat `_debuginfo` files as shadows: don't report their names, and hide or
     collapse the notes in normal output.
@@ -648,8 +652,7 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    (all of MOD_FORMAT §10), the `.rndf` reader, fingerprints and join codes (see README "Code so far"), and the
    bridge between game files and the engine for value changes, with `ruse build` (C4 is ready).
    Next: the bridge adds and removes objects (TOPO rule from the PC check), so a cloned unit can be built (M2).
-   Also from C4: hide the ×10,762 duplicate-name notes caused by `*_debuginfo` files, and decide whether rules touch
-   those files (§7 C4 "To fix").
+   ~~Also from C4: the `*_debuginfo` notes~~ **done:** debug-info copies are left as shipped, similar notes collapse.
 4. **You:** the open decisions in §9 (name, UI stack, outreach timing, the unit to clone in M2).
 
 **How the two sessions share the work**

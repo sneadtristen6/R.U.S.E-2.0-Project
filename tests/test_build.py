@@ -90,6 +90,32 @@ class BuildingAPack(unittest.TestCase):
             self.assertEqual(result.changed, {})
 
 
+class DebugInfoShadows(unittest.TestCase):
+    def test_debuginfo_copies_are_left_as_shipped(self):
+        pack = make_edat([("dir", "genglad\\patchable\\gfx\\", [
+            ("file", "everything.cpp.gladndfbin", NDF),
+            ("file", "everything_debuginfo.cpp.gladndfbin", NDF)])])  # repeats every name of the main file
+        with tempfile.TemporaryDirectory() as d:
+            mod = load_mod(write_mod(d, "half", {"p.rndf": "patch every TBatimentDescriptor ( ProductionPrice *= 0.5 )"}))
+            result = build_pack(Edat(pack), [mod])
+        self.assertEqual(result.errors, [])
+        self.assertEqual(list(result.changed), ["genglad\\patchable\\gfx\\everything.cpp.gladndfbin"])
+        self.assertEqual([f.message for f in result.findings],
+                         ["left 1 debug-info copies as shipped (everything_debuginfo.cpp.gladndfbin)"])
+
+
+class Report(unittest.TestCase):
+    def test_similar_notes_collapse(self):
+        from rusemod.cli import report_lines
+        from rusemod.patch import Finding
+        notes = [Finding("note", f"m (p.rndf:4): $/GFX/Everything/B{i} has no ProductionPrice; skipped") for i in range(10)]
+        lines = report_lines([Finding("error", "boom")] + notes)
+        self.assertEqual(lines[0], "  error    boom")
+        self.assertEqual(len(lines), 5)
+        self.assertIn("… and 7 more like this", lines[-1])
+        self.assertEqual(len(report_lines(notes, show_all=True)), 10)
+
+
 class BuildCommand(unittest.TestCase):
     def run_cli(self, *argv):
         out = io.StringIO()

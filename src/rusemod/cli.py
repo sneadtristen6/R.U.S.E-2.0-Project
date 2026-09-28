@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -158,6 +159,26 @@ def cmd_extract(args) -> int:
     return 0
 
 
+_NAMES = re.compile(r"\$/\S+|\S+#\d+")
+
+
+def report_lines(findings, show_all: bool = False, keep: int = 3):
+    """Errors first, then warnings, then notes. Findings that differ only in object names are collapsed to the
+    first `keep` plus a count, unless show_all."""
+    out = []
+    for level in ("error", "warning", "note"):
+        groups: dict[str, list] = {}
+        for f in findings:
+            if f.level == level:
+                groups.setdefault(_NAMES.sub("…", f.message), []).append(f)
+        for items in groups.values():
+            shown = items if show_all else items[:keep]
+            out += [f"  {level:7}  {f.message}" for f in shown]
+            if len(items) > len(shown):
+                out.append(f"  {level:7}  … and {len(items) - len(shown)} more like this (--all shows them)")
+    return out
+
+
 def cmd_build(args) -> int:
     try:
         mods = [load_mod(m) for m in args.mods]
@@ -171,8 +192,8 @@ def cmd_build(args) -> int:
         except ResolveError as exc:
             raise UserError(f"load order: {exc}") from None
         print("load order: " + " -> ".join(result.order))
-        for f in result.findings:
-            print(f"  {f.level:7}  {f.message}")
+        for line in report_lines(result.findings, show_all=args.all):
+            print(line)
         counts = {lvl: sum(1 for f in result.findings if f.level == lvl) for lvl in ("error", "warning", "note")}
         print(f"{counts['error']} error(s), {counts['warning']} warning(s), {counts['note']} note(s)")
         if result.errors:
@@ -227,6 +248,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--pack", default="ZZ_GladPatchableWin.dat", help="the pack the mods change (default: the unit data)")
     p.add_argument("--out", help="write the rebuilt pack here")
     p.add_argument("--instance", help="build a modded copy of the game in this folder (never the Steam install)")
+    p.add_argument("--all", action="store_true", help="show every note, without collapsing similar ones")
     p.set_defaults(fn=cmd_build)
     return ap
 
