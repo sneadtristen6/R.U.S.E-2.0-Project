@@ -12,6 +12,7 @@ from test_dic import MP01_KEY, make_dic
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
 import dic_check  # noqa: E402
+import names_check  # noqa: E402
 import topo_check  # noqa: E402
 from rusemod import Ndf  # noqa: E402
 
@@ -79,6 +80,9 @@ class EndToEnd(unittest.TestCase):
             self.assertIn("keys that decode to names: 1 of 1", out)
             self.assertIn("M_D_01 = 'Blitz'", out)
             self.assertIn("'us': 1", out)
+            code, out = run(names_check, root)
+            self.assertEqual(code, 0, out)
+            self.assertIn("EXPR rebuilt byte-identical: 1 of 1", out)
             self.assertIn("keeps every old text: 1 of 1", out)
 
 

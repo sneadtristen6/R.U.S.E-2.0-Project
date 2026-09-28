@@ -9,6 +9,8 @@ from __future__ import annotations
 import struct
 import zlib
 
+from . import names
+
 END = 0xABABABAB
 HDR = 0x28
 SCALAR = {  # editable scalar type codes -> struct format
@@ -163,12 +165,17 @@ class Ndf:
             self._toc[name] = (ff, off, size)
         self.classes = self._strs("CLAS")
         self.strings = self._strs("STRG")
-        self._strg_dirty = False
+        self._dirty: set[str] = set()   # tables changed since reading; everything else is written back as read
         self.trans = self._strs("TRAN")
         self.props = self._props()
         self.objects = self._objects()
-        self.exports = _name_tree(self._sec("EXPR"), self.trans)   # object index -> export path
-        self.imports = _name_tree(self._sec("IMPR"), self.trans)   # import index -> path in another file
+        self._n_objects = len(self.objects)
+        self.expr_tree = names.parse(self._sec("EXPR"))
+        self.impr_tree = names.parse(self._sec("IMPR"))
+        self.exports = names.paths(self.expr_tree, self.trans)   # object index -> export path
+        self.imports = names.paths(self.impr_tree, self.trans)   # import index -> path in another file
+        topo = self._sec("TOPO") if "TOPO" in self._toc else b""
+        self.topo = [struct.unpack_from("<I", topo, 4 * k)[0] for k in range(len(topo) // 4)]
         self._by_export = {v: k for k, v in self.exports.items()}
         self._prop_index = {name: i for i, (name, _cls) in enumerate(self.props)}
 
@@ -231,7 +238,7 @@ class Ndf:
         """Append a STRG entry and return its index (existing entries keep theirs)."""
         text.encode("latin-1")
         self.strings.append(text)
-        self._strg_dirty = True
+        self._dirty.add("STRG")
         return len(self.strings) - 1
 
     def set_string(self, index: int, text: str) -> None:
@@ -241,7 +248,67 @@ class Ndf:
         """
         text.encode("latin-1")  # STRG is latin-1: fail now, not at write time
         self.strings[index] = text
-        self._strg_dirty = True
+        self._dirty.add("STRG")
+
+    # --- growing the file: new classes, properties, names and objects (existing indices never move) ---
+    def class_index(self, name: str) -> int:
+        """The CLAS entry for `name`, added if the file doesn't have it."""
+        if name in self.classes:
+            return self.classes.index(name)
+        name.encode("latin-1")
+        self.classes.append(name)
+        self._dirty.add("CLAS")
+        return len(self.classes) - 1
+
+    def add_prop(self, name: str, cls: int) -> int:
+        """Append a PROP entry (property `name` of class index `cls`)."""
+        name.encode("latin-1")
+        self.props.append((name, cls))
+        self._dirty.add("PROP")
+        return len(self.props) - 1
+
+    def tran_index(self, fragment: str) -> int:
+        """The TRAN entry for a name fragment, added if missing."""
+        if fragment in self.trans:
+            return self.trans.index(fragment)
+        fragment.encode("latin-1")
+        self.trans.append(fragment)
+        self._dirty.add("TRAN")
+        return len(self.trans) - 1
+
+    def add_object(self, cls: int, props: list) -> int:
+        """Append an object; returns its index."""
+        self.objects.append(Obj(cls, props))
+        return len(self.objects) - 1
+
+    def add_export(self, path: str, index: int) -> None:
+        """Name object `index` (EXPR)."""
+        self.expr_tree = names.add(self.expr_tree, path, index, self.trans, self.tran_index)
+        self.exports[index] = path
+        self._by_export[path] = index
+        self._dirty.add("EXPR")
+
+    def remove_export(self, index: int) -> None:
+        if names.remove(self.expr_tree, index):
+            self._by_export.pop(self.exports.pop(index), None)
+            self._dirty.add("EXPR")
+
+    def import_index(self, path: str) -> int:
+        """The IMPR entry for `path` (an export path in another file), added if missing."""
+        for idx, p in self.imports.items():
+            if p == path:
+                return idx
+        idx = max(self.imports, default=-1) + 1
+        self.impr_tree = names.add(self.impr_tree, path, idx, self.trans, self.tran_index)
+        self.imports[idx] = path
+        self._dirty.add("IMPR")
+        return idx
+
+    def set_topo(self, topo: list[int]) -> None:
+        if "TOPO" not in self._toc:
+            raise ValueError("this file has no TOPO table")
+        self.topo = list(topo)
+        self._dirty.add("TOPO")
 
     # --- serialization ---
     def _encode_obje(self) -> bytes:
@@ -253,11 +320,28 @@ class Ndf:
             buf += struct.pack("<I", END)
         return bytes(buf)
 
+    def _table(self, name: str) -> bytes:
+        def strs(items):
+            return b"".join(struct.pack("<I", len(s.encode("latin-1"))) + s.encode("latin-1") for s in items)
+        if name == "OBJE":
+            return self._encode_obje()
+        if name == "CHNK" and len(self.objects) != self._n_objects:
+            return struct.pack("<II", 0, len(self.objects))  # always (0, object count)
+        if name not in self._dirty:
+            return self._sec(name)
+        if name in ("STRG", "CLAS", "TRAN"):
+            return strs({"STRG": self.strings, "CLAS": self.classes, "TRAN": self.trans}[name])
+        if name == "PROP":
+            return b"".join(struct.pack("<I", len(n.encode("latin-1"))) + n.encode("latin-1") + struct.pack("<I", c)
+                            for n, c in self.props)
+        if name == "TOPO":
+            return b"".join(struct.pack("<I", i) for i in self.topo)
+        if name in ("EXPR", "IMPR"):
+            return names.to_bytes(self.expr_tree if name == "EXPR" else self.impr_tree)
+        return self._sec(name)
+
     def to_logical(self) -> bytes:
-        sections = {name: (self._encode_obje() if name == "OBJE" else self._sec(name)) for name in self._order}
-        if self._strg_dirty:
-            sections["STRG"] = b"".join(struct.pack("<I", len(s.encode("latin-1"))) + s.encode("latin-1")
-                                        for s in self.strings)
+        sections = {name: self._table(name) for name in self._order}
         blob = bytearray()
         layout = []  # (name, offset, size)
         for name in self._order:
