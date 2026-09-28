@@ -79,10 +79,12 @@ class Loading(unittest.TestCase):
         base, loaded, result = build("patch $/A ( Speed *= 1 )")
         self.assertEqual(save(base, result.game, loaded), {})
 
-    def test_the_same_name_in_two_files_is_refused(self):
+    def test_the_same_name_in_two_files_is_reported_and_kept_apart(self):
         other = make_ndf(objects=[(0, [])], classes=["T"], props=[], exports={0: "A"})
-        with self.assertRaisesRegex(ModelError, r"\$/A is named in both"):
-            load({**FILES, OTHER: other})
+        game, _ = load({**FILES, OTHER: other})
+        self.assertEqual(game.objects["$/A"].cls, "TUniteAuSolDescriptor")  # the first file's
+        self.assertEqual(game.objects[f"{OTHER}#0"].cls, "T")
+        self.assertIn("$/A is named in both", game.notes[0])
 
 
 class WritingBack(unittest.TestCase):

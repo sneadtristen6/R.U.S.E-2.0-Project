@@ -1,0 +1,5 @@
+// Every building at half price (x.5 rounds up, the school way). Buildings without a price are skipped.
+patch every TBatimentDescriptor
+(
+    ProductionPrice *= 0.5
+)

@@ -84,7 +84,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0") -> BuildResult:
             members[game_path(e.path)] = e.path
     base, loaded = load(files)
     run = Engine(base).run([by_id[m.id] for m in order])
-    result.findings = list(run.findings)
+    result.findings = [Finding("note", n) for n in base.notes] + list(run.findings)
     if run.errors:
         return result
     try:

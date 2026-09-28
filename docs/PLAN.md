@@ -521,6 +521,21 @@ means every new unit name, rebuilds that whole pack (L5). With one, a mod ships 
   which the streaming writer handles (M10 is parked). Open: whether an *edited* map pack's header checksum is enforced
   (this test used unchanged content), tested in M6.
 
+### C4: a text mod through the whole pipeline (ready to run on the PC)
+
+C2 proved the game loads a pack we rebuilt with a script. C4 proves the real pipeline: a mod written as text
+([`examples/half-price-buildings/`](../examples/half-price-buildings/)), put through load order, the rules engine and the
+bridge, then written into a modded copy.
+
+    set PYTHONPATH=<repo>\src
+    py -3 -m rusemod build examples\half-price-buildings --instance D:\RUSE-Instances\c4-half-price
+
+- The build prints the load order and every note (one per building without a price), then "modded copy ready".
+  It reports, as notes, any object name used in two files (an open question in MOD_FORMAT.md §14).
+- Launch `RUSE.exe` from the instance with Steam running, start a skirmish, open the build menu: every building costs
+  half of normal (x.5 rounds up).
+- Record the result, the build's output and how long it took, in FORMATS.md or here.
+
 **This plan is a living document.** We adjust it together as we learn.
 
 **Progress (2026-09-28):** C1 passed (lossless NDF round-trip). First real library landed: `src/rusemod/`

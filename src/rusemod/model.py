@@ -174,12 +174,17 @@ def load(files: dict[str, bytes]) -> tuple[Game, dict[str, NdfFile]]:
     """Load NDF files (game path -> bytes) into one Game."""
     loaded = {game_path(p): NdfFile(p, raw) for p, raw in files.items()}
     owner: dict[str, str] = {}
-    for nf in loaded.values():
-        for name in nf.names.values():
-            if name in owner:
-                raise ModelError(f"{name} is named in both {owner[name]} and {nf.path}")
-            owner[name] = nf.path
     game = Game()
+    for nf in loaded.values():
+        for i, name in list(nf.names.items()):
+            if name in owner:  # MOD_FORMAT §14 q3: which copy the game uses is unknown, so say so
+                alt = f"{nf.path}#{i}"
+                game.notes.append(f"{name} is named in both {owner[name]} and {nf.path}; mods reach the first, "
+                                  f"the second is {alt}")
+                nf.names[i] = alt
+                nf.index_of[alt] = nf.index_of.pop(name)
+            else:
+                owner[name] = nf.path
     for nf in loaded.values():
         for i, name in nf.names.items():
             game.objects[name] = nf.obj(i)

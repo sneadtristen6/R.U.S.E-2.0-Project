@@ -80,6 +80,7 @@ class Obj:
 class Game:
     objects: dict = field(default_factory=dict)   # name -> Obj
     files: dict = field(default_factory=dict)     # game path -> bytes
+    notes: list = field(default_factory=list)     # things noticed while loading, for the build report
 
 
 def num(v, kind="int32") -> Num:

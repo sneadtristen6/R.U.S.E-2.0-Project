@@ -1,0 +1,8 @@
+# Check C4 (docs/PLAN.md §7): a mod written as text, built by `ruse build`, loaded by the game.
+[mod]
+id          = "half-price-buildings"
+name        = "Half-price buildings (test)"
+version     = "0.1.0"
+authors     = ["RUSE Mod Platform"]
+license     = "MIT"
+description = "Every building costs half. Proves a text mod builds and loads in-game. Not a balance mod."
