@@ -366,10 +366,19 @@ Descriptor_Unit_R2_MG_Nest is clone $/GFX/Everything/Descriptor_Unit_Tourelle_MG
 
 ### 10.8 Gameplay vs cosmetic
 
-Classified automatically and conservatively:
-- Gameplay: any change to NDF, scenarios, `mapinfo.win`, map packs or scripts. These must match in multiplayer.
-- Cosmetic: texture, model, sound, video or font replacements that change no NDF. These may differ per player.
-- The rules get refined after 2-PC tests.
+The builder sorts every file a mod set changes into one of two groups. Authors never declare it.
+
+| Group | Files | In multiplayer |
+|---|---|---|
+| **Gameplay** | every NDF file (unit data, maps, scenario data, even the few that are probably UI-only), `.scenario`, `mapinfo.win`, `.kdt`, `save.boobspc`, `output.sdb`, anything inside a map pack, scripts (`.xyz`, `.ipk`) | must be identical on every PC |
+| **Cosmetic** | textures, models, animations, sounds, videos, fonts, UI (`.gpk`), text (`.dic`) | may differ between players |
+
+- A mod set counts as gameplay if it changes even one gameplay file. Only gameplay files go into the fingerprint (§12).
+- A file whose content ends up identical to the game's own doesn't count as changed.
+- Cautious on purpose: when in doubt, a file is gameplay. A wrong "gameplay" only makes players match when they didn't
+  strictly have to; a wrong "cosmetic" causes desyncs.
+- To confirm in the 2-PC tests ([PLAN.md](PLAN.md) L6), models especially: in some games a model's size changes what
+  can be seen or hit.
 
 ### 10.9 Determinism
 
@@ -395,13 +404,14 @@ Classified automatically and conservatively:
   - missing targets are errors
 - `game.builds` in the manifest is updated when the author confirms.
 
-## 12. Mod sets, lockfiles and join codes
+## 12. Mod sets, lockfiles, fingerprints and join codes
 
 ```toml
 # modset.lock
-format     = 1
-platform   = "0.3.0"
-game_build = "24687178"
+format      = 1
+platform    = "0.3.0"
+game_build  = "24687178"
+fingerprint = "K7Q2-M9XD"   # written by the builder (below)
 
 [[mod]]
 id      = "ruse2-core"
@@ -413,9 +423,57 @@ source  = "index"      # or a direct URL
 - **Shape follows Modrinth's `.mrpack`** (see [RESEARCH.md](RESEARCH.md)): each resolved file lists `path`,
   `hashes` (sha1 + sha512), `downloads` (one or more HTTPS mirrors) and `fileSize`, so packs stay tiny and files can
   live on any host. The TOML above is the human-edited form; the launcher stores the resolved JSON.
-- **Join code v1:** `RUSE1:` + base32 of the compressed canonical lockfile plus a checksum. It's self-contained, so no server is needed.
-  It's typically 60–150 characters, fine for Steam chat or Discord.
+- **A published mod version never changes.** A fix is always a new version. That's what lets a mod id + version stand
+  for exact files everywhere: lockfiles, join codes and the index.
+
+### Fingerprint
+
+A short code that is the same on two PCs exactly when their gameplay content is the same.
+
+```
+SHA-256 over, in this order:
+  "RUSEFP1\n"
+  the Steam build id, "\n"
+  for each gameplay file (§10.8) the mod set changes, adds or deletes,
+  sorted by its lowercase game path with "/" separators:
+    the path, "\n", then the SHA-256 of its canonical content (or the word "deleted")
+```
+
+- **Canonical content:** NDF files are hashed uncompressed (their logical bytes), so compression settings can't change
+  the fingerprint. Every other file is hashed as written.
+- **Only changed files count.** Everything else is pinned by the Steam build id, so a fingerprint takes seconds, not a
+  pass over 3 GB of game data.
+- **Cosmetic files are left out**, so two players with different skins still match.
+- **It's about content, not names:** two different mod sets that produce identical gameplay files get the same
+  fingerprint, and that's correct, because they play together fine.
+- **Shown to people as 8 characters** of Crockford base32 (digits and letters without I, L, O, U, so nothing is
+  misread), e.g. `K7Q2-M9XD`. Vanilla has one too (no changed files), so "we're both on vanilla" is checked the same way.
+
+### Join codes
+
+v1 needs no server. A join code names the game build, the mods and their exact versions, and the fingerprint.
+
+- `RUSE1:` + Crockford base32 of:
+  - format (1 byte), Steam build id (4 bytes), fingerprint (the first 10 bytes of the SHA-256), mod count (1 byte)
+  - per mod: its id (length + text) and version (3 bytes: major, minor, patch)
+  - a 4-byte checksum (CRC-32) that catches typos and cut-off pastes
+- Length, with typical 10-letter mod ids: about 60 characters for one mod, 110 for three, 260 for ten. Fine for Steam
+  chat or Discord.
+- **No file hashes needed:** published versions never change, so id + version already pins exact files, and the index
+  has their hashes. After building, the joiner's fingerprint must equal the code's (all 10 bytes), or the launcher
+  stops before the game starts and says so.
+- Mods that aren't on the index can't go in a v1 code (they'd need a download link). The launcher says so and offers
+  the full lockfile as a file to send instead.
+- Changed from the first draft, which put the whole compressed lockfile in the code: the file hashes made codes about twice as
+  long, and the fingerprint check makes them unnecessary.
 - **v2 (optional service):** short codes, and direct transfer of unpublished mods.
+
+### Decisions for you (§12)
+
+1. **A published mod version never changes;** a fix is always a new version. A version number then always means the
+   same files, which is what keeps join codes short. Recommended.
+2. **Join codes carry mod names, versions and the fingerprint** instead of the whole lockfile: about half the length,
+   and still checked end to end by the fingerprint. Recommended.
 
 ## 13. Interop with RUSE-Mod-Manager (`.rmod`)
 

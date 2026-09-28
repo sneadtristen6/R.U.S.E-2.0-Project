@@ -168,7 +168,7 @@ Requirements derived from that:
   - map consistency (capture zones vs the hidden ground map)
   - Python 2.5 script compilation
 - **Fingerprint:** a hash over canonical *gameplay* content (decompressed NDF objects, scenarios, maps,
-  scripts) plus the game build. Cosmetic assets are excluded.
+  scripts) plus the game build. Cosmetic assets are excluded. Exact recipe: [MOD_FORMAT.md](MOD_FORMAT.md) §12.
 - **Rebase:** when the game updates, a 3-way merge (old base, new base, mod) produces a conflict report.
 
 ### L4 Deploy & run
@@ -207,15 +207,59 @@ Requirements derived from that:
 
 ### L6 Distribution & multiplayer sync
 - **Mod index:** a git repo of manifests: id, versions, content hashes, download mirrors, game builds,
-  gameplay/cosmetic flag. CI validates submissions.
+  gameplay/cosmetic flag. CI validates submissions. A published version is never changed; a fix is a new version.
 - **Mirrors:** the files can live on GitHub releases, Nexus, ModDB, Thunderstore or CurseForge. The launcher
   verifies hashes whatever the source.
 - **Mod sets and join codes:** a lockfile holds the exact mods, versions and hashes, plus the game build and platform version.
-  - v1: the join code is the lockfile itself, compressed into a pasteable string, so no server is needed.
+  - v1: the join code names the game build, the mods, their versions and the fingerprint
+    ([MOD_FORMAT.md](MOD_FORMAT.md) §12). No server needed.
   - Later: an optional service for short codes and for transferring unpublished mods.
 - **Safety:**
   - Scripts are code. They auto-install only from the index, or after explicit consent.
   - Native code (runtime extender plugins) is never taken from peers.
+
+**How multiplayer stays in sync**
+- R.U.S.E. multiplayer is lockstep ([FORMATS.md](FORMATS.md) §10: `TDesynchroChecker`). The PCs only send each other
+  the players' orders; every PC runs the whole battle itself from its own copy of the game data. The battles stay
+  identical only if every gameplay number is identical. One different price, speed or range and they drift apart, and
+  the game's checker reports a desync.
+- So gameplay files must match exactly while cosmetic files may differ ([MOD_FORMAT.md](MOD_FORMAT.md) §10.8), and the
+  build must give the same result on every PC (§10.3, §10.9 there). The fingerprint proves both.
+- Not known yet: whether the game compares any data when a player joins, or only notices mid-game. Test T3 answers it.
+
+**Joining a friend, step by step (v1)**
+1. The host picks a mod set and presses Play. The launcher shows the join code with a Copy button.
+2. The host makes the lobby in the game, invites the friend on Steam, and sends the code in Steam chat or Discord.
+3. The friend's launcher gets the code: pasted in, or read from the clipboard when a Steam invite opens the launcher
+   (the Launch Options route, L5). It shows what's missing and how big the download is.
+4. It downloads, checks every hash, builds, and compares fingerprints. If they match, it starts the game with
+   `+connect_lobby <id>`.
+5. Later, with the runtime extender (M10): the host's game writes the code into the Steam lobby itself, so clicking
+   the invite is enough, and players with the wrong mods are stopped before they join. **Cheap test for M3:** can the
+   launcher read or write the lobby's data while the game runs, without the extender? If yes, this comes much sooner.
+
+**When something doesn't match**
+
+| Situation | The player sees | The launcher |
+|---|---|---|
+| missing mods | "This game uses 2 mods you don't have: RUSE 2.0 Core 0.4.1, Better AI 1.2 (38 MB). Download and join?" | downloads, checks, builds |
+| scripts not from the index | "These mods include scripts (code) that aren't from the mod index. Only continue if you trust the host." | waits for OK (safety rule above) |
+| different game version | "Your friend is on a different version of R.U.S.E. (build …). Check you're both on the same Steam branch (Properties → Betas)." | does nothing else |
+| mod not on the index | "Your friend is using a mod that isn't published (name). Ask them to publish it, or to send you their mod set file." | does nothing else (v2: direct transfer) |
+| fingerprint differs after building | "Your game data doesn't match your friend's (K7Q2-M9XD vs …). Repair and try again?" | rebuilds the instance from scratch |
+| desync during a game | "Your last game went out of sync. This usually means different mods." | offers to save the game's desync log for a bug report |
+
+**2-PC test plan** (run on real PCs once M2 builds exist; record both build ids and fingerprints, the result, and any
+desync log lines)
+
+| Test | Setup | Expected | What it tells us |
+|---|---|---|---|
+| T1 vanilla baseline | both play from untouched instances (hard links only), 15-minute 1v1 skirmish | no desync | instances themselves are safe |
+| T2 same gameplay mod | both have the $1-buildings mod from C2 | no desync | identical rebuilt packs play together |
+| T3 mismatch on purpose | A has $1 buildings, B is vanilla | refused at join, or a desync | whether the game checks data at join or only mid-game, and what its checker compares ([MOD_FORMAT.md](MOD_FORMAT.md) §14 q5) |
+| T4 tiny mismatch | one unit 1 % faster on A only; both build and use that unit | a desync | how sensitive the checker is; confirms "every NDF change is gameplay" |
+| T5 cosmetic only | A has one changed text string (`.dic`), later a texture (M5) | no desync | the cosmetic list is right |
+| T6 join through the launcher | Steam invite → launcher → `+connect_lobby` | joins with the right mods | the whole join flow (M3) |
 
 ## 6. Key design decisions (to become ADRs in M0)
 
