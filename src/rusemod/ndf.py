@@ -48,6 +48,25 @@ class Value:
             raise TypeError(f"type 0x{self.tc:02x} is not a scalar")
         self.payload = struct.pack(SCALAR[self.tc], v)
 
+    def int_list(self) -> list[int]:
+        """Decode a list (0x11) of int32 (0x02)."""
+        if self.tc != 0x11:
+            raise TypeError(f"type 0x{self.tc:02x} is not a list")
+        cnt = struct.unpack_from("<I", self.payload, 0)[0]
+        return [struct.unpack_from("<i", self.payload, 4 + 8 * i + 4)[0] for i in range(cnt)]
+
+    def set_int_list(self, values: list[int]) -> None:
+        """Overwrite a list (0x11) of int32 in place (same count, so the payload length is unchanged)."""
+        buf = bytearray(self.payload)
+        cnt = struct.unpack_from("<I", buf, 0)[0]
+        if len(values) != cnt:
+            raise ValueError(f"expected {cnt} values, got {len(values)}")
+        for i, v in enumerate(values):
+            if struct.unpack_from("<I", buf, 4 + 8 * i)[0] != 0x02:
+                raise TypeError("list element is not int32")
+            struct.pack_into("<i", buf, 4 + 8 * i + 4, v)
+        self.payload = bytes(buf)
+
     def encode(self) -> bytes:
         return struct.pack("<I", self.tc) + self.payload
 
