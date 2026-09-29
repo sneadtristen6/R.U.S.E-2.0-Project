@@ -215,9 +215,27 @@ function row(u, r, mode) {
   if (!r.editable) return el("tr", {}, th, el("td", { textContent: r.values.join(" · ") }));
   const via = state.page.via;
   const st = rowState(r, mode);
-  const boxes = (st.mine || st.base).map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+  const shown = st.mine || st.base;
+  const boxes = shown.map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+  // A list whose values are all the same (a unit's five prices, one per battle date) gets one box that changes them
+  // all, so a modder can't change one of five by accident; "set each" shows every box.
+  let one = r.list && shown.length > 1 && r.type !== "bool" && shown.every((n) => n === shown[0])
+    ? numberBox(r, shown[0], `${r.label} (${w.all_values.replace("{n}", shown.length)})`) : null;
+  const holder = el("div", { className: "boxes" }, ...(one ? [one] : boxes));
+  if (one) {
+    const each = el("button", { type: "button", className: "link", textContent: w.each_value });
+    each.addEventListener("click", () => {
+      boxes.forEach((b) => { b.value = one.value; });
+      one = null;
+      holder.replaceChildren(...boxes);
+      boxes[0].focus();
+    });
+    holder.append(el("span", { className: "muted small", textContent: w.all_values.replace("{n}", shown.length) }), each);
+  }
   const was = el("div", { className: "was" });
-  const tr = el("tr", {}, th, el("td", {}, el("div", { className: "boxes" }, ...boxes), was));
+  const cell = el("td", {}, holder, was);
+  if (r.prop === "ProductionPrice" && r.list) cell.append(el("div", { className: "muted small", textContent: w.price_dates }));
+  const tr = el("tr", {}, th, cell);
   const setMine = (value) => {
     st.mine = value;
     const stored = value === null ? null : r.list ? value : value[0];
@@ -236,6 +254,7 @@ function row(u, r, mode) {
           if (b.type === "checkbox") b.checked = Boolean(st.base[i]); else b.value = String(st.base[i]);
           b.setAttribute("aria-invalid", "false");
         });
+        if (one) { one.value = String(st.base[0]); one.setAttribute("aria-invalid", "false"); }
         showWas();
         await refreshMarks();
         say("");
@@ -246,14 +265,16 @@ function row(u, r, mode) {
   };
 
   const save = async (box) => {
-    const numbers = boxes.map(readBox);
+    const numbers = one ? boxes.map(() => readBox(one)) : boxes.map(readBox);
     const bad = numbers.findIndex((n) => !Number.isFinite(n));
-    boxes.forEach((b, i) => b.setAttribute("aria-invalid", String(i === bad)));
+    if (one) one.setAttribute("aria-invalid", String(bad >= 0));
+    else boxes.forEach((b, i) => b.setAttribute("aria-invalid", String(i === bad)));
     if (bad >= 0) { box.focus(); return; }
     try {
       const res = await api().edit(u.address, r.prop, r.list ? numbers : numbers[0], mode, via);
       const value = r.list ? res.value : [res.value];
       value.forEach((n, i) => { if (boxes[i].type !== "checkbox") boxes[i].value = String(n); });
+      if (one) one.value = String(value[0]);
       setMine(sameNumbers(value, st.base) ? null : value);
       showWas();
       await refreshMarks();
@@ -261,6 +282,7 @@ function row(u, r, mode) {
     } catch (err) { problem(err); }
   };
   for (const box of boxes) box.addEventListener("change", () => save(box));
+  if (one) one.addEventListener("change", () => save(one));
   showWas();
   return tr;
 }

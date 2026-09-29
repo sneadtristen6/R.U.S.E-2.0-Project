@@ -6,7 +6,7 @@ new units, maps, models, missions and one-click modded multiplayer. The content 
 Status: early, and moving fast. Nothing here ever changes your game install: mods are built into a separate copy.
 
 **Download:** [Releases](https://github.com/sneadtristen6/Ruse-Mod-Platform/releases): **RUSE Launcher 0.1.0** for
-players and **RUSE Studio 0.4.0** for modders (a preview). Windows only; your browser may warn about a new download.
+players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your browser may warn about a new download.
 
 | RUSE Launcher | RUSE Studio (its preview mode, with sample units) |
 |---|---|

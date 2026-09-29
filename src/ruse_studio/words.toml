@@ -602,3 +602,40 @@ ru = "Загрузка настоящих текстур земли… {progress
 cz = "Načítání skutečných textur terénu… {progress}"
 jpn = "実際の地面テクスチャを読み込み中… {progress}"
 sc = "正在加载真实地面纹理… {progress}"
+
+# --- lists whose values are all the same (a unit's prices, one per battle date) ---
+[all_values]
+us = "all {n}"
+fr = "les {n}"
+ger = "alle {n}"
+ita = "tutti i {n}"
+spa = "los {n}"
+pol = "wszystkie {n}"
+ru = "все {n}"
+cz = "všech {n}"
+jpn = "{n} 個すべて"
+sc = "全部 {n} 个"
+
+[each_value]
+us = "set each"
+fr = "régler chacun"
+ger = "einzeln setzen"
+ita = "imposta ciascuno"
+spa = "ajustar cada uno"
+pol = "ustaw każdy"
+ru = "задать по отдельности"
+cz = "nastavit každý"
+jpn = "個別に設定"
+sc = "逐个设置"
+
+[price_dates]
+us = "One price per battle date: the host picks the date (1939, 1942, 1945, Total War) when setting up a battle."
+fr = "Un prix par date de bataille : l'hôte choisit la date (1939, 1942, 1945, Guerre totale) en préparant la partie."
+ger = "Ein Preis pro Schlachtdatum: Der Host wählt das Datum (1939, 1942, 1945, Totaler Krieg) beim Einrichten der Schlacht."
+ita = "Un prezzo per ogni data di battaglia: l'host sceglie la data (1939, 1942, 1945, Guerra totale) quando prepara la partita."
+spa = "Un precio por fecha de batalla: el anfitrión elige la fecha (1939, 1942, 1945, Guerra total) al preparar la partida."
+pol = "Jedna cena na każdą datę bitwy: gospodarz wybiera datę (1939, 1942, 1945, Wojna totalna) przy tworzeniu gry."
+ru = "Одна цена на каждую дату сражения: хост выбирает дату (1939, 1942, 1945, Тотальная война) при создании игры."
+cz = "Jedna cena pro každé datum bitvy: hostitel vybírá datum (1939, 1942, 1945, Totální válka) při zakládání hry."
+jpn = "戦闘の年代ごとに1つの価格：ホストがゲーム作成時に年代（1939、1942、1945、トータルウォー）を選びます。"
+sc = "每个战役年代一个价格：房主在创建游戏时选择年代（1939、1942、1945、全面战争）。"
