@@ -1,0 +1,16 @@
+# Rebuilt from the RUSE-Mod-Manager mod FNAT_All_The_Time_V1.rmod by tools/rmod_to_mod.py; README.md says what is and isn't here.
+[mod]
+id          = "fnat-all-the-time-v1"
+name        = "FNAT All The Time"
+version     = "1.0.0"
+authors     = ["DomesticNukes"]
+description = "It increases the pinned threshold to 2000000 which makes every unit in the game to ignore damage and not retreat, I made the change to the units also not listed in the menus like the rudel and the atomic b17, it should make operations intresting as well."
+
+[game]
+builds = ["24087620"]  # the build the original was made on
+
+[origin]
+format       = "ruse-mod/v1"
+file         = "FNAT_All_The_Time_V1.rmod"
+id           = "fnat-all-the-time-v1"
+game_version = "24087620"

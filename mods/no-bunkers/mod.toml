@@ -1,0 +1,15 @@
+# Rebuilt from the RUSE-Mod-Manager mod No_Bunkers_V1.rmod by tools/rmod_to_mod.py; README.md says what is and isn't here.
+[mod]
+id          = "no-bunkers"
+name        = "No Bunkers"
+version     = "1.0.0"
+description = "Removes the option to construct any nation's fixed-defense building (MG nests, AT/AA bunkers, blockhaus, pillboxes, artillery positions/shelters, outposts) by hiding them from the build menu and pricing them unaffordably. Existing bunkers already on a map are not deleted or affected -- this only blocks building new ones."
+
+[game]
+builds = ["24087620"]  # the build the original was made on
+
+[origin]
+format       = "ruse-mod/v1"
+file         = "No_Bunkers_V1.rmod"
+id           = "no-bunkers"
+game_version = "24087620"

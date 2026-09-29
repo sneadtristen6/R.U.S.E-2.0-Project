@@ -1,0 +1,15 @@
+# Rebuilt from the RUSE-Mod-Manager mod Low_Altitude_Planes_V1.rmod by tools/rmod_to_mod.py; README.md says what is and isn't here.
+[mod]
+id          = "low-altitude-planes"
+name        = "Low Altitude Planes"
+version     = "1.0.0"
+description = "Scales every aircraft's flight altitude to 0.25x the original (cruise altitude, attack/approach altitudes, dive-bomb start/end altitudes, and looping-maneuver altitudes all scale together) so planes fly much lower across the board."
+
+[game]
+builds = ["24087620"]  # the build the original was made on
+
+[origin]
+format       = "ruse-mod/v1"
+file         = "Low_Altitude_Planes_V1.rmod"
+id           = "low-altitude-planes"
+game_version = "24087620"

@@ -600,9 +600,9 @@ one is shorter. Rules:
 |---|---|---|---|---|
 | 1 | **Ask DomesticNukes** for the three `.kdt` encodings (index buffer, triangle lists, subtree opcodes), format notes only; ours (framing, vertices, the normal word) go into FORMATS.md with the agreed credit | a message; FORMATS §6 (**done 2026-09-29**) | 0 (owner) | — |
 | 2 | **Units in the Studio:** "New unit" from a unit's page (copy, name in all languages, price, menu and nation), on the engine that already does it (C6d, C7) (**done 2026-09-29**, pull request #1; the owner's in-game test and the 0.5.0 release follow) | Studio 0.5 | 1–2 | — |
-| 3 | **Launcher v0.2:** mod sets made in the window (new, edit, rename, duplicate, delete), "Add a mod file…", drag-and-drop; players never see a file | Launcher 0.2, first public alpha | 2 | — |
+| 3 | **Launcher v0.2:** mod sets made in the window (new, edit, rename, duplicate, delete), "Add a mod file…", drag-and-drop; players never see a file (**code done 2026-09-29**, pull request #2; the owner's test with the real game and the 0.2.0 release follow) | Launcher 0.2, first public alpha | 2 | — |
 | 4 | **Terrain editor** T1–T4 (§7 MT): `.kdt` read and written losslessly, height edits that keep the ground, the camera floor and both meshes in step, brushes in the Maps view, "Test in game" (**T2–T3 code done 2026-09-29**, branch `cloud/terrain-brushes`: brushes, all four files in step, terrain edits in mods and in the build; the in-game hill check is next, then the Studio's brushes, T4) | Studio 0.6 | 4–6 with the notes; +2–4 without | step 1 |
-| 5 | **Browse mods:** a GitHub repo as the index, a launcher tab that installs from it (L6) | Launcher 0.3 | 1–2 | step 3 |
+| 5 | **Browse mods:** a GitHub repo as the index, a launcher tab that installs from it (L6) (**code done 2026-09-29**, pull request `cloud/browse-mods`; the owner creates `sneadtristen6/Ruse-Mods` and tests) | Launcher 0.3 | 1–2 | step 3 |
 | 6 | **China, step 2** (M10): a modded copy with an 8th entry wherever the data has 7; does the game offer it? | an answer | 1 (owner at the game) | — |
 | 7 | **Join codes in the launcher** (MOD_FORMAT §12) and the 2-PC test (L6) | Launcher 0.4 | 1–2 + a second player | step 3 |
 
@@ -625,7 +625,7 @@ new units that fight). Launcher v0.1 and Studio 0.4.1 are released (values edite
 five per-date prices, the Maps view with each map's real ground in 3D). The terrain mesh and tile files read and
 write losslessly, and plain tiles we write are drawn in-game. The `.kdt` gameplay ground reads and writes losslessly on every map (`rusemod.kdt`,
 2026-09-29), its vertices and normals decoded; the notes are in FORMATS §6 with the agreed credit. Its index
-buffers, triangle lists and tree nodes are still opaque (step 1). Details: [LOG.md](LOG.md).
+buffers, triangle lists and tree nodes are still opaque (step 1). A mod as one file (TASKS C): the Studio's "Export mod…" writes `<id>-<version>.rusemod`, the launcher installs it (in review, 2026-09-29). Community mods: 18 RUSE-Mod-Manager mods rebuilt in our format (`mods/`, `tools/rmod_to_mod.py`, 2026-09-29; the format in MOD_FORMAT §13), not yet checked in-game. Details: [LOG.md](LOG.md).
 
 ## 11. RUSE 2.0 design notes (draft, 2026-09-28)
 

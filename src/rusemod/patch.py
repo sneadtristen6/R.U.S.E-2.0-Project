@@ -10,6 +10,11 @@ with a class and ordered properties. A property holds a `Num`, `Text`, `Ref` (to
 Rules, in short: operations run in load order, then the `final` ones; every operation sees the game as the ones
 before it left it; math is exact and rounds once at the end (half away from zero); each pair of operations by two
 different mods on the same thing gives the error / warning / note of the §10.4 table.
+
+Objects are named by export path, or found by a property value (`@TAmmunition[AmmunitionId=1120]`, MOD_FORMAT §4):
+exactly one object, of that class or of any class (`@[ClassNameForDebug='Unit_M4_Sherman']`), named or an unnamed
+part of another object. `patch every <class> [Prop=value]` takes all of them. A reference to a part of a game
+object (`$/X:Weapons[0].Ammunition`, or `@...:path`) makes that part a shared object with a name of its own.
 """
 from __future__ import annotations
 
@@ -18,7 +23,7 @@ import re
 import struct
 from collections import defaultdict
 from dataclasses import dataclass, field
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 INT_RANGES = {"bool": (0, 255), "int8": (-2**7, 2**7 - 1), "int16": (-2**15, 2**15 - 1), "uint16": (0, 2**16 - 1),
               "int32": (-2**31, 2**31 - 1), "uint32": (0, 2**32 - 1), "int64": (-2**63, 2**63 - 1)}
@@ -108,6 +113,7 @@ class Op:
     source: str | None = None       # clone: the object copied
     body: list = field(default_factory=list)   # create / clone: property operations on the new object
     every: str | None = None        # `patch every <class>`
+    filter: str | None = None       # `patch every <class> [Prop=value]`: only objects whose Prop has that value
     final: bool = False
     override: bool = False
     share: str | None = None        # own | shared
@@ -196,6 +202,8 @@ class Engine:
         self.created: dict[str, Op] = {}
         self.file_log: dict[str, Op] = {}
         self.trail = defaultdict(list)
+        self._gen = 0                      # bumped whenever objects appear, disappear or parts are shared
+        self._index_gen, self._by_class, self._all = -1, {}, []
 
     def run(self, mods) -> Result:
         """`mods`: [(ModInfo, [Op])] already in load order (resolve.load_order)."""
@@ -227,14 +235,18 @@ class Engine:
     def apply(self, op: Op) -> None:
         if op.kind in PROP_KINDS:
             if op.every:
-                names = sorted(n for n, o in self.game.objects.items() if o.cls == op.every)
-                for name in names:
+                found = self._objects_of(op.every, op.filter)
+                if not found:
+                    raise PatchError(f"{op.at()} patches every {_what(op.every, op.filter)}, but none exists in this "
+                                     f"game build (after a game update, this needs a rebase)")
+                for name, prefix, _obj in found:
                     try:
-                        self._prop_op(op, name, every=True)
+                        self._prop_op(op, name, every=True, prefix=prefix)
                     except PatchError as exc:
                         self._find("error", str(exc), op)
             else:
-                self._prop_op(op, op.target, every=False)
+                name, prefix = self._target(op, op.target, "patches")
+                self._prop_op(op, name, every=False, prefix=prefix)
         elif op.kind in ("create", "clone"):
             self._create(op)
         elif op.kind == "delobj":
@@ -258,14 +270,28 @@ class Engine:
             by = self.created.get(name)
             who = by.at() if by else "the game"
             raise PatchError(f"{op.at()} creates {name}, but {who} already has an object with that name")
+        placed = op
         if op.kind == "clone":
-            if op.source not in self.game.objects:
-                raise self._missing(op.source, op, "clones")
-            obj = _fresh(self.game.objects[op.source])  # owned sub-objects copied, references kept
+            src, prefix = self._target(op, op.source, "clones")
+            if src not in self.game.objects:
+                raise self._missing(src, op, "clones")
+            source = self.game.objects[src]
+            if prefix:  # a part of another object (or what a part refers to): copied like a named source would be
+                val = self._part_at(op, src, prefix)[2]
+                if isinstance(val, Ref) and val.target in self.game.objects:
+                    src, source = val.target, self.game.objects[val.target]
+                elif isinstance(val, Inline):
+                    source = val.obj
+                else:
+                    raise PatchError(f"{op.at()} clones {op.source}, which isn't an object")
+            obj = _fresh(source)  # owned sub-objects copied, references kept
+            placed = copy.copy(op)
+            placed.source = src  # the new object goes into its source's file (model.save)
         else:
             obj = Obj(op.cls or "?")
         self.game.objects[name] = obj
-        self.created[name] = op
+        self.created[name] = placed
+        self._gen += 1
         for sub in op.body:
             body_op = copy.copy(sub)
             body_op.target, body_op.mod = name, body_op.mod or op.mod
@@ -275,7 +301,7 @@ class Engine:
             except PatchError as exc:
                 self._find("error", str(exc), body_op)
         if op.kind == "clone":
-            self._fresh_identity(op, name)
+            self._fresh_identity(placed, name)
 
     def _fresh_identity(self, op: Op, name: str) -> None:
         """A clone gets its own id, debug name and build-menu slot (MOD_FORMAT §10.5, rusemod.identity), except for
@@ -293,7 +319,10 @@ class Engine:
         self._find("note", f"{op.at()}: {name} gets its own {parts} (set any of these in the clone to choose)", op)
 
     def _delete_object(self, op: Op) -> None:
-        name = op.target
+        name, prefix = self._target(op, op.target, "deletes")
+        if prefix:
+            raise PatchError(f"{op.at()} deletes {op.target}, a part of {name}; parts can't be deleted, patch {name} "
+                             f"instead")
         if name not in self.game.objects:
             if name in self.deleted:
                 self._find("note", f"{op.at()} deletes {name}, already deleted by {self.deleted[name].at()}", op)
@@ -304,6 +333,7 @@ class Engine:
             self._find("warning", f"{op.at()} deletes {name}; the changes {others[-1].at()} made to it are thrown away", op)
         del self.game.objects[name]
         self.deleted[name] = op
+        self._gen += 1
 
     def _file_op(self, op: Op) -> None:
         path = op.target.lower().replace("\\", "/")
@@ -319,9 +349,15 @@ class Engine:
         self.file_log[path] = op
 
     # --- properties ---
-    def _prop_op(self, op: Op, name: str, every: bool, own_object: bool = False) -> None:
+    def _prop_op(self, op: Op, name: str, every: bool, own_object: bool = False, prefix: str = "") -> None:
+        """`prefix`: the path from `name` to the part the operation is for (a found part, MOD_FORMAT §4)."""
         if name not in self.game.objects:
             raise self._missing(name, op, "patches")
+        if prefix or _needs_finding(op.value) or _needs_finding(op.anchor):
+            op = copy.copy(op)
+            if prefix:
+                op.path = f"{prefix}.{op.path}"
+            op.value, op.anchor = self._found(op, op.value), self._found(op, op.anchor)
         owner, obj, prop, idx, path = self._locate(op, name)
         key = (owner, path)
         if not own_object:
@@ -359,6 +395,8 @@ class Engine:
                 old.items[idx] = new
             else:
                 obj.props[prop] = new
+        if any(isinstance(x, Inline) for v in (target_val, new) for x in _walk_value(v)):
+            self._gen += 1  # a part came or went: the object index is rebuilt before the next find
         self.touch[key].append((op, category, op.value))
         self.trail[key].append((op, copy.deepcopy(new)))
 
@@ -400,6 +438,7 @@ class Engine:
                     copy_ = Inline(_fresh(self.game.objects[val.target]))
                     holder[key] = copy_
                     obj, walked = copy_.obj, walked + [step]
+                    self._gen += 1
                 else:
                     owner, obj, walked = val.target, self.game.objects[val.target], []
             else:
@@ -417,15 +456,119 @@ class Engine:
         for k, item in enumerate(lst.items):
             o = item.obj if isinstance(item, Inline) else self.game.objects.get(item.target) \
                 if isinstance(item, Ref) else None
-            if o is None:
-                continue
-            if field_ == "class" and o.cls == want:
-                hits.append(k)
-            elif field_ != "class" and show(o.props.get(field_)) in (want, repr(want.strip("'"))):
+            if o is not None and _matches(o, field_.strip(), want.strip()):
                 hits.append(k)
         if len(hits) != 1:
             raise PatchError(f"{op.at()}: [{sel}] matches {len(hits)} items of {owner}:{prop}, it must match exactly one")
         return hits[0]
+
+    # --- finding objects (MOD_FORMAT §4) ---
+    def _objects_of(self, cls: str | None, filter_: str | None) -> list:
+        """[(top-level name, path to the part or "", Obj)] of every object of class `cls` (any class when None)
+        whose property matches `filter_` ("Prop=value"), unnamed parts included; in name, then path order."""
+        if self._index_gen != self._gen:
+            by_class, all_ = defaultdict(list), []
+            for name in sorted(self.game.objects):
+                for path, o in _parts(self.game.objects[name]):
+                    by_class[o.cls].append((name, path, o))
+                    all_.append((name, path, o))
+            self._by_class, self._all, self._index_gen = by_class, all_, self._gen
+        found = self._by_class.get(cls, []) if cls else self._all
+        if filter_:
+            field_, eq, want = filter_.partition("=")
+            if not eq or not field_.strip():
+                raise PatchError(f"a filter is written [Property=value], not [{filter_}]")
+            found = [t for t in found if _matches(t[2], field_.strip(), want.strip())]
+        return found
+
+    def _target(self, op: Op, text: str, verb: str) -> tuple[str, str]:
+        """An object as written (`$/Name`, or `@Class[Prop=value]` with an optional `:path`) -> (top-level object
+        name, path to the part or ""). A designator must match exactly one object."""
+        if not text or not text.startswith("@"):
+            name, _, sub = text.partition(":") if text else ("", "", "")
+            return name, sub
+        cls, filter_, sub = _split_designator(text)
+        found = self._objects_of(cls, filter_)
+        what = _what(cls, filter_)
+        if not found:
+            raise PatchError(f"{op.at()} {verb} {what}, which doesn't exist in this game build (after a game update, "
+                             f"this needs a rebase)")
+        if len(found) > 1:
+            names = ", ".join(f"{n}:{p}" if p else n for n, p, _ in found[:4])
+            raise PatchError(f"{op.at()}: {what} matches {len(found)} objects ({names}{', …' if len(found) > 4 else ''}); "
+                             f"it must match exactly one")
+        name, prefix, _ = found[0]
+        if sub:
+            prefix = f"{prefix}.{sub}" if prefix else sub
+        return name, prefix
+
+    def _part_at(self, op: Op, name: str, path: str):
+        """A read-only walk from the top-level object `name` along `path`: (holder, key, the value at the end).
+        Crosses references to named objects on the way; the end may be a part, a reference or a plain value."""
+        obj, holder, key, val = self.game.objects[name], None, None, None
+        segs = _parse_path(path)
+        for i, (prop, sels) in enumerate(segs):
+            val = obj.props.get(prop)
+            if val is None:
+                raise PatchError(f"{op.at()}: {name} has no {path}")
+            holder, key = obj.props, prop
+            for sel in sels:
+                if not isinstance(val, ListV):
+                    raise PatchError(f"{op.at()}: {name}:{path}: {prop} isn't a list")
+                k = self._select(op, val, sel, name, prop)
+                holder, key, val = val.items, k, val.items[k]
+            if i == len(segs) - 1:
+                break
+            if isinstance(val, Inline):
+                obj = val.obj
+            elif isinstance(val, Ref) and val.target in self.game.objects:
+                name, obj = val.target, self.game.objects[val.target]
+            else:
+                raise PatchError(f"{op.at()}: {name}:{path}: {prop} isn't an object")
+        return holder, key, val
+
+    def _ref_to(self, op: Op, text: str) -> str | None:
+        """The object a reference written as `$/Name:path`, `@Class[Prop=value]` or `@...:path` points at, as a
+        top-level name. A part only its owner used so far becomes a shared object named `<file>#<index>`."""
+        if text.startswith("@"):
+            name, prefix = self._target(op, text, "refers to")
+        else:
+            name, _, prefix = text.partition(":")
+        if name not in self.game.objects:
+            raise self._missing(name, op, "refers to")
+        if not prefix:
+            return name
+        holder, key, val = self._part_at(op, name, prefix)
+        if isinstance(val, Ref):
+            return val.target
+        if isinstance(val, Inline):
+            return self._share(op, val.obj, holder, key)
+        raise PatchError(f"{op.at()}: {text} isn't an object")
+
+    def _share(self, op: Op, part: Obj, holder, key) -> str:
+        """Give a part its own name so something else can refer to it too (it stays where it is in its file)."""
+        if part.origin is None:
+            raise PatchError(f"{op.at()}: can't refer to a {part.cls} part that a mod made; refer to a part of a game "
+                             f"object, or make it a named object of its own")
+        name = f"{part.origin[0]}#{part.origin[1]}"
+        holder[key] = Ref(name)
+        self.game.objects[name] = part
+        self._gen += 1
+        return name
+
+    def _found(self, op: Op, v):
+        """`v` with every reference that still has to be found (`@...`, `$/X:path`) replaced by a plain one."""
+        if isinstance(v, Ref) and v.target and (v.target.startswith("@") or ":" in v.target):
+            return Ref(self._ref_to(op, v.target))
+        if isinstance(v, list):
+            return [self._found(op, x) for x in v]
+        if isinstance(v, ListV):
+            return ListV([self._found(op, x) for x in v.items])
+        if isinstance(v, MapV):
+            return MapV([(self._found(op, k), self._found(op, x)) for k, x in v.pairs])
+        if isinstance(v, PairV):
+            return PairV(self._found(op, v.a), self._found(op, v.b))
+        return v
 
     def _referrers(self, target: str) -> int:
         n = 0
@@ -477,12 +620,14 @@ class Engine:
         if op.kind == "append":
             self._no_deleted_refs(op, ListV(op.value))
             for v in op.value:
-                if isinstance(v, Ref) and v in items:
+                v = _fit(v, items)
+                if v in items:
                     self._find("note", f"{op.at()}: {show(v)} is already in {where}; not added twice", op)
                 else:
                     items.append(v)
         elif op.kind == "remove":
-            kept = [v for v in items if v not in op.value]
+            gone = [_fit(v, items) for v in op.value]
+            kept = [v for v in items if v not in gone]
             if len(kept) == len(items):
                 prev = self._last_other(op, key)
                 if prev and prev[1] == "remove" and _overlap(op.value, prev[2]):
@@ -497,13 +642,14 @@ class Engine:
                 if not 0 <= pos <= len(items):
                     raise PatchError(f"{op.at()}: {where} has no position {pos}")
             else:
-                if op.anchor not in items:
+                anchor = _fit(op.anchor, items)
+                if anchor not in items:
                     prev = self._last_other(op, key)
                     why = f" ({prev[0].at()} removed it)" if prev and prev[1] == "remove" and \
                         _overlap([op.anchor], prev[2]) else ""
                     raise PatchError(f"{op.at()}: can't insert next to {show(op.anchor)} in {where}, it isn't there{why}")
-                pos = items.index(op.anchor) + (1 if op.where == "after" else 0)
-            items.insert(pos, op.value)
+                pos = items.index(anchor) + (1 if op.where == "after" else 0)
+            items.insert(pos, _fit(op.value, items))
         return ListV(items)
 
     def _no_deleted_refs(self, op: Op, value) -> None:
@@ -600,3 +746,66 @@ def _fresh(obj: Obj) -> Obj:
 def _walk_obj(obj: Obj):
     for v in obj.props.values():
         yield from _walk_value(v)
+
+
+def _parts(obj: Obj, prefix: str = ""):
+    """(path, Obj) for `obj` itself ("" ) and every unnamed part inside it, through lists ("Weapons[0].Ammunition")."""
+    yield prefix, obj
+    for prop, v in obj.props.items():
+        yield from _parts_in(v, f"{prefix}.{prop}" if prefix else prop)
+
+
+def _parts_in(v, path: str):
+    if isinstance(v, Inline):
+        yield from _parts(v.obj, path)
+    elif isinstance(v, ListV):
+        for i, x in enumerate(v.items):
+            yield from _parts_in(x, f"{path}[{i}]")
+
+
+def _matches(obj: Obj, field_: str, want: str) -> bool:
+    """Whether `obj` fits the filter `field_=want` ([class=TAmmunition], [AmmunitionId=1120], [Name='x'], [Ref=$/…])."""
+    if field_ == "class":
+        return obj.cls == want
+    v = obj.props.get(field_)
+    if isinstance(v, Text):
+        return v.value == _unquote(want)
+    if isinstance(v, Num):
+        w = want.lower()
+        if w in ("true", "false"):
+            return (v.value != 0) == (w == "true")
+        try:
+            return v.value == (Decimal(int(w, 16)) if w.startswith(("0x", "-0x")) else Decimal(w))
+        except (InvalidOperation, ValueError):
+            return False
+    if isinstance(v, Ref):
+        return v.target == want or (v.target is None and want == "nil")
+    return False
+
+
+def _unquote(s: str) -> str:
+    return s[1:-1] if len(s) >= 2 and s[0] == s[-1] and s[0] in "'\"" else s
+
+
+def _split_designator(text: str) -> tuple[str | None, str, str]:
+    """`@TAmmunition[AmmunitionId=1120]:Icon` -> ("TAmmunition", "AmmunitionId=1120", "Icon"); no class -> None."""
+    head, _, rest = text[1:].partition("[")
+    filter_, _, sub = rest.partition("]")
+    return head or None, filter_, sub[1:] if sub.startswith(":") else sub
+
+
+def _what(cls: str | None, filter_: str | None) -> str:
+    return f"{cls or 'object'}" + (f" with [{filter_}]" if filter_ else "")
+
+
+def _needs_finding(v) -> bool:
+    values = v if isinstance(v, list) else [v]
+    return any(isinstance(x, Ref) and x.target and (x.target.startswith("@") or ":" in x.target)
+               for value in values for x in _walk_value(value))
+
+
+def _fit(v, items: list):
+    """A number added to a list of numbers takes the list's own type (uint32 flags stay uint32)."""
+    if isinstance(v, Num) and items and all(isinstance(x, Num) for x in items):
+        return Num(items[0].kind, v.value)
+    return v

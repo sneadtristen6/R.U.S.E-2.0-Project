@@ -13,6 +13,9 @@ venv/
 
 # NEVER commit Eugen's game files or anything extracted from the install (copyright).
 # Our own source and docs are fine; raw game data is not.
+# RUSE-Mod-Manager mods (other people's work, some carrying game files) stay out too: rebuild them with
+# tools/rmod_to_mod.py into mods/ instead.
+*.rmod
 *.dat
 *.ndfbin
 *.gladndfbin

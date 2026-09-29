@@ -1,0 +1,15 @@
+# Rebuilt from the RUSE-Mod-Manager mod Infinite_Fanaticism_V1.rmod by tools/rmod_to_mod.py; README.md says what is and isn't here.
+[mod]
+id          = "infinite-fanaticism"
+name        = "Infinite Fanaticism"
+version     = "1.0.0"
+description = "Sets every unit's Pinned threshold to one point above its own HP, so it would have to take more damage than it can survive to ever be suppressed -- units fight until destroyed instead of breaking under fire."
+
+[game]
+builds = ["24087620"]  # the build the original was made on
+
+[origin]
+format       = "ruse-mod/v1"
+file         = "Infinite_Fanaticism_V1.rmod"
+id           = "infinite-fanaticism"
+game_version = "24087620"
