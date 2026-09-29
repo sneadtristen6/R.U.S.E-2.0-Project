@@ -9,7 +9,6 @@ M1 rewrites them properly, with tests. Keep them as a reference for how each fin
 | `obje.py` | OBJE object parser with the verified type table; IMPR/EXPR name trees |
 | `xyz.py` | opens `.ipk` script packs in memory |
 | `m25.py` | `.xyz` reader + Python 2.5 marshal walker |
-| `pe_info.py` | RUSE.exe PE header / imports / sections analysis |
 
 Caveats:
 - `ndf.py` hard-codes the game path and this session's working folder.

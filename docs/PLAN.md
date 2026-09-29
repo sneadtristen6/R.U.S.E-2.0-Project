@@ -69,13 +69,12 @@ Details and byte layouts are in [FORMATS.md](FORMATS.md).
 | Archives | EDAT v1 = header + path trie + raw data; no encryption, no container compression | verified | reader done, writer next |
 | Unit data | NDF binaries (EUG0/CNDF, zlib). All 1,982 NDF files parse completely; 24-type value table verified; unit DB has 63,686 objects | verified | any gameplay value is editable |
 | Writer gap | `TOPO` table (an object ordering present in 164 files) not decoded | open | must be solved before adding objects |
-| Maps | 86 map entries in `mapinfo.cpp` NDF; map packs are mounted by NDF data (`TClusterMountMapDataPack`); RUSE.exe contains no map names | verified / medium | new maps look data-only |
+| Maps | 86 map entries in `mapinfo.cpp` NDF; map packs are mounted by NDF data (`TClusterMountMapDataPack`); map names come from data | verified / medium | new maps look data-only |
 | Map packs | 16-byte header checksum of Maps\PC packs unknown; `save.boobspc` and `output.sdb` carry plain MD5s | open / verified | could block edited map packs, so test early |
-| Nations | 7 nations hard-coded in RUSE.exe (US, GER, UK, FR, ITA, USSR, JAP) and 7-slot data structures | medium | rosters are data-only; an 8th nation needs exe work; Pacific (US vs JAP) needs none |
+| Nations | 7 nations (US, GER, UK, FR, ITA, USSR, JAP) and 7-slot data structures | medium | rosters are data-only; an 8th nation through data alone is the open question; Pacific (US vs JAP) needs none |
 | Scripts | `.xyz` = zlib-compressed Python 2.5 code objects; script packs are registered by NDF | verified | new missions/modes possible; needs a Python 2.5 compiler |
-| RUSE.exe | x64, no DRM or packer, no ASLR, imports `version.dll` / `winmm.dll` | verified | an optional runtime extender (proxy DLL) is feasible |
-| Multiplayer | Steam lobbies, lockstep with a desync checker, supports `connect_lobby` launches | verified (strings) | launcher can sync mods, then join a lobby |
-| Updates | RUSE.exe built 2026-08-11; RUSE-Mod-Manager tracks 7 game builds since May | verified | design for updates anyway |
+| Multiplayer | Steam lobbies, lockstep; mismatched mod files desync silently; `+connect_lobby` launches | medium | launcher must sync mods before joining a lobby |
+| Updates | Steam build 24670294; RUSE-Mod-Manager tracks 7 game builds since May | verified | design for updates anyway |
 | Sound | `.ess` = Eugen's own variable-bitrate codec, no public decoder | verified | last priority |
 
 ## 4. What modders do today, and what that requires
@@ -161,7 +160,7 @@ The game sees one tree of files assembled from many packs. We rebuild that tree 
 
 | Layer | Packs | Mounted |
 |---|---|---|
-| core | the six packs in `Data\PC\<rev>\`, names hard-coded in RUSE.exe | always |
+| core | the six packs in `Data\PC\<rev>\`, loaded by fixed names | always |
 | map | the 32 packs `Maps\PC\DataMap<Name>_v09.dat` | only while that map is loaded: its `clustermap.cpp` mounts `MapDat:\DataMap<Name>_v09.dat` at `Datasmap` |
 | nested | the 217 packs inside other packs (`.ipk .apk .mpk .gpk`, some `.ppk`) | by whatever refers to them, e.g. `TResourceDescriptorPythonPack 'Eugen.ipk'` |
 
@@ -275,11 +274,9 @@ search by name and see where each text is used. It costs some disk space (a gues
 
   Tools never write into a hard-linked file; they replace it. Several instances can sit side by side.
 - **Launch/join:** Steam-compatible launch; `+connect_lobby <id>` when joining a lobby (checked in M3).
-- **Runtime extender** (later, optional):
-  - A proxy `version.dll` is placed only in the instance and loads our loader.
-  - Hooks are found by byte patterns and checked against the build; RUSE.exe is never patched on disk.
-  - Candidate features: mount extra packs (no rebuilds), tag lobbies and block mismatched joiners,
-    raise the 7-nation limit, script hooks.
+- **Runtime extender: on hold (2026-09-29).** The platform works only through data files and never changes or
+  loads into the game's program (Eugen has reportedly asked modders not to publish details about unpacking it).
+  China stays as a real 8th nation (owner): the route without program changes is being worked out.
 
 ### L5 Front-ends
 - **CLI `ruse`:** `detect index ls extract dump verify new-mod build check deploy launch fingerprint rebase import-rmod`.
@@ -454,7 +451,7 @@ volunteer from the R.U.S.E. community: with a join code, joining takes them a co
 |---|---|---|---|---|
 | 1 | Core language | Python 3.11+ with type hints | runs inside Blender; same language as community tools; fastest for reverse engineering; AI-friendly | C#/.NET, Rust |
 | 2 | UI stack | Web UI (TypeScript, three.js for 3D) in a desktop window (pywebview), served by the local service. **Confirmed by the owner 2026-09-28.** v0.1 uses plain JavaScript with no build step, and pywebview's bridge instead of a separate service; TypeScript once the screens grow | best 3D and UI ecosystem; one UI codebase for Launcher and Studio; runs on Linux/Deck | Qt / PySide6 |
-| 3 | Runtime extender | C++ x64 proxy DLL, optional, instance-only | exe has no DRM/ASLR; `version.dll` is imported | none (repack only) |
+| 3 | Runtime extender | **On hold (2026-09-29):** data files only; nothing changes or loads into the game's program | respects Eugen's reported wish and our own rule; keeps mods safe to share | a program add-on |
 | 4 | Deployment | Modded instances via hard links | never touch the Steam install; mod sets side by side | in-place swap with backups (fallback) |
 | 5 | Mod identity | Engine export paths + owner paths + selectors | stable across updates, human-readable | indices (.rmod `index_map`) |
 | 6 | Source format | NDF-style text + CSV + standard asset formats | familiar to Eugen modders (WARNO/SD2 use text NDF); git-friendly | JSON / YAML |
@@ -531,7 +528,7 @@ to **M2** (decided 2026-09-28): without it, every new unit name costs a 2.3 GB r
 means every new unit name, rebuilds that whole pack (L5). With one, a mod ships a small pack of its own.
 
 **Known so far** ([FORMATS.md](FORMATS.md) §1, §5, §6):
-- RUSE.exe hard-codes the six core pack names and doesn't scan for extra `.dat` files.
+- The game loads the six core packs by fixed names and doesn't pick up extra `.dat` files.
 - Map packs are mounted by NDF data: each map's `clustermap.cpp` has `TClusterMountMapDataPack{ DataPack
   'MapDat:\DataMap<Name>_v09.dat', DatasMapDirectory 'GenDatasmap/<Name>', MountingPoint 'Datasmap' }`.
 - Script packs are registered by NDF too (`TResourceDescriptorPythonPack 'Eugen.ipk'`, `TClusterAddPythonPath`).
@@ -540,7 +537,7 @@ means every new unit name, rebuilds that whole pack (L5). With one, a mod ships 
 
 **Steps, cheapest first.** All in an instance; the Steam install is never touched.
 1. **Survey (read-only):** list every NDF class whose name contains `Mount`, `DataPack`, `Pack` or `Cluster`, across
-   all NDF files: where each is used and with which properties. Search RUSE.exe's strings for the same words. Record
+   all NDF files: where each is used and with which properties. Record
    what's found in FORMATS.md. **Ready to run:** [`tools/c3_survey.py`](../tools/c3_survey.py) does all of this
    (`py -3 tools\c3_survey.py > c3_survey.txt`).
 2. **Renamed map pack.** Proves a pack is found by the name in the data, and shows whether a pack's name is checked:
@@ -774,11 +771,11 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 | TOPO / NDF writer fidelity | can't add objects | C1 first; byte-identical gate |
 | Instance launch fails | must touch the install | C2 first. Fallback: in-place swap with journal + backup (players), full copy (dev) |
 | ~~Map-pack header checksum enforced and unknown~~ | — | retired: it's a random GUID, not a hash (FORMATS §6) |
-| 7 nations hard-coded | no China for RUSE 2.0 | size the job early (M10 step 1, the data scan; step 2, the program side) and follow what worked elsewhere (RESEARCH.md §6). No swap fallback: the owner keeps all 7 factions, so China waits rather than replacing one |
+| 7 nations hard-coded | no China for RUSE 2.0 | size the job early (M10 step 1, the data scan; the program side is on hold) and follow what worked elsewhere (RESEARCH.md §6). No swap fallback: the owner keeps all 7 factions, so China waits rather than replacing one |
 | SPK model format complexity | no new models | export first; static meshes before skinned ones |
 | Terrain can't be written | no new maps / islands | reading is solved elsewhere, writing is not: M1.5 tests re-encoding early; M8 sized by the result |
 | Python 2.5 toolchain | no new scripts | route known: compile with a real CPython 2.5.1 (a download, so your OK first); uncompyle6 to decompile |
-| Game updates | mods and tools break | per-build registry, rebase, byte-pattern hooks, CI on fixtures |
+| Game updates | mods and tools break | per-build registry, rebase, CI on fixtures |
 | Non-determinism across PCs | desyncs | canonical fingerprints, bundled runtime, 2-PC tests |
 | Community split | low adoption | `.rmod` import/export; talk to LittleGroove and Prolution; publish everywhere |
 | Legal | takedown | ship no game files; ask Eugen for an OK |

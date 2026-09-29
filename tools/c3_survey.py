@@ -3,7 +3,7 @@ r"""Check C3, step 1 (READ-ONLY): how does the game mount packs? See docs/PLAN.m
 Lists every NDF class whose name contains Mount, DataPack, Pack or Cluster, across every NDF file in every pack
 (nested packs included): where its objects are, their export names, their text values (strings, paths, wide
 strings, with how many values in that file share each string), and which objects refer to them.
-Then lists RUSE.exe's own strings that contain the same words. Nothing is written.
+Nothing is written.
 
   set PYTHONPATH=<repo>\src  &&  py -3 tools\c3_survey.py [game_dir] > c3_survey.txt
 """
@@ -20,7 +20,6 @@ from rusemod.ndf import _read_value  # noqa: E402
 
 DEFAULT_GAME = r"D:\Steam\steamapps\common\R.U.S.E"
 CLASS_WORDS = re.compile(r"mount|datapack|pack|cluster", re.I)
-EXE_WORDS = re.compile(rb"[\x20-\x7e]{5,}")
 MAX_OBJECTS_SHOWN = 40  # per class; classes with more show the first ones and a count
 
 
@@ -132,13 +131,6 @@ def main():
         if len(objs) > MAX_OBJECTS_SHOWN:
             print(f"  ... {len(objs) - MAX_OBJECTS_SHOWN} more")
         print()
-    exe = os.path.join(game, "RUSE.exe")
-    if os.path.exists(exe):
-        found = sorted({m.group().decode() for m in EXE_WORDS.finditer(open(exe, "rb").read())
-                        if re.search(rb"mount|datapack|pack|cluster", m.group(), re.I)})
-        print(f"== RUSE.exe strings with Mount / DataPack / Pack / Cluster: {len(found)}")
-        for s in found:
-            print("  " + s)
     return 0
 
 

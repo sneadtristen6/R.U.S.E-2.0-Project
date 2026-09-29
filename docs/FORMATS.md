@@ -1,7 +1,7 @@
 # R.U.S.E. File Formats: Knowledge Base
 
 Everything we know about the game's files, with evidence. Keep it updated: this file is the project's memory.
-Game build examined: Steam re-release, data revision **190852**, RUSE.exe built 2026-08-11.
+Game build examined: Steam re-release, Steam build 24670294, data revision **190852**.
 
 **Status legend:** ✅ verified on all shipped files · 🟡 partially understood · ❔ unknown ·
 **R** = we can read it · **W** = we can write it · **RT** = byte-identical round trip proven.
@@ -67,8 +67,7 @@ relays the data section, keeps the trie intact). Verified by [`tools/verify_writ
 | ZZ_Win.dat | 2.3 GB | 24,058 | textures, sounds, meshes, anims, UI, localisation, scripts, shader cache |
 | Maps\PC\DataMap\<Name\>_v09.dat | 23–148 MB | ~50 each | per-map terrain, textures, mesh, baked data (32 packs) |
 
-RUSE.exe hard-codes the six core pack names, `Data\PC`, `Maps/PC`, `MapDat` and
-`####DATAREVISION####00190852####DATAREVISION####`. It does not scan for extra `.dat` files.
+The game loads these six core packs by name; an extra `.dat` placed next to them isn't picked up.
 
 ## 2. NDF binary
 
@@ -158,11 +157,11 @@ with them rewritten too (C4), so which one it reads, if any, is unknown. `ruse b
 
 - `Nationalite` is an int32 on unit, infantry, aircraft, building, truck and acknowledgement descriptors.
   Stored values are 1–6; 0 is the default and is not written.
-- The enum: **0 US, 1 GER, 2 UK, 3 FR, 4 ITA, 5 USSR, 6 JAP.** RUSE.exe has the same table hard-coded
-  (`.data`, VA 0x1417F8E10: EU, Allemagne, RU, France, Italie, URSS, Japon).
+- The enum: **0 US, 1 GER, 2 UK, 3 FR, 4 ITA, 5 USSR, 6 JAP.**
 - Several structures have exactly 7 slots: `SubClusterNationaliteList` (every map), flag-icon lists, per-nation
   mesh packs, and the bit field `BitFieldNationaliteIfNotSkirmish` (values 0x3F, 0x403F…; bit 14 unexplained).
-- **Conclusion (medium confidence, no disassembly):** rosters are data-only; an 8th nation needs exe changes.
+- **Conclusion (medium confidence):** rosters are data-only. Whether an 8th nation can be added through data alone
+  is the open question (PLAN.md decision 19; China stays, and no faction is replaced).
 - **Nation scan** (`tools/nation_scan.py`, PC 2026-09-28, 2,172 NDF files, the 4 debug-info copies skipped, 5 s).
   Summary: an 8th entry is needed in 5 named per-nation structures (518 objects in 86 files); Chinese versions of 6
   kinds of nation-tagged objects; 1 bit field.
@@ -217,7 +216,6 @@ Other magics: `DICS` (18) and `DICV` (13) in `genvideos\…` (probably subtitles
 - The payload is a raw marshal code object with no `.pyc` header; `co_filename` looks like `datadir:\codeia\python\...`.
 - Script packs and `sys.path` are declared in NDF (`TResourceDescriptorPythonPack 'Eugen.ipk'`, `TClusterAddPythonPath`),
   so a mod's script pack can be registered through data. Building one needs a real Python 2.5 compiler.
-- The Python 2.5 interpreter, Scaleform GFx and libcurl are statically linked into RUSE.exe.
 - **The unit registry (found 2026-09-28, checks C5–C6c):** `ZZ_Win.dat!genpython\eugenpatchable.ipk` →
   `parametres\classes.xyz` defines **456 classes**, one per unit, plane and building (bases `front.unit.*` 259,
   `front.avion.*` 63, `front.batiment.*` 134), e.g. `class Unit_M3_Lee(front.unit.TankUnit): descriptor =
@@ -253,7 +251,7 @@ Ladder variants (`Scenario_1v1 … 3v3_v01`) are separate entries.
 
 **Pack mounting is data-driven:** each map's `clustermap.cpp` contains
 `TClusterMountMapDataPack{ DataPack 'MapDat:\DataMapTwoIslands_v09.dat', DatasMapDirectory 'GenDatasmap/TwoIslands', MountingPoint 'Datasmap' }`.
-RUSE.exe contains no map names. **Adding a map looks data-only.**
+Map names and paths all come from data. **Adding a map looks data-only.**
 
 **One map spans 5 packs:**
 - its own `Maps\PC\DataMap<Name>_v09.dat`
@@ -267,7 +265,7 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 | File | What we know |
 |---|---|
 | Map pack header "checksum" | ✅ **not a checksum: a random ID.** The 16 bytes at 0x08 are a Windows GUID (`uuid.UUID(bytes_le=…)`), version 4 with the RFC variant, in all 32 map packs (chance by accident ≈ 64⁻³¹). The game can't check it against the contents. Gamma and Gam_Ostfriesland share one (same pack). Every other archive has zeros there. Edits keep it; a new map gets a fresh `uuid4()`. Its use (map identity in multiplayer or replays?) ❔ |
-| `save.boobspc` | ✅ bytes 0–15 = MD5 of bytes 16..end; then version string `0.6`; uncompressed. RUSE.exe checks it ("Le Checksum du Boobs est invalide") |
+| `save.boobspc` | ✅ bytes 0–15 = MD5 of bytes 16..end; then version string `0.6`; uncompressed. The game checks it, so a rewrite must recompute it |
 | `output.sdb` | ✅ `SDB\r\n` + MD5 of the whole file with the 16-byte hash (at 5–20) removed |
 | `.scenario` | `SCENARIO\r\n` + 16 bytes (not an MD5 of the rest) + records (`AREA`, zones, …) ❔ |
 | `mapinfo.win` | `INFOIA\r\n` + 16 bytes (not an MD5 of the rest) + AI grids (concealment and movement-blocking layers) ❔ |
@@ -408,19 +406,13 @@ of TGU1? If ZIPO works, writing terrain textures needs no TGU1 encoder.
 - Big-endian header: `01 00 02 02`, u8 flag, u8 channels (1/2/6), u16 rate (11,025–48,000), u32 samples, u32 0,
   u32 samples, then a u32 table of block offsets.
 - About 1,024 samples per block, variable block sizes, about 4.4 bits/sample: a custom variable-bitrate codec.
-- All 17,462 files are compressed; there is no PCM variant. RUSE.exe contains no known codec library strings; vgmstream doesn't support it.
+- All 17,462 files are compressed; there is no PCM variant. vgmstream doesn't support it.
 
-## 10. RUSE.exe
+## 10. The game's program
 
-- PE32+ x64, MSVC 14.x, `EugGame.Final.x64.pdb`, built 2026-08-11, Authenticode-signed.
-- Protection:
-  - No `.bind` (no SteamStub) and no packer.
-  - No ASLR (fixed base 0x140000000) and no CFG.
-  - One ordinary TLS callback.
-- Imports 34 DLLs. Proxy candidates: **version.dll (4 functions)**, winmm.dll (1); also dbghelp, XINPUT9_1_0, X3DAudio1_6, d3dx9_42, d3d9, d3d11, dxgi, steam_api64 (11).
-- Multiplayer strings: `connect_lobby`, `LobbyInvite`, `GameLobbyJoinRequested_t`, `TDesynchroChecker`, `LogDesynchro`, `Desynchronized: %d`.
-- Integrity strings: `Le Checksum du Boobs est invalide`, `StateDB MD5 Mismatch`.
-- Command line is parsed with `GetCommandLineW` / `CommandLineToArgvW`.
+Out of scope. The platform works only through the game's data files and never changes, loads into or
+publishes details of RUSE.exe (PLAN.md principles; Eugen has reportedly asked modders not to post
+details about unpacking the program).
 
 ## Open questions (ordered by impact)
 

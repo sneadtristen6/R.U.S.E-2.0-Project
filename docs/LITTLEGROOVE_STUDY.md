@@ -63,7 +63,7 @@ File paths refer to their repo.
 | **3D models (Blender)** | none | SPK reader/writer + Blender bridge (nobody has this for R.U.S.E.) |
 | Textures | decode only | encoder (DXT + `TGU1`) |
 | New game modes / scripts | partial (compile route exists) | a Studio script workflow on the same idea: real Python 2.5 for compiling |
-| New nations | none | still exe-bound (parked) |
+| New nations | none | China through data (open question) |
 | Launcher, modpacks, instances | none (patches the live install) | our instance + `.mrpack`-style launcher (proven by C2) |
 | Multiplayer sync | via app updates | join codes + fingerprints |
 | Survive game updates | good concept (tiered identity + index maps) | same concept as a documented public API, one tested implementation |
