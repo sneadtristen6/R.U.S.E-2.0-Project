@@ -797,7 +797,7 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
         241,160 objects, 605,961 references, 27,522 shared objects and 130,845 texts (the same count as the decodable
         `.dic` keys). The queries take 0.3–0.45 s each: `show` lists the Sherman's values; `clone` lists what a copy
         copies, shares and references; `filter … ProductionPrice[0] gt 100` finds none, correctly, since the priciest
-        units cost 80 (the atomic cannons; `gt 40` finds 39); `texts Sherman` finds the name `N_UNI_137` and 12
+        units cost 80 (the atomic cannons; `gt 40` finds 39); `texts Sherman` finds the name `N_UNI_137` and 13
         dialog and description lines. Nothing wrong. Only noise: the build's summary prints a line for each of 20 sound
         files found in 44 packs. (In Git Bash, set `MSYS_NO_PATHCONV=1`, or `$/GFX/...` gets turned into a Windows path.)
         - `py -3 -m rusemod index build`: indexes every pack, file, object, reference and text (target: about a
