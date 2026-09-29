@@ -14,11 +14,11 @@ players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your br
 | | ![RUSE Studio's Maps: Centre of Gravity in 3D, with its real ground](docs/images/studio-maps.jpg) |
 
 **Current stage (2026-09-29):**
-- **Terrain brushes** (in review): mods can reshape a map's ground, and the Studio's Maps view paints the strokes
+- **Terrain brushes** (merged, not yet checked in-game): mods can reshape a map's ground, and the Studio's Maps view paints the strokes
   (hill, raise, lower, crater, plateau, flatten, smooth, and a two-click ramp; size, strength, Undo, Start over); the
   first in-game check is one hill on Centre of Gravity.
-- **Browse mods** (in review): the launcher lists the community's mods from a GitHub index and installs them.
-- **A mod as one file** (in review): the Studio exports `<id>-<version>.rusemod`, the launcher installs it.
+- **Browse mods** (merged, not yet checked in-game): the launcher lists the community's mods from a GitHub index and installs them.
+- **A mod as one file** (merged, not yet checked in-game): the Studio exports `<id>-<version>.rusemod`, the launcher installs it.
 - **Community mods:** 18 RUSE-Mod-Manager mods rebuilt in our format ([`mods/`](mods/)); their format is written
   down (MOD_FORMAT §13) and what the others teach is in FORMATS.md §2. Not checked in-game yet.
 - **New units work in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory;
@@ -29,8 +29,8 @@ players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your br
   modded copy and starts it.
 - **Maps:** new maps can ship their own pack (C3). The terrain mesh and tile files can be read and rewritten
   losslessly, and the game draws terrain textures we write ourselves.
-- **Next:** new units made from the Studio's window and mod sets made inside the launcher (both coded, in review:
-  pull requests `cloud/studio-new-unit` and `cloud/launcher-mod-sets`), then a terrain editor in RUSE Studio (shape
+- **Next:** new units made from the Studio's window and mod sets made inside the launcher (both merged, waiting for
+  the owner's in-game test), then a terrain editor in RUSE Studio (shape
   a map with brushes, then "Test in game").
 - Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19).
 
@@ -74,7 +74,7 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
   [`examples/named-unit/`](examples/named-unit/)).
 
 - **Terrain brushes** ([`src/rusemod/brush.py`](src/rusemod/brush.py), [`terrain_edit.py`](src/rusemod/terrain_edit.py),
-  in review; painted in the Studio's Maps view): a mod reshapes a map's ground with brush strokes (hill, raise,
+  merged 2026-09-29, not yet checked in-game; painted in the Studio's Maps view): a mod reshapes a map's ground with brush strokes (hill, raise,
   lower, crater, plateau, flatten, smooth, ramp)
   in `maps/<map>/terrain.toml`; `ruse build` applies them to all four files that hold the ground, together, and puts
   the map in the modded copy ([docs/MOD_FORMAT.md §8](docs/MOD_FORMAT.md)). The in-game check comes first:
@@ -106,9 +106,9 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
     file…" (the loop from modder to player, TASKS C).
     "Test in game" builds the mod and starts the game. **New unit…** on a unit's page makes a copy with its own
     name (in every language), price and build menu (the same nation and factory, or another nation's); it's listed
-    as new, edited like any other unit, and can be deleted (in review, 0.5). **Maps** (the terrain editor): every map
+    as new, edited like any other unit, and can be deleted (merged; Studio 0.5 after the owner's in-game check). **Maps** (the terrain editor): every map
     the game lists, shown in 3D with its real ground mesh and ground textures (the textures are decoded once per
-    map and kept); pick a brush and click or drag on the ground to shape it (in review, 0.6): each stroke is drawn
+    map and kept); pick a brush and click or drag on the ground to shape it (merged; Studio 0.6 after the owner's in-game check): each stroke is drawn
     at once and saved in the mod's `maps/<map>/terrain.toml`, a ramp takes two clicks (its start, its end), Undo
     takes a stroke back, Start over clears the map, and "Test in game" builds it into the map. `py -3 -m ruse_studio` (after `ruse index build`); `--spike` opens the 3D check.
   - `py -3 -m pip install -e .[apps]` once gives two commands, `ruse-launcher` and `ruse-studio`, that open them

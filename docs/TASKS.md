@@ -10,20 +10,22 @@ scope is out of scope.
 The PC session ran out of credit in the afternoon; the cloud session carried on. The owner is not a coder: **the PC
 session runs every command itself; the owner only installs, plays and screenshots.** Give click-level steps.
 
-**Open pull requests, in merge order.** All are green on the repository's own checks (tests on Linux and Windows,
-CodeQL). The red `github-advanced-security` check is GitHub's own scanner failing on GitHub's side before it reads
-any code ("The requested model is not supported"); it is commented on each pull request; ignore it, or turn it off
-under Settings → Advanced Security → Code scanning (the AI/Copilot switch; keep CodeQL on).
-1. #2 `cloud/launcher-mod-sets` (Task B) → #4 `cloud/mod-package` (Task C, on #2) → #5 `cloud/browse-mods` (Task D, on #4).
-2. #3 `cloud/community-mods` (Task G: 18 community mods rebuilt in our format; the patch language finds objects
-   by a property).
-3. #6 `cloud/terrain-brushes` (the terrain engine) → #7 `cloud/studio-brushes` (the Studio's brushes) → #8
-   `cloud/ramp-tool` (the ramp, Start over).
+**All of it is merged into `main` (later that evening):** #2, #4, #5 (the launcher: mod sets, a mod as one file,
+Browse mods), #3 (the community mods), #6, #7, #8 (the terrain editor: the engine, the Studio's brushes, the ramp
+and Start over) and #9 (this note). Each was re-read in full and green on the repository's own checks (tests on
+Linux and Windows, CodeQL) before merging, under the standing rule below; the branches clashed only in the docs and
+were joined by merging `main` into each (both sides kept). `main` passes 422 tests. **No version bump, tag or
+release was made:** those wait for the owner's in-game tests. The red `github-advanced-security` check on those
+pull requests is GitHub's own scanner failing on GitHub's side before it reads any code ("The requested model is
+not supported"); it is commented on each; ignore it, or turn it off under Settings → Advanced Security → Code
+scanning (the AI/Copilot switch; keep CodeQL on).
 
-Each ends with a "Test for the owner". **Merging:** under the standing rule below (the PC session out of credit),
-the cloud session merges these itself once GitHub's tests are green and it has re-read each diff, in the order
-above; version bumps, tags and releases wait for the owner's in-game tests. Any still open when you read this:
-merge it in that order (merge `main` into the branch first when GitHub says it conflicts).
+**What the PC session does now, in order:** 1) `git pull` on `main`; 2) the hill test below (one game start);
+3) the owner's other tests, one game start each (below; each pull request's "Test for the owner" section has the
+steps); 4) releases once the tests pass: the launcher (B, C and D together; 0.2 or 0.3, the PC session picks) and
+the Studio (A, the brushes and the ramp: 0.6). A failed test goes back to the cloud with exactly what happened, not
+into a release. The cloud session that did all this ran out of credit right after; its next piece of work is
+painting the ground (below), not started.
 
 **The one test that matters most: the hill (#6).** It decides whether the game accepts ground we move. Run
 `py -3 tools\verify_terrain.py` (read-only; every map should say OK), then
@@ -62,8 +64,8 @@ documented, not planned.
 **The owner's standing wishes:** think Cities: Skylines but simpler; no jargon; the sessions decide small things
 themselves and never ask the owner to type commands.
 
-**Queue (2026-09-29, keep this order):** A is done (pull request #1) → **B** (next, unless already started) → C →
-D → E → F → G. Take the first task not started; one task per session; one pull request per task; resolve
+**Queue (2026-09-29, keep this order):** A, B, C, D and G are done (pull requests #1, #2, #4, #5 and #3, all
+merged) → **E** (join codes, next) → F; the terrain editor's own order is in PLAN §12. Take the first task not started; one task per session; one pull request per task; resolve
 conflicts with `main` by merging `main` into the branch (in docs/LOG.md keep both entries). When the PC session
 is out of credit (it says so here or in the pull request), a cloud session may merge its own pull request once
 GitHub's tests are green and it has re-read the whole diff; version bumps, tags and releases still wait for the
