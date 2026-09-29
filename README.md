@@ -22,8 +22,9 @@ players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your br
   modded copy and starts it.
 - **Maps:** new maps can ship their own pack (C3). The terrain mesh and tile files can be read and rewritten
   losslessly, and the game draws terrain textures we write ourselves.
-- **Next:** new units made from the Studio's window, then mod sets made inside the launcher, then a terrain
-  editor in RUSE Studio (shape a map with brushes, then "Test in game").
+- **Next:** new units made from the Studio's window (code done, in review: pull request `cloud/studio-new-unit`),
+  then mod sets made inside the launcher, then a terrain editor in RUSE Studio (shape a map with brushes, then
+  "Test in game").
 - Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19).
 
 The order is in PLAN.md §10 "Now"; the latest decisions are in PLAN.md §6.
@@ -75,7 +76,9 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
     unit's values, parts and what uses it, and pick a language: the game's own names by default, or any of the
     game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is saved in
     the mod's `src/studio.rndf` (with Undo); a part several units share changes for one of them or all.
-    "Test in game" builds the mod and starts the game. **Maps** (new, the start of the terrain editor): every map
+    "Test in game" builds the mod and starts the game. **New unit…** on a unit's page makes a copy with its own
+    name (in every language), price and build menu (the same nation and factory, or another nation's); it's listed
+    as new, edited like any other unit, and can be deleted (in review, 0.5). **Maps** (the start of the terrain editor): every map
     the game lists, shown in 3D with its real ground mesh and ground textures (the textures are decoded once per
     map and kept). `py -3 -m ruse_studio` (after `ruse index build`); `--spike` opens the 3D check.
   - `py -3 -m pip install -e .[apps]` once gives two commands, `ruse-launcher` and `ruse-studio`, that open them

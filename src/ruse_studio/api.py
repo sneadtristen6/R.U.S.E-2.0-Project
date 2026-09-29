@@ -2,8 +2,10 @@
 the game index, opened read-only for each question (the window calls from several threads).
 
 Editing: the modder works in one mod at a time (made here, in the platform folder's `mods/`, or any mod folder they
-open). Every change is saved at once in that mod's `src/studio.rndf` (edits.py). Test in game builds the mod into
-its own modded copy and starts the game, with the platform's engine (rusemod.play), so the Studio doesn't need the
+open). Every change is saved at once in that mod's `src/studio.rndf` (edits.py). New units are copies of a unit the
+game has, kept in the same file with their names in `text/studio.baseunite.csv`; the game index doesn't know them,
+so their pages are the copied unit's pages, with the copy's own changes on top. Test in game builds the mod into its
+own modded copy and starts the game, with the platform's engine (rusemod.play), so the Studio doesn't need the
 launcher.
 """
 from __future__ import annotations
@@ -14,10 +16,11 @@ import re
 import struct
 import threading
 import tomllib
+import unicodedata
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from rusemod import schema
+from rusemod import identity, schema
 from rusemod.build import BuildError
 from rusemod.home import default_home, game_dir as find_game_dir
 from rusemod.index import LIST_VALUES, Index, build_index, default_path
@@ -29,7 +32,7 @@ from rusemod.build import find_pack
 from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_folder
 
-from .edits import EditsFileError, ModEdits
+from .edits import EditsFileError, ModEdits, NewUnit
 
 KINDS = {"ground": ("TUniteAuSolDescriptor",), "infantry": ("TInfanterieDescriptor",),
          "air": ("TAvionDescriptor",), "buildings": ("TBatimentDescriptor",)}
@@ -37,6 +40,8 @@ KIND_OF = {cls: kind for kind, classes in KINDS.items() for cls in classes}
 NOT_EDITABLE = {"DescriptorId", "TrackingId", "Nationalite"}  # ids stay unique (rusemod.identity); moving a unit to
 # another nation needs more than one number (its menus, and the new nation's add-on for China), so it comes later
 ALL_CLASSES = tuple(KIND_OF)
+NATIONS = 7
+_PREFIX = re.compile(r"^(Descriptor_[A-Za-z]+_)")  # Descriptor_Unit_M4_Sherman -> a copy is Descriptor_Unit_<Name>
 
 
 def _tail(address: str) -> str:
@@ -83,6 +88,13 @@ def _whole(value, kind: str, prop: str):
     if not lo <= r <= hi:
         raise StudioError(f"{prop}: {r} doesn't fit (it must be {lo} to {hi})")
     return r
+
+
+def safe_name(name: str) -> str:
+    """The part of a new unit's address made from its name: ASCII letters, digits and _ only (accents dropped, other
+    letters left out), which the game's data, its Python unit list and .rndf files all accept."""
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    return re.sub(r"[^A-Za-z0-9]+", "_", plain).strip("_")
 
 
 class StudioError(Exception):
@@ -142,7 +154,7 @@ class StudioApi:
         return words(lang)
 
     def nations(self, lang: str = schema.BASE) -> list[str]:
-        return [schema.nation(n, lang) for n in range(7)]
+        return [schema.nation(n, lang) for n in range(NATIONS)]
 
     def status(self) -> dict:
         path = self._path()
@@ -161,50 +173,125 @@ class StudioApi:
             self._units = ix.units(ALL_CLASSES)
         return self._units
 
+    def _new_units(self) -> dict[str, NewUnit]:
+        """The current mod's new units (none when there's no mod, or its files can't be read: browsing goes on)."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            return {}
+        return edits.new_units if edits else {}
+
     def units(self, lang: str = schema.BASE, kind: str = "all", nation: int = -1, search: str = "") -> dict:
-        """The units and buildings to list, with names in `lang` (the game's names by default)."""
+        """The units and buildings to list, with names in `lang` (the game's names by default). The current mod's
+        new units come first, under the nation and factory they were given, marked `new`."""
         ix = self._open()
         try:
             rows = self._all_units(ix)
             names = ix.names([u["key"] for u in rows], lang) if lang != schema.BASE else {}
         finally:
             ix.close()
+        by_address = {u["address"]: u for u in rows}
+        new = []
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        for unit in edits.new_units.values() if edits else []:
+            src = by_address.get(unit.source, {"class": "TUniteAuSolDescriptor", "nation": 0, "factory": None})
+            own = edits.of(unit.target)
+            new.append({"address": unit.target, "class": src["class"], "key": None,
+                        "nation": int(own.get("Nationalite", src["nation"])),
+                        "factory": own.get("Factory", src["factory"]), "slot": None, "new": True,
+                        "source": unit.source, "name": unit.name})
         words = search.strip().lower()
         out = []
-        for u in rows:
+        for u in new + rows:
             k = KIND_OF.get(u["class"], "ground")
             if kind != "all" and k != kind or nation >= 0 and u["nation"] != nation:
                 continue
-            name = names.get(u["key"]) or _tail(u["address"])
+            name = u.get("name") or names.get(u["key"]) or _tail(u["address"])
             if words and words not in name.lower() and words not in u["address"].lower():
                 continue
             out.append({"address": u["address"], "name": name, "base_name": _tail(u["address"]), "kind": k,
                         "nation": u["nation"], "nation_name": schema.nation(u["nation"], lang),
-                        "factory": u["factory"], "slot": u["slot"]})
-        return {"units": out, "total": len(rows)}
+                        "factory": u["factory"], "slot": u["slot"], "new": u.get("new", False),
+                        "source": u.get("source")})
+        return {"units": out, "total": len(rows) + len(new)}
 
-    def _names(self, ix: Index, addresses, lang: str) -> dict:
-        """Address -> what to call it on screen: a unit's in-game name in `lang`, else the end of its address."""
+    def menus(self, lang: str = schema.BASE) -> dict:
+        """The build menus a new unit can go in: for every nation, its factories, each shown by the units it holds
+        (the game has no names for factories), in menu order."""
+        ix = self._open()
+        try:
+            rows = self._all_units(ix)
+            names = self._names(ix, [u["address"] for u in rows if u["factory"] is not None], lang)
+        finally:
+            ix.close()
+        by_menu: dict[tuple, list] = {}
+        for u in rows:
+            if u["factory"] is not None:
+                by_menu.setdefault((u["nation"], u["factory"]), []).append(u)
+        nations = []
+        for n in range(NATIONS):
+            factories = []
+            for (nation, factory), units in sorted(by_menu.items()):
+                if nation != n:
+                    continue
+                units = sorted(units, key=lambda u: (u["slot"] is None, u["slot"] or 0, u["address"]))
+                factories.append({"factory": factory, "units": [names[u["address"]] for u in units[:3]],
+                                  "count": len(units)})
+            nations.append({"nation": n, "name": schema.nation(n, lang), "factories": factories})
+        return {"nations": nations}
+
+    def _names(self, ix: Index, addresses, lang: str, new_units: dict | None = None) -> dict:
+        """Address -> what to call it on screen: a unit's in-game name in `lang`, a new unit's own name, else the
+        end of its address."""
         keys = {u["address"]: u["key"] for u in self._all_units(ix)}
         texts = ix.names([keys.get(a) for a in addresses], lang) if lang != schema.BASE else {}
-        return {a: texts.get(keys.get(a)) or _tail(a) for a in addresses}
+        new_units = new_units or {}
+        return {a: new_units[a].name if a in new_units else texts.get(keys.get(a)) or _tail(a) for a in addresses}
+
+    @staticmethod
+    def _resolve(edits: ModEdits | None, address: str) -> tuple[str, NewUnit | None]:
+        """Where the index knows an address: a new unit (or one of its own parts) is looked up in the unit it copies.
+        Returns (the address in the index, the new unit or None)."""
+        unit = edits.new_unit_of(address) if edits else None
+        if unit is None:
+            return address, None
+        _base, _, inside = address.partition(":")
+        return unit.source + (f":{inside}" if inside else ""), unit
 
     def unit(self, address: str, lang: str = schema.BASE, via: str = "") -> dict:
         """One unit (or any object): its values in groups, its parts and what uses it, with the current mod's edits.
         `via` is the named unit the modder came from: a part several units share can then be changed for that unit
-        only (it gets its own copy) as well as for all of them."""
+        only (it gets its own copy) as well as for all of them. A new unit's page is its source's, at the new
+        address, with the copy's own values as edits."""
+        try:
+            mod = self._edits()
+            broken = ""
+        except EditsFileError as exc:  # browsing still works; editing waits until the file is fixed
+            mod, broken = None, str(exc)
+        new_units = mod.new_units if mod else {}
+        real, new = self._resolve(mod, address)
+        via_real, _via_new = self._resolve(mod, via) if via else ("", None)
         ix = self._open()
         try:
-            o = ix.show(address)
+            try:
+                o = ix.show(real)
+            except KeyError:
+                raise StudioError(f"There's nothing at {address} in this game build.") from None
             share = None
             if o["shared"] and not o["export"]:
-                names = self._names(ix, o["owners"] + ([via] if via else []), lang)
-                path = ix.path_to(via, o["address"]) if via in o["owners"] else None
-                share = {"owners": [{"address": a, "name": names[a]} for a in o["owners"]],
+                owners = o["owners"] + [t for t, u in new_units.items() if u.source in o["owners"]]  # copies use it too
+                names = self._names(ix, owners + ([via] if via else []), lang, new_units)
+                path = ix.path_to(via_real, o["address"]) if via_real in o["owners"] else None
+                share = {"owners": [{"address": a, "name": names[a]} for a in owners],
                          "via": {"address": via, "name": names[via], "path": path} if path else None}
             types = ix.prop_types(o["class"])
-            plan = ix.clone_plan(address)
-            parts = [{"address": a, "class": ix.show(a)["class"], "shared": False} for a in plan["copied"]] + \
+            plan = ix.clone_plan(real)
+            base = address.partition(":")[0]
+            rewrite = (lambda a: base + a[len(new.source):]) if new else (lambda a: a)  # its own parts, at its address
+            parts = [{"address": rewrite(a), "class": ix.show(a)["class"], "shared": False} for a in plan["copied"]] + \
                     [{"address": a, "class": ix.show(a)["class"], "shared": True} for a in plan["shared"]]
             uses = []
             for a in plan["references"]:  # named objects it uses (weapons, ammo…): editable on their own page
@@ -212,18 +299,20 @@ class StudioApi:
                     uses.append({"address": ix.show(a)["address"], "class": ix.show(a)["class"]})
                 except KeyError:  # an import the index couldn't find
                     pass
-            all_users = ix.used_by(address)
+            all_users = [] if new else ix.used_by(real)  # nothing in the game points at a new unit
             used_by = [{"address": a, "path": p} for a, p in all_users[:30]]
             key = next((t for p, _n, t in o["values"] if p == "NameInMenuToken"), None)
             shown = ix.names([key], lang).get(key) if key and lang != schema.BASE else None
+            source_name = self._names(ix, [new.source], lang)[new.source] if new else None
         finally:
             ix.close()
         editable, why = self._editable(o)
-        try:
-            mod = self._edits()
-        except EditsFileError as exc:  # browsing still works; editing waits until the file is fixed
-            mod, editable, why = None, False, str(exc)
-        edits = mod.of(o["address"], "shared" if share else None) if mod else {}
+        if broken:
+            editable, why = False, broken
+        top = new is not None and ":" not in address  # the new unit itself, not a part of it
+        if top:
+            shown = new.name
+        edits = mod.of(address, "shared" if share else None) if mod else {}
         own = mod.of(f"{via}:{share['via']['path']}", "own") if mod and share and share["via"] else {}
         users = len({a.split(":")[0] for a, _p in all_users})
         rows: dict[str, dict] = {}
@@ -231,7 +320,12 @@ class StudioApi:
             values = []
             for num, text in zip(p["numbers"], p["texts"]):
                 if prop == "Nationalite" and num is not None:
-                    values.append(f"{num} ({schema.nation(num, lang)})")
+                    n = edits.get(prop, num) if top else num
+                    values.append(f"{n} ({schema.nation(n, lang)})")
+                elif prop == "NameInMenuToken" and top:
+                    values.append(shown)
+                elif prop == identity.DEBUG_NAME and top and text:  # the build gives the copy its own (MOD_FORMAT §10.5)
+                    values.append(identity.debug_name(new.source, text, address))
                 elif prop == "NameInMenuToken" and shown:
                     values.append(f"{text} ({shown})")
                 else:
@@ -242,8 +336,9 @@ class StudioApi:
                           "editable": editable and _can_edit(prop, p),
                           "locked": prop in NOT_EDITABLE, "edited": edits.get(prop), "edited_own": own.get(prop)}
         if "Nationalite" not in rows and o["class"] in KIND_OF:  # 0 isn't written
+            n = edits.get("Nationalite", 0) if top else 0
             rows["Nationalite"] = {"prop": "Nationalite", "label": schema.label("Nationalite", lang),
-                                   "group": "identity", "values": [f"0 ({schema.nation(0, lang)})"], "numbers": [0],
+                                   "group": "identity", "values": [f"{n} ({schema.nation(n, lang)})"], "numbers": [0],
                                    "list": False, "type": "int32", "editable": False, "locked": True, "edited": None,
                                    "edited_own": None}
         groups = []
@@ -251,11 +346,13 @@ class StudioApi:
             members = [r for r in rows.values() if r["group"] == g]
             if members:
                 groups.append({"key": g, "name": schema.group_name(g, lang), "rows": members})
-        return {"address": o["address"], "class": o["class"], "name": shown or _tail(o["address"]),
+        return {"address": address, "class": o["class"], "name": shown or _tail(address),
                 "stable": o["stable"], "shared": o["shared"], "owners": o["owners"], "groups": groups,
                 "parts": parts, "uses": uses, "used_by": used_by, "editable": editable, "why_not": why,
                 "named": bool(o["export"]), "share": share,
-                "users": users if o["export"] and o["class"] not in KIND_OF and users > 1 else 0}
+                "users": users if o["export"] and o["class"] not in KIND_OF and users > 1 else 0,
+                "can_copy": bool(o["export"]) and o["class"] in KIND_OF and editable and new is None,
+                "new": {"source": new.source, "source_name": source_name} if top else None}
 
     def _editable(self, o: dict) -> tuple[bool, str]:
         """Whether this object's values can be edited from the Studio, and if not, why (a key of the tool's words)."""
@@ -263,17 +360,18 @@ class StudioApi:
             return False, "not_stable"
         return True, ""
 
-    def _where(self, ix: Index, o: dict, mode: str, via: str) -> tuple[str, str | None]:
-        """Where a change to object `o` is written, and how (MOD_FORMAT §10.5). A part several units share is changed
-        for all of them ("shared", at its own address) or for one of them only ("own": through that unit, which
-        gets its own copy of the part); anything else just at its address."""
+    def _where(self, ix: Index, o: dict, mode: str, via: str, address: str, edits: ModEdits) -> tuple[str, str | None]:
+        """Where a change to object `o` (shown at `address`) is written, and how (MOD_FORMAT §10.5). A part several
+        units share is changed for all of them ("shared", at its own address) or for one of them only ("own":
+        through that unit, which gets its own copy of the part); anything else just at its address."""
         if not (o["shared"] and not o["export"]):
-            return o["address"], None
+            return address, None
         if mode == "shared":
             return o["address"], "shared"
         if mode != "own":
             raise StudioError(f"{o['address']} is shared by several units: change it for one of them, or for all")
-        path = ix.path_to(via, o["address"]) if via in o["owners"] else None
+        via_real, _new = self._resolve(edits, via) if via else ("", None)
+        path = ix.path_to(via_real, o["address"]) if via_real in o["owners"] else None
         if path is None:
             raise StudioError(f"{via or 'no unit'} doesn't use {o['address']}, so it can't get its own copy")
         return f"{via}:{path}", "own"
@@ -402,14 +500,15 @@ class StudioApi:
         return self.choose_mod(chosen) if chosen else self.mods()
 
     def edited(self) -> list[str]:
-        """The named objects the current mod changes: a part changed for all its users marks every one of them."""
+        """The named objects the current mod changes: a part changed for all its users marks every one of them. New
+        units aren't in it: the list marks them as new instead."""
         try:
             edits = self._edits()
         except EditsFileError:
             return []
         if not edits:
             return []
-        names = edits.edited()
+        names = edits.edited() - set(edits.new_units)
         if edits.shared():
             ix = self._open()
             try:
@@ -429,14 +528,15 @@ class StudioApi:
         edits = self._edits()
         if edits is None:
             raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        real, _new = self._resolve(edits, address)
         ix = self._open()
         try:
-            o = ix.show(address)
+            o = ix.show(real)
             types = ix.prop_types(o["class"])
             ok, why = self._editable(o)
             if not ok:
                 raise StudioError(f"{address} can't be edited here ({why})")
-            where, how = self._where(ix, o, mode, via)
+            where, how = self._where(ix, o, mode, via, address, edits)
         finally:
             ix.close()
         p = _props(o).get(prop)
@@ -464,15 +564,100 @@ class StudioApi:
         edits = self._edits()
         if edits is None:
             return {"saved": None}
+        real, _new = self._resolve(edits, address)
         ix = self._open()
         try:
-            where, how = self._where(ix, ix.show(address), mode, via)
+            where, how = self._where(ix, ix.show(real), mode, via, address, edits)
         finally:
             ix.close()
         with self._saving:
             edits = ModEdits(edits.folder)
             edits.reset(where, prop, how)
         return {"saved": str(edits.file)}
+
+    # --- new units ---
+    def new_unit(self, source: str, name: str, price, nation: int = -1, factory: int = -1) -> dict:
+        """A new unit in the current mod: a copy of `source` called `name` (in every language), costing `price` at
+        every battle date, in the source's build menu or in another nation's (`nation` and `factory`, both given).
+        Returns its address, so the page can open it."""
+        name = (name or "").strip()
+        if not name:
+            raise StudioError("Give the new unit a name.")
+        if not isinstance(price, (int, float)) or isinstance(price, bool):
+            raise StudioError("Price: one number, used for every battle date.")
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: a new unit is saved in a mod.")
+        if source in edits.new_units:
+            raise StudioError(f"{name}: copy the unit {_tail(source)} was made from instead (a copy of a copy would "
+                              f"lose its changes)")
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(source)
+            except KeyError:
+                raise StudioError(f"{source} isn't in this game build") from None
+            if not o["export"] or o["class"] not in KIND_OF:
+                raise StudioError(f"{source} isn't a unit or building, so it can't be copied here")
+            types = ix.prop_types(o["class"])
+            menus = {(u["nation"], u["factory"]) for u in self._all_units(ix) if u["factory"] is not None}
+            namespace, tail = source.rsplit("/", 1)
+            m = _PREFIX.match(tail)
+            prefix = m.group(1) if m else "Descriptor_Unit_"
+
+            def taken(t: str) -> bool:
+                if t in edits.new_units:
+                    return True
+                try:
+                    ix.show(t)
+                    return True
+                except KeyError:
+                    return False
+
+            stem = safe_name(name)
+            if stem:
+                target = f"{namespace}/{prefix}{stem}"
+                if taken(target):
+                    raise StudioError(f"There's already a unit called {prefix}{stem} (from {name!r}). Pick another "
+                                      f"name.")
+            else:  # a name without letters or digits A-Z (Japanese, say): the address gets a number instead
+                n = 1
+                while taken(f"{namespace}/{prefix}New_{n}"):
+                    n += 1
+                target = f"{namespace}/{prefix}New_{n}"
+        finally:
+            ix.close()
+        values: dict = {}
+        prices = _props(o).get("ProductionPrice")
+        if prices and _can_edit("ProductionPrice", prices):
+            kind = types.get("ProductionPrice[]" if prices["list"] else "ProductionPrice", "")
+            p = _whole(price, kind, "ProductionPrice") if kind in INT_RANGES else price
+            values["ProductionPrice"] = [p] * len(prices["numbers"]) if prices["list"] else p
+        if nation >= 0 or factory >= 0:
+            if (nation, factory) not in menus:
+                raise StudioError(f"No build menu for nation {nation} and factory {factory}: pick one of the menus "
+                                  f"the game has")
+            own_nation = next((int(n) for path, n, _t in o["values"] if path == "Nationalite" and n is not None), 0)
+            own_factory = next((int(n) for path, n, _t in o["values"] if path == "Factory" and n is not None), None)
+            if (nation, factory) != (own_nation, own_factory):
+                values["Nationalite"], values["Factory"] = nation, factory
+        with self._saving:
+            edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
+            if target in edits.new_units:
+                raise StudioError(f"There's already a unit at {target}. Pick another name.")
+            edits.add_unit(target, source, name, values)
+        return {"address": target, "name": name, "saved": str(edits.file)}
+
+    def delete_unit(self, address: str) -> dict:
+        """Remove a new unit from the current mod: its copy, every change made to it and its parts, and its name."""
+        edits = self._edits()
+        if edits is None or address not in edits.new_units:
+            raise StudioError(f"{address} isn't a unit made in this mod, so it can't be deleted here")
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            source = edits.new_units[address].source if address in edits.new_units else None
+            edits.remove_unit(address)
+        return {"deleted": address, "source": source, "saved": str(edits.file)}
 
     def test_in_game(self) -> dict:
         """Build the current mod into its own modded copy (`RUSE-Instances\\studio-<mod>`) and start the game from it,

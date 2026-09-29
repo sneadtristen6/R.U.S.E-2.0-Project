@@ -24,7 +24,14 @@
       map_stats: "{points} points, {triangles} triangles",
       no_viewer: "The map view couldn't load its 3D library (it needs the internet the first time).",
       ground_loading: "Loading the real ground textures… {progress}", all_values: "all {n}", each_value: "set each",
-      price_dates: "One price per battle date: the host picks the date (1939, 1942, 1945, Total War) when setting up a battle." },
+      price_dates: "One price per battle date: the host picks the date (1939, 1942, 1945, Total War) when setting up a battle.",
+      new_unit: "New unit…", new_unit_name: "Name of the new unit (shown in every language)",
+      price: "Price (every battle date)", build_menu: "Build menu", same_menu: "The same as {name}",
+      other_menu: "Another one", nation: "Nation", factory: "Factory (shown by the units in it)",
+      more_units: "and {n} more", copy_of: "A copy of {name}, made in this mod.", delete_unit: "Delete this unit",
+      really_delete: "Delete {name}? Its changes go with it.", new_mark: "new",
+      unit_made: "{name} is in the mod. Test in game to see it in its build menu.",
+      unit_deleted: "{name} was deleted from the mod." },
     fr: { language: "Langue", game_names: "Noms du jeu", search: "Rechercher", all: "Tous", ground: "Terrestre",
       infantry: "Infanterie", air: "Aérien", buildings: "Bâtiments", units: "{n} unités", parts: "Composants",
       uses: "Utilise", own_part: "le sien", shared_part: "partagé avec d'autres unités", used_by: "Utilisé par",
@@ -46,7 +53,14 @@
       no_viewer: "La vue de carte n'a pas pu charger sa bibliothèque 3D (il faut Internet la première fois).",
       ground_loading: "Chargement des vraies textures du sol… {progress}", all_values: "les {n}",
       each_value: "régler chacun",
-      price_dates: "Un prix par date de bataille : l'hôte choisit la date (1939, 1942, 1945, Guerre totale) en préparant la partie." },
+      price_dates: "Un prix par date de bataille : l'hôte choisit la date (1939, 1942, 1945, Guerre totale) en préparant la partie.",
+      new_unit: "Nouvelle unité…", new_unit_name: "Nom de la nouvelle unité (affiché dans toutes les langues)",
+      price: "Prix (à chaque date de bataille)", build_menu: "Menu de production", same_menu: "Le même que {name}",
+      other_menu: "Un autre", nation: "Nation", factory: "Usine (indiquée par ses unités)", more_units: "et {n} autres",
+      copy_of: "Une copie de {name}, créée dans ce mod.", delete_unit: "Supprimer cette unité",
+      really_delete: "Supprimer {name} ? Ses modifications disparaissent aussi.", new_mark: "nouveau",
+      unit_made: "{name} est dans le mod. Testez en jeu pour le voir dans son menu de production.",
+      unit_deleted: "{name} a été supprimé du mod." },
     sc: { language: "语言", game_names: "游戏原名", search: "搜索", all: "全部", ground: "地面", infantry: "步兵",
       air: "空军", buildings: "建筑", units: "{n} 个单位", parts: "组件", uses: "使用", own_part: "自有",
       shared_part: "与其他单位共享", used_by: "被引用于", copy_address: "复制地址", no_index: "尚无游戏索引。",
@@ -60,7 +74,11 @@
       pick_map: "选择一张地图，以 3D 查看其地形。", map_loading: "正在加载地图…", detail_high: "完整细节", detail_low: "简化",
       water: "水面", map_help: "拖动旋转 · 右键拖动平移 · 滚轮缩放", map_stats: "{points} 个点，{triangles} 个三角形",
       no_viewer: "地图视图无法加载 3D 库（首次需要联网）。", ground_loading: "正在加载真实地面纹理… {progress}",
-      all_values: "全部 {n} 个", each_value: "逐个设置", price_dates: "每个战役年代一个价格：房主在创建游戏时选择年代（1939、1942、1945、全面战争）。" },
+      all_values: "全部 {n} 个", each_value: "逐个设置", price_dates: "每个战役年代一个价格：房主在创建游戏时选择年代（1939、1942、1945、全面战争）。",
+      new_unit: "新单位…", new_unit_name: "新单位的名称(所有语言均显示)", price: "价格(所有战役年代)", build_menu: "生产菜单",
+      same_menu: "与 {name} 相同", other_menu: "另一个", nation: "国家", factory: "工厂(按其中的单位显示)", more_units: "及另外 {n} 个",
+      copy_of: "在此模组中创建的 {name} 的副本。", delete_unit: "删除此单位", really_delete: "删除 {name}?它的修改也会一并删除。",
+      new_mark: "新", unit_made: "{name} 已加入模组。在游戏中测试即可在生产菜单中看到它。", unit_deleted: "已从模组中删除 {name}。" },
   };
   const nations = {
     base: ["EU", "Allemagne", "RU", "France", "Italie", "URSS", "Japon"],
@@ -107,12 +125,20 @@
     { id: "P40Warhawk", kind: "air", nation: 0, factory: 9, slot: 201, key: "U_P40",
       names: { us: "P-40 Warhawk", fr: "P-40 Warhawk", sc: "P-40 战鹰" }, price: 35, hp: 5, speed: 330 },
   ];
+  // units made in the Studio: copies of one of the above, kept per mod like src/studio.rndf holds them
+  const newUnits = [];  // { mod, id, source, name, price, nation, factory }
+  const newAddress = (id) => E + id;
+  const safeName = (name) => name.normalize("NFKD").replace(/[^\x00-\x7f]/g, "").replace(/[^A-Za-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
   const home = "C:/Users/You/AppData/Local/RUSE Mod Platform/mods/";
   const mods = [{ path: home + "pacific-test", name: "pacific-test" }];
   let current = mode === "nomod" ? null : mods[0].path;
   const edits = new Map();  // `${mod}|${address}|${prop}|${how}|${via}` -> value, like the mod's src/studio.rndf
   const editKey = (address, prop, how, via) => `${current}|${address}|${prop}|${how || ""}|${how === "own" ? via : ""}`;
   if (current) edits.set(editKey(E + "M4_Sherman", "SeuilMort"), 14);
+  if (current) newUnits.push({ mod: current, id: "Super_Sherman", source: E + "M4_Sherman", name: "Super Sherman",
+    price: 55, nation: 0, factory: 10 });
+  const mine = () => newUnits.filter((n) => n.mod === current);
   const BLAST = E + "M4_Sherman:Weapon.Blast";  // a part three units share
   const BLAST_OWNERS = ["M4_Sherman", "M3A1_Stuart", "Type97_ChiHa"];
 
@@ -139,10 +165,35 @@
       }) });
     }
     return { address, class: cls, name, stable: true, shared: Boolean(share), owners: [], groups: out, parts, uses,
-      used_by: usedBy, editable, why_not: whyNot, users, share: share || null, named: !address.includes(":") };
+      used_by: usedBy, editable, why_not: whyNot, users, share: share || null, named: !address.includes(":"),
+      can_copy: editable && !address.includes(":") && units.some((u) => E + u.id === address), new: null };
   }
 
   function unit(address, lang, via) {
+    const made = mine().find((n) => address === newAddress(n.id) || address.startsWith(newAddress(n.id) + ":"));
+    if (made) {
+      const inside = address.includes(":") ? address.slice(address.indexOf(":")) : "";
+      const page = unit(made.source + inside, lang, via);
+      const swap = (a) => a.startsWith(made.source + ":") ? newAddress(made.id) + a.slice(made.source.length) : a;
+      page.address = address;
+      page.parts = page.parts.map((p) => ({ ...p, address: p.shared ? p.address : swap(p.address) }));
+      page.used_by = [];
+      page.can_copy = false;
+      if (!inside) {
+        const src = units.find((x) => E + x.id === made.source);
+        page.name = made.name;
+        page.new = { source: made.source, source_name: nameOf(src, lang) };
+        for (const g of page.groups) {
+          for (const r of g.rows) {
+            if (r.prop === "ProductionPrice") r.edited = edits.get(editKey(address, r.prop, "")) ?? Array(5).fill(made.price);
+            if (r.prop === "NameInMenuToken") r.values = [made.name];
+            if (r.prop === "Nationalite") r.values = [`${made.nation} (${(nations[lang] || nations.us)[made.nation]})`];
+            if (r.prop === "Factory" && made.factory !== src.factory) r.edited = made.factory;
+          }
+        }
+      }
+      return page;
+    }
     if (address === AMMO) {
       return view(AMMO, lang, "TAmmunition", "Ammo_75mm_M3", true, "", 3,
         [["weapon", [["Puissance", 40], ["PorteeMaximale", 2800], ["TempsEntreDeuxTirs", 3.5, { type: "float32" }]]]],
@@ -247,11 +298,46 @@
       nations: async (lang) => nations[lang] || nations.us,
       status: async () => mode === "noindex" ? { ready: false, can_build: true } : { ready: true, build: "24687178" },
       units: async (lang, kind, nation, search) => {
-        const out = units.filter((u) => (kind === "all" || u.kind === kind) && (nation < 0 || u.nation === nation))
-          .map((u) => ({ address: E + u.id, name: nameOf(u, lang), base_name: "Descriptor_Unit_" + u.id, kind: u.kind,
-            nation: u.nation, nation_name: (nations[lang] || nations.us)[u.nation], factory: u.factory, slot: u.slot }))
+        const made = mine().map((n) => {
+          const src = units.find((x) => E + x.id === n.source);
+          return { id: n.id, kind: src.kind, nation: n.nation, factory: n.factory, slot: null, names: { us: n.name },
+            new: true, source: n.source };
+        });
+        const out = made.concat(units).filter((u) => (kind === "all" || u.kind === kind) && (nation < 0 || u.nation === nation))
+          .map((u) => ({ address: E + u.id, name: u.new ? u.names.us : nameOf(u, lang), base_name: "Descriptor_Unit_" + u.id,
+            kind: u.kind, nation: u.nation, nation_name: (nations[lang] || nations.us)[u.nation], factory: u.factory,
+            slot: u.slot, new: Boolean(u.new), source: u.source || null }))
           .filter((u) => !search || u.name.toLowerCase().includes(search.toLowerCase()));
-        return { units: out, total: units.length };
+        return { units: out, total: units.length + made.length };
+      },
+      menus: async (lang) => {
+        const names = nations[lang] || nations.us;
+        return { nations: names.map((name, n) => {
+          const factories = [...new Set(units.filter((u) => u.nation === n).map((u) => u.factory))].sort((a, b) => a - b);
+          return { nation: n, name, factories: factories.map((f) => {
+            const inside = units.filter((u) => u.nation === n && u.factory === f).sort((a, b) => a.slot - b.slot);
+            return { factory: f, units: inside.slice(0, 3).map((u) => nameOf(u, lang)), count: inside.length };
+          }) };
+        }) };
+      },
+      new_unit: async (source, name, price, nation, factory) => {
+        if (!current) throw new Error("Pick or make a mod first: a new unit is saved in a mod.");
+        const src = units.find((u) => E + u.id === source);
+        if (!src) throw new Error(`${source} isn't a unit or building, so it can't be copied here`);
+        const stem = safeName(name) || `New_${mine().length + 1}`;
+        if (units.some((u) => u.id === stem) || mine().some((n) => n.id === stem)) {
+          throw new Error(`There's already a unit called Descriptor_Unit_${stem} (from '${name}'). Pick another name.`);
+        }
+        newUnits.push({ mod: current, id: stem, source, name, price: Math.round(price), nation: nation >= 0 ? nation : src.nation,
+          factory: factory >= 0 ? factory : src.factory });
+        return { address: newAddress(stem), name, saved: current + "/src/studio.rndf" };
+      },
+      delete_unit: async (address) => {
+        const i = newUnits.findIndex((n) => n.mod === current && newAddress(n.id) === address);
+        if (i < 0) throw new Error(`${address} isn't a unit made in this mod, so it can't be deleted here`);
+        const [gone] = newUnits.splice(i, 1);
+        for (const k of [...edits.keys()]) if (k.split("|")[1].startsWith(address)) edits.delete(k);
+        return { deleted: address, source: gone.source, saved: current + "/src/studio.rndf" };
       },
       unit: async (address, lang, via) => unit(address, lang, via),
       mods: async () => modsView(),

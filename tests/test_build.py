@@ -203,6 +203,14 @@ class Texts(unittest.TestCase):
         self.assertEqual(text_of(rebuilt, "us", SHERMAN_KEY), "Sherman us")
         self.assertTrue(any("isn't in the ger" in f.message for f in result.findings))  # the made-up game has 2 languages
 
+    def test_a_text_file_can_carry_a_prefix_before_its_dictionary(self):  # text/studio.baseunite.csv: the Studio's names
+        with tempfile.TemporaryDirectory() as d:
+            folder = write_mod(d, "named", NAMED, extra='text_prefix = "C6"\n')
+            (folder / "text").mkdir()
+            (folder / "text" / "mine.baseunite.csv").write_text(NAMES, encoding="utf-8")
+            info, _ops = load_mod(folder)
+            self.assertEqual([(r.dictionary, r.file) for r in info.texts], [("baseunite", "text/mine.baseunite.csv")])
+
     def test_mistakes(self):
         with tempfile.TemporaryDirectory() as d:
             result = build_pack(Edat(UNIT_PACK), [self.mod(d)])

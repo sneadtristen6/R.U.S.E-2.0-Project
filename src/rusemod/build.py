@@ -79,8 +79,8 @@ def load_mod(path) -> tuple[ModInfo, list]:
             ops += parse(f.read_text(encoding="utf-8"), file=f.relative_to(path).as_posix(), mod=mod_id)
         text_dir = path / "text"
         for f in sorted(text_dir.glob("*.csv"), key=lambda p: p.name.lower()) if text_dir.is_dir() else []:
-            try:
-                info.texts += loc.read_csv(f.read_text(encoding="utf-8"), f.stem.lower(), mod_id,
+            try:  # the dictionary is the file's name, or its last part: studio.baseunite.csv is the Studio's names
+                info.texts += loc.read_csv(f.read_text(encoding="utf-8"), f.stem.rsplit(".", 1)[-1].lower(), mod_id,
                                            f.relative_to(path).as_posix())
             except loc.TextError as exc:
                 raise BuildError(str(exc)) from None

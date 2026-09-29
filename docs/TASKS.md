@@ -21,6 +21,9 @@ scope is out of scope.
 
 ## Task A: new units from the Studio (Studio 0.5) — branch `cloud/studio-new-unit`
 
+**Status (2026-09-29): code done, in a pull request from `cloud/studio-new-unit`.** The PC session tests it in-game
+(an M4 Sherman copy) and releases 0.5.0.
+
 **Goal:** a non-programmer makes a new unit from a unit's page and presses "Test in game".
 
 Today the Studio edits a unit's numbers in place (`src/ruse_studio/api.py` `edit`, saved by `edits.py` into the

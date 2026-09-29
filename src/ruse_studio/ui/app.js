@@ -128,6 +128,7 @@ async function refreshMarks() {
 }
 
 function mark(button) {
+  if (button.dataset.new === "1") return;  // a unit made in this mod is marked new, whatever else was changed on it
   const on = state.edited.has(button.dataset.address);
   button.classList.toggle("edited", on);
   const badge = button.querySelector(".badge");
@@ -167,6 +168,10 @@ async function refreshList() {
       el("span", { className: "sub", textContent: `${u.nation_name} · ${state.words[u.kind]}` +
         (u.name !== u.base_name ? ` · ${u.base_name}` : "") }));
     b.dataset.address = u.address;
+    if (u.new) {
+      b.dataset.new = "1";
+      b.prepend(el("span", { className: "badge new", textContent: state.words.new_mark }));
+    }
     b.setAttribute("aria-current", String(u.address === state.selected));
     b.addEventListener("click", () => showUnit(u.address));
     mark(b);
@@ -309,6 +314,109 @@ function shareChoice(u) {
   return box;
 }
 
+// --- new units: a copy of the unit shown, with its own name, price and build menu ---
+function factoryLabel(f) {
+  const more = f.count - f.units.length;
+  return f.units.join(", ") + (more > 0 ? ` ${state.words.more_units.replace("{n}", more)}` : "");
+}
+
+function newUnitForm(u) {
+  const w = state.words;
+  const open = el("button", { type: "button", className: "ghost", textContent: w.new_unit });
+  const form = el("form", { className: "new-unit hidden" });
+  const name = el("input", { autocomplete: "off", maxLength: 60, required: true, placeholder: w.new_unit_name });
+  name.setAttribute("aria-label", w.new_unit_name);
+  const priceRow = u.groups.flatMap((g) => g.rows).find((r) => r.prop === "ProductionPrice");
+  const first = priceRow ? [].concat(priceRow.edited ?? priceRow.numbers)[0] : 0;
+  const price = el("input", { type: "number", min: "0", step: "1", inputMode: "numeric", required: true,
+    value: String(first) });
+  price.setAttribute("aria-label", w.price);
+  const same = el("input", { type: "radio", name: "menu", value: "same", checked: true });
+  const other = el("input", { type: "radio", name: "menu", value: "other" });
+  const nation = el("select", { disabled: true }), factory = el("select", { disabled: true });
+  nation.setAttribute("aria-label", w.nation);
+  factory.setAttribute("aria-label", w.factory);
+  let menus = null;
+  const fillFactories = () => {
+    const n = menus.nations.find((x) => x.nation === Number(nation.value));
+    factory.replaceChildren(...(n ? n.factories : []).map((f) =>
+      el("option", { value: String(f.factory), textContent: factoryLabel(f) })));
+  };
+  const menuChoice = () => {
+    nation.disabled = factory.disabled = !other.checked;
+    if (other.checked && !menus) {
+      api().menus(state.lang).then((res) => {
+        menus = res;
+        nation.replaceChildren(...menus.nations.map((n) =>
+          el("option", { value: String(n.nation), textContent: n.name, selected: n.nation === u.nation })));
+        fillFactories();
+      }).catch(problem);
+    }
+  };
+  same.addEventListener("change", menuChoice);
+  other.addEventListener("change", menuChoice);
+  nation.addEventListener("change", fillFactories);
+  const create = el("button", { type: "submit", className: "primary", textContent: w.create });
+  const cancel = el("button", { type: "button", className: "ghost", textContent: w.cancel });
+  cancel.addEventListener("click", () => { form.classList.add("hidden"); open.classList.remove("hidden"); });
+  form.append(
+    el("label", {}, el("span", { textContent: w.new_unit_name }), name),
+    el("label", {}, el("span", { textContent: w.price }), price),
+    el("div", { className: "menu-choice" }, el("span", { textContent: w.build_menu }),
+      el("label", {}, same, " " + w.same_menu.replace("{name}", u.name)),
+      el("label", {}, other, " " + w.other_menu),
+      el("div", { className: "menu-picks" }, el("label", {}, el("span", { textContent: w.nation }), nation),
+        el("label", {}, el("span", { textContent: w.factory }), factory))),
+    el("div", { className: "actions" }, create, cancel));
+  open.addEventListener("click", () => {
+    open.classList.add("hidden");
+    form.classList.remove("hidden");
+    name.focus();
+  });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const cost = Number(price.value);
+    if (!name.value.trim() || !Number.isFinite(cost)) return;
+    create.disabled = true;
+    try {
+      const pick = other.checked && menus;
+      const res = await api().new_unit(u.address, name.value.trim(), cost,
+        pick ? Number(nation.value) : -1, pick ? Number(factory.value) : -1);
+      await refreshList();
+      await showUnit(res.address);
+      say(w.unit_made.replace("{name}", res.name), "ok");
+    } catch (err) { problem(err); create.disabled = false; }
+  });
+  return el("div", { className: "copy" }, open, form);
+}
+
+function copyNotice(u) {
+  const w = state.words;
+  const source = el("button", { type: "button", className: "link", textContent: u.new.source_name });
+  source.addEventListener("click", () => showUnit(u.new.source));
+  const [before, after] = w.copy_of.split("{name}");
+  const box = el("div", { className: "notice new" }, el("p", {}, before, source, after || ""));
+  if (!state.mod) return box;
+  const del = el("button", { type: "button", className: "ghost danger", textContent: w.delete_unit });
+  const sure = el("div", { className: "actions hidden" }, el("span", { textContent: w.really_delete.replace("{name}", u.name) }));
+  const yes = el("button", { type: "button", className: "ghost danger", textContent: w.delete_unit });
+  const no = el("button", { type: "button", className: "ghost", textContent: w.cancel });
+  no.addEventListener("click", () => { sure.classList.add("hidden"); del.classList.remove("hidden"); });
+  del.addEventListener("click", () => { del.classList.add("hidden"); sure.classList.remove("hidden"); yes.focus(); });
+  yes.addEventListener("click", async () => {
+    yes.disabled = true;
+    try {
+      const res = await api().delete_unit(u.address);
+      await refreshList();
+      await showUnit(res.source);
+      say(w.unit_deleted.replace("{name}", u.name), "ok");
+    } catch (err) { problem(err); yes.disabled = false; }
+  });
+  sure.append(yes, no);
+  box.append(del, sure);
+  return box;
+}
+
 async function showUnit(address, via) {
   via = via || "";
   if (!state.page || state.page.via !== via) state.mode = "own";  // a new way in: "only this unit" first
@@ -327,8 +435,10 @@ async function showUnit(address, via) {
   const parts = [el("h1", { textContent: u.name }),
     el("div", { className: "address" }, el("code", { textContent: u.address }), copy),
     el("div", { className: "meta", textContent: u.class })];
+  if (u.new) parts.push(copyNotice(u));
   if (!u.editable) parts.push(el("p", { className: "notice", textContent: w[u.why_not] || u.why_not }));
   else if (!state.mod) parts.push(el("p", { className: "notice", textContent: w.no_mod }));
+  else if (u.can_copy) parts.push(newUnitForm(u));
   if (u.editable && u.users) parts.push(el("p", { className: "notice warn",
     textContent: w.users_warning.replace("{n}", u.users) }));
   if (u.editable && u.share) parts.push(shareChoice(u));

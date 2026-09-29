@@ -23,6 +23,7 @@ ruse2-core/
     studio.rndf            the Studio's changes (it rewrites this file; hand-written ones go in the others)
   text/                    localisation tables (.csv)
     units.csv
+    studio.baseunite.csv   the Studio's new units' names (rewritten by the Studio; goes into baseunite.dic)
   files/
     replace/<game path>    replaces an existing game file (cooked from a source format)
     add/<new path>         adds a new file (under mods/<mod id>/...)
@@ -176,7 +177,9 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
 ```
 
 - **The file name picks the game dictionary:** `text/baseunite.csv` goes into every `baseunite.dic` (unit names; the
-  game has 112 dictionaries per language). A name the game doesn't have is an error.
+  game has 112 dictionaries per language). A name the game doesn't have is an error. A file called
+  `<anything>.<dictionary>.csv` goes into that dictionary too (`text/studio.baseunite.csv` is the Studio's, which it
+  rewrites; a mod's hand-written `text/baseunite.csv` stays its own).
 - **Using a text:** `NameInMenuToken = loc('r2.unit.us_marines.name')` in a `.rndf` file becomes that row's game key.
   A `loc()` that no mod in the set defines is an error.
 - **Where it goes:** all texts live in `ZZ_Win.dat`, so a mod with texts also rebuilds that 2.3 GB pack (streamed, in
