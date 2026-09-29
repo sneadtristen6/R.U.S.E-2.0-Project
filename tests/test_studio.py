@@ -143,8 +143,8 @@ PANZER_IV, DEPOT = "$/GFX/Everything/Descriptor_Unit_Panzer_IV_G", "$/GFX/Everyt
 M4_GUN, AMMO = M4 + ":Weapon", M4 + ":Weapon.Ammo"  # the ammo is shared with the Panzer's gun
 
 
-class Editing(unittest.TestCase):
-    """Changing a unit's numbers in place: saved in the mod's src/studio.rndf, read back, built into the game data."""
+class WithMod(unittest.TestCase):
+    """A Studio on the made-up game with a fresh platform folder per test, and a game to start (nothing starts)."""
 
     @classmethod
     def setUpClass(cls):
@@ -171,6 +171,10 @@ class Editing(unittest.TestCase):
 
     def rows(self, address):
         return {r["prop"]: r for g in self.api.unit(address)["groups"] for r in g["rows"]}
+
+
+class Editing(WithMod):
+    """Changing a unit's numbers in place: saved in the mod's src/studio.rndf, read back, built into the game data."""
 
     def test_changes_are_saved_in_the_mod_and_read_back(self):
         self.assertEqual(self.api.mods(), {"mods": [], "current": None})
@@ -344,7 +348,7 @@ def find_export(ndf, path):
     return next(i for i, name in ndf.exports.items() if name == path)
 
 
-class NewUnits(Editing):
+class NewUnits(WithMod):
     """New units from a unit's page: a copy of a unit the game has, with its own name, price and build menu, kept in
     the mod's src/studio.rndf and text/studio.baseunite.csv, listed, edited like any other unit, built, deleted."""
 
