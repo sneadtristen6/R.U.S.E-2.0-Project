@@ -689,7 +689,7 @@ What was checked next:
 
 **C6 in-game (2026-09-28): the named copy didn't appear either**, so a shared name key isn't the (whole) cause.
 Checked next: RUSE-Mod-Manager's docs say its editor **can't** make new units yet (its `clone.py` isn't offered, and
-nothing claims in-game success), so nobody has shown a new R.U.S.E. unit working. The `*_debuginfo` copy is a full
+nothing claims in-game success), so no public tool makes new units that work (modders have made some by hand; the owner, 2026-09-29). The `*_debuginfo` copy is a full
 duplicate of `everything` (the same 63,686 objects, 363 extra debug strings); nothing shows the game using it for the
 unit list. The Japanese units at 306 and 310 don't prove a 6th button exists in the US menu (306 is an upgrade).
 **C6b, the slot probe** (a test mod, removed after C6d): the copy takes the Lee's own slot 304
@@ -716,7 +716,7 @@ unit registry"), and no copy had one. **C6d:** the C6 instance (`D:\RUSE-Instanc
 C6-Test" at slot 306) now also has `class Unit_R2_Lee_Named(front.unit.TankUnit)` and its `base_class` line, added
 to its `ZZ_Win.dat` by a scratch probe. The owner chose to go ahead under the safety rules of decision 23. Pass:
 "Lee C6-Test" ($1) shows after the Sherman.
-**C6d passed in-game (2026-09-29): "Lee C6-Test" shows at $1, under the $20 Lee.** The first new unit in R.U.S.E.:
+**C6d passed in-game (2026-09-29): "Lee C6-Test" shows at $1, under the $20 Lee.** Our first new unit, and the first public tool that makes them (other modders have made units before):
 a copy in `everything`, its own name in the text files, and its class in the Python unit list. So C5 and C6 pass with
 the class added. **Built (2026-09-29):** `ruse build` adds the class itself for every copied unit (`rusemod.pyscript`: a Python 2.5
 marshal reader, the one fixed template, and `check_added`, which proves the module is the old one plus exactly the
