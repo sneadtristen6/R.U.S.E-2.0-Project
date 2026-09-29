@@ -320,8 +320,7 @@ class Kdt:
         table("OffsetOfTriangleIndexBufferIndexes", starts)
         out += bytes(-len(out) % 8)
         off["OffsetOfMainNode"] = len(out)
-        out += self.main_node
-        out += bytes(-len(out) % 8)  # every shipped file has its subtree table 8-aligned
+        out += self.main_node  # copied as is; every shipped MainNode is a multiple of 8 bytes, so the table stays aligned
         starts, pos = [], 0
         for t in self.subtrees:
             starts.append(pos)
