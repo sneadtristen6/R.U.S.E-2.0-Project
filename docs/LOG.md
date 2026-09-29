@@ -405,3 +405,14 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
 
 
 **2026-09-29, Studio 0.4.1 verified in-game (owner):** the M4 Sherman set to price 1 in the single price box costs 1 in a skirmish. The earlier "the Studio does not change values" report was the five unlabelled per-date price boxes (only the first was edited); the build had been right all along. The shared repo (private) mirrors main and has the `private` branch with the research handover and community guides; the owner pushes there.
+
+**2026-09-29, `rusemod.kdt` (MT step T1, first half):** the gameplay-ground `.kdt` container is read and rebuilt
+byte for byte on all 32 maps (ground and camera files, 3.5 million vertices), positions, parents and normals decoded
+and re-encoded exactly, the opaque parts (index buffers, triangle lists, MainNode, subtree nodes) carried as is; a
+vertex can be moved and the file rebuilt. `tools/verify_kdt.py` checks a game folder. Learned from the data: the
+fill after the parent codes is junk (0xAA on half the maps, 0xDD and stray bytes on the rest); seven ground files
+omit `BoundingBoxMin` (it is zero); `TriangleCount` is less than the subtrees' sum (border triangles repeat); some
+chunks stop one byte short of the flush marker. Built by a three-agent job (implement, verify on every map, review);
+the reviewer's alignment concern was checked and left as a comment (every shipped MainNode is a multiple of 8).
+Also: TASKS.md Tasks C–G for the cloud sessions (mod package, browse mods, join codes, Studio follow-ups, `.rmod`
+import); the cloud tab's pull request #1 (Task A) is under review.
