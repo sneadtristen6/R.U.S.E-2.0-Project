@@ -218,6 +218,21 @@ Other magics: `DICS` (18) and `DICV` (13) in `genvideos\…` (probably subtitles
 - Script packs and `sys.path` are declared in NDF (`TResourceDescriptorPythonPack 'Eugen.ipk'`, `TClusterAddPythonPath`),
   so a mod's script pack can be registered through data. Building one needs a real Python 2.5 compiler.
 - The Python 2.5 interpreter, Scaleform GFx and libcurl are statically linked into RUSE.exe.
+- **The unit registry (found 2026-09-28, checks C5–C6c):** `ZZ_Win.dat!genpython\eugenpatchable.ipk` →
+  `parametres\classes.xyz` defines **456 classes**, one per unit, plane and building (bases `front.unit.*` 259,
+  `front.avion.*` 63, `front.batiment.*` 134), e.g. `class Unit_M3_Lee(front.unit.TankUnit): descriptor =
+  _ndf.Database.GetObject('$/GFX/Everything/Descriptor_Unit_M3_Lee')`. The module ends with one line per class,
+  `Unit_M3_Lee.descriptor.base_class = Unit_M3_Lee`. **A unit with no class here is never used by the game**: copies in
+  `everything` with a fresh id, name key, class name or slot never appeared in the menu, while the moved real Lee did.
+  The level-design spawns name the class too (`PythonClassName = 'parametres.Classes.Unit_M3_Lee'`). The class name
+  matches the unit's `ClassNameForDebug`. 111 registered units are hidden from every menu, but most are used behind the
+  scenes (transports, HQs, planes for abilities); only a few (film and demo copies) are spare.
+- **Adding a class without a Python 2.5 compiler** (probe C6d, `D:\RUSE-Instances\c6-named`): the module's code
+  object gets 2 new constants (the class name and a class body copied from the source unit's, with the new
+  descriptor path), 1 new name, and 14 instructions before its final `LOAD_CONST None; RETURN_VALUE` (the class
+  statement and the `base_class` line, the same opcodes the file already uses). New strings are written plain
+  (marshal `s`), never interned (`t`), so the shared-string references (`R`) later in the file keep their numbering.
+  Safety rules for this (PLAN decision 23) apply to every such edit.
 
 ## 6. Maps
 

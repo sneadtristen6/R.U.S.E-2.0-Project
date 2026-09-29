@@ -474,6 +474,7 @@ volunteer from the R.U.S.E. community: with a join code, joining takes them a co
 | 20 | Testing multiplayer alone | Solo tests S1–S2 (L6) until there's a second player; one real 2-PC match before the first public release | the owner has no second player yet; most of the risk (same build everywhere, the join flow) can be tested on one PC | wait for a friend |
 | 21 | Display language in the tools | The game's own names are the default everywhere (mods use them); every modder can pick any of the game's ten languages for the tools, property names and unit names. Owner's call, 2026-09-28 | the community is international; no one language forced on modders | English by default |
 | 22 | Apps | Two separate apps on one engine: **RUSE Launcher** (players: finds the game, loads mods, starts the game) and **RUSE Studio** (modders: the unit editor, later maps and models). Neither needs the other; each has its own window, start command and, later, installer. The Studio keeps its own "Test in game". Owner's call, 2026-09-29 | players get a small, simple app; modders get the full tools; each can change without breaking the other | one app with a modding mode |
+| 23 | Script entries for new units | A new unit needs its own entry in the game's compiled Python unit list (`parametres/classes.xyz`, FORMATS §5); the build adds it. **Owner's call, 2026-09-28, with safety rules:** (1) mods can never contain scripts, and the launcher refuses any mod that ships script files; (2) the build only writes this one fixed kind of entry, from checked data (a name of letters, digits and `_`, and a path to a unit in the mod itself), and never compiles text; (3) the generated script is checked to contain only the allowed instructions and names before it's written; mods stay pinned by fingerprint; (4) custom game modes (M9) get their own design (a safe mission language, not raw Python) | without the entry the game ignores new units; code the game runs is the one thing a shared mod could abuse (a remote-code-execution risk for every player) | reuse the few spare hidden units (data only); no new units |
 
 ## 7. Roadmap
 
@@ -708,6 +709,13 @@ Lee's with the Jagdpanther.
 - "Probe B" ($2, slot 308) gets `DescriptorId` 2000, inside the shipped range (copies got 4059, past the highest
   shipped id, 4058).
 - "Probe C" ($3, slot 309) has both.
+
+**C6c in-game (2026-09-28): none of the three probes showed**; the Lee stayed at $20. So neither the class name nor
+the id is the gate. **Found:** the game only uses units that have a class in its Python unit list (FORMATS §5, "The
+unit registry"), and no copy had one. **C6d:** the C6 instance (`D:\RUSE-Instances\c6-named`, the Lee copy "Lee
+C6-Test" at slot 306) now also has `class Unit_R2_Lee_Named(front.unit.TankUnit)` and its `base_class` line, added
+to its `ZZ_Win.dat` by a scratch probe. The owner chose to go ahead under the safety rules of decision 23. Pass:
+"Lee C6-Test" ($1) shows after the Sherman.
 
 ### C6: a new unit with its own name (ready to run, after C5)
 
