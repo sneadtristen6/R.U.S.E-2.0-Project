@@ -22,9 +22,9 @@ players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your br
   modded copy and starts it.
 - **Maps:** new maps can ship their own pack (C3). The terrain mesh and tile files can be read and rewritten
   losslessly, and the game draws terrain textures we write ourselves.
-- **Next:** new units made from the Studio's window (code done, in review: pull request `cloud/studio-new-unit`),
-  then mod sets made inside the launcher, then a terrain editor in RUSE Studio (shape a map with brushes, then
-  "Test in game").
+- **Next:** new units made from the Studio's window and mod sets made inside the launcher (both coded, in review:
+  pull requests `cloud/studio-new-unit` and `cloud/launcher-mod-sets`), then a terrain editor in RUSE Studio (shape
+  a map with brushes, then "Test in game").
 - Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19).
 
 The order is in PLAN.md §10 "Now"; the latest decisions are in PLAN.md §6.
@@ -71,7 +71,9 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
   browser with made-up data: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_studio/ui/index.html?fake`.
   - **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/), v0.1), for players: it finds the game, lists your
     mod sets and has a big Play button that builds the set's modded copy and starts the game (Vanilla starts through
-    Steam). `py -3 -m ruse_launcher`.
+    Steam). `py -3 -m ruse_launcher`. **In review (0.2): players never touch a file.** A mod library ("Add a mod
+    file…", or drop a mod folder or `.zip` on the window; each mod is checked first), mod sets made on screen (new,
+    edit and reorder, rename, duplicate, delete), and the launcher in the PC's own language (any of the game's ten).
   - **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), v0.4), for modders: browse every unit and building, see a
     unit's values, parts and what uses it, and pick a language: the game's own names by default, or any of the
     game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is saved in

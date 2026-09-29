@@ -9,35 +9,55 @@
 <body>
   <header class="top">
     <div class="brand">RUSE <span>Launcher</span></div>
-    <div id="status" class="status" role="status">Looking for R.U.S.E.…</div>
-    <button id="choose" class="small hidden" type="button">Choose folder…</button>
+    <div id="status" class="status" role="status"></div>
+    <button id="choose" class="small hidden" type="button"></button>
+    <label class="lang"><span id="lang-label"></span>
+      <select id="lang"></select>
+    </label>
   </header>
 
   <main class="layout">
-    <section class="sets" aria-labelledby="sets-title">
-      <h2 id="sets-title">Mod sets</h2>
-      <ul id="set-list" class="set-list"></ul>
-      <button id="open-sets" class="small ghost" type="button">Open mod sets folder</button>
-    </section>
+    <aside class="side">
+      <section class="sets" aria-labelledby="sets-title">
+        <h2 id="sets-title"></h2>
+        <ul id="set-list" class="set-list"></ul>
+        <button id="new-set" class="small" type="button"></button>
+      </section>
+      <section class="library" aria-labelledby="library-title">
+        <h2 id="library-title"></h2>
+        <ul id="mod-list" class="mod-list"></ul>
+        <p id="library-empty" class="muted note hidden"></p>
+        <button id="add-mod" class="small" type="button"></button>
+        <p id="drop-hint" class="muted note"></p>
+      </section>
+    </aside>
 
     <section class="active" aria-live="polite">
-      <h1 id="active-name">Vanilla</h1>
-      <p id="active-description" class="muted"></p>
-      <ul id="active-mods" class="mods"></ul>
-      <p id="active-error" class="error hidden"></p>
-      <button id="play" class="play" type="button">Play</button>
-      <p id="play-message" class="message"></p>
-      <details id="progress" class="progress hidden">
-        <summary>Details</summary>
-        <pre id="log"></pre>
-      </details>
+      <div id="set-view">
+        <div class="set-head">
+          <h1 id="active-name"></h1>
+          <div id="set-actions" class="set-actions"></div>
+        </div>
+        <p id="active-description" class="muted"></p>
+        <ol id="active-mods" class="mods"></ol>
+        <p id="active-error" class="error hidden"></p>
+        <button id="play" class="play" type="button"></button>
+        <p id="play-message" class="message"></p>
+        <details id="progress" class="progress hidden">
+          <summary id="details"></summary>
+          <pre id="log"></pre>
+        </details>
+      </div>
+      <form id="editor" class="editor hidden"></form>
     </section>
   </main>
 
   <footer class="bottom">
-    <button class="small ghost" type="button" disabled title="Coming soon">Join a friend</button>
-    <button class="small ghost" type="button" disabled title="Coming soon">Browse mods</button>
+    <button id="join" class="small ghost" type="button" disabled></button>
+    <button id="browse" class="small ghost" type="button" disabled></button>
   </footer>
+
+  <div id="drop-zone" class="drop-zone hidden"><span id="drop-text"></span></div>
 
   <script src="fake-api.js"></script>
   <script src="app.js"></script>

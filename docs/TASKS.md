@@ -50,6 +50,10 @@ player sees. The PC session then makes one in-game (an M4 Sherman copy) and rele
 
 ## Task B: mod sets made in the launcher (Launcher 0.2) — branch `cloud/launcher-mod-sets`
 
+**Status (2026-09-29): code done, in a pull request from `cloud/launcher-mod-sets`** (built on top of Task A's
+branch, so the docs don't clash; merge A first). The PC session tries it with the real game, checks that a file
+dropped on the window arrives (pywebview's own drop support; it can't be tried without the window) and releases 0.2.0.
+
 **Goal (PLAN §10 step 3):** players never touch a file.
 
 Today (`src/ruse_launcher/api.py`): the launcher finds the game, lists mod sets read from

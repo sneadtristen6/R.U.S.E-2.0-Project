@@ -599,7 +599,7 @@ one is shorter. Rules:
 |---|---|---|---|---|
 | 1 | **Ask DomesticNukes** for the three `.kdt` encodings (index buffer, triangle lists, subtree opcodes), format notes only; ours (framing, vertices, the normal word) go into FORMATS.md with the agreed credit | a message; FORMATS §6 | 0 (owner) + ½ | — |
 | 2 | **Units in the Studio:** "New unit" from a unit's page (copy, name in all languages, price, menu and nation), on the engine that already does it (C6d, C7). **Code done (cloud, 2026-09-29, pull request `cloud/studio-new-unit`, TASKS.md A):** the PC session makes one in-game and releases 0.5.0 | Studio 0.5 | 1–2 | — |
-| 3 | **Launcher v0.2:** mod sets made in the window (new, edit, rename, duplicate, delete), "Add a mod file…", drag-and-drop; players never see a file | Launcher 0.2, first public alpha | 2 | — |
+| 3 | **Launcher v0.2:** mod sets made in the window (new, edit, rename, duplicate, delete), "Add a mod file…", drag-and-drop; players never see a file. **Code done (cloud, 2026-09-29, pull request `cloud/launcher-mod-sets`, TASKS.md B):** the PC session tries it with the real game (the drop needs the real window) and releases 0.2.0 | Launcher 0.2, first public alpha | 2 | — |
 | 4 | **Terrain editor** T1–T4 (§7 MT): `.kdt` read and written losslessly, height edits that keep the ground, the camera floor and both meshes in step, brushes in the Maps view, "Test in game" | Studio 0.6 | 4–6 with the notes; +2–4 without | step 1 |
 | 5 | **Browse mods:** a GitHub repo as the index, a launcher tab that installs from it (L6) | Launcher 0.3 | 1–2 | step 3 |
 | 6 | **China, step 2** (M10): a modded copy with an 8th entry wherever the data has 7; does the game offer it? | an answer | 1 (owner at the game) | — |
