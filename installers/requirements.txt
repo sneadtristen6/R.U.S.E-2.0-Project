@@ -1,0 +1,5 @@
+# What the Windows build of the two apps uses (installers/build_app.py), pinned so every build is the same.
+nuitka==4.2.2
+ordered-set==4.1.0
+pywebview==6.2.1
+pythonnet==3.1.0

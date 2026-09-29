@@ -12,7 +12,8 @@ pack "checksum" turned out to be a random ID. Next on the PC: in-game terrain te
 checkerboard tiles), the TGU1 texture codec, and **C5, a new unit in the build menu** (ready to run, PLAN.md §7).
 On the cloud side, adding units and naming them are done (C5 and C6 are ready to run). The platform is two separate
 apps on one engine: **RUSE Launcher** for players (v0.1: home screen and Play) and **RUSE Studio** for modders (v0.2:
-change any unit's numbers in a mod, then test it in the game). The PC tries both (PLAN.md §10 items 1.7 and 1.9).
+change any unit's numbers in a mod, then test it in the game), each with its own Windows installer that GitHub
+builds. The PC tries both (PLAN.md §10 items 1.7, 1.9 and 1.10).
 Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19); the order is the mod system, then the
 launcher; multiplayer is tested solo until there's a second player (decision 20).
 The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.md §6.
@@ -66,7 +67,10 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
     the mod's `src/studio.rndf` (with Undo), and "Test in game" builds it and starts the game. `py -3 -m ruse_studio`
     (after `ruse index build`); `--spike` opens the 3D check.
   - `py -3 -m pip install -e .[apps]` once gives two commands, `ruse-launcher` and `ruse-studio`, that open them
-    without a console window. Each app gets its own installer later.
+    without a console window.
+  - **Installers** ([`installers/`](installers/README.md)): GitHub builds `RUSE-Launcher-Setup-<version>.exe` and
+    `RUSE-Studio-Setup-<version>.exe` on every push that changes the apps (Actions → **apps** → Artifacts). No Python
+    or Git needed, no admin rights. Not signed yet, so Windows warns once ("More info" → "Run anyway").
 - [`ruse_edat.py`](ruse_edat.py): read-only EDAT archive reader.
   ```
   py -3 ruse_edat.py list    <archive.dat>

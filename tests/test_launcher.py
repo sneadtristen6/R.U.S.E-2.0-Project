@@ -12,6 +12,7 @@ from test_build import PACK, price, write_mod
 from ruse_launcher import app
 from ruse_launcher.api import LauncherApi
 from rusemod.play import STEAM_OPEN, STEAM_PLAY
+from rusemod.webui import serve
 
 
 def wait_for(api, job_id, timeout=10):
@@ -127,7 +128,7 @@ class Launcher(unittest.TestCase):
 
 class Window(unittest.TestCase):
     def test_the_screens_are_served_on_this_pc_only(self):
-        server, base = app.serve(app.UI)
+        server, base = serve(app.UI)
         try:
             self.assertTrue(base.startswith("http://127.0.0.1:"))
             with urllib.request.urlopen(f"{base}/index.html") as r:

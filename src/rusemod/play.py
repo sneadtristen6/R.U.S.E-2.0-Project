@@ -31,7 +31,8 @@ def start_game(exe: Path) -> None:
 def steam_running() -> bool:
     if sys.platform != "win32":
         return True
-    out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq steam.exe", "/NH"], capture_output=True, text=True)
+    out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq steam.exe", "/NH"], capture_output=True, text=True,
+                         creationflags=subprocess.CREATE_NO_WINDOW)  # no console flashing up from the apps
     return "steam.exe" in out.stdout.lower()
 
 

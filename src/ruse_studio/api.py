@@ -25,7 +25,7 @@ from rusemod.patch import INT_RANGES
 from rusemod.play import Starter, instances_dir
 from rusemod.rndf import RndfError
 from rusemod.steam import find_game
-from rusemod.webui import Job, job_view
+from rusemod.webui import Job, job_view, pick_folder
 
 from .edits import EditsFileError, ModEdits
 
@@ -305,9 +305,8 @@ class StudioApi:
     def open_mod_folder(self) -> dict:
         if self._window is None:
             return self.mods()
-        import webview
-        chosen = self._window.create_file_dialog(webview.FOLDER_DIALOG)
-        return self.choose_mod(chosen[0]) if chosen else self.mods()
+        chosen = pick_folder(self._window)
+        return self.choose_mod(chosen) if chosen else self.mods()
 
     def edited(self) -> list[str]:
         try:

@@ -15,3 +15,5 @@ language selector keeps the game's own names by default and can show the Studio 
 
   py -3 -m ruse_studio [--game DIR] [--index FILE] [--spike]
 """
+
+__version__ = "0.2.0"

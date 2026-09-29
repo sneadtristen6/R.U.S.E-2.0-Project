@@ -289,6 +289,9 @@ search by name and see where each text is used. It costs some disk space (a gues
   - detects the game and build
   - browses and installs mods from the index; manages mod sets and join codes
   - one-click join, updates, instances, self-update
+  - **installer (built 2026-09-29, `installers/`, ADR 9):** `RUSE-Launcher-Setup-<version>.exe`, made by GitHub on
+    every push that changes the apps; no Python or Git needed, no admin rights. The Studio gets its own
+    (`RUSE-Studio-Setup-<version>.exe`); a player never needs it.
   - **Steam integration (HOI4-style):** the user sets Steam's Launch Options once to
     `"<path>\launcher.exe" %command%`, so Steam's Play button opens our launcher instead of the game, and Steam
     lobby invites (`+connect_lobby`) route through it for mod sync before joining. No change to RUSE.exe.
@@ -455,7 +458,7 @@ volunteer from the R.U.S.E. community: with a join code, joining takes them a co
 | 6 | Source format | NDF-style text + CSV + standard asset formats | familiar to Eugen modders (WARNO/SD2 use text NDF); git-friendly | JSON / YAML |
 | 7 | Determinism | Fingerprint over canonical content, bundled runtime, fixed ordering | lockstep multiplayer | hashes of raw bytes only |
 | 8 | License | **MIT (decided 2026-09-28)**. RUSE-Mod-Manager's GPLv3 code is never copied: we study what it does and build our own better version | maximum reuse by community tools and Eugen; independence | GPLv3 (rejected) |
-| 9 | Packaging & install | Nuitka onefile + Inno Setup, built by GitHub Actions | faster start and fewer antivirus false positives than PyInstaller | PyInstaller, Briefcase |
+| 9 | Packaging & install | Nuitka + Inno Setup, built by GitHub Actions: one installer per app (decision 22). **Built 2026-09-29** (`installers/`): each app becomes a program folder (not Nuitka's onefile: it's installed anyway, starts faster, and antivirus programs trust it more), checks itself, and is wrapped by Inno Setup; per-user install, no admin rights. Unsigned until the first public release, so Windows' SmartScreen warns once | faster start and fewer antivirus false positives than PyInstaller | PyInstaller, Briefcase |
 | 10 | Updates | Velopack (spike first), fallback tufup | single self-updating installer | manual downloads |
 | 11 | Modpack / lockfile | Modrinth `.mrpack` shape (`files[]` with path, hashes, download mirrors, size; `dependencies`) | proven, tiny packs, host-anywhere | our own format |
 | 12 | Mod hosting | GitHub Releases now; Thunderstore once real mods exist; CurseForge last (needs a proxy server) | cheapest path that still scales | CurseForge first |
@@ -789,6 +792,11 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
         `src/rusemod/labels.toml`, the Studio's own in `src/ruse_studio/words.toml`).
         - Optional: `py -3 -m pip install -e .[apps]` once gives two commands, `ruse-launcher` and `ruse-studio`,
           which open the apps without a console window.
+    10. **The installers** (needs the owner at the PC; `installers/README.md`): on GitHub, Actions → the latest
+        **apps** run → Artifacts → download `launcher-installer` and `studio-installer`, unzip, run each setup.
+        Windows warns once ("Windows protected your PC": More info → Run anyway; they aren't signed yet). Check: both
+        appear in the Start menu with their own icons, both open, the launcher finds the game, the Studio opens the
+        M4 Sherman, and Windows' "Installed apps" can uninstall each. Record anything odd.
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the
@@ -818,7 +826,10 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    are: `ruse_launcher` (RUSE Launcher) and `ruse_studio` (RUSE Studio), each with its own window and start command,
    both on the engine `rusemod`; starting the game moved into the engine (`rusemod.play`), the game folder picked by
    hand is shared (`rusemod.home`), and the Studio's screen words moved into the Studio (`words.toml`).
-   Next (cloud), once the owner picks: parts shared by several units ("just this unit" or "all of them"), names,
+   **Installers (2026-09-29, ADR 9):** the owner asked for both apps as real Windows installers; built by GitHub on
+   every push (`installers/`, `.github/workflows/apps.yml`), each checked by installing it on GitHub's Windows machine.
+   The PC tries them (item 1.10).
+   Next (cloud), the owner's order: parts shared by several units ("just this unit" or "all of them"), names,
    moving a unit to another menu or nation, then new units (copies).
    Later (cloud), launcher steps, one at a time: installing mods into the launcher's library (from a folder or zip,
    then RUSE-Mod-Manager's `.rmod`), mod sets made on screen, the join-a-friend screen (join codes), then the
