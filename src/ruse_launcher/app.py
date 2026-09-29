@@ -7,14 +7,26 @@ the web engine it uses, WebView2). The installed app runs this too (installers/l
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
-from rusemod.webui import open_window, pick_folder, self_test
+from rusemod.webui import on_file_drop, open_window, pick_file, pick_folder, self_test
 
 from . import __version__
-from .api import LauncherApi
+from .api import MOD_FILES, LauncherApi, LauncherError, words
 
 UI = Path(__file__).with_name("ui")
+
+
+def dropped(api: LauncherApi, window, paths) -> None:
+    """Files dropped on the window: add each as a mod, then tell the page what happened (the page never sees a
+    dropped file's path itself; pywebview hands it to us)."""
+    for path in paths:
+        try:
+            event = {"ok": True, **api.add_mod(path)}
+        except LauncherError as exc:
+            event = {"ok": False, "message": str(exc)}
+        window.evaluate_js(f"window.dispatchEvent(new CustomEvent('mod-dropped', {{detail: {json.dumps(event)}}}))")
 
 
 def main(argv=None) -> int:
@@ -26,7 +38,12 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     api = LauncherApi(game_dir=args.game)
     if args.self_test:
-        return self_test(args.self_test, UI, ["index.html", "app.js", "style.css"],
-                         [("the launcher answers", lambda: f"{len(api.mod_sets())} mod set(s); {api.status()['message']}")])
+        return self_test(args.self_test, UI, ["index.html", "app.js", "style.css"], [
+            ("the launcher answers", lambda: f"{len(api.mod_sets())} mod set(s), {len(api.library())} mod(s) in the "
+                                             f"library; {api.status()['message']}"),
+            ("the launcher's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['play']!r}"),
+        ])
     api._pick_folder = lambda: pick_folder(api._window)
-    return open_window("RUSE Launcher", UI, "index.html", api, width=1120, height=740)
+    api._pick_file = lambda: pick_file(api._window, MOD_FILES)
+    return open_window("RUSE Launcher", UI, "index.html", api, width=1120, height=740,
+                       setup=lambda window: on_file_drop(window, lambda paths: dropped(api, window, paths)))

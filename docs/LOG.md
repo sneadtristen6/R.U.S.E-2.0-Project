@@ -438,6 +438,67 @@ import); the cloud tab's pull request #1 (Task A) is under review.
 - **Not done, on purpose:** per-language names (the names file gets their columns then; today it's rewritten with one), moving an existing
   unit to another menu, and the release (no version bump: the PC session's in-game check comes first).
 
+### 2026-09-29, cloud session: mod sets made in the launcher (TASKS.md B, pull request `cloud/launcher-mod-sets`)
+
+- **What a player sees:** under the mod sets, a **Mod library**: "Add a mod file…" opens a file dialog (a `.zip`, or
+  a mod's `mod.toml`); dropping a mod folder or `.zip` anywhere on the window does the same. Each mod is checked
+  first (the engine reads it the way a build would; scripts and programs are refused) and listed with its name,
+  version, author, description, the game build it was made for (and a note when that isn't the installed one) and
+  how many mod sets use it; **Remove** takes it out again. **New mod set…** asks for a name and the mods to tick, in
+  order (the lower one wins when two change the same thing; the set's order now counts in the build,
+  `rusemod.play.keep_order`). A set's page has **Edit** (mods and order), **Rename**, **Duplicate** and **Delete**.
+  Every change comes back with the fresh lists, so nothing needs a restart, and every refusal says what to do next.
+  The launcher starts in the PC's own language when the game has it (`words.toml`, ten languages, a selector at
+  the top right); nothing on screen mentions a file.
+- **How it's kept:** the library is `<home>/library/<mod id>/`; sets stay TOML files in `<home>/sets/`, now listing
+  library mods by id (a hand-written set with folder paths still works, and can be edited on screen). A dropped
+  file's path never reaches the page's JavaScript: pywebview's Windows side hands it to a Python drop handler
+  (`rusemod.webui.on_file_drop`), which adds the mod and tells the page. That part needs the real window, so the PC
+  session checks it.
+- **Tests:** the library (a folder, the file inside it, a zip from its top or one folder, a newer version replacing
+  the old, refusals: a broken `.rndf`, a script inside, no `mod.toml`, a bad id, a zip that would write outside its
+  folder), removing (sets that used it say so), the file dialog and dropped paths, sets (new, edit and reorder,
+  rename, duplicate, delete, unique ids, refusals with plain messages), Play from a set made on screen in both
+  orders (the later mod wins), hand-written sets, the words (complete, all used) and the start language.
+- **Not done, on purpose:** double-clicking a mod file in Explorer (the installer's file type), join codes, Browse
+  mods, and the release (no version bump: the PC session's check with the real window comes first).
+
+### 2026-09-29, cloud session: a mod as one file (TASKS.md C, pull request `cloud/mod-package`)
+
+- **What a modder sees:** "Export mod…" in the Studio's Mod menu asks for the version, author and description
+  (kept in the mod's `mod.toml` for next time), opens the window's "save as" dialog with `<id>-<version>.rusemod`
+  suggested, builds the mod on the game to record the game build and the mod's fingerprint (MOD_FORMAT §12) in the
+  file's manifest, and says where the file went. A mod with a mistake isn't exported; without the game the file is
+  made without the build mark, and the report says so.
+- **What a player sees:** "Add a mod file…" (and dropping a file on the window) takes the `.rusemod`; the library
+  shows its name, version, author, description and build; a broken file is refused with a plain message.
+- **Engine:** `rusemod.package`: pack (the §2 layout only: never caches, hidden files or build output; scripts and
+  programs refused), check (one mod folder, nothing that would land outside it, a sane size, the manifest's id and
+  version, and the mod read the way a build reads it), unpack (nothing written before the check passes), and a
+  manifest editor that changes values in place and keeps everything else. The launcher's library unpacks through it.
+- **Tests:** pack/check/unpack round trip and every refusal; the Studio's export (build mark, fingerprint, kept
+  values, cancel, a broken mod, no game); the launcher installing a file made by `pack` and playing a set with it.
+- **Not done, on purpose:** the installer's file type (double-clicking a `.rusemod` in Explorer), join codes, and
+  the release.
+
+### 2026-09-29, cloud session: Browse mods (TASKS.md D, pull request `cloud/browse-mods`)
+
+- **What a player sees:** "Browse mods" at the bottom of the launcher opens the community's list: each mod with its
+  name, version, author, size, description, tags, the game build it was made on and a link to its page; a search
+  box; Install (or "Update to 1.1.0", or "Installed"). Install downloads the file, checks its size and checksum
+  against the list, puts it in the library and says so; the mod then appears in the library and can be ticked in a
+  mod set. Offline, the list is the copy from before, and a line says from when.
+- **The index:** a public GitHub repository's `index.toml` (MOD_FORMAT §15: the file, the required fields, how a
+  modder adds an entry by pull request). `rusemod.mod_index` fetches it with a timeout, keeps the copy in
+  `<home>/index/`, checks every entry (a bad one is skipped and named, not the whole list), verifies downloads by
+  size and SHA-256, and marks entries against the library. The launcher's `index_url` setting points elsewhere for
+  tests and mirrors.
+- **Tests:** the index on a local web server (read online, the copy offline, entries checked one by one, downloads
+  refused when the file isn't the promised one or is missing); the launcher's list, states and search, an install
+  that then plays in a set, refusals, and offline.
+- **Not done, on purpose:** the index repository itself (the owner's), screenshots and ratings (PLAN L5 later),
+  and the release.
+
 ### 2026-09-29, cloud session: community mods rebuilt in our format (branch `cloud/community-mods`)
 
 - **What came in:** 41 files from the owner: 38 RUSE-Mod-Manager `.rmod` mods (37 distinct) and three zips that are
