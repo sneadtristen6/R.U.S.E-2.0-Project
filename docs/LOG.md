@@ -437,3 +437,26 @@ import); the cloud tab's pull request #1 (Task A) is under review.
   names file left alone. The browser preview (`index.html?fake`) shows the whole flow.
 - **Not done, on purpose:** per-language names (the names file gets their columns then; today it's rewritten with one), moving an existing
   unit to another menu, and the release (no version bump: the PC session's in-game check comes first).
+
+### 2026-09-29, cloud session: community mods rebuilt in our format (branch `cloud/community-mods`)
+
+- **What came in:** 41 files from the owner: 38 RUSE-Mod-Manager `.rmod` mods (37 distinct) and three zips that are
+  whole replacement copies of `ZZ_GladPatchableWin.dat` for the "Compat 2" branch (Tharshey's Extreme Nations v5 and
+  Extreme AI, Val's Reworked Nations). The `.rmod` format is now written down in MOD_FORMAT §13 (one JSON file;
+  objects matched by debug name, ammunition id, class, anchor or file position; typed values; texts by the game's own
+  keys written byte by byte; whole files; terrain bit layers). What the mods teach about the game's data (flag bits,
+  the constants, the AI profiles, ammunition, aircraft altitudes, where the music, videos and scripts live) is in
+  FORMATS.md §2, marked as the modders' findings.
+- **Engine:** objects found by a property (`@TClass[Prop=value]`, any class with `@[…]`) as patch targets, clone
+  sources and references; `patch every` reaches unnamed parts and takes a filter, and finding nothing is an error; a
+  reference to a game object's part makes the part a shared object with a name of its own (`<file>#<index>`, which
+  the writer encodes in place); `+=` / `-=` on number lists keep the list's type and never add an item twice.
+  Tests for each (`test_patch`, `test_rndf`, `test_model`).
+- **Mods:** `tools/rmod_to_mod.py`, our own reader, rebuilt 32 mods; the owner chose the 18 that go into `mods/`
+  (the gameplay ones, the cheat mod for testing, and the Navy mod as the seed for landing ships), each with a README
+  of what carried over and the assumptions to check in-game (`mods/README.md` is the index). Left out: two other
+  authors' mods, three that are only files (a song, a video, recompiled mission scripts), and the three whole-pack
+  zips, which would need a "compare two packs" tool and the pristine Compat 2 pack. A synthetic `.rmod` runs through
+  the tool and the engine in `tests/test_tools.py`.
+- **Not done, on purpose:** no in-game check (the owner's; the launcher builds a modded copy, never the Steam
+  install), no release, and Task G's launcher side (accepting `.rmod` files directly) stays in the queue.

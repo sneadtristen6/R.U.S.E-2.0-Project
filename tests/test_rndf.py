@@ -151,6 +151,34 @@ class Errors(unittest.TestCase):
         self.check("export D is clone ~/C ( )", "~/C must be declared earlier")
 
 
+class FindingObjects(unittest.TestCase):
+    """Objects found by a property (MOD_FORMAT §4): as patch targets, filters, clone sources and references."""
+
+    def test_patch_every_with_a_filter(self):
+        op, = parse("patch every TAmmunition [AmmunitionId=1120] ( NbTirParSalves = 40 )")
+        self.assertEqual((op.every, op.filter, op.path, op.target), ("TAmmunition", "AmmunitionId=1120", "NbTirParSalves", None))
+        op, = parse("patch every TAvionDescriptor [ClassNameForDebug='Avion_C47_Para'] shared ( M.Altitude = 2.0 )")
+        self.assertEqual((op.filter, op.share, op.path), ("ClassNameForDebug='Avion_C47_Para'", "shared", "M.Altitude"))
+
+    def test_a_designator_as_target(self):
+        op, = parse("patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M4_Sherman']:Weapons[0].Ammunition ( Puissance = 1 )")
+        self.assertEqual((op.target, op.path), ("@TUniteAuSolDescriptor[ClassNameForDebug='Unit_M4_Sherman']",
+                                                "Weapons[0].Ammunition.Puissance"))
+        op, = parse("patch shared @[ClassNameForDebug='X'] ( A = 1 )")
+        self.assertEqual((op.target, op.share, op.path), ("@[ClassNameForDebug='X']", "shared", "A"))
+
+    def test_a_designator_as_clone_source_and_as_a_value(self):
+        clone, = parse("Ammo_X is clone @TAmmunition[AmmunitionId=1120] ( Puissance = 5 )")
+        self.assertEqual((clone.target, clone.source), ("$/GFX/Everything/Ammo_X", "@TAmmunition[AmmunitionId=1120]"))
+        a, b = parse("patch $/A ( Ammunition = @TAmmunition[AmmunitionId=7]:Icon  Other = $/B:Weapons[0].Ammunition )")
+        self.assertEqual(a.value, Ref("@TAmmunition[AmmunitionId=7]:Icon"))
+        self.assertEqual(b.value, Ref("$/B:Weapons[0].Ammunition"))
+
+    def test_a_designator_needs_its_brackets(self):
+        with self.assertRaises(RndfError):
+            parse("patch @Nope ( A = 1 )")
+
+
 class TextModsThroughTheEngine(unittest.TestCase):
     """The worked example of MOD_FORMAT §10.7, written as text and run end to end."""
 

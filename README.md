@@ -14,6 +14,8 @@ players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your br
 | | ![RUSE Studio's Maps: Centre of Gravity in 3D, with its real ground](docs/images/studio-maps.jpg) |
 
 **Current stage (2026-09-29):**
+- **Community mods:** 18 RUSE-Mod-Manager mods rebuilt in our format ([`mods/`](mods/)); their format is written
+  down (MOD_FORMAT §13) and what the others teach is in FORMATS.md §2. Not checked in-game yet.
 - **New units work in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory;
   it's built and fights like any other unit (C7).
   `ruse build` gives every copied unit the class the game's Python unit list needs, under the safety rules of
@@ -65,6 +67,13 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
   ([`examples/cloned-unit/`](examples/cloned-unit/), PLAN.md §7). New units get their own names from a mod's
   `text/*.csv` ([`src/rusemod/loc.py`](src/rusemod/loc.py); in-game test C6,
   [`examples/named-unit/`](examples/named-unit/)).
+
+- **Community mods in our format** ([`mods/`](mods/), 18 of them, 2026-09-29): RUSE-Mod-Manager `.rmod` mods
+  rebuilt as mods of ours by [`tools/rmod_to_mod.py`](tools/rmod_to_mod.py), our own reader of that format
+  ([docs/MOD_FORMAT.md §13](docs/MOD_FORMAT.md)); each has a README with what carried over and what to check in-game.
+  For them, mods can now find an object by a property the way those mods do (`@TAmmunition[AmmunitionId=1120]`,
+  `patch every TUniteAuSolDescriptor [Nationalite=1]`), reach unnamed parts, and refer to a game object's part
+  (MOD_FORMAT §4). Not checked in-game yet.
 
 - **Two apps** on the engine, separate from each other (neither needs the other; PLAN.md decision 22). Both are
   desktop windows built like web pages; once: `py -3 -m pip install pywebview`. Their screens also open in a normal

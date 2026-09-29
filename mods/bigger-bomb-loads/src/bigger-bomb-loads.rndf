@@ -1,0 +1,16 @@
+// Bigger Bomb Loads: rebuilt from the RUSE-Mod-Manager mod Bigger_Bomb_Loads_V1.rmod by tools/rmod_to_mod.py.
+// Objects are found the way the original found them (docs/MOD_FORMAT.md §4): by debug name, ammunition id or class.
+
+// --- genglad/patchable/gfx/everything.cpp.gladndfbin (in Data/PC/190852/ZZ_GladPatchableWin.dat)
+patch @TAmmunition[AmmunitionId=1120] ( NbTirParSalves = 40  AngleDispersion = 0.30000001192092896 )
+patch @TAmmunition[AmmunitionId=1122] ( NbTirParSalves = 10  AngleDispersion = 0.6000000238418579 )
+patch @TAmmunition[AmmunitionId=1118] ( NbTirParSalves = 20  AngleDispersion = 0.30000001192092896 )
+patch @TAmmunition[AmmunitionId=1119] ( NbTirParSalves = 30  AngleDispersion = 0.30000001192092896 )
+patch @TAmmunition[AmmunitionId=1105] ( NbTirParSalves = 2 )
+patch @TAmmunition[AmmunitionId=1106] ( NbTirParSalves = 2  AngleDispersion = 0.10000000149011612 )
+patch @TAmmunition[AmmunitionId=1113] ( NbTirParSalves = 12  AngleDispersion = 0.03999999910593033 )
+patch @TAmmunition[AmmunitionId=1123] ( NbTirParSalves = 10  AngleDispersion = 0.03999999910593033 )
+patch @TAmmunition[AmmunitionId=1124] ( NbTirParSalves = 10  AngleDispersion = 0.03999999910593033 )
+patch @TAmmunition[AmmunitionId=1107] ( NbTirParSalves = 2 )
+patch @TAmmunition[AmmunitionId=1117] ( NbTirParSalves = 2  AngleDispersion = 0.03999999910593033 )
+patch @TAmmunition[AmmunitionId=1114] ( NbTirParSalves = 12  AngleDispersion = 0.03999999910593033 )

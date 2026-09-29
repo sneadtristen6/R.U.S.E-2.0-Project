@@ -1,0 +1,934 @@
+// Tanks Only: rebuilt from the RUSE-Mod-Manager mod Tanks_Only_V1.rmod by tools/rmod_to_mod.py.
+// Objects are found the way the original found them (docs/MOD_FORMAT.md §4): by debug name, ammunition id or class.
+
+// --- genglad/patchable/gfx/everything.cpp.gladndfbin (in Data/PC/190852/ZZ_GladPatchableWin.dat)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Willis_MB']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Kubelwagen']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SdkFz_222']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_BA_11']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Autoblinda_40']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Autoblinda_43']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M1_57mm_L_50']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M5_76mm_L_50']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M10_Wolverine']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M36_Jackson']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_GER_37mm_Pak36']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_PaK_40_75mm_L_48']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Marder_II']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Jagdpanther']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Laffly_W15_TCC']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Lorraine_37_L']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Archer']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SU_85']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SU_100']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Semovente_M_90_53']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SA_25mm_L_1934']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SA_47mm_1937']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_QF_2_pounder_40_mm']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_QF_17_pounder_76mm']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_45mm_L46']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_76mm_ZIS_3']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Cannone_da_47_32_M35']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_88mm_Flak']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Stug_III_B']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M7_Priest']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M40_GMC']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SturmTiger']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_75mm_le_FK_38_L_34']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_150mm_sFH_18_L_30']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_75mm_mle_1897']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_155mm_GPF']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_87mm_QF_25_pounder']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_140mm_5_5_Inch_BL_Mk_III_L_30']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_152mm_howitzer']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_203mm_howitzer']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_75mm_Canonne_da_75_27']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_210mm_Obice_da_M1935_L_23_8']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_ARL_40']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sexton']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_203mm_howitzer_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SU_122']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Semovente_M_40_75_18']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Semovente_M_43_105_25']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_40mm_M1_Bofors_L_60']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_40mm_M1_Bofors_L_60_UK']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M16_GMC']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M19_GMC_Twin_40mm']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_20mm_FlaK_30_L_112']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_88mm_FlaK_36L_56']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_ARL_40_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_25mm_CA_mle_1938']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_37mm_AA']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_20mm_Breda']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_L6_40_Lanciafiamme']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_FCM_F1']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Churchill_AVRE']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Lanciafiamme_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_AVRE_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sherman_Firefly']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SdKfz_234_2_Puma']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_155mm_M1_Long_Tom_L_45']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Long_Tom_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_US']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_UK']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_FR']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_GER']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_ITA']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_URSS']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_JAP']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sherman_Calliope']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sherman_Calliope_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sherman_lance_flammes']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sherman_lance_flammes_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Puma_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_210mm_Morser']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Morser_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Breda_Dovunque_90_53']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_PZIV_Wirbelwind']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Char_DCA_M4_SKINK']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Katyusha']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Katyusha_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_ZSU_37']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Breda_Dovunque_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M_15_AA_Tank']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Wirbelwind_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sdkfz251']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sdkfz251_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M15_AA_Tank_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_FCM_F1_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sau_40']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Skink_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M8_Greyhound']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Panhard_178']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Panhard_EBR_75']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Daimler_AC_MK_1']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Coventry_armoured_car']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_EBR_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Kurogane']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_47mm_AT']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_75mm_Type88']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_75mm_Type35']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type5_47mm_HoRu']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type2_HoRi']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type2_75mm_KuSe']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type4_HaTo']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type4_HaTo_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TaSe_20mm']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type1_AOV']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type1_AOV_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_OI_Heavy_Tank']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_OI_Heavy_Tank_atomique']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_US_Para']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_US_Para']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_ITA_Para']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_ITA_Para']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_FR_Para']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_FR_Para']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_UK_Para']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_UK_Para']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_Allemand_Para']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Allemand_Para']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_Russe_Para']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Russe_Para']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Teishin_Shudan']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Teishin_Shudan']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Giretsu_Kuteitai']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Giretsu_Kuteitai']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_US_Leger']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_US_Lourd']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_ITA_Recon']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_ITA_Leger']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_ITA_Lourd']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_FR_Leger']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_FR_Lourd']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_UK_Leger']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_UK_Lourd']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Allemand_Leger']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Allemand_Lourd']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Russe_Leger']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Russe_Lourd']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Sniper']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Konoe_Shidan']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Pionnier_Genie']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Junkers_87']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Storch_GR']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_ME109_GR']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_ME262']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_HE_111']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Ar234']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_P40Warhawk']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_P47Thunderbolt']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Grasshopper']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_B25']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Junkers_87_GR']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_B17']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_MS_406']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Dewoitine_D520']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Breguet_693_Guppy']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Potez_63_11']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Amiot_143']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_CR_42_Falco']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Macchi_MC_200']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Macchi_MC_205V']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_SM_79_Sparviero']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Piaggio_P108']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Avro_Anson']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Spitfire']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Hawker_Hurricane']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Hawker_Typhoon']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Wellington']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Lancaster']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Polikarpov_I16']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Yak_3']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_IL2_Sturmovik']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Nieman_R10']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Petlyakov_Pe8']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Mitsubishi_Zero']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Yokosuka_Judy']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Aichi_Susie']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Kyushu_Shinden']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Nakajima_Renzan']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)

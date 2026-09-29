@@ -1,0 +1,5 @@
+// Airfield Capacity: rebuilt from the RUSE-Mod-Manager mod Airfield_Capacity_V1.rmod by tools/rmod_to_mod.py.
+// Objects are found the way the original found them (docs/MOD_FORMAT.md §4): by debug name, ammunition id or class.
+
+// --- genglad/patchable/gfx/gdconstanteoriginal.cpp.gladndfbin (in Data/PC/190852/ZZ_GladPatchableWin.dat)
+patch every TTunableConstante ( NbAvionsParAeroport = 128 )
