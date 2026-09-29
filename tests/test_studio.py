@@ -548,7 +548,7 @@ class Terrain(WithMod):
         self.assertEqual((view["mod"], view["saved"]), (str(folder), str(file)))
         self.assertEqual([s["brush"] for s in view["strokes"]], ["hill", "plateau", "smooth"])
         self.assertEqual(view["strokes"][0], {"brush": "hill", "x": 500.0, "y": 600.0, "radius": 120.0, "height": 30.0,
-                                              "level": 0.0, "weight": 1.0})
+                                              "level": 0.0, "weight": 1.0, "x2": 0.0, "y2": 0.0, "level2": 0.0})
         self.assertEqual(self.api.terrain("SuperCrossroads4")["strokes"], [])  # another map has its own
         # Undo takes the last strokes off; the file goes when none is left, and its empty folders with it
         self.assertEqual(self.api.terrain_undo("TwoIslands", 2), {"count": 1, "removed": 2, "saved": str(file)})
@@ -616,8 +616,8 @@ class Labels(unittest.TestCase):
         used = set(re.findall(r"\b(?:w|state\.words|mv\.words)\.([a-z_]+)", app))
         used |= {"all", "ground", "infantry", "air", "buildings", "not_stable"}  # looked up by key
         maps = (ui / "maps.js").read_text(encoding="utf-8")  # each brush's name is looked up by key
-        used |= {"brush_" + name for name in re.findall(r"^  (\w+): \[\"(?:add|level|smooth)\"", maps, re.M)}
-        self.assertEqual(len(used & {"brush_hill", "brush_smooth"}), 2)
+        used |= {"brush_" + name for name in re.findall(r"^  (\w+): \[\"(?:add|level|smooth|ramp)\"", maps, re.M)}
+        self.assertEqual(len(used & {"brush_hill", "brush_smooth", "brush_ramp"}), 3)
         self.assertGreater(len(used), 25)
         self.assertEqual(sorted(used - set(_words())), [])
 

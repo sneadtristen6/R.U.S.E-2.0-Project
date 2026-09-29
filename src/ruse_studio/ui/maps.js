@@ -10,7 +10,7 @@ const mv = { api: null, words: {}, maps: [], current: null, lod: "lowdef", water
   stats: null, groundTex: {}, edit: null,
   // brush: the tool picked, its size and strength per brush (slider values), the strokes on this map (as saved),
   // the size of each group of strokes made this session (for Undo), the drag being painted, and the mod saved into
-  brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null } };
+  brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null, rampStart: null } };
 
 // --- brushes: the same shapes and rules as rusemod/brush.py (the build's own copy decides; this one only draws) ---
 // name: [kind, shape, sign, one dab per click (else dabs along a drag), size %, strength %]
@@ -22,6 +22,7 @@ const BRUSHES = {
   plateau: ["level", "flat", 1, true, 6, 15],
   flatten: ["level", "soft", 1, false, 4, 60],
   smooth: ["smooth", "soft", 1, false, 4, 60],
+  ramp: ["ramp", "flat", 1, true, 3, 100],  // two clicks: where it starts, then where it ends; size is half its width
 };
 const CRATER_RIM = 0.35;
 const HEIGHT_SHARE = 0.6;  // strength 100% = this share of the map's height range (hill, raise, lower, crater, plateau)
@@ -41,14 +42,46 @@ function shapeWeight(shape, t2) {
   return CRATER_RIM * rim - bowl;
 }
 
+// A ramp: how far along its centre line the nearest point lies (0 at the start, 1 at the end), and the squared
+// distance to that point.
+function along(s, x, y) {
+  const dx = s.x2 - s.x, dy = s.y2 - s.y, len2 = dx * dx + dy * dy;
+  let t = 0;
+  if (len2 > 0) { t = ((x - s.x) * dx + (y - s.y) * dy) / len2; t = t < 0 ? 0 : t > 1 ? 1 : t; }
+  const px = x - (s.x + dx * t), py = y - (s.y + dy * t);
+  return [t, px * px + py * py];
+}
+
 function heightAt(s, x, y, z, average) {
-  const dx = x - s.x, dy = y - s.y, d2 = dx * dx + dy * dy, r2 = s.radius * s.radius;
+  const [kind, shape, sign] = BRUSHES[s.brush], r2 = s.radius * s.radius;
+  if (kind === "ramp") {
+    const [t, d2] = along(s, x, y);
+    if (d2 >= r2) return z;
+    const target = s.level + (s.level2 - s.level) * t;
+    return z + (target - z) * (s.weight * shapeWeight(shape, d2 / r2));
+  }
+  const dx = x - s.x, dy = y - s.y, d2 = dx * dx + dy * dy;
   if (d2 >= r2) return z;
-  const [kind, shape, sign] = BRUSHES[s.brush];
   const p = shapeWeight(shape, d2 / r2);
   if (kind === "add") return z + sign * s.height * p;
   if (kind === "level") return z + (s.level - z) * (s.weight * p);
   return z + (average(x, y) - z) * (s.weight * p);
+}
+
+// The square around a stroke's circle (a ramp: around its whole band): x min, x max, y min, y max.
+function boxOf(s) {
+  if (s.brush === "ramp") {
+    return [Math.min(s.x, s.x2) - s.radius, Math.max(s.x, s.x2) + s.radius,
+            Math.min(s.y, s.y2) - s.radius, Math.max(s.y, s.y2) + s.radius];
+  }
+  return [s.x - s.radius, s.x + s.radius, s.y - s.radius, s.y + s.radius];
+}
+
+function covers(s, x, y) {
+  const r2 = s.radius * s.radius;
+  if (s.brush === "ramp") return along(s, x, y)[1] < r2;
+  const dx = x - s.x, dy = y - s.y;
+  return dx * dx + dy * dy < r2;
 }
 
 function el(tag, props, ...children) {
@@ -104,7 +137,14 @@ async function scene3d() {
   ring.renderOrder = 10;
   ring.visible = false;
   scene.add(ring);
-  mv.gl = { THREE, renderer, scene, camera, controls, draw, ground: null, water: null, ring,
+  // a ramp being made: a ring where it starts and a line from there to the pointer
+  const startRing = ring.clone();
+  const guide = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
+    new THREE.LineBasicMaterial({ color: 0xc8a64b, transparent: true, opacity: 0.9, depthTest: false }));
+  guide.renderOrder = 10;
+  guide.visible = false;
+  scene.add(startRing, guide);
+  mv.gl = { THREE, renderer, scene, camera, controls, draw, ground: null, water: null, ring, startRing, guide,
     raycaster: new THREE.Raycaster(), ndc: new THREE.Vector2() };
   watchPointer();
   setBrushMode(mv.brush.on);
@@ -224,10 +264,11 @@ function makeGrid(ed) {
 }
 
 function gridSpan(g, s) {
-  const c0 = Math.max(0, Math.floor((s.x - s.radius - g.x0) / g.sx) - 1);
-  const c1 = Math.min(g.cols - 1, Math.floor((s.x + s.radius - g.x0) / g.sx) + 1);
-  const r0 = Math.max(0, Math.floor((s.y - s.radius - g.y0) / g.sy) - 1);
-  const r1 = Math.min(g.rows - 1, Math.floor((s.y + s.radius - g.y0) / g.sy) + 1);
+  const [xlo, xhi, ylo, yhi] = boxOf(s);
+  const c0 = Math.max(0, Math.floor((xlo - g.x0) / g.sx) - 1);
+  const c1 = Math.min(g.cols - 1, Math.floor((xhi - g.x0) / g.sx) + 1);
+  const r0 = Math.max(0, Math.floor((ylo - g.y0) / g.sy) - 1);
+  const r1 = Math.min(g.rows - 1, Math.floor((yhi - g.y0) / g.sy) + 1);
   return [r0, r1, c0, c1];
 }
 
@@ -270,11 +311,9 @@ function applyStroke(ed, s) {
     if (!ed.grid) ed.grid = makeGrid(ed);
     average = gridAverage(ed.grid, s);
   }
-  const r2 = s.radius * s.radius;
-  near(ed.index, s.x - s.radius, s.x + s.radius, s.y - s.radius, s.y + s.radius, (i) => {
-    if (ed.fixed[i]) return;
-    const dx = ed.wx[i] - s.x, dy = ed.wy[i] - s.y;
-    if (dx * dx + dy * dy >= r2) return;
+  const [xlo, xhi, ylo, yhi] = boxOf(s);
+  near(ed.index, xlo, xhi, ylo, yhi, (i) => {
+    if (ed.fixed[i] || !covers(s, ed.wx[i], ed.wy[i])) return;
     ed.z[i] = heightAt(s, ed.wx[i], ed.wy[i], ed.z[i], average);
     ed.touched[i] = 1;
   });
@@ -398,6 +437,7 @@ async function show(pack, keepCamera) {
   gl.scene.add(gl.ground, gl.water);
   mv.edit = made.edit;
   mv.brush.painting = null;
+  cancelRamp();
   if (!keepCamera) {
     const [cx, cy, cz] = made.center, d = made.size;
     gl.camera.near = d / 2000;
@@ -435,6 +475,8 @@ function showCount() {
   const w = mv.words, n = mv.brush.strokes.length;
   $("brush-count").textContent = n ? fill(w.brush_count, { n: n.toLocaleString() }) : "";
   $("brush-undo").disabled = !n || !mv.brush.mod;
+  $("brush-clear").disabled = !n || !mv.brush.mod;
+  if (!n) $("brush-sure").classList.add("hidden");
 }
 
 async function loadStrokes(pack, ask) {
@@ -443,6 +485,8 @@ async function loadStrokes(pack, ask) {
   mv.brush.mod = res.mod;
   mv.brush.strokes = res.strokes;
   mv.brush.groups = [];
+  cancelRamp();
+  $("brush-sure").classList.add("hidden");
   reapply();
   showCount();
   renderBrushes();
@@ -467,14 +511,28 @@ function renderBrushes() {
 
 function pickBrush(name) {
   const b = mv.brush;
+  if (b.name !== name) cancelRamp();
   b.name = name;
   setBrushMode(true);
   if (!b.mod) brushNote(mv.words.no_mod, "error");
+  else if (name === "ramp") brushNote(mv.words.ramp_help);
+}
+
+// A ramp half made (its start clicked) is dropped: another brush, another map or mod, Look around, Esc.
+function cancelRamp() {
+  mv.brush.rampStart = null;
+  const gl = mv.gl;
+  if (gl && gl.guide && (gl.guide.visible || gl.startRing.visible)) {
+    gl.guide.visible = false;
+    gl.startRing.visible = false;
+    gl.draw();
+  }
 }
 
 function setBrushMode(on) {
   const gl = mv.gl;
   mv.brush.on = on;
+  if (!on) cancelRamp();
   if (gl) {
     const M = gl.THREE.MOUSE;
     gl.controls.mouseButtons = on ? { LEFT: null, MIDDLE: M.ROTATE, RIGHT: M.PAN }
@@ -486,13 +544,14 @@ function setBrushMode(on) {
 }
 
 // The world numbers of a new stroke, from the brush picked and its sliders.
-function newStroke(x, y, level) {
+function newStroke(x, y, level, end) {
   const name = mv.brush.name, [kind] = BRUSHES[name], set = settingsOf(name);
   const [x0, , z0, x1, , z1] = mv.edit.bounds;
   const s = { brush: name, x, y, radius: set.size / 100 * (x1 - x0) };
   if (kind === "add") s.height = set.strength / 100 * HEIGHT_SHARE * (z1 - z0);
   if (kind === "level") { s.level = level; s.weight = name === "plateau" ? 1 : set.strength / 100; }
   if (kind === "smooth") s.weight = set.strength / 100;
+  if (kind === "ramp") { s.level = level; s.weight = set.strength / 100; s.x2 = end.x; s.y2 = end.y; s.level2 = end.z; }
   return s;
 }
 
@@ -507,18 +566,32 @@ function hitGround(ev) {
 function showRing(p) {
   const gl = mv.gl;
   if (!gl.ring) return;
+  const set = settingsOf(mv.brush.name), [x0, , , x1] = mv.edit.bounds;
+  const r = set.size / 100 * (x1 - x0) * SCALE, lift = r * 0.02;
   gl.ring.visible = Boolean(p);
   if (p) {
-    const set = settingsOf(mv.brush.name), [x0, , , x1] = mv.edit.bounds;
-    const r = set.size / 100 * (x1 - x0) * SCALE;
-    gl.ring.position.set(p.x, p.y + r * 0.02, p.z);
+    gl.ring.position.set(p.x, p.y + lift, p.z);
     gl.ring.scale.set(r, r, r);
+  }
+  const start = mv.brush.rampStart;
+  gl.startRing.visible = Boolean(start);
+  gl.guide.visible = Boolean(start && p);
+  if (start) {
+    gl.startRing.position.set(start.sx, start.sy + lift, start.sz);
+    gl.startRing.scale.set(r, r, r);
+  }
+  if (start && p) {
+    const pos = gl.guide.geometry.attributes.position;
+    pos.setXYZ(0, start.sx, start.sy + lift, start.sz);
+    pos.setXYZ(1, p.x, p.y + lift, p.z);
+    pos.needsUpdate = true;
+    gl.guide.geometry.computeBoundingSphere();
   }
   gl.draw();
 }
 
 function dab(group, x, y) {
-  const s = newStroke(x, y, group.level);
+  const s = newStroke(x, y, group.level, group.end);
   group.strokes.push(s);
   group.last = [x, y];
   mv.brush.strokes.push(s);
@@ -575,6 +648,22 @@ async function undoStroke() {
   } catch (err) { brushNote((err && err.message) || String(err), "error"); }
 }
 
+// "Start over": every stroke on this map goes (after the question under the button).
+async function clearStrokes() {
+  const b = mv.brush, pack = mv.current;
+  $("brush-sure").classList.add("hidden");
+  if (!b.mod || !b.strokes.length || b.painting) return;
+  try {
+    await mv.api.terrain_undo(pack, b.strokes.length);
+    if (pack !== mv.current) return;
+    b.strokes = [];
+    b.groups = [];
+    reapply();
+    showCount();
+    brushNote(b.name === "ramp" ? mv.words.ramp_help : "");
+  } catch (err) { brushNote((err && err.message) || String(err), "error"); }
+}
+
 function watchPointer() {
   const gl = mv.gl, canvas = gl.renderer.domElement;
   let pending = null, frame = 0;
@@ -599,6 +688,18 @@ function watchPointer() {
     const name = mv.brush.name, [kind, , , stamp] = BRUSHES[name], set = settingsOf(name);
     const x = p.x / SCALE, y = p.z / SCALE, z = p.y / SCALE, [, , z0, , , z1] = mv.edit.bounds;
     const level = kind !== "level" ? 0 : name === "plateau" ? z + set.strength / 100 * HEIGHT_SHARE * (z1 - z0) : z;
+    if (kind === "ramp") {  // two clicks: where it starts (the ground's height there), then where it ends
+      const start = mv.brush.rampStart;
+      if (!start) { mv.brush.rampStart = { x, y, z, sx: p.x, sy: p.y, sz: p.z }; showRing(p); return; }
+      if (start.x === x && start.y === y) return;
+      mv.brush.rampStart = null;
+      showRing(p);
+      const ramp = { strokes: [], last: null, level: start.z, stamp: true, start: mv.brush.strokes.length, end: { x, y, z } };
+      mv.brush.painting = ramp;
+      dab(ramp, start.x, start.y);
+      finishStroke();
+      return;
+    }
     const group = { strokes: [], last: null, level, stamp, start: mv.brush.strokes.length };
     mv.brush.painting = group;
     dab(group, x, y);
@@ -632,6 +733,9 @@ function renderWords() {
   $("brush-strength-label").textContent = w.brush_strength;
   $("brush-look").textContent = w.brush_look;
   $("brush-undo").textContent = w.brush_undo;
+  $("brush-clear").textContent = w.brush_clear;
+  $("brush-clear-yes").textContent = w.remove_all;
+  $("brush-clear-no").textContent = w.cancel;
   if (!mv.current) $("map-pick").textContent = w.pick_map;
   renderBrushes();
 }
@@ -653,6 +757,14 @@ function wire() {
   $("brush-strength").addEventListener("input", (e) => { settingsOf(mv.brush.name).strength = Number(e.target.value); });
   $("brush-look").addEventListener("click", () => setBrushMode(false));
   $("brush-undo").addEventListener("click", () => undoStroke());
+  $("brush-clear").addEventListener("click", () => {
+    $("brush-sure-text").textContent = fill(mv.words.really_clear, { n: mv.brush.strokes.length.toLocaleString() });
+    $("brush-sure").classList.remove("hidden");
+    $("brush-clear-yes").focus();
+  });
+  $("brush-clear-no").addEventListener("click", () => $("brush-sure").classList.add("hidden"));
+  $("brush-clear-yes").addEventListener("click", () => clearStrokes());
+  window.addEventListener("keydown", (e) => { if (e.key === "Escape") cancelRamp(); });
 }
 
 // app.js opens the view when its tab is picked, and passes the words on every language change.

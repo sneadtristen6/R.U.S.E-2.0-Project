@@ -180,6 +180,9 @@ def _area(meshes: dict, trees: dict) -> tuple[float, float, float, float]:
 
 def _touches(stroke: Stroke, area) -> bool:
     x0, y0, x1, y1 = area
+    if stroke.brush == "ramp":
+        bx0, bx1, by0, by1 = stroke.box()
+        return bx0 < x1 and bx1 > x0 and by0 < y1 and by1 > y0
     dx = max(x0 - stroke.x, 0.0, stroke.x - x1)
     dy = max(y0 - stroke.y, 0.0, stroke.y - y1)
     return dx * dx + dy * dy < stroke.radius * stroke.radius

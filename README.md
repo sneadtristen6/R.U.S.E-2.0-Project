@@ -15,8 +15,8 @@ players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your br
 
 **Current stage (2026-09-29):**
 - **Terrain brushes** (in review): mods can reshape a map's ground, and the Studio's Maps view paints the strokes
-  (hill, raise, lower, crater, plateau, flatten, smooth; size, strength, Undo); the first in-game check is one hill
-  on Centre of Gravity.
+  (hill, raise, lower, crater, plateau, flatten, smooth, and a two-click ramp; size, strength, Undo, Start over); the
+  first in-game check is one hill on Centre of Gravity.
 - **New units work in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory;
   it's built and fights like any other unit (C7).
   `ruse build` gives every copied unit the class the game's Python unit list needs, under the safety rules of
@@ -71,7 +71,7 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
 
 - **Terrain brushes** ([`src/rusemod/brush.py`](src/rusemod/brush.py), [`terrain_edit.py`](src/rusemod/terrain_edit.py),
   in review; painted in the Studio's Maps view): a mod reshapes a map's ground with brush strokes (hill, raise,
-  lower, crater, plateau, flatten, smooth)
+  lower, crater, plateau, flatten, smooth, ramp)
   in `maps/<map>/terrain.toml`; `ruse build` applies them to all four files that hold the ground, together, and puts
   the map in the modded copy ([docs/MOD_FORMAT.md §8](docs/MOD_FORMAT.md)). The in-game check comes first:
   `py -3 tools\verify_terrain.py --make-test TwoIslands D:\RUSE-Instances\hill` builds a copy with one hill.
@@ -91,8 +91,8 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
     as new, edited like any other unit, and can be deleted (in review, 0.5). **Maps** (the terrain editor): every map
     the game lists, shown in 3D with its real ground mesh and ground textures (the textures are decoded once per
     map and kept); pick a brush and click or drag on the ground to shape it (in review, 0.6): each stroke is drawn
-    at once and saved in the mod's `maps/<map>/terrain.toml`, Undo takes it back, and "Test in game" builds it
-    into the map. `py -3 -m ruse_studio` (after `ruse index build`); `--spike` opens the 3D check.
+    at once and saved in the mod's `maps/<map>/terrain.toml`, a ramp takes two clicks (its start, its end), Undo
+    takes a stroke back, Start over clears the map, and "Test in game" builds it into the map. `py -3 -m ruse_studio` (after `ruse index build`); `--spike` opens the 3D check.
   - `py -3 -m pip install -e .[apps]` once gives two commands, `ruse-launcher` and `ruse-studio`, that open them
     without a console window.
   - **Installers** ([`installers/`](installers/README.md)): GitHub builds `RUSE-Launcher-Setup-<version>.exe` and

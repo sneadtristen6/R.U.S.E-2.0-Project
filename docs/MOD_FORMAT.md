@@ -240,7 +240,7 @@ list shows it under each map). The file holds strokes, one dab of a brush each:
 
 ```toml
 [[stroke]]
-brush  = "hill"      # hill, raise, lower, crater, plateau, flatten, smooth
+brush  = "hill"      # hill, raise, lower, crater, plateau, flatten, smooth, ramp
 x      = 983040.0    # the centre, in world units: x grows east, y grows south
 y      = 983040.0
 radius = 60000.0
@@ -252,7 +252,18 @@ x      = 700000.0
 y      = 400000.0
 radius = 40000.0
 level  = 21000.0     # plateau, flatten: the height (world z) the ground goes to
-weight = 1.0         # plateau, flatten, smooth: how far toward it, 0..1 (smooth: 0.5 when left out)
+weight = 1.0         # plateau, flatten, smooth, ramp: how far toward it, 0..1 (smooth: 0.5 when left out)
+
+[[stroke]]
+brush  = "ramp"
+x      = 300000.0    # where the ramp starts, at height `level`…
+y      = 500000.0
+x2     = 520000.0    # …and where it ends, at height `level2`
+y2     = 610000.0
+radius = 30000.0     # half the ramp's width
+level  = 14000.0
+level2 = 26000.0
+weight = 1.0
 ```
 
 | Brush | Does | Shape |
@@ -263,6 +274,7 @@ weight = 1.0         # plateau, flatten, smooth: how far toward it, 0..1 (smooth
 | `plateau` | ground to `level` | flat across the middle half, then an S-curve back to the old ground |
 | `flatten` | ground toward `level`, most at the centre | round hump weighting |
 | `smooth` | ground toward its local average (the mean over about a third of the radius) | round hump weighting |
+| `ramp` | an even slope from `level` at (`x`, `y`) to `level2` at (`x2`, `y2`); `radius` is half its width | flat across the middle half of the width, then an S-curve back to the old ground at the sides and beyond the ends |
 
 - **All four files together.** A map's ground is in four files (FORMATS.md §6): the close-up and far meshes the game
   draws, the gameplay ground and the camera floor (`.kdt`). Every stroke moves the points of all four inside its

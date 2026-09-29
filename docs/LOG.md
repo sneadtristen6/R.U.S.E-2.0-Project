@@ -490,3 +490,22 @@ import); the cloud tab's pull request #1 (Task A) is under review.
   and every word the panel uses in all ten languages. 377 tests.
 - **Not done:** the in-game hill check (PC session, from pull request #6) decides whether any of this ships; a ramp
   tool and water that follows the ground are next (TASKS "Later").
+
+### 2026-09-29, cloud session: the ramp and Start over (PLAN §7 MT, T4; branch `cloud/ramp-tool`, on top of `cloud/studio-brushes`)
+
+- **Owner's call:** "1 then 2": the ramp first, then painting the ground (PLAN §12). The owner is not a coder: the
+  sessions decide and build, the owner clicks and reports.
+- **The ramp** (`rusemod.brush`, brush `ramp`): an even slope from `level` at (x, y) to `level2` at (x2, y2),
+  `radius` half its width. Inside its band the ground goes to the line between the two heights, flat across the
+  middle half of the width and easing back to the old ground at the sides and beyond the ends; `weight` says how
+  far. The maths is a projection onto the centre line and the flat shape: + − × ÷ and one square root, so every
+  PC agrees. `Stroke` grew `x2`, `y2`, `level2` (0 for the other brushes); the terrain file writes them for ramps
+  only; a ramp whose two points are the same is refused.
+- **In the Studio:** the Ramp brush takes two clicks: the start (the ground's height there), then the end; a ring
+  marks the start and a line follows the pointer; Esc, another brush, Look around, another map or mod drop a
+  half-made ramp. Size is half the ramp's width, Strength how far the ground goes to it. **Start over** removes
+  every stroke on the map after a question under the button.
+- **Checked in Chromium** with the preview data: a ramp from low ground up a hill (two clicks, one stroke saved
+  with the two heights), Esc, Undo, the Start over question, No, then Yes (the file is gone, the button greys out).
+- **Tests:** the ramp's heights, band and box, the file written and read back, its two refusals; on the made-up
+  map, the ground inside the band lies on the ramp's line in all four files. 379 tests.
