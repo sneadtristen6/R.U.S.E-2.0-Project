@@ -5,7 +5,7 @@ new units, maps, models, missions and one-click modded multiplayer. The content 
 
 Status: **M0 done; M1 next** (the design for M1–M3 is written up). Nothing here modifies the game install.
 
-**Current stage (2026-09-29):** C4 passed: a mod written as text (`examples/half-price-buildings`), built by
+**Current stage (2026-09-29):** **The first new unit works in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory (checks C5 to C6d). The key was the game's Python unit list: every unit needs a class there, which the build will add under the safety rules of PLAN.md decision 23. The launcher's Play works end to end too. Earlier: C4 passed: a mod written as text (`examples/half-price-buildings`), built by
 `ruse build`, worked in-game. C3 passed too (new maps can ship their own pack). The M1.5 terrain work has started:
 the terrain mesh and tile files can be read and rewritten losslessly (`rusemod.tms`, `rusemod.tmst`), and the map
 pack "checksum" turned out to be a random ID. Next on the PC: in-game terrain tests (a raised mesa, swapped tiles,

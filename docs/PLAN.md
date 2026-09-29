@@ -716,6 +716,10 @@ unit registry"), and no copy had one. **C6d:** the C6 instance (`D:\RUSE-Instanc
 C6-Test" at slot 306) now also has `class Unit_R2_Lee_Named(front.unit.TankUnit)` and its `base_class` line, added
 to its `ZZ_Win.dat` by a scratch probe. The owner chose to go ahead under the safety rules of decision 23. Pass:
 "Lee C6-Test" ($1) shows after the Sherman.
+**C6d passed in-game (2026-09-29): "Lee C6-Test" shows at $1, under the $20 Lee.** The first new unit in R.U.S.E.:
+a copy in `everything`, its own name in the text files, and its class in the Python unit list. So C5 and C6 pass with
+the class added. **Next:** the build adds the class itself for every new unit (a Python 2.5 marshal reader and the
+fixed-template writer in `rusemod`, with the checks of decision 23), and the launcher refuses mods with script files.
 
 ### C6: a new unit with its own name (ready to run, after C5)
 
