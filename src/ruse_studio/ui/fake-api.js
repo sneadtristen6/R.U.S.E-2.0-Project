@@ -18,7 +18,12 @@
       shared_by: "Shared by {n}: {names}", change_for: "Change it for", only_unit: "only {name} (it gets its own copy)",
       all_units: "all {n} of them", no_via: "Open it from one of their pages to change it for that one only.",
       not_stable: "No stable address, so it can't be edited yet.", locked: "Ids and nation stay as they are.",
-      edited: "edited" },
+      edited: "edited", units_tab: "Units", maps_tab: "Maps",
+      pick_map: "Pick a map to see its ground in 3D.", map_loading: "Loading the map…", detail_high: "Full detail",
+      detail_low: "Light", water: "Water", map_help: "Drag to turn · right-drag to move · wheel to zoom",
+      map_stats: "{points} points, {triangles} triangles",
+      no_viewer: "The map view couldn't load its 3D library (it needs the internet the first time).",
+      ground_loading: "Loading the real ground textures… {progress}" },
     fr: { language: "Langue", game_names: "Noms du jeu", search: "Rechercher", all: "Tous", ground: "Terrestre",
       infantry: "Infanterie", air: "Aérien", buildings: "Bâtiments", units: "{n} unités", parts: "Composants",
       uses: "Utilise", own_part: "le sien", shared_part: "partagé avec d'autres unités", used_by: "Utilisé par",
@@ -32,7 +37,13 @@
       only_unit: "seulement {name} (il reçoit sa propre copie)", all_units: "les {n}",
       no_via: "Ouvrez-le depuis la page de l'un d'eux pour ne modifier que celui-là.",
       not_stable: "Pas d'adresse stable : pas encore modifiable.",
-      locked: "Les identifiants et la nation restent tels quels.", edited: "modifié" },
+      locked: "Les identifiants et la nation restent tels quels.", edited: "modifié", units_tab: "Unités",
+      maps_tab: "Cartes", pick_map: "Choisissez une carte pour voir son terrain en 3D.",
+      map_loading: "Chargement de la carte…", detail_high: "Détail complet", detail_low: "Allégé", water: "Eau",
+      map_help: "Glisser pour tourner · clic droit pour déplacer · molette pour zoomer",
+      map_stats: "{points} points, {triangles} triangles",
+      no_viewer: "La vue de carte n'a pas pu charger sa bibliothèque 3D (il faut Internet la première fois).",
+      ground_loading: "Chargement des vraies textures du sol… {progress}" },
     sc: { language: "语言", game_names: "游戏原名", search: "搜索", all: "全部", ground: "地面", infantry: "步兵",
       air: "空军", buildings: "建筑", units: "{n} 个单位", parts: "组件", uses: "使用", own_part: "自有",
       shared_part: "与其他单位共享", used_by: "被引用于", copy_address: "复制地址", no_index: "尚无游戏索引。",
@@ -42,7 +53,10 @@
       saved: "已保存到 {file}", users_warning: "修改后,所有使用它的单位都会改变({n})。",
       shared_by: "{n} 个单位共用:{names}", change_for: "修改范围", only_unit: "仅 {name}(为其创建独立副本)",
       all_units: "全部 {n} 个", no_via: "从其中一个单位的页面打开,即可只修改那一个。", not_stable: "没有固定地址,暂时无法编辑。",
-      locked: "编号和国家保持不变。", edited: "已修改" },
+      locked: "编号和国家保持不变。", edited: "已修改", units_tab: "单位", maps_tab: "地图",
+      pick_map: "选择一张地图，以 3D 查看其地形。", map_loading: "正在加载地图…", detail_high: "完整细节", detail_low: "简化",
+      water: "水面", map_help: "拖动旋转 · 右键拖动平移 · 滚轮缩放", map_stats: "{points} 个点，{triangles} 个三角形",
+      no_viewer: "地图视图无法加载 3D 库（首次需要联网）。", ground_loading: "正在加载真实地面纹理… {progress}" },
   };
   const nations = {
     base: ["EU", "Allemagne", "RU", "France", "Italie", "URSS", "Japon"],
@@ -160,6 +174,58 @@
     [{ address: AMMO, class: "TAmmunition" }], [{ address: "$/GFX/Everything/Menu_Armour_US", path: "Units[3]" }]);
   }
 
+  // The Maps view: a made-up island, packed like rusemod.terrain (uint16 positions over the bounds, zlib, base64)
+  const fakeMaps = [
+    { pack: "TwoIslands", names: ["(6) Centre de gravite"], paths: ["TwoIslands"], file: "DataMapTwoIslands_v09.dat" },
+    { pack: "SuperCrossroads4", names: ["(4) Blitz"], paths: ["SuperCrossroads4"], file: "DataMapSuperCrossroads4_v09.dat" },
+    { pack: "M02_Tunisie", names: ["M02_Tunisie_chapter1", "M02_Tunisie_chapter2"], paths: ["M02_Tunisie_chapter1"],
+      file: "DataMapM02_Tunisie_v09.dat" },
+  ].map((m) => ({ ...m, found: true }));
+
+  async function packed(typed) {
+    const stream = new Blob([typed]).stream().pipeThrough(new CompressionStream("deflate"));
+    const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+    let s = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+
+  async function fakeGround(pack, lod) {
+    const n = lod === "highdef" ? 257 : 129, Q = 32767, size = 1310720, top = 60000, sea = 11000;
+    const seed = pack.length;
+    const h = (u, v) => {
+      const r = Math.hypot(u - 0.5, v - 0.5) * 2.1;
+      return Math.max(0, 48000 * (1 - r * r) + 7000 * Math.sin(u * (11 + seed)) * Math.cos(v * 9)
+        + 3000 * Math.sin((u + v) * 31));
+    };
+    const pos = new Uint16Array(n * n * 3), nrm = new Uint8Array(n * n * 3), wat = new Uint16Array(n * n);
+    const step = size / (n - 1);
+    for (let j = 0; j < n; j++) {
+      for (let i = 0; i < n; i++) {
+        const k = j * n + i, u = i / (n - 1), v = j / (n - 1), z = Math.min(top, h(u, v));
+        pos.set([Math.round(u * Q), Math.round(v * Q), Math.round(z / top * Q)], 3 * k);
+        wat[k] = Math.round(sea / top * Q);
+        const dx = (h(u + 1 / (n - 1), v) - h(u - 1 / (n - 1), v)) / (2 * step);
+        const dy = (h(u, v + 1 / (n - 1)) - h(u, v - 1 / (n - 1))) / (2 * step);
+        const len = Math.hypot(dx, dy, 1);
+        nrm.set([(-dx / len + 1) * 127.5, (-dy / len + 1) * 127.5, (1 / len + 1) * 127.5].map(Math.round), 3 * k);
+      }
+    }
+    const tri = [], wtri = [];
+    for (let j = 0; j < n - 1; j++) {
+      for (let i = 0; i < n - 1; i++) {
+        const a = j * n + i, b = a + 1, c = a + n, d = c + 1;
+        for (const t of [[a, c, b], [b, c, d]]) {
+          tri.push(...t);
+          if (t.some((x) => pos[3 * x + 2] < wat[x])) wtri.push(...t);
+        }
+      }
+    }
+    return { pack, lod, bounds: [0, 0, 0, size, size, top], q_max: Q, vertices: n * n, triangle_count: tri.length / 3,
+      positions: await packed(pos), normals: await packed(nrm), water_heights: await packed(wat),
+      triangles: await packed(new Uint32Array(tri)), water: await packed(new Uint32Array(wtri)), picture: "" };
+  }
+
   const jobs = {
     index: [["  ZZ_Win.dat"], "The game index is ready."],
     test: [["Building the modded copy of R.U.S.E. for pacific-test in D:\\RUSE-Instances\\studio-pacific-test…",
@@ -220,6 +286,9 @@
       test_in_game: async () => ({ job: "test" }),
       build_index: async () => ({ job: "index" }),
       job: async (id) => ({ state: "done", message: jobs[id][1], lines: jobs[id][0], count: jobs[id][0].length }),
+      maps: async () => ({ maps: fakeMaps }),
+      map_view: async (pack, lod) => fakeGround(pack, lod || "lowdef"),
+      map_ground: async () => ({ url: null }),  // the made-up island has only its colours
     },
   };
   window.addEventListener("load", () => window.dispatchEvent(new Event("pywebviewready")));

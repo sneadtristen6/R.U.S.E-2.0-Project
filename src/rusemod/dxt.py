@@ -1,0 +1,167 @@
+"""DXT1 (BC1) blocks <-> RGB pixels, plus a tiny PNG writer for previews.
+
+A DXT1 block is 8 bytes covering 4x4 pixels: two RGB565 endpoint colours (u16 little-endian, c0 then c1)
+and 16 two-bit palette indices (u32 little-endian; row r is byte r, pixel c of the row is bits 2c..2c+1).
+When c0 > c1 the palette is c0, c1, 2/3*c0+1/3*c1, 1/3*c0+2/3*c1; otherwise it is c0, c1, the midpoint and
+black (transparent). Blocks are stored row by row, left to right.
+
+The encoder here is deliberately simple (principal-axis endpoints, a few refinement passes, exhaustive
+index choice). It always emits four-colour blocks (c0 > c1), except for a flat block, which gets c0 == c1
+and all-zero indices. Pure stdlib, so it is slow-ish (a 512x512 image takes a few seconds).
+"""
+from __future__ import annotations
+
+import struct
+import zlib
+from typing import BinaryIO
+
+
+def unpack565(c: int) -> tuple[int, int, int]:
+    """RGB565 -> 8-bit RGB with the usual bit replication."""
+    r, g, b = (c >> 11) & 31, (c >> 5) & 63, c & 31
+    return (r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2)
+
+
+def pack565(r: int, g: int, b: int) -> int:
+    """8-bit RGB -> RGB565, rounding each channel to the nearest level."""
+    return ((r * 31 + 127) // 255) << 11 | ((g * 63 + 127) // 255) << 5 | ((b * 31 + 127) // 255)
+
+
+def palette(c0: int, c1: int) -> list[tuple[int, int, int]]:
+    """The four colours a block can use (the common integer approximation of the GPU interpolation)."""
+    a, b = unpack565(c0), unpack565(c1)
+    if c0 > c1:
+        return [a, b,
+                tuple((2 * x + y + 1) // 3 for x, y in zip(a, b)),
+                tuple((x + 2 * y + 1) // 3 for x, y in zip(a, b))]
+    return [a, b, tuple((x + y) // 2 for x, y in zip(a, b)), (0, 0, 0)]
+
+
+def decode(data: bytes, width: int, height: int) -> bytearray:
+    """DXT1 blocks -> RGB pixels (3 bytes per pixel, rows top to bottom). width/height in pixels (multiples of 4)."""
+    bw, bh = width // 4, height // 4
+    if len(data) < bw * bh * 8:
+        raise ValueError(f"need {bw * bh * 8} bytes of DXT1 data for {width}x{height}, got {len(data)}")
+    out = bytearray(width * height * 3)
+    stride = width * 3
+    for by in range(bh):
+        for bx in range(bw):
+            c0, c1, idx = struct.unpack_from("<HHI", data, (by * bw + bx) * 8)
+            pal = [bytes(p) for p in palette(c0, c1)]
+            base = by * 4 * stride + bx * 12
+            for r in range(4):
+                row = base + r * stride
+                for c in range(4):
+                    out[row + c * 3:row + c * 3 + 3] = pal[(idx >> (2 * (r * 4 + c))) & 3]
+    return out
+
+
+def _dist(p: tuple[int, int, int], q: tuple[int, int, int]) -> int:
+    return (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2
+
+
+def best_indices(pixels: list[tuple[int, int, int]], c0: int, c1: int) -> tuple[int, int]:
+    """Pick the nearest palette entry for each of the 16 pixels. Returns (index word, total squared error)."""
+    pal = palette(c0, c1)
+    word = err = 0
+    for i, p in enumerate(pixels):
+        best, be = 0, None
+        for k, q in enumerate(pal):
+            e = _dist(p, q)
+            if be is None or e < be:
+                best, be = k, e
+        word |= best << (2 * i)
+        err += be
+    return word, err
+
+
+def _endpoints(pixels: list[tuple[int, int, int]]) -> tuple[tuple[float, ...], tuple[float, ...]]:
+    """Extremes of the block along its principal colour axis (power iteration on the covariance)."""
+    n = len(pixels)
+    mean = [sum(p[i] for p in pixels) / n for i in range(3)]
+    cov = [[sum((p[i] - mean[i]) * (p[j] - mean[j]) for p in pixels) for j in range(3)] for i in range(3)]
+    axis = [1.0, 1.0, 1.0]
+    for _ in range(8):
+        axis = [sum(cov[i][j] * axis[j] for j in range(3)) for i in range(3)]
+        norm = max(abs(a) for a in axis) or 1.0
+        axis = [a / norm for a in axis]
+    proj = [sum((p[i] - mean[i]) * axis[i] for i in range(3)) for p in pixels]
+    lo, hi = min(proj), max(proj)
+    return (tuple(mean[i] + hi * axis[i] for i in range(3)), tuple(mean[i] + lo * axis[i] for i in range(3)))
+
+
+def _to565(c: tuple[float, ...]) -> int:
+    return pack565(*(min(255, max(0, int(round(x)))) for x in c))
+
+
+def encode_block(pixels: list[tuple[int, int, int]]) -> bytes:
+    """16 RGB pixels (row-major) -> one 8-byte four-colour DXT1 block."""
+    if all(p == pixels[0] for p in pixels):
+        c = pack565(*pixels[0])
+        return struct.pack("<HHI", c, c, 0)
+    hi, lo = _endpoints(pixels)
+    best = None
+    cands = {(_to565(hi), _to565(lo))}
+    # Nudge the quantised endpoints a little: cheap and often worth a few units of error.
+    a, b = _to565(hi), _to565(lo)
+    for da in (-0x0821, 0, 0x0821):
+        for db in (-0x0821, 0, 0x0821):
+            if 0 <= a + da <= 0xFFFF and 0 <= b + db <= 0xFFFF:
+                cands.add((a + da, b + db))
+    for c0, c1 in cands:
+        if c0 == c1:
+            continue
+        if c0 < c1:
+            c0, c1 = c1, c0
+        word, err = best_indices(pixels, c0, c1)
+        if best is None or err < best[0]:
+            best = (err, c0, c1, word)
+    if best is None:  # every candidate collapsed to one colour
+        c = _to565(hi)
+        return struct.pack("<HHI", c, c, 0)
+    _, c0, c1, word = best
+    return struct.pack("<HHI", c0, c1, word)
+
+
+def encode(rgb: bytes, width: int, height: int) -> bytes:
+    """RGB pixels (3 bytes per pixel, rows top to bottom) -> DXT1 blocks. width/height multiples of 4."""
+    if width % 4 or height % 4:
+        raise ValueError("width and height must be multiples of 4")
+    stride = width * 3
+    out = bytearray()
+    for by in range(height // 4):
+        for bx in range(width // 4):
+            px = []
+            for r in range(4):
+                o = (by * 4 + r) * stride + bx * 12
+                px.extend(tuple(rgb[o + 3 * c:o + 3 * c + 3]) for c in range(4))
+            out += encode_block(px)
+    return bytes(out)
+
+
+def block_pixels(block: bytes) -> list[tuple[int, int, int]]:
+    """The 16 RGB pixels (row-major) an 8-byte DXT1 block stands for."""
+    c0, c1, idx = struct.unpack("<HHI", block[:8])
+    pal = palette(c0, c1)
+    return [pal[(idx >> (2 * i)) & 3] for i in range(16)]
+
+
+def png_bytes(rgb: bytes, width: int, height: int) -> bytes:
+    """Minimal 8-bit RGB PNG (no filtering)."""
+    stride = width * 3
+    raw = b"".join(b"\0" + bytes(rgb[y * stride:(y + 1) * stride]) for y in range(height))
+
+    def chunk(tag: bytes, body: bytes) -> bytes:
+        return struct.pack(">I", len(body)) + tag + body + struct.pack(">I", zlib.crc32(tag + body) & 0xFFFFFFFF)
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b"")
+
+
+def write_png(out: str | BinaryIO, rgb: bytes, width: int, height: int) -> None:
+    data = png_bytes(rgb, width, height)
+    if isinstance(out, str):
+        with open(out, "wb") as f:
+            f.write(data)
+    else:
+        out.write(data)

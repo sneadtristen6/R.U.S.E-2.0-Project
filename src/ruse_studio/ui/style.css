@@ -115,3 +115,19 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
             justify-content: center; gap: 14px; background: var(--bg); }
 .no-index pre { max-width: 760px; max-height: 240px; overflow: auto; padding: 10px; background: #0f1113;
                 border: 1px solid var(--line); border-radius: var(--radius); font-size: 12px; }
+
+/* --- the tabs, and the Maps view (maps.js) --- */
+.tabs { display: flex; gap: 4px; padding: 3px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; }
+.tabs button { padding: 4px 14px; background: none; border: 0; border-radius: 999px; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: var(--panel-hi); color: var(--accent); }
+.map-stage { position: relative; min-height: 0; overflow: hidden; }
+.map-canvas { position: absolute; inset: 0; }
+.map-canvas canvas { display: block; }
+.map-pick { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 24px;
+            text-align: center; pointer-events: none; }
+.map-hud { position: absolute; left: 14px; top: 12px; display: flex; flex-direction: column; gap: 6px;
+           max-width: 420px; padding: 10px 14px; background: rgba(21, 24, 27, 0.78); border: 1px solid var(--line);
+           border-radius: var(--radius); }
+.map-title { font-weight: 600; font-size: 15px; }
+.map-controls { display: flex; align-items: center; gap: 12px; }
+.map-controls label { display: flex; align-items: center; gap: 6px; }

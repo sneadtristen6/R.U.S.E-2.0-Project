@@ -25,10 +25,10 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     api = StudioApi(index_path=args.index, game_dir=args.game)
     if args.self_test:
-        return self_test(args.self_test, UI, ["index.html", "app.js", "style.css", "spike3d.html"], [
+        return self_test(args.self_test, UI, ["index.html", "app.js", "maps.js", "style.css", "spike3d.html"], [
             ("the Studio answers", lambda: api.status()),
             ("the Studio's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['search']!r}"),
             ("the game's names", lambda: f"ProductionPrice in Chinese is {schema.label('ProductionPrice', 'sc')!r}"),
         ])
     page = "spike3d.html" if args.spike else "index.html"
-    return open_window("RUSE Studio", UI, page, api)
+    return open_window("RUSE Studio", UI, page, api, extra={"cache": api.cache_dir})

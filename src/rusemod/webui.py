@@ -8,6 +8,7 @@ import http.server
 import os
 import sys
 import threading
+import urllib.parse
 import urllib.request
 import uuid
 from pathlib import Path
@@ -17,11 +18,25 @@ from .home import default_home
 WEBVIEW2_DOWNLOAD = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"  # Microsoft's WebView2 Runtime installer
 
 
-def serve(folder: Path) -> tuple[http.server.ThreadingHTTPServer, str]:
-    """Serve `folder` on a free port of 127.0.0.1 (this PC only). Returns the server and its address."""
+def serve(folder: Path, extra: dict[str, Path] | None = None) -> tuple[http.server.ThreadingHTTPServer, str]:
+    """Serve `folder` on a free port of 127.0.0.1 (this PC only). Returns the server and its address.
+    `extra` maps a first path part to another folder, e.g. {"cache": <platform folder>/cache} serves
+    `cache/ground/x.png` from there (made pictures too big to hand over through the window's bridge)."""
+    extra = {k: Path(v).resolve() for k, v in (extra or {}).items()}
+
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self, *args):
             pass
+
+        def translate_path(self, path):
+            head, _, rest = path.lstrip("/").partition("/")
+            if head in extra:
+                root = extra[head]
+                target = (root / urllib.parse.unquote(rest.split("?", 1)[0].split("#", 1)[0])).resolve()
+                if target == root or root in target.parents:
+                    return str(target)
+                return ""  # outside the folder: never served (opening "" fails, so the answer is "not found")
+            return super().translate_path(path)
 
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Quiet, directory=str(folder)))
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -66,7 +81,8 @@ def job_view(jobs: dict, job_id: str, since: int = 0) -> dict:
                                         "count": 0}
 
 
-def open_window(title: str, folder: Path, page: str, api, width=1180, height=760) -> int:
+def open_window(title: str, folder: Path, page: str, api, width=1180, height=760,
+                extra: dict[str, Path] | None = None) -> int:
     """Open a window showing `folder/page`, with `api` callable from its JavaScript. Needs pywebview. What the screens
     keep (the Studio's language, say) is stored in the platform folder, so it's still there next time."""
     try:
@@ -76,7 +92,7 @@ def open_window(title: str, folder: Path, page: str, api, width=1180, height=760
         return 2
     if not web_engine_ok(title):
         return 3
-    server, base = serve(folder)
+    server, base = serve(folder, extra)
     window = webview.create_window(title, f"{base}/{page}", js_api=api, width=width, height=height,
                                    min_size=(900, 600), background_color="#15181b")
     api._window = window

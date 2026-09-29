@@ -814,7 +814,13 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 - **Where we stand.** Others are ahead on terrain, scenery, pathing and AI data, reading models, and sound. Nobody else has mods built from the installed game (so they survive updates), a player launcher, join codes or a public unit editor. Community mods target the old `compat` build; ours build from whatever is installed.
 - **Next, in order:**
   1. ~~C7~~ **passed (2026-09-29):** the owner built "Lee C6-Test" in a skirmish and attacked with it: it works (the wiki's crash report doesn't apply). **Also passed:** the plain-tile texture test (FORMATS §6), so terrain textures can be written without a TGU1 encoder.
-  2. **MT, the terrain editor in the Studio** (§7, decision 24), starting with T1 (the `.kdt` files).
+  2. **MT, the terrain editor in the Studio** (§7, decision 24), starting with T1 (the `.kdt` files). **Started
+     (2026-09-29):** the Studio's Maps view (T4, read-only so far) lists the game's maps and shows each in 3D with
+     its real ground mesh, the game's own normals and its real ground textures (decoded once per map, cached).
+     The owner wants it to look like R.U.S.E.: next come finer textures up close, the map's own lighting, then
+     trees, buildings and roads (the scenery file and 3D models).
+  2b. **Units in the Studio too** (owner): making new units from the window (copy, name, price, menu), on the
+     engine that already does it (C6d, C7).
   3. **Launcher v0.2** (players never touch a file, below), then join codes in the launcher.
   4. **China, step 2** (M10): the data test.
 - **Dropped:** the mesa test (M1.5) and the program add-on (ADR 3).

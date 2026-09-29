@@ -355,7 +355,8 @@ class Labels(unittest.TestCase):
         self.assertEqual(schema.label("SeuilMort"), "SeuilMort")  # the game's names by default
 
     def test_every_word_the_studio_screen_uses_exists(self):
-        app = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
+        ui = Path(__file__).parents[1] / "src" / "ruse_studio" / "ui"
+        app = "\n".join((ui / f).read_text(encoding="utf-8") for f in ("app.js", "maps.js"))
         used = set(re.findall(r"\b(?:w|state\.words)\.([a-z_]+)", app))
         used |= {"all", "ground", "infantry", "air", "buildings", "not_stable"}  # looked up by key
         self.assertGreater(len(used), 25)

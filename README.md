@@ -74,8 +74,9 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
     unit's values, parts and what uses it, and pick a language: the game's own names by default, or any of the
     game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is saved in
     the mod's `src/studio.rndf` (with Undo); a part several units share changes for one of them or all.
-    "Test in game" builds the mod and starts the game. `py -3 -m ruse_studio`
-    (after `ruse index build`); `--spike` opens the 3D check.
+    "Test in game" builds the mod and starts the game. **Maps** (new, the start of the terrain editor): every map
+    the game lists, shown in 3D with its real ground mesh and ground textures (the textures are decoded once per
+    map and kept). `py -3 -m ruse_studio` (after `ruse index build`); `--spike` opens the 3D check.
   - `py -3 -m pip install -e .[apps]` once gives two commands, `ruse-launcher` and `ruse-studio`, that open them
     without a console window.
   - **Installers** ([`installers/`](installers/README.md)): GitHub builds `RUSE-Launcher-Setup-<version>.exe` and
@@ -104,7 +105,9 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
 - **Terrain** ([`src/rusemod/tms.py`](src/rusemod/tms.py), [`src/rusemod/tmst.py`](src/rusemod/tmst.py)): read and
   write the terrain mesh (heights, with a height-edit tool) and the texture-tile store. Proven lossless on every map
   by [`tools/verify_tms.py`](tools/verify_tms.py) and [`tools/verify_tmst.py`](tools/verify_tmst.py) (which also build
-  the in-game test packs). Not yet tried in the game.
+  the in-game test packs). In the game: our own plain texture tiles are drawn (2026-09-29). The texture tiles'
+  own codec is read by [`src/rusemod/tgu1.py`](src/rusemod/tgu1.py); [`src/rusemod/terrain.py`](src/rusemod/terrain.py)
+  gives the Studio the map list, the ground mesh and the stitched ground picture.
 - [`tools/c3_survey.py`](tools/c3_survey.py): check C3 step 1, a read-only survey of how the game mounts packs.
 - [`tools/topo_check.py`](tools/topo_check.py), [`tools/dic_check.py`](tools/dic_check.py): read-only checks of the
   TOPO and text-file leads from [docs/RESEARCH.md](docs/RESEARCH.md) §5.

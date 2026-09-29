@@ -7,7 +7,8 @@ const $ = (id) => document.getElementById(id);
 const state = { lang: "base", kind: "all", nation: -1, search: "", selected: null, words: {}, languages: [],
   nationNames: [], mods: [], mod: null, edited: new Set(),
   page: null,     // the object shown: { address, via }; via = the named unit the modder came from
-  mode: "own" };  // a part several units share: change it for "own" (that unit only) or "shared" (all of them)
+  mode: "own",    // a part several units share: change it for "own" (that unit only) or "shared" (all of them)
+  view: "units" };  // the tab: "units" or "maps" (maps.js)
 const KINDS = ["all", "ground", "infantry", "air", "buildings"];
 const WHOLE = new Set(["int8", "int16", "uint16", "int32", "uint32", "int64"]);
 const NEW = "\u0001new", OPEN = "\u0001open";  // the mod menu's two actions (never a folder path)
@@ -47,6 +48,9 @@ async function setLanguage(lang) {
   state.words = await api().strings(lang);
   state.nationNames = await api().nations(lang);
   const w = state.words;
+  $("tab-units").textContent = w.units_tab;
+  $("tab-maps").textContent = w.maps_tab;
+  if (state.view === "maps" && window.MapView) window.MapView.setWords(w);
   $("lang-label").textContent = w.language;
   $("mod-label").textContent = w.mod;
   $("test").textContent = w.test_in_game;
@@ -395,7 +399,22 @@ async function showNoIndex(status) {
   };
 }
 
+// --- the tabs: units, or maps (maps.js, a module: it may still be loading) ---
+function showView(view) {
+  state.view = view;
+  $("units-view").classList.toggle("hidden", view !== "units");
+  $("maps-view").classList.toggle("hidden", view !== "maps");
+  $("tab-units").setAttribute("aria-selected", String(view === "units"));
+  $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
+  if (view !== "maps") return;
+  const open = () => window.MapView.open(api(), state.words).catch(problem);
+  if (window.MapView) open();
+  else window.addEventListener("mapview-ready", open, { once: true });
+}
+
 async function start() {
+  $("tab-units").addEventListener("click", () => showView("units"));
+  $("tab-maps").addEventListener("click", () => showView("maps"));
   state.languages = await api().languages();
   state.lang = loadLang();
   if (!state.languages.some((l) => l.code === state.lang)) state.lang = "base";

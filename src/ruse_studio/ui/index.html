@@ -5,10 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RUSE Studio</title>
   <link rel="stylesheet" href="style.css">
+  <!-- the Maps view's 3D library (three.js, MIT) comes from the internet, like the 3D check, until the Studio ships
+       its own copy; it's only loaded when the Maps view opens -->
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+                   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }
+  </script>
 </head>
 <body>
   <header class="top">
     <div class="brand">RUSE <span>Studio</span></div>
+    <div class="tabs" role="tablist">
+      <button id="tab-units" type="button" role="tab" aria-selected="true"></button>
+      <button id="tab-maps" type="button" role="tab" aria-selected="false"></button>
+    </div>
     <label class="pick-mod"><span id="mod-label">Mod</span>
       <select id="mod"></select>
     </label>
@@ -24,7 +34,7 @@
     <button id="new-mod-cancel" type="button" class="ghost"></button>
   </form>
 
-  <main class="layout">
+  <main id="units-view" class="layout">
     <aside class="browser">
       <input id="search" type="search" autocomplete="off">
       <div id="kinds" class="chips" role="group"></div>
@@ -35,6 +45,26 @@
 
     <section id="detail" class="detail" aria-live="polite">
       <p id="pick" class="muted"></p>
+    </section>
+  </main>
+
+  <main id="maps-view" class="layout hidden">
+    <aside class="browser">
+      <ul id="map-list" class="unit-list"></ul>
+    </aside>
+    <section class="map-stage">
+      <div id="map-canvas" class="map-canvas"></div>
+      <p id="map-pick" class="map-pick muted"></p>
+      <div id="map-hud" class="map-hud hidden">
+        <div id="map-title" class="map-title"></div>
+        <div id="map-stats" class="muted small"></div>
+        <div class="map-controls">
+          <button id="map-detail" type="button" class="chip"></button>
+          <label class="small"><input id="map-water" type="checkbox" checked> <span id="map-water-label"></span></label>
+        </div>
+        <div id="map-ground" class="small"></div>
+        <div id="map-help" class="muted small"></div>
+      </div>
     </section>
   </main>
 
@@ -52,5 +82,6 @@
 
   <script src="fake-api.js"></script>
   <script src="app.js"></script>
+  <script type="module" src="maps.js"></script>
 </body>
 </html>

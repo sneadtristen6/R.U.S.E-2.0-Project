@@ -25,6 +25,8 @@ from rusemod.patch import INT_RANGES
 from rusemod.play import Starter, instances_dir
 from rusemod.rndf import RndfError
 from rusemod.steam import find_game
+from rusemod.build import find_pack
+from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_folder
 
 from .edits import EditsFileError, ModEdits
@@ -110,6 +112,9 @@ class StudioApi:
         self._window = None  # set by the window (a folder dialog for "Open a mod folder")
         self._saving = threading.RLock()  # the window calls from several threads: one change to the file at a time,
         # and no reading it mid-change (Windows can't replace a file that's open)
+        self._grounds: dict[tuple, dict] = {}  # the last maps shown in 3D, so switching back is instant
+        self._grounds_lock = threading.Lock()
+        self._ground_jobs: dict[str, str] = {}  # picture being made -> its job, so asking twice doesn't make it twice
 
     # --- where things are ---
     def _game(self) -> Path | None:
@@ -272,6 +277,64 @@ class StudioApi:
         if path is None:
             raise StudioError(f"{via or 'no unit'} doesn't use {o['address']}, so it can't get its own copy")
         return f"{via}:{path}", "own"
+
+    # --- maps (read from the game itself, not the index: the ground isn't in the index) ---
+    def maps(self) -> dict:
+        """The Maps view's list: the game's maps that ship a terrain pack, one per pack, in the game's order, with
+        the names the game lists them by (rusemod.terrain)."""
+        game = self._game()
+        if game is None:
+            raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
+        return {"maps": [m for m in map_list(game) if m["found"]]}
+
+    def map_view(self, pack: str, lod: str = "lowdef") -> dict:
+        """One map's ground for the 3D view: its mesh as packed buffers the window unpacks, and its overview picture.
+        `lod`: "lowdef" (light, opens fast) or "highdef" (the close-up mesh the game draws near the camera)."""
+        if lod not in LODS:
+            raise StudioError(f"No detail level called {lod!r}")
+        game = self._game()
+        if game is None:
+            raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
+        key = (str(game), pack, lod)
+        with self._grounds_lock:
+            if key in self._grounds:
+                self._grounds[key] = self._grounds.pop(key)  # most recent last
+                return self._grounds[key]
+        view = terrain(game, pack, lod)
+        with self._grounds_lock:
+            self._grounds[key] = view
+            while len(self._grounds) > 4:
+                self._grounds.pop(next(iter(self._grounds)))
+        return view
+
+    @property
+    def cache_dir(self) -> Path:
+        """Made files the window loads by address (served as `cache/...` by the window's own server)."""
+        return self._home / "cache"
+
+    def map_ground(self, pack: str) -> dict:
+        """The map's real ground textures as one picture, made once per map pack (about half a minute) and kept in
+        the cache: {"url": "cache/ground/..."} when it's there, else {"job": id}; ask again when the job is done."""
+        game = self._game()
+        if game is None:
+            raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
+        path = find_pack(game, pack_file(pack))
+        if path is None:
+            raise StudioError(f"{pack_file(pack)} isn't in the game folder.")
+        st = path.stat()
+        name = f"{pack}-{st.st_size}-{int(st.st_mtime)}.png"  # a new game build makes a new picture
+        out = self.cache_dir / "ground" / name
+        if out.is_file():
+            return {"url": f"cache/ground/{name}"}
+        with self._grounds_lock:
+            running = self._ground_jobs.get(name)
+            if running and running in self._jobs and self._jobs[running].state == "running":
+                return {"job": running}
+            job = Job()
+            self._jobs[job.id] = job
+            self._ground_jobs[name] = job.id
+        return job.start(lambda say: ground_png(game, pack, out, progress=lambda d, n: say(f"{d}/{n}")),
+                         "The ground textures are ready.")
 
     # --- the mod being edited ---
     def _settings(self) -> dict:

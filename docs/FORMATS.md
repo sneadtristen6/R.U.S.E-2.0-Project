@@ -367,7 +367,9 @@ level k matches HighDef level k+1 in area.
   The store order differs from the index order: column by column, overview last. Always go through the index.
 - **Record** = a full TGV (see §7): `1, 1, w, h, w, h, u16 1 mip, u16 4, "DXT1", u32 0x28, u32 size`, then the payload.
   The payload is always **TGU1**: `"TGU1", u32 5, u32 w/4, u32 h/4, u32 80, u32 40, u32 block count, u32 256 (terrain;
-  .tgv uses 257), u32 unpacked size`, then zlib ending in a sync flush. The TGU1 body is being decoded (codec work in progress).
+  .tgv uses 257), u32 unpacked size`, then zlib ending in a sync flush. **The TGU1 body decodes** (`rusemod.tgu1`,
+  2026-09-29): decoded tiles match each map's `terrain.png`, and the Studio draws maps with them (about 0.6 s per
+  512 px tile in pure Python). Our encoder is experimental and isn't needed: the game accepts plain ZIPO tiles.
 - **Integrity:** no other pack member records the terrain files' sizes, hashes or names (every member of all 32
   packs was searched). The pack's 16-byte header ID isn't a hash (see the table above).
 
