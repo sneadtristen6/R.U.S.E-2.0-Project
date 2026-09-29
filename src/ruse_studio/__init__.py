@@ -2,8 +2,9 @@
 A separate app from the launcher (decision 22); both are built on the platform's engine, `rusemod`, and neither needs
 the other.
 
-v0.2: browse every unit and building by kind, nation and name; see a unit's values grouped (cost, combat,
-movement…), its parts and what uses it, and change its numbers right there, saved in a mod (edits.py). Test in game
+v0.3: browse every unit and building by kind, nation and name; see a unit's values grouped (cost, combat,
+movement…), its parts and what uses it, and change its numbers right there, saved in a mod (edits.py); a part several units share changes for one
+of them or for all. Test in game
 builds the mod and starts R.U.S.E. Everything about the game comes from the game index (`ruse index build`). The
 language selector keeps the game's own names by default and can show the Studio in any of the game's ten languages.
 
@@ -16,4 +17,4 @@ language selector keeps the game's own names by default and can show the Studio 
   py -3 -m ruse_studio [--game DIR] [--index FILE] [--spike]
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

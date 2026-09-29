@@ -5,7 +5,9 @@
 
 const $ = (id) => document.getElementById(id);
 const state = { lang: "base", kind: "all", nation: -1, search: "", selected: null, words: {}, languages: [],
-  nationNames: [], mods: [], mod: null, edited: new Set() };
+  nationNames: [], mods: [], mod: null, edited: new Set(),
+  page: null,     // the object shown: { address, via }; via = the named unit the modder came from
+  mode: "own" };  // a part several units share: change it for "own" (that unit only) or "shared" (all of them)
 const KINDS = ["all", "ground", "infantry", "air", "buildings"];
 const WHOLE = new Set(["int8", "int16", "uint16", "int32", "uint32", "int64"]);
 const NEW = "\u0001new", OPEN = "\u0001open";  // the mod menu's two actions (never a folder path)
@@ -62,7 +64,7 @@ async function setLanguage(lang) {
   renderChips();
   if ($("no-index").classList.contains("hidden")) {
     await refreshList();
-    if (state.selected) await showUnit(state.selected);
+    if (state.page) await showUnit(state.page.address, state.page.via);
   }
 }
 
@@ -86,7 +88,7 @@ function useMods(res) {
 
 async function modChanged() {
   await refreshMarks();
-  if (state.selected) await showUnit(state.selected);
+  if (state.page) await showUnit(state.page.address, state.page.via);
 }
 
 async function pickMod(e) {
@@ -191,27 +193,43 @@ function readBox(box) {
   return box.value.trim() === "" ? NaN : Number(box.value);
 }
 
-function row(u, r) {
+function asList(r, x) {
+  return x === null || x === undefined ? null : r.list ? x : [x];
+}
+
+// What a row shows in the current mode: `base` is what the value was before this kind of change (the game's value, or
+// for "only this unit", what all of them got), `mine` this kind of change, if any.
+function rowState(r, mode) {
+  if (mode === "own") return { base: asList(r, r.edited) || r.numbers, mine: asList(r, r.edited_own) };
+  return { base: r.numbers, mine: asList(r, r.edited) };
+}
+
+function row(u, r, mode) {
   const w = state.words;
   const th = el("th", { textContent: r.label });
   if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
   if (!r.editable) return el("tr", {}, th, el("td", { textContent: r.values.join(" · ") }));
-  const current = r.edited === null || r.edited === undefined ? r.numbers : r.list ? r.edited : [r.edited];
-  const boxes = current.map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+  const via = state.page.via;
+  const st = rowState(r, mode);
+  const boxes = (st.mine || st.base).map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
   const was = el("div", { className: "was" });
   const tr = el("tr", {}, th, el("td", {}, el("div", { className: "boxes" }, ...boxes), was));
+  const setMine = (value) => {
+    st.mine = value;
+    const stored = value === null ? null : r.list ? value : value[0];
+    if (mode === "own") r.edited_own = stored; else r.edited = stored;
+  };
 
   const showWas = () => {
-    const edited = r.edited !== null && r.edited !== undefined;
-    tr.classList.toggle("edited", edited);
-    if (!edited) { was.replaceChildren(); return; }
+    tr.classList.toggle("edited", st.mine !== null);
+    if (st.mine === null) { was.replaceChildren(); return; }
     const undo = el("button", { type: "button", className: "link", textContent: w.reset });
     undo.addEventListener("click", async () => {
       try {
-        await api().reset(u.address, r.prop);
-        r.edited = null;
+        await api().reset(u.address, r.prop, mode, via);
+        setMine(null);
         boxes.forEach((b, i) => {
-          if (b.type === "checkbox") b.checked = Boolean(r.numbers[i]); else b.value = String(r.numbers[i]);
+          if (b.type === "checkbox") b.checked = Boolean(st.base[i]); else b.value = String(st.base[i]);
           b.setAttribute("aria-invalid", "false");
         });
         showWas();
@@ -219,7 +237,8 @@ function row(u, r) {
         say("");
       } catch (err) { problem(err); }
     });
-    was.replaceChildren(el("span", { textContent: w.was.replace("{v}", r.values.join(" · ")) }), undo);
+    const before = st.base === r.numbers ? r.values : st.base.map(String);
+    was.replaceChildren(el("span", { textContent: w.was.replace("{v}", before.join(" · ")) }), undo);
   };
 
   const save = async (box) => {
@@ -228,10 +247,10 @@ function row(u, r) {
     boxes.forEach((b, i) => b.setAttribute("aria-invalid", String(i === bad)));
     if (bad >= 0) { box.focus(); return; }
     try {
-      const res = await api().edit(u.address, r.prop, r.list ? numbers : numbers[0]);
+      const res = await api().edit(u.address, r.prop, r.list ? numbers : numbers[0], mode, via);
       const value = r.list ? res.value : [res.value];
       value.forEach((n, i) => { if (boxes[i].type !== "checkbox") boxes[i].value = String(n); });
-      r.edited = sameNumbers(value, r.numbers) ? null : r.list ? value : value[0];
+      setMine(sameNumbers(value, st.base) ? null : value);
       showWas();
       await refreshMarks();
       say(w.saved.replace("{file}", res.saved), "ok");
@@ -242,13 +261,40 @@ function row(u, r) {
   return tr;
 }
 
-async function showUnit(address) {
+// A part several units share: say who, and let the modder pick for whom a change is.
+function shareChoice(u) {
+  const w = state.words;
+  const names = u.share.owners.map((o) => o.name);
+  const shown = names.length > 8 ? names.slice(0, 8).join(", ") + ", …" : names.join(", ");
+  const box = el("div", { className: "notice share" },
+    el("p", { textContent: w.shared_by.replace("{n}", names.length).replace("{names}", shown) }));
+  if (!u.share.via) {
+    box.append(el("p", { className: "small", textContent: w.no_via }));
+    return box;
+  }
+  const choice = el("div", { className: "choice", role: "radiogroup" }, el("span", { textContent: w.change_for }));
+  for (const [mode, text] of [["own", w.only_unit.replace("{name}", u.share.via.name)],
+    ["shared", w.all_units.replace("{n}", names.length)]]) {
+    const input = el("input", { type: "radio", name: "share-mode", value: mode, checked: state.mode === mode });
+    input.addEventListener("change", () => { state.mode = mode; showUnit(state.page.address, state.page.via); });
+    choice.append(el("label", {}, input, " " + text));
+  }
+  box.append(choice);
+  return box;
+}
+
+async function showUnit(address, via) {
+  via = via || "";
+  if (!state.page || state.page.via !== via) state.mode = "own";  // a new way in: "only this unit" first
   state.selected = address;
   for (const b of $("unit-list").querySelectorAll("button")) {
-    b.setAttribute("aria-current", String(b.dataset.address === address));
+    b.setAttribute("aria-current", String(b.dataset.address === (via || address)));  // the unit we're inside
   }
   let u;
-  try { u = await api().unit(address, state.lang); } catch (err) { problem(err); return; }
+  try { u = await api().unit(address, state.lang, via); } catch (err) { problem(err); return; }
+  state.page = { address, via };
+  const inside = u.named ? u.address : via;  // the named unit its parts are opened from
+  const mode = u.share ? (u.share.via ? state.mode : "shared") : "";
   const w = state.words;
   const copy = el("button", { type: "button", textContent: w.copy_address });
   copy.addEventListener("click", () => navigator.clipboard && navigator.clipboard.writeText(u.address));
@@ -259,9 +305,10 @@ async function showUnit(address) {
   else if (!state.mod) parts.push(el("p", { className: "notice", textContent: w.no_mod }));
   if (u.editable && u.users) parts.push(el("p", { className: "notice warn",
     textContent: w.users_warning.replace("{n}", u.users) }));
+  if (u.editable && u.share) parts.push(shareChoice(u));
   for (const g of u.groups) {
     const table = el("table");
-    for (const r of g.rows) table.append(row(u, r));
+    for (const r of g.rows) table.append(row(u, r, mode));
     const group = el("div", { className: "group" }, el("h2", { textContent: g.name }), table);
     if (u.editable && g.rows.some((r) => r.locked)) group.append(el("p", { className: "muted small", textContent: w.locked }));
     parts.push(group);
@@ -271,7 +318,7 @@ async function showUnit(address) {
     for (const p of u.parts) {
       const b = el("button", { type: "button" }, `${p.address.split(":").pop()}  ·  ${p.class}`,
         el("span", { className: "badge" + (p.shared ? " shared" : ""), textContent: p.shared ? w.shared_part : w.own_part }));
-      b.addEventListener("click", () => showUnit(p.address));
+      b.addEventListener("click", () => showUnit(p.address, inside));
       list.append(el("li", {}, b));
     }
     parts.push(el("div", { className: "group" }, el("h2", { textContent: w.parts }), list));

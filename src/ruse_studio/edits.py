@@ -61,11 +61,19 @@ class EditsFileError(Exception):
     """src/studio.rndf can't be read (changed by hand). Nothing is written over it until it's fixed or deleted."""
 
 
+SHARE_ORDER = {"shared": 0, "": 1, "own": 2}  # a change for every user of a part goes in before a unit takes its own
+# copy of that part, so the copy has it too (MOD_FORMAT §10.5)
+
+
 class ModEdits:
+    """The Studio's changes in one mod. A change is keyed by the named object, the path to the value inside it, and
+    how a part that several units use is changed: "shared" (for all of them), "own" (this unit gets its own copy), or
+    "" (not a shared part)."""
+
     def __init__(self, folder):
         self.folder = Path(folder)
         self.file = self.folder / FILE
-        self.edits: dict[tuple[str, str], Edit] = {}
+        self.edits: dict[tuple[str, str, str], Edit] = {}
         if self.file.is_file():
             try:
                 ops = parse(self.file.read_text(encoding="utf-8"), file=FILE.as_posix(), mod=self.folder.name)
@@ -74,50 +82,55 @@ class ModEdits:
             for op in ops:
                 value = _plain(op.value)
                 if op.kind == "set" and value is not None and op.target:
-                    self.edits[(op.target, op.path)] = Edit(op.target, op.path, value, op.share)
+                    self.edits[(op.target, op.path, op.share or "")] = Edit(op.target, op.path, value, op.share)
 
     @staticmethod
-    def key(address: str, prop: str) -> tuple[str, str]:
+    def key(address: str, prop: str, share: str | None = None) -> tuple[str, str, str]:
         target, inside = split(address)
-        return target, f"{inside}.{prop}" if inside else prop
+        return target, f"{inside}.{prop}" if inside else prop, share or ""
 
-    def get(self, address: str, prop: str):
-        e = self.edits.get(self.key(address, prop))
+    def get(self, address: str, prop: str, share: str | None = None):
+        e = self.edits.get(self.key(address, prop, share))
         return e.value if e else None
 
     def set(self, address: str, prop: str, value, share: str | None = None) -> None:
-        target, path = self.key(address, prop)
-        self.edits[(target, path)] = Edit(target, path, value, share)
+        target, path, how = self.key(address, prop, share)
+        self.edits[(target, path, how)] = Edit(target, path, value, how or None)
         self.save()
 
-    def reset(self, address: str, prop: str) -> None:
-        self.edits.pop(self.key(address, prop), None)
+    def reset(self, address: str, prop: str, share: str | None = None) -> None:
+        self.edits.pop(self.key(address, prop, share), None)
         self.save()
 
-    def of(self, address: str) -> dict:
-        """prop -> value for the edits made to this object (not its parts)."""
+    def of(self, address: str, share: str | None = None) -> dict:
+        """prop -> value for the edits made to this object (not its parts), made this way (`share`)."""
         target, inside = split(address)
         out = {}
-        for (t, path), e in self.edits.items():
+        for (t, path, how), e in self.edits.items():
             head, _, prop = path.rpartition(".")
-            if t == target and head == inside:
+            if t == target and head == inside and how == (share or ""):
                 out[prop] = e.value
         return out
 
     def edited(self) -> set[str]:
         """The named objects that have edits (on themselves or their parts)."""
-        return {t for t, _p in self.edits}
+        return {t for t, _p, _s in self.edits}
+
+    def shared(self) -> set[str]:
+        """The addresses of parts changed for every unit that uses them."""
+        return {f"{t}:{p.rpartition('.')[0]}" for t, p, how in self.edits if how == "shared"}
 
     def save(self) -> None:
         blocks: dict[tuple, list] = {}
-        for (target, path), e in self.edits.items():
+        for (target, path, how), e in self.edits.items():
             head, _, prop = path.rpartition(".")
-            blocks.setdefault((target, head, e.share or ""), []).append((prop, e.value))
+            blocks.setdefault((SHARE_ORDER[how], target, head, how), []).append((prop, e.value))
         out = [HEADER]
-        for (target, head, share) in sorted(blocks):
+        for block in sorted(blocks):
+            _order, target, head, how = block
             where = f"{target}:{head}" if head else target
-            out.append(f"\npatch {share + ' ' if share else ''}{where}\n(\n")
-            for prop, value in sorted(blocks[(target, head, share)], key=lambda pv: _natural(pv[0])):
+            out.append(f"\npatch {how + ' ' if how else ''}{where}\n(\n")
+            for prop, value in sorted(blocks[block], key=lambda pv: _natural(pv[0])):
                 out.append(f"    {prop} = {literal(value)}\n")
             out.append(")\n")
         self.file.parent.mkdir(parents=True, exist_ok=True)

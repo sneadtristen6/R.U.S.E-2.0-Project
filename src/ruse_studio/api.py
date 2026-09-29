@@ -178,11 +178,25 @@ class StudioApi:
                         "factory": u["factory"], "slot": u["slot"]})
         return {"units": out, "total": len(rows)}
 
-    def unit(self, address: str, lang: str = schema.BASE) -> dict:
-        """One unit (or any object): its values in groups, its parts and what uses it, with the current mod's edits."""
+    def _names(self, ix: Index, addresses, lang: str) -> dict:
+        """Address -> what to call it on screen: a unit's in-game name in `lang`, else the end of its address."""
+        keys = {u["address"]: u["key"] for u in self._all_units(ix)}
+        texts = ix.names([keys.get(a) for a in addresses], lang) if lang != schema.BASE else {}
+        return {a: texts.get(keys.get(a)) or _tail(a) for a in addresses}
+
+    def unit(self, address: str, lang: str = schema.BASE, via: str = "") -> dict:
+        """One unit (or any object): its values in groups, its parts and what uses it, with the current mod's edits.
+        `via` is the named unit the modder came from: a part several units share can then be changed for that unit
+        only (it gets its own copy) as well as for all of them."""
         ix = self._open()
         try:
             o = ix.show(address)
+            share = None
+            if o["shared"] and not o["export"]:
+                names = self._names(ix, o["owners"] + ([via] if via else []), lang)
+                path = ix.path_to(via, o["address"]) if via in o["owners"] else None
+                share = {"owners": [{"address": a, "name": names[a]} for a in o["owners"]],
+                         "via": {"address": via, "name": names[via], "path": path} if path else None}
             types = ix.prop_types(o["class"])
             plan = ix.clone_plan(address)
             parts = [{"address": a, "class": ix.show(a)["class"], "shared": False} for a in plan["copied"]] + \
@@ -204,7 +218,8 @@ class StudioApi:
             mod = self._edits()
         except EditsFileError as exc:  # browsing still works; editing waits until the file is fixed
             mod, editable, why = None, False, str(exc)
-        edits = mod.of(o["address"]) if mod else {}
+        edits = mod.of(o["address"], "shared" if share else None) if mod else {}
+        own = mod.of(f"{via}:{share['via']['path']}", "own") if mod and share and share["via"] else {}
         users = len({a.split(":")[0] for a, _p in all_users})
         rows: dict[str, dict] = {}
         for prop, p in _props(o).items():
@@ -220,11 +235,12 @@ class StudioApi:
                           "values": values, "numbers": p["numbers"], "list": p["list"],
                           "type": types.get(prop + "[]" if p["list"] else prop, ""),
                           "editable": editable and _can_edit(prop, p),
-                          "locked": prop in NOT_EDITABLE, "edited": edits.get(prop)}
+                          "locked": prop in NOT_EDITABLE, "edited": edits.get(prop), "edited_own": own.get(prop)}
         if "Nationalite" not in rows and o["class"] in KIND_OF:  # 0 isn't written
             rows["Nationalite"] = {"prop": "Nationalite", "label": schema.label("Nationalite", lang),
                                    "group": "identity", "values": [f"0 ({schema.nation(0, lang)})"], "numbers": [0],
-                                   "list": False, "type": "int32", "editable": False, "locked": True, "edited": None}
+                                   "list": False, "type": "int32", "editable": False, "locked": True, "edited": None,
+                                   "edited_own": None}
         groups = []
         for g in schema.GROUP_ORDER:
             members = [r for r in rows.values() if r["group"] == g]
@@ -233,15 +249,29 @@ class StudioApi:
         return {"address": o["address"], "class": o["class"], "name": shown or _tail(o["address"]),
                 "stable": o["stable"], "shared": o["shared"], "owners": o["owners"], "groups": groups,
                 "parts": parts, "uses": uses, "used_by": used_by, "editable": editable, "why_not": why,
+                "named": bool(o["export"]), "share": share,
                 "users": users if o["export"] and o["class"] not in KIND_OF and users > 1 else 0}
 
     def _editable(self, o: dict) -> tuple[bool, str]:
         """Whether this object's values can be edited from the Studio, and if not, why (a key of the tool's words)."""
         if not o["stable"]:
             return False, "not_stable"
-        if o["shared"] and not o["export"]:
-            return False, "shared_part_later"
         return True, ""
+
+    def _where(self, ix: Index, o: dict, mode: str, via: str) -> tuple[str, str | None]:
+        """Where a change to object `o` is written, and how (MOD_FORMAT §10.5). A part several units share is changed
+        for all of them ("shared", at its own address) or for one of them only ("own": through that unit, which
+        gets its own copy of the part); anything else just at its address."""
+        if not (o["shared"] and not o["export"]):
+            return o["address"], None
+        if mode == "shared":
+            return o["address"], "shared"
+        if mode != "own":
+            raise StudioError(f"{o['address']} is shared by several units: change it for one of them, or for all")
+        path = ix.path_to(via, o["address"]) if via in o["owners"] else None
+        if path is None:
+            raise StudioError(f"{via or 'no unit'} doesn't use {o['address']}, so it can't get its own copy")
+        return f"{via}:{path}", "own"
 
     # --- the mod being edited ---
     def _settings(self) -> dict:
@@ -309,15 +339,30 @@ class StudioApi:
         return self.choose_mod(chosen) if chosen else self.mods()
 
     def edited(self) -> list[str]:
+        """The named objects the current mod changes: a part changed for all its users marks every one of them."""
         try:
             edits = self._edits()
         except EditsFileError:
             return []
-        return sorted(edits.edited()) if edits else []
+        if not edits:
+            return []
+        names = edits.edited()
+        if edits.shared():
+            ix = self._open()
+            try:
+                for address in edits.shared():
+                    try:
+                        names |= set(ix.show(address)["owners"])
+                    except KeyError:  # not in this game build's index
+                        pass
+            finally:
+                ix.close()
+        return sorted(names)
 
-    def edit(self, address: str, prop: str, value) -> dict:
+    def edit(self, address: str, prop: str, value, mode: str = "", via: str = "") -> dict:
         """Change one value (a number, or a list of numbers) of an object in the current mod. Saved at once; setting
-        the game's own value again removes the change."""
+        the value it had before again removes the change. For a part several units share, `mode` says for whom:
+        "own" (only `via`, the unit the modder came from) or "shared" (all of them)."""
         edits = self._edits()
         if edits is None:
             raise StudioError("Pick or make a mod first: changes are saved in a mod.")
@@ -325,11 +370,12 @@ class StudioApi:
         try:
             o = ix.show(address)
             types = ix.prop_types(o["class"])
+            ok, why = self._editable(o)
+            if not ok:
+                raise StudioError(f"{address} can't be edited here ({why})")
+            where, how = self._where(ix, o, mode, via)
         finally:
             ix.close()
-        ok, why = self._editable(o)
-        if not ok:
-            raise StudioError(f"{address} can't be edited here ({why})")
         p = _props(o).get(prop)
         if p is None or not _can_edit(prop, p):
             raise StudioError(f"{prop} of {address} can't be edited here")
@@ -343,18 +389,27 @@ class StudioApi:
             values = [_whole(v, kind, prop) for v in values]
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
-            if values == p["numbers"]:
-                edits.reset(o["address"], prop)
+            before = edits.get(o["address"], prop, "shared") if how == "own" else None  # what "all of them" got
+            before = before if before is not None else (p["numbers"] if p["list"] else p["numbers"][0])
+            if (values if p["list"] else values[0]) == before:
+                edits.reset(where, prop, how)
             else:
-                edits.set(o["address"], prop, values if p["list"] else values[0])
+                edits.set(where, prop, values if p["list"] else values[0], how)
         return {"saved": str(edits.file), "value": values if p["list"] else values[0]}
 
-    def reset(self, address: str, prop: str) -> dict:
+    def reset(self, address: str, prop: str, mode: str = "", via: str = "") -> dict:
+        edits = self._edits()
+        if edits is None:
+            return {"saved": None}
+        ix = self._open()
+        try:
+            where, how = self._where(ix, ix.show(address), mode, via)
+        finally:
+            ix.close()
         with self._saving:
-            edits = self._edits()
-            if edits is not None:
-                edits.reset(address, prop)
-        return {"saved": str(edits.file) if edits else None}
+            edits = ModEdits(edits.folder)
+            edits.reset(where, prop, how)
+        return {"saved": str(edits.file)}
 
     def test_in_game(self) -> dict:
         """Build the current mod into its own modded copy (`RUSE-Instances\\studio-<mod>`) and start the game from it,

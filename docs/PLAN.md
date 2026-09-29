@@ -362,8 +362,10 @@ search by name and see where each text is used. It costs some disk space (a gues
   "was …" with Undo; changed units are marked in the list. Whole-number stats stay whole (rounded like the build),
   yes/no values are checkboxes. A unit's own parts (its gun, its turret) and the named objects it uses (weapons, ammo)
   open on their own page and edit the same way; for a named object several units use, the page says the change
-  reaches all of them. Not yet: parts shared with other units without a name (they'd need the "just this unit / all
-  of them" choice, MOD_FORMAT §10.5), ids and nation (locked), texts and names. "Test in game" builds the mod into
+  reaches all of them. **v0.3 (2026-09-29): parts several units share** (MOD_FORMAT §10.5): the page lists the units
+  that use it and asks "Change it for: only <the unit you came from> (it gets its own copy) / all N of them"; saved
+  as `patch own` or `patch shared` (changes for all of them go first, so an own copy has them too). Not yet: ids and
+  nation (locked), texts and names. "Test in game" builds the mod into
   its own modded copy (`RUSE-Instances\studio-<mod>`) and starts the game with the engine's own code (`rusemod.play`,
   the same the launcher uses), so testing doesn't need the launcher. Later the launcher lists the mods in the shared
   `mods\` folder too, so a mod made in the Studio can be played from the launcher like any other.
@@ -829,8 +831,9 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    **Installers (2026-09-29, ADR 9):** the owner asked for both apps as real Windows installers; built by GitHub on
    every push (`installers/`, `.github/workflows/apps.yml`), each checked by installing it on GitHub's Windows machine.
    The PC tries them (item 1.10).
-   Next (cloud), the owner's order: parts shared by several units ("just this unit" or "all of them"), names,
-   moving a unit to another menu or nation, then new units (copies).
+   **Studio v0.3 (2026-09-29):** parts several units share can be changed for one unit only or for all (L5), proven
+   down to the built game data by a test.
+   Next (cloud), the owner's order: names, moving a unit to another menu or nation, then new units (copies).
    Later (cloud), launcher steps, one at a time: installing mods into the launcher's library (from a folder or zip,
    then RUSE-Mod-Manager's `.rmod`), mod sets made on screen, the join-a-friend screen (join codes), then the
    installers (Nuitka + Inno Setup; one for each app) and browsing the mod index. And whatever C5/C6 turn up.

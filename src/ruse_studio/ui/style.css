@@ -66,6 +66,13 @@ button:disabled { cursor: default; opacity: 0.5; }
 .notice { max-width: 780px; margin: 10px 0 0; padding: 8px 12px; background: var(--panel); border-left: 3px solid var(--line);
           border-radius: 0 var(--radius) var(--radius) 0; color: var(--muted); }
 .notice.warn { border-left-color: var(--accent); color: var(--text); }
+.notice.share { border-left-color: var(--shared); color: var(--text); }
+.notice p { margin: 0 0 6px; }
+.notice p:last-child { margin-bottom: 0; }
+.choice { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+.choice span { color: var(--muted); }
+.choice label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.choice input { accent-color: var(--shared); }
 .meta { color: var(--muted); margin-bottom: 14px; }
 .primary { padding: 9px 18px; border: 0; background: linear-gradient(180deg, var(--accent), var(--accent-dark));
            color: #15181b; font-weight: 700; }

@@ -139,7 +139,8 @@ class Studio(unittest.TestCase):
 
 
 M4 = "$/GFX/Everything/Descriptor_Unit_M4_Sherman"
-M4_GUN, AMMO = M4 + ":Weapon", M4 + ":Weapon.Ammo"
+PANZER_IV, DEPOT = "$/GFX/Everything/Descriptor_Unit_Panzer_IV_G", "$/GFX/Everything/Descriptor_Building_Depot"
+M4_GUN, AMMO = M4 + ":Weapon", M4 + ":Weapon.Ammo"  # the ammo is shared with the Panzer's gun
 
 
 class Editing(unittest.TestCase):
@@ -227,12 +228,48 @@ class Editing(unittest.TestCase):
                                      (M4_GUN, "TirEnMouvement", 2), (M4, "Nope", 1)]:
             with self.subTest(prop=prop, value=value), self.assertRaises(StudioError):
                 self.api.edit(address, prop, value)
-        ammo = self.api.unit(AMMO)
-        self.assertEqual((ammo["editable"], ammo["why_not"]), (False, "shared_part_later"))
+        ammo = self.api.unit(AMMO)  # shared: editable, once it's said for whom (the next test)
+        self.assertEqual((ammo["editable"], ammo["share"]["via"]), (True, None))
         self.assertEqual(self.api.edited(), [])
         with self.assertRaises(StudioError):
             self.api.choose_mod(self.tmp.name)  # no mod.toml
         self.assertEqual(Path(self.api.new_mod("x")["current"]).name, "x-2")
+
+    def test_a_shared_part_for_one_unit_or_for_all(self):
+        folder = Path(self.api.new_mod("Guns")["current"])
+        page = self.api.unit(AMMO, via=PANZER_IV)  # opened from the Panzer's page
+        self.assertEqual([o["address"] for o in page["share"]["owners"]], [M4, PANZER_IV])
+        self.assertEqual(page["share"]["via"], {"address": PANZER_IV, "name": "Descriptor_Unit_Panzer_IV_G",
+                                                "path": "Weapon.Ammo"})
+        for mode, via in (("", PANZER_IV), ("own", ""), ("own", DEPOT)):
+            with self.subTest(mode=mode, via=via), self.assertRaises(StudioError):
+                self.api.edit(AMMO, "Puissance", 50, mode, via)  # for whom? / no unit / a unit that doesn't use it
+
+        self.api.edit(AMMO, "Puissance", 50, "shared")  # all of them
+        self.api.edit(AMMO, "Puissance", 60, "own", PANZER_IV)  # the Panzer only: it gets its own copy
+        text = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        shared = text.index("patch shared $/GFX/Everything/Descriptor_Unit_M4_Sherman:Weapon.Ammo\n(\n    Puissance = 50")
+        own = text.index("patch own $/GFX/Everything/Descriptor_Unit_Panzer_IV_G:Weapon.Ammo\n(\n    Puissance = 60")
+        self.assertLess(shared, own)  # the copy is taken after the change for everyone, so it has it too
+        rows = {r["prop"]: r for g in self.api.unit(AMMO, via=PANZER_IV)["groups"] for r in g["rows"]}
+        self.assertEqual((rows["Puissance"]["edited"], rows["Puissance"]["edited_own"]), (50, 60))
+        self.assertEqual(self.api.edited(), [M4, PANZER_IV])  # a change for all of them marks every user
+
+        arc = Edat((self.game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes())
+        result = build_pack(arc, [load_mod(folder)])
+        self.assertEqual(result.errors, [])
+        new = Edat(arc.to_bytes(result.changed))
+        ndf = Ndf(new.read(new.find("everything.cpp.gladndfbin")))
+        ammo_of = lambda gun: struct.unpack("<III", ndf.objects[gun].get(8).payload)[1]  # noqa: E731
+        self.assertEqual(ammo_of(4), 6)  # the M4's gun still uses the shared ammo...
+        self.assertEqual(ndf.objects[6].get(9).scalar(), 50)  # ...changed for everyone
+        self.assertNotEqual(ammo_of(5), 6)  # the Panzer's gun has its own copy now
+        self.assertEqual(ndf.objects[ammo_of(5)].get(9).scalar(), 60)
+
+        self.api.edit(AMMO, "Puissance", 50, "own", PANZER_IV)  # the same as everyone again: no own copy needed
+        self.assertNotIn("patch own", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
+        self.api.reset(AMMO, "Puissance", "shared")
+        self.assertEqual(self.api.edited(), [])
 
     def test_a_studio_edit_changes_the_game_data(self):
         folder = Path(self.api.new_mod("Tank Test")["current"])
@@ -261,7 +298,7 @@ class Editing(unittest.TestCase):
         for t in threads:
             t.join()
         edits = ModEdits(Path(self.api.mods()["current"])).edits
-        self.assertEqual({path: e.value for (_target, path), e in edits.items()},
+        self.assertEqual({path: e.value for (_target, path, _how), e in edits.items()},
                          {"SeuilMort": 20, "ProductionPrice": [1, 2], "Weapon.PorteeMaximale": 3000,
                           "Weapon.TempsEntreDeuxTirs": 0.5, "Weapon.TirEnMouvement": 0})
 
@@ -320,7 +357,7 @@ class Labels(unittest.TestCase):
     def test_every_word_the_studio_screen_uses_exists(self):
         app = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
         used = set(re.findall(r"\b(?:w|state\.words)\.([a-z_]+)", app))
-        used |= {"all", "ground", "infantry", "air", "buildings", "not_stable", "shared_part_later"}  # looked up by key
+        used |= {"all", "ground", "infantry", "air", "buildings", "not_stable"}  # looked up by key
         self.assertGreater(len(used), 25)
         self.assertEqual(sorted(used - set(_words())), [])
 

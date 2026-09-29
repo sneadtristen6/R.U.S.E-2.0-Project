@@ -15,7 +15,8 @@
       mod_name: "Name of the new mod", create: "Create", cancel: "Cancel", close: "Close",
       no_mod: "Pick or make a mod to save changes in.", test_in_game: "Test in game", was: "was {v}", reset: "Undo",
       saved: "Saved in {file}", users_warning: "Changing this changes it for every unit that uses it ({n}).",
-      shared_part_later: "Shared with other units: editing it comes later.",
+      shared_by: "Shared by {n}: {names}", change_for: "Change it for", only_unit: "only {name} (it gets its own copy)",
+      all_units: "all {n} of them", no_via: "Open it from one of their pages to change it for that one only.",
       not_stable: "No stable address, so it can't be edited yet.", locked: "Ids and nation stay as they are.",
       edited: "edited" },
     fr: { language: "Langue", game_names: "Noms du jeu", search: "Rechercher", all: "Tous", ground: "Terrestre",
@@ -27,7 +28,9 @@
       close: "Fermer", no_mod: "Choisissez ou créez un mod pour enregistrer les modifications.",
       test_in_game: "Tester en jeu", was: "avant : {v}", reset: "Annuler", saved: "Enregistré dans {file}",
       users_warning: "Le modifier le change pour toutes les unités qui l'utilisent ({n}).",
-      shared_part_later: "Partagé avec d'autres unités : modifiable plus tard.",
+      shared_by: "Partagé par {n} : {names}", change_for: "Modifier pour",
+      only_unit: "seulement {name} (il reçoit sa propre copie)", all_units: "les {n}",
+      no_via: "Ouvrez-le depuis la page de l'un d'eux pour ne modifier que celui-là.",
       not_stable: "Pas d'adresse stable : pas encore modifiable.",
       locked: "Les identifiants et la nation restent tels quels.", edited: "modifié" },
     sc: { language: "语言", game_names: "游戏原名", search: "搜索", all: "全部", ground: "地面", infantry: "步兵",
@@ -37,7 +40,8 @@
       open_folder: "打开模组文件夹…", mod_name: "新模组名称", create: "创建", cancel: "取消", close: "关闭",
       no_mod: "请选择或新建一个模组来保存修改。", test_in_game: "在游戏中测试", was: "原为 {v}", reset: "撤销",
       saved: "已保存到 {file}", users_warning: "修改后,所有使用它的单位都会改变({n})。",
-      shared_part_later: "与其他单位共享:稍后支持编辑。", not_stable: "没有固定地址,暂时无法编辑。",
+      shared_by: "{n} 个单位共用:{names}", change_for: "修改范围", only_unit: "仅 {name}(为其创建独立副本)",
+      all_units: "全部 {n} 个", no_via: "从其中一个单位的页面打开,即可只修改那一个。", not_stable: "没有固定地址,暂时无法编辑。",
       locked: "编号和国家保持不变。", edited: "已修改" },
   };
   const nations = {
@@ -88,9 +92,11 @@
   const home = "C:/Users/You/AppData/Local/RUSE Mod Platform/mods/";
   const mods = [{ path: home + "pacific-test", name: "pacific-test" }];
   let current = mode === "nomod" ? null : mods[0].path;
-  const edits = new Map();  // `${mod}|${address}|${prop}` -> value, like the mod's src/studio.rndf
-  const editKey = (address, prop) => `${current}|${address}|${prop}`;
+  const edits = new Map();  // `${mod}|${address}|${prop}|${how}|${via}` -> value, like the mod's src/studio.rndf
+  const editKey = (address, prop, how, via) => `${current}|${address}|${prop}|${how || ""}|${how === "own" ? via : ""}`;
   if (current) edits.set(editKey(E + "M4_Sherman", "SeuilMort"), 14);
+  const BLAST = E + "M4_Sherman:Weapon.Blast";  // a part three units share
+  const BLAST_OWNERS = ["M4_Sherman", "M3A1_Stuart", "Type97_ChiHa"];
 
   const nameOf = (u, lang) => lang === "base" ? E.slice(17) + u.id : (u.names[lang] || u.names.us);
   const label = (prop, lang) => lang === "base" ? prop : ((labels[lang] || labels.us)[prop] || prop);
@@ -98,7 +104,7 @@
   const modsView = () => ({ mods: mods.slice(), current });
 
   // one object's values, as StudioApi.unit() gives them
-  function view(address, lang, cls, name, editable, whyNot, users, rowsByGroup, parts, uses, usedBy) {
+  function view(address, lang, cls, name, editable, whyNot, users, rowsByGroup, parts, uses, usedBy, share, via) {
     const g = groups[lang] || groups.us;
     const out = [];
     for (const [key, rows] of rowsByGroup) {
@@ -110,22 +116,26 @@
         const locked = ["DescriptorId", "Nationalite"].includes(prop);
         return { prop, label: label(prop, lang), group: key, values, numbers: o.text ? [null] : nums, list,
           type: o.type || "int32", editable: editable && !o.text && !locked, locked,
-          edited: edits.has(editKey(address, prop)) ? edits.get(editKey(address, prop)) : null };
+          edited: edits.get(editKey(address, prop, share ? "shared" : "")) ?? null,
+          edited_own: share && share.via ? edits.get(editKey(address, prop, "own", via)) ?? null : null };
       }) });
     }
-    return { address, class: cls, name, stable: true, shared: false, owners: [], groups: out, parts, uses,
-      used_by: usedBy, editable, why_not: whyNot, users };
+    return { address, class: cls, name, stable: true, shared: Boolean(share), owners: [], groups: out, parts, uses,
+      used_by: usedBy, editable, why_not: whyNot, users, share: share || null, named: !address.includes(":") };
   }
 
-  function unit(address, lang) {
+  function unit(address, lang, via) {
     if (address === AMMO) {
       return view(AMMO, lang, "TAmmunition", "Ammo_75mm_M3", true, "", 3,
         [["weapon", [["Puissance", 40], ["PorteeMaximale", 2800], ["TempsEntreDeuxTirs", 3.5, { type: "float32" }]]]],
         [], [], [{ address: E + "M4_Sherman:WeaponManager.Turrets[class=TTurretTwoAxisDescriptor]", path: "Ammo" }]);
     }
-    if (address.endsWith(":Weapon.Blast")) {
-      return view(address, lang, "TDamageDescriptor", address.split(":").pop(), false, "shared_part_later", 0,
-        [["weapon", [["Puissance", 6]]]], [], [], []);
+    if (address === BLAST) {
+      const owners = BLAST_OWNERS.map((id) => ({ address: E + id, name: nameOf(units.find((x) => x.id === id), lang) }));
+      const from = owners.find((o) => o.address === via);
+      const share = { owners, via: from ? { ...from, path: "Weapon.Blast" } : null };
+      return view(address, lang, "TDamageDescriptor", "Weapon.Blast", true, "", 0,
+        [["weapon", [["Puissance", 6], ["RayonDegats", 120]]]], [], [], [], share, via);
     }
     const base = address.split(":")[0];
     const u = units.find((x) => E + x.id === base) || units[0];
@@ -146,7 +156,7 @@
       ["vision", [["DetectionBase", 2500]]],
       ["menu", [["Factory", u.factory], ["PositionInMenu", u.slot]]],
     ], [{ address: E + u.id + ":WeaponManager.Turrets[class=TTurretTwoAxisDescriptor]", class: "TTurretTwoAxisDescriptor",
-      shared: false }, { address: E + u.id + ":Weapon.Blast", class: "TDamageDescriptor", shared: true }],
+      shared: false }, { address: BLAST, class: "TDamageDescriptor", shared: true }],
     [{ address: AMMO, class: "TAmmunition" }], [{ address: "$/GFX/Everything/Menu_Armour_US", path: "Units[3]" }]);
   }
 
@@ -173,7 +183,7 @@
           .filter((u) => !search || u.name.toLowerCase().includes(search.toLowerCase()));
         return { units: out, total: units.length };
       },
-      unit: async (address, lang) => unit(address, lang),
+      unit: async (address, lang, via) => unit(address, lang, via),
       mods: async () => modsView(),
       new_mod: async (name) => {
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-mod";
@@ -188,18 +198,25 @@
         current = path;
         return modsView();
       },
-      edited: async () => [...new Set([...edits.keys()].filter((k) => k.startsWith(current + "|"))
-        .map((k) => k.split("|")[1].split(":")[0]))],
-      edit: async (address, prop, value) => {
+      edited: async () => [...new Set([...edits.keys()].filter((k) => k.startsWith(current + "|")).flatMap((k) => {
+        const [, address, , how, via] = k.split("|");
+        return how === "shared" ? BLAST_OWNERS.map((id) => E + id) : how === "own" ? [via] : [address.split(":")[0]];
+      }))],
+      edit: async (address, prop, value, how, via) => {
         if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
-        const r = unit(address, "us").groups.flatMap((g) => g.rows).find((x) => x.prop === prop);
+        if (address === BLAST && !["own", "shared"].includes(how)) throw new Error("change it for one unit, or for all");
+        const r = unit(address, "us", via).groups.flatMap((g) => g.rows).find((x) => x.prop === prop);
         const whole = (v) => r.type === "float32" ? v : Math.sign(v) * Math.round(Math.abs(v));
         const v = Array.isArray(value) ? value.map(whole) : whole(value);
-        const same = Array.isArray(v) ? v.every((x, i) => x === r.numbers[i]) : v === r.numbers[0];
-        if (same) edits.delete(editKey(address, prop)); else edits.set(editKey(address, prop), v);
+        const base = how === "own" && r.edited !== null ? [].concat(r.edited) : r.numbers;
+        const same = [].concat(v).every((x, i) => x === base[i]);
+        if (same) edits.delete(editKey(address, prop, how, via)); else edits.set(editKey(address, prop, how, via), v);
         return { saved: current + "/src/studio.rndf", value: v };
       },
-      reset: async (address, prop) => { edits.delete(editKey(address, prop)); return { saved: current + "/src/studio.rndf" }; },
+      reset: async (address, prop, how, via) => {
+        edits.delete(editKey(address, prop, how, via));
+        return { saved: current + "/src/studio.rndf" };
+      },
       test_in_game: async () => ({ job: "test" }),
       build_index: async () => ({ job: "index" }),
       job: async (id) => ({ state: "done", message: jobs[id][1], lines: jobs[id][0], count: jobs[id][0].length }),

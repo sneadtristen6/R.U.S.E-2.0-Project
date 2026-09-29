@@ -61,10 +61,11 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
   - **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/), v0.1), for players: it finds the game, lists your
     mod sets and has a big Play button that builds the set's modded copy and starts the game (Vanilla starts through
     Steam). `py -3 -m ruse_launcher`.
-  - **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), v0.2), for modders: browse every unit and building, see a
+  - **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), v0.3), for modders: browse every unit and building, see a
     unit's values, parts and what uses it, and pick a language: the game's own names by default, or any of the
     game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is saved in
-    the mod's `src/studio.rndf` (with Undo), and "Test in game" builds it and starts the game. `py -3 -m ruse_studio`
+    the mod's `src/studio.rndf` (with Undo); a part several units share changes for one of them or all.
+    "Test in game" builds the mod and starts the game. `py -3 -m ruse_studio`
     (after `ruse index build`); `--spike` opens the 3D check.
   - `py -3 -m pip install -e .[apps]` once gives two commands, `ruse-launcher` and `ruse-studio`, that open them
     without a console window.

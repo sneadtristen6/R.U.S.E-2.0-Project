@@ -510,6 +510,41 @@ class Index:
                 out[name] = text
         return out
 
+    def _step(self, src: int, path: str) -> str:
+        """How an address writes the step `path` out of object `src`: a list item becomes a class selector when its
+        class is the only one of its kind in that list (and the list holds no imports), like the index's addresses."""
+        m = re.fullmatch(r"(.*)\[(\d+)\]", path)
+        if not m:
+            return path
+        base = m.group(1)
+        items = [(p, kind, dst) for p, kind, dst in self.db.execute(
+            "SELECT path, kind, dst FROM ref WHERE src = ? AND path LIKE ?", (src, base + "[%"))
+            if re.fullmatch(re.escape(base) + r"\[\d+\]", p)]
+        if any(kind != "object" for _p, kind, _d in items):
+            return path
+        classes = {p: self.db.execute("SELECT class FROM object WHERE id = ?", (d,)).fetchone()[0] for p, _k, d in items}
+        return f"{base}[class={classes[path]}]" if list(classes.values()).count(classes[path]) == 1 else path
+
+    def path_to(self, root: str, part: str) -> str | None:
+        """The shortest path from the named object `root` to `part`, one of its unnamed parts (through unnamed objects
+        only), as an address writes it after `root:`. None if `root` doesn't reach it. A part several units share has
+        one address (through its first owner); this gives the way in through any of the others."""
+        start, goal = self._object(root), self._object(part)
+        seen, queue = {start}, deque([(start, "")])
+        while queue:
+            oid, path = queue.popleft()
+            for p, dst in self.db.execute("SELECT path, dst FROM ref WHERE src = ? AND kind = 'object' ORDER BY rowid",
+                                          (oid,)).fetchall():
+                if dst in seen or self.db.execute("SELECT export FROM object WHERE id = ?", (dst,)).fetchone()[0]:
+                    continue
+                step = self._step(oid, p)
+                full = f"{path}.{step}" if path else step
+                if dst == goal:
+                    return full
+                seen.add(dst)
+                queue.append((dst, full))
+        return None
+
     def clone_plan(self, address: str) -> dict:
         """What cloning this object would do (MOD_FORMAT §10.5): its owned parts are copied, parts other named
         objects reach too are shared, named objects and imports stay references."""
