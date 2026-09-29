@@ -312,7 +312,8 @@ class StudioApi:
         top = new is not None and ":" not in address  # the new unit itself, not a part of it
         if top:
             shown = new.name
-        edits = mod.of(address, "shared" if share else None) if mod else {}
+        keyed = address if new else o["address"]  # a copy's edits by its own address, anything else by the index's
+        edits = mod.of(keyed, "shared" if share else None) if mod else {}
         own = mod.of(f"{via}:{share['via']['path']}", "own") if mod and share and share["via"] else {}
         users = len({a.split(":")[0] for a, _p in all_users})
         rows: dict[str, dict] = {}

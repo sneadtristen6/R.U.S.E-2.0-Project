@@ -585,7 +585,8 @@ one is shorter. Rules:
 - **Cheap and certain first.** Work the engine already does (new units, mod sets) ships before work that needs
   reverse engineering. The uncertain part of the terrain editor (the `.kdt` codecs) waits for DomesticNukes'
   published research and our exchange; we crack it ourselves only if that falls through.
-- **No agents, workflows or long transcripts** unless the owner asks: they multiply the cost.
+- **Agents and workflows are fine here** (owner, 2026-09-29): the cloud tab runs on its own credit, so the PC
+  session uses parallel agents when they save a session. Replies stay short.
 - **At most one in-game test per session**, batched: one modded copy, the owner runs it once and reports.
 - **Reading budget:** a session reads this section, [TASKS.md](TASKS.md) if it is a cloud session, the memory
   notes and the files it changes. History is in
@@ -597,9 +598,9 @@ one is shorter. Rules:
 
 | # | Step | Ships | Sessions | Needs |
 |---|---|---|---|---|
-| 1 | **Ask DomesticNukes** for the three `.kdt` encodings (index buffer, triangle lists, subtree opcodes), format notes only; ours (framing, vertices, the normal word) go into FORMATS.md with the agreed credit | a message; FORMATS §6 | 0 (owner) + ½ | — |
-| 2 | **Units in the Studio:** "New unit" from a unit's page (copy, name in all languages, price, menu and nation), on the engine that already does it (C6d, C7). **Code done (cloud, 2026-09-29, pull request `cloud/studio-new-unit`, TASKS.md A):** the PC session makes one in-game and releases 0.5.0 | Studio 0.5 | 1–2 | — |
-| 3 | **Launcher v0.2:** mod sets made in the window (new, edit, rename, duplicate, delete), "Add a mod file…", drag-and-drop; players never see a file. **Code done (cloud, 2026-09-29, pull request `cloud/launcher-mod-sets`, TASKS.md B):** the PC session tries it with the real game (the drop needs the real window) and releases 0.2.0 | Launcher 0.2, first public alpha | 2 | — |
+| 1 | **Ask DomesticNukes** for the three `.kdt` encodings (index buffer, triangle lists, subtree opcodes), format notes only; ours (framing, vertices, the normal word) go into FORMATS.md with the agreed credit | a message; FORMATS §6 (**done 2026-09-29**) | 0 (owner) | — |
+| 2 | **Units in the Studio:** "New unit" from a unit's page (copy, name in all languages, price, menu and nation), on the engine that already does it (C6d, C7) (**done 2026-09-29**, pull request #1; the owner's in-game test and the 0.5.0 release follow) | Studio 0.5 | 1–2 | — |
+| 3 | **Launcher v0.2:** mod sets made in the window (new, edit, rename, duplicate, delete), "Add a mod file…", drag-and-drop; players never see a file (**code done 2026-09-29**, pull request #2; the owner's test with the real game and the 0.2.0 release follow) | Launcher 0.2, first public alpha | 2 | — |
 | 4 | **Terrain editor** T1–T4 (§7 MT): `.kdt` read and written losslessly, height edits that keep the ground, the camera floor and both meshes in step, brushes in the Maps view, "Test in game" | Studio 0.6 | 4–6 with the notes; +2–4 without | step 1 |
 | 5 | **Browse mods:** a GitHub repo as the index, a launcher tab that installs from it (L6) | Launcher 0.3 | 1–2 | step 3 |
 | 6 | **China, step 2** (M10): a modded copy with an 8th entry wherever the data has 7; does the game offer it? | an answer | 1 (owner at the game) | — |
@@ -622,8 +623,9 @@ cloning and scenarios (M6); models (M7); new maps from heightmaps (M8); scriptin
 **Where we stand (2026-09-29):** C1–C7 passed (mods build from the installed game, load in-game, add texts and
 new units that fight). Launcher v0.1 and Studio 0.4.1 are released (values edited in place, one box for a unit's
 five per-date prices, the Maps view with each map's real ground in 3D). The terrain mesh and tile files read and
-write losslessly, and plain tiles we write are drawn in-game. The `.kdt` container, vertices and normal word are
-decoded (private notes until step 1). Details: [LOG.md](LOG.md).
+write losslessly, and plain tiles we write are drawn in-game. The `.kdt` gameplay ground reads and writes losslessly on every map (`rusemod.kdt`,
+2026-09-29), its vertices and normals decoded; the notes are in FORMATS §6 with the agreed credit. Its index
+buffers, triangle lists and tree nodes are still opaque (step 1). Details: [LOG.md](LOG.md).
 
 ## 11. RUSE 2.0 design notes (draft, 2026-09-28)
 
