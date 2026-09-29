@@ -17,7 +17,7 @@ Game build examined: Steam re-release, Steam build 24670294, data revision **190
 | Scenario (`.scenario`) | DataMap_Win | 102 | ❔ (RUSE-Mod-Manager edits it) | P1 |
 | AI map grids (`mapinfo.win`) | DataMap_Win | 34 | ❔ (RUSE-Mod-Manager edits layers) | P1 |
 | Terrain mesh (`.tms`) | Maps\PC | 64 (hi + low per map) | ✅ R W RT (not yet tried in-game) | P1 |
-| Terrain tiles (`.tmst_pc` + `.tmst_chunk_pc`) | Maps\PC | 64 sets, 29,254 tiles | ✅ container R W RT; TGU1 body 🟡 | P1 |
+| Terrain tiles (`.tmst_pc` + `.tmst_chunk_pc`) | Maps\PC | 64 sets, 29,254 tiles | ✅ container R W RT; plain tiles (ZIPO) work in-game; TGU1 body 🟡 (reading only) | P1 |
 | Textures (`.tgv`, `.tgv_pc`) | ZZ_Win, Maps\PC | 3,831 + maps | 🟡 header | P1 |
 | Meshes (`.spk`, `.spkpc`, `MESHPCPC`) | ZZ_Win, Maps\PC | 82 + maps | ❔ | P1 |
 | Animations (`.apk`, `.baf`) | ZZ_Win | 53 / 43 | ❔ | P2 |
@@ -373,8 +373,10 @@ level k matches HighDef level k+1 in area.
 
 Proven: unchanged rebuild byte-identical for 64/64 sets and 32/32 whole packs (2.2 GB, about 41 s); replaced tiles of
 any size re-read correctly, with every other tile unchanged.
-Open (in-game): does the loader accept our rebuilt store (mirror test) and a **ZIPO** tile (raw DXT1 + zlib) instead
-of TGU1? If ZIPO works, writing terrain textures needs no TGU1 encoder.
+**In-game (2026-09-29): the game accepts our rebuilt store with every tile a ZIPO tile** (raw DXT1 + zlib) instead of
+TGU1. The checker test (`verify_tmst.py --make-test TwoIslands OUT checker`, Two Islands = "Centre of Gravity") drew our
+checkerboards at two detail levels (magenta/yellow and cyan/red) with no problem. **So terrain textures can be written as
+plain DXT1: no TGU1 encoder is needed.** TGU1 decoding is still useful for reading the shipped textures.
 
 ## 7. Textures (`.tgv`, `.tgv_pc`)
 
