@@ -17,6 +17,10 @@ players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your br
 - **Terrain brushes** (in review): mods can reshape a map's ground, and the Studio's Maps view paints the strokes
   (hill, raise, lower, crater, plateau, flatten, smooth; size, strength, Undo); the first in-game check is one hill
   on Centre of Gravity.
+- **Browse mods** (in review): the launcher lists the community's mods from a GitHub index and installs them.
+- **A mod as one file** (in review): the Studio exports `<id>-<version>.rusemod`, the launcher installs it.
+- **Community mods:** 18 RUSE-Mod-Manager mods rebuilt in our format ([`mods/`](mods/)); their format is written
+  down (MOD_FORMAT §13) and what the others teach is in FORMATS.md §2. Not checked in-game yet.
 - **New units work in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory;
   it's built and fights like any other unit (C7).
   `ruse build` gives every copied unit the class the game's Python unit list needs, under the safety rules of
@@ -25,9 +29,9 @@ players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your br
   modded copy and starts it.
 - **Maps:** new maps can ship their own pack (C3). The terrain mesh and tile files can be read and rewritten
   losslessly, and the game draws terrain textures we write ourselves.
-- **Next:** new units made from the Studio's window (code done, in review: pull request `cloud/studio-new-unit`),
-  then mod sets made inside the launcher, then a terrain editor in RUSE Studio (shape a map with brushes, then
-  "Test in game").
+- **Next:** new units made from the Studio's window and mod sets made inside the launcher (both coded, in review:
+  pull requests `cloud/studio-new-unit` and `cloud/launcher-mod-sets`), then a terrain editor in RUSE Studio (shape
+  a map with brushes, then "Test in game").
 - Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19).
 
 The order is in PLAN.md §10 "Now"; the latest decisions are in PLAN.md §6.
@@ -76,16 +80,30 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
   the map in the modded copy ([docs/MOD_FORMAT.md §8](docs/MOD_FORMAT.md)). The in-game check comes first:
   `py -3 tools\verify_terrain.py --make-test TwoIslands D:\RUSE-Instances\hill` builds a copy with one hill.
 
+- **Community mods in our format** ([`mods/`](mods/), 18 of them, 2026-09-29): RUSE-Mod-Manager `.rmod` mods
+  rebuilt as mods of ours by [`tools/rmod_to_mod.py`](tools/rmod_to_mod.py), our own reader of that format
+  ([docs/MOD_FORMAT.md §13](docs/MOD_FORMAT.md)); each has a README with what carried over and what to check in-game.
+  For them, mods can now find an object by a property the way those mods do (`@TAmmunition[AmmunitionId=1120]`,
+  `patch every TUniteAuSolDescriptor [Nationalite=1]`), reach unnamed parts, and refer to a game object's part
+  (MOD_FORMAT §4). Not checked in-game yet.
+
 - **Two apps** on the engine, separate from each other (neither needs the other; PLAN.md decision 22). Both are
   desktop windows built like web pages; once: `py -3 -m pip install pywebview`. Their screens also open in a normal
   browser with made-up data: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_studio/ui/index.html?fake`.
   - **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/), v0.1), for players: it finds the game, lists your
     mod sets and has a big Play button that builds the set's modded copy and starts the game (Vanilla starts through
-    Steam). `py -3 -m ruse_launcher`.
+    Steam). `py -3 -m ruse_launcher`. **In review (0.2): players never touch a file.** A mod library ("Add a mod
+    file…" for a `.rusemod` from the Studio or a `.zip`, or drop a mod file or folder on the window; each mod is
+    checked first), mod sets made on screen (new,
+    edit and reorder, rename, duplicate, delete), and the launcher in the PC's own language (any of the game's ten). **In review (0.3): "Browse mods"**, a list of the
+    community's mods from a GitHub repository (MOD_FORMAT §15), with Install: the file is checked against the list
+    before it goes into the library; offline, the last copy of the list.
   - **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), v0.4), for modders: browse every unit and building, see a
     unit's values, parts and what uses it, and pick a language: the game's own names by default, or any of the
     game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is saved in
-    the mod's `src/studio.rndf` (with Undo); a part several units share changes for one of them or all.
+    the mod's `src/studio.rndf` (with Undo); a part several units share changes for one of them or all. **In review: "Export mod…"** turns the mod into one
+    file, `<id>-<version>.rusemod`, with the game build and the mod's fingerprint inside, for the launcher's "Add a mod
+    file…" (the loop from modder to player, TASKS C).
     "Test in game" builds the mod and starts the game. **New unit…** on a unit's page makes a copy with its own
     name (in every language), price and build menu (the same nation and factory, or another nation's); it's listed
     as new, edited like any other unit, and can be deleted (in review, 0.5). **Maps** (the terrain editor): every map

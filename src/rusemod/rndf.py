@@ -4,6 +4,8 @@
     export Descriptor_Unit_R2_Marines is clone $/GFX/Everything/Descriptor_Unit_US_Rangers ( ShowInMenu = [1, 1, 1, 1, 1] )
     final patch every TUniteAuSolDescriptor ( SeuilMort *= 1.1 )
     when mod better-ai ( patch $/GFX/Everything/Descriptor_Unit_M4_Sherman ( ProductionPrice += 5 ) )
+    patch @TAmmunition[AmmunitionId=1120] ( NbTirParSalves = 40 )          // found by a property (MOD_FORMAT §4)
+    patch every TUniteAuSolDescriptor [Nationalite=1] ( SeuilMort += 10 )   // every object that fits the filter
 
 Values are spelled like Eugen's own text NDF (WARNO) where it has a spelling. Errors give file, line and column.
 """
@@ -21,6 +23,7 @@ DEFAULT_NAMESPACE = "$/GFX/Everything"  # where `X is TClass` objects go unless 
 _TOKENS = [
     ("skip", r"\s+|//[^\n]*|/\*.*?\*/|\(\*.*?\*\)"),
     ("guid", r"GUID:\{[0-9A-Fa-f-]+\}"),
+    ("designator", r"@(?:[A-Za-z_]\w*)?\[[^\]]*\](?::(?:[\w.]|\[[^\]]*\])+)?"),
     ("ref", r"[$~]/[\w/]+(?::(?:[\w.]|\[[^\]]*\])+)?"),
     ("shared", r"#\d+"),
     ("number", r"-?(?:0x[0-9A-Fa-f]+|\d+\.\d*(?:[eE][-+]?\d+)?|\.\d+(?:[eE][-+]?\d+)?|\d+(?:[eE][-+]?\d+)?)"),
@@ -148,19 +151,23 @@ class Parser:
 
     def patch(self) -> list[Op]:
         start = self.next()
-        every = share = None
+        every = share = filter_ = None
+        if self.is_("own", "shared"):
+            share = self.next().text
         if self.is_("every"):
             self.next()
             cls = self.next()
             if cls.kind != "name":
                 raise self.error("expected a class name after `patch every`", cls)
             every = cls.text
-        if self.is_("own", "shared"):
+            if self.is_("["):
+                filter_ = self.bracketed()
+        if share is None and self.is_("own", "shared"):
             share = self.next().text
         target, sub = (None, "") if every else self.split_target(self.target_ref())
         ops = self.body()
         for o in ops:
-            o.target, o.every, o.share = target, every, share
+            o.target, o.every, o.filter, o.share = target, every, filter_, share
             o.path = f"{sub}.{o.path}" if sub else o.path
         if not ops:
             raise self.error("empty patch", start)
@@ -182,6 +189,8 @@ class Parser:
                 if local not in self.declared:
                     raise self.error(f"~/{local} must be declared earlier in this file to be cloned", src_tok)
                 namespace = self.declared[local].rsplit("/", 1)[0]
+            elif source.startswith("@"):  # found by a property: the engine puts the copy in its source's file
+                namespace = DEFAULT_NAMESPACE
             else:
                 namespace = source.rsplit("/", 1)[0]
             full = f"{namespace}/{name.text}"
@@ -262,28 +271,36 @@ class Parser:
         path = t.text
         while True:
             if self.is_("["):
-                self.next()
-                inner = ""
-                while not self.is_("]"):
-                    if self.peek().kind == "end":
-                        raise self.error("'[' is never closed")
-                    inner += self.next().text
-                self.next()
-                path += f"[{inner}]"
+                path += f"[{self.bracketed()}]"
             elif self.is_(".") and self.peek(1).kind == "name" and self.peek(1).text != "insert":
                 self.next()
                 path += "." + self.next().text
             else:
                 return path
 
+    def bracketed(self) -> str:
+        """The text between `[` and `]`, tokens joined: a list index, a selector or a filter."""
+        self.expect("[")
+        inner = ""
+        while not self.is_("]"):
+            if self.peek().kind == "end":
+                raise self.error("'[' is never closed")
+            inner += self.next().text
+        self.next()
+        return inner
+
     def target_ref(self) -> str:
         t = self.next()
-        if t.kind != "ref":
-            raise self.error("expected an object like $/GFX/Everything/Name or ~/Name", t)
+        if t.kind not in ("ref", "designator"):
+            raise self.error("expected an object like $/GFX/Everything/Name, ~/Name or @TClass[Property=value]", t)
         return t.text
 
     @staticmethod
     def split_target(ref: str) -> tuple[str, str]:
+        """`$/Name:Sub.Path` or `@TClass[Prop=v]:Sub.Path` -> (the object, the path inside it)."""
+        if ref.startswith("@"):
+            head, _, rest = ref.partition("]")
+            return head + "]", rest[1:] if rest.startswith(":") else rest
         obj, _, sub = ref.partition(":")
         return obj, sub
 
@@ -303,7 +320,7 @@ class Parser:
         if t.kind == "string":
             self.next()
             return Text("string", t.text[1:-1])
-        if t.kind == "ref":
+        if t.kind in ("ref", "designator"):
             self.next()
             return Ref(t.text)
         if t.kind == "shared":

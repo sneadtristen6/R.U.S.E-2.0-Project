@@ -58,6 +58,9 @@ button:disabled { cursor: default; opacity: 0.45; }
 }
 .status.good { color: var(--good); }
 .status.bad { color: var(--bad); }
+.lang { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+.lang select { background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--radius); padding: 5px 8px;
+               font: inherit; color: var(--text); }
 
 /* layout */
 .layout {
@@ -67,12 +70,16 @@ button:disabled { cursor: default; opacity: 0.45; }
   min-height: 0;
 }
 
-.sets {
-  padding: 18px;
+.side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border-right: 1px solid var(--line);
   overflow: auto;
 }
-.sets h2 {
+.sets, .library { padding: 18px; }
+.library { border-top: 1px solid var(--line); }
+.sets h2, .library h2 {
   margin: 0 0 12px;
   font-size: 13px;
   text-transform: uppercase;
@@ -147,3 +154,63 @@ button:disabled { cursor: default; opacity: 0.45; }
 }
 .small.ghost { background: transparent; }
 .small:hover:not(:disabled) { border-color: var(--accent); }
+
+/* --- Launcher 0.2: mod sets made here, and the mod library --- */
+.note { margin: 10px 0 0; font-size: 12px; }
+.small.danger { color: var(--bad); border-color: var(--bad); }
+.small.danger:hover:not(:disabled) { border-color: var(--bad); background: rgba(224, 122, 95, 0.12); }
+.set-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.set-head h1 { flex: 1 1 auto; min-width: 200px; }
+.set-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.rename-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rename-form input, .editor input[type="text"], .editor input:not([type]) {
+  padding: 8px 12px; background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--radius);
+  font: inherit; color: var(--text); min-width: 280px; }
+.rename-form input { font-size: 22px; font-weight: 700; }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0; padding: 8px 12px;
+           background: var(--panel); border-left: 3px solid var(--bad); border-radius: 0 var(--radius) var(--radius) 0; }
+.mods { list-style: decimal; }
+
+.mod-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.mod-card { display: grid; gap: 2px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line);
+            border-radius: var(--radius); }
+.mod-card .name { font-weight: 600; }
+.mod-card .meta, .pick-list .meta { font-size: 12px; color: var(--muted); }
+.mod-card .warn { font-size: 12px; color: var(--bad); }
+.mod-card .small { justify-self: start; margin-top: 4px; }
+.mod-card .confirm { margin: 6px 0 0; }
+
+.editor { display: grid; gap: 14px; max-width: 720px; }
+.editor h1 { margin: 0; font-size: 28px; }
+.editor .field { display: grid; gap: 4px; }
+.editor .field span { font-size: 12px; color: var(--muted); }
+.editor p { margin: 0; }
+.pick-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pick-list li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--panel);
+                border: 1px solid var(--line); border-radius: var(--radius); }
+.pick-list label { flex: 1; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.pick-list input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
+.pick-list .order { display: flex; gap: 4px; }
+.arrow { padding: 2px 9px; }
+.editor .actions { display: flex; gap: 8px; }
+
+/* --- Launcher 0.3: Browse mods (the mod index) --- */
+.browse { display: grid; gap: 12px; max-width: 840px; }
+.browse h1 { margin: 0; font-size: 28px; }
+.browse input[type="search"] { padding: 7px 12px; background: var(--panel-hi); border: 1px solid var(--line);
+                               border-radius: var(--radius); font: inherit; color: var(--text); min-width: 220px; }
+.browse p { margin: 0; }
+.browse-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.browse-card { display: grid; grid-template-columns: 1fr auto; gap: 2px 14px; padding: 12px 14px; background: var(--panel);
+               border: 1px solid var(--line); border-radius: var(--radius); }
+.browse-card .name { font-weight: 600; font-size: 16px; }
+.browse-card .meta { font-size: 12px; color: var(--muted); grid-column: 1; }
+.browse-card .desc { font-size: 13px; grid-column: 1; }
+.browse-card .tags { font-size: 11px; color: var(--accent); grid-column: 1; }
+.browse-card .small { grid-column: 2; grid-row: 1 / span 5; align-self: center; }
+.browse-card .link { background: none; border: 0; padding: 0; color: var(--accent); font-size: 12px;
+                     text-decoration: underline; grid-column: 1; justify-self: start; }
+
+.drop-zone { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(21, 24, 27, 0.85);
+             border: 3px dashed var(--accent); color: var(--accent); font-size: 22px; font-weight: 700; z-index: 10;
+             pointer-events: none; }

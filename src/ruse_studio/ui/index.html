@@ -34,6 +34,15 @@
     <button id="new-mod-cancel" type="button" class="ghost"></button>
   </form>
 
+  <form id="export-mod" class="new-mod hidden">
+    <label><span id="export-version-label"></span> <input id="export-version" class="short" autocomplete="off" maxlength="30" required></label>
+    <label><span id="export-author-label"></span> <input id="export-author" autocomplete="off" maxlength="80"></label>
+    <label><span id="export-description-label"></span> <input id="export-description" class="wide" autocomplete="off" maxlength="300"></label>
+    <button id="export-go" type="submit" class="primary"></button>
+    <button id="export-cancel" type="button" class="ghost"></button>
+    <span id="export-help" class="muted small"></span>
+  </form>
+
   <main id="units-view" class="layout">
     <aside class="browser">
       <input id="search" type="search" autocomplete="off">

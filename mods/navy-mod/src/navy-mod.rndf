@@ -1,0 +1,1227 @@
+// Navy Mod: rebuilt from the RUSE-Mod-Manager mod Navy_Mod.rmod by tools/rmod_to_mod.py.
+// Objects are found the way the original found them (docs/MOD_FORMAT.md §4): by debug name, ammunition id or class.
+
+// --- genglad/patchable/gfx/everything.cpp.gladndfbin (in Data/PC/190852/ZZ_GladPatchableWin.dat)
+// Not rebuilt (FileName: needs a file the original ships (US_Battleship.png)):
+// Card_Unit_Battleship is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325377)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Battleship.png)  (not rebuilt)
+// )
+
+// Not rebuilt (FileName: needs a file the original ships (US_Heavy_Cruiser.png)):
+// Card_Unit_Heavy_Cruiser is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325377)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Heavy_Cruiser.png)  (not rebuilt)
+// )
+
+// Not rebuilt (FileName: needs a file the original ships (US_Destroyer.png)):
+// Card_Unit_Destroyer is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325377)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Destroyer.png)  (not rebuilt)
+// )
+
+// Not rebuilt (Operator_Translate_Vertical: a map entry reached by its position (SousElements<v2>); Operator_Rotate_Pente: a map entry reached by its position (SousElements<v2>); Operator_Rotate_Roulis: a map entry reached by its position (SousElements<v2>)):
+// Chassis_Unit_Battleship is TGfxDescriptorChassis
+// (
+//     NameBone = 'us_battleship'
+//     Coef_Sur_Pente_Relation_Acceleration = 20.0
+//     Coef_Sur_Roulis_Relation_Rotation = 30.0
+//     Coef_Sur_Pente_Relation_Terrain = 25.0
+//     Coef_Sur_Roulis_Relation_Terrain = 25.0
+//     Coef_Bruit_Sur_Ressort = 35.0
+//     Coef_Bruit_Sur_Pente = 30.0
+//     Coef_Bruit_Sur_Roulis = 30.0
+//     Operator_Translate_Vertical: a map entry reached by its position (SousElements<v2>)  (not rebuilt)
+//     Operator_Rotate_Pente: a map entry reached by its position (SousElements<v2>)  (not rebuilt)
+//     Operator_Rotate_Roulis: a map entry reached by its position (SousElements<v2>)  (not rebuilt)
+// )
+
+// Not rebuilt (Operator_Translate_Vertical: a map entry reached by its position (SousElements<v2>); Operator_Rotate_Pente: a map entry reached by its position (SousElements<v2>); Operator_Rotate_Roulis: a map entry reached by its position (SousElements<v2>)):
+// Chassis_Unit_Heavy_Cruiser is TGfxDescriptorChassis
+// (
+//     NameBone = 'Chassis'
+//     Coef_Sur_Pente_Relation_Acceleration = 20.0
+//     Coef_Sur_Roulis_Relation_Rotation = 30.0
+//     Coef_Sur_Pente_Relation_Terrain = 25.0
+//     Coef_Sur_Roulis_Relation_Terrain = 25.0
+//     Coef_Bruit_Sur_Ressort = 35.0
+//     Coef_Bruit_Sur_Pente = 30.0
+//     Coef_Bruit_Sur_Roulis = 30.0
+//     Operator_Translate_Vertical: a map entry reached by its position (SousElements<v2>)  (not rebuilt)
+//     Operator_Rotate_Pente: a map entry reached by its position (SousElements<v2>)  (not rebuilt)
+//     Operator_Rotate_Roulis: a map entry reached by its position (SousElements<v2>)  (not rebuilt)
+// )
+
+// Not rebuilt (Operator_Translate_Vertical: a map entry reached by its position (SousElements<v2>); Operator_Rotate_Pente: a map entry reached by its position (SousElements<v2>); Operator_Rotate_Roulis: a map entry reached by its position (SousElements<v2>)):
+// Chassis_Unit_Destroyer is TGfxDescriptorChassis
+// (
+//     NameBone = 'Chassis'
+//     Coef_Sur_Pente_Relation_Acceleration = 20.0
+//     Coef_Sur_Roulis_Relation_Rotation = 30.0
+//     Coef_Sur_Pente_Relation_Terrain = 25.0
+//     Coef_Sur_Roulis_Relation_Terrain = 25.0
+//     Coef_Bruit_Sur_Ressort = 35.0
+//     Coef_Bruit_Sur_Pente = 30.0
+//     Coef_Bruit_Sur_Roulis = 30.0
+//     Operator_Translate_Vertical: a map entry reached by its position (SousElements<v2>)  (not rebuilt)
+//     Operator_Rotate_Pente: a map entry reached by its position (SousElements<v2>)  (not rebuilt)
+//     Operator_Rotate_Roulis: a map entry reached by its position (SousElements<v2>)  (not rebuilt)
+// )
+
+Figurine_Unit_Battleship is TFigurineOptions
+(
+    BaseSize = 2.2
+    Scale = 0.818
+    VisibilityRange = $/GFX/Visibility/AllRanges/Zoom12
+    ScaleRange = $/GFX/Visibility/AllRanges/Zoom2
+    MultiRenderTypeMaterialPack = $/M3D/Shader/MultiRenderTypeMaterialPack_Damage_CampWithDistAttenuation
+    ViewVariantConfiguration = @[_ShortDatabaseName='Gfx_Amiot_143']:ViewVariantConfiguration
+)
+Figurine_Unit_Heavy_Cruiser is TFigurineOptions
+(
+    BaseSize = 2.2
+    Scale = 0.818
+    VisibilityRange = $/GFX/Visibility/AllRanges/Zoom12
+    ScaleRange = $/GFX/Visibility/AllRanges/Zoom2
+    MultiRenderTypeMaterialPack = $/M3D/Shader/MultiRenderTypeMaterialPack_Damage_CampWithDistAttenuation
+    ViewVariantConfiguration = @[_ShortDatabaseName='Gfx_Amiot_143']:ViewVariantConfiguration
+)
+Figurine_Unit_Destroyer is TFigurineOptions
+(
+    BaseSize = 2.2
+    Scale = 0.818
+    VisibilityRange = $/GFX/Visibility/AllRanges/Zoom12
+    ScaleRange = $/GFX/Visibility/AllRanges/Zoom2
+    MultiRenderTypeMaterialPack = $/M3D/Shader/MultiRenderTypeMaterialPack_Damage_CampWithDistAttenuation
+    ViewVariantConfiguration = @[_ShortDatabaseName='Gfx_Amiot_143']:ViewVariantConfiguration
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Destroyer.png)):
+// Card_Unit_Destroyer_Ger is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325378)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Destroyer.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Destroyer_GER is clone @[ClassNameForDebug='Unit_Destroyer']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Destroyer']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Destroyer']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 700
+    EfficaceHintToken = key(D_air)
+    LongDescriptionUnitHintToken = loc('navy-mod.9AEqzMT2hZV')
+    DescriptionUnitHintToken = loc('navy-mod.5SrKvNUTPQg')
+    TypeUnitHintToken = loc('navy-mod.0uFIrw7Jp8n')
+    NameInMenuToken = loc('navy-mod.4X9OwxH0dmw')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [50, 50, 50, 50, 50]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 30
+    Key = int8(103)
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 3900.0
+    VitesseCombat = 3900.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 50
+    UpgradeTime = 50
+    Nationalite = 1
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Heavy_Cruiser.png)):
+// Card_Unit_Heavy_Cruiser_Ger is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325378)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Heavy_Cruiser.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Heavy_Cruiser_GER is clone @[ClassNameForDebug='Unit_Heavy_Cruiser']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Heavy_Cruiser']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Heavy_Cruiser']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 701
+    EfficaceHintToken = key(VE_ground)
+    LongDescriptionUnitHintToken = loc('navy-mod.B7fm4cqLy5e')
+    DescriptionUnitHintToken = loc('navy-mod.EEODWlk3wXg')
+    TypeUnitHintToken = loc('navy-mod.B_LMtLU9hZ0')
+    NameInMenuToken = loc('navy-mod.1wAZaDY_yxI')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [80, 80, 80, 80, 80]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 45
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 3120.0
+    VitesseCombat = 3120.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 75
+    UpgradeTime = 60
+    Nationalite = 1
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Battleship.png)):
+// Card_Unit_Battleship_Ger is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325378)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Battleship.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Battleship_GER is clone @[ClassNameForDebug='Unit_Battleship']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Battleship']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Battleship']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 702
+    EfficaceHintToken = key(D_ground)
+    LongDescriptionUnitHintToken = loc('navy-mod.6306b827bc39f67d')
+    DescriptionUnitHintToken = loc('navy-mod.8TyuBYMvotG')
+    TypeUnitHintToken = loc('navy-mod.0TS_P7MtBAT')
+    NameInMenuToken = loc('navy-mod.70M1WporJbZ')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [120, 120, 120, 120, 120]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 60
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 2600.0
+    VitesseCombat = 2600.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 100
+    UpgradeTime = 90
+    Nationalite = 1
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Destroyer.png)):
+// Card_Unit_Destroyer_Uk is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325380)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Destroyer.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Destroyer_UK is clone @[ClassNameForDebug='Unit_Destroyer']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Destroyer']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Destroyer']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 700
+    EfficaceHintToken = key(D_air)
+    LongDescriptionUnitHintToken = loc('navy-mod.5Pi9ItckkLf')
+    DescriptionUnitHintToken = loc('navy-mod.3B388HhOGHU')
+    TypeUnitHintToken = loc('navy-mod.0uFIrw7Jp8n')
+    NameInMenuToken = loc('navy-mod.2bnszzCv40H')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [50, 50, 50, 50, 50]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 30
+    Key = int8(103)
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 3900.0
+    VitesseCombat = 3900.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 50
+    UpgradeTime = 50
+    Nationalite = 2
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Heavy_Cruiser.png)):
+// Card_Unit_Heavy_Cruiser_Uk is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325380)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Heavy_Cruiser.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Heavy_Cruiser_UK is clone @[ClassNameForDebug='Unit_Heavy_Cruiser']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Heavy_Cruiser']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Heavy_Cruiser']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 701
+    EfficaceHintToken = key(VE_ground)
+    LongDescriptionUnitHintToken = loc('navy-mod.74ypUhmCX6e')
+    DescriptionUnitHintToken = loc('navy-mod.65CxKbpKKTD')
+    TypeUnitHintToken = loc('navy-mod.B_LMtLU9hZ0')
+    NameInMenuToken = loc('navy-mod.DlEmvA4iGAu')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [80, 80, 80, 80, 80]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 45
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 3120.0
+    VitesseCombat = 3120.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 75
+    UpgradeTime = 60
+    Nationalite = 2
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Battleship.png)):
+// Card_Unit_Battleship_Uk is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325380)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Battleship.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Battleship_UK is clone @[ClassNameForDebug='Unit_Battleship']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Battleship']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Battleship']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 702
+    EfficaceHintToken = key(D_ground)
+    LongDescriptionUnitHintToken = loc('navy-mod.9aaoqjQtjBf')
+    DescriptionUnitHintToken = loc('navy-mod.0Se5o0ghhRl')
+    TypeUnitHintToken = loc('navy-mod.0TS_P7MtBAT')
+    NameInMenuToken = loc('navy-mod.5mw_j8ua2gE')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [120, 120, 120, 120, 120]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 60
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 2600.0
+    VitesseCombat = 2600.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 100
+    UpgradeTime = 90
+    Nationalite = 2
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Destroyer.png)):
+// Card_Unit_Destroyer_Fr is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325384)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Destroyer.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Destroyer_FR is clone @[ClassNameForDebug='Unit_Destroyer']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Destroyer']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Destroyer']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 700
+    EfficaceHintToken = key(D_air)
+    LongDescriptionUnitHintToken = loc('navy-mod.DPXitIpaJcF')
+    DescriptionUnitHintToken = loc('navy-mod.8N4HrrqzZFB')
+    TypeUnitHintToken = loc('navy-mod.0uFIrw7Jp8n')
+    NameInMenuToken = loc('navy-mod.3GnekJezc6F')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [50, 50, 50, 50, 50]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 30
+    Key = int8(103)
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 3900.0
+    VitesseCombat = 3900.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 50
+    UpgradeTime = 50
+    Nationalite = 3
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Heavy_Cruiser.png)):
+// Card_Unit_Heavy_Cruiser_Fr is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325384)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Heavy_Cruiser.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Heavy_Cruiser_FR is clone @[ClassNameForDebug='Unit_Heavy_Cruiser']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Heavy_Cruiser']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Heavy_Cruiser']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 701
+    EfficaceHintToken = key(VE_ground)
+    LongDescriptionUnitHintToken = loc('navy-mod.9iAqcmskHIR')
+    DescriptionUnitHintToken = loc('navy-mod.6N_akAdVFQj')
+    TypeUnitHintToken = loc('navy-mod.B_LMtLU9hZ0')
+    NameInMenuToken = loc('navy-mod.8qXtrOfYiBZ')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [80, 80, 80, 80, 80]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 45
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 3120.0
+    VitesseCombat = 3120.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 75
+    UpgradeTime = 60
+    Nationalite = 3
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Battleship.png)):
+// Card_Unit_Battleship_Fr is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325384)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Battleship.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Battleship_FR is clone @[ClassNameForDebug='Unit_Battleship']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Battleship']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Battleship']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 702
+    EfficaceHintToken = key(D_ground)
+    LongDescriptionUnitHintToken = loc('navy-mod.9rwYT5c444S')
+    DescriptionUnitHintToken = loc('navy-mod.1hgY5rhSQ41')
+    TypeUnitHintToken = loc('navy-mod.0TS_P7MtBAT')
+    NameInMenuToken = loc('navy-mod.Bq_tmheeWKL')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [120, 120, 120, 120, 120]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 60
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 2600.0
+    VitesseCombat = 2600.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 100
+    UpgradeTime = 90
+    Nationalite = 3
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Destroyer.png)):
+// Card_Unit_Destroyer_Ita is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325392)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Destroyer.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Destroyer_ITA is clone @[ClassNameForDebug='Unit_Destroyer']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Destroyer']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Destroyer']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 700
+    EfficaceHintToken = key(D_air)
+    LongDescriptionUnitHintToken = loc('navy-mod.81wgUNV_odu')
+    DescriptionUnitHintToken = loc('navy-mod.EVNajOZRW5W')
+    TypeUnitHintToken = loc('navy-mod.0uFIrw7Jp8n')
+    NameInMenuToken = loc('navy-mod.4CD3odX6OR6')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [50, 50, 50, 50, 50]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 30
+    Key = int8(103)
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 3900.0
+    VitesseCombat = 3900.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 50
+    UpgradeTime = 50
+    Nationalite = 4
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Heavy_Cruiser.png)):
+// Card_Unit_Heavy_Cruiser_Ita is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325392)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Heavy_Cruiser.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Heavy_Cruiser_ITA is clone @[ClassNameForDebug='Unit_Heavy_Cruiser']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Heavy_Cruiser']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Heavy_Cruiser']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 701
+    EfficaceHintToken = key(VE_ground)
+    LongDescriptionUnitHintToken = loc('navy-mod.8nEKLvsAEhX')
+    DescriptionUnitHintToken = loc('navy-mod.0jig7Vls0Jf')
+    TypeUnitHintToken = loc('navy-mod.B_LMtLU9hZ0')
+    NameInMenuToken = loc('navy-mod.3epMhdtz_AM')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [80, 80, 80, 80, 80]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 45
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 3120.0
+    VitesseCombat = 3120.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 75
+    UpgradeTime = 60
+    Nationalite = 4
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Battleship.png)):
+// Card_Unit_Battleship_Ita is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325392)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Battleship.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Battleship_ITA is clone @[ClassNameForDebug='Unit_Battleship']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Battleship']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Battleship']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 702
+    EfficaceHintToken = key(D_ground)
+    LongDescriptionUnitHintToken = loc('navy-mod.08ISTPU8I6W')
+    DescriptionUnitHintToken = loc('navy-mod.4Hv4KR4t9qU')
+    TypeUnitHintToken = loc('navy-mod.0TS_P7MtBAT')
+    NameInMenuToken = loc('navy-mod.5Jk41hYjfqF')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [120, 120, 120, 120, 120]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 60
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 2600.0
+    VitesseCombat = 2600.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 100
+    UpgradeTime = 90
+    Nationalite = 4
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Destroyer.png)):
+// Card_Unit_Destroyer_Urss is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325408)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Destroyer.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Destroyer_URSS is clone @[ClassNameForDebug='Unit_Destroyer']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Destroyer']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Destroyer']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 700
+    EfficaceHintToken = key(D_air)
+    LongDescriptionUnitHintToken = loc('navy-mod.9Lc8IaNwy0t')
+    DescriptionUnitHintToken = loc('navy-mod.C2kyHJJX1qC')
+    TypeUnitHintToken = loc('navy-mod.0uFIrw7Jp8n')
+    NameInMenuToken = loc('navy-mod.9P6e7rNpGDr')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [50, 50, 50, 50, 50]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 30
+    Key = int8(103)
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 3900.0
+    VitesseCombat = 3900.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 50
+    UpgradeTime = 50
+    Nationalite = 5
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Heavy_Cruiser.png)):
+// Card_Unit_Heavy_Cruiser_Urss is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325408)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Heavy_Cruiser.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Heavy_Cruiser_URSS is clone @[ClassNameForDebug='Unit_Heavy_Cruiser']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Heavy_Cruiser']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Heavy_Cruiser']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 701
+    EfficaceHintToken = key(VE_ground)
+    LongDescriptionUnitHintToken = loc('navy-mod.8vrCXr30dAM')
+    DescriptionUnitHintToken = loc('navy-mod.8d05e4bef998fb9f')
+    TypeUnitHintToken = loc('navy-mod.B_LMtLU9hZ0')
+    NameInMenuToken = loc('navy-mod.44xCMSgrM07')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [80, 80, 80, 80, 80]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 45
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 3120.0
+    VitesseCombat = 3120.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 75
+    UpgradeTime = 60
+    Nationalite = 5
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Battleship.png)):
+// Card_Unit_Battleship_Urss is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325408)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Battleship.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Battleship_URSS is clone @[ClassNameForDebug='Unit_Battleship']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Battleship']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Battleship']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 702
+    EfficaceHintToken = key(D_ground)
+    LongDescriptionUnitHintToken = loc('navy-mod.sIX_VE8P8t')
+    DescriptionUnitHintToken = loc('navy-mod.9DRO9qVFN15')
+    TypeUnitHintToken = loc('navy-mod.0TS_P7MtBAT')
+    NameInMenuToken = loc('navy-mod.CTAxm82c6DO')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [120, 120, 120, 120, 120]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 60
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 2600.0
+    VitesseCombat = 2600.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 100
+    UpgradeTime = 90
+    Nationalite = 5
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Destroyer.png)):
+// Card_Unit_Destroyer_Jap is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325440)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Destroyer.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Destroyer_JAP is clone @[ClassNameForDebug='Unit_Destroyer']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Destroyer']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Destroyer']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 700
+    EfficaceHintToken = key(D_air)
+    LongDescriptionUnitHintToken = loc('navy-mod.t9gCRccTEn')
+    DescriptionUnitHintToken = loc('navy-mod.5cl00vj3Nt')
+    TypeUnitHintToken = loc('navy-mod.0uFIrw7Jp8n')
+    NameInMenuToken = loc('navy-mod.3d02280548a92930')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [50, 50, 50, 50, 50]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 30
+    Key = int8(103)
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 3900.0
+    VitesseCombat = 3900.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 50
+    UpgradeTime = 50
+    Nationalite = 6
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Heavy_Cruiser.png)):
+// Card_Unit_Heavy_Cruiser_Jap is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325440)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Heavy_Cruiser.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Heavy_Cruiser_JAP is clone @[ClassNameForDebug='Unit_Heavy_Cruiser']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Heavy_Cruiser']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Heavy_Cruiser']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 701
+    EfficaceHintToken = key(VE_ground)
+    LongDescriptionUnitHintToken = loc('navy-mod.60X1C_ZP9St')
+    DescriptionUnitHintToken = loc('navy-mod.BGscQ578n_i')
+    TypeUnitHintToken = loc('navy-mod.B_LMtLU9hZ0')
+    NameInMenuToken = loc('navy-mod.2g5ue9ZUa3w')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [80, 80, 80, 80, 80]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 45
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 3120.0
+    VitesseCombat = 3120.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 75
+    UpgradeTime = 60
+    Nationalite = 6
+)
+// Not rebuilt (FileName: needs a file the original ships (US_Battleship.png)):
+// Card_Unit_Battleship_Jap is TUIResourceTexture
+// (
+//     UsefulnessMask = uint32(4325440)
+//     AsynchronousTextureSourceCarac = $/M3D/Divers/TextureSourceCaracChooser/TextureType_TextureAnimationUnitIcone_Asynchrone
+//     FileName: needs a file the original ships (US_Battleship.png)  (not rebuilt)
+// )
+
+export Descriptor_Unit_Battleship_JAP is clone @[ClassNameForDebug='Unit_Battleship']
+(
+    Radius = 520.0
+    Scale = 1.0
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+    TempsDemiTour = 3.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    WeaponDescriptor = @[ClassNameForDebug='Unit_Battleship']:WeaponDescriptor
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    IconeType = 1
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Battleship']:GfxDescriptorCadavre
+    SignatureRadar = 1
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    PositionInMenu = 702
+    EfficaceHintToken = key(D_ground)
+    LongDescriptionUnitHintToken = loc('navy-mod.6oTuZMIayLE')
+    DescriptionUnitHintToken = loc('navy-mod.b444a7639202d41b')
+    TypeUnitHintToken = loc('navy-mod.0TS_P7MtBAT')
+    NameInMenuToken = loc('navy-mod.7jv0ZWnBS9d')
+    Category = 6
+    CategorieIA = 4
+    AcknowUnitType = 7
+    TypeForAcknow = 118
+    Factory = 12
+    ProductionPrice = [120, 120, 120, 120, 120]
+    ShowInMenu = [true, true, true, true, true]
+    ProductionTime = 60
+    UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager
+    VitesseLineaire = 2600.0
+    VitesseCombat = 2600.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 5
+    StickToGround = true
+    UpgradePrice = 100
+    UpgradeTime = 90
+    Nationalite = 6
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Battleship']
+(
+    VitesseLineaire = 4030.0
+    VitesseCombat = 4030.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 3
+    StickToGround = true
+    // not rebuilt: TextureForInterface: a reference to Card_Unit_Battleship, which couldn't be rebuilt
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Battleship']
+(
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Battleship'] ( UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager )
+// Not rebuilt (none of its values can be written):
+// patch TGfxDescriptorModeleWithAnimation {"_index": "60250"}
+// (
+//     SousElements: a map entry reached by its position (SousElements<v0>)  (not rebuilt)
+// )
+
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Heavy_Cruiser']
+(
+    VitesseLineaire = 4030.0
+    VitesseCombat = 4030.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 3
+    StickToGround = true
+    // not rebuilt: TextureForInterface: a reference to Card_Unit_Heavy_Cruiser, which couldn't be rebuilt
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Heavy_Cruiser']
+(
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Heavy_Cruiser'] ( UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager )
+// Not rebuilt (none of its values can be written):
+// patch TGfxDescriptorModeleWithAnimation {"_index": "60273"}
+// (
+//     SousElements: a map entry reached by its position (SousElements<v0>)  (not rebuilt)
+// )
+
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Destroyer']
+(
+    VitesseLineaire = 4030.0
+    VitesseCombat = 4030.0
+    MaxAcceleration = 3900.0
+    MaxDeceleration = 7800.0
+    ArmureHint = 3
+    StickToGround = true
+    // not rebuilt: TextureForInterface: a reference to Card_Unit_Destroyer, which couldn't be rebuilt
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Destroyer']
+(
+    InitialFlagSet = [uint32(10), uint32(11), uint32(21), uint32(22), uint32(24), uint32(40), uint32(41), uint32(43), uint32(47), uint32(50), uint32(53), uint32(55), uint32(57)]
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Destroyer'] ( UnitIdleManager = @[ClassNameForDebug='Unit_TransportSoldier']:UnitIdleManager )
+// Not rebuilt (none of its values can be written):
+// patch TGfxDescriptorModeleWithAnimation {"_index": "60218"}
+// (
+//     SousElements: a map entry reached by its position (SousElements<v0>)  (not rebuilt)
+// )
+
+patch shared @[ClassNameForDebug='Unit_Battleship']:GfxDescriptor
+(
+    FigurineOptions = ~/Figurine_Unit_Battleship
+    VisibilityRange = $/GFX/Visibility/AllRanges/Zoom34
+    ScaleWithVisibilityRange_Coef = 3.0
+    // not rebuilt: FigurineBinderEffets: a map entry reached by its position (FigurineBinderEffets<v0>)
+)
+patch shared @[ClassNameForDebug='Unit_Heavy_Cruiser']:GfxDescriptor
+(
+    FigurineOptions = ~/Figurine_Unit_Heavy_Cruiser
+    VisibilityRange = $/GFX/Visibility/AllRanges/Zoom34
+    ScaleWithVisibilityRange_Coef = 3.0
+    // not rebuilt: FigurineBinderEffets: a map entry reached by its position (FigurineBinderEffets<v0>)
+)
+patch shared @[ClassNameForDebug='Unit_Destroyer']:GfxDescriptor
+(
+    FigurineOptions = ~/Figurine_Unit_Destroyer
+    VisibilityRange = $/GFX/Visibility/AllRanges/Zoom34
+    ScaleWithVisibilityRange_Coef = 3.0
+    // not rebuilt: FigurineBinderEffets: a map entry reached by its position (FigurineBinderEffets<v0>)
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Destroyer'] ( ShowInMenu = [true, true, true, true, true]  PositionInMenu = 206 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Heavy_Cruiser'] ( ShowInMenu = [true, true, true, true, true]  PositionInMenu = 207 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Battleship'] ( ShowInMenu = [true, true, true, true, true]  PositionInMenu = 208 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Destroyer']
+(
+    ProductionPrice = [50, 50, 50, 50, 50]
+    ProductionTime = 30
+    VitesseLineaire = 3900.0
+    VitesseCombat = 3900.0
+    ArmureHint = 5
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    UpgradePrice = 50
+    UpgradeTime = 50
+    // not rebuilt: ArmorDescriptor: a reference by file position (object #45062, TArmorDescriptor)
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Heavy_Cruiser']
+(
+    ProductionPrice = [80, 80, 80, 80, 80]
+    ProductionTime = 45
+    VitesseLineaire = 3120.0
+    VitesseCombat = 3120.0
+    ArmureHint = 5
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    UpgradePrice = 75
+    UpgradeTime = 60
+    // not rebuilt: ArmorDescriptor: a reference by file position (object #45062, TArmorDescriptor)
+)
+// Not rebuilt (TAmmunition object #44931 of everything.cpp.gladndfbin, matched by its position in the file):
+// patch TAmmunition {"_index": "44931"}
+// (
+//     PorteeMaximale = 650000.0
+// )
+
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Battleship']
+(
+    ProductionPrice = [120, 120, 120, 120, 120]
+    ProductionTime = 60
+    VitesseLineaire = 2600.0
+    VitesseCombat = 2600.0
+    ArmureHint = 5
+    SeuilMort = 2000.0
+    SeuilPinned = 1000.0
+    UpgradePrice = 100
+    UpgradeTime = 90
+    // not rebuilt: ArmorDescriptor: a reference by file position (object #45062, TArmorDescriptor)
+)
+// Not rebuilt (TAmmunition object #44932 of everything.cpp.gladndfbin, matched by its position in the file):
+// patch TAmmunition {"_index": "44932"}
+// (
+//     PorteeMaximale = 800000.0
+// )
+
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Destroyer']
+(
+    TypeUnitHintToken = loc('navy-mod.0uFIrw7Jp8n')
+    DescriptionUnitHintToken = loc('navy-mod.AxM5NnBBTZ')
+    LongDescriptionUnitHintToken = loc('navy-mod.Cn7KYKCZhVT')
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Heavy_Cruiser']
+(
+    TypeUnitHintToken = loc('navy-mod.B_LMtLU9hZ0')
+    DescriptionUnitHintToken = loc('navy-mod.6iQdbmzHBIv')
+    LongDescriptionUnitHintToken = loc('navy-mod.28pW6z_PJoU')
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Battleship']
+(
+    TypeUnitHintToken = loc('navy-mod.0TS_P7MtBAT')
+    DescriptionUnitHintToken = loc('navy-mod.BbdYqArSAI5')
+    LongDescriptionUnitHintToken = loc('navy-mod.CAbXRmkYkJD')
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Destroyer'] ( Factory = 12  PositionInMenu = 700 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Heavy_Cruiser'] ( Factory = 12  PositionInMenu = 701 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Battleship'] ( Factory = 12  PositionInMenu = 702 )
+// Not rebuilt (TResourceMultiMaterialMesh object #60236 of everything.cpp.gladndfbin, matched by its position in the file):
+// patch TResourceMultiMaterialMesh {"_index": "60236"}
+// (
+//     UsefulnessMask = uint32(8388735)
+// )
+
+// Not rebuilt (TResourceMultiMaterialMesh object #60237 of everything.cpp.gladndfbin, matched by its position in the file):
+// patch TResourceMultiMaterialMesh {"_index": "60237"}
+// (
+//     UsefulnessMask = uint32(8388735)
+// )
+
+// Not rebuilt (TResourceMultiMaterialMesh object #60284 of everything.cpp.gladndfbin, matched by its position in the file):
+// patch TResourceMultiMaterialMesh {"_index": "60284"}
+// (
+//     UsefulnessMask = uint32(8388735)
+// )
+
+// Not rebuilt (TResourceMultiMaterialMesh object #60261 of everything.cpp.gladndfbin, matched by its position in the file):
+// patch TResourceMultiMaterialMesh {"_index": "60261"}
+// (
+//     UsefulnessMask = uint32(8388735)
+// )
+
+// --- genglad/patchable/ia/cluster.cpp.gladndfbin (in Data/PC/190852/ZZ_GladPatchableWin.dat)
+patch @TResourceDescriptorMeshPack[PackName='Pack\GFXDescriptor\MeshSkirmish_US.spk']
+(
+    PackName = path('Pack\GFXDescriptor\MeshSkirmishWitBoat_US.spk')
+    UsefulnessMask = uint32(33489023)
+)
+patch @TResourceDescriptorProxyPack[PackName='Pack\GFXDescriptor\ProxySkirmish_US.ppk']
+(
+    PackName = path('Pack\GFXDescriptor\ProxySkirmishWitBoat_US.ppk')
+    UsefulnessMask = uint32(16711807)
+)
+// Not rebuilt (TClusterLoadResource object #50 of cluster.cpp.gladndfbin, matched by its position in the file):
+// patch TClusterLoadResource {"_index": "50"}
+// (
+//     Packs: a reference by file position (object #51, TResourceDescriptorMeshPack)  (not rebuilt)
+// )
+
+// Not rebuilt (TClusterLoadResource object #55 of cluster.cpp.gladndfbin, matched by its position in the file):
+// patch TClusterLoadResource {"_index": "55"}
+// (
+//     Packs: a reference by file position (object #56, TResourceDescriptorMeshPack)  (not rebuilt)
+// )
+
+// Not rebuilt (TClusterLoadResource object #60 of cluster.cpp.gladndfbin, matched by its position in the file):
+// patch TClusterLoadResource {"_index": "60"}
+// (
+//     Packs: a reference by file position (object #61, TResourceDescriptorMeshPack)  (not rebuilt)
+// )
+
+// Not rebuilt (TClusterLoadResource object #65 of cluster.cpp.gladndfbin, matched by its position in the file):
+// patch TClusterLoadResource {"_index": "65"}
+// (
+//     Packs: a reference by file position (object #66, TResourceDescriptorMeshPack)  (not rebuilt)
+// )
+
+// Not rebuilt (TClusterLoadResource object #77 of cluster.cpp.gladndfbin, matched by its position in the file):
+// patch TClusterLoadResource {"_index": "77"}
+// (
+//     Packs: a reference by file position (object #78, TResourceDescriptorMeshPack)  (not rebuilt)
+// )
+
+// Not rebuilt (TClusterLoadResource object #82 of cluster.cpp.gladndfbin, matched by its position in the file):
+// patch TClusterLoadResource {"_index": "82"}
+// (
+//     Packs: a reference by file position (object #83, TResourceDescriptorMeshPack)  (not rebuilt)
+// )
+
+// Not rebuilt (TClusterLoadResource object #102 of cluster.cpp.gladndfbin, matched by its position in the file):
+// patch TClusterLoadResource {"_index": "102"}
+// (
+//     Packs: a reference by file position (object #93, TResourceDescriptorTexturePack)  (not rebuilt)
+// )
+
+// Not rebuilt (TResourceDescriptorMeshPack object #70 of cluster.cpp.gladndfbin, matched by its position in the file):
+// patch TResourceDescriptorMeshPack {"_index": "70"}
+// (
+//     UsefulnessMask = uint32(33489023)
+// )
+
+// Not rebuilt (TResourceDescriptorProxyPack object #71 of cluster.cpp.gladndfbin, matched by its position in the file):
+// patch TResourceDescriptorProxyPack {"_index": "71"}
+// (
+//     UsefulnessMask = uint32(16711807)
+// )
+
+// Not rebuilt (TResourceDescriptorMeshPack object #73 of cluster.cpp.gladndfbin, matched by its position in the file):
+// patch TResourceDescriptorMeshPack {"_index": "73"}
+// (
+//     UsefulnessMask = uint32(33489023)
+// )
+

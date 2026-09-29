@@ -145,8 +145,12 @@ class NdfFile:
         if isinstance(v, Ref):
             if v.target is None:
                 return Value(0x09, struct.pack("<III", 0xBBBBBBBB, 0xFFFFFFFF, 0xFFFFFFFF))
-            if v.target in self.index_of:
-                i = self.index_of[v.target]
+            i = self.index_of.get(v.target)
+            if i is None and v.target.startswith(f"{self.path}#") and v.target[len(self.path) + 1:].isdigit():
+                i = int(v.target[len(self.path) + 1:])  # a part of this file that a mod made shared (patch._share)
+                if i >= len(self.ndf.objects):
+                    i = None
+            if i is not None:
                 return Value(0x09, struct.pack("<III", 0xBBBBBBBB, i, self.ndf.objects[i].cls))
             if v.target.startswith("$/"):  # a named object in another file: import it (reused if already imported)
                 return Value(0x09, struct.pack("<II", 0xAAAAAAAA, self.ndf.import_index(v.target)))

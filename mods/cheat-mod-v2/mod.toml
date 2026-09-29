@@ -1,0 +1,15 @@
+# Rebuilt from the RUSE-Mod-Manager mod Cheat_Mod_V2.rmod by tools/rmod_to_mod.py; README.md says what is and isn't here.
+[mod]
+id          = "cheat-mod-v2"
+name        = "Cheat Mod 2.0"
+version     = "2.0.0"
+description = "Every unit AND every building costs $1 to build, every unit's ProductionTime is 0, and the global MinProductionTime floor is lowered to 0.01 seconds so 0-second production actually takes effect instead of being clamped back up to 1 second. Extends the example Cheat Mod (units-only $1 pricing) with building pricing and the confirmed-working instant-production fix."
+
+[game]
+builds = ["24087620"]  # the build the original was made on
+
+[origin]
+format       = "ruse-mod/v1"
+file         = "Cheat_Mod_V2.rmod"
+id           = "cheat-mod-v2"
+game_version = "24087620"

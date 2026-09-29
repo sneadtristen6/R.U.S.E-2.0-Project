@@ -11,7 +11,7 @@ const state = { lang: "base", kind: "all", nation: -1, search: "", selected: nul
   view: "units" };  // the tab: "units" or "maps" (maps.js)
 const KINDS = ["all", "ground", "infantry", "air", "buildings"];
 const WHOLE = new Set(["int8", "int16", "uint16", "int32", "uint32", "int64"]);
-const NEW = "\u0001new", OPEN = "\u0001open";  // the mod menu's two actions (never a folder path)
+const NEW = "\u0001new", OPEN = "\u0001open", EXPORT = "\u0001export";  // the mod menu's actions (never a folder path)
 
 function api() { return window.pywebview.api; }
 
@@ -57,6 +57,12 @@ async function setLanguage(lang) {
   $("new-mod-name").placeholder = w.mod_name;
   $("new-mod-create").textContent = w.create;
   $("new-mod-cancel").textContent = w.cancel;
+  $("export-version-label").textContent = w.version;
+  $("export-author-label").textContent = w.author;
+  $("export-description-label").textContent = w.description;
+  $("export-go").textContent = w.export;
+  $("export-cancel").textContent = w.cancel;
+  $("export-help").textContent = w.export_help;
   $("test-log-close").textContent = w.close;
   $("lang").replaceChildren(...state.languages.map((l) =>
     el("option", { value: l.code, textContent: l.code === "base" ? w.game_names : l.name, selected: l.code === lang })));
@@ -79,7 +85,8 @@ function renderMods() {
   if (!state.mod) options.push(el("option", { value: "", textContent: w.no_mod, disabled: true, selected: true }));
   for (const m of state.mods) options.push(el("option", { value: m.path, textContent: m.name, title: m.path,
     selected: m.path === state.mod }));
-  options.push(el("option", { value: NEW, textContent: w.new_mod }), el("option", { value: OPEN, textContent: w.open_folder }));
+  options.push(el("option", { value: NEW, textContent: w.new_mod }), el("option", { value: OPEN, textContent: w.open_folder }),
+    el("option", { value: EXPORT, textContent: w.export_mod, disabled: !state.mod }));
   $("mod").replaceChildren(...options);
   $("test").disabled = !state.mod || $("test").dataset.running === "1";
 }
@@ -105,6 +112,7 @@ async function pickMod(e) {
       $("new-mod-name").focus();
       return;
     }
+    if (value === EXPORT) { await openExport(); return; }
     useMods(value === OPEN ? await api().open_mod_folder() : await api().choose_mod(value));
     await modChanged();
   } catch (err) { problem(err); }
@@ -120,6 +128,31 @@ async function createMod(e) {
     $("new-mod-name").value = "";
     say(`${state.words.mod}: ${state.mod}`, "ok");
     await modChanged();
+  } catch (err) { problem(err); }
+}
+
+// --- the mod as one file (Export mod…): version, author and description, then the window's "save as" dialog
+async function openExport() {
+  const info = await api().mod_info();
+  $("export-version").value = info.version || "0.1.0";
+  $("export-author").value = info.author || "";
+  $("export-description").value = info.description || "";
+  $("export-mod").classList.remove("hidden");
+  $("export-version").focus();
+}
+
+async function exportMod(e) {
+  e.preventDefault();
+  const version = $("export-version").value.trim();
+  if (!version) return;
+  try {
+    const { job } = await api().export_mod(version, $("export-author").value.trim(), $("export-description").value.trim());
+    if (!job) return;  // the dialog was cancelled
+    $("export-mod").classList.add("hidden");
+    const log = $("test-log");
+    log.textContent = "";
+    $("test-panel").classList.remove("hidden");
+    follow(job, log, (ok, message) => { if (message) say(message, ok ? "ok" : "error"); });
   } catch (err) { problem(err); }
 }
 
@@ -555,6 +588,8 @@ async function start() {
   $("mod").addEventListener("change", pickMod);
   $("new-mod").addEventListener("submit", createMod);
   $("new-mod-cancel").addEventListener("click", () => $("new-mod").classList.add("hidden"));
+  $("export-mod").addEventListener("submit", exportMod);
+  $("export-cancel").addEventListener("click", () => $("export-mod").classList.add("hidden"));
   $("test").addEventListener("click", testInGame);
   $("test-log-close").addEventListener("click", () => $("test-panel").classList.add("hidden"));
   let timer = null;

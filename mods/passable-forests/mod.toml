@@ -1,0 +1,15 @@
+# Rebuilt from the RUSE-Mod-Manager mod Passable_Forests_V1.rmod by tools/rmod_to_mod.py; README.md says what is and isn't here.
+[mod]
+id          = "passable-forests"
+name        = "Passable Forests"
+version     = "1.0.0"
+description = "Lets every tank, tank destroyer, AA vehicle, and mobile artillery/assault gun enter forest terrain the way recon vehicles already can, by removing the InitialFlagSet flags (11, 21, 55) that block forest entry. Confirmed in-game on the M4 Sherman before rolling out to the full roster."
+
+[game]
+builds = ["24087620"]  # the build the original was made on
+
+[origin]
+format       = "ruse-mod/v1"
+file         = "Passable_Forests_V1.rmod"
+id           = "passable-forests"
+game_version = "24087620"
