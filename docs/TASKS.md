@@ -5,6 +5,63 @@ Cloud sessions have no game files. They do design, code and tests here, on a bra
 [PLAN.md](PLAN.md) §10 first (the order and the rules), then the task below. Everything that isn't in the task's
 scope is out of scope.
 
+## Handover from the cloud session (2026-09-29, evening): read this first
+
+The PC session ran out of credit in the afternoon; the cloud session carried on. The owner is not a coder: **the PC
+session runs every command itself; the owner only installs, plays and screenshots.** Give click-level steps.
+
+**Open pull requests, in merge order.** All are green on the repository's own checks (tests on Linux and Windows,
+CodeQL). The red `github-advanced-security` check is GitHub's own scanner failing on GitHub's side before it reads
+any code ("The requested model is not supported"); it is commented on each pull request; ignore it, or turn it off
+under Settings → Advanced Security → Code scanning (the AI/Copilot switch; keep CodeQL on).
+1. #2 `cloud/launcher-mod-sets` (Task B) → #4 `cloud/mod-package` (Task C, on #2) → #5 `cloud/browse-mods` (Task D, on #4).
+2. #3 `cloud/community-mods` (Task G: 18 community mods rebuilt in our format; the patch language finds objects
+   by a property).
+3. #6 `cloud/terrain-brushes` (the terrain engine) → #7 `cloud/studio-brushes` (the Studio's brushes) → #8
+   `cloud/ramp-tool` (the ramp, Start over).
+
+Each ends with a "Test for the owner". **Merging:** under the standing rule below (the PC session out of credit),
+the cloud session merges these itself once GitHub's tests are green and it has re-read each diff, in the order
+above; version bumps, tags and releases wait for the owner's in-game tests. Any still open when you read this:
+merge it in that order (merge `main` into the branch first when GitHub says it conflicts).
+
+**The one test that matters most: the hill (#6).** It decides whether the game accepts ground we move. Run
+`py -3 tools\verify_terrain.py` (read-only; every map should say OK), then
+`py -3 tools\verify_terrain.py --make-test TwoIslands D:\RUSE-Instances\hill`; the owner starts `RUSE.exe` from that
+copy (Steam running), plays Centre de gravite and looks for the hill near the middle (the tool prints where):
+drawn close up and zoomed out, tanks drive up it, orders and the camera work.
+- Passes → release Studio 0.6 (the brushes, the ramp); the cloud's next is painting the ground (below).
+- Fails → write down exactly what happened (a crash at load, holes or seams, units walking through it, the camera)
+  in pull request #6. Likely causes, in order: the `.kdt` index buffers and triangle lists (still opaque, FORMATS
+  §6) no longer matching moved points; patch bounds; normals. The cloud can then move only the mesh points, or a
+  smaller hill, to split the cause.
+
+**Other tests waiting for the owner** (the steps are in each pull request): Studio 0.5's new unit (A, merged),
+mod sets in the launcher (B), a mod as one file (C), the community mods (G: `mods/airfield-capacity`, then
+`mods/cheat-mod-v2`), Browse mods (D: needs the owner to create the public repository `sneadtristen6/Ruse-Mods`
+with an `index.toml`, MOD_FORMAT §15). One game start per test.
+
+**Findings since the PC stopped** (details in [LOG.md](LOG.md)):
+- The community `.rmod` files showed the patch forms modders need (`@TClass[Prop=value]`, `patch every`, a
+  reference to a part) and real values worth keeping (FORMATS §2); 18 mods are rebuilt in `mods/`, other authors'
+  work left out (MOD_FORMAT §13).
+- A map's ground is four files that must move together; the engine moves them by one rule, keeps every untouched
+  byte, and builds the same bytes on every PC (multiplayer fingerprints match). Unverified in the game until the
+  hill test.
+- The Studio's brushes work in a browser on the preview island: hill, a painted drag, crater, plateau, ramp, Undo,
+  Start over, the words in all ten languages.
+- Discord got an update with pictures (a Studio unit, the launcher, Browse mods, the map view) and the GitHub link.
+
+**The cloud's plan now (the owner's order, PLAN §12):** 1) **painting the ground**: a brush that paints sand,
+grass, rock or snow onto the map's texture tiles (the game already draws tiles we write, so this rests on an
+in-game fact; the cloud studies `tmst`/`tgu1` and the tile grid first and writes the format into MOD_FORMAT §8
+before building); 2) **water that follows the ground** (T5); 3) scenery and roads (M6) after the ground works
+in-game. Two ideas the owner parked are in PLAN §12 (strongpoints troops can hold; tunnels and trenches):
+documented, not planned.
+
+**The owner's standing wishes:** think Cities: Skylines but simpler; no jargon; the sessions decide small things
+themselves and never ask the owner to type commands.
+
 **Queue (2026-09-29, keep this order):** A is done (pull request #1) → **B** (next, unless already started) → C →
 D → E → F → G. Take the first task not started; one task per session; one pull request per task; resolve
 conflicts with `main` by merging `main` into the branch (in docs/LOG.md keep both entries). When the PC session
