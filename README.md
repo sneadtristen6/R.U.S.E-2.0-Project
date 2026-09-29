@@ -1,4 +1,4 @@
-# R.U.S.E. Mod Platform (working name)
+# R.U.S.E. 2.0
 
 A foundational modding platform and player launcher for R.U.S.E. (Eugen Systems, 2010), built for the long run:
 new units, maps, models, missions and one-click modded multiplayer. The content goals on top are RUSE 2.0 and Pacific Island Defense.
