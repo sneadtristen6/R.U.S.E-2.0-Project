@@ -623,7 +623,7 @@ v1 needs no server. A join code names the game build, the mods and their exact v
 ## 13. Interop with RUSE-Mod-Manager (`.rmod`)
 
 Built: `tools/rmod_to_mod.py` rebuilds an `.rmod` as a mod of ours (18 of them are in `mods/`, 2026-09-29; see
-`mods/README.md`); TASKS.md G moves that into the launcher. The format, read from 37 mods with our own reader
+kept in the private repo until their authors agree); TASKS.md G moves that into the launcher. The format, read from 37 mods with our own reader
 (RUSE-Mod-Manager's code isn't used):
 
 - **One JSON file.** `$schema` `ruse-mod/v1`; `id`, `name`, `version`, `author`, `description`, `game_version` (the

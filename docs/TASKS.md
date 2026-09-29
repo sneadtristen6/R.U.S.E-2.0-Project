@@ -39,8 +39,8 @@ drawn close up and zoomed out, tanks drive up it, orders and the camera work.
   smaller hill, to split the cause.
 
 **Other tests waiting for the owner** (the steps are in each pull request): Studio 0.5's new unit (A, merged),
-mod sets in the launcher (B), a mod as one file (C), the community mods (G: `mods/airfield-capacity`, then
-`mods/cheat-mod-v2`), Browse mods (D: needs the owner to create the public repository `sneadtristen6/Ruse-Mods`
+mod sets in the launcher (B), a mod as one file (C), the community mods (G: `airfield-capacity`, then
+`cheat-mod-v2`; in the private repo's `private/mods/` until their authors agree), Browse mods (D: needs the owner to create the public repository `sneadtristen6/Ruse-Mods`
 with an `index.toml`, MOD_FORMAT §15). One game start per test.
 
 **Findings since the PC stopped** (details in [LOG.md](LOG.md)):

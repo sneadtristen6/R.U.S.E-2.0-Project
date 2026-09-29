@@ -515,7 +515,7 @@ import); the cloud tab's pull request #1 (Task A) is under review.
   Tests for each (`test_patch`, `test_rndf`, `test_model`).
 - **Mods:** `tools/rmod_to_mod.py`, our own reader, rebuilt 32 mods; the owner chose the 18 that go into `mods/`
   (the gameplay ones, the cheat mod for testing, and the Navy mod as the seed for landing ships), each with a README
-  of what carried over and the assumptions to check in-game (`mods/README.md` is the index). Left out: two other
+  of what carried over and the assumptions to check in-game (`mods/README.md` is the index; moved to the private repo on 2026-09-29: most are DomesticNukes' work, published only with his OK). Left out: two other
   authors' mods, three that are only files (a song, a video, recompiled mission scripts), and the three whole-pack
   zips, which would need a "compare two packs" tool and the pristine Compat 2 pack. A synthetic `.rmod` runs through
   the tool and the engine in `tests/test_tools.py`.

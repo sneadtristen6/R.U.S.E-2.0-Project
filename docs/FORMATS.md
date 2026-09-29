@@ -145,7 +145,7 @@ requirement, and the engine doesn't check member bytes against anything we chang
   `VitesseLineaire` (speed), `SeuilMort` (death threshold), `SeuilPinned`, `Puissance` (power),
   `PorteeMaximale` (max range), `DetectionBase`, `ShowInMenu`, `ArmorDescriptor`, `GfxDescriptor`, `Nationalite`.
 - **Values and tricks from 37 community mods (2026-09-29; the mods' own findings, not checked by us in-game;
-  `mods/README.md` says which of them are rebuilt in the repo):**
+  the rebuilt ones are kept in the private repo until their authors agree):**
   - Units (`TUniteAuSolDescriptor`, `TInfanterieDescriptor`, `TAvionDescriptor`, `TTruckDescriptor`): `SeuilMort`
     (health) and `SeuilPinned` (pinned threshold: above `SeuilMort` = never pinned, 0 = pinned at once);
     `VitesseLineaire` / `VitesseCombat` (speeds; ground values go up to 57,200), `MaxAcceleration`,
