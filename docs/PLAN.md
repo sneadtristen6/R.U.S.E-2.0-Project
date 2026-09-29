@@ -696,6 +696,19 @@ unit list. The Japanese units at 306 and 310 don't prove a 6th button exists in 
 fingerprint `W77E-1S9T`. If "Lee Probe" shows where the Lee was, copies work and the menu only has buttons for the
 slots it ships with (then the build must pick shipped slots); if the slot is empty, the game ignores new units.
 
+**C6b in-game (2026-09-28):** "Lee Probe" did **not** show at 304. The real Lee, moved to 306, showed after the
+Sherman at $20 (the Sherman, now first, appeared as the upgrade). So a 6th slot works (the menu lays units out in
+slot order), and **the game ignores copied units whatever their slot.** Not the cause either: `CHNK` is `(0, object
+count)` and the writer updates it; `TrackingId` (1–60, a small table) is shared by 42 groups of visible units, the
+Lee's with the Jagdpanther.
+**C6c, three probes at once** ([`examples/id-probe/`](../examples/id-probe/), instance
+`D:\RUSE-Instances\c6c-id-probe`, fingerprint `W6BS-XP65`), US armour menu after the Sherman:
+- "Probe A" ($1, slot 307) keeps the Lee's `ClassNameForDebug` 'Unit_M3_Lee'. The game's Python unit list
+  (`parametres/classes.xyz`) has one class per unit named exactly like this, and a renamed copy has none.
+- "Probe B" ($2, slot 308) gets `DescriptorId` 2000, inside the shipped range (copies got 4059, past the highest
+  shipped id, 4058).
+- "Probe C" ($3, slot 309) has both.
+
 ### C6: a new unit with its own name (ready to run, after C5)
 
 C5 proves a new unit works. C6 gives it its own name through the new text step: C5's M3 Lee copy with the name
