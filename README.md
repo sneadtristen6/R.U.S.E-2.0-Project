@@ -22,11 +22,11 @@ players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your br
   modded copy and starts it.
 - **Maps:** new maps can ship their own pack (C3). The terrain mesh and tile files can be read and rewritten
   losslessly, and the game draws terrain textures we write ourselves.
-- **Next: a terrain editor in RUSE Studio** (shape a map with brushes, then "Test in game"), then making mod sets
-  inside the launcher.
+- **Next:** new units made from the Studio's window, then mod sets made inside the launcher, then a terrain
+  editor in RUSE Studio (shape a map with brushes, then "Test in game").
 - Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19).
 
-The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.md §6.
+The order is in PLAN.md §10 "Now"; the latest decisions are in PLAN.md §6.
 
 | Doc | What it covers |
 |---|---|
