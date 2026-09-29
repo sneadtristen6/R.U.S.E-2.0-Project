@@ -32,7 +32,9 @@ ruse2-core/
   README.md, LICENSE, CHANGELOG.md
 ```
 
-A package is shared as a `.zip` of this folder. Built outputs are never part of the source package. An optional
+A package is one file: the folder zipped, named `<id>-<version>.rusemod` (a plain zip inside, so it opens anywhere;
+`rusemod.package`). The Studio's "Export mod…" makes it and the launcher's "Add a mod file…" installs it; a `.zip` of
+the folder is accepted too. Built outputs are never part of the source package. An optional
 `cache/` of cooked assets, keyed by tool version, can ship to speed up installs.
 
 ## 3. Manifest (`mod.toml`)
@@ -51,6 +53,7 @@ platform    = ">=0.1, <0.2"         # platform versions this mod works with
 [game]
 builds        = ["24687178"]        # Steam build ids the mod was tested on
 data_revision = "190852"
+fingerprint   = "K7Q2-M9XD"         # this mod alone on that build (§12); Export mod… writes these three lines
 
 [dependencies]                      # hard dependencies: id = version range
 # "ruse2-assets" = "^0.3"

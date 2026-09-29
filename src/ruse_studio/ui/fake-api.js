@@ -12,6 +12,8 @@
       own_part: "its own", shared_part: "shared with other units", used_by: "Used by", copy_address: "Copy address",
       no_index: "No game index yet. Build it once (about a minute).", build_index: "Build the index",
       pick_unit: "Pick a unit on the left.", mod: "Mod", new_mod: "New mod…", open_folder: "Open a mod folder…",
+      export_mod: "Export mod…", version: "Version", author: "Author", description: "Description", export: "Export",
+      export_help: "One file to share: the mod folder packed. The version, author and description are kept in the mod.",
       mod_name: "Name of the new mod", create: "Create", cancel: "Cancel", close: "Close",
       no_mod: "Pick or make a mod to save changes in.", test_in_game: "Test in game", was: "was {v}", reset: "Undo",
       saved: "Saved in {file}", users_warning: "Changing this changes it for every unit that uses it ({n}).",
@@ -37,6 +39,8 @@
       uses: "Utilise", own_part: "le sien", shared_part: "partagé avec d'autres unités", used_by: "Utilisé par",
       copy_address: "Copier l'adresse", no_index: "Pas encore d'index du jeu.", build_index: "Construire l'index",
       pick_unit: "Choisissez une unité à gauche.", mod: "Mod", new_mod: "Nouveau mod…",
+      export_mod: "Exporter le mod…", version: "Version", author: "Auteur", description: "Description", export: "Exporter",
+      export_help: "Un seul fichier à partager : le dossier du mod empaqueté. La version, l'auteur et la description restent dans le mod.",
       open_folder: "Ouvrir un dossier de mod…", mod_name: "Nom du nouveau mod", create: "Créer", cancel: "Annuler",
       close: "Fermer", no_mod: "Choisissez ou créez un mod pour enregistrer les modifications.",
       test_in_game: "Tester en jeu", was: "avant : {v}", reset: "Annuler", saved: "Enregistré dans {file}",
@@ -65,6 +69,8 @@
       air: "空军", buildings: "建筑", units: "{n} 个单位", parts: "组件", uses: "使用", own_part: "自有",
       shared_part: "与其他单位共享", used_by: "被引用于", copy_address: "复制地址", no_index: "尚无游戏索引。",
       build_index: "建立索引", pick_unit: "请在左侧选择一个单位。", mod: "模组", new_mod: "新建模组…",
+      export_mod: "导出模组…", version: "版本", author: "作者", description: "描述", export: "导出",
+      export_help: "一个可分享的文件：打包后的模组文件夹。版本、作者和描述会保存在模组中。",
       open_folder: "打开模组文件夹…", mod_name: "新模组名称", create: "创建", cancel: "取消", close: "关闭",
       no_mod: "请选择或新建一个模组来保存修改。", test_in_game: "在游戏中测试", was: "原为 {v}", reset: "撤销",
       saved: "已保存到 {file}", users_warning: "修改后,所有使用它的单位都会改变({n})。",
@@ -131,13 +137,11 @@
   const safeName = (name) => name.normalize("NFKD").replace(/[^\x00-\x7f]/g, "").replace(/[^A-Za-z0-9]+/g, "_")
     .replace(/^_|_$/g, "");
   const home = "C:/Users/You/AppData/Local/RUSE Mod Platform/mods/";
-  const mods = [{ path: home + "pacific-test", name: "pacific-test" }];
+  const mods = [{ path: home + "sherman-test", name: "sherman-test" }];  // sample data for the preview only
   let current = mode === "nomod" ? null : mods[0].path;
   const edits = new Map();  // `${mod}|${address}|${prop}|${how}|${via}` -> value, like the mod's src/studio.rndf
   const editKey = (address, prop, how, via) => `${current}|${address}|${prop}|${how || ""}|${how === "own" ? via : ""}`;
-  if (current) edits.set(editKey(E + "M4_Sherman", "SeuilMort"), 14);
-  if (current) newUnits.push({ mod: current, id: "Super_Sherman", source: E + "M4_Sherman", name: "Super Sherman",
-    price: 55, nation: 0, factory: 10 });
+  if (current) edits.set(editKey(E + "M4_Sherman", "ProductionTime"), 1);  // a cheap, fast Sherman, as in the owner's test
   const mine = () => newUnits.filter((n) => n.mod === current);
   const BLAST = E + "M4_Sherman:Weapon.Blast";  // a part three units share
   const BLAST_OWNERS = ["M4_Sherman", "M3A1_Stuart", "Type97_ChiHa"];
@@ -283,7 +287,9 @@
 
   const jobs = {
     index: [["  ZZ_Win.dat"], "The game index is ready."],
-    test: [["Building the modded copy of R.U.S.E. for pacific-test in D:\\RUSE-Instances\\studio-pacific-test…",
+    export: [["Building the mod on the game, to record the game build and the fingerprint…", "  fingerprint: K7Q2-M9XD",
+      "Saved as C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod"], "Saved as C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod"],
+    test: [["Building the modded copy of R.U.S.E. for sherman-test in D:\\RUSE-Instances\\studio-sherman-test…",
       "  1 change in 1 file", "  modded copy ready: 41 files linked, 1 replaced", "Starting R.U.S.E. from the modded copy…"],
       "R.U.S.E. is starting."],
   };
@@ -349,8 +355,8 @@
       },
       choose_mod: async (path) => { current = path; return modsView(); },
       open_mod_folder: async () => {
-        const path = "D:/Mods/pacific-maps";
-        if (!mods.some((m) => m.path === path)) mods.push({ path, name: "pacific-maps" });
+        const path = "D:/Mods/another-mod";
+        if (!mods.some((m) => m.path === path)) mods.push({ path, name: "another-mod" });
         current = path;
         return modsView();
       },
@@ -374,6 +380,9 @@
         return { saved: current + "/src/studio.rndf" };
       },
       test_in_game: async () => ({ job: "test" }),
+      mod_info: async () => ({ id: "sherman-test", name: "sherman-test", version: "0.1.0", authors: [], author: "",
+        description: "Made in the RUSE Studio.", builds: [], data_revision: "", fingerprint: "" }),
+      export_mod: async () => ({ job: "export" }),
       build_index: async () => ({ job: "index" }),
       job: async (id) => ({ state: "done", message: jobs[id][1], lines: jobs[id][0], count: jobs[id][0].length }),
       maps: async () => ({ maps: fakeMaps }),

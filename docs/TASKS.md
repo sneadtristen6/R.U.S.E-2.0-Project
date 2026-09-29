@@ -162,6 +162,9 @@ Order: C, then D, then E (each builds on the one before). F and G can be done at
 
 ### Task C: a mod as one file — branch `cloud/mod-package`
 
+**Status (2026-09-29): code done, in a pull request from `cloud/mod-package` (it sits on Task B's branch until pull
+request #2 merges).** The PC session tests the loop with the real game.
+
 **Goal:** the loop from modder to player. The Studio turns a mod folder into one file; a player installs that file
 with the launcher's "Add a mod file…" (Task B).
 

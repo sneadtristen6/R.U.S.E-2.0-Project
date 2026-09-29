@@ -625,7 +625,8 @@ new units that fight). Launcher v0.1 and Studio 0.4.1 are released (values edite
 five per-date prices, the Maps view with each map's real ground in 3D). The terrain mesh and tile files read and
 write losslessly, and plain tiles we write are drawn in-game. The `.kdt` gameplay ground reads and writes losslessly on every map (`rusemod.kdt`,
 2026-09-29), its vertices and normals decoded; the notes are in FORMATS §6 with the agreed credit. Its index
-buffers, triangle lists and tree nodes are still opaque (step 1). Details: [LOG.md](LOG.md).
+buffers, triangle lists and tree nodes are still opaque (step 1). A mod as one file (TASKS C): the Studio's "Export mod…" writes `<id>-<version>.rusemod`, the launcher
+installs it (in review, 2026-09-29). Details: [LOG.md](LOG.md).
 
 ## 11. RUSE 2.0 design notes (draft, 2026-09-28)
 

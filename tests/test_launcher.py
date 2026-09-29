@@ -13,8 +13,8 @@ from unittest import mock
 
 from test_build import PACK, price, write_mod
 from ruse_launcher import app
-from ruse_launcher.api import LauncherApi, LauncherError, _words, language_code, words
-from rusemod import schema
+from ruse_launcher.api import MOD_FILES, LauncherApi, LauncherError, _words, language_code, words
+from rusemod import package, schema
 from rusemod.play import STEAM_OPEN, STEAM_PLAY, keep_order
 from rusemod.resolve import ModInfo
 from rusemod.webui import serve
@@ -148,7 +148,7 @@ def make_zip(path: Path, files: dict, prefix: str = "") -> Path:
 
 
 class Library(Base):
-    """The mod library: mods added from a folder or a .zip, checked first, listed, removed."""
+    """The mod library: mods added from a folder, a .zip or a .rusemod file, checked first, listed, removed."""
 
     def mod(self, mod_id, files=HALF, extra=""):
         return write_mod(Path(self.tmp.name, "downloads"), mod_id, files, extra=extra)
@@ -210,6 +210,30 @@ class Library(Base):
             self.assertIn(why, str(cm.exception))
         self.assertEqual(api.library(), [])
         self.assertEqual([p.name for p in (self.home / "library").iterdir()], [])  # nothing half-added
+
+    def test_a_mod_file_from_the_studio_is_installed_and_plays(self):
+        folder = self.mod("econ-half", extra='name = "Half price"\nauthors = ["Tristen"]\n')
+        file = package.pack(folder, Path(self.tmp.name), build_id="24687178", fingerprint="K7Q2-M9XD")
+        self.assertEqual(file.name, "econ-half-1.0.0.rusemod")
+        api = self.api(pick_file=lambda: str(file))
+        mod = api.add_mod_file()["library"][0]
+        self.assertEqual((mod["id"], mod["version"], mod["author"], mod["builds"], mod["fingerprint"]),
+                         ("econ-half", "1.0.0", "Tristen", ["24687178"], "K7Q2-M9XD"))
+        self.assertTrue((self.home / "library" / "econ-half" / "src" / "eco.rndf").is_file())
+        api.new_set("Half", ["econ-half"])
+        j = wait_for(api, api.play("half")["job"])
+        self.assertEqual(j["state"], "done", j)
+        copy = self.instances / "half"
+        self.assertEqual(price((copy / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes()), [53] * 5)
+        broken = Path(self.tmp.name, "broken.rusemod")
+        with zipfile.ZipFile(broken, "w") as z:
+            z.writestr("mod.toml", '[mod]\nid = "broken"\nversion = "1.0.0"\n')
+            z.writestr("src/x.rndf", "patch $/B ( ProductionPrice = \n")
+        with self.assertRaises(LauncherError) as cm:
+            api.add_mod(str(broken))
+        self.assertIn("mistake", str(cm.exception))
+        self.assertEqual(len(api.library()), 1)
+        self.assertEqual(MOD_FILES[0], "Mods (*.rusemod;*.zip;*.toml)")
 
     def test_removing_a_mod(self):
         api = self.api()
