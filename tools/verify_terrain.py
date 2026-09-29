@@ -4,7 +4,8 @@ Without --make-test (READ-ONLY on the game): on every Maps\PC\DataMap*_v09.dat a
 dry land nearest the middle of the map, and the four ground files are checked:
   A. all four change and read back,
   B. in each file the point nearest the hill's centre rose by what the brush says, to within the file's height step,
-  C. where the gameplay ground and the close-up mesh share a point, they still have the same height,
+  C. every gameplay-ground point still has the height of the close-up mesh point it sat on (same x, y and height;
+     the mesh can hold several points at one x, y, a cliff's top and foot, so x and y alone don't say which),
   D. the mesh cells and tree parts the hill doesn't reach keep their exact bytes.
 One line per map with the time it took, then a summary. Nothing is written.
 
@@ -121,15 +122,30 @@ def check(read, name: str) -> tuple[list[str], str]:
         step = (hi - lo) / Q_MAX
         if abs(got - want) > step:
             problems.append(f"the {LABELS[key]} rose to {got:.1f} at the hill's centre, not {want:.1f}")
-    # C
+    # C: the close-up mesh can hold several points at one x, y at different heights (a cliff's top and foot: every
+    # shipped mesh has hundreds), so each gameplay-ground point is matched, before the edit, to the mesh point it
+    # sits on (same quantized x, y and height; all 32 shipped maps: every ground point has one) and must have that
+    # point's height after it, exactly
     if "ground" in new and "highdef" in new:
         g, h = new["ground"], new["highdef"]
         if tuple(g.bounds_min) == tuple(h.bounds[:3]) and tuple(g.bounds_max) == tuple(h.bounds[3:]):
-            heights = {(p[0], p[1]): p[2] for c in h.cells for p in c.positions()}
-            off = sum(1 for s in range(len(g.subtrees)) for p in g.positions(s)
-                      if (p[0], p[1]) in heights and heights[(p[0], p[1])] != p[2])
+            after: dict[tuple, set] = {}   # close-up mesh point (x, y, height before) -> its heights after
+            for a, b in zip(Tms(raw["highdef"]).cells, h.cells):
+                for p, q in zip(a.positions(), b.positions()):
+                    after.setdefault(p[:3], set()).add(q[2])
+            old_g = Kdt(raw["ground"])
+            off = lost = 0
+            for s in range(len(g.subtrees)):
+                for p, q in zip(old_g.positions(s), g.positions(s)):
+                    heights = after.get(p)
+                    if heights is None:
+                        lost += 1
+                    elif heights != {q[2]}:
+                        off += 1
             if off:
                 problems.append(f"{off} gameplay-ground point(s) differ from the close-up mesh")
+            if lost:
+                problems.append(f"{lost} gameplay-ground point(s) sit on no close-up mesh point (before the edit)")
     # D
     for key in ("highdef", "lowdef"):
         if key in new:

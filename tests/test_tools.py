@@ -309,6 +309,48 @@ class VerifyTerrain(unittest.TestCase):
         self.assertIn("Test                     OK  hill at (", out.getvalue())
         self.assertIn("1 maps, 0 failures", out.getvalue())
 
+    def add_cliff_map(self):
+        from test_terrain_edit import make_map_pack
+        with open(os.path.join(self.game, "Maps", "PC", "DataMapCliff_v09.dat"), "wb") as f:
+            f.write(make_map_pack(cliff=True))
+
+    def test_a_cliff_in_the_close_up_mesh_is_no_mismatch(self):
+        # the close-up mesh holds two points at one x, y (a cliff's top and foot, the foot last); the gameplay ground
+        # sits on the top, so it matches that point, not the last one at that x, y
+        self.add_cliff_map()
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = verify_terrain.main([self.game, "--only", "Cliff"])
+        self.assertEqual(code, 0, out.getvalue())
+        self.assertIn("Cliff                    OK  hill at (", out.getvalue())
+
+    def test_a_ground_point_off_the_close_up_mesh_is_still_caught(self):
+        from rusemod.kdt import Kdt
+        from rusemod.terrain_edit import FILES
+        self.add_cliff_map()
+        real = verify_terrain.edit_map
+
+        def skewed(read, strokes, name):   # the hill, then one gameplay-ground point one step higher
+            changed, notes = real(read, strokes, name)
+            ground = Kdt(changed[FILES["ground"]])
+            pos = ground.positions(1)
+            x, y, z = pos[121 + 60]         # the centre point of the centre cell, under the hill
+            pos[121 + 60] = (x, y, z + 1)
+            ground.set_positions(1, pos)
+            changed[FILES["ground"]] = ground.to_bytes()
+            return changed, notes
+
+        out = io.StringIO()
+        verify_terrain.edit_map = skewed
+        try:
+            with contextlib.redirect_stdout(out):
+                code = verify_terrain.main([self.game, "--only", "Cliff"])
+        finally:
+            verify_terrain.edit_map = real
+        self.assertEqual(code, 1, out.getvalue())
+        self.assertIn("Cliff                    FAIL: 1 gameplay-ground point(s) differ from the close-up mesh",
+                      out.getvalue())
+
     def test_the_hill_test_makes_a_modded_copy(self):
         copy = os.path.join(self.tmp.name, "hill")
         out = io.StringIO()

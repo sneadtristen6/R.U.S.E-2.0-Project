@@ -11,7 +11,9 @@ and height only, so points the files share end up at the same height. The map's 
 drawn mesh's curtain hangs from it). Heights stay inside each file's own height range: a point pushed past the top or
 the bottom stops there, and the report says how many did. In the meshes, the normals around moved points and the
 height bounds of their patches are recomputed (rusemod.tms); in the .kdt trees, a moved point takes the normal of the
-nearest close-up mesh point. Parts nothing touched keep their exact bytes.
+nearest close-up mesh point (nearest in x, y, then in height: the close-up mesh can hold several points at one x, y,
+a cliff's top and foot, and a gameplay-ground point sits on one of them). Parts nothing touched keep their exact
+bytes.
 
 Not yet (MOD_FORMAT §8): raising the ground above a map's highest point, water that follows the ground (lakes keep
 their outline), and cutting the mesh finer.
@@ -123,7 +125,8 @@ def _commit_mesh(tms: Tms, pts: _Points) -> tuple[int, int, int]:
 
 
 def _commit_tree(kdt: Kdt, pts: _Points, normal_at) -> tuple[int, int, int]:
-    """Write the new heights into the tree; moved points take `normal_at(x, y)` (or keep theirs when it's None)."""
+    """Write the new heights into the tree; moved points take `normal_at(x, y, z)` (or keep theirs when it's
+    None)."""
     by_sub: dict[int, dict[int, int]] = {}
     positions: dict[int, list] = {}
     for n in range(len(pts.z)):
@@ -139,7 +142,7 @@ def _commit_tree(kdt: Kdt, pts: _Points, normal_at) -> tuple[int, int, int]:
         normals = list(kdt.normals(s))
         for i, n in points.items():
             pos[i][2] = kdt.to_quant(2, pts.z[n])
-            nrm = normal_at(pts.x[n], pts.y[n]) if normal_at else None
+            nrm = normal_at(pts.x[n], pts.y[n], pts.z[n]) if normal_at else None
             if nrm is not None:
                 normals[i] = nrm
         kdt.set_positions(s, [tuple(p) for p in pos])
@@ -150,13 +153,15 @@ def _commit_tree(kdt: Kdt, pts: _Points, normal_at) -> tuple[int, int, int]:
 
 def _normal_lookup(tms: Tms, pts: _Points):
     """The normal of the close-up mesh point nearest to (x, y), as a unit vector, or None when no point is within
-    two index squares (the tree point then keeps its own normal)."""
-    def at(x: float, y: float):
+    two index squares (the tree point then keeps its own normal). The mesh can hold several points at one x, y (a
+    cliff's top and its foot; every shipped close-up mesh has hundreds): among those, the one whose height is
+    nearest to z, so a tree point takes the normal of the mesh point it sits on."""
+    def at(x: float, y: float, z: float):
         best, best_d = None, None
         s = pts.step
         for n in pts.near(x - 2 * s, x + 2 * s, y - 2 * s, y + 2 * s):
             dx, dy = pts.x[n] - x, pts.y[n] - y
-            d = dx * dx + dy * dy
+            d = (dx * dx + dy * dy, abs(pts.z[n] - z))
             if best_d is None or d < best_d or (d == best_d and n < best):
                 best, best_d = n, d
         if best is None:
