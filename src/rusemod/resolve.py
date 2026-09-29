@@ -27,6 +27,7 @@ class ModInfo:
     when_mods: set[str] = field(default_factory=set)         # ids named in `when mod` blocks
     text_prefix: str = ""                                    # start of the text keys the mod hands out (§6)
     texts: list = field(default_factory=list)                # loc.TextRow from text/*.csv
+    terrain: dict = field(default_factory=dict)              # map pack name -> [brush.Stroke] (§8)
 
 
 # --- versions ---

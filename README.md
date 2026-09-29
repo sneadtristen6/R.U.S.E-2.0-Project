@@ -14,6 +14,8 @@ players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your br
 | | ![RUSE Studio's Maps: Centre of Gravity in 3D, with its real ground](docs/images/studio-maps.jpg) |
 
 **Current stage (2026-09-29):**
+- **Terrain brushes** (in review): mods can reshape a map's ground; the first in-game check is one hill on Centre of
+  Gravity.
 - **New units work in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory;
   it's built and fights like any other unit (C7).
   `ruse build` gives every copied unit the class the game's Python unit list needs, under the safety rules of
@@ -65,6 +67,12 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
   ([`examples/cloned-unit/`](examples/cloned-unit/), PLAN.md §7). New units get their own names from a mod's
   `text/*.csv` ([`src/rusemod/loc.py`](src/rusemod/loc.py); in-game test C6,
   [`examples/named-unit/`](examples/named-unit/)).
+
+- **Terrain brushes** ([`src/rusemod/brush.py`](src/rusemod/brush.py), [`terrain_edit.py`](src/rusemod/terrain_edit.py),
+  in review): a mod reshapes a map's ground with brush strokes (hill, raise, lower, crater, plateau, flatten, smooth)
+  in `maps/<map>/terrain.toml`; `ruse build` applies them to all four files that hold the ground, together, and puts
+  the map in the modded copy ([docs/MOD_FORMAT.md §8](docs/MOD_FORMAT.md)). The in-game check comes first:
+  `py -3 tools\verify_terrain.py --make-test TwoIslands D:\RUSE-Instances\hill` builds a copy with one hill.
 
 - **Two apps** on the engine, separate from each other (neither needs the other; PLAN.md decision 22). Both are
   desktop windows built like web pages; once: `py -3 -m pip install pywebview`. Their screens also open in a normal

@@ -437,3 +437,33 @@ import); the cloud tab's pull request #1 (Task A) is under review.
   names file left alone. The browser preview (`index.html?fake`) shows the whole flow.
 - **Not done, on purpose:** per-language names (the names file gets their columns then; today it's rewritten with one), moving an existing
   unit to another menu, and the release (no version bump: the PC session's in-game check comes first).
+
+### 2026-09-29, cloud session: terrain brushes, engine side (PLAN §7 MT, T2–T3; branch `cloud/terrain-brushes`)
+
+- **Owner's call:** start on map editing. First the engine, so the one in-game check can happen before the Studio
+  offers brushes.
+- **Brushes** (`rusemod.brush`): hill, raise, lower, crater, plateau, flatten, smooth. A stroke is one dab: centre,
+  radius, and a height, a level or a weight. Shapes are polynomials (no crease, full at the centre, nothing at the
+  edge); only arithmetic and square roots, so every PC computes the same heights. Smooth pulls toward the local
+  average of a height grid sampled from the close-up mesh, which follows every stroke, so every file moves toward
+  the same surface.
+- **All four files together** (`rusemod.terrain_edit`): every stroke moves the points of the close-up and far meshes,
+  the gameplay ground and the camera floor inside its circle by the same function of position and height, so
+  shared points stay equal (the gameplay ground's points are the close-up mesh's: exactly equal after the edit).
+  The map edge never moves; heights stop at each file's own range and the report counts them; mesh normals and patch
+  bounds are recomputed around moved points (`Tms.set_heights`); a moved tree point takes the normal of the nearest
+  close-up mesh point; untouched cells and tree parts keep their bytes.
+- **In mods and the build:** `maps/<map pack>/terrain.toml` (MOD_FORMAT §8); `ruse build`, the launcher's Play and
+  the Studio's "Test in game" apply the strokes of every mod in load order and put the rebuilt map pack into the
+  modded copy; the reshaped files count in the fingerprint. A map that isn't in the game, a bad stroke or a bad
+  folder name is refused with a plain message.
+- **The in-game check** (next, on the PC): `tools/verify_terrain.py` checks every map in memory (all four files
+  change and read back, the hill's centre rose by what the brush says in each, shared points agree, nothing far away
+  changed); `--make-test TwoIslands <copy>` builds a copy with one hill on the dry land nearest the middle of Centre
+  of Gravity and says what to look for (drawn near and far, units drive up it, camera, line of sight).
+- **Tests:** brushes (shapes, each brush, the file written and read back, every mistake, the local average), a
+  made-up map's four files edited together (a hill, a plateau level in every file, smoothing, the top of the range,
+  normals, the edge, a stroke outside the map, a missing file, the same bytes twice), the build (the copy, the
+  fingerprint, two mods on one map, refusals) and the check tool.
+- **Not done, on purpose:** the Studio's brushes (T4, next, after the hill passes in-game), ground above the map's
+  highest point, water following the ground, re-meshing.

@@ -16,6 +16,7 @@ import identity_check  # noqa: E402
 import names_check  # noqa: E402
 import nation_scan  # noqa: E402
 import topo_check  # noqa: E402
+import verify_terrain  # noqa: E402
 from rusemod import Ndf  # noqa: E402
 
 REF = 0x09
@@ -165,6 +166,50 @@ class NationScan(unittest.TestCase):
         self.assertIn("TMapNations.BitFieldNationaliteIfNotSkirmish: 0x3F ×1", out)
         self.assertIn("an 8th entry in 1 named per-nation structure(s) (1 objects, 1 files)", out)
         self.assertIn("Chinese versions of 1 kind(s) of nation-tagged objects; 1 bit field(s)", out)
+
+
+class VerifyTerrain(unittest.TestCase):
+    """The terrain check and the in-game hill test, on a made-up game with one made-up map."""
+
+    def setUp(self):
+        from test_build import PACK
+        from test_terrain_edit import make_map_pack
+        self.tmp = tempfile.TemporaryDirectory()
+        self.game = os.path.join(self.tmp.name, "R.U.S.E")
+        os.makedirs(os.path.join(self.game, "Maps", "PC"))
+        os.makedirs(os.path.join(self.game, "Data", "PC", "190852"))
+        with open(os.path.join(self.game, "Maps", "PC", "DataMapTest_v09.dat"), "wb") as f:
+            f.write(make_map_pack())
+        with open(os.path.join(self.game, "Data", "PC", "190852", "ZZ_GladPatchableWin.dat"), "wb") as f:
+            f.write(PACK)
+        with open(os.path.join(self.game, "RUSE.exe"), "wb") as f:
+            f.write(b"MZ")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_every_map_is_checked(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = verify_terrain.main([self.game])
+        self.assertEqual(code, 0, out.getvalue())
+        self.assertIn("Test                     OK  hill at (", out.getvalue())
+        self.assertIn("1 maps, 0 failures", out.getvalue())
+
+    def test_the_hill_test_makes_a_modded_copy(self):
+        copy = os.path.join(self.tmp.name, "hill")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = verify_terrain.main([self.game, "--make-test", "Test", copy, "--radius", "500"])
+        self.assertEqual(code, 0, out.getvalue())
+        text = out.getvalue()
+        self.assertIn("terrain: Test, from hill-test", text)
+        self.assertIn("with a radius of 500 units", text)
+        with open(os.path.join(copy, "Maps", "PC", "DataMapTest_v09.dat"), "rb") as f, \
+                open(os.path.join(self.game, "Maps", "PC", "DataMapTest_v09.dat"), "rb") as g:
+            self.assertNotEqual(f.read(), g.read())
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(verify_terrain.main([self.game, "--make-test", "Nope", copy]), 2)
 
 
 if __name__ == "__main__":
