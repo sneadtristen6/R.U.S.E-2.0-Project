@@ -5,9 +5,31 @@ RUSE Launcher (players) and RUSE Studio (modders) each become a normal Windows p
 
 ## Getting them
 
-GitHub builds both on every push to `main` that changes the apps (`.github/workflows/apps.yml`). Open the repo's
-**Actions** tab → the latest **apps** run → **Artifacts**: `launcher-installer` and `studio-installer`. Each download
-is a zip holding `RUSE-Launcher-Setup-<version>.exe` or `RUSE-Studio-Setup-<version>.exe`. Run it: no admin rights
+**Players: the Releases page.** Each version is published as a GitHub Release (`.github/workflows/release.yml`):
+push a tag `launcher-v<version>` or `studio-v<version>` (it must equal the app's `__version__`), and GitHub builds,
+test-installs and attaches `RUSE-Launcher-Setup-<version>.exe` itself, not zipped, with its SHA-256 in the notes.
+Releases need no GitHub login and don't expire, and every player downloads the same file from the same address.
+
+**Testers: the latest build.** GitHub also builds both apps on every push to `main` that changes them
+(`.github/workflows/apps.yml`). Open the repo's **Actions** tab → the latest **apps** run → **Artifacts**:
+`launcher-installer` and `studio-installer`. Each download is a zip holding `RUSE-Launcher-Setup-<version>.exe` or
+`RUSE-Studio-Setup-<version>.exe`. These need a GitHub login and expire after 90 days, so they're for testing only.
+
+### Browser warnings (Chrome called the first test build "dangerous", 2026-09-28)
+
+Browsers judge a download by its address and by how many people have downloaded that exact file before. A test
+build is the worst case: a new, unsigned file every time, in a zip, from a generic cloud-storage address. That first
+build was checked (its SHA-256 matched GitHub's record, and Windows Defender found nothing). What we do about it:
+
+1. **Releases, not test builds** (done): one stable file per version at a GitHub address, so its reputation grows as
+   people download it. Don't publish a new version without a reason; each new file starts from zero.
+2. **Updates from inside the launcher** (planned, Velopack): after the first install, updates never pass through a
+   browser, so the warning can only ever appear once, at the first download.
+3. **Report false alarms** for each release (needs the owner's go, since it sends the file to Google and Microsoft):
+   Google Safe Browsing's error report and Microsoft's file submission (Defender and SmartScreen) usually clear a
+   false alarm within days.
+4. **Later, with no browser download at all:** `winget install` (Windows' package manager) and the Microsoft Store.
+   Code signing is the paid way to carry a reputation from one version to the next; it isn't needed yet. Run it: no admin rights
 needed; it installs for your Windows user, adds a Start menu entry (and a desktop icon if you tick it), and has an
 uninstaller in Windows' "Installed apps". Uninstalling keeps your mods and settings (`%LOCALAPPDATA%\RUSE Mod Platform`).
 

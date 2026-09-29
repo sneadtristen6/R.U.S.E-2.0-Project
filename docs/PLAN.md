@@ -717,7 +717,7 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 | Malicious mods | user harm | scripts only from the index or with consent; signed releases; no native code from peers |
 | Small team (you + AI) | work stalls | docs, ADRs, tests, open source, contributor guide |
 | WebGL unstable in the embedded webview | 3D map/model viewer blocked | prototype a three.js scene in pywebview early (cheap spike) |
-| Antivirus / SmartScreen distrust of the installer | players scared off | Nuitka, signing at first public release, trust builds over releases |
+| Antivirus / SmartScreen distrust of the installer | players scared off (**seen 2026-09-28:** Chrome called the first test build "dangerous"; the file was verified clean) | Nuitka; players download GitHub Releases, not test builds (`release.yml`); in-app updates so a browser only sees the first download; false-alarm reports per release; winget / Microsoft Store later; signing at first public release (installers/README.md "Browser warnings") |
 | Publishing Eugen-owned content (RUSE-Mod-Manager reset its public history "for Eugen Systems compliance") | takedown | `.gitignore` blocks game files; never commit extracted assets or decoded game scripts; check before each push |
 | Reinventing formats others already decoded | wasted credits | study RUSE-Mod-Manager's approach first ([LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)); write our own (MIT, never copy) |
 
