@@ -163,6 +163,21 @@ with them rewritten too (C4), so which one it reads, if any, is unknown. `ruse b
 - Several structures have exactly 7 slots: `SubClusterNationaliteList` (every map), flag-icon lists, per-nation
   mesh packs, and the bit field `BitFieldNationaliteIfNotSkirmish` (values 0x3F, 0x403F…; bit 14 unexplained).
 - **Conclusion (medium confidence, no disassembly):** rosters are data-only; an 8th nation needs exe changes.
+- **Nation scan** (`tools/nation_scan.py`, PC 2026-09-28, 2,172 NDF files, the 4 debug-info copies skipped, 5 s).
+  Summary: an 8th entry is needed in 5 named per-nation structures (518 objects in 86 files); Chinese versions of 6
+  kinds of nation-tagged objects; 1 bit field.
+  - Objects with a nation (US / GER / UK / FR / ITA / USSR / JAP): `TAcknowUnitDescriptor` 3,322 (481 / 467 / 475 /
+    468 / 467 / 468 / 496), `TUniteAuSolDescriptor` 204 (43 / 37 / 26 / 24 / 26 / 24 / 24), `TBatimentDescriptor` 135
+    (22 / 22 / 18 / 17 / 19 / 17 / 20), `TAvionDescriptor` 63 (15 / 13 / 8 / 6 / 6 / 8 / 7), `TInfanterieDescriptor` 39
+    (7 / 6 / 4 / 4 / 7 / 4 / 7), `TTruckDescriptor` 18 (5 / 3 / 2 / 2 / 2 / 2 / 2).
+  - The starred 7-item lists (named after nations, flags or countries):
+    `TClusterInitialisationExecuteSelectifSubClusters.SubClusterNationaliteList` (510 objects, 85 files),
+    `TUniteAuSolDescriptor.InitialFlagSet` (5 objects, 1 file), `TLoadingScreenMultiplayerDataBag.NationalityIcons`,
+    `TPlayerLabelDescriptor.NationaliteIcones` and `TReplayPlayerInfosResource.NationaliteIcones` (1 each).
+  - Unstarred 7-item lists that sit next to them and may also be per nation: `SubClusterPlayerList` (510 objects,
+    85 files), `TClusterLoadSelectifResource.SkirmishPacks` (255, 85 files), `SubClusterList` (170, 86 files).
+  - The bit field `BitFieldNationaliteIfNotSkirmish` uses 0x3 … 0x3F (bits 0–5) and 0x40 (bit 6, Japan), each also
+    with bit 14 (0x4000) set: 0x403F ×224 is the most common value. Bit 14 is still unexplained.
 
 ## 4. Localisation (`.dic`)
 

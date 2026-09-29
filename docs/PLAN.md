@@ -792,6 +792,14 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
           shows the build, then the game starts from `D:\RUSE-Instances\half-price` with every building at half price.
         - Record what worked and anything confusing on the screen.
      8. **The game index** (read-only, no game launch):
+        **Done on the PC (2026-09-28):** `index build` took 35 s and wrote a 269 MB file
+        (`<platform folder>\index¦70294-190852.sqlite`): 38 packs and 217 nested ones (both match `listings/`),
+        241,160 objects, 605,961 references, 27,522 shared objects and 130,845 texts (the same count as the decodable
+        `.dic` keys). The queries take 0.3–0.45 s each: `show` lists the Sherman's values; `clone` lists what a copy
+        copies, shares and references; `filter … ProductionPrice[0] gt 100` finds none, correctly, since the priciest
+        units cost 80 (the atomic cannons; `gt 40` finds 39); `texts Sherman` finds the name `N_UNI_137` and 12
+        dialog and description lines. Nothing wrong. Only noise: the build's summary prints a line for each of 20 sound
+        files found in 44 packs. (In Git Bash, set `MSYS_NO_PATHCONV=1`, or `$/GFX/...` gets turned into a Windows path.)
         - `py -3 -m rusemod index build`: indexes every pack, file, object, reference and text (target: about a
           minute). Record its counts, time and file size here or in FORMATS.md, and whether the file counts match
           `listings/` (38 packs, 217 nested).
