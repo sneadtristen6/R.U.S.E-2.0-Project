@@ -89,7 +89,8 @@ def test_install(app: str, setup: Path) -> None:
 
 
 def main(argv=None) -> int:
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # the self-test reports hold Chinese and Russian words
+    if hasattr(sys.stdout, "reconfigure"):  # the self-test reports hold Chinese and Russian words
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     args = sys.argv[1:] if argv is None else argv
     if not args or args[0] not in APPS or sys.platform != "win32":
         print(__doc__)
