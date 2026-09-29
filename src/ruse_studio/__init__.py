@@ -7,6 +7,8 @@ movement…), its parts and what uses it, and change its numbers right there, sa
 of them or for all. Test in game
 builds the mod and starts R.U.S.E. Everything about the game comes from the game index (`ruse index build`). The
 language selector keeps the game's own names by default and can show the Studio in any of the game's ten languages.
+v0.4: Maps, the start of the terrain editor: every map the game ships, drawn in 3D with its real ground and textures
+(ui/maps.js, rusemod.terrain).
 
   api.py      what the screens can ask for
   edits.py    the Studio's changes, kept in the mod's src/studio.rndf
@@ -17,4 +19,4 @@ language selector keeps the game's own names by default and can show the Studio 
   py -3 -m ruse_studio [--game DIR] [--index FILE] [--spike]
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"

@@ -6,11 +6,12 @@ new units, maps, models, missions and one-click modded multiplayer. The content 
 Status: early, and moving fast. Nothing here ever changes your game install: mods are built into a separate copy.
 
 **Download:** [Releases](https://github.com/sneadtristen6/Ruse-Mod-Platform/releases): **RUSE Launcher 0.1.0** for
-players and **RUSE Studio 0.3.0** for modders (a preview). Windows only; your browser may warn about a new download.
+players and **RUSE Studio 0.4.0** for modders (a preview). Windows only; your browser may warn about a new download.
 
 | RUSE Launcher | RUSE Studio (its preview mode, with sample units) |
 |---|---|
 | ![RUSE Launcher: mod sets on the left, Play on the right](docs/images/launcher.jpg) | ![RUSE Studio: a unit's values, ready to edit](docs/images/studio-unit.jpg) |
+| | ![RUSE Studio's Maps: Centre of Gravity in 3D, with its real ground](docs/images/studio-maps.jpg) |
 
 **Current stage (2026-09-29):**
 - **New units work in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory;
@@ -70,7 +71,7 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
   - **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/), v0.1), for players: it finds the game, lists your
     mod sets and has a big Play button that builds the set's modded copy and starts the game (Vanilla starts through
     Steam). `py -3 -m ruse_launcher`.
-  - **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), v0.3), for modders: browse every unit and building, see a
+  - **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), v0.4), for modders: browse every unit and building, see a
     unit's values, parts and what uses it, and pick a language: the game's own names by default, or any of the
     game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is saved in
     the mod's `src/studio.rndf` (with Undo); a part several units share changes for one of them or all.
