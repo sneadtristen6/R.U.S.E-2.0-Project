@@ -403,3 +403,5 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
 - **GitHub `main` is still the record.** Anything a later session needs goes into the repo. Push when done, and
   keep README's "Current stage" line and this section up to date.
 
+
+**2026-09-29, Studio 0.4.1 verified in-game (owner):** the M4 Sherman set to price 1 in the single price box costs 1 in a skirmish. The earlier "the Studio does not change values" report was the five unlabelled per-date price boxes (only the first was edited); the build had been right all along. The shared repo (private) mirrors main and has the `private` branch with the research handover and community guides; the owner pushes there.
