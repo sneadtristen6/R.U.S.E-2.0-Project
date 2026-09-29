@@ -30,7 +30,9 @@ def wait_for(api, job_id, timeout=10):
     raise AssertionError("the job didn't finish")
 
 
-class Launcher(unittest.TestCase):
+class Base(unittest.TestCase):
+    """A launcher on a made-up game folder, with a fresh platform folder per test; nothing starts for real."""
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
@@ -61,6 +63,8 @@ class Launcher(unittest.TestCase):
         (self.home / "sets" / f"{name}.toml").write_text(f'name = "{name.title()}"\nmods = [{lines}]\n{body}',
                                                          encoding="utf-8")
 
+
+class Launcher(Base):
     def test_status(self):
         s = self.api().status()
         self.assertTrue(s["found"])
@@ -143,7 +147,7 @@ def make_zip(path: Path, files: dict, prefix: str = "") -> Path:
     return path
 
 
-class Library(Launcher):
+class Library(Base):
     """The mod library: mods added from a folder or a .zip, checked first, listed, removed."""
 
     def mod(self, mod_id, files=HALF, extra=""):
@@ -240,7 +244,7 @@ class Library(Launcher):
         self.assertIn("doesn't exist", events[1]["message"])
 
 
-class SetsOnScreen(Launcher):
+class SetsOnScreen(Base):
     """Mod sets made in the window: new, edit, rename, duplicate, delete; the order is kept and counts when playing."""
 
     def setUp(self):
