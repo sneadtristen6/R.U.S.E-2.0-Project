@@ -587,7 +587,8 @@ one is shorter. Rules:
   published research and our exchange; we crack it ourselves only if that falls through.
 - **No agents, workflows or long transcripts** unless the owner asks: they multiply the cost.
 - **At most one in-game test per session**, batched: one modded copy, the owner runs it once and reports.
-- **Reading budget:** a session reads this section, the memory notes and the files it changes. History is in
+- **Reading budget:** a session reads this section, [TASKS.md](TASKS.md) if it is a cloud session, the memory
+  notes and the files it changes. History is in
   LOG.md and is read only when a step needs it.
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
@@ -608,10 +609,13 @@ one is shorter. Rules:
 cloning and scenarios (M6); models (M7); new maps from heightmaps (M8); scripting (M9); sound (M11).
 
 **Standing:**
-- **RUSE 2.0** is made privately and shown to Eugen before release (decision 19); its private repo isn't created
-  yet (the owner makes it on github.com).
-- **DomesticNukes** is credited as "DomesticNukes and his Claude" (decision 25). The shared repo
-  (`Ruse-Mod-Platform-Shared`) is for joint work: pull requests there, synced to `main` here; releases stay here.
+- **Two repos (owner, 2026-09-29):** `Ruse-Mod-Platform` (public) releases only the Studio and the launcher.
+  `Ruse-Mod-Platform-Shared` (private: the owner, DomesticNukes, the cloud sessions) holds the same code plus a
+  `private/` folder (the research handover, community guides) and RUSE 2.0, which is never released publicly
+  (decision 19). Code goes to the public `main`; the shared repo's `main` mirrors it; private work stays there.
+- **DomesticNukes** is credited as "DomesticNukes and his Claude" (decision 25).
+- **Cloud sessions** take their tasks from [TASKS.md](TASKS.md) and open pull requests; the PC session tests
+  in-game, merges and releases.
 - **GitHub `main` is the record.** Push when done; keep README's "Current stage", this section and LOG.md current.
 - Open decisions in §9: the name, outreach timing, a second player.
 
