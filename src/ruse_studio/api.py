@@ -1,27 +1,32 @@
-"""What the Studio's screens can ask for. Plain JSON-friendly data in and out, like the launcher's API; every answer
-comes from the game index, opened read-only for each question (the window calls from several threads).
+"""What the Studio's screens can ask for. Plain JSON-friendly data in and out; every answer about the game comes from
+the game index, opened read-only for each question (the window calls from several threads).
 
 Editing: the modder works in one mod at a time (made here, in the platform folder's `mods/`, or any mod folder they
-open). Every change is saved at once in that mod's `src/studio.rndf` (studio/edits.py); Play builds the mod into a
-modded copy and starts the game, like the launcher.
+open). Every change is saved at once in that mod's `src/studio.rndf` (edits.py). Test in game builds the mod into
+its own modded copy and starts the game, with the platform's engine (rusemod.play), so the Studio doesn't need the
+launcher.
 """
 from __future__ import annotations
 
+import functools
 import json
-import os
 import re
 import struct
 import threading
+import tomllib
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from .. import schema
-from ..home import default_home
-from ..index import LIST_VALUES, Index, build_index, default_path
-from ..launcher.api import LauncherApi
-from ..patch import INT_RANGES
-from ..steam import find_game
-from ..webui import Job
+from rusemod import schema
+from rusemod.build import BuildError
+from rusemod.home import default_home, game_dir as find_game_dir
+from rusemod.index import LIST_VALUES, Index, build_index, default_path
+from rusemod.patch import INT_RANGES
+from rusemod.play import Starter, instances_dir
+from rusemod.rndf import RndfError
+from rusemod.steam import find_game
+from rusemod.webui import Job, job_view
+
 from .edits import EditsFileError, ModEdits
 
 KINDS = {"ground": ("TUniteAuSolDescriptor",), "infantry": ("TInfanterieDescriptor",),
@@ -82,13 +87,24 @@ class StudioError(Exception):
     pass
 
 
+@functools.cache
+def _words() -> dict:
+    return tomllib.loads(Path(__file__).with_name("words.toml").read_text(encoding="utf-8"))
+
+
+def words(lang: str = schema.BASE) -> dict:
+    """The Studio's own words in `lang` (English for `base` and anything missing)."""
+    return {key: texts.get(lang) or texts["us"] for key, texts in _words().items()}
+
+
 class StudioApi:
-    def __init__(self, index_path=None, game_dir=None, find=find_game, home=None, launcher=None):
+    def __init__(self, index_path=None, game_dir=None, find=find_game, home=None, starter=None, instances=None):
         self._index_path = Path(index_path) if index_path else None
         self._game_dir = Path(game_dir) if game_dir else None
         self._find = find
         self._home = Path(home) if home else default_home()
-        self._launcher = launcher or LauncherApi(game_dir=game_dir, home=self._home, find=find)
+        self._starter = starter or Starter()
+        self._instances = Path(instances) if instances else None
         self._jobs: dict[str, Job] = {}
         self._units: list | None = None  # every unit and building, read once per index
         self._window = None  # set by the window (a folder dialog for "Open a mod folder")
@@ -99,10 +115,7 @@ class StudioApi:
     def _game(self) -> Path | None:
         if self._game_dir:
             return self._game_dir
-        if os.environ.get("RUSE_GAME"):
-            return Path(os.environ["RUSE_GAME"])
-        found = self._find()
-        return Path(found["game_dir"]) if found else None
+        return find_game_dir(self._home, self._find)[0]  # the same answer as the launcher's
 
     def _path(self) -> Path | None:
         if self._index_path:
@@ -121,7 +134,7 @@ class StudioApi:
         return schema.languages()
 
     def strings(self, lang: str = schema.BASE) -> dict:
-        return schema.ui(lang)
+        return words(lang)
 
     def nations(self, lang: str = schema.BASE) -> list[str]:
         return [schema.nation(n, lang) for n in range(7)]
@@ -344,12 +357,23 @@ class StudioApi:
                 edits.reset(address, prop)
         return {"saved": str(edits.file) if edits else None}
 
-    def play(self) -> dict:
-        """Build the current mod into its own modded copy and start the game from it."""
+    def test_in_game(self) -> dict:
+        """Build the current mod into its own modded copy (`RUSE-Instances\\studio-<mod>`) and start the game from it,
+        in the background. Returns {'job': id}; follow it with job(id)."""
         folder = self._mod_dir()
         if folder is None:
             raise StudioError("Pick or make a mod first.")
-        return self._launcher.play_folders(folder.name, [str(folder)], f"studio-{folder.name}")
+
+        def work(say):
+            game = self._game()
+            if game is None:
+                raise BuildError("We couldn't find R.U.S.E.")
+            instance = (self._instances or instances_dir(game)) / f"studio-{folder.name}"
+            self._starter.modded(game, [folder], instance, folder.name, say)
+
+        job = Job()
+        self._jobs[job.id] = job
+        return job.start(work, "R.U.S.E. is starting.", plain=(BuildError, RndfError, OSError))
 
     # --- building the index from the Studio ---
     def build_index(self) -> dict:
@@ -360,17 +384,11 @@ class StudioApi:
             job.state, job.message = "failed", "We couldn't find R.U.S.E."
             return {"job": job.id}
 
-        def run():
-            try:
-                build_index(game, self._path(), say=job.say)
-                self._units = None
-                job.state, job.message = "done", "The game index is ready."
-            except Exception as exc:  # shown to the modder as it is
-                job.state, job.message = "failed", f"{type(exc).__name__}: {exc}"
+        def work(say):
+            build_index(game, self._path(), say=say)
+            self._units = None
 
-        threading.Thread(target=run, daemon=True).start()
-        return {"job": job.id}
+        return job.start(work, "The game index is ready.")
 
     def job(self, job_id: str, since: int = 0) -> dict:
-        job = self._jobs.get(job_id)
-        return job.view(since) if job else self._launcher.job(job_id, since)
+        return job_view(self._jobs, job_id, since)

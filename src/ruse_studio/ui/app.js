@@ -1,5 +1,5 @@
 // The Studio screen: browse units, see one unit's values, parts and users, and change its numbers in a mod (saved at
-// once in the mod's src/studio.rndf), then play it. Talks to StudioApi (studio/api.py) through
+// once in the mod's src/studio.rndf), then test it in the game. Talks to StudioApi (ruse_studio/api.py) through
 // window.pywebview.api; open index.html?fake in a normal browser for made-up data.
 "use strict";
 
@@ -47,11 +47,11 @@ async function setLanguage(lang) {
   const w = state.words;
   $("lang-label").textContent = w.language;
   $("mod-label").textContent = w.mod;
-  $("play").textContent = w.play_mod;
+  $("test").textContent = w.test_in_game;
   $("new-mod-name").placeholder = w.mod_name;
   $("new-mod-create").textContent = w.create;
   $("new-mod-cancel").textContent = w.cancel;
-  $("play-log-close").textContent = w.close;
+  $("test-log-close").textContent = w.close;
   $("lang").replaceChildren(...state.languages.map((l) =>
     el("option", { value: l.code, textContent: l.code === "base" ? w.game_names : l.name, selected: l.code === lang })));
   $("search").placeholder = w.search;
@@ -75,7 +75,7 @@ function renderMods() {
     selected: m.path === state.mod }));
   options.push(el("option", { value: NEW, textContent: w.new_mod }), el("option", { value: OPEN, textContent: w.open_folder }));
   $("mod").replaceChildren(...options);
-  $("play").disabled = !state.mod || $("play").dataset.running === "1";
+  $("test").disabled = !state.mod || $("test").dataset.running === "1";
 }
 
 function useMods(res) {
@@ -293,7 +293,7 @@ async function showUnit(address) {
   $("detail").replaceChildren(...parts);
 }
 
-// --- play the mod ---
+// --- test the mod in the game ---
 async function follow(jobId, log, done) {
   let seen = 0;
   const tick = async () => {
@@ -310,20 +310,20 @@ async function follow(jobId, log, done) {
   tick();
 }
 
-async function play() {
-  const button = $("play");
+async function testInGame() {
+  const button = $("test");
   button.disabled = true;
   button.dataset.running = "1";
-  const log = $("play-log");
+  const log = $("test-log");
   log.textContent = "";
-  $("play-panel").classList.remove("hidden");
+  $("test-panel").classList.remove("hidden");
   const finish = (ok, message) => {
     button.dataset.running = "0";
     button.disabled = !state.mod;
     if (message) say(message, ok ? "ok" : "error");
   };
   try {
-    const { job } = await api().play();
+    const { job } = await api().test_in_game();
     follow(job, log, finish);
   } catch (err) { problem(err); finish(false); }
 }
@@ -356,8 +356,8 @@ async function start() {
   $("mod").addEventListener("change", pickMod);
   $("new-mod").addEventListener("submit", createMod);
   $("new-mod-cancel").addEventListener("click", () => $("new-mod").classList.add("hidden"));
-  $("play").addEventListener("click", play);
-  $("play-log-close").addEventListener("click", () => $("play-panel").classList.add("hidden"));
+  $("test").addEventListener("click", testInGame);
+  $("test-log-close").addEventListener("click", () => $("test-panel").classList.add("hidden"));
   let timer = null;
   $("search").addEventListener("input", (e) => {
     state.search = e.target.value;

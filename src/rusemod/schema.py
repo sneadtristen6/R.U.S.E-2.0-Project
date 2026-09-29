@@ -1,8 +1,8 @@
-"""Display names for the game's data (labels.toml, the start of the schema DB, PLAN.md L2).
+"""Display names for the game's data (labels.toml, the start of the schema DB, PLAN.md L2), for every app and tool.
 
 The default is always the game's own names (`base`), which mods use. A modder can pick one of the game's ten
-languages to read the tools in: property names, groups, nations and the tools' own words. Anything without a
-translation falls back to the game's name (or, for the tools' words, to English).
+languages to read the tools in: property names, groups and nations. Anything without a translation falls back to
+the game's name. Each app keeps its own screen words (the Studio's: ruse_studio/words.toml).
 """
 from __future__ import annotations
 
@@ -54,8 +54,3 @@ def nation(n, lang: str = BASE) -> str:
     names = table.get(lang) or table[BASE]
     n = int(n)
     return names[n] if 0 <= n < len(names) else str(n)
-
-
-def ui(lang: str = BASE) -> dict:
-    """The tools' own words in `lang` (English for `base` and anything missing)."""
-    return {key: texts.get(lang) or texts["us"] for key, texts in _data()["ui"].items()}

@@ -121,6 +121,13 @@ Requirements derived from that:
   L6 Distribution     mod index (git) - mirrors (GitHub/Nexus/ModDB/...) - join codes
 ```
 
+**Two separate apps on one engine (decision 22, the owner, 2026-09-29).** **RUSE Launcher** is the players' app: it
+finds the game, loads mods and starts the game (`src/ruse_launcher/`). **RUSE Studio** is the modders' app: the unit
+editor now, the map, model and scenario tools later (`src/ruse_studio/`). Both are built on the same engine, `rusemod`
+(L1–L4, plus the `ruse` command), and neither needs the other: a test fails if one ever imports the other. They share
+the platform folder (`%LOCALAPPDATA%\RUSE Mod Platform`): the game folder picked by hand, the game index, and `mods\`,
+where the Studio saves the mods it makes. Each gets its own installer; a player never needs the Studio.
+
 ### L1 Formats
 - Each format is one plugin module: `parse(bytes) -> model`, `write(model) -> bytes`, a status
   (unknown / read / write / round-trip) and golden tests.
@@ -278,7 +285,7 @@ search by name and see where each text is used. It costs some disk space (a gues
 - **CLI `ruse`:** `detect index ls extract dump verify new-mod build check deploy launch fingerprint rebase import-rmod`.
 - **Python API:** the same operations, for scripts and bulk edits ("all tanks +10 % HP").
 - **Local service:** JSON-RPC on localhost, used by Studio and the Launcher.
-- **Launcher (players):**
+- **RUSE Launcher (the players' app, `src/ruse_launcher/`):**
   - detects the game and build
   - browses and installs mods from the index; manages mod sets and join codes
   - one-click join, updates, instances, self-update
@@ -341,7 +348,7 @@ search by name and see where each text is used. It costs some disk space (a gues
 
   **Decided (2026-09-28):** test in M2 (moved up from M5/M6) whether the game can load an extra pack of ours. If it
   can, mods ship small packs and never rebuild the 2.3 GB one.
-- **Studio (modders):** **v0.1 built (2026-09-28, `rusemod.studio`, `py -3 -m rusemod.studio`):** browse every unit
+- **RUSE Studio (the modders' app, `src/ruse_studio/`, `py -3 -m ruse_studio`):** **v0.1 built (2026-09-28):** browse every unit
   and building by kind, nation and name; a unit's values in groups (cost, combat, movement…), its parts (its own or
   shared) and what uses it; all from the game index, which the Studio can also build. A language selector keeps the
   game's names by default and shows the tool, property names and units' in-game names in any of the game's ten
@@ -353,8 +360,10 @@ search by name and see where each text is used. It costs some disk space (a gues
   yes/no values are checkboxes. A unit's own parts (its gun, its turret) and the named objects it uses (weapons, ammo)
   open on their own page and edit the same way; for a named object several units use, the page says the change
   reaches all of them. Not yet: parts shared with other units without a name (they'd need the "just this unit / all
-  of them" choice, MOD_FORMAT §10.5), ids and nation (locked), texts and names. "Play with this mod" builds the mod
-  into its own modded copy (`RUSE-Instances\studio-<mod>`) and starts the game, like the launcher.
+  of them" choice, MOD_FORMAT §10.5), ids and nation (locked), texts and names. "Test in game" builds the mod into
+  its own modded copy (`RUSE-Instances\studio-<mod>`) and starts the game with the engine's own code (`rusemod.play`,
+  the same the launcher uses), so testing doesn't need the launcher. Later the launcher lists the mods in the shared
+  `mods\` folder too, so a mod made in the Studio can be played from the launcher like any other.
   - content browser, reference viewer, schema-driven property editor
   - unit editor with a clone wizard
   - scenario/map workshop
@@ -459,6 +468,7 @@ volunteer from the R.U.S.E. community: with a join code, joining takes them a co
 | 19 | New nations | A real 8th nation (China, for RUSE 2.0): the runtime extender (ADR 3, M10) lifts the 7-nation limit, and the data gets an 8th entry wherever it has 7. Owner's call, 2026-09-28 | RUSE 2.0 wants a real nation, not a renamed one. **No faction is ever given up** (owner, 2026-09-28): there is no swap fallback; if the job turns out big, China comes later, never by replacing a nation | China takes over one of the 7 slots (**rejected**: it loses a faction) |
 | 20 | Testing multiplayer alone | Solo tests S1–S2 (L6) until there's a second player; one real 2-PC match before the first public release | the owner has no second player yet; most of the risk (same build everywhere, the join flow) can be tested on one PC | wait for a friend |
 | 21 | Display language in the tools | The game's own names are the default everywhere (mods use them); every modder can pick any of the game's ten languages for the tools, property names and unit names. Owner's call, 2026-09-28 | the community is international; no one language forced on modders | English by default |
+| 22 | Apps | Two separate apps on one engine: **RUSE Launcher** (players: finds the game, loads mods, starts the game) and **RUSE Studio** (modders: the unit editor, later maps and models). Neither needs the other; each has its own window, start command and, later, installer. The Studio keeps its own "Test in game". Owner's call, 2026-09-29 | players get a small, simple app; modders get the full tools; each can change without breaking the other | one app with a modding mode |
 
 ## 7. Roadmap
 
@@ -470,7 +480,7 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 | **M1 Core tools** | combined file view + index (L2) ✅ (cloud session; the PC runs it); `.dic` r/w ✅ and `ruse` CLI basics ✅ (cloud session); scenario / AI-layer / capture-zone readers (our own code, informed by [LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)) | every shipped file of these types round-trips byte-identically | 2–4 (was 4–6) | low |
 | **M1.5 Frontier tests** (new) | short, capped tests of the riskiest unknowns: re-encode one terrain texture tile (`TGU1`) and one terrain mesh (`.tms`); read one 3D model (SPK) section table | clear yes/no: can we write new terrain? can we read models? Decides how big Pacific maps can be | ~3 | high (that's the point) |
 | **M2 Mod system slice** | package v1; `.rndf` reader ✅, rules engine ✅, load order ✅, fingerprint + join codes ✅ (cloud session); the adapter between game files and the engine; `.rmod` import; extra-pack mount test (C3); instances already proven by C2 | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test (until there's a second player, the solo tests S1–S2 in L6 stand in; the 2-PC test comes before the first public release). This proves the tool, not a balance mod | 2–4 (was 4–6) | medium |
-| **M3 Launcher v1** | Steam auto-detect ✅ (`ruse detect`), the window ✅ (v0.1: game status, mod sets, Play; `rusemod.launcher`), one-click install into instances, modpacks, join codes; also installs the `.rmod` mods players already have, combinable and without patching the live install | first public alpha on GitHub, ModDB, Nexus | 3–5 | low |
+| **M3 Launcher v1** | Steam auto-detect ✅ (`ruse detect`), the window ✅ (v0.1: game status, mod sets, Play; its own app, `ruse_launcher`), one-click install into instances, modpacks, join codes; also installs the `.rmod` mods players already have, combinable and without patching the live install | first public alpha on GitHub, ModDB, Nexus | 3–5 | low |
 | **M4 Studio v1** | content browser ✅ and unit view ✅ (v0.1, with the language selector), property editor ✅ (v0.2: numbers, in place, saved as a mod, Play), unit editor; clone **any** class with its **own** visuals, wired into menus, upgrades and AI; validation, diff/rebase | a non-programmer builds a new unit | 5–8 | low–medium |
 | **M5 Textures & icons** | TGV r/w including a game-valid `TGU1` encoder (nobody has one), UI icon/flag pipeline | retextured unit with its own icon in-game | 3–5 | medium |
 | **M6 Maps I** | map cloning, scenario editor, capture-zone compiler, AI layers, island maps on existing terrain | a new map listed and playable in multiplayer | 4–6 (was 5–8: formats now understood) | medium |
@@ -753,11 +763,12 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
      5. **Nation scan** (read-only, no game launch needed): `py -3 tools\nation_scan.py > nations.txt`. Record its
         summary and the starred lines of B in FORMATS.md §3: that's the data side of the new nation (decision 19).
      6. **C6, a unit with its own name** (§7 C6), after C5: one build, then look for "Sherman C6-Test" in the menu.
-     7. **Launcher v0.1 and the 3D check** (needs the owner at the PC):
+     7. **Launcher v0.1 and the 3D check** (needs the owner at the PC). The launcher and the Studio are two separate
+        apps now (decision 22), each started on its own:
         - Once: `py -3 -m pip install pywebview` (Windows 10/11 already have the web engine it uses).
-        - `py -3 -m rusemod.launcher --spike`: a rotating island. Record the lines in the box (WebGL 2, GPU, frames per
+        - `py -3 -m ruse_studio --spike` (the 3D check belongs to the Studio, for its map and model views): a rotating island. Record the lines in the box (WebGL 2, GPU, frames per
           second). **Pass: 30+ frames per second.** It loads the 3D library from the internet, so the PC must be online.
-        - `py -3 -m rusemod.launcher`: the home screen should say "Found R.U.S.E. on D: (build …)". Press "Open mod
+        - `py -3 -m ruse_launcher`: the window is called "RUSE Launcher"; the home screen should say "Found R.U.S.E. on D: (build …)". Press "Open mod
           sets folder" and save a file `half-price.toml` there with `name = "Half-price test"` and
           `mods = ["<repo>/examples/half-price-buildings"]` (forward slashes). Pick it and press Play: the Details box
           shows the build, then the game starts from `D:\RUSE-Instances\half-price` with every building at half price.
@@ -771,10 +782,13 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
           copies and shares), `... index filter TUniteAuSolDescriptor ProductionPrice[0] gt 100`, `... index texts
           Sherman`. Note anything wrong or slow.
      9. **Studio v0.2** (after item 8; needs pywebview like the launcher; build the index again first, it now
-        records list types): `py -3 -m rusemod.studio`. Browse units, open the M4 Sherman, switch the language (top
+        records list types): `py -3 -m ruse_studio`. Browse units, open the M4 Sherman, switch the language (top
         right) through a few languages. Then make a mod ("Mod" menu → "New mod…", call it `studio-test`), set the
-        M4 Sherman's price to 1 in every box, press "Play with this mod" and check the price in a skirmish. Record
-        anything wrong, slow or badly translated (translations are in `src/rusemod/labels.toml`).
+        M4 Sherman's price to 1 in every box, press "Test in game" and check the price in a skirmish (the launcher
+        isn't needed for this). Record anything wrong, slow or badly translated (translations: the game's words in
+        `src/rusemod/labels.toml`, the Studio's own in `src/ruse_studio/words.toml`).
+        - Optional: `py -3 -m pip install -e .[apps]` once gives two commands, `ruse-launcher` and `ruse-studio`,
+          which open the apps without a console window.
 2. **PC session, then M1:** build the game model from L2 (the combined file view and the index), the `.dic` reader and
    writer, and the `ruse` CLI (`detect index ls extract dump verify`). It needs the game files, so it runs on the PC.
 3. **Cloud sessions (no game needed):** done 2026-09-28: tests that GitHub runs on every push (Windows and Linux), the
@@ -792,19 +806,23 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    **Launcher v0.1 done (2026-09-28):** the window (web-style, decided by the owner) with the home screen: finds the
    game (or "Choose folder…"), lists mod sets, and Play builds the set's modded copy (the same code as `ruse build`),
    starts Steam if needed and starts the game; Vanilla starts through Steam. Mod sets are hand-written files for now
-   (`%LOCALAPPDATA%\RUSE Mod Platform\sets\*.toml`, see `rusemod/launcher/api.py`). Plus the 3D check page. The PC
-   tries both (item 1.7).
+   (`%LOCALAPPDATA%\RUSE Mod Platform\sets\*.toml`, see `ruse_launcher/api.py`). Plus the 3D check page (now in
+   the Studio). The PC tries both (item 1.7).
    **The game index done (2026-09-28)**: `rusemod.index`, `ruse index` (L2 "Built"). The PC runs it (item 1.8).
    The owner (2026-09-28): the launcher stays at v0.1 for now; the core tools come first.
    **Studio v0.1 done (2026-09-28)**: browse units, a unit's values, parts and users, the language selector with
    the game's names by default (decision 21). **v0.2 done (2026-09-28)**: the owner asked to edit units right on
    their page instead of copying them first: numbers are edited in place, saved in the mod's `src/studio.rndf`,
-   and "Play with this mod" starts it (L5). The PC tries it (item 1.9). Next (cloud), once the owner picks: parts
-   shared by several units ("just this unit" or "all of them"), names, moving a unit to another menu or nation,
-   then new units (copies).
+   and "Test in game" starts it (L5). The PC tries it (item 1.9).
+   **Two apps (2026-09-29, decision 22):** the owner asked for the Studio and the launcher to be separate apps. They
+   are: `ruse_launcher` (RUSE Launcher) and `ruse_studio` (RUSE Studio), each with its own window and start command,
+   both on the engine `rusemod`; starting the game moved into the engine (`rusemod.play`), the game folder picked by
+   hand is shared (`rusemod.home`), and the Studio's screen words moved into the Studio (`words.toml`).
+   Next (cloud), once the owner picks: parts shared by several units ("just this unit" or "all of them"), names,
+   moving a unit to another menu or nation, then new units (copies).
    Later (cloud), launcher steps, one at a time: installing mods into the launcher's library (from a folder or zip,
    then RUSE-Mod-Manager's `.rmod`), mod sets made on screen, the join-a-friend screen (join codes), then the
-   installer (Nuitka + Inno Setup) and browsing the mod index. And whatever C5/C6 turn up.
+   installers (Nuitka + Inno Setup; one for each app) and browsing the mod index. And whatever C5/C6 turn up.
 4. **You:** the open decisions in §9 (name, outreach timing, the unit to clone in M2, a second player).
 
 **How the two sessions share the work**

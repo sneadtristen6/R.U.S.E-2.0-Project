@@ -13,7 +13,7 @@
       no_index: "No game index yet. Build it once (about a minute).", build_index: "Build the index",
       pick_unit: "Pick a unit on the left.", mod: "Mod", new_mod: "New mod…", open_folder: "Open a mod folder…",
       mod_name: "Name of the new mod", create: "Create", cancel: "Cancel", close: "Close",
-      no_mod: "Pick or make a mod to save changes in.", play_mod: "Play with this mod", was: "was {v}", reset: "Undo",
+      no_mod: "Pick or make a mod to save changes in.", test_in_game: "Test in game", was: "was {v}", reset: "Undo",
       saved: "Saved in {file}", users_warning: "Changing this changes it for every unit that uses it ({n}).",
       shared_part_later: "Shared with other units: editing it comes later.",
       not_stable: "No stable address, so it can't be edited yet.", locked: "Ids and nation stay as they are.",
@@ -25,7 +25,7 @@
       pick_unit: "Choisissez une unité à gauche.", mod: "Mod", new_mod: "Nouveau mod…",
       open_folder: "Ouvrir un dossier de mod…", mod_name: "Nom du nouveau mod", create: "Créer", cancel: "Annuler",
       close: "Fermer", no_mod: "Choisissez ou créez un mod pour enregistrer les modifications.",
-      play_mod: "Jouer avec ce mod", was: "avant : {v}", reset: "Annuler", saved: "Enregistré dans {file}",
+      test_in_game: "Tester en jeu", was: "avant : {v}", reset: "Annuler", saved: "Enregistré dans {file}",
       users_warning: "Le modifier le change pour toutes les unités qui l'utilisent ({n}).",
       shared_part_later: "Partagé avec d'autres unités : modifiable plus tard.",
       not_stable: "Pas d'adresse stable : pas encore modifiable.",
@@ -35,7 +35,7 @@
       shared_part: "与其他单位共享", used_by: "被引用于", copy_address: "复制地址", no_index: "尚无游戏索引。",
       build_index: "建立索引", pick_unit: "请在左侧选择一个单位。", mod: "模组", new_mod: "新建模组…",
       open_folder: "打开模组文件夹…", mod_name: "新模组名称", create: "创建", cancel: "取消", close: "关闭",
-      no_mod: "请选择或新建一个模组来保存修改。", play_mod: "使用此模组游戏", was: "原为 {v}", reset: "撤销",
+      no_mod: "请选择或新建一个模组来保存修改。", test_in_game: "在游戏中测试", was: "原为 {v}", reset: "撤销",
       saved: "已保存到 {file}", users_warning: "修改后,所有使用它的单位都会改变({n})。",
       shared_part_later: "与其他单位共享:稍后支持编辑。", not_stable: "没有固定地址,暂时无法编辑。",
       locked: "编号和国家保持不变。", edited: "已修改" },
@@ -152,7 +152,7 @@
 
   const jobs = {
     index: [["  ZZ_Win.dat"], "The game index is ready."],
-    play: [["Building the modded copy of R.U.S.E. for pacific-test in D:\\RUSE-Instances\\studio-pacific-test…",
+    test: [["Building the modded copy of R.U.S.E. for pacific-test in D:\\RUSE-Instances\\studio-pacific-test…",
       "  1 change in 1 file", "  modded copy ready: 41 files linked, 1 replaced", "Starting R.U.S.E. from the modded copy…"],
       "R.U.S.E. is starting."],
   };
@@ -200,7 +200,7 @@
         return { saved: current + "/src/studio.rndf", value: v };
       },
       reset: async (address, prop) => { edits.delete(editKey(address, prop)); return { saved: current + "/src/studio.rndf" }; },
-      play: async () => ({ job: "play" }),
+      test_in_game: async () => ({ job: "test" }),
       build_index: async () => ({ job: "index" }),
       job: async (id) => ({ state: "done", message: jobs[id][1], lines: jobs[id][0], count: jobs[id][0].length }),
     },

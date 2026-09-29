@@ -14,81 +14,42 @@ Installing mods from the mod index replaces the hand-written list later (L6).
 """
 from __future__ import annotations
 
-import json
-import os
 import re
-import subprocess
-import sys
-import threading
 import time
 import tomllib
-import webbrowser
 from pathlib import Path
 
-from ..build import BuildError, build_and_write, load_mod
-from ..home import default_home
-from ..webui import Job
-from ..rndf import RndfError
-from ..steam import build_of, find_game
+from rusemod import play as game_start
+from rusemod.build import BuildError
+from rusemod.home import default_home, game_dir as find_game_dir, save_settings, settings
+from rusemod.play import Starter, instances_dir
+from rusemod.rndf import RndfError
+from rusemod.steam import build_of, find_game
+from rusemod.webui import Job, job_view
 
-STEAM_PLAY = "steam://rungameid/21970"
-STEAM_OPEN = "steam://open/main"
 _SET_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
-
-
-def _open_url(url: str) -> None:
-    if sys.platform == "win32":
-        os.startfile(url)  # steam:// links and folders open with their Windows handler
-    else:
-        webbrowser.open(url)
-
-
-def _start_game(exe: Path) -> None:
-    subprocess.Popen([str(exe)], cwd=str(exe.parent))
-
-
-def _steam_running() -> bool:
-    if sys.platform != "win32":
-        return True
-    out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq steam.exe", "/NH"], capture_output=True, text=True)
-    return "steam.exe" in out.stdout.lower()
 
 
 class LauncherApi:
     """The launcher's back end. The arguments replace the real world in tests: the game folder, the launcher's own
     folder, where modded copies go, and how links, the game and Steam get started."""
 
-    def __init__(self, game_dir=None, home=None, instances=None, open_url=_open_url, start_game=_start_game,
-                 steam_running=_steam_running, find=find_game, wait=time.sleep, pick_folder=None):
+    def __init__(self, game_dir=None, home=None, instances=None, open_url=game_start.open_url,
+                 start_game=game_start.start_game, steam_running=game_start.steam_running, find=find_game,
+                 wait=time.sleep, pick_folder=None):
         self._game_dir = Path(game_dir) if game_dir else None
         self._home = Path(home) if home else default_home()
         self._instances = Path(instances) if instances else None
-        self._open_url, self._start_game = open_url, start_game
-        self._steam_running, self._find, self._wait = steam_running, find, wait
+        self._open_url, self._find = open_url, find
+        self._starter = Starter(open_url, start_game, steam_running, wait)
         self._pick_folder = pick_folder  # set by the window: a "choose folder" dialog; returns a path or None
         self._jobs: dict[str, Job] = {}
 
     # --- the game ---
-    def _settings(self) -> dict:
-        try:
-            return json.loads((self._home / "settings.json").read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return {}
-
-    def _save_settings(self, settings: dict) -> None:
-        self._home.mkdir(parents=True, exist_ok=True)
-        (self._home / "settings.json").write_text(json.dumps(settings, indent=2), encoding="utf-8")
-
     def _game(self) -> tuple[Path | None, dict]:
         if self._game_dir:
             return self._game_dir, {}
-        chosen = self._settings().get("game_dir")
-        if chosen and Path(chosen, "RUSE.exe").is_file():
-            return Path(chosen), {}
-        if os.environ.get("RUSE_GAME"):
-            return Path(os.environ["RUSE_GAME"]), {}
-        found = self._find()
-        return (Path(found["game_dir"]), found) if found else (None, {})
+        return find_game_dir(self._home, self._find)
 
     def status(self) -> dict:
         """Where the game is, which build, and a sentence for the screen."""
@@ -111,9 +72,9 @@ class LauncherApi:
             status = self.status()
             status["message"] = f"{folder} doesn't have RUSE.exe in it. Pick the R.U.S.E folder itself."
             return status
-        settings = self._settings()
-        settings["game_dir"] = str(folder)
-        self._save_settings(settings)
+        values = settings(self._home)
+        values["game_dir"] = str(folder)  # the Studio uses it too
+        save_settings(self._home, values)
         return self.status()
 
     # --- mod sets ---
@@ -153,9 +114,6 @@ class LauncherApi:
         return str(self._sets_dir())
 
     # --- play ---
-    def _instances_dir(self, game: Path) -> Path:
-        return self._instances or Path(game.anchor) / "RUSE-Instances"
-
     def play(self, set_id: str) -> dict:
         """Start playing a mod set in the background. Returns {'job': id}; follow it with job(id)."""
         chosen = next((s for s in self._read_sets() if s["id"] == set_id), None)
@@ -166,58 +124,19 @@ class LauncherApi:
         elif chosen.get("error"):
             job.state, job.message = "failed", f"The mod set {chosen['name']} has a mistake: {chosen['error']}."
         else:
-            threading.Thread(target=self._play, args=(job, chosen), daemon=True).start()
-        return {"job": job.id}
-
-    def play_folders(self, name: str, folders: list[str], copy_id: str) -> dict:
-        """Build these mod folders into the modded copy `copy_id` and start the game from it (the Studio's Play)."""
-        job = Job()
-        self._jobs[job.id] = job
-        chosen = {"id": copy_id, "name": name, "mods": [str(f) for f in folders]}
-        threading.Thread(target=self._play, args=(job, chosen), daemon=True).start()
+            job.start(lambda say: self._play(chosen, say), "R.U.S.E. is starting.",
+                      plain=(BuildError, RndfError, OSError))
         return {"job": job.id}
 
     def job(self, job_id: str, since: int = 0) -> dict:
-        job = self._jobs.get(job_id)
-        return job.view(since) if job else {"id": job_id, "state": "failed", "message": "unknown job", "lines": [],
-                                            "count": 0}
+        return job_view(self._jobs, job_id, since)
 
-    def _ensure_steam(self, job: Job) -> bool:
-        if self._steam_running():
-            return True
-        job.say("Starting Steam…")
-        self._open_url(STEAM_OPEN)
-        for _ in range(60):
-            self._wait(1)
-            if self._steam_running():
-                return True
-        return False
-
-    def _play(self, job: Job, chosen: dict) -> None:
-        try:
-            if chosen["id"] == "vanilla":
-                job.say("Starting R.U.S.E. through Steam…")
-                self._open_url(STEAM_PLAY)
-            else:
-                game, _found = self._game()
-                if game is None:
-                    raise BuildError("We couldn't find R.U.S.E. Choose its folder first.")
-                mods = [load_mod(Path(m)) for m in chosen["mods"]]
-                instance = self._instances_dir(game) / chosen["id"]
-                job.say(f"Building the modded copy of R.U.S.E. for {chosen['name']} in {instance}…")
-                result = build_and_write(game, mods, instance=instance, say=job.say)
-                if result.errors:
-                    raise BuildError("These mods have errors (listed above). Nothing was changed.")
-                exe = next((p for p in instance.iterdir() if p.name.lower() == "ruse.exe"), None) \
-                    if instance.is_dir() else None
-                if exe is None:
-                    raise BuildError(f"The modded copy at {instance} has no RUSE.exe.")
-                if not self._ensure_steam(job):
-                    raise BuildError("Steam didn't start. Start Steam, then press Play again.")
-                job.say("Starting R.U.S.E. from the modded copy…")
-                self._start_game(exe)
-            job.state, job.message = "done", "R.U.S.E. is starting."
-        except (BuildError, RndfError, OSError) as exc:
-            job.state, job.message = "failed", str(exc)
-        except Exception as exc:  # anything unexpected still ends the job, with the error for a bug report
-            job.state, job.message = "failed", f"Something went wrong: {type(exc).__name__}: {exc}"
+    def _play(self, chosen: dict, say) -> None:
+        if chosen["id"] == "vanilla":
+            self._starter.vanilla(say)
+            return
+        game, _found = self._game()
+        if game is None:
+            raise BuildError("We couldn't find R.U.S.E. Choose its folder first.")
+        instance = (self._instances or instances_dir(game)) / chosen["id"]
+        self._starter.modded(game, chosen["mods"], instance, chosen["name"], say)

@@ -14,8 +14,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 
-from ..patch import ListV, Num
-from ..rndf import RndfError, parse
+from rusemod.patch import ListV, Num
+from rusemod.rndf import RndfError, parse
 
 FILE = Path("src") / "studio.rndf"
 HEADER = ("// Made by the RUSE Studio, which rewrites this file after every change.\n"

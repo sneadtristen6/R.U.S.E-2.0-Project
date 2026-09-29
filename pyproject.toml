@@ -2,20 +2,30 @@
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
+# One repo, three parts: the engine (`rusemod`, with the `ruse` command) and two separate apps built on it,
+# RUSE Launcher for players (`ruse_launcher`) and RUSE Studio for modders (`ruse_studio`). Neither app needs the
+# other; each will get its own installer. `py -3 -m pip install -e .[apps]` gives the commands below.
 [project]
 name = "rusemod"
 version = "0.0.1"
-description = "Read and write R.U.S.E. game data; the core of the R.U.S.E. mod platform."
+description = "Read and write R.U.S.E. game data: the engine of the R.U.S.E. mod platform, and its two apps."
 requires-python = ">=3.11"
 license = { text = "MIT" }
 
+[project.optional-dependencies]
+apps = ["pywebview"]  # the apps' windows
+
 [project.scripts]
 ruse = "rusemod.cli:main"
+
+[project.gui-scripts]
+ruse-launcher = "ruse_launcher.app:main"
+ruse-studio = "ruse_studio.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
 "rusemod" = ["labels.toml"]
-"rusemod.launcher" = ["ui/*"]
-"rusemod.studio" = ["ui/*"]
+"ruse_launcher" = ["ui/*"]
+"ruse_studio" = ["ui/*", "words.toml"]

@@ -1,5 +1,6 @@
-"""The Studio's back end (rusemod.studio.api) and the display names (rusemod.schema), on a made-up game."""
+"""The Studio app's back end (ruse_studio.api) and the display names (rusemod.schema), on a made-up game."""
 import os
+import re
 import struct
 import tempfile
 import threading
@@ -14,8 +15,9 @@ from rusemod import Edat, Ndf, schema
 from rusemod.build import build_pack, load_mod
 from rusemod.dic import name_to_key
 from rusemod.index import build_index
-from rusemod.studio.api import StudioApi, StudioError, _short
-from rusemod.studio.edits import EditsFileError, ModEdits, number
+from rusemod.play import Starter
+from ruse_studio.api import StudioApi, StudioError, _short, _words
+from ruse_studio.edits import EditsFileError, ModEdits, number
 
 SHERMAN, PANZER = name_to_key("SHERMAN"), name_to_key("PANZER")
 
@@ -131,24 +133,13 @@ class Studio(unittest.TestCase):
         self.assertTrue(api.status()["ready"])
         with mock.patch.dict(os.environ, {}, clear=False):
             os.environ.pop("RUSE_GAME", None)
-            nothing = StudioApi(index_path=Path(self.tmp.name, "none.sqlite"), find=lambda: None)
+            nothing = StudioApi(index_path=Path(self.tmp.name, "none.sqlite"), find=lambda: None,
+                                home=Path(self.tmp.name, "empty-home"))  # no game folder picked by hand either
             self.assertEqual(nothing.status(), {"ready": False, "can_build": False})  # no game: nothing to build from
 
 
 M4 = "$/GFX/Everything/Descriptor_Unit_M4_Sherman"
 M4_GUN, AMMO = M4 + ":Weapon", M4 + ":Weapon.Ammo"
-
-
-class FakeLauncher:
-    def __init__(self):
-        self.calls = []
-
-    def play_folders(self, name, folders, copy_id):
-        self.calls.append((name, folders, copy_id))
-        return {"job": "j1"}
-
-    def job(self, job_id, since=0):
-        return {"id": job_id, "state": "done", "message": "R.U.S.E. is starting.", "lines": [], "count": 0}
 
 
 class Editing(unittest.TestCase):
@@ -159,6 +150,7 @@ class Editing(unittest.TestCase):
         cls.tmp = tempfile.TemporaryDirectory()
         cls.game = Path(cls.tmp.name, "game")
         write_game(cls.game)
+        (cls.game / "RUSE.exe").write_bytes(b"MZ")
         cls.index = build_index(cls.game, Path(cls.tmp.name, "index.sqlite"), say=lambda line: None)
 
     @classmethod
@@ -167,11 +159,14 @@ class Editing(unittest.TestCase):
 
     def setUp(self):
         self.home = Path(tempfile.mkdtemp(dir=self.tmp.name))
-        self.launcher = FakeLauncher()
+        self.started = []
         self.api = self.studio()
 
     def studio(self):
-        return StudioApi(index_path=self.index, game_dir=self.game, home=self.home, launcher=self.launcher)
+        starter = Starter(open_url=lambda url: None, start_game=self.started.append, steam_running=lambda: True,
+                          wait=lambda s: None)
+        return StudioApi(index_path=self.index, game_dir=self.game, home=self.home, starter=starter,
+                         instances=self.home / "copies")
 
     def rows(self, address):
         return {r["prop"]: r for g in self.api.unit(address)["groups"] for r in g["rows"]}
@@ -282,13 +277,22 @@ class Editing(unittest.TestCase):
             self.api.edit(M4, "SeuilMort", 15)
         self.assertEqual((folder / "src" / "studio.rndf").read_text(encoding="utf-8"), broken)
 
-    def test_play_builds_the_mod_through_the_launcher(self):
+    def test_test_in_game_builds_the_mod_and_starts_it(self):  # the Studio's own, without the launcher
         with self.assertRaises(StudioError):
-            self.api.play()
-        folder = Path(self.api.new_mod("Tank Test")["current"])
-        self.assertEqual(self.api.play(), {"job": "j1"})
-        self.assertEqual(self.launcher.calls, [("tank-test", [str(folder)], "studio-tank-test")])
-        self.assertEqual(self.api.job("j1")["state"], "done")  # the launcher's job, followed from the Studio
+            self.api.test_in_game()  # no mod yet
+        self.api.new_mod("Tank Test")
+        self.api.edit(M4, "SeuilMort", 15)
+        job = self.api.test_in_game()["job"]
+        end = time.time() + 20
+        while self.api.job(job)["state"] == "running" and time.time() < end:
+            time.sleep(0.02)
+        j = self.api.job(job)
+        self.assertEqual((j["state"], j["message"]), ("done", "R.U.S.E. is starting."), j)
+        copy = self.home / "copies" / "studio-tank-test"
+        self.assertEqual(self.started, [copy / "RUSE.exe"])
+        pack = Edat((copy / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes())
+        self.assertEqual(Ndf(pack.read(pack.find("everything.cpp.gladndfbin"))).objects[0].get(1).scalar(), 15)
+        self.assertEqual(self.api.job("nope")["state"], "failed")
 
     def test_numbers_as_modders_see_them(self):
         self.assertEqual([number(x) for x in (0.1, 1e-7, 12.0, True, -2.5, 3)], ["0.1", "0.0000001", "12", "1", "-2.5", "3"])
@@ -301,10 +305,10 @@ class Labels(unittest.TestCase):
 
     def test_complete(self):
         data = schema._data()
-        for section in ("props", "groups", "ui"):
-            for name, entry in data[section].items():
+        for section, entries in (("props", data["props"]), ("groups", data["groups"]), ("Studio words", _words())):
+            for name, entry in entries.items():
                 missing = [lang for lang in schema.LANGS if not entry.get(lang)]
-                self.assertEqual(missing, [], f"{section}.{name}")
+                self.assertEqual(missing, [], f"{section}: {name}")
         for name, entry in data["props"].items():
             self.assertIn(entry["group"], schema.GROUP_ORDER, name)
         for lang, names in data["nations"].items():
@@ -312,6 +316,13 @@ class Labels(unittest.TestCase):
         self.assertEqual(schema.label("ProductionPrice[2]", "fr"), "Prix [2]")
         self.assertEqual(schema.label("NotTranslated", "fr"), "NotTranslated")
         self.assertEqual(schema.label("SeuilMort"), "SeuilMort")  # the game's names by default
+
+    def test_every_word_the_studio_screen_uses_exists(self):
+        app = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
+        used = set(re.findall(r"\b(?:w|state\.words)\.([a-z_]+)", app))
+        used |= {"all", "ground", "infantry", "air", "buildings", "not_stable", "shared_part_later"}  # looked up by key
+        self.assertGreater(len(used), 25)
+        self.assertEqual(sorted(used - set(_words())), [])
 
 
 if __name__ == "__main__":

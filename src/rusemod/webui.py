@@ -1,5 +1,5 @@
-"""Shared pieces of the web-style windows (the launcher and the Studio, PLAN.md ADR 2): serving a window's screens on
-this PC only, and background jobs the screens follow."""
+"""Shared pieces of the web-style windows of both apps (the launcher and the Studio, PLAN.md ADR 2): serving a window's
+screens on this PC only, and background jobs the screens follow."""
 from __future__ import annotations
 
 import functools
@@ -33,6 +33,29 @@ class Job:
     def view(self, since: int = 0) -> dict:
         return {"id": self.id, "state": self.state, "message": self.message, "lines": self.lines[since:],
                 "count": len(self.lines)}
+
+    def start(self, work, done: str, plain=(OSError,)) -> dict:
+        """Run `work(say)` in the background. The job ends "done" with the message `done`, or "failed" with the
+        error: as it is for the `plain` kinds (their messages are written for people), with its type for anything
+        else (for a bug report)."""
+        def run():
+            try:
+                work(self.say)
+                self.state, self.message = "done", done
+            except plain as exc:
+                self.state, self.message = "failed", str(exc)
+            except Exception as exc:
+                self.state, self.message = "failed", f"Something went wrong: {type(exc).__name__}: {exc}"
+
+        threading.Thread(target=run, daemon=True).start()
+        return {"job": self.id}
+
+
+def job_view(jobs: dict, job_id: str, since: int = 0) -> dict:
+    """What a screen sees of one of its jobs (`since` skips the lines it already has)."""
+    job = jobs.get(job_id)
+    return job.view(since) if job else {"id": job_id, "state": "failed", "message": "unknown job", "lines": [],
+                                        "count": 0}
 
 
 def open_window(title: str, folder: Path, page: str, api, width=1180, height=760) -> int:

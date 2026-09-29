@@ -5,13 +5,14 @@ new units, maps, models, missions and one-click modded multiplayer. The content 
 
 Status: **M0 done; M1 next** (the design for M1–M3 is written up). Nothing here modifies the game install.
 
-**Current stage (2026-09-28):** C4 passed: a mod written as text (`examples/half-price-buildings`), built by
+**Current stage (2026-09-29):** C4 passed: a mod written as text (`examples/half-price-buildings`), built by
 `ruse build`, worked in-game. C3 passed too (new maps can ship their own pack). The M1.5 terrain work has started:
 the terrain mesh and tile files can be read and rewritten losslessly (`rusemod.tms`, `rusemod.tmst`), and the map
 pack "checksum" turned out to be a random ID. Next on the PC: in-game terrain tests (a raised mesa, swapped tiles,
 checkerboard tiles), the TGU1 texture codec, and **C5, a new unit in the build menu** (ready to run, PLAN.md §7).
-On the cloud side, adding units and naming them are done (C5 and C6 are ready to run), and the launcher v0.1
-exists (home screen and Play; the PC tries it, PLAN.md §10 item 1.7).
+On the cloud side, adding units and naming them are done (C5 and C6 are ready to run). The platform is two separate
+apps on one engine: **RUSE Launcher** for players (v0.1: home screen and Play) and **RUSE Studio** for modders (v0.2:
+change any unit's numbers in a mod, then test it in the game). The PC tries both (PLAN.md §10 items 1.7 and 1.9).
 Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19); the order is the mod system, then the
 launcher; multiplayer is tested solo until there's a second player (decision 20).
 The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.md §6.
@@ -26,6 +27,9 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
 | [docs/ENGINE_NOTES.md](docs/ENGINE_NOTES.md) | ideas learned from studying the game's own files (esp. its Python scripting layer) |
 
 ## Code so far
+
+Three parts, in `src/`: the engine, `rusemod` (the game's files, the mod system, building modded copies, the `ruse`
+tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
 
 - **The `ruse` tool** (`src/rusemod/cli.py`): with `PYTHONPATH=src`, run `py -3 -m rusemod <command>`
   (or `pip install -e .` once, then just `ruse <command>`). It never writes into the game folder.
@@ -50,18 +54,19 @@ The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.
   `text/*.csv` ([`src/rusemod/loc.py`](src/rusemod/loc.py); in-game test C6,
   [`examples/named-unit/`](examples/named-unit/)).
 
-- **The launcher** ([`src/rusemod/launcher/`](src/rusemod/launcher/), v0.1): a desktop window built like a web page.
-  It finds the game, lists your mod sets and has a big Play button that builds the set's modded copy and starts the
-  game (Vanilla starts through Steam). Once: `py -3 -m pip install pywebview`, then `py -3 -m rusemod.launcher`
-  (`--spike` opens the 3D check). The screens also open in a normal browser with made-up data:
-  `src/rusemod/launcher/ui/index.html?fake`.
-- **The Studio** ([`src/rusemod/studio/`](src/rusemod/studio/), v0.2): the modders' tool, in the same kind of
-  window. Browse every unit and building, see a unit's values, parts and what uses it, and pick a language: the
-  game's own names by default, or any of the game's ten languages ([`src/rusemod/labels.toml`](src/rusemod/labels.toml)).
-  Pick or make a mod and change a unit's numbers right on its page: each change is saved in the mod's
-  `src/studio.rndf` (with Undo), and "Play with this mod" builds it and starts the game.
-  `py -3 -m rusemod.studio` (after `ruse index build`). Made-up data in a normal browser:
-  `src/rusemod/studio/ui/index.html?fake`.
+- **Two apps** on the engine, separate from each other (neither needs the other; PLAN.md decision 22). Both are
+  desktop windows built like web pages; once: `py -3 -m pip install pywebview`. Their screens also open in a normal
+  browser with made-up data: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_studio/ui/index.html?fake`.
+  - **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/), v0.1), for players: it finds the game, lists your
+    mod sets and has a big Play button that builds the set's modded copy and starts the game (Vanilla starts through
+    Steam). `py -3 -m ruse_launcher`.
+  - **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), v0.2), for modders: browse every unit and building, see a
+    unit's values, parts and what uses it, and pick a language: the game's own names by default, or any of the
+    game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is saved in
+    the mod's `src/studio.rndf` (with Undo), and "Test in game" builds it and starts the game. `py -3 -m ruse_studio`
+    (after `ruse index build`); `--spike` opens the 3D check.
+  - `py -3 -m pip install -e .[apps]` once gives two commands, `ruse-launcher` and `ruse-studio`, that open them
+    without a console window. Each app gets its own installer later.
 - [`ruse_edat.py`](ruse_edat.py): read-only EDAT archive reader.
   ```
   py -3 ruse_edat.py list    <archive.dat>

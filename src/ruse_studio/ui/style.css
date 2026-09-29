@@ -96,9 +96,9 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .badge.edited { color: var(--accent); }
 .unit-list button.edited .name { color: var(--accent); }
 
-.play-panel { position: relative; border-top: 1px solid var(--line); background: #0f1113; }
-.play-panel pre { margin: 0; max-height: 180px; overflow: auto; padding: 10px 20px; font-size: 12px; }
-.play-panel button { position: absolute; top: 8px; right: 16px; background: var(--panel); }
+.test-panel { position: relative; border-top: 1px solid var(--line); background: #0f1113; }
+.test-panel pre { margin: 0; max-height: 180px; overflow: auto; padding: 10px 20px; font-size: 12px; }
+.test-panel button { position: absolute; top: 8px; right: 16px; background: var(--panel); }
 .status { min-height: 28px; padding: 5px 20px; border-top: 1px solid var(--line); background: var(--panel); color: var(--muted);
           font-size: 12px; overflow-wrap: anywhere; }
 .status.ok { color: var(--ok); }
