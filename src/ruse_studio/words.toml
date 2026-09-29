@@ -784,6 +784,66 @@ cz = "Uloženo v módu. „Vyzkoušet ve hře“ to zabuduje do mapy."
 jpn = "MODに保存しました。「ゲームでテスト」でマップに反映されます。"
 sc = "已保存到模组。“在游戏中测试”会将其构建进地图。"
 
+[brush_ramp]
+us = "Ramp"
+fr = "Rampe"
+ger = "Rampe"
+ita = "Rampa"
+spa = "Rampa"
+pol = "Rampa"
+ru = "Склон"
+cz = "Rampa"
+jpn = "スロープ"
+sc = "斜坡"
+
+[ramp_help]
+us = "Click where the ramp starts, then where it ends. Esc cancels."
+fr = "Cliquez au début de la rampe, puis à sa fin. Échap annule."
+ger = "Klicken Sie auf den Anfang der Rampe, dann auf ihr Ende. Esc bricht ab."
+ita = "Clicca dove inizia la rampa, poi dove finisce. Esc annulla."
+spa = "Haz clic donde empieza la rampa y luego donde termina. Esc cancela."
+pol = "Kliknij początek rampy, potem jej koniec. Esc anuluje."
+ru = "Щёлкните в начале склона, затем в его конце. Esc отменяет."
+cz = "Klikněte na začátek rampy, pak na její konec. Esc zruší."
+jpn = "スロープの始点をクリックし、次に終点をクリックします。Escで取り消し。"
+sc = "先点击斜坡的起点，再点击终点。按 Esc 取消。"
+
+[brush_clear]
+us = "Start over"
+fr = "Tout effacer"
+ger = "Von vorn"
+ita = "Ricomincia"
+spa = "Empezar de nuevo"
+pol = "Zacznij od nowa"
+ru = "Начать заново"
+cz = "Začít znovu"
+jpn = "やり直す"
+sc = "重新开始"
+
+[really_clear]
+us = "Remove all {n} strokes on this map?"
+fr = "Supprimer les {n} coups de pinceau de cette carte ?"
+ger = "Alle {n} Pinselstriche auf dieser Karte entfernen?"
+ita = "Rimuovere tutte le {n} pennellate su questa mappa?"
+spa = "¿Quitar las {n} pinceladas de este mapa?"
+pol = "Usunąć wszystkie pociągnięcia ({n}) na tej mapie?"
+ru = "Убрать все мазки ({n}) на этой карте?"
+cz = "Odstranit všechny tahy ({n}) na této mapě?"
+jpn = "このマップのストローク（{n}）をすべて削除しますか？"
+sc = "删除此地图上的全部 {n} 个笔画？"
+
+[remove_all]
+us = "Remove them"
+fr = "Les supprimer"
+ger = "Entfernen"
+ita = "Rimuovile"
+spa = "Quitarlas"
+pol = "Usuń"
+ru = "Убрать"
+cz = "Odstranit"
+jpn = "削除する"
+sc = "删除"
+
 # --- lists whose values are all the same (a unit's prices, one per battle date) ---
 [all_values]
 us = "all {n}"

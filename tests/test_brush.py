@@ -62,12 +62,30 @@ class Strokes(unittest.TestCase):
         self.assertTrue(s.covers(13.0, 23.0))
         self.assertFalse(s.covers(15.0, 20.0))                           # the edge itself is outside
 
+    def test_the_ramp(self):
+        z = 10.0
+        ramp = Stroke("ramp", 0.0, 0.0, 100.0, level=20.0, x2=1000.0, y2=0.0, level2=120.0)
+        self.assertEqual(ramp.height_at(0, 0, z), 20.0)                  # the start, at its level
+        self.assertEqual(ramp.height_at(1000, 0, z), 120.0)              # the end, at its own
+        self.assertEqual(ramp.height_at(250, 30, z), 45.0)               # a quarter along, inside the flat middle
+        self.assertEqual(ramp.height_at(-30, 0, z), 20.0)                # beyond the start: the start's level
+        self.assertEqual(ramp.height_at(1000, 100, z), z)                # the band's edge: untouched
+        self.assertEqual(ramp.height_at(500, 200, z), z)                 # well beside it
+        self.assertTrue(z < ramp.height_at(500, 75, z) < 70.0)           # the sides slope back to the old ground
+        half = Stroke("ramp", 0.0, 0.0, 100.0, level=20.0, x2=1000.0, y2=0.0, level2=120.0, weight=0.5)
+        self.assertEqual(half.height_at(0, 0, z), 15.0)
+        self.assertEqual(ramp.along(500, 40), (0.5, 1600.0))
+        self.assertEqual(ramp.box(), (-100.0, 1100.0, -100.0, 100.0))
+        self.assertTrue(ramp.covers(500, 99))
+        self.assertFalse(ramp.covers(500, 100) or ramp.covers(-100, 0))
+
 
 class TerrainFile(unittest.TestCase):
     STROKES = [Stroke("hill", 983040.0, 983040.0, 60000.0, height=12000.0),
                Stroke("plateau", 1.5, 2.25, 10.0, level=-300.0, weight=0.75),
                Stroke("smooth", 3.0, 4.0, 5.0, weight=0.5),
-               Stroke("crater", 0.1, 0.2, 0.3, height=7.0)]
+               Stroke("crater", 0.1, 0.2, 0.3, height=7.0),
+               Stroke("ramp", 5.0, 6.0, 7.0, level=8.0, weight=0.5, x2=9.0, y2=10.0, level2=11.0)]
 
     def test_written_and_read_back(self):
         text = strokes_toml(self.STROKES, "Made in the RUSE Studio.\nIt rewrites this file.")
@@ -77,10 +95,13 @@ class TerrainFile(unittest.TestCase):
         self.assertIn("height = 12000.0", first)
         self.assertNotIn("level", first)                                 # only what the brush uses
         self.assertNotIn("weight", first)
+        ramp = text.split("[[stroke]]")[5]
+        self.assertIn("x2 = 9.0\ny2 = 10.0\nlevel = 8.0\nlevel2 = 11.0\nweight = 0.5\n", ramp)
+        self.assertNotIn("height", ramp)
         self.assertEqual(strokes_toml([]), "\n")
 
     def test_brushes_and_their_values(self):
-        self.assertEqual(set(BRUSHES), {"hill", "raise", "lower", "crater", "plateau", "flatten", "smooth"})
+        self.assertEqual(set(BRUSHES), {"hill", "raise", "lower", "crater", "plateau", "flatten", "smooth", "ramp"})
         self.assertEqual(parse_strokes([{"brush": "smooth", "x": 1, "y": 2, "radius": 3}])[0].weight, 0.5)
         self.assertEqual(parse_strokes([{"brush": "flatten", "x": 1, "y": 2, "radius": 3, "level": 4}])[0].weight, 1.0)
 
@@ -105,6 +126,10 @@ class TerrainFile(unittest.TestCase):
                 parse_strokes([good, item], "maps/X/terrain.toml")
         with self.assertRaisesRegex(BrushError, "plateau brush needs level"):
             parse_strokes([{"brush": "plateau", "x": 1, "y": 2, "radius": 3}])
+        with self.assertRaisesRegex(BrushError, "ramp brush needs x2, y2, level, level2"):
+            parse_strokes([{"brush": "ramp", "x": 1, "y": 2, "radius": 3}])
+        with self.assertRaisesRegex(BrushError, "stroke 1: the ramp's start and end are the same point"):
+            parse_strokes([{"brush": "ramp", "x": 1, "y": 2, "radius": 3, "x2": 1, "y2": 2, "level": 0, "level2": 5}])
         with self.assertRaisesRegex(BrushError, "isn't a \\[\\[stroke\\]\\] table"):
             parse_strokes(["hill"])
         with self.assertRaisesRegex(BrushError, "must be a list"):

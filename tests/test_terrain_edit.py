@@ -134,6 +134,31 @@ class Together(unittest.TestCase):
             self.assertTrue(inner)
             self.assertEqual(set(inner), {k.to_quant(2, 2500.0)}, key)
 
+    def test_a_ramp_slopes_evenly_from_end_to_end_in_every_file(self):
+        ramp = Stroke("ramp", 600.0, 1500.0, 400.0, level=1000.0, x2=2400.0, y2=1500.0, level2=2500.0)
+        changed, _ = edit_map(reader(self.files), [ramp])
+        self.assertEqual(set(changed), set(FILES.values()))
+
+        def want(x):
+            return 1000.0 + 1500.0 * (x - 600.0) / 1800.0
+
+        for key in ("highdef", "lowdef"):  # inside the flat middle of the band, the ground is exactly on the ramp
+            mesh = Tms(changed[FILES[key]])
+            step = (mesh.bounds[5] - mesh.bounds[2]) / Q_MAX
+            inner = [(mesh.to_world(0, p[0]), mesh.to_world(2, p[2])) for c in mesh.cells for p in c.positions()
+                     if 600 <= mesh.to_world(0, p[0]) <= 2400 and abs(mesh.to_world(1, p[1]) - 1500) < 200]
+            self.assertGreater(len(inner), 3, key)
+            for x, z in inner:
+                self.assertAlmostEqual(z, want(x), delta=step, msg=key)
+        for key in ("ground", "camera"):
+            k = Kdt(changed[FILES[key]])
+            step = (k.bounds_max[2] - k.bounds_min[2]) / Q_MAX
+            inner = [(k.to_world(0, p[0]), k.to_world(2, p[2])) for s in range(len(k.subtrees)) for p in k.positions(s)
+                     if 600 <= k.to_world(0, p[0]) <= 2400 and abs(k.to_world(1, p[1]) - 1500) < 200]
+            self.assertGreater(len(inner), 3, key)
+            for x, z in inner:
+                self.assertAlmostEqual(z, want(x), delta=step, msg=key)
+
     def test_smoothing_evens_out_the_bumps_and_keeps_the_files_in_step(self):
         def spread(mesh):
             zs = [mesh.to_world(2, p[2]) for c in mesh.cells for p in c.positions()

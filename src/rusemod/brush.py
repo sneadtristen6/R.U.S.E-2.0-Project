@@ -1,9 +1,9 @@
 """Terrain brushes (PLAN.md §7 MT, steps T2-T4; docs/MOD_FORMAT.md §8): the height changes a modder paints on a map.
 
 A stroke is one dab of a brush: which brush, where (world x, y), how wide (radius) and how much. The Studio turns a
-drag into dabs along its path. A dab changes the ground inside its circle only, weighted by the brush's shape (full
-at the centre, nothing at the edge, smooth in between). Strokes apply in order, each to the ground the ones before
-it left.
+drag into dabs along its path. A dab changes the ground inside its circle only (a ramp: inside the band along its
+line), weighted by the brush's shape (full at the centre, nothing at the edge, smooth in between). Strokes apply in
+order, each to the ground the ones before it left.
 
   brush     what it does                                              uses
   hill      raises the ground in a round hump                         height (world units)
@@ -14,6 +14,9 @@ it left.
             half, sloping back to the old ground at the edge
   flatten   pulls the ground toward a level, most at the centre        level, weight
   smooth    pulls the ground toward its own local average              weight
+  ramp      an even slope from one point to another: flat across the    level (z at the start), x2, y2 and
+            middle half of its width, sloping back to the old ground     level2 (the end and z there), weight;
+            at its sides and beyond its ends                             radius is half its width
 
 Every map's ground lives in four files that must change together (FORMATS.md §6): the two drawn meshes and the two
 .kdt trees. rusemod.terrain_edit applies every stroke to all four through `Stroke.height_at`, a function of the
@@ -34,7 +37,8 @@ class BrushError(ValueError):
 
 @dataclass(frozen=True)
 class Brush:
-    kind: str    # "add": z + sign * height * shape; "level": toward `level`; "smooth": toward the local average
+    kind: str    # "add": z + sign * height * shape; "level": toward `level`; "smooth": toward the local average;
+                 # "ramp": toward the line from `level` at (x, y) to `level2` at (x2, y2)
     shape: str   # "soft", "flat" or "crater" (see shape_weight)
     sign: int = 1
 
@@ -47,6 +51,7 @@ BRUSHES = {
     "plateau": Brush("level", "flat"),
     "flatten": Brush("level", "soft"),
     "smooth": Brush("smooth", "soft"),
+    "ramp": Brush("ramp", "flat"),
 }
 CRATER_RIM = 0.35      # the crater's rim rises by this share of the bowl's depth
 
@@ -84,34 +89,60 @@ def shape_weight(shape: str, t2: float) -> float:
 @dataclass(frozen=True)
 class Stroke:
     brush: str
-    x: float           # world units: x grows east, y grows south (the game's axes)
+    x: float           # world units: x grows east, y grows south (the game's axes); a ramp: where it starts
     y: float
-    radius: float
+    radius: float      # a ramp: half its width
     height: float = 0.0   # hill, raise, lower, crater: how much, in world units
-    level: float = 0.0    # plateau, flatten: the height (world z) the ground goes to
-    weight: float = 1.0   # plateau, flatten, smooth: how far toward it, 0..1
+    level: float = 0.0    # plateau, flatten: the height (world z) the ground goes to; ramp: the height at its start
+    weight: float = 1.0   # plateau, flatten, smooth, ramp: how far toward it, 0..1
+    x2: float = 0.0       # ramp: where it ends
+    y2: float = 0.0
+    level2: float = 0.0   # ramp: the height at its end
 
     @property
     def kind(self) -> Brush:
         return BRUSHES[self.brush]
 
+    def along(self, x: float, y: float) -> tuple[float, float]:
+        """A ramp: how far along its centre line the point nearest to (x, y) lies (0 at the start, 1 at the end)
+        and the squared distance from (x, y) to that point."""
+        dx, dy = self.x2 - self.x, self.y2 - self.y
+        len2 = dx * dx + dy * dy
+        t = 0.0
+        if len2 > 0.0:
+            t = ((x - self.x) * dx + (y - self.y) * dy) / len2
+            t = 0.0 if t < 0.0 else 1.0 if t > 1.0 else t
+        px, py = x - (self.x + dx * t), y - (self.y + dy * t)
+        return t, px * px + py * py
+
     def covers(self, x: float, y: float) -> bool:
+        if self.brush == "ramp":
+            return self.along(x, y)[1] < self.radius * self.radius
         dx, dy = x - self.x, y - self.y
         return dx * dx + dy * dy < self.radius * self.radius
 
     def box(self) -> tuple[float, float, float, float]:
-        """The square around the circle: x min, x max, y min, y max."""
+        """The square around the circle (a ramp: around its whole band): x min, x max, y min, y max."""
+        if self.brush == "ramp":
+            return (min(self.x, self.x2) - self.radius, max(self.x, self.x2) + self.radius,
+                    min(self.y, self.y2) - self.radius, max(self.y, self.y2) + self.radius)
         return self.x - self.radius, self.x + self.radius, self.y - self.radius, self.y + self.radius
 
     def height_at(self, x: float, y: float, z: float, average=None) -> float:
-        """The new height of a point at world (x, y) whose ground is at z now (z itself outside the circle).
-        `average(x, y)` gives the local average height, which only the smooth brush uses."""
+        """The new height of a point at world (x, y) whose ground is at z now (z itself outside the circle, or
+        outside a ramp's band). `average(x, y)` gives the local average height, which only the smooth brush uses."""
+        b = self.kind
+        r2 = self.radius * self.radius
+        if b.kind == "ramp":
+            t, d2 = self.along(x, y)
+            if d2 >= r2:
+                return z
+            target = self.level + (self.level2 - self.level) * t
+            return z + (target - z) * (self.weight * shape_weight(b.shape, d2 / r2))
         dx, dy = x - self.x, y - self.y
         d2 = dx * dx + dy * dy
-        r2 = self.radius * self.radius
         if d2 >= r2:
             return z
-        b = self.kind
         p = shape_weight(b.shape, d2 / r2)
         if b.kind == "add":
             return z + b.sign * self.height * p
@@ -123,8 +154,8 @@ class Stroke:
 
 
 # --- the mod file: maps/<map pack>/terrain.toml -------------------------------------------------------------------
-_NEEDS = {"add": ("height",), "level": ("level",), "smooth": ()}
-_NUMBERS = ("x", "y", "radius", "height", "level", "weight")
+_NEEDS = {"add": ("height",), "level": ("level",), "smooth": (), "ramp": ("x2", "y2", "level", "level2")}
+_NUMBERS = ("x", "y", "radius", "height", "level", "weight", "x2", "y2", "level2")
 
 
 def _number(v, what: str) -> float:
@@ -170,6 +201,8 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
             raise BrushError(f"{at}: weight must be between 0 and 1")
         if brush == "smooth" and "weight" not in values:
             values["weight"] = 0.5
+        if brush == "ramp" and (values["x"], values["y"]) == (values["x2"], values["y2"]):
+            raise BrushError(f"{at}: the ramp's start and end are the same point")
         out.append(Stroke(brush, **values))
     return out
 
@@ -190,7 +223,10 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
             lines.append(f"height = {_num_text(s.height)}")
         if kind == "level":
             lines.append(f"level = {_num_text(s.level)}")
-        if kind in ("level", "smooth"):
+        if kind == "ramp":
+            lines += [f"x2 = {_num_text(s.x2)}", f"y2 = {_num_text(s.y2)}", f"level = {_num_text(s.level)}",
+                      f"level2 = {_num_text(s.level2)}"]
+        if kind in ("level", "smooth", "ramp"):
             lines.append(f"weight = {_num_text(s.weight)}")
     return "\n".join(lines).lstrip("\n") + "\n"
 
