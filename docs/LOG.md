@@ -462,3 +462,21 @@ import); the cloud tab's pull request #1 (Task A) is under review.
   orders (the later mod wins), hand-written sets, the words (complete, all used) and the start language.
 - **Not done, on purpose:** double-clicking a mod file in Explorer (the installer's file type), join codes, Browse
   mods, and the release (no version bump: the PC session's check with the real window comes first).
+
+### 2026-09-29, cloud session: a mod as one file (TASKS.md C, pull request `cloud/mod-package`)
+
+- **What a modder sees:** "Export mod…" in the Studio's Mod menu asks for the version, author and description
+  (kept in the mod's `mod.toml` for next time), opens the window's "save as" dialog with `<id>-<version>.rusemod`
+  suggested, builds the mod on the game to record the game build and the mod's fingerprint (MOD_FORMAT §12) in the
+  file's manifest, and says where the file went. A mod with a mistake isn't exported; without the game the file is
+  made without the build mark, and the report says so.
+- **What a player sees:** "Add a mod file…" (and dropping a file on the window) takes the `.rusemod`; the library
+  shows its name, version, author, description and build; a broken file is refused with a plain message.
+- **Engine:** `rusemod.package`: pack (the §2 layout only: never caches, hidden files or build output; scripts and
+  programs refused), check (one mod folder, nothing that would land outside it, a sane size, the manifest's id and
+  version, and the mod read the way a build reads it), unpack (nothing written before the check passes), and a
+  manifest editor that changes values in place and keeps everything else. The launcher's library unpacks through it.
+- **Tests:** pack/check/unpack round trip and every refusal; the Studio's export (build mark, fingerprint, kept
+  values, cancel, a broken mod, no game); the launcher installing a file made by `pack` and playing a set with it.
+- **Not done, on purpose:** the installer's file type (double-clicking a `.rusemod` in Explorer), join codes, and
+  the release.

@@ -15,6 +15,7 @@ from rusemod import Edat, Ndf, schema
 from rusemod.build import build_pack, load_mod
 from rusemod.dic import name_to_key
 from rusemod.index import build_index
+from rusemod import package
 from rusemod.play import Starter
 from ruse_studio.api import StudioApi, StudioError, _short, _words
 from ruse_studio.edits import EditsFileError, ModEdits, number
@@ -334,6 +335,63 @@ class Editing(WithMod):
         pack = Edat((copy / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes())
         self.assertEqual(Ndf(pack.read(pack.find("everything.cpp.gladndfbin"))).objects[0].get(1).scalar(), 15)
         self.assertEqual(self.api.job("nope")["state"], "failed")
+
+    def test_export_mod_makes_one_file_with_the_build_and_fingerprint(self):
+        with self.assertRaises(StudioError):
+            self.api.export_mod("1.0.0")  # no mod yet
+        self.api.new_mod("Tank Test")
+        self.api.edit(M4, "SeuilMort", 15)
+        with self.assertRaisesRegex(StudioError, "like 1.0.0"):
+            self.api.export_mod("one")
+        self.api._pick_save = lambda name: None  # the dialog cancelled: nothing happens
+        self.assertEqual(self.api.export_mod("1.2.0", "Tristen", "Tanks are tougher."), {"job": None})
+        # a game the way Steam lays it out, so the build id is known
+        steam = self.home / "steamapps"
+        game = steam / "common" / "R.U.S.E"
+        write_game(game)
+        (game / "RUSE.exe").write_bytes(b"MZ")
+        (steam / "appmanifest_21970.acf").write_text('"AppState" { "buildid" "24687178" }')
+        dest, picked = self.home / "Documents", []
+        dest.mkdir()
+        api = StudioApi(index_path=self.index, game_dir=game, home=self.home, instances=self.home / "copies",
+                        pick_save=lambda name: (picked.append(name), str(dest / name))[1])
+
+        def export(*args):
+            job = api.export_mod(*args)["job"]
+            end = time.time() + 20
+            while api.job(job)["state"] == "running" and time.time() < end:
+                time.sleep(0.02)
+            return api.job(job)
+
+        j = export("1.2.0", "Tristen", "Tanks are tougher.")
+        self.assertEqual((j["state"], j["message"]), ("done", f"Saved as {dest / 'tank-test-1.2.0.rusemod'}"), j)
+        self.assertEqual(picked, ["tank-test-1.2.0.rusemod"])
+        info = package.check(dest / "tank-test-1.2.0.rusemod")
+        self.assertEqual((info["id"], info["version"], info["authors"], info["description"], info["builds"], info["data_revision"]),
+                         ("tank-test", "1.2.0", ["Tristen"], "Tanks are tougher.", ["24687178"], "190852"))
+        self.assertRegex(info["fingerprint"], r"^[0-9A-Z]{4}-[0-9A-Z]{4}$")
+        self.assertIn("src/studio.rndf", info["files"])
+        again = api.mod_info()  # the folder's manifest keeps them for next time
+        self.assertEqual((again["version"], again["author"], again["fingerprint"]), ("1.2.0", "Tristen", info["fingerprint"]))
+        j = export("1.2.1")  # blank author and description: the old ones stay
+        self.assertEqual(j["state"], "done", j)
+        self.assertEqual((api.mod_info()["author"], api.mod_info()["description"]), ("Tristen", "Tanks are tougher."))
+        (Path(api.mods()["current"]) / "src" / "extra.rndf").write_text("patch $/Nope ( X = 1 )", encoding="utf-8")
+        j = export("1.2.2")  # a mod with a mistake isn't exported
+        self.assertEqual(j["state"], "failed", j)
+        self.assertIn("Fix the mod first", j["message"])
+        self.assertFalse((dest / "tank-test-1.2.2.rusemod").exists())
+        (Path(api.mods()["current"]) / "src" / "extra.rndf").unlink()
+        without = StudioApi(index_path=self.index, game_dir=None, find=lambda: None, home=self.home,
+                            pick_save=lambda name: str(dest / name))
+        job = without.export_mod("1.3.0")["job"]
+        end = time.time() + 20
+        while without.job(job)["state"] == "running" and time.time() < end:
+            time.sleep(0.02)
+        j = without.job(job)
+        self.assertEqual(j["state"], "done", j)
+        self.assertIn("R.U.S.E. wasn't found, so the file carries no game build or fingerprint.", j["lines"])
+        self.assertEqual(package.check(dest / "tank-test-1.3.0.rusemod")["builds"], ["24687178"])  # kept from before
 
     def test_numbers_as_modders_see_them(self):
         self.assertEqual([number(x) for x in (0.1, 1e-7, 12.0, True, -2.5, 3)], ["0.1", "0.0000001", "12", "1", "-2.5", "3"])

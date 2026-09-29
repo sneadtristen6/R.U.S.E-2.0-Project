@@ -20,17 +20,18 @@ import unicodedata
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from rusemod import identity, schema
-from rusemod.build import BuildError
+from rusemod import identity, package, schema
+from rusemod.build import BuildError, build_and_write, load_mod
+from rusemod.lock import fingerprint_text
 from rusemod.home import default_home, game_dir as find_game_dir
 from rusemod.index import LIST_VALUES, Index, build_index, default_path
 from rusemod.patch import INT_RANGES
 from rusemod.play import Starter, instances_dir
 from rusemod.rndf import RndfError
-from rusemod.steam import find_game
+from rusemod.steam import build_of, data_revisions, find_game
 from rusemod.build import find_pack
 from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
-from rusemod.webui import Job, job_view, pick_folder
+from rusemod.webui import Job, job_view, pick_folder, pick_save
 
 from .edits import EditsFileError, ModEdits, NewUnit
 
@@ -42,6 +43,7 @@ NOT_EDITABLE = {"DescriptorId", "TrackingId", "Nationalite"}  # ids stay unique 
 ALL_CLASSES = tuple(KIND_OF)
 NATIONS = 7
 _PREFIX = re.compile(r"^(Descriptor_[A-Za-z]+_)")  # Descriptor_Unit_M4_Sherman -> a copy is Descriptor_Unit_<Name>
+PACKAGE_FILES = ("RUSE mods (*.rusemod)",)  # the "save as" dialog's filter for Export mod…
 
 
 def _tail(address: str) -> str:
@@ -112,7 +114,8 @@ def words(lang: str = schema.BASE) -> dict:
 
 
 class StudioApi:
-    def __init__(self, index_path=None, game_dir=None, find=find_game, home=None, starter=None, instances=None):
+    def __init__(self, index_path=None, game_dir=None, find=find_game, home=None, starter=None, instances=None,
+                 pick_save=None):
         self._index_path = Path(index_path) if index_path else None
         self._game_dir = Path(game_dir) if game_dir else None
         self._find = find
@@ -121,7 +124,8 @@ class StudioApi:
         self._instances = Path(instances) if instances else None
         self._jobs: dict[str, Job] = {}
         self._units: list | None = None  # every unit and building, read once per index
-        self._window = None  # set by the window (a folder dialog for "Open a mod folder")
+        self._window = None  # set by the window (a folder dialog for "Open a mod folder", "save as" for Export)
+        self._pick_save = pick_save  # tests: a stand-in for the "save as" dialog (filename -> path or None)
         self._saving = threading.RLock()  # the window calls from several threads: one change to the file at a time,
         # and no reading it mid-change (Windows can't replace a file that's open)
         self._grounds: dict[tuple, dict] = {}  # the last maps shown in 3D, so switching back is instant
@@ -677,6 +681,70 @@ class StudioApi:
         job = Job()
         self._jobs[job.id] = job
         return job.start(work, "R.U.S.E. is starting.", plain=(BuildError, RndfError, OSError))
+
+    # --- a mod as one file (MOD_FORMAT §2, rusemod.package) ---
+    def mod_info(self) -> dict:
+        """The current mod's manifest, for the export form: id, name, version, authors, description, the game build
+        it was last exported on and its fingerprint."""
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first.")
+        try:
+            return package.info_of(folder)
+        except package.PackageError as exc:
+            raise StudioError(str(exc)) from None
+
+    def export_mod(self, version: str, author: str = "", description: str = "") -> dict:
+        """Turn the current mod into one file, `<id>-<version>.rusemod`, where the modder chooses (the window's "save
+        as" dialog). The version, author and description go into the mod's mod.toml first, so the next export starts
+        from them (blank author or description: the old ones stay). The mod is built on the game to record the game
+        build and its fingerprint (MOD_FORMAT §12) in the package; without the game it's packed without them, and
+        the report says so. Returns {'job': id}, or {'job': None} when the modder cancels the dialog."""
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first.")
+        version = (version or "").strip()
+        if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+            raise StudioError("The version should be three numbers, like 1.0.0.")
+        suggested = package.file_name(self.mod_info() | {"version": version})
+        if self._pick_save is not None:
+            target = self._pick_save(suggested)
+        else:
+            target = pick_save(self._window, suggested, PACKAGE_FILES) if self._window is not None else None
+        if not target:
+            return {"job": None}
+        target = Path(target)
+        if target.suffix.lower() != package.EXTENSION:
+            target = target.with_name(target.name + package.EXTENSION)
+        manifest = {"version": version}
+        if (author or "").strip():
+            manifest["authors"] = [author.strip()]
+        if (description or "").strip():
+            manifest["description"] = description.strip()
+
+        def work(say):
+            with self._saving:
+                package.update_manifest(folder, mod=manifest)
+            game = self._game()
+            build_id = revision = fingerprint = None
+            if game is None:
+                say("R.U.S.E. wasn't found, so the file carries no game build or fingerprint.")
+            else:
+                say("Building the mod on the game, to record the game build and the fingerprint…")
+                result = build_and_write(game, [load_mod(folder)], say=lambda line: say("  " + line))
+                if result.errors:
+                    raise BuildError("Fix the mod first: the build above has errors, so nothing was exported.")
+                build_id = build_of(game)
+                revisions = data_revisions(game)
+                revision = revisions[0] if len(revisions) == 1 else None
+                fingerprint = fingerprint_text(result.fingerprint) if result.fingerprint else None
+            with self._saving:
+                path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint)
+            say(f"Saved as {path}")
+
+        job = Job()
+        self._jobs[job.id] = job
+        return job.start(work, f"Saved as {target}", plain=(BuildError, RndfError, OSError, package.PackageError))
 
     # --- building the index from the Studio ---
     def build_index(self) -> dict:

@@ -124,6 +124,16 @@ def pick_file(window, file_types=()) -> str | None:
     return chosen[0] if chosen else None
 
 
+def pick_save(window, filename: str, file_types=()) -> str | None:
+    """A "save as" dialog in `window` suggesting `filename`; the path chosen, or None if the person cancels."""
+    import webview
+    kind = webview.FileDialog.SAVE if hasattr(webview, "FileDialog") else webview.SAVE_DIALOG
+    chosen = window.create_file_dialog(kind, save_filename=filename, file_types=tuple(file_types))
+    if isinstance(chosen, (list, tuple)):
+        chosen = chosen[0] if chosen else None
+    return str(chosen) if chosen else None
+
+
 def on_file_drop(window, handler) -> None:
     """Call `handler(paths)` with the full paths of files or folders dropped anywhere on the window's page. A page's
     own JavaScript never sees a dropped file's path; pywebview's Windows side does, and hands it to a drop handler
