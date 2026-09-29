@@ -189,7 +189,7 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
 - **Language columns** use the game's own language folders: `us fr ger ita spa pol cz ru jpn sc` (from
   RUSE-Mod-Manager's notes; `tools/dic_check.py` confirms them on the game). The usual codes are accepted too:
   `en de it es pl cs ja zh`. Missing cells fall back to `us`.
-- **Text keys are readable names.** The game's keys pack a name of up to 8 characters (0-9, A-Z, _, a-z) into a
+- **Text keys are readable names.** The game's keys pack a name of up to 10 characters (0-9, A-Z, _, a-z) into a
   number ([RESEARCH.md](RESEARCH.md) §5). Each row gets one: the `game_key` column sets it (`R2MARINE`), or when it's
   empty, the builder makes one from the manifest's `text_prefix` plus a number, assigned in sorted `key` order so it's
   the same on every PC (`R2000001`, `R2000002`, …). A key the game or another mod in the set already uses is an error

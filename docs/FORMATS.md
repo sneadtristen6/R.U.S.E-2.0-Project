@@ -270,7 +270,7 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 | `.scenario` | `SCENARIO\r\n` + 16 bytes (not an MD5 of the rest) + records (`AREA`, zones, …) ❔ |
 | `mapinfo.win` | `INFOIA\r\n` + 16 bytes (not an MD5 of the rest) + AI grids (concealment and movement-blocking layers) ❔ |
 | `.tms`, `.tmst_pc`, `.tmst_chunk_pc` | ✅ terrain mesh and texture tiles: see "Terrain" below |
-| `.kdt` | starts `EUG0` ❔ |
+| `.kdt` | ✅ the gameplay ground and the camera floor: see "Gameplay ground" below |
 | `.fpkpc` | `SFXS` ❔ |
 | `.sourcefileid` | begins "Size" ❔; only for div_map, env_map faces and occlusioninfo (source-asset size/MD5), none for terrain |
 
@@ -287,8 +287,9 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 
 **Heights live in 3 places:** `highdef.tms`, `lowdef.tms` (an independent, coarser mesh: shared points differ by up
 to 6,224 units) and `occlusioninfo_terrainonly.kdt` (NDF `TStreamedMeshKdTree`, same bounds as highdef, 197,703
-triangles, compressed `Storage` not decoded yet; probably what picking, line of sight and maybe pathing use). An edit
-must change both `.tms` files; whether gameplay follows the `.kdt` is the next thing to learn.
+triangles, vertices and normals decoded, see "Gameplay ground" below; probably what picking, line of sight and maybe
+pathing use). An edit must change both `.tms` files and the `.kdt`; whether gameplay follows the `.kdt` is the
+next thing to learn.
 
 #### Mesh (`.tms`, magic `TMSG`), little-endian
 
@@ -379,6 +380,53 @@ any size re-read correctly, with every other tile unchanged.
 TGU1. The checker test (`verify_tmst.py --make-test TwoIslands OUT checker`, Two Islands = "Centre of Gravity") drew our
 checkerboards at two detail levels (magenta/yellow and cyan/red) with no problem. **So terrain textures can be written as
 plain DXT1: no TGU1 encoder is needed.** TGU1 decoding is still useful for reading the shipped textures.
+
+#### Gameplay ground (`.kdt`; 2026-09-29; code `rusemod.kdt`; check `tools/verify_kdt.py`)
+
+Two per map pack: `output\occlusioninfo_terrainonly.kdt`, the ground gameplay runs on (same bounds as `highdef.tms`;
+every vertex sits on a `highdef.tms` vertex), and `output\occlusioninfo_camera.kdt`, the camera floor (fewer, larger
+triangles). Each is an uncompressed NDF binary (§2) holding one object of class `TStreamedMeshKdTree`:
+
+| property | type | meaning |
+|---|---|---|
+| `RTVersion` | u32 | 0 |
+| `BoundingBoxMin`, `BoundingBoxMax` | 3 × f32 | world bounds, also the quantization range; the min is left out of the file when it is (0, 0, 0) (7 of the 32 ground files) |
+| `TriangleCount` | u32 | triangles of the whole mesh; smaller than the sum of the subtrees' index counts (subtrees repeat the triangles on their borders) |
+| `OffsetOf…` (8 of them) | u32 | where each region of `Storage` starts, see below |
+| `IsStreamPacked`, `IsCompressed` | u8 | 1 |
+| `SubtreeCount` | u32 | 11–312 |
+| `Storage` | blob (0x14) | u32 length + the regions below |
+
+- **Chunk:** u32 L, u32 inflated size, then a zlib stream of L − 4 bytes ended by a sync flush (no final block, no
+  Adler), like the `.tms` triangle lists. A few hundred shipped chunks stop one byte short of the flush marker;
+  zlib's `decompressobj` reads both, and the writer keeps a chunk's original bytes unless its content changed.
+- **Storage regions, in this order** (each `OffsetOf*` property is a region's start; the regions touch, the last chunk
+  ends the blob): per subtree a positions chunk then a normals chunk | `VertexBufferIndexes`: u32 per subtree, the
+  offset of its positions chunk | `IndexBuffer`: per subtree u32 index count + one chunk (the index buffer, not
+  decoded) | `IndexBufferIndexes`: u32 per subtree, relative to `IndexBuffer` | `TriangleIndexLists`: one chunk per
+  subtree (not decoded) | `TriangleIndexBufferIndexes`: relative; then zero bytes so that `MainNode` starts 8-aligned
+  | `MainNode`: raw bytes up to the next region (not decoded) | `CompressedSubtreeIndexBuffer`: u32 per subtree,
+  relative to `CompressedSubtrees` | `CompressedSubtrees`: one chunk per subtree (not decoded).
+- **Positions chunk, inflated:** u32 n, u32 mask 0x7FFF, 3n u16 residuals (x, y, z per vertex), the parent codes of
+  the `.tms` predictor (0 = the previous vertex, `0x80|hi, lo` = that many vertices back; vertices 0 and 1 have parent
+  0), then fill bytes up to 8 + 12n (0xAA in half the maps, mostly 0xDD with stray bytes in the other half: memory
+  junk, ignore it; we write 0xAA). Coordinate = (residual + the parent's coordinate) & 0x7FFF: the position quantized
+  over the object's bounds, 0..32767 like the `.tms`.
+- **Normals chunk, inflated:** one u32 per vertex. Bits 0–3 = the dominant axis and its sign (0 −x, 1 +x, 2 −y, 3 +y,
+  4 −z, 5 +z; about 94% are +z). With axis k, a = n[(k+1) mod 3] / |n[k]| and b = n[(k+2) mod 3] / |n[k]|; bits
+  16–31 = round(a · 32768) + 32768, bits 4–15 = round(b · 8192) as 12-bit two's complement, which **wraps** when
+  |b| > 0.25 (the shipped files do wrap, so a writer must too or its words differ). Decoding: unpack a and b, set the
+  axis component to ±1, normalise. In the one exact tie between two axes in 3.5 M vertices the later axis (z over x)
+  was used.
+
+Proven (`tools/verify_kdt.py`, 64 files, 3.5 M vertices): every file rebuilds byte-identical from its parts (tables,
+padding and offset properties recomputed); decoding then re-encoding every subtree's positions and normals reproduces
+the shipped inflated bytes (positions up to the end of the parent codes); a replaced positions or normals chunk reads
+back with the new content and every other part unchanged (on made-up data). Open: the index buffer, triangle list,
+`MainNode` and subtree encodings (kept as bytes, so vertices can move but the mesh can't be re-cut); in-game
+acceptance of a moved vertex.
+
+The file's role and its container framing follow the notes of DomesticNukes and his Claude; the vertex and normal encodings were worked out here.
 
 ## 7. Textures (`.tgv`, `.tgv_pc`)
 

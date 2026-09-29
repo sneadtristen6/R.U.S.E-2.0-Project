@@ -5,6 +5,29 @@ Cloud sessions have no game files. They do design, code and tests here, on a bra
 [PLAN.md](PLAN.md) §10 first (the order and the rules), then the task below. Everything that isn't in the task's
 scope is out of scope.
 
+**Queue (2026-09-29, keep this order):** A is done (pull request #1) → **B** (next, unless already started) → C →
+D → E → F → G. Take the first task not started; one task per session; one pull request per task; resolve
+conflicts with `main` by merging `main` into the branch (in docs/LOG.md keep both entries). When the PC session
+is out of credit (it says so here or in the pull request), a cloud session may merge its own pull request once
+GitHub's tests are green and it has re-read the whole diff; version bumps, tags and releases still wait for the
+owner's in-game check.
+
+**Tell the owner what to test.** Cloud sessions have no game, so every pull request ends with a section
+**"Test for the owner"**: at most five numbered steps in plain words (which app to install from the Actions run,
+which button to press, what should appear), what counts as a pass, and what to screenshot. Post the same steps as
+the last comment on the pull request when it is merged. The owner's tests so far:
+- **A (new units):** install the Studio from the Actions run on `main`; open the M4 Sherman, "New unit…", name it
+  "Sherman Test", price 5, same menu; "Test in game"; in a skirmish the US armour factory offers "Sherman Test" at 5
+  and it builds and fights. Screenshot the factory menu.
+- **B (mod sets):** install the launcher; "New mod set", tick a mod, Play: the game starts with the set; rename and
+  delete a set without touching any file.
+- **C (a mod as one file):** export a Studio mod, install the file in the launcher with "Add a mod file…", play it.
+- **D (browse mods):** open "Browse mods", install a listed mod, play it; then unplug the network and open the tab
+  again (the cached list shows).
+- **E (join codes):** make a set, copy its code, paste it into a second launcher home (or a friend's PC): the same
+  set appears and plays.
+- **F, G:** as their briefs say; F re-runs the A test with a unit moved to another menu.
+
 **Rules for every task**
 - Public code is data-only: it never patches, injects into or reads addresses of RUSE.exe. MIT; never copy
   RUSE-Mod-Manager's code (LITTLEGROOVE_STUDY.md is a study, not a source).
@@ -72,7 +95,106 @@ The owner's verdict: "this needs to be worked out, it will be hard for people wh
 **Done when:** the tests pass, the browser preview shows the flow with `fake-api.js`, and the PR describes what a
 player sees. The PC session then tries it with the real game and releases 0.2.0.
 
-## Later (not yet assigned)
+## Next five (added 2026-09-29, after Tasks A and B)
 
-- **Browse mods** (PLAN §10 step 5): a GitHub repository as the mod index, and a launcher tab that installs from it.
-- **Join codes in the launcher** (MOD_FORMAT §12).
+Order: C, then D, then E (each builds on the one before). F and G can be done at any time, on their own branches.
+
+### Task C: a mod as one file — branch `cloud/mod-package`
+
+**Goal:** the loop from modder to player. The Studio turns a mod folder into one file; a player installs that file
+with the launcher's "Add a mod file…" (Task B).
+
+**Build:**
+1. The package is the mod folder zipped (MOD_FORMAT §2 layout, §3 manifest): `mod.toml` with name, version,
+   author, description, the game build it was made from and the mod's fingerprint (§12), plus `src/*.rndf`,
+   `text/*.csv` and assets. If §2 doesn't fix the file extension, use `.rusemod` and write it into §2.
+2. Engine: one module used by both apps: pack a folder into a package, check a package (manifest, files, nothing
+   that isn't allowed such as scripts, PLAN decision 23) and report problems in plain words, unpack into the
+   launcher's library.
+3. Studio: "Export mod…" on the Mod menu asks for version, author and description (kept in `mod.toml` for next
+   time), writes `<name>-<version>.rusemod` where the modder chooses, and shows where it went.
+4. Launcher: "Add a mod file…" accepts the package; the library shows name, version, author, description and the
+   build; a broken package is refused with a plain message.
+5. Tests: pack and unpack round trip, the checks, the Studio's export, the launcher's install, and a set using the
+   installed package builds on the fixtures.
+
+**Done when:** a mod made in the Studio is exported, installed in the launcher from the file, and plays in a set.
+
+### Task D: Browse mods — branch `cloud/browse-mods` (PLAN §10 step 5)
+
+**Goal:** players find and install mods inside the launcher. No server: a GitHub repository is the index.
+
+**Build:**
+1. The index: a small public repository (the owner creates `sneadtristen6/Ruse-Mods`; until then work on a local
+   copy) holding `index.toml`, one entry per mod: id, name, version, author, description, homepage, download URL
+   (a GitHub Release asset: the package from Task C), size, sha256, game build, fingerprint, tags. Document the
+   file and how a modder adds an entry (a pull request to that repository) in a new MOD_FORMAT section.
+2. Engine: fetch the index with a timeout and keep a cached copy for offline use; verify a download's size and
+   sha256 before installing; install through the library code of Tasks B and C.
+3. Launcher: a "Browse mods" tab: search, and for each mod its name, author, version, description, size, build
+   and an Install button; "Installed" and "Update available" states; offline shows the cached list and says so.
+4. Tests with a local HTTP server serving a fixture index and package (no internet in tests).
+
+**Done when:** from a fixture index the launcher lists mods, installs one, and a set using it builds.
+
+### Task E: join codes in the launcher — branch `cloud/join-codes` (PLAN §10 step 7; needs D)
+
+**Goal:** a friend pastes a code and plays the same mods (MOD_FORMAT §12; the engine's fingerprint and join-code
+code is in `src/rusemod/lock.py` and its tests).
+
+**Build:**
+1. "Share this set": the launcher shows the set's join code and copies it.
+2. "Join a friend…": paste a code; the launcher shows what the set holds and what's missing, installs the missing
+   mods from the index (Task D) or asks for the file, makes the set, and refuses to play if the fingerprint
+   doesn't match, saying what differs.
+3. Tests: a code made in one launcher home (a temp folder) reproduces the set in another temp home from the
+   fixture index.
+
+**Done when:** two temp launcher homes end with byte-identical mod sets from one code.
+
+### Task F: Studio follow-ups from Task A — branch `cloud/studio-names-menus`
+
+1. Names per language: on a new unit's page, "Names in other languages…" with the ten languages; blank means the
+   one name (the names file already has the columns).
+2. Moving an existing unit to another factory or nation ("Build menu" on any unit's page; the engine's identity
+   code gives it a free slot), undoable.
+3. The review notes on pull request #1 (two reviewers, 2026-09-29; nothing blocking, all tests passed):
+   - `app.js` ~351: the "Another one" nation list never preselects the unit's own nation (`unit()` returns no
+     `nation` field, in the API and in `fake-api.js`).
+   - `app.js` ~382: if `menus()` fails after "Another one" is ticked, Create silently falls back to the source's
+     menu; it should say so instead.
+   - `api.py` ~621: the new-unit errors are hard-coded English with internal names ("Descriptor_Unit_…"); use
+     `words.toml` and the unit's shown name.
+   - `api.py` ~634 and ~632: a huge or NaN price raises a raw exception instead of a StudioError; a source without
+     an editable price silently drops the typed price.
+   - `api.py` ~315: `unit()` looks up edits by the address as given instead of the index's canonical address, so
+     a shared part opened through an alias no longer shows its "shared" edit (main used the canonical one).
+   - `edits.py` ~219: `save()` sorts clone blocks by address, so a hand-written clone of another Studio clone can
+     be moved before its source and the mod stops building.
+   - `MOD_FORMAT.md` §6: game keys are said to be up to 8 characters; the Studio writes 10 (`dic.name_to_key`
+     accepts up to 10). Fix the wording.
+   - `LOG.md`: "the names file has room for the columns" overstates it; `save()` rewrites the file with only the
+     columns it knows.
+4. Tests as in Task A.
+
+**Done when:** the browser preview shows both flows and the build on the fixtures places the unit in its new menu.
+
+### Task G: import RUSE-Mod-Manager `.rmod` mods — branch `cloud/rmod-import` (PLAN M3)
+
+**Goal:** players keep the mods they already have.
+
+**Build:**
+1. Our own `.rmod` reader (MIT; never copy RUSE-Mod-Manager's code; the format as documented in MOD_FORMAT §13 and
+   docs/LITTLEGROOVE_STUDY.md) that turns an `.rmod` into a package of ours (Task C), with `mod.toml` marking the
+   game build it was made for (the `compat` branch). If the documents don't pin the format down, write what's
+   missing into MOD_FORMAT §14 and stop.
+2. Launcher: "Add a mod file…" accepts `.rmod`; the library shows the build mark and says "made for the old build"
+   when the installed game differs.
+3. Tests with a synthetic `.rmod` the test builds from the documented format.
+
+**Done when:** a synthetic `.rmod` installs and its changes appear in a set built on the fixtures.
+
+## Later
+
+- Launcher: an update check against GitHub Releases ("a newer version is out", one click to get it).
+- Studio: the terrain editor's brushes, once the PC session's engine work (PLAN §7 MT) is in.

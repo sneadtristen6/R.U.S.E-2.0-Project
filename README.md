@@ -109,7 +109,9 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
 - **Terrain** ([`src/rusemod/tms.py`](src/rusemod/tms.py), [`src/rusemod/tmst.py`](src/rusemod/tmst.py)): read and
   write the terrain mesh (heights, with a height-edit tool) and the texture-tile store. Proven lossless on every map
   by [`tools/verify_tms.py`](tools/verify_tms.py) and [`tools/verify_tmst.py`](tools/verify_tmst.py) (which also build
-  the in-game test packs). In the game: our own plain texture tiles are drawn (2026-09-29). The texture tiles'
+  the in-game test packs). In the game: our own plain texture tiles are drawn (2026-09-29). The gameplay ground and
+  the camera floor (`.kdt`) are read and written by [`src/rusemod/kdt.py`](src/rusemod/kdt.py): vertices and normals
+  decoded, the tree itself kept as bytes; lossless on every map by [`tools/verify_kdt.py`](tools/verify_kdt.py). The texture tiles'
   own codec is read by [`src/rusemod/tgu1.py`](src/rusemod/tgu1.py); [`src/rusemod/terrain.py`](src/rusemod/terrain.py)
   gives the Studio the map list, the ground mesh and the stitched ground picture.
 - [`tools/c3_survey.py`](tools/c3_survey.py): check C3 step 1, a read-only survey of how the game mounts packs.
