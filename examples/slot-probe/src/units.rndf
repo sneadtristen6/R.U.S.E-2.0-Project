@@ -1,0 +1,14 @@
+// C5 and C6 put the Lee copy at 306, a new 6th slot in the US tank row, and it never showed. This probe tells apart
+// "the menu only has buttons for the slots it ships with" from "the game ignores new units": the copy takes the
+// Lee's own slot 304, and the Lee moves to 306. If "Lee Probe" ($1) shows where the Lee was, copies work.
+export Descriptor_Unit_R2_Lee_Probe is clone $/GFX/Everything/Descriptor_Unit_M3_Lee
+(
+    ProductionPrice = [1, 1, 1, 1, 1]
+    NameInMenuToken = loc('probe.lee.name')
+    PositionInMenu = 304
+)
+
+patch $/GFX/Everything/Descriptor_Unit_M3_Lee
+(
+    PositionInMenu = 306
+)

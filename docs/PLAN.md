@@ -686,6 +686,16 @@ What was checked next:
 **C6 built (2026-09-28)** with the Lee copy, 18 s, 0 errors: `NameInMenuToken` = `C6000001`, "Lee C6-Test" in all 11
 `baseunite.dic` files, fingerprint `NA86-7RBG`, instance `D:\RUSE-Instances\c6-named`.
 
+**C6 in-game (2026-09-28): the named copy didn't appear either**, so a shared name key isn't the (whole) cause.
+Checked next: RUSE-Mod-Manager's docs say its editor **can't** make new units yet (its `clone.py` isn't offered, and
+nothing claims in-game success), so nobody has shown a new R.U.S.E. unit working. The `*_debuginfo` copy is a full
+duplicate of `everything` (the same 63,686 objects, 363 extra debug strings); nothing shows the game using it for the
+unit list. The Japanese units at 306 and 310 don't prove a 6th button exists in the US menu (306 is an upgrade).
+**C6b, the slot probe** ([`examples/slot-probe/`](../examples/slot-probe/)): the copy takes the Lee's own slot 304
+("Lee Probe", $1, key `C6B00001`) and the Lee moves to 306. Instance `D:\RUSE-Instances\c6b-slot-probe`,
+fingerprint `W77E-1S9T`. If "Lee Probe" shows where the Lee was, copies work and the menu only has buttons for the
+slots it ships with (then the build must pick shipped slots); if the slot is empty, the game ignores new units.
+
 ### C6: a new unit with its own name (ready to run, after C5)
 
 C5 proves a new unit works. C6 gives it its own name through the new text step: C5's M3 Lee copy with the name
