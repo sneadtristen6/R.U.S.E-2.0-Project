@@ -64,18 +64,16 @@
       mod_added: "{name} 已添加到库中。", mod_updated: "{name} 已替换为版本 {v}。", mod_removed: "已从库中移除 {name}。" },
   };
   const build = "24687178";
+  // Sample data for the preview only: mods that exist in the repo's mods/ folder, nobody's name on them.
   let library = mode === "empty" ? [] : [
-    { id: "half-price-buildings", name: "Half-price buildings", version: "1.0.0", authors: ["RUSE Mod Platform"],
-      author: "RUSE Mod Platform", description: "Every building costs half.", builds: [build], used_in: 1 },
-    { id: "ruse2-core", name: "RUSE 2.0 Core", version: "0.4.1", authors: ["DomesticNukes", "Tristen"],
-      author: "DomesticNukes, Tristen", description: "Balance, new units and tactics for RUSE 2.0.", builds: ["24670294"], used_in: 1 },
-    { id: "ruse2-china", name: "RUSE 2.0 China", version: "0.1.0", authors: [], author: "", description: "", builds: [], used_in: 1 },
+    { id: "airfield-capacity", name: "Airfield Capacity", version: "1.0.0", authors: [], author: "",
+      description: "Airfields hold 128 planes instead of 8.", builds: ["24087620"], used_in: 1 },
+    { id: "passable-forests", name: "Passable Forests", version: "1.0.0", authors: [], author: "",
+      description: "Tanks and other vehicles can enter forests, like recon units already can.", builds: ["24087620"], used_in: 1 },
   ];
   let sets = mode === "empty" ? [] : [
-    { id: "half-price", name: "Half-price test", description: "Every building costs half.", mods: ["half-price-buildings"] },
-    { id: "ruse2", name: "RUSE 2.0", description: "Balance, new units and China (draft).", mods: ["ruse2-core", "ruse2-china"] },
-    { id: "old", name: "Old test", description: "", mods: ["old-units"] },
-    { id: "hand-written", name: "Hand-written", description: "", mods: ["D:/mods/pacific-maps", "ruse2-core"] },
+    { id: "my-set", name: "My set", description: "", mods: ["airfield-capacity", "passable-forests"] },
+    { id: "missing-mod", name: "Sample set with a missing mod", description: "", mods: ["some-other-mod"] },
   ];
   const wordsOf = (lang) => words[lang] || words.us;
   const known = (id) => library.find((m) => m.id === id);
@@ -106,20 +104,20 @@
     if (id.endsWith("exe")) throw new Error(`${name} isn't a mod: add a mod folder (with mod.toml in it) or a .zip of one.`);
     const replaced = Boolean(known(id));
     library = library.filter((m) => m.id !== id);
-    const mod = { id, name: name.replace(/\.zip$/, ""), version: replaced ? "1.1.0" : "1.0.0", authors: ["you"], author: "you",
+    const mod = { id, name: name.replace(/\.zip$/, ""), version: replaced ? "1.1.0" : "1.0.0", authors: [], author: "",
       description: "Added from a file.", builds: [build], used_in: 0 };
     library.push(mod);
     library.sort((a, b) => a.name.localeCompare(b.name));
     return lists({ mod, replaced });
   };
   const script = [
-    "Building the modded copy of R.U.S.E. for Half-price test in D:\\RUSE-Instances\\half-price…",
-    "load order: half-price-buildings",
+    "Building the modded copy of R.U.S.E. for My set in D:\\RUSE-Instances\\my-set…",
+    "load order: airfield-capacity -> passable-forests",
     "  note     left 4 debug-info copies as shipped (everything_debuginfo.cpp.gladndfbin, …)",
     "0 error(s), 0 warning(s), 3 note(s)",
     "changed: genglad\\patchable\\gfx\\everything.cpp.gladndfbin",
     "fingerprint: S1HP-X6PM",
-    "modded copy ready: D:\\RUSE-Instances\\half-price  {'linked': 37, 'copied': 23, 'written': 1}",
+    "modded copy ready: D:\\RUSE-Instances\\my-set  {'linked': 37, 'copied': 23, 'written': 1}",
     "Starting R.U.S.E. from the modded copy…",
   ];
   let playing = null;
