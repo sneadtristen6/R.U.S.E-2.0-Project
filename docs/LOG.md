@@ -467,3 +467,26 @@ import); the cloud tab's pull request #1 (Task A) is under review.
   fingerprint, two mods on one map, refusals) and the check tool.
 - **Not done, on purpose:** the Studio's brushes (T4, next, after the hill passes in-game), ground above the map's
   highest point, water following the ground, re-meshing.
+
+### 2026-09-29, cloud session: the Studio's brushes (PLAN §7 MT, T4; branch `cloud/studio-brushes`, on top of `cloud/terrain-brushes`)
+
+- **Owner's call:** on with the map editor; think Cities: Skylines, kept simple (PLAN §12). Two map ideas
+  (strongpoints troops can hold, tunnels and trenches) are written down in §12 and nothing more.
+- **The Maps view paints strokes.** A "Shape the ground" panel with the seven brushes, Size and Strength sliders,
+  "Look around" (the camera again), Undo and the count of strokes on the map. Click stamps one dab (hill, crater,
+  plateau); dragging paints dabs along the path (raise, lower, flatten, smooth), a third of a radius apart. The
+  view reshapes the drawn mesh at once with the same maths as `rusemod.brush` (a copy in `maps.js`; the build's
+  copy decides), recomputes normals where the ground moved and keeps the game's own everywhere else. The size is a
+  share of the map's width, the strength a share of the map's height range; plateau levels at the click's height
+  plus the strength, flatten at the height where the drag started.
+- **Saved in the mod:** `StudioApi.terrain`, `terrain_add` and `terrain_undo` read and rewrite
+  `maps/<map pack>/terrain.toml` in the current mod (the build's own format, `strokes_toml`), one write at a time;
+  the file and its empty folders go when the last stroke is undone; a file the Studio can't read is never written
+  over. Picking another mod swaps the strokes drawn. Undo takes back the last click or the whole last drag. Without
+  a mod the panel says to pick one and paints nothing.
+- **Checked in Chromium** with the preview data: three hills, a 40-dab drag, a crater, Undo twice, the words in
+  French, the no-mod case. The preview island's triangles were wound the wrong way (it drew dark), fixed.
+- **Tests:** the terrain calls (no mod, saved and read back by the build's reader, per mod, refusals, a broken file)
+  and every word the panel uses in all ten languages. 377 tests.
+- **Not done:** the in-game hill check (PC session, from pull request #6) decides whether any of this ships; a ramp
+  tool and water that follows the ground are next (TASKS "Later").

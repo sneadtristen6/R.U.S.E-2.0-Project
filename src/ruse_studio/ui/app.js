@@ -93,6 +93,7 @@ function useMods(res) {
 async function modChanged() {
   await refreshMarks();
   if (state.page) await showUnit(state.page.address, state.page.via);
+  if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // a map's strokes are the mod's
 }
 
 async function pickMod(e) {

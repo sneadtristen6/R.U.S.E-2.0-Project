@@ -17,10 +17,12 @@ import struct
 import threading
 import tomllib
 import unicodedata
+from dataclasses import asdict
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 from rusemod import identity, schema
+from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.build import BuildError
 from rusemod.home import default_home, game_dir as find_game_dir
 from rusemod.index import LIST_VALUES, Index, build_index, default_path
@@ -434,6 +436,78 @@ class StudioApi:
             self._ground_jobs[name] = job.id
         return job.start(lambda say: ground_png(game, pack, out, progress=lambda d, n: say(f"{d}/{n}")),
                          "The ground textures are ready.")
+
+    # --- shaping a map's ground: maps/<pack>/terrain.toml in the current mod (MOD_FORMAT §8, rusemod.brush) ---
+    TERRAIN_HEADER = ("The ground this mod reshapes on this map: brush strokes, applied in order (docs/MOD_FORMAT.md "
+                      "§8).\nMade in the RUSE Studio, which rewrites this file.")
+
+    def _terrain_file(self, pack: str) -> Path:
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first: the shaped ground is saved in it.")
+        if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
+            raise StudioError(f"{pack!r} isn't a map's pack name")
+        return folder / "maps" / pack / "terrain.toml"
+
+    @staticmethod
+    def _read_strokes(path: Path) -> list:
+        if not path.is_file():
+            return []
+        try:
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+            return parse_strokes(data.get("stroke", []), str(path))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, BrushError) as exc:
+            raise StudioError(f"{path} can't be read ({exc}). Fix or remove it by hand: the Studio won't write over "
+                              f"it.") from None
+
+    def _write_strokes(self, path: Path, strokes: list) -> None:
+        if strokes:
+            ModEdits._write(path, strokes_toml(strokes, self.TERRAIN_HEADER))
+            return
+        if path.is_file():
+            path.unlink()
+        for folder in (path.parent, path.parent.parent):  # maps/<pack>, then maps, when they're empty
+            try:
+                folder.rmdir()
+            except OSError:
+                break
+
+    def terrain(self, pack: str) -> dict:
+        """The strokes the current mod makes on a map's ground, for the Maps view to draw on the game's own:
+        {"strokes": [{brush, x, y, radius, height, level, weight}], "saved": the file or None, "mod": the mod or
+        None when none is picked}."""
+        folder = self._mod_dir()
+        if folder is None:
+            return {"strokes": [], "saved": None, "mod": None}
+        path = self._terrain_file(pack)
+        with self._saving:
+            strokes = self._read_strokes(path)
+        return {"strokes": [asdict(s) for s in strokes], "saved": str(path) if strokes else None, "mod": str(folder)}
+
+    def terrain_add(self, pack: str, strokes: list) -> dict:
+        """Add strokes (dicts with the terrain file's keys) after the ones already on the map, in the current mod.
+        Returns {"count": strokes on the map now, "saved": the file}."""
+        path = self._terrain_file(pack)
+        try:
+            new = parse_strokes(list(strokes or []), "the new strokes")
+        except BrushError as exc:
+            raise StudioError(str(exc)) from None
+        with self._saving:
+            every = self._read_strokes(path) + new
+            self._write_strokes(path, every)
+        return {"count": len(every), "saved": str(path)}
+
+    def terrain_undo(self, pack: str, count: int = 1) -> dict:
+        """Take the last `count` strokes off the map (the file goes when none is left). Returns {"count": strokes
+        left, "removed": how many went, "saved": the file or None}."""
+        path = self._terrain_file(pack)
+        with self._saving:
+            every = self._read_strokes(path)
+            n = max(0, min(int(count), len(every)))
+            left = every[:len(every) - n]
+            if n:
+                self._write_strokes(path, left)
+        return {"count": len(left), "removed": n, "saved": str(path) if left else None}
 
     # --- the mod being edited ---
     def _settings(self) -> dict:

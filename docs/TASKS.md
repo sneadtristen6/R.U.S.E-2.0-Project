@@ -197,4 +197,7 @@ code is in `src/rusemod/lock.py` and its tests).
 ## Later
 
 - Launcher: an update check against GitHub Releases ("a newer version is out", one click to get it).
-- Studio: the terrain editor's brushes, once the PC session's engine work (PLAN §7 MT) is in.
+- ~~Studio: the terrain editor's brushes~~ (code done 2026-09-29, branch `cloud/studio-brushes`, on top of
+  `cloud/terrain-brushes`; waits for the in-game hill check).
+- Studio, next brushes (PLAN §12): a ramp tool (click two points, the ground slopes evenly between them) and
+  water that follows the ground.

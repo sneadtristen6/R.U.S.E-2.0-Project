@@ -23,7 +23,13 @@
       detail_low: "Light", water: "Water", map_help: "Drag to turn · right-drag to move · wheel to zoom",
       map_stats: "{points} points, {triangles} triangles",
       no_viewer: "The map view couldn't load its 3D library (it needs the internet the first time).",
-      ground_loading: "Loading the real ground textures… {progress}", all_values: "all {n}", each_value: "set each",
+      ground_loading: "Loading the real ground textures… {progress}", shape_ground: "Shape the ground",
+      brush_hill: "Hill", brush_raise: "Raise", brush_lower: "Lower", brush_crater: "Crater", brush_plateau: "Plateau",
+      brush_flatten: "Flatten", brush_smooth: "Smooth", brush_size: "Size", brush_strength: "Strength",
+      brush_look: "Look around", brush_undo: "Undo",
+      brush_help: "Click or drag on the ground to paint · middle-drag to turn · right-drag to move · wheel to zoom",
+      brush_count: "Strokes on this map: {n}", brush_note: "Saved in the mod. \"Test in game\" builds it into the map.",
+      all_values: "all {n}", each_value: "set each",
       price_dates: "One price per battle date: the host picks the date (1939, 1942, 1945, Total War) when setting up a battle.",
       new_unit: "New unit…", new_unit_name: "Name of the new unit (shown in every language)",
       price: "Price (every battle date)", build_menu: "Build menu", same_menu: "The same as {name}",
@@ -51,7 +57,13 @@
       map_help: "Glisser pour tourner · clic droit pour déplacer · molette pour zoomer",
       map_stats: "{points} points, {triangles} triangles",
       no_viewer: "La vue de carte n'a pas pu charger sa bibliothèque 3D (il faut Internet la première fois).",
-      ground_loading: "Chargement des vraies textures du sol… {progress}", all_values: "les {n}",
+      ground_loading: "Chargement des vraies textures du sol… {progress}", shape_ground: "Modeler le terrain",
+      brush_hill: "Colline", brush_raise: "Surélever", brush_lower: "Abaisser", brush_crater: "Cratère",
+      brush_plateau: "Plateau", brush_flatten: "Aplanir", brush_smooth: "Adoucir", brush_size: "Taille",
+      brush_strength: "Force", brush_look: "Regarder", brush_undo: "Annuler",
+      brush_help: "Cliquez ou glissez sur le sol pour peindre · glisser du milieu pour tourner · clic droit pour déplacer · molette pour zoomer",
+      brush_count: "Coups de pinceau sur cette carte : {n}",
+      brush_note: "Enregistré dans le mod. « Tester en jeu » l'intègre à la carte.", all_values: "les {n}",
       each_value: "régler chacun",
       price_dates: "Un prix par date de bataille : l'hôte choisit la date (1939, 1942, 1945, Guerre totale) en préparant la partie.",
       new_unit: "Nouvelle unité…", new_unit_name: "Nom de la nouvelle unité (affiché dans toutes les langues)",
@@ -74,6 +86,10 @@
       pick_map: "选择一张地图，以 3D 查看其地形。", map_loading: "正在加载地图…", detail_high: "完整细节", detail_low: "简化",
       water: "水面", map_help: "拖动旋转 · 右键拖动平移 · 滚轮缩放", map_stats: "{points} 个点，{triangles} 个三角形",
       no_viewer: "地图视图无法加载 3D 库（首次需要联网）。", ground_loading: "正在加载真实地面纹理… {progress}",
+      shape_ground: "塑造地形", brush_hill: "山丘", brush_raise: "抬高", brush_lower: "降低", brush_crater: "弹坑", brush_plateau: "高台",
+      brush_flatten: "压平", brush_smooth: "平滑", brush_size: "大小", brush_strength: "强度", brush_look: "查看", brush_undo: "撤销",
+      brush_help: "在地面上点击或拖动来绘制 · 中键拖动旋转 · 右键拖动平移 · 滚轮缩放", brush_count: "此地图上的笔画：{n}",
+      brush_note: "已保存到模组。“在游戏中测试”会将其构建进地图。",
       all_values: "全部 {n} 个", each_value: "逐个设置", price_dates: "每个战役年代一个价格：房主在创建游戏时选择年代（1939、1942、1945、全面战争）。",
       new_unit: "新单位…", new_unit_name: "新单位的名称(所有语言均显示)", price: "价格(所有战役年代)", build_menu: "生产菜单",
       same_menu: "与 {name} 相同", other_menu: "另一个", nation: "国家", factory: "工厂(按其中的单位显示)", more_units: "及另外 {n} 个",
@@ -134,6 +150,7 @@
   const mods = [{ path: home + "pacific-test", name: "pacific-test" }];
   let current = mode === "nomod" ? null : mods[0].path;
   const edits = new Map();  // `${mod}|${address}|${prop}|${how}|${via}` -> value, like the mod's src/studio.rndf
+  const terrains = new Map();  // `${mod}|${map pack}` -> strokes, like the mod's maps/<pack>/terrain.toml
   const editKey = (address, prop, how, via) => `${current}|${address}|${prop}|${how || ""}|${how === "own" ? via : ""}`;
   if (current) edits.set(editKey(E + "M4_Sherman", "SeuilMort"), 14);
   if (current) newUnits.push({ mod: current, id: "Super_Sherman", source: E + "M4_Sherman", name: "Super Sherman",
@@ -270,7 +287,7 @@
     for (let j = 0; j < n - 1; j++) {
       for (let i = 0; i < n - 1; i++) {
         const a = j * n + i, b = a + 1, c = a + n, d = c + 1;
-        for (const t of [[a, c, b], [b, c, d]]) {
+        for (const t of [[a, b, c], [b, d, c]]) {  // wound like the game's meshes, so the top is the lit side
           tri.push(...t);
           if (t.some((x) => pos[3 * x + 2] < wat[x])) wtri.push(...t);
         }
@@ -379,6 +396,24 @@
       maps: async () => ({ maps: fakeMaps }),
       map_view: async (pack, lod) => fakeGround(pack, lod || "lowdef"),
       map_ground: async () => ({ url: null }),  // the made-up island has only its colours
+      terrain: async (pack) => {
+        if (!current) return { strokes: [], saved: null, mod: null };
+        const list = terrains.get(`${current}|${pack}`) || [];
+        return { strokes: list.map((s) => ({ height: 0, level: 0, weight: 1, ...s })), mod: current,
+          saved: list.length ? `${current}/maps/${pack}/terrain.toml` : null };
+      },
+      terrain_add: async (pack, strokes) => {
+        if (!current) throw new Error("Pick or make a mod first: the shaped ground is saved in it.");
+        const key = `${current}|${pack}`, list = (terrains.get(key) || []).concat(strokes);
+        terrains.set(key, list);
+        return { count: list.length, saved: `${current}/maps/${pack}/terrain.toml` };
+      },
+      terrain_undo: async (pack, count = 1) => {
+        if (!current) throw new Error("Pick or make a mod first: the shaped ground is saved in it.");
+        const key = `${current}|${pack}`, list = terrains.get(key) || [], n = Math.min(count, list.length);
+        terrains.set(key, list.slice(0, list.length - n));
+        return { count: list.length - n, removed: n, saved: list.length - n ? `${current}/maps/${pack}/terrain.toml` : null };
+      },
     },
   };
   window.addEventListener("load", () => window.dispatchEvent(new Event("pywebviewready")));
