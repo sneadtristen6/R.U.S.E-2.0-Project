@@ -585,7 +585,8 @@ one is shorter. Rules:
 - **Cheap and certain first.** Work the engine already does (new units, mod sets) ships before work that needs
   reverse engineering. The uncertain part of the terrain editor (the `.kdt` codecs) waits for DomesticNukes'
   published research and our exchange; we crack it ourselves only if that falls through.
-- **No agents, workflows or long transcripts** unless the owner asks: they multiply the cost.
+- **Agents and workflows are fine here** (owner, 2026-09-29): the cloud tab runs on its own credit, so the PC
+  session uses parallel agents when they save a session. Replies stay short.
 - **At most one in-game test per session**, batched: one modded copy, the owner runs it once and reports.
 - **Reading budget:** a session reads this section, [TASKS.md](TASKS.md) if it is a cloud session, the memory
   notes and the files it changes. History is in
