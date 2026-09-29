@@ -137,13 +137,11 @@
   const safeName = (name) => name.normalize("NFKD").replace(/[^\x00-\x7f]/g, "").replace(/[^A-Za-z0-9]+/g, "_")
     .replace(/^_|_$/g, "");
   const home = "C:/Users/You/AppData/Local/RUSE Mod Platform/mods/";
-  const mods = [{ path: home + "pacific-test", name: "pacific-test" }];
+  const mods = [{ path: home + "sherman-test", name: "sherman-test" }];  // sample data for the preview only
   let current = mode === "nomod" ? null : mods[0].path;
   const edits = new Map();  // `${mod}|${address}|${prop}|${how}|${via}` -> value, like the mod's src/studio.rndf
   const editKey = (address, prop, how, via) => `${current}|${address}|${prop}|${how || ""}|${how === "own" ? via : ""}`;
-  if (current) edits.set(editKey(E + "M4_Sherman", "SeuilMort"), 14);
-  if (current) newUnits.push({ mod: current, id: "Super_Sherman", source: E + "M4_Sherman", name: "Super Sherman",
-    price: 55, nation: 0, factory: 10 });
+  if (current) edits.set(editKey(E + "M4_Sherman", "ProductionTime"), 1);  // a cheap, fast Sherman, as in the owner's test
   const mine = () => newUnits.filter((n) => n.mod === current);
   const BLAST = E + "M4_Sherman:Weapon.Blast";  // a part three units share
   const BLAST_OWNERS = ["M4_Sherman", "M3A1_Stuart", "Type97_ChiHa"];
@@ -290,8 +288,8 @@
   const jobs = {
     index: [["  ZZ_Win.dat"], "The game index is ready."],
     export: [["Building the mod on the game, to record the game build and the fingerprint…", "  fingerprint: K7Q2-M9XD",
-      "Saved as C:\\Users\\You\\Documents\\pacific-test-0.1.0.rusemod"], "Saved as C:\\Users\\You\\Documents\\pacific-test-0.1.0.rusemod"],
-    test: [["Building the modded copy of R.U.S.E. for pacific-test in D:\\RUSE-Instances\\studio-pacific-test…",
+      "Saved as C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod"], "Saved as C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod"],
+    test: [["Building the modded copy of R.U.S.E. for sherman-test in D:\\RUSE-Instances\\studio-sherman-test…",
       "  1 change in 1 file", "  modded copy ready: 41 files linked, 1 replaced", "Starting R.U.S.E. from the modded copy…"],
       "R.U.S.E. is starting."],
   };
@@ -357,8 +355,8 @@
       },
       choose_mod: async (path) => { current = path; return modsView(); },
       open_mod_folder: async () => {
-        const path = "D:/Mods/pacific-maps";
-        if (!mods.some((m) => m.path === path)) mods.push({ path, name: "pacific-maps" });
+        const path = "D:/Mods/another-mod";
+        if (!mods.some((m) => m.path === path)) mods.push({ path, name: "another-mod" });
         current = path;
         return modsView();
       },
@@ -382,7 +380,7 @@
         return { saved: current + "/src/studio.rndf" };
       },
       test_in_game: async () => ({ job: "test" }),
-      mod_info: async () => ({ id: "pacific-test", name: "pacific-test", version: "0.1.0", authors: [], author: "",
+      mod_info: async () => ({ id: "sherman-test", name: "sherman-test", version: "0.1.0", authors: [], author: "",
         description: "Made in the RUSE Studio.", builds: [], data_revision: "", fingerprint: "" }),
       export_mod: async () => ({ job: "export" }),
       build_index: async () => ({ job: "index" }),
