@@ -670,10 +670,26 @@ at slot 306 (a 6th button in the Lee's row), the Lee is unchanged. The build pri
 both" (names shared by every map's files, e.g. `$/ClusterTerrain/MapInstance`) and hundreds of "… and N more like
 this" lines. **For the cloud session:** collapse these to one summary line per kind.
 
+**C5 in-game (2026-09-28): the copy did not appear** in the US armour factory menu (no crash, the game ran).
+What was checked next:
+- Nothing in the game data refers to the Lee except the Sherman's `UpgradeRequire`, so the menu isn't a list of
+  references; the game seems to scan the units.
+- A 6th column isn't the problem: Japan's tank row shows units at 306 (Type 5 Chi-Ri) and 310 (Ta-Se).
+- **The likely cause:** our copy kept the Lee's name key (`N_UNI_135`). RUSE-Mod-Manager's clone, which works for
+  its users, always gives the copy a new `NameInMenuToken`. Eugen's own film copy of the Lee has its own key too
+  (`N_UNI_136`). If the menu tells units apart by name key, a copy that shares one is dropped. C6 gives the copy its
+  own key, so it tests this.
+- For later (M9): `ZZ_Win.dat!genpython/eugenpatchable.ipk` → `parametres/classes.xyz` defines a Python class per
+  unit (`Unit_M3_Lee` → `Database.GetObject('$/GFX/Everything/Descriptor_Unit_M3_Lee')`) for the AI and the mission
+  scripts. The AI won't use a new unit until it has an entry there.
+
+**C6 built (2026-09-28)** with the Lee copy, 18 s, 0 errors: `NameInMenuToken` = `C6000001`, "Lee C6-Test" in all 11
+`baseunite.dic` files, fingerprint `NA86-7RBG`, instance `D:\RUSE-Instances\c6-named`.
+
 ### C6: a new unit with its own name (ready to run, after C5)
 
-C5 proves a new unit works. C6 gives it its own name through the new text step: C5's Sherman copy with the name
-"Sherman C6-Test" ([`examples/named-unit/`](../examples/named-unit/): the unit in `src/units.rndf`, the name in
+C5 proves a new unit works. C6 gives it its own name through the new text step: C5's M3 Lee copy with the name
+"Lee C6-Test" ([`examples/named-unit/`](../examples/named-unit/): the unit in `src/units.rndf`, the name in
 `text/baseunite.csv`). Every language shows the English name (a missing language falls back to `us`).
 
 1. **Build** (a few minutes: the text pack, ZZ_Win.dat, is 2.3 GB and gets rebuilt into the copy, so the drive needs
@@ -685,7 +701,7 @@ C5 proves a new unit works. C6 gives it its own name through the new text step: 
    Expect the fresh-identity note from C5, `texts: 11 file(s) in ZZ_Win.dat (baseunite.dic ×11)` (ten languages and
    `dev`), no warnings or errors.
 2. **In game** (owner): skirmish as the US, armour factory menu.
-   - **Pass:** the new Sherman copy (costing 1) is called "Sherman C6-Test"; the normal Sherman keeps its name.
+   - **Pass:** the new Sherman copy (costing 1) is called "Lee C6-Test"; the normal Sherman keeps its name.
    - Record the result, a screenshot, the build output and how long the build took.
 3. **If the name is blank or shows a code:** unit names may not come from `baseunite.dic` (RUSE-Mod-Manager's note).
    Check which `.dic` holds the Sherman's own name key (`ruse dump` shows it on `NameInMenuToken`), rename
@@ -780,7 +796,7 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
         US armour factory's menu.
      5. **Nation scan** (read-only, no game launch needed): `py -3 tools\nation_scan.py > nations.txt`. Record its
         summary and the starred lines of B in FORMATS.md §3: that's the data side of the new nation (decision 19).
-     6. **C6, a unit with its own name** (§7 C6), after C5: one build, then look for "Sherman C6-Test" in the menu.
+     6. **C6, a unit with its own name** (§7 C6), after C5: one build, then look for "Lee C6-Test" in the menu.
      7. **Launcher v0.1 and the 3D check** (needs the owner at the PC). The launcher and the Studio are two separate
         apps now (decision 22), each started on its own:
         - Once: `py -3 -m pip install pywebview` (Windows 10/11 already have the web engine it uses).
