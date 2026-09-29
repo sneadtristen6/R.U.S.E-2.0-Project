@@ -244,7 +244,55 @@ maps/R2_Iwo/
   - creates the new `TMapLoadInfo`, its GUID and cluster files
   - creates the map pack
   - creates the DataMap_Win and IA_Common entries
-- Terrain comes later (M8).
+- Terrain from scratch comes later (M8).
+
+### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`; PLAN §7 MT, T2–T3)
+
+```
+maps/TwoIslands/
+  terrain.toml    # brush strokes on that map's ground, applied in order (the Studio rewrites this file)
+```
+
+The folder's name is the map's pack name (`TwoIslands` for `Maps\PC\DataMapTwoIslands_v09.dat`; the Studio's Maps
+list shows it under each map). The file holds strokes, one dab of a brush each:
+
+```toml
+[[stroke]]
+brush  = "hill"      # hill, raise, lower, crater, plateau, flatten, smooth
+x      = 983040.0    # the centre, in world units: x grows east, y grows south
+y      = 983040.0
+radius = 60000.0
+height = 12000.0     # hill, raise, lower, crater: how much (for crater, the bowl's depth)
+
+[[stroke]]
+brush  = "plateau"
+x      = 700000.0
+y      = 400000.0
+radius = 40000.0
+level  = 21000.0     # plateau, flatten: the height (world z) the ground goes to
+weight = 1.0         # plateau, flatten, smooth: how far toward it, 0..1 (smooth: 0.5 when left out)
+```
+
+| Brush | Does | Shape |
+|---|---|---|
+| `hill`, `raise` | ground up by `height` | round hump: full at the centre, nothing at the edge |
+| `lower` | ground down by `height` | the same hump, downward |
+| `crater` | a bowl `height` deep with a rim a third as high | bowl out to 3/4 of the radius, rim around 4/5 |
+| `plateau` | ground to `level` | flat across the middle half, then an S-curve back to the old ground |
+| `flatten` | ground toward `level`, most at the centre | round hump weighting |
+| `smooth` | ground toward its local average (the mean over about a third of the radius) | round hump weighting |
+
+- **All four files together.** A map's ground is in four files (FORMATS.md §6): the close-up and far meshes the game
+  draws, the gameplay ground and the camera floor (`.kdt`). Every stroke moves the points of all four inside its
+  circle by a function of position and height only, so points they share stay at the same height. The map's outer
+  edge never moves (the drawn mesh's curtain hangs from it).
+- **The same on every PC.** Only arithmetic and square roots, which every PC rounds the same way, so two PCs build the
+  same bytes. The reshaped map counts for multiplayer: its files are part of the fingerprint (§12).
+- **Load order:** when several mods reshape one map, their strokes run in load order, one mod's after another's.
+- **Not yet:** raising the ground above the map's highest point or below its lowest (points stop at the file's
+  height range, and the build says how many did), water that follows the ground (lakes keep their outline), and
+  cutting the mesh finer. The game's acceptance of moved ground is the next in-game check
+  (`tools/verify_terrain.py --make-test`).
 
 ## 9. Scripts
 

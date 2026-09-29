@@ -1,8 +1,9 @@
-"""Build mods into game files: from mod folders to rebuilt packs (docs/MOD_FORMAT.md §2, §3, §6, §10).
+"""Build mods into game files: from mod folders to rebuilt packs (docs/MOD_FORMAT.md §2, §3, §6, §8, §10).
 
-  mod folders (mod.toml + src/**/*.rndf + text/*.csv)  ->  load order  ->  the pack's data files into the engine's
-  model  ->  run the mods  ->  texts: game keys handed out, loc('...') values filled in  ->  write changed files back
-  ->  rebuilt unit-data pack + fingerprint, and the rebuilt ZZ_Win.dat when mods add texts or new units
+  mod folders (mod.toml + src/**/*.rndf + text/*.csv + maps/<map>/terrain.toml)  ->  load order  ->  the pack's data
+  files into the engine's model  ->  run the mods  ->  texts: game keys handed out, loc('...') values filled in  ->
+  write changed files back  ->  rebuilt unit-data pack + fingerprint, the rebuilt ZZ_Win.dat when mods add texts or
+  new units, and a rebuilt map pack for every map whose ground a mod reshapes (rusemod.terrain_edit)
 
 Value changes, new objects (clones, new units) and deletes all go through rusemod.model; texts through rusemod.loc.
 A new unit (a copy of a unit the game knows) also needs a class in the game's Python unit list, which
@@ -11,12 +12,15 @@ rusemod.pyscript adds from its one fixed template (PLAN.md decision 23). Mods ne
 from __future__ import annotations
 
 import re
+import struct
 import tomllib
+import zlib
 from contextlib import ExitStack
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import loc, pyscript
+from .brush import BrushError, parse_strokes
 from .edat import Edat
 from .lock import fingerprint, fingerprint_text
 from .model import ModelError, game_path, load, save
@@ -24,6 +28,7 @@ from .patch import Engine, Finding, Text, _walk_obj
 from .resolve import ModInfo, ResolveError, load_order
 from .rndf import parse
 from .steam import build_of, data_revisions
+from .terrain_edit import edit_map
 
 DEFAULT_PACK = "ZZ_GladPatchableWin.dat"  # the unit data
 
@@ -84,8 +89,38 @@ def load_mod(path) -> tuple[ModInfo, list]:
                                            f.relative_to(path).as_posix())
             except loc.TextError as exc:
                 raise BuildError(str(exc)) from None
+        info.terrain = read_terrain(path)
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
+
+
+_MAP_NAME = re.compile(r"^[A-Za-z0-9_]+$")
+
+
+def read_terrain(folder: Path) -> dict:
+    """A mod's terrain edits: {map pack name: [brush.Stroke]} from maps/<map pack>/terrain.toml (MOD_FORMAT §8).
+    The folder's name is the map's pack name (TwoIslands for DataMapTwoIslands_v09.dat)."""
+    out = {}
+    maps = folder / "maps"
+    for f in sorted(maps.glob("*/terrain.toml"), key=lambda p: p.parent.name.lower()) if maps.is_dir() else []:
+        rel = f.relative_to(folder).as_posix()
+        if not _MAP_NAME.match(f.parent.name):
+            raise BuildError(f"{rel}: {f.parent.name!r} isn't a map's pack name (letters, digits and _, like "
+                             f"TwoIslands)")
+        try:
+            data = tomllib.loads(f.read_text(encoding="utf-8"))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+            raise BuildError(f"{rel}: {exc}") from None
+        extra = sorted(set(data) - {"stroke"})
+        if extra:
+            raise BuildError(f"{rel}: unknown key {extra[0]!r} (a terrain file holds [[stroke]] tables)")
+        try:
+            strokes = parse_strokes(data.get("stroke", []), rel)
+        except BrushError as exc:
+            raise BuildError(str(exc)) from None
+        if strokes:
+            out[f.parent.name] = strokes
+    return out
 
 
 @dataclass
@@ -96,6 +131,7 @@ class BuildResult:
     text_changed: dict = field(default_factory=dict)  # member path in the text pack (ZZ_Win.dat) -> new bytes
     script_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (the script pack) -> new bytes
     new_classes: list = field(default_factory=list)  # class names added to the game's Python unit list
+    terrain_changed: dict = field(default_factory=dict)  # map pack file name -> {member path: new bytes}
     fingerprint: bytes | None = None
 
     @property
@@ -267,6 +303,18 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     return result
 
 
+def terrain_edits(order: list[str], mods: list) -> dict[str, tuple[list, list[str]]]:
+    """Every map a mod reshapes: {map pack name: (the strokes of all the mods in load order, the mods' ids)}."""
+    by_id = {m.id: m for m, _ in mods}
+    out: dict[str, tuple[list, list[str]]] = {}
+    for mod_id in order:
+        for pack, strokes in by_id[mod_id].terrain.items():
+            all_strokes, ids = out.setdefault(pack, ([], []))
+            all_strokes.extend(strokes)
+            ids.append(mod_id)
+    return out
+
+
 def find_pack(game: Path, name: str) -> Path | None:
     """A pack by path, or by name in the game folder (newest data revision first found, then Maps\\PC)."""
     p = Path(name)
@@ -334,6 +382,44 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         if result.errors:
             say("Nothing was written.")
             return result
+        from .terrain import pack_file
+        map_packs = []  # (path, open pack, {member: new bytes})
+        for name, (strokes, ids) in terrain_edits(result.order, mods).items():
+            map_path = find_pack(game, pack_file(name))
+            if map_path is None:
+                result.findings.append(Finding("error", f"{', '.join(ids)}: the map {name} isn't in this game "
+                                                        f"({pack_file(name)} is missing), so its ground can't be "
+                                                        f"changed"))
+                continue
+            map_arc = stack.enter_context(Edat.open(str(map_path)))
+
+            def read(member, a=map_arc):
+                try:
+                    return bytes(a.read(a.find(member)))
+                except KeyError:
+                    return None
+
+            try:
+                changed_members, notes = edit_map(read, strokes, name)
+            except (ValueError, struct.error, zlib.error) as exc:
+                result.findings.append(Finding("error", f"{map_path.name}: its ground files can't be read ({exc})"))
+                continue
+            say(f"terrain: {name}, from {', '.join(ids)}")
+            for note in notes:
+                say(f"  {note}")
+            if changed_members:
+                map_packs.append((map_path, map_arc, changed_members))
+                result.terrain_changed[map_path.name] = changed_members
+        if result.errors:
+            for line in report_lines([f for f in result.findings if f.level == "error"], show_all=show_all):
+                say(line)
+            say("Nothing was written.")
+            return result
+        if map_packs:
+            gameplay = dict(result.changed)
+            for map_path, _a, changed_members in map_packs:
+                gameplay.update({f"Maps/PC/{map_path.name}/{m}": d for m, d in changed_members.items()})
+            result.fingerprint = fingerprint(build_id, gameplay)
         for path in result.changed:
             say(f"changed: {path}")
         if result.text_changed:
@@ -346,18 +432,24 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         if result.new_classes:
             say(f"unit list: {len(result.new_classes)} class(es) added to {pyscript.UNIT_LIST} in {text_path.name} ("
                 + ", ".join(result.new_classes) + ")")
+        for map_path, _a, changed_members in map_packs:
+            say(f"changed: {map_path.name} ({len(changed_members)} file(s): "
+                + ", ".join(m.rsplit(chr(92), 1)[-1] for m in changed_members) + ")")
         zz_win_changed = {**result.text_changed, **result.script_changed}
-        if not result.changed and not zz_win_changed:
+        if not result.changed and not zz_win_changed and not map_packs:
             say("The mods change nothing in these packs.")
             return result
+        if result.fingerprint is None:
+            result.fingerprint = fingerprint(build_id, result.changed)
         say(f"fingerprint: {fingerprint_text(result.fingerprint)}")
-        rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, zz_win_changed)]
+        rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, zz_win_changed)] + map_packs
         rebuilt = [(path, a, changed) for path, a, changed in rebuilt if changed]
         if out is not None:
             out = Path(out)
             if out.suffix.lower() == ".dat":
                 if len(rebuilt) > 1:
-                    raise BuildError("these mods rebuild two packs (unit data and texts): give --out a folder")
+                    raise BuildError(f"these mods rebuild {len(rebuilt)} packs ("
+                                     + ", ".join(path.name for path, _a, _c in rebuilt) + "): give --out a folder")
                 targets = [(out, rebuilt[0][1], rebuilt[0][2])]
             else:
                 out.mkdir(parents=True, exist_ok=True)

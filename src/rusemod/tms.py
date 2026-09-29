@@ -651,6 +651,22 @@ class Tms:
                 total += len(changed)
         return total
 
+    def set_heights(self, k: int, heights: dict[int, int]) -> int:
+        """Give vertices of cell `k` new quantized heights ({vertex index: z, 0..32767}), then recompute what
+        depends on them, as edit_heights does (the normals around them, the bounds of their patches). Returns how
+        many changed."""
+        c = self.cells[k]
+        pos = [list(p) for p in c.positions()]
+        changed = []
+        for i, q in sorted(heights.items()):
+            q = min(max(int(q), 0), Q_MAX)
+            if pos[i][2] != q:
+                pos[i][2] = q
+                changed.append(i)
+        if changed:
+            self._commit(c, pos, changed)
+        return len(changed)
+
     def _commit(self, c: Cell, pos: list[list[int]], changed: list[int]) -> None:
         tri = c.triangles(0)
         moved = set(changed)

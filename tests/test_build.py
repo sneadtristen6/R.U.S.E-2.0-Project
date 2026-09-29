@@ -11,8 +11,10 @@ from fixtures import make_edat, make_ndf, val
 from test_dic import make_dic
 from rusemod import Edat, Ndf, loc
 from rusemod.dic import Dic, name_to_key
-from rusemod.build import BuildError, build_pack, load_mod
+from rusemod.build import BuildError, build_and_write, build_pack, load_mod
+from rusemod.brush import Stroke
 from rusemod.cli import main
+from rusemod.lock import fingerprint_text
 
 UNITS = "genglad\\patchable\\gfx\\everything.cpp.gladndfbin"
 
@@ -256,7 +258,97 @@ class Examples(unittest.TestCase):
         for folder in folders:
             info, ops = load_mod(folder)
             self.assertEqual(info.id, folder.name)
-            self.assertTrue(ops, folder.name)
+            self.assertTrue(ops or info.texts or info.terrain, folder.name)
+
+
+HILL = ('[[stroke]]\nbrush = "hill"\nx = 1500.0\ny = 1500.0\nradius = 600.0\nheight = 400.0\n')
+
+
+class Terrain(unittest.TestCase):
+    """A mod that reshapes a map's ground: maps/<map>/terrain.toml, built into the map's pack (MOD_FORMAT §8)."""
+
+    def setUp(self):
+        from test_terrain_edit import make_map_pack
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.game = root / "steamapps" / "common" / "R.U.S.E"
+        (self.game / "Data" / "PC" / "190852").mkdir(parents=True)
+        (self.game / "Maps" / "PC").mkdir(parents=True)
+        (self.game / "RUSE.exe").write_bytes(b"MZ")
+        (self.game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").write_bytes(PACK)
+        self.map_pack = make_map_pack()
+        (self.game / "Maps" / "PC" / "DataMapTest_v09.dat").write_bytes(self.map_pack)
+        (root / "steamapps" / "appmanifest_21970.acf").write_text('"AppState" { "buildid" "24687178" }')
+        self.root = root
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def mod(self, mod_id, terrain=HILL, rndf=None, map_name="Test"):
+        folder = write_mod(self.root / "mods", mod_id, rndf or {})
+        (folder / "maps" / map_name).mkdir(parents=True)
+        (folder / "maps" / map_name / "terrain.toml").write_text(terrain, encoding="utf-8")
+        return folder
+
+    def build(self, *folders, copy="copy"):
+        lines = []
+        result = build_and_write(self.game, [load_mod(f) for f in folders], instance=self.root / copy,
+                                 say=lines.append)
+        return result, lines
+
+    def test_the_mod_file_is_read(self):
+        info, ops = load_mod(self.mod("hill"))
+        self.assertEqual((info.terrain, ops), ({"Test": [Stroke("hill", 1500.0, 1500.0, 600.0, height=400.0)]}, []))
+
+    def test_a_reshaped_map_goes_into_the_modded_copy(self):
+        result, lines = self.build(self.mod("hill"))
+        self.assertEqual(result.errors, [], lines)
+        pack = self.root / "copy" / "Maps" / "PC" / "DataMapTest_v09.dat"
+        arc = Edat(pack.read_bytes())
+        for member, data in result.terrain_changed["DataMapTest_v09.dat"].items():
+            self.assertEqual(bytes(arc.read(arc.find(member))), data)
+        self.assertEqual(len(result.terrain_changed["DataMapTest_v09.dat"]), 4)
+        self.assertIn("terrain: Test, from hill", lines)
+        self.assertTrue(any(line.startswith("changed: DataMapTest_v09.dat (4 file(s): highdef.tms") for line in lines))
+        self.assertEqual((self.game / "Maps" / "PC" / "DataMapTest_v09.dat").read_bytes(), self.map_pack)  # untouched
+        self.assertEqual((self.root / "copy" / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes(), PACK)
+        # the ground counts for multiplayer: another hill, another fingerprint
+        other, _ = self.build(self.mod("other", HILL.replace("400.0", "300.0")), copy="copy2")
+        self.assertNotEqual(fingerprint_text(result.fingerprint), fingerprint_text(other.fingerprint))
+        self.assertIn(f"fingerprint: {fingerprint_text(result.fingerprint)}", lines)
+
+    def test_terrain_and_unit_changes_together_and_two_mods_on_one_map(self):
+        a = self.mod("aaa", rndf={"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
+        b = self.mod("bbb", HILL.replace('"hill"', '"lower"').replace("400.0", "100.0"))
+        result, lines = self.build(a, b)
+        self.assertEqual(result.errors, [], lines)
+        self.assertIn("terrain: Test, from aaa, bbb", lines)            # the strokes of both, in load order
+        self.assertEqual(price((self.root / "copy" / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes()),
+                         [53] * 5)
+        from rusemod.terrain_edit import FILES
+        from rusemod.tms import Tms
+        hd = Tms(result.terrain_changed["DataMapTest_v09.dat"][FILES["highdef"]])
+        orig = Tms(bytes(Edat(self.map_pack).read(Edat(self.map_pack).find(FILES["highdef"]))))
+        centre = [p for p in hd.cells[4].positions() if (p[0], p[1]) == (16383, 16383)]
+        before = [p for p in orig.cells[4].positions() if (p[0], p[1]) == (16383, 16383)]
+        self.assertTrue(centre and before)
+        self.assertEqual(centre[0][2] - before[0][2], 3000)   # +400 then -100 at the very centre: +300, in 0.1 steps
+
+    def test_mistakes(self):
+        result, lines = self.build(self.mod("elsewhere", map_name="Nope"))
+        self.assertIn("elsewhere: the map Nope isn't in this game (DataMapNope_v09.dat is missing)",
+                      result.errors[0].message)
+        self.assertIn("Nothing was written.", lines)
+        self.assertFalse((self.root / "copy").exists())
+        for n, (terrain, message) in enumerate([
+                ("[[stroke]]\nbrush = 'hill'\n", "maps/Test/terrain.toml: stroke 1: the hill brush needs"),
+                ("stroke = 5\n", "maps/Test/terrain.toml: `stroke` must be a list"),
+                ("colour = 1\n", "maps/Test/terrain.toml: unknown key 'colour'"),
+                ("[[stroke\n", "maps/Test/terrain.toml: ")]):
+            with self.subTest(terrain=terrain), self.assertRaisesRegex(BuildError, message):
+                load_mod(self.mod(f"bad-{n}", terrain))
+        with self.assertRaisesRegex(BuildError, "isn't a map's pack name"):
+            load_mod(self.mod("bad-name", map_name="Two Islands"))
 
     def test_every_rebuilt_community_mod_loads(self):
         """mods/: RUSE-Mod-Manager mods rebuilt in our format (MOD_FORMAT §13); each reads, has a README and a build."""

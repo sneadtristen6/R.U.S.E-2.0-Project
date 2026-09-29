@@ -14,6 +14,8 @@ players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your br
 | | ![RUSE Studio's Maps: Centre of Gravity in 3D, with its real ground](docs/images/studio-maps.jpg) |
 
 **Current stage (2026-09-29):**
+- **Terrain brushes** (in review): mods can reshape a map's ground; the first in-game check is one hill on Centre of
+  Gravity.
 - **Browse mods** (in review): the launcher lists the community's mods from a GitHub index and installs them.
 - **A mod as one file** (in review): the Studio exports `<id>-<version>.rusemod`, the launcher installs it.
 - **Community mods:** 18 RUSE-Mod-Manager mods rebuilt in our format ([`mods/`](mods/)); their format is written
@@ -69,6 +71,12 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
   ([`examples/cloned-unit/`](examples/cloned-unit/), PLAN.md §7). New units get their own names from a mod's
   `text/*.csv` ([`src/rusemod/loc.py`](src/rusemod/loc.py); in-game test C6,
   [`examples/named-unit/`](examples/named-unit/)).
+
+- **Terrain brushes** ([`src/rusemod/brush.py`](src/rusemod/brush.py), [`terrain_edit.py`](src/rusemod/terrain_edit.py),
+  in review): a mod reshapes a map's ground with brush strokes (hill, raise, lower, crater, plateau, flatten, smooth)
+  in `maps/<map>/terrain.toml`; `ruse build` applies them to all four files that hold the ground, together, and puts
+  the map in the modded copy ([docs/MOD_FORMAT.md §8](docs/MOD_FORMAT.md)). The in-game check comes first:
+  `py -3 tools\verify_terrain.py --make-test TwoIslands D:\RUSE-Instances\hill` builds a copy with one hill.
 
 - **Community mods in our format** ([`mods/`](mods/), 18 of them, 2026-09-29): RUSE-Mod-Manager `.rmod` mods
   rebuilt as mods of ours by [`tools/rmod_to_mod.py`](tools/rmod_to_mod.py), our own reader of that format
