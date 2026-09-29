@@ -615,6 +615,21 @@ one is shorter. Rules:
 | **The PC session** (has the game) | everything that needs game files: checks the cloud's work on the real maps, builds the test copies, merges, releases, the China data test | fix and re-check the terrain editor on every map; build the hill copy; releases after the tests |
 | **The cloud sessions** (no game) | code and docs from [TASKS.md](TASKS.md): join codes (E), Studio follow-ups (F), painting the ground, water that follows the ground (§12) | E |
 
+**Terrain work waits for DomesticNukes (owner, 2026-09-29):** no more terrain-engine changes and no hill test
+until he has caught up and reviewed. Open for him, found by the PC session's check of the cloud's work:
+1. The `.kdt` MainNode holds height limits per part of the tree (read as 8-byte records: split nodes, one leaf per
+   subtree, many one-sided height planes; the root repeats the file's z range). The engine moves points but can't
+   update these, and any raise at the test spot on Two Islands goes above them. A hill test can't tell a bad edit
+   from a stale limit until they're understood; a flatten that stays inside every touched part's range would.
+2. `.tms` normals are recomputed per cell, so points on a cell border get two different normals after an edit (a
+   possible lighting seam); the test hill sits on a cell border.
+3. Fixed and pushed: the terrain check compared ground points with the wrong point where the mesh stacks several at
+   one spot (cliffs); the engine's normal lookup had the same flaw. All 32 maps pass.
+4. Community mods: five hold absolute values that reveal the game's tables (speed, range, altitude, health); four
+   could be relative (`*=`). Descriptions repeat the originals' "confirmed in-game" claims. The owner is asked whose
+   the 17 unattributed mods are. DomesticNukes' FNAT mod was taken out of the public repo (kept in the private
+   repo) until he agrees; it remains in the public repo's history.
+
 **The owner's tests, in this order** (the PC session prepares each one and gives click-level steps; stop at the
 first failure and report what happened):
 1. **The hill** (terrain editor, pull request #6): start `D:\RUSE-Instances\hill\RUSE.exe` with Steam open, play

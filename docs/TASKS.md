@@ -64,6 +64,8 @@ documented, not planned.
 **The owner's standing wishes:** think Cities: Skylines but simpler; no jargon; the sessions decide small things
 themselves and never ask the owner to type commands.
 
+**Terrain paused (owner, 2026-09-29):** no terrain work (painting the ground, water, brush changes) until DomesticNukes has caught up and reviewed; see PLAN §10 "Terrain work waits". Join codes (E) and the Studio follow-ups (F) go ahead.
+
 **Queue (2026-09-29, keep this order):** A, B, C, D and G are done (pull requests #1, #2, #4, #5 and #3, all
 merged) → **E** (join codes, next) → F; the terrain editor's own order is in PLAN §12. Take the first task not started; one task per session; one pull request per task; resolve
 conflicts with `main` by merging `main` into the branch (in docs/LOG.md keep both entries). When the PC session
