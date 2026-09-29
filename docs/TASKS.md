@@ -12,6 +12,22 @@ is out of credit (it says so here or in the pull request), a cloud session may m
 GitHub's tests are green and it has re-read the whole diff; version bumps, tags and releases still wait for the
 owner's in-game check.
 
+**Tell the owner what to test.** Cloud sessions have no game, so every pull request ends with a section
+**"Test for the owner"**: at most five numbered steps in plain words (which app to install from the Actions run,
+which button to press, what should appear), what counts as a pass, and what to screenshot. Post the same steps as
+the last comment on the pull request when it is merged. The owner's tests so far:
+- **A (new units):** install the Studio from the Actions run on `main`; open the M4 Sherman, "New unit…", name it
+  "Sherman Test", price 5, same menu; "Test in game"; in a skirmish the US armour factory offers "Sherman Test" at 5
+  and it builds and fights. Screenshot the factory menu.
+- **B (mod sets):** install the launcher; "New mod set", tick a mod, Play: the game starts with the set; rename and
+  delete a set without touching any file.
+- **C (a mod as one file):** export a Studio mod, install the file in the launcher with "Add a mod file…", play it.
+- **D (browse mods):** open "Browse mods", install a listed mod, play it; then unplug the network and open the tab
+  again (the cached list shows).
+- **E (join codes):** make a set, copy its code, paste it into a second launcher home (or a friend's PC): the same
+  set appears and plays.
+- **F, G:** as their briefs say; F re-runs the A test with a unit moved to another menu.
+
 **Rules for every task**
 - Public code is data-only: it never patches, injects into or reads addresses of RUSE.exe. MIT; never copy
   RUSE-Mod-Manager's code (LITTLEGROOVE_STUDY.md is a study, not a source).
