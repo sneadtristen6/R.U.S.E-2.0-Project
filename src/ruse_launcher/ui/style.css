@@ -194,6 +194,23 @@ button:disabled { cursor: default; opacity: 0.45; }
 .arrow { padding: 2px 9px; }
 .editor .actions { display: flex; gap: 8px; }
 
+/* --- Launcher 0.3: Browse mods (the mod index) --- */
+.browse { display: grid; gap: 12px; max-width: 840px; }
+.browse h1 { margin: 0; font-size: 28px; }
+.browse input[type="search"] { padding: 7px 12px; background: var(--panel-hi); border: 1px solid var(--line);
+                               border-radius: var(--radius); font: inherit; color: var(--text); min-width: 220px; }
+.browse p { margin: 0; }
+.browse-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.browse-card { display: grid; grid-template-columns: 1fr auto; gap: 2px 14px; padding: 12px 14px; background: var(--panel);
+               border: 1px solid var(--line); border-radius: var(--radius); }
+.browse-card .name { font-weight: 600; font-size: 16px; }
+.browse-card .meta { font-size: 12px; color: var(--muted); grid-column: 1; }
+.browse-card .desc { font-size: 13px; grid-column: 1; }
+.browse-card .tags { font-size: 11px; color: var(--accent); grid-column: 1; }
+.browse-card .small { grid-column: 2; grid-row: 1 / span 5; align-self: center; }
+.browse-card .link { background: none; border: 0; padding: 0; color: var(--accent); font-size: 12px;
+                     text-decoration: underline; grid-column: 1; justify-self: start; }
+
 .drop-zone { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(21, 24, 27, 0.85);
              border: 3px dashed var(--accent); color: var(--accent); font-size: 22px; font-weight: 700; z-index: 10;
              pointer-events: none; }

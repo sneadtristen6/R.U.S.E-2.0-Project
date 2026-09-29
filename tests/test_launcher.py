@@ -18,6 +18,7 @@ from rusemod import package, schema
 from rusemod.play import STEAM_OPEN, STEAM_PLAY, keep_order
 from rusemod.resolve import ModInfo
 from rusemod.webui import serve
+import hashlib
 
 
 def wait_for(api, job_id, timeout=10):
@@ -351,6 +352,97 @@ class SetsOnScreen(Base):
         a, b, c = ModInfo("a"), ModInfo("b"), ModInfo("c", before=["b"])
         keep_order([(c, []), (b, []), (a, [])])
         self.assertEqual((a.after, b.after, c.after), (["b"], [], []))  # c and b already say how they relate
+
+
+class Browse(Base):
+    """Browse mods: the mod index on a local web server, installs checked against it, the copy kept for offline."""
+
+    def setUp(self):
+        super().setUp()
+        self.www = Path(self.tmp.name, "www")
+        self.www.mkdir()
+        folder = write_mod(Path(self.tmp.name, "src"), "econ-half", HALF, extra='name = "Half price"\nauthors = ["Tristen"]\n')
+        self.file = package.pack(folder, self.www, build_id="24687178", fingerprint="K7Q2-M9XD")
+        self.server, self.base = serve(self.www)
+        self.write_index("1.0.0")
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        super().tearDown()
+
+    def write_index(self, version, extra=""):
+        data = self.file.read_bytes()
+        (self.www / "index.toml").write_text(
+            'format = 1\n\n[[mod]]\nid = "econ-half"\nname = "Half price"\nversion = "%s"\nauthor = "Tristen"\n'
+            'description = "Every building costs half."\nhomepage = "https://example.com/half"\n'
+            'download = "%s/%s"\nsize = %d\nsha256 = "%s"\ngame_build = "24687178"\nfingerprint = "K7Q2-M9XD"\n'
+            'tags = ["economy"]\n%s' % (version, self.base, self.file.name, len(data), hashlib.sha256(data).hexdigest(), extra),
+            encoding="utf-8")
+
+    def browser(self, **kw):
+        return self.api(index_url=f"{self.base}/index.toml", **kw)
+
+    def test_the_list_its_states_and_search(self):
+        api = self.browser()
+        res = api.browse()
+        self.assertEqual((res["source"], res["message"], res["problems"]), ("online", "", []))
+        mod = res["mods"][0]
+        self.assertEqual((mod["id"], mod["name"], mod["version"], mod["author"], mod["state"], mod["game_build"], mod["tags"]),
+                         ("econ-half", "Half price", "1.0.0", "Tristen", "new", "24687178", ["economy"]))
+        self.assertEqual(mod["size_text"], f"{max(1, round(len(self.file.read_bytes()) / 1000))} KB")
+        self.assertEqual(api.browse("nothing like it")["mods"], [])
+        self.assertEqual(len(api.browse("economy")["mods"]), 1)  # tags count
+        api.add_mod(str(self.file))
+        self.assertEqual(api.browse()["mods"][0]["state"], "installed")
+        self.write_index("1.1.0")
+        self.assertEqual(api.browse()["mods"][0]["version"], "1.0.0")  # the list is fetched once per run…
+        fresh = api.browse(fresh=True)["mods"][0]
+        self.assertEqual((fresh["version"], fresh["state"], fresh["installed_version"]), ("1.1.0", "update", "1.0.0"))
+        with self.assertRaisesRegex(LauncherError, "Only https"):
+            api.open_link("http://example.com")
+        api.open_link("https://example.com/half")
+        self.assertEqual(self.urls, ["https://example.com/half"])
+
+    def test_install_from_the_list_then_play(self):
+        api = self.browser()
+        j = wait_for(api, api.install_from_index("econ-half")["job"])
+        self.assertEqual((j["state"], j["message"]), ("done", "Half price is in the library."), j)
+        self.assertIn("The file matches the mod list (size and checksum).", j["lines"])
+        mod = api.library()[0]
+        self.assertEqual((mod["id"], mod["version"], mod["builds"], mod["fingerprint"]), ("econ-half", "1.0.0", ["24687178"], "K7Q2-M9XD"))
+        self.assertEqual(api.browse()["mods"][0]["state"], "installed")
+        self.assertEqual(list((self.home / "downloads").iterdir()), [])  # nothing kept
+        api.new_set("Half", ["econ-half"])
+        j = wait_for(api, api.play("half")["job"])
+        self.assertEqual(j["state"], "done", j)
+        self.assertEqual(price((self.instances / "half" / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes()), [53] * 5)
+        with self.assertRaisesRegex(LauncherError, "no mod called"):
+            api.install_from_index("nope")
+
+    def test_a_wrong_or_missing_file_is_refused(self):
+        wrong = ('\n[[mod]]\nid = "wrong"\nname = "Wrong"\nversion = "1.0.0"\ndownload = "%s/%s"\nsize = 5\nsha256 = "%s"\n'
+                 '\n[[mod]]\nid = "gone"\nname = "Gone"\nversion = "1.0.0"\ndownload = "%s/missing.rusemod"\nsize = 5\nsha256 = "%s"\n'
+                 % (self.base, self.file.name, "0" * 64, self.base, "1" * 64))
+        self.write_index("1.0.0", extra=wrong)
+        api = self.browser()
+        j = wait_for(api, api.install_from_index("wrong")["job"])
+        self.assertEqual(j["state"], "failed")
+        self.assertIn("isn't the one the mod list promises", j["message"])
+        j = wait_for(api, api.install_from_index("gone")["job"])
+        self.assertIn("couldn't be downloaded", j["message"])
+        self.assertEqual(api.library(), [])
+
+    def test_offline_shows_the_copy_from_before(self):
+        self.assertEqual(self.browser().browse()["source"], "online")
+        self.server.shutdown()
+        self.server.server_close()
+        res = self.browser().browse()  # a new launcher run: no list in memory, no network
+        self.assertEqual((res["source"], len(res["mods"])), ("cache", 1))
+        self.assertIn("This is the copy from", res["message"])
+        res = self.browser(home=Path(self.tmp.name, "other-home")).browse()
+        self.assertEqual((res["source"], res["mods"]), ("none", []))
+        self.assertIn("couldn't be loaded", res["message"])
 
 
 class Words(unittest.TestCase):

@@ -6,7 +6,8 @@
 
 const $ = (id) => document.getElementById(id);
 const state = { lang: "us", words: {}, languages: [], status: null, sets: [], library: [], active: "vanilla",
-  playing: false, editing: null };  // editing: { id (null for a new set), name, mods: [entries in order] }
+  playing: false, editing: null,   // editing: { id (null for a new set), name, mods: [entries in order] }
+  browse: null };                  // browse: the mod index on screen { mods, source, as_of, message, search, busy }
 
 function api() {
   return window.pywebview.api;
@@ -65,7 +66,12 @@ async function setLanguage(lang) {
   text($("details"), w.details);
   text($("join"), w.join);
   text($("browse"), w.browse);
-  $("join").title = $("browse").title = w.coming_soon;
+  $("join").title = w.coming_soon;
+  text($("browse-title"), w.browse);
+  $("browse-search").placeholder = w.search_mods;
+  text($("browse-refresh"), w.refresh_list);
+  text($("browse-back"), w.back);
+  text($("browse-help"), w.browse_help);
   text($("drop-text"), w.drop_here);
   if (state.status) renderStatus(state.status); else text($("status"), w.looking);
   render();
@@ -84,7 +90,7 @@ function renderStatus(status) {
 function render() {
   renderSets();
   renderLibrary();
-  if (state.editing) renderEditor(); else renderActive();
+  if (state.browse) renderBrowse(); else if (state.editing) renderEditor(); else renderActive();
 }
 
 function useLists(res) {
@@ -128,11 +134,13 @@ function renderSets() {
       if (state.playing) return;
       state.active = set.id;
       state.editing = null;
+      state.browse = null;
       render();
     });
     return el("li", {}, card);
   }));
   $("new-set").disabled = state.playing;
+  $("browse").disabled = state.playing;
 }
 
 // --- the active set ---
@@ -157,6 +165,7 @@ function renderActive() {
   const set = activeSet();
   $("set-view").classList.remove("hidden");
   $("editor").classList.add("hidden");
+  $("browse-view").classList.add("hidden");
   for (const row of $("set-view").querySelectorAll(".confirm")) row.remove();  // a question left from before
   if (!set) return;
   text($("active-name"), setName(set));
@@ -231,6 +240,7 @@ function renderEditor() {
   const w = state.words;
   const ed = state.editing;
   $("set-view").classList.add("hidden");
+  $("browse-view").classList.add("hidden");
   const form = $("editor");
   form.classList.remove("hidden");
   const name = el("input", { value: ed.name, maxLength: 60, required: true, placeholder: w.set_name, autocomplete: "off" });
@@ -289,6 +299,95 @@ function renderEditor() {
     } catch (err) { problem(err); save.disabled = false; }
   };
   if (!ed.id && !ed.name) name.focus();
+}
+
+// --- Browse mods: the mod index (MOD_FORMAT §15), installs checked against it ---
+async function openBrowse(fresh) {
+  state.editing = null;
+  state.browse = state.browse || { mods: [], source: "", as_of: "", message: "", search: "", busy: {} };
+  state.browse.loading = true;
+  render();
+  try {
+    const res = await api().browse(state.browse.search, Boolean(fresh));
+    Object.assign(state.browse, res, { loading: false });
+  } catch (err) { state.browse.loading = false; problem(err); }
+  render();
+}
+
+function browseMessage(message, kind) {
+  const node = $("browse-message");
+  text(node, message);
+  node.className = "message" + (kind ? " " + kind : "");
+}
+
+function renderBrowse() {
+  const w = state.words;
+  const b = state.browse;
+  $("set-view").classList.add("hidden");
+  $("editor").classList.add("hidden");
+  $("browse-view").classList.remove("hidden");
+  if ($("browse-search").value !== b.search) $("browse-search").value = b.search;
+  const note = $("browse-note");
+  if (b.source === "cache") text(note, fill(w.offline_note, { date: b.as_of }));
+  else if (b.source === "none") text(note, fill(w.list_failed, { why: b.message }));
+  else if (!b.loading && !b.mods.length) text(note, w.list_empty);
+  else text(note, "");
+  note.classList.toggle("hidden", !note.textContent);
+  $("browse-list").replaceChildren(...b.mods.map((mod) => {
+    const meta = [mod.version ? fill(w.version_v, { v: mod.version }) : "", mod.author ? fill(w.by, { authors: mod.author }) : "",
+      mod.size_text, mod.game_build ? fill(w.for_build, { build: mod.game_build }) : ""].filter(Boolean).join(" · ");
+    const li = el("li", { className: "mod-card browse-card" },
+      el("span", { className: "name", textContent: mod.name }),
+      el("span", { className: "meta", textContent: meta }));
+    if (mod.description) li.append(el("span", { className: "desc", textContent: mod.description }));
+    if (mod.tags && mod.tags.length) li.append(el("span", { className: "tags", textContent: mod.tags.join(" · ") }));
+    if (mod.homepage) {
+      const link = el("button", { type: "button", className: "link", textContent: w.more_info });
+      link.addEventListener("click", () => api().open_link(mod.homepage).catch(problem));
+      li.append(link);
+    }
+    const busy = Boolean(b.busy[mod.id]);
+    const label = busy ? w.installing : mod.state === "installed" ? w.installed
+      : mod.state === "update" ? fill(w.update_to, { v: mod.version }) : w.install;
+    const button = el("button", { type: "button", className: "small", textContent: label,
+      disabled: busy || mod.state === "installed" || state.playing });
+    button.addEventListener("click", () => installFromIndex(mod));
+    li.append(button);
+    return li;
+  }));
+}
+
+function followJob(job, onEnd) {
+  let seen = 0;
+  const tick = async () => {
+    let j;
+    try { j = await api().job(job, seen); } catch (err) { onEnd({ state: "failed", message: err.message }); return; }
+    seen = j.count;
+    if (j.state === "running") { setTimeout(tick, 400); return; }
+    onEnd(j);
+  };
+  tick();
+}
+
+async function installFromIndex(mod) {
+  const b = state.browse;
+  b.busy[mod.id] = true;
+  browseMessage(fill(state.words.installing, {}), "");
+  renderBrowse();
+  let job;
+  try { ({ job } = await api().install_from_index(mod.id)); }
+  catch (err) { delete b.busy[mod.id]; browseMessage(err.message, "bad"); renderBrowse(); return; }
+  followJob(job, async (j) => {
+    if (j.state === "done") {
+      try {
+        useLists({ sets: await api().mod_sets(), library: await api().library() });
+        if (state.browse) Object.assign(state.browse, await api().browse(b.search, false));
+      } catch (err) { problem(err); }
+    }
+    delete b.busy[mod.id];
+    browseMessage(j.message, j.state === "done" ? "good" : "bad");
+    render();
+  });
 }
 
 // --- the mod library ---
@@ -402,11 +501,21 @@ async function start() {
   $("play").addEventListener("click", play);
   $("new-set").addEventListener("click", () => openEditor(null));
   $("add-mod").addEventListener("click", addModFile);
+  $("browse").addEventListener("click", () => openBrowse(true));
+  $("browse-refresh").addEventListener("click", () => openBrowse(true));
+  $("browse-back").addEventListener("click", () => { state.browse = null; render(); });
+  let searching = null;
+  $("browse-search").addEventListener("input", (e) => {
+    if (!state.browse) return;
+    state.browse.search = e.target.value;
+    clearTimeout(searching);
+    searching = setTimeout(() => openBrowse(false), 200);
+  });
   $("choose").addEventListener("click", async () => {
     try { renderStatus(await api().choose_game_folder()); await refresh(); } catch (err) { problem(err); }
   });
   window.addEventListener("focus", () => {
-    if (!state.playing && !state.editing) refresh();  // anything changed while the launcher was in the background
+    if (!state.playing && !state.editing && !state.browse) refresh();  // anything changed while the launcher was away
   });
   watchDrops();
   await setLanguage(state.lang);

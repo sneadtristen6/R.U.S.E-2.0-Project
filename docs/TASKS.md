@@ -129,6 +129,10 @@ with the launcher's "Add a mod file…" (Task B).
 
 ### Task D: Browse mods — branch `cloud/browse-mods` (PLAN §10 step 5)
 
+**Status (2026-09-29): code done, in a pull request from `cloud/browse-mods` (on Task C's branch until pull requests
+#2 and #4 merge).** Waiting on the owner: create the public repository `sneadtristen6/Ruse-Mods` with an
+`index.toml` (MOD_FORMAT §15 shows one), then test with the real launcher.
+
 **Goal:** players find and install mods inside the launcher. No server: a GitHub repository is the index.
 
 **Build:**
