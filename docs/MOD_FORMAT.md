@@ -559,3 +559,44 @@ v1 needs no server. A join code names the game build, the mods and their exact v
    (112 `.dic` files each). New text must also update each file's character list (key `0x8000000000000000`).
 5. The exact gameplay/cosmetic split (depends on what the desync checker hashes).
 6. Scenario source format: design it once the binary format is decoded (M6).
+
+## 15. The mod index (Browse mods)
+
+Built: `src/rusemod/mod_index.py`, the launcher's "Browse mods" (TASKS.md D, 2026-09-29). No server of ours: a
+small public git repository is the index, GitHub serves its file, and GitHub Releases hold the packages.
+
+- **The repository:** `sneadtristen6/Ruse-Mods` (the owner creates it; until then the launcher can be pointed at any
+  copy with the `index_url` setting in `settings.json`). Its `index.toml` is what the launcher reads
+  (`https://raw.githubusercontent.com/sneadtristen6/Ruse-Mods/main/index.toml`).
+- **The file:**
+
+  ```toml
+  format = 1
+
+  [[mod]]
+  id          = "airfield-capacity"                # the mod's id (mod.toml), lowercase letters, digits and -
+  name        = "Airfield Capacity"
+  version     = "1.0.0"
+  author      = "…"
+  description = "Airfields hold 128 planes instead of 8."
+  homepage    = "https://github.com/…"             # optional: "More about this mod"
+  download    = "https://github.com/…/releases/download/airfield-capacity-1.0.0/airfield-capacity-1.0.0.rusemod"
+  size        = 1234                               # bytes of the package
+  sha256      = "…"                                # 64 hex characters, of the package
+  game_build  = "24670294"                         # the build it was made on (mod.toml [game] builds)
+  fingerprint = "K7Q2-M9XD"                        # from the export (§12), for join codes later
+  tags        = ["gameplay", "air"]
+  ```
+
+  `id`, `version`, `download` (an `https://` link), `size` and `sha256` are required; an entry that lacks one, or
+  repeats an id, is skipped and listed in the launcher's log, never the whole list. A `format` above 1 means "made
+  for a newer launcher".
+- **Adding a mod:** export it from the Studio (§2), attach the `.rusemod` to a GitHub Release (of the mod's own
+  repository, or of the index repository), and open a pull request to the index repository that adds the
+  `[[mod]]` entry with the file's size and SHA-256. A new version is a new entry line: change `version`,
+  `download`, `size`, `sha256` (a published file never changes, §12).
+- **What the launcher does:** fetches the list (10 s timeout), keeps a copy in `<home>/index/` and shows that copy
+  when offline, saying from when it is; marks each entry against the library ("new", "update available",
+  "installed"); on Install, downloads the package, checks the size and the SHA-256 against the entry (anything else
+  is deleted and refused), then adds it through the library like a file the player picked (§2). The list is
+  searched by id, name, author, description and tags.

@@ -49,12 +49,26 @@
         </details>
       </div>
       <form id="editor" class="editor hidden"></form>
+      <div id="browse-view" class="browse hidden">
+        <div class="set-head">
+          <h1 id="browse-title"></h1>
+          <div class="set-actions">
+            <input id="browse-search" type="search" autocomplete="off">
+            <button id="browse-refresh" class="small ghost" type="button"></button>
+            <button id="browse-back" class="small ghost" type="button"></button>
+          </div>
+        </div>
+        <p id="browse-help" class="muted"></p>
+        <p id="browse-note" class="muted note hidden"></p>
+        <ul id="browse-list" class="browse-list"></ul>
+        <p id="browse-message" class="message"></p>
+      </div>
     </section>
   </main>
 
   <footer class="bottom">
     <button id="join" class="small ghost" type="button" disabled></button>
-    <button id="browse" class="small ghost" type="button" disabled></button>
+    <button id="browse" class="small ghost" type="button"></button>
   </footer>
 
   <div id="drop-zone" class="drop-zone hidden"><span id="drop-text"></span></div>

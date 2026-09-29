@@ -480,3 +480,21 @@ import); the cloud tab's pull request #1 (Task A) is under review.
   values, cancel, a broken mod, no game); the launcher installing a file made by `pack` and playing a set with it.
 - **Not done, on purpose:** the installer's file type (double-clicking a `.rusemod` in Explorer), join codes, and
   the release.
+
+### 2026-09-29, cloud session: Browse mods (TASKS.md D, pull request `cloud/browse-mods`)
+
+- **What a player sees:** "Browse mods" at the bottom of the launcher opens the community's list: each mod with its
+  name, version, author, size, description, tags, the game build it was made on and a link to its page; a search
+  box; Install (or "Update to 1.1.0", or "Installed"). Install downloads the file, checks its size and checksum
+  against the list, puts it in the library and says so; the mod then appears in the library and can be ticked in a
+  mod set. Offline, the list is the copy from before, and a line says from when.
+- **The index:** a public GitHub repository's `index.toml` (MOD_FORMAT §15: the file, the required fields, how a
+  modder adds an entry by pull request). `rusemod.mod_index` fetches it with a timeout, keeps the copy in
+  `<home>/index/`, checks every entry (a bad one is skipped and named, not the whole list), verifies downloads by
+  size and SHA-256, and marks entries against the library. The launcher's `index_url` setting points elsewhere for
+  tests and mirrors.
+- **Tests:** the index on a local web server (read online, the copy offline, entries checked one by one, downloads
+  refused when the file isn't the promised one or is missing); the launcher's list, states and search, an install
+  that then plays in a set, refusals, and offline.
+- **Not done, on purpose:** the index repository itself (the owner's), screenshots and ratings (PLAN L5 later),
+  and the release.

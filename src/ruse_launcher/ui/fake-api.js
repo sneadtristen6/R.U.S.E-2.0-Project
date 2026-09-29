@@ -24,7 +24,12 @@
       version_v: "version {v}", by: "by {authors}", made_for: "made for game build {builds}",
       your_build: "you have {build}, so it may not fit", used_in_one: "in 1 mod set", used_in: "in {n} mod sets",
       library_empty: "No mods yet. Add a mod file, or drop one on this window.", mod_added: "{name} was added to the library.",
-      mod_updated: "{name} was replaced by version {v}.", mod_removed: "{name} was removed from the library." },
+      mod_updated: "{name} was replaced by version {v}.", mod_removed: "{name} was removed from the library.",
+      search_mods: "Search mods", back: "Back", install: "Install", update_to: "Update to {v}", installed: "Installed",
+      installing: "Installing…", offline_note: "No connection to the mod list. This is the copy from {date}.",
+      list_failed: "The mod list couldn't be loaded: {why}", list_empty: "No mods match.", for_build: "for game build {build}",
+      more_info: "More about this mod", refresh_list: "Refresh",
+      browse_help: "Mods from the community's list. Install puts one in your library; then tick it in a mod set." },
     fr: { language: "Langue", looking: "Recherche de R.U.S.E.…", choose_folder: "Choisir le dossier…",
       mod_sets: "Ensembles de mods", vanilla: "Jeu d'origine", vanilla_desc: "Le jeu tel que Steam l'a installé.",
       no_mods: "Aucun mod", one_mod: "1 mod", n_mods: "{n} mods", has_mistake: "Contient une erreur",
@@ -47,7 +52,12 @@
       used_in: "dans {n} ensembles de mods",
       library_empty: "Pas encore de mod. Ajoutez un fichier de mod, ou déposez-en un dans cette fenêtre.",
       mod_added: "{name} a été ajouté à la bibliothèque.", mod_updated: "{name} a été remplacé par la version {v}.",
-      mod_removed: "{name} a été retiré de la bibliothèque." },
+      mod_removed: "{name} a été retiré de la bibliothèque.",
+      search_mods: "Rechercher des mods", back: "Retour", install: "Installer", update_to: "Mettre à jour vers {v}",
+      installed: "Installé", installing: "Installation…", offline_note: "Pas de connexion à la liste des mods. Voici la copie du {date}.",
+      list_failed: "La liste des mods n'a pas pu être chargée : {why}", list_empty: "Aucun mod ne correspond.",
+      for_build: "pour la version du jeu {build}", more_info: "En savoir plus sur ce mod", refresh_list: "Actualiser",
+      browse_help: "Les mods de la liste de la communauté. Installer le place dans votre bibliothèque ; cochez-le ensuite dans un ensemble de mods." },
     sc: { language: "语言", looking: "正在查找 R.U.S.E.…", choose_folder: "选择文件夹…", mod_sets: "模组组合", vanilla: "原版",
       vanilla_desc: "Steam 安装的原始游戏。", no_mods: "无模组", one_mod: "1 个模组", n_mods: "{n} 个模组", has_mistake: "有错误",
       set_mistake: "此模组组合有错误:{error}", play: "开始游戏", play_set: "以 {name} 开始游戏", getting_ready: "正在准备…",
@@ -61,7 +71,11 @@
       adding: "正在添加模组…", remove: "移除", really_remove_mod: "从库中移除 {name}?使用它的模组组合在它重新添加之前无法使用。",
       version_v: "版本 {v}", by: "作者:{authors}", made_for: "适用于游戏版本 {builds}", your_build: "你的版本是 {build},可能不兼容",
       used_in_one: "用于 1 个模组组合", used_in: "用于 {n} 个模组组合", library_empty: "还没有模组。请添加模组文件,或将其拖放到此窗口。",
-      mod_added: "{name} 已添加到库中。", mod_updated: "{name} 已替换为版本 {v}。", mod_removed: "已从库中移除 {name}。" },
+      mod_added: "{name} 已添加到库中。", mod_updated: "{name} 已替换为版本 {v}。", mod_removed: "已从库中移除 {name}。",
+      search_mods: "搜索模组", back: "返回", install: "安装", update_to: "更新到 {v}", installed: "已安装", installing: "正在安装…",
+      offline_note: "无法连接到模组列表。这是 {date} 的副本。", list_failed: "无法加载模组列表：{why}", list_empty: "没有匹配的模组。",
+      for_build: "适用于游戏版本 {build}", more_info: "关于此模组的更多信息", refresh_list: "刷新",
+      browse_help: "来自社区列表的模组。安装后进入你的库；然后在模组组合中勾选它。" },
   };
   const build = "24687178";
   // Sample data for the preview only: mods that exist in the repo's mods/ folder, nobody's name on them.
@@ -120,6 +134,31 @@
     "modded copy ready: D:\\RUSE-Instances\\my-set  {'linked': 37, 'copied': 23, 'written': 1}",
     "Starting R.U.S.E. from the modded copy…",
   ];
+  // Sample data for the preview only: mods from the repo's mods/ folder with their real sizes and checksums; the
+  // download links are placeholders until the mod index repository exists (MOD_FORMAT §15).
+  const listed = [
+    { id: "airfield-capacity", name: "Airfield Capacity", version: "1.0.0", author: "", description: "Raises the number of planes that can fit in an Airfield from 8 to 128.",
+      homepage: "https://github.com/sneadtristen6/Ruse-Mod-Platform/tree/main/mods/airfield-capacity",
+      download: "https://example.invalid/airfield-capacity-1.0.0.rusemod", size: 1315, sha256: "ae22dfd4ab5ff56254fff98e8d8a27b486f4ec5c821db83211c62b35aeb0f25a",
+      game_build: "24087620", fingerprint: "", tags: ["air"] },
+    { id: "passable-forests", name: "Passable Forests", version: "1.0.0", author: "", description: "Lets every tank, tank destroyer, AA vehicle, and mobile artillery/assault gun enter forest terrain the way recon vehicles already can, by removing the InitialFlagSet flags (11, 21, 55) that block forest entry. Confirmed in-game on the M4 Sherman before rolling out to the full roster.",
+      homepage: "https://github.com/sneadtristen6/Ruse-Mod-Platform/tree/main/mods/passable-forests",
+      download: "https://example.invalid/passable-forests-1.0.0.rusemod", size: 2744, sha256: "1fe29ca1b796b3e6034f1a4710d6ed0f10236f487ec88492a3550b19692d2102",
+      game_build: "24087620", fingerprint: "", tags: ["movement"] },
+    { id: "cheat-mod-v2", name: "Cheat Mod 2.0", version: "2.0.0", author: "", description: "Every unit AND every building costs $1 to build, every unit's ProductionTime is 0, and the global MinProductionTime floor is lowered to 0.01 seconds so 0-second production actually takes effect instead of being clamped back up to 1 second. Extends the example Cheat Mod (units-only $1 pricing) with building pricing and the confirmed-working instant-production fix.",
+      homepage: "https://github.com/sneadtristen6/Ruse-Mod-Platform/tree/main/mods/cheat-mod-v2",
+      download: "https://example.invalid/cheat-mod-v2-2.0.0.rusemod", size: 4918, sha256: "e010c5cc810fdc29a84704f4bc73dedd671132bd18adb9896e2867a03fae587c",
+      game_build: "24087620", fingerprint: "", tags: ["testing"] },
+  ];
+  const sizeText = (n) => n < 1e6 ? `${Math.max(1, Math.round(n / 1000))} KB` : `${(n / 1e6).toFixed(1)} MB`;
+  const browseView = (search) => {
+    const q = (search || "").toLowerCase();
+    const have = Object.fromEntries(library.map((m) => [m.id, m.version]));
+    const mods = listed.filter((m) => !q || `${m.id} ${m.name} ${m.author} ${m.description} ${m.tags.join(" ")}`.toLowerCase().includes(q))
+      .map((m) => ({ ...m, state: !have[m.id] ? "new" : have[m.id] < m.version ? "update" : "installed",
+        installed_version: have[m.id] || "", size_text: sizeText(m.size) }));
+    return { mods, source: mode === "offline" ? "cache" : "online", as_of: "2026-09-29 20:30", message: "", problems: [] };
+  };
   let playing = null;
   window.pywebview = {
     api: {
@@ -168,13 +207,28 @@
         return lists({ set: "vanilla" });
       },
       play: async (id) => {
-        playing = { id, step: 0, lines: id === "vanilla" ? ["Starting R.U.S.E. through Steam…"] : script };
+        playing = { id, step: 0, lines: id === "vanilla" ? ["Starting R.U.S.E. through Steam…"] : script,
+          message: "R.U.S.E. is starting." };
         return { job: "fake" };
       },
+      browse: async (search) => browseView(search),
+      install_from_index: async (id) => {
+        const m = listed.find((x) => x.id === id);
+        if (!m) throw new Error(`There's no mod called '${id}' in the mod list.`);
+        playing = { id: "install", step: 0, message: `${m.name} is in the library.`,
+          lines: [`Downloading ${m.name} ${m.version} (${sizeText(m.size)})…`, "The file matches the mod list (size and checksum).",
+            `${m.name} ${m.version} is in the library.`],
+          then: () => { library = library.filter((x) => x.id !== m.id); library.push({ id: m.id, name: m.name, version: m.version,
+            authors: m.author ? [m.author] : [], author: m.author, description: m.description, builds: m.game_build ? [m.game_build] : [],
+            used_in: 0 }); library.sort((a, b) => a.name.localeCompare(b.name)); } };
+        return { job: "install" };
+      },
+      open_link: async (url) => ({ opened: url }),
       job: async (_job, since) => {
         playing.step = Math.min(playing.step + 2, playing.lines.length);
         const done = playing.step >= playing.lines.length;
-        return { id: "fake", state: done ? "done" : "running", message: done ? "R.U.S.E. is starting." : "",
+        if (done && playing.then) { playing.then(); playing.then = null; }
+        return { id: "fake", state: done ? "done" : "running", message: done ? playing.message : "",
           lines: playing.lines.slice(since, playing.step), count: playing.step };
       },
     },

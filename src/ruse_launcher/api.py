@@ -28,8 +28,10 @@ import time
 import tomllib
 from pathlib import Path
 
+from rusemod import mod_index
 from rusemod import play as game_start, schema
 from rusemod.build import BuildError
+from rusemod.mod_index import DEFAULT_URL, ModIndexError, size_text, states
 from rusemod.home import default_home, game_dir as find_game_dir, save_settings, settings
 from rusemod.play import Starter, instances_dir
 from rusemod.rndf import RndfError
@@ -83,7 +85,7 @@ class LauncherApi:
 
     def __init__(self, game_dir=None, home=None, instances=None, open_url=game_start.open_url,
                  start_game=game_start.start_game, steam_running=game_start.steam_running, find=find_game,
-                 wait=time.sleep, pick_folder=None, pick_file=None, ui_language=pc_language):
+                 wait=time.sleep, pick_folder=None, pick_file=None, ui_language=pc_language, index_url=None):
         self._game_dir = Path(game_dir) if game_dir else None
         self._home = Path(home) if home else default_home()
         self._instances = Path(instances) if instances else None
@@ -94,6 +96,8 @@ class LauncherApi:
         self._ui_language = ui_language
         self._library = Library(self._home / "library")
         self._jobs: dict[str, Job] = {}
+        self._index_url_given = index_url   # tests: a local web server instead of the mod index on GitHub
+        self._index: mod_index.IndexResult | None = None  # the mod list as last fetched, for search and installs
 
     # --- words ---
     def languages(self) -> list[dict]:
@@ -178,6 +182,61 @@ class LauncherApi:
         except LibraryError as exc:
             raise LauncherError(str(exc)) from None
         return self._lists(mod=info)
+
+    # --- browse mods: the mod index (MOD_FORMAT §15) ---
+    def _index_url(self) -> str:
+        return self._index_url_given or settings(self._home).get("index_url") or DEFAULT_URL
+
+    def browse(self, search: str = "", fresh: bool = False) -> dict:
+        """The mods in the mod index, each with its state next to the library ("new", "update" available, or
+        "installed"), filtered by `search` (id, name, author, description, tags). The list is fetched once per
+        launcher run, or again with `fresh`; offline it is the copy from before, and `message` says so."""
+        if fresh or self._index is None:
+            try:
+                self._index = mod_index.fetch(self._index_url(), self._home / "index")
+            except ModIndexError as exc:
+                return {"mods": [], "source": "none", "as_of": "", "message": str(exc), "problems": []}
+        result = self._index
+        mods = states([dict(m) for m in result.mods], {m["id"]: m["version"] for m in self._library.mods()})
+        q = (search or "").strip().lower()
+        if q:
+            mods = [m for m in mods if q in " ".join([m["id"], m["name"], m["author"], m["description"]] + m["tags"]).lower()]
+        for m in mods:
+            m["size_text"] = size_text(m["size"])
+        return {"mods": mods, "source": result.source, "as_of": result.as_of, "message": result.message,
+                "problems": list(result.problems)}
+
+    def install_from_index(self, mod_id: str) -> dict:
+        """Download a mod from the mod index, check it against the list (size and checksum) and add it to the
+        library, in the background. Returns {'job': id}; follow it with job(id)."""
+        if self._index is None:
+            self.browse()
+        entry = next((m for m in (self._index.mods if self._index else []) if m["id"] == mod_id), None)
+        if entry is None:
+            raise LauncherError(f"There's no mod called {mod_id!r} in the mod list.")
+
+        def work(say):
+            say(f"Downloading {entry['name']} {entry['version']} ({size_text(entry['size'])})…")
+            file = mod_index.download(entry, self._home / "downloads")
+            say("The file matches the mod list (size and checksum).")
+            try:
+                info, replaced = self._library.add(file)
+            except LibraryError as exc:
+                raise ModIndexError(str(exc)) from None
+            finally:
+                file.unlink(missing_ok=True)
+            say(f"{info['name']} {info['version']} is in the library" + (" (it replaced the older copy)." if replaced else "."))
+
+        job = Job()
+        self._jobs[job.id] = job
+        return job.start(work, f"{entry['name']} is in the library.", plain=(ModIndexError, OSError))
+
+    def open_link(self, url: str) -> dict:
+        """Open a mod's page in the browser (https links only)."""
+        if not str(url).lower().startswith("https://"):
+            raise LauncherError("Only https:// links open from here.")
+        self._open_url(str(url))
+        return {"opened": str(url)}
 
     # --- mod sets ---
     def _sets_dir(self) -> Path:

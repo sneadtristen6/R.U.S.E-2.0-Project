@@ -14,6 +14,7 @@ players and **RUSE Studio 0.4.1** for modders (a preview). Windows only; your br
 | | ![RUSE Studio's Maps: Centre of Gravity in 3D, with its real ground](docs/images/studio-maps.jpg) |
 
 **Current stage (2026-09-29):**
+- **Browse mods** (in review): the launcher lists the community's mods from a GitHub index and installs them.
 - **A mod as one file** (in review): the Studio exports `<id>-<version>.rusemod`, the launcher installs it.
 - **New units work in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory;
   it's built and fights like any other unit (C7).
@@ -75,7 +76,9 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
     Steam). `py -3 -m ruse_launcher`. **In review (0.2): players never touch a file.** A mod library ("Add a mod
     file…" for a `.rusemod` from the Studio or a `.zip`, or drop a mod file or folder on the window; each mod is
     checked first), mod sets made on screen (new,
-    edit and reorder, rename, duplicate, delete), and the launcher in the PC's own language (any of the game's ten).
+    edit and reorder, rename, duplicate, delete), and the launcher in the PC's own language (any of the game's ten). **In review (0.3): "Browse mods"**, a list of the
+    community's mods from a GitHub repository (MOD_FORMAT §15), with Install: the file is checked against the list
+    before it goes into the library; offline, the last copy of the list.
   - **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), v0.4), for modders: browse every unit and building, see a
     unit's values, parts and what uses it, and pick a language: the game's own names by default, or any of the
     game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is saved in
