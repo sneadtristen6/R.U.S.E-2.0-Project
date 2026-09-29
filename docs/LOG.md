@@ -437,3 +437,28 @@ import); the cloud tab's pull request #1 (Task A) is under review.
   names file left alone. The browser preview (`index.html?fake`) shows the whole flow.
 - **Not done, on purpose:** per-language names (the names file gets their columns then; today it's rewritten with one), moving an existing
   unit to another menu, and the release (no version bump: the PC session's in-game check comes first).
+
+### 2026-09-29, cloud session: mod sets made in the launcher (TASKS.md B, pull request `cloud/launcher-mod-sets`)
+
+- **What a player sees:** under the mod sets, a **Mod library**: "Add a mod file…" opens a file dialog (a `.zip`, or
+  a mod's `mod.toml`); dropping a mod folder or `.zip` anywhere on the window does the same. Each mod is checked
+  first (the engine reads it the way a build would; scripts and programs are refused) and listed with its name,
+  version, author, description, the game build it was made for (and a note when that isn't the installed one) and
+  how many mod sets use it; **Remove** takes it out again. **New mod set…** asks for a name and the mods to tick, in
+  order (the lower one wins when two change the same thing; the set's order now counts in the build,
+  `rusemod.play.keep_order`). A set's page has **Edit** (mods and order), **Rename**, **Duplicate** and **Delete**.
+  Every change comes back with the fresh lists, so nothing needs a restart, and every refusal says what to do next.
+  The launcher starts in the PC's own language when the game has it (`words.toml`, ten languages, a selector at
+  the top right); nothing on screen mentions a file.
+- **How it's kept:** the library is `<home>/library/<mod id>/`; sets stay TOML files in `<home>/sets/`, now listing
+  library mods by id (a hand-written set with folder paths still works, and can be edited on screen). A dropped
+  file's path never reaches the page's JavaScript: pywebview's Windows side hands it to a Python drop handler
+  (`rusemod.webui.on_file_drop`), which adds the mod and tells the page. That part needs the real window, so the PC
+  session checks it.
+- **Tests:** the library (a folder, the file inside it, a zip from its top or one folder, a newer version replacing
+  the old, refusals: a broken `.rndf`, a script inside, no `mod.toml`, a bad id, a zip that would write outside its
+  folder), removing (sets that used it say so), the file dialog and dropped paths, sets (new, edit and reorder,
+  rename, duplicate, delete, unique ids, refusals with plain messages), Play from a set made on screen in both
+  orders (the later mod wins), hand-written sets, the words (complete, all used) and the start language.
+- **Not done, on purpose:** double-clicking a mod file in Explorer (the installer's file type), join codes, Browse
+  mods, and the release (no version bump: the PC session's check with the real window comes first).

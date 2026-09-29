@@ -1,98 +1,384 @@
-// The home screen (PLAN.md L5, screen 6). It talks to LauncherApi (launcher/api.py) through
-// window.pywebview.api; in a normal browser, open index.html?fake to use the made-up API in fake-api.js.
+// The home screen (PLAN.md L5, screen 6): mod sets on the left with the mod library under them, the active set and
+// Play on the right. Mod sets are made and changed here (new, edit, rename, duplicate, delete); mods come into the
+// library from a file dialog or by dropping them on the window. It talks to LauncherApi (ruse_launcher/api.py)
+// through window.pywebview.api; in a normal browser, open index.html?fake to use the made-up API in fake-api.js.
 "use strict";
 
 const $ = (id) => document.getElementById(id);
-const state = { sets: [], active: "vanilla", playing: false };
+const state = { lang: "us", words: {}, languages: [], status: null, sets: [], library: [], active: "vanilla",
+  playing: false, editing: null };  // editing: { id (null for a new set), name, mods: [entries in order] }
 
 function api() {
   return window.pywebview.api;
 }
 
-function text(el, value) {
-  el.textContent = value || "";
+function el(tag, props, ...children) {
+  const node = document.createElement(tag);
+  Object.assign(node, props || {});
+  for (const c of children) node.append(c);
+  return node;
 }
 
+function text(node, value) {
+  node.textContent = value || "";
+}
+
+function fill(word, values) {
+  return Object.entries(values || {}).reduce((s, [k, v]) => s.split(`{${k}}`).join(String(v)), word || "");
+}
+
+function loadLang() {
+  try { return localStorage.getItem("launcher.lang"); } catch { return null; }
+}
+
+function saveLang(lang) {
+  try { localStorage.setItem("launcher.lang", lang); } catch { /* private window: fine */ }
+}
+
+// --- messages ---
+function setMessage(message, kind) {
+  const node = $("play-message");
+  text(node, message);
+  node.className = "message" + (kind ? " " + kind : "");
+}
+
+function problem(err) {
+  setMessage((err && err.message) || String(err), "bad");
+}
+
+// --- words ---
+async function setLanguage(lang) {
+  state.lang = lang;
+  saveLang(lang);
+  state.words = await api().strings(lang);
+  const w = state.words;
+  text($("lang-label"), w.language);
+  $("lang").replaceChildren(...state.languages.map((l) =>
+    el("option", { value: l.code, textContent: l.name, selected: l.code === lang })));
+  text($("choose"), w.choose_folder);
+  text($("sets-title"), w.mod_sets);
+  text($("new-set"), w.new_set);
+  text($("library-title"), w.library);
+  text($("add-mod"), w.add_mod);
+  text($("drop-hint"), w.drop_hint);
+  text($("library-empty"), w.library_empty);
+  text($("details"), w.details);
+  text($("join"), w.join);
+  text($("browse"), w.browse);
+  $("join").title = $("browse").title = w.coming_soon;
+  text($("drop-text"), w.drop_here);
+  if (state.status) renderStatus(state.status); else text($("status"), w.looking);
+  render();
+}
+
+// --- the game ---
 function renderStatus(status) {
-  const el = $("status");
-  text(el, status.message);
-  el.className = "status " + (status.found ? "good" : "bad");
+  state.status = status;
+  const node = $("status");
+  text(node, status.message);
+  node.className = "status " + (status.found ? "good" : "bad");
   $("choose").classList.toggle("hidden", status.found);
 }
 
-function renderSets() {
-  const list = $("set-list");
-  list.replaceChildren();
-  for (const set of state.sets) {
-    const li = document.createElement("li");
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "set-card";
-    card.setAttribute("aria-pressed", String(set.id === state.active));
-    const name = document.createElement("span");
-    name.className = "name";
-    text(name, set.name);
-    const meta = document.createElement("span");
-    meta.className = set.error ? "warn" : "meta";
-    text(meta, set.error ? "Has a mistake" : set.id === "vanilla" ? "No mods" :
-      `${set.mods.length} mod${set.mods.length === 1 ? "" : "s"}`);
-    card.append(name, meta);
-    card.addEventListener("click", () => {
-      if (state.playing) return;
-      state.active = set.id;
-      renderSets();
-      renderActive();
-    });
-    li.append(card);
-    list.append(li);
-  }
+// --- what's on screen ---
+function render() {
+  renderSets();
+  renderLibrary();
+  if (state.editing) renderEditor(); else renderActive();
 }
 
-function renderActive() {
-  const set = state.sets.find((s) => s.id === state.active) || state.sets[0];
-  if (!set) return;
-  text($("active-name"), set.name);
-  text($("active-description"), set.description);
-  const mods = $("active-mods");
-  mods.replaceChildren(...set.mod_names.map((n) => {
-    const li = document.createElement("li");
-    text(li, n);
-    return li;
-  }));
-  const err = $("active-error");
-  text(err, set.error ? `This mod set has a mistake: ${set.error}` : "");
-  err.classList.toggle("hidden", !set.error);
-  const play = $("play");
-  text(play, set.id === "vanilla" ? "Play" : `Play ${set.name}`);
-  play.disabled = state.playing || Boolean(set.error);
-}
-
-function setMessage(message, kind) {
-  const el = $("play-message");
-  text(el, message);
-  el.className = "message" + (kind ? " " + kind : "");
+function useLists(res) {
+  state.sets = res.sets;
+  state.library = res.library;
+  if (res.set) state.active = res.set;
+  if (!state.sets.some((s) => s.id === state.active)) state.active = "vanilla";
+  render();
 }
 
 async function refresh() {
-  renderStatus(await api().status());
-  state.sets = await api().mod_sets();
-  if (!state.sets.some((s) => s.id === state.active)) state.active = "vanilla";
-  renderSets();
-  renderActive();
+  try {
+    renderStatus(await api().status());
+    useLists({ sets: await api().mod_sets(), library: await api().library() });
+  } catch (err) { problem(err); }
 }
 
+function activeSet() {
+  return state.sets.find((s) => s.id === state.active) || state.sets[0];
+}
+
+function setName(set) {
+  return set.id === "vanilla" ? state.words.vanilla : set.name;
+}
+
+function modCount(set) {
+  const w = state.words;
+  if (set.error) return w.has_mistake;
+  if (!set.mods.length) return w.no_mods;
+  return set.mods.length === 1 ? w.one_mod : fill(w.n_mods, { n: set.mods.length });
+}
+
+// --- the list of mod sets ---
+function renderSets() {
+  $("set-list").replaceChildren(...state.sets.map((set) => {
+    const card = el("button", { type: "button", className: "set-card" },
+      el("span", { className: "name", textContent: setName(set) }),
+      el("span", { className: set.error ? "warn" : "meta", textContent: modCount(set) }));
+    card.setAttribute("aria-pressed", String(set.id === state.active));
+    card.addEventListener("click", () => {
+      if (state.playing) return;
+      state.active = set.id;
+      state.editing = null;
+      render();
+    });
+    return el("li", {}, card);
+  }));
+  $("new-set").disabled = state.playing;
+}
+
+// --- the active set ---
+function confirmRow(question, yesText, onYes, holder, trigger) {
+  const w = state.words;
+  const row = el("div", { className: "confirm" }, el("span", { textContent: question }));
+  const yes = el("button", { type: "button", className: "small danger", textContent: yesText });
+  const no = el("button", { type: "button", className: "small ghost", textContent: w.cancel });
+  yes.addEventListener("click", async () => {
+    yes.disabled = true;
+    try { await onYes(); } catch (err) { problem(err); if (trigger) trigger.disabled = false; }
+    row.remove();
+  });
+  no.addEventListener("click", () => { row.remove(); if (trigger) trigger.disabled = false; });
+  row.append(yes, no);
+  holder.append(row);
+  yes.focus();
+}
+
+function renderActive() {
+  const w = state.words;
+  const set = activeSet();
+  $("set-view").classList.remove("hidden");
+  $("editor").classList.add("hidden");
+  for (const row of $("set-view").querySelectorAll(".confirm")) row.remove();  // a question left from before
+  if (!set) return;
+  text($("active-name"), setName(set));
+  text($("active-description"), set.id === "vanilla" ? w.vanilla_desc : set.description);
+  const actions = $("set-actions");
+  actions.replaceChildren();
+  if (set.editable && !state.playing) {
+    const edit = el("button", { type: "button", className: "small ghost", textContent: w.edit });
+    edit.addEventListener("click", () => openEditor(set));
+    const rename = el("button", { type: "button", className: "small ghost", textContent: w.rename });
+    rename.addEventListener("click", () => renameSet(set));
+    const dup = el("button", { type: "button", className: "small ghost", textContent: w.duplicate });
+    dup.addEventListener("click", async () => {
+      dup.disabled = true;
+      try {
+        useLists(await api().duplicate_set(set.id, fill(w.copy_name, { name: set.name })));
+        setMessage(fill(w.set_saved, { name: activeSet().name }), "good");
+      } catch (err) { problem(err); dup.disabled = false; }
+    });
+    const del = el("button", { type: "button", className: "small ghost danger", textContent: w.delete });
+    del.addEventListener("click", () => {
+      del.disabled = true;
+      confirmRow(fill(w.really_delete_set, { name: set.name }), w.delete, async () => {
+        useLists(await api().delete_set(set.id));
+        setMessage(fill(w.set_deleted, { name: set.name }), "good");
+      }, $("set-view"), del);
+    });
+    actions.append(edit, rename, dup, del);
+  }
+  $("active-mods").replaceChildren(...set.mod_names.map((n) => el("li", { textContent: n })));
+  const err = $("active-error");
+  text(err, set.error ? fill(w.set_mistake, { error: set.error }) : "");
+  err.classList.toggle("hidden", !set.error);
+  const play = $("play");
+  text(play, set.id === "vanilla" ? w.play : fill(w.play_set, { name: set.name }));
+  play.disabled = state.playing || Boolean(set.error);
+}
+
+function renameSet(set) {
+  const w = state.words;
+  const head = $("active-name");
+  const box = el("input", { value: set.name, maxLength: 60, className: "rename" });
+  box.setAttribute("aria-label", w.set_name);
+  const save = el("button", { type: "button", className: "small", textContent: w.save });
+  const cancel = el("button", { type: "button", className: "small ghost", textContent: w.cancel });
+  const form = el("form", { className: "rename-form" }, box, save, cancel);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!box.value.trim()) return;
+    save.disabled = true;
+    try {
+      useLists(await api().save_set(set.id, box.value.trim()));
+      setMessage(fill(w.set_saved, { name: box.value.trim() }), "good");
+    } catch (err) { problem(err); save.disabled = false; }
+  });
+  save.addEventListener("click", () => form.requestSubmit());
+  cancel.addEventListener("click", () => renderActive());
+  head.replaceChildren(form);
+  $("set-actions").replaceChildren();
+  box.focus();
+  box.select();
+}
+
+// --- the editor: a new mod set, or a set's mods and their order ---
+function openEditor(set) {
+  state.editing = set ? { id: set.id, name: set.name, mods: set.mods.slice(), names: set.mod_names.slice() }
+    : { id: null, name: "", mods: [], names: [] };
+  render();
+}
+
+function renderEditor() {
+  const w = state.words;
+  const ed = state.editing;
+  $("set-view").classList.add("hidden");
+  const form = $("editor");
+  form.classList.remove("hidden");
+  const name = el("input", { value: ed.name, maxLength: 60, required: true, placeholder: w.set_name, autocomplete: "off" });
+  name.setAttribute("aria-label", w.set_name);
+  name.addEventListener("input", () => { ed.name = name.value; });
+  const rows = el("ul", { className: "pick-list" });
+  const known = new Map(state.library.map((m) => [m.id, m]));
+  const inSet = ed.mods.map((entry, i) => ({ entry, name: ed.names[i], mod: known.get(entry) || null, on: true }));
+  const others = state.library.filter((m) => !ed.mods.includes(m.id)).map((m) => ({ entry: m.id, name: m.name, mod: m, on: false }));
+  for (const [i, r] of inSet.concat(others).entries()) {
+    const tick = el("input", { type: "checkbox", checked: r.on });
+    tick.addEventListener("change", () => {
+      if (tick.checked) { ed.mods.push(r.entry); ed.names.push(r.name); }
+      else { const k = ed.mods.indexOf(r.entry); ed.mods.splice(k, 1); ed.names.splice(k, 1); }
+      renderEditor();
+    });
+    const label = el("label", {}, tick, " ", el("span", { className: "name", textContent: r.name }));
+    if (r.mod && r.mod.version) label.append(el("span", { className: "meta", textContent: " " + fill(w.version_v, { v: r.mod.version }) }));
+    if (!r.mod) label.append(el("span", { className: "meta", textContent: " · " + w.from_folder }));
+    const li = el("li", {}, label);
+    if (r.on) {
+      const up = el("button", { type: "button", className: "small ghost arrow", textContent: "↑", title: w.move_up, disabled: i === 0 });
+      const down = el("button", { type: "button", className: "small ghost arrow", textContent: "↓", title: w.move_down,
+        disabled: i === inSet.length - 1 });
+      up.setAttribute("aria-label", w.move_up);
+      down.setAttribute("aria-label", w.move_down);
+      const swap = (a, b) => {
+        [ed.mods[a], ed.mods[b]] = [ed.mods[b], ed.mods[a]];
+        [ed.names[a], ed.names[b]] = [ed.names[b], ed.names[a]];
+        renderEditor();
+      };
+      up.addEventListener("click", () => swap(i, i - 1));
+      down.addEventListener("click", () => swap(i, i + 1));
+      li.append(el("span", { className: "order" }, up, down));
+    }
+    rows.append(li);
+  }
+  const save = el("button", { type: "submit", className: "small", textContent: ed.id ? w.save : w.create });
+  const cancel = el("button", { type: "button", className: "small ghost", textContent: w.cancel });
+  cancel.addEventListener("click", () => { state.editing = null; render(); });
+  form.replaceChildren(
+    el("h1", { textContent: ed.id ? w.edit : w.new_set }),
+    el("label", { className: "field" }, el("span", { textContent: w.set_name }), name),
+    el("p", { className: "muted", textContent: state.library.length || ed.mods.length ? w.tick_mods : w.library_empty_for_set }),
+    rows,
+    el("div", { className: "actions" }, save, cancel));
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    if (!ed.name.trim()) { name.focus(); return; }
+    save.disabled = true;
+    try {
+      const res = ed.id ? await api().save_set(ed.id, ed.name.trim(), ed.mods) : await api().new_set(ed.name.trim(), ed.mods);
+      state.editing = null;
+      useLists(res);
+      setMessage(fill(w.set_saved, { name: ed.name.trim() }), "good");
+    } catch (err) { problem(err); save.disabled = false; }
+  };
+  if (!ed.id && !ed.name) name.focus();
+}
+
+// --- the mod library ---
+function buildNote(mod) {
+  const w = state.words;
+  if (!mod.builds.length) return "";
+  let note = fill(w.made_for, { builds: mod.builds.join(", ") });
+  const build = state.status && state.status.build;
+  if (build && !mod.builds.includes(build)) note += "; " + fill(w.your_build, { build });
+  return note;
+}
+
+function renderLibrary() {
+  const w = state.words;
+  $("library-empty").classList.toggle("hidden", state.library.length > 0);
+  $("mod-list").replaceChildren(...state.library.map((mod) => {
+    const meta = [mod.version ? fill(w.version_v, { v: mod.version }) : "", mod.author ? fill(w.by, { authors: mod.author }) : "",
+      mod.used_in ? (mod.used_in === 1 ? w.used_in_one : fill(w.used_in, { n: mod.used_in })) : ""].filter(Boolean).join(" · ");
+    const li = el("li", { className: "mod-card" },
+      el("span", { className: "name", textContent: mod.name }),
+      el("span", { className: "meta", textContent: meta }));
+    if (mod.description) li.append(el("span", { className: "meta", textContent: mod.description }));
+    const note = buildNote(mod);
+    if (note) li.append(el("span", { className: "meta", textContent: note }));
+    if (mod.error) li.append(el("span", { className: "warn", textContent: `${w.has_mistake}: ${mod.error}` }));
+    const remove = el("button", { type: "button", className: "small ghost danger", textContent: w.remove, disabled: state.playing });
+    remove.addEventListener("click", () => {
+      remove.disabled = true;
+      confirmRow(fill(w.really_remove_mod, { name: mod.name }), w.remove, async () => {
+        useLists(await api().remove_mod(mod.id));
+        setMessage(fill(w.mod_removed, { name: mod.name }), "good");
+      }, li, remove);
+    });
+    li.append(remove);
+    return li;
+  }));
+  $("add-mod").disabled = state.playing;
+}
+
+function added(res) {
+  const w = state.words;
+  useLists(res);
+  if (!res.mod) return;
+  setMessage(res.replaced ? fill(w.mod_updated, { name: res.mod.name, v: res.mod.version }) : fill(w.mod_added, { name: res.mod.name }), "good");
+}
+
+async function addModFile() {
+  const button = $("add-mod");
+  button.disabled = true;
+  try { added(await api().add_mod_file()); } catch (err) { problem(err); }
+  button.disabled = state.playing;
+}
+
+// Dropping a mod on the window: the page can't see a dropped file's path, so the window's own side adds the mod and
+// tells the page with a "mod-dropped" event (ruse_launcher/app.py; fake-api.js does the same for the preview).
+function dropping(on) {
+  $("drop-zone").classList.toggle("hidden", !on);
+}
+
+function watchDrops() {
+  let depth = 0;
+  window.addEventListener("dragenter", (e) => { e.preventDefault(); depth += 1; dropping(true); });
+  window.addEventListener("dragover", (e) => { e.preventDefault(); });
+  window.addEventListener("dragleave", () => { depth = Math.max(0, depth - 1); if (!depth) dropping(false); });
+  window.addEventListener("drop", (e) => {
+    e.preventDefault();
+    depth = 0;
+    dropping(false);
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) setMessage(state.words.adding, "");
+  });
+  window.addEventListener("mod-dropped", (e) => {
+    const res = e.detail;
+    if (res.ok) added(res); else setMessage(res.message, "bad");
+  });
+}
+
+// --- play ---
 async function play() {
   state.playing = true;
-  renderActive();
-  renderSets();
+  render();
   const log = $("log");
   log.textContent = "";
   $("progress").classList.remove("hidden");
-  setMessage("Getting everything ready…");
-  const { job } = await api().play(state.active);
+  setMessage(state.words.getting_ready);
+  let job;
+  try { ({ job } = await api().play(state.active)); } catch (err) { problem(err); state.playing = false; render(); return; }
   let seen = 0;
   const tick = async () => {
-    const j = await api().job(job, seen);
+    let j;
+    try { j = await api().job(job, seen); } catch (err) { problem(err); state.playing = false; render(); return; }
     for (const line of j.lines) log.textContent += line + "\n";
     log.scrollTop = log.scrollHeight;
     seen = j.count;
@@ -103,32 +389,35 @@ async function play() {
     state.playing = false;
     setMessage(j.message, j.state === "done" ? "good" : "bad");
     if (j.state === "failed") $("progress").open = true;
-    renderActive();
-    renderSets();
+    render();
   };
   tick();
 }
 
-function start() {
+async function start() {
+  state.languages = await api().languages();
+  state.lang = loadLang() || await api().default_language();
+  if (!state.languages.some((l) => l.code === state.lang)) state.lang = "us";
+  $("lang").addEventListener("change", (e) => setLanguage(e.target.value).catch(problem));
   $("play").addEventListener("click", play);
-  $("open-sets").addEventListener("click", async () => {
-    await api().open_sets_folder();
-  });
+  $("new-set").addEventListener("click", () => openEditor(null));
+  $("add-mod").addEventListener("click", addModFile);
   $("choose").addEventListener("click", async () => {
-    renderStatus(await api().choose_game_folder());
-    await refresh();
+    try { renderStatus(await api().choose_game_folder()); await refresh(); } catch (err) { problem(err); }
   });
   window.addEventListener("focus", () => {
-    if (!state.playing) refresh();  // mod sets edited while the launcher was in the background show up
+    if (!state.playing && !state.editing) refresh();  // anything changed while the launcher was in the background
   });
-  refresh();
+  watchDrops();
+  await setLanguage(state.lang);
+  await refresh();
 }
 
 let started = false;
 function startOnce() {
   if (started) return;
   started = true;
-  start();
+  start().catch(problem);
 }
 window.addEventListener("pywebviewready", startOnce);
 if (window.pywebview && window.pywebview.api && window.pywebview.api.status) startOnce();

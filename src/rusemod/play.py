@@ -42,6 +42,16 @@ def instances_dir(game: Path) -> Path:
     return Path(game.anchor) / "RUSE-Instances"
 
 
+def keep_order(mods) -> None:
+    """Make the given order of `mods` [(ModInfo, ops)] count for the load order: each mod loads after the one before
+    it, unless either of the two already says how they relate (a dependency, `after` or `before`)."""
+    for (prev, _ops), (info, _o) in zip(mods, mods[1:]):
+        related = prev.id in info.after or prev.id in info.before or prev.id in info.depends or \
+            info.id in prev.after or info.id in prev.before or info.id in prev.depends
+        if not related and prev.id != info.id:
+            info.after.append(prev.id)
+
+
 class Starter:
     """Starts the game. The arguments replace the real world in tests: opening links, starting the game, checking for
     Steam, and waiting for it."""
@@ -54,9 +64,12 @@ class Starter:
         self.open_url(STEAM_PLAY)
 
     def modded(self, game: Path, mod_folders, instance: Path, name: str, say) -> None:
-        """Build these mod folders into the modded copy `instance` and start the game from it. A problem raises
-        BuildError (or RndfError, OSError) with a message for the player, and nothing starts."""
+        """Build these mod folders into the modded copy `instance` and start the game from it. The folders' order
+        counts: a later mod comes after an earlier one, so it wins when both change the same value, unless the mods
+        themselves say otherwise (MOD_FORMAT §10.6). A problem raises BuildError (or RndfError, OSError) with a
+        message for the player, and nothing starts."""
         mods = [load_mod(Path(m)) for m in mod_folders]
+        keep_order(mods)
         say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")
         result = build_and_write(game, mods, instance=instance, say=say)
         if result.errors:

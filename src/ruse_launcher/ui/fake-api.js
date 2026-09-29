@@ -1,39 +1,172 @@
 // A made-up LauncherApi, for working on the screens in a normal browser: open index.html?fake
-// (?fake=notfound shows the "game not found" state). It does nothing in the real launcher window.
+// (?fake=notfound shows the "game not found" state, ?fake=empty a launcher with no mods yet). Only English, French
+// and Chinese words are included here; the real launcher has all ten languages. It does nothing in the real window.
 "use strict";
 
 (function () {
   const mode = new URLSearchParams(location.search).get("fake");
   if (mode === null) return;
-  const sets = [
-    { id: "vanilla", name: "Vanilla", description: "The game as Steam installed it.", mods: [], mod_names: [] },
-    { id: "half-price", name: "Half-price test", description: "Every building costs half.",
-      mods: ["D:/mods/half-price-buildings"], mod_names: ["half-price-buildings"] },
-    { id: "ruse2", name: "RUSE 2.0", description: "Balance, new units and China (draft).",
-      mods: ["D:/mods/ruse2-core", "D:/mods/ruse2-china"], mod_names: ["ruse2-core", "ruse2-china"] },
-    { id: "broken", name: "Old test", description: "", mods: [], mod_names: [], error: "it lists no mods" },
+  const words = {
+    us: { language: "Language", looking: "Looking for R.U.S.E.…", choose_folder: "Choose folder…", mod_sets: "Mod sets",
+      vanilla: "Vanilla", vanilla_desc: "The game as Steam installed it.", no_mods: "No mods", one_mod: "1 mod",
+      n_mods: "{n} mods", has_mistake: "Has a mistake", set_mistake: "This mod set has a mistake: {error}", play: "Play",
+      play_set: "Play {name}", getting_ready: "Getting everything ready…", details: "Details", join: "Join a friend",
+      browse: "Browse mods", coming_soon: "Coming soon", new_set: "New mod set…", set_name: "Name of the mod set",
+      tick_mods: "Tick the mods to use. They load in this order: when two change the same thing, the lower one wins.",
+      save: "Save", cancel: "Cancel", create: "Create", edit: "Edit", rename: "Rename", duplicate: "Duplicate",
+      delete: "Delete", really_delete_set: "Delete the mod set {name}? Its mods stay in the library.", move_up: "Move up",
+      move_down: "Move down", copy_name: "{name} (copy)", set_saved: "The mod set {name} was saved.",
+      set_deleted: "The mod set {name} was deleted.", from_folder: "from a folder",
+      library_empty_for_set: "Add a mod to the library first: a mod set is made of the mods in it.", library: "Mod library",
+      add_mod: "Add a mod file…", drop_hint: "…or drop a mod folder or .zip anywhere on this window.",
+      drop_here: "Drop it to add it to the library", adding: "Adding the mod…", remove: "Remove",
+      really_remove_mod: "Remove {name} from the library? Mod sets that use it stop working until it's back.",
+      version_v: "version {v}", by: "by {authors}", made_for: "made for game build {builds}",
+      your_build: "you have {build}, so it may not fit", used_in_one: "in 1 mod set", used_in: "in {n} mod sets",
+      library_empty: "No mods yet. Add a mod file, or drop one on this window.", mod_added: "{name} was added to the library.",
+      mod_updated: "{name} was replaced by version {v}.", mod_removed: "{name} was removed from the library." },
+    fr: { language: "Langue", looking: "Recherche de R.U.S.E.…", choose_folder: "Choisir le dossier…",
+      mod_sets: "Ensembles de mods", vanilla: "Jeu d'origine", vanilla_desc: "Le jeu tel que Steam l'a installé.",
+      no_mods: "Aucun mod", one_mod: "1 mod", n_mods: "{n} mods", has_mistake: "Contient une erreur",
+      set_mistake: "Cet ensemble de mods contient une erreur : {error}", play: "Jouer", play_set: "Jouer {name}",
+      getting_ready: "Préparation en cours…", details: "Détails", join: "Rejoindre un ami", browse: "Parcourir les mods",
+      coming_soon: "Bientôt", new_set: "Nouvel ensemble de mods…", set_name: "Nom de l'ensemble de mods",
+      tick_mods: "Cochez les mods à utiliser. Ils se chargent dans cet ordre : si deux modifient la même chose, le plus bas l'emporte.",
+      save: "Enregistrer", cancel: "Annuler", create: "Créer", edit: "Modifier", rename: "Renommer", duplicate: "Dupliquer",
+      delete: "Supprimer", really_delete_set: "Supprimer l'ensemble de mods {name} ? Ses mods restent dans la bibliothèque.",
+      move_up: "Monter", move_down: "Descendre", copy_name: "{name} (copie)",
+      set_saved: "L'ensemble de mods {name} a été enregistré.", set_deleted: "L'ensemble de mods {name} a été supprimé.",
+      from_folder: "depuis un dossier",
+      library_empty_for_set: "Ajoutez d'abord un mod à la bibliothèque : un ensemble de mods se compose des mods qui s'y trouvent.",
+      library: "Bibliothèque de mods", add_mod: "Ajouter un fichier de mod…",
+      drop_hint: "…ou déposez un dossier de mod ou un .zip n'importe où dans cette fenêtre.",
+      drop_here: "Déposez-le pour l'ajouter à la bibliothèque", adding: "Ajout du mod…", remove: "Retirer",
+      really_remove_mod: "Retirer {name} de la bibliothèque ? Les ensembles de mods qui l'utilisent ne fonctionneront plus tant qu'il n'est pas de retour.",
+      version_v: "version {v}", by: "par {authors}", made_for: "conçu pour la version du jeu {builds}",
+      your_build: "vous avez la {build}, il se peut qu'il ne convienne pas", used_in_one: "dans 1 ensemble de mods",
+      used_in: "dans {n} ensembles de mods",
+      library_empty: "Pas encore de mod. Ajoutez un fichier de mod, ou déposez-en un dans cette fenêtre.",
+      mod_added: "{name} a été ajouté à la bibliothèque.", mod_updated: "{name} a été remplacé par la version {v}.",
+      mod_removed: "{name} a été retiré de la bibliothèque." },
+    sc: { language: "语言", looking: "正在查找 R.U.S.E.…", choose_folder: "选择文件夹…", mod_sets: "模组组合", vanilla: "原版",
+      vanilla_desc: "Steam 安装的原始游戏。", no_mods: "无模组", one_mod: "1 个模组", n_mods: "{n} 个模组", has_mistake: "有错误",
+      set_mistake: "此模组组合有错误:{error}", play: "开始游戏", play_set: "以 {name} 开始游戏", getting_ready: "正在准备…",
+      details: "详情", join: "加入好友", browse: "浏览模组", coming_soon: "即将推出", new_set: "新建模组组合…",
+      set_name: "模组组合的名称", tick_mods: "勾选要使用的模组。按此顺序加载:两个模组修改同一项时,下面的优先。", save: "保存",
+      cancel: "取消", create: "创建", edit: "编辑", rename: "重命名", duplicate: "复制", delete: "删除",
+      really_delete_set: "删除模组组合 {name}?其中的模组仍保留在库中。", move_up: "上移", move_down: "下移",
+      copy_name: "{name}(副本)", set_saved: "模组组合 {name} 已保存。", set_deleted: "模组组合 {name} 已删除。",
+      from_folder: "来自文件夹", library_empty_for_set: "请先向库中添加模组:模组组合由库中的模组组成。", library: "模组库",
+      add_mod: "添加模组文件…", drop_hint: "…或将模组文件夹或 .zip 拖放到此窗口的任意位置。", drop_here: "松开即可添加到库中",
+      adding: "正在添加模组…", remove: "移除", really_remove_mod: "从库中移除 {name}?使用它的模组组合在它重新添加之前无法使用。",
+      version_v: "版本 {v}", by: "作者:{authors}", made_for: "适用于游戏版本 {builds}", your_build: "你的版本是 {build},可能不兼容",
+      used_in_one: "用于 1 个模组组合", used_in: "用于 {n} 个模组组合", library_empty: "还没有模组。请添加模组文件,或将其拖放到此窗口。",
+      mod_added: "{name} 已添加到库中。", mod_updated: "{name} 已替换为版本 {v}。", mod_removed: "已从库中移除 {name}。" },
+  };
+  const build = "24687178";
+  // Sample data for the preview only: mods that exist in the repo's mods/ folder, nobody's name on them.
+  let library = mode === "empty" ? [] : [
+    { id: "airfield-capacity", name: "Airfield Capacity", version: "1.0.0", authors: [], author: "",
+      description: "Airfields hold 128 planes instead of 8.", builds: ["24087620"], used_in: 1 },
+    { id: "passable-forests", name: "Passable Forests", version: "1.0.0", authors: [], author: "",
+      description: "Tanks and other vehicles can enter forests, like recon units already can.", builds: ["24087620"], used_in: 1 },
   ];
+  let sets = mode === "empty" ? [] : [
+    { id: "my-set", name: "My set", description: "", mods: ["airfield-capacity", "passable-forests"] },
+    { id: "missing-mod", name: "Sample set with a missing mod", description: "", mods: ["some-other-mod"] },
+  ];
+  const wordsOf = (lang) => words[lang] || words.us;
+  const known = (id) => library.find((m) => m.id === id);
+  const resolve = (entry) => known(entry) ? null : /^[a-z0-9][a-z0-9-]*$/.test(entry)
+    ? `it needs ${entry}, which isn't in the library (add it with “Add a mod file…”)` : null;
+  const setView = (s) => {
+    const errors = s.mods.map(resolve).filter(Boolean);
+    return { id: s.id, name: s.name, description: s.description, mods: s.mods.slice(),
+      mod_names: s.mods.map((m) => known(m) ? known(m).name : m.split("/").pop()),
+      error: s.mods.length ? errors[0] || null : "it lists no mods", editable: true };
+  };
+  const modSets = () => [{ id: "vanilla", name: "Vanilla", description: "The game as Steam installed it.", mods: [],
+    mod_names: [], error: null, editable: false }].concat(sets.map(setView));
+  const used = () => library.map((m) => ({ ...m, used_in: sets.filter((s) => s.mods.includes(m.id)).length }));
+  const lists = (extra) => ({ library: used(), sets: modSets(), ...(extra || {}) });
+  const slug = (name) => {
+    const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "mod-set";
+    let id = base, n = 2;
+    while (id === "vanilla" || sets.some((s) => s.id === id)) id = `${base}-${n++}`;
+    return id;
+  };
+  const checkMods = (mods) => {
+    if (!mods || !mods.length) throw new Error("Tick at least one mod for this mod set.");
+    for (const m of mods) { const why = resolve(m); if (why) throw new Error(`This mod set can't be saved: ${why}.`); }
+  };
+  const fakeMod = (name) => {
+    const id = name.toLowerCase().replace(/\.zip$/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "mod";
+    if (id.endsWith("exe")) throw new Error(`${name} isn't a mod: add a mod folder (with mod.toml in it) or a .zip of one.`);
+    const replaced = Boolean(known(id));
+    library = library.filter((m) => m.id !== id);
+    const mod = { id, name: name.replace(/\.zip$/, ""), version: replaced ? "1.1.0" : "1.0.0", authors: [], author: "",
+      description: "Added from a file.", builds: [build], used_in: 0 };
+    library.push(mod);
+    library.sort((a, b) => a.name.localeCompare(b.name));
+    return lists({ mod, replaced });
+  };
   const script = [
-    "Building the modded copy of R.U.S.E. for Half-price test in D:\\RUSE-Instances\\half-price…",
-    "load order: half-price-buildings",
+    "Building the modded copy of R.U.S.E. for My set in D:\\RUSE-Instances\\my-set…",
+    "load order: airfield-capacity -> passable-forests",
     "  note     left 4 debug-info copies as shipped (everything_debuginfo.cpp.gladndfbin, …)",
     "0 error(s), 0 warning(s), 3 note(s)",
     "changed: genglad\\patchable\\gfx\\everything.cpp.gladndfbin",
     "fingerprint: S1HP-X6PM",
-    "modded copy ready: D:\\RUSE-Instances\\half-price  {'linked': 37, 'copied': 23, 'written': 1}",
+    "modded copy ready: D:\\RUSE-Instances\\my-set  {'linked': 37, 'copied': 23, 'written': 1}",
     "Starting R.U.S.E. from the modded copy…",
   ];
   let playing = null;
   window.pywebview = {
     api: {
+      languages: async () => [{ code: "us", name: "English" }, { code: "fr", name: "Français" }, { code: "ger", name: "Deutsch" },
+        { code: "ita", name: "Italiano" }, { code: "spa", name: "Español" }, { code: "pol", name: "Polski" },
+        { code: "ru", name: "Русский" }, { code: "cz", name: "Čeština" }, { code: "jpn", name: "日本語" }, { code: "sc", name: "简体中文" }],
+      default_language: async () => "us",
+      strings: async (lang) => wordsOf(lang),
       status: async () => mode === "notfound"
         ? { found: false, message: "We couldn't find R.U.S.E. Is it installed through Steam?" }
-        : { found: true, game_dir: "D:\\Steam\\steamapps\\common\\R.U.S.E", build: "24687178", drive: "D:",
-            message: "Found R.U.S.E. on D: (build 24687178)" },
-      mod_sets: async () => sets,
-      open_sets_folder: async () => "C:\\Users\\you\\AppData\\Local\\RUSE Mod Platform\\sets",
-      choose_game_folder: async () => ({ found: true, drive: "D:", build: "24687178",
-        message: "Found R.U.S.E. on D: (build 24687178)" }),
+        : { found: true, game_dir: "D:\\Steam\\steamapps\\common\\R.U.S.E", build, drive: "D:",
+            message: `Found R.U.S.E. on D: (build ${build})` },
+      choose_game_folder: async () => ({ found: true, drive: "D:", build, message: `Found R.U.S.E. on D: (build ${build})` }),
+      library: async () => used(),
+      mod_sets: async () => modSets(),
+      add_mod: async (path) => fakeMod(path.split(/[\\/]/).pop()),
+      add_mod_file: async () => fakeMod("Pacific Maps.zip"),
+      remove_mod: async (id) => {
+        const mod = known(id);
+        if (!mod) throw new Error(`There's no mod called '${id}' in the library.`);
+        library = library.filter((m) => m.id !== id);
+        return lists({ mod });
+      },
+      new_set: async (name, mods) => {
+        if (!name.trim()) throw new Error("Give the mod set a name.");
+        checkMods(mods);
+        const id = slug(name);
+        sets.push({ id, name: name.trim(), description: "", mods: mods.slice() });
+        return lists({ set: id });
+      },
+      save_set: async (id, name, mods) => {
+        const s = sets.find((x) => x.id === id);
+        if (!s) throw new Error(`There's no mod set called '${id}' any more. Pick another one.`);
+        if (mods) { checkMods(mods); s.mods = mods.slice(); }
+        if (name && name.trim()) s.name = name.trim();
+        return lists({ set: id });
+      },
+      duplicate_set: async (id, name) => {
+        const s = sets.find((x) => x.id === id);
+        const copy = { id: slug(name), name, description: s.description, mods: s.mods.slice() };
+        sets.push(copy);
+        return lists({ set: copy.id });
+      },
+      delete_set: async (id) => {
+        sets = sets.filter((x) => x.id !== id);
+        return lists({ set: "vanilla" });
+      },
       play: async (id) => {
         playing = { id, step: 0, lines: id === "vanilla" ? ["Starting R.U.S.E. through Steam…"] : script };
         return { job: "fake" };
@@ -46,5 +179,14 @@
       },
     },
   };
+  // In the real window pywebview hands dropped files' paths to the launcher, which then tells the page; here the
+  // page's own drop event has to do (a file's name stands in for the mod).
+  window.addEventListener("drop", (e) => {
+    for (const f of e.dataTransfer ? e.dataTransfer.files : []) {
+      let detail;
+      try { detail = { ok: true, ...fakeMod(f.name) }; } catch (err) { detail = { ok: false, message: err.message }; }
+      setTimeout(() => window.dispatchEvent(new CustomEvent("mod-dropped", { detail })), 300);
+    }
+  });
   window.addEventListener("load", () => window.dispatchEvent(new Event("pywebviewready")));
 })();

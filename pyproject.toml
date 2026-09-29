@@ -27,5 +27,5 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "rusemod" = ["labels.toml"]
-"ruse_launcher" = ["ui/*"]
+"ruse_launcher" = ["ui/*", "words.toml"]
 "ruse_studio" = ["ui/*", "words.toml"]

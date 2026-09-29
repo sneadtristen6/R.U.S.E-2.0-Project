@@ -82,9 +82,10 @@ def job_view(jobs: dict, job_id: str, since: int = 0) -> dict:
 
 
 def open_window(title: str, folder: Path, page: str, api, width=1180, height=760,
-                extra: dict[str, Path] | None = None) -> int:
+                extra: dict[str, Path] | None = None, setup=None) -> int:
     """Open a window showing `folder/page`, with `api` callable from its JavaScript. Needs pywebview. What the screens
-    keep (the Studio's language, say) is stored in the platform folder, so it's still there next time."""
+    keep (the Studio's language, say) is stored in the platform folder, so it's still there next time. `setup(window)`
+    runs before the window opens, for hooks like on_file_drop."""
     try:
         import webview
     except ImportError:
@@ -96,6 +97,8 @@ def open_window(title: str, folder: Path, page: str, api, width=1180, height=760
     window = webview.create_window(title, f"{base}/{page}", js_api=api, width=width, height=height,
                                    min_size=(900, 600), background_color="#15181b")
     api._window = window
+    if setup is not None:
+        setup(window)
     try:
         webview.start(private_mode=False, storage_path=str(default_home() / "webview"))
     finally:
@@ -110,6 +113,31 @@ def pick_folder(window) -> str | None:
     kind = webview.FileDialog.FOLDER if hasattr(webview, "FileDialog") else webview.FOLDER_DIALOG
     chosen = window.create_file_dialog(kind)
     return chosen[0] if chosen else None
+
+
+def pick_file(window, file_types=()) -> str | None:
+    """A "choose a file" dialog in `window`; the file, or None if the player cancels. `file_types` are pywebview's
+    filters, like ("Mods (*.zip;*.toml)",)."""
+    import webview
+    kind = webview.FileDialog.OPEN if hasattr(webview, "FileDialog") else webview.OPEN_DIALOG
+    chosen = window.create_file_dialog(kind, file_types=tuple(file_types))
+    return chosen[0] if chosen else None
+
+
+def on_file_drop(window, handler) -> None:
+    """Call `handler(paths)` with the full paths of files or folders dropped anywhere on the window's page. A page's
+    own JavaScript never sees a dropped file's path; pywebview's Windows side does, and hands it to a drop handler
+    registered from Python (`pywebviewFullPath`). The page still has to allow the drop (`dragover` with
+    preventDefault) and is told what happened by `handler` itself (`window.evaluate_js`)."""
+    def attach():
+        def dropped(event):
+            files = (event.get("dataTransfer") or {}).get("files") or []
+            paths = [f["pywebviewFullPath"] for f in files if isinstance(f, dict) and f.get("pywebviewFullPath")]
+            if paths:
+                handler(paths)
+        window.dom.document.events.drop += dropped
+
+    window.events.loaded += attach
 
 
 def web_engine_ok(title: str) -> bool:
