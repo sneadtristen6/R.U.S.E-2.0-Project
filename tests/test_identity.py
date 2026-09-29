@@ -14,6 +14,7 @@ from rusemod.rndf import parse
 
 E = "$/GFX/Everything/"
 SHERMAN = E + "Descriptor_Unit_M4_Sherman"
+LEE = E + "Descriptor_Unit_M3_Lee"
 
 
 def unit(did, debug, slot, factory=10, nation=None, **extra):
@@ -137,12 +138,14 @@ class FreshIdentity(unittest.TestCase):
 class ExampleMod(unittest.TestCase):
     def test_the_c5_example_does_what_it_says(self):
         info, ops = load_mod(Path(__file__).resolve().parent.parent / "examples" / "cloned-unit")
-        r = Engine(game()).run([(info, ops)])
+        g = game()
+        g.objects[LEE] = unit(188, "Unit_M3_Lee", 304)  # C5 copies the Lee (the Sherman is an upgrade of it)
+        r = Engine(g).run([(info, ops)])
         self.assertEqual(r.errors + r.warnings, [])
-        new = E + "Descriptor_Unit_R2_Sherman_Test"
-        self.assertEqual(props(r, new, *FRESH), [1000, "Unit_R2_Sherman_Test", 304])
+        new = E + "Descriptor_Unit_R2_Lee_Test"
+        self.assertEqual(props(r, new, *FRESH), [1000, "Unit_R2_Lee_Test", 305])
         self.assertEqual([int(n.value) for n in r.game.objects[new].props["ProductionPrice"].items], [1] * 5)
-        self.assertEqual([int(n.value) for n in r.game.objects[SHERMAN].props["ProductionPrice"].items], [30] * 5)
+        self.assertEqual([int(n.value) for n in r.game.objects[LEE].props["ProductionPrice"].items], [30] * 5)
 
 
 class InTheDataFile(unittest.TestCase):

@@ -617,7 +617,7 @@ French barracks 25 → 13, artillery factory 35/30 → 18/15, HQ 140 → 70). Bu
 
 ### C5: a new unit in the build menu (ready to run)
 
-C4 changed values that already exist. C5 adds something new: a copy of the M4 Sherman
+C4 changed values that already exist. C5 adds something new: a copy of the M3 Lee
 ([`examples/cloned-unit/`](../examples/cloned-unit/)) that costs 1, with its own name, id and menu slot
 (MOD_FORMAT.md §10.5, "Fresh identity"). It is the "1 cloned unit (reused visuals)" of the M2 exit test.
 
@@ -656,6 +656,19 @@ C4 changed values that already exist. C5 adds something new: a copy of the M4 Sh
    - **The game crashes** at start or when the menu opens: the likely suspect is the debug-info copy of the unit data,
      which doesn't have the new unit (builds leave it as shipped). Next try: mirror new objects into it.
    - **Wrong price, or the original changed too:** send the build output.
+
+**C5 prepared on the PC (2026-09-28):** `names_check` passed (EXPR and IMPR trees rebuild byte-identical in 2,176 of
+2,176 files, no "miss" lines; only 446 of 3,614 multi-child nodes are in name order). `identity_check`: the Sherman
+is an **upgrade** (`UpgradeRequire` = the M3 Lee, `IsUpgrade`), so C5 copies the **M3 Lee** instead (not an
+upgrade, shown in every mode, row 3 of the US armour menu: 301 Greyhound, 302 Stuart, 303 Chaffee, 304 Lee, 305
+Sherman). `Key` is set on 8 ground units, 2 infantry and 7 planes and isn't refreshed; the Lee has none. The first
+build failed on the Lee's text key `LD_UNI_135`: the key writer refused names over 8 characters, but the game uses up
+to 10 (fixed in `dic.py`). Build, 14 s, 0 errors: `Descriptor_Unit_R2_Lee_Test gets its own DescriptorId 1141 ->
+4059, ClassNameForDebug 'Unit_M3_Lee' -> 'Unit_R2_Lee_Test', PositionInMenu 304 -> 306`, `changed:` the unit data
+file, fingerprint `BPJC-0PK0`, instance `D:\RUSE-Instances\c5-clone`. Checked in the rebuilt file: the copy costs 1
+at slot 306 (a 6th button in the Lee's row), the Lee is unchanged. The build printed 8,537 notes: 1,476 "named in
+both" (names shared by every map's files, e.g. `$/ClusterTerrain/MapInstance`) and hundreds of "… and N more like
+this" lines. **For the cloud session:** collapse these to one summary line per kind.
 
 ### C6: a new unit with its own name (ready to run, after C5)
 

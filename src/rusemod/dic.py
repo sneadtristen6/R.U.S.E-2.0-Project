@@ -5,8 +5,9 @@ sorted by key, then the UTF-16LE texts, with no terminating null. Offsets count 
 several entries can share one text. Each shipped file also has one entry with key 0x8000000000000000 (`GLYPH_KEY`)
 listing every character the file uses. (All checked on the 1,232 shipped files with `tools/dic_check.py`.)
 
-Keys are not hashes: like Wargame's (moddingSuite `Utils.CreateLocalisationHash`, MIT), a key packs a name of up to
-8 characters, 6 bits each (0-9, A-Z, _, a-z). R.U.S.E.'s multiplayer map-name keys decode to M_D_01 .. M_D_30.
+Keys are not hashes: like Wargame's (moddingSuite `Utils.CreateLocalisationHash`, MIT), a key packs a name, 6 bits a
+character (0-9, A-Z, _, a-z), as many as fit in the 64 bits: 10 characters (an 11th only if it starts with 0-9 or
+A-E). R.U.S.E. uses up to 10: its multiplayer map-name keys decode to M_D_01 .. M_D_30, unit names to N_UNI_137.
 """
 from __future__ import annotations
 
@@ -30,12 +31,14 @@ def key_to_name(key: int) -> str | None:
 
 
 def name_to_key(name: str) -> int:
-    """Pack a name (1-8 characters of 0-9, A-Z, _, a-z) into a text key, the way the game's keys are made."""
-    if not 1 <= len(name) <= 8 or any(c not in _CHARS for c in name):
-        raise ValueError(f"not a valid text-key name: {name!r} (1-8 characters of 0-9 A-Z _ a-z)")
+    """Pack a name (0-9, A-Z, _, a-z; up to 10 characters) into a text key, the way the game's keys are made."""
+    if not name or any(c not in _CHARS for c in name):
+        raise ValueError(f"not a valid text-key name: {name!r} (up to 10 characters of 0-9 A-Z _ a-z)")
     key = 0
     for c in name:
         key = (key << 6) | (_CHARS.index(c) + 1)
+    if key >= 1 << 64:
+        raise ValueError(f"not a valid text-key name: {name!r} is too long for a 64-bit key (up to 10 characters)")
     return key
 
 

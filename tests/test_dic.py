@@ -26,12 +26,12 @@ class KeyCodec(unittest.TestCase):
         self.assertEqual(key_to_name(MP01_KEY), "M_D_01")
 
     def test_names_round_trip(self):
-        for name in ["M_D_01", "R2U00001", "a", "Z9_z"]:
+        for name in ["M_D_01", "R2U00001", "a", "Z9_z", "N_UNI_137", "LD_UNI_135", "0zzzzzzzzzz"]:  # the game uses 9 and 10
             self.assertEqual(key_to_name(name_to_key(name)), name)
         self.assertEqual(name_to_key("M_D_01"), MP01_KEY)
 
     def test_invalid_names_are_refused(self):
-        for bad in ["", "TOO_LONG_1", "has space", "é"]:
+        for bad in ["", "TOO_LONG_NAME", "ZZZZZZZZZZZ", "has space", "é"]:
             with self.assertRaises(ValueError):
                 name_to_key(bad)
 
