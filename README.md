@@ -19,8 +19,9 @@ players and **RUSE Studio 0.3.0** for modders (a preview). Windows only; your br
 - **Text mods work end to end** (check C4), with new names in all ten languages (C6). The launcher's Play builds the
   modded copy and starts it.
 - **Maps:** new maps can ship their own pack (C3). The terrain mesh and tile files can be read and rewritten
-  losslessly (M1.5); the in-game terrain tests are next.
-- **Next:** in-game terrain tests, making mod sets inside the launcher, the terrain texture codec.
+  losslessly.
+- **Next: a terrain editor in RUSE Studio** (shape a map with brushes, then "Test in game"), then making mod sets
+  inside the launcher.
 - Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19).
 
 The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.md §6.

@@ -76,6 +76,9 @@ Details and byte layouts are in [FORMATS.md](FORMATS.md).
 | Multiplayer | Steam lobbies, lockstep; mismatched mod files desync silently; `+connect_lobby` launches | medium | launcher must sync mods before joining a lobby |
 | Updates | Steam build 24670294; RUSE-Mod-Manager tracks 7 game builds since May | verified | design for updates anyway |
 | Sound | `.ess` = Eugen's own variable-bitrate codec, no public decoder | verified | last priority |
+| Steam builds | Eugen re-released R.U.S.E. in May 2026. Steam's default branch is the new build (this PC: `public`, build 24670294); the `compat` beta branch keeps the old modding-era build, which every community mod targets | verified (wiki, `ruse detect`) | our mods build from whatever the player has installed; the launcher shows the branch |
+| Terrain editing | another modder has height edits, re-meshing and brushes working in-game: the gameplay ground and the camera floor (`.kdt`) change with both `.tms` meshes | reported, with screenshots | the Studio's terrain editor (MT) builds on it; our `.tms` and `.tmst` writers are lossless |
+| New units | a copy shows in the build menu with its own name (C6d); the wiki reports a crash when a new unit is built | open | C7: build one and fight with it |
 
 ## 4. What modders do today, and what that requires
 
@@ -467,11 +470,13 @@ volunteer from the R.U.S.E. community: with a join code, joining takes them a co
 | 16 | Join codes | Game build + mod ids + versions + fingerprint; a published mod version never changes | about half the length of a full lockfile, checked end to end | the whole compressed lockfile |
 | 17 | Extra-pack test | Moved up to M2 as check C3 | without it, every new unit name rebuilds the 2.3 GB ZZ_Win.dat | test in M5/M6 |
 | 18 | Mod language details | A `final` pass; `when mod` blocks; WARNO's spellings; readable text keys | proven in Factorio, KSP ModuleManager and WARNO ([RESEARCH.md](RESEARCH.md) §5) | our own spellings, made-up hash keys |
-| 19 | New nations | A real 8th nation (China, for RUSE 2.0): the runtime extender (ADR 3, M10) lifts the 7-nation limit, and the data gets an 8th entry wherever it has 7. Owner's call, 2026-09-28 | RUSE 2.0 wants a real nation, not a renamed one. **No faction is ever given up** (owner, 2026-09-28): there is no swap fallback; if the job turns out big, China comes later, never by replacing a nation | China takes over one of the 7 slots (**rejected**: it loses a faction) |
+| 19 | New nations | A real 8th nation, China, for RUSE 2.0. **China stays** (owner, 2026-09-29): it's not negotiable, and no faction is ever given up. The data side comes first: a test with an 8th entry wherever the data has 7 (M10). RUSE 2.0 itself is developed privately and shown to Eugen before release (owner, 2026-09-29); this public platform stays data-only (ADR 3) | RUSE 2.0 wants a real nation, not a renamed one | China takes over one of the 7 slots (**rejected**: it loses a faction) |
 | 20 | Testing multiplayer alone | Solo tests S1–S2 (L6) until there's a second player; one real 2-PC match before the first public release | the owner has no second player yet; most of the risk (same build everywhere, the join flow) can be tested on one PC | wait for a friend |
 | 21 | Display language in the tools | The game's own names are the default everywhere (mods use them); every modder can pick any of the game's ten languages for the tools, property names and unit names. Owner's call, 2026-09-28 | the community is international; no one language forced on modders | English by default |
 | 22 | Apps | Two separate apps on one engine: **RUSE Launcher** (players: finds the game, loads mods, starts the game) and **RUSE Studio** (modders: the unit editor, later maps and models). Neither needs the other; each has its own window, start command and, later, installer. The Studio keeps its own "Test in game". Owner's call, 2026-09-29 | players get a small, simple app; modders get the full tools; each can change without breaking the other | one app with a modding mode |
 | 23 | Script entries for new units | A new unit needs its own entry in the game's compiled Python unit list (`parametres/classes.xyz`, FORMATS §5); the build adds it. **Owner's call, 2026-09-28, with safety rules:** (1) mods can never contain scripts, and the launcher refuses any mod that ships script files; (2) the build only writes this one fixed kind of entry, from checked data (a name of letters, digits and `_`, and a path to a unit in the mod itself), and never compiles text; (3) the generated script is checked to contain only the allowed instructions and names before it's written; mods stay pinned by fingerprint; (4) custom game modes (M9) get their own design (a safe mission language, not raw Python) | without the entry the game ignores new units; code the game runs is the one thing a shared mod could abuse (a remote-code-execution risk for every player) | reuse the few spare hidden units (data only); no new units |
+| 24 | What comes next | **The terrain editor in the Studio (MT, §7). Owner's call, 2026-09-29.** Terrain editing belongs to the Studio; the launcher stays a player app. The Studio shows a map in 3D, modders shape it with brushes, and "Test in game" builds it | no public tool edits terrain (RUSE-Mod-Manager doesn't); maps come first for the owner; another modder has proven in-game what has to change, so the risk is known | the launcher's v0.2 first; models first |
+| 25 | Knowledge from other modders | What others share guides our own code (MIT, never their code). What we verify ourselves goes into FORMATS.md, credited the way they want. Their notes stay private, and nothing about the game's program is ever published | trust, and a clean license | copy their code; publish their notes |
 
 ## 7. Roadmap
 
@@ -481,16 +486,17 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 |---|---|---|---|---|
 | **M0 Foundations** ✅ | repo, docs; EDAT + NDF read/write; whole-game byte-identical check (38 archives, 2,176 NDF files); modded-instance launch | **done 2026-09-28** (C1, C2 passed) | — | — |
 | **M1 Core tools** | combined file view + index (L2) ✅ (cloud session; the PC runs it); `.dic` r/w ✅ and `ruse` CLI basics ✅ (cloud session); scenario / AI-layer / capture-zone readers (our own code, informed by [LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)) | every shipped file of these types round-trips byte-identically | 2–4 (was 4–6) | low |
-| **M1.5 Frontier tests** (new) | short, capped tests of the riskiest unknowns: re-encode one terrain texture tile (`TGU1`) and one terrain mesh (`.tms`); read one 3D model (SPK) section table | clear yes/no: can we write new terrain? can we read models? Decides how big Pacific maps can be | ~3 | high (that's the point) |
+| **M1.5 Frontier tests** | ~~re-encode one `TGU1` tile and one `.tms`; read one SPK section table~~ **Folded into MT (2026-09-29):** the `.tms` and `.tmst` writers are lossless on every map; the mesa test is dropped (it changed only the visual mesh, and the gameplay ground must change too); the tile tests (mirror, checker) move into MT | — | — | — |
+| **MT Terrain editor (Studio)**: next (decision 24) | **T1** the gameplay ground and the camera floor (`.kdt`) read and written, lossless on every map, and still right after their parts move; **T2** height edits that keep the ground, the camera floor and both `.tms` meshes in step, with patch bounds and water lists updated; **T3** terrain edits in a mod (brush strokes, applied the same way on every PC), built into the map's pack in the modded copy; **T4** the Studio's map view in 3D with brushes (raise, lower, flatten, smooth), Undo and "Test in game"; **T5** finer edits (re-meshing), lakes drained or filled, the tile tests | a modder raises a hill in the Studio and presses "Test in game": it's drawn near and far, units drive up it, orders and the camera work, trees and roads follow | 5–8 | medium (done in-game by another modder) |
 | **M2 Mod system slice** | package v1; `.rndf` reader ✅, rules engine ✅, load order ✅, fingerprint + join codes ✅ (cloud session); the adapter between game files and the engine; `.rmod` import; extra-pack mount test (C3); instances already proven by C2 | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test (until there's a second player, the solo tests S1–S2 in L6 stand in; the 2-PC test comes before the first public release). This proves the tool, not a balance mod | 2–4 (was 4–6) | medium |
 | **M3 Launcher v1** | Steam auto-detect ✅ (`ruse detect`), the window ✅ (v0.1: game status, mod sets, Play; its own app, `ruse_launcher`), one-click install into instances, modpacks, join codes; also installs the `.rmod` mods players already have, combinable and without patching the live install | first public alpha on GitHub, ModDB, Nexus | 3–5 | low |
 | **M4 Studio v1** | content browser ✅ and unit view ✅ (v0.1, with the language selector), property editor ✅ (v0.2: numbers, in place, saved as a mod, Play), unit editor; clone **any** class with its **own** visuals, wired into menus, upgrades and AI; validation, diff/rebase | a non-programmer builds a new unit | 5–8 | low–medium |
 | **M5 Textures & icons** | TGV r/w including a game-valid `TGU1` encoder (nobody has one), UI icon/flag pipeline | retextured unit with its own icon in-game | 3–5 | medium |
 | **M6 Maps I** | map cloning, scenario editor, capture-zone compiler, AI layers, island maps on existing terrain | a new map listed and playable in multiplayer | 4–6 (was 5–8: formats now understood) | medium |
 | **M7 Models** | SPK → glTF, Blender bridge, glTF → SPK (static, then skinned/animated). A first for R.U.S.E. | a new vehicle model in-game | 6–12 | high |
-| **M8 Terrain / new maps** | terrain writer (heights + texture), heightmap import, maps from scratch, tropical scenery set | a new island map built from a heightmap | 8–15+ (sized by M1.5) | high |
+| **M8 Terrain / new maps** | builds on MT: terrain textures, heightmap import, maps from scratch, scenery, movement and AI data (`mapinfo.win`), tropical scenery set | a new island map built from a heightmap | 6–12 (was 8–15+) | high |
 | **M9 Scripting** | `.xyz` decompile, compile via a real CPython 2.5.1 (known route), mission/mode scripting | a new game mode (e.g. Island Defense) | 3–6 (was 4–8) | medium |
-| **M10 Runtime extender** | **Un-parked 2026-09-28 (owner): RUSE 2.0 gets a real 8th nation, China.** The proxy DLL in the modded copy only (L4) raises the 7-nation limit; the data gets an 8th entry wherever it has 7 (every map's nation list, flags, menus). Later the same DLL can mount extra packs (no 2.3 GB rebuilds) and tag lobbies. **Step 1 (data):** `tools/nation_scan.py` counts every per-nation structure in the game data (read-only). **Step 2 (program):** find every place the game program assumes 7 nations, as the Red Alert 2 modders did before lifting their limit ([RESEARCH.md](RESEARCH.md) §6: what other games' modders learned) | China can be picked in a skirmish, with its own flag and units | unknown until the scan | high |
+| **M10 China (8th nation)** | **China stays** (owner, 2026-09-29). Step 1 (done): `tools/nation_scan.py` counts every per-nation structure in the data. Step 2: a modded copy with an 8th entry wherever the data has 7: does the game offer an 8th nation? RUSE 2.0 itself is developed privately (decision 19) | China can be picked in a skirmish, with its own flag and units | unknown | high |
 | **M11 Sound** | `.ess` codec, WAV import | a replaced sound plays in-game | 4–10 | high |
 
 **Content comes after the tool.** Per the owner's direction (2026-09-28), no balance/unit-stat/roster
@@ -771,12 +777,15 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 | TOPO / NDF writer fidelity | can't add objects | C1 first; byte-identical gate |
 | Instance launch fails | must touch the install | C2 first. Fallback: in-place swap with journal + backup (players), full copy (dev) |
 | ~~Map-pack header checksum enforced and unknown~~ | — | retired: it's a random GUID, not a hash (FORMATS §6) |
-| 7 nations hard-coded | no China for RUSE 2.0 | size the job early (M10 step 1, the data scan; the program side is on hold) and follow what worked elsewhere (RESEARCH.md §6). No swap fallback: the owner keeps all 7 factions, so China waits rather than replacing one |
+| An 8th nation may not be possible through data | China waits | the data test first (M10 step 2); RUSE 2.0 is developed privately and shown to Eugen (decision 19). No swap: the owner keeps all 7 factions |
+| New units crash when built (the community wiki reports a unit count check between the patchable and not-patchable packs) | copies unusable | C7: build a copy in a skirmish and fight with it; if it crashes, find the count in the data (read-only) and raise it in the build |
+| Two game builds (Steam's default vs the `compat` branch) | community mods only run on `compat` | our mods build from the installed game; the launcher shows the branch; imported pre-built mods are marked with their build |
+| Terrain edits break the game (crash, refused orders) | no terrain editor | follow the rules proven in-game (the meshes change together, moved parts relocated, bounds widened); each step checked in-game on one map before the Studio offers it |
 | SPK model format complexity | no new models | export first; static meshes before skinned ones |
 | Terrain can't be written | no new maps / islands | reading is solved elsewhere, writing is not: M1.5 tests re-encoding early; M8 sized by the result |
 | Python 2.5 toolchain | no new scripts | route known: compile with a real CPython 2.5.1 (a download, so your OK first); uncompyle6 to decompile |
 | Game updates | mods and tools break | per-build registry, rebase, CI on fixtures |
-| Non-determinism across PCs | desyncs | canonical fingerprints, bundled runtime, 2-PC tests |
+| Non-determinism across PCs, or mismatched mods (the game doesn't detect desyncs) | ruined matches | join codes are the only guard: the launcher refuses a mismatch before joining; canonical fingerprints, bundled runtime, 2-PC tests |
 | Community split | low adoption | `.rmod` import/export; talk to LittleGroove and Prolution; publish everywhere |
 | Legal | takedown | ship no game files; ask Eugen for an OK |
 | Malicious mods | user harm | scripts only from the index or with consent; signed releases; no native code from peers |
@@ -801,6 +810,17 @@ Remaining for M1: `.dic`/scenario/mapinfo readers, the combined file view and th
 
 ## 10. Next steps
 
+**Re-evaluation (2026-09-29)**, after the community wiki and guides, another modder's research notes and the owner's calls:
+- **Where we stand.** Others are ahead on terrain, scenery, pathing and AI data, reading models, and sound. Nobody else has mods built from the installed game (so they survive updates), a player launcher, join codes or a public unit editor. Community mods target the old `compat` build; ours build from whatever is installed.
+- **Next, in order:**
+  1. **C7 (owner, five minutes):** in the `c6-auto` copy, start a skirmish as the US, build "Lee C6-Test", drive it and fight. The wiki says new units crash when built.
+  2. **MT, the terrain editor in the Studio** (§7, decision 24), starting with T1 (the `.kdt` files).
+  3. **Launcher v0.2** (players never touch a file, below), then join codes in the launcher.
+  4. **China, step 2** (M10): the data test.
+- **Dropped:** the mesa test (M1.5) and the program add-on (ADR 3).
+- **RUSE 2.0** is developed privately and shown to Eugen before release (decision 19).
+- **Other modders** (decision 25): what they share guides our own code; we credit them the way they want.
+
 Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on paper (Progress, §7).
 
 1. **PC session:** ~~C3 step 1, TOPO check, text-file check~~ **done 2026-09-28**, results in FORMATS.md:
@@ -821,8 +841,7 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
      "checksum" is a random GUID, so it can't block edits. A TGU1 texture codec (`rusemod.tgu1`, `rusemod.dxt`) is in
      progress.
    - **Next on the PC, needs the owner at the game** (one instance per test, map Two Islands, "(6) Centre de gravite"):
-     1. **Mesa:** `py -3 tools\verify_tms.py --pack TwoIslands --out DIR` builds a pack with a flat-topped hill at the map
-        centre. Is it drawn, and do units climb it or clip through (the `.kdt` copy isn't updated)?
+     1. ~~**Mesa**~~ **dropped (2026-09-29):** it changes only the visual mesh; the gameplay ground (`.kdt`) must change too (MT).
      2. **Mirror:** `py -3 tools\verify_tmst.py --make-test TwoIslands OUT.dat mirror` swaps every tile with its
         left-right twin (the game's own tile bytes). Proves the game reads our rebuilt tile store.
      3. **Checker:** the same with `checker` makes every tile a coloured ZIPO checkerboard (colour = detail level).
