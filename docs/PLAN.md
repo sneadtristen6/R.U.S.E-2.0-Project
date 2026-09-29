@@ -701,7 +701,7 @@ C5 proves a new unit works. C6 gives it its own name through the new text step: 
    Expect the fresh-identity note from C5, `texts: 11 file(s) in ZZ_Win.dat (baseunite.dic ×11)` (ten languages and
    `dev`), no warnings or errors.
 2. **In game** (owner): skirmish as the US, armour factory menu.
-   - **Pass:** the new Sherman copy (costing 1) is called "Lee C6-Test"; the normal Sherman keeps its name.
+   - **Pass:** the new Lee copy (costing 1) is called "Lee C6-Test"; the normal Lee keeps its name.
    - Record the result, a screenshot, the build output and how long the build took.
 3. **If the name is blank or shows a code:** unit names may not come from `baseunite.dic` (RUSE-Mod-Manager's note).
    Check which `.dic` holds the Sherman's own name key (`ruse dump` shows it on `NameInMenuToken`), rename
