@@ -818,6 +818,26 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    starts Steam if needed and starts the game; Vanilla starts through Steam. Mod sets are hand-written files for now
    (`%LOCALAPPDATA%\RUSE Mod Platform\sets\*.toml`, see `ruse_launcher/api.py`). Plus the 3D check page (now in
    the Studio). The PC tries both (item 1.7).
+   **Tried on the PC (2026-09-28), installed from the test build:** the download was verified (its SHA-256 matched
+   GitHub's record, Defender clean) and it installed. The window works (the Edge engine, finds the game, build
+   24670294). The mod set only appeared after the owner made the file by hand and dropped it into the sets folder.
+   **The owner: "this needs to be worked out, it will be hard for people who aren't techy."** Found on the way:
+   - The installed app's `--self-test` fails its window check ("WebView2Loader.dll isn't next to the program or on
+     the search path") although the window works: pywebview loads it from `webview\lib\runtimes\win-x64\native\`.
+     The check should look where pywebview looks.
+   - The PC session's tools run inside the Claude app's Windows package, which redirects its AppData writes, so an
+     installer or file it starts isn't seen by the owner's apps. The owner runs installs; the PC session puts files
+     on D:\.
+   **Launcher v0.2 requirement, before any player uses it: players never touch a file.**
+   - **Mod sets are made in the window:** "New mod set" (name it, tick the mods), then edit, rename, duplicate and
+     delete from the set's menu. The launcher stores them itself; players never see TOML.
+   - **Adding mods takes one action:** Install from "Browse mods" (the index, L6); an "Add a mod file…" button; drag
+     a mod file onto the window; double-click a mod file in Explorer (the installer registers the file type) and
+     the launcher asks "Install this mod?". Later, `ruse://` links from a web page.
+   - **Join codes** (MOD_FORMAT §12): paste a code, and the launcher installs what's missing and makes the set.
+   - Lists update by themselves when something changes (no restart), and every error says what to do next in plain
+     words.
+   - Mod folders like `examples/` stay the modders' format (the Studio). Players get packaged mods.
    **The game index done (2026-09-28)**: `rusemod.index`, `ruse index` (L2 "Built"). The PC runs it (item 1.8).
    The owner (2026-09-28): the launcher stays at v0.1 for now; the core tools come first.
    **Studio v0.1 done (2026-09-28)**: browse units, a unit's values, parts and users, the language selector with
