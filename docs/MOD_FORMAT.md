@@ -347,6 +347,13 @@ A unit is one named object plus unnamed sub-objects (weapon slots, turrets and s
   - `tools/identity_check.py` checks these rules against the real game (PLAN.md §7, C5).
 - **A copy of that moment:** a clone copies its source as it is at that point in the load order. Later patches to the
   source don't reach the clone, and patches to the clone never reach the source.
+- **The game's Python unit list** (FORMATS.md §5): R.U.S.E. only uses units that have a class there, so the build
+  gives every copy of a listed unit its own class (named after the copy's `ClassNameForDebug`, with the source's
+  base class). A unit made from scratch, or a copy of an unlisted one, gets a warning: the game ignores it.
+  Deleting a listed unit is an error for now (the list would point at nothing).
+- **Mods never contain scripts or programs** (`.py`, `.xyz`, `.ipk`, `.exe`, `.dll`, `.bat`, …): the build refuses
+  them. The unit-list classes above are the only script change a build makes, written from one fixed template
+  and checked (PLAN.md decision 23).
 - **Giving a clone its own weapon:** clone the weapon or ammunition too, and point the clone at the copy:
   `Weapons[0].Ammunition = ~/Ammo_R2_Flamethrower`.
 

@@ -1,7 +1,8 @@
 // A copy of the M3 Lee that costs 1 in every game mode, so it's easy to spot in the US armour factory.
 // (Not the M4 Sherman: the Sherman is an upgrade of the Lee, UpgradeRequire set, and C5 copies a plain unit.)
 // The build gives it its own DescriptorId, debug name (Unit_R2_Lee_Test) and the next free slot in the Lee's
-// row of the build menu; the build report shows the values. It keeps the Lee's name and icon for now.
+// row of the build menu, plus its class in the game's Python unit list; the build report shows them all. It keeps
+// the Lee's name and icon.
 export Descriptor_Unit_R2_Lee_Test is clone $/GFX/Everything/Descriptor_Unit_M3_Lee
 (
     ProductionPrice = [1, 1, 1, 1, 1]

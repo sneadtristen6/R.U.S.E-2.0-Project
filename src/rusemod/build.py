@@ -2,9 +2,11 @@
 
   mod folders (mod.toml + src/**/*.rndf + text/*.csv)  ->  load order  ->  the pack's data files into the engine's
   model  ->  run the mods  ->  texts: game keys handed out, loc('...') values filled in  ->  write changed files back
-  ->  rebuilt unit-data pack + fingerprint, and the rebuilt text pack (ZZ_Win.dat) when mods add or change texts
+  ->  rebuilt unit-data pack + fingerprint, and the rebuilt ZZ_Win.dat when mods add texts or new units
 
 Value changes, new objects (clones, new units) and deletes all go through rusemod.model; texts through rusemod.loc.
+A new unit (a copy of a unit the game knows) also needs a class in the game's Python unit list, which
+rusemod.pyscript adds from its one fixed template (PLAN.md decision 23). Mods never bring scripts of their own.
 """
 from __future__ import annotations
 
@@ -14,7 +16,7 @@ from contextlib import ExitStack
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import loc
+from . import loc, pyscript
 from .edat import Edat
 from .lock import fingerprint, fingerprint_text
 from .model import ModelError, game_path, load, save
@@ -29,6 +31,10 @@ _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 # The game ships "_debuginfo" copies of a few data files that repeat every name of the main file. The game runs with
 # them untouched (C2) or rewritten (C4); builds leave them exactly as shipped (PLAN.md §7, C4).
 SHADOW = re.compile(r"_debuginfo\.cpp\.[a-z]*ndfbin$")
+# PLAN.md decision 23: a mod never brings code that the game or the PC would run. The build only reads mod.toml,
+# src/**/*.rndf and text/*.csv anyway; refusing these files outright keeps them from travelling with a mod at all.
+NOT_IN_MODS = {".py", ".pyc", ".pyo", ".pyw", ".pyd", ".xyz", ".ipk", ".exe", ".dll", ".com", ".scr", ".msi", ".bat",
+               ".cmd", ".ps1", ".vbs", ".js", ".jar"}
 
 
 class BuildError(Exception):
@@ -47,6 +53,12 @@ def load_mod(path) -> tuple[ModInfo, list]:
         manifest_file = path / "mod.toml"
         if not manifest_file.is_file():
             raise BuildError(f"{path} has no mod.toml (and isn't a .rndf file)")
+        bad = sorted(f.relative_to(path).as_posix() for f in path.rglob("*")
+                     if f.is_file() and f.suffix.lower() in NOT_IN_MODS)
+        if bad:
+            more = ", …" if len(bad) > 5 else ""
+            raise BuildError(f"{path}: mods can't contain scripts or programs ({', '.join(bad[:5])}{more}). The "
+                             f"build writes the only script changes a mod needs itself (PLAN.md decision 23).")
         try:
             manifest = tomllib.loads(manifest_file.read_text(encoding="utf-8"))
         except tomllib.TOMLDecodeError as exc:
@@ -82,6 +94,8 @@ class BuildResult:
     findings: list = field(default_factory=list)    # Finding: errors, warnings, notes
     changed: dict = field(default_factory=dict)     # member path in the pack -> new bytes
     text_changed: dict = field(default_factory=dict)  # member path in the text pack (ZZ_Win.dat) -> new bytes
+    script_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (the script pack) -> new bytes
+    new_classes: list = field(default_factory=list)  # class names added to the game's Python unit list
     fingerprint: bytes | None = None
 
     @property
@@ -113,9 +127,10 @@ def load_pack(arc: Edat) -> PackModel:
     return PackModel(base, loaded, members, shadows)
 
 
-def needs_text_pack(mods: list) -> bool:
-    """Whether building `mods` [(ModInfo, ops)] needs the text pack (ZZ_Win.dat): some mod adds or changes texts."""
-    return any(m.texts for m, _ in mods)
+def needs_zz_win(mods: list) -> bool:
+    """Whether building `mods` [(ModInfo, ops)] needs ZZ_Win.dat: some mod adds texts, or new objects (a new unit
+    needs a class in the Python unit list, which lives there)."""
+    return any(m.texts for m, _ in mods) or any(op.kind in ("create", "clone") for _, ops in mods for op in ops)
 
 
 def fill_loc(game, keys: dict) -> list[str]:
@@ -140,9 +155,66 @@ def _reader(arc: Edat):
     return read, entries
 
 
+def unit_classes(base, run, zz_win, result: BuildResult) -> None:
+    """Give every new unit a class in the game's Python unit list (ZZ_Win.dat), like the unit it copies. Units the
+    list can't take (made from scratch, or copies of units it doesn't list) get a warning: the game ignores them."""
+    wanted = [(name, op) for name, op in run.created.items() if name in run.game.objects]
+    found = pyscript.find_unit_list(zz_win) if zz_win is not None else None
+    if found is None:
+        if wanted:
+            where = "ZZ_Win.dat wasn't given" if zz_win is None else "ZZ_Win.dat has no Python unit list"
+            result.findings.append(Finding("note", f"{where}, so new objects got no class in it (the game only uses "
+                                                   f"units that have one)"))
+        return
+    entry, pack, member, raw = found
+    try:
+        xyz = pyscript.read_xyz(raw)
+        ul = pyscript.unit_list(xyz.payload)
+    except pyscript.ScriptError as exc:
+        result.findings.append(Finding("error", f"the game's Python unit list can't be read: {exc}"))
+        return
+    for path in ul.by_path:
+        if path in base.objects and path not in run.game.objects:
+            result.findings.append(Finding("error", f"{path} is deleted, but it has a class in the game's Python unit "
+                                                    f"list; deleting such units isn't supported yet (the game would "
+                                                    f"fail to load its units)"))
+    unit_kinds = {base.objects[p].cls for p in ul.by_path if p in base.objects}
+    new = []
+    for name, op in wanted:
+        obj = run.game.objects[name]
+        like = ul.by_path.get(op.source) if op.kind == "clone" else None
+        if like is None:
+            if obj.cls in unit_kinds:
+                result.findings.append(Finding("warning", f"{op.at()}: {name} is a new {obj.cls} but isn't a copy of "
+                                                          f"a unit in the game's Python unit list, so the game will "
+                                                          f"ignore it; make it a clone of one", op))
+            continue
+        debug = obj.props.get("ClassNameForDebug")
+        if not isinstance(debug, Text):
+            result.findings.append(Finding("error", f"{op.at()}: {name} has no ClassNameForDebug to name its class",
+                                           op))
+            continue
+        new.append(pyscript.NewClass(debug.value, name, like.name))
+    if not new or result.errors:
+        return
+    try:
+        added = pyscript.add_classes(xyz.payload, new)
+    except pyscript.ScriptError as exc:
+        result.findings.append(Finding("error", f"the new units' classes can't be added: {exc}"))
+        return
+    new_xyz = pyscript.write_xyz(pyscript.Xyz(xyz.source_md5, added))
+    result.script_changed = {entry.path: pack.to_bytes({member.path: new_xyz})}
+    result.new_classes = [n.name for n in new]
+    for n in new:
+        base_name = ".".join(ul.classes[n.like].base)
+        result.findings.append(Finding("note", f"{n.path} gets its class {n.name}(front.{base_name}) in the game's "
+                                               f"Python unit list, like {n.like}"))
+
+
 def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None = None) -> BuildResult:
-    """Run `mods` [(ModInfo, ops)] on the data files of `arc`, and their texts on the .dic files of `text_arc`
-    (ZZ_Win.dat; needed when a mod has text/*.csv). Nothing is written; see BuildResult.changed / text_changed."""
+    """Run `mods` [(ModInfo, ops)] on the data files of `arc`, and their texts and new units' classes on
+    `text_arc` (ZZ_Win.dat; needed when a mod has text/*.csv or new units). Nothing is written; see
+    BuildResult.changed / text_changed / script_changed."""
     order = load_order([m for m, _ in mods])
     by_id = {m.id: (m, ops) for m, ops in mods}
     result = BuildResult(order=[m.id for m in order])
@@ -191,6 +263,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
             return result
         result.findings += [Finding("note", n) for n in text_notes]
         result.text_changed = {entries[p.lower()].path: data for p, data in text_changed.items()}
+    unit_classes(base, run, text_arc, result)
     return result
 
 
@@ -240,10 +313,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
     if pack_path is None:
         raise BuildError(f"No pack called {pack!r} in {game}.")
     text_path = None
-    if needs_text_pack(mods):
+    if needs_zz_win(mods):
         text_path = find_pack(game, loc.PACK)
         if text_path is None:
-            raise BuildError(f"These mods add texts, which go into {loc.PACK}, but {game} doesn't have it.")
+            raise BuildError(f"These mods add texts or new units, which need {loc.PACK}, but {game} doesn't have "
+                             f"it.")
     build_id = build_of(game) or "0"  # the fingerprint includes the game build
     with ExitStack() as stack:
         arc = stack.enter_context(Edat.open(str(pack_path)))
@@ -269,11 +343,15 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 names[name] = names.get(name, 0) + 1
             say(f"texts: {len(result.text_changed)} file(s) in {text_path.name} ("
                 + ", ".join(f"{n} ×{c}" for n, c in sorted(names.items())) + ")")
-        if not result.changed and not result.text_changed:
+        if result.new_classes:
+            say(f"unit list: {len(result.new_classes)} class(es) added to {pyscript.UNIT_LIST} in {text_path.name} ("
+                + ", ".join(result.new_classes) + ")")
+        zz_win_changed = {**result.text_changed, **result.script_changed}
+        if not result.changed and not zz_win_changed:
             say("The mods change nothing in these packs.")
             return result
         say(f"fingerprint: {fingerprint_text(result.fingerprint)}")
-        rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, result.text_changed)]
+        rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, zz_win_changed)]
         rebuilt = [(path, a, changed) for path, a, changed in rebuilt if changed]
         if out is not None:
             out = Path(out)

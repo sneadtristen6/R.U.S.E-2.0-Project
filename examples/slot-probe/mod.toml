@@ -1,9 +1,0 @@
-# Check C6b (docs/PLAN.md §7): does a new unit show at a slot the menu already has?
-[mod]
-id          = "slot-probe"
-name        = "Slot probe (test)"
-version     = "0.1.0"
-authors     = ["RUSE Mod Platform"]
-license     = "MIT"
-description = "The M3 Lee copy takes the Lee's own menu slot (304) and the Lee moves to 306. Not a balance mod."
-text_prefix = "C6B"

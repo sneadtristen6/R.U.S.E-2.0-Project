@@ -1,5 +1,5 @@
 // C5's M3 Lee copy (costs 1, own id and menu slot), now with its own name from text/baseunite.csv.
-// Its own NameInMenuToken may also be what lets it appear at all: C5's copy kept the Lee's key and didn't show.
+// Like every copy, it also gets its own class in the game's Python unit list from the build (PLAN.md §7, C6d).
 export Descriptor_Unit_R2_Lee_Named is clone $/GFX/Everything/Descriptor_Unit_M3_Lee
 (
     ProductionPrice = [1, 1, 1, 1, 1]

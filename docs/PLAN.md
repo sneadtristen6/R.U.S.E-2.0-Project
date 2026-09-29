@@ -692,7 +692,7 @@ Checked next: RUSE-Mod-Manager's docs say its editor **can't** make new units ye
 nothing claims in-game success), so nobody has shown a new R.U.S.E. unit working. The `*_debuginfo` copy is a full
 duplicate of `everything` (the same 63,686 objects, 363 extra debug strings); nothing shows the game using it for the
 unit list. The Japanese units at 306 and 310 don't prove a 6th button exists in the US menu (306 is an upgrade).
-**C6b, the slot probe** ([`examples/slot-probe/`](../examples/slot-probe/)): the copy takes the Lee's own slot 304
+**C6b, the slot probe** (a test mod, removed after C6d): the copy takes the Lee's own slot 304
 ("Lee Probe", $1, key `C6B00001`) and the Lee moves to 306. Instance `D:\RUSE-Instances\c6b-slot-probe`,
 fingerprint `W77E-1S9T`. If "Lee Probe" shows where the Lee was, copies work and the menu only has buttons for the
 slots it ships with (then the build must pick shipped slots); if the slot is empty, the game ignores new units.
@@ -702,7 +702,7 @@ Sherman at $20 (the Sherman, now first, appeared as the upgrade). So a 6th slot 
 slot order), and **the game ignores copied units whatever their slot.** Not the cause either: `CHNK` is `(0, object
 count)` and the writer updates it; `TrackingId` (1–60, a small table) is shared by 42 groups of visible units, the
 Lee's with the Jagdpanther.
-**C6c, three probes at once** ([`examples/id-probe/`](../examples/id-probe/), instance
+**C6c, three probes at once** (a test mod, removed after C6d; instance
 `D:\RUSE-Instances\c6c-id-probe`, fingerprint `W6BS-XP65`), US armour menu after the Sherman:
 - "Probe A" ($1, slot 307) keeps the Lee's `ClassNameForDebug` 'Unit_M3_Lee'. The game's Python unit list
   (`parametres/classes.xyz`) has one class per unit named exactly like this, and a renamed copy has none.
@@ -718,8 +718,12 @@ to its `ZZ_Win.dat` by a scratch probe. The owner chose to go ahead under the sa
 "Lee C6-Test" ($1) shows after the Sherman.
 **C6d passed in-game (2026-09-29): "Lee C6-Test" shows at $1, under the $20 Lee.** The first new unit in R.U.S.E.:
 a copy in `everything`, its own name in the text files, and its class in the Python unit list. So C5 and C6 pass with
-the class added. **Next:** the build adds the class itself for every new unit (a Python 2.5 marshal reader and the
-fixed-template writer in `rusemod`, with the checks of decision 23), and the launcher refuses mods with script files.
+the class added. **Built (2026-09-29):** `ruse build` adds the class itself for every copied unit (`rusemod.pyscript`: a Python 2.5
+marshal reader, the one fixed template, and `check_added`, which proves the module is the old one plus exactly the
+template's statements), and every build, the launcher's included, refuses mods that contain scripts or programs.
+`ruse build examples/named-unit` now does all of C6d by itself ("unit list: 1 class(es) added"), and its unit
+list is byte-identical to the probe's that worked in-game. Tests: `tests/test_pyscript.py`; the real game:
+`tools/verify_pyscript.py`.
 
 ### C6: a new unit with its own name (ready to run, after C5)
 
@@ -931,13 +935,11 @@ Done so far: M0 (C1 and C2), the repo on GitHub, and the design for M1–M3 on p
    installers (Nuitka + Inno Setup; one for each app) and browsing the mod index. And whatever C5/C6 turn up.
 4. **You:** the open decisions in §9 (name, outreach timing, the unit to clone in M2, a second player).
 
-**How the two sessions share the work**
-- **Cloud session:** research and design, nothing that needs the game files. It writes its results into these docs.
-- **PC session:** everything that needs the game: running checks and tests, building against the install, editing
-  files on the PC.
-- **GitHub `main` is the shared state.** The sessions can't see each other's chats, so anything the other one needs
-  goes into the repo. Pull `main` before starting, push to it when done, and keep README's "Current stage" line and
-  this section up to date.
+**Who does the work (from 2026-09-29)**
+- The cloud session has ended (its credit is used up). The PC session now does everything: design, code, and the
+  checks and tests that need the game.
+- **GitHub `main` is still the record.** Anything a later session needs goes into the repo. Push when done, and
+  keep README's "Current stage" line and this section up to date.
 
 ## 11. RUSE 2.0 design notes (draft, 2026-09-28)
 

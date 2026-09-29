@@ -1,9 +1,0 @@
-# Check C6c (docs/PLAN.md §7): which fresh value makes the game drop a copied unit?
-[mod]
-id          = "id-probe"
-name        = "Id probe (test)"
-version     = "0.1.0"
-authors     = ["RUSE Mod Platform"]
-license     = "MIT"
-description = "Three M3 Lee copies, each keeping a different value of the Lee's, to find why copies don't show. Not a balance mod."
-text_prefix = "C6C"

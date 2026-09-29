@@ -233,6 +233,11 @@ Other magics: `DICS` (18) and `DICV` (13) in `genvideos\…` (probably subtitles
   statement and the `base_class` line, the same opcodes the file already uses). New strings are written plain
   (marshal `s`), never interned (`t`), so the shared-string references (`R`) later in the file keep their numbering.
   Safety rules for this (PLAN decision 23) apply to every such edit.
+- **Built (2026-09-29): `rusemod.pyscript`** reads Python 2.5 marshal data and `.xyz` files and adds classes from
+  the one template; `ruse build` gives every copied unit its class. `tools/verify_pyscript.py` (read-only): all 327
+  compiled scripts read; the unit list's 456 classes are all the standard template and all registered (bases:
+  `unit.TankUnit` 183, `avion.AvionUnit` 63, `unit.Unit` 30, `unit.InfanterieUnit` 21, 19 building kinds); the
+  build's output is byte-identical to the C6d probe that worked in-game.
 
 ## 6. Maps
 

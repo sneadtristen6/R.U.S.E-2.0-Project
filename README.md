@@ -5,7 +5,7 @@ new units, maps, models, missions and one-click modded multiplayer. The content 
 
 Status: **M0 done; M1 next** (the design for M1–M3 is written up). Nothing here modifies the game install.
 
-**Current stage (2026-09-29):** **The first new unit works in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory (checks C5 to C6d). The key was the game's Python unit list: every unit needs a class there, which the build will add under the safety rules of PLAN.md decision 23. The launcher's Play works end to end too. Earlier: C4 passed: a mod written as text (`examples/half-price-buildings`), built by
+**Current stage (2026-09-29):** **The first new unit works in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory (checks C5 to C6d). The key was the game's Python unit list: every unit needs a class there, which `ruse build` now adds by itself, under the safety rules of PLAN.md decision 23. The launcher's Play works end to end too. Earlier: C4 passed: a mod written as text (`examples/half-price-buildings`), built by
 `ruse build`, worked in-game. C3 passed too (new maps can ship their own pack). The M1.5 terrain work has started:
 the terrain mesh and tile files can be read and rewritten losslessly (`rusemod.tms`, `rusemod.tmst`), and the map
 pack "checksum" turned out to be a random ID. Next on the PC: in-game terrain tests (a raised mesa, swapped tiles,
@@ -88,6 +88,10 @@ tool), and two apps built on it, `ruse_launcher` and `ruse_studio`.
   the pasteable join code from [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md) §12.
 - **Mod file reader** ([`src/rusemod/rndf.py`](src/rusemod/rndf.py)): reads `.rndf` mod text (MOD_FORMAT §5, WARNO
   spellings) into operations for the engine, with errors that give file, line and column.
+- **New units** ([`src/rusemod/pyscript.py`](src/rusemod/pyscript.py)): the game only uses units that have a class
+  in its Python unit list, so `ruse build` gives every copied unit one, from a single fixed template that's checked
+  before it's written; mods can never bring scripts of their own (PLAN.md decision 23).
+  [`tools/verify_pyscript.py`](tools/verify_pyscript.py) checks it against the real game.
 - **Terrain** ([`src/rusemod/tms.py`](src/rusemod/tms.py), [`src/rusemod/tmst.py`](src/rusemod/tmst.py)): read and
   write the terrain mesh (heights, with a height-edit tool) and the texture-tile store. Proven lossless on every map
   by [`tools/verify_tms.py`](tools/verify_tms.py) and [`tools/verify_tmst.py`](tools/verify_tmst.py) (which also build
