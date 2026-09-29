@@ -36,10 +36,15 @@ button:disabled { cursor: default; opacity: 0.5; }
                                  padding: 5px 8px; }
 .pick-mod select { max-width: 300px; color: var(--text); }
 .top .primary { padding: 6px 14px; }
-.new-mod { display: flex; gap: 8px; padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.new-mod { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 20px; background: var(--panel);
+           border-bottom: 1px solid var(--line); }
+.new-mod .muted { flex-basis: 100%; }
 .new-mod input { width: 320px; padding: 6px 10px; background: var(--panel-hi); border: 1px solid var(--line);
                  border-radius: var(--radius); }
 .new-mod button { padding: 6px 14px; font-size: 14px; }
+.new-mod label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; }
+.new-mod input.short { width: 110px; }
+.new-mod input.wide { width: 380px; }
 
 .layout { flex: 1; display: grid; grid-template-columns: 330px 1fr; min-height: 0; }
 .browser { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-right: 1px solid var(--line);

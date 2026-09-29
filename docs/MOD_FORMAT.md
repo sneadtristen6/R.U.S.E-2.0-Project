@@ -32,7 +32,9 @@ ruse2-core/
   README.md, LICENSE, CHANGELOG.md
 ```
 
-A package is shared as a `.zip` of this folder. Built outputs are never part of the source package. An optional
+A package is one file: the folder zipped, named `<id>-<version>.rusemod` (a plain zip inside, so it opens anywhere;
+`rusemod.package`). The Studio's "Export mod…" makes it and the launcher's "Add a mod file…" installs it; a `.zip` of
+the folder is accepted too. Built outputs are never part of the source package. An optional
 `cache/` of cooked assets, keyed by tool version, can ship to speed up installs.
 
 ## 3. Manifest (`mod.toml`)
@@ -51,6 +53,7 @@ platform    = ">=0.1, <0.2"         # platform versions this mod works with
 [game]
 builds        = ["24687178"]        # Steam build ids the mod was tested on
 data_revision = "190852"
+fingerprint   = "K7Q2-M9XD"         # this mod alone on that build (§12); Export mod… writes these three lines
 
 [dependencies]                      # hard dependencies: id = version range
 # "ruse2-assets" = "^0.3"
@@ -77,6 +80,13 @@ before = []
 | Selector | `…:Turrets[class=TTurretTwoAxisDescriptor]`, `…:Weapons[Ammunition=$/GFX/…/Ammo_75mm]` | matches list items by class or a property value. More robust than an index across game updates |
 | Map key | `…:SomeMap{'key'}` | an entry of an NDF map |
 | Mod-local | `~/Descriptor_Unit_R2_US_Marines` | an object declared in this mod |
+| Found by a property | `@TAmmunition[AmmunitionId=1120]`, `@[ClassNameForDebug='Unit_M4_Sherman']` | the one object of that class (or of any class, `@[…]`) whose property has that value, named or an unnamed part of another object; an error unless exactly one matches. Works wherever an object is named: patch targets, clone sources, references. `:path` reaches a part of it. This is how RUSE-Mod-Manager mods find things (§13) |
+| Every match | `patch every TAmmunition [AmmunitionId=1120]` | every object of the class whose property has that value; at least one, or an error |
+
+A reference to a part of a game object (`Ammunition = $/…/Descriptor_Unit_M4_Sherman:Weapons[0].Ammunition`, or
+`@[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor`) makes that part a shared object: it keeps its
+place in its file and gets a name of its own (`<file>#<index>`), and from then on a patch that reaches it through its
+owner has to say `own` or `shared` (§10.5). Parts of objects a mod made can't be referred to that way yet.
 
 New objects are created in the same NDF file as the object they are cloned from, unless `in "<ndf file>"` is given.
 Names must be unique. Convention: include a short mod prefix (`Descriptor_Unit_R2_…`).
@@ -126,6 +136,14 @@ patch own $/GFX/Everything/Descriptor_Unit_M4_Sherman:Weapons[0].Ammunition   //
 (
     Puissance += 10
 )
+
+// Found by a property, the way RUSE-Mod-Manager mods find things (§4, §13): the one object that matches...
+patch @TAmmunition[AmmunitionId=1120] ( NbTirParSalves = 40 )
+// ...or every object of a class that matches
+patch every TUniteAuSolDescriptor [Nationalite=1] ( SeuilMort += 10 )
+// A copy of a part, and a reference to another unit's part (which makes that part shared, §4)
+Ammo_R2_Rifle is clone @[ClassNameForDebug='Unit_Soldat_US_Leger']:WeaponDescriptor.TurretDescriptorList[0].MountedWeaponDescriptorList[0].Ammunition ( Puissance = 8 )
+patch $/GFX/Everything/Descriptor_Unit_M4_Sherman ( SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor )
 
 // Replacing another mod's value on purpose: no warning (§10.4)
 patch $/GFX/Everything/Descriptor_Unit_M4_Sherman
@@ -320,7 +338,7 @@ depends only on the game build, the mods and their order.
 | set | `P = v` | any property | the value becomes `v`, converted to the property's type (§5). An absent property is added | the object doesn't exist; `v` can't convert |
 | multiply | `P *= k` | a number, or each item of a list of numbers | value × k | the property is absent (below) or not numeric |
 | add | `P += n` | a number, or each item of a list of numbers | value + n | same as multiply |
-| append | `P += [a, b]` | a list | the items go at the end, in the order written | the property isn't a list |
+| append | `P += [a, b]` | a list | the items go at the end, in the order written; one that's already in the list isn't added twice | the property isn't a list |
 | remove | `P -= [a]` | a list | every item equal to `a` is removed | never; if nothing matched, a warning |
 | insert | `P.insert(after=x, value=v)` (also `before=`, `at=`) | a list | `v` goes next to the first item equal to `x` | `x` isn't in the list |
 | delete property | `delete P` | any property | the property is removed, so the engine uses its built-in default | never |
@@ -337,8 +355,12 @@ depends only on the game build, the mods and their order.
   which the validator can only partly check. Hiding a unit (`ShowInMenu = [0, 0, 0, 0, 0]`) is usually the safer choice.
 - A target that doesn't exist in this game build is an error that suggests a rebase (§11). It's never skipped silently.
 - **`patch every <class>`** applies its body to every object of that class that exists at that point in the load order,
-  including clones from mods loaded earlier. Objects that lack a property the body does math on are skipped and listed
-  in the report, instead of stopping the build.
+  including clones from mods loaded earlier and unnamed parts inside other objects (a weapon's ammunition). With a
+  filter, `patch every TAmmunition [AmmunitionId=1120]`, only the objects whose property has that value. Objects that
+  lack a property the body does math on are skipped and listed in the report, instead of stopping the build; finding
+  no object at all is an error (the class or the value doesn't exist in this game build).
+- **Numbers in lists keep the list's type:** an item added to, removed from or inserted into a list of numbers takes
+  the type the list has (a flag added to a `uint32` list is a `uint32`), so `InitialFlagSet += [71]` is enough.
 
 ### 10.3 Numbers
 
@@ -600,19 +622,102 @@ v1 needs no server. A join code names the game build, the mods and their exact v
 
 ## 13. Interop with RUSE-Mod-Manager (`.rmod`)
 
-- **Import:**
-  - `patch`, `create`, `delete` and `delete_props` become the matching operations.
-  - Their instance indices are translated to our paths through the base build's registry.
-  - `file_patches` become replace/add file operations.
-  - Anything that can't be resolved is reported, never guessed.
+Built: `tools/rmod_to_mod.py` rebuilds an `.rmod` as a mod of ours (18 of them are in `mods/`, 2026-09-29; see
+`mods/README.md`); TASKS.md G moves that into the launcher. The format, read from 37 mods with our own reader
+(RUSE-Mod-Manager's code isn't used):
+
+- **One JSON file.** `$schema` `ruse-mod/v1`; `id`, `name`, `version`, `author`, `description`, `game_version` (the
+  Steam build it was made on: 24670294, 24087620 and 23661872 seen). Then up to four lists:
+  - `patches`: each names a pack (`dat`), a data file in it (`ndf`) and its `changes`. A change is an `action`
+    (`patch`, `create`, `delete_props`), a class (`table`), how to find the object (`match`) and `set`: property →
+    `{"type": T, "value": V}`. Types seen: `Float32 Int32 UInt32 Int8 Bool StringRef PathRef LocHash Guid TransRef
+    ObjRef List<T> Map<StringRef,ObjRef>`. A `create` has a `local_id` (and `top_object` when it's a whole unit);
+    later values say `{"$ref": local_id}`. `delete_props` lists `props`.
+  - `match`: `{"ClassNameForDebug": "Unit_X"}` (most), `{"AmmunitionId": 1120}`, `{"TrackingId": "CH32"}`,
+    `{"PackName": "…"}`, `{}` (every object of the class), `{"_index": "44823"}` (the object's position in the file),
+    or an anchor: `{"anchor": {"root": ["ClassNameForDebug", "Unit_X"], "steps": [["WeaponDescriptor"],
+    ["TurretDescriptorList", "[0]"], …]}}`, a named object plus steps into it (`"<v0>"` picks a map value by position).
+  - references (`ObjRef`): an anchor as above, `{"inst": 60322}` (a position), `{"stable_ref": "ClassNameForDebug",
+    "key_val": "Unit_X", "class_name": …}`, or `{"$ref"/"local_id": …}`. `TransRef` is `{"trans": "$/M3D/…"}`: an
+    import of a named object.
+  - `LocHash` values are the game's 64-bit text keys (§6) written byte by byte in file order: `86504ed857620000` is
+    the key `N_UNI_15`.
+  - `loc_patches`: a pack, a `.dic` path (language folder included) and `entries` of `key` (as above) and `value`;
+    `"add": true` marks a new text.
+  - `file_patches`: a pack and files as `path` + base64 `data` (music, videos, compiled `.xyz` scripts, `.scenario`
+    files, icons). RUSE-Mod-Manager writes each into the pack the original file lives in (§14, question 1).
+  - `sdb_patches`: per map (`DataMap_Win.dat`, `datasmap\<map>\mapinfo.win`), a `grid_size` and `layers` of `bit` +
+    a zlib+base64 `mask`: terrain bit layers.
+- **What carries over** (`tools/rmod_to_mod.py`):
+
+  | In the `.rmod` | In our mod |
+  |---|---|
+  | match by a property | `patch @TClass[Prop=value]` (§4) |
+  | `{}` | `patch every TClass` |
+  | anchor | `patch shared @[Prop='v']:steps` |
+  | `create`, `delete_props` | `Name is TClass ( … )`, `delete Prop` |
+  | `$ref`, `stable_ref`, anchor references, `TransRef` | `~/Name`, `@TClass[Prop='v']`, `@[…]:path`, `$/…` |
+  | `loc_patches` | `text/<dictionary>.csv`: `game:N_UNI_15` rows; new texts keep the original key as `game_key` |
+  | `_index`, `inst`, `<v0>` steps, `file_patches`, `sdb_patches` | not carried, never guessed: the statement stays in the `.rndf` as a comment with the original's values, and the mod's README lists it |
+
+  A few mods have recipes in the tool (a flag that is added or removed instead of the whole list rewritten, a copy
+  of a unit instead of one built from scratch, a path for an object the original matched by position); each is
+  written into the README as an assumption to check in-game. The manifest records the origin (`[origin]`: `format`,
+  `file`, `id`, `game_version`) and the build in `[game] builds`, so the launcher can say "made on another build".
+- **Builds.** Matches by property survive a build change; positions don't. A rebuilt mod is built against the
+  installed game whatever build the original was made on (the values are the author's, the objects are found by name).
 - **Export** (later): the subset of operations `.rmod` can express, so RUSE-Mod-Manager users can install our mods.
 
 ## 14. Open questions
 
 1. Which pack receives new files and new NDF objects (depends on whether NDF can mount an extra pack)?
+   RUSE-Mod-Manager's answer (§13): each file goes into the pack the original lives in (ZZ_Win.dat for music and unit
+   cards, Data_Common.dat for videos, IA_Common.dat for mission scripts, DataMap_Win.dat for scenarios and terrain
+   layers). Our build writes the unit-data pack and ZZ_Win.dat so far.
 2. Can a mod add a whole new NDF file, or only objects inside existing ones?
 3. How does the engine react to duplicate export names across files?
 4. ~~Language list~~ **Answered (FORMATS.md §4):** `us`, `fr`, `ger`, `ita`, `spa`, `pol`, `ru`, `cz`, `jpn`, `sc`
    (112 `.dic` files each). New text must also update each file's character list (key `0x8000000000000000`).
 5. The exact gameplay/cosmetic split (depends on what the desync checker hashes).
 6. Scenario source format: design it once the binary format is decoded (M6).
+
+## 15. The mod index (Browse mods)
+
+Built: `src/rusemod/mod_index.py`, the launcher's "Browse mods" (TASKS.md D, 2026-09-29). No server of ours: a
+small public git repository is the index, GitHub serves its file, and GitHub Releases hold the packages.
+
+- **The repository:** `sneadtristen6/Ruse-Mods` (the owner creates it; until then the launcher can be pointed at any
+  copy with the `index_url` setting in `settings.json`). Its `index.toml` is what the launcher reads
+  (`https://raw.githubusercontent.com/sneadtristen6/Ruse-Mods/main/index.toml`).
+- **The file:**
+
+  ```toml
+  format = 1
+
+  [[mod]]
+  id          = "airfield-capacity"                # the mod's id (mod.toml), lowercase letters, digits and -
+  name        = "Airfield Capacity"
+  version     = "1.0.0"
+  author      = "…"
+  description = "Airfields hold 128 planes instead of 8."
+  homepage    = "https://github.com/…"             # optional: "More about this mod"
+  download    = "https://github.com/…/releases/download/airfield-capacity-1.0.0/airfield-capacity-1.0.0.rusemod"
+  size        = 1234                               # bytes of the package
+  sha256      = "…"                                # 64 hex characters, of the package
+  game_build  = "24670294"                         # the build it was made on (mod.toml [game] builds)
+  fingerprint = "K7Q2-M9XD"                        # from the export (§12), for join codes later
+  tags        = ["gameplay", "air"]
+  ```
+
+  `id`, `version`, `download` (an `https://` link), `size` and `sha256` are required; an entry that lacks one, or
+  repeats an id, is skipped and listed in the launcher's log, never the whole list. A `format` above 1 means "made
+  for a newer launcher".
+- **Adding a mod:** export it from the Studio (§2), attach the `.rusemod` to a GitHub Release (of the mod's own
+  repository, or of the index repository), and open a pull request to the index repository that adds the
+  `[[mod]]` entry with the file's size and SHA-256. A new version is a new entry line: change `version`,
+  `download`, `size`, `sha256` (a published file never changes, §12).
+- **What the launcher does:** fetches the list (10 s timeout), keeps a copy in `<home>/index/` and shows that copy
+  when offline, saying from when it is; marks each entry against the library ("new", "update available",
+  "installed"); on Install, downloads the package, checks the size and the SHA-256 against the entry (anything else
+  is deleted and refused), then adds it through the library like a file the player picked (§2). The list is
+  searched by id, name, author, description and tags.

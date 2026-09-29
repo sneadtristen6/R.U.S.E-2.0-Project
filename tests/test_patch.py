@@ -4,7 +4,7 @@ import struct
 import unittest
 from decimal import Decimal
 
-from rusemod.patch import Engine, Game, Inline, ListV, Obj, Op, Ref, num, nums
+from rusemod.patch import Engine, Game, Inline, ListV, Obj, Op, Ref, Text, num, nums
 from rusemod.resolve import ModInfo
 
 
@@ -266,6 +266,110 @@ class ListsDeletesHistory(unittest.TestCase):
     def test_files(self):
         self.assertIn("already exists", run(("m", [Op("addfile", "gfx/icon.tgv", value=b"x")])).errors[0].message)
         self.assertIn("isn't a game file", run(("m", [Op("replacefile", "nope.tgv", value=b"x")])).errors[0].message)
+
+
+def named():
+    """Two units with debug names and flag lists; the Sherman's ammo is its own part, the Lee's is shared."""
+    def unit(debug, flags, ammo, origin):
+        return Obj("TUniteAuSolDescriptor", {
+            "ClassNameForDebug": Text("string", debug), "InitialFlagSet": nums(flags, "uint32"),
+            "Nationalite": num(1 if debug.endswith("Lee") else 0),
+            "Weapons": ListV([Inline(Obj("TWeapon", {"Ammunition": ammo}, origin=("f", origin)))])}, origin=("f", origin - 1))
+    own_ammo = Inline(Obj("TAmmunition", {"AmmunitionId": num(1120, "uint32"), "Puissance": num(100)}, origin=("f", 3)))
+    return Game(objects={
+        "$/Sherman": unit("Unit_M4_Sherman", [10, 24], own_ammo, 2),
+        "$/Lee": unit("Unit_M3_Lee", [10], Ref("#ammo"), 5),
+        "#ammo": Obj("TAmmunition", {"AmmunitionId": num(1000, "uint32"), "Puissance": num(50)}, origin=("f", 6)),
+        "$/Const": Obj("TTunableConstante", {"NbAvionsParAeroport": num(8)}, origin=("f", 7)),
+    })
+
+
+def puissance(result, name="$/Sherman"):
+    obj = result.game.objects[name]
+    ammo = obj.props["Weapons"].items[0].obj.props["Ammunition"] if "Weapons" in obj.props else None
+    ammo = result.game.objects[ammo.target] if isinstance(ammo, Ref) else ammo.obj if ammo else obj
+    return int(ammo.props["Puissance"].value)
+
+
+class FindingObjects(unittest.TestCase):
+    """MOD_FORMAT §4: objects found by a property, parts reached by `patch every`, references to parts."""
+
+    def test_patch_every_reaches_unnamed_parts_and_takes_a_filter(self):
+        r = run(("m", [Op("set", path="Puissance", value=num(2), every="TAmmunition")]), game=named())
+        self.assertEqual((puissance(r), puissance(r, "$/Lee"), levels(r)), (2, 2, []))  # the Sherman's own part too
+        r = run(("m", [Op("set", path="Puissance", value=num(2), every="TAmmunition", filter="AmmunitionId=1120")]),
+                game=named())
+        self.assertEqual((puissance(r), puissance(r, "$/Lee")), (2, 50))
+        r = run(("m", [Op("add", path="Nationalite", value=5, every="TUniteAuSolDescriptor",
+                          filter="ClassNameForDebug='Unit_M3_Lee'")]), game=named())
+        self.assertEqual([int(r.game.objects[n].props["Nationalite"].value) for n in ("$/Sherman", "$/Lee")], [0, 6])
+
+    def test_patch_every_that_finds_nothing_is_an_error(self):
+        r = run(("m", [Op("set", path="X", value=num(1), every="TNope")]), game=named())
+        self.assertIn("patches every TNope, but none exists in this game build (after a game update", r.errors[0].message)
+        r = run(("m", [Op("set", path="X", value=num(1), every="TAmmunition", filter="AmmunitionId=7")]), game=named())
+        self.assertIn("every TAmmunition with [AmmunitionId=7], but none exists", r.errors[0].message)
+
+    def test_a_designator_must_find_exactly_one_object(self):
+        r = run(("m", [Op("set", "@TAmmunition[AmmunitionId=1120]", "Puissance", num(3)),
+                       Op("set", "@[ClassNameForDebug='Unit_M3_Lee']", "Nationalite", num(9)),
+                       Op("set", "@TTunableConstante[NbAvionsParAeroport=8]", "NbAvionsParAeroport", num(128))]),
+                game=named())
+        self.assertEqual(levels(r), [])
+        self.assertEqual(puissance(r), 3)
+        self.assertEqual(int(r.game.objects["$/Lee"].props["Nationalite"].value), 9)
+        self.assertEqual(int(r.game.objects["$/Const"].props["NbAvionsParAeroport"].value), 128)
+        r = run(("m", [Op("set", "@[class=TUniteAuSolDescriptor]", "Nationalite", num(1))]), game=named())
+        self.assertIn("matches 2 objects ($/Lee, $/Sherman); it must match exactly one", r.errors[0].message)
+        r = run(("m", [Op("set", "@TAmmunition[AmmunitionId=1]", "Puissance", num(1))]), game=named())
+        self.assertIn("patches TAmmunition with [AmmunitionId=1], which doesn't exist in this game build", r.errors[0].message)
+
+    def test_a_designator_with_a_path_reaches_a_part(self):
+        r = run(("m", [Op("set", "@[ClassNameForDebug='Unit_M4_Sherman']", "Weapons[0].Ammunition.Puissance", num(7))]),
+                game=named())
+        self.assertEqual((levels(r), puissance(r)), ([], 7))
+
+    def test_a_reference_to_a_part_makes_it_a_shared_object(self):
+        r = run(("m", [Op("set", "$/Lee", "Weapons[0].Ammunition", Ref("$/Sherman:Weapons[0].Ammunition"))]), game=named())
+        self.assertEqual(levels(r), [])
+        shared = r.game.objects["f#3"]  # the part keeps its place in the file, under a name of its own
+        self.assertEqual(int(shared.props["AmmunitionId"].value), 1120)
+        for unit in ("$/Sherman", "$/Lee"):
+            self.assertEqual(r.game.objects[unit].props["Weapons"].items[0].obj.props["Ammunition"], Ref("f#3"))
+        # the same, found by a property; and a part of a copy can't be referred to (it has no place in a file yet)
+        r = run(("m", [Op("set", "$/Lee", "Weapons[0].Ammunition", Ref("@TAmmunition[AmmunitionId=1120]"))]), game=named())
+        self.assertEqual(r.game.objects["$/Lee"].props["Weapons"].items[0].obj.props["Ammunition"], Ref("f#3"))
+        r = run(("m", [Op("clone", "$/Copy", source="$/Sherman"),
+                       Op("set", "$/Lee", "Weapons[0].Ammunition", Ref("$/Copy:Weapons[0].Ammunition"))]), game=named())
+        self.assertIn("can't refer to a TAmmunition part that a mod made", r.errors[0].message)
+
+    def test_a_copy_of_a_found_object_or_of_a_part(self):
+        r = run(("m", [Op("clone", "$/GFX/Everything/Ammo_New", source="@TAmmunition[AmmunitionId=1120]",
+                          body=[Op("set", path="Puissance", value=num(9))]),
+                       Op("clone", "$/GFX/Everything/Lee_2", source="@[ClassNameForDebug='Unit_M3_Lee']")]), game=named())
+        self.assertEqual(levels(r), ["note"])  # the Lee copy's fresh identity
+        self.assertEqual(int(r.game.objects["$/GFX/Everything/Ammo_New"].props["Puissance"].value), 9)
+        self.assertEqual(puissance(r), 100)  # the original part is untouched
+        self.assertEqual(r.created["$/GFX/Everything/Ammo_New"].source, "$/Sherman")  # its file: the part's owner's
+        self.assertEqual(r.created["$/GFX/Everything/Lee_2"].source, "$/Lee")
+        r = run(("m", [Op("clone", "$/GFX/Everything/Ammo_Shared", source="$/Lee:Weapons[0].Ammunition")]), game=named())
+        self.assertEqual(int(r.game.objects["$/GFX/Everything/Ammo_Shared"].props["Puissance"].value), 50)  # a copy of #ammo
+        self.assertEqual(r.created["$/GFX/Everything/Ammo_Shared"].source, "#ammo")
+        r = run(("m", [Op("clone", "$/X", source="$/Lee:Nationalite")]), game=named())
+        self.assertIn("clones $/Lee:Nationalite, which isn't an object", r.errors[0].message)
+
+    def test_list_edits_keep_the_lists_number_type_and_add_nothing_twice(self):
+        r = run(("m", [Op("append", "$/Sherman", "InitialFlagSet", [num(71), num(10)]),
+                       Op("remove", "$/Sherman", "InitialFlagSet", [num(24)]),
+                       Op("insert", "$/Sherman", "InitialFlagSet", num(5), anchor=num(10), where="before")]), game=named())
+        flags = r.game.objects["$/Sherman"].props["InitialFlagSet"].items
+        self.assertEqual([(int(n.value), n.kind) for n in flags], [(5, "uint32"), (10, "uint32"), (71, "uint32")])
+        self.assertEqual(levels(r), ["note"])  # 10 was there already
+        self.assertIn("10 is already in $/Sherman:InitialFlagSet; not added twice", r.notes[0].message)
+
+    def test_a_part_cannot_be_deleted(self):
+        r = run(("m", [Op("delobj", "@TAmmunition[AmmunitionId=1120]")]), game=named())
+        self.assertIn("a part of $/Sherman; parts can't be deleted", r.errors[0].message)
 
 
 if __name__ == "__main__":

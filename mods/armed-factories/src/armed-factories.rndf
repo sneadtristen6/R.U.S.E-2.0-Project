@@ -1,0 +1,116 @@
+// Armed Factories: rebuilt from the RUSE-Mod-Manager mod Armed_Factories_V1.rmod by tools/rmod_to_mod.py.
+// Objects are found the way the original found them (docs/MOD_FORMAT.md §4): by debug name, ammunition id or class.
+
+// --- genglad/patchable/gfx/everything.cpp.gladndfbin (in Data/PC/190852/ZZ_GladPatchableWin.dat)
+Afg_Mount_0 is TMountedWeaponDescriptor
+(
+    Ammunition = @[ClassNameForDebug='Unit_Soldat_US_Leger']:WeaponDescriptor.TurretDescriptorList[0].MountedWeaponDescriptorList[0].Ammunition
+    EffectTag = 'weapon_effet_tag1'
+    TirEnMouvement = true
+)
+Afg_Mount_1 is TMountedWeaponDescriptor
+(
+    Ammunition = @[ClassNameForDebug='Unit_Soldat_US_Leger']:WeaponDescriptor.TurretDescriptorList[0].MountedWeaponDescriptorList[0].Ammunition
+    EffectTag = 'weapon_effet_tag2'
+    TirEnMouvement = true
+)
+Afg_Turret_0 is TTurretOneAxisDescriptor
+(
+    NbFX = 1
+    Tag = 'tourelle1'
+    VitesseRotation = 1.3962633609771729
+    AngleRotationMax = 6.2831854820251465
+    MountedWeaponDescriptorList = [~/Afg_Mount_0]
+)
+Afg_Turret_1 is TTurretTwoAxisDescriptor
+(
+    NbFX = 1
+    Tag = 'tourelle2'
+    VitesseRotation = 1.3962633609771729
+    AngleRotationMax = 6.2831854820251465
+    AngleRotationMaxPitch = 1.3962633609771729
+    MountedWeaponDescriptorList = [~/Afg_Mount_1]
+)
+export Afg_Weapon is TWeaponDescriptor ( TurretDescriptorList = [~/Afg_Turret_0, ~/Afg_Turret_1] )
+export Descriptor_Unit_Tourelle_Factory_Guard is clone @[ClassNameForDebug='Unit_Tourelle_MG_GER']
+(
+    WeaponDescriptor = ~/Afg_Weapon
+    ShowInMenu = [0, 0, 0, 0, 0]
+    InitialFlagSet = [uint32(24), uint32(40), uint32(43), uint32(4), uint32(6), uint32(60), uint32(10), uint32(22), uint32(41), uint32(47), uint32(50), uint32(53), uint32(57), uint32(58), uint32(21), uint32(11)]
+    ArmorDescriptor = @[ClassNameForDebug='Unit_Tourelle_Siegfried_GER']:ArmorDescriptor
+    GfxDescriptorCadavre = @[ClassNameForDebug='Unit_Tourelle_MG_GER']:GfxDescriptorCadavre
+    SoundMotorDescriptor = @[ClassNameForDebug='Unit_Hotchkiss_H_39']:SoundMotorDescriptor
+    UnitIdleManager = @[ClassNameForDebug='Unit_M1_57mm_L_50']:UnitIdleManager
+    EfficaceHintToken = key(VE_inf)
+    LongDescriptionUnitHintToken = key(LD_UNI_167)
+    DescriptionUnitHintToken = key(DD_mgGER)
+    TypeUnitHintToken = key(D_mgGER)
+    NameInMenuToken = key(ND_12)
+    Radius = 520.0
+    Scale = 1.0
+    TempsDemiTour = 6.0
+    DetectionBase = 104000.0
+    PorteeVisionVolant = 208000.0
+    SeuilMort = 250.0
+    SeuilPinned = 251.0
+    IconeType = 5
+    PositionInMenu = 115
+    Category = 4
+    CategorieIA = 2
+    TypeForAcknow = 10
+    Factory = 3
+    ProductionPrice = [40, 40, 40, 40, 40]
+    ProductionTime = 20
+    Nationalite = 1
+    AcknowUnitType = 13
+    ReculeSeulementSiUberstress = true
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_VehiculeFactory'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_VehiculeFactoryGR'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_VehiculeFactoryURSS'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_VehiculeFactoryUK'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_VehiculeFactoryFR'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_VehiculeFactoryITA'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Caserne'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_CaserneGR'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_CaserneURSS'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_CaserneUK'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_CaserneFR'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_CaserneITA'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_Canon'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_CanonGR'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_CanonURSS'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_CanonUK'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_CanonFR'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_CanonITA'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Aeroport'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_AeroportGR'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_AeroportURSS'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_AeroportUK'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_AeroportFR'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_AeroportITA'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_ExperimentalFactory'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_Atomique_US'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_ExperimentalFactoryGR'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_Atomique_GER'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_ExperimentalFactoryUK'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_Atomique_UK'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_ExperimentalFactoryURSS'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_Atomique_URSS'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_ExperimentalFactoryFR'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_Atomique_FR'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_ExperimentalFactoryITA'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_Atomique_ITA'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_UsineAutomoteur'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_UsineAutomoteurGER'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_UsineAutomoteurUK'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_UsineAutomoteurURSS'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_UsineAutomoteurFR'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_UsineAutomoteurITA'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_VehiculeFactory_JAP'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Caserne_JAP'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_Canon_JAP'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Aeroport_JAP'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_ExperimentalFactory_JAP'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Usine_Atomique_JAP'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )
+patch @TBatimentDescriptor[ClassNameForDebug='Building_UsineAutomoteur_JAP'] ( UniteDefense = ~/Descriptor_Unit_Tourelle_Factory_Guard )

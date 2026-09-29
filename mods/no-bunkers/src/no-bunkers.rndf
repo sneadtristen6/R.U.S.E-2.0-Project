@@ -1,0 +1,89 @@
+// No Bunkers: rebuilt from the RUSE-Mod-Manager mod No_Bunkers_V1.rmod by tools/rmod_to_mod.py.
+// Objects are found the way the original found them (docs/MOD_FORMAT.md §4): by debug name, ammunition id or class.
+
+// --- genglad/patchable/gfx/everything.cpp.gladndfbin (in Data/PC/190852/ZZ_GladPatchableWin.dat)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_DefenseDCAMGNest']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_DefenseAT']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_DefenseDCA']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_DefenseDCAMGATNest']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_DefenseDCAMGATNestUK']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_PosteAlerteAvanceUK']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_DefenseArtillerieDCAUK']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_ArtillerieFieldLeger']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_ArtillerieFieldLourd']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_DefenseLegereFR']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_DefenseMaginotFR']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_DefenseATITA']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_DefenseMGNestGER']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_DefenseSiegfriedGER']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Def_Bunker_enterre_JAP']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Def_Position_105mm_JAP']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)
+patch @TBatimentDescriptor[ClassNameForDebug='Building_Def_Position_DCA_JAP']
+(
+    ShowInMenu = [false, false, false, false, false]
+    ProductionPrice = [1000000, 1000000, 1000000, 1000000, 1000000]
+)

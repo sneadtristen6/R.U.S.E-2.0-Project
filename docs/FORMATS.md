@@ -144,6 +144,68 @@ requirement, and the engine doesn't check member bytes against anything we chang
 - Property names are French. Examples seen in mods: `ProductionPrice` (list of 5), `ProductionTime`,
   `VitesseLineaire` (speed), `SeuilMort` (death threshold), `SeuilPinned`, `Puissance` (power),
   `PorteeMaximale` (max range), `DetectionBase`, `ShowInMenu`, `ArmorDescriptor`, `GfxDescriptor`, `Nationalite`.
+- **Values and tricks from 37 community mods (2026-09-29; the mods' own findings, not checked by us in-game;
+  `mods/README.md` says which of them are rebuilt in the repo):**
+  - Units (`TUniteAuSolDescriptor`, `TInfanterieDescriptor`, `TAvionDescriptor`, `TTruckDescriptor`): `SeuilMort`
+    (health) and `SeuilPinned` (pinned threshold: above `SeuilMort` = never pinned, 0 = pinned at once);
+    `VitesseLineaire` / `VitesseCombat` (speeds; ground values go up to 57,200), `MaxAcceleration`,
+    `MaxDeceleration`, planes also `VitesseLineaireAuSol`; `DetectionBase` and `PorteeVisionVolant` (vision on the
+    ground / against aircraft), `PorteeAttackReflexSol` / `PorteeAttackReflexAir` (reflex-fire ranges); `ShowInMenu`
+    (5 booleans, one per battle date) with `ProductionPrice` (5 numbers) and `ProductionTime` (hiding a unit = all
+    five false plus an unaffordable price); `UpgradePrice`, `UpgradeTime`, `UpgradeRequire`; `Factory` (12 = the
+    prototype base's experimental tab) and `PositionInMenu` (row × 100 + column); `StickToGround`, `ArmureHint`,
+    `TextureForInterface` (the unit's card), `IconeType`, `Category`, `CategorieIA`, `TypeForAcknow`, `Radius`,
+    `Scale`, `TempsDemiTour`; the hint texts `NameInMenuToken`, `TypeUnitHintToken`, `DescriptionUnitHintToken`,
+    `LongDescriptionUnitHintToken`, `EfficaceHintToken` (keys such as `ND_12`, `D_mgGER`, `DD_mgGER`, `LD_UNI_167`,
+    `VE_inf`); `UnitIdleManager`, `SoundMotorDescriptor`, `GfxDescriptorCadavre`, `GfxDescriptorIcone`.
+  - `InitialFlagSet` (a list of uint32 bit numbers, up to 102): 1 is on the 54 artillery and gun pieces (indirect
+    fire, the modders' reading); 11, 21 and 55 keep vehicles out of forests (recon units lack them); 71 = vision all
+    round (artillery and turretless vehicles have it); 72 = no line-of-sight check (aircraft have it); 77 = never fires
+    by reflex (the seven atomic cannons have it); 24, 40 and 43 are on every ground unit.
+  - Buildings (`TBatimentDescriptor`, 135, of which 49 are production buildings): `BuildPolicy` 2 = free placement
+    (the bunkers' value; production buildings normally need a truck and a depot), `UniteDefense` = a unit that guards
+    the building (two decoy buildings use it), `TypeBatiment`.
+  - Ammunition (`TAmmunition`, 139, shared between units): `AmmunitionId` (1000–1139; mods start new ones at 9110),
+    `Puissance` (damage), `PorteeMaximale` / `PorteeMinimale` (range; the game's longest is 2,600,000),
+    `TempsEntreDeuxTirs` (seconds between shots; the game's fastest is 0.2 and a mod reports 0.1 as the lowest that
+    works), `NbTirParSalves` (shots per burst, on 66 of them), `AngleDispersion`, `TirIndirect`, `RayonPinned`,
+    `Arme`, `ProjectileType`, `Level`, `Name` / `TypeName` (keys `N_ARM_30`, `T_ARM_6`), `Icon`, `StressManager`,
+    `FX_vitesse_de_depart`, `FX_frottement`, `FX_tir_tendu`, `PourcentageTirDirect`. A unit's first gun is
+    `WeaponDescriptor.TurretDescriptorList[0].MountedWeaponDescriptorList[0].Ammunition`; turrets are
+    `TTurretOneAxisDescriptor` / `TTurretTwoAxisDescriptor` (`Tag`, `VitesseRotation`, `AngleRotationMax`,
+    `AngleRotationMaxPitch`, `NbFX`, `MountedWeaponDescriptorList`), mounts `TMountedWeaponDescriptor`
+    (`Ammunition`, `EffectTag`, `TirEnMouvement`), a unit's weapon `TWeaponDescriptor` (`TurretDescriptorList`).
+  - Aircraft flight, in each plane's `MouvementHandlerInfo` (`TMouvementHandler_Avion_Info`): `AltitudeDeVol`,
+    `ChaosAltitudeDeVol`, `AltitudeDownAttack`, `AltitudeDownAirport`, `AltitudeNoise`, `LoopingStartAltitude`,
+    `LoopingAltitudeToHit`, `DiveAttackStartAltitude`, `DiveAttackEndAltitude` (scaling all of them together works).
+  - Constants (`TTunableConstante`, one in `gdconstanteoriginal.cpp` and one in `gdconstanteatomic.cpp`):
+    `NbAvionsParAeroport` 8, `SecondesEntreDeuxDecollages`, `SecondesEntreDeuxAtterrissages`,
+    `RegenerationPinnedHorsCombat` 10, `MinProductionTime` 1 (a `ProductionTime` of 0 is held to it).
+  - AI (`TIAProfil`, 10 objects in `everything.cpp`: regular, three difficulties, and the personalities turtle,
+    howitzer, air force, prototype, blitzkrieg and random): `AttaqueTempsActivation`,
+    `MissionFacteurLancementAttaque`, `MissionFacteurEnoughToDestroy`, `OffensiveNbMissionMax` (-1 = no cap),
+    `DefenseMaxUnitOnPosition`, `DefenseNbMissionMax`, `HarcelementActif`, `UpgradeActifPourHarcelement`,
+    `NbProdIdle*` (Infanterie, Tank, Antitank, Arti, DCA, Chasseur, Bomber, ChasseurBomber),
+    `CashReserveTempsActivation`, `DefenseDistanceMenace`, `DefenseDistanceUrgent`,
+    `PourcentChanceUtiliserCarteManipAuDebut`, `PercentMoneyToReserveForBatimentAdmin`,
+    `TempsMemorisationUnitInvisible`, `ProbaRepereFake`, `Bonus*`. Their names on screen are the texts
+    `PROFILE_<n>` in `ai-descriptors.dic` and `AI_PROF<n>` in `flash_txt.dic`.
+  - Operations (`TChallengeMapInfo` in `misc/globals.cpp`): `TrackingId` (`CH32` Tobrouk co-op, `CH34` Zapad) and
+    `NbPlayers` (1 makes a co-op operation start without a lobby, untested). Multiplayer maps are `TMultiMapInfo`
+    (`GUID`, `TrackingId` `M09`…, `NbPlayers`, `GameType`, `GameModeMulti`, `DispoMulti2Teams` / `3Teams` / `FFA`,
+    `MapSize`, `CategoryId`), listed in a `TMultiPack`.
+  - Texts: unit names are `N_UNI_<n>` in `baseunite.dic` and long descriptions `LD_UNI_<n>` in
+    `long_description_unite.dic` (230 and 189 of them).
+  - Files: the menu music is `gen_sound\ww2\sons\atp_music\ruse_menu_ref-1.ess` (ZZ_Win.dat; an `.ess` stereo
+    encoder exists in the community), the studio splash `ww2\videos\logo\eugen.webm` (Data_Common.dat; VP9/Vorbis,
+    1280×720, 25 fps), mission scripts `genpython\1000\test\map\<mission>\scripting_chapter<n>\effetmap.xyz`
+    (IA_Common.dat; the campaign's red-zone blockers are `DescriptorBloqueZoneForRuseAndOrder` calls there),
+    scenarios `test\map\<map>\leveldesign*.scenario` (DataMap_Win.dat), unit cards
+    `gen\ww2\res2d\texanimationuniticone\<nation>\<unit>.tgv` (ZZ_Win.dat). Per-map terrain bit layers live in
+    `datasmap\<map>\mapinfo.win` (DataMap_Win.dat; 2048² cells; bit 4 = blocked, bit 8 = forest, per the mods).
+  - Ships: `Unit_Battleship`, `Unit_Heavy_Cruiser` and `Unit_Destroyer` boot, render, take orders and fire when made
+    buildable; the battleship's model has no chassis bone, so it never moves visibly. The skirmish mesh packs
+    `Pack\GFXDescriptor\MeshSkirmish_<nation>.spk` have `…WitBoat_…` variants (`ia/cluster.cpp`).
 
 **Naval units exist:** `Descriptor_Unit_Battleship`, `_Destroyer` and `_LCVP` (ships named USS Texas, Nevada, Arkansas and
 others: the Normandy mission). Whether players can control them in skirmish is untested.
