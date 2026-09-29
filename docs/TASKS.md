@@ -5,6 +5,13 @@ Cloud sessions have no game files. They do design, code and tests here, on a bra
 [PLAN.md](PLAN.md) §10 first (the order and the rules), then the task below. Everything that isn't in the task's
 scope is out of scope.
 
+**Queue (2026-09-29, keep this order):** A is done (pull request #1) → **B** (next, unless already started) → C →
+D → E → F → G. Take the first task not started; one task per session; one pull request per task; resolve
+conflicts with `main` by merging `main` into the branch (in docs/LOG.md keep both entries). When the PC session
+is out of credit (it says so here or in the pull request), a cloud session may merge its own pull request once
+GitHub's tests are green and it has re-read the whole diff; version bumps, tags and releases still wait for the
+owner's in-game check.
+
 **Rules for every task**
 - Public code is data-only: it never patches, injects into or reads addresses of RUSE.exe. MIT; never copy
   RUSE-Mod-Manager's code (LITTLEGROOVE_STUDY.md is a study, not a source).
@@ -132,7 +139,23 @@ code is in `src/rusemod/lock.py` and its tests).
    one name (the names file already has the columns).
 2. Moving an existing unit to another factory or nation ("Build menu" on any unit's page; the engine's identity
    code gives it a free slot), undoable.
-3. Whatever the review of pull request #1 listed as non-blocking (its comments); skip if nothing is listed.
+3. The review notes on pull request #1 (two reviewers, 2026-09-29; nothing blocking, all tests passed):
+   - `app.js` ~351: the "Another one" nation list never preselects the unit's own nation (`unit()` returns no
+     `nation` field, in the API and in `fake-api.js`).
+   - `app.js` ~382: if `menus()` fails after "Another one" is ticked, Create silently falls back to the source's
+     menu; it should say so instead.
+   - `api.py` ~621: the new-unit errors are hard-coded English with internal names ("Descriptor_Unit_…"); use
+     `words.toml` and the unit's shown name.
+   - `api.py` ~634 and ~632: a huge or NaN price raises a raw exception instead of a StudioError; a source without
+     an editable price silently drops the typed price.
+   - `api.py` ~315: `unit()` looks up edits by the address as given instead of the index's canonical address, so
+     a shared part opened through an alias no longer shows its "shared" edit (main used the canonical one).
+   - `edits.py` ~219: `save()` sorts clone blocks by address, so a hand-written clone of another Studio clone can
+     be moved before its source and the mod stops building.
+   - `MOD_FORMAT.md` §6: game keys are said to be up to 8 characters; the Studio writes 10 (`dic.name_to_key`
+     accepts up to 10). Fix the wording.
+   - `LOG.md`: "the names file has room for the columns" overstates it; `save()` rewrites the file with only the
+     columns it knows.
 4. Tests as in Task A.
 
 **Done when:** the browser preview shows both flows and the build on the fixtures places the unit in its new menu.
