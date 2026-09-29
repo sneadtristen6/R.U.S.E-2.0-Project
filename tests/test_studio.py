@@ -5,6 +5,7 @@ import struct
 import tempfile
 import threading
 import time
+import tomllib
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -12,6 +13,7 @@ from unittest import mock
 from fixtures import make_edat, make_ndf, val
 from test_dic import make_dic
 from rusemod import Edat, Ndf, schema
+from rusemod.brush import parse_strokes
 from rusemod.build import build_pack, load_mod
 from rusemod.dic import name_to_key
 from rusemod.index import build_index
@@ -576,6 +578,79 @@ class NewUnits(WithMod):
         self.assertEqual(self.api.units()["units"][0]["name"], "Super Sherman")
 
 
+class Terrain(WithMod):
+    """The Maps view's brushes: strokes saved in the mod's maps/<map pack>/terrain.toml (the build's own format),
+    read back for the view to draw, and taken off again with Undo."""
+
+    HILL = {"brush": "hill", "x": 500.0, "y": 600.0, "radius": 120.0, "height": 30.0}
+
+    def test_no_mod_yet(self):
+        self.assertEqual(self.api.terrain("TwoIslands"), {"strokes": [], "saved": None, "mod": None})
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod"):
+            self.api.terrain_add("TwoIslands", [self.HILL])
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod"):
+            self.api.terrain_undo("TwoIslands")
+
+    def test_strokes_saved_read_back_and_undone(self):
+        folder = Path(self.api.new_mod("Hills")["current"])
+        file = folder / "maps" / "TwoIslands" / "terrain.toml"
+        self.assertEqual(self.api.terrain_add("TwoIslands", [self.HILL]), {"count": 1, "saved": str(file)})
+        plateau = {"brush": "plateau", "x": 100, "y": 100, "radius": 50, "level": 20.0, "weight": 1.0}
+        smooth = {"brush": "smooth", "x": 100, "y": 100, "radius": 50, "weight": 0.5}
+        self.assertEqual(self.api.terrain_add("TwoIslands", [plateau, smooth])["count"], 3)
+        # the file is the mod format's own: the build's reader takes it as it is
+        strokes = parse_strokes(tomllib.loads(file.read_text(encoding="utf-8"))["stroke"], "terrain.toml")
+        self.assertEqual([s.brush for s in strokes], ["hill", "plateau", "smooth"])
+        self.assertEqual((strokes[0].height, strokes[1].level, strokes[2].weight), (30.0, 20.0, 0.5))
+        view = self.api.terrain("TwoIslands")
+        self.assertEqual((view["mod"], view["saved"]), (str(folder), str(file)))
+        self.assertEqual([s["brush"] for s in view["strokes"]], ["hill", "plateau", "smooth"])
+        self.assertEqual(view["strokes"][0], {"brush": "hill", "x": 500.0, "y": 600.0, "radius": 120.0, "height": 30.0,
+                                              "level": 0.0, "weight": 1.0})
+        self.assertEqual(self.api.terrain("SuperCrossroads4")["strokes"], [])  # another map has its own
+        # Undo takes the last strokes off; the file goes when none is left, and its empty folders with it
+        self.assertEqual(self.api.terrain_undo("TwoIslands", 2), {"count": 1, "removed": 2, "saved": str(file)})
+        self.assertEqual(parse_strokes(tomllib.loads(file.read_text(encoding="utf-8"))["stroke"])[0].brush, "hill")
+        self.assertEqual(self.api.terrain_undo("TwoIslands", 5), {"count": 0, "removed": 1, "saved": None})
+        self.assertFalse(file.exists())
+        self.assertFalse((folder / "maps").exists())
+        self.assertTrue((folder / "mod.toml").is_file())
+        self.assertEqual(self.api.terrain("TwoIslands"), {"strokes": [], "saved": None, "mod": str(folder)})
+        self.assertEqual(self.api.terrain_undo("TwoIslands"), {"count": 0, "removed": 0, "saved": None})
+
+    def test_each_mod_has_its_own_strokes(self):
+        first = self.api.new_mod("First")["current"]
+        self.api.terrain_add("TwoIslands", [self.HILL])
+        self.api.new_mod("Second")
+        self.assertEqual(self.api.terrain("TwoIslands")["strokes"], [])
+        self.api.choose_mod(first)
+        self.assertEqual(len(self.api.terrain("TwoIslands")["strokes"]), 1)
+
+    def test_what_is_refused(self):
+        self.api.new_mod("x")
+        with self.assertRaisesRegex(StudioError, "isn't a map's pack name"):
+            self.api.terrain("../etc")
+        with self.assertRaisesRegex(StudioError, "isn't a map's pack name"):
+            self.api.terrain_add("Two Islands", [self.HILL])
+        with self.assertRaisesRegex(StudioError, "stroke 1: brush 'mesa' isn't one of"):
+            self.api.terrain_add("TwoIslands", [{"brush": "mesa", "x": 1, "y": 1, "radius": 5}])
+        with self.assertRaisesRegex(StudioError, "the hill brush needs height"):
+            self.api.terrain_add("TwoIslands", [self.HILL, {"brush": "hill", "x": 1, "y": 1, "radius": 5}])
+        self.assertEqual(self.api.terrain("TwoIslands")["strokes"], [])  # nothing half-written
+
+    def test_a_broken_terrain_file_is_never_written_over(self):
+        folder = Path(self.api.new_mod("x")["current"])
+        file = folder / "maps" / "TwoIslands" / "terrain.toml"
+        file.parent.mkdir(parents=True)
+        by_hand = '[[stroke]]\nbrush = "hill"\n'  # x, y and radius missing
+        file.write_text(by_hand, encoding="utf-8")
+        for call in (lambda: self.api.terrain("TwoIslands"), lambda: self.api.terrain_add("TwoIslands", [self.HILL]),
+                     lambda: self.api.terrain_undo("TwoIslands")):
+            with self.assertRaisesRegex(StudioError, "can't be read .*stroke 1"):
+                call()
+        self.assertEqual(file.read_text(encoding="utf-8"), by_hand)
+
+
 class Labels(unittest.TestCase):
     """Every display name has all ten languages, so no modder gets a half-translated tool."""
 
@@ -596,8 +671,11 @@ class Labels(unittest.TestCase):
     def test_every_word_the_studio_screen_uses_exists(self):
         ui = Path(__file__).parents[1] / "src" / "ruse_studio" / "ui"
         app = "\n".join((ui / f).read_text(encoding="utf-8") for f in ("app.js", "maps.js"))
-        used = set(re.findall(r"\b(?:w|state\.words)\.([a-z_]+)", app))
+        used = set(re.findall(r"\b(?:w|state\.words|mv\.words)\.([a-z_]+)", app))
         used |= {"all", "ground", "infantry", "air", "buildings", "not_stable"}  # looked up by key
+        maps = (ui / "maps.js").read_text(encoding="utf-8")  # each brush's name is looked up by key
+        used |= {"brush_" + name for name in re.findall(r"^  (\w+): \[\"(?:add|level|smooth)\"", maps, re.M)}
+        self.assertEqual(len(used & {"brush_hill", "brush_smooth"}), 2)
         self.assertGreater(len(used), 25)
         self.assertEqual(sorted(used - set(_words())), [])
 

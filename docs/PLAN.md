@@ -487,7 +487,7 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 | **M0 Foundations** ✅ | repo, docs; EDAT + NDF read/write; whole-game byte-identical check (38 archives, 2,176 NDF files); modded-instance launch | **done 2026-09-28** (C1, C2 passed) | — | — |
 | **M1 Core tools** | combined file view + index (L2) ✅ (cloud session; the PC runs it); `.dic` r/w ✅ and `ruse` CLI basics ✅ (cloud session); scenario / AI-layer / capture-zone readers (our own code, informed by [LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)) | every shipped file of these types round-trips byte-identically | 2–4 (was 4–6) | low |
 | **M1.5 Frontier tests** | ~~re-encode one `TGU1` tile and one `.tms`; read one SPK section table~~ **Folded into MT (2026-09-29):** the `.tms` and `.tmst` writers are lossless on every map; the mesa test is dropped (it changed only the visual mesh, and the gameplay ground must change too); the tile tests (mirror, checker) move into MT | — | — | — |
-| **MT Terrain editor (Studio)**: next (decision 24) | **T1** the gameplay ground and the camera floor (`.kdt`) read and written, lossless on every map, and still right after their parts move; **T2** height edits that keep the ground, the camera floor and both `.tms` meshes in step, with patch bounds and water lists updated; **T3** terrain edits in a mod (brush strokes, applied the same way on every PC), built into the map's pack in the modded copy; **T4** the Studio's map view in 3D with brushes (raise, lower, flatten, smooth), Undo and "Test in game"; **T5** finer edits (re-meshing), lakes drained or filled, ground textures (plain tiles work in-game, 2026-09-29) | a modder raises a hill in the Studio and presses "Test in game": it's drawn near and far, units drive up it, orders and the camera work, trees and roads follow | 5–8 | medium (done in-game by another modder) |
+| **MT Terrain editor (Studio)**: next (decision 24) | **T1** the gameplay ground and the camera floor (`.kdt`) read and written, lossless on every map, and still right after their parts move; **T2** height edits that keep the ground, the camera floor and both `.tms` meshes in step, with patch bounds and water lists updated; **T3** terrain edits in a mod (brush strokes, applied the same way on every PC), built into the map's pack in the modded copy; **T4** the Studio's map view in 3D with brushes (hill, raise, lower, crater, plateau, flatten, smooth), Undo and "Test in game" (code done 2026-09-29, branch `cloud/studio-brushes`, in review); **T5** finer edits (re-meshing), lakes drained or filled, ground textures (plain tiles work in-game, 2026-09-29) | a modder raises a hill in the Studio and presses "Test in game": it's drawn near and far, units drive up it, orders and the camera work, trees and roads follow | 5–8 | medium (done in-game by another modder) |
 | **M2 Mod system slice** | package v1; `.rndf` reader ✅, rules engine ✅, load order ✅, fingerprint + join codes ✅ (cloud session); the adapter between game files and the engine; `.rmod` import; extra-pack mount test (C3); instances already proven by C2 | the **pipeline** works end-to-end: a throwaway value tweak + 1 cloned unit (reused visuals) builds, loads in-game and matches in a 2-PC test (until there's a second player, the solo tests S1–S2 in L6 stand in; the 2-PC test comes before the first public release). This proves the tool, not a balance mod | 2–4 (was 4–6) | medium |
 | **M3 Launcher v1** | Steam auto-detect ✅ (`ruse detect`), the window ✅ (v0.1: game status, mod sets, Play; its own app, `ruse_launcher`), one-click install into instances, modpacks, join codes; also installs the `.rmod` mods players already have, combinable and without patching the live install | first public alpha on GitHub, ModDB, Nexus | 3–5 | low |
 | **M4 Studio v1** | content browser ✅ and unit view ✅ (v0.1, with the language selector), property editor ✅ (v0.2: numbers, in place, saved as a mod, Play), unit editor; clone **any** class with its **own** visuals, wired into menus, upgrades and AI; validation, diff/rebase | a non-programmer builds a new unit | 5–8 | low–medium |
@@ -601,7 +601,7 @@ one is shorter. Rules:
 | 1 | **Ask DomesticNukes** for the three `.kdt` encodings (index buffer, triangle lists, subtree opcodes), format notes only; ours (framing, vertices, the normal word) go into FORMATS.md with the agreed credit | a message; FORMATS §6 (**done 2026-09-29**) | 0 (owner) | — |
 | 2 | **Units in the Studio:** "New unit" from a unit's page (copy, name in all languages, price, menu and nation), on the engine that already does it (C6d, C7) (**done 2026-09-29**, pull request #1; the owner's in-game test and the 0.5.0 release follow) | Studio 0.5 | 1–2 | — |
 | 3 | **Launcher v0.2:** mod sets made in the window (new, edit, rename, duplicate, delete), "Add a mod file…", drag-and-drop; players never see a file (**code done 2026-09-29**, pull request #2; the owner's test with the real game and the 0.2.0 release follow) | Launcher 0.2, first public alpha | 2 | — |
-| 4 | **Terrain editor** T1–T4 (§7 MT): `.kdt` read and written losslessly, height edits that keep the ground, the camera floor and both meshes in step, brushes in the Maps view, "Test in game" (**T2–T3 code done 2026-09-29**, branch `cloud/terrain-brushes`: brushes, all four files in step, terrain edits in mods and in the build; the in-game hill check is next, then the Studio's brushes, T4) | Studio 0.6 | 4–6 with the notes; +2–4 without | step 1 |
+| 4 | **Terrain editor** T1–T4 (§7 MT): `.kdt` read and written losslessly, height edits that keep the ground, the camera floor and both meshes in step, brushes in the Maps view, "Test in game" (**T2–T4 code done 2026-09-29**, branches `cloud/terrain-brushes` and `cloud/studio-brushes`: brushes, all four files in step, terrain edits in mods and in the build, and the brushes in the Studio's Maps view; the in-game hill check is next) | Studio 0.6 | 4–6 with the notes; +2–4 without | step 1 |
 | 5 | **Browse mods:** a GitHub repo as the index, a launcher tab that installs from it (L6) (**code done 2026-09-29**, pull request `cloud/browse-mods`; the owner creates `sneadtristen6/Ruse-Mods` and tests) | Launcher 0.3 | 1–2 | step 3 |
 | 6 | **China, step 2** (M10): a modded copy with an 8th entry wherever the data has 7; does the game offer it? | an answer | 1 (owner at the game) | — |
 | 7 | **Join codes in the launcher** (MOD_FORMAT §12) and the 2-PC test (L6) | Launcher 0.4 | 1–2 + a second player | step 3 |
@@ -760,3 +760,29 @@ https://historynet.com/the-m-1-75mm-pack-howitzer/) and Soviet aid
 (https://www.gw2ru.com/history/232540-how-the-ussr-helped-china-in-the-war-against-japan-photos); Chinese armour
 (https://en.wikipedia.org/wiki/Vickers_6-ton, https://en.wikipedia.org/wiki/T-26); the unit lists in RUSE-Mod-Manager's
 class catalog (facts only).
+
+## 12. The map editor's direction, and map ideas parked (owner, 2026-09-29)
+
+**Direction: shape maps the way Cities: Skylines does, only simpler.** A few brushes with a size and a strength
+slider, painted straight onto the 3D ground, Undo, and one button to see it in the game. Nothing is set up in a
+file. The first set (T4) is hill, raise, lower, crater, plateau, flatten and smooth; the next candidates are a ramp
+tool (click two points, the ground slopes evenly between them, the way roads want it) and water that follows the
+ground (T5). Scenery, roads and textures come after the ground works in-game (M6, M8).
+
+**Ideas parked, written down so they aren't lost. Nothing here is built or planned yet; the map editor comes first.**
+
+1. **Strongpoints: buildings troops can hold.** Pre-made buildings like the game's armed ones (bunkers, forts), but
+   infantry can go inside; on some maps they're indestructible and worth capturing, and units inside take less
+   damage. What the data says so far: the game has armed buildings that shoot, and towns already hide infantry and
+   make it tougher (PLAN §11), but no "troops go inside a building" mechanic has been found in the data, and the
+   engine can't be given one (public code is data-only, decision 23). The closest buildable version: an
+   indestructible armed building placed on a map, captured through the game's own capture rules (M6's capture-zone
+   compiler, once it exists), with a town-style cover bonus around it. Whether a unit can be made "inside" (hidden and
+   protected) is a check for later, not a promise.
+2. **Caves, tunnels, trenches, an underground.** The ground is one surface: no overhangs, no second level, so real
+   caves and tunnels aren't possible in this engine. Trenches can be dug today with the lower brush (a ditch), but
+   the game's cover bonuses belong to forest and town zones, not to the shape of the ground, so a ditch is only a
+   picture until a cover zone can be drawn on it (M6). A tunnel would have to be a gameplay trick (two connected
+   points), and nothing in the data does that yet.
+
+Both go to §11 (RUSE 2.0 design notes) when they're taken up; until then this is the record.

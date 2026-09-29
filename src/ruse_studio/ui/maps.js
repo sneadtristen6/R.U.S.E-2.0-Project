@@ -1,11 +1,55 @@
-// The Maps view: the game's maps on the left, one map's ground in 3D on the right. Read-only for now; the terrain
-// editor's brushes come next (PLAN.md milestone MT). The ground is the map's own visual mesh, lit by the game's own
-// normals and draped with the map's overview picture (StudioApi.map_view, rusemod/terrain.py). three.js is loaded
-// from the internet (see index.html) the first time the view opens.
+// The Maps view: the game's maps on the left, one map's ground in 3D on the right, and brushes that reshape it
+// (PLAN.md milestone MT, step T4). The ground is the map's own visual mesh, lit by the game's own normals and draped
+// with the map's overview picture (StudioApi.map_view, rusemod/terrain.py). Brush strokes are saved in the current
+// mod's maps/<map>/terrain.toml (StudioApi.terrain_add); this view draws them on the game's ground with the same
+// maths as the build (rusemod/brush.py), and "Test in game" builds them into all four files that hold the ground.
+// three.js is loaded from the internet (see index.html) the first time the view opens.
 const $ = (id) => document.getElementById(id);
 const SCALE = 1 / 1000;  // world units to scene units: a standard map is about 1,300 scene units wide
 const mv = { api: null, words: {}, maps: [], current: null, lod: "lowdef", water: true, gl: null, ask: 0,
-  stats: null, groundTex: {} };
+  stats: null, groundTex: {}, edit: null,
+  // brush: the tool picked, its size and strength per brush (slider values), the strokes on this map (as saved),
+  // the size of each group of strokes made this session (for Undo), the drag being painted, and the mod saved into
+  brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null } };
+
+// --- brushes: the same shapes and rules as rusemod/brush.py (the build's own copy decides; this one only draws) ---
+// name: [kind, shape, sign, one dab per click (else dabs along a drag), size %, strength %]
+const BRUSHES = {
+  hill: ["add", "soft", 1, true, 6, 50],
+  raise: ["add", "soft", 1, false, 3, 8],
+  lower: ["add", "soft", -1, false, 3, 8],
+  crater: ["add", "crater", 1, true, 4, 25],
+  plateau: ["level", "flat", 1, true, 6, 15],
+  flatten: ["level", "soft", 1, false, 4, 60],
+  smooth: ["smooth", "soft", 1, false, 4, 60],
+};
+const CRATER_RIM = 0.35;
+const HEIGHT_SHARE = 0.6;  // strength 100% = this share of the map's height range (hill, raise, lower, crater, plateau)
+
+function shapeWeight(shape, t2) {
+  if (shape === "soft") { const u = 1 - t2; return u * u; }
+  const t = Math.sqrt(t2);
+  if (shape === "flat") {
+    if (t <= 0.5) return 1;
+    const s = (t - 0.5) * 2;
+    return 1 - s * s * (3 - 2 * s);
+  }
+  let bowl = 0, rim = 0;
+  if (t2 < 0.5625) { const u = 1 - t2 / 0.5625; bowl = u * u; }
+  const v = (t - 0.8) / 0.2;
+  if (v > -1 && v < 1) { const w = 1 - v * v; rim = w * w; }
+  return CRATER_RIM * rim - bowl;
+}
+
+function heightAt(s, x, y, z, average) {
+  const dx = x - s.x, dy = y - s.y, d2 = dx * dx + dy * dy, r2 = s.radius * s.radius;
+  if (d2 >= r2) return z;
+  const [kind, shape, sign] = BRUSHES[s.brush];
+  const p = shapeWeight(shape, d2 / r2);
+  if (kind === "add") return z + sign * s.height * p;
+  if (kind === "level") return z + (s.level - z) * (s.weight * p);
+  return z + (average(x, y) - z) * (s.weight * p);
+}
 
 function el(tag, props, ...children) {
   const node = document.createElement(tag);
@@ -54,7 +98,16 @@ async function scene3d() {
     camera.updateProjectionMatrix();
     draw();
   }).observe(host);
-  mv.gl = { THREE, renderer, scene, camera, controls, draw, ground: null, water: null };
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.94, 1, 72),
+    new THREE.MeshBasicMaterial({ color: 0xc8a64b, transparent: true, opacity: 0.9, depthTest: false, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2;
+  ring.renderOrder = 10;
+  ring.visible = false;
+  scene.add(ring);
+  mv.gl = { THREE, renderer, scene, camera, controls, draw, ground: null, water: null, ring,
+    raycaster: new THREE.Raycaster(), ndc: new THREE.Vector2() };
+  watchPointer();
+  setBrushMode(mv.brush.on);
   return mv.gl;
 }
 
@@ -74,8 +127,11 @@ async function meshes(view) {
   const sx = (x1 - x0) / Q, sy = (y1 - y0) / Q, sz = (z1 - z0) / Q;
   const pos = new Float32Array(n * 3), wpos = new Float32Array(n * 3), nor = new Float32Array(n * 3);
   const uv = new Float32Array(n * 2);
+  const wx = new Float64Array(n), wy = new Float64Array(n), base = new Float64Array(n), fixed = new Uint8Array(n);
   for (let i = 0; i < n; i++) {
     const qx = q[3 * i], qy = q[3 * i + 1];
+    wx[i] = x0 + qx * sx; wy[i] = y0 + qy * sy; base[i] = z0 + q[3 * i + 2] * sz;
+    fixed[i] = qx === 0 || qx === Q || qy === 0 || qy === Q ? 1 : 0;  // the map's edge never moves
     const X = (x0 + qx * sx) * SCALE, Z = (y0 + qy * sy) * SCALE;
     pos[3 * i] = X; pos[3 * i + 1] = (z0 + q[3 * i + 2] * sz) * SCALE; pos[3 * i + 2] = Z;
     wpos[3 * i] = X; wpos[3 * i + 1] = (z0 + wq[i] * sz) * SCALE; wpos[3 * i + 2] = Z;
@@ -101,8 +157,164 @@ async function meshes(view) {
   wg.computeVertexNormals();
   const water = new THREE.Mesh(wg, new THREE.MeshLambertMaterial({ color: 0x2f6f8f, transparent: true, opacity: 0.72,
     side: THREE.DoubleSide, depthWrite: false }));
+  const edit = { n, wx, wy, base, z: Float64Array.from(base), fixed, touched: new Uint8Array(n),
+    baseNormals: nor.slice(), bounds: view.bounds, index: bucketIndex(wx, wy, x0, y0, x1, y1), grid: null };
   return { ground, water, center: [(x0 + x1) / 2 * SCALE, (z0 + z1) / 2 * SCALE, (y0 + y1) / 2 * SCALE],
-    size: Math.max(x1 - x0, y1 - y0) * SCALE };
+    size: Math.max(x1 - x0, y1 - y0) * SCALE, edit };
+}
+
+// --- the drawn ground, reshaped by the strokes ---
+function bucketIndex(wx, wy, x0, y0, x1, y1) {
+  const step = Math.max(x1 - x0, y1 - y0, 1) / 128, cells = new Map();
+  for (let i = 0; i < wx.length; i++) {
+    const key = Math.floor((wx[i] - x0) / step) * 65536 + Math.floor((wy[i] - y0) / step);
+    let list = cells.get(key);
+    if (!list) cells.set(key, (list = []));
+    list.push(i);
+  }
+  return { step, x0, y0, cells };
+}
+
+function near(index, xlo, xhi, ylo, yhi, fn) {
+  const b0 = Math.max(-1, Math.floor((xlo - index.x0) / index.step)), b1 = Math.min(129, Math.floor((xhi - index.x0) / index.step));
+  const c0 = Math.max(-1, Math.floor((ylo - index.y0) / index.step)), c1 = Math.min(129, Math.floor((yhi - index.y0) / index.step));
+  for (let bx = b0; bx <= b1; bx++) {
+    for (let by = c0; by <= c1; by++) {
+      const list = index.cells.get(bx * 65536 + by);
+      if (list) for (const i of list) fn(i);
+    }
+  }
+}
+
+// The ground as a coarse grid of heights that follows every stroke: the smooth brush pulls toward its local average
+// (the mean over about a third of the brush's radius), like HeightGrid in rusemod/brush.py.
+function makeGrid(ed) {
+  const [x0, y0, , x1, y1] = ed.bounds;
+  const cols = 256, rows = Math.max(1, Math.round(256 * (y1 - y0) / (x1 - x0)));
+  const sx = (x1 - x0) / cols, sy = (y1 - y0) / rows;
+  const sum = new Float64Array(rows * cols), cnt = new Uint32Array(rows * cols);
+  for (let i = 0; i < ed.n; i++) {
+    const c = Math.min(cols - 1, Math.max(0, Math.floor((ed.wx[i] - x0) / sx)));
+    const r = Math.min(rows - 1, Math.max(0, Math.floor((ed.wy[i] - y0) / sy)));
+    sum[r * cols + c] += ed.z[i];
+    cnt[r * cols + c] += 1;
+  }
+  const z = new Float64Array(rows * cols).fill(NaN);
+  for (let k = 0; k < z.length; k++) if (cnt[k]) z[k] = sum[k] / cnt[k];
+  const fillLine = (get, set, len) => {
+    let last = NaN;
+    const vals = Array.from({ length: len }, (_, i) => get(i));
+    const known = vals.map((v, i) => (Number.isNaN(v) ? -1 : i)).filter((i) => i >= 0);
+    if (!known.length) return;
+    let j = 0;
+    for (let i = 0; i < len; i++) {
+      if (!Number.isNaN(vals[i])) continue;
+      while (j + 1 < known.length && Math.abs(known[j + 1] - i) < Math.abs(known[j] - i)) j++;
+      set(i, vals[known[j]]);
+      last = vals[known[j]];
+    }
+    return last;
+  };
+  for (let r = 0; r < rows; r++) fillLine((c) => z[r * cols + c], (c, v) => { z[r * cols + c] = v; }, cols);
+  for (let c = 0; c < cols; c++) fillLine((r) => z[r * cols + c], (r, v) => { z[r * cols + c] = v; }, rows);
+  let low = Infinity;
+  for (const v of z) if (!Number.isNaN(v) && v < low) low = v;
+  for (let k = 0; k < z.length; k++) if (Number.isNaN(z[k])) z[k] = Number.isFinite(low) ? low : 0;
+  return { rows, cols, x0, y0, sx, sy, z };
+}
+
+function gridSpan(g, s) {
+  const c0 = Math.max(0, Math.floor((s.x - s.radius - g.x0) / g.sx) - 1);
+  const c1 = Math.min(g.cols - 1, Math.floor((s.x + s.radius - g.x0) / g.sx) + 1);
+  const r0 = Math.max(0, Math.floor((s.y - s.radius - g.y0) / g.sy) - 1);
+  const r1 = Math.min(g.rows - 1, Math.floor((s.y + s.radius - g.y0) / g.sy) + 1);
+  return [r0, r1, c0, c1];
+}
+
+function gridAverage(g, s) {
+  const k = Math.max(1, Math.min(8, Math.round(s.radius / (3 * Math.min(g.sx, g.sy)))));
+  const [r0, r1, c0, c1] = gridSpan(g, s);
+  const mean = new Map();
+  for (let r = r0; r <= r1; r++) {
+    for (let c = c0; c <= c1; c++) {
+      let total = 0, count = 0;
+      for (let rr = Math.max(0, r - k); rr <= Math.min(g.rows - 1, r + k); rr++) {
+        for (let cc = Math.max(0, c - k); cc <= Math.min(g.cols - 1, c + k); cc++) { total += g.z[rr * g.cols + cc]; count++; }
+      }
+      mean.set(r * g.cols + c, total / count);
+    }
+  }
+  const at = (r, c) => mean.get(Math.min(Math.max(r, r0), r1) * g.cols + Math.min(Math.max(c, c0), c1));
+  return (x, y) => {
+    const fc = (x - g.x0) / g.sx - 0.5, fr = (y - g.y0) / g.sy - 0.5;
+    const c = Math.min(Math.max(Math.floor(fc), c0), c1), r = Math.min(Math.max(Math.floor(fr), r0), r1);
+    const tx = Math.min(Math.max(fc - c, 0), 1), ty = Math.min(Math.max(fr - r, 0), 1);
+    const top = at(r, c) + (at(r, c + 1) - at(r, c)) * tx, bottom = at(r + 1, c) + (at(r + 1, c + 1) - at(r + 1, c)) * tx;
+    return top + (bottom - top) * ty;
+  };
+}
+
+function gridApply(g, s, average) {
+  const [r0, r1, c0, c1] = gridSpan(g, s);
+  for (let r = r0; r <= r1; r++) {
+    for (let c = c0; c <= c1; c++) {
+      const k = r * g.cols + c;
+      g.z[k] = heightAt(s, g.x0 + (c + 0.5) * g.sx, g.y0 + (r + 0.5) * g.sy, g.z[k], average);
+    }
+  }
+}
+
+function applyStroke(ed, s) {
+  let average = null;
+  if (s.brush === "smooth") {
+    if (!ed.grid) ed.grid = makeGrid(ed);
+    average = gridAverage(ed.grid, s);
+  }
+  const r2 = s.radius * s.radius;
+  near(ed.index, s.x - s.radius, s.x + s.radius, s.y - s.radius, s.y + s.radius, (i) => {
+    if (ed.fixed[i]) return;
+    const dx = ed.wx[i] - s.x, dy = ed.wy[i] - s.y;
+    if (dx * dx + dy * dy >= r2) return;
+    ed.z[i] = heightAt(s, ed.wx[i], ed.wy[i], ed.z[i], average);
+    ed.touched[i] = 1;
+  });
+  if (ed.grid) gridApply(ed.grid, s, average);
+}
+
+// Copy the heights into what the screen draws; `all` also puts back the points no stroke touches any more.
+// Normals are worked out again where the ground moved (the game's own everywhere else).
+function redraw(all, normals) {
+  const ed = mv.edit, gl = mv.gl;
+  if (!ed || !gl || !gl.ground) return;
+  const g = gl.ground.geometry, pos = g.attributes.position.array;
+  const z0 = ed.bounds[2], z1 = ed.bounds[5];
+  for (let i = 0; i < ed.n; i++) {
+    if (all || ed.touched[i]) pos[3 * i + 1] = Math.min(Math.max(ed.z[i], z0), z1) * SCALE;
+  }
+  g.attributes.position.needsUpdate = true;
+  if (normals) {
+    g.computeVertexNormals();
+    const nor = g.attributes.normal.array;
+    for (let i = 0; i < ed.n; i++) {
+      if (!ed.touched[i]) { nor[3 * i] = ed.baseNormals[3 * i]; nor[3 * i + 1] = ed.baseNormals[3 * i + 1]; nor[3 * i + 2] = ed.baseNormals[3 * i + 2]; }
+    }
+    g.attributes.normal.needsUpdate = true;
+    ed.normalsAt = performance.now();
+  }
+  g.computeBoundingSphere();
+  g.computeBoundingBox();
+  gl.draw();
+}
+
+// Back to the game's ground, then every stroke again, in order (after Undo, another mod, or the other detail level).
+function reapply() {
+  const ed = mv.edit;
+  if (!ed) return;
+  ed.z.set(ed.base);
+  ed.touched.fill(0);
+  ed.grid = null;
+  for (const s of mv.brush.strokes) applyStroke(ed, s);
+  redraw(true, true);
 }
 
 function forget(mesh) {
@@ -184,6 +396,8 @@ async function show(pack, keepCamera) {
   gl.water = made.water;
   gl.water.visible = mv.water;
   gl.scene.add(gl.ground, gl.water);
+  mv.edit = made.edit;
+  mv.brush.painting = null;
   if (!keepCamera) {
     const [cx, cy, cz] = made.center, d = made.size;
     gl.camera.near = d / 2000;
@@ -200,7 +414,201 @@ async function show(pack, keepCamera) {
   $("map-stats").textContent = fill(w.map_stats, mv.stats);
   $("map-pick").classList.add("hidden");
   $("map-hud").classList.remove("hidden");
+  $("map-tools").classList.remove("hidden");
+  loadStrokes(pack, ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
   realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
+}
+
+// --- the brush tools ---
+function settingsOf(name) {
+  if (!mv.brush.settings[name]) mv.brush.settings[name] = { size: BRUSHES[name][4], strength: BRUSHES[name][5] };
+  return mv.brush.settings[name];
+}
+
+function brushNote(text, kind) {
+  const note = $("brush-note");
+  note.textContent = text || "";
+  note.className = "small" + (kind === "error" ? " error-text" : "");
+}
+
+function showCount() {
+  const w = mv.words, n = mv.brush.strokes.length;
+  $("brush-count").textContent = n ? fill(w.brush_count, { n: n.toLocaleString() }) : "";
+  $("brush-undo").disabled = !n || !mv.brush.mod;
+}
+
+async function loadStrokes(pack, ask) {
+  const res = await mv.api.terrain(pack);
+  if (ask !== mv.ask) return;
+  mv.brush.mod = res.mod;
+  mv.brush.strokes = res.strokes;
+  mv.brush.groups = [];
+  reapply();
+  showCount();
+  renderBrushes();
+  brushNote(res.mod ? (res.strokes.length ? mv.words.brush_note : "") : mv.words.no_mod);
+}
+
+function renderBrushes() {
+  const w = mv.words, b = mv.brush;
+  $("brush-list").replaceChildren(...Object.keys(BRUSHES).map((name) => {
+    const chip = el("button", { type: "button", className: "chip", textContent: w["brush_" + name] || name });
+    chip.setAttribute("aria-pressed", String(b.on && b.name === name));
+    chip.addEventListener("click", () => pickBrush(name));
+    return chip;
+  }));
+  const set = settingsOf(b.name);
+  $("brush-size").value = set.size;
+  $("brush-strength").value = set.strength;
+  $("brush-look").setAttribute("aria-pressed", String(!b.on));
+  $("map-help").textContent = b.on ? w.brush_help : w.map_help;
+  showCount();
+}
+
+function pickBrush(name) {
+  const b = mv.brush;
+  b.name = name;
+  setBrushMode(true);
+  if (!b.mod) brushNote(mv.words.no_mod, "error");
+}
+
+function setBrushMode(on) {
+  const gl = mv.gl;
+  mv.brush.on = on;
+  if (gl) {
+    const M = gl.THREE.MOUSE;
+    gl.controls.mouseButtons = on ? { LEFT: null, MIDDLE: M.ROTATE, RIGHT: M.PAN }
+                                  : { LEFT: M.ROTATE, MIDDLE: M.DOLLY, RIGHT: M.PAN };
+    if (!on && gl.ring) { gl.ring.visible = false; gl.draw(); }
+    gl.renderer.domElement.style.cursor = on ? "crosshair" : "";
+  }
+  renderBrushes();
+}
+
+// The world numbers of a new stroke, from the brush picked and its sliders.
+function newStroke(x, y, level) {
+  const name = mv.brush.name, [kind] = BRUSHES[name], set = settingsOf(name);
+  const [x0, , z0, x1, , z1] = mv.edit.bounds;
+  const s = { brush: name, x, y, radius: set.size / 100 * (x1 - x0) };
+  if (kind === "add") s.height = set.strength / 100 * HEIGHT_SHARE * (z1 - z0);
+  if (kind === "level") { s.level = level; s.weight = name === "plateau" ? 1 : set.strength / 100; }
+  if (kind === "smooth") s.weight = set.strength / 100;
+  return s;
+}
+
+function hitGround(ev) {
+  const gl = mv.gl, rect = gl.renderer.domElement.getBoundingClientRect();
+  gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
+  gl.raycaster.setFromCamera(gl.ndc, gl.camera);
+  const hit = gl.raycaster.intersectObject(gl.ground, false)[0];
+  return hit ? hit.point : null;  // scene: X east, Y up, Z south
+}
+
+function showRing(p) {
+  const gl = mv.gl;
+  if (!gl.ring) return;
+  gl.ring.visible = Boolean(p);
+  if (p) {
+    const set = settingsOf(mv.brush.name), [x0, , , x1] = mv.edit.bounds;
+    const r = set.size / 100 * (x1 - x0) * SCALE;
+    gl.ring.position.set(p.x, p.y + r * 0.02, p.z);
+    gl.ring.scale.set(r, r, r);
+  }
+  gl.draw();
+}
+
+function dab(group, x, y) {
+  const s = newStroke(x, y, group.level);
+  group.strokes.push(s);
+  group.last = [x, y];
+  mv.brush.strokes.push(s);
+  applyStroke(mv.edit, s);
+  const ed = mv.edit;
+  redraw(false, !ed.normalsAt || performance.now() - ed.normalsAt > 150);
+}
+
+function paintTo(p) {
+  const g = mv.brush.painting;
+  if (!g || g.stamp || !g.last) return;
+  const x = p.x / SCALE, y = p.z / SCALE, spacing = g.strokes[0].radius / 3;
+  let [lx, ly] = g.last;
+  let dist = Math.hypot(x - lx, y - ly);
+  while (dist >= spacing) {
+    lx += (x - lx) * spacing / dist;
+    ly += (y - ly) * spacing / dist;
+    dab(g, lx, ly);
+    dist = Math.hypot(x - lx, y - ly);
+  }
+}
+
+async function finishStroke() {
+  const g = mv.brush.painting;
+  mv.brush.painting = null;
+  if (!g || !g.strokes.length) return;
+  redraw(false, true);
+  const pack = mv.current;
+  try {
+    await mv.api.terrain_add(pack, g.strokes);
+    if (pack !== mv.current) return;
+    mv.brush.groups.push(g.strokes.length);
+    showCount();
+    brushNote(mv.words.brush_note);
+  } catch (err) {
+    if (pack !== mv.current) return;
+    mv.brush.strokes.splice(g.start, g.strokes.length);  // not saved: take it off the view again
+    reapply();
+    showCount();
+    brushNote((err && err.message) || String(err), "error");
+  }
+}
+
+async function undoStroke() {
+  const b = mv.brush, pack = mv.current;
+  if (!b.mod || !b.strokes.length || b.painting) return;
+  const n = b.groups.length ? b.groups.pop() : 1;
+  try {
+    const res = await mv.api.terrain_undo(pack, n);
+    if (pack !== mv.current) return;
+    b.strokes.splice(b.strokes.length - res.removed, res.removed);
+    reapply();
+    showCount();
+  } catch (err) { brushNote((err && err.message) || String(err), "error"); }
+}
+
+function watchPointer() {
+  const gl = mv.gl, canvas = gl.renderer.domElement;
+  let pending = null, frame = 0;
+  const tick = () => {
+    frame = 0;
+    if (!pending || !mv.brush.on || !gl.ground) return;
+    const p = hitGround(pending);
+    showRing(p);
+    if (p && mv.brush.painting) paintTo(p);
+  };
+  canvas.addEventListener("pointermove", (ev) => {
+    if (!mv.brush.on) return;
+    pending = ev;
+    if (!frame) frame = requestAnimationFrame(tick);
+  });
+  canvas.addEventListener("pointerdown", (ev) => {
+    if (!mv.brush.on || ev.button !== 0 || !gl.ground || !mv.edit) return;
+    if (!mv.brush.mod) { brushNote(mv.words.no_mod, "error"); return; }
+    const p = hitGround(ev);
+    if (!p) return;
+    ev.preventDefault();
+    const name = mv.brush.name, [kind, , , stamp] = BRUSHES[name], set = settingsOf(name);
+    const x = p.x / SCALE, y = p.z / SCALE, z = p.y / SCALE, [, , z0, , , z1] = mv.edit.bounds;
+    const level = kind !== "level" ? 0 : name === "plateau" ? z + set.strength / 100 * HEIGHT_SHARE * (z1 - z0) : z;
+    const group = { strokes: [], last: null, level, stamp, start: mv.brush.strokes.length };
+    mv.brush.painting = group;
+    dab(group, x, y);
+    if (stamp) finishStroke();
+    else canvas.setPointerCapture(ev.pointerId);
+  });
+  for (const type of ["pointerup", "pointercancel"]) {
+    canvas.addEventListener(type, () => { if (mv.brush.painting) finishStroke(); });
+  }
+  canvas.addEventListener("pointerleave", () => { if (mv.brush.on && gl.ring) { gl.ring.visible = false; gl.draw(); } });
 }
 
 function renderList() {
@@ -218,8 +626,14 @@ function renderWords() {
   const w = mv.words;
   $("map-detail").textContent = mv.lod === "highdef" ? w.detail_high : w.detail_low;
   $("map-water-label").textContent = w.water;
-  $("map-help").textContent = w.map_help;
+  $("map-help").textContent = mv.brush.on ? w.brush_help : w.map_help;
+  $("brush-title").textContent = w.shape_ground;
+  $("brush-size-label").textContent = w.brush_size;
+  $("brush-strength-label").textContent = w.brush_strength;
+  $("brush-look").textContent = w.brush_look;
+  $("brush-undo").textContent = w.brush_undo;
   if (!mv.current) $("map-pick").textContent = w.pick_map;
+  renderBrushes();
 }
 
 let wired = false;
@@ -235,6 +649,10 @@ function wire() {
     mv.water = e.target.checked;
     if (mv.gl && mv.gl.water) { mv.gl.water.visible = mv.water; mv.gl.draw(); }
   });
+  $("brush-size").addEventListener("input", (e) => { settingsOf(mv.brush.name).size = Number(e.target.value); });
+  $("brush-strength").addEventListener("input", (e) => { settingsOf(mv.brush.name).strength = Number(e.target.value); });
+  $("brush-look").addEventListener("click", () => setBrushMode(false));
+  $("brush-undo").addEventListener("click", () => undoStroke());
 }
 
 // app.js opens the view when its tab is picked, and passes the words on every language change.
@@ -258,6 +676,10 @@ window.MapView = {
     mv.words = words;
     renderWords();
     if (mv.stats) $("map-stats").textContent = fill(words.map_stats, mv.stats);
+  },
+  // another mod was picked: its strokes on this map (or none) replace the ones drawn
+  modChanged() {
+    if (mv.current && mv.edit) loadStrokes(mv.current, mv.ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
   },
 };
 window.dispatchEvent(new Event("mapview-ready"));
