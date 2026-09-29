@@ -416,3 +416,24 @@ chunks stop one byte short of the flush marker. Built by a three-agent job (impl
 the reviewer's alignment concern was checked and left as a comment (every shipped MainNode is a multiple of 8).
 Also: TASKS.md Tasks C–G for the cloud sessions (mod package, browse mods, join codes, Studio follow-ups, `.rmod`
 import); the cloud tab's pull request #1 (Task A) is under review.
+
+### 2026-09-29, cloud session: new units from the Studio (TASKS.md A, pull request `cloud/studio-new-unit`)
+
+- **What a modder sees:** on a unit's page, **New unit…** asks for a name (one name, shown in every language), a
+  price (one number, every battle date) and the build menu: the same as the unit's, or another nation's factory
+  (factories are shown by the units they hold, since the game has no names for them). The copy opens as its own
+  page, listed first under its nation and marked *new*; it's edited like any other unit (its own values, its parts,
+  a shared part for it only or for all) and **Delete this unit** removes everything about it. Test in game builds it.
+- **How it's kept:** the copy is a `clone` block at the top of the mod's `src/studio.rndf` (its own values inside the
+  block, its parts' changes as `patch` blocks after it); its name is a row in `text/studio.baseunite.csv` with a
+  game key made from the unit's address (the same on every PC). The engine now reads `<anything>.<dictionary>.csv`
+  (MOD_FORMAT §6), so the Studio's names file never touches a hand-written `text/baseunite.csv`.
+- **Addresses:** `$/GFX/Everything/Descriptor_Unit_<Name>` with an ASCII-safe name (accents dropped); a name the
+  game or the mod already has is refused; a name without any A–Z letter or digit (Japanese, say) gets
+  `Descriptor_Unit_New_1`, and the shown name stays as typed. The debug name and the class in the game's Python unit
+  list follow from it (MOD_FORMAT §10.5).
+- **Tests:** the mod files written and read back, the build down to the game data on the fixtures (own gun, own ammo
+  copy, the name in both fixture languages, another nation's menu), listing, deleting, name clashes, a broken
+  names file left alone. The browser preview (`index.html?fake`) shows the whole flow.
+- **Not done, on purpose:** per-language names (the names file gets their columns then; today it's rewritten with one), moving an existing
+  unit to another menu, and the release (no version bump: the PC session's in-game check comes first).

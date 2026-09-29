@@ -143,8 +143,8 @@ PANZER_IV, DEPOT = "$/GFX/Everything/Descriptor_Unit_Panzer_IV_G", "$/GFX/Everyt
 M4_GUN, AMMO = M4 + ":Weapon", M4 + ":Weapon.Ammo"  # the ammo is shared with the Panzer's gun
 
 
-class Editing(unittest.TestCase):
-    """Changing a unit's numbers in place: saved in the mod's src/studio.rndf, read back, built into the game data."""
+class WithMod(unittest.TestCase):
+    """A Studio on the made-up game with a fresh platform folder per test, and a game to start (nothing starts)."""
 
     @classmethod
     def setUpClass(cls):
@@ -171,6 +171,10 @@ class Editing(unittest.TestCase):
 
     def rows(self, address):
         return {r["prop"]: r for g in self.api.unit(address)["groups"] for r in g["rows"]}
+
+
+class Editing(WithMod):
+    """Changing a unit's numbers in place: saved in the mod's src/studio.rndf, read back, built into the game data."""
 
     def test_changes_are_saved_in_the_mod_and_read_back(self):
         self.assertEqual(self.api.mods(), {"mods": [], "current": None})
@@ -335,6 +339,183 @@ class Editing(unittest.TestCase):
         self.assertEqual([number(x) for x in (0.1, 1e-7, 12.0, True, -2.5, 3)], ["0.1", "0.0000001", "12", "1", "-2.5", "3"])
         self.assertEqual([_short(x) for x in (12.0, 0.10000000149011612, 0.1, 1e300)], [12, 0.1, 0.1, 1e300])
         self.assertEqual(ModEdits(self.home).edits, {})  # a folder without the file: no changes
+
+
+SUPER = "$/GFX/Everything/Descriptor_Unit_Super_Sherman"
+
+
+def find_export(ndf, path):
+    return next(i for i, name in ndf.exports.items() if name == path)
+
+
+class NewUnits(WithMod):
+    """New units from a unit's page: a copy of a unit the game has, with its own name, price and build menu, kept in
+    the mod's src/studio.rndf and text/studio.baseunite.csv, listed, edited like any other unit, built, deleted."""
+
+    def build(self, folder):
+        rev = self.game / "Data" / "PC" / "190852"
+        arc, texts = Edat((rev / "ZZ_GladPatchableWin.dat").read_bytes()), Edat((rev / "ZZ_Win.dat").read_bytes())
+        result = build_pack(arc, [load_mod(folder)], text_arc=texts)
+        self.assertEqual(result.errors, [])
+        new = Edat(arc.to_bytes(result.changed))
+        return Ndf(new.read(new.find("everything.cpp.gladndfbin"))), Edat(texts.to_bytes(result.text_changed))
+
+    def test_a_new_unit_is_written_read_back_listed_and_built(self):
+        with self.assertRaises(StudioError):
+            self.api.new_unit(M4, "Super Sherman", 50)  # no mod yet
+        folder = Path(self.api.new_mod("Copies")["current"])
+        made = self.api.new_unit(M4, "Super Sherman", 50.4)
+        self.assertEqual((made["address"], made["name"]), (SUPER, "Super Sherman"))
+        rndf = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        self.assertIn("\nexport Descriptor_Unit_Super_Sherman is clone $/GFX/Everything/Descriptor_Unit_M4_Sherman\n(\n"
+                      "    NameInMenuToken = loc('studio.Descriptor_Unit_Super_Sherman.name')\n"
+                      "    ProductionPrice = [50, 50]\n)\n", rndf)  # the price for every battle date, whole
+        names = (folder / "text" / "studio.baseunite.csv").read_text(encoding="utf-8")
+        self.assertRegex(names, r"^key,game_key,us\nstudio\.Descriptor_Unit_Super_Sherman\.name,S[0-9A-Za-z_]{9},"
+                                r"Super Sherman\n$")
+
+        listed = self.api.units("fr")["units"]
+        self.assertEqual(listed[0]["address"], SUPER)  # new units first
+        self.assertEqual((listed[0]["name"], listed[0]["nation"], listed[0]["kind"], listed[0]["new"], listed[0]["source"]),
+                         ("Super Sherman", 0, "ground", True, M4))
+        self.assertFalse(listed[1]["new"])
+        self.assertEqual(self.api.units()["total"], 5)
+        self.assertEqual([u["address"] for u in self.api.units(nation=0, search="super")["units"]], [SUPER])
+        self.assertEqual(self.api.edited(), [])  # new, not edited
+
+        page = self.api.unit(SUPER, "fr")
+        rows = {r["prop"]: r for g in page["groups"] for r in g["rows"]}
+        self.assertEqual((page["name"], page["new"]), ("Super Sherman", {"source": M4, "source_name": "M4 Sherman (fr)"}))
+        self.assertEqual((page["can_copy"], page["used_by"], page["named"]), (False, [], True))
+        self.assertTrue(self.api.unit(M4)["can_copy"])
+        self.assertEqual((rows["ProductionPrice"]["values"], rows["ProductionPrice"]["edited"]), (["30", "35"], [50, 50]))
+        self.assertEqual(rows["NameInMenuToken"]["values"], ["Super Sherman"])
+        self.assertEqual([(p["address"], p["shared"]) for p in page["parts"]],
+                         [(SUPER + ":Weapon", False), (AMMO, True)])  # its own gun, the ammo everyone shares
+
+        # edited like any other unit: its own values go inside its block, its parts get patch blocks
+        self.assertEqual(self.api.edit(SUPER, "SeuilMort", 20)["value"], 20)
+        self.api.edit(SUPER + ":Weapon", "PorteeMaximale", 3000)
+        self.api.edit(AMMO, "Puissance", 70, "own", SUPER)  # the copy gets its own ammo
+        rndf = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        self.assertIn("    ProductionPrice = [50, 50]\n    SeuilMort = 20\n)\n", rndf)
+        self.assertIn("\npatch $/GFX/Everything/Descriptor_Unit_Super_Sherman:Weapon\n(\n    PorteeMaximale = 3000\n)\n", rndf)
+        self.assertIn("\npatch own $/GFX/Everything/Descriptor_Unit_Super_Sherman:Weapon.Ammo\n(\n    Puissance = 70\n)\n", rndf)
+        self.assertLess(rndf.index("export"), rndf.index("patch"))  # copies first
+        ammo = self.api.unit(AMMO, via=SUPER)
+        self.assertEqual([o["address"] for o in ammo["share"]["owners"]], [M4, PANZER_IV, SUPER])
+        self.assertEqual(ammo["share"]["via"], {"address": SUPER, "name": "Super Sherman", "path": "Weapon.Ammo"})
+        self.assertEqual({r["prop"]: r["edited_own"] for g in ammo["groups"] for r in g["rows"]}, {"Puissance": 70})
+        self.assertEqual(self.rows(SUPER)["SeuilMort"]["edited"], 20)
+        self.assertEqual(self.api.edited(), [])
+        self.api.edit(SUPER, "SeuilMort", 12)  # the copied value again: no change left
+        self.assertNotIn("SeuilMort", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
+
+        again = self.studio()  # opened again: the same new unit, from the files
+        self.assertEqual([(u.source, u.name) for u in again._new_units().values()], [(M4, "Super Sherman")])
+        self.assertEqual({r["prop"]: r["edited"] for g in again.unit(SUPER)["groups"] for r in g["rows"]
+                          if r["edited"] is not None}, {"ProductionPrice": [50, 50]})
+
+        ndf, texts = self.build(folder)
+        i = find_export(ndf, SUPER)
+        copy = ndf.objects[i]
+        self.assertEqual((copy.get(0).int_list(), copy.get(1).scalar()), ([50, 50], 12))
+        gun = struct.unpack("<III", copy.get(4).payload)[1]
+        self.assertNotEqual(gun, 4)  # its own gun...
+        self.assertEqual(ndf.objects[gun].get(10).scalar(), 3000)
+        own_ammo = struct.unpack("<III", ndf.objects[gun].get(8).payload)[1]
+        self.assertNotEqual(own_ammo, 6)  # ...and its own ammo
+        self.assertEqual((ndf.objects[own_ammo].get(9).scalar(), ndf.objects[6].get(9).scalar()), (70, 40))
+        self.assertEqual(ndf.objects[0].get(0).int_list(), [30, 35])  # the M4 is untouched
+        key = struct.unpack("<Q", copy.get(2).payload)[0]
+        self.assertNotEqual(key, SHERMAN)
+        from rusemod.dic import Dic
+        from rusemod import loc
+        for lang in ("us", "fr"):  # one name, in every language the game has
+            dic = Dic(texts.read(texts.find(loc.member("baseunite", lang))))
+            self.assertEqual(dic.text(key), "Super Sherman")
+
+    def test_a_new_unit_in_another_build_menu(self):
+        folder = Path(self.api.new_mod("Lend-Lease")["current"])
+        menus = self.api.menus("us")["nations"]
+        self.assertEqual([(m["nation"], m["name"]) for m in menus][:2], [(0, "USA"), (1, "Germany")])
+        self.assertEqual(menus[0]["factories"], [{"factory": 10, "units": ["M4 Sherman"], "count": 1}])
+        self.assertEqual(menus[1]["factories"], [{"factory": 10, "units": ["Panzer IV"], "count": 1}])
+        self.assertEqual(menus[5]["factories"], [])
+        with self.assertRaises(StudioError):
+            self.api.new_unit(M4, "Soviet Sherman", 40, 5, 10)  # the USSR has no factory 10 in this little game
+        made = self.api.new_unit(M4, "German Sherman", 40, 1, 10)
+        rndf = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        self.assertIn("    Factory = 10\n    Nationalite = 1\n    ProductionPrice = [40, 40]\n)\n", rndf)
+        listed = self.api.units(nation=1)["units"]
+        self.assertEqual([(u["address"], u["nation"]) for u in listed], [(made["address"], 1), (PANZER_IV, 1)])
+        rows = self.rows(made["address"])
+        self.assertEqual((rows["Nationalite"]["values"], rows["Nationalite"]["locked"]), (["1 (Allemagne)"], True))
+        self.assertEqual(rows["Factory"]["edited"], 10)
+        same = self.api.new_unit(M4, "Same menu", 40, 0, 10)  # the source's own menu: nothing to write
+        self.assertNotIn("Descriptor_Unit_Same_menu\n(\n    NameInMenuToken = loc('studio.Descriptor_Unit_Same_menu.name')"
+                         "\n    Nationalite", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
+        ndf, _texts = self.build(folder)
+        copy = ndf.objects[find_export(ndf, made["address"])]
+        self.assertEqual((copy.get(5).scalar(), copy.get(3).scalar(), copy.get(0).int_list()), (1, 10, [40, 40]))
+        self.assertEqual(ndf.objects[find_export(ndf, same["address"])].get(5), None)
+        self.assertEqual(same["address"], "$/GFX/Everything/Descriptor_Unit_Same_menu")
+
+    def test_names_safe_for_the_game_and_no_clashes(self):
+        self.api.new_mod("Names")
+        for name, price in [("M4 Sherman", 10), ("", 10), ("  ", 10), ("Fine", "10"), ("Fine", True)]:
+            with self.subTest(name=name, price=price), self.assertRaises(StudioError):
+                self.api.new_unit(M4, name, price)  # the game's own unit / no name / not a number
+        self.assertEqual(self.api.new_unit(M4, "Tigre à 2 tourelles!", 10)["address"],
+                         "$/GFX/Everything/Descriptor_Unit_Tigre_a_2_tourelles")
+        with self.assertRaises(StudioError):
+            self.api.new_unit(M4, "Tigre a 2 tourelles", 10)  # the same address again
+        self.assertEqual(self.api.new_unit(M4, "虎", 10)["address"], "$/GFX/Everything/Descriptor_Unit_New_1")
+        self.assertEqual(self.api.new_unit(M4, "戦車", 10)["address"], "$/GFX/Everything/Descriptor_Unit_New_2")
+        self.assertEqual(self.api.new_unit(DEPOT, "Big Depot", 10)["address"],
+                         "$/GFX/Everything/Descriptor_Building_Big_Depot")
+        with self.assertRaises(StudioError):
+            self.api.new_unit(AMMO, "Ammo copy", 10)  # not a unit
+        with self.assertRaises(StudioError):
+            self.api.new_unit("$/GFX/Everything/Descriptor_Unit_New_1", "Copy of a copy", 10)
+        self.assertEqual([u["name"] for u in self.api.units()["units"] if u["new"]],
+                         ["Big Depot", "虎", "戦車", "Tigre à 2 tourelles!"])  # by address
+        self.assertEqual(self.api.units(kind="buildings")["units"][0]["name"], "Big Depot")
+
+    def test_deleting_a_new_unit_removes_everything_about_it(self):
+        folder = Path(self.api.new_mod("Copies")["current"])
+        self.api.new_unit(M4, "Super Sherman", 50)
+        self.api.new_unit(M4, "Other", 50)
+        self.api.edit(SUPER, "SeuilMort", 20)
+        self.api.edit(SUPER + ":Weapon", "PorteeMaximale", 3000)
+        self.api.edit(AMMO, "Puissance", 70, "own", SUPER)
+        self.api.edit(M4, "SeuilMort", 15)
+        with self.assertRaises(StudioError):
+            self.api.delete_unit(M4)  # the game's own unit
+        self.assertEqual(self.api.delete_unit(SUPER)["source"], M4)
+        rndf = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        self.assertNotIn("Super_Sherman", rndf)
+        self.assertIn("Descriptor_Unit_Other is clone", rndf)
+        self.assertIn("patch $/GFX/Everything/Descriptor_Unit_M4_Sherman\n(\n    SeuilMort = 15\n)", rndf)
+        self.assertNotIn("Super", (folder / "text" / "studio.baseunite.csv").read_text(encoding="utf-8"))
+        self.api.delete_unit("$/GFX/Everything/Descriptor_Unit_Other")
+        self.assertFalse((folder / "text" / "studio.baseunite.csv").exists())  # no names left to keep
+        self.assertEqual([u["address"] for u in self.api.units()["units"] if u["new"]], [])
+        self.assertEqual(self.api.edited(), [M4])
+        with self.assertRaises(StudioError):
+            self.api.unit(SUPER)  # gone: nothing at that address any more
+        self.assertEqual(ModEdits(folder).new_units, {})
+
+    def test_a_broken_names_file_is_never_written_over(self):
+        folder = Path(self.api.new_mod("Copies")["current"])
+        self.api.new_unit(M4, "Super Sherman", 50)
+        (folder / "text" / "studio.baseunite.csv").write_text("key,us\n,no key\n", encoding="utf-8")
+        self.assertFalse(self.api.unit(M4)["editable"])
+        self.assertFalse(any(u["new"] for u in self.api.units()["units"]))  # it can't be shown; browsing goes on
+        with self.assertRaises(EditsFileError):
+            self.api.new_unit(M4, "Another", 50)
+        (folder / "text" / "studio.baseunite.csv").unlink()  # gone by hand: the unit keeps a plain name
+        self.assertEqual(self.api.units()["units"][0]["name"], "Super Sherman")
 
 
 class Labels(unittest.TestCase):

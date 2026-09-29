@@ -101,6 +101,29 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .badge { float: right; font-size: 11px; color: var(--muted); }
 .badge.shared { color: var(--shared); }
 .badge.edited { color: var(--accent); }
+.badge.new { color: var(--ok); }
+.notice.new { border-left-color: var(--ok); color: var(--text); }
+.notice .link { padding: 0 2px; font-size: inherit; }
+.notice .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.ghost.danger { color: var(--error); border-color: var(--error); }
+
+/* a new unit: the form under the "New unit…" button */
+.copy { margin-top: 12px; max-width: 780px; }
+.new-unit { display: grid; gap: 10px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--line);
+            border-radius: var(--radius); }
+.new-unit > label, .menu-picks label { display: grid; gap: 4px; }
+.new-unit > label > span, .menu-choice > span, .menu-picks span { color: var(--muted); font-size: 12px; }
+.new-unit input[type="text"], .new-unit input:not([type]), .new-unit input[type="number"], .new-unit select {
+  padding: 6px 10px; background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--radius); }
+.new-unit input[type="number"] { width: 8em; }
+.menu-choice { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+.menu-choice > label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.menu-choice input[type="radio"] { accent-color: var(--accent); }
+.menu-picks { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; }
+.menu-picks select { max-width: 420px; }
+.menu-picks select:disabled { opacity: 0.5; }
+.new-unit .actions { display: flex; gap: 8px; }
+.new-unit .actions button { padding: 6px 14px; font-size: 14px; }
 .unit-list button.edited .name { color: var(--accent); }
 
 .test-panel { position: relative; border-top: 1px solid var(--line); background: #0f1113; }
