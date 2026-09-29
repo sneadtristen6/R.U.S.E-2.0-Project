@@ -24,7 +24,6 @@ ours build against whatever game is installed, because they find objects by name
 | `cheat-mod-v2` | everything costs 1 and builds at once (useful for testing) | complete |
 | `double-speed-range` | double speed, weapon range and vision | complete |
 | `faster-multi-takeoff` | 24 planes per airfield, no gap between take-offs and landings | complete |
-| `fnat-all-the-time-v1` | units never get pinned (threshold 2,000,000); by DomesticNukes | complete |
 | `free-placement-factories` | production buildings can be placed anywhere | the terrain layers are not carried (the original wasn't sure they matter) |
 | `half-speed-range` | half speed, weapon range and vision | complete |
 | `high-altitude-planes` | planes fly four times higher | complete |
