@@ -134,17 +134,21 @@
     "modded copy ready: D:\\RUSE-Instances\\my-set  {'linked': 37, 'copied': 23, 'written': 1}",
     "Starting R.U.S.E. from the modded copy…",
   ];
+  // Sample data for the preview only: mods from the repo's mods/ folder with their real sizes and checksums; the
+  // download links are placeholders until the mod index repository exists (MOD_FORMAT §15).
   const listed = [
-    { id: "half-price-buildings", name: "Half-price buildings", version: "1.0.0", author: "RUSE Mod Platform",
-      description: "Every building costs half.", homepage: "https://github.com/sneadtristen6/Ruse-Mod-Platform",
-      download: "https://example.invalid/half.rusemod", size: 2048, sha256: "0".repeat(64), game_build: build,
-      fingerprint: "S1HP-X6PM", tags: ["economy", "test"] },
-    { id: "ruse2-core", name: "RUSE 2.0 Core", version: "0.5.0", author: "DomesticNukes, Tristen",
-      description: "Balance, new units and tactics for RUSE 2.0.", homepage: "", download: "https://example.invalid/core.rusemod",
-      size: 4300000, sha256: "0".repeat(64), game_build: "24670294", fingerprint: "K7Q2-M9XD", tags: ["overhaul"] },
-    { id: "airfield-capacity", name: "Airfield Capacity", version: "1.0.0", author: "",
-      description: "Airfields hold 128 planes instead of 8.", homepage: "", download: "https://example.invalid/air.rusemod",
-      size: 1200, sha256: "0".repeat(64), game_build: "24087620", fingerprint: "", tags: ["air"] },
+    { id: "airfield-capacity", name: "Airfield Capacity", version: "1.0.0", author: "", description: "Raises the number of planes that can fit in an Airfield from 8 to 128.",
+      homepage: "https://github.com/sneadtristen6/Ruse-Mod-Platform/tree/main/mods/airfield-capacity",
+      download: "https://example.invalid/airfield-capacity-1.0.0.rusemod", size: 1315, sha256: "ae22dfd4ab5ff56254fff98e8d8a27b486f4ec5c821db83211c62b35aeb0f25a",
+      game_build: "24087620", fingerprint: "", tags: ["air"] },
+    { id: "passable-forests", name: "Passable Forests", version: "1.0.0", author: "", description: "Lets every tank, tank destroyer, AA vehicle, and mobile artillery/assault gun enter forest terrain the way recon vehicles already can, by removing the InitialFlagSet flags (11, 21, 55) that block forest entry. Confirmed in-game on the M4 Sherman before rolling out to the full roster.",
+      homepage: "https://github.com/sneadtristen6/Ruse-Mod-Platform/tree/main/mods/passable-forests",
+      download: "https://example.invalid/passable-forests-1.0.0.rusemod", size: 2744, sha256: "1fe29ca1b796b3e6034f1a4710d6ed0f10236f487ec88492a3550b19692d2102",
+      game_build: "24087620", fingerprint: "", tags: ["movement"] },
+    { id: "cheat-mod-v2", name: "Cheat Mod 2.0", version: "2.0.0", author: "", description: "Every unit AND every building costs $1 to build, every unit's ProductionTime is 0, and the global MinProductionTime floor is lowered to 0.01 seconds so 0-second production actually takes effect instead of being clamped back up to 1 second. Extends the example Cheat Mod (units-only $1 pricing) with building pricing and the confirmed-working instant-production fix.",
+      homepage: "https://github.com/sneadtristen6/Ruse-Mod-Platform/tree/main/mods/cheat-mod-v2",
+      download: "https://example.invalid/cheat-mod-v2-2.0.0.rusemod", size: 4918, sha256: "e010c5cc810fdc29a84704f4bc73dedd671132bd18adb9896e2867a03fae587c",
+      game_build: "24087620", fingerprint: "", tags: ["testing"] },
   ];
   const sizeText = (n) => n < 1e6 ? `${Math.max(1, Math.round(n / 1000))} KB` : `${(n / 1e6).toFixed(1)} MB`;
   const browseView = (search) => {
