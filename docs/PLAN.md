@@ -606,6 +606,28 @@ one is shorter. Rules:
 | 6 | **China, step 2** (M10): a modded copy with an 8th entry wherever the data has 7; does the game offer it? | an answer | 1 (owner at the game) | — |
 | 7 | **Join codes in the launcher** (MOD_FORMAT §12) and the 2-PC test (L6) | Launcher 0.4 | 1–2 + a second player | step 3 |
 
+**Who does what (from 2026-09-29; DomesticNukes' part is a proposal until he agrees):**
+
+| Who | Does | Next |
+|---|---|---|
+| **The owner** | plays the in-game tests below (one game start each, screenshots), makes the calls, talks to the community and DomesticNukes, makes GitHub repos and adds collaborators | the tests below; `sneadtristen6/Ruse-Mods` for Browse mods; add DomesticNukes to the shared repo when he sends his GitHub name |
+| **DomesticNukes and his Claude** | what he knows best: the `.kdt` index buffers, triangle lists and tree nodes (needed to re-cut the ground, T5); scenery (trees, buildings, roads: the scenery file and its models); new unit textures and models (M5, M7); script know-how for the Pacific (beach landings, air drops; RUSE 2.0, private). Both Claudes review each other's notes | the `.kdt` notes; then scenery |
+| **The PC session** (has the game) | everything that needs game files: checks the cloud's work on the real maps, builds the test copies, merges, releases, the China data test | fix and re-check the terrain editor on every map; build the hill copy; releases after the tests |
+| **The cloud sessions** (no game) | code and docs from [TASKS.md](TASKS.md): join codes (E), Studio follow-ups (F), painting the ground, water that follows the ground (§12) | E |
+
+**The owner's tests, in this order** (the PC session prepares each one and gives click-level steps; stop at the
+first failure and report what happened):
+1. **The hill** (terrain editor, pull request #6): start `D:\RUSE-Instances\hill\RUSE.exe` with Steam open, play
+   Centre de gravité, find the hill: drawn close and far, tanks drive up it, orders and the camera work. Decides
+   whether the game accepts ground we move (Studio 0.6).
+2. **A new unit** (Studio, #1): a copy of the M4 Sherman, "Sherman Test", price 5, in the US armour factory,
+   built and fighting. Decides Studio 0.5.
+3. **The launcher** (#2, #4): a mod set made in the window, a mod exported from the Studio and added as one file,
+   Play. Decides launcher 0.2.
+4. **Community mods** (#3): `airfield-capacity`, then `cheat-mod-v2`, through the launcher.
+5. **Browse mods** (#5): after `sneadtristen6/Ruse-Mods` exists with an `index.toml`.
+6. **China** (M10 step 2): the copy with an 8th nation, when the PC session has built it.
+
 **Parked until asked:** the "look like R.U.S.E." polish and terrain T5; icons and unit textures (M5); map
 cloning and scenarios (M6); models (M7); new maps from heightmaps (M8); scripting (M9); sound (M11).
 
