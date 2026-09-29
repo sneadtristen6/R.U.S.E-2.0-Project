@@ -47,11 +47,14 @@ jobs:
           $setup = Get-ChildItem "dist/*-Setup-${{ steps.tag.outputs.version }}.exe"
           if (-not $setup) { throw "no installer for version ${{ steps.tag.outputs.version }}: the tag must match the app's __version__" }
           $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLower()
+          $about = Get-Content -Raw ".github/release-notes/${{ steps.tag.outputs.app }}.md"
           $notes = @"
+          $about
           Download **$($setup.Name)** below and run it. It installs for your Windows user, with no admin rights needed.
 
           Windows or your browser may warn about it: it's a new program they haven't seen many downloads of yet.
           To check that you have the real file, compare its SHA-256 with ``$hash``
           (PowerShell: ``Get-FileHash $($setup.Name)``).
           "@
-          gh release create "${{ github.ref_name }}" $setup.FullName --title (($setup.BaseName -replace '-Setup-', ' ') -replace '-', ' ') --notes $notes
+          $pre = if ("${{ steps.tag.outputs.app }}" -eq "studio") { "--prerelease" } else { "--latest" }  # the Studio is a preview
+          gh release create "${{ github.ref_name }}" $setup.FullName --title (($setup.BaseName -replace '-Setup-', ' ') -replace '-', ' ') --notes $notes $pre
