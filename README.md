@@ -3,19 +3,26 @@
 A foundational modding platform and player launcher for R.U.S.E. (Eugen Systems, 2010), built for the long run:
 new units, maps, models, missions and one-click modded multiplayer. The content goals on top are RUSE 2.0 and Pacific Island Defense.
 
-Status: **M0 done; M1 next** (the design for M1–M3 is written up). Nothing here modifies the game install.
+Status: early, and moving fast. Nothing here ever changes your game install: mods are built into a separate copy.
 
-**Current stage (2026-09-29):** **Our first new unit works in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory (checks C5 to C6d). The key was the game's Python unit list: every unit needs a class there, which `ruse build` now adds by itself, under the safety rules of PLAN.md decision 23. The launcher's Play works end to end too. Earlier: C4 passed: a mod written as text (`examples/half-price-buildings`), built by
-`ruse build`, worked in-game. C3 passed too (new maps can ship their own pack). The M1.5 terrain work has started:
-the terrain mesh and tile files can be read and rewritten losslessly (`rusemod.tms`, `rusemod.tmst`), and the map
-pack "checksum" turned out to be a random ID. Next on the PC: in-game terrain tests (a raised mesa, swapped tiles,
-checkerboard tiles), the TGU1 texture codec, and **C5, a new unit in the build menu** (ready to run, PLAN.md §7).
-On the cloud side, adding units and naming them are done (C5 and C6 are ready to run). The platform is two separate
-apps on one engine: **RUSE Launcher** for players (v0.1: home screen and Play) and **RUSE Studio** for modders (v0.2:
-change any unit's numbers in a mod, then test it in the game), each with its own Windows installer that GitHub
-builds. The PC tries both (PLAN.md §10 items 1.7, 1.9 and 1.10).
-Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19); the order is the mod system, then the
-launcher; multiplayer is tested solo until there's a second player (decision 20).
+**Download:** [Releases](https://github.com/sneadtristen6/Ruse-Mod-Platform/releases): **RUSE Launcher 0.1.0** for
+players and **RUSE Studio 0.3.0** for modders (a preview). Windows only; your browser may warn about a new download.
+
+| RUSE Launcher | RUSE Studio (its preview mode, with sample units) |
+|---|---|
+| ![RUSE Launcher: mod sets on the left, Play on the right](docs/images/launcher.jpg) | ![RUSE Studio: a unit's values, ready to edit](docs/images/studio-unit.jpg) |
+
+**Current stage (2026-09-29):**
+- **New units work in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory.
+  `ruse build` gives every copied unit the class the game's Python unit list needs, under the safety rules of
+  PLAN.md decision 23 (mods never carry scripts).
+- **Text mods work end to end** (check C4), with new names in all ten languages (C6). The launcher's Play builds the
+  modded copy and starts it.
+- **Maps:** new maps can ship their own pack (C3). The terrain mesh and tile files can be read and rewritten
+  losslessly (M1.5); the in-game terrain tests are next.
+- **Next:** in-game terrain tests, making mod sets inside the launcher, the terrain texture codec.
+- Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19).
+
 The full list is in PLAN.md §10 "Next steps"; the latest decisions are in PLAN.md §6.
 
 | Doc | What it covers |

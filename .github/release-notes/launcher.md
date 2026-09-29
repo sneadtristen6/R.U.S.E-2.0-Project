@@ -8,3 +8,5 @@ Not there yet: making mod sets in the window. For now a mod set is a small text 
     mods = ["C:/path/to/a/mod/folder"]
 
 Example mods are in the repo's `examples` folder. Problems and ideas: GitHub Issues.
+
+![RUSE Launcher](https://raw.githubusercontent.com/sneadtristen6/Ruse-Mod-Platform/main/docs/images/launcher.jpg)
