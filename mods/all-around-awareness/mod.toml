@@ -1,0 +1,15 @@
+# Rebuilt from the RUSE-Mod-Manager mod All_Around_Awareness_V1.rmod by tools/rmod_to_mod.py; README.md says what is and isn't here.
+[mod]
+id          = "all-around-awareness"
+name        = "All-Around Awareness"
+version     = "1.0.0"
+description = "Adds InitialFlagSet bit 71 ('vision_circulaire' -- 360-degree vision, no facing restriction) to every ground unit (150 newly patched, 54 already had it vanilla -- mostly artillery and turretless casemate vehicles). Real vanilla precedent for this flag (unlike the dead Total Blackout experiment) -- 54/204 ground units plus all aircraft already use it. No more sneaking around a unit's blind side."
+
+[game]
+builds = ["24670294"]  # the build the original was made on
+
+[origin]
+format       = "ruse-mod/v1"
+file         = "All_Around_Awareness_V1.rmod"
+id           = "all-around-awareness"
+game_version = "24670294"

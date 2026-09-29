@@ -249,6 +249,11 @@ code is in `src/rusemod/lock.py` and its tests).
 
 ### Task G: import RUSE-Mod-Manager `.rmod` mods — branch `cloud/rmod-import` (PLAN M3)
 
+**Status (2026-09-29):** the reader exists as `tools/rmod_to_mod.py` (branch `cloud/community-mods`: 18 mods rebuilt
+into `mods/`, the format written down in MOD_FORMAT §13, a test on a synthetic `.rmod` in `tests/test_tools.py`).
+G now means: move the reader into the engine (`rusemod/rmod.py`, built on the tool), the launcher's "Add a mod file…"
+accepting `.rmod` (it becomes a mod folder in the library, marked with its build), and the launcher tests.
+
 **Goal:** players keep the mods they already have.
 
 **Build:**

@@ -1,0 +1,15 @@
+# Rebuilt from the RUSE-Mod-Manager mod No_Regeneration_V1.rmod by tools/rmod_to_mod.py; README.md says what is and isn't here.
+[mod]
+id          = "no-regeneration"
+name        = "No Regeneration"
+version     = "1.0.0"
+description = "Disables out-of-combat health regeneration for every unit and building (RegenerationPinnedHorsCombat 10.0 -> 0.0) -- damage is permanent, units fight at whatever condition they're in until destroyed."
+
+[game]
+builds = ["24087620"]  # the build the original was made on
+
+[origin]
+format       = "ruse-mod/v1"
+file         = "No_Regeneration_V1.rmod"
+id           = "no-regeneration"
+game_version = "24087620"

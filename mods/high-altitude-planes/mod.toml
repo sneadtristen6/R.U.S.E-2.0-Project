@@ -1,0 +1,15 @@
+# Rebuilt from the RUSE-Mod-Manager mod High_Altitude_Planes_V1.rmod by tools/rmod_to_mod.py; README.md says what is and isn't here.
+[mod]
+id          = "high-altitude-planes"
+name        = "High Altitude Planes"
+version     = "1.0.0"
+description = "Scales every aircraft's flight altitude to 4x the original (cruise altitude, attack/approach altitudes, dive-bomb start/end altitudes, and looping-maneuver altitudes all scale together) so planes fly much higher across the board."
+
+[game]
+builds = ["24087620"]  # the build the original was made on
+
+[origin]
+format       = "ruse-mod/v1"
+file         = "High_Altitude_Planes_V1.rmod"
+id           = "high-altitude-planes"
+game_version = "24087620"

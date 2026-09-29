@@ -223,6 +223,16 @@ class NewObjects(unittest.TestCase):
         self.assertEqual(ndf.objects[5].get(4).scalar(), 1)
         self.assertEqual(ndf.objects[2].get(4).scalar(), 40)       # B still uses the shared original
 
+    def test_a_reference_to_a_part_makes_it_a_shared_object(self):
+        # B takes A's own weapon (#1): the part keeps its place, A and B both point at it, nothing new is added
+        out, _ = build_and_save("patch $/B ( Weapon = $/A:Weapon )")
+        ndf = reread(out)
+        self.assertEqual(len(ndf.objects), 5)
+        self.assertEqual(struct.unpack("<III", ndf.objects[3].get(2).payload)[:2], (0xBBBBBBBB, 1))
+        self.assertEqual(struct.unpack("<III", ndf.objects[0].get(2).payload)[:2], (0xBBBBBBBB, 1))
+        base, _loaded, result = build("patch $/B ( Weapon = $/A:Weapon )  patch $/A:Weapon.Ammo ( Puissance = 1 )")
+        self.assertIn("which 2 places use", result.errors[0].message)  # from then on it counts as shared
+
 
 if __name__ == "__main__":
     unittest.main()

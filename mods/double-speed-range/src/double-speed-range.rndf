@@ -1,0 +1,2082 @@
+// Double Speed & Range: rebuilt from the RUSE-Mod-Manager mod Double_Speed_Range_V1.rmod by tools/rmod_to_mod.py.
+// Objects are found the way the original found them (docs/MOD_FORMAT.md §4): by debug name, ammunition id or class.
+
+// --- genglad/patchable/gfx/everything.cpp.gladndfbin (in Data/PC/190852/ZZ_GladPatchableWin.dat)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportSoldier']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportSoldier_ITA']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportSoldier_FR']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportSoldier_UK']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportSoldier_GER']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportSoldier_URSS']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportSoldier_JAP']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportCanon']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportCanon_GER']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportCanon_ITA']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportCanon_URSS']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportCanon_FR']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportCanon_UK']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportCanon_JAP']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 13000.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Hotchkiss_H_39']
+(
+    VitesseLineaire = 5720.0
+    VitesseCombat = 5720.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TAmmunition[AmmunitionId=1002] ( PorteeMaximale = 130000.0 )
+patch @TAmmunition[AmmunitionId=1065] ( PorteeMaximale = 130000.0 )
+patch @TAmmunition[AmmunitionId=1048] ( PorteeMaximale = 130000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Vickers']
+(
+    VitesseLineaire = 10140.0
+    VitesseCombat = 10140.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TAmmunition[AmmunitionId=1049] ( PorteeMaximale = 130000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Willis_MB']
+(
+    VitesseLineaire = 12220.0
+    VitesseCombat = 12220.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Kubelwagen']
+(
+    VitesseLineaire = 12220.0
+    VitesseCombat = 12220.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SdkFz_222']
+(
+    VitesseLineaire = 10140.0
+    VitesseCombat = 10140.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1000] ( PorteeMaximale = 130000.0 )
+patch @TAmmunition[AmmunitionId=1051] ( PorteeMaximale = 130000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_BA_11']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TAmmunition[AmmunitionId=1001] ( PorteeMaximale = 130000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Autoblinda_40']
+(
+    VitesseLineaire = 9360.0
+    VitesseCombat = 9360.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TAmmunition[AmmunitionId=1050] ( PorteeMaximale = 130000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Autoblinda_43']
+(
+    VitesseLineaire = 10140.0
+    VitesseCombat = 10140.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TAmmunition[AmmunitionId=1003] ( PorteeMaximale = 156000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Unite_Vide_L'] ( VitesseLineaire = 114400.0  VitesseCombat = 114400.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Unite_Vide_B'] ( VitesseLineaire = 114400.0  VitesseCombat = 114400.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TransportHQ']
+(
+    VitesseLineaire = 11440.0
+    VitesseCombat = 3120.0
+    DetectionBase = 52.0
+    PorteeVisionVolant = 5200.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M1_57mm_L_50']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1016] ( PorteeMaximale = 234000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M1_57mm_L_50_SOLO']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 260000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M5_76mm_L_50']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1017] ( PorteeMaximale = 260000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M10_Wolverine']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1007] ( PorteeMaximale = 208000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M36_Jackson']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1012] ( PorteeMaximale = 260000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_GER_37mm_Pak36']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1015] ( PorteeMaximale = 208000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_PaK_40_75mm_L_48']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Marder_II']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1010] ( PorteeMaximale = 260000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Jagdpanther']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Laffly_W15_TCC']
+(
+    VitesseLineaire = 8320.0
+    VitesseCombat = 8320.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Lorraine_37_L']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Archer']
+(
+    VitesseLineaire = 8320.0
+    VitesseCombat = 8320.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SU_85']
+(
+    VitesseLineaire = 7020.0
+    VitesseCombat = 7020.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SU_100']
+(
+    VitesseLineaire = 7020.0
+    VitesseCombat = 7020.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Semovente_M_90_53']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SA_25mm_L_1934']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SA_47mm_1937']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_QF_2_pounder_40_mm']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_QF_17_pounder_76mm']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_45mm_L46']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_76mm_ZIS_3']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Cannone_da_47_32_M35']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_88mm_Flak']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1018] ( PorteeMaximale = 312000.0 )
+patch @TAmmunition[AmmunitionId=1101] ( PorteeMaximale = 312000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Stug_III_B']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1074] ( PorteeMaximale = 338000.0  PorteeMinimale = 52000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M7_Priest']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1024] ( PorteeMaximale = 624000.0  PorteeMinimale = 130000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M40_GMC']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1025] ( PorteeMaximale = 832000.0  PorteeMinimale = 130000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SturmTiger']
+(
+    VitesseLineaire = 5200.0
+    VitesseCombat = 5200.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1075] ( PorteeMaximale = 364000.0  PorteeMinimale = 78000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_75mm_le_FK_38_L_34']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1023] ( PorteeMaximale = 416000.0  PorteeMinimale = 130000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_150mm_sFH_18_L_30']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_75mm_mle_1897']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_155mm_GPF']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_87mm_QF_25_pounder']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_140mm_5_5_Inch_BL_Mk_III_L_30']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_152mm_howitzer']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_203mm_howitzer']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TAmmunition[AmmunitionId=1027] ( PorteeMaximale = 1248000.0  PorteeMinimale = 260000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_75mm_Canonne_da_75_27']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_210mm_Obice_da_M1935_L_23_8']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_ARL_40']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 7280.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sexton']
+(
+    VitesseLineaire = 6760.0
+    VitesseCombat = 6760.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_203mm_howitzer_atomique']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SU_122']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 7280.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Semovente_M_40_75_18']
+(
+    VitesseLineaire = 7020.0
+    VitesseCombat = 7020.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Semovente_M_43_105_25']
+(
+    VitesseLineaire = 7020.0
+    VitesseCombat = 7020.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_40mm_M1_Bofors_L_60']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1095] ( PorteeMaximale = 286000.0 )
+patch @TAmmunition[AmmunitionId=1096] ( PorteeMaximale = 104000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_40mm_M1_Bofors_L_60_UK']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M16_GMC']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 520000.0
+)
+patch @TAmmunition[AmmunitionId=1087] ( PorteeMaximale = 286000.0 )
+patch @TAmmunition[AmmunitionId=1088] ( PorteeMaximale = 104000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M19_GMC_Twin_40mm']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 624000.0
+)
+patch @TAmmunition[AmmunitionId=1099] ( PorteeMaximale = 286000.0 )
+patch @TAmmunition[AmmunitionId=1100] ( PorteeMaximale = 104000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_20mm_FlaK_30_L_112']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1089] ( PorteeMaximale = 286000.0 )
+patch @TAmmunition[AmmunitionId=1090] ( PorteeMaximale = 104000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_88mm_FlaK_36L_56']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_ARL_40_atomique']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 7280.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_25mm_CA_mle_1938']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_37mm_AA']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_20mm_Breda']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_T28']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1013] ( PorteeMaximale = 260000.0 )
+patch @TAmmunition[AmmunitionId=1072] ( PorteeMaximale = 260000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_T28_atomique']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_L6_40_Lanciafiamme']
+(
+    VitesseLineaire = 12220.0
+    VitesseCombat = 12220.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TAmmunition[AmmunitionId=1058] ( PorteeMaximale = 156000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M26_Pershing']
+(
+    VitesseLineaire = 8840.0
+    VitesseCombat = 8840.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1009] ( PorteeMaximale = 260000.0 )
+patch @TAmmunition[AmmunitionId=1070] ( PorteeMaximale = 260000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Super_Pershing']
+(
+    VitesseLineaire = 9360.0
+    VitesseCombat = 9360.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1011] ( PorteeMaximale = 260000.0 )
+patch @TAmmunition[AmmunitionId=1071] ( PorteeMaximale = 260000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Super_Pershing_DEMO']
+(
+    VitesseLineaire = 12480.0
+    VitesseCombat = 12480.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1014] ( PorteeMaximale = 260000.0 )
+patch @TAmmunition[AmmunitionId=1073] ( PorteeMaximale = 260000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Maus']
+(
+    VitesseLineaire = 5200.0
+    VitesseCombat = 5200.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1008] ( PorteeMaximale = 234000.0 )
+patch @TAmmunition[AmmunitionId=1068] ( PorteeMaximale = 208000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_FCM_F1']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Churchill_A22']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TAmmunition[AmmunitionId=1006] ( PorteeMaximale = 208000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Churchill_atomique']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Matilda']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Churchill_AVRE']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_IS2']
+(
+    VitesseLineaire = 7800.0
+    VitesseCombat = 7800.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TAmmunition[AmmunitionId=1069] ( PorteeMaximale = 234000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_KV1']
+(
+    VitesseLineaire = 5720.0
+    VitesseCombat = 5720.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_IS3']
+(
+    VitesseLineaire = 7800.0
+    VitesseCombat = 7800.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Lanciafiamme_atomique']
+(
+    VitesseLineaire = 12220.0
+    VitesseCombat = 12220.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Carro_Armato_P_26_40']
+(
+    VitesseLineaire = 10140.0
+    VitesseCombat = 10140.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_AVRE_atomique']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sherman_Firefly']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Maus_atomique']
+(
+    VitesseLineaire = 5200.0
+    VitesseCombat = 5200.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_SdKfz_234_2_Puma']
+(
+    VitesseLineaire = 10140.0
+    VitesseCombat = 10140.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1005] ( PorteeMaximale = 182000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_155mm_M1_Long_Tom_L_45']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Long_Tom_atomique']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Long_Tom_nuke']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1037] ( PorteeMaximale = 1040000.0  PorteeMinimale = 260000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_US']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1038] ( PorteeMaximale = 832000.0  PorteeMinimale = 338000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_UK']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_FR']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_GER']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_ITA']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_URSS']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Canon_atomique_JAP']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sherman_Calliope']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1033] ( PorteeMaximale = 520000.0  PorteeMinimale = 208000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sherman_Calliope_atomique']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sherman_lance_flammes']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sherman_lance_flammes_atomique']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Puma_atomique']
+(
+    VitesseLineaire = 10140.0
+    VitesseCombat = 10140.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_210mm_Morser']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Morser_atomique']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_V2_launcher']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1039] ( PorteeMaximale = 5200000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_V2_nuclear_launcher']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1040] ( PorteeMaximale = 5200000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_IS3_atomique']
+(
+    VitesseLineaire = 7800.0
+    VitesseCombat = 7800.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_P26_atomique']
+(
+    VitesseLineaire = 10140.0
+    VitesseCombat = 10140.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Breda_Dovunque_90_53']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_PZIV_Wirbelwind']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1093] ( PorteeMaximale = 286000.0 )
+patch @TAmmunition[AmmunitionId=1094] ( PorteeMaximale = 104000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Char_DCA_M4_SKINK']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Katyusha']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 11440.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TAmmunition[AmmunitionId=1034] ( PorteeMaximale = 728000.0  PorteeMinimale = 208000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Katyusha_atomique']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 11440.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_ZSU_37']
+(
+    VitesseLineaire = 10140.0
+    VitesseCombat = 10140.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Breda_Dovunque_atomique']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M_15_AA_Tank']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Wirbelwind_atomique']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sdkfz251']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1035] ( PorteeMaximale = 520000.0  PorteeMinimale = 208000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sdkfz251_atomique']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Wurfrahmen_PV']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1036] ( PorteeMaximale = 1248000.0  PorteeMinimale = 208000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M3A1_Stuart']
+(
+    VitesseLineaire = 11180.0
+    VitesseCombat = 11180.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1064] ( PorteeMaximale = 130000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M24_Chaffee']
+(
+    VitesseLineaire = 12220.0
+    VitesseCombat = 12220.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1066] ( PorteeMaximale = 156000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Panzer_III_J']
+(
+    VitesseLineaire = 10140.0
+    VitesseCombat = 10140.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_T26']
+(
+    VitesseLineaire = 8840.0
+    VitesseCombat = 8840.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M15_AA_Tank_atomique']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Carro_Veloce']
+(
+    VitesseLineaire = 12480.0
+    VitesseCombat = 12480.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Carro_Armato_M11_39']
+(
+    VitesseLineaire = 9360.0
+    VitesseCombat = 9360.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M3_Lee']
+(
+    VitesseLineaire = 7020.0
+    VitesseCombat = 7020.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M3_Lee_cinematique']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1020] ( PorteeMaximale = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M4_Sherman']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Panzer_IV_G']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1067] ( PorteeMaximale = 182000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Panzer_IV_cinematique']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Panzer_V_G_Panther']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_FCM_F1_atomique']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Somua_S_35']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 7280.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Sau_40']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 7280.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Skink_atomique']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Cruiser_A13']
+(
+    VitesseLineaire = 11180.0
+    VitesseCombat = 11180.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Cruiser_A27_Cromwell']
+(
+    VitesseLineaire = 11180.0
+    VitesseCombat = 11180.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_T34']
+(
+    VitesseLineaire = 7800.0
+    VitesseCombat = 7800.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Carro_Armato_M13_40']
+(
+    VitesseLineaire = 11180.0
+    VitesseCombat = 11180.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Carro_Armato_M15_42']
+(
+    VitesseLineaire = 12220.0
+    VitesseCombat = 12220.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Panzer_VI_Tigre']
+(
+    VitesseLineaire = 7020.0
+    VitesseCombat = 7020.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Panzer_VI_B_Tigre_II']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 7280.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_KingTigerAS']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_B1_Bis']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 6240.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_ARL_44']
+(
+    VitesseLineaire = 7020.0
+    VitesseCombat = 7020.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_M8_Greyhound']
+(
+    VitesseLineaire = 11180.0
+    VitesseCombat = 11180.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Panhard_178']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Panhard_EBR_75']
+(
+    VitesseLineaire = 10140.0
+    VitesseCombat = 10140.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Daimler_AC_MK_1']
+(
+    VitesseLineaire = 8060.0
+    VitesseCombat = 8060.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Coventry_armoured_car']
+(
+    VitesseLineaire = 9360.0
+    VitesseCombat = 9360.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_EBR_atomique']
+(
+    VitesseLineaire = 10140.0
+    VitesseCombat = 10140.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Destroyer'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TAmmunition[AmmunitionId=1103] ( PorteeMaximale = 1144000.0 )
+patch @TAmmunition[AmmunitionId=1104] ( PorteeMaximale = 832000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Battleship'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TAmmunition[AmmunitionId=1031] ( PorteeMaximale = 2860000.0  PorteeMinimale = 52000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Heavy_Cruiser'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TAmmunition[AmmunitionId=1030] ( PorteeMaximale = 2340000.0  PorteeMinimale = 52000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_LCVP'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_LST'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_Siegfried_GER'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TAmmunition[AmmunitionId=1059] ( PorteeMaximale = 156000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_MG_GER'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TAmmunition[AmmunitionId=1054] ( PorteeMaximale = 156000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_MG_US'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TAmmunition[AmmunitionId=1053] ( PorteeMaximale = 156000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_AT_US'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_DCA_US'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_AT_UK'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_Outpost_UK'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TAmmunition[AmmunitionId=1052] ( PorteeMaximale = 156000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_Artillerie_UK'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_ArtillerieLight_URSS'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_ArtillerieHeavy_URSS'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_Light_FR'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_Maginot_FR'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Tourelle_AT_ITA'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Kurogane']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 7280.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_47mm_AT']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_75mm_Type88']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1097] ( PorteeMaximale = 260000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_75mm_Type35']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 1040.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type5_47mm_HoRu']
+(
+    VitesseLineaire = 11180.0
+    VitesseCombat = 11180.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1004] ( PorteeMaximale = 156000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type2_HoRi']
+(
+    VitesseLineaire = 6760.0
+    VitesseCombat = 6760.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type2_75mm_KuSe']
+(
+    VitesseLineaire = 11180.0
+    VitesseCombat = 11180.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type4_HaTo']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1076] ( PorteeMaximale = 624000.0  PorteeMinimale = 208000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type4_HaTo_atomique']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_TaSe_20mm']
+(
+    VitesseLineaire = 9880.0
+    VitesseCombat = 9880.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 520000.0
+)
+patch @TAmmunition[AmmunitionId=1091] ( PorteeMaximale = 286000.0 )
+patch @TAmmunition[AmmunitionId=1092] ( PorteeMaximale = 104000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type95_HaGo']
+(
+    VitesseLineaire = 6760.0
+    VitesseCombat = 6760.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type97_ChiHa']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type3_ChiNu']
+(
+    VitesseLineaire = 11180.0
+    VitesseCombat = 11180.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type5_ChiRi']
+(
+    VitesseLineaire = 11180.0
+    VitesseCombat = 11180.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type1_AOV']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Type1_AOV_atomique']
+(
+    VitesseLineaire = 9100.0
+    VitesseCombat = 9100.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_OI_Heavy_Tank']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 7280.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1032] ( PorteeMaximale = 416000.0  PorteeMinimale = 104000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_OI_Heavy_Tank_atomique']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 7280.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Bunker_enterre_JAP'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Position_105mm_JAP'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TAmmunition[AmmunitionId=1019] ( PorteeMaximale = 312000.0 )
+patch @TUniteAuSolDescriptor[ClassNameForDebug='Unit_Position_DCA_JAP'] ( DetectionBase = 208000.0  PorteeVisionVolant = 416000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_C47_Para']
+(
+    VitesseLineaire = 31200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Caproni_314_Para']
+(
+    VitesseLineaire = 31200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Potez_650_Para']
+(
+    VitesseLineaire = 31200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_C47_Para_RU']
+(
+    VitesseLineaire = 31200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Ju_52_Para']
+(
+    VitesseLineaire = 41600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_C47_Para_URSS']
+(
+    VitesseLineaire = 31200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Mitsubishi_Ki_57']
+(
+    VitesseLineaire = 31200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Mitsubishi_Ki_57_reco']
+(
+    VitesseLineaire = 31200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Junkers_87']
+(
+    VitesseLineaire = 52000.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 260000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1105] ( PorteeMaximale = 416000.0 )
+patch @TAmmunition[AmmunitionId=1106] ( PorteeMaximale = 416000.0 )
+patch @TAmmunition[AmmunitionId=1125] ( PorteeMaximale = 208000.0 )
+patch @TAmmunition[AmmunitionId=1128] ( PorteeMaximale = 208000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Junkers_87_Rudel']
+(
+    VitesseLineaire = 52000.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 260000.0
+    DetectionBase = 390000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1123] ( PorteeMaximale = 520000.0 )
+patch @TAmmunition[AmmunitionId=1124] ( PorteeMaximale = 520000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Junkers_87_PV']
+(
+    VitesseLineaire = 28080.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 260000.0
+    DetectionBase = 390000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Storch_GR']
+(
+    VitesseLineaire = 41600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    DetectionBase = 390000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_ME109_GR']
+(
+    VitesseLineaire = 72800.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1130] ( PorteeMaximale = 208000.0 )
+patch @TAmmunition[AmmunitionId=1113] ( PorteeMaximale = 416000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_ME109_PV']
+(
+    VitesseLineaire = 35880.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1114] ( PorteeMaximale = 416000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_ME262']
+(
+    VitesseLineaire = 93600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1132] ( PorteeMaximale = 208000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_HE_111']
+(
+    VitesseLineaire = 52000.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1118] ( PorteeMaximale = 208000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_HE_111_PV']
+(
+    VitesseLineaire = 28080.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1122] ( PorteeMaximale = 208000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_HE_111_High_PV']
+(
+    VitesseLineaire = 28080.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Ar234']
+(
+    VitesseLineaire = 93600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1127] ( PorteeMaximale = 208000.0 )
+patch @TAmmunition[AmmunitionId=1119] ( PorteeMaximale = 208000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Ar234_PV']
+(
+    VitesseLineaire = 72800.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_P40Warhawk']
+(
+    VitesseLineaire = 62400.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1129] ( PorteeMaximale = 208000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_P47Thunderbolt']
+(
+    VitesseLineaire = 72800.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 260000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1111] ( PorteeMaximale = 416000.0 )
+patch @TAmmunition[AmmunitionId=1109] ( PorteeMaximale = 416000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_P47Thunderbolt_PV']
+(
+    VitesseLineaire = 36400.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    DetectionBase = 390000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Grasshopper']
+(
+    VitesseLineaire = 41600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    DetectionBase = 390000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_B25']
+(
+    VitesseLineaire = 52000.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_B25_PV']
+(
+    VitesseLineaire = 28080.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Junkers_87_GR']
+(
+    VitesseLineaire = 83200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1131] ( PorteeMaximale = 208000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_P51_PV']
+(
+    VitesseLineaire = 43940.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1115] ( PorteeMaximale = 416000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_B17_PV']
+(
+    VitesseLineaire = 28080.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_B17_High_PV']
+(
+    VitesseLineaire = 28080.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_B17']
+(
+    VitesseLineaire = 52000.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1120] ( PorteeMaximale = 208000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_B17_Atomic_bomber']
+(
+    VitesseLineaire = 52000.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1121] ( PorteeMaximale = 208000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_C47_Para_PV']
+(
+    VitesseLineaire = 41600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_C47_Para_solo']
+(
+    VitesseLineaire = 41600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_MS_406']
+(
+    VitesseLineaire = 62400.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Dewoitine_D520']
+(
+    VitesseLineaire = 72800.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Breguet_693_Guppy']
+(
+    VitesseLineaire = 62400.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 260000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1107] ( PorteeMaximale = 416000.0 )
+patch @TAmmunition[AmmunitionId=1117] ( PorteeMaximale = 416000.0 )
+patch @TAmmunition[AmmunitionId=1126] ( PorteeMaximale = 208000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Potez_63_11']
+(
+    VitesseLineaire = 41600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    DetectionBase = 390000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Amiot_143']
+(
+    VitesseLineaire = 41600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_CR_42_Falco']
+(
+    VitesseLineaire = 62400.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    DetectionBase = 390000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Macchi_MC_200']
+(
+    VitesseLineaire = 72800.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Macchi_MC_205V']
+(
+    VitesseLineaire = 83200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_SM_79_Sparviero']
+(
+    VitesseLineaire = 72800.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 260000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Piaggio_P108']
+(
+    VitesseLineaire = 72800.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Avro_Anson']
+(
+    VitesseLineaire = 41600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    DetectionBase = 390000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Spitfire']
+(
+    VitesseLineaire = 83200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Hawker_Hurricane']
+(
+    VitesseLineaire = 62400.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 260000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1116] ( PorteeMaximale = 416000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Hawker_Typhoon']
+(
+    VitesseLineaire = 72800.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 260000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1112] ( PorteeMaximale = 416000.0 )
+patch @TAmmunition[AmmunitionId=1110] ( PorteeMaximale = 416000.0 )
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Wellington']
+(
+    VitesseLineaire = 52000.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Wellington_PV']
+(
+    VitesseLineaire = 31200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Lancaster']
+(
+    VitesseLineaire = 62400.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Polikarpov_I16']
+(
+    VitesseLineaire = 62400.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Yak_3']
+(
+    VitesseLineaire = 72800.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_IL2_Sturmovik']
+(
+    VitesseLineaire = 62400.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 260000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Nieman_R10']
+(
+    VitesseLineaire = 41600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    DetectionBase = 390000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Petlyakov_Pe8']
+(
+    VitesseLineaire = 31200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Petlyakov_Atomic_bomber']
+(
+    VitesseLineaire = 52000.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 312000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Petlyakov_Pe8_PV']
+(
+    VitesseLineaire = 26000.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Mitsubishi_Zero']
+(
+    VitesseLineaire = 83200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Yokosuka_Judy']
+(
+    VitesseLineaire = 62400.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Aichi_Susie']
+(
+    VitesseLineaire = 41600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    DetectionBase = 390000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Kyushu_Shinden']
+(
+    VitesseLineaire = 83200.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAvionDescriptor[ClassNameForDebug='Avion_Nakajima_Renzan']
+(
+    VitesseLineaire = 41600.0
+    PorteeAttackReflexSol = 364000.0
+    PorteeAttackReflexAir = 416000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_US_Para'] ( VitesseLineaire = 6240.0  VitesseCombat = 3120.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_US_Para']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1044] ( PorteeMaximale = 78000.0 )
+patch @TAmmunition[AmmunitionId=1081] ( PorteeMaximale = 78000.0 )
+patch @TAmmunition[AmmunitionId=1057] ( PorteeMaximale = 36400.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_US_Para_SOLO'] ( VitesseLineaire = 6240.0  VitesseCombat = 2080.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_ITA_Para'] ( VitesseLineaire = 6240.0  VitesseCombat = 3120.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_ITA_Para']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1045] ( PorteeMaximale = 78000.0 )
+patch @TAmmunition[AmmunitionId=1079] ( PorteeMaximale = 78000.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_FR_Para'] ( VitesseLineaire = 6240.0  VitesseCombat = 3120.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_FR_Para']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1043] ( PorteeMaximale = 78000.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_UK_Para'] ( VitesseLineaire = 6240.0  VitesseCombat = 3120.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_UK_Para']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1080] ( PorteeMaximale = 78000.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_Allemand_Para'] ( VitesseLineaire = 6240.0  VitesseCombat = 3120.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Allemand_Para']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1084] ( PorteeMaximale = 78000.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Soldat_Russe_Para'] ( VitesseLineaire = 6240.0  VitesseCombat = 3120.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Russe_Para']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Teishin_Shudan'] ( VitesseLineaire = 6240.0  VitesseCombat = 3120.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Teishin_Shudan']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Para_Giretsu_Kuteitai'] ( VitesseLineaire = 6240.0  VitesseCombat = 3120.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Giretsu_Kuteitai']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 3120.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1041] ( PorteeMaximale = 78000.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_US_Para_SOLO']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_US_Leger']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1042] ( PorteeMaximale = 78000.0 )
+patch @TAmmunition[AmmunitionId=1056] ( PorteeMaximale = 36400.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_US_Lourd']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1083] ( PorteeMaximale = 78000.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_US_Leger_SOLO']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_ITA_Recon']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TAmmunition[AmmunitionId=1055] ( PorteeMaximale = 36400.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_ITA_Recon_SOLO']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 468000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_ITA_Leger']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_ITA_Leger_SOLO']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_ITA_Lourd']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TAmmunition[AmmunitionId=1082] ( PorteeMaximale = 78000.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_FR_Leger']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_FR_Lourd']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_UK_Leger']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 260000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_UK_Lourd']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Allemand_Leger']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Allemand_Leger_SOLO']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Allemand_Lourd']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Russe_Leger']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Russe_Lourd']
+(
+    VitesseLineaire = 7280.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Soldat_Allemand_Antichar']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Sniper']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 3120.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1046] ( PorteeMaximale = 208000.0 )
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Konoe_Shidan']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TInfanterieDescriptor[ClassNameForDebug='Unit_Pionnier_Genie']
+(
+    VitesseLineaire = 6240.0
+    VitesseCombat = 2080.0
+    DetectionBase = 208000.0
+    PorteeVisionVolant = 416000.0
+)
+patch @TAmmunition[AmmunitionId=1047] ( PorteeMaximale = 78000.0  PorteeMinimale = 26000.0 )
+patch @TAmmunition[AmmunitionId=1078] ( PorteeMaximale = 26000.0 )

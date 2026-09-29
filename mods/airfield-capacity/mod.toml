@@ -1,0 +1,15 @@
+# Rebuilt from the RUSE-Mod-Manager mod Airfield_Capacity_V1.rmod by tools/rmod_to_mod.py; README.md says what is and isn't here.
+[mod]
+id          = "airfield-capacity"
+name        = "Airfield Capacity"
+version     = "1.0.0"
+description = "Raises the number of planes that can fit in an Airfield from 8 to 128."
+
+[game]
+builds = ["24087620"]  # the build the original was made on
+
+[origin]
+format       = "ruse-mod/v1"
+file         = "Airfield_Capacity_V1.rmod"
+id           = "airfield-capacity"
+game_version = "24087620"

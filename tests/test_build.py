@@ -258,6 +258,18 @@ class Examples(unittest.TestCase):
             self.assertEqual(info.id, folder.name)
             self.assertTrue(ops, folder.name)
 
+    def test_every_rebuilt_community_mod_loads(self):
+        """mods/: RUSE-Mod-Manager mods rebuilt in our format (MOD_FORMAT §13); each reads, has a README and a build."""
+        root = Path(__file__).resolve().parent.parent / "mods"
+        folders = sorted(p for p in root.iterdir() if p.is_dir())
+        self.assertTrue(folders)
+        for folder in folders:
+            info, ops = load_mod(folder)
+            self.assertEqual(info.id, folder.name)
+            self.assertTrue(ops or info.texts, folder.name)
+            self.assertTrue((folder / "README.md").is_file(), folder.name)
+            self.assertIn("[origin]", (folder / "mod.toml").read_text(encoding="utf-8"), folder.name)
+
 
 if __name__ == "__main__":
     unittest.main()
