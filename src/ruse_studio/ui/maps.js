@@ -7,14 +7,17 @@
 const $ = (id) => document.getElementById(id);
 const SCALE = 1 / 1000;  // world units to scene units: a standard map is about 1,300 scene units wide
 const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "lowdef", water: true, gl: null, ask: 0,
-  stats: null, groundTex: {}, edit: null,
+  stats: null, groundTex: {}, edit: null, size: 0,  // size: the map's longer side in scene units (the keys' speed)
   // brush: the tool picked, its size and strength per brush (slider values), the strokes on this map (as saved),
   // the size of each group of strokes made this session (for Undo), the drag being painted, and the mod saved into
   brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null, rampStart: null },
   // scenery: which groups are shown, the map's scenery (StudioApi.map_scenery) and its drawn shapes per group
   scenery: { show: { building: true, prop: true, vegetation: true }, data: null, meshes: {} },
   // placing: on or not, the group and type picked, the next object's turn and size, what the mod places on this map
-  place: { on: false, group: "building", type: null, turn: 0, size: 1, objects: [], meshes: {}, mod: null } };
+  place: { on: false, group: "building", type: null, turn: 0, size: 1, objects: [], meshes: {}, mod: null,
+    // how: one, area or line; area: the area brush's radius and spacing: per kind, in metres; groups: how many objects
+    // each click, area or line placed (for Undo); lineStart: a line's first click; painting: an area being dragged
+    how: "one", area: 40, spacing: {}, groups: [], lineStart: null, painting: null } };
 
 // --- brushes: the same shapes and rules as rusemod/brush.py (the build's own copy decides; this one only draws) ---
 // name: [kind, shape, sign, one dab per click (else dabs along a drag), size %, strength %]
@@ -498,6 +501,7 @@ async function loadScenery(pack, ask) {
   placeScenery();
   showSceneryStats();
   placeOptions();
+  if (mv.place.on && mv.place.mod) placeNote(mv.place.type ? "" : whyNoType(), "error");  // was "reading the map…"
   drawPlaced();
 }
 
@@ -518,6 +522,13 @@ function sceneryAt(ev) {
 // maps/<map>/scenery.toml (StudioApi.scenery_add); drawn in gold until "Test in game" builds them into the map ---
 const PLACEABLE = ["building", "prop", "vegetation"];
 const PLACED_COLOUR = 0xe8c14f;
+// How a click places: one object; an area, painted by dragging (objects scattered at least `spacing` apart); or a line
+// between two clicks (objects every `spacing`, turned along it: a hedgerow, a tree line, a row of houses).
+const PLACE_HOW = ["one", "area", "line"];
+const METRE = 260;  // world units in a metre (the game's distances: 260,000 to a kilometre)
+const SPACING = { building: 20, prop: 8, vegetation: 6 };  // metres between objects to start with, per kind
+const MOST = 800;  // objects one area or line may place at most, so a slip of the mouse can't bury a map
+const around = (turn, spread) => (turn + Math.round((Math.random() * 2 - 1) * spread) + 360) % 360;
 
 function placeNote(text, kind) {
   const note = $("place-note");
@@ -525,6 +536,8 @@ function placeNote(text, kind) {
   note.className = kind === "error" ? "small error-text" : "small";
 }
 
+// The list only holds the map's own types: the game can't take a type a map doesn't already use (StudioApi.scenery_add
+// refuses it), so the search and the tooltip say so rather than offering every type in the game.
 function placeOptions() {
   const d = mv.scenery.data, p = mv.place, q = $("place-search").value.trim().toLowerCase();
   const rows = ((d && d.palette) || []).filter((r) => r[2] === p.group
@@ -541,29 +554,62 @@ function renderPlace() {
   const w = mv.words, p = mv.place;
   $("place-title").textContent = w.place_title;
   $("place-groups").replaceChildren(...PLACEABLE.map((g) => {
-    const chip = el("button", { type: "button", className: "chip", textContent: w[`scenery_${g}`] });
+    const chip = el("button", { type: "button", className: "chip", textContent: w[`scenery_${g}`], title: w.tip_place_group });
     chip.setAttribute("aria-pressed", String(p.group === g));
-    chip.addEventListener("click", () => { p.group = g; placeOptions(); renderPlace(); });
+    // picking a kind starts placing, as picking a brush starts painting: a click on the ground then does something
+    chip.addEventListener("click", () => { p.group = g; placeOptions(); if (!p.on) setPlaceMode(true); else renderPlace(); });
     return chip;
   }));
+  $("place-scenery-note").textContent = w.scenery_note;  // DomesticNukes' note: scenery is only for looks, for now
   $("place-search").placeholder = w.search || "";
+  $("place-search").title = w.tip_place_search;
+  $("place-type").title = w.tip_place_type;
   $("place-turn-label").textContent = `${w.place_turn} ${p.turn}°`;
+  $("place-turn").title = w.tip_place_turn;
   $("place-size-label").textContent = `${w.brush_size} ${p.size.toFixed(1)}×`;
+  $("place-size").title = w.tip_place_size;
   $("place-on").textContent = w.place_on;
+  $("place-on").title = w.tip_place_on;
   $("place-on").setAttribute("aria-pressed", String(p.on));
   $("place-undo").textContent = w.brush_undo;
+  $("place-undo").title = w.tip_place_undo;
   $("place-undo").disabled = !p.objects.length;
   $("place-count").textContent = p.objects.length ? fill(w.place_count, { n: p.objects.length.toLocaleString() }) : "";
-  if (p.on) $("map-help").textContent = w.place_help;
+  $("place-how").replaceChildren(...PLACE_HOW.map((how) => {
+    const chip = el("button", { type: "button", className: "chip", textContent: w[`place_${how}`], title: w[`tip_place_${how}`] });
+    chip.setAttribute("aria-pressed", String(p.how === how));
+    chip.addEventListener("click", () => { p.how = how; p.lineStart = null; showPlaceGuide(null); if (!p.on) setPlaceMode(true); else renderPlace(); });
+    return chip;
+  }));
+  $("place-spacing-row").classList.toggle("hidden", p.how === "one");
+  $("place-area-row").classList.toggle("hidden", p.how !== "area");
+  $("place-spacing").value = spacingOf(p.group);
+  $("place-spacing-label").textContent = fill(w.place_spacing, { m: spacingOf(p.group) });
+  $("place-spacing").title = w.tip_place_spacing;
+  $("place-area").value = p.area;
+  $("place-area-label").textContent = fill(w.place_area_size, { m: p.area });
+  $("place-area").title = w.tip_place_area_size;
+  if (p.on) $("map-help").textContent = p.how === "area" ? w.place_area_help : p.how === "line" ? w.place_line_help : w.place_help;
+}
+
+function spacingOf(group) {
+  return mv.place.spacing[group] ?? SPACING[group] ?? 10;
 }
 
 function setPlaceMode(on) {
   mv.place.on = on;
+  if (!on) { mv.place.lineStart = null; showPlaceGuide(null); }
   if (on && mv.brush.on) setBrushMode(false);
   pointerMode();
-  if (on && !mv.place.mod) placeNote(mv.words.no_mod, "error");
+  if (on) placeNote(!mv.place.mod ? mv.words.no_mod : !mv.place.type ? whyNoType() : "", "error");
   if (!on) $("map-help").textContent = mv.brush.on ? mv.words.brush_help : mv.words.map_help;
   renderPlace();
+}
+
+// Nothing to place yet: the map's types are still being read (a second or two on a real map), or the kind picked has
+// none, or the search left none.
+function whyNoType() {
+  return mv.scenery.data ? mv.words.place_pick : mv.words.scenery_loading;
 }
 
 // The objects this mod places, in gold, on the ground as it is now.
@@ -602,18 +648,22 @@ async function loadPlaced(pack, ask) {
   const res = await mv.api.scenery(pack);
   if (ask !== mv.ask) return;
   mv.place.objects = res.objects;
+  mv.place.groups = [];
+  mv.place.lineStart = null;
   mv.place.mod = res.mod;
   placeNote("");
   drawPlaced();
   renderPlace();
 }
 
+// A click that places nothing always says why: no mod, nothing picked, or the click missed the ground (the sky, or
+// the map's edge seen from the side).
 async function placeAt(ev) {
   const p = mv.place, pack = mv.current, w = mv.words;
   if (!p.mod) { placeNote(w.no_mod, "error"); return; }
-  if (!p.type) { placeNote(w.place_pick, "error"); return; }
+  if (!p.type) { placeNote(whyNoType(), "error"); return; }
   const hit = hitGround(ev);
-  if (!hit) return;
+  if (!hit) { placeNote(w.place_ground, "error"); return; }
   const obj = { type: p.type, x: Math.round(hit.x / SCALE), y: Math.round(hit.z / SCALE), turn: p.turn, size: p.size };
   p.objects.push(obj);
   drawPlaced();
@@ -630,11 +680,104 @@ async function placeAt(ev) {
   renderPlace();
 }
 
+// Several objects in one go (an area or a line): drawn at once, saved in one call, taken back together by Undo.
+async function placeMany(objs) {
+  const p = mv.place, pack = mv.current, w = mv.words;
+  if (!objs.length) { placeNote(w.place_none_room, "error"); return; }
+  p.objects.push(...objs);
+  drawPlaced();
+  try {
+    await mv.api.scenery_add(pack, objs);
+    if (pack !== mv.current) return;
+    p.groups.push(objs.length);
+    placeNote(fill(w.place_placed, { n: objs.length.toLocaleString() }) + (objs.length >= MOST ? " " + w.place_most : ""));
+  } catch (err) {
+    if (pack !== mv.current) return;
+    p.objects.splice(p.objects.length - objs.length, objs.length);
+    drawPlaced();
+    placeNote((err && err.message) || String(err), "error");
+  }
+  renderPlace();
+}
+
+// The next object of an area or a line at world (x, y): the kind's own look, with a little variety for trees and props
+// (their turn, and a tree's size) so a painted wood doesn't look stamped; buildings keep the turn they're given.
+function objectAt(x, y, turn) {
+  const p = mv.place, varied = p.group !== "building";
+  const size = p.group === "vegetation" ? Math.round(p.size * (0.85 + Math.random() * 0.3) * 100) / 100 : p.size;
+  return { type: p.type, x: Math.round(x), y: Math.round(y), turn: varied ? Math.floor(Math.random() * 360) : turn, size };
+}
+
+// Painting an area: each spot the pointer passes scatters objects in the circle, never closer than the spacing to
+// another one (this stroke's, or any the mod placed before), so going over a spot twice doesn't pile them up.
+function scatter(stroke, x, y) {
+  const p = mv.place, gap = spacingOf(p.group) * METRE, r = p.area * METRE, cell = gap;
+  const key = (a, b) => `${Math.floor(a / cell)},${Math.floor(b / cell)}`;
+  if (!stroke.grid) {
+    stroke.grid = new Map();
+    for (const o of p.objects) (stroke.grid.get(key(o.x, o.y)) || stroke.grid.set(key(o.x, o.y), []).get(key(o.x, o.y))).push(o);
+  }
+  const free = (a, b) => {
+    const cx = Math.floor(a / cell), cy = Math.floor(b / cell);
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
+      for (const o of stroke.grid.get(`${cx + i},${cy + j}`) || []) if (Math.hypot(o.x - a, o.y - b) < gap) return false;
+    }
+    return true;
+  };
+  const tries = Math.ceil(Math.PI * r * r / (gap * gap)) * 3;
+  const [x0, y0, , x1, y1] = mv.edit.bounds;
+  for (let t = 0; t < tries && stroke.objects.length < MOST; t++) {
+    const a = Math.random() * 2 * Math.PI, d = r * Math.sqrt(Math.random());
+    const ox = x + d * Math.cos(a), oy = y + d * Math.sin(a);
+    if (ox < x0 || ox > x1 || oy < y0 || oy > y1 || !free(ox, oy)) continue;
+    const o = objectAt(ox, oy, around(p.turn, 45));
+    stroke.objects.push(o);
+    (stroke.grid.get(key(o.x, o.y)) || stroke.grid.set(key(o.x, o.y), []).get(key(o.x, o.y))).push(o);
+  }
+  stroke.last = [x, y];
+}
+
+// A line between two clicks: an object every `spacing`, both ends included, turned along the line (buildings then
+// face the same way, like houses along a street; the turn slider adds to that).
+function lineOf(a, b) {
+  const p = mv.place, gap = spacingOf(p.group) * METRE, len = Math.hypot(b.x - a.x, b.y - a.y);
+  const n = Math.min(MOST, Math.max(1, Math.floor(len / gap) + 1));
+  const heading = (Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI + 360) % 360;
+  const out = [];
+  for (let k = 0; k < n; k++) {
+    const t = n === 1 ? 0 : k / (n - 1);
+    out.push(objectAt(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, Math.round(heading + p.turn) % 360));
+  }
+  return out;
+}
+
+// What the area brush covers, or where a line would go, drawn with the terrain brush's own ring and guide.
+function showPlaceGuide(pt) {
+  const gl = mv.gl, p = mv.place;
+  if (!gl || !gl.ring) return;
+  const r = p.area * METRE * SCALE;
+  gl.ring.visible = Boolean(pt && p.on && p.how === "area");
+  if (gl.ring.visible) { gl.ring.position.set(pt.x, pt.y + r * 0.02, pt.z); gl.ring.scale.set(r, r, r); }
+  const start = p.on && p.how === "line" ? p.lineStart : null, mark = spacingOf(p.group) * METRE * SCALE;
+  gl.startRing.visible = Boolean(start);
+  if (start) { gl.startRing.position.set(start.sx, start.sy + mark * 0.1, start.sz); gl.startRing.scale.set(mark, mark, mark); }
+  gl.guide.visible = Boolean(start && pt);
+  if (start && pt) {
+    const pos = gl.guide.geometry.attributes.position;
+    pos.setXYZ(0, start.sx, start.sy + mark * 0.1, start.sz);
+    pos.setXYZ(1, pt.x, pt.y + mark * 0.1, pt.z);
+    pos.needsUpdate = true;
+    gl.guide.geometry.computeBoundingSphere();
+  }
+  gl.draw();
+}
+
 async function undoPlace() {
   const p = mv.place, pack = mv.current;
-  if (!p.mod || !p.objects.length) return;
+  if (!p.mod || !p.objects.length || p.painting) return;
+  const n = p.groups.length ? p.groups.pop() : 1;  // an area or a line goes back in one go
   try {
-    const res = await mv.api.scenery_undo(pack, 1);
+    const res = await mv.api.scenery_undo(pack, n);
     if (pack !== mv.current) return;
     p.objects.splice(p.objects.length - res.removed, res.removed);
     drawPlaced();
@@ -674,6 +817,7 @@ async function show(pack, keepCamera) {
   gl.water.visible = mv.water;
   gl.scene.add(gl.ground, gl.water);
   mv.edit = made.edit;
+  mv.size = made.size;
   mv.brush.painting = null;
   cancelRamp();
   if (!keepCamera) {
@@ -693,7 +837,10 @@ async function show(pack, keepCamera) {
   $("map-hud").classList.remove("hidden");
   $("map-tools").classList.remove("hidden");
   loadStrokes(pack, ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
-  loadScenery(pack, ask).catch((err) => { $("scenery-stats").textContent = (err && err.message) || String(err); });
+  loadScenery(pack, ask).catch((err) => {  // no types to place then: the place panel says so too
+    $("scenery-stats").textContent = (err && err.message) || String(err);
+    placeNote((err && err.message) || String(err), "error");
+  });
   loadPlaced(pack, ask).catch((err) => placeNote((err && err.message) || String(err), "error"));
   realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
 }
@@ -734,8 +881,9 @@ async function loadStrokes(pack, ask) {
 
 function renderBrushes() {
   const w = mv.words, b = mv.brush;
-  $("brush-list").replaceChildren(...Object.keys(BRUSHES).map((name) => {
-    const chip = el("button", { type: "button", className: "chip", textContent: w["brush_" + name] || name });
+  $("brush-list").replaceChildren(...Object.keys(BRUSHES).map((name, i) => {
+    const chip = el("button", { type: "button", className: "chip", textContent: w["brush_" + name] || name,
+      title: fill(w.tip_brush || "", { n: i + 1 }) });
     chip.setAttribute("aria-pressed", String(b.on && b.name === name));
     chip.addEventListener("click", () => pickBrush(name));
     return chip;
@@ -785,6 +933,7 @@ function pointerMode() {
   gl.controls.mouseButtons = busy ? { LEFT: null, MIDDLE: M.ROTATE, RIGHT: M.PAN }
                                   : { LEFT: M.ROTATE, MIDDLE: M.DOLLY, RIGHT: M.PAN };
   if (!mv.brush.on && gl.ring) { gl.ring.visible = false; gl.draw(); }
+  if (busy) $("scenery-hover").textContent = "";
   gl.renderer.domElement.style.cursor = busy ? "crosshair" : "";
 }
 
@@ -912,6 +1061,9 @@ async function clearStrokes() {
 
 function watchPointer() {
   const gl = mv.gl, canvas = gl.renderer.domElement;
+  // A click on the map takes the focus off the type list or a slider, so the keys reach the map from then on.
+  canvas.tabIndex = -1;
+  canvas.addEventListener("pointerdown", () => canvas.focus({ preventScroll: true }));
   let pending = null, frame = 0;
   const tick = () => {
     frame = 0;
@@ -956,13 +1108,67 @@ function watchPointer() {
     canvas.addEventListener(type, () => { if (mv.brush.painting) finishStroke(); });
   }
   canvas.addEventListener("pointerdown", (ev) => {
-    if (!mv.place.on || ev.button !== 0 || !gl.ground || !mv.edit) return;
+    const p = mv.place;
+    if (!p.on || ev.button !== 0 || !gl.ground || !mv.edit) return;
     ev.preventDefault();
-    placeAt(ev);
+    if (p.how === "one") { placeAt(ev); return; }
+    const w = mv.words;
+    if (!p.mod) { placeNote(w.no_mod, "error"); return; }
+    if (!p.type) { placeNote(whyNoType(), "error"); return; }
+    const hit = hitGround(ev);
+    if (!hit) { placeNote(w.place_ground, "error"); return; }
+    const x = hit.x / SCALE, y = hit.z / SCALE;
+    if (p.how === "line") {  // two clicks: where it starts, then where it ends
+      if (!p.lineStart) { p.lineStart = { x, y, sx: hit.x, sy: hit.y, sz: hit.z }; placeNote(w.place_line_next); showPlaceGuide(hit); return; }
+      const start = p.lineStart;
+      p.lineStart = null;
+      showPlaceGuide(null);
+      placeMany(lineOf(start, { x, y }));
+      return;
+    }
+    p.painting = { objects: [], last: null };  // an area: scatter here, then wherever the pointer is dragged
+    scatter(p.painting, x, y);
+    drawStroke();
+    canvas.setPointerCapture(ev.pointerId);
   });
+  // an area being painted: shown as it grows, saved when the button comes up
+  const drawStroke = () => {
+    const p = mv.place, keep = p.objects;
+    p.objects = keep.concat(p.painting.objects);
+    drawPlaced();
+    p.objects = keep;
+  };
+  let placeMove = null, placeFrame = 0;
+  canvas.addEventListener("pointermove", (ev) => {
+    const p = mv.place;
+    if (!p.on || p.how === "one") return;
+    placeMove = ev;
+    if (placeFrame) return;
+    placeFrame = requestAnimationFrame(() => {
+      placeFrame = 0;
+      const hit = placeMove && hitGround(placeMove);
+      showPlaceGuide(hit);
+      const stroke = p.painting;
+      if (!hit || !stroke || !stroke.last) return;
+      const x = hit.x / SCALE, y = hit.z / SCALE, step = p.area * METRE / 2;
+      if (Math.hypot(x - stroke.last[0], y - stroke.last[1]) < step) return;
+      scatter(stroke, x, y);
+      drawStroke();
+    });
+  });
+  for (const type of ["pointerup", "pointercancel"]) {
+    canvas.addEventListener(type, () => {
+      const p = mv.place, stroke = p.painting;
+      if (!stroke) return;
+      p.painting = null;
+      placeMany(stroke.objects);
+    });
+  }
   let hoverEv = null, hoverFrame = 0;
-  canvas.addEventListener("pointermove", (ev) => {  // looking around: say what the pointer is on
-    if (mv.brush.on || !mv.scenery.data) return;
+  // Looking around: say what the pointer is on. Only then: the ray is tested against every drawn object (tens of
+  // thousands on a real map), which is too slow to run under a painting or placing pointer.
+  canvas.addEventListener("pointermove", (ev) => {
+    if (mv.brush.on || mv.place.on || !mv.scenery.data) return;
     hoverEv = ev;
     if (!hoverFrame) hoverFrame = requestAnimationFrame(() => {
       hoverFrame = 0;
@@ -970,7 +1176,10 @@ function watchPointer() {
       $("scenery-hover").textContent = t ? `${t[0]} · ${t[2] || t[1]}` : "";
     });
   });
-  canvas.addEventListener("pointerleave", () => { if (mv.brush.on && gl.ring) { gl.ring.visible = false; gl.draw(); } });
+  canvas.addEventListener("pointerleave", () => {
+    if (mv.brush.on && gl.ring) { gl.ring.visible = false; gl.draw(); }
+    if (mv.place.on && mv.place.how === "area" && gl.ring) { gl.ring.visible = false; gl.draw(); }
+  });
 }
 
 // What the game's menus call a map in the Studio's language, best first (a map can hold a multiplayer map, campaign
@@ -990,7 +1199,7 @@ function nameLine(m) {
 function renderList() {
   $("map-list").replaceChildren(...mv.maps.map((m) => {
     const names = menuNames(m);
-    const b = el("button", { type: "button", title: m.file },
+    const b = el("button", { type: "button", title: fill(mv.words.tip_open_map || "{file}", { file: m.file }) },
       el("span", { className: "name" }, ...nameLine(m)),
       el("span", { className: "sub", textContent: (names.length ? names.slice(1) : m.names).join(" · ") }));
     b.setAttribute("aria-current", String(m.pack === mv.current));
@@ -1007,21 +1216,143 @@ function showTitle() {
 function renderWords() {
   const w = mv.words;
   $("map-detail").textContent = mv.lod === "highdef" ? w.detail_high : w.detail_low;
+  $("map-detail").title = w.tip_detail;
   $("map-water-label").textContent = w.water;
-  for (const g of ["building", "prop", "vegetation"]) $(`scenery-${g}-label`).textContent = w[`scenery_${g}`];
+  $("map-water").title = w.tip_water;
+  for (const g of ["building", "prop", "vegetation"]) {
+    $(`scenery-${g}-label`).textContent = w[`scenery_${g}`];
+    $(`scenery-${g}`).title = w.tip_show_group;
+  }
   showSceneryStats();
   renderPlace();
   $("map-help").textContent = mv.brush.on ? w.brush_help : w.map_help;
+  $("map-keys").textContent = w.map_keys;
   $("brush-title").textContent = w.shape_ground;
   $("brush-size-label").textContent = w.brush_size;
+  $("brush-size").title = w.tip_brush_size;
   $("brush-strength-label").textContent = w.brush_strength;
+  $("brush-strength").title = w.tip_brush_strength;
   $("brush-look").textContent = w.brush_look;
+  $("brush-look").title = w.tip_look;
   $("brush-undo").textContent = w.brush_undo;
+  $("brush-undo").title = w.tip_brush_undo;
   $("brush-clear").textContent = w.brush_clear;
+  $("brush-clear").title = w.tip_brush_clear;
   $("brush-clear-yes").textContent = w.remove_all;
+  $("brush-clear-yes").title = w.tip_remove_all;
   $("brush-clear-no").textContent = w.cancel;
+  $("brush-clear-no").title = w.tip_cancel;
   if (!mv.current) $("map-pick").textContent = w.pick_map;
   renderBrushes();
+}
+
+// --- keys, while the map view is open and no text box has the focus ---
+// W/S and A/D (or the arrows) slide the camera along the map's own north-south and east-west axes, whichever way it
+// looks; Q/E turn it around the point it looks at; R/F zoom. Held keys move smoothly, frame by frame, at a speed
+// scaled to the map (and to the zoom, so a close view doesn't fly), three times as fast with Shift. The tool keys
+// do what the buttons do (the tooltips name them).
+const MOVE = { KeyW: [0, -1], ArrowUp: [0, -1], KeyS: [0, 1], ArrowDown: [0, 1], KeyA: [-1, 0], ArrowLeft: [-1, 0],
+  KeyD: [1, 0], ArrowRight: [1, 0] };  // physical keys (e.code): the same places on an AZERTY keyboard
+const HELD = new Set([...Object.keys(MOVE), "KeyQ", "KeyE", "KeyR", "KeyF"]);
+const keys = { down: new Set(), shift: false, frame: 0, at: 0 };
+
+function mapViewOpen() {
+  return Boolean(mv.gl && mv.gl.ground && mv.edit) && !$("maps-view").classList.contains("hidden");
+}
+
+// Where the keys would go instead: a text box, a list or a text area take letters; `any` also counts sliders and
+// check boxes, whose arrow keys are their own.
+function fieldFocused(any) {
+  const a = document.activeElement;
+  if (!a || a === document.body) return false;
+  const tag = a.tagName;
+  if (tag === "TEXTAREA" || tag === "SELECT" || a.isContentEditable) return true;
+  if (tag !== "INPUT") return false;
+  return any || !["range", "checkbox", "radio", "button"].includes(a.type);
+}
+
+function moveStep(now) {
+  keys.frame = 0;
+  const gl = mv.gl, dt = Math.min(0.1, (now - keys.at) / 1000);
+  keys.at = now;
+  if (!keys.down.size || !mapViewOpen()) { keys.down.clear(); return; }
+  const { THREE, camera, controls } = gl, fast = keys.shift ? 3 : 1;
+  const offset = camera.position.clone().sub(controls.target), dist = offset.length();
+  let dx = 0, dz = 0;
+  for (const code of keys.down) { const m = MOVE[code]; if (m) { dx += m[0]; dz += m[1]; } }
+  if (dx || dz) {
+    const speed = Math.min(mv.size * 0.5, dist) * fast * dt / Math.hypot(dx, dz);
+    controls.target.add(new THREE.Vector3(dx * speed, 0, dz * speed));
+  }
+  const turn = (keys.down.has("KeyQ") ? 1 : 0) - (keys.down.has("KeyE") ? 1 : 0);
+  if (turn) offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), turn * 1.2 * fast * dt);
+  const zoom = (keys.down.has("KeyF") ? 1 : 0) - (keys.down.has("KeyR") ? 1 : 0);
+  if (zoom) offset.setLength(Math.min(mv.size * 3, Math.max(mv.size * 0.01, dist * Math.pow(2, zoom * fast * dt))));
+  camera.position.copy(controls.target).add(offset);
+  controls.update();  // keeps the camera's own limits (never under the ground) and redraws
+  gl.draw();
+  keys.frame = requestAnimationFrame(moveStep);
+}
+
+// [ ] and - = : the brush's size and strength, or the next object's size and turn while placing.
+function nudge(what, dir) {
+  if (mv.place.on) {
+    const p = mv.place;
+    if (what === "size") p.size = Math.round(Math.min(3, Math.max(0.5, p.size + dir * 0.1)) * 10) / 10;
+    else p.turn = (p.turn + dir * 15 + 360) % 360;
+    $("place-size").value = p.size;
+    $("place-turn").value = p.turn;
+    renderPlace();
+    return;
+  }
+  const set = settingsOf(mv.brush.name);
+  if (what === "size") set.size = Math.min(15, Math.max(1, set.size + dir));
+  else set.strength = Math.min(100, Math.max(1, set.strength + dir * 5));
+  renderBrushes();
+}
+
+function lookAround() {
+  cancelRamp();
+  mv.place.lineStart = null;
+  showPlaceGuide(null);
+  mv.place.on = false;
+  setBrushMode(false);
+}
+
+function onKey(e) {
+  if (!mapViewOpen()) return;
+  keys.shift = e.shiftKey;
+  const held = HELD.has(e.code);
+  if (e.type === "keyup") { if (held) keys.down.delete(e.code); return; }
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && !e.altKey && e.code === "KeyZ") {  // the one shortcut that works with a modifier
+    if (fieldFocused(false)) return;              // a text box has its own undo
+    e.preventDefault();
+    if (mv.brush.on) undoStroke(); else if (mv.place.on) undoPlace();
+    return;
+  }
+  if (ctrl || e.altKey) return;
+  if (e.key === "Escape") {
+    if (fieldFocused(true)) { document.activeElement.blur(); return; }  // first out of the box, then back to Look
+    lookAround();
+    return;
+  }
+  if (held) {
+    if (fieldFocused(!e.code.startsWith("Key"))) return;  // arrows in a slider are the slider's; letters in a box, the box's
+    e.preventDefault();  // the arrows would scroll the page
+    keys.down.add(e.code);
+    if (!keys.frame) { keys.at = performance.now(); keys.frame = requestAnimationFrame(moveStep); }
+    return;
+  }
+  if (fieldFocused(false)) return;
+  const digit = /^Digit([1-8])$/.exec(e.code);
+  if (digit) { pickBrush(Object.keys(BRUSHES)[Number(digit[1]) - 1]); return; }
+  if (e.code === "KeyB") { if (mv.brush.on) lookAround(); else pickBrush(mv.brush.name); }
+  else if (e.code === "KeyP") setPlaceMode(!mv.place.on);
+  else if (e.code === "BracketLeft") nudge("size", -1);
+  else if (e.code === "BracketRight") nudge("size", 1);
+  else if (e.code === "Minus") nudge("strength", -1);
+  else if (e.code === "Equal") nudge("strength", 1);
 }
 
 let wired = false;
@@ -1049,10 +1380,15 @@ function wire() {
   $("brush-look").addEventListener("click", () => { mv.place.on = false; setBrushMode(false); });
   $("place-on").addEventListener("click", () => setPlaceMode(!mv.place.on));
   $("place-undo").addEventListener("click", () => undoPlace());
-  $("place-search").addEventListener("input", () => placeOptions());
-  $("place-type").addEventListener("change", (e) => { mv.place.type = e.target.value; });
+  $("place-search").addEventListener("input", () => { placeOptions(); if (mv.place.on) placeNote(mv.place.type ? "" : whyNoType(), "error"); });
+  $("place-type").addEventListener("change", (e) => {  // picking a type starts placing, as picking a brush starts painting
+    mv.place.type = e.target.value;
+    if (!mv.place.on) setPlaceMode(true); else placeNote("");
+  });
   $("place-turn").addEventListener("input", (e) => { mv.place.turn = Number(e.target.value); renderPlace(); });
   $("place-size").addEventListener("input", (e) => { mv.place.size = Number(e.target.value); renderPlace(); });
+  $("place-spacing").addEventListener("input", (e) => { mv.place.spacing[mv.place.group] = Number(e.target.value); renderPlace(); });
+  $("place-area").addEventListener("input", (e) => { mv.place.area = Number(e.target.value); renderPlace(); });
   $("brush-undo").addEventListener("click", () => undoStroke());
   $("brush-clear").addEventListener("click", () => {
     $("brush-sure-text").textContent = fill(mv.words.really_clear, { n: mv.brush.strokes.length.toLocaleString() });
@@ -1061,7 +1397,9 @@ function wire() {
   });
   $("brush-clear-no").addEventListener("click", () => $("brush-sure").classList.add("hidden"));
   $("brush-clear-yes").addEventListener("click", () => clearStrokes());
-  window.addEventListener("keydown", (e) => { if (e.key === "Escape") cancelRamp(); });
+  window.addEventListener("keydown", onKey);
+  window.addEventListener("keyup", onKey);
+  window.addEventListener("blur", () => keys.down.clear());  // a key released in another window never arrives
 }
 
 // app.js opens the view when its tab is picked, and passes the words and the language on every language change.
@@ -1090,6 +1428,12 @@ window.MapView = {
     renderList();
     showTitle();
     if (mv.stats) $("map-stats").textContent = fill(words.map_stats, mv.stats);
+  },
+  // where the camera is and what it looks at, in scene units (for checking the keys from outside; nothing else)
+  camera() {
+    const gl = mv.gl;
+    if (!gl) return null;
+    return { position: gl.camera.position.toArray(), target: gl.controls.target.toArray(), placed: mv.place.objects.length };
   },
   // another mod was picked: its strokes on this map (or none) replace the ones drawn
   modChanged() {
