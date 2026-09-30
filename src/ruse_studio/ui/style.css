@@ -227,6 +227,14 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
               background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41); }
 .update-bar.hidden { display: none; }
 
+/* the mod check (app.js checkMod): a bar under the header, one row per problem, Set aside for a broken map file */
+.check-bar { display: flex; flex-direction: column; gap: 4px; padding: 6px 20px; font-size: 13px;
+             background: #3a2424; border-bottom: 1px solid var(--error, #e8836f); }
+.check-bar.hidden { display: none; }
+.check-title { color: var(--error, #e8836f); font-weight: 600; }
+.check-row { display: flex; align-items: center; gap: 10px; }
+.check-row span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
 /* a unit's flags: one chip per number, a cross takes it off, a picker adds one */
 .flags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .flag { display: inline-flex; align-items: center; gap: 2px; padding: 1px 4px 1px 8px; background: var(--panel-hi);
@@ -238,3 +246,13 @@ tr.edited .flag { border-color: var(--accent); }
 .map-kind { width: 100%; margin-bottom: 8px; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
 .unit-group { width: 100%; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
 .scen-pick { max-width: 190px; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
+
+/* the map list folds away (maps.js foldMaps): a thin strip with the button to bring it back */
+.browser-head { display: flex; gap: 6px; align-items: stretch; }
+.browser-head .map-kind { flex: 1; min-width: 0; margin-bottom: 8px; }
+.fold { padding: 0 9px; margin-bottom: 8px; font-size: 15px; line-height: 1; }
+#maps-view.folded { grid-template-columns: 44px 1fr; }
+#maps-view.folded .browser { padding: 10px 4px; overflow: hidden; }
+#maps-view.folded .browser > :not(.browser-head), #maps-view.folded .map-kind { display: none; }
+.small-tile { min-width: 64px; padding: 4px 6px 3px; }
+.small-tile svg { width: 22px; height: 22px; }

@@ -119,30 +119,67 @@ def load_mod(path) -> tuple[ModInfo, list]:
 _MAP_NAME = re.compile(r"^[A-Za-z0-9_]+$")
 
 
-def read_scenery(folder: Path) -> dict:
-    """A mod's added scenery: {map pack name: [scenery.NewObject]} from maps/<map pack>/scenery.toml (MOD_FORMAT §8)."""
+def _map_readers() -> dict:
+    """Each map file a mod may hold (maps/<map pack>/<file>): the tables it holds, how it says so, how its rows are
+    read, and what its reader raises."""
+    from .cover import CoverError, parse_paints
+    from .nav import NavError, parse_blocks
+    from .scenario import ScenarioError, parse_moves, parse_spawns
     from .scenery import SceneryEditError, parse_objects
+    return {
+        "terrain.toml": (("stroke",), "a terrain file holds [[stroke]] tables",
+                         lambda d, rel: parse_strokes(d.get("stroke", []), rel), BrushError),
+        "scenery.toml": (("object",), "a scenery file holds [[object]] tables",
+                         lambda d, rel: parse_objects(d.get("object", []), rel), SceneryEditError),
+        # moves first: they name the shipped items by their number, which spawns (added at the end) don't shift
+        "scenario.toml": (("move", "spawn"), "a scenario file holds [[move]] and [[spawn]] tables",
+                          lambda d, rel: parse_moves(d.get("move", []), rel) + parse_spawns(d.get("spawn", []), rel),
+                          ScenarioError),
+        "cover.toml": (("paint",), "a cover file holds [[paint]] tables",
+                       lambda d, rel: parse_paints(d.get("paint", []), rel), CoverError),
+        "movement.toml": (("block",), "a movement file holds [[block]] tables",
+                          lambda d, rel: parse_blocks(d.get("block", []), rel), NavError),
+    }
+
+
+MAP_FILES = ("terrain.toml", "scenery.toml", "scenario.toml", "cover.toml", "movement.toml")
+
+
+def read_map_file(folder: Path, f: Path) -> list:
+    """One map file of the mod in `folder` (maps/<map pack>/<one of MAP_FILES>), read as the build reads it: its
+    rows, or BuildError naming the file and its mistake. The Studio's mod check reads each file this way."""
+    rel = f.relative_to(folder).as_posix()
+    keys, holds, parse_rows, mistake = _map_readers()[f.name]
+    if not _MAP_NAME.match(f.parent.name):
+        raise BuildError(f"{rel}: {f.parent.name!r} isn't a map's pack name (letters, digits and _, like "
+                         f"TwoIslands)")
+    try:
+        data = tomllib.loads(f.read_text(encoding="utf-8"))
+    except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+        raise BuildError(f"{rel}: {exc}") from None
+    extra = sorted(set(data) - set(keys))
+    if extra:
+        raise BuildError(f"{rel}: unknown key {extra[0]!r} ({holds})")
+    try:
+        return parse_rows(data, rel)
+    except mistake as exc:
+        raise BuildError(str(exc)) from None
+
+
+def _read_maps(folder: Path, file: str) -> dict:
+    """{map pack name: rows} of every maps/<map pack>/<file> in the mod that holds any."""
     out = {}
     maps = folder / "maps"
-    for f in sorted(maps.glob("*/scenery.toml"), key=lambda p: p.parent.name.lower()) if maps.is_dir() else []:
-        rel = f.relative_to(folder).as_posix()
-        if not _MAP_NAME.match(f.parent.name):
-            raise BuildError(f"{rel}: {f.parent.name!r} isn't a map's pack name (letters, digits and _, like "
-                             f"TwoIslands)")
-        try:
-            data = tomllib.loads(f.read_text(encoding="utf-8"))
-        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
-            raise BuildError(f"{rel}: {exc}") from None
-        extra = sorted(set(data) - {"object"})
-        if extra:
-            raise BuildError(f"{rel}: unknown key {extra[0]!r} (a scenery file holds [[object]] tables)")
-        try:
-            objects = parse_objects(data.get("object", []), rel)
-        except SceneryEditError as exc:
-            raise BuildError(str(exc)) from None
-        if objects:
-            out[f.parent.name] = objects
+    for f in sorted(maps.glob(f"*/{file}"), key=lambda p: p.parent.name.lower()) if maps.is_dir() else []:
+        rows = read_map_file(folder, f)
+        if rows:
+            out[f.parent.name] = rows
     return out
+
+
+def read_scenery(folder: Path) -> dict:
+    """A mod's added scenery: {map pack name: [scenery.NewObject]} from maps/<map pack>/scenery.toml (MOD_FORMAT §8)."""
+    return _read_maps(folder, "scenery.toml")
 
 
 def _cover_brushes(info) -> None:
@@ -165,28 +202,7 @@ def _cover_brushes(info) -> None:
 def read_movement(folder: Path) -> dict:
     """A mod's ground units can't use: {map pack name: [nav.Block]} from maps/<map pack>/movement.toml (MOD_FORMAT
     §8)."""
-    from .nav import NavError, parse_blocks
-    out = {}
-    maps = folder / "maps"
-    for f in sorted(maps.glob("*/movement.toml"), key=lambda p: p.parent.name.lower()) if maps.is_dir() else []:
-        rel = f.relative_to(folder).as_posix()
-        if not _MAP_NAME.match(f.parent.name):
-            raise BuildError(f"{rel}: {f.parent.name!r} isn't a map's pack name (letters, digits and _, like "
-                             f"TwoIslands)")
-        try:
-            data = tomllib.loads(f.read_text(encoding="utf-8"))
-        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
-            raise BuildError(f"{rel}: {exc}") from None
-        extra = sorted(set(data) - {"block"})
-        if extra:
-            raise BuildError(f"{rel}: unknown key {extra[0]!r} (a movement file holds [[block]] tables)")
-        try:
-            blocks = parse_blocks(data.get("block", []), rel)
-        except NavError as exc:
-            raise BuildError(str(exc)) from None
-        if blocks:
-            out[f.parent.name] = blocks
-    return out
+    return _read_maps(folder, "movement.toml")
 
 
 def _block_brushes(info) -> None:
@@ -208,82 +224,20 @@ def _block_brushes(info) -> None:
 def read_cover(folder: Path) -> dict:
     """A mod's painted cover and blocked ground: {map pack name: [cover.Paint]} from maps/<map pack>/cover.toml
     (MOD_FORMAT §8)."""
-    from .cover import CoverError, parse_paints
-    out = {}
-    maps = folder / "maps"
-    for f in sorted(maps.glob("*/cover.toml"), key=lambda p: p.parent.name.lower()) if maps.is_dir() else []:
-        rel = f.relative_to(folder).as_posix()
-        if not _MAP_NAME.match(f.parent.name):
-            raise BuildError(f"{rel}: {f.parent.name!r} isn't a map's pack name (letters, digits and _, like "
-                             f"TwoIslands)")
-        try:
-            data = tomllib.loads(f.read_text(encoding="utf-8"))
-        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
-            raise BuildError(f"{rel}: {exc}") from None
-        extra = sorted(set(data) - {"paint"})
-        if extra:
-            raise BuildError(f"{rel}: unknown key {extra[0]!r} (a cover file holds [[paint]] tables)")
-        try:
-            paints = parse_paints(data.get("paint", []), rel)
-        except CoverError as exc:
-            raise BuildError(str(exc)) from None
-        if paints:
-            out[f.parent.name] = paints
-    return out
+    return _read_maps(folder, "cover.toml")
 
 
 def read_scenario(folder: Path) -> dict:
     """A mod's scenario edits: moved design items (starting points, spawns, names) and new spawns (units and
     buildings when the scenario starts): {map pack name: [scenario.Move, then scenario.Spawn]} from
     maps/<map pack>/scenario.toml (MOD_FORMAT §8)."""
-    from .scenario import ScenarioError, parse_moves, parse_spawns
-    out = {}
-    maps = folder / "maps"
-    for f in sorted(maps.glob("*/scenario.toml"), key=lambda p: p.parent.name.lower()) if maps.is_dir() else []:
-        rel = f.relative_to(folder).as_posix()
-        if not _MAP_NAME.match(f.parent.name):
-            raise BuildError(f"{rel}: {f.parent.name!r} isn't a map's pack name (letters, digits and _, like "
-                             f"TwoIslands)")
-        try:
-            data = tomllib.loads(f.read_text(encoding="utf-8"))
-        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
-            raise BuildError(f"{rel}: {exc}") from None
-        extra = sorted(set(data) - {"move", "spawn"})
-        if extra:
-            raise BuildError(f"{rel}: unknown key {extra[0]!r} (a scenario file holds [[move]] and [[spawn]] tables)")
-        try:  # moves first: they name the shipped items by their number, which spawns (added at the end) don't shift
-            moves = parse_moves(data.get("move", []), rel) + parse_spawns(data.get("spawn", []), rel)
-        except ScenarioError as exc:
-            raise BuildError(str(exc)) from None
-        if moves:
-            out[f.parent.name] = moves
-    return out
+    return _read_maps(folder, "scenario.toml")
 
 
 def read_terrain(folder: Path) -> dict:
     """A mod's terrain edits: {map pack name: [brush.Stroke]} from maps/<map pack>/terrain.toml (MOD_FORMAT §8).
     The folder's name is the map's pack name (TwoIslands for DataMapTwoIslands_v09.dat)."""
-    out = {}
-    maps = folder / "maps"
-    for f in sorted(maps.glob("*/terrain.toml"), key=lambda p: p.parent.name.lower()) if maps.is_dir() else []:
-        rel = f.relative_to(folder).as_posix()
-        if not _MAP_NAME.match(f.parent.name):
-            raise BuildError(f"{rel}: {f.parent.name!r} isn't a map's pack name (letters, digits and _, like "
-                             f"TwoIslands)")
-        try:
-            data = tomllib.loads(f.read_text(encoding="utf-8"))
-        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
-            raise BuildError(f"{rel}: {exc}") from None
-        extra = sorted(set(data) - {"stroke"})
-        if extra:
-            raise BuildError(f"{rel}: unknown key {extra[0]!r} (a terrain file holds [[stroke]] tables)")
-        try:
-            strokes = parse_strokes(data.get("stroke", []), rel)
-        except BrushError as exc:
-            raise BuildError(str(exc)) from None
-        if strokes:
-            out[f.parent.name] = strokes
-    return out
+    return _read_maps(folder, "terrain.toml")
 
 
 @dataclass

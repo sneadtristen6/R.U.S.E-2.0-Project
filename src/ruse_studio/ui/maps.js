@@ -830,8 +830,69 @@ const ALLIANCE = [0x3f7fe0, 0xe0503f, 0x49b85a, 0xe0c33f, 0xa35ee0, 0x3fc8d8];
 // tool: "move" or "spawn" (or null); selected: the item being moved; units: what can be spawned (StudioApi.units);
 // kind, type: the Spawn tool's first two dropdowns (the third is the unit, by nation)
 const scen = { data: null, pick: 0, show: true, group: null, tool: null, selected: null, units: null, kind: "ground",
-  type: null, camp: "1" };
+  type: null, camp: "1", count: 1, formation: "line", gap: {} };
 const SPAWN_KINDS = ["buildings", "ground", "infantry", "air"];
+// Several at once: how many one click adds, in which shape, how far apart (metres, per kind to start with). The shape
+// faces up the screen (away from the camera), its middle on the click; each unit is turned that way too.
+const SPAWN_COUNTS = [1, 2, 4, 6, 8, 10];
+const FORMATIONS = ["line", "column", "wedge", "box", "circle"];
+const SPAWN_GAP = { infantry: 12, ground: 25, air: 50, buildings: 60 };
+
+// [across, ahead] of each of `n` places, in gaps, the shape's middle at [0, 0].
+function formationOffsets(shape, n) {
+  const out = [];
+  if (n <= 1) return [[0, 0]];
+  for (let i = 0; i < n; i++) {
+    if (shape === "line") out.push([i - (n - 1) / 2, 0]);
+    else if (shape === "column") out.push([0, -i]);
+    else if (shape === "wedge") { const k = Math.ceil(i / 2); out.push([i % 2 ? -k : k, -k]); }  // a V: the leader at the tip
+    else if (shape === "circle") {  // neighbours a gap apart
+      const r = 0.5 / Math.sin(Math.PI / n), a = 2 * Math.PI * i / n;
+      out.push([r * Math.sin(a), r * Math.cos(a)]);
+    } else {  // box: two ranks up to ten, then a square
+      const rows = n <= 10 ? 2 : Math.ceil(Math.sqrt(n)), cols = Math.ceil(n / rows);
+      const r = Math.floor(i / cols), inRow = Math.min(cols, n - r * cols);
+      out.push([i % cols - (inRow - 1) / 2, -r]);
+    }
+  }
+  const ahead = out.map((o) => o[1]), mid = (Math.max(...ahead) + Math.min(...ahead)) / 2;
+  return out.map(([a, b]) => [a, b - mid]);
+}
+
+function spawnGap() {
+  return scen.gap[scen.kind] ?? SPAWN_GAP[scen.kind] ?? 25;
+}
+
+// Up the screen, on the map: the camera's looking direction across the ground, as a unit [x, y] (game x east, y
+// south = the scene's X and Z).
+function screenAhead() {
+  const gl = mv.gl, dx = gl.controls.target.x - gl.camera.position.x, dz = gl.controls.target.z - gl.camera.position.z;
+  const len = Math.hypot(dx, dz) || 1;
+  return [dx / len, dz / len];
+}
+
+// The places a click at map (x, y) spawns at.
+function formationPoints(x, y) {
+  const gap = spawnGap() * METRE, [fx, fy] = screenAhead(), rx = -fy, ry = fx;
+  return formationOffsets(scen.formation, scen.count).map(([a, b]) =>
+    [Math.round(x + (a * rx + b * fx) * gap), Math.round(y + (a * ry + b * fy) * gap)]);
+}
+
+// A ring where each unit will stand, under the pointer, while adding units.
+function showFormation(hit) {
+  const gl = mv.gl;
+  if (!gl || !gl.ring) return;
+  gl.ghosts = gl.ghosts || [];
+  const pts = hit && scen.tool === "spawn" ? formationPoints(hit.x / SCALE, hit.z / SCALE) : [];
+  const r = spawnGap() * METRE * SCALE * 0.3;
+  while (gl.ghosts.length < pts.length) { const g = gl.ring.clone(); gl.scene.add(g); gl.ghosts.push(g); }
+  if (!pts.length && !gl.ghosts.some((g) => g.visible)) return;
+  gl.ghosts.forEach((g, i) => {
+    g.visible = i < pts.length;
+    if (g.visible) { g.position.set(pts[i][0] * SCALE, hit.y + r * 0.1, pts[i][1] * SCALE); g.scale.set(r, r, r); }
+  });
+  gl.draw();
+}
 const GROUP_ORDER = ["hq", "money", "factory", "fort", "fake", "barracks", "armor", "antitank", "artillery", "prototype",
   "airfield", "turret", "other"];
 
@@ -1015,7 +1076,9 @@ function renderScenTools() {
   $("scen-spawn").setAttribute("aria-pressed", String(scen.tool === "spawn"));
   $("scen-move").disabled = $("scen-spawn").disabled = !s;
   const kindPick = $("scen-kind"), typePick = $("scen-group"), unit = $("scen-unit"), camp = $("scen-camp");
-  for (const box of [kindPick, typePick, unit, camp]) box.classList.toggle("hidden", scen.tool !== "spawn");
+  for (const box of [kindPick, typePick, unit, camp, $("scen-count"), $("scen-gap-row")]) box.classList.toggle("hidden", scen.tool !== "spawn");
+  $("scen-formation").classList.toggle("hidden", scen.tool !== "spawn" || scen.count === 1);
+  if (scen.tool !== "spawn") showFormation(null);
   if (scen.tool === "spawn") {
     if (!scen.units) { loadSpawnUnits().catch((err) => scenNote((err && err.message) || String(err), "error")); }
     // 1: the kind; 2: what it's for (a building's job, or the factory that builds a unit); 3: the unit, by nation
@@ -1039,6 +1102,18 @@ function renderScenTools() {
     unit.title = w.tip_scen_unit;
     camp.replaceChildren(...["", "1", "2", "3", "4", "5", "6", "7"].map((n) => chipOf(n ? fill(w.scen_side_n, { n }) : w.scen_side_none,
       w.tip_scen_camp, scen.camp === n, () => { scen.camp = n; renderScenTools(); })));
+    $("scen-count").replaceChildren(el("span", { className: "muted small", textContent: w.scen_count }),
+      ...SPAWN_COUNTS.map((n) => chipOf(String(n), w.tip_scen_count, scen.count === n, () => { scen.count = n; renderScenTools(); })));
+    $("scen-formation").replaceChildren(...FORMATIONS.map((f) => {
+      const tile = iconTile(el("button", { type: "button", className: "tool-tile small-tile", title: w.tip_scen_formation }),
+        "formation_" + f, w["formation_" + f]);
+      tile.setAttribute("aria-pressed", String(scen.formation === f));
+      tile.addEventListener("click", () => { scen.formation = f; renderScenTools(); });
+      return tile;
+    }));
+    $("scen-gap").value = spawnGap();
+    $("scen-gap-label").textContent = fill(w.place_spacing, { m: spawnGap() });
+    $("scen-gap-row").title = w.tip_scen_gap;
   }
   if (!mv.brush.mod && scen.tool) { scenNote(w.no_mod, "error"); return; }
   if (scen.tool === "move") {
@@ -1096,9 +1171,10 @@ function scenPointerDown(ev) {
     else scenEdit(() => mv.api.scenario_move(mv.current, s.file, it.item, x, y));
     return;
   }
-  const unit = $("scen-unit").value, camp = scen.camp;
+  const unit = $("scen-unit").value, camp = scen.camp, [fx, fy] = screenAhead();
   if (!unit) { scenNote(mv.words.scen_pick_unit, "error"); return; }
-  scenEdit(() => mv.api.scenario_spawn(mv.current, s.file, unit, x, y, camp === "" ? null : Number(camp)));
+  scenEdit(() => mv.api.scenario_spawn_many(mv.current, s.file, unit, formationPoints(x, y),
+    camp === "" ? null : Number(camp), Math.atan2(fy, fx)));
 }
 
 // Pointing at a zone, a starting point or a spawn says what it is.
@@ -1516,6 +1592,12 @@ const ICONS = {
   spawn: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8v8 M8 12h8",
 };
 const BRUSH_ICON = { water: "drop", cover: "cover", block: "movement" };
+for (const f of FORMATIONS) {
+  ICONS["formation_" + f] = formationOffsets(f, 6).map(([a, b]) => {
+    const x = (12 + a * 3.3).toFixed(1), y = (12 - b * 3.3).toFixed(1);
+    return `M${x} ${y}m-1.3 0a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0-2.6 0`;
+  }).join(" ");
+}
 
 function iconTile(button, icon, label) {
   button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[icon] || ICONS.spawn}"/></svg>`;
@@ -1928,6 +2010,13 @@ function watchPointer() {
       placeMany(stroke.objects);
     });
   }
+  let spawnMove = null, spawnFrame = 0;
+  canvas.addEventListener("pointermove", (ev) => {
+    if (scen.tool !== "spawn") return;
+    spawnMove = ev;
+    if (!spawnFrame) spawnFrame = requestAnimationFrame(() => { spawnFrame = 0; showFormation(spawnMove && hitGround(spawnMove)); });
+  });
+  canvas.addEventListener("pointerleave", () => showFormation(null));
   let hoverEv = null, hoverFrame = 0;
   // Looking around: say what the pointer is on. Only then: the ray is tested against every drawn object (tens of
   // thousands on a real map), which is too slow to run under a painting or placing pointer.
@@ -2028,6 +2117,7 @@ function renderWords() {
   $("brush-clear-no").textContent = w.cancel;
   $("brush-clear-no").title = w.tip_cancel;
   if (!mv.current) $("map-pick").textContent = w.pick_map;
+  foldMaps(Boolean(mv.folded));
   renderBrushes();
   renderScenTools();
   renderDockBar();
@@ -2281,7 +2371,7 @@ function wire() {
   $("map-kind").addEventListener("change", (e) => {
     mv.kind = e.target.value;
     renderList();
-    if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind }).catch(() => {});
+    saveView();
   });
   $("map-cover").addEventListener("change", (e) => {
     cover.show = e.target.checked;
@@ -2307,6 +2397,7 @@ function wire() {
     renderScenTools();
   });
   $("scen-move").addEventListener("click", () => setScenTool("move"));
+  $("scen-gap").addEventListener("input", (e) => { scen.gap[scen.kind] = Number(e.target.value); renderScenTools(); });
   $("scen-spawn").addEventListener("click", () => setScenTool("spawn"));
   for (const g of ["building", "prop", "vegetation"]) {
     $(`scenery-${g}`).addEventListener("change", (e) => {
@@ -2332,6 +2423,7 @@ function wire() {
   $("place-spacing").addEventListener("input", (e) => { mv.place.spacing[mv.place.group] = Number(e.target.value); renderPlace(); });
   $("place-area").addEventListener("input", (e) => { mv.place.area = Number(e.target.value); renderPlace(); });
   $("brush-undo").addEventListener("click", () => undoStroke());
+  $("maps-fold").addEventListener("click", () => { foldMaps(!mv.folded); saveView(); });
   $("brush-clear").addEventListener("click", () => {
     $("brush-sure-text").textContent = fill(mv.words.really_clear, { n: mv.brush.strokes.length.toLocaleString() });
     $("brush-sure").classList.remove("hidden");
@@ -2342,6 +2434,18 @@ function wire() {
   window.addEventListener("keydown", onKey);
   window.addEventListener("keyup", onKey);
   window.addEventListener("blur", () => keys.down.clear());  // a key released in another window never arrives
+}
+
+// The map list folds away to give the map the room (the button at its top, again to unfold).
+function foldMaps(folded) {
+  mv.folded = folded;
+  $("maps-view").classList.toggle("folded", folded);
+  $("maps-fold").textContent = folded ? "»" : "«";
+  $("maps-fold").title = folded ? mv.words.tip_maps_show : mv.words.tip_maps_hide;
+}
+
+function saveView() {
+  if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind, maps_folded: Boolean(mv.folded) }).catch(() => {});
 }
 
 // app.js opens the view when its tab is picked, and passes the words and the language on every language change.
@@ -2355,7 +2459,11 @@ window.MapView = {
     renderWords();
     if (!mv.maps.length) {
       try {
-        try { mv.kind = ((await api.prefs()).view || {}).map_kind || mv.kind; } catch { /* kept nothing */ }
+        try {
+          const view = (await api.prefs()).view || {};
+          mv.kind = view.map_kind || mv.kind;
+          foldMaps(Boolean(view.maps_folded));
+        } catch { /* kept nothing */ }
         mv.maps = (await api.maps()).maps;
       } catch (err) {
         $("map-pick").textContent = (err && err.message) || String(err);

@@ -252,7 +252,13 @@ class ModEdits:
             for prop, value in sorted(blocks[block], key=lambda pv: _natural(pv[0])):
                 out.append(f"    {prop} = {literal(value)}\n")
             out.append(")\n")
-        self._write(self.file, "".join(out))
+        text = "".join(out)
+        try:  # only a file the build can read back is ever saved
+            parse(text, file=FILE.as_posix(), mod=self.folder.name)
+        except RndfError as exc:
+            raise RndfError(f"the Studio would have saved a mod file it can't read back ({exc}), so nothing was "
+                            f"saved. Please report this.") from None
+        self._write(self.file, text)
         named = [self.new_units[t] for t in sorted(self.new_units) if self.new_units[t].named]
         if named:
             names = io.StringIO()

@@ -103,6 +103,14 @@ class TerrainFile(unittest.TestCase):
         self.assertNotIn("height", ramp)
         self.assertEqual(strokes_toml([]), "\n")
 
+    def test_every_brush_read_back(self):  # the Studio saved water strokes without their level once (0.7.0)
+        every = [Stroke(name, 1.0, 2.0, 3.0, height=4.0, level=5.0, weight=0.5, x2=6.0, y2=7.0, level2=8.0)
+                 for name in BRUSHES]
+        read = parse_strokes(tomllib.loads(strokes_toml(every))["stroke"])
+        self.assertEqual([s.brush for s in read], list(BRUSHES))
+        water = next(s for s in read if s.brush == "water")
+        self.assertEqual(water.level, 5.0)
+
     def test_brushes_and_their_values(self):
         self.assertEqual(set(BRUSHES), {"hill", "raise", "lower", "crater", "plateau", "flatten", "level", "smooth", "ramp",
                                         "water", "drain", "cover", "uncover", "block", "block_infantry", "block_vehicles"})

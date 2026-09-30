@@ -824,6 +824,43 @@ class Terrain(WithMod):
                 call()
         self.assertEqual(file.read_text(encoding="utf-8"), by_hand)
 
+    def test_a_water_stroke_keeps_its_level(self):  # Studio 0.7.0 and before saved it without, then couldn't read it
+        self.api.new_mod("x")
+        lake = {"brush": "water", "x": 1.0, "y": 2.0, "radius": 3.0, "level": 450.0}
+        self.api.terrain_add("TwoIslands", [lake])
+        self.assertEqual(self.api.terrain("TwoIslands")["strokes"][0]["level"], 450.0)
+
+    def test_a_file_it_cant_read_back_is_never_saved(self):
+        folder = Path(self.api.new_mod("x")["current"])
+        with mock.patch("ruse_studio.api.strokes_toml", return_value='[[stroke]]\nbrush = "water"\nx = 1.0\ny = 2.0\nradius = 3.0\n'):
+            with self.assertRaisesRegex(StudioError, "can't read back.*needs level"):
+                self.api.terrain_add("TwoIslands", [self.HILL])
+        self.assertFalse((folder / "maps" / "TwoIslands" / "terrain.toml").exists())
+
+    def test_the_mod_check_lists_every_broken_file_and_sets_them_aside(self):
+        self.assertEqual(self.api.check_mod(), {"mod": None, "problems": []})
+        folder = Path(self.api.new_mod("x")["current"])
+        self.assertEqual(self.api.check_mod()["problems"], [])
+        lake = folder / "maps" / "Blitz" / "terrain.toml"
+        lake.parent.mkdir(parents=True)
+        lake.write_text('[[stroke]]\nbrush = "water"\nx = 1.0\ny = 2.0\nradius = 3.0\n', encoding="utf-8")
+        spawns = folder / "maps" / "TwoIslands" / "scenario.toml"
+        spawns.parent.mkdir(parents=True)
+        spawns.write_text("[[wrong]]\n", encoding="utf-8")
+        (folder / "maps" / "TwoIslands" / "notes.toml").write_text("not = [a map file", encoding="utf-8")
+        got = self.api.check_mod()["problems"]
+        self.assertEqual([(p["file"], p["set_aside"]) for p in got],  # both named, nothing about the notes
+                         [("maps/Blitz/terrain.toml", True), ("maps/TwoIslands/scenario.toml", True)])
+        self.assertIn("the water brush needs level", got[0]["problem"])
+        self.assertIn("unknown key 'wrong'", got[1]["problem"])
+        after = self.api.set_aside("maps/Blitz/terrain.toml")
+        self.assertEqual(Path(after["kept"]).name, "terrain.broken.toml")
+        self.assertEqual([p["file"] for p in after["problems"]], ["maps/TwoIslands/scenario.toml"])
+        self.assertEqual(self.api.set_aside("maps/TwoIslands/scenario.toml")["problems"], [])
+        for bad in ("mod.toml", "maps/Blitz/terrain.broken.toml", "../x/maps/Blitz/terrain.toml", "maps/Nope/cover.toml"):
+            with self.assertRaisesRegex(StudioError, "isn't one of this mod's map files"):
+                self.api.set_aside(bad)
+
 
 class ScenarioEdits(WithMod):
     """The map view's Move and Add unit tools: a starting point moved, units spawned, saved in the mod's
@@ -883,6 +920,22 @@ class ScenarioEdits(WithMod):
         self.assertFalse(self.file.exists())
         with self.assertRaisesRegex(StudioError, "isn't in the mod"):
             self.api.scenario_remove_spawn("Blitz", 0)
+
+    def test_a_formation_in_one_go(self):
+        before = len(self.items(self.api.map_scenarios("Blitz")))
+        shown = {"values": [("ClassNameForDebug", 0, "Unit_M4_Sherman")]}
+        with mock.patch("rusemod.index.Index.show", return_value=shown):
+            items = self.items(self.api.scenario_spawn_many("Blitz", "leveldesign.scenario", M4,
+                                                            [[1, 2], [3, 4], [5, 6]], None, 1.5))
+            mine = items[before:]
+            self.assertEqual([(m["x"], m["y"], m["camp"], m["spawn"]) for m in mine],
+                             [(1.0, 2.0, None, 0), (3.0, 4.0, None, 1), (5.0, 6.0, None, 2)])
+            data = tomllib.loads(self.file.read_text(encoding="utf-8"))
+            self.assertEqual({s["rotation"] for s in data["spawn"]}, {1.5})
+            for bad in ([], [[1, 2]] * 51, [[1, "a"]], [[1, float("nan")]], [[1, 2, 3]]):
+                with self.assertRaisesRegex(StudioError, "places|pairs"):
+                    self.api.scenario_spawn_many("Blitz", "leveldesign.scenario", M4, bad)
+        self.assertEqual(len(self.items(self.api.map_scenarios("Blitz"))), before + 3)
 
 
 class Labels(unittest.TestCase):

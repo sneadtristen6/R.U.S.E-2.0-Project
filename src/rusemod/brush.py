@@ -254,7 +254,7 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
                   f"radius = {_num_text(s.radius)}"]
         if kind == "add":
             lines.append(f"height = {_num_text(s.height)}")
-        if kind == "level":
+        if kind in ("level", "water"):  # a lake's surface is its level
             lines.append(f"level = {_num_text(s.level)}")
         if kind == "ramp":
             lines += [f"x2 = {_num_text(s.x2)}", f"y2 = {_num_text(s.y2)}", f"level = {_num_text(s.level)}",

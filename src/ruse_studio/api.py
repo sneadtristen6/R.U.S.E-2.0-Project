@@ -13,6 +13,7 @@ from __future__ import annotations
 import base64
 import functools
 import json
+import math
 import re
 import struct
 import threading
@@ -25,7 +26,7 @@ from pathlib import Path
 from rusemod import identity, package, scenario, scenery, schema
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.update import UpdateCalls
-from rusemod.build import BuildError, build_and_write, load_mod
+from rusemod.build import MAP_FILES, BuildError, build_and_write, load_mod, read_map_file
 from rusemod.lock import fingerprint_text
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
@@ -150,6 +151,32 @@ def safe_name(name: str) -> str:
 
 class StudioError(Exception):
     pass
+
+
+# the ways a mod's map files can be wrong, as their readers say it
+_FILE_MISTAKES = (tomllib.TOMLDecodeError, UnicodeDecodeError, BrushError, scenario.ScenarioError,
+                  scenery.SceneryEditError)
+
+
+def _save_checked(path: Path, text: str, read) -> None:
+    """Save `text` into `path` only when `read(its TOML)` takes it: the Studio never writes a file that it, or the
+    build, can't read back (Studio 0.7.0 once saved water strokes without their level)."""
+    try:
+        read(tomllib.loads(text))
+    except _FILE_MISTAKES as exc:
+        raise StudioError(f"The Studio would have saved {path.name}, which it can't read back ({exc}), so nothing "
+                          f"was saved. Please report this.") from None
+    ModEdits._write(path, text)
+
+
+def _aside(path: Path) -> Path:
+    """Rename a mod file that can't be read to <name>.broken.toml (-2, -3... when taken): out of the build's way,
+    never lost. Returns the new path."""
+    kept, k = path.with_name(f"{path.stem}.broken.toml"), 2
+    while kept.exists():
+        kept, k = path.with_name(f"{path.stem}.broken-{k}.toml"), k + 1
+    path.rename(kept)
+    return kept
 
 
 @functools.cache
@@ -1016,12 +1043,15 @@ class StudioApi(UpdateCalls, PrefsCalls):
             return (scenario.parse_moves(data.get("move", []), str(path)),
                     scenario.parse_spawns(data.get("spawn", []), str(path)))
         except (tomllib.TOMLDecodeError, UnicodeDecodeError, scenario.ScenarioError) as exc:
-            raise StudioError(f"{path} has a mistake ({exc}). Fix it, or delete it to start over.") from None
+            raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
+                              f"by hand.") from None
 
     def _write_scenario_edits(self, pack: str, moves: list, spawns: list) -> Path:
         path = self._scenario_file(pack)
         if moves or spawns:
-            ModEdits._write(path, scenario.moves_toml(moves, self.SCENARIO_HEADER) + "\n" + scenario.spawns_toml(spawns))
+            _save_checked(path, scenario.moves_toml(moves, self.SCENARIO_HEADER) + "\n" + scenario.spawns_toml(spawns),
+                          lambda data: (scenario.parse_moves(data.get("move", []), str(path)),
+                                        scenario.parse_spawns(data.get("spawn", []), str(path))))
         elif path.is_file():
             path.unlink()
         return path
@@ -1060,6 +1090,20 @@ class StudioApi(UpdateCalls, PrefsCalls):
                        rotation: float = 0.0) -> dict:
         """Spawn a unit or building (`unit`: its address, as the unit list gives it) when scenario `file` starts, at
         x, y, for side `camp`. Returns the map's scenarios as the mod leaves them."""
+        return self.scenario_spawn_many(pack, file, unit, [[x, y]], camp, rotation)
+
+    SPAWN_MOST = 50  # units one click may add (a formation)
+
+    def scenario_spawn_many(self, pack: str, file: str, unit: str, points: list, camp: int | None = 1,
+                            rotation: float = 0.0) -> dict:
+        """Spawn `unit` at each [x, y] of `points` (a formation, up to SPAWN_MOST) when scenario `file` starts, for
+        side `camp`, all turned `rotation` radians; saved in one go. Returns the map's scenarios."""
+        try:
+            where = [(float(x), float(y)) for x, y in points]
+        except (TypeError, ValueError):
+            raise StudioError("the places to spawn at must be pairs of numbers") from None
+        if not 1 <= len(where) <= self.SPAWN_MOST or not all(map(math.isfinite, (v for p in where for v in p))):
+            raise StudioError(f"a spawn takes 1 to {self.SPAWN_MOST} places, each two finite numbers")
         self._base_scenario(pack, file)
         ix = self._open()
         try:
@@ -1074,7 +1118,8 @@ class StudioApi(UpdateCalls, PrefsCalls):
             raise StudioError(f"{_tail(unit)} has no class name for the game's scripts, so it can't be spawned")
         with self._saving:
             moves, spawns = self._read_scenario_edits(pack)
-            spawns.append(scenario.Spawn(file, name, float(x), float(y), None if camp is None else int(camp), float(rotation)))
+            spawns += [scenario.Spawn(file, name, x, y, None if camp is None else int(camp), float(rotation))
+                       for x, y in where]
             self._write_scenario_edits(pack, moves, spawns)
         return self.map_scenarios(pack)
 
@@ -1118,12 +1163,13 @@ class StudioApi(UpdateCalls, PrefsCalls):
             data = tomllib.loads(path.read_text(encoding="utf-8"))
             return scenery.parse_objects(data.get("object", []), str(path))
         except (tomllib.TOMLDecodeError, UnicodeDecodeError, scenery.SceneryEditError) as exc:
-            raise StudioError(f"{path} can't be read ({exc}). Fix or remove it by hand: the Studio won't write over "
-                              f"it.") from None
+            raise StudioError(f"{path} can't be read ({exc}). The mod check at the top can set it aside, or fix it by "
+                              f"hand: the Studio won't write over it.") from None
 
     def _write_objects(self, path: Path, objects: list) -> None:
         if objects:
-            ModEdits._write(path, scenery.objects_toml(objects, self.SCENERY_HEADER))
+            _save_checked(path, scenery.objects_toml(objects, self.SCENERY_HEADER),
+                          lambda data: scenery.parse_objects(data.get("object", []), str(path)))
             return
         if path.is_file():
             path.unlink()
@@ -1192,12 +1238,13 @@ class StudioApi(UpdateCalls, PrefsCalls):
             data = tomllib.loads(path.read_text(encoding="utf-8"))
             return parse_strokes(data.get("stroke", []), str(path))
         except (tomllib.TOMLDecodeError, UnicodeDecodeError, BrushError) as exc:
-            raise StudioError(f"{path} can't be read ({exc}). Fix or remove it by hand: the Studio won't write over "
-                              f"it.") from None
+            raise StudioError(f"{path} can't be read ({exc}). The mod check at the top can set it aside, or fix it by "
+                              f"hand: the Studio won't write over it.") from None
 
     def _write_strokes(self, path: Path, strokes: list) -> None:
         if strokes:
-            ModEdits._write(path, strokes_toml(strokes, self.TERRAIN_HEADER))
+            _save_checked(path, strokes_toml(strokes, self.TERRAIN_HEADER),
+                          lambda data: parse_strokes(data.get("stroke", []), str(path)))
             return
         if path.is_file():
             path.unlink()
@@ -1243,6 +1290,44 @@ class StudioApi(UpdateCalls, PrefsCalls):
             if n:
                 self._write_strokes(path, left)
         return {"count": len(left), "removed": n, "saved": str(path) if left else None}
+
+    # --- the mod check (like a mod manager's): every file read as the build reads it, before it's too late ---
+    def check_mod(self) -> dict:
+        """Every file of the current mod read as the build reads it, each mistake in plain words: {"mod": its folder
+        or None, "problems": [{"file": its path in the mod (None: the mod as a whole), "problem": what's wrong,
+        "set_aside": whether Set aside can take the file out}]}. The window runs it when a mod is picked and
+        before Test in game."""
+        folder = self._mod_dir()
+        if folder is None:
+            return {"mod": None, "problems": []}
+        problems = []
+        maps = folder / "maps"
+        for f in sorted(maps.glob("*/*.toml"), key=lambda p: p.as_posix().lower()) if maps.is_dir() else []:
+            if f.name in MAP_FILES:
+                try:
+                    read_map_file(folder, f)
+                except BuildError as exc:
+                    problems.append({"file": f.relative_to(folder).as_posix(), "problem": str(exc), "set_aside": True})
+        try:  # the rest: mod.toml, the unit edits, the names (the build stops at the first mistake)
+            load_mod(folder)
+        except (BuildError, RndfError, OSError) as exc:
+            if not any(p["file"] and p["file"] in str(exc) for p in problems):
+                problems.append({"file": None, "problem": str(exc), "set_aside": False})
+        return {"mod": str(folder), "problems": problems}
+
+    def set_aside(self, file: str) -> dict:
+        """Take a broken map file (`file`: its path in the mod, as check_mod gives it) out of the current mod: it's
+        renamed <name>.broken.toml beside it, never deleted, and the build skips it. Returns check_mod() and "kept":
+        the renamed file."""
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first.")
+        path = folder / str(file or "")
+        if path.name not in MAP_FILES or path.parent.parent != folder / "maps" or not path.is_file():
+            raise StudioError(f"{file} isn't one of this mod's map files")
+        with self._saving:
+            kept = _aside(path)
+        return self.check_mod() | {"kept": str(kept)}
 
     # --- the mod being edited ---
     def _settings(self) -> dict:

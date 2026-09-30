@@ -69,6 +69,7 @@ async function setLanguage(lang) {
   $("lang-label").textContent = w.language;
   $("mod-label").textContent = w.mod;
   $("test").textContent = w.test_in_game;
+  renderCheck();
   $("new-mod-name").placeholder = w.mod_name;
   $("new-mod-create").textContent = w.create;
   $("new-mod-cancel").textContent = w.cancel;
@@ -116,6 +117,46 @@ function useMods(res) {
   state.mods = res.mods;
   state.mod = res.current;
   renderMods();
+  checkMod();
+}
+
+// --- the mod check (StudioApi.check_mod): every file of the mod read as the build reads it, as soon as the mod is
+// picked and again before Test in game, so a mistake is found before the game refuses the mod. A bar under the
+// header names each one; a broken map file can be set aside (renamed, never lost) with one click. ---
+const fillText = (text, values) => String(text || "").replace(/\{(\w+)\}/g, (_, k) => values[k] ?? "");
+
+async function checkMod() {
+  if (!state.mod) { state.problems = []; renderCheck(); return true; }
+  try {
+    state.problems = (await api().check_mod()).problems || [];
+  } catch (err) { problem(err); return false; }
+  renderCheck();
+  return !state.problems.length;
+}
+
+function renderCheck() {
+  const w = state.words, bar = $("check-bar"), list = state.problems || [];
+  bar.classList.toggle("hidden", !list.length);
+  if (!list.length) { bar.replaceChildren(); return; }
+  bar.replaceChildren(el("span", { className: "check-title", textContent: fillText(w.check_title, { n: list.length }) }),
+    ...list.map((p) => {
+      const row = el("div", { className: "check-row" }, el("span", { textContent: p.problem }));
+      if (p.set_aside) {
+        const button = el("button", { type: "button", className: "small", textContent: w.check_set_aside, title: w.tip_check_set_aside });
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          try {
+            const res = await api().set_aside(p.file);
+            state.problems = res.problems || [];
+            renderCheck();
+            say(fillText(w.check_aside_done, { file: res.kept }), "ok");
+            if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // the map starts clean
+          } catch (err) { problem(err); button.disabled = false; }
+        });
+        row.append(button);
+      }
+      return row;
+    }));
 }
 
 async function modChanged() {
@@ -738,6 +779,7 @@ async function follow(jobId, log, done) {
 }
 
 async function testInGame() {
+  if (!await checkMod()) { say(state.words.check_stop, "error"); return; }
   const button = $("test");
   button.disabled = true;
   button.dataset.running = "1";

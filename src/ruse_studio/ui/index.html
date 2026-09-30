@@ -28,6 +28,8 @@
   <div id="update-bar" class="update-bar hidden" role="status"><span id="update-text"></span>
     <button id="update-now" class="small" type="button"></button>
     <button id="update-info" class="small ghost" type="button"></button></div>
+  <!-- the mod check (app.js checkMod): what the build would stop at, and a way out for each broken map file -->
+  <div id="check-bar" class="check-bar hidden" role="alert"></div>
 
   <form id="new-mod" class="new-mod hidden">
     <input id="new-mod-name" autocomplete="off" maxlength="60" required>
@@ -61,7 +63,10 @@
 
   <main id="maps-view" class="layout hidden">
     <aside class="browser">
-      <select id="map-kind" class="map-kind"></select>
+      <div class="browser-head">
+        <select id="map-kind" class="map-kind"></select>
+        <button id="maps-fold" type="button" class="ghost fold">«</button>
+      </div>
       <ul id="map-list" class="unit-list"></ul>
     </aside>
     <section class="map-stage">
@@ -153,10 +158,14 @@
               </div>
               <div id="scen-kind" class="chips hidden" role="group"></div>
               <div id="scen-group" class="chips hidden" role="group"></div>
+              <div id="scen-count" class="chips hidden" role="group"></div>
+              <div id="scen-formation" class="tool-tiles hidden" role="group"></div>
             </div>
             <div class="tray-side">
               <select id="scen-unit" size="5" class="place-list hidden"></select>
               <div id="scen-camp" class="chips hidden" role="group"></div>
+              <label id="scen-gap-row" class="brush-slider small hidden"><span id="scen-gap-label"></span>
+                <input id="scen-gap" type="range" min="4" max="150" step="1" value="25"></label>
               <div id="scen-note" class="small"></div>
             </div>
           </div>
