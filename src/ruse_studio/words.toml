@@ -4402,3 +4402,27 @@ ru = "Переименует папку карты в моде в имя пак�
 cz = "Přejmenuje složku mapy ve vašem modu na název balíku, který používá hra. Obsah se nemění."
 jpn = "モッド内のマップフォルダーをゲームのパック名に変更します。中身は変わりません。"
 sc = "把模组中的地图文件夹改名为游戏使用的包名。其中内容不变。"
+
+[roads_show]
+us = "Roads"
+fr = "Routes"
+ger = "Straßen"
+ita = "Strade"
+spa = "Carreteras"
+pol = "Drogi"
+ru = "Дороги"
+cz = "Silnice"
+jpn = "道路"
+sc = "道路"
+
+[tip_roads_show]
+us = "Show the map's roads in gold, on the ground as you shape it."
+fr = "Afficher les routes de la carte en doré, sur le terrain que vous modelez."
+ger = "Die Straßen der Karte golden zeigen, auf dem Gelände, wie Sie es formen."
+ita = "Mostra le strade della mappa in oro, sul terreno che modelli."
+spa = "Mostrar las carreteras del mapa en dorado, sobre el terreno que modelas."
+pol = "Pokaż drogi mapy na złoto, na terenie, który kształtujesz."
+ru = "Показать дороги карты золотым цветом, на рельефе, который вы меняете."
+cz = "Ukázat silnice mapy zlatě, na terénu, jak ho tvarujete."
+jpn = "マップの道路を金色で表示します（編集中の地形の上に）。"
+sc = "以金色显示地图的道路，贴在你塑造的地形上。"

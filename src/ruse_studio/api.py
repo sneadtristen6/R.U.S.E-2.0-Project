@@ -813,6 +813,31 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
                 self._sceneries.pop(next(iter(self._sceneries)))
         return out
 
+    def map_roads(self, pack: str) -> dict:
+        """A map's roads for the 3D view (rusemod.scenery Scenery.roads): {"pieces": [x0, y0, x1, y1, x2, y2, x3, y3,
+        ...]}, each road piece a cubic Bézier's four points, in map units."""
+        game = self._game()
+        if game is None:
+            raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
+        map_path = find_pack(game, pack_file(pack))
+        if map_path is None:
+            raise StudioError(f"{pack_file(pack)} isn't in the game folder.")
+        key = ("roads", str(map_path), map_path.stat().st_mtime)
+        with self._grounds_lock:
+            if key in self._sceneries:
+                return self._sceneries[key]
+        with Edat.open(str(map_path)) as map_arc:
+            try:
+                sc = scenery.Scenery(bytes(map_arc.read(map_arc.find(scenery.MEMBER))))
+            except (KeyError, scenery.SceneryError, struct.error) as exc:
+                raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
+        out = {"pieces": [round(v) for piece in sc.roads() for v in piece]}
+        with self._grounds_lock:
+            self._sceneries[key] = out
+            while len(self._sceneries) > 3:
+                self._sceneries.pop(next(iter(self._sceneries)))
+        return out
+
     def map_cover(self, pack: str) -> dict:
         """Where units hide on a map, as the game has it (rusemod.cover: the cover grid in DataMap_Win.dat), for the
         map view to draw under the mod's cover brushes: {"size": n, "box": [x0, y0, width, height] in map units,

@@ -505,7 +505,9 @@ his Claude; checked here on all 32 maps.
   (long) or +0x1C; the entries (u32 item offsets from the items' start; a block seen from far lists its far-view
   items first, then every item again), the tree's 8-byte nodes, the items.
 - **Item:** a u32 word, then its transform. Bit 31 = an object (name index = bits 4–23); bit 24 = a road piece (15
-  more words, a cubic Bézier); otherwise a child block (offset = bits 2–23, always after its parent). Transform by
+  more words, a cubic Bézier: its start x, y, z, the start's handle as an offset from it, its end, the end's handle
+  as an offset from the end, then 3 and two codes on every piece seen; pieces chain end to start with their handles
+  in line; `Scenery.roads`); otherwise a child block (offset = bits 2–23, always after its parent). Transform by
   bits 0–1: 3 = 12 f32 (3 rows of 4), 2 = a move (3 f32), 1 = none, 0 = compact (4 int16 × 3/32767 for the 2×2 turn
   and scale, then x, y, z and the height scale as f32; so compact sizes stop at 3.0).
 - **Objects stand at height 0**; the game sets them on the ground. A name is a scenery type: a descriptor in the

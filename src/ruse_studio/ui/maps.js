@@ -569,6 +569,72 @@ function overlayDraw(o, r0, r1, c0, c1) {
   if (mv.gl) mv.gl.draw();
 }
 
+// --- roads: the map's own road pieces (StudioApi.map_roads: cubic Béziers), drawn in gold on the ground when the
+// Roads box is ticked. Each is sampled into short lines seated on the ground, again after every stroke, so they
+// follow the brushes. (Drawing new roads comes next: PLAN A3.) ---
+const roads = { pieces: null, line: null, show: false };
+const ROAD_STEP = 8000;  // map units per line (about 30 m): a long piece gets more, so it follows hills
+const ROAD_LIFT = 600;   // map units above the ground (about 2 m), so the ground doesn't hide them
+
+async function loadRoads(pack, ask) {
+  dropRoads();
+  const res = await mv.api.map_roads(pack);
+  if (ask !== mv.ask || !mv.edit) return;
+  roads.pieces = res.pieces;
+  drawRoads();
+}
+
+function dropRoads() {
+  if (roads.line) {
+    mv.gl.scene.remove(roads.line);
+    roads.line.geometry.dispose();
+    roads.line.material.dispose();
+  }
+  Object.assign(roads, { pieces: null, line: null });
+}
+
+function drawRoads() {
+  const gl = mv.gl, P = roads.pieces;
+  if (!gl || !P || !mv.edit) return;
+  if (!roads.show) {
+    if (roads.line && roads.line.visible) { roads.line.visible = false; gl.draw(); }
+    return;
+  }
+  const { THREE } = gl, grid = makeGrid(mv.edit), n = P.length / 8, steps = new Uint16Array(n);
+  let total = 0;
+  for (let i = 0; i < n; i++) {  // the control polygon's length bounds the curve's
+    const o = 8 * i, len = Math.hypot(P[o + 2] - P[o], P[o + 3] - P[o + 1]) + Math.hypot(P[o + 4] - P[o + 2], P[o + 5] - P[o + 3])
+      + Math.hypot(P[o + 6] - P[o + 4], P[o + 7] - P[o + 5]);
+    steps[i] = Math.min(64, Math.max(2, Math.ceil(len / ROAD_STEP)));
+    total += steps[i];
+  }
+  const pos = new Float32Array(total * 6);
+  let k = 0;
+  for (let i = 0; i < n; i++) {
+    const o = 8 * i;
+    let px = P[o], py = P[o + 1];
+    for (let s = 1; s <= steps[i]; s++) {
+      const t = s / steps[i], u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+      const x = a * P[o] + b * P[o + 2] + c * P[o + 4] + d * P[o + 6], y = a * P[o + 1] + b * P[o + 3] + c * P[o + 5] + d * P[o + 7];
+      pos[k++] = px * SCALE; pos[k++] = (groundAt(grid, px, py) + ROAD_LIFT) * SCALE; pos[k++] = py * SCALE;
+      pos[k++] = x * SCALE; pos[k++] = (groundAt(grid, x, y) + ROAD_LIFT) * SCALE; pos[k++] = y * SCALE;
+      px = x; py = y;
+    }
+  }
+  if (!roads.line) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    roads.line = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xf2c12e, transparent: true, opacity: 0.95 }));
+    roads.line.renderOrder = 4;
+    roads.line.frustumCulled = false;
+    gl.scene.add(roads.line);
+  } else {
+    roads.line.geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  }
+  roads.line.visible = true;
+  gl.draw();
+}
+
 // Every building the map and the mod put here: the map's (map_scenery) and the ones placed in this mod.
 function buildingSpots() {
   const d = mv.scenery.data, out = [];
@@ -783,6 +849,7 @@ function sceneryMeshes(data) {
 // object's size.
 function placeScenery() {
   if (scen.group) drawScenario();
+  drawRoads();  // the roads follow the ground too
   const shapes = Object.values(mv.scenery.meshes);
   if (!shapes.length || !mv.edit) return;
   const models = Object.values(mv.scenery.models || {}).flat();
@@ -1509,6 +1576,7 @@ async function show(pack, keepCamera) {
   if (ask !== mv.ask) return;
   const gl = mv.gl;
   for (const o of OVERLAYS) dropOverlay(o);
+  dropRoads();
   forget(gl.ground);
   forget(gl.water);
   gl.ground = made.ground;
@@ -1546,6 +1614,7 @@ async function show(pack, keepCamera) {
   loadScenarios(pack, ask).catch((err) => { $("scen-stats").textContent = (err && err.message) || String(err); });
   loadCover(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   loadMoves(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
+  loadRoads(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
 }
 
@@ -2091,6 +2160,8 @@ function renderWords() {
   $("map-cover-label").textContent = w.cover_show;
   $("map-cover").parentElement.title = w.tip_cover_show;
   $("map-move-label").textContent = w.move_show;
+  $("map-roads-label").textContent = w.roads_show;
+  $("map-roads").parentElement.title = w.tip_roads_show;
   $("map-move").parentElement.title = w.tip_move_show;
   $("scen-show-label").textContent = w.scen_show;
   $("scen-show").parentElement.title = w.tip_scen_show;
@@ -2376,6 +2447,10 @@ function wire() {
   $("map-cover").addEventListener("change", (e) => {
     cover.show = e.target.checked;
     showOverlays();
+  });
+  $("map-roads").addEventListener("change", (e) => {
+    roads.show = e.target.checked;
+    drawRoads();
   });
   $("map-move").addEventListener("change", (e) => {
     moves.show = e.target.checked;

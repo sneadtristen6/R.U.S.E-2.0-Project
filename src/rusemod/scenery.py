@@ -200,6 +200,25 @@ class Scenery:
                 elif it.kind == "child":
                     todo.append((self._by_offset[it.child_offset], compose(m, it.matrix())))
 
+    def roads(self) -> list[tuple]:
+        """Every road piece, in map coordinates: a cubic Bézier as (x0, y0, x1, y1, x2, y2, x3, y3). A piece's 15
+        words are its start (x, y, z), the start's handle as an offset from it, its end, the end's handle as an offset
+        from the end, then three words (3 and two codes on every piece seen); pieces join end to start, handles in
+        line. Roads lie on the ground, so their z (0) isn't kept. A few long far-view pieces of the top block repeat
+        roads the close pieces already draw."""
+        out = []
+        todo = [(r, IDENTITY) for r in reversed(self.roots())]
+        while todo:
+            i, m = todo.pop()
+            for it in self.blocks[i].items:
+                if it.kind == "child":
+                    todo.append((self._by_offset[it.child_offset], compose(m, it.matrix())))
+                elif it.kind == "road":
+                    f = struct.unpack_from("<12f", it.data)
+                    ends = ((f[0], f[1]), (f[0] + f[3], f[1] + f[4]), (f[6] + f[9], f[7] + f[10]), (f[6], f[7]))
+                    out.append(tuple(v for x, y in ends for v in (m[0] * x + m[1] * y + m[3], m[4] * x + m[5] * y + m[7])))
+        return out
+
     def types(self) -> dict[int, int]:
         """How many objects of each name the map places (no walk: each block's objects times how often it's placed)."""
         weight = [0] * len(self.blocks)

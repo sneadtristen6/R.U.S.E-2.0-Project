@@ -27,8 +27,11 @@ def moved(word, x, y):
     return struct.pack("<I3f", word | 2, x, y, 0.0)
 
 
-def road():
-    return struct.pack("<I", 0x01000000) + bytes(60)
+def road(start=(0.0, 0.0), handle=(0.0, 0.0), end=(0.0, 0.0), back=(0.0, 0.0)):
+    """A road piece: its start, the start's handle (an offset), its end, the end's handle (an offset from the end),
+    each x, y, z; then 3 and two codes, as on every piece of the game's maps."""
+    f = [*start, 0.0, *handle, 0.0, *end, 0.0, *back, 0.0]
+    return struct.pack("<I12f3I", 0x01000141, *f, 3, 129958752, 1567752)
 
 
 def block(items, far=False):
@@ -73,7 +76,8 @@ NAMES = ["TypeWarrior/MairieNormande", "TypeWarrior/Chene_02"]
 
 def village():
     """Block 1: two oaks and a road piece; block 0 places a town hall and block 1 twice."""
-    wood = block([struct.pack("<I", 0x80000000 | 1 << 4 | 1), moved(0x80000000 | 1 << 4, 100.0, 0.0), road()])
+    wood = block([struct.pack("<I", 0x80000000 | 1 << 4 | 1), moved(0x80000000 | 1 << 4, 100.0, 0.0),
+                  road((10.0, 20.0), (5.0, 0.0), (40.0, 20.0), (-5.0, 0.0))])
     root_len = len(block([compact(0, 1000.0, 2000.0), moved(0, 0, 0), moved(0, 0, 0)]))
     root = block([compact(0, 1000.0, 2000.0, math.pi / 2), moved(root_len, 5000.0, 0.0),
                   moved(root_len, 5000.0, 9000.0)])
@@ -98,6 +102,10 @@ class Reading(unittest.TestCase):
         x, y, turn, size = placement(hall)
         self.assertAlmostEqual(turn, math.pi / 2, places=3)
         self.assertAlmostEqual(size, 1.0, places=3)
+
+    def test_roads_are_placed_with_their_blocks(self):
+        got = sorted(tuple(round(v) for v in piece) for piece in Scenery(village()).roads())
+        self.assertEqual(got, [(5010, 20, 5015, 20, 5035, 20, 5040, 20), (5010, 9020, 5015, 9020, 5035, 9020, 5040, 9020)])
 
     def test_far_view_items_are_listed_twice_but_counted_once(self):
         s = Scenery(make_scenery([block([compact(1, 1, 2), compact(1, 3, 4)], far=True)], NAMES))
