@@ -66,6 +66,7 @@ async function setLanguage(lang) {
   $("lang").replaceChildren(...state.languages.map((l) =>
     el("option", { value: l.code, textContent: l.name, selected: l.code === lang })));
   text($("choose"), w.choose_folder);
+  text($("settings-open"), w.settings_tab);
   text($("sets-title"), w.mod_sets);
   text($("new-set"), w.new_set);
   text($("library-title"), w.library);
@@ -113,8 +114,39 @@ function renderStatus(status) {
 function render() {
   renderSets();
   renderLibrary();
-  if (state.browse) renderBrowse(); else if (state.importing) renderImport(); else if (state.editing) renderEditor();
+  $("settings-view").classList.add("hidden");
+  if (state.settings) renderSettings();
+  else if (state.browse) renderBrowse(); else if (state.importing) renderImport(); else if (state.editing) renderEditor();
   else renderActive();
+}
+
+// --- Settings: one entry per section (its words are set_<id>_title); a new setting is one more entry and its
+// section in index.html. What they change is kept by the launcher (settings.json), not by the window.
+const SETTINGS = [
+  { id: "language", render() {} },  // the list is filled at start and saved on change
+  { id: "game", render() {
+    const w = state.words, s = state.status || {};
+    text($("set-game-path"), s.found ? fill(w.set_game_path, { path: s.game_dir || "" }) : (s.message || w.set_game_none));
+    text($("set-game-change"), w.set_game_change);
+  } },
+  { id: "updates", render() {
+    const w = state.words, u = state.update || {};
+    text($("set-updates-text"), u.checking ? w.set_updates_checking : u.available ? fill(w.update_out, { app: APP_NAME, version: u.version })
+      : u.error ? u.error : fill(w.set_updates_latest, { version: u.version || "" }));
+    text($("set-updates-check"), w.set_updates_check);
+  } },
+];
+
+function renderSettings() {
+  const w = state.words;
+  for (const id of ["set-view", "editor", "import-view", "browse-view"]) $(id).classList.add("hidden");
+  $("settings-view").classList.remove("hidden");
+  text($("settings-title"), w.settings_title);
+  text($("settings-back"), w.back || "Back");
+  for (const s of SETTINGS) {
+    text($(`set-${s.id}-title`), w[`set_${s.id}_title`] || s.id);
+    s.render();
+  }
 }
 
 function useLists(res) {
@@ -161,6 +193,7 @@ function renderSets() {
       state.editing = null;
       state.browse = null;
       state.importing = null;
+      state.settings = false;
       render();
     });
     return el("li", {}, card);
@@ -358,6 +391,7 @@ async function copyShared() {
 function openImport() {
   state.editing = null;
   state.browse = null;
+  state.settings = false;
   state.importing = { text: "", check: null, name: "" };
   render();
   $("import-text").value = "";
@@ -421,6 +455,7 @@ async function checkImport() {
 
 // --- the editor: a new mod set, or a set's mods and their order ---
 function openEditor(set) {
+  state.settings = false;
   state.editing = set ? { id: set.id, name: set.name, mods: set.mods.slice(), names: set.mod_names.slice() }
     : { id: null, name: "", mods: [], names: [] };
   render();
@@ -504,6 +539,7 @@ function renderEditor() {
 
 // --- Browse mods: the mod index (MOD_FORMAT §15), installs checked against it ---
 async function openBrowse(fresh) {
+  state.settings = false;
   state.editing = null;
   state.importing = null;
   state.browse = state.browse || { mods: [], source: "", as_of: "", message: "", search: "", busy: {} };
@@ -701,6 +737,19 @@ async function start() {
   state.lang = (await loadLang()) || await api().default_language();
   if (!state.languages.some((l) => l.code === state.lang)) state.lang = "us";
   $("lang").addEventListener("change", (e) => setLanguage(e.target.value).catch(problem));
+  $("settings-open").addEventListener("click", () => { state.settings = true; render(); });
+  $("settings-back").addEventListener("click", () => { state.settings = false; render(); });
+  $("set-game-change").addEventListener("click", async () => {
+    try { renderStatus(await api().choose_game_folder()); await refresh(); } catch (err) { problem(err); }
+    if (state.settings) renderSettings();
+  });
+  $("set-updates-check").addEventListener("click", async () => {
+    state.update = { checking: true };
+    renderSettings();
+    try { state.update = await api().update_check(); } catch (err) { state.update = { error: (err && err.message) || String(err) }; }
+    renderUpdate();
+    renderSettings();
+  });
   $("play").addEventListener("click", play);
   $("new-set").addEventListener("click", () => { state.importing = null; openEditor(null); });
   $("import-set").addEventListener("click", openImport);

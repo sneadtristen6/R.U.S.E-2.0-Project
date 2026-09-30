@@ -1652,12 +1652,11 @@ function keysLine() {
 // that one without a key. Defaults puts them all back.
 function renderKeys() {
   const w = mv.words, line = $("map-keys"), panel = $("keys-panel");
+  if (!w.keys_head) return;  // the words come with the map view or Settings
   const change = el("button", { type: "button", className: "link", textContent: w.keys_change, title: w.tip_keys_change });
-  change.setAttribute("aria-expanded", String(!panel.classList.contains("hidden")));
-  change.addEventListener("click", () => { panel.classList.toggle("hidden"); keys.arming = null; renderKeys(); });
+  change.addEventListener("click", () => { keys.arming = null; if (window.openSettings) window.openSettings("keys"); });
   line.replaceChildren(el("span", { textContent: w.keys_head + keysLine() }), " ", change);
   panel.replaceChildren();
-  if (panel.classList.contains("hidden")) return;
   const rows = el("div", { className: "keys-rows" });
   for (const action of Object.keys(KEY_DEFAULTS)) {
     const key = el("button", { type: "button", className: "key" + (keys.arming === action ? " arming" : ""),
@@ -1756,7 +1755,7 @@ function lookAround() {
 }
 
 function onKey(e) {
-  if (keys.arming && !$("maps-view").classList.contains("hidden")) { armKey(e); return; }  // choosing a key: any key
+  if (keys.arming) { armKey(e); return; }  // choosing a key (in Settings): any key
   if (!mapViewOpen()) return;
   keys.shift = e.shiftKey;
   const held = HELD.has(e.code);
@@ -1878,6 +1877,14 @@ window.MapView = {
     renderList();
     showTitle();
     if (mv.stats) $("map-stats").textContent = fill(words.map_stats, mv.stats);
+  },
+  // Settings shows the keys panel even before the map view has opened
+  renderKeysPanel(api, words) {
+    if (!mv.api) mv.api = api;
+    mv.words = words;
+    wire();
+    renderKeys();
+    loadKeptKeys();
   },
   // where the camera is and what it looks at, in scene units (for checking the keys from outside; nothing else)
   camera() {

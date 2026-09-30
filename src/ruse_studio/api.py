@@ -1050,6 +1050,33 @@ class StudioApi(UpdateCalls, PrefsCalls):
         chosen = pick_folder(self._window)
         return self.choose_mod(chosen) if chosen else self.mods()
 
+    # --- the Settings tab ---
+    def game_folder(self) -> dict:
+        """The R.U.S.E. folder in use and how it was found: {"path" or None, "picked": chosen by hand (shared with the
+        launcher, settings.json), "version": this Studio's version}."""
+        from rusemod.home import settings as shared_settings
+        game = self._game()
+        picked = shared_settings(self._home).get("game_dir")
+        return {"path": str(game) if game else None, "picked": bool(picked and game and Path(picked) == game),
+                "version": __version__}
+
+    def choose_game_folder(self) -> dict:
+        """Ask for the R.U.S.E. folder (when Steam can't tell, or to use another copy); it must hold RUSE.exe. Kept
+        in settings.json, which the launcher reads too. Returns game_folder() and, when refused, a "message"."""
+        from rusemod.home import save_settings, settings as shared_settings
+        if self._window is None:
+            return self.game_folder()
+        chosen = pick_folder(self._window)
+        if not chosen:
+            return self.game_folder()
+        if not Path(chosen, "RUSE.exe").is_file():
+            return {**self.game_folder(), "message": f"{chosen} doesn't have RUSE.exe in it. Pick the R.U.S.E folder itself."}
+        values = shared_settings(self._home)
+        values["game_dir"] = str(chosen)
+        save_settings(self._home, values)
+        self._game_dir = None
+        return self.game_folder()
+
     def edited(self) -> list[str]:
         """The named objects the current mod changes: a part changed for all its users marks every one of them. New
         units aren't in it: the list marks them as new instead."""

@@ -11,9 +11,7 @@
     <div class="brand">RUSE <span>Launcher</span></div>
     <div id="status" class="status" role="status"></div>
     <button id="choose" class="small hidden" type="button"></button>
-    <label class="lang"><span id="lang-label"></span>
-      <select id="lang"></select>
-    </label>
+    <button id="settings-open" class="small ghost" type="button"></button>
   </header>
   <div id="update-bar" class="update-bar hidden" role="status"><span id="update-text"></span>
     <button id="update-now" class="small" type="button"></button>
@@ -77,6 +75,25 @@
           <button id="import-cancel" class="small ghost" type="button"></button>
         </div>
         <div id="import-result"></div>
+      </div>
+      <!-- Settings (app.js SETTINGS: one section per setting, so a new one is one more entry) -->
+      <div id="settings-view" class="browse hidden">
+        <div class="set-head">
+          <h1 id="settings-title"></h1>
+          <div class="set-actions"><button id="settings-back" class="small ghost" type="button"></button></div>
+        </div>
+        <section class="setting" id="set-language">
+          <h2 id="set-language-title"></h2>
+          <label class="lang"><span id="lang-label" class="sr-only"></span><select id="lang"></select></label>
+        </section>
+        <section class="setting" id="set-game">
+          <h2 id="set-game-title"></h2><p id="set-game-path" class="small"></p>
+          <div class="actions"><button id="set-game-change" type="button" class="small"></button></div>
+        </section>
+        <section class="setting" id="set-updates">
+          <h2 id="set-updates-title"></h2><p id="set-updates-text" class="small"></p>
+          <div class="actions"><button id="set-updates-check" type="button" class="small"></button></div>
+        </section>
       </div>
       <div id="browse-view" class="browse hidden">
         <div class="set-head">

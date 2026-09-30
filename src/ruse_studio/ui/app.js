@@ -64,6 +64,7 @@ async function setLanguage(lang) {
   const w = state.words;
   $("tab-units").textContent = w.units_tab;
   $("tab-maps").textContent = w.maps_tab;
+  $("tab-settings").textContent = w.settings_tab;
   if (state.view === "maps" && window.MapView) window.MapView.setWords(w, lang);
   $("lang-label").textContent = w.language;
   $("mod-label").textContent = w.mod;
@@ -79,7 +80,7 @@ async function setLanguage(lang) {
   $("export-help").textContent = w.export_help;
   $("test-log-close").textContent = w.close;
   // tooltips: one sentence on every control, from words.toml (tip_*)
-  const tips = { "tab-units": "tip_tab_units", "tab-maps": "tip_tab_maps", mod: "tip_mod", test: "tip_test", lang: "tip_lang",
+  const tips = { "tab-units": "tip_tab_units", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", lang: "tip_lang",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close",
     "build-index": "tip_build_index", search: "tip_search" };
@@ -822,13 +823,53 @@ function showView(view) {
   state.view = view;
   $("units-view").classList.toggle("hidden", view !== "units");
   $("maps-view").classList.toggle("hidden", view !== "maps");
+  $("settings-view").classList.toggle("hidden", view !== "settings");
   $("tab-units").setAttribute("aria-selected", String(view === "units"));
   $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
+  $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
+  if (view === "settings") { renderSettings(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
   if (window.MapView) open();
   else window.addEventListener("mapview-ready", open, { once: true });
 }
+
+// --- Settings: one entry per section (its words are set_<id>_title / _help); a new setting is one more entry and
+// its section in index.html. What they change is kept by the app (settings.json), not by the window.
+const SETTINGS = [
+  { id: "language", render() {} },  // the language list is filled at start (renderLanguages) and saved on change
+  { id: "keys", render() { if (window.MapView && window.MapView.renderKeysPanel) window.MapView.renderKeysPanel(api(), state.words); } },
+  { id: "game", async render() {
+    const w = state.words, g = await api().game_folder();
+    $("set-game-path").textContent = g.message || (g.path ? fill(w.set_game_path, { path: g.path }) : w.set_game_none);
+    $("set-game-change").textContent = w.set_game_change;
+  } },
+  { id: "updates", async render() {
+    const w = state.words, u = state.update || {};
+    if (!state.version) state.version = (await api().game_folder()).version;
+    $("set-updates-text").textContent = u.available ? fill(w.update_out || "", { app: APP_NAME, version: u.version })
+      : u.error ? u.error : fill(w.set_updates_latest, { version: state.version || "" });
+    $("set-updates-check").textContent = w.set_updates_check;
+  } },
+];
+
+function renderSettings() {
+  const w = state.words;
+  $("settings-title").textContent = w.settings_title;
+  for (const s of SETTINGS) {
+    $(`set-${s.id}-title`).textContent = w[`set_${s.id}_title`] || s.id;
+    const help = $(`set-${s.id}-help`);
+    if (help) help.textContent = w[`set_${s.id}_help`] || "";
+    Promise.resolve(s.render()).catch(problem);
+  }
+}
+
+// The map view's "Change keys…" opens Settings at the keys.
+window.openSettings = (id) => {
+  showView("settings");
+  const at = $(`set-${id}`);
+  if (at) at.scrollIntoView({ block: "start" });
+};
 
 // --- a newer release (rusemod/update.py): offered in the header; Update downloads it, checks it and installs it,
 // then the app closes and the installer opens it again ---
@@ -884,6 +925,18 @@ async function installUpdate() {
 async function start() {
   $("tab-units").addEventListener("click", () => showView("units"));
   $("tab-maps").addEventListener("click", () => showView("maps"));
+  $("tab-settings").addEventListener("click", () => showView("settings"));
+  $("set-game-change").addEventListener("click", async () => {
+    const g = await api().choose_game_folder().catch(problem);
+    if (g) renderSettings();
+    if (g && g.message) $("set-game-path").textContent = g.message;
+  });
+  $("set-updates-check").addEventListener("click", async () => {
+    $("set-updates-text").textContent = state.words.set_updates_checking;
+    try { state.update = await api().update_check(); } catch (err) { state.update = { error: (err && err.message) || String(err) }; }
+    renderUpdate();
+    renderSettings();
+  });
   state.languages = await api().languages();
   state.lang = await loadLang();
   if (!state.languages.some((l) => l.code === state.lang)) state.lang = "base";
