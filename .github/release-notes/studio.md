@@ -1,6 +1,15 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**New in 0.6:**
+
+- **Terrain that works in the game:** ground you raise, lower or flatten now takes move orders, the camera stays above
+  it, and trees and buildings stand on it. The recipe of DomesticNukes and his Claude: the gameplay ground moves first,
+  the drawn ground follows it, and the game's hidden height limits are widened. Checked on all 32 maps.
+- **Scenarios on the map:** a "Scenario" row picks one of the map's scenarios (skirmish, challenges, campaign
+  chapters) and shows its zones, starting points (pillars in each alliance's colour), spawns (white diamonds) and
+  town names. Point at one to see what it is. The first step toward making maps.
+
 **0.5.2:**
 
 - **Water and Drain brushes** (Water on key 0): flood the ground below a level into a lake, or dry a lake
@@ -16,8 +25,6 @@ your own, and test it in the game. Your Steam install is never changed.
 - **Level brush** (key 7): paints the ground flat at the height where you start dragging.
 - **WASD moves with the camera**: W is always forward on screen, however the view is turned.
 - The game index is built again once, the first time 0.5.1 opens (about half a minute).
-- **Known problem:** in the game, ground raised or lowered a lot can show steps and cliffs, and trees on it stay
-  at the old height. The fix is being worked on.
 
 **New in 0.5:**
 
