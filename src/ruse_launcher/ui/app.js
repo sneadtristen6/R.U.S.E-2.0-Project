@@ -113,6 +113,7 @@ function render() {
 function useLists(res) {
   state.sets = res.sets;
   state.library = res.library;
+  state.checks = {};  // the library may have changed (a mod replaced by a newer version): check sets again
   if (res.set) state.active = res.set;
   if (!state.sets.some((s) => s.id === state.active)) state.active = "vanilla";
   render();
@@ -227,7 +228,59 @@ function renderActive() {
   err.classList.toggle("hidden", !set.error);
   const play = $("play");
   text(play, set.id === "vanilla" ? w.play : fill(w.play_set, { name: set.name }));
-  play.disabled = state.playing || Boolean(set.error);
+  const check = set.error ? null : checkOf(set.mods, () => { if (!state.editing && activeSet() === set) renderActive(); });
+  renderClashes($("active-clashes"), check);
+  play.disabled = state.playing || Boolean(set.error) || Boolean(check && check.hard.length);
+}
+
+// --- mods that don't go together (rusemod.rmod.clashes): asked for whenever a set is shown or its mods change ---
+// state.checks: mods (in order, joined) -> { hard, soft } from the launcher; a missing entry is being fetched.
+function checkOf(mods, then) {
+  if (mods.length < 2) return { hard: [], soft: [] };
+  const key = mods.join("\n");
+  state.checks = state.checks || {};
+  const known = state.checks[key];
+  if (known) return known;
+  if (!state.checking) state.checking = {};
+  if (!state.checking[key]) {
+    state.checking[key] = api().check_mods(mods).then((res) => { state.checks[key] = res; then(res); })
+      .catch(problem).finally(() => { delete state.checking[key]; });
+  }
+  return null;  // not known yet: the boxes stay empty until the answer comes
+}
+
+function clashText(c) {
+  const w = state.words;
+  const kinds = { "script": w.kind_script, "script archive": w.kind_script_archive, "video": w.kind_video, "sound": w.kind_sound,
+    "sound archive": w.kind_sound_archive, "picture": w.kind_picture, "map file": w.kind_map_file, "text file": w.kind_text_file,
+    "game data": w.kind_game_data };
+  const values = { a: c.a, b: c.b, n: c.count, example: c.what, file: c.what.split("/").pop(), kind: kinds[c.file_kind] || w.kind_game_data };
+  if (c.kind === "file" || c.kind === "script") return fill(w.clash_file, values);
+  if (c.kind === "archive") return fill(w.clash_archive, values);
+  if (c.kind === "create") return fill(w.clash_create, values);
+  if (c.kind === "text") return fill(c.count === 1 ? w.clash_text_one : w.clash_text, values);
+  return fill(c.count === 1 ? w.clash_value_one : w.clash_value, values);
+}
+
+function renderClashes(holder, check) {
+  const w = state.words;
+  holder.replaceChildren();
+  if (!check) return;
+  const item = (c) => {
+    const li = el("li", { textContent: clashText(c) });
+    if ((c.kind === "file" || c.kind === "script") && c.what.includes("/")) li.append(" ", el("span", { className: "path", textContent: c.what }));
+    return li;
+  };
+  if (check.hard.length) {
+    holder.append(el("div", { className: "clash-box hard", role: "alert" }, el("div", { className: "title", textContent: w.clash_cant_play }),
+      el("ul", {}, ...check.hard.map(item))));
+  }
+  if (check.soft.length) {
+    const box = el("details", { className: "clash-box soft" }, el("summary", { textContent: fill(w.clash_overwrites, { n: check.soft.length }) }),
+      el("ul", {}, ...check.soft.map(item)));
+    box.open = check.soft.length <= 3;
+    holder.append(box);
+  }
 }
 
 function renameSet(set) {
@@ -396,11 +449,15 @@ function renderEditor() {
   const save = el("button", { type: "submit", className: "small", textContent: ed.id ? w.save : w.create });
   const cancel = el("button", { type: "button", className: "small ghost", textContent: w.cancel });
   cancel.addEventListener("click", () => { state.editing = null; render(); });
+  // the ticked mods checked against each other as they're ticked and moved, so a clash shows before the set is saved
+  const clashes = el("div", { className: "clashes" });
+  renderClashes(clashes, checkOf(ed.mods, (res) => { if (state.editing === ed) renderClashes(clashes, res); }));
   form.replaceChildren(
     el("h1", { textContent: ed.id ? w.edit : w.new_set }),
     el("label", { className: "field" }, el("span", { textContent: w.set_name }), name),
     el("p", { className: "muted", textContent: state.library.length || ed.mods.length ? w.tick_mods : w.library_empty_for_set }),
     rows,
+    clashes,
     el("div", { className: "actions" }, save, cancel));
   form.onsubmit = async (e) => {
     e.preventDefault();

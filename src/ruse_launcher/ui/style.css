@@ -9,6 +9,7 @@
   --accent-dark: #8f7530;
   --good: #7fb069;
   --bad: #e07a5f;
+  --warn: #e0b85f;
   --radius: 8px;
   color-scheme: dark;
 }
@@ -243,3 +244,16 @@ button:disabled { cursor: default; opacity: 0.45; }
 .update-bar { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-size: 13px;
               background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41); }
 .update-bar.hidden { display: none; }
+
+/* mods that don't go together (rusemod.rmod.clashes): red when the set can't be played, yellow when a later mod
+   overwrites an earlier one */
+.clashes { display: grid; gap: 10px; max-width: 720px; margin: 0 0 16px; }
+.clash-box { padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--panel);
+             line-height: 1.45; }
+.clash-box.hard { border-color: var(--bad); border-left-width: 4px; }
+.clash-box.soft { border-color: var(--warn); border-left-width: 4px; }
+.clash-box summary, .clash-box .title { font-weight: 600; cursor: default; }
+.clash-box.hard .title { color: var(--bad); }
+.clash-box.soft summary { color: var(--warn); cursor: pointer; }
+.clash-box ul { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+.clash-box .path { color: var(--muted); font-size: 12px; }

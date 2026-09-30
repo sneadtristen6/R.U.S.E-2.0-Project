@@ -67,7 +67,8 @@ class Starter:
         """Build these mod folders into the modded copy `instance` and start the game from it. The folders' order
         counts: a later mod comes after an earlier one, so it wins when both change the same value, unless the mods
         themselves say otherwise (MOD_FORMAT §10.6). A problem raises BuildError (or RndfError, OSError) with a
-        message for the player, and nothing starts."""
+        message for the player, and nothing starts; so do .rmod mods that can't go together (the build refuses them
+        before building anything, naming every clash: rusemod.rmod.clashes)."""
         mods = [load_mod(Path(m)) for m in mod_folders]
         keep_order(mods)
         say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")

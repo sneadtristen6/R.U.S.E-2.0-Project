@@ -9,14 +9,21 @@ mod made for another game build is moved to this one with his version maps.
 A .rmod may replace the game's own scripts (.xyz, and the .ipk archives that hold them; the owner's call, 2026-09-29,
 an exception to PLAN.md decision 23 for .rmod mods), and the build says so; anything else that could run on the PC
 (programs, PC scripts) is refused.
+
+Before a set of .rmod mods is built, `clashes` says which of them don't go together (MOD_FORMAT.md §13): two mods
+replacing the same file with different bytes is a hard clash that stops the build; a later mod overwriting values an
+earlier one set is a soft one, shown before Play. Built on DomesticNukes and his Claude's report of 2026-09-30 (75
+mods in one set: the build said 0 errors, the game crashed).
 """
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
 import shutil
 import threading
-from dataclasses import dataclass, field
+import tomllib
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -258,3 +265,220 @@ def apply(game, rmod_paths, build_id: str | None = None, say=print) -> RmodRun:
         finally:
             edata.open_dat = original
     return run
+
+
+# --- do these mods work together? ---
+# What DomesticNukes' set showed (2026-09-30): seven mods each brought their own copy of a map's script (effetmap.xyz),
+# so only the last one's survived and the others' features vanished; two mods set the battleship's speed to 0 after
+# Navy Mod had set it, so "ships don't move" was just the later mod winning. Nothing had said so before Play.
+
+ARCHIVES = (".ipk", ".ppk", ".mpk", ".apk", ".gpk")  # nested archives (his edata.CONTAINER_EXTS): whole or edited inside
+FILE_KINDS = {".xyz": "script", ".ipk": "script archive", ".bik": "video", ".wmv": "video", ".avi": "video",
+              ".wav": "sound", ".ogg": "sound", ".mp3": "sound", ".mpk": "sound archive", ".dds": "picture",
+              ".tgv": "picture", ".png": "picture", ".tga": "picture", ".jpg": "picture", ".scenario": "map file",
+              ".win": "map file", ".sdb": "map file", ".tms": "map file", ".tmst": "map file", ".tgu1": "map file",
+              ".dic": "text file"}
+_IDENTITY = ("ClassNameForDebug", "AmmunitionId", "_ShortDatabaseName")  # his applier's name for a created object
+
+
+def file_kind(path: str) -> str:
+    """What kind of game file this is, for a sentence: "script", "video", "map file"... ("game data" when it's none
+    of the known kinds)."""
+    return FILE_KINDS.get(Path(path).suffix.lower(), "game data")
+
+
+@dataclass
+class Clash:
+    """Mods that don't go together. A hard one stops the build: the set can't be played. A soft one is allowed, and
+    shown before Play: the later mod overwrites what the earlier one changed."""
+    kind: str        # hard: "file", "archive", "script", "create"; soft: "value", "text"
+    hard: bool
+    mods: list       # the mods' names, in the set's order; "archive": the mod replacing the archive first
+    what: str        # the file, the new object's name, or the first value overwritten (Unit_Battleship.VitesseLineaire)
+    message: str     # one sentence for the build report
+    count: int = 1   # value/text: how many values (texts) the later mod overwrites
+    file_kind: str = ""  # file/script: what kind of file it is ("script", "video", "map file", ...)
+
+    def sides(self) -> tuple[str, str]:
+        """The two sides of the sentence a screen shows: (a, b). file/script/create: all but the last mod, and the
+        last; archive: the mod replacing the archive, and the mods editing inside it; value/text: the later mod (it
+        wins), and the earlier one."""
+        if self.kind == "archive":
+            return self.mods[0], ", ".join(self.mods[1:])
+        if self.kind in ("value", "text"):
+            return self.mods[1], self.mods[0]
+        return ", ".join(self.mods[:-1]), self.mods[-1]
+
+    def view(self) -> dict:
+        """Plain data for a screen: the fields, plus the two sides."""
+        a, b = self.sides()
+        return asdict(self) | {"a": a, "b": b}
+
+
+def _and(names) -> str:
+    names = list(names)
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+
+
+@dataclass
+class _Edits:
+    """What one .rmod touches, small enough to keep: file contents as digests, values as keys."""
+    name: str
+    files: dict = field(default_factory=dict)     # (dat, path lower) -> (digest, path): whole files of a pack
+    inside: dict = field(default_factory=dict)    # (dat, archive lower, path lower) -> (digest, path, archive)
+    archives: set = field(default_factory=set)    # (dat, archive lower): archives replaced whole
+    edited_in: set = field(default_factory=set)   # (dat, archive lower): archives edited inside
+    creates: dict = field(default_factory=dict)   # (dat, file, table, name) -> what to call it
+    values: dict = field(default_factory=dict)    # (dat, file, table, match, prop) -> the example (Object.Prop)
+    texts: dict = field(default_factory=dict)     # (dat, dic lower, key) -> the example (baseunite.dic N_UNI_15)
+
+
+def _edits(mod) -> _Edits:
+    e = _Edits(str(mod.name or mod.id))
+    for group in mod.file_patches:
+        for fp in group.files:
+            path = fp.path.replace("\\", "/")
+            if fp.container:
+                archive = fp.container.replace("\\", "/")
+                e.inside[(group.dat, archive.lower(), path.lower())] = (hashlib.sha1(fp.data).digest(), path, archive)
+                e.edited_in.add((group.dat, archive.lower()))
+            else:
+                e.files[(group.dat, path.lower())] = (hashlib.sha1(fp.data).digest(), path)
+                if path.lower().endswith(ARCHIVES):
+                    e.archives.add((group.dat, path.lower()))
+    for group in list(mod.patches) + list(mod.scenario_patches):
+        where = getattr(group, "ndf", None) or getattr(group, "scenario", "")
+        for ch in group.changes:
+            match = ch.match or {}
+            match_key = ";".join(f"{k}={v}" for k, v in sorted(match.items()))
+            if ch.action == "create":
+                name = next((str(v.value) for p in _IDENTITY if (v := (ch.set_props or {}).get(p)) is not None
+                             and getattr(v, "value", None) not in (None, "")), "")
+                if name:  # an unnamed new object can't clash by name (his rule: two mods adding their own units is fine)
+                    e.creates[(group.dat, where, ch.table, name)] = f"{ch.table} '{name}'"
+                continue
+            props = list(ch.set_props or ()) if ch.action == "patch" else list(ch.del_props or ())
+            first = next(iter(match.values()), None)
+            head = str(first) if len(match) == 1 and isinstance(first, (str, int)) else ch.table
+            for prop in props:
+                e.values[(group.dat, where, ch.table, match_key, prop)] = f"{head}.{prop}"
+    for group in mod.loc_patches:
+        dic = group.dic.replace("\\", "/")
+        for entry in group.entries:
+            e.texts[(group.dat, dic.lower(), entry.key)] = f"{dic.rsplit('/', 1)[-1]} {entry.key}"
+    for group in mod.sdb_patches:
+        win = group.win.replace("\\", "/")
+        for layer in group.layers:
+            e.values[(group.dat, win.lower(), "sdb", "", str(layer.bit))] = f"{win.rsplit('/', 1)[-1]} layer {layer.bit}"
+    return e
+
+
+_edits_seen: dict[str, tuple[tuple, _Edits]] = {}  # file -> ((size, mtime), its edits): the check runs on every change
+
+
+def rmod_of(path) -> Path | None:
+    """The .rmod behind a path: the file itself, or the one a library folder wraps (mod.toml with [rmod] file=);
+    None for anything else (our own mods keep their own rules, MOD_FORMAT.md §10.4)."""
+    path = Path(path)
+    if path.is_file():
+        return path if path.suffix.lower() == EXTENSION else None
+    manifest = path / "mod.toml"
+    if not manifest.is_file():
+        return None
+    try:
+        name = str(tomllib.loads(manifest.read_text(encoding="utf-8")).get("rmod", {}).get("file", ""))
+    except (tomllib.TOMLDecodeError, OSError):
+        return None
+    return path / name if name and Path(name).name == name and (path / name).is_file() else None
+
+
+def edits_of(path) -> _Edits | None:
+    """What the .rmod at `path` (or wrapped in the folder `path`) touches, read once per file version. None for a
+    path that isn't a .rmod, or one that can't be read (the build says so)."""
+    from ruse_mod_engine import mod_format
+    file = rmod_of(path)
+    if file is None:
+        return None
+    try:
+        stat = file.stat()
+    except OSError:
+        return None
+    stamp = (stat.st_size, stat.st_mtime_ns)
+    key = str(file.resolve())
+    hit = _edits_seen.get(key)
+    if hit is not None and hit[0] == stamp:
+        return hit[1]
+    try:
+        edits = _edits(mod_format.load(str(file)))
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    _edits_seen[key] = (stamp, edits)
+    return edits
+
+
+def clashes(paths) -> list[Clash]:
+    """Which of these .rmod mods (files, or library folders wrapping one; other paths are skipped) don't go
+    together. Hard clashes first, then soft ones, in the set's order. Fast: only the .rmod files are read, once."""
+    edits = [e for e in (edits_of(p) for p in paths) if e is not None]
+    hard: list[Clash] = []
+    # the same whole file, or the same file inside an archive, with different bytes (identical bytes are harmless)
+    for attr, kind, inside in (("files", "file", False), ("inside", "script", True)):
+        by_key: dict = {}
+        for e in edits:
+            for key, value in getattr(e, attr).items():
+                by_key.setdefault(key, []).append((e.name, value))
+        for key, items in by_key.items():
+            if len({value[0] for _n, value in items}) < 2:
+                continue
+            names = list(dict.fromkeys(n for n, _v in items))
+            path = items[0][1][1]
+            where = f"inside {items[0][1][2].rsplit('/', 1)[-1]}" if inside else f"in {key[0].rsplit('/', 1)[-1]}"
+            kind_word = file_kind(path)
+            hard.append(Clash(kind, True, names, path, f"{_and(names)} each replace the same {kind_word}, "
+                                                       f"{path.rsplit('/', 1)[-1]} ({path} {where}), with different "
+                                                       f"contents, so only the last one's would count. Only one of "
+                                                       f"them can be in a set.", file_kind=kind_word))
+    # a whole archive replaced by one mod, edited inside by another (either order): the edits are thrown away
+    for e in edits:
+        for dat, archive in sorted(e.archives):
+            others = [o.name for o in edits if o is not e and (dat, archive) in o.edited_in]
+            if others:
+                name = archive.rsplit("/", 1)[-1]
+                hard.append(Clash("archive", True, [e.name] + others, name,
+                                  f"{e.name} replaces the whole archive {name}, and {_and(others)} change(s) files "
+                                  f"inside it; one of the two would be thrown away. Only one of them can be in a set."))
+    # two new objects with the same name in the same file
+    by_key = {}
+    for e in edits:
+        for key, label in e.creates.items():
+            by_key.setdefault(key, []).append((e.name, label))
+    for key, items in by_key.items():
+        names = list(dict.fromkeys(n for n, _l in items))
+        if len(names) > 1:
+            hard.append(Clash("create", True, names, key[3], f"{_and(names)} each add a new {items[0][1]} in "
+                                                             f"{key[1].rsplit('/', 1)[-1]}; two objects can't share a "
+                                                             f"name. Only one of them can be in a set."))
+    # soft: a later mod changes values (or texts) an earlier one changed too; the later wins, as the build says
+    soft: list[Clash] = []
+    for attr, kind, noun in (("values", "value", "value"), ("texts", "text", "text")):
+        last: dict = {}    # key -> the latest mod so far that changed it
+        pairs: dict = {}   # (earlier, later) -> [count, first example]
+        for e in edits:
+            for key, example in getattr(e, attr).items():
+                prev = last.get(key)
+                if prev is not None and prev is not e:
+                    pair = pairs.setdefault((prev.name, e.name), [0, example])
+                    pair[0] += 1
+                last[key] = e
+        for (earlier, later), (count, example) in pairs.items():
+            soft.append(Clash(kind, False, [earlier, later], example,
+                              f"{later} changes {count} {noun}{'s' if count > 1 else ''} {earlier} changed too, "
+                              f"e.g. {example}; it comes later, so it wins. Put {earlier} after {later} if you want "
+                              f"{earlier}'s {noun}s.", count=count))
+    return hard + soft
+
+
+def refusal(hard: list[Clash]) -> str:
+    """The build's message when a set has hard clashes: every one, in plain words."""
+    return (f"These mods can't be played together ({len(hard)} clash{'es' if len(hard) > 1 else ''}):\n"
+            + "\n".join(f"- {c.message}" for c in hard) + "\nNothing was built.")

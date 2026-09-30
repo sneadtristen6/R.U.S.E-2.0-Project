@@ -15,6 +15,8 @@ Players never touch a file (Launcher 0.2):
                                              # (relative paths start at this file) still works for hand-written sets
 
   Every call that changes something returns the fresh lists, so the screen never waits for a restart.
+- Before Play, `set_check` says which of a set's mods don't go together (rusemod.rmod.clashes): hard clashes disable
+  Play (the build would refuse them anyway), soft ones are shown as the later mod winning.
 """
 from __future__ import annotations
 
@@ -35,7 +37,7 @@ from rusemod.build import BuildError
 from rusemod.loadorder import match as match_order, parse as parse_order, share_text
 from rusemod.mod_index import DEFAULT_URL, ModIndexError, size_text, states
 from rusemod.package import PackageError
-from rusemod.rmod import data_layout
+from rusemod.rmod import clashes as rmod_clashes, data_layout
 from rusemod.home import default_home, game_dir as find_game_dir, save_settings, settings
 from rusemod.play import Starter, instances_dir
 from rusemod.rndf import RndfError
@@ -382,6 +384,25 @@ class LauncherApi(UpdateCalls):
             raise LauncherError("Vanilla can't be deleted: it's the game itself.")
         Path(chosen["file"]).unlink()
         return self._lists(set=VANILLA)
+
+    # --- do the set's mods work together? (rusemod.rmod.clashes; shown before Play, and while a set is edited) ---
+    def check_mods(self, mods: list[str]) -> dict:
+        """The clashes between these mods (library ids or folders, in load order): {"hard": [...], "soft": [...]},
+        each with the mods' names, what clashes and a sentence. Hard ones mean the set can't be played (the build
+        refuses it); soft ones mean a later mod overwrites an earlier one's values. Mods that aren't in the library
+        are skipped: the set's own error says so."""
+        folders = []
+        for entry in mods if isinstance(mods, list) else []:
+            path, _why = self._resolve(str(entry), self._sets_dir() / "x.toml")
+            if path is not None:
+                folders.append(path)
+        found = rmod_clashes(folders) if len(folders) > 1 else []
+        return {"hard": [c.view() for c in found if c.hard], "soft": [c.view() for c in found if not c.hard]}
+
+    def set_check(self, set_id: str) -> dict:
+        """check_mods for a mod set (Vanilla: nothing clashes)."""
+        chosen = self._set(set_id)
+        return self.check_mods(chosen["mods"])
 
     # --- sharing a mod set's load order (rusemod.loadorder: the same text RUSE Mod Manager copies and reads) ---
     def share_set(self, set_id: str) -> dict:
