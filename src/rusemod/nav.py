@@ -35,6 +35,8 @@ import struct
 from dataclasses import dataclass, field
 
 HEADER = 84
+STEP = 320.0         # circle centres and radii are on this grid
+MIN_RADIUS = 1280.0  # the smallest circle on any shipped map
 
 
 class NavError(ValueError):
@@ -87,6 +89,62 @@ class Graph:
                             len(self.subs)) + self.head_rest)
         return head + struct.pack(f"<{len(offsets)}I", *offsets) + b"".join(body)
 
+    # --- changing it ---
+    def block(self, zones: list[tuple[float, float, float]]) -> dict:
+        """Take the ground inside `zones` (circles: x, y, radius) away, here and in the local graphs: units plan
+        around it. A circle whose middle is in a zone, or that would be smaller than MIN_RADIUS once it keeps clear
+        of every zone, is emptied (radius 0, no links); one that reaches into a zone shrinks to keep clear (its
+        radius a multiple of STEP). A link goes when one of its circles is emptied or its meeting point is no longer
+        inside both circles, or lies in a zone; the crossings that use it go too, and the links left are numbered
+        again. Circle numbers stay, so the index (points) needs no change. Returns what changed."""
+        counts = {"emptied": 0, "shrunk": 0, "links": 0, "crossings": 0}
+        if zones:
+            n = len(self.circles) - 1
+            radius = []
+            for x, y, r, _l, _c in self.circles[:-1]:
+                clear = min(((x - zx) ** 2 + (y - zy) ** 2) ** 0.5 - zr for zx, zy, zr in zones)
+                if clear >= r:
+                    radius.append(r)
+                    continue
+                new = (clear // STEP) * STEP if clear > 0 else 0.0
+                if new < MIN_RADIUS:
+                    new = 0.0
+                counts["emptied" if new == 0 else "shrunk"] += 1
+                radius.append(new)
+
+            def inside(c, px, py):
+                cx, cy = self.circles[c][:2]
+                return radius[c] > 0 and (px - cx) ** 2 + (py - cy) ** 2 <= radius[c] ** 2 + 1.0
+
+            keep = [inside(a, x, y) and inside(b, x, y)
+                    and all((x - zx) ** 2 + (y - zy) ** 2 > zr * zr for zx, zy, zr in zones)
+                    for a, b, x, y in self.links]
+            number, links = {}, []
+            for i, (lk, k) in enumerate(zip(self.links, keep)):
+                if k:
+                    number[i] = len(links)
+                    links.append(lk)
+            counts["links"] = len(self.links) - len(links)
+            cross = [self.crossings[28 * i:28 * i + 28] for i in range(len(self.crossings) // 28)]
+            circles, lists, kept = [], [], []
+            for c in range(n):
+                x, y, _r, l0, c0 = self.circles[c]
+                l1, c1 = self.circles[c + 1][3], self.circles[c + 1][4]
+                start, cstart = len(lists), len(kept)
+                lists += [number[k] for k in self.lists[l0:l1] if k in number]
+                for rec in cross[c0:c1]:
+                    la, lb = struct.unpack_from("<2H", rec, 20)
+                    if la in number and lb in number:
+                        kept.append(rec[:20] + struct.pack("<2H", number[la], number[lb]) + rec[24:])
+                circles.append((x, y, radius[c], start, cstart))
+            circles.append((0.0, 0.0, 0.0, len(lists), len(kept)))
+            counts["crossings"] = len(cross) - len(kept)
+            self.circles, self.links, self.lists, self.crossings = circles, links, lists, b"".join(kept)
+        for s in self.subs:
+            for k, v in s.block(zones).items():
+                counts[k] += v
+        return counts
+
     # --- reading it ---
     def links_of(self, circle: int) -> list[int]:
         """The link numbers of one circle."""
@@ -95,3 +153,82 @@ class Graph:
     def at(self, x: float, y: float) -> list[int]:
         """The circles that hold the point (x, y)."""
         return [i for i, (cx, cy, r, _l, _c) in enumerate(self.circles[:-1]) if (x - cx) ** 2 + (y - cy) ** 2 <= r * r]
+
+
+# --- the mod file: maps/<map pack>/movement.toml (MOD_FORMAT §8) ---------------------------------------------------
+UNITS = {"all": (1, 2), "infantry": (1,), "vehicles": (2,)}  # which of mapinfo.win's graphs a block changes
+
+
+@dataclass
+class Block:
+    """Ground units can't use: a circle (map units) taken out of the infantry graph, the vehicles' or both."""
+    x: float
+    y: float
+    radius: float
+    units: str = "all"
+
+
+def parse_blocks(items, where: str = "movement.toml") -> list[Block]:
+    out = []
+    for n, b in enumerate(items or [], start=1):
+        at = f"{where}: block {n}"
+        if not isinstance(b, dict):
+            raise NavError(f"{at} isn't a table")
+        extra = sorted(set(b) - {"x", "y", "radius", "units"})
+        if extra:
+            raise NavError(f"{at}: unknown key {extra[0]!r}")
+        for k in ("x", "y", "radius"):
+            if k not in b:
+                raise NavError(f"{at}: {k} is missing")
+            if isinstance(b[k], bool) or not isinstance(b[k], (int, float)):
+                raise NavError(f"{at}: {k} must be a number")
+        if b["radius"] <= 0:
+            raise NavError(f"{at}: radius must be more than 0")
+        units = b.get("units", "all")
+        if units not in UNITS:
+            raise NavError(f"{at}: units must be one of {', '.join(UNITS)}")
+        out.append(Block(float(b["x"]), float(b["y"]), float(b["radius"]), units))
+    return out
+
+
+def blocks_toml(blocks: list[Block], header: str = "") -> str:
+    lines = [f"# {line}" for line in header.splitlines()] + ([""] if header else [])
+    for b in blocks:
+        lines += ["[[block]]", f"x = {b.x!r}", f"y = {b.y!r}", f"radius = {b.radius!r}", f'units = "{b.units}"', ""]
+    return "\n".join(lines)
+
+
+def replace_buffers(win: bytes, new: dict) -> bytes:
+    """mapinfo.win with buffers replaced ({number: bytes}) and its salted MD5 made again (sdb.replace_buffer4's rule)."""
+    import hashlib
+    from ruse_mod_engine import sdb
+    parts = sdb.split_mapinfo(win)
+    if not parts:
+        raise NavError("not a mapinfo.win")
+    header48, bufs, trailing = parts
+    bufs = [new.get(i, b) for i, b in enumerate(bufs)]
+    out = bytearray(header48 + b"".join(struct.pack("<I", len(b)) + b for b in bufs) + trailing)
+    out[8:24] = hashlib.md5(b"INFOIA\r\n" + b"Eugen Systems" + bytes(out[24:])).digest()
+    return bytes(out)
+
+
+def apply_blocks(read, pack: str, blocks: list[Block]) -> tuple[dict, list[str]]:
+    """({member: new mapinfo.win}, notes) for one map; `read(member)` gives a DataMap_Win.dat file's bytes or None."""
+    from ruse_mod_engine import sdb
+    from .cover import PACK, member
+    name = member(pack)
+    win = read(name)
+    if win is None:
+        raise NavError(f"{pack} has no {name} in {PACK}, so its movement can't be changed")
+    bufs = sdb.split_mapinfo(win)[1]
+    new, notes = {}, []
+    for k, what in ((1, "infantry"), (2, "vehicles")):
+        zones = [(b.x, b.y, b.radius) for b in blocks if k in UNITS[b.units]]
+        if not zones:
+            continue
+        g = Graph.read(bufs[k])
+        c = g.block(zones)
+        new[k] = g.to_bytes()
+        notes.append(f"{what}: {len(zones)} block(s); {c['emptied']} circle(s) emptied, {c['shrunk']} shrunk, "
+                     f"{c['links']} link(s) and {c['crossings']} crossing(s) taken out")
+    return {name: replace_buffers(win, new)}, notes

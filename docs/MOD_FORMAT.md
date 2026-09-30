@@ -406,6 +406,26 @@ erase = true        # optional: clears the layer instead (a wood's cover taken a
 - Circles apply in load order, a later mod's over an earlier one's.
 - Whether units hide in painted cover the way they do in a wood is the next in-game check.
 
+### Ground units can't use: `maps/<map pack>/movement.toml`
+
+Where units can go is each map's two navigation graphs in `mapinfo.win` (buffers 1 and 2: infantry and vehicles;
+`rusemod.nav`, FORMATS §2): overlapping circles units plan through. A mod takes ground away, one table each:
+
+```toml
+[[block]]
+x = 871088.0
+y = 881645.0
+radius = 26000.0
+units = "all"        # or "infantry" or "vehicles"
+```
+
+- A circle whose middle is inside a block is emptied; one reaching into it shrinks to keep clear (in steps of 320);
+  the links and route costs through what's gone are taken out. Circle numbers stay, so the graph's spatial index
+  doesn't change.
+- For now the ground taken is more than the block: shrinking a big circle uncovers ground around it too. New
+  circles to fill that back come next.
+- The in-game check (units plan around a blocked pit on Blitz) is waiting.
+
 ## 9. Scripts
 
 - `scripts/<package>/*.py` holds Python 2.5-compatible source.

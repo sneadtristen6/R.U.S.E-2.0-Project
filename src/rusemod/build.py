@@ -1,6 +1,7 @@
 """Build mods into game files: from mod folders to rebuilt packs (docs/MOD_FORMAT.md §2, §3, §6, §8, §10).
 
-  mod folders (mod.toml + src/**/*.rndf + text/*.csv + maps/<map>/terrain.toml, scenery.toml, scenario.toml, cover.toml)  ->  load order  ->  the pack's data
+  mod folders (mod.toml + src/**/*.rndf + text/*.csv + maps/<map>/terrain.toml, scenery.toml, scenario.toml, cover.toml,
+  movement.toml)  ->  load order  ->  the pack's data
   files into the engine's model  ->  run the mods  ->  texts: game keys handed out, loc('...') values filled in  ->
   write changed files back  ->  rebuilt unit-data pack + fingerprint, the rebuilt ZZ_Win.dat when mods add texts or
   new units, and a rebuilt map pack for every map whose ground a mod reshapes (rusemod.terrain_edit)
@@ -109,6 +110,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.scenario = read_scenario(path)
         info.cover = read_cover(path)
         _cover_brushes(info)
+        info.movement = read_movement(path)
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -157,6 +159,33 @@ def _cover_brushes(info) -> None:
             info.terrain[pack] = rest
         else:
             del info.terrain[pack]
+
+
+def read_movement(folder: Path) -> dict:
+    """A mod's ground units can't use: {map pack name: [nav.Block]} from maps/<map pack>/movement.toml (MOD_FORMAT
+    §8)."""
+    from .nav import NavError, parse_blocks
+    out = {}
+    maps = folder / "maps"
+    for f in sorted(maps.glob("*/movement.toml"), key=lambda p: p.parent.name.lower()) if maps.is_dir() else []:
+        rel = f.relative_to(folder).as_posix()
+        if not _MAP_NAME.match(f.parent.name):
+            raise BuildError(f"{rel}: {f.parent.name!r} isn't a map's pack name (letters, digits and _, like "
+                             f"TwoIslands)")
+        try:
+            data = tomllib.loads(f.read_text(encoding="utf-8"))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+            raise BuildError(f"{rel}: {exc}") from None
+        extra = sorted(set(data) - {"block"})
+        if extra:
+            raise BuildError(f"{rel}: unknown key {extra[0]!r} (a movement file holds [[block]] tables)")
+        try:
+            blocks = parse_blocks(data.get("block", []), rel)
+        except NavError as exc:
+            raise BuildError(str(exc)) from None
+        if blocks:
+            out[f.parent.name] = blocks
+    return out
 
 
 def read_cover(folder: Path) -> dict:
@@ -634,8 +663,10 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             result.terrain_changed[map_path.name] = changed_members
         data_packs = []  # (path, open pack, {member: new bytes}): DataMap_Win.dat, the scenarios and the cover grids
         moves, paints = scenario_edits(result.order, mods), scenario_edits(result.order, mods, "cover")
-        if moves or paints:
+        blocks = scenario_edits(result.order, mods, "movement")
+        if moves or paints or blocks:
             from .cover import CoverError, apply_paints
+            from .nav import NavError, apply_blocks
             from .scenario import PACK as SCENARIO_PACK, ScenarioError, apply_moves
             data_path = find_pack(game, SCENARIO_PACK)
             if data_path is None:
@@ -668,6 +699,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         continue
                     changed_members.update(new)
                     say(f"cover: {name}, from {', '.join(ids)}")
+                    for note in notes:
+                        say(f"  {note}")
+                for name, (map_blocks, ids) in blocks.items():
+                    try:
+                        new, notes = apply_blocks(read_data, name, map_blocks)
+                    except (NavError, ValueError, struct.error) as exc:
+                        result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}"))
+                        continue
+                    changed_members.update(new)
+                    say(f"movement: {name}, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
                 if changed_members:
