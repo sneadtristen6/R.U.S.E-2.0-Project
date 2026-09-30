@@ -58,6 +58,7 @@ def manifest_info(data: dict, folder=None) -> dict:
             "version": str(m.get("version", "")), "authors": authors, "author": ", ".join(authors),
             "description": str(m.get("description", "")), "builds": [str(b) for b in game.get("builds", [])],
             "data_revision": str(game.get("data_revision", "")), "fingerprint": str(game.get("fingerprint", "")),
+            "rmod": str(data.get("rmod", {}).get("file", "")) if isinstance(data.get("rmod"), dict) else "",
             "path": str(folder) if folder else ""}
 
 

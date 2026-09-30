@@ -7,7 +7,8 @@
   const mode = new URLSearchParams(location.search).get("fake");
   if (mode === null) return;
   const words = {
-    us: { language: "Language", looking: "Looking for R.U.S.E.…", choose_folder: "Choose folder…", mod_sets: "Mod sets",
+    us: { guide_title: "Playing with mods, in three steps", guide_add: "Add mods: “Add a mod file…” on the left, or drop the file on this window. RUSE Studio mods (.rusemod), RUSE Mod Manager mods (.rmod) and .zip files all work. Or find one under “Browse mods”.", guide_set: "Make a mod set: “New mod set…”, tick the mods and put them in order. Where two mods change the same thing, the lower one wins.", guide_play: "Pick the set and press Play. The launcher builds a separate modded copy of the game and starts it; your Steam game stays as it is.", share: "Share", share_title: "Share this load order", share_help: "Copy this and send it to a friend (Discord, a message…). They import it in RUSE Launcher (“Import a load order…”) or in RUSE Mod Manager and get the same mods in the same order. They need the mods too.", copy: "Copy", copied: "Copied.", import_order: "Import a load order…", import_help: "Paste a load order a friend shared, from RUSE Launcher or RUSE Mod Manager. The new mod set gets the mods you have, in the same order.", import_paste: "Paste the load order here", check_order: "Check", make_set: "Make the mod set", import_found: "{n} of {total} mods are in your library.", import_missing: "Not in your library yet: {names}. Add them (Add a mod file… or Browse mods) and import again, or make the set without them.", import_version: "In your library in another version: {list}.", import_wrong_game: "Made for the other version of the game (R.U.S.E. or R.U.S.E. COMPAT): the mods may not fit yours.", import_done: "Mod set “{name}” made from the shared load order.",
+      language: "Language", looking: "Looking for R.U.S.E.…", choose_folder: "Choose folder…", mod_sets: "Mod sets",
       vanilla: "Vanilla", vanilla_desc: "The game as Steam installed it.", no_mods: "No mods", one_mod: "1 mod",
       n_mods: "{n} mods", has_mistake: "Has a mistake", set_mistake: "This mod set has a mistake: {error}", play: "Play",
       play_set: "Play {name}", getting_ready: "Getting everything ready…", details: "Details", join: "Join a friend",
@@ -30,7 +31,8 @@
       list_failed: "The mod list couldn't be loaded: {why}", list_empty: "No mods match.", for_build: "for game build {build}",
       more_info: "More about this mod", refresh_list: "Refresh",
       browse_help: "Mods from the community's list. Install puts one in your library; then tick it in a mod set." },
-    fr: { language: "Langue", looking: "Recherche de R.U.S.E.…", choose_folder: "Choisir le dossier…",
+    fr: { guide_title: "Jouer avec des mods, en trois étapes", guide_add: "Ajoutez des mods : « Ajouter un fichier de mod… » à gauche, ou déposez le fichier dans cette fenêtre. Les mods de RUSE Studio (.rusemod), les mods de RUSE Mod Manager (.rmod) et les fichiers .zip fonctionnent tous. Ou trouvez-en un dans « Parcourir les mods ».", guide_set: "Créez un ensemble de mods : « Nouvel ensemble de mods… », cochez les mods et mettez-les dans l'ordre. Si deux mods modifient la même chose, le plus bas l'emporte.", guide_play: "Choisissez l'ensemble et appuyez sur Jouer. Le lanceur crée une copie distincte du jeu avec les mods et la démarre ; votre jeu Steam reste tel quel.", share: "Partager", share_title: "Partager cet ordre de chargement", share_help: "Copiez ceci et envoyez-le à un ami (Discord, un message…). Il l'importe dans RUSE Launcher (« Importer un ordre de chargement… ») ou dans RUSE Mod Manager et obtient les mêmes mods dans le même ordre. Il lui faut aussi les mods.", copy: "Copier", copied: "Copié.", import_order: "Importer un ordre de chargement…", import_help: "Collez un ordre de chargement partagé par un ami, depuis RUSE Launcher ou RUSE Mod Manager. Le nouvel ensemble de mods reçoit les mods que vous avez, dans le même ordre.", import_paste: "Collez l'ordre de chargement ici", check_order: "Vérifier", make_set: "Créer l'ensemble de mods", import_found: "Mods présents dans votre bibliothèque : {n} sur {total}.", import_missing: "Pas encore dans votre bibliothèque : {names}. Ajoutez-les (Ajouter un fichier de mod… ou Parcourir les mods) et importez à nouveau, ou créez l'ensemble sans eux.", import_version: "Dans votre bibliothèque, mais dans une autre version : {list}.", import_wrong_game: "Conçu pour l'autre version du jeu (R.U.S.E. ou R.U.S.E. COMPAT) : les mods risquent de ne pas convenir à la vôtre.", import_done: "Ensemble de mods « {name} » créé à partir de l'ordre de chargement partagé.",
+      language: "Langue", looking: "Recherche de R.U.S.E.…", choose_folder: "Choisir le dossier…",
       mod_sets: "Ensembles de mods", vanilla: "Jeu d'origine", vanilla_desc: "Le jeu tel que Steam l'a installé.",
       no_mods: "Aucun mod", one_mod: "1 mod", n_mods: "{n} mods", has_mistake: "Contient une erreur",
       set_mistake: "Cet ensemble de mods contient une erreur : {error}", play: "Jouer", play_set: "Jouer {name}",
@@ -58,7 +60,8 @@
       list_failed: "La liste des mods n'a pas pu être chargée : {why}", list_empty: "Aucun mod ne correspond.",
       for_build: "pour la version du jeu {build}", more_info: "En savoir plus sur ce mod", refresh_list: "Actualiser",
       browse_help: "Les mods de la liste de la communauté. Installer le place dans votre bibliothèque ; cochez-le ensuite dans un ensemble de mods." },
-    sc: { language: "语言", looking: "正在查找 R.U.S.E.…", choose_folder: "选择文件夹…", mod_sets: "模组组合", vanilla: "原版",
+    sc: { guide_title: "使用模组游玩，只需三步", guide_add: "添加模组：点击左侧的“添加模组文件…”，或将文件拖放到此窗口。RUSE Studio 模组（.rusemod）、RUSE Mod Manager 模组（.rmod）和 .zip 文件都可以使用。也可以在“浏览模组”中查找。", guide_set: "创建模组组合：点击“新建模组组合…”，勾选模组并排好顺序。两个模组修改同一项时，下面的优先。", guide_play: "选择组合，然后点击“开始游戏”。启动器会创建一份单独的模组版游戏副本并启动它；你的 Steam 游戏保持原样。", share: "分享", share_title: "分享此加载顺序", share_help: "复制这段内容并发送给好友（Discord、消息…）。对方在 RUSE Launcher（“导入加载顺序…”）或 RUSE Mod Manager 中导入，即可按相同顺序获得相同的模组。对方也需要拥有这些模组。", copy: "复制", copied: "已复制。", import_order: "导入加载顺序…", import_help: "粘贴好友分享的加载顺序（来自 RUSE Launcher 或 RUSE Mod Manager）。新的模组组合会按相同顺序包含你已有的模组。", import_paste: "在此粘贴加载顺序", check_order: "检查", make_set: "创建模组组合", import_found: "{total} 个模组中有 {n} 个在你的库中。", import_missing: "库中尚无：{names}。请添加它们（“添加模组文件…”或“浏览模组”）后重新导入，或不含它们直接创建组合。", import_version: "库中版本不同的模组：{list}。", import_wrong_game: "为游戏的另一个版本（R.U.S.E. 或 R.U.S.E. COMPAT）制作：这些模组可能与你的版本不兼容。", import_done: "已根据分享的加载顺序创建模组组合“{name}”。",
+      language: "语言", looking: "正在查找 R.U.S.E.…", choose_folder: "选择文件夹…", mod_sets: "模组组合", vanilla: "原版",
       vanilla_desc: "Steam 安装的原始游戏。", no_mods: "无模组", one_mod: "1 个模组", n_mods: "{n} 个模组", has_mistake: "有错误",
       set_mistake: "此模组组合有错误:{error}", play: "开始游戏", play_set: "以 {name} 开始游戏", getting_ready: "正在准备…",
       details: "详情", join: "加入好友", browse: "浏览模组", coming_soon: "即将推出", new_set: "新建模组组合…",
@@ -205,6 +208,39 @@
       delete_set: async (id) => {
         sets = sets.filter((x) => x.id !== id);
         return lists({ set: "vanilla" });
+      },
+      // a load order to share, and one pasted in: the same text RUSE Mod Manager uses (rusemod/loadorder.py)
+      share_set: async (id) => {
+        const s = sets.find((x) => x.id === id);
+        const rows = s.mods.map((m, i) => `${i + 1}. ${known(m) ? `${known(m).name} | v${known(m).version}` : m}`);
+        return { text: ["=== R.U.S.E. Load Order ===", `Set: ${s.name}`, `Game build: ${build}`, ...rows,
+          "=== End Load Order ==="].join("\n") + "\n" };
+      },
+      import_check: async (text) => {
+        const lines = (text || "").split(/\r?\n/).map((l) => l.trim());
+        const start = lines.findIndex((l) => l.includes("Load Order") && l.includes("R.U.S.E.") && !l.includes("End"));
+        if (start < 0) throw new Error("There's no load order in that text. A shared load order starts with a line like “=== R.U.S.E. Load Order ===”: copy the whole block.");
+        const found = [], missing = [], other = [];
+        let setName = "";
+        for (const l of lines.slice(start + 1)) {
+          if (l.includes("End Load Order")) break;
+          if (/^set:/i.test(l)) { setName = l.slice(4).trim(); continue; }
+          const m = /^\d+\.\s+(.+)$/.exec(l);
+          if (!m) continue;
+          const [name, version] = m[1].includes(" | v") ? m[1].split(" | v") : [m[1], ""];
+          const mod = library.find((x) => x.name.toLowerCase() === name.replace(/^\[COMPAT\] /, "").trim().toLowerCase());
+          if (!mod) { missing.push({ name: name.trim(), version: version.trim() }); continue; }
+          found.push({ id: mod.id, name: mod.name, version: mod.version });
+          if (version && version.trim() !== mod.version) other.push({ name: mod.name, have: mod.version, wanted: version.trim() });
+        }
+        return { set_name: setName, mode: "public", build: "", wrong_game: false, found, missing, other_version: other, repeated: [] };
+      },
+      import_set: async (text, name) => {
+        const check = await window.pywebview.api.import_check(text);
+        if (!check.found.length) throw new Error("None of these mods are in your library yet.");
+        const id = slug(name || check.set_name || "Shared load order");
+        sets.push({ id, name: name || check.set_name || "Shared load order", description: "", mods: check.found.map((f) => f.id) });
+        return lists({ set: id, import: check });
       },
       play: async (id) => {
         playing = { id, step: 0, lines: id === "vanilla" ? ["Starting R.U.S.E. through Steam…"] : script,

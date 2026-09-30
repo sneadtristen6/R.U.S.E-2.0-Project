@@ -22,6 +22,7 @@
         <h2 id="sets-title"></h2>
         <ul id="set-list" class="set-list"></ul>
         <button id="new-set" class="small" type="button"></button>
+        <button id="import-set" class="small ghost" type="button"></button>
       </section>
       <section class="library" aria-labelledby="library-title">
         <h2 id="library-title"></h2>
@@ -39,6 +40,20 @@
           <div id="set-actions" class="set-actions"></div>
         </div>
         <p id="active-description" class="muted"></p>
+        <div id="guide" class="guide hidden">
+          <h2 id="guide-title"></h2>
+          <ol><li id="guide-add"></li><li id="guide-set"></li><li id="guide-play"></li></ol>
+        </div>
+        <div id="share-box" class="share hidden">
+          <h2 id="share-title"></h2>
+          <p id="share-help" class="muted"></p>
+          <textarea id="share-text" rows="8" readonly spellcheck="false"></textarea>
+          <div class="actions">
+            <button id="share-copy" class="small" type="button"></button>
+            <button id="share-close" class="small ghost" type="button"></button>
+            <span id="share-note" class="muted"></span>
+          </div>
+        </div>
         <ol id="active-mods" class="mods"></ol>
         <p id="active-error" class="error hidden"></p>
         <button id="play" class="play" type="button"></button>
@@ -49,6 +64,16 @@
         </details>
       </div>
       <form id="editor" class="editor hidden"></form>
+      <div id="import-view" class="editor hidden">
+        <h1 id="import-title"></h1>
+        <p id="import-help" class="muted"></p>
+        <textarea id="import-text" rows="9" spellcheck="false"></textarea>
+        <div class="actions">
+          <button id="import-check" class="small" type="button"></button>
+          <button id="import-cancel" class="small ghost" type="button"></button>
+        </div>
+        <div id="import-result"></div>
+      </div>
       <div id="browse-view" class="browse hidden">
         <div class="set-head">
           <h1 id="browse-title"></h1>

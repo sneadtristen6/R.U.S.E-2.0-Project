@@ -7,7 +7,8 @@
 const $ = (id) => document.getElementById(id);
 const state = { lang: "us", words: {}, languages: [], status: null, sets: [], library: [], active: "vanilla",
   playing: false, editing: null,   // editing: { id (null for a new set), name, mods: [entries in order] }
-  browse: null };                  // browse: the mod index on screen { mods, source, as_of, message, search, busy }
+  browse: null,                    // browse: the mod index on screen { mods, source, as_of, message, search, busy }
+  importing: null };               // importing: a pasted load order { text, check (what the launcher found), name }
 
 function api() {
   return window.pywebview.api;
@@ -73,6 +74,20 @@ async function setLanguage(lang) {
   text($("browse-back"), w.back);
   text($("browse-help"), w.browse_help);
   text($("drop-text"), w.drop_here);
+  text($("import-set"), w.import_order);
+  text($("guide-title"), w.guide_title);
+  text($("guide-add"), w.guide_add);
+  text($("guide-set"), w.guide_set);
+  text($("guide-play"), w.guide_play);
+  text($("share-title"), w.share_title);
+  text($("share-help"), w.share_help);
+  text($("share-copy"), w.copy);
+  text($("share-close"), w.cancel);
+  text($("import-title"), w.import_order);
+  text($("import-help"), w.import_help);
+  $("import-text").placeholder = w.import_paste;
+  text($("import-check"), w.check_order);
+  text($("import-cancel"), w.cancel);
   if (state.status) renderStatus(state.status); else text($("status"), w.looking);
   render();
 }
@@ -90,7 +105,8 @@ function renderStatus(status) {
 function render() {
   renderSets();
   renderLibrary();
-  if (state.browse) renderBrowse(); else if (state.editing) renderEditor(); else renderActive();
+  if (state.browse) renderBrowse(); else if (state.importing) renderImport(); else if (state.editing) renderEditor();
+  else renderActive();
 }
 
 function useLists(res) {
@@ -135,11 +151,13 @@ function renderSets() {
       state.active = set.id;
       state.editing = null;
       state.browse = null;
+      state.importing = null;
       render();
     });
     return el("li", {}, card);
   }));
   $("new-set").disabled = state.playing;
+  $("import-set").disabled = state.playing;
   $("browse").disabled = state.playing;
 }
 
@@ -166,10 +184,14 @@ function renderActive() {
   $("set-view").classList.remove("hidden");
   $("editor").classList.add("hidden");
   $("browse-view").classList.add("hidden");
+  $("import-view").classList.add("hidden");
   for (const row of $("set-view").querySelectorAll(".confirm")) row.remove();  // a question left from before
   if (!set) return;
   text($("active-name"), setName(set));
   text($("active-description"), set.id === "vanilla" ? w.vanilla_desc : set.description);
+  // new players: how mods get into a game, shown on Vanilla (and until the library has a mod)
+  $("guide").classList.toggle("hidden", !(set.id === "vanilla" || !state.library.length));
+  if ($("share-box").dataset.set !== set.id) $("share-box").classList.add("hidden");
   const actions = $("set-actions");
   actions.replaceChildren();
   if (set.editable && !state.playing) {
@@ -193,7 +215,10 @@ function renderActive() {
         setMessage(fill(w.set_deleted, { name: set.name }), "good");
       }, $("set-view"), del);
     });
-    actions.append(edit, rename, dup, del);
+    const share = el("button", { type: "button", className: "small ghost", textContent: w.share });
+    share.disabled = !set.mods.length;
+    share.addEventListener("click", () => shareSet(set));
+    actions.append(edit, rename, dup, share, del);
   }
   $("active-mods").replaceChildren(...set.mod_names.map((n) => el("li", { textContent: n })));
   const err = $("active-error");
@@ -229,6 +254,94 @@ function renameSet(set) {
   box.select();
 }
 
+// --- sharing a load order: the text RUSE Mod Manager copies and reads too (rusemod/loadorder.py) ---
+async function shareSet(set) {
+  const box = $("share-box");
+  try {
+    const res = await api().share_set(set.id);
+    $("share-text").value = res.text;
+    box.dataset.set = set.id;
+    box.classList.remove("hidden");
+    text($("share-note"), "");
+    copyShared();
+  } catch (err) { problem(err); }
+}
+
+async function copyShared() {
+  const area = $("share-text");
+  try {
+    await navigator.clipboard.writeText(area.value);
+    text($("share-note"), state.words.copied);
+  } catch {
+    area.focus();
+    area.select();  // no clipboard access here: selected, so Ctrl+C copies it
+  }
+}
+
+function openImport() {
+  state.editing = null;
+  state.browse = null;
+  state.importing = { text: "", check: null, name: "" };
+  render();
+  $("import-text").value = "";
+  $("import-text").focus();
+}
+
+function renderImport() {
+  const w = state.words, imp = state.importing;
+  $("set-view").classList.add("hidden");
+  $("editor").classList.add("hidden");
+  $("browse-view").classList.add("hidden");
+  $("import-view").classList.remove("hidden");
+  const out = $("import-result");
+  out.replaceChildren();
+  const c = imp.check;
+  if (!c) return;
+  const total = c.found.length + c.missing.length;
+  const lines = [el("p", { className: c.found.length ? "good" : "bad",
+    textContent: fill(w.import_found, { n: c.found.length, total }) })];
+  if (c.wrong_game) lines.push(el("p", { className: "warn", textContent: w.import_wrong_game }));
+  if (c.missing.length) {
+    lines.push(el("p", { className: "warn", textContent: fill(w.import_missing, {
+      names: c.missing.map((m) => (m.version ? `${m.name} (v${m.version})` : m.name)).join(", ") }) }));
+  }
+  if (c.other_version.length) {
+    lines.push(el("p", { className: "muted", textContent: fill(w.import_version, {
+      list: c.other_version.map((m) => `${m.name} (${m.have || "?"} / ${m.wanted})`).join(", ") }) }));
+  }
+  const order = el("ol", { className: "mods" }, ...c.found.map((m) => el("li", { textContent: m.version
+    ? `${m.name} · ${fill(w.version_v, { v: m.version })}` : m.name })));
+  const name = el("input", { value: imp.name, maxLength: 60, placeholder: w.set_name, autocomplete: "off" });
+  name.setAttribute("aria-label", w.set_name);
+  name.addEventListener("input", () => { imp.name = name.value; });
+  const make = el("button", { type: "button", className: "small", textContent: w.make_set, disabled: !c.found.length });
+  make.addEventListener("click", async () => {
+    make.disabled = true;
+    try {
+      const res = await api().import_set(imp.text, imp.name.trim());
+      state.importing = null;
+      useLists(res);
+      setMessage(fill(w.import_done, { name: activeSet().name }), "good");
+    } catch (err) { problem(err); make.disabled = false; }
+  });
+  out.append(...lines, order, el("label", { className: "field" }, el("span", { textContent: w.set_name }), name),
+    el("div", { className: "actions" }, make));
+}
+
+async function checkImport() {
+  const imp = state.importing;
+  imp.text = $("import-text").value;
+  try {
+    imp.check = await api().import_check(imp.text);
+    if (!imp.name) imp.name = imp.check.set_name || "";
+    renderImport();
+  } catch (err) {
+    imp.check = null;
+    renderImport();
+    $("import-result").replaceChildren(el("p", { className: "bad", textContent: (err && err.message) || String(err) }));
+  }
+}
+
 // --- the editor: a new mod set, or a set's mods and their order ---
 function openEditor(set) {
   state.editing = set ? { id: set.id, name: set.name, mods: set.mods.slice(), names: set.mod_names.slice() }
@@ -241,6 +354,7 @@ function renderEditor() {
   const ed = state.editing;
   $("set-view").classList.add("hidden");
   $("browse-view").classList.add("hidden");
+  $("import-view").classList.add("hidden");
   const form = $("editor");
   form.classList.remove("hidden");
   const name = el("input", { value: ed.name, maxLength: 60, required: true, placeholder: w.set_name, autocomplete: "off" });
@@ -304,6 +418,7 @@ function renderEditor() {
 // --- Browse mods: the mod index (MOD_FORMAT §15), installs checked against it ---
 async function openBrowse(fresh) {
   state.editing = null;
+  state.importing = null;
   state.browse = state.browse || { mods: [], source: "", as_of: "", message: "", search: "", busy: {} };
   state.browse.loading = true;
   render();
@@ -325,6 +440,7 @@ function renderBrowse() {
   const b = state.browse;
   $("set-view").classList.add("hidden");
   $("editor").classList.add("hidden");
+  $("import-view").classList.add("hidden");
   $("browse-view").classList.remove("hidden");
   if ($("browse-search").value !== b.search) $("browse-search").value = b.search;
   const note = $("browse-note");
@@ -499,7 +615,12 @@ async function start() {
   if (!state.languages.some((l) => l.code === state.lang)) state.lang = "us";
   $("lang").addEventListener("change", (e) => setLanguage(e.target.value).catch(problem));
   $("play").addEventListener("click", play);
-  $("new-set").addEventListener("click", () => openEditor(null));
+  $("new-set").addEventListener("click", () => { state.importing = null; openEditor(null); });
+  $("import-set").addEventListener("click", openImport);
+  $("import-check").addEventListener("click", checkImport);
+  $("import-cancel").addEventListener("click", () => { state.importing = null; render(); });
+  $("share-copy").addEventListener("click", copyShared);
+  $("share-close").addEventListener("click", () => $("share-box").classList.add("hidden"));
   $("add-mod").addEventListener("click", addModFile);
   $("browse").addEventListener("click", () => openBrowse(true));
   $("browse-refresh").addEventListener("click", () => openBrowse(true));
@@ -515,7 +636,7 @@ async function start() {
     try { renderStatus(await api().choose_game_folder()); await refresh(); } catch (err) { problem(err); }
   });
   window.addEventListener("focus", () => {
-    if (!state.playing && !state.editing && !state.browse) refresh();  // anything changed while the launcher was away
+    if (!state.playing && !state.editing && !state.browse && !state.importing) refresh();  // changed while away
   });
   watchDrops();
   await setLanguage(state.lang);

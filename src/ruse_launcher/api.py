@@ -31,14 +31,17 @@ from pathlib import Path
 from rusemod import mod_index
 from rusemod import play as game_start, schema
 from rusemod.build import BuildError
+from rusemod.loadorder import match as match_order, parse as parse_order, share_text
 from rusemod.mod_index import DEFAULT_URL, ModIndexError, size_text, states
+from rusemod.package import PackageError
+from rusemod.rmod import data_layout
 from rusemod.home import default_home, game_dir as find_game_dir, save_settings, settings
 from rusemod.play import Starter, instances_dir
 from rusemod.rndf import RndfError
 from rusemod.steam import build_of, find_game
 from rusemod.webui import Job, job_view
 
-from .library import MANIFEST, Library, LibraryError
+from .library import MANIFEST, Library, LibraryError, read_info
 
 _SET_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 VANILLA = "vanilla"
@@ -375,6 +378,53 @@ class LauncherApi:
             raise LauncherError("Vanilla can't be deleted: it's the game itself.")
         Path(chosen["file"]).unlink()
         return self._lists(set=VANILLA)
+
+    # --- sharing a mod set's load order (rusemod.loadorder: the same text RUSE Mod Manager copies and reads) ---
+    def share_set(self, set_id: str) -> dict:
+        """A mod set's load order as text to send to a friend: {"text": ...}. RUSE Launcher and RUSE Mod Manager
+        both import it."""
+        chosen = self._set(set_id)
+        if set_id == VANILLA or not chosen["mods"]:
+            raise LauncherError("Vanilla has no mods, so there's no load order to share.")
+        mods = []
+        for entry, folder in zip(chosen["mods"], chosen["folders"]):
+            try:
+                info = read_info(Path(folder)) if folder else {"name": entry, "version": ""}
+            except (OSError, PackageError):
+                info = {"name": entry, "version": ""}
+            mods.append({"name": info.get("name") or entry, "version": info.get("version", ""),
+                         "compat": str(info.get("rmod", "")).lower().endswith(".compat.rmod")})
+        game, _found = self._game()
+        layout = data_layout(game) if game else "public"
+        return {"text": share_text(mods, layout, chosen["name"], (build_of(game) if game else "") or "")}
+
+    def import_check(self, text: str) -> dict:
+        """What a pasted load order would give: the mods found in the library (in its order), the missing ones, the
+        ones found in another version, and whether it was made for the other game layout."""
+        shared = parse_order(text)
+        if not shared.entries:
+            raise LauncherError("There's no load order in that text. A shared load order starts with a line like "
+                                "“=== R.U.S.E. Load Order ===”: copy the whole block.")
+        m = match_order(shared, self._library.mods())
+        game, _found = self._game()
+        layout = data_layout(game) if game else None
+        return {"set_name": shared.set_name, "mode": shared.mode, "build": shared.build,
+                "wrong_game": bool(layout and shared.mode and layout != shared.mode),
+                "found": [{"id": mod["id"], "name": mod["name"], "version": mod["version"]} for _e, mod in m.found],
+                "missing": [{"name": e.name, "version": e.version} for e in m.missing],
+                "other_version": [{"name": mod["name"], "have": mod["version"], "wanted": e.version}
+                                  for e, mod in m.other_version],
+                "repeated": [e.name for e in m.repeated]}
+
+    def import_set(self, text: str, name: str = "") -> dict:
+        """Make a mod set from a pasted load order: the mods found in the library, in its order. Returns the fresh
+        lists (the new set selected) and what the check found."""
+        check = self.import_check(text)
+        if not check["found"]:
+            raise LauncherError("None of these mods are in your library yet. Add them first (Add a mod file… or Browse "
+                                "mods), then import the load order again.")
+        name = (name or check["set_name"] or "Shared load order").strip()[:60]
+        return self.new_set(name, [f["id"] for f in check["found"]]) | {"import": check}
 
     # --- play ---
     def play(self, set_id: str) -> dict:

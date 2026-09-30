@@ -278,6 +278,24 @@ class SetsOnScreen(Base):
         for mod_id, files in (("aaa-half", HALF), ("bbb-ten", TEN)):
             self.lib.add_mod(str(write_mod(Path(self.tmp.name, "dl"), mod_id, files, extra=f'name = "{mod_id.title()}"\n')))
 
+    def test_share_and_import_a_load_order(self):
+        api = self.api()
+        api.new_set("Mine", ["bbb-ten", "aaa-half"])
+        text = api.share_set("mine")["text"]
+        self.assertIn("Set: Mine\n", text)
+        self.assertIn("1. Bbb-Ten | v1.0.0\n2. Aaa-Half | v1.0.0\n=== End Load Order ===", text)
+        check = api.import_check("from a friend:\n" + text.replace("Aaa-Half", "Missing Mod"))
+        self.assertEqual(([f["id"] for f in check["found"]], check["missing"], check["set_name"]),
+                         (["bbb-ten"], [{"name": "Missing Mod", "version": "1.0.0"}], "Mine"))
+        res = api.import_set(text, "From Bob")
+        self.assertEqual((res["set"], res["sets"][-1]["mods"]), ("from-bob", ["bbb-ten", "aaa-half"]))
+        with self.assertRaisesRegex(LauncherError, "no load order"):
+            api.import_check("hello")
+        with self.assertRaisesRegex(LauncherError, "None of these mods"):
+            api.import_set("=== R.U.S.E. Load Order ===\n1. Nope\n=== End Load Order ===")
+        with self.assertRaisesRegex(LauncherError, "Vanilla has no mods"):
+            api.share_set("vanilla")
+
     def test_new_edit_rename_duplicate_delete(self):
         api = self.api()
         res = api.new_set("My Set!", ["bbb-ten", "aaa-half"])
