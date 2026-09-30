@@ -1,6 +1,20 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.7.1:** several units at once, a mod check, and help at hand.
+- **Add unit** places 1, 2, 4, 6, 8 or 10 at once, in a **line, column, wedge, box or circle** facing up the
+  screen, with a spacing slider and rings showing where each will stand.
+- The **mod check**: every file of your mod is read the way the game build reads it, when you pick the mod and
+  before **Test in game**. A red bar names each problem; a broken map file can be **set aside** (renamed, never
+  lost), and a map folder named after the map's title (maps/Blitz) can be **renamed** to its pack name
+  (maps/SuperCrossRoads4) in one click.
+- Fixed: **Water** strokes were saved without their level, so the game build refused the mod. Every file the
+  Studio writes is now read back before it's saved.
+- The map list **folds away** («) for more room.
+- **Settings > Help & community**: the wiki (the new field manual), Discussions, and **Report a problem**, which
+  opens a bug report with your version filled in. An error at the bottom has its own **Report** link. Nothing is
+  sent by the app: you read the report and post it.
+
 **0.7.0:** a new look and movement tools. The map tools moved to a bar along the bottom, as in Cities: Skylines, in
 R.U.S.E.'s own HUD style: pick a kind (Ground, Water, Cover, Movement, Buildings, Objects, Trees, Scenario) and its
 tools open above it; click it again or press Esc to just look around. The scenario's pickers are tiles now, not

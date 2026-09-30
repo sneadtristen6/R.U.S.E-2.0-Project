@@ -691,7 +691,8 @@ ends with one in-game test (batched, one game start) and a release. Sessions are
 | A5 | **Zones:** draw and move the capture sectors (the scenario's AREA records, reader done) and their names. Test: a new sector captured in a skirmish | — | 1-2 |
 | A6 | **Ground painting:** grass, sand, rock, road texture with a brush (plain tiles work in-game) | — | 1-2 |
 | A7 | **Re-meshing:** finer ground only where brushes need it (adaptive, so no lag: far mesh and gameplay ground stay coarse); a warning when a brush is steeper than the mesh can show | DomesticNukes' index-buffer notes | 2-3 |
-| A8 | Spawn checks: which camp is the player in a skirmish, and does a skirmish honour unit spawns | — | 0 (one test) |
+| A8 | Spawn checks: which camp is the player in a skirmish, and does a skirmish honour unit spawns; formations (Studio 0.7.1): do the units face the way the formation does | — | 0 (one test) |
+| A9 | *Idea (owner, 2026-09-30):* units drawn as their real 3D models in the map view (a tank as a tank, infantry as soldiers) instead of markers, like the buildings already are | — | 1-2 |
 
 *Phase B: new maps* (M6, M8)
 | # | Step | Needs | Sessions |
@@ -705,11 +706,13 @@ ends with one in-game test (batched, one game start) and a release. Sessions are
 *Phase C: players and multiplayer* (M3)
 | # | Step | Needs | Sessions |
 |---|---|---|---|
-| C1 | **Browse mods:** the `sneadtristen6/Ruse-Mods` index repo (owner), install with dependencies in one click (code done) | the repo | 1 |
+| C0 | **Community (done 2026-09-30):** the wiki is a field manual (`docs/wiki`, pushed to the GitHub wiki by hand); Discussions has the Welcome and Roadmap posts (`docs/community`, posted and updated by `tools/post_discussions.py` through the owner's `gh`), a bug-report form (`.github/DISCUSSION_TEMPLATE`); both apps open the wiki, Discussions and a pre-filled report (`rusemod.community`; paths without the user name). Left for the owner: the categories (Help, Mods & maps, Bug reports) and the pins, on the website | — | done |
+| C1 | **Browse mods:** the `sneadtristen6/Ruse-Mods` index repo (owner), install with dependencies in one click (code done). Until then, public mods live in Discussions > Mods & maps; the how-to is the wiki's Export and share | the repo | 1 |
 | C2 | Modpacks as their own instance (RUSE 2.0 in one click); one-click back to vanilla | C1 | 1-2 |
 | C3 | Studio: "Publish mod" to the index (a pull request made for the modder) | C1 | 1 |
 | C4 | **Join codes** in the launcher, and the 2-PC test | a second player | 1-2 |
 | C5 | Trust: code signing, a first public release on ModDB and Nexus; outreach (LittleGroove, Eugen) | C1-C4 | 1 + owner |
+| C6 | **Self-checks, like a mod manager's** (owner: "a lot of self-checks built into this, like CurseForge has"). Done: files read back before saving, the mod check (every file as the build reads it, Set aside, map folders named by title renamed). Next: the same check in the launcher when a mod is added (and on the files a player drops in by hand), duplicate mod ids, a mod made on another game build, a zip nested two folders deep | — | 1 |
 
 *Phase D: the content tools* (M4, M5, M7, M9-M11)
 | # | Step | Needs | Sessions |

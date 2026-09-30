@@ -130,6 +130,28 @@ def map_list(game: Path) -> list[dict]:
     return maps
 
 
+def _plain(text: str) -> str:
+    """A map name compared loosely: letters and digits only, any case, a campaign chapter's "12. " dropped."""
+    import re
+    return re.sub(r"[\W_]", "", re.sub(r"^\d+\.\s*", "", str(text).strip())).casefold()
+
+
+def pack_for(name: str, maps: list[dict]) -> str | None:
+    """The pack a mod's map folder called `name` most likely means (maps from map_list): the pack itself written in
+    another case, else the pack of a map titled `name` in any of the ten languages (Blitz -> SuperCrossRoads4).
+    None when nothing matches."""
+    want = _plain(name)
+    if not want:
+        return None
+    for m in maps:
+        if _plain(m["pack"]) == want:
+            return m["pack"]
+    for m in maps:
+        if any(_plain(t) == want for titles in m.get("titles", {}).values() for t in titles):
+            return m["pack"]
+    return None
+
+
 def _pack(a: array) -> str:
     """Little-endian array -> zlib -> base64 (the window unpacks it with DecompressionStream("deflate"))."""
     if sys.byteorder != "little":

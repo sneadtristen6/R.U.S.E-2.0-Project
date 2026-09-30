@@ -240,6 +240,19 @@ def read_terrain(folder: Path) -> dict:
     return _read_maps(folder, "terrain.toml")
 
 
+def _meant(game: Path, name: str) -> str:
+    """For an error about a mod's maps/<name>: the fix, when the name is a map's title or its pack in another case
+    (maps/Blitz for SuperCrossRoads4), else ""."""
+    try:
+        from .terrain import map_list, pack_for
+        guess = pack_for(name, map_list(game))
+    except (OSError, ValueError, KeyError):
+        return ""
+    if not guess or guess == name:
+        return ""
+    return f" (the mod's folder maps/{name} should be maps/{guess}: it takes the map's pack name, not its title)"
+
+
 @dataclass
 class BuildResult:
     order: list = field(default_factory=list)       # mod ids in load order
@@ -570,7 +583,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if map_path is None:
                 result.findings.append(Finding("error", f"{', '.join(ids)}: the map {name} isn't in this game "
                                                         f"({pack_file(name)} is missing), so its ground can't be "
-                                                        f"changed"))
+                                                        f"changed{_meant(game, name)}"))
                 continue
             map_arc = open_pack(map_path)
 
@@ -610,7 +623,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if map_path is None:
                 result.findings.append(Finding("error", f"{', '.join(ids)}: the map {name} isn't in this game "
                                                         f"({pack_file(name)} is missing), so nothing can be placed "
-                                                        f"on it"))
+                                                        f"on it{_meant(game, name)}"))
                 continue
             entry = next((e for e in map_packs if e[0] == map_path), None)
             map_arc = entry[1] if entry else open_pack(map_path)
@@ -667,7 +680,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     try:
                         new, notes = apply_moves(read_data, name, map_moves)
                     except (ScenarioError, ValueError, struct.error) as exc:
-                        result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}"))
+                        result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
                     changed_members.update(new)
                     say(f"scenario: {name}, from {', '.join(ids)}")
@@ -677,7 +690,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     try:
                         new, notes = apply_paints(read_data, name, map_paints)
                     except (CoverError, ValueError, struct.error) as exc:
-                        result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}"))
+                        result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
                     changed_members.update(new)
                     say(f"cover: {name}, from {', '.join(ids)}")
@@ -687,7 +700,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     try:
                         new, notes = apply_blocks(read_data, name, map_blocks)
                     except (NavError, ValueError, struct.error) as exc:
-                        result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}"))
+                        result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
                     changed_members.update(new)
                     say(f"movement: {name}, from {', '.join(ids)}")

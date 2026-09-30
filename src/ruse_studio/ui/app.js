@@ -44,9 +44,14 @@ function saveLang(lang) {
 
 // --- the bar at the bottom: what just happened ---
 function say(text, kind) {
-  const bar = $("status");
+  const bar = $("status"), w = state.words || {};
   bar.textContent = text || "";
   bar.className = "status" + (kind ? " " + kind : "");
+  if (kind === "error" && text && w.report) {  // an error can go straight into a bug report (the player posts it)
+    const report = el("button", { type: "button", className: "link", textContent: w.report, title: w.tip_report || "" });
+    report.addEventListener("click", () => api().report_problem(text).catch(() => {}));
+    bar.append(" ", report);
+  }
 }
 
 function problem(err) {
@@ -151,6 +156,19 @@ function renderCheck() {
             renderCheck();
             say(fillText(w.check_aside_done, { file: res.kept }), "ok");
             if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // the map starts clean
+          } catch (err) { problem(err); button.disabled = false; }
+        });
+        row.append(button);
+      }
+      if (p.rename_to) {  // a map folder named after the map's title: rename it to the pack name the build reads
+        const button = el("button", { type: "button", className: "small", textContent: fillText(w.check_rename, { name: p.rename_to }),
+          title: w.tip_check_rename });
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          try {
+            state.problems = (await api().rename_map_folder(p.file.split("/")[1], p.rename_to)).problems || [];
+            renderCheck();
+            if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();
           } catch (err) { problem(err); button.disabled = false; }
         });
         row.append(button);
@@ -905,6 +923,13 @@ const SETTINGS = [
       : u.error ? u.error : fill(w.set_updates_latest, { version: state.version || "" });
     $("set-updates-check").textContent = w.set_updates_check;
   } },
+  { id: "help", render() {
+    const w = state.words;
+    for (const [id, word] of [["help-wiki", "help_wiki"], ["help-discussions", "help_discussions"], ["help-report", "report_problem"]]) {
+      $(id).textContent = w[word];
+      $(id).title = w["tip_" + word] || "";
+    }
+  } },
 ];
 
 function renderSettings() {
@@ -985,6 +1010,9 @@ async function start() {
     if (g) renderSettings();
     if (g && g.message) $("set-game-path").textContent = g.message;
   });
+  $("help-wiki").addEventListener("click", () => api().open_help("wiki").catch(problem));
+  $("help-discussions").addEventListener("click", () => api().open_help("discussions").catch(problem));
+  $("help-report").addEventListener("click", () => api().report_problem("").catch(problem));
   $("set-updates-check").addEventListener("click", async () => {
     $("set-updates-text").textContent = state.words.set_updates_checking;
     try { state.update = await api().update_check(); } catch (err) { state.update = { error: (err && err.message) || String(err) }; }

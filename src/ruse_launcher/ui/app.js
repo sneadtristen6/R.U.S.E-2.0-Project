@@ -46,9 +46,14 @@ function saveLang(lang) {
 
 // --- messages ---
 function setMessage(message, kind) {
-  const node = $("play-message");
+  const node = $("play-message"), w = state.words || {};
   text(node, message);
   node.className = "message" + (kind ? " " + kind : "");
+  if (kind === "bad" && message && w.report) {  // a problem can go straight into a bug report (the player posts it)
+    const report = el("button", { type: "button", className: "link", textContent: w.report, title: w.tip_report || "" });
+    report.addEventListener("click", () => api().report_problem(message).catch(() => {}));
+    node.append(" ", report);
+  }
 }
 
 function problem(err) {
@@ -76,6 +81,10 @@ async function setLanguage(lang) {
   text($("details"), w.details);
   text($("join"), w.join);
   text($("browse"), w.browse);
+  text($("help"), w.help);
+  $("help").title = w.tip_help;
+  text($("report"), w.report_problem);
+  $("report").title = w.tip_report_problem;
   $("join").title = w.coming_soon;
   text($("browse-title"), w.browse);
   $("browse-search").placeholder = w.search_mods;
@@ -759,6 +768,8 @@ async function start() {
   $("share-close").addEventListener("click", () => $("share-box").classList.add("hidden"));
   $("add-mod").addEventListener("click", addModFile);
   $("browse").addEventListener("click", () => openBrowse(true));
+  $("help").addEventListener("click", () => api().open_help("wiki").catch(problem));
+  $("report").addEventListener("click", () => api().report_problem("").catch(problem));
   $("browse-refresh").addEventListener("click", () => openBrowse(true));
   $("browse-back").addEventListener("click", () => { state.browse = null; render(); });
   let searching = null;

@@ -673,3 +673,23 @@ Esc, closes it. Its look comes from the game's own HUD, read (not copied) from t
 `res2d/interface` textures (`objectives_panel_cadre`, `hint_unit_info`: translucent black, a thin grey frame,
 gunmetal bands; raw A8R8G8B8): the player bar's blue marks what's picked, the money's gold names the tray. The
 scenario's four drop-downs became chips and a list.
+
+### 2026-09-30, afternoon: Studio 0.7.1 and Launcher 0.2.7, the wiki and Discussions
+
+The owner hit "stroke 1: the water brush needs level" on Test in game: the Studio wrote water strokes without their
+level (`brush.strokes_toml` only wrote it for the level brushes), then refused its own file. Fixed; and every file
+the Studio writes (terrain, scenery, scenario, unit edits) is now parsed back before it's saved, so it can't write a
+file it can't read. The **mod check** reads every file of the mod as the build does (the five map-file readers now
+share `build.read_map_file`), when a mod is picked and before Test in game: a red bar per problem, **Set aside**
+(renamed `.broken.toml`, never lost) for a broken map file, **Rename** for a map folder named after the map's title
+(`terrain.pack_for`: any case, any of the ten languages' titles; the build's errors give the same hint).
+
+Owner requests, built: **several units at once** (1-10) in a **line, column, wedge, box or circle**, facing up the
+screen, with rings under the pointer (`scenario_spawn_many`, one save); the **map list folds away**.
+
+The **wiki** is a field manual (task pages, not the README's pitch; the owner asked for the distinction, and for a
+real "Ask a question" page instead of an empty FAQ), `docs/wiki` pushed to the GitHub wiki. **Discussions**: the
+Welcome and Roadmap posts from `docs/community` via `tools/post_discussions.py` (the owner's `gh` login; the API
+can't make categories or pin), and a bug-report form with two self-checks. Both apps: **Help** / **Report a
+problem** (`rusemod.community`: a pre-filled report; the Windows user name taken out of paths; nothing sent).
+Screenshots of the new windows for the README: from the owner, after updating.

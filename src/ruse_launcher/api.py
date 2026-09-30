@@ -32,6 +32,7 @@ from pathlib import Path
 
 from rusemod import mod_index
 from rusemod import play as game_start, schema
+from rusemod.community import CommunityCalls
 from rusemod.update import UpdateCalls
 from rusemod.build import BuildError
 from rusemod.loadorder import match as match_order, parse as parse_order, share_text
@@ -86,7 +87,7 @@ def pc_language() -> str:
     return locale.getlocale()[0] or os.environ.get("LANG", "") or "en"
 
 
-class LauncherApi(UpdateCalls, PrefsCalls):
+class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls):
     """The launcher's back end. The arguments replace the real world in tests: the game folder, the launcher's own
     folder, where modded copies go, how links, the game and Steam get started, and the window's dialogs."""
 

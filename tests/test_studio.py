@@ -824,6 +824,49 @@ class Terrain(WithMod):
                 call()
         self.assertEqual(file.read_text(encoding="utf-8"), by_hand)
 
+    MAPS = [{"pack": "SuperCrossRoads4", "titles": {"us": ["Blitz", "Anzio"], "ru": ["Блиц"]}},
+            {"pack": "TwoIslands", "titles": {"us": ["Centre of Gravity"]}},
+            {"pack": "M04_cotentin", "titles": {"us": ["D-Day", "10. UTAH BEACH"]}}]
+
+    def test_map_folders_named_after_a_title_are_found_and_renamed(self):
+        folder = Path(self.api.new_mod("x")["current"])
+        hill = '[[stroke]]\nbrush = "hill"\nx = 1.0\ny = 2.0\nradius = 3.0\nheight = 4.0\n'
+        for name in ("Blitz", "twoislands", "Nowhere", "SuperCrossRoads4", "Empty"):
+            (folder / "maps" / name).mkdir(parents=True)
+            if name != "Empty":
+                (folder / "maps" / name / "terrain.toml").write_text(hill, encoding="utf-8")
+        (folder / "maps" / "scenery.toml").write_text("", encoding="utf-8")
+        with mock.patch("ruse_studio.api.map_list", return_value=self.MAPS):
+            got = {p["file"]: p for p in self.api.check_mod()["problems"]}
+            self.assertEqual(sorted(got), ["maps/Blitz", "maps/Nowhere", "maps/scenery.toml", "maps/twoislands"])
+            self.assertEqual(got["maps/Blitz"]["rename_to"], "SuperCrossRoads4")
+            self.assertIn("Blitz is the title of a map whose pack is SuperCrossRoads4", got["maps/Blitz"]["problem"])
+            self.assertEqual(got["maps/twoislands"]["rename_to"], "TwoIslands")
+            self.assertIsNone(got["maps/Nowhere"]["rename_to"])
+            self.assertIn("loose in maps/", got["maps/scenery.toml"]["problem"])
+            with self.assertRaisesRegex(StudioError, "maps/SuperCrossRoads4 already exists"):
+                self.api.rename_map_folder("Blitz", "SuperCrossRoads4")
+            left = self.api.rename_map_folder("twoislands", "TwoIslands")["problems"]
+            self.assertNotIn("maps/twoislands", [p["file"] for p in left])
+            self.assertTrue((folder / "maps" / "TwoIslands" / "terrain.toml").is_file())
+            for name, to in (("Nope", "X"), ("Blitz", "../x"), ("..", "X")):
+                with self.assertRaises(StudioError):
+                    self.api.rename_map_folder(name, to)
+
+    def test_a_folder_name_to_its_pack(self):
+        from rusemod.terrain import pack_for
+        for name, pack in (("Blitz", "SuperCrossRoads4"), ("blitz", "SuperCrossRoads4"), ("Anzio", "SuperCrossRoads4"),
+                           ("Блиц", "SuperCrossRoads4"), ("supercrossroads4", "SuperCrossRoads4"),
+                           ("Centre_of_Gravity", "TwoIslands"), ("UtahBeach", "M04_cotentin"), ("DDay", "M04_cotentin"),
+                           ("Nowhere", None), ("", None), ("___", None)):
+            self.assertEqual(pack_for(name, self.MAPS), pack, name)
+        from rusemod.build import _meant  # the build's error says the same to a player
+        with mock.patch("rusemod.terrain.map_list", return_value=self.MAPS):
+            self.assertIn("maps/Blitz should be maps/SuperCrossRoads4", _meant(Path("game"), "Blitz"))
+            self.assertEqual((_meant(Path("game"), "SuperCrossRoads4"), _meant(Path("game"), "Nowhere")), ("", ""))
+        with mock.patch("rusemod.terrain.map_list", side_effect=FileNotFoundError):
+            self.assertEqual(_meant(Path("game"), "Blitz"), "")
+
     def test_a_water_stroke_keeps_its_level(self):  # Studio 0.7.0 and before saved it without, then couldn't read it
         self.api.new_mod("x")
         lake = {"brush": "water", "x": 1.0, "y": 2.0, "radius": 3.0, "level": 450.0}
@@ -857,7 +900,7 @@ class Terrain(WithMod):
         self.assertEqual(Path(after["kept"]).name, "terrain.broken.toml")
         self.assertEqual([p["file"] for p in after["problems"]], ["maps/TwoIslands/scenario.toml"])
         self.assertEqual(self.api.set_aside("maps/TwoIslands/scenario.toml")["problems"], [])
-        for bad in ("mod.toml", "maps/Blitz/terrain.broken.toml", "../x/maps/Blitz/terrain.toml", "maps/Nope/cover.toml"):
+        for bad in ("mod.toml", "maps/Blitz/terrain.broken.toml", "../x/maps/Blitz/terrain.toml", "maps/Nope/movement.toml"):
             with self.assertRaisesRegex(StudioError, "isn't one of this mod's map files"):
                 self.api.set_aside(bad)
 
