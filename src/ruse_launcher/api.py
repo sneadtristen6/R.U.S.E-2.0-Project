@@ -37,7 +37,7 @@ from rusemod.build import BuildError
 from rusemod.loadorder import match as match_order, parse as parse_order, share_text
 from rusemod.mod_index import DEFAULT_URL, ModIndexError, size_text, states
 from rusemod.package import PackageError
-from rusemod.rmod import clashes as rmod_clashes, data_layout
+from rusemod.rmod import best_order as rmod_best_order, clashes as rmod_clashes, data_layout, overwritten as rmod_overwritten, sizes as rmod_sizes
 from rusemod.home import default_home, game_dir as find_game_dir, save_settings, settings
 from rusemod.play import Starter, instances_dir
 from rusemod.rndf import RndfError
@@ -391,13 +391,37 @@ class LauncherApi(UpdateCalls):
         each with the mods' names, what clashes and a sentence. Hard ones mean the set can't be played (the build
         refuses it); soft ones mean a later mod overwrites an earlier one's values. Mods that aren't in the library
         are skipped: the set's own error says so."""
-        folders = []
+        entries, folders = [], []
         for entry in mods if isinstance(mods, list) else []:
             path, _why = self._resolve(str(entry), self._sets_dir() / "x.toml")
             if path is not None:
+                entries.append(entry)
                 folders.append(path)
         found = rmod_clashes(folders) if len(folders) > 1 else []
-        return {"hard": [c.view() for c in found if c.hard], "soft": [c.view() for c in found if not c.hard]}
+        out = {"hard": [c.view() for c in found if c.hard], "soft": [c.view() for c in found if not c.hard],
+               "best": None}
+        if any(not c.hard for c in found):
+            # the order in which each mod keeps the most of its changes (rusemod.rmod.best_order), when it's another
+            order = rmod_best_order(folders)
+            if order != sorted(order):
+                best = iter([entries[i] for i in order])
+                listed = set(entries)
+                out["best"] = [next(best) if entry in listed else entry for entry in mods]
+                # the mods that lose most of their changes now and wouldn't in the best order
+                sizes = rmod_sizes(folders)
+                now, after = rmod_overwritten(folders), rmod_overwritten([folders[i] for i in order])
+                after = {i: after[k] for k, i in enumerate(order)}
+                out["helped"] = [self._mod_name(entries[i], folders[i]) for i in range(len(entries))
+                                 if now[i] and now[i] * 2 >= sizes[i] and after[i] * 2 < sizes[i]]
+        return out
+
+    def best_order(self, set_id: str) -> dict:
+        """Put a mod set's mods in the best order (check_mods' "best") and save it. Returns the fresh lists."""
+        chosen = self._set(set_id)
+        best = self.check_mods(chosen["mods"])["best"]
+        if best is None:
+            return self._lists(set=set_id)
+        return self.save_set(set_id, chosen["name"], best)
 
     def set_check(self, set_id: str) -> dict:
         """check_mods for a mod set (Vanilla: nothing clashes)."""

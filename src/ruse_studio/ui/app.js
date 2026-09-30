@@ -451,7 +451,9 @@ function weaponsGroup(u) {
       const open = el("button", { type: "button", className: "link", textContent: w.open_ammo });
       open.addEventListener("click", () => showUnit(pick.value));
       const was = el("div", { className: "was" });
-      const tr = el("tr", { className: wp.edited ? "edited" : "" }, th, el("td", {}, el("div", { className: "boxes" }, pick, open), was));
+      // the muzzle flash and sound this weapon plays (they follow the ammo: api.set_ammo)
+      const shot = el("div", { className: "muted small", textContent: wp.shot ? fill(w.shot, { fx: wp.shot }) : "" });
+      const tr = el("tr", { className: wp.edited ? "edited" : "" }, th, el("td", {}, el("div", { className: "boxes" }, pick, open), was, shot));
       const showWas = (edited) => {
         tr.classList.toggle("edited", edited);
         was.replaceChildren();
@@ -465,6 +467,8 @@ function weaponsGroup(u) {
         try {
           const saved = await api().set_ammo(u.address, wp.address, pick.value);
           showWas(saved.edited);
+          const now = (await api().weapons(u.address, state.lang)).weapons.find((x) => x.address === wp.address);
+          shot.textContent = now && now.shot ? fill(w.shot, { fx: now.shot }) : "";
           await refreshMarks();
           say(w.saved.replace("{file}", saved.saved), "ok");
         } catch (err) { problem(err); }

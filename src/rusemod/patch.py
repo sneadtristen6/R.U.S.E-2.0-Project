@@ -164,6 +164,26 @@ class PatchError(Exception):
     pass
 
 
+ENTRY = "(map entry)"  # one entry of a map, as a path sees it: `Map[i].k` is its key, `Map[i].v` its value
+
+
+class _EntryProps(dict):
+    """The key ("k") and value ("v") of one map entry as a part's properties; a change goes into the map."""
+
+    def __init__(self, mapv: MapV, i: int):
+        super().__init__(k=mapv.pairs[i][0], v=mapv.pairs[i][1])
+        self.mapv, self.i = mapv, i
+
+    def __setitem__(self, key, value):
+        if key not in ("k", "v"):
+            raise PatchError(f"a map entry has k (its key) and v (its value), not {key}")
+        super().__setitem__(key, value)
+        self.mapv.pairs[self.i] = (self["k"], self["v"])
+
+    def pop(self, key, *default):
+        raise PatchError("a map entry's key or value can't be deleted")
+
+
 def show(v) -> str:
     if isinstance(v, Num):
         return format(v.value.normalize(), "f") if v.value == v.value.to_integral() else str(v.value)
@@ -421,10 +441,7 @@ class Engine:
             if val is None:
                 raise PatchError(f"{op.at()}: {owner} has no {'.'.join(walked + [prop])}")
             for sel in sels:
-                if not isinstance(val, ListV):
-                    raise PatchError(f"{op.at()}: {owner}:{'.'.join(walked + [prop])} isn't a list")
-                k = self._select(op, val, sel, owner, prop)
-                holder, key, val = val.items, k, val.items[k]
+                holder, key, val = self._item(op, val, sel, owner, ".".join(walked + [prop]))
             step = prop + "".join(f"[{s}]" for s in sels)
             if isinstance(val, Inline):
                 obj, walked = val.obj, walked + [step]
@@ -444,6 +461,18 @@ class Engine:
             else:
                 raise PatchError(f"{op.at()}: {owner}:{'.'.join(walked + [step])} isn't an object")
         raise PatchError(f"{op.at()}: empty property path")
+
+    def _item(self, op: Op, val, sel: str, owner: str, prop: str):
+        """(holder, key, value) of one item of a list (by number or filter), or of one entry of a map (by number; the
+        path goes on with `.k` or `.v`)."""
+        if isinstance(val, MapV):
+            if not re.fullmatch(r"-?\d+", sel) or not -len(val.pairs) <= int(sel) < len(val.pairs):
+                raise PatchError(f"{op.at()}: {owner}:{prop} has no entry [{sel}]")
+            return None, None, Inline(Obj(ENTRY, _EntryProps(val, int(sel) % len(val.pairs))))
+        if not isinstance(val, ListV):
+            raise PatchError(f"{op.at()}: {owner}:{prop} isn't a list")
+        k = self._select(op, val, sel, owner, prop)
+        return val.items, k, val.items[k]
 
     def _select(self, op: Op, lst: ListV, sel: str, owner: str, prop: str) -> int:
         if re.fullmatch(r"-?\d+", sel):
@@ -513,10 +542,7 @@ class Engine:
                 raise PatchError(f"{op.at()}: {name} has no {path}")
             holder, key = obj.props, prop
             for sel in sels:
-                if not isinstance(val, ListV):
-                    raise PatchError(f"{op.at()}: {name}:{path}: {prop} isn't a list")
-                k = self._select(op, val, sel, name, prop)
-                holder, key, val = val.items, k, val.items[k]
+                holder, key, val = self._item(op, val, sel, name, prop)
             if i == len(segs) - 1:
                 break
             if isinstance(val, Inline):

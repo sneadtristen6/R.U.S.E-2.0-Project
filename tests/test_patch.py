@@ -4,7 +4,7 @@ import struct
 import unittest
 from decimal import Decimal
 
-from rusemod.patch import Engine, Game, Inline, ListV, Obj, Op, Ref, Text, num, nums
+from rusemod.patch import Engine, Game, Inline, ListV, MapV, Obj, Op, Ref, Text, num, nums
 from rusemod.resolve import ModInfo
 
 
@@ -376,3 +376,44 @@ class FindingObjects(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def gfx():
+    """Two units' models, each with a turret whose firing effect sits in a map ("tir" -> a call of an effect), the way
+    the game binds a weapon's muzzle flash and sound (FX_Tir_*). The calls are shared, like the game's."""
+    def model(tag, call, origin):
+        turret = Obj("TGfxDescriptorModeleSousMobile", {"BinderEffets": MapV([(Text("string", "tir"), Ref(call))])},
+                     origin=("f", origin + 2))
+        return Obj("TUniteAuSolDescriptor", {"GfxDescriptor": Inline(Obj("TGfxDescriptorModele", {
+            "SousElements": MapV([(Text("string", "chassis"), Inline(Obj("TGfxDescriptorModeleSousMobile", {}))),
+                                  (Text("string", tag), Inline(turret))])}, origin=("f", origin + 1)))},
+                   origin=("f", origin))
+    return Game(objects={
+        "$/Sherman": model("weapon_effet_tag1", "#tir_ap", 0),
+        "$/Rifleman": model("weapon_effet_tag1", "#tir_rifle", 10),
+        "#tir_ap": Obj("TActionCall", {"Action": Ref("$/FX_Tir_ObusAP_Moyen")}),
+        "#tir_rifle": Obj("TActionCall", {"Action": Ref("$/FX_Tir_infanterie_Moyen")}),
+        "$/FX_Tir_ObusAP_Moyen": Obj("TActionDescriptor", {}),
+        "$/FX_Tir_infanterie_Moyen": Obj("TActionDescriptor", {}),
+    })
+
+
+class MapEntries(unittest.TestCase):
+    """A path goes into a map's entry by number: `Map[i].k` is its key, `Map[i].v` its value."""
+
+    def test_a_link_into_a_map_entry_changes_only_that_unit(self):
+        link = Ref("$/Sherman:GfxDescriptor.SousElements[1].v.BinderEffets[0].v")
+        r = run(("m", [Op("set", "$/Rifleman:GfxDescriptor.SousElements[1].v", "BinderEffets[0].v", link)]), game=gfx())
+        self.assertEqual(levels(r), [])
+        effect = lambda name: r.game.objects[name].props["GfxDescriptor"].obj.props["SousElements"].pairs[1][1] \
+            .obj.props["BinderEffets"].pairs[0]  # noqa: E731
+        self.assertEqual(effect("$/Rifleman"), (Text("string", "tir"), Ref("#tir_ap")))
+        self.assertEqual(effect("$/Sherman"), (Text("string", "tir"), Ref("#tir_ap")))
+        self.assertEqual(r.game.objects["#tir_rifle"].props["Action"], Ref("$/FX_Tir_infanterie_Moyen"))  # untouched
+
+    def test_a_key_can_be_read_and_set_and_a_missing_entry_is_an_error(self):
+        r = run(("m", [Op("set", "$/Sherman", "GfxDescriptor.SousElements[0].k", Text("string", "base"))]), game=gfx())
+        self.assertEqual(r.game.objects["$/Sherman"].props["GfxDescriptor"].obj.props["SousElements"].pairs[0][0],
+                         Text("string", "base"))
+        r = run(("m", [Op("set", "$/Sherman", "GfxDescriptor.SousElements[5].v.X", num(1))]), game=gfx())
+        self.assertIn("has no entry [5]", r.errors[0].message)

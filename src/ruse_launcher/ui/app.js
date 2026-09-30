@@ -229,7 +229,12 @@ function renderActive() {
   const play = $("play");
   text(play, set.id === "vanilla" ? w.play : fill(w.play_set, { name: set.name }));
   const check = set.error ? null : checkOf(set.mods, () => { if (!state.editing && activeSet() === set) renderActive(); });
-  renderClashes($("active-clashes"), check);
+  renderClashes($("active-clashes"), check, set.editable ? async () => {
+    try {
+      useLists(await api().best_order(set.id));
+      setMessage(fill(w.best_order_done, { name: set.name }), "good");
+    } catch (e) { problem(e); }
+  } : null);
   play.disabled = state.playing || Boolean(set.error) || Boolean(check && check.hard.length);
 }
 
@@ -262,7 +267,8 @@ function clashText(c) {
   return fill(c.count === 1 ? w.clash_value_one : w.clash_value, values);
 }
 
-function renderClashes(holder, check) {
+// onBest: puts the mods in the best order (check.best: rusemod.rmod.best_order), offered in the box of overwrites
+function renderClashes(holder, check, onBest) {
   const w = state.words;
   holder.replaceChildren();
   if (!check) return;
@@ -278,7 +284,14 @@ function renderClashes(holder, check) {
   if (check.soft.length) {
     const box = el("details", { className: "clash-box soft" }, el("summary", { textContent: fill(w.clash_overwrites, { n: check.soft.length }) }),
       el("ul", {}, ...check.soft.map(item)));
-    box.open = check.soft.length <= 3;
+    box.open = check.soft.length <= 3 || Boolean(check.best && onBest);
+    if (check.best && onBest) {
+      const button = el("button", { type: "button", className: "small", textContent: w.best_order });
+      button.addEventListener("click", async () => { button.disabled = true; try { await onBest(check.best); } finally { button.disabled = false; } });
+      const why = el("p", { className: "muted", textContent: w.best_order_why });
+      if (check.helped && check.helped.length) why.append(" ", fill(w.best_order_helps, { names: check.helped.join(", ") }));
+      box.append(el("div", { className: "best-order" }, why, button));
+    }
     holder.append(box);
   }
 }
@@ -451,7 +464,13 @@ function renderEditor() {
   cancel.addEventListener("click", () => { state.editing = null; render(); });
   // the ticked mods checked against each other as they're ticked and moved, so a clash shows before the set is saved
   const clashes = el("div", { className: "clashes" });
-  renderClashes(clashes, checkOf(ed.mods, (res) => { if (state.editing === ed) renderClashes(clashes, res); }));
+  const toBest = (best) => {  // the editor's own order changes; Save keeps it
+    const names = Object.fromEntries(ed.mods.map((m, i) => [m, ed.names[i]]));
+    ed.mods = best.slice();
+    ed.names = best.map((m) => names[m]);
+    renderEditor();
+  };
+  renderClashes(clashes, checkOf(ed.mods, (res) => { if (state.editing === ed) renderClashes(clashes, res, toBest); }), toBest);
   form.replaceChildren(
     el("h1", { textContent: ed.id ? w.edit : w.new_set }),
     el("label", { className: "field" }, el("span", { textContent: w.set_name }), name),

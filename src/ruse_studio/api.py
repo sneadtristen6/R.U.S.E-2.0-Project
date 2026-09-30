@@ -45,6 +45,7 @@ KINDS = {"ground": ("TUniteAuSolDescriptor",), "infantry": ("TInfanterieDescript
 KIND_OF = {cls: kind for kind, classes in KINDS.items() for cls in classes}
 AMMO = "TAmmunition"  # a weapon's shots (damage, range, rate of fire): listed as the "ammo" kind, and copied for a
 WEAPON = "TMountedWeaponDescriptor"  # weapon of its own; a weapon on a unit fires one ammo (its Ammunition)
+SHOT_TAG = "weapon_effet_tag"  # a weapon's EffectTag names the part of the unit's model it fires from (_shots)
 FLAG_LISTS = set(WHOLE_LISTS)  # lists edited as a set of flags, any length (a unit's InitialFlagSet)
 NOT_EDITABLE = {"DescriptorId", "TrackingId", "AmmunitionId", "Nationalite"}  # ids stay unique (rusemod.identity);
 # moving a unit to another nation needs more than one number (its menus, and the new nation's add-on for China), so it
@@ -57,6 +58,12 @@ PACKAGE_FILES = ("RUSE mods (*.rusemod)",)  # the "save as" dialog's filter for 
 
 def _tail(address: str) -> str:
     return address.rsplit("/", 1)[-1]
+
+
+def _shot_name(effect: str | None) -> str:
+    """$/GFX/Everything/FX_Tir_ObusAP_Moyen -> ObusAP Moyen."""
+    name = _tail(effect or "")
+    return name[len("FX_Tir_"):].replace("_", " ") if name.startswith("FX_Tir_") else name.replace("_", " ")
 
 
 def _short(num: float):
@@ -333,12 +340,14 @@ class StudioApi(UpdateCalls):
             parts = sorted((a for a in plan["copied"] + plan["shared"] if ix.show(a)["class"] == WEAPON),
                            key=lambda a: [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", a)])
             weapons = []
+            unit_shots = self._shots(ix, real.partition(":")[0])
             for part in parts:
                 o = ix.show(part)
                 tag = next((t for p, _n, t in o["values"] if p == "EffectTag"), None)
                 fires = next((what for p, k, what in ix.uses(part) if p == "Ammunition" and k == "object"), None)
                 weapons.append({"real": part, "address": (base + part[len(new.source):]) if new else part,
-                                "name": tag or f"{_tail(part)}", "fires": fires})
+                                "name": tag or f"{_tail(part)}", "fires": fires,
+                                "shot": self._shot_now(ix, edits, unit_shots.get(tag, []), real, base)})
             rows = self._all_ammo(ix)
             names = self._ammo_names(ix, rows, lang)
             nation_of = {u["address"]: u["nation"] for u in self._all_units(ix)}
@@ -358,7 +367,7 @@ class StudioApi(UpdateCalls):
             current = str(chosen) if chosen else w["fires"]
             out.append({"address": w["address"], "name": w["name"],
                         "ammo": {"address": current, "name": names.get(current) or (_tail(current) if current else "")},
-                        "game_ammo": w["fires"], "edited": bool(chosen)})
+                        "game_ammo": w["fires"], "edited": bool(chosen), "shot": w["shot"]})
         return {"weapons": out, "choices": choices}
 
     def set_ammo(self, unit: str, weapon: str, ammo: str) -> dict:
@@ -387,15 +396,29 @@ class StudioApi(UpdateCalls):
             except KeyError:
                 raise StudioError(f"There's no ammunition at {ammo}.") from None
             game_ammo = next((what for p, k, what in ix.uses(real_weapon) if p == "Ammunition" and k == "object"), None)
+            tag = next((t for p, _n, t in o["values"] if p == "EffectTag"), None)
+            real_unit = real_weapon.partition(":")[0]
+            mine = self._shots(ix, real_unit).get(tag, []) if tag else []
+            theirs = self._shot_of(ix, real_ammo) if mine and ammo != game_ammo else []
         finally:
             ix.close()
+        base = weapon.partition(":")[0]
         with self._saving:
             edits = ModEdits(edits.folder)
             if ammo == game_ammo:
                 edits.reset(weapon, "Ammunition")
             else:
                 edits.set(weapon, "Ammunition", Link(ammo))
-        return {"saved": str(edits.file), "ammo": ammo, "edited": ammo != game_ammo}
+            # the muzzle flash and sound follow the ammo: the Sherman's gun on a rifleman fires like a Sherman
+            for s in mine:
+                where, prop = base + s["part"][len(real_unit):], f"BinderEffets[{s['entry']}].v"
+                other = next((x for x in theirs if x["key"] == s["key"]), theirs[0] if theirs else None)
+                if other is None or other["call"] == s["call"]:
+                    edits.reset(where, prop, s["share"])
+                else:
+                    edits.set(where, prop, Link(other["call"]), s["share"])
+        return {"saved": str(edits.file), "ammo": ammo, "edited": ammo != game_ammo,
+                "shot": _shot_name(theirs[0]["effect"]) if theirs else ""}
 
     def new_ammo(self, source: str, name: str) -> dict:
         """A copy of an ammunition in the current mod, for a weapon of its own (Groove's recipe: copy the ammo,
@@ -482,6 +505,67 @@ class StudioApi(UpdateCalls):
             return address, None
         _base, _, inside = address.partition(":")
         return unit.source + (f":{inside}" if inside else ""), unit
+
+    @staticmethod
+    def _shots(ix: Index, unit: str) -> dict[str, list[dict]]:
+        """A unit's shots, the muzzle flash and sound its model plays when a weapon fires, by the weapon's EffectTag:
+        {tag: [{part, entry, key, call, effect, share}]}. The model (GfxDescriptor) has a part per tag
+        (SousElements[i].k = weapon_effet_tag1); in it, a map binds an event (tir; tir_move: firing on the move) to a
+        call of an effect, $/GFX/Everything/FX_Tir_*, which also plays the sound."""
+        gfx = next((w for p, k, w in ix.uses(unit) if p == "GfxDescriptor" and k == "object"), None)
+        if gfx is None or not gfx.startswith(unit + ":"):  # a model the unit doesn't own: not changed from here
+            return {}
+        kids = {p: w for p, k, w in ix.uses(gfx) if k == "object"}
+        out = {}
+        for path, _n, tag in ix.show(gfx)["values"]:
+            m = re.fullmatch(r"SousElements\[(\d+)\]\.k", path)
+            if not (m and tag and tag.startswith(SHOT_TAG)):
+                continue
+            todo, found = [kids.get(f"SousElements[{m.group(1)}].v")], []
+            while todo:
+                part = todo.pop(0)
+                if part is None:
+                    continue
+                o = ix.show(part)
+                keys = {p: text for p, _n2, text in o["values"] if p.endswith(".k")}
+                for p, k, w in ix.uses(part):
+                    b = re.fullmatch(r"BinderEffets\[(\d+)\]\.v", p)
+                    if b and k == "object":
+                        found.append({"part": part, "entry": int(b.group(1)), "key": keys.get(f"BinderEffets[{b.group(1)}].k"),
+                                      "call": w, "effect": next((e for q, _k, e in ix.uses(w) if q == "Action"), None),
+                                      "share": "own" if o["shared"] else None})
+                    elif k == "object" and re.fullmatch(r"SousElements\[\d+\]\.v", p):
+                        todo.append(w)
+            out[tag] = found
+        return out
+
+    def _shot_of(self, ix: Index, ammo: str) -> list[dict]:
+        """The shot of a weapon that fires `ammo` in the game (the first one that has one): what a unit's weapon
+        plays when it's made to fire that ammo."""
+        for user, path in ix.used_by(ammo):
+            if path != "Ammunition" or ix.show(user)["class"] != WEAPON:
+                continue
+            tag = next((t for p, _n, t in ix.show(user)["values"] if p == "EffectTag"), None)
+            found = self._shots(ix, user.partition(":")[0]).get(tag) if tag else None
+            if found:
+                return found
+        return []
+
+    @staticmethod
+    def _shot_now(ix: Index, edits: ModEdits | None, shots: list[dict], real: str, base: str) -> str:
+        """The name of the shot a weapon plays now (its main event, tir), with the mod's change if it has one."""
+        s = next((x for x in shots if x["key"] == "tir"), shots[0] if shots else None)
+        if s is None:
+            return ""
+        unit = real.partition(":")[0]
+        link = edits.get(base + s["part"][len(unit):], f"BinderEffets[{s['entry']}].v", s["share"]) if edits else None
+        effect = s["effect"]
+        if link:
+            try:
+                effect = next((e for q, _k, e in ix.uses(str(link)) if q == "Action"), effect)
+            except KeyError:
+                pass
+        return _shot_name(effect)
 
     def unit(self, address: str, lang: str = schema.BASE, via: str = "") -> dict:
         """One unit (or any object): its values in groups, its parts and what uses it, with the current mod's edits.

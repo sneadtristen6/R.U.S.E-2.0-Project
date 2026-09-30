@@ -395,8 +395,8 @@ class Clashing(Base):
         self.assertEqual([(c["kind"], c["a"], c["b"], c["count"], c["what"]) for c in check["soft"]],
                          [("value", "Gamma", "Alpha", 1, "Unit_Battleship.VitesseLineaire")])
         self.assertEqual(api.check_mods(["alpha", "gamma"])["hard"], [])   # while a set is edited: ids, no set yet
-        self.assertEqual(api.check_mods(["alpha", "nope"]), {"hard": [], "soft": []})
-        self.assertEqual(api.set_check("vanilla"), {"hard": [], "soft": []})
+        self.assertEqual(api.check_mods(["alpha", "nope"]), {"hard": [], "soft": [], "best": None})
+        self.assertEqual(api.set_check("vanilla"), {"hard": [], "soft": [], "best": None})
         j = wait_for(api, api.play("clashing")["job"])
         self.assertEqual(j["state"], "failed")
         self.assertIn("These mods can't be played together (1 clash):", j["message"])
@@ -404,6 +404,25 @@ class Clashing(Base):
         self.assertEqual(self.started, [])
         self.assertFalse((self.instances / "clashing").exists())
 
+
+    def test_best_order_puts_the_smaller_mod_after_the_bigger_one(self):
+        from test_rmod import rmod_json, set_values
+        dl = Path(self.tmp.name, "dl")
+        dl.mkdir()
+        api = self.api()
+        for name, patches in (("Static", [set_values("Unit_Battleship", VitesseLineaire=0)]),
+                              ("Navy", [set_values("Unit_Battleship", VitesseLineaire=9.5, Blindage=3),
+                                        set_values("Unit_Destroyer", VitesseLineaire=12)])):
+            path = dl / f"{name}.rmod"
+            path.write_text(rmod_json({}, mod_id=name.lower(), name=name, patches=patches), encoding="utf-8")
+            api.add_mod(str(path))
+        api.new_set("Ships", ["static", "navy"])
+        check = api.set_check("ships")
+        self.assertEqual((check["best"], check["helped"]), (["navy", "static"], ["Static"]))
+        lists = api.best_order("ships")
+        chosen = next(s for s in lists["sets"] if s["id"] == "ships")
+        self.assertEqual(chosen["mods"], ["navy", "static"])
+        self.assertIsNone(api.set_check("ships")["best"])  # already the best order: no button
 
 class Browse(Base):
     """Browse mods: the mod index on a local web server, installs checked against it, the copy kept for offline."""

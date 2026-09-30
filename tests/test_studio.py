@@ -636,7 +636,7 @@ class AmmoAndFlags(WithMod):
         w = self.api.weapons(PANZER_IV, "us")
         self.assertEqual(w["weapons"], [{"address": PANZER_MOUNT, "name": "weapon_effet_tag1",
                                          "ammo": {"address": AMMO_75, "name": "AP shell · Medium cal."},
-                                         "game_ammo": AMMO_75, "edited": False}])
+                                         "game_ammo": AMMO_75, "edited": False, "shot": ""}])
         self.assertEqual([(c["address"], c["nations"]) for c in w["choices"]],
                          [(AMMO_88, []), (AMMO_75, ["Germany"])])  # by name: Large before Medium; whose it is
         self.assertEqual(self.api.weapons(M4)["weapons"], [])  # the M4's gun is the older, simpler shape
@@ -829,3 +829,97 @@ class Labels(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def mapv(*pairs):
+    return val(0x12, struct.pack("<I", len(pairs)) + b"".join(k + v for k, v in pairs))
+
+
+# Two tanks whose models bind their gun's shot (muzzle flash and sound) the game's way: the model has a part per
+# weapon EffectTag (SousElements: weapon_effet_tag1), and inside it a map from an event (tir; tir_move, firing on the
+# move) to a call of an FX_Tir_* effect. The Panzer fires Ammo_Canon_75 with a medium shot, the Tiger Ammo_Canon_88
+# with a heavy one. classes: 0 unit, 1 model, 2 model part, 3 mounted weapon, 4 ammo, 5 call, 6 effect
+SHOTS = make_ndf(
+    objects=[(0, [(0, ref(2, 3)), (1, ref(4, 1))]),                                          # 0 Panzer
+             (0, [(0, ref(3, 3)), (1, ref(7, 1))]),                                          # 1 Tiger
+             (3, [(2, s(0)), (3, ref(10, 4))]),                                              # 2 Panzer's gun
+             (3, [(2, s(0)), (3, ref(11, 4))]),                                              # 3 Tiger's gun
+             (1, [(4, mapv((s(0), ref(5, 2))))]),                                            # 4 Panzer's model
+             (2, [(5, mapv((s(1), ref(6, 2))))]),                                            # 5 its turret
+             (2, [(6, mapv((s(2), ref(12, 5)), (s(3), ref(13, 5))))]),                       # 6 the turret's shots
+             (1, [(4, mapv((s(0), ref(8, 2))))]),                                            # 7 Tiger's model
+             (2, [(5, mapv((s(1), ref(9, 2))))]),                                            # 8 its turret
+             (2, [(6, mapv((s(2), ref(14, 5))))]),                                           # 9 its shot
+             (4, [(7, u32(1001))]),                                                          # 10 Ammo 75
+             (4, [(7, u32(1002))]),                                                          # 11 Ammo 88
+             (5, [(8, ref(15, 6))]), (5, [(8, ref(16, 6))]), (5, [(8, ref(17, 6))]),        # 12-14 calls
+             (6, []), (6, []), (6, [])],                                                     # 15-17 effects
+    classes=["TUniteAuSolDescriptor", "TGfxDescriptorModele", "TGfxDescriptorModeleSousMobile",
+             "TMountedWeaponDescriptor", "TAmmunition", "TActionCall", "TActionDescriptor"],
+    props=[("MountedWeapon", 0), ("GfxDescriptor", 0), ("EffectTag", 3), ("Ammunition", 3), ("SousElements", 1),
+           ("SousElements", 2), ("BinderEffets", 2), ("AmmunitionId", 4), ("Action", 5)],
+    strings=["weapon_effet_tag1", "1", "tir", "tir_move"],
+    exports={0: "GFX/Everything/Descriptor_Unit_Panzer_IV_G", 1: "GFX/Everything/Descriptor_Unit_Tiger",
+             10: "GFX/Everything/Ammo_Canon_75", 11: "GFX/Everything/Ammo_Canon_88",
+             15: "GFX/Everything/FX_Tir_ObusAP_Moyen", 16: "GFX/Everything/FX_Tir_ObusAP_Move_Moyen",
+             17: "GFX/Everything/FX_Tir_ObusAP_Lourd"},
+    topo=[0, 1, 10, 11, 15, 16, 17])
+TIGER = "$/GFX/Everything/Descriptor_Unit_Tiger"
+
+
+class Shots(unittest.TestCase):
+    """A weapon's shot follows its ammo: a gun made to fire another unit's ammo takes that unit's muzzle flash and
+    sound (api.set_ammo), in the unit's own model, so no other unit changes."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.game = Path(self.tmp.name, "game")
+        rev = self.game / "Data" / "PC" / "190852"
+        rev.mkdir(parents=True)
+        (rev / "ZZ_GladPatchableWin.dat").write_bytes(make_edat([("file", "everything.cpp.gladndfbin", SHOTS)]))
+        (rev / "ZZ_Win.dat").write_bytes(make_edat([("dir", "genlocalisation\\ww2\\localisation\\translations\\", [
+            ("dir", "us\\", [("file", "baseunite.dic", make_dic([(PANZER, "Panzer IV")]))])])]))
+        index = build_index(self.game, Path(self.tmp.name, "index.sqlite"), say=lambda line: None)
+        self.api = StudioApi(index_path=index, game_dir=self.game, home=Path(self.tmp.name, "home"))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def shots(self, folder):
+        """{unit: [the effect each of its shot events plays]} in the mod as built."""
+        rev = self.game / "Data" / "PC" / "190852"
+        arc = Edat((rev / "ZZ_GladPatchableWin.dat").read_bytes())
+        result = build_pack(arc, [load_mod(folder)])
+        self.assertEqual(result.errors, [])
+        new = Edat(arc.to_bytes(result.changed))
+        nd = Ndf(new.read(new.find("everything.cpp.gladndfbin")))
+        from rusemod.ndf import local_ref, sub_values
+        names = [p for p, _ in nd.props]
+        objs = [{names[pi]: v for pi, v in o.props} for o in nd.objects]
+        exp = {p: i for i, p in nd.exports.items()}
+        out = {}
+        for unit in (PANZER_IV, TIGER):
+            model = local_ref(objs[exp[unit]]["GfxDescriptor"])
+            turret = local_ref(sub_values(objs[model]["SousElements"])[1])
+            part = local_ref(sub_values(objs[turret]["SousElements"])[1])
+            calls = sub_values(objs[part]["BinderEffets"])[1::2]
+            out[unit] = [nd.exports[local_ref(objs[local_ref(c)]["Action"])].rsplit("/", 1)[-1] for c in calls]
+        return out
+
+    def test_the_shot_follows_the_ammo(self):
+        folder = Path(self.api.new_mod("Guns")["current"])
+        mount = PANZER_IV + ":MountedWeapon"
+        self.assertEqual(self.api.weapons(PANZER_IV)["weapons"][0]["shot"], "ObusAP Moyen")
+        saved = self.api.set_ammo(PANZER_IV, mount, AMMO_88)
+        self.assertEqual(saved["shot"], "ObusAP Lourd")
+        self.assertEqual(self.api.weapons(PANZER_IV)["weapons"][0]["shot"], "ObusAP Lourd")
+        rndf = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        self.assertIn("\npatch $/GFX/Everything/Descriptor_Unit_Panzer_IV_G:GfxDescriptor.SousElements[0].v"
+                      ".SousElements[0].v.BinderEffets[0]\n(\n    v = $/GFX/Everything/Descriptor_Unit_Tiger:"
+                      "GfxDescriptor.SousElements[0].v.SousElements[0].v.BinderEffets[0].v\n)\n", rndf)
+        # firing on the move too: the Tiger has no shot of its own for it, so its one shot
+        self.assertEqual(self.shots(folder), {PANZER_IV: ["FX_Tir_ObusAP_Lourd", "FX_Tir_ObusAP_Lourd"],
+                                              TIGER: ["FX_Tir_ObusAP_Lourd"]})
+        self.api.set_ammo(PANZER_IV, mount, AMMO_75)  # the game's own ammo again: its own shot again
+        self.assertNotIn("BinderEffets", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
+        self.assertEqual(self.api.weapons(PANZER_IV)["weapons"][0]["shot"], "ObusAP Moyen")

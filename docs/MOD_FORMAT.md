@@ -78,7 +78,8 @@ before = []
 | Export path | `$/GFX/Everything/Descriptor_Unit_M4_Sherman` | a named object, using the engine's own names (EXPR table) |
 | Sub-object | `…Descriptor_Unit_M4_Sherman:WeaponManager.Turrets[0]` | a path from the nearest named owner: `.property`, `[index]` |
 | Selector | `…:Turrets[class=TTurretTwoAxisDescriptor]`, `…:Weapons[Ammunition=$/GFX/…/Ammo_75mm]` | matches list items by class or a property value. More robust than an index across game updates |
-| Map key | `…:SomeMap{'key'}` | an entry of an NDF map |
+| Map key | `…:SomeMap{'key'}` | an entry of an NDF map (planned) |
+| Map entry | `…:GfxDescriptor.SousElements[39].v.BinderEffets[0].v` | an entry of an NDF map by its place: `[i].k` is its key, `[i].v` its value (the game index names map parts this way). A key or value can be set, not deleted. The Studio uses it to give a weapon another unit's shot |
 | Mod-local | `~/Descriptor_Unit_R2_US_Marines` | an object declared in this mod |
 | Found by a property | `@TAmmunition[AmmunitionId=1120]`, `@[ClassNameForDebug='Unit_M4_Sherman']` | the one object of that class (or of any class, `@[…]`) whose property has that value, named or an unnamed part of another object; an error unless exactly one matches. Works wherever an object is named: patch targets, clone sources, references. `:path` reaches a part of it. This is how RUSE-Mod-Manager mods find things (§13) |
 | Every match | `patch every TAmmunition [AmmunitionId=1120]` | every object of the class whose property has that value; at least one, or an error |

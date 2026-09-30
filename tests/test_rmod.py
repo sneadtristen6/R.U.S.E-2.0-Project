@@ -275,6 +275,25 @@ class Clashes(unittest.TestCase):
         self.assertEqual(found[0].sides(), ("Static", "Navy"))  # the later mod first: it wins
         self.assertEqual([c.mods for c in rmod.clashes([static, navy])], [["Static", "Navy"], ["Static", "Navy"]])
 
+    def test_the_best_order_lets_the_smaller_mod_keep_its_values(self):
+        navy = self.mod("Navy", patches=[set_values("Unit_Battleship", VitesseLineaire=9.5, Blindage=3),
+                                         set_values("Unit_Destroyer", VitesseLineaire=12, Blindage=2)])
+        static = self.mod("Static", patches=[set_values("Unit_Battleship", VitesseLineaire=0)])
+        other = self.mod("Other", patches=[set_values("Unit_Tank", Blindage=1)])
+        # Navy changes 4 values, Static 1 (the battleship's speed, the reason it exists): Static goes after Navy, in
+        # Navy's place; Other shares nothing and stays where it is
+        self.assertEqual(rmod.best_order([static, other, navy]), [2, 1, 0])
+        self.assertEqual(rmod.overwritten([static, other, navy]), [1, 0, 0])   # now Static loses all it changes
+        self.assertEqual(rmod.overwritten([navy, other, static]), [1, 0, 0])   # after: Navy loses 1 of its 4
+        self.assertEqual(rmod.sizes([navy, static, other]), [4, 1, 1])
+        self.assertEqual(rmod.best_order([navy, other, static]), [0, 1, 2])   # already the best order
+        # two groups that share nothing are each ordered in their own places; a tie keeps the set's order
+        tanks = self.mod("Tanks", patches=[set_values("Unit_Tank", Blindage=2, Vitesse=3)])
+        self.assertEqual(rmod.best_order([static, other, navy, tanks]), [2, 3, 0, 1])
+        again = self.mod("Again", patches=[set_values("Unit_Battleship", VitesseLineaire=5)])
+        self.assertEqual(rmod.best_order([again, static]), [0, 1])
+        self.assertEqual(rmod.best_order([static, self.root / "ours", navy]), [2, 1, 0])  # not a .rmod: stays
+
     def test_library_folders_other_mods_and_changed_files(self):
         a = self.mod("Alpha", {"genpython/map/effetmap.xyz": b"XYZ0 A"})
         b = self.mod("Beta", {"genpython/map/effetmap.xyz": b"XYZ0 B"})

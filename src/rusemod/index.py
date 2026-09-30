@@ -42,7 +42,7 @@ from .edat import Edat
 from .ndf import SCALAR, Ndf, decode, sub_values
 from .steam import build_of, data_revisions
 
-FORMAT = "3"  # 3: whole flag lists (WHOLE_LISTS)
+FORMAT = "4"  # 3: whole flag lists (WHOLE_LISTS); 4: the keys of top-level maps
 TYPES = {0x00: "bool", 0x01: "int8", 0x02: "int32", 0x03: "uint32", 0x05: "float32", 0x06: "float64", 0x07: "string",
          0x08: "wide string", 0x09: "reference", 0x0B: "vec3f", 0x0C: "float4", 0x0D: "color32", 0x11: "list",
          0x12: "map", 0x13: "int64", 0x14: "blob", 0x18: "int16", 0x19: "uint16", 0x1A: "guid", 0x1C: "path",
@@ -247,10 +247,13 @@ class _Builder:
 
     @staticmethod
     def _stored(path: str) -> bool:
-        """Top-level numbers, and the first items of top-level lists of numbers (Price[0] … Price[15]; all of a
-        WHOLE_LISTS list)."""
+        """Top-level numbers, the first items of top-level lists of numbers (Price[0] … Price[15]; all of a
+        WHOLE_LISTS list), and the keys of top-level maps (SousElements[39].k = weapon_effet_tag1: which part of a
+        model a weapon fires from; BinderEffets[0].k = tir: which effect is its shot)."""
         if "[" not in path:
             return "." not in path
+        if re.fullmatch(r"[^.\[\]]+\[\d+\]\.k", path):
+            return True
         m = re.fullmatch(r"([^.\[\]]+)\[(\d+)\]", path)
         return bool(m) and int(m.group(2)) < WHOLE_LISTS.get(m.group(1), LIST_VALUES)
 

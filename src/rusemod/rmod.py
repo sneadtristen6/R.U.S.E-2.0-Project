@@ -482,3 +482,58 @@ def refusal(hard: list[Clash]) -> str:
     """The build's message when a set has hard clashes: every one, in plain words."""
     return (f"These mods can't be played together ({len(hard)} clash{'es' if len(hard) > 1 else ''}):\n"
             + "\n".join(f"- {c.message}" for c in hard) + "\nNothing was built.")
+
+
+def best_order(paths) -> list[int]:
+    """The order of these mods (indexes into `paths`, the set's order) in which each .rmod keeps as much as it can of
+    what it changes. Where mods change the same values (or texts), the later one wins; so of the mods that share
+    values, the one that changes more goes first and the one that changes less, which is there for those very
+    values, after it. Each group of mods sharing values is ordered in its own places; the other mods, and mods that
+    aren't .rmod files, keep theirs. Order can't mend a hard clash (the same file from two mods): those stay."""
+    edits = [edits_of(p) for p in paths]
+    owners: dict = {}
+    for i, e in enumerate(edits):
+        if e is not None:
+            for key in [("value",) + k for k in e.values] + [("text",) + k for k in e.texts]:
+                owners.setdefault(key, []).append(i)
+    group = list(range(len(paths)))  # mods sharing a value, joined (union-find)
+
+    def top(i):
+        while group[i] != i:
+            group[i] = group[group[i]]
+            i = group[i]
+        return i
+    for ids in owners.values():
+        for i in ids[1:]:
+            group[top(i)] = top(ids[0])
+    groups: dict = {}
+    for i, e in enumerate(edits):
+        if e is not None:
+            groups.setdefault(top(i), []).append(i)
+    order = list(range(len(paths)))
+    for places in groups.values():
+        ranked = sorted(places, key=lambda i: (-(len(edits[i].values) + len(edits[i].texts)), i))
+        for place, i in zip(places, ranked):
+            order[place] = i
+    return order
+
+
+def overwritten(paths) -> list[int]:
+    """How many of each mod's values and texts a later mod in this order overwrites (0 for mods that aren't .rmod)."""
+    edits = [edits_of(p) for p in paths]
+    last: dict = {}
+    for i, e in enumerate(edits):
+        if e is not None:
+            for key in [("value",) + k for k in e.values] + [("text",) + k for k in e.texts]:
+                last[key] = i
+    lost = [0] * len(paths)
+    for i, e in enumerate(edits):
+        if e is not None:
+            lost[i] = sum(1 for k in [("value",) + k for k in e.values] + [("text",) + k for k in e.texts]
+                          if last[k] != i)
+    return lost
+
+
+def sizes(paths) -> list[int]:
+    """How many values and texts each mod changes (0 for mods that aren't .rmod)."""
+    return [len(e.values) + len(e.texts) if e is not None else 0 for e in (edits_of(p) for p in paths)]

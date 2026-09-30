@@ -48,7 +48,7 @@
       really_delete: "Delete {name}? Its changes go with it.", new_mark: "new",
       unit_made: "{name} is in the mod. Test in game to see it in its build menu.",
       unit_deleted: "{name} was deleted from the mod.",
-      ammo: "Ammo", fired_by: "Fired by {names}", fired_by_nobody: "No unit fires it", weapons: "Weapons", models_loading: "Loading the game's 3D models… {progress}", weapon_n: "Weapon {n}",
+      shot: "Muzzle flash and sound: {fx}. Picking another ammo takes the flash and sound of a weapon that fires it.", ammo: "Ammo", fired_by: "Fired by {names}", fired_by_nobody: "No unit fires it", weapons: "Weapons", models_loading: "Loading the game's 3D models… {progress}", weapon_n: "Weapon {n}",
       weapons_help: "Each weapon fires one ammo, which several units may share: change the ammo's numbers on its page for all of them, or copy it there for a weapon of this unit's own.",
       fires: "What this weapon fires", open_ammo: "Open the ammo", copy_ammo: "Copy this ammo…",
       copy_name: "Name of the copy (only shown here)",
@@ -144,7 +144,7 @@
       really_delete: "Supprimer {name} ? Ses modifications disparaissent aussi.", new_mark: "nouveau",
       unit_made: "{name} est dans le mod. Testez en jeu pour le voir dans son menu de production.",
       unit_deleted: "{name} a été supprimé du mod.",
-      ammo: "Munitions", fired_by: "Tirée par {names}", fired_by_nobody: "Aucune unité ne la tire", weapons: "Armes", models_loading: "Chargement des modèles 3D du jeu… {progress}", weapon_n: "Arme {n}",
+      shot: "Éclair et son du tir : {fx}. Choisir une autre munition prend l'éclair et le son d'une arme qui la tire.", ammo: "Munitions", fired_by: "Tirée par {names}", fired_by_nobody: "Aucune unité ne la tire", weapons: "Armes", models_loading: "Chargement des modèles 3D du jeu… {progress}", weapon_n: "Arme {n}",
       weapons_help: "Chaque arme tire une munition, que plusieurs unités peuvent partager : changez ses valeurs sur sa page pour toutes, ou copiez-la là pour une arme propre à cette unité.",
       fires: "Ce que tire cette arme", open_ammo: "Ouvrir la munition", copy_ammo: "Copier cette munition…",
       copy_name: "Nom de la copie (affiché ici seulement)",
@@ -228,7 +228,7 @@
       same_menu: "与 {name} 相同", other_menu: "另一个", nation: "国家", factory: "工厂(按其中的单位显示)", more_units: "及另外 {n} 个",
       copy_of: "在此模组中创建的 {name} 的副本。", delete_unit: "删除此单位", really_delete: "删除 {name}?它的修改也会一并删除。",
       new_mark: "新", unit_made: "{name} 已加入模组。在游戏中测试即可在生产菜单中看到它。", unit_deleted: "已从模组中删除 {name}。",
-      ammo: "弹药", fired_by: "由 {names} 使用", fired_by_nobody: "没有单位使用", weapons: "武器", models_loading: "正在加载游戏的3D模型… {progress}", weapon_n: "武器 {n}",
+      shot: "开火闪光与声音：{fx}。选择其他弹药时，会换成发射该弹药的武器的闪光与声音。", ammo: "弹药", fired_by: "由 {names} 使用", fired_by_nobody: "没有单位使用", weapons: "武器", models_loading: "正在加载游戏的3D模型… {progress}", weapon_n: "武器 {n}",
       weapons_help: "每件武器使用一种弹药，多个单位可能共用：在弹药页面改数值会影响所有单位；要让本单位拥有专属武器，请在那里复制一份弹药。",
       fires: "此武器使用的弹药", open_ammo: "打开弹药", copy_ammo: "复制此弹药…", copy_name: "副本名称（仅在此显示）",
       copy_ammo_help: "副本初始与原版相同，游戏内沿用原名。修改数值后，在单位页面为某件武器选用它。",
@@ -463,8 +463,11 @@
     const choices = [...names].map(([addr, name]) => ({ address: addr, name, new: myAmmo().some((n) => ammoAddress(n.id) === addr),
       nations: whose(addr) }))
       .sort((x, y) => x.name.localeCompare(y.name));
+    // the shot (muzzle flash and sound) follows the ammo, as in api.set_ammo: made-up names like the game's FX_Tir_*
+    const shotOf = (addr) => { const c = myAmmo().find((n) => ammoAddress(n.id) === addr);
+      const id = c ? c.source.split("/").pop() : addr.split("/").pop(); return /88|75|76/.test(id) ? "ObusAP Moyen" : "infanterie Moyen"; };
     return { weapons: [{ address: weapon, name: "weapon_effet_tag1", ammo: { address: current_, name: names.get(current_) || current_ },
-      game_ammo: ammoAddress(game.id), edited: Boolean(chosen) }], choices };
+      game_ammo: ammoAddress(game.id), edited: Boolean(chosen), shot: shotOf(current_) }], choices };
   }
 
   // The Maps view: a made-up island, packed like rusemod.terrain (uint16 positions over the bounds, zlib, base64)
