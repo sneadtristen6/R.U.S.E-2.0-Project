@@ -12,6 +12,8 @@ on:
 
 jobs:
   build:
+    # the shared private repo mirrors main and the tags: it doesn't build or test (its Actions minutes are limited)
+    if: github.repository == 'sneadtristen6/Ruse-Mod-Platform'
     strategy:
       fail-fast: false
       matrix:
