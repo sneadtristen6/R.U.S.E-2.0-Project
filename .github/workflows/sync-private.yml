@@ -32,17 +32,18 @@ jobs:
         if: env.TOKEN != ''
         with:
           fetch-depth: 0
-      - name: Copy the release tag
-        if: env.TOKEN != '' && github.ref_type == 'tag'
+      # every release tag, on every run: a run that waited in the queue can be cancelled by a newer one (GitHub keeps
+      # one waiting run per group), so no run copies only its own tag
+      - name: Copy the release tags
+        if: env.TOKEN != ''
         run: |
           git remote add shared "https://x-access-token:${TOKEN}@github.com/sneadtristen6/Ruse-Mod-Platform-Shared.git"
-          git push shared "refs/tags/${GITHUB_REF_NAME}"
+          git push shared "refs/tags/launcher-v*:refs/tags/launcher-v*" "refs/tags/studio-v*:refs/tags/studio-v*"
       - name: Mirror main, merge it into private
         if: env.TOKEN != '' && github.ref_type == 'branch'
         run: |
           git config user.name "sync-private"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote add shared "https://x-access-token:${TOKEN}@github.com/sneadtristen6/Ruse-Mod-Platform-Shared.git"
           git fetch --no-tags shared main private
           git push shared "${GITHUB_SHA}:refs/heads/main"
           git checkout -B private shared/private
