@@ -45,8 +45,8 @@ with an `index.toml`, MOD_FORMAT §15). One game start per test.
 
 **Findings since the PC stopped** (details in [LOG.md](LOG.md)):
 - The community `.rmod` files showed the patch forms modders need (`@TClass[Prop=value]`, `patch every`, a
-  reference to a part) and real values worth keeping (FORMATS §2); 18 mods are rebuilt in `mods/`, other authors'
-  work left out (MOD_FORMAT §13).
+  reference to a part) and real values worth keeping (FORMATS §2); the rebuilt mods are kept in the private shared
+  repo until their authors agree (MOD_FORMAT §13).
 - A map's ground is four files that must move together; the engine moves them by one rule, keeps every untouched
   byte, and builds the same bytes on every PC (multiplayer fingerprints match). Unverified in the game until the
   hill test.
@@ -254,8 +254,8 @@ code is in `src/rusemod/lock.py` and its tests).
 
 ### Task G: import RUSE-Mod-Manager `.rmod` mods — branch `cloud/rmod-import` (PLAN M3)
 
-**Status (2026-09-29):** the reader exists as `tools/rmod_to_mod.py` (branch `cloud/community-mods`: 18 mods rebuilt
-into `mods/`, the format written down in MOD_FORMAT §13, a test on a synthetic `.rmod` in `tests/test_tools.py`).
+**Status (2026-09-29):** the reader exists as `tools/rmod_to_mod.py` (branch `cloud/community-mods`: the mods it rebuilt
+are kept in the private shared repo now, the format written down in MOD_FORMAT §13, a test on a synthetic `.rmod` in `tests/test_tools.py`).
 G now means: move the reader into the engine (`rusemod/rmod.py`, built on the tool), the launcher's "Add a mod file…"
 accepting `.rmod` (it becomes a mod folder in the library, marked with its build), and the launcher tests.
 

@@ -663,8 +663,7 @@ cloning and scenarios (M6); models (M7); new maps from heightmaps (M8); scriptin
 new units that fight). Launcher v0.1 and Studio 0.4.1 are released (values edited in place, one box for a unit's
 five per-date prices, the Maps view with each map's real ground in 3D). The terrain mesh and tile files read and
 write losslessly, and plain tiles we write are drawn in-game. The `.kdt` gameplay ground reads and writes losslessly on every map (`rusemod.kdt`,
-2026-09-29), its vertices and normals decoded; the notes are in FORMATS §6 with the agreed credit. Its index
-buffers, triangle lists and tree nodes are still opaque (step 1). A mod as one file (TASKS C): the Studio's "Export mod…" writes `<id>-<version>.rusemod`, the launcher installs it (merged 2026-09-29, not yet checked in-game). Community mods: 18 RUSE-Mod-Manager mods rebuilt in our format (`mods/`, `tools/rmod_to_mod.py`, 2026-09-29; the format in MOD_FORMAT §13), not yet checked in-game. Details: [LOG.md](LOG.md).
+2026-09-29), and every part decodes and re-encodes, from DomesticNukes' notes (commit 39d7a76). A mod as one file (TASKS C): the Studio's "Export mod…" writes `<id>-<version>.rusemod`, the launcher installs it (merged 2026-09-29, not yet checked in-game). Community mods: `.rmod` files apply as they are through LittleGroove's engine (decision 26; a first mix passed in-game); the mods rebuilt in our format (`tools/rmod_to_mod.py`) are kept in the private shared repo until their authors agree. Scenery: every map's buildings, props and trees read, and mods add more (Studio Place tool). The apps update themselves from GitHub Releases. The in-game tests are in [TESTS.md](TESTS.md). Details: [LOG.md](LOG.md).
 
 ## 11. RUSE 2.0 design notes (draft, 2026-09-28)
 
