@@ -15,17 +15,24 @@ const mv = { api: null, words: {}, maps: [], current: null, lod: "lowdef", water
 // --- brushes: the same shapes and rules as rusemod/brush.py (the build's own copy decides; this one only draws) ---
 // name: [kind, shape, sign, one dab per click (else dabs along a drag), size %, strength %]
 const BRUSHES = {
-  hill: ["add", "soft", 1, true, 6, 50],
-  raise: ["add", "soft", 1, false, 3, 8],
-  lower: ["add", "soft", -1, false, 3, 8],
-  crater: ["add", "crater", 1, true, 4, 25],
-  plateau: ["level", "flat", 1, true, 6, 15],
+  hill: ["add", "soft", 1, true, 6, 40],
+  raise: ["add", "soft", 1, false, 3, 10],
+  lower: ["add", "soft", -1, false, 3, 10],
+  crater: ["add", "crater", 1, true, 4, 30],
+  plateau: ["level", "flat", 1, true, 6, 20],
   flatten: ["level", "soft", 1, false, 4, 60],
   smooth: ["smooth", "soft", 1, false, 4, 60],
   ramp: ["ramp", "flat", 1, true, 3, 100],  // two clicks: where it starts, then where it ends; size is half its width
 };
 const CRATER_RIM = 0.35;
 const HEIGHT_SHARE = 0.6;  // strength 100% = this share of the map's height range (hill, raise, lower, crater, plateau)
+
+// How far one dab moves the ground at a strength (1-100): the square of the slider, so its lower half moves the
+// ground in small steps (strength 10 = 1% of the top) and its top still makes big hills.
+function lift(strength, z0, z1) {
+  const s = strength / 100;
+  return s * s * HEIGHT_SHARE * (z1 - z0);
+}
 
 function shapeWeight(shape, t2) {
   if (shape === "soft") { const u = 1 - t2; return u * u; }
@@ -548,7 +555,7 @@ function newStroke(x, y, level, end) {
   const name = mv.brush.name, [kind] = BRUSHES[name], set = settingsOf(name);
   const [x0, , z0, x1, , z1] = mv.edit.bounds;
   const s = { brush: name, x, y, radius: set.size / 100 * (x1 - x0) };
-  if (kind === "add") s.height = set.strength / 100 * HEIGHT_SHARE * (z1 - z0);
+  if (kind === "add") s.height = lift(set.strength, z0, z1);
   if (kind === "level") { s.level = level; s.weight = name === "plateau" ? 1 : set.strength / 100; }
   if (kind === "smooth") s.weight = set.strength / 100;
   if (kind === "ramp") { s.level = level; s.weight = set.strength / 100; s.x2 = end.x; s.y2 = end.y; s.level2 = end.z; }
@@ -687,7 +694,7 @@ function watchPointer() {
     ev.preventDefault();
     const name = mv.brush.name, [kind, , , stamp] = BRUSHES[name], set = settingsOf(name);
     const x = p.x / SCALE, y = p.z / SCALE, z = p.y / SCALE, [, , z0, , , z1] = mv.edit.bounds;
-    const level = kind !== "level" ? 0 : name === "plateau" ? z + set.strength / 100 * HEIGHT_SHARE * (z1 - z0) : z;
+    const level = kind !== "level" ? 0 : name === "plateau" ? z + lift(set.strength, z0, z1) : z;
     if (kind === "ramp") {  // two clicks: where it starts (the ground's height there), then where it ends
       const start = mv.brush.rampStart;
       if (!start) { mv.brush.rampStart = { x, y, z, sx: p.x, sy: p.y, sz: p.z }; showRing(p); return; }
