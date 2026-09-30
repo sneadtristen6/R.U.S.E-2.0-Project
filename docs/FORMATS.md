@@ -535,10 +535,54 @@ his Claude; checked here on all 32 maps.
   file are 4-aligned. With several mips, mip 0 is the smallest. ZIPO = `"ZIPO", u32 unpacked size, zlib` ending in a
   sync flush with no final block (some recorded a byte short of `00 00 ff ff`; inflate doesn't mind); DXT data inside
   is the raw row-major block array. Python zlib level 9 + sync flush reproduces some shipped streams byte-exactly.
+- ✅ A model atlas can say a bigger size in its header than its largest mip holds (a 2048-pixel France buildings
+  atlas stores 512 × 512 blocks); each mip's own size is in its TGU1 header (in 4 × 4 blocks). TGU1 in model atlases
+  is the terrain's DXT1 codec (§6), except that its block count is smaller than width × height (meaning not known;
+  decoding doesn't need it). TGU1 with alpha (DXT5, some leaf atlases) isn't read yet.
 
-## 8. Meshes, animations, UI ❔
+## 8. Meshes, animations, UI 🟡
 
-- `.spk` = `MESH` `PCPC` u32 4, u32 fileSize, 16-byte hash, then a section table. 82 packs (vehicles, scenery sets per theatre, base buildings).
+### Mesh packs (`.spk`): ✅ read (`src/rusemod/spk.py`)
+
+From the notes of **DomesticNukes and his Claude** (2026-09-29), checked with our own reader on every pack
+(`tools/verify_spk.py`): 61 mesh packs and 21 skeleton-only ones in `ZZ_Win.dat` `gen_5\pack\`; **9,650 of 9,650
+draw calls decode** (6,793 stored as is, 2,857 compressed), every index below its vertex count, every material
+number below the material count, every position inside its model's box.
+
+| Offset | Content |
+|---|---|
+| 0x00 | `MESH` `PCPC`, u32 version 4, u32 file size, 16-byte hash |
+| 0x34 | 8 × (u32 offset, size, count): names, vertex formats, materials, two empty, meshes, draw calls, index-buffer table |
+| 0x94 | index-buffer data (offset, size) |
+| 0x9C | vertex-buffer table (offset, size, count) |
+| 0xA8 | vertex-buffer data (offset, size) |
+
+- **Names**: u32 10, 6 bytes, then the same trie as an EDAT archive (§1): header length 0 is a model, followed by its
+  box (6 f32), u32 flags, u16 mesh number, u16 skeleton record (0xCDCD in mesh packs), then its name's last piece.
+  Full names are lowercase: `ww2\res3d\decors\vegetation_eu\022lod0.ase2ndfbin`, the `ModelASE` of a scenery
+  descriptor without `DataDir:\`. Some models have a lighter `_lodmedium` version beside them.
+- **Vertex formats**: u32 256, then 256-byte names that spell the layout, e.g.
+  `TVertex__Position_3f__NormalIn01_4ubn__TexCoord0_2wn__TexPackedAtlas0_4ubn` (positions f32; normal bytes
+  b / 255 × 2 − 1; UVs u16 / 65535 or 2 f32; the atlas bytes below).
+- **Materials**: an NDF with one `TMeshMaterial` per material; `Textures` maps a role to (image, 0). The image is
+  `diffuseTexture`, or `CombinedDSCTexture` / `CombinedDSTexture` on most buildings: `ZZ:\GenTexGroup\...\X01.png`
+  is the texture `gen\...\x01.tgv` in `ZZ_Win.dat`, an atlas.
+- **Mesh** u16 first draw call, u16 count; **draw call** u16, u16 material, u16 index buffer, u16 vertex buffer, u16
+  0xFFFF, u16 0xCDCD; **buffer tables** 16 bytes: u32 offset, size, count, u16 (1 / vertex format), u16 flags
+  (0xC000 compressed).
+- **Compressed index buffer**: u32 size, then zlib (sync flush): u16 differences, summed.
+- **Compressed vertex buffer**: a `VBUF` chunk like the terrain's (§6): a predictor (the same parent codes), then
+  one `SUBP` stream per component (storage 0 raw, 1 zlib, 3 LZ; mode 2 = relative to the parent), sizes rounded up
+  to 4. Positions: u16 Q, 3 f32 min, 3 f32 max, u16, then 3 × u16; t = q / Q, x = min + t × (max − min) up to
+  t = 0.5, else max − (1 − t) × (max − min). UVs `_2f` the same with 2 values, `_2wn` a u16 mask then 2 × u16
+  (uv = value / mask); normals and atlas bytes 4 × u8.
+- **LZ** (§6) with two more cases: a stored block (bit 7 of the width byte: the units follow the first 8 bytes) and
+  literals packed 5 or 11 bits wide.
+- **Atlas bytes**: a vertex's (min u, min v, width, height) × 255 of its part of the atlas; the drawn UV is
+  min + uv × size.
+- **Scenery descriptors**: a tree is a `TSceneryDescriptorComposite` of two models, its leaves and its trunk
+  (`DescriptorComposition`), so `rusemod.scenery` gives every descriptor all its models.
+- Not read yet: skeleton packs, mirrored vertices (no shipped pack uses them), writing models (PLAN M7).
 - `.apk` (nested EDAT), `.baf` (`0f000000`), `.ppk` (`PRXY` or nested EDAT), `.gpk` (UI, likely Scaleform GFx).
 - Scenery sets are European/African only: africa, allemagne, ardennes, europe, france, givre, hollande, italie. There is no tropical set.
 

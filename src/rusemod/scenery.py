@@ -233,6 +233,7 @@ class Descriptor:
     group: str         # building, vegetation, prop, decal or other (GROUPS)
     model: str | None  # the close-up model, e.g. ww2\res3d\decors\france\france_1\mairienormandelod0.ase2ndfbin
     source: str        # the NDF file it comes from
+    models: tuple = ()  # every model it's drawn with close up: a tree is two (its leaves and its trunk)
 
 
 def group_of(category: str, cls: str) -> str:
@@ -265,28 +266,34 @@ def descriptors(arc) -> dict[str, Descriptor]:
         def text(v):
             return n.strings[struct.unpack("<I", v.payload)[0]] if v is not None and v.tc in (0x07, 0x1C) else ""
 
-        def model(i, depth=0):
-            """The close-up model under object i: through a multi-state's normal look and a multi-mode's nearest
-            level to a Model3DFromFile."""
+        def models(i, depth=0) -> list:
+            """The close-up models under object i: through a multi-state's normal look, a multi-mode's nearest
+            level and a composite's every part (a tree: its leaves and its trunk) to each Model3DFromFile.
+            Composites are from DomesticNukes and his Claude's scenery notes."""
             if i is None or depth > 8:
-                return None
+                return []
             d = objs[i]
             if "ModelASE" in d:
-                return text(d["ModelASE"]).replace("DataDir:\\", "").lower() or None
+                name = text(d["ModelASE"]).replace("DataDir:\\", "").lower()
+                return [name] if name else []
             if "SDFalse" in d:
-                return model(local_ref(d["SDFalse"]), depth + 1)
+                return models(local_ref(d["SDFalse"]), depth + 1)
             if "ModeEntry" in d:
                 entries = [local_ref(v) for v in sub_values(d["ModeEntry"])]
                 entries = [x for x in entries if x is not None]
                 entries.sort(key=lambda x: objs[x]["ModeMask"].scalar() if "ModeMask" in objs[x] else 99)
                 for x in entries:
-                    found = model(local_ref(objs[x].get("SceneryDescriptor")) if objs[x].get("SceneryDescriptor")
-                                  else None, depth + 1)
+                    found = models(local_ref(objs[x].get("SceneryDescriptor")) if objs[x].get("SceneryDescriptor")
+                                   else None, depth + 1)
                     if found:
                         return found
+            if "DescriptorComposition" in d:
+                return [m for v in sub_values(d["DescriptorComposition"]) for m in models(local_ref(v), depth + 1)]
             if "SceneryDescriptor" in d:
-                return model(local_ref(d["SceneryDescriptor"]), depth + 1)
-            return None
+                v = d["SceneryDescriptor"]
+                refs = [local_ref(x) for x in sub_values(v)] if v.tc == 0x11 else [local_ref(v)]
+                return [m for r in refs for m in models(r, depth + 1)]
+            return []
 
         for i, d in enumerate(objs):
             name = text(d.get("RegistrationName"))
@@ -297,7 +304,9 @@ def descriptors(arc) -> dict[str, Descriptor]:
                 continue
             cls = n.classes[n.objects[i].cls]
             category = text(d.get("Classement"))
-            out[name] = Descriptor(name, cls, category, group_of(category, cls), model(i), e.path)
+            found = models(i)
+            out[name] = Descriptor(name, cls, category, group_of(category, cls), found[0] if found else None, e.path,
+                                   tuple(found))
     return out
 
 
@@ -375,7 +384,8 @@ SHOW = {"building": None, "prop": 20000, "vegetation": 40000}  # what the Studio
 
 
 def view(map_arc, unit_arc, descs: dict[str, Descriptor] | None = None, budget: dict | None = None) -> dict:
-    """A map's scenery for the Studio's map view (JSON-ready): {"types": [[short name, group, category, model]],
+    """A map's scenery for the Studio's map view (JSON-ready): {"types": [[short name, group, category, model,
+    [every model]]],
     "groups": {group: {"shown": n, "total": n}}, "items": {group: [type, x, y, turn, size, ...] flat}} with every
     building and a sample of props and trees (`budget`, default SHOW). Positions are map units; the game sets
     objects on the ground itself."""
@@ -397,7 +407,7 @@ def view(map_arc, unit_arc, descs: dict[str, Descriptor] | None = None, budget: 
             if s not in index:
                 index[s] = len(types)
                 d = descs[sc.names[s]]
-                types.append([d.name.split("/", 1)[-1], d.group, d.category, d.model or ""])
+                types.append([d.name.split("/", 1)[-1], d.group, d.category, d.model or "", list(d.models)])
             flat += [index[s], round(x), round(y), round(turn, 3), round(size, 2)]
         items[g] = flat
     per_type = sc.types()

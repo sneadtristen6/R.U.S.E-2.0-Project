@@ -146,15 +146,56 @@ def block_pixels(block: bytes) -> list[tuple[int, int, int]]:
     return [pal[(idx >> (2 * i)) & 3] for i in range(16)]
 
 
-def png_bytes(rgb: bytes, width: int, height: int) -> bytes:
-    """Minimal 8-bit RGB PNG (no filtering)."""
-    stride = width * 3
+def decode_rgba(data: bytes, width: int, height: int, fmt: str = "DXT1") -> bytearray:
+    """DXT1 or DXT5 blocks -> RGBA pixels (4 bytes per pixel, rows top to bottom), for model textures: a DXT1
+    block with c0 <= c1 makes its 4th colour transparent (tree leaves are cut out that way); a DXT5 block is 8 bytes
+    of alpha (two 8-bit endpoints, 16 three-bit indices) before its colour block, whose colours are always four."""
+    bw, bh, dxt5 = width // 4, height // 4, fmt.upper() == "DXT5"
+    size = 16 if dxt5 else 8
+    if len(data) < bw * bh * size:
+        raise ValueError(f"need {bw * bh * size} bytes of {fmt} data for {width}x{height}, got {len(data)}")
+    out = bytearray(width * height * 4)
+    stride = width * 4
+    for by in range(bh):
+        for bx in range(bw):
+            at = (by * bw + bx) * size
+            alphas = None
+            if dxt5:
+                a0, a1 = data[at], data[at + 1]
+                bits = int.from_bytes(data[at + 2:at + 8], "little")
+                if a0 > a1:
+                    table = [a0, a1] + [((7 - k) * a0 + k * a1 + 3) // 7 for k in range(1, 7)]
+                else:
+                    table = [a0, a1] + [((5 - k) * a0 + k * a1 + 2) // 5 for k in range(1, 5)] + [0, 255]
+                alphas = [table[(bits >> (3 * i)) & 7] for i in range(16)]
+                at += 8
+            c0, c1, idx = struct.unpack_from("<HHI", data, at)
+            a, b = unpack565(c0), unpack565(c1)
+            if c0 > c1 or dxt5:
+                pal = [a + (255,), b + (255,), tuple((2 * x + y + 1) // 3 for x, y in zip(a, b)) + (255,),
+                       tuple((x + 2 * y + 1) // 3 for x, y in zip(a, b)) + (255,)]
+            else:
+                pal = [a + (255,), b + (255,), tuple((x + y) // 2 for x, y in zip(a, b)) + (255,), (0, 0, 0, 0)]
+            base = by * 4 * stride + bx * 16
+            for i in range(16):
+                r, c = divmod(i, 4)
+                px = pal[(idx >> (2 * i)) & 3]
+                if alphas is not None:
+                    px = px[:3] + (alphas[i],)
+                o = base + r * stride + c * 4
+                out[o:o + 4] = bytes(px)
+    return out
+
+
+def png_bytes(rgb: bytes, width: int, height: int, channels: int = 3) -> bytes:
+    """Minimal 8-bit RGB (or, with channels=4, RGBA) PNG (no filtering)."""
+    stride = width * channels
     raw = b"".join(b"\0" + bytes(rgb[y * stride:(y + 1) * stride]) for y in range(height))
 
     def chunk(tag: bytes, body: bytes) -> bytes:
         return struct.pack(">I", len(body)) + tag + body + struct.pack(">I", zlib.crc32(tag + body) & 0xFFFFFFFF)
 
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6 if channels == 4 else 2, 0, 0, 0)
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b"")
 
 

@@ -145,19 +145,25 @@ def unit_pack():
 
 
 def unit_pack_raw():
-    """A descriptor NDF: a multi-state town hall whose normal look is a multi-mode with a close model; an oak."""
+    """A descriptor NDF: a multi-state town hall whose normal look is a multi-mode with a close model; an oak drawn
+    as a composite of two models, its leaves and its trunk, as the game's trees are."""
     classes = ["TSceneryDescriptorMultiState", "TSceneryDescriptorMultiMode", "TSceneryDescriptorMultiModeEntry",
-               "TSceneryDescriptorModel3DFromFile"]
+               "TSceneryDescriptorModel3DFromFile", "TSceneryDescriptorComposite"]
     props = [("RegistrationName", 0), ("Classement", 0), ("SDFalse", 0), ("ModeEntry", 1), ("ModeMask", 2),
-             ("SceneryDescriptor", 2), ("ModelASE", 3)]
+             ("SceneryDescriptor", 2), ("ModelASE", 3), ("DescriptorComposition", 4)]
     strings = NAMES + ["COC/Normandie/Batiments_Villes_Villages", "Vegetation/Arbres",
-                       "DataDir:\\WW2\\Res3D\\Decors\\France\\MairieNormandelod0.ASE2NdfBin"]
+                       "DataDir:\\WW2\\Res3D\\Decors\\France\\MairieNormandelod0.ASE2NdfBin",
+                       "DataDir:\\WW2\\Res3D\\Decors\\Vegetation_EU\\Chene_02_Feuilleslod0.ASE2NdfBin",
+                       "DataDir:\\WW2\\Res3D\\Decors\\Vegetation_EU\\Chene_02_Tronclod0.ASE2NdfBin"]
     objects = [
         (0, [(0, text(0)), (1, text(2)), (2, ref(1))]),
         (1, [(3, val(0x11, struct.pack("<I", 1) + ref(2)))]),
         (2, [(4, val(0x03, struct.pack("<I", 2))), (5, ref(3))]),
         (3, [(6, text(4, 0x1C))]),
-        (0, [(0, text(1)), (1, text(3))]),
+        (0, [(0, text(1)), (1, text(3)), (2, ref(5))]),
+        (4, [(7, val(0x11, struct.pack("<I", 2) + ref(6) + ref(7)))]),
+        (3, [(6, text(5, 0x1C))]),
+        (3, [(6, text(6, 0x1C))]),
     ]
     ndf = make_ndf(objects, classes, props, strings=strings)
     return make_edat([("dir", "genglad\\patchable\\scenery\\", [("file", "france.cpp.gladndfbin", ndf)])])
@@ -169,7 +175,11 @@ class Descriptors(unittest.TestCase):
         hall = d["TypeWarrior/MairieNormande"]
         self.assertEqual((hall.group, hall.category), ("building", "COC/Normandie/Batiments_Villes_Villages"))
         self.assertEqual(hall.model, "ww2\\res3d\\decors\\france\\mairienormandelod0.ase2ndfbin")
-        self.assertEqual((d["TypeWarrior/Chene_02"].group, d["TypeWarrior/Chene_02"].model), ("vegetation", None))
+        oak = d["TypeWarrior/Chene_02"]
+        self.assertEqual((oak.group, oak.models), ("vegetation", ("ww2\\res3d\\decors\\vegetation_eu\\chene_02_feuilleslod0.ase2ndfbin",
+                                                                  "ww2\\res3d\\decors\\vegetation_eu\\chene_02_tronclod0.ase2ndfbin")))
+        self.assertEqual(oak.model, oak.models[0])
+        self.assertEqual(hall.models, (hall.model,))
 
     def test_the_studio_view(self):
         maps = Edat(make_edat([("dir", "output\\", [("file", "save.boobspc", village())])]))

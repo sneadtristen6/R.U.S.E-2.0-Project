@@ -2386,3 +2386,15 @@ ru = "Больше за один мазок нельзя; повторите, ч
 cz = "Víc jeden tah neumístí; pro další táhněte znovu."
 jpn = "1回で置ける最大数です。さらに置くにはもう一度。"
 sc = "一笔最多放置这么多；如需更多请再画一次。"
+
+[models_loading]
+us = "Loading the game's 3D models… {progress}"
+fr = "Chargement des modèles 3D du jeu… {progress}"
+ger = "3D-Modelle des Spiels werden geladen… {progress}"
+ita = "Caricamento dei modelli 3D del gioco… {progress}"
+spa = "Cargando los modelos 3D del juego… {progress}"
+pol = "Wczytywanie modeli 3D z gry… {progress}"
+ru = "Загрузка 3D-моделей игры… {progress}"
+cz = "Načítání 3D modelů hry… {progress}"
+jpn = "ゲームの3Dモデルを読み込み中… {progress}"
+sc = "正在加载游戏的3D模型… {progress}"

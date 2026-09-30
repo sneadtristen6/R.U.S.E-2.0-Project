@@ -12,7 +12,7 @@ const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "
   // the size of each group of strokes made this session (for Undo), the drag being painted, and the mod saved into
   brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null, rampStart: null },
   // scenery: which groups are shown, the map's scenery (StudioApi.map_scenery) and its drawn shapes per group
-  scenery: { show: { building: true, prop: true, vegetation: true }, data: null, meshes: {} },
+  scenery: { show: { building: true, prop: true, vegetation: true }, data: null, meshes: {}, models: {} },
   // placing: on or not, the group and type picked, the next object's turn and size, what the mod places on this map
   place: { on: false, group: "building", type: null, turn: 0, size: 1, objects: [], meshes: {}, mod: null,
     // how: one, area or line; area: the area brush's radius and spacing: per kind, in metres; groups: how many objects
@@ -419,6 +419,105 @@ async function realGround(pack, ask) {
   note.textContent = "";
 }
 
+// --- the real 3D models (StudioApi.map_models: the game's .spk models and their atlases, made once per map and
+// kept in the cache; from DomesticNukes and his Claude's notes). Until they're in, and for a type without a model,
+// the simple shapes below stand in. Each type is one instanced mesh per part (a part: one atlas), drawn where the
+// shapes stand; the shapes stay, unseen, for pointing at things (sceneryAt). ---
+async function loadModels(pack, ask) {
+  const w = mv.words, note = $("map-ground");
+  let res = await mv.api.map_models(pack);
+  while (res && res.job) {
+    let view, since = 0;
+    do {
+      await wait(700);
+      view = await mv.api.job(res.job, since);
+      since = view.count;
+      if (ask !== mv.ask) return;
+      if (view.lines.length) note.textContent = fill(w.models_loading, { progress: view.lines[view.lines.length - 1] });
+    } while (view.state === "running");
+    if (view.state !== "done") { note.textContent = view.message; return; }
+    res = await mv.api.map_models(pack);
+  }
+  if (!res || !res.index || ask !== mv.ask || !mv.scenery.data) return;
+  note.textContent = fill(w.models_loading, { progress: "" });
+  const { THREE } = mv.gl, idx = res.index;
+  const buf = await (await fetch(res.base + idx.bin)).arrayBuffer();
+  if (ask !== mv.ask) return;
+  const loader = new THREE.TextureLoader(), textures = {};
+  const textureOf = (key) => {
+    if (!key || !idx.textures[key]) return null;
+    if (!textures[key]) {
+      const t = loader.load(res.base + idx.textures[key], () => mv.gl.draw());
+      t.flipY = false;  // the game's UVs start at the picture's top
+      t.colorSpace = THREE.SRGBColorSpace;
+      textures[key] = t;
+    }
+    return textures[key];
+  };
+  const geometries = {};
+  const geometryOf = (typeIdx) => {
+    if (geometries[typeIdx]) return geometries[typeIdx];
+    const parts = (idx.models[typeIdx] || []).map((p) => {
+      const n = p.vertices;
+      const src = new Float32Array(buf, p.positions, 3 * n), pos = new Float32Array(3 * n);
+      for (let i = 0; i < n; i++) {  // map units, x east, y south, z up -> the scene's x east, y up, z south
+        pos[3 * i] = src[3 * i]; pos[3 * i + 1] = src[3 * i + 2]; pos[3 * i + 2] = src[3 * i + 1];
+      }
+      const nsrc = new Int8Array(buf, p.normals, 4 * n), nrm = new Float32Array(3 * n);
+      for (let i = 0; i < n; i++) {
+        nrm[3 * i] = nsrc[4 * i] / 127; nrm[3 * i + 1] = nsrc[4 * i + 2] / 127; nrm[3 * i + 2] = nsrc[4 * i + 1] / 127;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute("normal", new THREE.BufferAttribute(nrm, 3));
+      geo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(buf, p.uvs, 2 * n).slice(), 2));
+      geo.setIndex(new THREE.BufferAttribute(new Uint32Array(buf, p.indices, 3 * p.triangles).slice(), 1));
+      return { geo, texture: p.texture };
+    });
+    return (geometries[typeIdx] = parts);
+  };
+  clearModels();
+  const models = {};
+  for (const [group, mesh] of Object.entries(mv.scenery.meshes)) {
+    const flat = mesh.userData.flat, byType = new Map();
+    for (let k = 0; k < flat.length / 5; k++) {
+      const t = flat[5 * k];
+      if (idx.models[t] && idx.models[t].length) (byType.get(t) || byType.set(t, []).get(t)).push(k);
+    }
+    const colour = SCENERY_LOOK[group][3], list = [], rest = [];
+    for (let k = 0; k < flat.length / 5; k++) if (!byType.has(flat[5 * k])) rest.push(k);
+    for (const [t, rows] of byType) {
+      for (const part of geometryOf(t)) {
+        const map = textureOf(part.texture);
+        const mat = new THREE.MeshLambertMaterial(map ? { map, alphaTest: 0.5, side: THREE.DoubleSide }
+                                                      : { color: colour, side: THREE.DoubleSide });
+        const inst = new THREE.InstancedMesh(part.geo, mat, rows.length);
+        inst.userData = { group, rows, flat, real: true };
+        inst.visible = mv.scenery.show[group];
+        mv.gl.scene.add(inst);
+        list.push(inst);
+      }
+    }
+    if (rest.length) {  // types without a model keep their shape
+      const inst = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material.clone(), rest.length);
+      inst.userData = { group, rows: rest, flat };
+      inst.visible = mv.scenery.show[group];
+      mv.gl.scene.add(inst);
+      list.push(inst);
+    }
+    models[group] = list;
+    mesh.material.visible = false;  // the shapes aren't drawn any more: they stay to point at (sceneryAt)
+  }
+  mv.scenery.models = models;
+  placeScenery();
+  note.textContent = "";
+}
+
+function clearModels() {
+  for (const list of Object.values(mv.scenery.models || {})) for (const m of list) forget(m);
+  mv.scenery.models = {};
+}
+
 // --- what stands on the map: every building, a sample of props and trees (StudioApi.map_scenery) ---
 // Simple shapes until the game's models can be read: a building is a box, a prop a small block, a tree a cone, turned
 // and sized as the game places them and stood on the ground (the game sets scenery on the ground itself).
@@ -453,20 +552,27 @@ function sceneryMeshes(data) {
 }
 
 // Stand every shown object on the ground as it is now (after strokes, too).
+// A shape mesh holds every shown object of its group (userData.flat); a model mesh or a stand-in holds some of them
+// (userData.rows: their numbers in flat). Shapes are scaled to the look's size; models keep their own, times the
+// object's size.
 function placeScenery() {
-  const meshes = Object.values(mv.scenery.meshes);
-  if (!meshes.length || !mv.edit) return;
+  const shapes = Object.values(mv.scenery.meshes);
+  if (!shapes.length || !mv.edit) return;
+  const models = Object.values(mv.scenery.models || {}).flat();
   const { THREE } = mv.gl, grid = makeGrid(mv.edit);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
-  for (const mesh of meshes) {
-    const { group, flat } = mesh.userData, [, width, height] = SCENERY_LOOK[group];
-    for (let k = 0; k < flat.length / 5; k++) {
+  for (const mesh of shapes.concat(models)) {
+    const { group, flat, rows, real } = mesh.userData, [, width, height] = SCENERY_LOOK[group];
+    const n = rows ? rows.length : flat.length / 5;
+    for (let j = 0; j < n; j++) {
+      const k = rows ? rows[j] : j;
       const x = flat[5 * k + 1], y = flat[5 * k + 2], size = Math.max(0.3, Math.min(flat[5 * k + 4], 4));
       p.set(x * SCALE, groundAt(grid, x, y) * SCALE, y * SCALE);
       q.setFromAxisAngle(up, -flat[5 * k + 3]);  // the game turns from east toward south; the scene's Y turns the other way
-      s.set(width * size * SCALE, height * size * SCALE, width * size * SCALE);
-      mesh.setMatrixAt(k, m.compose(p, q, s));
+      if (real) s.set(size * SCALE, size * SCALE, size * SCALE);
+      else s.set(width * size * SCALE, height * size * SCALE, width * size * SCALE);
+      mesh.setMatrixAt(j, m.compose(p, q, s));
     }
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
@@ -475,6 +581,7 @@ function placeScenery() {
 }
 
 function clearScenery() {
+  clearModels();
   for (const mesh of Object.values(mv.scenery.meshes)) forget(mesh);
   mv.scenery.meshes = {};
   mv.scenery.data = null;
@@ -837,7 +944,9 @@ async function show(pack, keepCamera) {
   $("map-hud").classList.remove("hidden");
   $("map-tools").classList.remove("hidden");
   loadStrokes(pack, ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
-  loadScenery(pack, ask).catch((err) => {  // no types to place then: the place panel says so too
+  loadScenery(pack, ask).then(() => loadModels(pack, ask).catch((err) => {  // the shapes stay when models can't be had
+    $("map-ground").textContent = (err && err.message) || String(err);
+  })).catch((err) => {  // no types to place then: the place panel says so too
     $("scenery-stats").textContent = (err && err.message) || String(err);
     placeNote((err && err.message) || String(err), "error");
   });
@@ -1372,7 +1481,9 @@ function wire() {
     $(`scenery-${g}`).addEventListener("change", (e) => {
       mv.scenery.show[g] = e.target.checked;
       const mesh = mv.scenery.meshes[g];
-      if (mesh) { mesh.visible = e.target.checked; mv.gl.draw(); }
+      if (mesh) mesh.visible = e.target.checked;
+      for (const m of (mv.scenery.models || {})[g] || []) m.visible = e.target.checked;
+      if (mv.gl) mv.gl.draw();
     });
   }
   $("brush-size").addEventListener("input", (e) => { settingsOf(mv.brush.name).size = Number(e.target.value); });

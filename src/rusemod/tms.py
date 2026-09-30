@@ -46,16 +46,29 @@ _MAX_LEN = 259
 
 
 def lz_decode(src: bytes, pos: int = 0) -> bytes:
-    """Decode the LZ stream starting at `pos`."""
+    """Decode the LZ stream starting at `pos`. The method byte is the literal width in bits: 8 and 16 in the
+    terrain; mesh packs (rusemod.spk) also pack 5- and 11-bit literals, and store small blocks unpacked (bit 7 set:
+    the units follow the first 8 bytes). Output units are 1 byte up to 8 bits, else 2."""
+    ver, _hlen, method, _sb, count = struct.unpack_from("<BBBBI", src, pos)
+    width = method & 0x7F
+    unit = 2 if width > 8 else 1
+    if ver == 1 and method & 0x80:  # a stored block can be shorter than a packed one's header
+        return bytes(src[pos + 8:pos + 8 + count * unit])
     ver, hlen, method, sb, count, nlit, ntok, lbase, tbase = _LZ_HDR.unpack_from(src, pos)
-    if ver != 1 or hlen != 0x14 or method & 0x80:
+    if ver != 1 or hlen != 0x14 or not 1 <= width <= 16:
         raise ValueError(f"unsupported LZ stream header {ver}/{hlen:#x}/{method:#x}")
-    unit = 2 if (method & 0x3F) >= 16 else 1
     need = count * unit
     shift = sb + 2
     cp = pos + hlen
     lp = pos + (lbase << shift)
     tp = pos + (tbase << shift)
+    lits = src
+    if width not in (8, 16):  # literals packed `width` bits each, least significant bit first
+        bits = int.from_bytes(src[lp:lp + (nlit * width + 7) // 8], "little")
+        mask = (1 << width) - 1
+        vals = [(bits >> (i * width)) & mask for i in range(nlit)]
+        lits = bytes(vals) if unit == 1 else struct.pack(f"<{nlit}H", *vals)
+        lp = 0
     out = bytearray()
     while len(out) < need:
         word = struct.unpack_from("<I", src, cp)[0]
@@ -65,7 +78,7 @@ def lz_decode(src: bytes, pos: int = 0) -> bytes:
             if not word & 1:  # a run of literal units
                 run = ((word & -word).bit_length() - 1) if word else left
                 run = min(run, left, (need - len(out)) // unit)
-                out += src[lp:lp + run * unit]
+                out += lits[lp:lp + run * unit]
                 lp += run * unit
                 word >>= run
                 left -= run

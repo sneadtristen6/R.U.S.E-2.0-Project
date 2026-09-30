@@ -312,7 +312,10 @@ def decode_full(payload: bytes) -> Decoded:
     if not head.flags & FLAG_CODED or head.flags & FLAG_ALPHA:
         raise ValueError(f"unsupported TGU1 flags {head.flags:#x} (only DXT1 terrain, {FLAG_CODED:#x})")
     w, h = head.width, head.height
-    if w % 4 or h % 4 or w * h != head.block_count:
+    # block_count is w × h in every terrain tile, but smaller in model atlases (a France buildings atlas of 128 x 128
+    # blocks says 14805), for a reason not known yet; decoding doesn't use it: the banks' own checks below (every
+    # stream used up, no bytes left over) are what say a payload was read right.
+    if w % 4 or h % 4 or head.block_count > w * h:
         raise ValueError(f"unsupported TGU1 size {w}x{h} blocks ({head.block_count})")
 
     n_tog = struct.unpack_from("<I", body, 0)[0]

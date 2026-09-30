@@ -152,6 +152,7 @@ class StudioApi(UpdateCalls):
         self._ground_jobs: dict[str, str] = {}  # picture being made -> its job, so asking twice doesn't make it twice
         self._sceneries: dict[tuple, dict] = {}  # the last maps' scenery (map_scenery)
         self._descriptors: tuple = (None, {})    # (unit pack, its scenery types), read once per game build
+        self._models_done: dict[str, dict] = {}  # map -> the index of its 3D models (map_models), once made
 
     # --- where things are ---
     def _game(self) -> Path | None:
@@ -685,6 +686,37 @@ class StudioApi(UpdateCalls):
             self._ground_jobs[name] = job.id
         return job.start(lambda say: ground_png(game, pack, out, progress=lambda d, n: say(f"{d}/{n}")),
                          "The ground textures are ready.")
+
+    def map_models(self, pack: str) -> dict:
+        """The real 3D models of the map's scenery (rusemod.models, from DomesticNukes and his Claude's .spk notes),
+        made once per map and game build (about ten seconds) and kept in the cache: {"base": "cache/models/.../",
+        "index": {...}} when they're there, else {"job": id}; ask again when the job is done. The index's type
+        numbers are map_scenery's."""
+        from rusemod import models
+        game = self._game()
+        if game is None:
+            raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
+        types = self.map_scenery(pack)["types"]
+        zz = find_pack(game, "ZZ_Win.dat")
+        st = zz.stat()
+        folder = f"{st.st_size}-{int(st.st_mtime)}"  # a new game build makes new models
+        out = self.cache_dir / "models" / folder
+        name = f"models:{folder}:{pack}"
+        done = self._models_done.get(name)
+        if done is not None:
+            return {"base": f"cache/models/{folder}/", "index": done}
+        with self._grounds_lock:
+            running = self._ground_jobs.get(name)
+            if running and running in self._jobs and self._jobs[running].state == "running":
+                return {"job": running}
+            job = Job()
+            self._jobs[job.id] = job
+            self._ground_jobs[name] = job.id
+
+        def work(say):
+            self._models_done[name] = models.map_models(game, types, out, say=say)
+
+        return job.start(work, "The 3D models are ready.")
 
     # --- placing objects on a map: maps/<pack>/scenery.toml in the current mod (MOD_FORMAT §8, rusemod.scenery) ---
     SCENERY_HEADER = ("The objects this mod adds to this map, in order (docs/MOD_FORMAT.md §8).\nMade in the RUSE "
