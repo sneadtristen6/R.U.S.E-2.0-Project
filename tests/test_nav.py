@@ -104,8 +104,11 @@ class Blocking(unittest.TestCase):
                 self.assertIn(i, g.links_of(c))
         self.assertTrue(all(g.links_of(c) for c in range(len(g.circles) - 1)))  # nothing left unlinked
         self.assertEqual([b for _a, b, _x, _y in g.links], sorted(b for _a, b, _x, _y in g.links))  # as the game's files
-        leaf = struct.unpack_from(f"<{1 + counts['added']}H", g.points, 6)
-        self.assertEqual(leaf, (2 * counts["added"],) + tuple(range(2, 2 + counts["added"])))
+        # the index: the leaf that listed the shrunk circle (0) lists the new ones too; nothing is appended
+        n = counts["added"]
+        self.assertEqual(struct.unpack_from(f"<{3 + n}H", g.points, 0), (2 * (2 + n), 0, 1) + tuple(range(2, 2 + n)))
+        self.assertEqual(len(g.points), 2 + 2 * (2 + n))
+        self.assertEqual(nav._index_add(struct.pack("<3H", 4, 0, 1), {7: [9]}), struct.pack("<3H", 4, 0, 1) + struct.pack("<2H", 2, 9))
         self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
         # the old ground outside the zone is covered again, but for thin slivers along the circles' edges
         import random

@@ -132,7 +132,8 @@ class Graph:
             return any((px - zx) ** 2 + (py - zy) ** 2 <= zr * zr for zx, zy, zr in zones)
 
         now = [(x, y, radius[i]) for i, (x, y, _r) in enumerate(old)]
-        added = _fill([old[i] for i in changed], zones, now) if refill else []
+        filled = _fill([old[i] for i in changed], zones, now) if refill else []
+        added = [c[:3] for c in filled]
         allc = now + added
         counts["added"] += len(added)
 
@@ -187,9 +188,11 @@ class Graph:
         if len(circles) > 65535 or len(links) > 65535 or len(lists) > 65535:
             raise NavError("the graph would be too big for its 16-bit numbers")
         self.circles, self.links, self.lists, self.crossings = circles, links, lists, b"".join(kept)
-        if added:  # the index: one more tree, a leaf of the new circles
-            ids = range(n, n + len(added))
-            self.points += struct.pack(f"<H{len(added)}H", 2 * len(added), *ids)
+        if added:  # the index: each new circle joins the leaf of the old circle it lies in (see _index_add)
+            into: dict[int, list[int]] = {}
+            for j, (_x, _y, _r, source) in enumerate(filled):
+                into.setdefault(changed[source], []).append(n + j)
+            self.points = _index_add(self.points, into)
 
     # --- reading it ---
     def links_of(self, circle: int) -> list[int]:
@@ -328,7 +331,7 @@ def _fill(sources, zones, now) -> list[tuple[float, float, float]]:
     def covered(x, y, extra):
         key = (int(x // near.size), int(y // near.size))
         return any((x - live[i][0]) ** 2 + (y - live[i][1]) ** 2 < live[i][2] ** 2 for i in near.cells.get(key, ())) \
-            or any((x - cx) ** 2 + (y - cy) ** 2 < cr * cr for cx, cy, cr in extra)
+            or any((x - c[0]) ** 2 + (y - c[1]) ** 2 < c[2] * c[2] for c in extra)
 
     step = 2 * STEP
     spots = []
@@ -336,17 +339,49 @@ def _fill(sources, zones, now) -> list[tuple[float, float, float]]:
         for i in range(int((sx - sr) // step), int((sx + sr) // step) + 1):
             for j in range(int((sy - sr) // step), int((sy + sr) // step) + 1):
                 x, y = i * step, j * step
-                room = max((cr - ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5 for cx, cy, cr in sources), default=0.0)
-                room = min([room] + [((x - zx) ** 2 + (y - zy) ** 2) ** 0.5 - zr for zx, zy, zr in zones])
+                deep, source = max(((cr - ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5, k) for k, (cx, cy, cr) in enumerate(sources)),
+                                   default=(0.0, 0))
+                room = min([deep] + [((x - zx) ** 2 + (y - zy) ** 2) ** 0.5 - zr for zx, zy, zr in zones])
                 room = (room // STEP) * STEP
                 if room >= MIN_RADIUS and not covered(x, y, ()):
-                    spots.append((room, x, y))
+                    spots.append((room, x, y, source))
     spots.sort(key=lambda s: (-s[0], s[1], s[2]))
-    out = []
-    for r, x, y in spots:
+    out = []  # (x, y, r, the source circle it lies deepest in)
+    for r, x, y, source in spots:
         if not covered(x, y, out):
-            out.append((float(x), float(y), float(r)))
+            out.append((float(x), float(y), float(r), source))
     return out
+
+
+def _index_add(points: bytes, into: dict[int, list[int]]) -> bytes:
+    """The spatial index (a graph's `points`) with new circles added: {old circle: [new circle numbers]} puts each
+    new number in the leaf that lists the old circle. The index is a row of two-way trees: a branch is (u16 1, u16,
+    f32, f32) with its left tree right after it and its right tree after that (on the split axis, the first float
+    is the left tree's far edge, the second usually the right tree's near edge); a leaf is (u16 byte length, u16
+    circle numbers...). A new circle lies inside the old one, so the walk that reaches the old circle's leaf for a
+    point in it reaches the new circle too. Branches are left as they are. Numbers whose old circle is in no leaf
+    go in one more leaf at the end."""
+    out = bytearray()
+    left = {old: list(new) for old, new in into.items()}
+
+    def parse(q: int) -> int:
+        tag = struct.unpack_from("<H", points, q)[0]
+        if tag == 1:
+            out.extend(points[q:q + 12])
+            return parse(parse(q + 12))
+        ids = list(struct.unpack_from(f"<{tag // 2}H", points, q + 2))
+        for i in list(ids):
+            ids += left.pop(i, [])
+        out.extend(struct.pack(f"<H{len(ids)}H", 2 * len(ids), *ids))
+        return q + 2 + tag
+
+    pos = 0
+    while pos < len(points):
+        pos = parse(pos)
+    rest = [n for new in left.values() for n in new]
+    if rest:
+        out.extend(struct.pack(f"<H{len(rest)}H", 2 * len(rest), *rest))
+    return bytes(out)
 
 
 # --- placed buildings units can't go through ---------------------------------------------------------------------
