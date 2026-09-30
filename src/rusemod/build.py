@@ -1,6 +1,6 @@
 """Build mods into game files: from mod folders to rebuilt packs (docs/MOD_FORMAT.md §2, §3, §6, §8, §10).
 
-  mod folders (mod.toml + src/**/*.rndf + text/*.csv + maps/<map>/terrain.toml)  ->  load order  ->  the pack's data
+  mod folders (mod.toml + src/**/*.rndf + text/*.csv + maps/<map>/terrain.toml, scenery.toml, scenario.toml)  ->  load order  ->  the pack's data
   files into the engine's model  ->  run the mods  ->  texts: game keys handed out, loc('...') values filled in  ->
   write changed files back  ->  rebuilt unit-data pack + fingerprint, the rebuilt ZZ_Win.dat when mods add texts or
   new units, and a rebuilt map pack for every map whose ground a mod reshapes (rusemod.terrain_edit)
@@ -106,6 +106,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
                 raise BuildError(str(exc)) from None
         info.terrain = read_terrain(path)
         info.scenery = read_scenery(path)
+        info.scenario = read_scenario(path)
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -136,6 +137,33 @@ def read_scenery(folder: Path) -> dict:
             raise BuildError(str(exc)) from None
         if objects:
             out[f.parent.name] = objects
+    return out
+
+
+def read_scenario(folder: Path) -> dict:
+    """A mod's moved design items (starting points, spawns, names): {map pack name: [scenario.Move]} from
+    maps/<map pack>/scenario.toml (MOD_FORMAT §8)."""
+    from .scenario import ScenarioError, parse_moves
+    out = {}
+    maps = folder / "maps"
+    for f in sorted(maps.glob("*/scenario.toml"), key=lambda p: p.parent.name.lower()) if maps.is_dir() else []:
+        rel = f.relative_to(folder).as_posix()
+        if not _MAP_NAME.match(f.parent.name):
+            raise BuildError(f"{rel}: {f.parent.name!r} isn't a map's pack name (letters, digits and _, like "
+                             f"TwoIslands)")
+        try:
+            data = tomllib.loads(f.read_text(encoding="utf-8"))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+            raise BuildError(f"{rel}: {exc}") from None
+        extra = sorted(set(data) - {"move"})
+        if extra:
+            raise BuildError(f"{rel}: unknown key {extra[0]!r} (a scenario file holds [[move]] tables)")
+        try:
+            moves = parse_moves(data.get("move", []), rel)
+        except ScenarioError as exc:
+            raise BuildError(str(exc)) from None
+        if moves:
+            out[f.parent.name] = moves
     return out
 
 
@@ -374,6 +402,20 @@ def scenery_edits(order: list[str], mods: list) -> dict[str, tuple[list, list[st
     return out
 
 
+def scenario_edits(order: list[str], mods: list) -> dict[str, tuple[list, list[str]]]:
+    """Every map a mod moves design items on: {map pack name: (the moves of all the mods in load order, their ids)}."""
+    by_id = {m.id: m for m, _ in mods}
+    out: dict[str, tuple[list, list[str]]] = {}
+    for mod_id in order:
+        if mod_id not in by_id:
+            continue
+        for pack, moves in getattr(by_id[mod_id], "scenario", {}).items():
+            every, ids = out.setdefault(pack, ([], []))
+            every.extend(moves)
+            ids.append(mod_id)
+    return out
+
+
 def find_pack(game: Path, name: str) -> Path | None:
     """A pack by path, or by name in the game folder (newest data revision first found, then Maps\\PC)."""
     p = Path(name)
@@ -542,13 +584,42 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if entry is None:
                 map_packs.append((map_path, map_arc, changed_members))
             result.terrain_changed[map_path.name] = changed_members
+        data_packs = []  # (path, open pack, {member: new bytes}): DataMap_Win.dat, where the scenarios are
+        moves = scenario_edits(result.order, mods)
+        if moves:
+            from .scenario import PACK as SCENARIO_PACK, ScenarioError, apply_moves
+            data_path = find_pack(game, SCENARIO_PACK)
+            if data_path is None:
+                result.findings.append(Finding("error", f"{SCENARIO_PACK} isn't in this game, so no starting point or "
+                                                        f"spawn can be moved"))
+            else:
+                data_arc = open_pack(data_path)
+                changed_members: dict = {}
+
+                def read_data(member, a=data_arc):
+                    try:
+                        return changed_members.get(member) or bytes(a.read(a.find(member)))
+                    except KeyError:
+                        return None
+                for name, (map_moves, ids) in moves.items():
+                    try:
+                        new, notes = apply_moves(read_data, name, map_moves)
+                    except (ScenarioError, ValueError, struct.error) as exc:
+                        result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}"))
+                        continue
+                    changed_members.update(new)
+                    say(f"scenario: {name}, from {', '.join(ids)}")
+                    for note in notes:
+                        say(f"  {note}")
+                if changed_members:
+                    data_packs.append((data_path, data_arc, changed_members))
         if result.errors:
             for line in report_lines([f for f in result.findings if f.level == "error"], show_all=show_all):
                 say(line)
             say("Nothing was written.")
             return result
         rmod_packs = run.changed_packs() if run else {}
-        if map_packs or rmod_packs:
+        if map_packs or rmod_packs or data_packs:
             gameplay = {}
             for p, a in rmod_packs.items():
                 where = f"Maps/PC/{p.name}/" if p.parent.parent.name.lower() == "maps" else ""
@@ -556,6 +627,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             gameplay.update(result.changed)
             for map_path, _a, changed_members in map_packs:
                 gameplay.update({f"Maps/PC/{map_path.name}/{m}": d for m, d in changed_members.items()})
+            for data_path, _a, changed_members in data_packs:
+                gameplay.update({f"{data_path.name}/{m}": d for m, d in changed_members.items()})
             result.fingerprint = fingerprint(build_id, gameplay)
         for p, a in rmod_packs.items():
             say(f"changed by .rmod mods: {p.name} ({len(a.changed)} file(s) changed, {len(a.added)} added)")
@@ -575,7 +648,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say(f"changed: {map_path.name} ({len(changed_members)} file(s): "
                 + ", ".join(m.rsplit(chr(92), 1)[-1] for m in changed_members) + ")")
         zz_win_changed = {**result.text_changed, **result.script_changed}
-        rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, zz_win_changed)] + map_packs
+        for data_path, _a, changed_members in data_packs:
+            say(f"changed: {data_path.name} ({len(changed_members)} scenario file(s))")
+        rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, zz_win_changed)] + map_packs + data_packs
         listed = {Path(path).resolve() for path, _a, _c in rebuilt if path}
         rebuilt += [(p, a, {}) for p, a in rmod_packs.items() if p not in listed]
         # a pack the .rmod mods changed writes their changes too, even when the other mods leave it alone

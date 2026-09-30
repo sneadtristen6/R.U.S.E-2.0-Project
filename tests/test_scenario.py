@@ -88,6 +88,32 @@ class Reading(unittest.TestCase):
             Scenario.read(bytes(broken))
 
 
+class Writing(unittest.TestCase):
+    """Unchanged, the file comes back byte for byte (all 102 of the game's, by the round-trip check); a moved item
+    reads back where it was put, and everything else stays."""
+
+    def test_unchanged_is_byte_for_byte(self):
+        for data in (scenario(), scenario(items=False), scenario(zones=())):
+            self.assertEqual(Scenario.read(data).to_bytes(), data)
+
+    def test_moving_a_starting_point(self):
+        s = Scenario.read(scenario())
+        s.move(0, 1500.0, 2500.0, rotation=0.5)
+        back = Scenario.read(s.to_bytes())
+        start, spawn = back.items
+        self.assertEqual((start.position, start.rotation), ((1500.0, 2500.0, 50.0), 0.5))
+        self.assertEqual(start.values, {"AllianceNum": 2, "Name": "HQ_Allies"})
+        self.assertEqual(spawn.position, (3000.0, 4000.0, 60.0))
+        self.assertEqual([z.name for z in back.zones], ["zone_a", "zone_b"])
+        with self.assertRaises(ScenarioError):  # the spawn has no rotation to change
+            s.move(1, 0.0, 0.0, rotation=1.0)
+
+    def test_a_renamed_zone_is_written_with_its_new_name(self):
+        s = Scenario.read(scenario())
+        s.zones[1].name = "zone_new_longer_name"
+        self.assertEqual([z.name for z in Scenario.read(s.to_bytes()).zones], ["zone_a", "zone_new_longer_name"])
+
+
 class ForTheMapView(unittest.TestCase):
     def test_folders_and_the_view(self):
         from rusemod.scenario import folder_of, of_map, view

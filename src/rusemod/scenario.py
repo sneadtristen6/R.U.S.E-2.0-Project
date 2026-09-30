@@ -27,6 +27,9 @@ The design items (TGameDesignItem, listed by the one TGameDesignItemList): a Pos
 optional Rotation (f32, radians) and an AddOn saying what it is: TGameDesignAddOn_StartingPoint (a player's start),
 _Spawn (where reinforcements arrive), _LabelVille and _LabelMontagne (a town's or a mountain's name on the map), and
 others on some maps.
+
+Writing: `Scenario.to_bytes()` gives the file back; unchanged, byte for byte (all 102). `move()` puts a design item
+somewhere else (its Position, and its Rotation when it has one); the NDF is then written again by rusemod.ndf.
 """
 from __future__ import annotations
 
@@ -54,6 +57,7 @@ class Zone:
     border_triangles: tuple = (0, 0, 0, 0)
     border_vertices: tuple = (0, 0)
     outline: list = field(default_factory=list)      # the list at the end (R.U.S.E. only)
+    stored_name: tuple = (0, b"")                    # (length, bytes with their padding) as read, to write back
 
     def outline_points(self) -> list[tuple]:
         """The zone's border as (x, y) points: its border vertices in order."""
@@ -67,6 +71,7 @@ class Item:
     position: tuple      # x, y, z
     rotation: float      # radians (0 when the item has none)
     values: dict         # the AddOn's own values: name -> number or text
+    obj: int = -1        # its object in the scenario's NDF (for moving it)
 
 
 class _Reader:
@@ -101,7 +106,8 @@ def _zone(r: _Reader) -> Zone:
         raise ScenarioError("a zone of another version than 2")
     number = r.u32()
     n = r.u32()
-    name = r.take((n + 3) // 4 * 4)[:n].rstrip(b"\0").decode("utf-8", "replace")
+    stored = r.take((n + 3) // 4 * 4)
+    name = stored[:n].rstrip(b"\0").decode("utf-8", "replace")
     r.area()
     anchor = (r.f32(), r.f32(), r.f32())
     r.area()
@@ -120,7 +126,26 @@ def _zone(r: _Reader) -> Zone:
     r.area()
     if r.take(4) != b"END0":
         raise ScenarioError(f"END0 expected at byte {r.p - 4}")
-    return Zone(number, name, anchor, vertices, triangles, parts, border_tri, border_vtx, outline)
+    return Zone(number, name, anchor, vertices, triangles, parts, border_tri, border_vtx, outline, (n, stored))
+
+
+def _zone_bytes(z: Zone) -> bytes:
+    """A zone as stored (the reverse of _zone). A zone read from a file keeps its name's stored bytes."""
+    n, stored = z.stored_name
+    if not stored or stored[:n].rstrip(b"\0").decode("utf-8", "replace") != z.name:
+        raw = z.name.encode("utf-8")
+        n, stored = len(raw), raw + bytes(-len(raw) % 4)
+    out = bytearray(AREA + struct.pack("<3I", 2, z.number, n) + stored)
+    out += AREA + struct.pack("<3f", *z.anchor)
+    out += AREA + struct.pack("<I", len(z.parts)) + b"".join(struct.pack("<4I", *pt) for pt in z.parts)
+    out += AREA + struct.pack("<4I", *z.border_triangles)
+    out += AREA + struct.pack("<2I", *z.border_vertices)
+    out += AREA + struct.pack("<2I", len(z.vertices), len(z.triangles))
+    out += b"".join(struct.pack("<5f", *v) for v in z.vertices)
+    out += AREA + b"".join(struct.pack("<3I", *tri) for tri in z.triangles)
+    out += AREA + struct.pack("<I", len(z.outline)) + b"".join(struct.pack("<I", i) for i in z.outline)
+    out += AREA + b"END0"
+    return bytes(out)
 
 
 @dataclass
@@ -128,6 +153,11 @@ class Scenario:
     version: int
     zones: list
     items: list
+    head: bytes = MAGIC + bytes(18)   # the header up to the version: magic, the 16-byte checksum, 2 zero bytes
+    one: int = 1                      # the u32 after the version
+    ndf: Ndf | None = None            # the design items' NDF, as read
+    ndf_raw: bytes = b""              # its bytes as read (written back as they are until something moves)
+    changed: bool = False
 
     @classmethod
     def read(cls, data: bytes) -> "Scenario":
@@ -136,16 +166,45 @@ class Scenario:
         r = _Reader(data)
         r.p = 28
         version = r.u32()
-        r.u32()
+        one = r.u32()
         zone_data = r.take(r.u32())
         z = _Reader(zone_data)
         zones = [_zone(z) for _ in range(z.u32())]
         if z.p != len(zone_data):
             raise ScenarioError(f"{len(zone_data) - z.p} bytes after the last zone")
-        items = []
+        items, nd, raw = [], None, b""
         if r.p < len(data):
-            items = _items(Ndf(r.take(r.u32())))
-        return cls(version, zones, items)
+            raw = r.take(r.u32())
+            nd = Ndf(raw)
+            items = _items(nd)
+        if r.p != len(data):
+            raise ScenarioError(f"{len(data) - r.p} bytes after the design items")
+        return cls(version, zones, items, bytes(data[:28]), one, nd, raw)
+
+    def move(self, item: int, x: float, y: float, z: float | None = None, rotation: float | None = None) -> None:
+        """Put design item number `item` (in `items`) at x, y (and z; else it keeps its height), turned to `rotation`
+        radians when given (only items that have a Rotation can turn)."""
+        it = self.items[item]
+        o = self.ndf.objects[it.obj]
+        props = {self.ndf.prop_name(pi): v for pi, v in o.props}
+        pos = props["Position"]
+        z = it.position[2] if z is None else z
+        pos.payload = struct.pack("<3f", x, y, z) + pos.payload[12:]
+        it.position = struct.unpack("<3f", pos.payload[:12])
+        if rotation is not None:
+            if "Rotation" not in props:
+                raise ScenarioError(f"design item {item} ({it.kind}) has no rotation to change")
+            props["Rotation"].payload = struct.pack("<f", rotation)
+            it.rotation = struct.unpack("<f", props["Rotation"].payload)[0]
+        self.changed = True
+
+    def to_bytes(self) -> bytes:
+        zones = struct.pack("<I", len(self.zones)) + b"".join(_zone_bytes(z) for z in self.zones)
+        out = self.head + struct.pack("<3I", self.version, self.one, len(zones)) + zones
+        if self.ndf is not None:
+            nd = self.ndf.to_member(compress=bool(self.ndf.flags & 0x80)) if self.changed else self.ndf_raw
+            out += struct.pack("<I", len(nd)) + nd
+        return out
 
 
 def _items(nd: Ndf) -> list[Item]:
@@ -163,7 +222,7 @@ def _items(nd: Ndf) -> list[Item]:
             kind = nd.classes[nd.objects[addon].cls].removeprefix("TGameDesignAddOn_")
             for name, v in objs[addon].items():
                 values[name] = _plain(nd, v)
-        out.append(Item(kind, pos, rot, values))
+        out.append(Item(kind, pos, rot, values, nd.objects.index(o)))
     return out
 
 
@@ -234,3 +293,86 @@ def view(s: "Scenario") -> dict:
             entry["text"] = text if isinstance(text, str) and not all(c in "0123456789abcdef" for c in text) else entry["name"]
         items.append(entry)
     return {"zones": zones, "items": items}
+
+
+# --- mods: design items moved (maps/<map pack>/scenario.toml, MOD_FORMAT §8) ---
+KINDS_MOVABLE = ("StartingPoint", "Spawn", "LabelVille", "LabelMontagne", "CircularZone", "RectangleZone", "Name")
+
+
+@dataclass
+class Move:
+    """One design item put somewhere else: in scenario `file` of the map, item number `item` (its place in the file's
+    item list, as rusemod.scenario reads it), which must be a `kind` there, to x, y (world units), turned to
+    `rotation` radians when given."""
+    file: str
+    item: int
+    kind: str
+    x: float
+    y: float
+    rotation: float | None = None
+
+
+def parse_moves(items, where: str = "scenario.toml") -> list[Move]:
+    out = []
+    for n, m in enumerate(items or [], start=1):
+        at = f"{where}: move {n}"
+        if not isinstance(m, dict):
+            raise ScenarioError(f"{at} isn't a table")
+        extra = sorted(set(m) - {"file", "item", "kind", "x", "y", "rotation"})
+        if extra:
+            raise ScenarioError(f"{at}: unknown key {extra[0]!r}")
+        for k in ("file", "item", "kind", "x", "y"):
+            if k not in m:
+                raise ScenarioError(f"{at}: {k} is missing")
+        f = str(m["file"])
+        if not f.lower().endswith(".scenario") or "/" in f or "\\" in f:
+            raise ScenarioError(f"{at}: file must be a scenario's name, like leveldesign.scenario")
+        if m["kind"] not in KINDS_MOVABLE:
+            raise ScenarioError(f"{at}: kind must be one of {', '.join(KINDS_MOVABLE)}")
+        try:
+            item = int(m["item"])
+            x, y = float(m["x"]), float(m["y"])
+            rot = float(m["rotation"]) if "rotation" in m else None
+        except (TypeError, ValueError):
+            raise ScenarioError(f"{at}: item is a whole number; x, y and rotation are numbers") from None
+        if item < 0:
+            raise ScenarioError(f"{at}: item can't be negative")
+        out.append(Move(f, item, str(m["kind"]), x, y, rot))
+    return out
+
+
+def moves_toml(moves: list[Move], header: str = "") -> str:
+    lines = [f"# {line}" for line in header.splitlines()] + ([""] if header else [])
+    for m in moves:
+        lines += ["[[move]]", f'file = "{m.file}"', f"item = {m.item}", f'kind = "{m.kind}"', f"x = {m.x!r}", f"y = {m.y!r}"]
+        if m.rotation is not None:
+            lines.append(f"rotation = {m.rotation!r}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def apply_moves(read, map_pack: str, moves: list[Move]) -> tuple[dict[str, bytes], list[str]]:
+    """Apply `moves` (in order) to a map's scenarios. `read(member)` gives a DataMap_Win.dat member's bytes, or None.
+    Returns ({member: new bytes}, report lines). A move whose file or item isn't there, or whose item is another
+    kind (the file isn't the one the mod was made for), raises ScenarioError."""
+    folder = folder_of(map_pack)
+    files: dict[str, Scenario] = {}
+    notes = []
+    for m in moves:
+        member = folder + m.file
+        if member.lower() not in files:
+            raw = read(member)
+            if raw is None:
+                raise ScenarioError(f"{map_pack}: it has no scenario {m.file}")
+            files[member.lower()] = (member, Scenario.read(raw))
+        member, s = files[member.lower()]
+        if m.item >= len(s.items):
+            raise ScenarioError(f"{map_pack}: {m.file} has {len(s.items)} design items, not {m.item + 1}")
+        if s.items[m.item].kind != m.kind:
+            raise ScenarioError(f"{map_pack}: {m.file} item {m.item} is a {s.items[m.item].kind or 'plain item'}, "
+                                f"not a {m.kind}: the mod was made for another version of this map")
+        s.move(m.item, m.x, m.y, rotation=m.rotation)  # an item without a rotation can't be turned: move() says so
+    for member, s in files.values():
+        notes.append(f"{map_pack}: {member.rsplit(chr(92), 1)[-1]}: "
+                     f"{sum(1 for m in moves if (folder + m.file).lower() == member.lower())} item(s) moved")
+    return {member: s.to_bytes() for member, s in files.values()}, notes

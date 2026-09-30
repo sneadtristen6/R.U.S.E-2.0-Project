@@ -344,6 +344,27 @@ size = 1.5                              # 0.05 to 50
   shipped objects isn't offered yet.
 - Several mods' objects are added in load order.
 
+### Starting points, spawns and names: `maps/<map pack>/scenario.toml`
+
+A map's scenarios (skirmish, challenges, campaign chapters) are its `.scenario` files in `DataMap_Win.dat`
+(`test\map\<map>\`, FORMATS §2). A mod moves their design items, one table each:
+
+```toml
+[[move]]
+file = "leveldesign_normal.scenario"   # which of the map's scenarios (the Studio's Scenario list names them)
+item = 3                               # the item's number in that file (rusemod.scenario reads them in order)
+kind = "StartingPoint"                 # what it must be: StartingPoint, Spawn, LabelVille, LabelMontagne, ...
+x = 458772.0                           # map units: x grows east, y grows south
+y = 655380.0
+rotation = 0.95                        # radians, optional: only items that have a turn
+```
+
+- The build writes the changed scenario files into `DataMap_Win.dat` in the modded copy; everything else in them
+  stays byte for byte (all 102 shipped files write back unchanged).
+- `kind` guards against a file that isn't the one the mod was made for: a move whose item is another kind is refused
+  with the reason, and nothing is built.
+- Moves apply in load order; two mods moving one item: the later wins.
+
 ## 9. Scripts
 
 - `scripts/<package>/*.py` holds Python 2.5-compatible source.

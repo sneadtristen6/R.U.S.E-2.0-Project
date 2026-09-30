@@ -367,3 +367,56 @@ class Terrain(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ScenarioMoves(unittest.TestCase):
+    """A mod that moves a starting point: maps/<map>/scenario.toml, built into DataMap_Win.dat (MOD_FORMAT §8)."""
+
+    def setUp(self):
+        from test_scenario import scenario
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.game = root / "steamapps" / "common" / "R.U.S.E"
+        rev = self.game / "Data" / "PC" / "190852"
+        rev.mkdir(parents=True)
+        (self.game / "RUSE.exe").write_bytes(b"MZ")
+        (rev / "ZZ_GladPatchableWin.dat").write_bytes(PACK)
+        self.data = make_edat([("dir", "test/map/blitz/".replace("/", "\\"), [("file", "leveldesign.scenario", scenario())])])
+        (rev / "DataMap_Win.dat").write_bytes(self.data)
+        (root / "steamapps" / "appmanifest_21970.acf").write_text('"AppState" { "buildid" "24687178" }')
+        self.root = root
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def mod(self, mod_id, moves):
+        folder = write_mod(self.root / "mods", mod_id, {})
+        (folder / "maps" / "Blitz").mkdir(parents=True)
+        (folder / "maps" / "Blitz" / "scenario.toml").write_text(moves, encoding="utf-8")
+        return folder
+
+    def test_a_moved_starting_point_goes_into_the_modded_copy(self):
+        from rusemod.scenario import Scenario
+        folder = self.mod("start", '[[move]]\nfile = "leveldesign.scenario"\nitem = 0\nkind = "StartingPoint"\n'
+                                   'x = 1500.0\ny = 2500.0\n')
+        info, _ops = load_mod(folder)
+        self.assertEqual(len(info.scenario["Blitz"]), 1)
+        lines = []
+        result = build_and_write(self.game, [load_mod(folder)], instance=self.root / "copy", say=lines.append)
+        self.assertEqual(result.errors, [], lines)
+        self.assertIn("scenario: Blitz, from start", lines)
+        arc = Edat((self.root / "copy" / "Data" / "PC" / "190852" / "DataMap_Win.dat").read_bytes())
+        s = Scenario.read(bytes(arc.read(arc.find("test/map/blitz/leveldesign.scenario".replace("/", "\\")))))
+        self.assertEqual(s.items[0].position, (1500.0, 2500.0, 50.0))
+        self.assertEqual((self.game / "Data" / "PC" / "190852" / "DataMap_Win.dat").read_bytes(), self.data)  # untouched
+
+    def test_a_move_for_another_version_of_the_map_is_refused(self):
+        folder = self.mod("wrong", '[[move]]\nfile = "leveldesign.scenario"\nitem = 1\nkind = "StartingPoint"\n'
+                                   'x = 1.0\ny = 2.0\n')
+        lines = []
+        result = build_and_write(self.game, [load_mod(folder)], instance=self.root / "copy", say=lines.append)
+        self.assertTrue(any("item 1 is a Spawn, not a StartingPoint" in f.message for f in result.errors), lines)
+        self.assertFalse((self.root / "copy").exists())
+        bad = self.mod("bad", '[[move]]\nfile = "../x.scenario"\nitem = 0\nkind = "StartingPoint"\nx = 1\ny = 2\n')
+        with self.assertRaises(BuildError):
+            load_mod(bad)

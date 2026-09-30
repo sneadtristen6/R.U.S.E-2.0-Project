@@ -30,6 +30,7 @@ class ModInfo:
     terrain: dict = field(default_factory=dict)              # map pack name -> [brush.Stroke] (§8)
     rmod: object = None                                      # a .rmod mod: its file (rusemod.rmod applies it)
     scenery: dict = field(default_factory=dict)              # map pack name -> [scenery.NewObject] (§8)
+    scenario: dict = field(default_factory=dict)             # map pack name -> [scenario.Move] (§8)
 
 
 # --- versions ---
