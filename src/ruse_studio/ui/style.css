@@ -168,4 +168,9 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .brush-slider input { width: 100%; margin: 0; accent-color: var(--accent); }
 .map-tools .ghost { padding: 3px 10px; font-size: 12px; }
 .map-tools .sure { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.map-tools { max-height: calc(100% - 24px); overflow-y: auto; }
+.place-title { margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.place-search, .place-list { width: 100%; box-sizing: border-box; background: var(--panel, #1b1f23); color: inherit;
+                             border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-size: 13px; }
+.place-list option { padding: 2px 4px; }
 .error-text { color: var(--error); }

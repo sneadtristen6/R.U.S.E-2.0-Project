@@ -141,6 +141,10 @@ def text(index, tc=0x07):
 
 
 def unit_pack():
+    return Edat(unit_pack_raw())
+
+
+def unit_pack_raw():
     """A descriptor NDF: a multi-state town hall whose normal look is a multi-mode with a close model; an oak."""
     classes = ["TSceneryDescriptorMultiState", "TSceneryDescriptorMultiMode", "TSceneryDescriptorMultiModeEntry",
                "TSceneryDescriptorModel3DFromFile"]
@@ -156,7 +160,7 @@ def unit_pack():
         (0, [(0, text(1)), (1, text(3))]),
     ]
     ndf = make_ndf(objects, classes, props, strings=strings)
-    return Edat(make_edat([("dir", "genglad\\patchable\\scenery\\", [("file", "france.cpp.gladndfbin", ndf)])]))
+    return make_edat([("dir", "genglad\\patchable\\scenery\\", [("file", "france.cpp.gladndfbin", ndf)])])
 
 
 class Descriptors(unittest.TestCase):
@@ -258,6 +262,40 @@ class Building(unittest.TestCase):
             result = build_and_write(game, [load_mod(mod)], out=root / "out2", say=lines.append)
             self.assertIn("isn't used on this map", result.errors[0].message)
             self.assertIn("Nothing was written.", lines)
+
+
+class Studio(unittest.TestCase):
+    """The Studio's calls: what stands on a map, and placing objects into the current mod's scenery file."""
+
+    def test_placing(self):
+        from ruse_studio.api import StudioApi, StudioError
+        with tempfile.TemporaryDirectory() as tmp:
+            game = Path(tmp) / "R.U.S.E"
+            (game / "Data" / "PC" / "190852").mkdir(parents=True)
+            (game / "Maps" / "PC").mkdir(parents=True)
+            (game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").write_bytes(unit_pack_raw())
+            (game / "Maps" / "PC" / "DataMapTest_v09.dat").write_bytes(
+                make_edat([("dir", "output\\", [("file", "save.boobspc", village())])]))
+            api = StudioApi(game_dir=game, home=Path(tmp, "home"), index_path=Path(tmp, "none.sqlite"))
+            v = api.map_scenery("Test")
+            self.assertEqual([(r[0], r[2], r[4]) for r in v["palette"]],
+                             [("TypeWarrior/MairieNormande", "building", 1), ("TypeWarrior/Chene_02", "vegetation", 4)])
+            self.assertEqual(api.scenery("Test"), {"objects": [], "saved": None, "mod": None})
+            with self.assertRaises(StudioError):
+                api.scenery_add("Test", [{"type": "TypeWarrior/Chene_02", "x": 50, "y": 60}])  # no mod yet
+            folder = Path(api.new_mod("Village")["current"])
+            api.scenery_add("Test", [{"type": "TypeWarrior/Chene_02", "x": 50, "y": 60}])
+            res = api.scenery_add("Test", [{"type": "TypeWarrior/MairieNormande", "x": 70, "y": 80, "turn": 45,
+                                            "size": 2}])
+            self.assertEqual(res["count"], 2)
+            with self.assertRaisesRegex(StudioError, "isn't one of this map's own types"):
+                api.scenery_add("Test", [{"type": "TypeWarrior/Nope", "x": 1, "y": 2}])
+            info, _ops = load_mod(folder)
+            self.assertEqual(info.scenery["Test"], [NewObject("TypeWarrior/Chene_02", 50.0, 60.0),
+                                                    NewObject("TypeWarrior/MairieNormande", 70.0, 80.0, 45.0, 2.0)])
+            self.assertEqual(api.scenery_undo("Test", 1)["count"], 1)
+            self.assertEqual(api.scenery_undo("Test", 5), {"count": 0, "removed": 1, "saved": None})
+            self.assertFalse((folder / "maps").exists())
 
 
 if __name__ == "__main__":

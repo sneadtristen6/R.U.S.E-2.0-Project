@@ -23,6 +23,9 @@
       edited: "edited", units_tab: "Units", maps_tab: "Maps",
       pick_map: "Pick a map to see its ground in 3D.", map_loading: "Loading the map…", detail_high: "Full detail",
       detail_low: "Light", water: "Water", scenery_building: "Buildings", scenery_prop: "Props", scenery_vegetation: "Trees",
+      place_title: "Place on the map", place_on: "Place", place_turn: "Turn", place_pick: "Pick something to place first.",
+      place_help: "Click the ground to place the picked object · right-drag to move · wheel to zoom",
+      place_count: "{n} placed on this map by this mod",
       scenery_loading: "Reading what stands on the map…",
       scenery_stats: "{buildings} buildings · {props} of {props_total} props · {trees} of {trees_total} trees shown", map_help: "Drag to turn · right-drag to move · wheel to zoom",
       map_stats: "{points} points, {triangles} triangles",
@@ -62,6 +65,9 @@
       locked: "Les identifiants et la nation restent tels quels.", edited: "modifié", units_tab: "Unités",
       maps_tab: "Cartes", pick_map: "Choisissez une carte pour voir son terrain en 3D.",
       map_loading: "Chargement de la carte…", detail_high: "Détail complet", detail_low: "Allégé", water: "Eau", scenery_building: "Bâtiments", scenery_prop: "Objets", scenery_vegetation: "Arbres",
+      place_title: "Placer sur la carte", place_on: "Placer", place_turn: "Rotation", place_pick: "Choisissez d'abord quoi placer.",
+      place_help: "Cliquez sur le sol pour placer l'objet choisi · clic droit glissé pour déplacer · molette pour zoomer",
+      place_count: "{n} placés sur cette carte par ce mod",
       scenery_loading: "Lecture de ce qui se trouve sur la carte…",
       scenery_stats: "{buildings} bâtiments · {props} objets sur {props_total} · {trees} arbres sur {trees_total} affichés",
       map_help: "Glisser pour tourner · clic droit pour déplacer · molette pour zoomer",
@@ -98,7 +104,8 @@
       all_units: "全部 {n} 个", no_via: "从其中一个单位的页面打开,即可只修改那一个。", not_stable: "没有固定地址,暂时无法编辑。",
       locked: "编号和国家保持不变。", edited: "已修改", units_tab: "单位", maps_tab: "地图",
       pick_map: "选择一张地图，以 3D 查看其地形。", map_loading: "正在加载地图…", detail_high: "完整细节", detail_low: "简化",
-      water: "水面", scenery_building: "建筑", scenery_prop: "道具", scenery_vegetation: "树木", scenery_loading: "正在读取地图上的物体…",
+      water: "水面", place_title: "放置到地图上", place_on: "放置", place_turn: "朝向", place_pick: "请先选择要放置的物体。",
+      place_help: "点击地面放置所选物体 · 右键拖动平移 · 滚轮缩放", place_count: "此模组在该地图上放置了 {n} 个", scenery_building: "建筑", scenery_prop: "道具", scenery_vegetation: "树木", scenery_loading: "正在读取地图上的物体…",
       scenery_stats: "已显示：建筑 {buildings} · 道具 {props}/{props_total} · 树木 {trees}/{trees_total}", map_help: "拖动旋转 · 右键拖动平移 · 滚轮缩放", map_stats: "{points} 个点，{triangles} 个三角形",
       no_viewer: "地图视图无法加载 3D 库（首次需要联网）。", ground_loading: "正在加载真实地面纹理… {progress}",
       shape_ground: "塑造地形", brush_hill: "山丘", brush_raise: "抬高", brush_lower: "降低", brush_crater: "弹坑", brush_plateau: "高台",
@@ -168,6 +175,7 @@
   let current = mode === "nomod" ? null : mods[0].path;
   const edits = new Map();  // `${mod}|${address}|${prop}|${how}|${via}` -> value, like the mod's src/studio.rndf
   const terrains = new Map();  // `${mod}|${map pack}` -> strokes, like the mod's maps/<pack>/terrain.toml
+  const placed = new Map();    // `${mod}|${map pack}` -> placed objects, like the mod's maps/<pack>/scenery.toml
   const editKey = (address, prop, how, via) => `${current}|${address}|${prop}|${how || ""}|${how === "own" ? via : ""}`;
   if (current) edits.set(editKey(E + "M4_Sherman", "ProductionTime"), 1);  // a cheap, fast Sherman, as in the owner's test
   const mine = () => newUnits.filter((n) => n.mod === current);
@@ -292,7 +300,11 @@
       const u = (k * 7919 + seed) % 97 / 97, v = (k * 104729) % 89 / 89;
       items.vegetation.push(3, Math.round(c - 90000 + u * 180000), Math.round(c - 200000 + v * 90000), k, 0.8 + (k % 5) / 10);
     }
-    return { types, items, groups: { building: { shown: 40, total: 40 }, prop: { shown: 30, total: 30 },
+    const palette = [["TypeWarrior/MairieNormande", "MairieNormande", "building", "COC/Normandie/Batiments_Villes_Villages", 1],
+      ["TypeWarrior/TownHouseB2_Haut", "TownHouseB2_Haut", "building", "COC/Normandie/BatimentsMorceaux/TownHouseB/B2", 39],
+      ["TypeWarrior/Charette_1", "Charette_1", "prop", "Props/Ferme", 30],
+      ["TypeWarrior/Chene_02", "Chene_02", "vegetation", "Vegetation/Arbres", 12000]];
+    return { types, items, palette, groups: { building: { shown: 40, total: 40 }, prop: { shown: 30, total: 30 },
       vegetation: { shown: 900, total: 12000 } } };
   }
 
@@ -436,6 +448,18 @@
       map_view: async (pack, lod) => fakeGround(pack, lod || "lowdef"),
       map_ground: async () => ({ url: null }),  // the made-up island has only its colours
       map_scenery: async (pack) => fakeScenery(pack),
+      scenery: async (pack) => ({ objects: current ? (placed.get(`${current}|${pack}`) || []) : [], saved: null, mod: current }),
+      scenery_add: async (pack, objects) => {
+        if (!current) throw new Error("Pick or make a mod first: what you place is saved in it.");
+        const key = `${current}|${pack}`, list = (placed.get(key) || []).concat(objects);
+        placed.set(key, list);
+        return { count: list.length, saved: `${current}/maps/${pack}/scenery.toml` };
+      },
+      scenery_undo: async (pack, count = 1) => {
+        const key = `${current}|${pack}`, list = placed.get(key) || [], n = Math.min(count, list.length);
+        placed.set(key, list.slice(0, list.length - n));
+        return { count: list.length - n, removed: n, saved: null };
+      },
       terrain: async (pack) => {
         if (!current) return { strokes: [], saved: null, mod: null };
         const list = terrains.get(`${current}|${pack}`) || [];

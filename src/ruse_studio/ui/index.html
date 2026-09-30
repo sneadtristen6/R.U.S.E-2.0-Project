@@ -100,6 +100,21 @@
           <button id="brush-clear-no" type="button" class="ghost"></button></div>
         <div id="brush-count" class="muted small"></div>
         <div id="brush-note" class="small"></div>
+        <!-- placing objects (maps.js): saved in the current mod's maps/<map>/scenery.toml -->
+        <div id="place-title" class="map-title place-title"></div>
+        <div id="place-groups" class="chips brush-list" role="group"></div>
+        <input id="place-search" type="search" class="place-search">
+        <select id="place-type" size="6" class="place-list"></select>
+        <label class="brush-slider small"><span id="place-turn-label"></span>
+          <input id="place-turn" type="range" min="0" max="345" step="15" value="0"></label>
+        <label class="brush-slider small"><span id="place-size-label"></span>
+          <input id="place-size" type="range" min="0.5" max="3" step="0.1" value="1"></label>
+        <div class="map-controls">
+          <button id="place-on" type="button" class="chip"></button>
+          <button id="place-undo" type="button" class="ghost" disabled></button>
+        </div>
+        <div id="place-count" class="muted small"></div>
+        <div id="place-note" class="small"></div>
       </div>
     </section>
   </main>

@@ -12,7 +12,9 @@ const mv = { api: null, words: {}, maps: [], current: null, lod: "lowdef", water
   // the size of each group of strokes made this session (for Undo), the drag being painted, and the mod saved into
   brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null, rampStart: null },
   // scenery: which groups are shown, the map's scenery (StudioApi.map_scenery) and its drawn shapes per group
-  scenery: { show: { building: true, prop: true, vegetation: true }, data: null, meshes: {} } };
+  scenery: { show: { building: true, prop: true, vegetation: true }, data: null, meshes: {} },
+  // placing: on or not, the group and type picked, the next object's turn and size, what the mod places on this map
+  place: { on: false, group: "building", type: null, turn: 0, size: 1, objects: [], meshes: {}, mod: null } };
 
 // --- brushes: the same shapes and rules as rusemod/brush.py (the build's own copy decides; this one only draws) ---
 // name: [kind, shape, sign, one dab per click (else dabs along a drag), size %, strength %]
@@ -466,7 +468,7 @@ function placeScenery() {
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
   }
-  mv.gl.draw();
+  drawPlaced();
 }
 
 function clearScenery() {
@@ -495,6 +497,8 @@ async function loadScenery(pack, ask) {
   for (const mesh of Object.values(mv.scenery.meshes)) mv.gl.scene.add(mesh);
   placeScenery();
   showSceneryStats();
+  placeOptions();
+  drawPlaced();
 }
 
 // Pointing at an object says what it is: its name and the game editor's category.
@@ -508,6 +512,134 @@ function sceneryAt(ev) {
   const hit = shown.length ? gl.raycaster.intersectObjects(shown, false)[0] : null;
   if (!hit || hit.instanceId === undefined) return null;
   return d.types[hit.object.userData.flat[5 * hit.instanceId]] || null;
+}
+
+// --- placing objects: the map's own types, clicked onto the ground, saved in the current mod's
+// maps/<map>/scenery.toml (StudioApi.scenery_add); drawn in gold until "Test in game" builds them into the map ---
+const PLACEABLE = ["building", "prop", "vegetation"];
+const PLACED_COLOUR = 0xe8c14f;
+
+function placeNote(text, kind) {
+  const note = $("place-note");
+  note.textContent = text || "";
+  note.className = kind === "error" ? "small error-text" : "small";
+}
+
+function placeOptions() {
+  const d = mv.scenery.data, p = mv.place, q = $("place-search").value.trim().toLowerCase();
+  const rows = ((d && d.palette) || []).filter((r) => r[2] === p.group
+    && (!q || r[1].toLowerCase().includes(q) || r[3].toLowerCase().includes(q)));
+  if (!rows.some((r) => r[0] === p.type)) p.type = rows.length ? rows[0][0] : null;
+  $("place-type").replaceChildren(...rows.map((r) => {
+    const o = el("option", { value: r[0], textContent: r[4] ? `${r[1]}  (${r[4].toLocaleString()})` : r[1], title: r[3] });
+    o.selected = r[0] === p.type;
+    return o;
+  }));
+}
+
+function renderPlace() {
+  const w = mv.words, p = mv.place;
+  $("place-title").textContent = w.place_title;
+  $("place-groups").replaceChildren(...PLACEABLE.map((g) => {
+    const chip = el("button", { type: "button", className: "chip", textContent: w[`scenery_${g}`] });
+    chip.setAttribute("aria-pressed", String(p.group === g));
+    chip.addEventListener("click", () => { p.group = g; placeOptions(); renderPlace(); });
+    return chip;
+  }));
+  $("place-search").placeholder = w.search || "";
+  $("place-turn-label").textContent = `${w.place_turn} ${p.turn}°`;
+  $("place-size-label").textContent = `${w.brush_size} ${p.size.toFixed(1)}×`;
+  $("place-on").textContent = w.place_on;
+  $("place-on").setAttribute("aria-pressed", String(p.on));
+  $("place-undo").textContent = w.brush_undo;
+  $("place-undo").disabled = !p.objects.length;
+  $("place-count").textContent = p.objects.length ? fill(w.place_count, { n: p.objects.length.toLocaleString() }) : "";
+  if (p.on) $("map-help").textContent = w.place_help;
+}
+
+function setPlaceMode(on) {
+  mv.place.on = on;
+  if (on && mv.brush.on) setBrushMode(false);
+  pointerMode();
+  if (on && !mv.place.mod) placeNote(mv.words.no_mod, "error");
+  if (!on) $("map-help").textContent = mv.brush.on ? mv.words.brush_help : mv.words.map_help;
+  renderPlace();
+}
+
+// The objects this mod places, in gold, on the ground as it is now.
+function drawPlaced() {
+  const gl = mv.gl, p = mv.place;
+  if (!gl) return;
+  for (const m of Object.values(p.meshes)) forget(m);
+  p.meshes = {};
+  if (mv.edit && p.objects.length) {
+    const groupOf = new Map(((mv.scenery.data && mv.scenery.data.palette) || []).map((r) => [r[0], r[2]]));
+    const lists = {};
+    for (const o of p.objects) (lists[groupOf.get(o.type) || "building"] ||= []).push(o);
+    const { THREE } = gl, grid = makeGrid(mv.edit), m = new THREE.Matrix4(), q = new THREE.Quaternion();
+    const at = new THREE.Vector3(), s = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+    for (const [group, list] of Object.entries(lists)) {
+      const [shape, width, height] = SCENERY_LOOK[group];
+      const geo = shape === "cone" ? new THREE.ConeGeometry(0.5, 1, 6) : new THREE.BoxGeometry(1, 1, 1);
+      geo.translate(0, 0.5, 0);
+      const mesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: PLACED_COLOUR }), list.length);
+      list.forEach((o, k) => {
+        at.set(o.x * SCALE, groundAt(grid, o.x, o.y) * SCALE, o.y * SCALE);
+        q.setFromAxisAngle(up, -o.turn * Math.PI / 180);
+        s.set(width * o.size * SCALE, height * o.size * SCALE, width * o.size * SCALE);
+        mesh.setMatrixAt(k, m.compose(at, q, s));
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.computeBoundingSphere();
+      gl.scene.add(mesh);
+      p.meshes[group] = mesh;
+    }
+  }
+  gl.draw();
+}
+
+async function loadPlaced(pack, ask) {
+  const res = await mv.api.scenery(pack);
+  if (ask !== mv.ask) return;
+  mv.place.objects = res.objects;
+  mv.place.mod = res.mod;
+  placeNote("");
+  drawPlaced();
+  renderPlace();
+}
+
+async function placeAt(ev) {
+  const p = mv.place, pack = mv.current, w = mv.words;
+  if (!p.mod) { placeNote(w.no_mod, "error"); return; }
+  if (!p.type) { placeNote(w.place_pick, "error"); return; }
+  const hit = hitGround(ev);
+  if (!hit) return;
+  const obj = { type: p.type, x: Math.round(hit.x / SCALE), y: Math.round(hit.z / SCALE), turn: p.turn, size: p.size };
+  p.objects.push(obj);
+  drawPlaced();
+  try {
+    await mv.api.scenery_add(pack, [obj]);
+    if (pack !== mv.current) return;
+    placeNote(w.brush_note);
+  } catch (err) {
+    if (pack !== mv.current) return;
+    p.objects.splice(p.objects.indexOf(obj), 1);
+    drawPlaced();
+    placeNote((err && err.message) || String(err), "error");
+  }
+  renderPlace();
+}
+
+async function undoPlace() {
+  const p = mv.place, pack = mv.current;
+  if (!p.mod || !p.objects.length) return;
+  try {
+    const res = await mv.api.scenery_undo(pack, 1);
+    if (pack !== mv.current) return;
+    p.objects.splice(p.objects.length - res.removed, res.removed);
+    drawPlaced();
+    renderPlace();
+  } catch (err) { placeNote((err && err.message) || String(err), "error"); }
 }
 
 // --- showing one map ---
@@ -563,6 +695,7 @@ async function show(pack, keepCamera) {
   $("map-tools").classList.remove("hidden");
   loadStrokes(pack, ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
   loadScenery(pack, ask).catch((err) => { $("scenery-stats").textContent = (err && err.message) || String(err); });
+  loadPlaced(pack, ask).catch((err) => placeNote((err && err.message) || String(err), "error"));
   realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
 }
 
@@ -637,17 +770,23 @@ function cancelRamp() {
 }
 
 function setBrushMode(on) {
-  const gl = mv.gl;
   mv.brush.on = on;
+  if (on) mv.place.on = false;
   if (!on) cancelRamp();
-  if (gl) {
-    const M = gl.THREE.MOUSE;
-    gl.controls.mouseButtons = on ? { LEFT: null, MIDDLE: M.ROTATE, RIGHT: M.PAN }
-                                  : { LEFT: M.ROTATE, MIDDLE: M.DOLLY, RIGHT: M.PAN };
-    if (!on && gl.ring) { gl.ring.visible = false; gl.draw(); }
-    gl.renderer.domElement.style.cursor = on ? "crosshair" : "";
-  }
+  pointerMode();
   renderBrushes();
+  renderPlace();
+}
+
+// Brushing or placing: the left button works on the ground (the middle one turns the view); else it turns the view.
+function pointerMode() {
+  const gl = mv.gl;
+  if (!gl) return;
+  const busy = mv.brush.on || mv.place.on, M = gl.THREE.MOUSE;
+  gl.controls.mouseButtons = busy ? { LEFT: null, MIDDLE: M.ROTATE, RIGHT: M.PAN }
+                                  : { LEFT: M.ROTATE, MIDDLE: M.DOLLY, RIGHT: M.PAN };
+  if (!mv.brush.on && gl.ring) { gl.ring.visible = false; gl.draw(); }
+  gl.renderer.domElement.style.cursor = busy ? "crosshair" : "";
 }
 
 // The world numbers of a new stroke, from the brush picked and its sliders.
@@ -817,6 +956,11 @@ function watchPointer() {
   for (const type of ["pointerup", "pointercancel"]) {
     canvas.addEventListener(type, () => { if (mv.brush.painting) finishStroke(); });
   }
+  canvas.addEventListener("pointerdown", (ev) => {
+    if (!mv.place.on || ev.button !== 0 || !gl.ground || !mv.edit) return;
+    ev.preventDefault();
+    placeAt(ev);
+  });
   let hoverEv = null, hoverFrame = 0;
   canvas.addEventListener("pointermove", (ev) => {  // looking around: say what the pointer is on
     if (mv.brush.on || !mv.scenery.data) return;
@@ -847,6 +991,7 @@ function renderWords() {
   $("map-water-label").textContent = w.water;
   for (const g of ["building", "prop", "vegetation"]) $(`scenery-${g}-label`).textContent = w[`scenery_${g}`];
   showSceneryStats();
+  renderPlace();
   $("map-help").textContent = mv.brush.on ? w.brush_help : w.map_help;
   $("brush-title").textContent = w.shape_ground;
   $("brush-size-label").textContent = w.brush_size;
@@ -882,7 +1027,13 @@ function wire() {
   }
   $("brush-size").addEventListener("input", (e) => { settingsOf(mv.brush.name).size = Number(e.target.value); });
   $("brush-strength").addEventListener("input", (e) => { settingsOf(mv.brush.name).strength = Number(e.target.value); });
-  $("brush-look").addEventListener("click", () => setBrushMode(false));
+  $("brush-look").addEventListener("click", () => { mv.place.on = false; setBrushMode(false); });
+  $("place-on").addEventListener("click", () => setPlaceMode(!mv.place.on));
+  $("place-undo").addEventListener("click", () => undoPlace());
+  $("place-search").addEventListener("input", () => placeOptions());
+  $("place-type").addEventListener("change", (e) => { mv.place.type = e.target.value; });
+  $("place-turn").addEventListener("input", (e) => { mv.place.turn = Number(e.target.value); renderPlace(); });
+  $("place-size").addEventListener("input", (e) => { mv.place.size = Number(e.target.value); renderPlace(); });
   $("brush-undo").addEventListener("click", () => undoStroke());
   $("brush-clear").addEventListener("click", () => {
     $("brush-sure-text").textContent = fill(mv.words.really_clear, { n: mv.brush.strokes.length.toLocaleString() });
@@ -919,6 +1070,7 @@ window.MapView = {
   // another mod was picked: its strokes on this map (or none) replace the ones drawn
   modChanged() {
     if (mv.current && mv.edit) loadStrokes(mv.current, mv.ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
+    if (mv.current && mv.edit) loadPlaced(mv.current, mv.ask).catch((err) => placeNote((err && err.message) || String(err), "error"));
   },
 };
 window.dispatchEvent(new Event("mapview-ready"));

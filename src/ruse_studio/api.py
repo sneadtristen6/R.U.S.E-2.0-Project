@@ -472,6 +472,80 @@ class StudioApi:
         return job.start(lambda say: ground_png(game, pack, out, progress=lambda d, n: say(f"{d}/{n}")),
                          "The ground textures are ready.")
 
+    # --- placing objects on a map: maps/<pack>/scenery.toml in the current mod (MOD_FORMAT §8, rusemod.scenery) ---
+    SCENERY_HEADER = ("The objects this mod adds to this map, in order (docs/MOD_FORMAT.md §8).\nMade in the RUSE "
+                      "Studio, which rewrites this file.")
+
+    def _scenery_file(self, pack: str) -> Path:
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first: what you place is saved in it.")
+        if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
+            raise StudioError(f"{pack!r} isn't a map's pack name")
+        return folder / "maps" / pack / "scenery.toml"
+
+    @staticmethod
+    def _read_objects(path: Path) -> list:
+        if not path.is_file():
+            return []
+        try:
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+            return scenery.parse_objects(data.get("object", []), str(path))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, scenery.SceneryEditError) as exc:
+            raise StudioError(f"{path} can't be read ({exc}). Fix or remove it by hand: the Studio won't write over "
+                              f"it.") from None
+
+    def _write_objects(self, path: Path, objects: list) -> None:
+        if objects:
+            ModEdits._write(path, scenery.objects_toml(objects, self.SCENERY_HEADER))
+            return
+        if path.is_file():
+            path.unlink()
+        for folder in (path.parent, path.parent.parent):
+            try:
+                folder.rmdir()
+            except OSError:
+                break
+
+    def scenery(self, pack: str) -> dict:
+        """The objects the current mod places on a map: {"objects": [{type, x, y, turn, size}], "saved": the file or
+        None, "mod": the mod or None}."""
+        folder = self._mod_dir()
+        if folder is None:
+            return {"objects": [], "saved": None, "mod": None}
+        path = self._scenery_file(pack)
+        with self._saving:
+            objects = self._read_objects(path)
+        return {"objects": [asdict(o) for o in objects], "saved": str(path) if objects else None, "mod": str(folder)}
+
+    def scenery_add(self, pack: str, objects: list) -> dict:
+        """Place objects (dicts with the scenery file's keys) after the ones already there, in the current mod. Only
+        types the map already uses. Returns {"count": objects placed on the map now, "saved": the file}."""
+        path = self._scenery_file(pack)
+        try:
+            new = scenery.parse_objects(list(objects or []), "the new objects")
+        except scenery.SceneryEditError as exc:
+            raise StudioError(str(exc)) from None
+        known = {row[0] for row in self.map_scenery(pack)["palette"]}
+        for o in new:
+            if o.type not in known:
+                raise StudioError(f"{o.type} isn't one of this map's own types, so the map can't take it.")
+        with self._saving:
+            every = self._read_objects(path) + new
+            self._write_objects(path, every)
+        return {"count": len(every), "saved": str(path)}
+
+    def scenery_undo(self, pack: str, count: int = 1) -> dict:
+        """Take the last `count` placed objects off the map. Returns {"count": left, "removed": how many went,
+        "saved": the file or None}."""
+        path = self._scenery_file(pack)
+        with self._saving:
+            every = self._read_objects(path)
+            n = max(0, min(int(count), len(every)))
+            left = every[:len(every) - n]
+            self._write_objects(path, left)
+        return {"count": len(left), "removed": n, "saved": str(path) if left else None}
+
     # --- shaping a map's ground: maps/<pack>/terrain.toml in the current mod (MOD_FORMAT §8, rusemod.brush) ---
     TERRAIN_HEADER = ("The ground this mod reshapes on this map: brush strokes, applied in order (docs/MOD_FORMAT.md "
                       "§8).\nMade in the RUSE Studio, which rewrites this file.")

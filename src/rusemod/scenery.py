@@ -400,8 +400,16 @@ def view(map_arc, unit_arc, descs: dict[str, Descriptor] | None = None, budget: 
                 types.append([d.name.split("/", 1)[-1], d.group, d.category, d.model or ""])
             flat += [index[s], round(x), round(y), round(turn, 3), round(size, 2)]
         items[g] = flat
-    return {"types": types, "items": items,
+    per_type = sc.types()
+    palette = sorted(([descs[n].name, n.split("/", 1)[-1], descs[n].group, descs[n].category, per_type.get(i, 0)]
+                      for i, n in enumerate(sc.names[:len(sc.flags)])
+                      if sc.flags[i] == 1 and n in descs and descs[n].group in PLACEABLE),
+                     key=lambda r: (PLACEABLE.index(r[2]), -r[4], r[1].lower()))
+    return {"types": types, "items": items, "palette": palette,
             "groups": {g: {"shown": len(shown.get(g, [])), "total": totals.get(g, 0)} for g in budget}}
+
+
+PLACEABLE = ("building", "prop", "vegetation")  # what the Studio offers to place (decals come later)
 
 
 # --- adding objects (a mod's maps/<map>/scenery.toml; docs/MOD_FORMAT.md §8) ---
