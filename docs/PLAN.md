@@ -587,14 +587,46 @@ one is shorter. Rules:
 - **Cheap and certain first.** Work the engine already does (new units, mod sets) ships before work that needs
   reverse engineering. The uncertain part of the terrain editor (the `.kdt` codecs) waits for DomesticNukes'
   published research and our exchange; we crack it ourselves only if that falls through.
-- **Agents and workflows are fine here** (owner, 2026-09-29): the cloud tab runs on its own credit, so the PC
-  session uses parallel agents when they save a session. Replies stay short.
+- **Ask before any agent or workflow** (owner, 2026-09-30, evening: "dont run agents on side unless u ask for
+  now"; this replaces the 2026-09-29 go-ahead). Replies stay short.
+- **No heredocs:** a hook (`~/.claude/hooks/no_heredoc.py`, on since 2026-09-30) refuses them in the shell; scripts
+  and commit messages go in files (`git commit -F <file>`). A mistake that repeats gets a guard like this one, not
+  another rule.
 - **At most one in-game test per session**, batched: one modded copy, the owner runs it once and reports.
 - **Reading budget:** a session reads this section, [TASKS.md](TASKS.md) if it is a cloud session, the memory
   notes and the files it changes. History is in
   LOG.md and is read only when a step needs it.
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
+
+**Next session (written 2026-09-30, night): start here.**
+
+Out: **Studio 0.7.4 and Launcher 0.2.9** (commit `ec57169`, the shared repo synced): test copies work when the game's
+files are marked read-only (a player's "[WinError 5] Access is denied" on every Test in game; `tests/test_instance.py`
+ReadOnlyGame is the guard), one bridge per river crossing stretched bank to bank, a road over one of the map's own
+bridges replaces it, and a road's length while it's drawn. **In the game (owner, 17:15): the new bridges look right**
+(one straight piece per crossing, the painted roads meeting them). Units on them: not tried yet.
+
+*Testing plan* (steps and commands in [TESTS.md](TESTS.md); one game start each):
+
+| Test | Who | Decides | State |
+|---|---|---|---|
+| **T8 Bridges:** units (a tank, then infantry) and a supply route cross the new D-Day bridges; the glow if it returns; the spawned units' side and facing (A8) | owner, `D:\RUSE-Instances\bridges` | bridges done, or what to fix | the look passed |
+| **T9 A road over an old bridge:** the old one gone, units cross on the new one, nothing on the water where it stood | owner | the replace rule | its copy is built next session |
+| **T10 Read-only game folder:** Test in game after updating, and is his folder read-only? | the player who reported it | the fix | waiting for him |
+| **T11 Launcher 0.2.9:** the update is offered, Play works | owner | — | — |
+
+*Next steps* (one goal per session):
+1. Fix what T8-T10 find; build the T9 copy (a road across one of D-Day's own bridges) for the owner.
+2. **Studio: a Bridges kind in the bar**, placed like buildings (the map's own bridge kinds, the palette rows whose
+   category ends `/Ponts`, taken out of Buildings; a Length slider = `stretch`; coded as bridges: never solid, the
+   deck opened), and the road tool drawing its water crossings in gold and saying when the map has no bridge kind.
+   Studio 0.7.5.
+3. **A4 Remove scenery** (an Erase brush): trees along the new roads (T8's screenshots show the forest roads); the
+   old-bridge rule could then remove instead of sink.
+4. Then the roadmap below: **A5 Ruse areas**, A6 ground painting.
+
+*Open, the owner's to decide* (ideas, not decisions): "two tabs open" in the map builder; bridges for chokepoint maps.
 
 **Order** (sessions are estimates for the shorter sessions):
 
@@ -688,7 +720,7 @@ ends with one in-game test (batched, one game start) and a release. Sessions are
 | A2 | **Movement: passed in the game (2026-09-30).** `mapinfo.win` buffers 1-2 are the infantry and vehicle navigation graphs (circles units plan through, linked where they meet, with a spatial index; water and off-map ground uncovered), read and written byte-identical (`rusemod.nav`). Mods block ground (`maps/<map>/movement.toml`), the freed ground is filled back with new circles, and every placed building is solid: on Blitz units go around a blocked pit and between placed towers, and a building placed in the game on edited ground works. The Studio side ships in 0.7.0 (Block brushes, a Solid toggle on placed buildings, the Where units go view), with the tools moved to a Cities: Skylines-style bar along the bottom in the game's HUD look | — | done |
 | A3 | **Roads, Cities: Skylines style:** draw the map's roads in the view (done 2026-09-30: the Roads box, the scenery's road pieces decoded as Béziers); the road network (buffer 0) decoded, written back byte-identical on all 33 maps, and `RoadNet.add_road` (points along the curve, joined to the nearest road, index rebuilt; not tried in the game yet). Found: the roads a player sees are painted into the ground's texture tiles, the scenery's pieces lie on them, so a visible new road also needs ground painting (A6). **Proven in the game (2026-09-30): supply routes follow a network-only road** (the depot's route preview took the new shortcut). Still to test: vehicles' speed on it, and whether pieces draw anything; a road tool (click points, a curve follows, ends snap to roads) that writes the scenery's road pieces and the road network, and clears the trees along it (needs A4). Test: a new road, drawn? faster? | A2, A4 | 2-3 |
 | A4 | **Remove scenery:** take out the map's own trees, props and buildings (an Erase brush; roads and towns use it) | — | 1 |
-| A5 | **Zones:** draw and move the capture sectors (the scenario's AREA records, reader done) and their names. Test: a new sector captured in a skirmish | — | 1-2 |
+| A5 | **Ruse areas** (owner, 2026-09-30: "editing ruse areas for new maps and existing, along with how many per"): the areas ruses are played on, the scenario's `AREA` records (reader done): draw, move, reshape, add, remove and name them, on the shipped maps and on new maps (B1-B2). **How many ruses an area takes:** two, and no data value holds it (found 2026-09-30, §11), so the public apps can't change it; it's on RUSE 2.0's private list (program-side), unless a data value turns up. Test: a new area shows on the ruse map and takes a ruse | — | 1-2 |
 | A6 | **Ground painting:** grass, sand, rock, road texture with a brush (plain tiles work in-game) | — | 1-2 |
 | A7 | **Re-meshing:** finer ground only where brushes need it (adaptive, so no lag: far mesh and gameplay ground stay coarse); a warning when a brush is steeper than the mesh can show | DomesticNukes' index-buffer notes | 2-3 |
 | A8 | Spawn checks: which camp is the player in a skirmish, and does a skirmish honour unit spawns; formations (Studio 0.7.1): do the units face the way the formation does | — | 0 (one test) |
@@ -698,7 +730,7 @@ ends with one in-game test (batched, one game start) and a release. Sessions are
 | # | Step | Needs | Sessions |
 |---|---|---|---|
 | B1 | **Clone a map** under a new name and register it (map list, skirmish menu, name in ten languages, menu picture); "New map…" in the Studio. Test: it's listed and plays | — | 2 |
-| B2 | A blank start (flattened copy), map sizes, **heightmap import** | B1, A7 | 2-3 |
+| B2 | A blank start (flattened copy), map sizes, **heightmap import**, and the new map's **ruse areas** (A5's tool) | B1, A5, A7 | 2-3 |
 | B3 | The AI on edited maps: the 51×51 AI grid (`mapinfo.win`'s tail) and the other AI layers follow the new ground, roads and towns. Test: the AI plays the new map | A2 | 2 |
 | B4 | Multiplayer check of a new map between two PCs (join codes, C4 below) | B1, C4 | 1 + a second player |
 | B5 | The Pacific look: a tropical scenery set from the game's own assets (Italy, Tunisia), then new ones (M5, M7) | B1 | 2+ |

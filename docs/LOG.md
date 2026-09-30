@@ -735,7 +735,8 @@ bridge on the ground under its ends. Now: one bridge per crossing, centred on th
 (`scenery.toml` objects take `stretch` and `lift`), sunk to the median of the map's own bridges of that kind.
 Owner's rule: **a road over one of the map's own bridges replaces it** (the old one sunk out of sight in place,
 `scenery.bury_objects`; its deck over water closed to units, `nav.Graph.block`, and to the road network,
-`RoadNet.cut`). Not tried in the game yet: `D:\RUSE-Instances\bridges` rebuilt for the owner.
+`RoadNet.cut`). **In the game (owner, 17:15): the rebuilt D-Day copy shows one straight bridge per crossing, bank to
+bank, the painted roads meeting it.** Units on them: not tried yet (TESTS.md T8).
 
 **A player's report:** *Test in game* failed every time with `[WinError 5] Access is denied:
 'E:\RUSE-Instances\studio-cascade-test.partial\Data\PC\190852\ZZ_GladPatchableWin.dat'`. Reproduced

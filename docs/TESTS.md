@@ -103,6 +103,45 @@ Install RUSE Launcher 0.2.0 from [Releases](https://github.com/sneadtristen6/Rus
 - **First report (DomesticNukes, 2026-09-29):** 12 `.rmod` mods in one set built with 0 errors and the game started,
   then failed. His suspect: No Fog of War. Next: the same set without it, then No Fog of War alone.
 
+## T8. Bridges where new roads cross water (Studio 0.7.4)
+
+The copy: `D:\RUSE-Instances\bridges` on the owner's PC (the Studio mod `test`), or build one from a mod whose
+`maps/M04_cotentin/roads.toml` crosses the river:
+`py -3 -m rusemod build <the mod's folder> --instance D:\RUSE-Instances\bridges`. In the game: **BATTLES > D-Day**.
+The two new bridges stand where the new roads cross the river, between Briqueville and Les Pieux.
+1. **Look:** each crossing has one straight bridge, level, both ends on the banks. **Passed (owner, 2026-09-30,
+   17:15):** one piece per crossing, bank to bank, the painted roads meeting it (the first build tipped into the river).
+2. **Units:** order a tank, then an infantry squad, to a point across the river right behind a new bridge.
+   - **Pass:** they drive over the bridge. **Fail:** they stop at the bank, go the long way round, or walk on water.
+3. **Supply:** place a supply depot so its route needs the new road across the river.
+   - **Pass:** the route line and the trucks use the bridge.
+4. **The glow** (seen once: the ground glows, then turns normal): if it comes back, a screenshot while it glows and
+   where the camera is (on the painted roads, or everywhere?).
+5. While there: the mod's spawned units on this map (PLAN A8): which side they're on, and whether a formation faces
+   the way it was drawn.
+
+## T9. A road over one of the map's own bridges (Studio 0.7.4)
+
+The owner's rule: the old bridge goes and the new road's bridge takes its place. The copy is built first (next
+session): a mod with a road drawn across the river over one of D-Day's own bridges (the Studio: **Roads >
+Straight**, across the gold road where it crosses the river). The build says `1 old bridge(s) replaced`.
+- **Pass:** the old bridge is gone (not even its shadow), the new one runs along the new road, units cross on it,
+  and nothing walks or drives on the water where the old one stood; supply routes don't cross there either.
+
+## T10. Test in game with a read-only game folder (Studio 0.7.4, Launcher 0.2.9)
+
+From a player's report: every **Test in game** failed with "[WinError 5] Access is denied" on a file in
+`...\RUSE-Instances\<name>.partial`. Whoever had it (he offered to help):
+1. Update to Studio 0.7.4 (the Studio offers it when it opens, or **Settings > Updates > Check now**).
+2. **Test in game** again, without deleting anything first.
+- **Pass:** the game starts; the old half-built copy is gone. **Also tell us:** is the R.U.S.E. folder marked
+  **Read-only** (right-click it > Properties)? Was R.U.S.E. still running from an earlier test when it first failed?
+- **Fail:** the whole message (the new one names the file and says why).
+
+## T11. Launcher 0.2.9
+
+- **Pass:** the launcher offers 0.2.9 when it opens; **Update** installs it and it starts again; **Play** works.
+
 ## Later
 
 - **Browse mods:** once `sneadtristen6/Ruse-Mods` exists with an `index.toml`.
