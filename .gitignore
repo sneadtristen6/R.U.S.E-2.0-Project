@@ -67,3 +67,6 @@ Thumbs.db
 
 # Keep: docs/, *.py source, listings/*.txt (these are archive file *names*, not game content)
 !listings/*.txt
+
+# a code-analysis tool's output (the owner's, local)
+.enola/
