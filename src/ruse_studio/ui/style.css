@@ -206,4 +206,7 @@ tr.edited .flag { border-color: var(--accent); }
 .flag .x:hover { color: var(--error); }
 .flags select { max-width: 22em; font-size: 12px; }
 .map-kind { width: 100%; margin-bottom: 8px; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+.scen-tools { flex-wrap: wrap; }
+.unit-group { width: 100%; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+.scen-camp { background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
 .scen-pick { max-width: 190px; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }

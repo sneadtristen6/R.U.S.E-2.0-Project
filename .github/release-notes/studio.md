@@ -1,6 +1,12 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.6.5:** scenarios can be edited on the map. **Move** a starting point or a spawn (click it, then where it goes;
+Put back undoes it). **Add unit** spawns a unit or building when the scenario starts: pick its kind (buildings, ground,
+infantry, air), then its type (for buildings: HQ, money, factories, forts and defenses, fake decoys; for units: the
+factory that builds them), then the unit (by nation) and its side. Saved in the mod's `maps/<map>/scenario.toml`.
+The unit list has the same Type filter.
+
 **0.6.4:** the map list has a type filter: all maps, or only the skirmish maps, Operations, campaign, demo or
 test maps (from the game's own menus; a map can be several). It's remembered.
 

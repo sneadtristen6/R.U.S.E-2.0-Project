@@ -133,6 +133,30 @@ class Studio(unittest.TestCase):
         self.assertEqual([u["base_name"] for u in self.api.units(nation=1)["units"]], ["Descriptor_Unit_Panzer_IV_G"])
         self.assertEqual([u["name"] for u in self.api.units("us", search="sherman")["units"]], ["M4 Sherman"])
 
+    def test_units_by_type(self):
+        everything = self.api.units()
+        self.assertEqual(everything["groups"], ["money", "armor", "other"])  # in GROUPS order: buildings' jobs first
+        self.assertEqual({u["base_name"]: u["group"] for u in everything["units"]},
+                         {"Descriptor_Building_Depot": "money", "Descriptor_Unit_M4_Sherman": "armor",
+                          "Descriptor_Unit_Panzer_IV_G": "armor", "Descriptor_Unit_Soldat_US_Leger": "other"})
+        armor = self.api.units(group="armor")
+        self.assertEqual([u["base_name"] for u in armor["units"]], ["Descriptor_Unit_M4_Sherman", "Descriptor_Unit_Panzer_IV_G"])
+        self.assertEqual(armor["groups"], everything["groups"])  # the choices stay: they're of the kind and nation
+        self.assertEqual(self.api.units(kind="buildings")["groups"], ["money"])
+
+    def test_what_a_unit_is_for(self):
+        from ruse_studio.api import group_of
+        building = "$/GFX/Everything/Descriptor_Building_"
+        self.assertEqual([group_of("buildings", building + n, 3) for n in (
+            "CaserneLeurreFR", "HeadquarterGRFake", "Headquarter", "BatimentAdministratifUK", "DalleBatimentDepot",
+            "DefenseMaginotFR", "Def_Bunker_enterre_JAP", "ArtillerieFieldLourd", "PosteAlerteAvanceUK",
+            "VehiculeFactory", "Usine_Atomique_US")],
+            ["fake", "fake", "hq", "money", "money", "fort", "fort", "fort", "fort", "factory", "factory"])
+        self.assertEqual([group_of(k, "$/GFX/Everything/Descriptor_Unit_X", f) for k, f in (
+            ("infantry", 8), ("ground", 10), ("ground", 11), ("ground", 13), ("ground", 12), ("air", 9),
+            ("infantry", 9), ("ground", 3), ("ground", None))],
+            ["barracks", "armor", "antitank", "artillery", "prototype", "airfield", "airfield", "turret", "other"])
+
     def test_one_unit(self):
         u = self.api.unit("$/GFX/Everything/Descriptor_Unit_M4_Sherman", "fr")
         self.assertEqual(u["name"], "M4 Sherman (fr)")
@@ -798,6 +822,66 @@ class Terrain(WithMod):
         self.assertEqual(file.read_text(encoding="utf-8"), by_hand)
 
 
+class ScenarioEdits(WithMod):
+    """The map view's Move and Add unit tools: a starting point moved, units spawned, saved in the mod's
+    maps/<map>/scenario.toml and shown on the map as the mod leaves it."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from test_scenario import scenario
+        folder = "test/map/blitz/".replace("/", "\\")
+        (cls.game / "Data" / "PC" / "190852" / "DataMap_Win.dat").write_bytes(
+            make_edat([("dir", folder, [("file", "leveldesign.scenario", scenario())])]))
+
+    def setUp(self):
+        super().setUp()
+        menus = mock.patch("rusemod.scenario.kinds_of", return_value={})  # no map list in the made-up game (Kinds)
+        menus.start()
+        self.addCleanup(menus.stop)
+        self.mod = Path(self.api.new_mod("Scenario edits")["current"])
+        self.file = self.mod / "maps" / "Blitz" / "scenario.toml"
+
+    def items(self, res):
+        return next(s for s in res["scenarios"] if s["file"] == "leveldesign.scenario")["items"]
+
+    def test_move_and_put_back(self):
+        start = self.items(self.api.map_scenarios("Blitz"))[0]
+        self.assertEqual((start["kind"], start["item"]), ("StartingPoint", 0))
+        moved = self.items(self.api.scenario_move("Blitz", "leveldesign.scenario", 0, 111.0, 222.0))[0]
+        self.assertEqual((moved["x"], moved["y"], moved["moved"]), (111.0, 222.0, True))
+        self.items(self.api.scenario_move("Blitz", "leveldesign.scenario", 0, 333.0, 444.0))  # a second move replaces it
+        data = tomllib.loads(self.file.read_text(encoding="utf-8"))
+        self.assertEqual([(m["item"], m["x"], m["y"]) for m in data["move"]], [(0, 333.0, 444.0)])
+        back = self.items(self.api.scenario_put_back("Blitz", "leveldesign.scenario", 0))[0]
+        self.assertEqual((back["x"], back["y"], "moved" in back), (start["x"], start["y"], False))
+        self.assertFalse(self.file.exists())  # nothing left to change: the file goes
+        with self.assertRaisesRegex(StudioError, "no item 9"):
+            self.api.scenario_move("Blitz", "leveldesign.scenario", 9, 0.0, 0.0)
+        with self.assertRaisesRegex(StudioError, "no scenario"):
+            self.api.scenario_move("Blitz", "other.scenario", 0, 0.0, 0.0)
+
+    def test_spawn_move_and_remove(self):
+        before = len(self.items(self.api.map_scenarios("Blitz")))
+        with self.assertRaisesRegex(StudioError, "no class name"):  # the made-up game's units have none
+            self.api.scenario_spawn("Blitz", "leveldesign.scenario", M4, 5.0, 6.0, 2)
+        shown = {"values": [("ClassNameForDebug", 0, "Unit_M4_Sherman")]}
+        with mock.patch("rusemod.index.Index.show", return_value=shown):
+            items = self.items(self.api.scenario_spawn("Blitz", "leveldesign.scenario", M4, 5.0, 6.0, 2))
+        mine = items[-1]
+        self.assertEqual(len(items), before + 1)
+        self.assertEqual((mine["what"], mine["camp"], mine["x"], mine["y"], mine["mine"], mine["spawn"]),
+                         ("Unit_M4_Sherman", 2, 5.0, 6.0, True, 0))
+        data = tomllib.loads(self.file.read_text(encoding="utf-8"))
+        self.assertEqual([(s["what"], s["camp"]) for s in data["spawn"]], [("Unit_M4_Sherman", 2)])
+        mine = self.items(self.api.scenario_move_spawn("Blitz", 0, 7.0, 8.0))[-1]
+        self.assertEqual((mine["x"], mine["y"], mine["camp"]), (7.0, 8.0, 2))
+        self.assertEqual(len(self.items(self.api.scenario_remove_spawn("Blitz", 0))), before)
+        self.assertFalse(self.file.exists())
+        with self.assertRaisesRegex(StudioError, "isn't in the mod"):
+            self.api.scenario_remove_spawn("Blitz", 0)
+
+
 class Labels(unittest.TestCase):
     """Every display name has all ten languages, so no modder gets a half-translated tool."""
 
@@ -820,6 +904,8 @@ class Labels(unittest.TestCase):
         app = "\n".join((ui / f).read_text(encoding="utf-8") for f in ("app.js", "maps.js"))
         used = set(re.findall(r"\b(?:w|state\.words|mv\.words)\.([a-z_]+)", app))
         used |= {"all", "ground", "infantry", "air", "buildings", "not_stable"}  # looked up by key
+        from ruse_studio.api import GROUPS
+        used |= {"group_" + g for g in GROUPS}  # each type's name too
         maps = (ui / "maps.js").read_text(encoding="utf-8")  # each brush's name is looked up by key
         used |= {"brush_" + name for name in re.findall(r"^  (\w+): \[\"(?:add|level|smooth|ramp)\"", maps, re.M)}
         self.assertEqual(len(used & {"brush_hill", "brush_smooth", "brush_ramp"}), 3)

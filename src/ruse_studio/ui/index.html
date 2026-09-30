@@ -49,6 +49,7 @@
       <input id="search" type="search" autocomplete="off">
       <div id="kinds" class="chips" role="group"></div>
       <div id="nations" class="chips" role="group"></div>
+      <select id="unit-group" class="unit-group"></select>
       <div id="count" class="muted small"></div>
       <ul id="unit-list" class="unit-list"></ul>
     </aside>
@@ -86,6 +87,16 @@
           <select id="scen-pick" class="small scen-pick"></select>
         </div>
         <div id="scen-stats" class="muted small"></div>
+        <!-- editing the picked scenario (maps.js scen.tool): items moved, units and buildings spawned, in the mod -->
+        <div id="scen-tools" class="map-controls scen-tools">
+          <button id="scen-move" type="button" class="chip"></button>
+          <button id="scen-spawn" type="button" class="chip"></button>
+          <select id="scen-kind" class="small scen-camp"></select>
+          <select id="scen-group" class="small scen-camp"></select>
+          <select id="scen-unit" class="small scen-pick"></select>
+          <select id="scen-camp" class="small scen-camp"></select>
+        </div>
+        <div id="scen-note" class="small"></div>
         <div id="scenery-hover" class="small"></div>
         <div id="map-ground" class="small"></div>
         <div id="map-help" class="muted small"></div>

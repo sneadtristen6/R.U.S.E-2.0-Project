@@ -34,7 +34,7 @@
       no_viewer: "The map view couldn't load its 3D library (it needs the internet the first time).",
       ground_loading: "Loading the real ground textures… {progress}", shape_ground: "Shape the ground",
       brush_hill: "Hill", brush_raise: "Raise", brush_lower: "Lower", brush_crater: "Crater", brush_plateau: "Plateau",
-      brush_flatten: "Flatten", brush_level: "Level", scen_show: "Scenario", maps_all: "All maps", tip_map_kind: "Show only the maps the game offers this way: skirmish, Operations, campaign, demo or test.", settings_tab: "Settings", tip_tab_settings: "Language, keys, the game folder and updates.", settings_title: "Settings", set_language_title: "Language", set_language_help: "Code names show the game's own names; any of the game's ten languages shows the names players know.", set_keys_title: "Map view keys", set_keys_help: "Click a key, then press the one you want.", set_game_title: "Game folder", set_game_path: "R.U.S.E. is in {path}.", set_game_none: "R.U.S.E. wasn't found. Pick its folder.", set_game_change: "Choose folder…", set_updates_title: "Updates", set_updates_latest: "This is RUSE Studio {version}. It looks for a newer one each time it opens.", set_updates_check: "Check now", set_updates_checking: "Looking for a newer version…", scen_kind_skirmish: "Skirmish", scen_kind_operation: "Operations", scen_kind_campaign: "Campaign", scen_kind_demo: "Demo", scen_kind_test: "Test setups", scen_kind_unused: "Not in any menu", tip_scen_show: "Show the scenario's zones, starting points (pillars in each alliance's colour), spawns (white diamonds) and town names.", tip_scen_pick: "The map's scenarios: the skirmish one first, then challenges and campaign chapters.", scen_main: "main", scen_none: "This map has no scenario.", scen_stats: "{zones} zones · {starts} starting points · {spawns} spawns · {names} names", scen_zone: "Zone", scen_start: "Starting point, alliance {n}", scen_spawn: "Spawn", brush_water: "Water", brush_drain: "Drain", tip_brush_water: "Floods the ground below a water level: the height where you start dragging, plus Strength. The ground itself is unchanged.", tip_brush_drain: "Puts the water back to the map's base level: lakes and rivers there dry up.", tip_brush_level: "Paints the ground flat at one height: the height where you start dragging. Start on ground at the height you want.", brush_smooth: "Smooth", brush_size: "Size", brush_strength: "Strength",
+      brush_flatten: "Flatten", brush_level: "Level", scen_show: "Scenario", maps_all: "All maps", tip_map_kind: "Show only the maps the game offers this way: skirmish, Operations, campaign, demo or test.", settings_tab: "Settings", tip_tab_settings: "Language, keys, the game folder and updates.", settings_title: "Settings", set_language_title: "Language", set_language_help: "Code names show the game's own names; any of the game's ten languages shows the names players know.", set_keys_title: "Map view keys", set_keys_help: "Click a key, then press the one you want.", set_game_title: "Game folder", set_game_path: "R.U.S.E. is in {path}.", set_game_none: "R.U.S.E. wasn't found. Pick its folder.", set_game_change: "Choose folder…", set_updates_title: "Updates", set_updates_latest: "This is RUSE Studio {version}. It looks for a newer one each time it opens.", set_updates_check: "Check now", set_updates_checking: "Looking for a newer version…", scen_kind_skirmish: "Skirmish", scen_kind_operation: "Operations", scen_kind_campaign: "Campaign", scen_kind_demo: "Demo", scen_kind_test: "Test setups", scen_kind_unused: "Not in any menu", tip_scen_show: "Show the scenario's zones, starting points (pillars in each alliance's colour), spawns (white diamonds) and town names.", tip_scen_pick: "The map's scenarios: the skirmish one first, then challenges and campaign chapters.", scen_main: "main", scen_none: "This map has no scenario.", scen_stats: "{zones} zones · {starts} starting points · {spawns} spawns · {names} names", scen_zone: "Zone", scen_start: "Starting point, alliance {n}", scen_spawn: "Spawn", scen_move_tool: "Move", tip_scen_move: "Move a starting point or a spawn: click it, then click where it goes. Saved in the mod.", scen_spawn_tool: "Add unit", tip_scen_spawn: "Add a unit or building that appears when this scenario starts: pick its kind, type and name, pick a side, then click the map.", tip_scen_kind: "Buildings, ground units, infantry or planes.", tip_scen_unit: "The unit or building, listed by nation.", tip_scen_camp: "The side it belongs to. Which number is which player: test it in the game.", scen_side_none: "No side", scen_side_n: "Side {n}", scen_pick_item: "Click a starting point or a spawn to move it.", scen_pick_place: "Now click where it goes: {what}.", scen_remove: "Remove", scen_put_back: "Put back", scen_spawn_help: "Click the map where it appears.", scen_pick_unit: "Pick a unit or building first.", scen_moved: "moved in this mod", scen_mine: "added in this mod", group_all: "All types", tip_group: "What it's for: a building's job (HQ, money, factory, fort, fake) or the factory that builds a unit.", group_hq: "HQ", group_money: "Money (depots, admin)", group_factory: "Factories", group_fort: "Forts and defenses", group_fake: "Fake (decoys)", group_barracks: "Barracks", group_armor: "Armor", group_antitank: "Anti-tank", group_artillery: "Artillery", group_prototype: "Prototypes", group_airfield: "Airfield", group_turret: "Fort guns", group_other: "Other", brush_water: "Water", brush_drain: "Drain", tip_brush_water: "Floods the ground below a water level: the height where you start dragging, plus Strength. The ground itself is unchanged.", tip_brush_drain: "Puts the water back to the map's base level: lakes and rivers there dry up.", tip_brush_level: "Paints the ground flat at one height: the height where you start dragging. Start on ground at the height you want.", brush_smooth: "Smooth", brush_size: "Size", brush_strength: "Strength",
       brush_look: "Look around", brush_undo: "Undo",
       brush_help: "Click or drag on the ground to paint · middle-drag to turn · right-drag to move · wheel to zoom",
       brush_count: "Strokes on this map: {n}", brush_note: "Saved in the mod. \"Test in game\" builds it into the map.",
@@ -129,7 +129,7 @@
       no_viewer: "La vue de carte n'a pas pu charger sa bibliothèque 3D (il faut Internet la première fois).",
       ground_loading: "Chargement des vraies textures du sol… {progress}", shape_ground: "Modeler le terrain",
       brush_hill: "Colline", brush_raise: "Surélever", brush_lower: "Abaisser", brush_crater: "Cratère",
-      brush_plateau: "Plateau", brush_flatten: "Aplanir", brush_level: "Niveler", scen_show: "Scénario", maps_all: "Toutes les cartes", tip_map_kind: "Afficher seulement les cartes que le jeu propose ainsi : escarmouche, opérations, campagne, démo ou test.", settings_tab: "Réglages", tip_tab_settings: "Langue, touches, dossier du jeu et mises à jour.", settings_title: "Réglages", set_language_title: "Langue", set_language_help: "Les noms de code montrent les noms internes du jeu ; chacune des dix langues montre les noms que voient les joueurs.", set_keys_title: "Touches de la vue carte", set_keys_help: "Cliquez sur une touche, puis appuyez sur celle que vous voulez.", set_game_title: "Dossier du jeu", set_game_path: "R.U.S.E. est dans {path}.", set_game_none: "R.U.S.E. est introuvable. Choisissez son dossier.", set_game_change: "Choisir le dossier…", set_updates_title: "Mises à jour", set_updates_latest: "Ceci est RUSE Studio {version}. Il cherche une version plus récente à chaque ouverture.", set_updates_check: "Vérifier", set_updates_checking: "Recherche d'une version plus récente…", scen_kind_skirmish: "Escarmouche", scen_kind_operation: "Opérations", scen_kind_campaign: "Campagne", scen_kind_demo: "Démo", scen_kind_test: "Réglages de test", scen_kind_unused: "Dans aucun menu", tip_scen_show: "Afficher les zones du scénario, les points de départ (piliers à la couleur de chaque alliance), les apparitions (losanges blancs) et les noms de villes.", tip_scen_pick: "Les scénarios de la carte : l'escarmouche d'abord, puis les défis et les chapitres de campagne.", scen_main: "principal", scen_none: "Cette carte n'a pas de scénario.", scen_stats: "{zones} zones · {starts} points de départ · {spawns} apparitions · {names} noms", scen_zone: "Zone", scen_start: "Point de départ, alliance {n}", scen_spawn: "Apparition", brush_water: "Eau", brush_drain: "Assécher", tip_brush_water: "Inonde le sol sous un niveau d'eau : la hauteur où vous commencez à glisser, plus la force. Le sol lui-même ne change pas.", tip_brush_drain: "Remet l'eau au niveau de base de la carte : les lacs et rivières s'y assèchent.", tip_brush_level: "Peint le terrain à plat à une hauteur : celle où vous commencez à glisser. Commencez sur un terrain à la hauteur voulue.", brush_smooth: "Adoucir", brush_size: "Taille",
+      brush_plateau: "Plateau", brush_flatten: "Aplanir", brush_level: "Niveler", scen_show: "Scénario", maps_all: "Toutes les cartes", tip_map_kind: "Afficher seulement les cartes que le jeu propose ainsi : escarmouche, opérations, campagne, démo ou test.", settings_tab: "Réglages", tip_tab_settings: "Langue, touches, dossier du jeu et mises à jour.", settings_title: "Réglages", set_language_title: "Langue", set_language_help: "Les noms de code montrent les noms internes du jeu ; chacune des dix langues montre les noms que voient les joueurs.", set_keys_title: "Touches de la vue carte", set_keys_help: "Cliquez sur une touche, puis appuyez sur celle que vous voulez.", set_game_title: "Dossier du jeu", set_game_path: "R.U.S.E. est dans {path}.", set_game_none: "R.U.S.E. est introuvable. Choisissez son dossier.", set_game_change: "Choisir le dossier…", set_updates_title: "Mises à jour", set_updates_latest: "Ceci est RUSE Studio {version}. Il cherche une version plus récente à chaque ouverture.", set_updates_check: "Vérifier", set_updates_checking: "Recherche d'une version plus récente…", scen_kind_skirmish: "Escarmouche", scen_kind_operation: "Opérations", scen_kind_campaign: "Campagne", scen_kind_demo: "Démo", scen_kind_test: "Réglages de test", scen_kind_unused: "Dans aucun menu", tip_scen_show: "Afficher les zones du scénario, les points de départ (piliers à la couleur de chaque alliance), les apparitions (losanges blancs) et les noms de villes.", tip_scen_pick: "Les scénarios de la carte : l'escarmouche d'abord, puis les défis et les chapitres de campagne.", scen_main: "principal", scen_none: "Cette carte n'a pas de scénario.", scen_stats: "{zones} zones · {starts} points de départ · {spawns} apparitions · {names} noms", scen_zone: "Zone", scen_start: "Point de départ, alliance {n}", scen_spawn: "Apparition", scen_move_tool: "Déplacer", tip_scen_move: "Déplacer un point de départ ou une apparition : cliquez dessus, puis là où il va. Enregistré dans le mod.", scen_spawn_tool: "Ajouter une unité", tip_scen_spawn: "Ajouter une unité ou un bâtiment qui apparaît au début de ce scénario : choisissez sa catégorie, son type et son nom, un camp, puis cliquez sur la carte.", tip_scen_kind: "Bâtiments, unités terrestres, infanterie ou avions.", tip_scen_unit: "L'unité ou le bâtiment, par nation.", tip_scen_camp: "Le camp auquel il appartient. Quel numéro correspond à quel joueur : testez dans le jeu.", scen_side_none: "Aucun camp", scen_side_n: "Camp {n}", scen_pick_item: "Cliquez sur un point de départ ou une apparition à déplacer.", scen_pick_place: "Cliquez maintenant là où il va : {what}.", scen_remove: "Retirer", scen_put_back: "Remettre", scen_spawn_help: "Cliquez sur la carte là où il apparaît.", scen_pick_unit: "Choisissez d'abord une unité ou un bâtiment.", scen_moved: "déplacé dans ce mod", scen_mine: "ajouté dans ce mod", group_all: "Tous les types", tip_group: "À quoi il sert : le rôle d'un bâtiment (QG, argent, usine, fort, factice) ou l'usine qui produit une unité.", group_hq: "QG", group_money: "Argent (dépôts, administration)", group_factory: "Usines", group_fort: "Forts et défenses", group_fake: "Factices (leurres)", group_barracks: "Caserne", group_armor: "Blindés", group_antitank: "Antichar", group_artillery: "Artillerie", group_prototype: "Prototypes", group_airfield: "Aérodrome", group_turret: "Canons de fort", group_other: "Autres", brush_water: "Eau", brush_drain: "Assécher", tip_brush_water: "Inonde le sol sous un niveau d'eau : la hauteur où vous commencez à glisser, plus la force. Le sol lui-même ne change pas.", tip_brush_drain: "Remet l'eau au niveau de base de la carte : les lacs et rivières s'y assèchent.", tip_brush_level: "Peint le terrain à plat à une hauteur : celle où vous commencez à glisser. Commencez sur un terrain à la hauteur voulue.", brush_smooth: "Adoucir", brush_size: "Taille",
       brush_strength: "Force", brush_look: "Regarder", brush_undo: "Annuler",
       brush_help: "Cliquez ou glissez sur le sol pour peindre · glisser du milieu pour tourner · clic droit pour déplacer · molette pour zoomer",
       brush_count: "Coups de pinceau sur cette carte : {n}",
@@ -219,7 +219,7 @@
       scenery_stats: "已显示：建筑 {buildings} · 道具 {props}/{props_total} · 树木 {trees}/{trees_total}", map_help: "拖动旋转 · 右键拖动平移 · 滚轮缩放", map_stats: "{points} 个点，{triangles} 个三角形",
       no_viewer: "地图视图无法加载 3D 库（首次需要联网）。", ground_loading: "正在加载真实地面纹理… {progress}",
       shape_ground: "塑造地形", brush_hill: "山丘", brush_raise: "抬高", brush_lower: "降低", brush_crater: "弹坑", brush_plateau: "高台",
-      brush_flatten: "压平", brush_level: "整平", scen_show: "剧本", maps_all: "所有地图", tip_map_kind: "只显示游戏以此方式提供的地图：遭遇战、作战、战役、演示或测试。", settings_tab: "设置", tip_tab_settings: "语言、按键、游戏文件夹和更新。", settings_title: "设置", set_language_title: "语言", set_language_help: "代号显示游戏内部名称；十种语言中的任何一种显示玩家看到的名称。", set_keys_title: "地图视图按键", set_keys_help: "点击一个按键，然后按下想要的键。", set_game_title: "游戏文件夹", set_game_path: "R.U.S.E. 位于 {path}。", set_game_none: "未找到 R.U.S.E.，请选择其文件夹。", set_game_change: "选择文件夹…", set_updates_title: "更新", set_updates_latest: "这是 RUSE Studio {version}。每次打开时都会检查新版本。", set_updates_check: "立即检查", set_updates_checking: "正在查找新版本…", scen_kind_skirmish: "遭遇战", scen_kind_operation: "作战", scen_kind_campaign: "战役", scen_kind_demo: "演示", scen_kind_test: "测试用", scen_kind_unused: "不在任何菜单中", tip_scen_show: "显示剧本的区域、起始点（各同盟颜色的柱子）、出生点（白色菱形）和城镇名称。", tip_scen_pick: "地图的剧本：先是遭遇战，然后是挑战和战役章节。", scen_main: "主要", scen_none: "此地图没有剧本。", scen_stats: "{zones} 个区域 · {starts} 个起始点 · {spawns} 个出生点 · {names} 个名称", scen_zone: "区域", scen_start: "起始点，同盟 {n}", scen_spawn: "出生点", brush_water: "水", brush_drain: "排干", tip_brush_water: "把低于水位的地面淹没：水位为开始拖动处的高度加上强度。地面本身不变。", tip_brush_drain: "把水恢复到地图的基准水位：那里的湖泊和河流会干涸。", tip_brush_level: "把地面刷平到同一高度：即开始拖动处的高度。请从所需高度的地面开始。", brush_smooth: "平滑", brush_size: "大小", brush_strength: "强度", brush_look: "查看", brush_undo: "撤销",
+      brush_flatten: "压平", brush_level: "整平", scen_show: "剧本", maps_all: "所有地图", tip_map_kind: "只显示游戏以此方式提供的地图：遭遇战、作战、战役、演示或测试。", settings_tab: "设置", tip_tab_settings: "语言、按键、游戏文件夹和更新。", settings_title: "设置", set_language_title: "语言", set_language_help: "代号显示游戏内部名称；十种语言中的任何一种显示玩家看到的名称。", set_keys_title: "地图视图按键", set_keys_help: "点击一个按键，然后按下想要的键。", set_game_title: "游戏文件夹", set_game_path: "R.U.S.E. 位于 {path}。", set_game_none: "未找到 R.U.S.E.，请选择其文件夹。", set_game_change: "选择文件夹…", set_updates_title: "更新", set_updates_latest: "这是 RUSE Studio {version}。每次打开时都会检查新版本。", set_updates_check: "立即检查", set_updates_checking: "正在查找新版本…", scen_kind_skirmish: "遭遇战", scen_kind_operation: "作战", scen_kind_campaign: "战役", scen_kind_demo: "演示", scen_kind_test: "测试用", scen_kind_unused: "不在任何菜单中", tip_scen_show: "显示剧本的区域、起始点（各同盟颜色的柱子）、出生点（白色菱形）和城镇名称。", tip_scen_pick: "地图的剧本：先是遭遇战，然后是挑战和战役章节。", scen_main: "主要", scen_none: "此地图没有剧本。", scen_stats: "{zones} 个区域 · {starts} 个起始点 · {spawns} 个出生点 · {names} 个名称", scen_zone: "区域", scen_start: "起始点，同盟 {n}", scen_spawn: "出生点", scen_move_tool: "移动", tip_scen_move: "移动起始点或出生点：点击它，再点击要放的位置。保存在模组中。", scen_spawn_tool: "放置单位", tip_scen_spawn: "添加在此剧本开始时出现的单位或建筑：选择类别、类型和名称，选择阵营，然后点击地图。", tip_scen_kind: "建筑、地面单位、步兵或飞机。", tip_scen_unit: "单位或建筑（按国家）。", tip_scen_camp: "所属阵营。哪个编号对应哪个玩家：请在游戏中测试。", scen_side_none: "无阵营", scen_side_n: "阵营 {n}", scen_pick_item: "点击要移动的起始点或出生点。", scen_pick_place: "现在点击 {what} 要放的位置。", scen_remove: "移除", scen_put_back: "放回", scen_spawn_help: "在地图上点击它出现的位置。", scen_pick_unit: "请先选择单位或建筑。", scen_moved: "已在此模组中移动", scen_mine: "已在此模组中添加", group_all: "所有类型", tip_group: "用途：建筑的作用（司令部、资金、工厂、要塞、假的）或生产该单位的工厂。", group_hq: "司令部", group_money: "资金（补给站、行政）", group_factory: "工厂", group_fort: "要塞与防御", group_fake: "假的（诱饵）", group_barracks: "兵营", group_armor: "装甲", group_antitank: "反坦克", group_artillery: "炮兵", group_prototype: "原型", group_airfield: "机场", group_turret: "要塞火炮", group_other: "其他", brush_water: "水", brush_drain: "排干", tip_brush_water: "把低于水位的地面淹没：水位为开始拖动处的高度加上强度。地面本身不变。", tip_brush_drain: "把水恢复到地图的基准水位：那里的湖泊和河流会干涸。", tip_brush_level: "把地面刷平到同一高度：即开始拖动处的高度。请从所需高度的地面开始。", brush_smooth: "平滑", brush_size: "大小", brush_strength: "强度", brush_look: "查看", brush_undo: "撤销",
       brush_help: "在地面上点击或拖动来绘制 · 中键拖动旋转 · 右键拖动平移 · 滚轮缩放", brush_count: "此地图上的笔画：{n}",
       brush_note: "已保存到模组。“在游戏中测试”会将其构建进地图。", brush_ramp: "斜坡",
       ramp_help: "先点击斜坡的起点，再点击终点。按 Esc 取消。", brush_clear: "重新开始", really_clear: "删除此地图上的全部 {n} 个笔画？",
@@ -303,6 +303,14 @@
       names: { us: "Type 97 Chi-Ha", fr: "Type 97 Chi-Ha", sc: "九七式中战车" }, price: 30, hp: 9, speed: 36 },
     { id: "P40Warhawk", kind: "air", nation: 0, factory: 9, slot: 201, key: "U_P40",
       names: { us: "P-40 Warhawk", fr: "P-40 Warhawk", sc: "P-40 战鹰" }, price: 35, hp: 5, speed: 330 },
+    { id: "Building_Headquarter", kind: "buildings", nation: 0, factory: 3, slot: null, key: "B_HQ",
+      names: { us: "Headquarters", fr: "Quartier général", sc: "司令部" }, price: 0, hp: 60, speed: 0 },
+    { id: "Building_BatimentDepot", kind: "buildings", nation: 0, factory: 3, slot: null, key: "B_DEPOT",
+      names: { us: "Supply depot", fr: "Dépôt de ravitaillement", sc: "补给站" }, price: 0, hp: 30, speed: 0 },
+    { id: "Building_CaserneLeurre", kind: "buildings", nation: 0, factory: 3, slot: null, key: "B_DECOY",
+      names: { us: "Decoy barracks", fr: "Caserne factice", sc: "假兵营" }, price: 5, hp: 5, speed: 0 },
+    { id: "Building_DefenseMaginotFR", kind: "buildings", nation: 2, factory: 3, slot: null, key: "B_MAGINOT",
+      names: { us: "Maginot line", fr: "Ligne Maginot", sc: "马奇诺防线" }, price: 30, hp: 80, speed: 0 },
   ];
   // units made in the Studio: copies of one of the above, kept per mod like src/studio.rndf holds them
   const newUnits = [];  // { mod, id, source, name, price, nation, factory }
@@ -346,8 +354,46 @@
       fr: "Voit à travers les obstacles (pas de test de ligne de vue ; les avions l'ont)", sc: "无视障碍物（不做视线检查；飞机默认具有）" },
       examples: ["Panzer IV", "P-40 Warhawk"] },
   ];
+  // what a unit or building is for, as StudioApi.group_of says
+  const GROUPS = ["hq", "money", "factory", "fort", "fake", "barracks", "armor", "antitank", "artillery", "prototype",
+    "airfield", "turret", "other"];
+  const groupOf = (u) => u.kind === "buildings"
+    ? (/Leurre|Fake/.test(u.id) ? "fake" : /Headquarter/.test(u.id) ? "hq" : /BatimentAdministratif|Depot/.test(u.id)
+      ? "money" : /Defense|Def_|ArtillerieField|PosteAlerte/.test(u.id) ? "fort" : "factory")
+    : ({ 8: "barracks", 10: "armor", 11: "antitank", 13: "artillery", 12: "prototype", 9: "airfield", 3: "turret" })[u.factory] || "other";
   const nameOf = (u, lang) => lang === "base" ? E.slice(17) + u.id : (u.names[lang] || u.names.us);
   const label = (prop, lang) => lang === "base" ? prop : ((labels[lang] || labels.us)[prop] || prop);
+  // the preview island's scenario: two zones, two starting points, a spawn and a town name (rusemod.scenario.view)
+  const baseScenarios = () => ({ scenarios: [
+        { file: "leveldesign.scenario", kind: "skirmish", entries: [{ name: "(2) Island", kind: "skirmish", titles: { us: "Island", fr: "Île" } }], zones: [
+          { name: "zone_west", number: 0, points: [300000, 450000, 560000, 450000, 560000, 800000, 300000, 800000], triangles: [0, 1, 2, 0, 2, 3] },
+          { name: "zone_east", number: 1, points: [760000, 450000, 1020000, 450000, 1020000, 800000, 760000, 800000], triangles: [0, 1, 2, 0, 2, 3] }],
+          items: [{ kind: "StartingPoint", x: 430000, y: 620000, turn: 0, name: "", alliance: 1 },
+            { kind: "StartingPoint", x: 890000, y: 620000, turn: 0, name: "", alliance: 2 },
+            { kind: "Spawn", x: 655000, y: 420000, turn: 0, name: "depot", camp: 1, what: "Unit_M4_Sherman" },
+            { kind: "LabelVille", x: 655000, y: 700000, turn: 0, name: "", text: "Port Island" }] },
+        { file: "leveldesign_challenge.scenario", kind: "operation", entries: [{ name: "Challenge - Island", kind: "operation", titles: { us: "Harbour raid", fr: "Raid sur le port" } }], zones: [], items: [{ kind: "StartingPoint", x: 655000, y: 620000, turn: 0, name: "", alliance: 1 }] }] });
+  // a scenario edited in a mod: moves and spawns per mod and map
+  const scenarioEdits = new Map();
+  function scenEdits(pack) {
+    if (!current) throw new Error("Pick or make a mod first: scenario changes are saved in it.");
+    const key = `${current}|${pack}`;
+    if (!scenarioEdits.has(key)) scenarioEdits.set(key, { moves: [], spawns: [] });
+    return scenarioEdits.get(key);
+  }
+  function withScenarioEdits(pack) {
+    const out = baseScenarios();
+    const e = current && scenarioEdits.get(`${current}|${pack}`) || { moves: [], spawns: [] };
+    for (const s of out.scenarios) {
+      s.items.forEach((it, i) => { it.item = i; });
+      for (const m of e.moves) if (m.file === s.file && s.items[m.item]) Object.assign(s.items[m.item], { x: m.x, y: m.y, moved: true });
+      e.spawns.forEach((sp, n) => {
+        if (sp.file === s.file) s.items.push({ kind: "Spawn", x: sp.x, y: sp.y, turn: 0, name: "", camp: sp.camp, what: sp.what,
+          mine: true, spawn: n, item: s.items.length });
+      });
+    }
+    return out;
+  }
   const words_ = (lang) => words[lang] || words.us;
   const modsView = () => ({ mods: mods.slice(), current });
 
@@ -573,7 +619,7 @@
       nations: async (lang) => nations[lang] || nations.us,
       status: async () => mode === "noindex" ? { ready: false, can_build: true }
         : mode === "oldindex" ? { ready: false, can_build: true, old: true } : { ready: true, build: "24687178" },
-      units: async (lang, kind, nation, search) => {
+      units: async (lang, kind = "all", nation = -1, search = "", group = "all") => {
         if (kind === "ammo") {
           const copies = myAmmo().map((n) => ({ address: ammoAddress(n.id), name: n.name, base_name: "Ammo_" + n.id, kind: "ammo",
             id: null, users: [], nations: nationsOf(ammo.find((a) => ammoAddress(a.id) === n.source), lang), nation: -1, nation_name: "", factory: null, slot: null, new: true, source: n.source,
@@ -589,14 +635,16 @@
         const made = mine().map((n) => {
           const src = units.find((x) => E + x.id === n.source);
           return { id: n.id, kind: src.kind, nation: n.nation, factory: n.factory, slot: null, names: { us: n.name },
-            new: true, source: n.source };
+            new: true, source: n.source, group: groupOf(src) };
         });
-        const out = made.concat(units).filter((u) => (kind === "all" || u.kind === kind) && (nation < 0 || u.nation === nation))
+        const shown = made.concat(units).filter((u) => (kind === "all" || u.kind === kind) && (nation < 0 || u.nation === nation));
+        const present = new Set(shown.map((u) => u.group || groupOf(u)));
+        const out = shown.filter((u) => group === "all" || (u.group || groupOf(u)) === group)
           .map((u) => ({ address: E + u.id, name: u.new ? u.names.us : nameOf(u, lang), base_name: "Descriptor_Unit_" + u.id,
             kind: u.kind, nation: u.nation, nation_name: (nations[lang] || nations.us)[u.nation], factory: u.factory,
-            slot: u.slot, new: Boolean(u.new), source: u.source || null }))
+            slot: u.slot, new: Boolean(u.new), source: u.source || null, group: u.group || groupOf(u) }))
           .filter((u) => !search || u.name.toLowerCase().includes(search.toLowerCase()));
-        return { units: out, total: units.length + made.length };
+        return { units: out, total: units.length + made.length, groups: GROUPS.filter((g) => present.has(g)) };
       },
       menus: async (lang) => {
         const names = nations[lang] || nations.us;
@@ -726,16 +774,29 @@
         return { strokes: list.map((s) => ({ height: 0, level: 0, weight: 1, ...s })), mod: current,
           saved: list.length ? `${current}/maps/${pack}/terrain.toml` : null };
       },
-      // the preview island's scenario: two zones, two starting points, a spawn and a town name (rusemod.scenario.view)
-      map_scenarios: async () => ({ scenarios: [
-        { file: "leveldesign.scenario", kind: "skirmish", entries: [{ name: "(2) Island", kind: "skirmish", titles: { us: "Island", fr: "Île" } }], zones: [
-          { name: "zone_west", number: 0, points: [300000, 450000, 560000, 450000, 560000, 800000, 300000, 800000], triangles: [0, 1, 2, 0, 2, 3] },
-          { name: "zone_east", number: 1, points: [760000, 450000, 1020000, 450000, 1020000, 800000, 760000, 800000], triangles: [0, 1, 2, 0, 2, 3] }],
-          items: [{ kind: "StartingPoint", x: 430000, y: 620000, turn: 0, name: "", alliance: 1 },
-            { kind: "StartingPoint", x: 890000, y: 620000, turn: 0, name: "", alliance: 2 },
-            { kind: "Spawn", x: 655000, y: 420000, turn: 0, name: "depot", camp: 1, what: "Unit_M4_Sherman" },
-            { kind: "LabelVille", x: 655000, y: 700000, turn: 0, name: "", text: "Port Island" }] },
-        { file: "leveldesign_challenge.scenario", kind: "operation", entries: [{ name: "Challenge - Island", kind: "operation", titles: { us: "Harbour raid", fr: "Raid sur le port" } }], zones: [], items: [{ kind: "StartingPoint", x: 655000, y: 620000, turn: 0, name: "", alliance: 1 }] }] }),
+      map_scenarios: async (pack) => withScenarioEdits(pack),
+      scenario_move: async (pack, file, item, x, y) => {
+        const e = scenEdits(pack);
+        e.moves = e.moves.filter((m) => !(m.file === file && m.item === item)).concat([{ file, item, x, y }]);
+        return withScenarioEdits(pack);
+      },
+      scenario_put_back: async (pack, file, item) => {
+        const e = scenEdits(pack);
+        e.moves = e.moves.filter((m) => !(m.file === file && m.item === item));
+        return withScenarioEdits(pack);
+      },
+      scenario_spawn: async (pack, file, unit, x, y, camp = 1) => {
+        scenEdits(pack).spawns.push({ file, what: unit.replace(E, "Unit_"), x, y, camp });
+        return withScenarioEdits(pack);
+      },
+      scenario_move_spawn: async (pack, number, x, y) => {
+        Object.assign(scenEdits(pack).spawns[number], { x, y });
+        return withScenarioEdits(pack);
+      },
+      scenario_remove_spawn: async (pack, number) => {
+        scenEdits(pack).spawns.splice(number, 1);
+        return withScenarioEdits(pack);
+      },
       terrain_add: async (pack, strokes) => {
         if (!current) throw new Error("Pick or make a mod first: the shaped ground is saved in it.");
         const key = `${current}|${pack}`, list = (terrains.get(key) || []).concat(strokes);

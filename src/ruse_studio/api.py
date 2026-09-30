@@ -17,7 +17,7 @@ import struct
 import threading
 import tomllib
 import unicodedata
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
@@ -51,6 +51,23 @@ NOT_EDITABLE = {"DescriptorId", "TrackingId", "AmmunitionId", "Nationalite"}  # 
 # moving a unit to another nation needs more than one number (its menus, and the new nation's add-on for China), so it
 # comes later
 ALL_CLASSES = tuple(KIND_OF)
+# What a unit or building is for (the unit list's and the Spawn tool's second sort, after the kind). Buildings by their
+# code name, first match wins (a decoy HQ is a decoy): Leurre is French for decoy. Units by the factory that builds them
+# (its menu number); 3 is the construction menu, where the forts' guns sit.
+BUILDING_GROUPS = (("fake", ("Leurre", "Fake")), ("hq", ("Headquarter",)),
+                   ("money", ("BatimentAdministratif", "Depot")),
+                   ("fort", ("Defense", "Def_", "ArtillerieField", "PosteAlerte")))
+FACTORY_GROUPS = {8: "barracks", 10: "armor", 11: "antitank", 13: "artillery", 12: "prototype", 9: "airfield",
+                  3: "turret"}
+GROUPS = ("hq", "money", "factory", "fort", "fake", *FACTORY_GROUPS.values(), "other")  # the order lists show them in
+
+
+def group_of(kind: str, address: str, factory: int | None) -> str:
+    """What a unit or building is for: one of GROUPS (a mod's new unit goes by the one it was copied from)."""
+    if kind == "buildings":
+        name = _tail(address)
+        return next((g for g, parts in BUILDING_GROUPS if any(p in name for p in parts)), "factory")
+    return FACTORY_GROUPS.get(factory, "other")
 NATIONS = 7
 _PREFIX = re.compile(r"^(Descriptor_[A-Za-z]+_)")  # Descriptor_Unit_M4_Sherman -> a copy is Descriptor_Unit_<Name>
 PACKAGE_FILES = ("RUSE mods (*.rusemod)",)  # the "save as" dialog's filter for Export mod…
@@ -217,10 +234,11 @@ class StudioApi(UpdateCalls, PrefsCalls):
             return {}
         return edits.new_units if edits else {}
 
-    def units(self, lang: str = schema.BASE, kind: str = "all", nation: int = -1, search: str = "") -> dict:
-        """The units and buildings to list, with names in `lang` (the code names by default). The current mod's
-        new units come first, under the nation and factory they were given, marked `new`. `kind` "ammo" lists the
-        ammunition instead (see `ammo`)."""
+    def units(self, lang: str = schema.BASE, kind: str = "all", nation: int = -1, search: str = "",
+              group: str = "all") -> dict:
+        """The units and buildings to list, with names in `lang` (the code names by default), each with its `group`
+        (what it's for, group_of); `group` lists only those. `groups`: the groups there are of `kind` and `nation`. The current mod's new units come first, under the nation
+        and factory they were given, marked `new`. `kind` "ammo" lists the ammunition instead (see `ammo`)."""
         if kind == "ammo":
             return self.ammo(lang, search)
         ix = self._open()
@@ -245,10 +263,14 @@ class StudioApi(UpdateCalls, PrefsCalls):
                         "factory": own.get("Factory", src["factory"]), "slot": None, "new": True,
                         "source": unit.source, "name": unit.name})
         words = search.strip().lower()
-        out = []
+        out, present = [], set()
         for u in new + rows:
             k = KIND_OF.get(u["class"], "ground")
             if kind != "all" and k != kind or nation >= 0 and u["nation"] != nation:
+                continue
+            g = group_of(k, u.get("source") or u["address"], u["factory"])
+            present.add(g)
+            if group != "all" and g != group:
                 continue
             name = u.get("name") or names.get(u["key"]) or _tail(u["address"])
             if words and words not in name.lower() and words not in u["address"].lower():
@@ -256,8 +278,8 @@ class StudioApi(UpdateCalls, PrefsCalls):
             out.append({"address": u["address"], "name": name, "base_name": _tail(u["address"]), "kind": k,
                         "nation": u["nation"], "nation_name": schema.nation(u["nation"], lang),
                         "factory": u["factory"], "slot": u["slot"], "new": u.get("new", False),
-                        "source": u.get("source")})
-        return {"units": out, "total": len(rows) + len(new)}
+                        "source": u.get("source"), "group": g})
+        return {"units": out, "total": len(rows) + len(new), "groups": [g for g in GROUPS if g in present]}
 
     # --- ammunition: what a weapon fires (damage, range, rate of fire); several units' weapons share one ---
     def _all_ammo(self, ix: Index) -> list[dict]:
@@ -743,12 +765,14 @@ class StudioApi(UpdateCalls, PrefsCalls):
                 self._sceneries.pop(next(iter(self._sceneries)))
         return out
 
-    def map_scenarios(self, pack: str) -> dict:
+    def map_scenarios(self, pack: str, edited: bool = True) -> dict:
         """A map's scenarios (rusemod.scenario), for the map view: {"scenarios": [{"file", "kind", "entries",
         "zones", "items"}]}, by kind (skirmish, operation, campaign, demo, test, unused: what the game's map list and
         menus do with it), then by name. `entries`: the map list's entries that load it, each with its name and what
         the menus call it in each language ({lang: text}). Zones are drawn as their triangles; items are starting
-        points, spawns, circle and rectangle zones, labels and waypoints."""
+        points, spawns, circle and rectangle zones, labels and waypoints, each with its number (`item`). `edited`:
+        as the current mod leaves them (items it moves are at their new place and marked `moved`; the units and
+        buildings it spawns come last, marked `mine` with their number among the mod's spawns)."""
         from rusemod.terrain import menu_texts
         game = self._game()
         if game is None:
@@ -759,8 +783,9 @@ class StudioApi(UpdateCalls, PrefsCalls):
             raise StudioError(f"{scenario.PACK if path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game folder.")
         key = ("scenarios", str(path), path.stat().st_mtime, pack.lower())
         with self._grounds_lock:
-            if key in self._sceneries:
-                return self._sceneries[key]
+            cached = self._sceneries.get(key)
+        if cached is not None:
+            return self._with_scenario_edits(pack, cached) if edited else cached
         with Edat.open(str(path)) as arc:
             found = scenario.of_map(arc, pack)
         with Edat.open(str(glad_path)) as glad:
@@ -772,12 +797,34 @@ class StudioApi(UpdateCalls, PrefsCalls):
                         "titles": {lang: t[e["key"]] for lang, t in texts.items() if e["key"] in t}}
                        for e in kinds.get(f.lower(), [])]
             kind = entries[0]["kind"] if entries else "unused"
-            out_list.append({"file": f, "kind": kind, "entries": entries, **scenario.view(s)})
+            view = scenario.view(s)
+            for k, it in enumerate(view["items"]):
+                it["item"] = k
+            out_list.append({"file": f, "kind": kind, "entries": entries, **view})
         out_list.sort(key=lambda s: (scenario.KINDS.index(s["kind"]), (s["entries"][0]["name"] if s["entries"] else s["file"]).lower()))
         out = {"scenarios": out_list}
         with self._grounds_lock:
             self._sceneries[key] = out
-        return out
+        return self._with_scenario_edits(pack, out) if edited else out
+
+    def _with_scenario_edits(self, pack: str, base: dict) -> dict:
+        """The map's scenarios as the current mod leaves them (a copy; the cached ones stay the game's)."""
+        moves, spawns = self._read_scenario_edits(pack)
+        if not moves and not spawns:
+            return base
+        out = []
+        for s in base["scenarios"]:
+            s = {**s, "items": [dict(it) for it in s["items"]]}
+            for m in moves:
+                if m.file.lower() == s["file"].lower() and m.item < len(s["items"]):
+                    s["items"][m.item].update(x=m.x, y=m.y, moved=True)
+            for n, sp in enumerate(spawns):
+                if sp.file.lower() == s["file"].lower():
+                    s["items"].append({"kind": "Spawn", "x": sp.x, "y": sp.y, "turn": sp.rotation, "name": "",
+                                       "camp": sp.camp, "what": sp.what, "mine": True, "spawn": n,
+                                       "item": len(s["items"])})
+            out.append(s)
+        return {"scenarios": out}
 
     @property
     def cache_dir(self) -> Path:
@@ -838,6 +885,113 @@ class StudioApi(UpdateCalls, PrefsCalls):
             self._models_done[name] = models.map_models(game, types, out, say=say)
 
         return job.start(work, "The 3D models are ready.")
+
+    # --- a map's scenarios, edited: maps/<pack>/scenario.toml in the current mod (MOD_FORMAT §8, rusemod.scenario):
+    # starting points and other items moved, units and buildings spawned ---
+    SCENARIO_HEADER = ("The starting points and other items this mod moves on this map's scenarios, and the units and "
+                       "buildings it spawns (docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio, which rewrites this file.")
+
+    def _scenario_file(self, pack: str) -> Path:
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+        if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
+            raise StudioError(f"{pack!r} isn't a map's pack name")
+        return folder / "maps" / pack / "scenario.toml"
+
+    def _read_scenario_edits(self, pack: str) -> tuple[list, list]:
+        """(moves, spawns) the current mod makes on this map's scenarios; none without a mod."""
+        if self._mod_dir() is None:
+            return [], []
+        path = self._scenario_file(pack)
+        if not path.is_file():
+            return [], []
+        try:
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+            return (scenario.parse_moves(data.get("move", []), str(path)),
+                    scenario.parse_spawns(data.get("spawn", []), str(path)))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, scenario.ScenarioError) as exc:
+            raise StudioError(f"{path} has a mistake ({exc}). Fix it, or delete it to start over.") from None
+
+    def _write_scenario_edits(self, pack: str, moves: list, spawns: list) -> Path:
+        path = self._scenario_file(pack)
+        if moves or spawns:
+            ModEdits._write(path, scenario.moves_toml(moves, self.SCENARIO_HEADER) + "\n" + scenario.spawns_toml(spawns))
+        elif path.is_file():
+            path.unlink()
+        return path
+
+    def _base_scenario(self, pack: str, file: str) -> dict:
+        found = next((s for s in self.map_scenarios(pack, edited=False)["scenarios"] if s["file"].lower() == file.lower()), None)
+        if found is None:
+            raise StudioError(f"{pack} has no scenario {file}")
+        return found
+
+    def scenario_move(self, pack: str, file: str, item: int, x: float, y: float) -> dict:
+        """Put design item `item` of scenario `file` at x, y in the current mod (a second move of it replaces the
+        first). Returns the map's scenarios as the mod leaves them."""
+        base = self._base_scenario(pack, file)
+        if not 0 <= int(item) < len(base["items"]):
+            raise StudioError(f"{file} has no item {item}")
+        kind = base["items"][int(item)]["kind"]
+        if kind not in scenario.KINDS_MOVABLE:
+            raise StudioError(f"a {kind or 'plain item'} can't be moved")
+        with self._saving:
+            moves, spawns = self._read_scenario_edits(pack)
+            moves = [m for m in moves if not (m.file.lower() == file.lower() and m.item == int(item))]
+            moves.append(scenario.Move(file, int(item), kind, float(x), float(y)))
+            self._write_scenario_edits(pack, moves, spawns)
+        return self.map_scenarios(pack)
+
+    def scenario_put_back(self, pack: str, file: str, item: int) -> dict:
+        """Undo the current mod's move of item `item` (it goes back where the game has it)."""
+        with self._saving:
+            moves, spawns = self._read_scenario_edits(pack)
+            moves = [m for m in moves if not (m.file.lower() == file.lower() and m.item == int(item))]
+            self._write_scenario_edits(pack, moves, spawns)
+        return self.map_scenarios(pack)
+
+    def scenario_spawn(self, pack: str, file: str, unit: str, x: float, y: float, camp: int | None = 1,
+                       rotation: float = 0.0) -> dict:
+        """Spawn a unit or building (`unit`: its address, as the unit list gives it) when scenario `file` starts, at
+        x, y, for side `camp`. Returns the map's scenarios as the mod leaves them."""
+        self._base_scenario(pack, file)
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(unit)
+            except KeyError:
+                raise StudioError(f"There's no unit at {unit}.") from None
+            name = next((t for p, _n, t in o["values"] if p == "ClassNameForDebug" and t), None)
+        finally:
+            ix.close()
+        if not name:
+            raise StudioError(f"{_tail(unit)} has no class name for the game's scripts, so it can't be spawned")
+        with self._saving:
+            moves, spawns = self._read_scenario_edits(pack)
+            spawns.append(scenario.Spawn(file, name, float(x), float(y), None if camp is None else int(camp), float(rotation)))
+            self._write_scenario_edits(pack, moves, spawns)
+        return self.map_scenarios(pack)
+
+    def scenario_move_spawn(self, pack: str, number: int, x: float, y: float) -> dict:
+        """Put the current mod's spawn number `number` at x, y."""
+        with self._saving:
+            moves, spawns = self._read_scenario_edits(pack)
+            if not 0 <= int(number) < len(spawns):
+                raise StudioError("that spawn isn't in the mod any more")
+            spawns[int(number)] = replace(spawns[int(number)], x=float(x), y=float(y))
+            self._write_scenario_edits(pack, moves, spawns)
+        return self.map_scenarios(pack)
+
+    def scenario_remove_spawn(self, pack: str, number: int) -> dict:
+        """Take back the current mod's spawn number `number` (its place among the mod's spawns on this map)."""
+        with self._saving:
+            moves, spawns = self._read_scenario_edits(pack)
+            if not 0 <= int(number) < len(spawns):
+                raise StudioError("that spawn isn't in the mod any more")
+            del spawns[int(number)]
+            self._write_scenario_edits(pack, moves, spawns)
+        return self.map_scenarios(pack)
 
     # --- placing objects on a map: maps/<pack>/scenery.toml in the current mod (MOD_FORMAT §8, rusemod.scenery) ---
     SCENERY_HEADER = ("The objects this mod adds to this map, in order (docs/MOD_FORMAT.md §8).\nMade in the RUSE "

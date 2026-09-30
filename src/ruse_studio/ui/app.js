@@ -4,7 +4,7 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
-const state = { lang: "base", kind: "all", nation: -1, search: "", selected: null, words: {}, languages: [],
+const state = { lang: "base", kind: "all", nation: -1, search: "", group: "all", selected: null, words: {}, languages: [],
   nationNames: [], mods: [], mod: null, edited: new Set(),
   page: null,     // the object shown: { address, via }; via = the named unit the modder came from
   mode: "own",    // a part several units share: change it for "own" (that unit only) or "shared" (all of them)
@@ -198,7 +198,7 @@ function renderChips() {
   $("kinds").replaceChildren(...KINDS.map((k) => {
     const b = el("button", { type: "button", className: "chip", textContent: w[k], title: w.tip_kind });
     b.setAttribute("aria-pressed", String(state.kind === k));
-    b.addEventListener("click", () => { state.kind = k; renderChips(); refreshList(); });
+    b.addEventListener("click", () => { state.kind = k; state.group = "all"; renderChips(); refreshList(); });
     return b;
   }));
   const nations = state.kind === "ammo" ? [] : [-1, 0, 1, 2, 3, 4, 5, 6];  // ammunition has no nation
@@ -211,13 +211,25 @@ function renderChips() {
   }));
 }
 
+// What the units listed are for: a building's job (HQ, money, factory, fort, fake) or the factory that builds a unit.
+function renderGroups(groups) {
+  const w = state.words, pick = $("unit-group");
+  pick.classList.toggle("hidden", !groups.length);
+  pick.title = w.tip_group;
+  pick.setAttribute("aria-label", w.tip_group);
+  pick.replaceChildren(el("option", { value: "all", textContent: w.group_all }),
+    ...groups.map((g) => el("option", { value: g, textContent: w["group_" + g] || g })));
+  pick.value = groups.includes(state.group) ? state.group : "all";
+}
+
 async function refreshList() {
   let res;
   try {
-    res = await api().units(state.lang, state.kind, state.nation, state.search);
+    res = await api().units(state.lang, state.kind, state.nation, state.search, state.group || "all");
     state.edited = new Set(await api().edited());
   } catch (err) { problem(err); return; }
   $("count").textContent = state.words.units.replace("{n}", res.units.length);
+  renderGroups(res.groups || []);
   $("unit-list").replaceChildren(...res.units.map((u) => {
     const sub = u.kind === "ammo"
       ? (u.nations.length ? u.nations.join(", ") + " · " : "") +
@@ -949,6 +961,7 @@ async function start() {
   $("test").addEventListener("click", testInGame);
   $("test-log-close").addEventListener("click", () => $("test-panel").classList.add("hidden"));
   let timer = null;
+  $("unit-group").addEventListener("change", (e) => { state.group = e.target.value; refreshList(); });
   $("search").addEventListener("input", (e) => {
     state.search = e.target.value;
     clearTimeout(timer);
