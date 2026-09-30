@@ -823,7 +823,9 @@ flamethrower, the Italian L6/40 Lanciafiamme), with a short range.
 - **Tunnel Warfare:** your infantry in the sector's towns stays hidden after it fires (the tunnel villages of
   northern China). Needs balancing: it may be too strong.
 
-Whether new ruses are possible at all depends on whether ruses are data or program (check 1).
+Whether new ruses are possible at all depends on whether ruses are data or program (check 1). Some rules are
+known to be program-side already (the two ruses a sector takes, 2026-09-30: no data value holds it); those go on
+RUSE 2.0's private list, to be handled together later, never through the public apps.
 
 **Pacific forts (draft):**
 - **Coconut-log bunker:** very tough against artillery, weak against flamethrowers and close assault
