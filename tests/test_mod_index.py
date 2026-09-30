@@ -79,6 +79,10 @@ class Served(unittest.TestCase):
         with self.assertRaisesRegex(ModIndexError, "no copy from before"):
             fetch(f"{self.base}/index.toml", self.root / "empty", timeout=2)
 
+    def test_no_list_published_yet(self):
+        with self.assertRaisesRegex(ModIndexError, "No mod list has been published yet"):
+            fetch(f"{self.base}/nothing-here.toml", self.root / "empty", timeout=2)
+
     def test_a_download_is_checked_against_the_list(self):
         mods, _ = parse((self.www / "index.toml").read_text(encoding="utf-8"))
         by_id = {m["id"]: m for m in mods}

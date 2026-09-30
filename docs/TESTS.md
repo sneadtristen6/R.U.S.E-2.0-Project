@@ -93,11 +93,15 @@ Studio with `py -3 -m ruse_studio`.
 
 ## T7. The launcher: mod sets, sharing and importing (launcher 0.2)
 
-Open the launcher with `py -3 -m ruse_launcher`.
+Install RUSE Launcher 0.2.0 from [Releases](https://github.com/sneadtristen6/Ruse-Mod-Platform/releases?q=launcher)
+(or run `py -3 -m ruse_launcher` from the repo).
 1. Click **Add a mod file…** and add a `.rmod`. Then make a mod set with it and press **Play**.
 2. On the set, click **Share**. Then use **Import a load order…** with that text.
 - **Pass:** the mod works in-game, and the imported set has the same mods in the same order.
 - **Extra:** a load order copied from RUSE Mod Manager imports too.
+- **Extra, when 0.2.1 is out:** the launcher offers it; **Update** installs it and the launcher starts again.
+- **First report (DomesticNukes, 2026-09-29):** 12 `.rmod` mods in one set built with 0 errors and the game started,
+  then failed. His suspect: No Fog of War. Next: the same set without it, then No Fog of War alone.
 
 ## Later
 

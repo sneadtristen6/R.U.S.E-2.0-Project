@@ -111,6 +111,10 @@ def fetch(url: str, cache_dir, timeout: float = TIMEOUT, now=time.localtime) -> 
                                    f"No connection to the mod list ({why}). This is the copy from {as_of}.")
             except (ModIndexError, OSError, UnicodeDecodeError):
                 pass
+        if isinstance(exc, urllib.error.HTTPError) and exc.code == 404:  # the address answers, the list isn't there
+            exc.close()
+            raise ModIndexError("No mod list has been published yet, so there's nothing to browse. A mod you have as "
+                                "a file goes in with “Add a mod file…”.") from None
         raise ModIndexError(f"The mod list couldn't be loaded ({why}), and there's no copy from before.") from None
     cache_dir.mkdir(parents=True, exist_ok=True)
     when = time.strftime("%Y-%m-%d %H:%M", now())

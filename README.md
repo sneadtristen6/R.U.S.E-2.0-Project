@@ -13,7 +13,7 @@
 &nbsp;&nbsp;
 [![Download RUSE Studio](https://img.shields.io/badge/Download-RUSE%20Studio-b8913a?style=for-the-badge)](https://github.com/sneadtristen6/Ruse-Mod-Platform/releases?q=studio)
 
-**Launcher** for players (latest: 0.1.0) &middot; **Studio** for modders, a preview (latest: 0.4.1) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.2.0) &middot; **Studio** for modders, a preview (latest: 0.4.1) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 </div>
 
@@ -36,23 +36,24 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 
 - Pick a mod set and press **Play**: the launcher builds a modded copy of the game and starts it.
 - Add a mod file (a `.rusemod` from the Studio, a community `.rmod` used as it is, or a `.zip`), or drop it on the
-  window. *Coming.*
-- Make and reorder mod sets in the window. *Coming.*
+  window.
+- Make and reorder mod sets in the window.
 - Share a mod set's load order with a friend, or import one. It's the same text RUSE-Mod-Manager copies and reads,
-  so load orders go both ways. *Coming.*
-- Browse the community's mods and install them. *Coming.*
-- Get new versions without downloading by hand: the launcher offers them, checks the file and installs it.
-  *Coming* (the first version with it has to be installed by hand once).
+  so load orders go both ways.
+- Browse the community's mods and install them. *Coming* (the list isn't published yet).
+- Get new versions without downloading by hand: the launcher offers them, checks the file and installs it (from
+  0.2.0 on).
 
 **Modders, with RUSE Studio**
 
-- Browse every unit and building, in the game's own names or any of its ten languages.
+- Browse every unit and building by its code name or in any of the game's ten languages.
 - Change a unit's numbers in your own mod, with Undo, then **Test in game**.
-- See every map in 3D with its real ground.
+- See every map in 3D with its real ground, listed by the name players know (in any of the ten languages) next to
+  its code name.
 - Make new units, shape a map's ground, place buildings, props and trees, and export a mod as one file. *Coming.*
 - The Studio offers its own new versions too. *Coming.*
 
-*Coming* means merged and in the test builds, waiting for its in-game check before a release ships it.
+*Coming* means merged and in the test builds, not in a release yet.
 
 Modders who write mods by hand can also use the `ruse` command-line tool, from the source (see
 [For contributors](#for-contributors) below).
@@ -121,7 +122,7 @@ step by step for anyone with the game: [docs/TESTS.md](docs/TESTS.md).
   modded copy with Dev Toolkit and 10x Artillery Price passed in-game. Their format is written down in MOD_FORMAT
   §13, and what they teach about the game's data is in FORMATS.md §2. The community mods we rebuilt in our own
   format (`tools/rmod_to_mod.py`) are kept in the private shared repo until their authors agree.
-- **Sharing a load order** (merged, not yet checked in-game): the launcher gives a mod set's load order as text to
+- **Sharing a load order** (Launcher 0.2.0, not yet checked in-game): the launcher gives a mod set's load order as text to
   paste to a friend, and "Import a load order…" makes a set from one. It's RUSE-Mod-Manager's own block, so load
   orders go both ways between the two apps.
 - **Browse mods** (merged, not yet checked in-game): the launcher lists the community's mods from a GitHub index and
@@ -136,7 +137,7 @@ step by step for anyone with the game: [docs/TESTS.md](docs/TESTS.md).
   modded copy and starts it.
 - **Maps:** new maps can ship their own pack (C3). The terrain mesh and tile files can be read and rewritten
   losslessly, and the game draws terrain textures we write ourselves.
-- **The apps update themselves** (merged, not yet checked in-game): on start they look for a newer release on
+- **The apps update themselves** (Launcher 0.2.0 and the next Studio, not yet checked in-game): on start they look for a newer release on
   GitHub, and Update downloads it, checks its SHA-256 and installs it; the app starts again by itself.
 - **Next:** the in-game tests in [docs/TESTS.md](docs/TESTS.md) (scenery, water, community mods, the hill, a new
   unit from the Studio, the launcher), then the releases that ship them.

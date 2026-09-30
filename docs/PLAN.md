@@ -602,7 +602,7 @@ one is shorter. Rules:
 |---|---|---|---|---|
 | 1 | **Ask DomesticNukes** for the three `.kdt` encodings (index buffer, triangle lists, subtree opcodes), format notes only; ours (framing, vertices, the normal word) go into FORMATS.md with the agreed credit | a message; FORMATS §6 (**done 2026-09-29**) | 0 (owner) | — |
 | 2 | **Units in the Studio:** "New unit" from a unit's page (copy, name in all languages, price, menu and nation), on the engine that already does it (C6d, C7) (**done 2026-09-29**, pull request #1; the owner's in-game test and the 0.5.0 release follow) | Studio 0.5 | 1–2 | — |
-| 3 | **Launcher v0.2:** mod sets made in the window (new, edit, rename, duplicate, delete), "Add a mod file…", drag-and-drop; players never see a file (**code done 2026-09-29**, pull request #2; the owner's test with the real game and the 0.2.0 release follow) | Launcher 0.2, first public alpha | 2 | — |
+| 3 | **Launcher v0.2:** mod sets made in the window (new, edit, rename, duplicate, delete), "Add a mod file…", drag-and-drop; players never see a file (**released as Launcher 0.2.0 on 2026-09-29**, the owner's call before T7, with ".rmod" files, sharing and importing a load order, and self-update; T7 still checks it) | Launcher 0.2, first public alpha | 2 | — |
 | 4 | **Terrain editor** T1–T4 (§7 MT): `.kdt` read and written losslessly, height edits that keep the ground, the camera floor and both meshes in step, brushes in the Maps view, "Test in game" (**T2–T4 code done 2026-09-29**, branches `cloud/terrain-brushes` and `cloud/studio-brushes`: brushes, all four files in step, terrain edits in mods and in the build, and the brushes in the Studio's Maps view; the in-game hill check is next) | Studio 0.6 | 4–6 with the notes; +2–4 without | step 1 |
 | 5 | **Browse mods:** a GitHub repo as the index, a launcher tab that installs from it (L6) (**code done 2026-09-29**, pull request `cloud/browse-mods`; the owner creates `sneadtristen6/Ruse-Mods` and tests) | Launcher 0.3 | 1–2 | step 3 |
 | 6 | **China, step 2** (M10): a modded copy with an 8th entry wherever the data has 7; does the game offer it? | an answer | 1 (owner at the game) | — |
@@ -642,7 +642,10 @@ and report what happened.
 4. **T4 The hill** (terrain brushes, pull request #6). Decides whether the game accepts ground we move.
 5. **T5 A new unit** made in the Studio (a Sherman copy). Decides Studio 0.5.
 6. **T6 Placing scenery from the Studio.**
-7. **T7 The launcher:** mod sets, sharing and importing a load order. Decides launcher 0.2.
+7. **T7 The launcher:** mod sets, sharing and importing a load order. Launcher 0.2.0 is already out (the owner's
+   call); T7 checks it and the next version's self-update. First report (DomesticNukes, 2026-09-29): a set of 12
+   `.rmod` mods built with 0 errors and the game started, then failed; his suspect is No Fog of War (every unit's
+   vision set to 3,000,000). Next: the same set without it.
 8. Later: **Browse mods** (after `sneadtristen6/Ruse-Mods` exists) and **China** (M10 step 2).
 
 **Parked until asked:** the "look like R.U.S.E." polish and terrain T5; icons and unit textures (M5); map
