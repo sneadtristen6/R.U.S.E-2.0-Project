@@ -1,0 +1,47 @@
+# Keeps the private shared repo in step with this one (PLAN.md §10 "Two repos"): on every push to main, whoever
+# pushed (the PC session, a cloud session, a merged pull request), the shared repo's main gets the same commits and
+# its private branch gets them merged in (it's main plus the private/ folder, which this repo never touches).
+# Needs the secret SHARED_REPO_TOKEN: a fine-grained token with Contents read/write on Ruse-Mod-Platform-Shared only.
+# Without it the job warns and does nothing. It never force-pushes: if the shared main has commits of its own, or the
+# merge conflicts, the job fails and says so, and nothing is changed there.
+name: sync-private
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: sync-private
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'sneadtristen6/Ruse-Mod-Platform'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TOKEN: ${{ secrets.SHARED_REPO_TOKEN }}
+    steps:
+      - name: Without the token, say so
+        if: env.TOKEN == ''
+        run: echo "::warning::SHARED_REPO_TOKEN isn't set, so the private repo wasn't synced (.github/workflows/sync-private.yml)"
+      - uses: actions/checkout@v4
+        if: env.TOKEN != ''
+        with:
+          fetch-depth: 0
+      - name: Mirror main, merge it into private
+        if: env.TOKEN != ''
+        run: |
+          git config user.name "sync-private"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add shared "https://x-access-token:${TOKEN}@github.com/sneadtristen6/Ruse-Mod-Platform-Shared.git"
+          git fetch --no-tags shared main private
+          git push shared "${GITHUB_SHA}:refs/heads/main"
+          git checkout -B private shared/private
+          if git merge-base --is-ancestor "${GITHUB_SHA}" HEAD; then
+            echo "private already has ${GITHUB_SHA::7}"
+          else
+            git merge --no-edit "${GITHUB_SHA}" -m "Merge public main (${GITHUB_SHA::7}) into private"
+            git push shared private
+          fi
