@@ -10,8 +10,8 @@ to make them, and what to do when something goes wrong.
 
 ### Where to post
 
-- 🐞 **Bug reports**: something doesn't work. A short form asks for the details (soon the apps' **Report a problem**
-  button will open one with your version filled in).
+- 🐞 **Bug reports**: something doesn't work. The apps' **Report a problem** button opens one with your version
+  filled in, or start one here: a short form asks for the details.
 - ❓ **Help**: how do I...? Mark the answer that solved it, so the next person finds it.
 - 💡 **Ideas**: tools, features and mods you'd like. Upvote the ones you want most.
 - 🗺️ **Mods & maps**: show what you made, attach the `.rusemod`, get feedback.

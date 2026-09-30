@@ -14,6 +14,9 @@ Where things stand, and what's next. Tested-in-game features are marked ✅.
 - ✅ Where units go: block ground for every unit, infantry or vehicles
 - ✅ Move starting points and spawns; add units to a scenario
 - ✅ Launcher: mod sets, `.rmod` support, shared load orders, self-updates
+- Several units at once, in formations (line, column, wedge, box, circle): Studio 0.7.1, in-game check next
+- A mod check that finds broken files and misnamed map folders, with the fix: Studio 0.7.1
+- **Report a problem** and **Help** in both apps: Studio 0.7.1, Launcher 0.2.7
 
 ### Next, in order
 
@@ -25,8 +28,6 @@ Where things stand, and what's next. Tested-in-game features are marked ✅.
 
 ### Also coming
 
-- **Several units at once, in formations** (line, column, wedge, box, circle): in the next Studio release
-- **Report a problem** buttons in both apps, and a mod check that finds broken files before the game does
 - **Browse mods** in the launcher: the community's mods, installed in one click
 - **Join codes**: check that every player has the same mods before a multiplayer game
 - **Units as real 3D models** in the Studio's map view, instead of markers
