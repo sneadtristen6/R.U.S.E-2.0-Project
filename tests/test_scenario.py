@@ -4,7 +4,7 @@ import struct
 import unittest
 
 from fixtures import make_ndf, val
-from rusemod.scenario import AREA, MAGIC, Scenario, ScenarioError
+from rusemod.scenario import AREA, MAGIC, Scenario, ScenarioError, with_checksum
 
 
 def u32(*vs) -> bytes:
@@ -58,7 +58,7 @@ def scenario(zones=(("zone_a", 1000.0), ("zone_b", 500.0)), items=True) -> bytes
     if items:
         nd = design_items()
         out += u32(len(nd)) + nd
-    return out
+    return with_checksum(out)
 
 
 class Reading(unittest.TestCase):
@@ -119,6 +119,16 @@ class Writing(unittest.TestCase):
         self.assertEqual(size % 4, 0)
         s.move(0, 1.0, 2.0)
         self.assertEqual(len(s.to_bytes()) % 4, len(data) % 4)
+
+    def test_the_checksum_is_made_again(self):
+        """The 16 bytes after the magic are the MD5 of bytes 0-9 and 28-end (LittleGroove's rule, true of all 102
+        shipped files); the game checks it at launch and crashed on a moved starting point without it."""
+        import hashlib
+        s = Scenario.read(scenario())
+        s.move(0, 7.0, 8.0)
+        data = s.to_bytes()
+        self.assertEqual(data[10:26], hashlib.md5(data[:10] + data[28:]).digest())
+        self.assertNotEqual(data[10:26], bytes(16))
 
     def test_a_renamed_zone_is_written_with_its_new_name(self):
         s = Scenario.read(scenario())

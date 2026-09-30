@@ -6,7 +6,7 @@ files are the same except for the list at the end of each zone (Wargame writes i
 checked on every scenario R.U.S.E. ships (102 files, every byte accounted for).
 
     "SCENARIO\\r\\n"            10 bytes
-    16 bytes                    a checksum (not an MD5 of the rest)
+    16 bytes                    MD5 of bytes 0-9 and of byte 28 to the end (LittleGroove's rule; the game checks it)
     2 bytes                     0
     u32 version                 4
     u32 1
@@ -29,10 +29,12 @@ _Spawn (where reinforcements arrive), _LabelVille and _LabelMontagne (a town's o
 others on some maps.
 
 Writing: `Scenario.to_bytes()` gives the file back; unchanged, byte for byte (all 102). `move()` puts a design item
-somewhere else (its Position, and its Rotation when it has one); the NDF is then written again by rusemod.ndf.
+somewhere else (its Position, and its Rotation when it has one); the NDF is then written again by rusemod.ndf, and
+the checksum made again.
 """
 from __future__ import annotations
 
+import hashlib
 import struct
 from dataclasses import dataclass, field
 
@@ -208,7 +210,18 @@ class Scenario:
             else:
                 nd = self.ndf_raw
             out += struct.pack("<I", len(nd)) + nd
-        return out
+        return with_checksum(out)
+
+
+def checksum(data: bytes) -> bytes:
+    """The 16 bytes at 10-25: the MD5 of bytes 0-9 and of byte 28 to the end (the rule in LittleGroove's
+    RUSE-Mod-Manager, scenario.py; true of all 102 shipped files). The game checks it when it starts: a moved
+    starting point without it crashed the game at launch (2026-09-30)."""
+    return hashlib.md5(bytes(data[:10]) + bytes(data[28:])).digest()
+
+
+def with_checksum(data: bytes) -> bytes:
+    return bytes(data[:10]) + checksum(data) + bytes(data[26:])
 
 
 def _items(nd: Ndf) -> list[Item]:
