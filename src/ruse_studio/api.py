@@ -815,6 +815,61 @@ class StudioApi(UpdateCalls, PrefsCalls):
             self._sceneries[key] = out
         return out
 
+    def map_movement(self, pack: str) -> dict:
+        """Where units can go on a map, as the game has it (rusemod.nav: the navigation graphs in DataMap_Win.dat),
+        for the map view to draw under the mod's block brushes: {"size": n, "box": [x0, y0, width, height] in map
+        units, "infantry": base64 of n*n bits, "vehicles": the same} (cell i at byte i // 8, bit i % 8; row by row
+        from y0; 1 = a circle of that graph holds the cell's middle). n is 512; kept per map."""
+        from rusemod import cover, nav
+        from ruse_mod_engine import sdb
+        game = self._game()
+        if game is None:
+            raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
+        path = find_pack(game, cover.PACK)
+        if path is None:
+            raise StudioError(f"{cover.PACK} isn't in the game folder.")
+        key = ("movement", str(path), path.stat().st_mtime, pack.lower())
+        with self._grounds_lock:
+            cached = self._sceneries.get(key)
+        if cached is not None:
+            return cached
+        with Edat.open(str(path)) as arc:
+            try:
+                win = bytes(arc.read(arc.find(cover.member(pack))))
+            except KeyError:
+                raise StudioError(f"{pack} has no movement data in {cover.PACK}.") from None
+        try:
+            bufs = sdb.split_mapinfo(win)[1]
+            graphs = {name: nav.Graph.read(bufs[k]) for name, k in (("infantry", 1), ("vehicles", 2))}
+        except (nav.NavError, ValueError, struct.error, TypeError) as exc:
+            raise StudioError(f"{pack}: its movement data can't be read ({exc}).") from None
+        n = 512
+        x0, y0, size = graphs["infantry"].box[0], graphs["infantry"].box[1], graphs["infantry"].box[2]
+        out = {"size": n, "box": [float(x0), float(y0), float(size), float(size)]}
+        cell = size / n
+        for name, g in graphs.items():
+            bits = bytearray((n * n + 7) // 8)
+            for cx, cy, r, _l, _c in g.circles[:-1]:
+                if r <= 0:
+                    continue
+                i0, i1 = max(0, int((cx - r - x0) / cell)), min(n - 1, int((cx + r - x0) / cell))
+                j0, j1 = max(0, int((cy - r - y0) / cell)), min(n - 1, int((cy + r - y0) / cell))
+                rr = r * r
+                for j in range(j0, j1 + 1):
+                    dy = y0 + (j + 0.5) * cell - cy
+                    dy2 = dy * dy
+                    if dy2 > rr:
+                        continue
+                    half = (rr - dy2) ** 0.5
+                    a, b = max(i0, int((cx - half - x0) / cell)), min(i1, int((cx + half - x0) / cell))
+                    for i in range(a, b + 1):
+                        k = j * n + i
+                        bits[k >> 3] |= 1 << (k & 7)
+            out[name] = base64.b64encode(bytes(bits)).decode("ascii")
+        with self._grounds_lock:
+            self._sceneries[key] = out
+        return out
+
     def map_scenarios(self, pack: str, edited: bool = True) -> dict:
         """A map's scenarios (rusemod.scenario), for the map view: {"scenarios": [{"file", "kind", "entries",
         "zones", "items"}]}, by kind (skirmish, operation, campaign, demo, test, unused: what the game's map list and

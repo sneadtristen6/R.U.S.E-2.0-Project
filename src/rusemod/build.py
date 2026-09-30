@@ -111,6 +111,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.cover = read_cover(path)
         _cover_brushes(info)
         info.movement = read_movement(path)
+        _block_brushes(info)
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -186,6 +187,22 @@ def read_movement(folder: Path) -> dict:
         if blocks:
             out[f.parent.name] = blocks
     return out
+
+
+def _block_brushes(info) -> None:
+    """The Studio's block brushes (terrain.toml) take ground away from units: they move to `info.movement` (after
+    the mod's own movement.toml blocks), like the cover brushes to the cover grid."""
+    from .nav import Block
+    for pack, strokes in list(info.terrain.items()):
+        blocks = [s for s in strokes if s.kind.kind == "block"]
+        if not blocks:
+            continue
+        info.movement.setdefault(pack, []).extend(Block(s.x, s.y, s.radius, s.kind.shape) for s in blocks)
+        rest = [s for s in strokes if s.kind.kind != "block"]
+        if rest:
+            info.terrain[pack] = rest
+        else:
+            del info.terrain[pack]
 
 
 def read_cover(folder: Path) -> dict:
