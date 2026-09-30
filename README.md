@@ -53,9 +53,17 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - Make new units, and give a weapon another unit's ammo (its muzzle flash and sound come with it).
 - Shape a map's ground with brushes (hills, craters, ramps, level, lakes) that **work in the game**: units drive on
   it and take orders there (checked on Blitz, 2026-09-30).
-- See each map's scenarios: zones, starting points, spawns and town names; mods can move starting points.
-- Place buildings, props and trees, and export a mod as one file.
-- The Studio offers its own new versions.
+- **Make towns and woods units hide in:** the map view shows where units hide (in green), and the Cover, Uncover and
+  Town brushes paint it (Town: click a town, cover goes around all its buildings). Infantry on painted cover are
+  hidden in the game (2026-09-30).
+- See each map's scenarios, grouped as the game uses them (skirmish, Operations, campaign): zones, starting points,
+  spawns and town names. **Move** starting points and spawns, and **add units and buildings** a scenario starts with
+  (pick the kind, the type, the unit and its side).
+- Place buildings, props and trees, up to 10× their size, and export a mod as one file. Placed buildings show in the
+  game (2026-09-30; the fix ships in Studio 0.6.9).
+- Units, buildings and ammunition sorted by type (factories, money, forts, decoys; AP, HE, anti-aircraft...).
+- A Settings tab (language, keys, game folder, updates), kept through updates. The Studio offers its own new
+  versions.
 
 *Coming* means merged and in the test builds, not in a release yet.
 
@@ -81,7 +89,7 @@ Modders who write mods by hand can also use the `ruse` command-line tool, from t
   </tr>
 </table>
 
-### Terrain editing, in the game
+### Map making, in the game
 
 <table>
   <tr>
@@ -94,6 +102,18 @@ Modders who write mods by hand can also use the `ruse` command-line tool, from t
       <img src="docs/images/terrain-ingame-units.jpg" alt="R.U.S.E. in game: units on top of the raised hill, the town of Cahir lifted with it" width="380"><br>
       <sub>On top of the hill: the town of Cahir and its trees rise with the ground (2026-09-30). The recipe is
       DomesticNukes and his Claude's.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/map-cover-hidden.jpg" alt="R.U.S.E. in game on Blitz: infantry on top of a painted cover patch, shown as hidden" width="380"><br>
+      <sub>Cover painted on open ground (here on a test hill): the infantry standing on it are hidden, as in a wood.
+      That's how new towns and woods hide units.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/map-placed-buildings.jpg" alt="R.U.S.E. in game on Blitz: water towers at 8 times their size around a hill, barns at 6 times around a pit" width="380"><br>
+      <sub>Buildings placed by a mod: water towers at 8× their size ring the hill, barns at 6× ring a pit next to it
+      (2026-09-30). Units still walk through placed buildings; making them solid is next.</sub>
     </td>
   </tr>
 </table>
@@ -118,50 +138,32 @@ run, **Artifacts** (needs a GitHub login; the files expire after 90 days). More 
 ## Status
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
-are built and fight, maps with their own pack, terrain texture tiles we write ourselves, and a first `.rmod` check
-(Dev Toolkit and 10x Artillery Price in one modded copy). **Not yet checked in the game:** a new unit made in the
-Studio's window, mod sets made in the launcher's window, a mod exported as one file, the launcher's mod library and
-sharing a load order, terrain brushes, placing scenery, Browse mods, and the apps updating themselves. The tests,
-step by step for anyone with the game: [docs/TESTS.md](docs/TESTS.md).
+are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
+(Dev Toolkit and 10x Artillery Price in one modded copy), and on 2026-09-30: terrain brushes (hills, pits, level
+ground that units drive on and take orders on), a moved starting point, painted cover that hides infantry, placed
+buildings (at up to 8× their size), and both apps updating themselves. **Not yet checked in the game:** a new unit
+made in the Studio's window, mod sets made in the launcher's window, a mod exported as one file, sharing a load
+order, units a skirmish spawns, and Browse mods. The tests, step by step for anyone with the game:
+[docs/TESTS.md](docs/TESTS.md).
 
 <details>
-<summary><b>Current stage (2026-09-29)</b></summary>
+<summary><b>Current stage (2026-09-30)</b></summary>
 
-- **Scenery** (merged, not yet checked in-game): mods can add buildings, props and trees to a map
-  (`maps/<map>/scenery.toml`, MOD_FORMAT §8). The Studio's Maps view shows each map's buildings and a share of its
-  props and trees, and its Place tool adds more. The scenery file's layout follows the notes of DomesticNukes and his
-  Claude.
-- **Terrain brushes** (merged, not yet checked in-game): mods can reshape a map's ground, and the Studio's Maps view
-  paints the strokes (hill, raise, lower, crater, plateau, flatten, smooth, and a two-click ramp; size, strength,
-  Undo, Start over). The first in-game check is one hill on Centre of Gravity; it waits for DomesticNukes' review of
-  the ground files (PLAN.md §10).
-- **The ground files:** the map's gameplay ground (`.kdt`) now decodes and re-encodes in every part, lossless on all
-  64 shipped files (`src/rusemod/kdt.py`, checked by `tools/verify_kdt.py`), from the notes of DomesticNukes and
-  his Claude.
-- **Community mods:** `.rmod` files (RUSE-Mod-Manager, by LittleGroove) work as they are: the build applies them with
-  LittleGroove's own engine (PLAN.md decision 26). All 75 on hand apply with 0 errors (a read-only check), and a
-  modded copy with Dev Toolkit and 10x Artillery Price passed in-game. Their format is written down in MOD_FORMAT
-  §13, and what they teach about the game's data is in FORMATS.md §2. The community mods we rebuilt in our own
-  format (`tools/rmod_to_mod.py`) are kept in the private shared repo until their authors agree.
-- **Sharing a load order** (Launcher 0.2.0, not yet checked in-game): the launcher gives a mod set's load order as text to
-  paste to a friend, and "Import a load order…" makes a set from one. It's RUSE-Mod-Manager's own block, so load
-  orders go both ways between the two apps.
-- **Browse mods** (merged, not yet checked in-game): the launcher lists the community's mods from a GitHub index and
-  installs them. It goes live when the index's repository exists.
-- **A mod as one file** (merged, not yet checked in-game): the Studio exports `<id>-<version>.rusemod`, the launcher
-  installs it.
-- **New units work in-game:** a copy of the M3 Lee named "Lee C6-Test", costing $1, in the US armour factory; it's
-  built and fights like any other unit (C7). `ruse build` gives every copied unit the class the game's Python unit
-  list needs, under the safety rules of PLAN.md decision 23 (our own mod format never carries scripts; a community
-  `.rmod` may replace the game's own scripts, with a warning in the build report, decision 26).
-- **Text mods work end to end** (check C4), with new names in all ten languages (C6). The launcher's Play builds the
-  modded copy and starts it.
-- **Maps:** new maps can ship their own pack (C3). The terrain mesh and tile files can be read and rewritten
-  losslessly, and the game draws terrain textures we write ourselves.
-- **The apps update themselves** (Launcher 0.2.0 and Studio 0.5.0 on, not yet checked in-game): on start they look for a newer release on
-  GitHub, and Update downloads it, checks its SHA-256 and installs it; the app starts again by itself.
-- **Next:** the in-game tests in [docs/TESTS.md](docs/TESTS.md) (scenery, water, community mods, the hill, a new
-  unit from the Studio, the launcher), then the releases that ship them.
+- **Map making works in the game** (Blitz, 2026-09-30): the Studio's terrain brushes (the recipe is DomesticNukes
+  and his Claude's), a moved starting point, painted cover (`maps/<map>/cover.toml`, or the Studio's Cover, Uncover
+  and Town brushes: units there are hidden), and placed buildings, which now go in a new block wrapped around a block
+  the map draws from far (FORMATS.md §6).
+- **Scenarios:** every map's scenarios read and shown on the map; mods move starting points and spawns and add units
+  and buildings a scenario starts with (`maps/<map>/scenario.toml`). Which side number is the player in a skirmish
+  is the next in-game check.
+- **Found in the game:** units walk through placed buildings, and the cover grid's "blocked" layer doesn't stop
+  them. Movement lives in the map's other AI data (`mapinfo.win`): its first part is the map's road network, which
+  the road tool will write.
+- **Community mods:** `.rmod` files (RUSE-Mod-Manager, by LittleGroove) work as they are, through LittleGroove's own
+  engine (PLAN.md decision 26); all 75 on hand apply with 0 errors.
+- **Next, the map maker the Cities: Skylines way** (PLAN.md §10, "Roadmap from here"): movement (solid buildings,
+  impassable water and cliffs), roads you draw with a curve that clear the trees in their way, removing scenery,
+  capture zones, ground painting, finer terrain; then new maps in the game's menus, Browse mods and join codes.
 - Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19).
 
 The order is in [PLAN.md §10 "Now"](docs/PLAN.md#10-now); the latest decisions are in PLAN.md §6.
