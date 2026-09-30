@@ -49,6 +49,14 @@ def group_name(key: str, lang: str = BASE) -> str:
 GROUP_ORDER = ("identity", "cost", "combat", "movement", "vision", "menu", "weapon", "other")
 
 
+def flag(n, lang: str = BASE) -> str | None:
+    """What a unit flag number is known to do, in `lang` (English when the language has no text), or None."""
+    texts = _data().get("flags", {}).get(str(int(n)))
+    if not texts:
+        return None
+    return texts.get(lang) or texts.get("us")
+
+
 def nation(n, lang: str = BASE) -> str:
     table = _data()["nations"]
     names = table.get(lang) or table[BASE]

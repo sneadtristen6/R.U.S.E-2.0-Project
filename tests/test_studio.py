@@ -49,30 +49,53 @@ def flag(v):
     return val(0x00, struct.pack("<B", v))
 
 
-# classes: 0 TUniteAuSolDescriptor, 1 TInfanterieDescriptor, 2 TBatimentDescriptor, 3 TWeapon, 4 TAmmunition
+def u32(v):
+    return val(0x03, struct.pack("<I", v))
+
+
+def s(i):
+    return val(0x07, struct.pack("<I", i))
+
+
+AMMO75, AMMO88, APSHELL, MEDIUM, LARGE = (name_to_key(n) for n in ("AMMO75", "AMMO88", "APSHELL", "MEDIUM", "LARGE"))
+
+# classes: 0 TUniteAuSolDescriptor, 1 TInfanterieDescriptor, 2 TBatimentDescriptor, 3 TWeapon, 4 TAmmunition,
+# 5 TMountedWeaponDescriptor. The Panzer also has a mounted weapon firing a named ammunition, like the real game's
+# units, and a flag list; the M4 keeps the simpler shape the earlier tests were written for.
 UNITS = make_ndf(
     objects=[(0, [(0, lst(i32(30), i32(35))), (1, i32(12)), (2, key(SHERMAN)), (3, i32(10)), (4, ref(4, 3))]),  # 0 M4
-             (0, [(0, lst(i32(45), i32(45))), (5, i32(1)), (2, key(PANZER)), (3, i32(10)), (4, ref(5, 3))]),  # 1 Panzer
+             (0, [(0, lst(i32(45), i32(45))), (5, i32(1)), (2, key(PANZER)), (3, i32(10)), (4, ref(5, 3)),
+                  (13, ref(9, 5)), (14, lst(u32(4), u32(10)))]),                                          # 1 Panzer
              (1, [(6, i32(4))]),                                                                          # 2 infantry
              (2, [(7, lst(i32(20)))]),                                                                    # 3 depot
              (3, [(8, ref(6, 4)), (10, i32(2500)), (11, f32(0.1)), (12, flag(1))]),                       # 4 M4 gun
              (3, [(8, ref(6, 4))]),                                                                       # 5 Panzer gun
-             (4, [(9, i32(40))])],                                                                        # 6 shared ammo
-    classes=["TUniteAuSolDescriptor", "TInfanterieDescriptor", "TBatimentDescriptor", "TWeapon", "TAmmunition"],
+             (4, [(9, i32(40))]),                                                                         # 6 shared ammo
+             (4, [(15, u32(1001)), (9, i32(55)), (16, key(MEDIUM)), (17, key(APSHELL))]),                # 7 Ammo 75
+             (4, [(15, u32(1002)), (9, i32(90)), (16, key(LARGE)), (17, key(APSHELL))]),                 # 8 Ammo 88
+             (5, [(18, s(0)), (19, ref(7, 4))])],                                                        # 9 Panzer's mount
+    classes=["TUniteAuSolDescriptor", "TInfanterieDescriptor", "TBatimentDescriptor", "TWeapon", "TAmmunition",
+             "TMountedWeaponDescriptor"],
     props=[("ProductionPrice", 0), ("SeuilMort", 0), ("NameInMenuToken", 0), ("Factory", 0), ("Weapon", 0),
            ("Nationalite", 0), ("SeuilMort", 1), ("ProductionPrice", 2), ("Ammo", 3), ("Puissance", 4),
-           ("PorteeMaximale", 3), ("TempsEntreDeuxTirs", 3), ("TirEnMouvement", 3)],
+           ("PorteeMaximale", 3), ("TempsEntreDeuxTirs", 3), ("TirEnMouvement", 3), ("MountedWeapon", 0),
+           ("InitialFlagSet", 0), ("AmmunitionId", 4), ("Name", 4), ("TypeName", 4), ("EffectTag", 5),
+           ("Ammunition", 5)],
+    strings=["weapon_effet_tag1"],
     exports={0: "GFX/Everything/Descriptor_Unit_M4_Sherman", 1: "GFX/Everything/Descriptor_Unit_Panzer_IV_G",
-             2: "GFX/Everything/Descriptor_Unit_Soldat_US_Leger", 3: "GFX/Everything/Descriptor_Building_Depot"},
-    topo=[0, 1, 2, 3])
+             2: "GFX/Everything/Descriptor_Unit_Soldat_US_Leger", 3: "GFX/Everything/Descriptor_Building_Depot",
+             7: "GFX/Everything/Ammo_Canon_75", 8: "GFX/Everything/Ammo_Canon_88"},
+    topo=[0, 1, 2, 3, 7, 8])
 
 
 def write_game(root: Path):
     rev = root / "Data" / "PC" / "190852"
     rev.mkdir(parents=True)
     (rev / "ZZ_GladPatchableWin.dat").write_bytes(make_edat([("file", "everything.cpp.gladndfbin", UNITS)]))
-    texts = {"us": [(SHERMAN, "M4 Sherman"), (PANZER, "Panzer IV")],
-             "fr": [(SHERMAN, "M4 Sherman (fr)"), (PANZER, "Panzer IV (fr)")]}
+    texts = {"us": [(SHERMAN, "M4 Sherman"), (PANZER, "Panzer IV"), (APSHELL, "AP shell"), (MEDIUM, "Medium cal."),
+                    (LARGE, "Large cal.")],
+             "fr": [(SHERMAN, "M4 Sherman (fr)"), (PANZER, "Panzer IV (fr)"), (APSHELL, "Obus AP"),
+                    (MEDIUM, "Moyen cal."), (LARGE, "Gros cal.")]}
     (rev / "ZZ_Win.dat").write_bytes(make_edat([("dir", "genlocalisation\\ww2\\localisation\\translations\\", [
         ("dir", f"{lang}\\", [("file", "baseunite.dic", make_dic(items))]) for lang, items in texts.items()])]))
 
@@ -576,6 +599,130 @@ class NewUnits(WithMod):
             self.api.new_unit(M4, "Another", 50)
         (folder / "text" / "studio.baseunite.csv").unlink()  # gone by hand: the unit keeps a plain name
         self.assertEqual(self.api.units()["units"][0]["name"], "Super Sherman")
+
+
+AMMO_75, AMMO_88 = "$/GFX/Everything/Ammo_Canon_75", "$/GFX/Everything/Ammo_Canon_88"
+PANZER_MOUNT = PANZER_IV + ":MountedWeapon"
+
+
+class AmmoAndFlags(WithMod):
+    """The ammunition list, a weapon firing another ammo, a copied ammo of a unit's own, and a unit's flag list."""
+
+    def build(self, folder):
+        rev = self.game / "Data" / "PC" / "190852"
+        arc = Edat((rev / "ZZ_GladPatchableWin.dat").read_bytes())
+        result = build_pack(arc, [load_mod(folder)])
+        self.assertEqual(result.errors, [])
+        new = Edat(arc.to_bytes(result.changed))
+        return Ndf(new.read(new.find("everything.cpp.gladndfbin")))
+
+    def test_ammunition_listed_with_its_users_and_names(self):
+        listed = self.api.units("us", kind="ammo")
+        self.assertEqual(listed["total"], 2)
+        self.assertEqual([(a["address"], a["name"], a["id"], a["users"], a["kind"]) for a in listed["units"]],
+                         [(AMMO_75, "AP shell · Medium cal.", 1001, ["Panzer IV"], "ammo"),
+                          (AMMO_88, "AP shell · Large cal.", 1002, [], "ammo")])
+        self.assertEqual([a["nations"] for a in listed["units"]], [["Germany"], []])  # the Panzer's country; unused: none
+        self.assertEqual([a["name"] for a in self.api.ammo("fr")["units"]], ["Obus AP · Moyen cal.", "Obus AP · Gros cal."])
+        self.assertEqual(self.api.ammo("fr")["units"][0]["nations"], ["Allemagne"])
+        self.assertEqual([a["name"] for a in self.api.ammo()["units"]], ["Ammo_Canon_75", "Ammo_Canon_88"])  # code names
+        self.assertEqual([a["address"] for a in self.api.ammo("us", search="panzer")["units"]], [AMMO_75])  # by user too
+        page = self.api.unit(AMMO_75)
+        self.assertEqual((page["can_copy"], page["can_copy_ammo"], page["has_weapons"]), (False, True, False))
+        self.assertTrue(self.api.unit(PANZER_IV)["has_weapons"])
+
+    def test_a_weapon_fires_another_ammo(self):
+        folder = Path(self.api.new_mod("Guns")["current"])
+        w = self.api.weapons(PANZER_IV, "us")
+        self.assertEqual(w["weapons"], [{"address": PANZER_MOUNT, "name": "weapon_effet_tag1",
+                                         "ammo": {"address": AMMO_75, "name": "AP shell · Medium cal."},
+                                         "game_ammo": AMMO_75, "edited": False}])
+        self.assertEqual([(c["address"], c["nations"]) for c in w["choices"]],
+                         [(AMMO_88, []), (AMMO_75, ["Germany"])])  # by name: Large before Medium; whose it is
+        self.assertEqual(self.api.weapons(M4)["weapons"], [])  # the M4's gun is the older, simpler shape
+        saved = self.api.set_ammo(PANZER_IV, PANZER_MOUNT, AMMO_88)
+        self.assertEqual((saved["ammo"], saved["edited"]), (AMMO_88, True))
+        rndf = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        self.assertIn("\npatch $/GFX/Everything/Descriptor_Unit_Panzer_IV_G:MountedWeapon\n(\n"
+                      "    Ammunition = $/GFX/Everything/Ammo_Canon_88\n)\n", rndf)
+        w = self.api.weapons(PANZER_IV, "us")["weapons"][0]
+        self.assertEqual((w["ammo"]["address"], w["ammo"]["name"], w["edited"]), (AMMO_88, "AP shell · Large cal.", True))
+        self.assertEqual(self.api.edited(), [PANZER_IV])
+        ndf = self.build(folder)
+        mount = ndf.objects[9]
+        self.assertEqual(struct.unpack("<III", mount.get(19).payload)[1], 8)  # the mount now points at Ammo 88
+        for unit, weapon, ammo in [(M4, PANZER_MOUNT, AMMO_88), (PANZER_IV, PANZER_IV + ":Weapon", AMMO_88),
+                                   (PANZER_IV, PANZER_MOUNT, M4), (PANZER_IV, PANZER_MOUNT, "$/GFX/Nope")]:
+            with self.subTest(weapon=weapon, ammo=ammo), self.assertRaises(StudioError):
+                self.api.set_ammo(unit, weapon, ammo)
+        self.api.set_ammo(PANZER_IV, PANZER_MOUNT, AMMO_75)  # the game's own again: no change left
+        self.assertNotIn("MountedWeapon", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
+        self.assertFalse(self.api.weapons(PANZER_IV)["weapons"][0]["edited"])
+
+    def test_a_copied_ammo_for_a_weapon_of_its_own(self):
+        with self.assertRaises(StudioError):
+            self.api.new_ammo(AMMO_75, "Hot 75")  # no mod yet
+        folder = Path(self.api.new_mod("Copies")["current"])
+        made = self.api.new_ammo(AMMO_75, "Hot 75")
+        self.assertEqual(made["address"], "$/GFX/Everything/Ammo_Hot_75")
+        rndf = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        self.assertIn("\nexport Ammo_Hot_75 is clone $/GFX/Everything/Ammo_Canon_75\n(\n)\n", rndf)
+        self.assertFalse((folder / "text" / "studio.baseunite.csv").exists())  # it keeps its source's name in game
+        listed = self.api.ammo("us")["units"]
+        self.assertEqual((listed[0]["address"], listed[0]["name"], listed[0]["new"], listed[0]["source_name"],
+                          listed[0]["nations"]), (made["address"], "Hot 75", True, "AP shell · Medium cal.", ["Germany"]))
+        self.assertEqual([u["address"] for u in self.api.units()["units"] if u["new"]], [])  # not among the units
+        page = self.api.unit(made["address"], "us")
+        rows = {r["prop"]: r for g in page["groups"] for r in g["rows"]}
+        self.assertEqual((page["name"], page["new"]["source"], page["can_copy_ammo"]), ("Hot 75", AMMO_75, False))
+        self.assertEqual(self.api.edit(made["address"], "Puissance", 80)["value"], 80)
+        self.assertEqual(self.rows(made["address"])["Puissance"]["edited"], 80)
+        self.assertFalse(rows["AmmunitionId"]["editable"])  # ids stay unique: the build hands one out
+        choices = self.api.weapons(PANZER_IV, "us")["choices"]
+        self.assertEqual([(c["address"], c["new"]) for c in choices if c["new"]], [(made["address"], True)])
+        self.api.set_ammo(PANZER_IV, PANZER_MOUNT, made["address"])
+        ndf = self.build(folder)
+        copy = find_export(ndf, "$/GFX/Everything/Ammo_Hot_75")
+        obj = ndf.objects[copy]
+        self.assertEqual((obj.get(15).scalar(), obj.get(9).scalar()), (1003, 80))  # a fresh id, its own damage
+        self.assertEqual(struct.unpack("<III", ndf.objects[9].get(19).payload)[1], copy)
+        with self.assertRaises(StudioError):
+            self.api.new_ammo(made["address"], "Hotter")  # a copy of a copy
+        with self.assertRaises(StudioError):
+            self.api.new_ammo(PANZER_IV, "Tank")  # not an ammunition
+        gone = self.api.delete_unit(made["address"])
+        self.assertEqual(gone["source"], AMMO_75)
+        self.assertEqual(self.api.ammo()["total"], 2)
+
+    def test_flags_are_a_list_of_any_length(self):
+        flags = self.api.flags("us")["flags"]
+        self.assertEqual([(f["flag"], f["count"], f["examples"], f["meaning"]) for f in flags],
+                         [(4, 1, ["Panzer IV"], None), (10, 1, ["Panzer IV"], None)])
+        self.assertTrue(schema.flag(72).startswith("Sees through obstacles"))
+        folder = Path(self.api.new_mod("Flags")["current"])
+        row = self.rows(PANZER_IV)["InitialFlagSet"]
+        self.assertEqual((row["numbers"], row["list"], row["type"], row["editable"], row["label"]),
+                         ([4, 10], True, "uint32", True, "InitialFlagSet"))
+        self.assertEqual(self.api.edit(PANZER_IV, "InitialFlagSet", [4, 10, 72, 72])["value"], [4, 10, 72])  # once each
+        self.assertEqual(self.api.edit(PANZER_IV, "InitialFlagSet", [10])["value"], [10])  # shorter is fine
+        self.assertIn("    InitialFlagSet = [10]\n", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
+        for value in ([4, -1], [4, 2 ** 32], 4, [4, "x"]):
+            with self.subTest(value=value), self.assertRaises(StudioError):
+                self.api.edit(PANZER_IV, "InitialFlagSet", value)
+        self.assertEqual(self.build(folder).objects[1].get(14).int_list(), [10])
+        self.api.edit(PANZER_IV, "InitialFlagSet", [4, 10])  # the game's own: no change left
+        self.assertEqual(self.rows(PANZER_IV)["InitialFlagSet"]["edited"], None)
+
+    def test_an_index_from_an_older_studio_is_built_again(self):
+        import sqlite3
+        old = Path(self.home, "old.sqlite")
+        old.write_bytes(self.index.read_bytes())
+        db = sqlite3.connect(str(old))
+        db.execute("UPDATE meta SET value = '2' WHERE key = 'format'")
+        db.commit()
+        db.close()
+        api = StudioApi(index_path=old, game_dir=self.game, home=self.home)
+        self.assertEqual(api.status(), {"ready": False, "can_build": True, "old": True})
 
 
 class Terrain(WithMod):

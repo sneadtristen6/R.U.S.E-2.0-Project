@@ -659,3 +659,30 @@ ru = "Уровень оружия"
 cz = "Úroveň zbraně"
 jpn = "武器レベル"
 sc = "武器等级"
+
+# A unit's flags (InitialFlagSet): the game gives no names for them. What is known comes from the community's mods
+# and their in-game tests (72: the No Fog of War mod, DomesticNukes, 2026). Numbers not listed here are shown as is.
+[flags.72]
+us = "Sees through obstacles (no line-of-sight check; aircraft have it)"
+fr = "Voit à travers les obstacles (pas de test de ligne de vue ; les avions l'ont)"
+ger = "Sieht durch Hindernisse (keine Sichtlinienprüfung; Flugzeuge haben es)"
+ita = "Vede attraverso gli ostacoli (nessun controllo della linea di vista; gli aerei ce l'hanno)"
+spa = "Ve a través de los obstáculos (sin comprobación de línea de visión; los aviones lo tienen)"
+pol = "Widzi przez przeszkody (bez sprawdzania linii wzroku; samoloty to mają)"
+ru = "Видит сквозь препятствия (без проверки линии видимости; есть у самолётов)"
+cz = "Vidí skrz překážky (bez kontroly výhledu; letadla to mají)"
+jpn = "障害物を透視する（視線判定なし。航空機は標準で持つ）"
+sc = "无视障碍物（不做视线检查；飞机默认具有）"
+
+[props.InitialFlagSet]
+group = "identity"
+us = "Flags"
+fr = "Drapeaux"
+ger = "Flags"
+ita = "Flag"
+spa = "Indicadores"
+pol = "Flagi"
+ru = "Флаги"
+cz = "Příznaky"
+jpn = "フラグ"
+sc = "标志位"

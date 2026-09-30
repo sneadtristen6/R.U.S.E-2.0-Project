@@ -9,7 +9,7 @@ const state = { lang: "base", kind: "all", nation: -1, search: "", selected: nul
   page: null,     // the object shown: { address, via }; via = the named unit the modder came from
   mode: "own",    // a part several units share: change it for "own" (that unit only) or "shared" (all of them)
   view: "units" };  // the tab: "units" or "maps" (maps.js)
-const KINDS = ["all", "ground", "infantry", "air", "buildings"];
+const KINDS = ["all", "ground", "infantry", "air", "buildings", "ammo"];  // ammo: what weapons fire (its own list)
 const WHOLE = new Set(["int8", "int16", "uint16", "int32", "uint32", "int64"]);
 const NEW = "\u0001new", OPEN = "\u0001open", EXPORT = "\u0001export";  // the mod menu's actions (never a folder path)
 
@@ -48,6 +48,7 @@ function problem(err) {
 // --- words ---
 async function setLanguage(lang) {
   state.lang = lang;
+  knownFlags = null;  // the flags' meanings are in the language
   saveLang(lang);
   state.words = await api().strings(lang);
   renderUpdate();
@@ -72,7 +73,7 @@ async function setLanguage(lang) {
   $("lang").replaceChildren(...state.languages.map((l) =>
     el("option", { value: l.code, textContent: l.code === "base" ? w.game_names : l.name, selected: l.code === lang })));
   $("search").placeholder = w.search;
-  $("no-index-text").textContent = w.no_index;
+  $("no-index-text").textContent = state.oldIndex ? w.old_index : w.no_index;
   $("build-index").textContent = w.build_index;
   if ($("pick")) $("pick").textContent = w.pick_unit;  // gone once a unit is shown
   renderMods();
@@ -184,7 +185,7 @@ function renderChips() {
     b.addEventListener("click", () => { state.kind = k; renderChips(); refreshList(); });
     return b;
   }));
-  const nations = [-1, 0, 1, 2, 3, 4, 5, 6];
+  const nations = state.kind === "ammo" ? [] : [-1, 0, 1, 2, 3, 4, 5, 6];  // ammunition has no nation
   $("nations").replaceChildren(...nations.map((n) => {
     const b = el("button", { type: "button", className: "chip",
       textContent: n < 0 ? w.all : state.nationNames[n] || String(n) });
@@ -202,10 +203,15 @@ async function refreshList() {
   } catch (err) { problem(err); return; }
   $("count").textContent = state.words.units.replace("{n}", res.units.length);
   $("unit-list").replaceChildren(...res.units.map((u) => {
+    const sub = u.kind === "ammo"
+      ? (u.nations.length ? u.nations.join(", ") + " · " : "") +
+        (u.users.length ? fill(state.words.fired_by, { names: u.users.slice(0, 3).join(", ") +
+          (u.users.length > 3 ? ", …" : "") }) : state.words.fired_by_nobody) +
+        (u.name !== u.base_name ? ` · ${u.base_name}` : "")
+      : `${u.nation_name} · ${state.words[u.kind]}` + (u.name !== u.base_name ? ` · ${u.base_name}` : "");
     const b = el("button", { type: "button" },
       el("span", { className: "name", textContent: u.name }),
-      el("span", { className: "sub", textContent: `${u.nation_name} · ${state.words[u.kind]}` +
-        (u.name !== u.base_name ? ` · ${u.base_name}` : "") }));
+      el("span", { className: "sub", textContent: sub }));
     b.dataset.address = u.address;
     if (u.new) {
       b.dataset.new = "1";
@@ -257,6 +263,7 @@ function row(u, r, mode) {
   const th = el("th", { textContent: r.label });
   if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
   if (!r.editable) return el("tr", {}, th, el("td", { textContent: r.values.join(" · ") }));
+  if (FLAG_LISTS.has(r.prop)) return flagRow(u, r, mode, th);
   const via = state.page.via;
   const st = rowState(r, mode);
   const shown = st.mine || st.base;
@@ -329,6 +336,164 @@ function row(u, r, mode) {
   if (one) one.addEventListener("change", () => save(one));
   showWas();
   return tr;
+}
+
+// A unit's flags (InitialFlagSet): a set of numbers of any length. Shown as chips with a cross to take one out, and
+// an "Add" picker listing every flag the game's units carry (what it does, when known, and who has it).
+const FLAG_LISTS = new Set(["InitialFlagSet"]);
+let knownFlags = null;  // from api.flags(), once per language
+
+function flagRow(u, r, mode, th) {
+  const w = state.words;
+  const via = state.page.via;
+  const st = rowState(r, mode);
+  let current = (st.mine || st.base).slice();
+  const chips = el("div", { className: "flags" });
+  const was = el("div", { className: "was" });
+  const cell = el("td", {}, chips, was);
+  const tr = el("tr", {}, th, cell);
+  const meaning = (n) => {
+    const k = knownFlags && knownFlags.find((f) => f.flag === n);
+    if (!k) return String(n);
+    const who = k.count ? fill(w.flag_used_by, { n: k.count, names: k.examples.join(", ") }) : "";
+    return [k.meaning, who].filter(Boolean).join(" · ");
+  };
+  const setMine = (value) => {
+    st.mine = value;
+    if (mode === "own") r.edited_own = value; else r.edited = value;
+  };
+  const save = async (next) => {
+    try {
+      const res = await api().edit(u.address, r.prop, next, mode, via);
+      current = res.value.slice();
+      setMine(sameNumbers(current, st.base) ? null : current);
+      render();
+      await refreshMarks();
+      say(w.saved.replace("{file}", res.saved), "ok");
+    } catch (err) { problem(err); }
+  };
+  const render = () => {
+    tr.classList.toggle("edited", st.mine !== null);
+    chips.replaceChildren(...current.map((n) => {
+      const chip = el("span", { className: "flag", title: meaning(n) }, String(n));
+      if (state.mod) {
+        const x = el("button", { type: "button", className: "x", textContent: "×", title: w.flag_remove });
+        x.addEventListener("click", () => save(current.filter((m) => m !== n)));
+        chip.append(x);
+      }
+      return chip;
+    }));
+    if (state.mod) {
+      const pick = el("select", { title: w.flag_add });
+      pick.append(el("option", { value: "", textContent: w.flag_add }));
+      for (const f of knownFlags || []) {
+        if (current.includes(f.flag)) continue;
+        pick.append(el("option", { value: String(f.flag), textContent: `${f.flag}` + (f.meaning ? ` · ${f.meaning}` : "") +
+          ` (${fill(w.flag_count, { n: f.count })})` }));
+      }
+      pick.append(el("option", { value: "?", textContent: w.flag_add_number }));
+      pick.addEventListener("change", () => {
+        if (pick.value === "?") {
+          const typed = window.prompt(w.flag_add_number, "");
+          const n = Number(typed);
+          if (typed !== null && typed.trim() !== "" && Number.isInteger(n) && n >= 0 && n < 4294967296) save([...current, n]);
+          else pick.value = "";
+        } else if (pick.value !== "") save([...current, Number(pick.value)]);
+      });
+      chips.append(pick);
+    }
+    was.replaceChildren();
+    if (st.mine !== null) {
+      const undo = el("button", { type: "button", className: "link", textContent: w.reset });
+      undo.addEventListener("click", async () => {
+        try {
+          await api().reset(u.address, r.prop, mode, via);
+          current = st.base.slice();
+          setMine(null);
+          render();
+          await refreshMarks();
+          say("");
+        } catch (err) { problem(err); }
+      });
+      was.append(el("span", { textContent: w.was.replace("{v}", st.base.join(" · ")) }), undo);
+    }
+  };
+  if (knownFlags) render();
+  else api().flags(state.lang).then((res) => { knownFlags = res.flags; render(); }).catch((err) => { problem(err); render(); });
+  return tr;
+}
+
+// A unit's weapons and what each fires: one dropdown per weapon, listing every ammunition (the mod's copies first).
+function weaponsGroup(u) {
+  const w = state.words;
+  const group = el("div", { className: "group hidden" }, el("h2", { textContent: w.weapons }));
+  api().weapons(u.address, state.lang).then((res) => {
+    if (!res.weapons.length) return;
+    const table = el("table");
+    res.weapons.forEach((wp, i) => {
+      const th = el("th", { textContent: fill(w.weapon_n, { n: i + 1 }) }, el("small", { textContent: wp.name }));
+      const pick = el("select", { disabled: !state.mod, title: w.fires });
+      for (const c of res.choices) {
+        pick.append(el("option", { value: c.address, textContent: (c.new ? `${w.new_mark} ` : "") + c.name +
+          (c.nations.length ? ` (${c.nations.join(", ")})` : ""),
+          selected: c.address === wp.ammo.address }));
+      }
+      const open = el("button", { type: "button", className: "link", textContent: w.open_ammo });
+      open.addEventListener("click", () => showUnit(pick.value));
+      const was = el("div", { className: "was" });
+      const tr = el("tr", { className: wp.edited ? "edited" : "" }, th, el("td", {}, el("div", { className: "boxes" }, pick, open), was));
+      const showWas = (edited) => {
+        tr.classList.toggle("edited", edited);
+        was.replaceChildren();
+        if (!edited) return;
+        const undo = el("button", { type: "button", className: "link", textContent: w.reset });
+        undo.addEventListener("click", () => { pick.value = wp.game_ammo; pick.dispatchEvent(new Event("change")); });
+        const game = res.choices.find((c) => c.address === wp.game_ammo);
+        was.append(el("span", { textContent: w.was.replace("{v}", game ? game.name : wp.game_ammo) }), undo);
+      };
+      pick.addEventListener("change", async () => {
+        try {
+          const saved = await api().set_ammo(u.address, wp.address, pick.value);
+          showWas(saved.edited);
+          await refreshMarks();
+          say(w.saved.replace("{file}", saved.saved), "ok");
+        } catch (err) { problem(err); }
+      });
+      showWas(wp.edited);
+      table.append(tr);
+    });
+    group.append(table, el("p", { className: "muted small", textContent: w.weapons_help }));
+    group.classList.remove("hidden");
+  }).catch(problem);
+  return group;
+}
+
+// A copy of an ammunition, for a weapon of its own (its numbers are changed on its page, then a weapon picks it)
+function newAmmoForm(u) {
+  const w = state.words;
+  const open = el("button", { type: "button", className: "ghost", textContent: w.copy_ammo });
+  const form = el("form", { className: "new-unit hidden" });
+  const name = el("input", { autocomplete: "off", maxLength: 60, required: true, placeholder: w.copy_name });
+  name.setAttribute("aria-label", w.copy_name);
+  const create = el("button", { type: "submit", className: "primary", textContent: w.create });
+  const cancel = el("button", { type: "button", className: "ghost", textContent: w.cancel });
+  cancel.addEventListener("click", () => { form.classList.add("hidden"); open.classList.remove("hidden"); });
+  form.append(el("label", {}, el("span", { textContent: w.copy_name }), name),
+    el("p", { className: "muted small", textContent: w.copy_ammo_help }),
+    el("div", { className: "actions" }, create, cancel));
+  open.addEventListener("click", () => { open.classList.add("hidden"); form.classList.remove("hidden"); name.focus(); });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!name.value.trim()) return;
+    create.disabled = true;
+    try {
+      const res = await api().new_ammo(u.address, name.value.trim());
+      if (state.kind === "ammo") await refreshList();
+      await showUnit(res.address);
+      say(w.copy_made.replace("{name}", res.name), "ok");
+    } catch (err) { problem(err); create.disabled = false; }
+  });
+  return el("div", { className: "copy" }, open, form);
 }
 
 // A part several units share: say who, and let the modder pick for whom a change is.
@@ -436,9 +601,10 @@ function copyNotice(u) {
   const [before, after] = w.copy_of.split("{name}");
   const box = el("div", { className: "notice new" }, el("p", {}, before, source, after || ""));
   if (!state.mod) return box;
-  const del = el("button", { type: "button", className: "ghost danger", textContent: w.delete_unit });
+  const label = u.class === "TAmmunition" ? w.delete_copy : w.delete_unit;
+  const del = el("button", { type: "button", className: "ghost danger", textContent: label });
   const sure = el("div", { className: "actions hidden" }, el("span", { textContent: w.really_delete.replace("{name}", u.name) }));
-  const yes = el("button", { type: "button", className: "ghost danger", textContent: w.delete_unit });
+  const yes = el("button", { type: "button", className: "ghost danger", textContent: label });
   const no = el("button", { type: "button", className: "ghost", textContent: w.cancel });
   no.addEventListener("click", () => { sure.classList.add("hidden"); del.classList.remove("hidden"); });
   del.addEventListener("click", () => { del.classList.add("hidden"); sure.classList.remove("hidden"); yes.focus(); });
@@ -448,6 +614,7 @@ function copyNotice(u) {
       const res = await api().delete_unit(u.address);
       await refreshList();
       await showUnit(res.source);
+      knownFlags = null;
       say(w.unit_deleted.replace("{name}", u.name), "ok");
     } catch (err) { problem(err); yes.disabled = false; }
   });
@@ -478,6 +645,7 @@ async function showUnit(address, via) {
   if (!u.editable) parts.push(el("p", { className: "notice", textContent: w[u.why_not] || u.why_not }));
   else if (!state.mod) parts.push(el("p", { className: "notice", textContent: w.no_mod }));
   else if (u.can_copy) parts.push(newUnitForm(u));
+  else if (u.can_copy_ammo) parts.push(newAmmoForm(u));
   if (u.editable && u.users) parts.push(el("p", { className: "notice warn",
     textContent: w.users_warning.replace("{n}", u.users) }));
   if (u.editable && u.share) parts.push(shareChoice(u));
@@ -488,6 +656,7 @@ async function showUnit(address, via) {
     if (u.editable && g.rows.some((r) => r.locked)) group.append(el("p", { className: "muted small", textContent: w.locked }));
     parts.push(group);
   }
+  if (u.has_weapons && u.editable) parts.push(weaponsGroup(u));
   if (u.parts.length) {
     const list = el("ul", { className: "parts" });
     for (const p of u.parts) {
@@ -554,7 +723,8 @@ async function testInGame() {
 async function showNoIndex(status) {
   const w = state.words;
   $("no-index").classList.remove("hidden");
-  $("no-index-text").textContent = w.no_index;
+  state.oldIndex = Boolean(status.old);
+  $("no-index-text").textContent = status.old ? w.old_index : w.no_index;
   const button = $("build-index");
   button.textContent = w.build_index;
   button.disabled = !status.can_build;

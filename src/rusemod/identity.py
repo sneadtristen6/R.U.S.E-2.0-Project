@@ -3,8 +3,9 @@
 A clone starts as an exact copy of its source, so values the game expects to differ between units are the same. After
 the clone's own lines run, the engine gives it fresh ones, except for any the clone sets itself:
 
-  DescriptorId, TrackingId  one more than the highest in the game, if the source's class uses them as ids (no two
-                            objects of the class share a value); otherwise left as copied
+  DescriptorId, TrackingId, one more than the highest in the game, if the source's class uses them as ids (no two
+  AmmunitionId              objects of the class share a value); otherwise left as copied. AmmunitionId: a copied
+                            ammunition (a weapon's own ammo), which mods may find by its id (@TAmmunition[...])
   ClassNameForDebug         the clone's own name, written the way the source's is (Descriptor_Unit_X -> Unit_X);
                             `_2`, `_3`, ... added if that's taken
   PositionInMenu            its slot in the build menu (slot = row * 100 + column). Units share a menu when they have
@@ -21,7 +22,7 @@ from decimal import Decimal
 
 from .patch import INT_RANGES, Inline, Num, Text, _walk_value
 
-IDS = ("DescriptorId", "TrackingId")
+IDS = ("DescriptorId", "TrackingId", "AmmunitionId")
 DEBUG_NAME = "ClassNameForDebug"
 SLOT = "PositionInMenu"
 RULES = IDS + (DEBUG_NAME, SLOT)

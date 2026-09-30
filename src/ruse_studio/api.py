@@ -27,7 +27,7 @@ from rusemod.update import UpdateCalls
 from rusemod.build import BuildError, build_and_write, load_mod
 from rusemod.lock import fingerprint_text
 from rusemod.home import default_home, game_dir as find_game_dir
-from rusemod.index import LIST_VALUES, Index, build_index, default_path
+from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
 from rusemod.patch import INT_RANGES
 from rusemod.play import Starter, instances_dir
 from rusemod.rndf import RndfError
@@ -37,14 +37,18 @@ from rusemod.edat import Edat
 from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_folder, pick_save
 
-from .edits import EditsFileError, ModEdits, NewUnit
+from .edits import EditsFileError, Link, ModEdits, NewUnit
 from . import __version__
 
 KINDS = {"ground": ("TUniteAuSolDescriptor",), "infantry": ("TInfanterieDescriptor",),
          "air": ("TAvionDescriptor",), "buildings": ("TBatimentDescriptor",)}
 KIND_OF = {cls: kind for kind, classes in KINDS.items() for cls in classes}
-NOT_EDITABLE = {"DescriptorId", "TrackingId", "Nationalite"}  # ids stay unique (rusemod.identity); moving a unit to
-# another nation needs more than one number (its menus, and the new nation's add-on for China), so it comes later
+AMMO = "TAmmunition"  # a weapon's shots (damage, range, rate of fire): listed as the "ammo" kind, and copied for a
+WEAPON = "TMountedWeaponDescriptor"  # weapon of its own; a weapon on a unit fires one ammo (its Ammunition)
+FLAG_LISTS = set(WHOLE_LISTS)  # lists edited as a set of flags, any length (a unit's InitialFlagSet)
+NOT_EDITABLE = {"DescriptorId", "TrackingId", "AmmunitionId", "Nationalite"}  # ids stay unique (rusemod.identity);
+# moving a unit to another nation needs more than one number (its menus, and the new nation's add-on for China), so it
+# comes later
 ALL_CLASSES = tuple(KIND_OF)
 NATIONS = 7
 _PREFIX = re.compile(r"^(Descriptor_[A-Za-z]+_)")  # Descriptor_Unit_M4_Sherman -> a copy is Descriptor_Unit_<Name>
@@ -85,7 +89,14 @@ def _props(o: dict) -> dict[str, dict]:
 
 def _can_edit(prop: str, p: dict) -> bool:
     return prop not in NOT_EDITABLE and p["in_order"] and all(n is not None for n in p["numbers"]) \
-        and not (p["list"] and len(p["numbers"]) >= LIST_VALUES)  # the index keeps 16 items: there may be more
+        and not (p["list"] and len(p["numbers"]) >= WHOLE_LISTS.get(prop, LIST_VALUES))  # the index keeps 16 items of
+    # most lists: there may be more
+
+
+def ammo_name(texts: dict, name_key, type_key) -> str | None:
+    """What the game calls an ammunition: its kind, then its calibre ("AP shell · Medium cal."), from its two texts."""
+    kind, calibre = texts.get(type_key), texts.get(name_key)
+    return " · ".join(dict.fromkeys(t for t in (kind, calibre) if t)) or None
 
 
 def _whole(value, kind: str, prop: str):
@@ -131,6 +142,7 @@ class StudioApi(UpdateCalls):
         self._instances = Path(instances) if instances else None
         self._jobs: dict[str, Job] = {}
         self._units: list | None = None  # every unit and building, read once per index
+        self._ammo: list | None = None   # every ammunition, the same
         self._window = None  # set by the window (a folder dialog for "Open a mod folder", "save as" for Export)
         self._pick_save = pick_save  # tests: a stand-in for the "save as" dialog (filename -> path or None)
         self._saving = threading.RLock()  # the window calls from several threads: one change to the file at a time,
@@ -178,6 +190,8 @@ class StudioApi(UpdateCalls):
             meta = ix.meta()
         finally:
             ix.close()
+        if meta.get("format") != INDEX_FORMAT:  # made by an older Studio: build it again (the same button)
+            return {"ready": False, "can_build": self._game() is not None, "old": True}
         return {"ready": True, "build": meta.get("build"), "built": meta.get("built"), "path": str(path)}
 
     # --- units ---
@@ -195,8 +209,11 @@ class StudioApi(UpdateCalls):
         return edits.new_units if edits else {}
 
     def units(self, lang: str = schema.BASE, kind: str = "all", nation: int = -1, search: str = "") -> dict:
-        """The units and buildings to list, with names in `lang` (the game's names by default). The current mod's
-        new units come first, under the nation and factory they were given, marked `new`."""
+        """The units and buildings to list, with names in `lang` (the code names by default). The current mod's
+        new units come first, under the nation and factory they were given, marked `new`. `kind` "ammo" lists the
+        ammunition instead (see `ammo`)."""
+        if kind == "ammo":
+            return self.ammo(lang, search)
         ix = self._open()
         try:
             rows = self._all_units(ix)
@@ -210,6 +227,8 @@ class StudioApi(UpdateCalls):
         except EditsFileError:
             edits = None
         for unit in edits.new_units.values() if edits else []:
+            if unit.source not in by_address:  # a copied ammunition, listed under "ammo"
+                continue
             src = by_address.get(unit.source, {"class": "TUniteAuSolDescriptor", "nation": 0, "factory": None})
             own = edits.of(unit.target)
             new.append({"address": unit.target, "class": src["class"], "key": None,
@@ -230,6 +249,195 @@ class StudioApi(UpdateCalls):
                         "factory": u["factory"], "slot": u["slot"], "new": u.get("new", False),
                         "source": u.get("source")})
         return {"units": out, "total": len(rows) + len(new)}
+
+    # --- ammunition: what a weapon fires (damage, range, rate of fire); several units' weapons share one ---
+    def _all_ammo(self, ix: Index) -> list[dict]:
+        if self._ammo is None:
+            self._ammo = ix.ammunition()
+        return self._ammo
+
+    def _ammo_names(self, ix: Index, rows, lang: str) -> dict:
+        """Address -> what to call an ammunition: its kind and calibre in `lang` ("AP shell · Medium cal."), else
+        its code name."""
+        keys = [k for a in rows for k in (a["name_key"], a["type_key"]) if k]
+        texts = ix.names(keys, lang) if lang != schema.BASE else {}
+        return {a["address"]: ammo_name(texts, a["name_key"], a["type_key"]) or _tail(a["address"]) for a in rows}
+
+    def ammo(self, lang: str = schema.BASE, search: str = "") -> dict:
+        """The ammunition to list, like `units`: the current mod's copies first (marked `new`), then the game's,
+        each with the units whose weapons fire it (`users`, names in `lang`)."""
+        ix = self._open()
+        try:
+            rows = self._all_ammo(ix)
+            names = self._ammo_names(ix, rows, lang)
+            users = {u for a in rows for u in a["users"]}
+            user_names = self._names(ix, sorted(users), lang)
+            nation_of = {u["address"]: u["nation"] for u in self._all_units(ix)}
+        finally:
+            ix.close()
+        by_address = {a["address"]: a for a in rows}
+        new = []
+        for unit in self._new_units().values():
+            src = by_address.get(unit.source)
+            if src is None:
+                continue
+            new.append({"address": unit.target, "id": None, "users": [], "new": True, "source": unit.source,
+                        "name": unit.name, "source_name": names[unit.source]})
+        words = search.strip().lower()
+        out = []
+        for a in new + rows:
+            name = a.get("name") or names[a["address"]]
+            used = [user_names[u] for u in a["users"]]
+            if words and words not in name.lower() and words not in a["address"].lower() \
+                    and not any(words in u.lower() for u in used):
+                continue
+            nations = self._nations_of(a["users"] or by_address.get(a.get("source"), {}).get("users", []), nation_of, lang)
+            out.append({"address": a["address"], "name": name, "base_name": _tail(a["address"]), "kind": "ammo",
+                        "id": a["id"], "users": used, "nations": nations, "nation": -1, "nation_name": "",
+                        "factory": None, "slot": None, "new": a.get("new", False), "source": a.get("source"),
+                        "source_name": a.get("source_name")})
+        return {"units": out, "total": len(rows) + len(new)}
+
+    @staticmethod
+    def _nations_of(users, nation_of: dict, lang: str) -> list[str]:
+        """The countries whose units fire an ammunition (a copy: its source's), in the game's nation order."""
+        found = sorted({nation_of[u] for u in users if u in nation_of})
+        return [schema.nation(n, lang) for n in found]
+
+    def flags(self, lang: str = schema.BASE) -> dict:
+        """Every flag number the game's units carry in their flag lists (InitialFlagSet), with what is known about
+        it (rusemod/labels.toml [flags]), how many units have it and a few of them by name."""
+        ix = self._open()
+        try:
+            rows = ix.flag_sets()
+            names = self._names(ix, sorted({e for r in rows for e in r["examples"]}), lang)
+        finally:
+            ix.close()
+        return {"flags": [{"flag": r["flag"], "count": r["count"], "examples": [names[e] for e in r["examples"]],
+                           "meaning": schema.flag(r["flag"], lang)} for r in rows]}
+
+    def weapons(self, address: str, lang: str = schema.BASE) -> dict:
+        """A unit's mounted weapons and what each fires: [{address, name, ammo: {address, name}, edited}], plus
+        every ammunition it could fire instead (`choices`, the game's and the mod's copies)."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, new = self._resolve(edits, address)
+        base = address.partition(":")[0]
+        ix = self._open()
+        try:
+            plan = ix.clone_plan(real)
+            # in their place on the unit (turret 1's weapons first), so "Weapon 1" is the main gun
+            parts = sorted((a for a in plan["copied"] + plan["shared"] if ix.show(a)["class"] == WEAPON),
+                           key=lambda a: [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", a)])
+            weapons = []
+            for part in parts:
+                o = ix.show(part)
+                tag = next((t for p, _n, t in o["values"] if p == "EffectTag"), None)
+                fires = next((what for p, k, what in ix.uses(part) if p == "Ammunition" and k == "object"), None)
+                weapons.append({"real": part, "address": (base + part[len(new.source):]) if new else part,
+                                "name": tag or f"{_tail(part)}", "fires": fires})
+            rows = self._all_ammo(ix)
+            names = self._ammo_names(ix, rows, lang)
+            nation_of = {u["address"]: u["nation"] for u in self._all_units(ix)}
+        finally:
+            ix.close()
+        users = {a["address"]: a["users"] for a in rows}
+        copies = {t: u for t, u in (edits.new_units.items() if edits else []) if u.source in names}
+        for t, u in copies.items():
+            names[t] = u.name
+            users[t] = users.get(u.source, [])
+        choices = [{"address": a, "name": n, "new": a in copies,
+                    "nations": self._nations_of(users.get(a, []), nation_of, lang)}
+                   for a, n in sorted(names.items(), key=lambda kv: kv[1].lower())]
+        out = []
+        for w in weapons:
+            chosen = edits.get(w["address"], "Ammunition") if edits else None
+            current = str(chosen) if chosen else w["fires"]
+            out.append({"address": w["address"], "name": w["name"],
+                        "ammo": {"address": current, "name": names.get(current) or (_tail(current) if current else "")},
+                        "game_ammo": w["fires"], "edited": bool(chosen)})
+        return {"weapons": out, "choices": choices}
+
+    def set_ammo(self, unit: str, weapon: str, ammo: str) -> dict:
+        """Make a unit's weapon fire another ammunition (one of `weapons(unit)["choices"]`), saved in the current mod
+        as a link at the weapon's address; choosing the game's own ammo again removes the change."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        if weapon.partition(":")[0] != unit.partition(":")[0]:
+            raise StudioError(f"{weapon} isn't a weapon of {unit}")
+        real_weapon, _new = self._resolve(edits, weapon)
+        real_ammo, ammo_copy = self._resolve(edits, ammo)
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(real_weapon)
+            except KeyError:
+                raise StudioError(f"There's no weapon at {weapon} in this game build.") from None
+            if o["class"] != WEAPON:
+                raise StudioError(f"{weapon} isn't a weapon (it's a {o['class']})")
+            if o["shared"] and not o["export"]:
+                raise StudioError(f"{weapon} is shared by several units; change it on each unit's own copy")
+            try:
+                if ix.show(real_ammo)["class"] != AMMO:
+                    raise StudioError(f"{ammo} isn't an ammunition")
+            except KeyError:
+                raise StudioError(f"There's no ammunition at {ammo}.") from None
+            game_ammo = next((what for p, k, what in ix.uses(real_weapon) if p == "Ammunition" and k == "object"), None)
+        finally:
+            ix.close()
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            if ammo == game_ammo:
+                edits.reset(weapon, "Ammunition")
+            else:
+                edits.set(weapon, "Ammunition", Link(ammo))
+        return {"saved": str(edits.file), "ammo": ammo, "edited": ammo != game_ammo}
+
+    def new_ammo(self, source: str, name: str) -> dict:
+        """A copy of an ammunition in the current mod, for a weapon of its own (Groove's recipe: copy the ammo,
+        change the copy, point one weapon at it). In game it keeps its source's name; `name` is what the Studio
+        calls it. The copy gets a fresh AmmunitionId when built (rusemod.identity)."""
+        name = (name or "").strip()
+        if not name:
+            raise StudioError("Give the copy a name.")
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: a copy is saved in a mod.")
+        if source in edits.new_units:
+            raise StudioError(f"{name}: copy the ammunition {_tail(source)} was made from instead")
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(source)
+            except KeyError:
+                raise StudioError(f"{source} isn't in this game build") from None
+            if not o["export"] or o["class"] != AMMO:
+                raise StudioError(f"{source} isn't an ammunition, so it can't be copied here")
+            namespace = source.rsplit("/", 1)[0]
+            stem = safe_name(name)
+            target = f"{namespace}/Ammo_{stem}" if stem else None
+            n = 1
+            while target is None or target in edits.new_units or self._exists(ix, target):
+                target, n = f"{namespace}/Ammo_New_{n}", n + 1
+        finally:
+            ix.close()
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            if target in edits.new_units:
+                raise StudioError(f"There's already a copy at {target}. Pick another name.")
+            edits.add_unit(target, source, name, {}, named=False)
+        return {"address": target, "name": name, "saved": str(edits.file)}
+
+    @staticmethod
+    def _exists(ix: Index, address: str) -> bool:
+        try:
+            ix.show(address)
+            return True
+        except KeyError:
+            return False
 
     def menus(self, lang: str = schema.BASE) -> dict:
         """The build menus a new unit can go in: for every nation, its factories, each shown by the units it holds
@@ -366,6 +574,8 @@ class StudioApi(UpdateCalls):
                 "named": bool(o["export"]), "share": share,
                 "users": users if o["export"] and o["class"] not in KIND_OF and users > 1 else 0,
                 "can_copy": bool(o["export"]) and o["class"] in KIND_OF and editable and new is None,
+                "can_copy_ammo": bool(o["export"]) and o["class"] == AMMO and editable and new is None,
+                "has_weapons": o["class"] in KIND_OF,  # the page then asks for weapons(address)
                 "new": {"source": new.source, "source_name": source_name} if top else None}
 
     def _editable(self, o: dict) -> tuple[bool, str]:
@@ -733,7 +943,11 @@ class StudioApi(UpdateCalls):
         values = value if isinstance(value, list) else [value]
         if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in values):
             raise StudioError(f"{prop}: numbers only")
-        if p["list"] != isinstance(value, list) or len(values) != len(p["numbers"]):
+        if p["list"] != isinstance(value, list):
+            raise StudioError(f"{prop}: expected a list of numbers" if p["list"] else f"{prop}: one number")
+        if prop in FLAG_LISTS:  # a set of flags: any number of them, each once
+            values = list(dict.fromkeys(values))
+        elif len(values) != len(p["numbers"]):
             raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
         kind = types.get(prop + "[]" if p["list"] else prop, "")
         if kind in INT_RANGES:

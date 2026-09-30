@@ -47,7 +47,16 @@
       more_units: "and {n} more", copy_of: "A copy of {name}, made in this mod.", delete_unit: "Delete this unit",
       really_delete: "Delete {name}? Its changes go with it.", new_mark: "new",
       unit_made: "{name} is in the mod. Test in game to see it in its build menu.",
-      unit_deleted: "{name} was deleted from the mod." },
+      unit_deleted: "{name} was deleted from the mod.",
+      ammo: "Ammo", fired_by: "Fired by {names}", fired_by_nobody: "No unit fires it", weapons: "Weapons", weapon_n: "Weapon {n}",
+      weapons_help: "Each weapon fires one ammo, which several units may share: change the ammo's numbers on its page for all of them, or copy it there for a weapon of this unit's own.",
+      fires: "What this weapon fires", open_ammo: "Open the ammo", copy_ammo: "Copy this ammo…",
+      copy_name: "Name of the copy (only shown here)",
+      copy_ammo_help: "The copy starts the same as the original and keeps its name in game. Change its numbers, then pick it for a weapon on the unit's page.",
+      copy_made: "{name} is in the mod. Pick it for a weapon on a unit's page.", delete_copy: "Delete this copy",
+      flag_add: "Add a flag…", flag_add_number: "Another number…", flag_remove: "Take this flag off",
+      flag_used_by: "{n} units have it, e.g. {names}", flag_count: "{n} units",
+      old_index: "The game index was made by an older Studio. Build it again (about a minute)." },
     fr: { update_out: "{app} {version} est disponible.", update_now: "Mettre à jour", whats_new: "Nouveautés", update_progress: "Téléchargement de la mise à jour… {pct}", update_installing: "Installation : {app} se ferme puis se rouvre automatiquement.", update_repo: "(Cette copie s'exécute depuis le dépôt Git : mettez-la à jour avec git pull.)", update_failed: "La mise à jour n'a pas fonctionné : {why}",
       language: "Langue", game_names: "Noms internes", search: "Rechercher", all: "Tous", ground: "Terrestre",
       infantry: "Infanterie", air: "Aérien", buildings: "Bâtiments", units: "{n} unités", parts: "Composants",
@@ -92,7 +101,16 @@
       copy_of: "Une copie de {name}, créée dans ce mod.", delete_unit: "Supprimer cette unité",
       really_delete: "Supprimer {name} ? Ses modifications disparaissent aussi.", new_mark: "nouveau",
       unit_made: "{name} est dans le mod. Testez en jeu pour le voir dans son menu de production.",
-      unit_deleted: "{name} a été supprimé du mod." },
+      unit_deleted: "{name} a été supprimé du mod.",
+      ammo: "Munitions", fired_by: "Tirée par {names}", fired_by_nobody: "Aucune unité ne la tire", weapons: "Armes", weapon_n: "Arme {n}",
+      weapons_help: "Chaque arme tire une munition, que plusieurs unités peuvent partager : changez ses valeurs sur sa page pour toutes, ou copiez-la là pour une arme propre à cette unité.",
+      fires: "Ce que tire cette arme", open_ammo: "Ouvrir la munition", copy_ammo: "Copier cette munition…",
+      copy_name: "Nom de la copie (affiché ici seulement)",
+      copy_ammo_help: "La copie part identique à l'originale et garde son nom en jeu. Changez ses valeurs, puis choisissez-la pour une arme sur la page de l'unité.",
+      copy_made: "{name} est dans le mod. Choisissez-la pour une arme sur la page d'une unité.", delete_copy: "Supprimer cette copie",
+      flag_add: "Ajouter un drapeau…", flag_add_number: "Un autre numéro…", flag_remove: "Retirer ce drapeau",
+      flag_used_by: "{n} unités l'ont, p. ex. {names}", flag_count: "{n} unités",
+      old_index: "L'index du jeu vient d'un Studio plus ancien. Reconstruisez-le (environ une minute)." },
     sc: { update_out: "{app} {version} 已发布。", update_now: "更新", whats_new: "更新内容", update_progress: "正在下载更新… {pct}", update_installing: "正在安装：{app} 会自动关闭并重新打开。", update_repo: "（此副本从代码仓库运行：请用 git pull 更新。）", update_failed: "更新失败：{why}",
       language: "语言", game_names: "内部名称", search: "搜索", all: "全部", ground: "地面", infantry: "步兵",
       air: "空军", buildings: "建筑", units: "{n} 个单位", parts: "组件", uses: "使用", own_part: "自有",
@@ -121,7 +139,15 @@
       new_unit: "新单位…", new_unit_name: "新单位的名称(所有语言均显示)", price: "价格(所有战役年代)", build_menu: "生产菜单",
       same_menu: "与 {name} 相同", other_menu: "另一个", nation: "国家", factory: "工厂(按其中的单位显示)", more_units: "及另外 {n} 个",
       copy_of: "在此模组中创建的 {name} 的副本。", delete_unit: "删除此单位", really_delete: "删除 {name}?它的修改也会一并删除。",
-      new_mark: "新", unit_made: "{name} 已加入模组。在游戏中测试即可在生产菜单中看到它。", unit_deleted: "已从模组中删除 {name}。" },
+      new_mark: "新", unit_made: "{name} 已加入模组。在游戏中测试即可在生产菜单中看到它。", unit_deleted: "已从模组中删除 {name}。",
+      ammo: "弹药", fired_by: "由 {names} 使用", fired_by_nobody: "没有单位使用", weapons: "武器", weapon_n: "武器 {n}",
+      weapons_help: "每件武器使用一种弹药，多个单位可能共用：在弹药页面改数值会影响所有单位；要让本单位拥有专属武器，请在那里复制一份弹药。",
+      fires: "此武器使用的弹药", open_ammo: "打开弹药", copy_ammo: "复制此弹药…", copy_name: "副本名称（仅在此显示）",
+      copy_ammo_help: "副本初始与原版相同，游戏内沿用原名。修改数值后，在单位页面为某件武器选用它。",
+      copy_made: "{name} 已加入mod。请在单位页面为某件武器选用它。", delete_copy: "删除此副本",
+      flag_add: "添加标志位…", flag_add_number: "其他编号…", flag_remove: "移除此标志位",
+      flag_used_by: "{n} 个单位具有，例如 {names}", flag_count: "{n} 个单位",
+      old_index: "游戏索引由旧版Studio生成。请重新构建（约一分钟）。" },
   };
   const nations = {
     base: ["EU", "Allemagne", "RU", "France", "Italie", "URSS", "Japon"],
@@ -133,16 +159,16 @@
     us: { SeuilMort: "Health", VitesseLineaire: "Speed", ProductionPrice: "Price", ProductionTime: "Build time",
       DetectionBase: "Vision range", Factory: "Factory", PositionInMenu: "Menu slot", Nationalite: "Nation",
       DescriptorId: "Id", ClassNameForDebug: "Debug name", NameInMenuToken: "Name (text key)", Puissance: "Power",
-      PorteeMaximale: "Maximum range", TempsEntreDeuxTirs: "Time between shots", TirEnMouvement: "Fires while moving" },
+      PorteeMaximale: "Maximum range", TempsEntreDeuxTirs: "Time between shots", TirEnMouvement: "Fires while moving", InitialFlagSet: "Flags" },
     fr: { SeuilMort: "Points de vie", VitesseLineaire: "Vitesse", ProductionPrice: "Prix", ProductionTime: "Temps de production",
       DetectionBase: "Portée de vision", Factory: "Usine", PositionInMenu: "Position dans le menu", Nationalite: "Nation",
       DescriptorId: "Identifiant", ClassNameForDebug: "Nom de débogage", NameInMenuToken: "Nom (clé de texte)",
       Puissance: "Puissance", PorteeMaximale: "Portée maximale", TempsEntreDeuxTirs: "Temps entre deux tirs",
-      TirEnMouvement: "Tir en mouvement" },
+      TirEnMouvement: "Tir en mouvement", InitialFlagSet: "Drapeaux" },
     sc: { SeuilMort: "生命值", VitesseLineaire: "速度", ProductionPrice: "价格", ProductionTime: "生产时间",
       DetectionBase: "视野范围", Factory: "工厂", PositionInMenu: "菜单位置", Nationalite: "国家", DescriptorId: "编号",
       ClassNameForDebug: "调试名称", NameInMenuToken: "名称(文本键)", Puissance: "威力", PorteeMaximale: "最大射程",
-      TempsEntreDeuxTirs: "射击间隔", TirEnMouvement: "行进间射击" },
+      TempsEntreDeuxTirs: "射击间隔", TirEnMouvement: "行进间射击", InitialFlagSet: "标志位" },
   };
   const groups = {
     us: { identity: "Identity", cost: "Cost", combat: "Combat", movement: "Movement", vision: "Vision", menu: "Build menu",
@@ -185,6 +211,31 @@
   const BLAST = E + "M4_Sherman:Weapon.Blast";  // a part three units share
   const BLAST_OWNERS = ["M4_Sherman", "M3A1_Stuart", "Type97_ChiHa"];
 
+  // ammunition: what a weapon fires; each unit has one mounted weapon here, and every ground unit two flags
+  const A = "$/GFX/Everything/Ammo_";
+  const ammo = [
+    { id: "75mm_M3", ammoId: 1001, names: { us: "AP shell · Medium cal.", fr: "Obus AP · Moyen cal.", sc: "穿甲弹 · 中口径" },
+      power: 40, range: 2800, users: ["M4_Sherman", "M3A1_Stuart"] },
+    { id: "75mm_KwK40", ammoId: 1002, names: { us: "AP shell · Long 75", fr: "Obus AP · 75 long", sc: "穿甲弹 · 长身管75" },
+      power: 55, range: 3200, users: ["Panzer_IV_G"] },
+    { id: "MG_Cal30", ammoId: 1048, names: { us: "Machine-gun · .30 cal.", fr: "Mitrailleuse · cal. 30", sc: "机枪 · .30口径" },
+      power: 2, range: 1300, users: ["Soldat_US_Leger", "P40Warhawk", "Type97_ChiHa"] },
+  ];
+  const newAmmo = [];  // { mod, id, source, name }: copies made here, like the new units
+  const ammoAddress = (id) => A + id;
+  const myAmmo = () => newAmmo.filter((n) => n.mod === current);
+  const ammoName = (a, lang) => lang === "base" ? "Ammo_" + a.id : (a.names[lang] || a.names.us);
+  const nationsOf = (a, lang) => [...new Set(a.users.map((id) => units.find((x) => x.id === id).nation))].sort()
+    .map((n) => (nations[lang] || nations.us)[n]);
+  const flags = { M4_Sherman: [4, 10, 41], M3A1_Stuart: [4, 10], Panzer_IV_G: [4, 10, 72], Type97_ChiHa: [4, 10] };
+  const knownFlags = [
+    { flag: 4, count: 302, meaning: null, examples: ["M4 Sherman", "M3A1 Stuart", "Panzer IV"] },
+    { flag: 10, count: 908, meaning: null, examples: ["M4 Sherman", "Infantry", "P-40 Warhawk"] },
+    { flag: 41, count: 876, meaning: null, examples: ["M4 Sherman"] },
+    { flag: 72, count: 126, meaning: { us: "Sees through obstacles (no line-of-sight check; aircraft have it)",
+      fr: "Voit à travers les obstacles (pas de test de ligne de vue ; les avions l'ont)", sc: "无视障碍物（不做视线检查；飞机默认具有）" },
+      examples: ["Panzer IV", "P-40 Warhawk"] },
+  ];
   const nameOf = (u, lang) => lang === "base" ? E.slice(17) + u.id : (u.names[lang] || u.names.us);
   const label = (prop, lang) => lang === "base" ? prop : ((labels[lang] || labels.us)[prop] || prop);
   const words_ = (lang) => words[lang] || words.us;
@@ -209,7 +260,8 @@
     }
     return { address, class: cls, name, stable: true, shared: Boolean(share), owners: [], groups: out, parts, uses,
       used_by: usedBy, editable, why_not: whyNot, users, share: share || null, named: !address.includes(":"),
-      can_copy: editable && !address.includes(":") && units.some((u) => E + u.id === address), new: null };
+      can_copy: editable && !address.includes(":") && units.some((u) => E + u.id === address), new: null,
+      can_copy_ammo: false, has_weapons: !address.includes(":") && cls !== "TAmmunition" };
   }
 
   function unit(address, lang, via) {
@@ -237,6 +289,19 @@
       }
       return page;
     }
+    const copy = myAmmo().find((n) => ammoAddress(n.id) === address);
+    const a = ammo.find((x) => ammoAddress(x.id) === (copy ? copy.source : address));
+    if (a) {
+      const page = view(address, lang, "TAmmunition", copy ? copy.name : ammoName(a, lang), true, "", copy ? 0 : a.users.length,
+        [["identity", [["AmmunitionId", a.ammoId]]],
+         ["weapon", [["Puissance", a.power], ["PorteeMaximale", a.range], ["TempsEntreDeuxTirs", 3.5, { type: "float32" }]]]],
+        [], [], copy ? [] : a.users.map((id) => ({ address: E + id + ":MountedWeapon", path: "Ammunition" })));
+      for (const r of page.groups.flatMap((g) => g.rows)) if (r.prop === "AmmunitionId") { r.editable = false; r.locked = true; }
+      page.can_copy = false;
+      page.can_copy_ammo = Boolean(current) && !copy;
+      if (copy) page.new = { source: copy.source, source_name: ammoName(a, lang) };
+      return page;
+    }
     if (address === AMMO) {
       return view(AMMO, lang, "TAmmunition", "Ammo_75mm_M3", true, "", 3,
         [["weapon", [["Puissance", 40], ["PorteeMaximale", 2800], ["TempsEntreDeuxTirs", 3.5, { type: "float32" }]]]],
@@ -261,7 +326,8 @@
       "TUniteAuSolDescriptor", nameOf(u, lang), true, "", 0, [
       ["identity", [["Nationalite", u.nation, { text: `${u.nation} (${nationName})` }], ["DescriptorId", 187],
         ["ClassNameForDebug", 0, { text: "Unit_" + u.id }],
-        ["NameInMenuToken", 0, { text: lang === "base" ? u.key : `${u.key} (${nameOf(u, lang)})` }]]],
+        ["NameInMenuToken", 0, { text: lang === "base" ? u.key : `${u.key} (${nameOf(u, lang)})` }],
+        ...(flags[u.id] ? [["InitialFlagSet", flags[u.id], { type: "uint32" }]] : [])]],
       ["cost", [["ProductionPrice", Array(5).fill(u.price)], ["ProductionTime", 20]]],
       ["combat", [["SeuilMort", u.hp]]],
       ["movement", [["VitesseLineaire", u.speed, { type: "float32" }]]],
@@ -270,6 +336,26 @@
     ], [{ address: E + u.id + ":WeaponManager.Turrets[class=TTurretTwoAxisDescriptor]", class: "TTurretTwoAxisDescriptor",
       shared: false }, { address: BLAST, class: "TDamageDescriptor", shared: true }],
     [{ address: AMMO, class: "TAmmunition" }], [{ address: "$/GFX/Everything/Menu_Armour_US", path: "Units[3]" }]);
+  }
+
+  // a unit's mounted weapon and what it fires (one per unit here), with the mod's ammo choice on top
+  function weaponsOf(address, lang) {
+    const made = mine().find((n) => address === newAddress(n.id));
+    const u = units.find((x) => E + x.id === (made ? made.source : address));
+    if (!u) return { weapons: [], choices: [] };
+    const game = ammo.find((a) => a.users.includes(u.id)) || ammo[0];
+    const weapon = address + ":MountedWeapon";
+    const chosen = edits.get(editKey(weapon, "Ammunition", ""));
+    const names = new Map(ammo.map((a) => [ammoAddress(a.id), ammoName(a, lang)]));
+    for (const n of myAmmo()) names.set(ammoAddress(n.id), n.name);
+    const current_ = chosen || ammoAddress(game.id);
+    const whose = (addr) => { const c = myAmmo().find((n) => ammoAddress(n.id) === addr);
+      const a = ammo.find((x) => ammoAddress(x.id) === (c ? c.source : addr)); return a ? nationsOf(a, lang) : []; };
+    const choices = [...names].map(([addr, name]) => ({ address: addr, name, new: myAmmo().some((n) => ammoAddress(n.id) === addr),
+      nations: whose(addr) }))
+      .sort((x, y) => x.name.localeCompare(y.name));
+    return { weapons: [{ address: weapon, name: "weapon_effet_tag1", ammo: { address: current_, name: names.get(current_) || current_ },
+      game_ammo: ammoAddress(game.id), edited: Boolean(chosen) }], choices };
   }
 
   // The Maps view: a made-up island, packed like rusemod.terrain (uint16 positions over the bounds, zlib, base64)
@@ -372,8 +458,21 @@
         { code: "jpn", name: "日本語" }, { code: "sc", name: "简体中文" }],
       strings: async (lang) => words_(lang),
       nations: async (lang) => nations[lang] || nations.us,
-      status: async () => mode === "noindex" ? { ready: false, can_build: true } : { ready: true, build: "24687178" },
+      status: async () => mode === "noindex" ? { ready: false, can_build: true }
+        : mode === "oldindex" ? { ready: false, can_build: true, old: true } : { ready: true, build: "24687178" },
       units: async (lang, kind, nation, search) => {
+        if (kind === "ammo") {
+          const copies = myAmmo().map((n) => ({ address: ammoAddress(n.id), name: n.name, base_name: "Ammo_" + n.id, kind: "ammo",
+            id: null, users: [], nations: nationsOf(ammo.find((a) => ammoAddress(a.id) === n.source), lang), nation: -1, nation_name: "", factory: null, slot: null, new: true, source: n.source,
+            source_name: ammoName(ammo.find((a) => ammoAddress(a.id) === n.source), lang) }));
+          const out = copies.concat(ammo.map((a) => ({ address: ammoAddress(a.id), name: ammoName(a, lang), base_name: "Ammo_" + a.id,
+            kind: "ammo", id: a.ammoId, users: a.users.map((id) => nameOf(units.find((x) => x.id === id), lang)),
+            nations: nationsOf(a, lang), nation: -1,
+            nation_name: "", factory: null, slot: null, new: false, source: null })))
+            .filter((a) => !search || a.name.toLowerCase().includes(search.toLowerCase()) ||
+              a.users.some((x) => x.toLowerCase().includes(search.toLowerCase())));
+          return { units: out, total: ammo.length + copies.length };
+        }
         const made = mine().map((n) => {
           const src = units.find((x) => E + x.id === n.source);
           return { id: n.id, kind: src.kind, nation: n.nation, factory: n.factory, slot: null, names: { us: n.name },
@@ -408,7 +507,32 @@
           factory: factory >= 0 ? factory : src.factory });
         return { address: newAddress(stem), name, saved: current + "/src/studio.rndf" };
       },
+      weapons: async (address, lang) => weaponsOf(address, lang),
+      set_ammo: async (unitAddress, weapon, chosen) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        const w = weaponsOf(unitAddress, "us");
+        if (!w.weapons.some((x) => x.address === weapon)) throw new Error(`${weapon} isn't a weapon of ${unitAddress}`);
+        if (!w.choices.some((c) => c.address === chosen)) throw new Error(`There's no ammunition at ${chosen}.`);
+        const edited = chosen !== w.weapons[0].game_ammo;
+        if (edited) edits.set(editKey(weapon, "Ammunition", ""), chosen); else edits.delete(editKey(weapon, "Ammunition", ""));
+        return { saved: current + "/src/studio.rndf", ammo: chosen, edited };
+      },
+      new_ammo: async (source, name) => {
+        if (!current) throw new Error("Pick or make a mod first: a copy is saved in a mod.");
+        if (!ammo.some((a) => ammoAddress(a.id) === source)) throw new Error(`${source} isn't an ammunition, so it can't be copied here`);
+        const stem = safeName(name) || `New_${myAmmo().length + 1}`;
+        if (ammo.some((a) => a.id === stem) || myAmmo().some((n) => n.id === stem)) throw new Error(`There's already a copy at Ammo_${stem}. Pick another name.`);
+        newAmmo.push({ mod: current, id: stem, source, name });
+        return { address: ammoAddress(stem), name, saved: current + "/src/studio.rndf" };
+      },
+      flags: async (lang) => ({ flags: knownFlags.map((f) => ({ ...f, meaning: f.meaning ? (f.meaning[lang] || f.meaning.us) : null })) }),
       delete_unit: async (address) => {
+        const j = newAmmo.findIndex((n) => n.mod === current && ammoAddress(n.id) === address);
+        if (j >= 0) {
+          const [gone] = newAmmo.splice(j, 1);
+          for (const k of [...edits.keys()]) if (k.split("|")[1].startsWith(address) || edits.get(k) === address) edits.delete(k);
+          return { deleted: address, source: gone.source, saved: current + "/src/studio.rndf" };
+        }
         const i = newUnits.findIndex((n) => n.mod === current && newAddress(n.id) === address);
         if (i < 0) throw new Error(`${address} isn't a unit made in this mod, so it can't be deleted here`);
         const [gone] = newUnits.splice(i, 1);
@@ -439,9 +563,10 @@
         if (address === BLAST && !["own", "shared"].includes(how)) throw new Error("change it for one unit, or for all");
         const r = unit(address, "us", via).groups.flatMap((g) => g.rows).find((x) => x.prop === prop);
         const whole = (v) => r.type === "float32" ? v : Math.sign(v) * Math.round(Math.abs(v));
-        const v = Array.isArray(value) ? value.map(whole) : whole(value);
+        let v = Array.isArray(value) ? value.map(whole) : whole(value);
+        if (prop === "InitialFlagSet") v = [...new Set(v)];
         const base = how === "own" && r.edited !== null ? [].concat(r.edited) : r.numbers;
-        const same = [].concat(v).every((x, i) => x === base[i]);
+        const same = [].concat(v).length === base.length && [].concat(v).every((x, i) => x === base[i]);
         if (same) edits.delete(editKey(address, prop, how, via)); else edits.set(editKey(address, prop, how, via), v);
         return { saved: current + "/src/studio.rndf", value: v };
       },

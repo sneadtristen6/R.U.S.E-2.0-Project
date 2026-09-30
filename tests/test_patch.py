@@ -347,8 +347,10 @@ class FindingObjects(unittest.TestCase):
         r = run(("m", [Op("clone", "$/GFX/Everything/Ammo_New", source="@TAmmunition[AmmunitionId=1120]",
                           body=[Op("set", path="Puissance", value=num(9))]),
                        Op("clone", "$/GFX/Everything/Lee_2", source="@[ClassNameForDebug='Unit_M3_Lee']")]), game=named())
-        self.assertEqual(levels(r), ["note"])  # the Lee copy's fresh identity
+        self.assertEqual(levels(r), ["note", "note"])  # each copy's fresh identity: the ammo's id, the Lee's
+        self.assertIn("Ammo_New gets its own AmmunitionId 1120 -> 1121", r.notes[0].message)
         self.assertEqual(int(r.game.objects["$/GFX/Everything/Ammo_New"].props["Puissance"].value), 9)
+        self.assertEqual(int(r.game.objects["$/GFX/Everything/Ammo_New"].props["AmmunitionId"].value), 1121)
         self.assertEqual(puissance(r), 100)  # the original part is untouched
         self.assertEqual(r.created["$/GFX/Everything/Ammo_New"].source, "$/Sherman")  # its file: the part's owner's
         self.assertEqual(r.created["$/GFX/Everything/Lee_2"].source, "$/Lee")

@@ -441,8 +441,9 @@ A unit is one named object plus unnamed sub-objects (weapon slots, turrets and s
   files), keep pointing to the original.
 - **Fresh identity** (built: `src/rusemod/identity.py`): the clone gets its new export name, plus fresh values for
   what must differ between units:
-  - `DescriptorId`, `TrackingId`: one more than the highest in the game, if the class uses them as ids (no two of its
-    objects share a value).
+  - `DescriptorId`, `TrackingId`, `AmmunitionId`: one more than the highest in the game, if the class uses them as
+    ids (no two of its objects share a value). A copied ammunition (a weapon's own ammo) gets its own id, so mods
+    that find ammo by id (`@TAmmunition[AmmunitionId=…]`) never find the copy by mistake.
   - `ClassNameForDebug`: the clone's own name, written like the source's (`Descriptor_Unit_R2_X` gives `Unit_R2_X`),
     with `_2`, `_3`, … added if that's taken.
   - `PositionInMenu` (slot = row × 100 + column): units with the same `Nationalite` and `Factory` share a build menu.

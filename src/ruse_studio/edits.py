@@ -3,8 +3,10 @@ changes and the new units, and `text/studio.baseunite.csv` for the new units' na
 
 The files are the only record: the Studio reads them back to show what's been changed, and rewrites them after every
 change: the new units first (one `clone` block each, holding that unit's own values), then one `patch` block per
-object in address order. They only hold plain values (`Prop = 12` or `Prop = [30, 30, 30, 30, 30]`) and the new units'
-names; hand-written changes belong in other `.rndf` and `.csv` files of the same mod, which the Studio never touches.
+object in address order. They only hold plain values (`Prop = 12` or `Prop = [30, 30, 30, 30, 30]`), links to named
+objects (`Ammunition = $/GFX/Everything/Ammo_X`: which ammo a weapon fires) and the new units' names; hand-written
+changes belong in other `.rndf` and `.csv` files of the same mod, which the Studio never touches. A copy that keeps
+its source's name in game (an ammunition) has no names row.
 """
 from __future__ import annotations
 
@@ -19,7 +21,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from rusemod import loc
-from rusemod.patch import ListV, Num, Text
+from rusemod.patch import ListV, Num, Ref, Text
 from rusemod.rndf import RndfError, parse
 
 FILE = Path("src") / "studio.rndf"
@@ -29,11 +31,15 @@ HEADER = ("// Made by the RUSE Studio, which rewrites this file after every chan
 NAME_PROP = "NameInMenuToken"
 
 
+class Link(str):
+    """A value that points at a named object, by its address ($/GFX/Everything/Ammo_X)."""
+
+
 @dataclass
 class Edit:
     target: str             # the named object: $/GFX/Everything/Descriptor_Unit_X
     path: str               # inside it: "SeuilMort", or "Weapons[class=TWeapon].Puissance" for a part
-    value: object           # a number, or a list of numbers
+    value: object           # a number, a list of numbers, or a Link
     share: str | None = None
 
 
@@ -42,6 +48,7 @@ class NewUnit:
     target: str             # $/GFX/Everything/Descriptor_Unit_X: the copy's own address
     source: str             # the unit it copies
     name: str               # the name shown in game (the same in every language, for now)
+    named: bool = True      # False: it keeps its source's name in game (a copied ammunition), so no names row
 
     @property
     def text_key(self) -> str:
@@ -56,6 +63,8 @@ def split(address: str) -> tuple[str, str]:
 
 
 def _plain(value):
+    if isinstance(value, Ref):
+        return Link(value.target) if value.target else None
     if isinstance(value, Num):
         return int(value.value) if value.value == value.value.to_integral() else float(value.value)
     if isinstance(value, ListV) and value.items and all(isinstance(x, Num) for x in value.items):
@@ -73,6 +82,8 @@ def number(x) -> str:
 
 
 def literal(value) -> str:
+    if isinstance(value, Link):
+        return str(value)
     return "[" + ", ".join(number(v) for v in value) + "]" if isinstance(value, list) else number(value)
 
 
@@ -92,8 +103,9 @@ def game_key(target: str) -> str:
 
 
 def plain_name(target: str) -> str:
-    """A name to show for a new unit whose names file is gone: Descriptor_Unit_Super_Sherman -> Super Sherman."""
-    return re.sub(r"^Descriptor_[A-Za-z]+_", "", target.rsplit("/", 1)[-1]).replace("_", " ")
+    """A name to show for a copy whose names file is gone (or that has no names row, like a copied ammunition):
+    Descriptor_Unit_Super_Sherman -> Super Sherman, Ammo_Hot_75 -> Hot 75."""
+    return re.sub(r"^(Descriptor_[A-Za-z]+_|Ammo_)", "", target.rsplit("/", 1)[-1]).replace("_", " ")
 
 
 class EditsFileError(Exception):
@@ -143,12 +155,12 @@ class ModEdits:
         return {r.key: r.texts["us"] for r in rows}
 
     def _read_clone(self, op, names: dict[str, str]) -> None:
-        unit = NewUnit(op.target, op.source, plain_name(op.target))
+        unit = NewUnit(op.target, op.source, plain_name(op.target), named=False)
         for b in op.body:
             if b.kind != "set":
                 continue
             if b.path == NAME_PROP and isinstance(b.value, Text) and b.value.kind == "loc":
-                unit.name = names.get(b.value.value, unit.name)
+                unit.name, unit.named = names.get(b.value.value, unit.name), True
                 continue
             value = _plain(b.value)
             if value is not None:
@@ -192,10 +204,11 @@ class ModEdits:
         return {f"{t}:{p.rpartition('.')[0]}" for t, p, how in self.edits if how == "shared"}
 
     # --- new units ---
-    def add_unit(self, target: str, source: str, name: str, values: dict) -> NewUnit:
+    def add_unit(self, target: str, source: str, name: str, values: dict, named: bool = True) -> NewUnit:
         """A new unit: a copy of `source` at `target`, called `name` in game, with `values` (prop -> value) of its
-        own from the start (its price, and its nation and factory when it goes in another build menu)."""
-        unit = NewUnit(target, source, name)
+        own from the start (its price, and its nation and factory when it goes in another build menu). `named`
+        False: a copy that keeps its source's name in game (an ammunition); `name` is only what the Studio calls it."""
+        unit = NewUnit(target, source, name, named)
         self.new_units[target] = unit
         for prop, value in values.items():
             self.edits[(target, prop, "")] = Edit(target, prop, value)
@@ -219,7 +232,8 @@ class ModEdits:
         for target in sorted(self.new_units):  # copies first: a new unit starts as a copy of the game's own unit
             unit = self.new_units[target]
             out.append(f"\nexport {target.rsplit('/', 1)[-1]} is clone {unit.source}\n(\n")
-            out.append(f"    {NAME_PROP} = loc('{unit.text_key}')\n")
+            if unit.named:
+                out.append(f"    {NAME_PROP} = loc('{unit.text_key}')\n")
             own = [(path, e.value) for (t, path, how), e in self.edits.items()
                    if t == target and how == "" and "." not in path]
             for prop, value in sorted(own, key=lambda pv: _natural(pv[0])):
@@ -239,13 +253,13 @@ class ModEdits:
                 out.append(f"    {prop} = {literal(value)}\n")
             out.append(")\n")
         self._write(self.file, "".join(out))
-        if self.new_units:
+        named = [self.new_units[t] for t in sorted(self.new_units) if self.new_units[t].named]
+        if named:
             names = io.StringIO()
             writer = csv.writer(names, lineterminator="\n")
             writer.writerow(["key", "game_key", "us"])
-            for target in sorted(self.new_units):
-                unit = self.new_units[target]
-                writer.writerow([unit.text_key, game_key(target), unit.name])
+            for unit in named:
+                writer.writerow([unit.text_key, game_key(unit.target), unit.name])
             self._write(self.names_file, names.getvalue())
         elif self.names_file.is_file():
             self.names_file.unlink()

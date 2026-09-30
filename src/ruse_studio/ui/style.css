@@ -180,3 +180,12 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .update-bar { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-size: 13px;
               background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41); }
 .update-bar.hidden { display: none; }
+
+/* a unit's flags: one chip per number, a cross takes it off, a picker adds one */
+.flags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.flag { display: inline-flex; align-items: center; gap: 2px; padding: 1px 4px 1px 8px; background: var(--panel-hi);
+  border: 1px solid var(--line); border-radius: 999px; font-size: 12px; }
+tr.edited .flag { border-color: var(--accent); }
+.flag .x { padding: 0 4px; background: none; border: 0; color: var(--muted); font-size: 14px; line-height: 1; cursor: pointer; }
+.flag .x:hover { color: var(--error); }
+.flags select { max-width: 22em; font-size: 12px; }

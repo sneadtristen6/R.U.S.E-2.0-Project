@@ -42,7 +42,7 @@ from .edat import Edat
 from .ndf import SCALAR, Ndf, decode, sub_values
 from .steam import build_of, data_revisions
 
-FORMAT = "2"
+FORMAT = "3"  # 3: whole flag lists (WHOLE_LISTS)
 TYPES = {0x00: "bool", 0x01: "int8", 0x02: "int32", 0x03: "uint32", 0x05: "float32", 0x06: "float64", 0x07: "string",
          0x08: "wide string", 0x09: "reference", 0x0B: "vec3f", 0x0C: "float4", 0x0D: "color32", 0x11: "list",
          0x12: "map", 0x13: "int64", 0x14: "blob", 0x18: "int16", 0x19: "uint16", 0x1A: "guid", 0x1C: "path",
@@ -51,6 +51,7 @@ _LANG = re.compile(r"\\translations\\([^\\]+)\\|\\(dev)\\", re.I)
 _MAP = re.compile(r"^DataMap(.+?)(?:_v\d+)?\.dat$", re.I)
 _FILEISH = re.compile(r"[\\/].*\.[A-Za-z0-9]{2,5}$|^[A-Za-z]+:")
 LIST_VALUES = 16  # list items stored in `value` per property
+WHOLE_LISTS = {"InitialFlagSet": 256}  # lists stored whole (up to this many items): a unit's flags, up to 17 in the game
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
@@ -246,11 +247,12 @@ class _Builder:
 
     @staticmethod
     def _stored(path: str) -> bool:
-        """Top-level numbers, and the first items of top-level lists of numbers (Price[0] … Price[15])."""
+        """Top-level numbers, and the first items of top-level lists of numbers (Price[0] … Price[15]; all of a
+        WHOLE_LISTS list)."""
         if "[" not in path:
             return "." not in path
-        m = re.fullmatch(r"[^.\[\]]+\[(\d+)\]", path)
-        return bool(m) and int(m.group(1)) < LIST_VALUES
+        m = re.fullmatch(r"([^.\[\]]+)\[(\d+)\]", path)
+        return bool(m) and int(m.group(2)) < WHOLE_LISTS.get(m.group(1), LIST_VALUES)
 
     def _addresses(self, ndf: Ndf, game_path: str, children, mixed):
         n = len(ndf.objects)
@@ -493,6 +495,34 @@ class Index:
             ORDER BY o.address""", list(classes)).fetchall()
         return [{"address": a, "class": c, "nation": int(n or 0), "factory": None if f is None else int(f),
                  "slot": None if s is None else int(s), "key": k} for a, c, n, f, s, k in rows]
+
+    def flag_sets(self, prop: str = "InitialFlagSet") -> list[dict]:
+        """Every number the named objects' `prop` lists hold (a unit's flags): [{flag, count, examples}], by number;
+        `count` named objects have it, `examples` are the first three of them."""
+        per: dict[int, set] = defaultdict(set)
+        for num, address in self.db.execute("""SELECT v.num, o.address FROM value v JOIN object o ON o.id = v.object
+                                               WHERE substr(v.path, 1, ?) = ? AND o.shadow = 0
+                                               AND o.export IS NOT NULL""", (len(prop) + 1, prop + "[")):
+            if num is not None:
+                per[int(num)].add(address)
+        return [{"flag": f, "count": len(a), "examples": sorted(a)[:3]} for f, a in sorted(per.items())]
+
+    def ammunition(self) -> list[dict]:
+        """Every named ammunition (TAmmunition): its address, id, name and kind keys (texts), and the named units whose
+        weapons fire it, by address."""
+        rows = self.db.execute("""SELECT o.id, o.address,
+              (SELECT num FROM value WHERE object = o.id AND path = 'AmmunitionId'),
+              (SELECT text FROM value WHERE object = o.id AND path = 'Name'),
+              (SELECT text FROM value WHERE object = o.id AND path = 'TypeName')
+            FROM object o WHERE o.class = 'TAmmunition' AND o.shadow = 0 AND o.export IS NOT NULL
+            ORDER BY o.address""").fetchall()
+        users: dict[int, set] = defaultdict(set)
+        for dst, owner in self.db.execute("""SELECT r.dst, n.address FROM ref r JOIN object d ON d.id = r.dst
+                                             JOIN owner w ON w.object = r.src JOIN object n ON n.id = w.owner
+                                             WHERE d.class = 'TAmmunition' AND n.shadow = 0"""):
+            users[dst].add(owner)
+        return [{"address": a, "id": None if i is None else int(i), "name_key": k, "type_key": t,
+                 "users": sorted(users[oid])} for oid, a, i, k, t in rows]
 
     def prop_types(self, cls: str) -> dict:
         """Property -> the value type objects of `cls` use for it ("int32", "float32", "list"…), the most common one."""
