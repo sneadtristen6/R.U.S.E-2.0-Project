@@ -618,3 +618,23 @@ import); the cloud tab's pull request #1 (Task A) is under review.
 - **Owner, the same evening:** Eugen has never said the game's program can't be edited. The docs said he had; fixed
   (PLAN L4 and decision 3, FORMATS §10, TASKS rules). Keeping the public code data-only is the owner's rule;
   program work is allowed in the private repo, for editing game files and mods.
+
+### 2026-09-30, PC session: the terrain fix, and three community tools read
+
+- **Terrain (the owner's in-game report: orders refused, the camera falling through, trees at the old height,
+  steps):** DomesticNukes and his Claude's recipe is in: strokes move the gameplay `.kdt` only; the drawn meshes and
+  the camera floor move by the change of its surface (barycentric, inside its triangles); both `.kdt` files widen
+  every height limit over a moved triangle, in the subtree trees and the MainNode, and a part whose moved triangle
+  changes sides of a height split gets a new x/y tree (`rusemod.kdt_edit`). `tools/verify_terrain.py` now also
+  checks the trees: 32 of 32 maps pass. Test copy for the owner: `D:\RUSE-Instances\terrain` (Blitz: a hill, a pit
+  east of it, a flattened patch west of it). The pit reaches the map's lowest height (16 points clamp), so its floor
+  is flat.
+- **Three tools downloaded to `D:\research\` at the owner's request, read only:**
+  - RugnirViking/moddingSuite (enohka's Wargame suite, forked for R.U.S.E.; GPL-2.0): its `.scenario` reader gave us
+    the zone layout. R.U.S.E.'s files match except for one list per zone; `rusemod.scenario` (our own code) reads
+    all 102: zones, starting points, spawns, labels, waypoints. It also has Wargame's mesh, TGV, `.ess` and save
+    readers, which we already have or don't need.
+  - mathieujaumain/IrisZoomDataAPI (LGPL-3.0): a C# reader for NDF binaries and EDAT packs, the same ground as
+    `rusemod.ndf` and `rusemod.edat`. Nothing new for us.
+  - Ulibos/ndf-parse (MIT): parses WARNO's **text** NDF. R.U.S.E. ships binary `.ndfbin`, so it doesn't apply.
+  Only format facts were taken, never code (the first two are GPL/LGPL).

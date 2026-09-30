@@ -14,7 +14,7 @@ Game build examined: Steam re-release, Steam build 24670294, data revision **190
 | Python scripts (`.xyz`) | `.ipk` in ZZ_Win, IA_Common | 327 | ✅ R | P2 |
 | Map registration (`mapinfo.cpp`, `clustermap.cpp`) | ZZ_GladPatchable | 86 maps | ✅ R | P1 |
 | Map support files (`save.boobspc`, `output.sdb`) | Maps\PC | per map | 🟡 checksums known | P1 |
-| Scenario (`.scenario`) | DataMap_Win | 102 | ❔ (RUSE-Mod-Manager edits it) | P1 |
+| Scenario (`.scenario`) | DataMap_Win | 102 | ✅ R (zones and design items; `rusemod.scenario`, all 102) | P1 |
 | AI map grids (`mapinfo.win`) | DataMap_Win | 34 | ❔ (RUSE-Mod-Manager edits layers) | P1 |
 | Terrain mesh (`.tms`) | Maps\PC | 64 (hi + low per map) | ✅ R W RT (not yet tried in-game) | P1 |
 | Terrain tiles (`.tmst_pc` + `.tmst_chunk_pc`) | Maps\PC | 64 sets, 29,254 tiles | ✅ container R W RT; plain tiles (ZIPO) work in-game; TGU1 body 🟡 (reading only) | P1 |
@@ -329,7 +329,7 @@ Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 | Map pack header "checksum" | ✅ **not a checksum: a random ID.** The 16 bytes at 0x08 are a Windows GUID (`uuid.UUID(bytes_le=…)`), version 4 with the RFC variant, in all 32 map packs (chance by accident ≈ 64⁻³¹). The game can't check it against the contents. Gamma and Gam_Ostfriesland share one (same pack). Every other archive has zeros there. Edits keep it; a new map gets a fresh `uuid4()`. Its use (map identity in multiplayer or replays?) ❔ |
 | `save.boobspc` | ✅ bytes 0–15 = MD5 of bytes 16..end; then version string `0.6`; uncompressed. The game checks it, so a rewrite must recompute it |
 | `output.sdb` | ✅ `SDB\r\n` + MD5 of the whole file with the 16-byte hash (at 5–20) removed |
-| `.scenario` | `SCENARIO\r\n` + 16 bytes (not an MD5 of the rest) + records (`AREA`, zones, …) ❔ |
+| `.scenario` | ✅ `SCENARIO\r\n` + 16 bytes (not an MD5 of the rest) + 2 zero bytes + u32 version 4 + u32 1, then the zones (u32 size + `AREA` records: a named polygon per zone, cut into triangles, with its border and a list that closes the outline, each ending `END0`) and the design items (u32 size + an NDF of `TGameDesignItem`s: Position, Rotation and an AddOn: `StartingPoint` (alliance, camera, warm-up path), `Spawn` (camp, the class that arrives), `CircularZone`, `RectangleZone`, `LabelVille`, `LabelMontagne` (text in UTF-16), `Name` (waypoints)). Every byte of all 102 files is read (`rusemod.scenario`; its docstring has the layout). The layout was worked out for Wargame by enohka's moddingSuite and RugnirViking's RUSE fork of it; R.U.S.E. differs only in the list at the end of each zone, which Wargame writes empty |
 | `mapinfo.win` | `INFOIA\r\n` + 16 bytes (not an MD5 of the rest) + AI grids (concealment and movement-blocking layers) ❔ |
 | `.tms`, `.tmst_pc`, `.tmst_chunk_pc` | ✅ terrain mesh and texture tiles: see "Terrain" below |
 | `.kdt` | ✅ the gameplay ground and the camera floor: see "Gameplay ground" below |
