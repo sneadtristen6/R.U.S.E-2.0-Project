@@ -490,8 +490,21 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 except KeyError:
                     return None
 
+            def depth_of(n=name, a=arc):
+                """The map's MaxDepthForSimulationDepthMap, from its mapwaterconstante in the unit-data pack."""
+                from .ndf import Ndf
+                from .water import max_depth
+
+                def nd():
+                    try:
+                        e = a.find(f"genglad\\patchable\\map\\{n.lower()}\\mapwaterconstante.cpp.gladndfbin")
+                    except KeyError:
+                        return None
+                    return Ndf(bytes(a.read(e))) if e is not None else None
+                return max_depth(nd)
+
             try:
-                changed_members, notes = edit_map(read, strokes, name)
+                changed_members, notes = edit_map(read, strokes, name, max_depth_of=depth_of)
             except (ValueError, struct.error, zlib.error) as exc:
                 result.findings.append(Finding("error", f"{map_path.name}: its ground files can't be read ({exc})"))
                 continue

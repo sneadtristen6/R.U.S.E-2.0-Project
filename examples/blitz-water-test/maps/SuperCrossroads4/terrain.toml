@@ -1,0 +1,21 @@
+# The water brushes' in-game check. World units; x grows east, y grows south (north is up on the minimap).
+
+# A new lake: a natural basin in the north-west hills, dry in the shipped map (floor about 23,000, rim above 24,200
+# all round, 56,000 to 61,000 from this centre), flooded to 24,000: about 1,000 deep at the floor, which is Blitz's
+# full water depth. The circle ends on the rim, higher than the water, so the shore follows the ground.
+# Close-up only: the far mesh has too few points here (53 in the circle) for any of its triangles to lie under the
+# water, so the lake isn't drawn from far away until the far mesh is cut finer.
+[[stroke]]
+brush = "water"
+x = 309760.0
+y = 401920.0
+radius = 60000.0
+level = 24000.0
+
+# The lake north-east of Cashel, drained back to the map's base level: it should become a dry basin. The circle
+# covers the whole lake (its water reaches 51,000 from this centre in the shipped close-up mesh).
+[[stroke]]
+brush = "drain"
+x = 883447.0
+y = 485815.0
+radius = 56000.0

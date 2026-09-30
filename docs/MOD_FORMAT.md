@@ -259,7 +259,7 @@ list shows it under each map). The file holds strokes, one dab of a brush each:
 
 ```toml
 [[stroke]]
-brush  = "hill"      # hill, raise, lower, crater, plateau, flatten, smooth, ramp
+brush  = "hill"      # hill, raise, lower, crater, plateau, flatten, smooth, ramp, water, drain
 x      = 983040.0    # the centre, in world units: x grows east, y grows south
 y      = 983040.0
 radius = 60000.0
@@ -283,6 +283,13 @@ radius = 30000.0     # half the ramp's width
 level  = 14000.0
 level2 = 26000.0
 weight = 1.0
+
+[[stroke]]
+brush  = "water"
+x      = 284160.0
+y      = 376320.0
+radius = 24000.0
+level  = 23500.0     # water: the water surface (world z); the ground under it floods
 ```
 
 | Brush | Does | Shape |
@@ -294,6 +301,15 @@ weight = 1.0
 | `flatten` | ground toward `level`, most at the centre | round hump weighting |
 | `smooth` | ground toward its local average (the mean over about a third of the radius) | round hump weighting |
 | `ramp` | an even slope from `level` at (`x`, `y`) to `level2` at (`x2`, `y2`); `radius` is half its width | flat across the middle half of the width, then an S-curve back to the old ground at the sides and beyond the ends |
+| `water` | the water surface to `level`: wherever the ground is lower, it floods (a lake); the ground doesn't move | the whole circle; end it on higher ground so the shore follows the ground |
+| `drain` | the water surface back to the map's base level: lakes and rivers inside dry up | the whole circle |
+
+- **Water.** Water brushes run after the height brushes. They change the water surface of the two drawn meshes and
+  the map's three water textures, never the ground or the `.kdt` files (units are kept out of water by the map's
+  movement data, which water brushes don't change: a new lake is for looks until that is written too). What is
+  written follows the rules every shipped map keeps (the water triangles, the per-cell patch bounds, the far mesh's
+  water about 150 lower, the textures' depth, tiles and cell flags; `rusemod.water`). A height brush near water
+  also keeps the water triangles and textures in step.
 
 - **All four files together.** A map's ground is in four files (FORMATS.md §6): the close-up and far meshes the game
   draws, the gameplay ground and the camera floor (`.kdt`). Every stroke moves the points of all four inside its
@@ -303,8 +319,7 @@ weight = 1.0
   same bytes. The reshaped map counts for multiplayer: its files are part of the fingerprint (§12).
 - **Load order:** when several mods reshape one map, their strokes run in load order, one mod's after another's.
 - **Not yet:** raising the ground above the map's highest point or below its lowest (points stop at the file's
-  height range, and the build says how many did), water that follows the ground (lakes keep their outline), and
-  cutting the mesh finer. The game's acceptance of moved ground is the next in-game check
+  height range, and the build says how many did), water in the movement data, and cutting the mesh finer. The game's acceptance of moved ground is the next in-game check
   (`tools/verify_terrain.py --make-test`).
 
 ### Scenery: `maps/<map pack>/scenery.toml`

@@ -193,9 +193,23 @@ def _touches(stroke: Stroke, area) -> bool:
     return dx * dx + dy * dy < stroke.radius * stroke.radius
 
 
-def edit_map(read, strokes: list[Stroke], name: str = "the map") -> tuple[dict[str, bytes], list[str]]:
+def _area_of(stroke: Stroke) -> tuple[float, float, float]:
+    """A circle (x, y, radius) around everything a stroke can change."""
+    if stroke.brush == "ramp":
+        half = math.hypot(stroke.x2 - stroke.x, stroke.y2 - stroke.y) / 2
+        return (stroke.x + stroke.x2) / 2, (stroke.y + stroke.y2) / 2, half + stroke.radius
+    return stroke.x, stroke.y, stroke.radius
+
+
+def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=None) -> tuple[dict[str, bytes], list[str]]:
     """Apply `strokes`, in order, to a map pack's ground. `read(member path)` gives a member's bytes, or None when
-    the pack hasn't got it. Returns ({member path: new bytes} for the files that changed, report lines)."""
+    the pack hasn't got it. Height brushes come first, then the water brushes (rusemod.water); then the map's water
+    textures follow the drawn water near every stroke. `max_depth_of()` gives the map's MaxDepthForSimulationDepthMap
+    (the textures' depth scale), or None. Returns ({member path: new bytes} for the files that changed, report
+    lines)."""
+    from .water import apply_water, update_textures
+    water_strokes = [s for s in strokes if s.brush in ("water", "drain")]
+    strokes = [s for s in strokes if s.brush not in ("water", "drain")]
     notes: list[str] = []
     meshes: dict[str, Tms] = {}
     trees: dict[str, Kdt] = {}
@@ -241,13 +255,30 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map") -> tuple[dict[s
     changed: dict[str, bytes] = {}
     counts = []
     held_top = held_bottom = 0
+    moved_mesh = {}
     for key in ("highdef", "lowdef"):
         if key in meshes:
             moved, top, bottom = _commit_mesh(meshes[key], points[key])
             held_top, held_bottom = held_top + top, held_bottom + bottom
             counts.append(f"{LABELS[key]} {moved}")
-            if moved:
-                changed[FILES[key]] = meshes[key].to_bytes()
+            moved_mesh[key] = moved
+    water_notes = apply_water(meshes, water_strokes)
+    for key in ("highdef", "lowdef"):
+        if key in meshes and (moved_mesh[key] or water_strokes):
+            changed[FILES[key]] = meshes[key].to_bytes()
+    if "highdef" in meshes and FILES["highdef"] in changed:
+        depth = max_depth_of() if max_depth_of else None
+        if depth:
+            far = "lowdef" in meshes
+            new_tex, tex_notes = update_textures(read, Tms(read(FILES["highdef"])), meshes["highdef"],
+                                                 [_area_of(s) for s in strokes + water_strokes], depth, name,
+                                                 far_before=Tms(read(FILES["lowdef"])) if far else None,
+                                                 far_after=meshes["lowdef"] if far else None)
+            changed.update(new_tex)
+            water_notes += tex_notes
+        elif water_strokes:
+            water_notes.append(f"{name}: the map's water depth scale couldn't be read, so its water textures were "
+                               f"left as they are")
     normal_at = _normal_lookup(meshes["highdef"], points["highdef"]) if "highdef" in meshes else None
     for key in ("ground", "camera"):
         if key in trees:
@@ -256,7 +287,8 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map") -> tuple[dict[s
             counts.append(f"{LABELS[key]} {moved}")
             if moved:
                 changed[FILES[key]] = trees[key].to_bytes()
-    notes.insert(0, f"{name}: {len(strokes)} stroke(s); points moved: " + ", ".join(counts))
+    notes.insert(0, f"{name}: {len(strokes) + len(water_strokes)} stroke(s); points moved: " + ", ".join(counts))
+    notes[1:1] = water_notes
     if held_top:
         notes.append(f"{name}: {held_top} point(s) reached the top of the map's height range and stop there "
                      f"(raising the ground above the map's highest point comes later)")
