@@ -712,7 +712,7 @@ ends with one in-game test (batched, one game start) and a release. Sessions are
 | C3 | Studio: "Publish mod" to the index (a pull request made for the modder) | C1 | 1 |
 | C4 | **Join codes** in the launcher, and the 2-PC test | a second player | 1-2 |
 | C5 | Trust: code signing, a first public release on ModDB and Nexus; outreach (LittleGroove, Eugen) | C1-C4 | 1 + owner |
-| C6 | **Self-checks, like a mod manager's** (owner: "a lot of self-checks built into this, like CurseForge has"). Done: files read back before saving, the mod check (every file as the build reads it, Set aside, map folders named by title renamed). Next: the same check in the launcher when a mod is added (and on the files a player drops in by hand), duplicate mod ids, a mod made on another game build, a zip nested two folders deep | — | 1 |
+| C6 | **Self-checks, like a mod manager's** (owner: "a lot of self-checks built into this, like CurseForge has"). Done: files read back before saving, the mod check (every file as the build reads it, Set aside, map folders named by title renamed). Next: the same check in the launcher when a mod is added (and on the files a player drops in by hand), a mod file recognized by its SHA-256 against the index whatever its name or folder, duplicate mod ids, a mod made on another game build, a zip nested two folders deep. How CurseForge, Nexus, ModDB and Thunderstore do it: `docs/RESEARCH-mod-platforms.md` | — | 1 |
 
 *Phase D: the content tools* (M4, M5, M7, M9-M11)
 | # | Step | Needs | Sessions |
