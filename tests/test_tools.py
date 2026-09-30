@@ -455,7 +455,7 @@ class VerifyTerrain(unittest.TestCase):
             code = verify_terrain.main([self.game, "--make-test", "Test", copy, "--radius", "500"])
         self.assertEqual(code, 0, out.getvalue())
         text = out.getvalue()
-        self.assertIn("terrain: Test, from hill-test", text)
+        self.assertIn("terrain: Test, from terrain-test", text)
         self.assertIn("with a radius of 500 units", text)
         with open(os.path.join(copy, "Maps", "PC", "DataMapTest_v09.dat"), "rb") as f, \
                 open(os.path.join(self.game, "Maps", "PC", "DataMapTest_v09.dat"), "rb") as g:
