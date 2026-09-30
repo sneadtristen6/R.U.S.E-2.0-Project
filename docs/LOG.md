@@ -708,3 +708,8 @@ Screenshots of the new windows for the README: from the owner, after updating.
 - **Test copy waiting:** `D:\RUSE-Instances\roads` (scratch `make_road_test.py`): one straight shortcut road on Blitz,
   network only, west of player 1's HQ, 2.9× shorter than the existing way round, a water tower beside each end.
   Question: do vehicles take it, and are they faster on it than beside it?
+
+**In the game (owner, 2026-09-30, 15:19): the road network is what supply routes follow.** Placing a supply depot
+west of the HQ, the game's route preview runs along the roads, then straight north through open fields where no
+road is painted: the network-only road added by `roads.toml`. A road that exists only in buffer 0 is a road to the
+game's supply routing. Still to see: a truck driving it, and whether vehicles are faster on it.
