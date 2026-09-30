@@ -159,7 +159,9 @@ class Crossings(unittest.TestCase):
         new, notes = apply_spans(read, "Blitz", [(11600.0, 2000.0, 16000.0, 2000.0)])
         bufs = sdb.split_mapinfo(new[member("Blitz")])[1]
         self.assertEqual(bufs[0], net.to_bytes())  # no old bridge: the road network is left alone
-        self.assertEqual(len(navmod.Graph.read(bufs[2]).circles) - 1, 3 + 3)  # 4,400 of deck, a circle every 2,560
+        graph = navmod.Graph.read(bufs[2])
+        self.assertEqual(len(graph.circles) - 1, 3 + 5)  # 4,400 of deck, a circle every 1,280
+        self.assertEqual({c[2] for c in graph.circles[3:-1]}, {1280.0})  # as narrow as a deck: units keep to it
         new, notes = apply_spans(read, "Blitz", [], [(10000.0, 2000.0, 1000.0)])  # where an old one stood
         bufs = sdb.split_mapinfo(new[member("Blitz")])[1]
         for k in (1, 2):

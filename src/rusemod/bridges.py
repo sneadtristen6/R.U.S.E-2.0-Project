@@ -28,7 +28,10 @@ BANK = 2000.0        # map units of bank past the water each end of a bridge rea
                      # shipped bridges reach 200 to 4,600 past the water, about 2,200 in the middle)
 SAMPLE = 800.0       # map units between the places a road is tested for water
 LEAST = 1500.0       # a run of water shorter than this is a puddle: no bridge
-DECK = 2560.0        # the movement circles' radius on a bridge (the shipped bridges' circles are 2,240-3,520)
+DECK = 2560.0        # a deck's width, give or take (the shipped bridges' circles are 2,240-3,520)
+OPEN = 1280.0        # the movement circles along a new deck: the smallest the shipped graphs use (nav.MIN_RADIUS),
+                     # about the deck's half-width, so units keep to it (2,560 let a tank step off the side into the
+                     # river, seen in the game 2026-09-30)
 FALLBACK_LENGTH = 8000.0  # a bridge model's length when its model can't be measured (about 30 m)
 STRETCH = (0.9, 2.0)  # how far a bridge is stretched along its length to fit (the shipped ones: 0.91 to 1.91)
 CLOSE = 1600.0       # the radius of the ground closed along an old bridge's deck, every CLOSE / 2 over water
@@ -386,7 +389,7 @@ def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = ()) -
         if closed:
             c = g.block(list(closed), refill=False)
             notes.append(f"{what}: {c['emptied']} circle(s) taken and {c['shrunk']} shrunk where old bridges stood")
-        c = g.open(spans, DECK) if spans else {"added": 0, "linked": 0}
+        c = g.open(spans, OPEN) if spans else {"added": 0, "linked": 0}
         new[k] = g.to_bytes()
         notes.append(f"{what}: {c['added']} circle(s) and {c['linked']} link(s) added along {len(spans)} bridge(s)")
     if closed:

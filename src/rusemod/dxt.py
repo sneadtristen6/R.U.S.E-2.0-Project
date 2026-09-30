@@ -187,6 +187,34 @@ def decode_rgba(data: bytes, width: int, height: int, fmt: str = "DXT1") -> byte
     return out
 
 
+def _alpha_table(a0: int, a1: int) -> list[int]:
+    if a0 > a1:
+        return [a0, a1] + [((7 - k) * a0 + k * a1 + 3) // 7 for k in range(1, 7)]
+    return [a0, a1] + [((5 - k) * a0 + k * a1 + 2) // 5 for k in range(1, 5)] + [0, 255]
+
+
+def dxt5_block(block: bytes) -> tuple[list[tuple[int, int, int]], list[int]]:
+    """The 16 RGB pixels and 16 alphas (row-major) a 16-byte DXT5 block stands for (its colours always four)."""
+    table = _alpha_table(block[0], block[1])
+    bits = int.from_bytes(block[2:8], "little")
+    c0, c1, idx = struct.unpack_from("<HHI", block, 8)
+    a, b = unpack565(c0), unpack565(c1)
+    pal = [a, b, tuple((2 * x + y + 1) // 3 for x, y in zip(a, b)), tuple((x + 2 * y + 1) // 3 for x, y in zip(a, b))]
+    return [pal[(idx >> (2 * i)) & 3] for i in range(16)], [table[(bits >> (3 * i)) & 7] for i in range(16)]
+
+
+def encode_dxt5_block(pixels: list[tuple[int, int, int]], alphas: list[int]) -> bytes:
+    """16 RGB pixels and 16 alphas (row-major) -> one 16-byte DXT5 block: the alpha endpoints the block's highest and
+    lowest (eight steps between), each alpha its nearest step; the colours as encode_block's four-colour block."""
+    a0, a1 = max(alphas), min(alphas)
+    table = _alpha_table(a0, a1)
+    bits = 0
+    for i, v in enumerate(alphas):
+        k = min(range(8), key=lambda j: abs(table[j] - v))
+        bits |= k << (3 * i)
+    return bytes((a0, a1)) + bits.to_bytes(6, "little") + encode_block(pixels)
+
+
 def png_bytes(rgb: bytes, width: int, height: int, channels: int = 3) -> bytes:
     """Minimal 8-bit RGB (or, with channels=4, RGBA) PNG (no filtering)."""
     stride = width * channels

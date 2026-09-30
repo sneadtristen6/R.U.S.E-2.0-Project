@@ -116,7 +116,12 @@ The two new bridges stand where the new roads cross the river, between Briquevil
    - **First try (owner, 2026-09-30, 17:18): failed.** The unit crossed along the deck's line, but under it, on the
      riverbed: the decks units stand on are in `occlusioninfo_objectsonly.kdt`, which new bridges weren't in.
    - **Rebuilt (2026-09-30, night):** each new bridge now has a floor there (a shipped Pont_Metallique_02's, carried
-     onto its banks, 47 units above them). Try again: do they drive over the deck now?
+     onto its banks, 47 units above them). **Passed (owner, 18:19): tanks drive on the deck.** One tank was down in
+     the water beside a bridge: the ground opened along a deck was 2,560 each side of its line, the deck about 1,200.
+     Now 1,280 (the smallest circle any shipped map uses). Again: does every unit stay on the deck?
+   - **The roads up close:** a painted road vanished near the camera (owner, 18:18): up close the game draws a road
+     with its road stickers (`Route` pieces), not the painted ground. The new roads now get them. Zoom in on a new
+     road: does it stay?
    - **Seen on the way (owner):** a tank couldn't take a new road into the woods, infantry could; the owner likes
      that, and wants it as a choice per road (PLAN §10, next steps).
 3. **Supply:** place a supply depot so its route needs the new road across the river.

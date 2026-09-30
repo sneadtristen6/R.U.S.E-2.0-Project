@@ -512,6 +512,86 @@ class NewObject:
         return (c, -s * k, 0.0, self.x, s, c * k, 0.0, self.y, 0.0, 0.0, self.size, self.lift)
 
 
+ROAD_PIECE = 4000.0   # map units a new road's sticker pieces run (the shipped ones: 1,300 to 73,000, about 4,100 typical)
+
+
+@dataclass(frozen=True)
+class RoadPiece:
+    """One piece of a road sticker (the game's `Route` items, a STICKERS type: what draws a road up close; the painted
+    ground only shows it from afar, seen in the game 2026-09-30). A cubic from (x0, y0) to (x1, y1), each end's
+    handle an offset from it (the shipped pieces' are a tenth of the piece, along it); `chain`: how many pieces its
+    road has (the game's first trailing word)."""
+    x0: float
+    y0: float
+    hx0: float
+    hy0: float
+    x1: float
+    y1: float
+    hx1: float
+    hy1: float
+    chain: int
+
+    @property
+    def x(self) -> float:
+        return (self.x0 + self.x1) / 2
+
+    @property
+    def y(self) -> float:
+        return (self.y0 + self.y1) / 2
+
+
+def road_pieces(line, step: float = ROAD_PIECE) -> list[RoadPiece]:
+    """A road's line (map points, in order) as sticker pieces about `step` long, end to end, the way the shipped
+    roads are cut: each piece straight, its handles a tenth of it."""
+    pts = [tuple(map(float, line[0]))]
+    for (ax, ay), (bx, by) in zip(line, line[1:]):
+        d = math.hypot(bx - ax, by - ay)
+        n = max(1, round(d / step))
+        pts += [(ax + (bx - ax) * k / n, ay + (by - ay) * k / n) for k in range(1, n + 1)]
+    merged = [pts[0]]  # short steps (a line's own close points) joined up to about a piece
+    for q in pts[1:-1]:
+        if math.hypot(q[0] - merged[-1][0], q[1] - merged[-1][1]) >= step * 0.75:
+            merged.append(q)
+    if math.hypot(pts[-1][0] - merged[-1][0], pts[-1][1] - merged[-1][1]) > 1.0 or len(merged) == 1:
+        merged.append(pts[-1])
+    out = []
+    for (ax, ay), (bx, by) in zip(merged, merged[1:]):
+        dx, dy = (bx - ax) / 10, (by - ay) / 10
+        out.append(RoadPiece(ax, ay, dx, dy, bx, by, -dx, -dy, 0))
+    return [RoadPiece(q.x0, q.y0, q.hx0, q.hy0, q.x1, q.y1, q.hx1, q.hy1, len(out)) for q in out]
+
+
+def _road_style(sc: "Scenery") -> tuple[int, tuple[int, int]] | None:
+    """(the Route name's number, the two trailing words every piece carries) as the map's own road pieces have
+    them, or None when it has none."""
+    from collections import Counter
+    syms, tails = Counter(), Counter()
+    for b in sc.blocks:
+        for it in b.items:
+            if it.kind == "road":
+                syms[it.symbol] += 1
+                tails[struct.unpack_from("<2I", it.data, 52)] += 1
+    if not syms:
+        return None
+    return syms.most_common(1)[0][0], tails.most_common(1)[0][0]
+
+
+def _road_item(piece: RoadPiece, m: tuple, style) -> tuple[bytes, list[float], list[float]]:
+    """A road piece's item bytes in the block whose map-to-block transform is `m`, and its ends' x and y there."""
+    sym, tail = style
+
+    def pt(x, y):
+        return m[0] * x + m[1] * y + m[3], m[4] * x + m[5] * y + m[7]
+
+    def vec(x, y):
+        return m[0] * x + m[1] * y, m[4] * x + m[5] * y
+    a, b = pt(piece.x0, piece.y0), pt(piece.x1, piece.y1)
+    h0, h1 = vec(piece.hx0, piece.hy0), vec(piece.hx1, piece.hy1)
+    body = struct.pack("<I12f3I", 0x01000001 | (sym << 4), a[0], a[1], 0.0, h0[0], h0[1], 0.0, b[0], b[1], 0.0,
+                       h1[0], h1[1], 0.0, piece.chain, *tail)
+    return body, [a[0], b[0]], [a[1], b[1]]
+
+
 def _inverse(m: tuple) -> tuple:
     a, b, c, tx, d, e, f, ty, g, h, i, tz = m
     det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)
@@ -607,11 +687,17 @@ def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]
     objects are drawn wherever and from however far that block is. The new block goes right after the top block (a
     reference must point forward), so every later reference moves by its size. A map whose top block lists no block
     for far view gets the first way DomesticNukes proved in the game (_add_block: an object near them becomes the
-    reference). The grids are left alone. Types must be ones the map already uses (in its name table). Returns (new
-    file, notes)."""
+    reference). The grids are left alone. Types must be ones the map already uses (in its name table). `objects` may
+    hold RoadPiece too (a new road's stickers, in the map's own Route style; a map without one gets none). Returns
+    (new file, notes)."""
     if not objects:
         return bytes(data), []
     notes = []
+    if any(isinstance(o, RoadPiece) for o in objects) and _road_style(Scenery(data)) is None:
+        objects = [o for o in objects if not isinstance(o, RoadPiece)]
+        notes.append("this map has no road stickers to copy: its new roads show from afar only")
+        if not objects:
+            return bytes(data), notes
     for group in _groups(objects):
         sc = Scenery(data)
         far = _far_children(sc)
@@ -700,7 +786,16 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item]) -
     to_local = _inverse(carrier.matrix())
     inner = sc.block_at(carrier.child_offset)
     items, xs, ys = [], [inner.bbox[0], inner.bbox[2]], [inner.bbox[1], inner.bbox[3]]
+    style = _road_style(sc)
     for o in objects:
+        if isinstance(o, RoadPiece):
+            if style is None:
+                raise SceneryEditError("this map has no road stickers to copy, so a new road can't be drawn up close")
+            body, px, py = _road_item(o, to_local, style)
+            items.append(body)
+            xs += px
+            ys += py
+            continue
         sym = index.get(o.type)
         if sym is None:
             raise SceneryEditError(f"{o.type} isn't used on this map, so the map can't take it (only types its "
@@ -756,8 +851,15 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item]) -
     x0, y0, x1, y1 = _world_box(sc, carrier)
     far_m = math.hypot(max(x0 - cx, 0.0, cx - x1), max(y0 - cy, 0.0, cy - y1)) / 100
     return hashlib.md5(body).digest() + body, [
-        f"{len(objects)} object(s) added in a new block with block {inner.index} (drawn from far, {far_m:.0f} m "
+        f"{_counted(objects)} added in a new block with block {inner.index} (drawn from far, {far_m:.0f} m "
         f"from them), placed where the top block had it"]
+
+
+def _counted(items: list) -> str:
+    pieces = sum(1 for o in items if isinstance(o, RoadPiece))
+    parts = [f"{len(items) - pieces} object(s)" if len(items) > pieces else "",
+             f"{pieces} road sticker piece(s)" if pieces else ""]
+    return " and ".join(p for p in parts if p)
 
 
 def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]:
@@ -779,7 +881,16 @@ def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]
         kind, tdata = encode_transform(compose(_inverse(q), carrier.matrix()))
         items = [struct.pack("<I", (carrier.word & ~3) | kind) + tdata]
     xs, ys, notes = [], [], []
+    style = _road_style(sc)
     for o in objects:
+        if isinstance(o, RoadPiece):
+            if style is None:
+                raise SceneryEditError("this map has no road stickers to copy, so a new road can't be drawn up close")
+            body, px, py = _road_item(o, to_local, style)
+            items.append(body)
+            xs += px
+            ys += py
+            continue
         sym = index.get(o.type)
         if sym is None:
             raise SceneryEditError(f"{o.type} isn't used on this map, so the map can't take it (only types its "
@@ -794,7 +905,7 @@ def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]
     cm = carrier.matrix()
     xs.append(cm[3])
     ys.append(cm[7])
-    pad = MARGIN * max([1.0] + [o.size for o in objects])
+    pad = MARGIN * max([1.0] + [o.size for o in objects if not isinstance(o, RoadPiece)])
     new = _new_block(items, (min(xs) - pad, min(ys) - pad, max(xs) + pad, max(ys) + pad))
     f = list(sc.fields)
     tab_off, tab_n, data_off, data_len = f[0], f[1], f[2], f[3]
@@ -820,7 +931,7 @@ def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]
             + data[end:])
     out = hashlib.md5(body).digest() + body
     cw = compose(frame, cm)
-    notes.append(f"{len(objects)} object(s) added in a new block, hung on {sc.names[carrier.symbol]} in block "
+    notes.append(f"{_counted(objects)} added in a new block, hung on {sc.names[carrier.symbol]} in block "
                  f"{block.index}, {math.hypot(cw[3] - objects[0].x, cw[7] - objects[0].y) / 100:.0f} m away")
     return out, notes
 

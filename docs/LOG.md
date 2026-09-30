@@ -784,3 +784,13 @@ as (along, across, height above the line between the ends' ground) and put back 
 again as one subtree with its own k-d tree (every node clipped to its triangles, split at the middle of the longest
 side, leaves of at most 8; every triangle found from its middle). D-Day's own 556 triangles rebuilt: every point
 exactly where it was; with the test mod's two bridges: 572, each new floor 47 above its banks.
+
+**In the game (owner, 18:19): tanks drive on the new bridges' decks** (the floors work). Two things left, both seen in
+the same test: one tank was in the water beside a bridge (the ground opened along a deck reached 2,560 either side
+of its line; the deck is about 1,200: now 1,280, the smallest circle any shipped map uses), and a painted road
+vanished near the camera. The close-up road: the scenery's road pieces are `Route` items, a **STICKERS** type (the
+descriptor `TypeWarrior/Route`, no model): decals along the curves, what draws a road up close; the painted pyramid
+is the far view. New roads now get sticker pieces the shipped way (about 16 m, straight, handles a tenth, the chain's
+count and the map's two constant words), added with the placed objects (`scenery.RoadPiece`). On the way:
+`div_map.tgv_pc` decoded (DXT5, the whole map about 5 m a pixel); roads are only a faint lift there, so it isn't the
+close-up road (a painter for it is kept, unused).

@@ -725,8 +725,21 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             every, who = placed.setdefault(name, ([], []))
             every.extend(objects)
             who.extend(i for i in ids if i not in who)
+        # new roads are drawn up close by road stickers (the game's Route pieces), from afar by the painted ground:
+        # the pieces go into the scenery with the placed objects (seen in the game, 2026-09-30: without them a new
+        # road vanished near the camera)
+        from .bridges import cut
+        from .scenery import RoadPiece, road_pieces
+        with_pieces = {name: (list(objects), list(ids)) for name, (objects, ids) in placed.items()}
+        for name, (map_roads, ids) in road_edits.items():
+            decks = bridge_spans.get(name, []) + bridge_decks.get(name, [])
+            pieces = [q for line in cut([r.points for r in map_roads if r.paint], decks) for q in road_pieces(line)]
+            if pieces and find_pack(game, pack_file(name)) is not None:  # (a missing map is said with the roads)
+                every, who = with_pieces.setdefault(name, ([], []))
+                every.extend(pieces)
+                who.extend(i for i in ids if i not in who)
         solid: dict = {}  # map pack name -> (nav.Block for each placed building, the mods' ids)
-        for name, (objects, ids) in placed.items():
+        for name, (objects, ids) in with_pieces.items():
             map_path = find_pack(game, pack_file(name))
             if map_path is None:
                 result.findings.append(Finding("error", f"{', '.join(ids)}: the map {name} isn't in this game "
@@ -754,7 +767,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             for note in notes:
                 say(f"  {note}")
             from .nav import solid_blocks
-            walls, wall_notes = solid_blocks(game, objects)
+            walls, wall_notes = solid_blocks(game, [o for o in objects if not isinstance(o, RoadPiece)])
             for note in wall_notes:
                 say(f"  {note}")
             if walls:

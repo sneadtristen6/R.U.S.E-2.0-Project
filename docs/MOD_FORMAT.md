@@ -487,7 +487,9 @@ join = 20000.0       # an end this near a road joins it (a junction); else it's 
   within `join`. The network's index is built again the game's way (x then y, at the middle of the links).
 - Proven in the game (Blitz, 2026-09-30): **supply routes follow it** (a depot's route took a new shortcut road).
 - `paint = true` (the default) paints it into the ground's texture tiles in the map's own road colour (proven in the
-  game); `bridges = true` (the default) puts the map's own bridge kind where it crosses water, one piece stretched
+  game: seen from afar) and lays the map's own road stickers along it (`Route` pieces, about 16 m each: what draws a
+  road up close; not tried in the game yet); `bridges = true` (the default) puts the map's own bridge kind where it
+  crosses water, one piece stretched
   bank to bank (rusemod.bridges), with a floor units stand on: the floor of a shipped bridge of its kind, carried
   onto the new banks, in the map's `occlusioninfo_objectsonly.kdt` (rusemod.floors). A bridge placed by hand in
   `scenery.toml` gets one the same way.

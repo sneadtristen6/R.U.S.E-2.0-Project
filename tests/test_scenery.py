@@ -288,6 +288,43 @@ class Adding(unittest.TestCase):
         self.assertEqual((x, y, round(math.degrees(turn)), size), (10.0, 20.0, 90, 2.0))
 
 
+class RoadStickers(unittest.TestCase):
+    """A new road's stickers (the game's Route pieces: what draws a road up close), cut like the shipped ones and
+    added with the objects in the map's own style."""
+
+    def test_a_line_cut_into_pieces(self):
+        pieces = scenery.road_pieces([(0.0, 0.0), (10000.0, 0.0), (10000.0, 7000.0)])
+        self.assertEqual([(q.x0, q.y0, q.x1, q.y1) for q in pieces],
+                         [(0.0, 0.0, 5000.0, 0.0), (5000.0, 0.0, 10000.0, 0.0), (10000.0, 0.0, 10000.0, 3500.0),
+                          (10000.0, 3500.0, 10000.0, 7000.0)])
+        self.assertEqual({q.chain for q in pieces}, {4})  # the road's length in pieces, as the game counts them
+        self.assertEqual((pieces[0].hx0, pieces[0].hy0, pieces[0].hx1, pieces[0].hy1), (500.0, 0.0, -500.0, 0.0))
+        close = scenery.road_pieces([(0.0, 0.0), (500.0, 0.0), (1000.0, 0.0), (6000.0, 0.0)])
+        self.assertEqual([(q.x0, q.x1) for q in close], [(0.0, 6000.0)])  # a line's close points joined up
+
+    def test_added_in_the_maps_own_style(self):
+        raw = village()
+        s = Scenery(raw)
+        before = sorted(tuple(round(v) for v in p) for p in s.roads())
+        pieces = scenery.road_pieces([(1000.0, 2500.0), (9000.0, 2500.0)])
+        new, notes = add_objects(raw, [NewObject("TypeWarrior/Chene_02", 1200.0, 2600.0)] + pieces)
+        after = Scenery(new)
+        got = sorted(tuple(round(v) for v in p) for p in after.roads())
+        mine = [p for p in got if p not in before]
+        self.assertEqual(mine, [(1000, 2500, 1400, 2500, 4600, 2500, 5000, 2500),
+                                (5000, 2500, 5400, 2500, 8600, 2500, 9000, 2500)])  # where they were drawn
+        road_items = [it for b in after.blocks for it in b.items if it.kind == "road"]
+        self.assertEqual({it.symbol for it in road_items}, {20})  # the map's own Route name
+        self.assertEqual({struct.unpack_from("<3I", it.data, 48) for it in road_items} - {(3, 129958752, 1567752)},
+                         {(2, 129958752, 1567752)})  # its trailing words, with the new road's own count
+        self.assertIn("1 object(s) and 2 road sticker piece(s) added", notes[0])
+
+    def test_a_map_without_stickers_gets_none(self):
+        raw = make_scenery([block([compact(0, 100.0, 100.0)])], NAMES)
+        new, notes = add_objects(raw, scenery.road_pieces([(0.0, 0.0), (8000.0, 0.0)]))
+        self.assertEqual((new, notes), (raw, ["this map has no road stickers to copy: its new roads show from afar only"]))
+
+
 class Sinking(unittest.TestCase):
     """An object the map ships, sunk out of sight where it's stored (a bridge a new road replaces)."""
 

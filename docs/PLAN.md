@@ -619,7 +619,10 @@ bridges replaces it, and a road's length while it's drawn. **In the game (owner,
 *Next steps* (one goal per session):
 1. **Units under the new bridges** (T8, owner 17:18: a unit crossed along the deck's line, but on the riverbed under
    it). **Built 2026-09-30, night:** `rusemod.floors` gives every new bridge (a road's or placed by hand) the floor of a
-   shipped bridge of its kind, on its own banks, and takes a sunk one's away; the D-Day copy is rebuilt; T8 again. Found: the decks units stand on are in the map pack's own **`output\occlusioninfo_objectsonly.kdt`** (the
+   shipped bridge of its kind, on its own banks, and takes a sunk one's away. **In the game (18:19): tanks drive on
+   the deck.** Then: the deck's opened ground narrowed (a tank stepped off the side), and new roads get the game's
+   road stickers (a painted road vanished up close: the stickers draw roads near the camera). The D-Day copy is
+   rebuilt; T8 again. Found: the decks units stand on are in the map pack's own **`output\occlusioninfo_objectsonly.kdt`** (the
    same `TStreamedMeshKdTree` as the ground; D-Day: 556 triangles, 690 points, one subtree, in clusters exactly at
    its 21 bridges). The gameplay ground (`occlusioninfo_terrainonly.kdt`) dips into the river under shipped bridges
    just like the visible ground, and the movement circles there are ordinary. So: write each new bridge's deck into

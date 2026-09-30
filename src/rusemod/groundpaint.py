@@ -10,7 +10,7 @@ import math
 import struct
 
 from . import dxt, tgu1
-from .tmst import Tmst, zipo_tile, zipo_unpack
+from .tmst import Tgv, Tmst, zipo_pack, zipo_tile, zipo_unpack
 
 LODS = ("highdef", "lowdef")
 ROAD_WIDTH = 1800.0     # map units (about 7 m): a road's painted width
@@ -172,6 +172,96 @@ def paint_lines(store: Tmst, bounds, lines: list[list[tuple[float, float]]], col
     return out
 
 
+DETAIL = "output\\div_map.tgv_pc"
+DETAIL_WIDER = 2.0      # the map's own roads there run 2 to 3 of its 5 m pixels wide: new ones are painted this much wider
+
+
+def _tgv_with_payload(raw: bytes, payload: bytes) -> bytes:
+    """A one-mip TGV record `raw` with its payload replaced: the header kept, the size patched, 4-aligned."""
+    tex = Tgv(raw)
+    if len(tex.mips) != 1:
+        raise PaintError("the close-up map has more than one mip")
+    offset, _size = tex.mips[0]
+    name_len = struct.unpack_from("<H", raw, 26)[0]
+    sizes_at = ((28 + name_len + 3) & ~3) + 4  # the header, 4-aligned, then one offset, then one size
+    head = bytearray(raw[:offset])
+    struct.pack_into("<I", head, sizes_at, len(payload))
+    return bytes(head) + payload + bytes(-len(payload) % 4)
+
+
+def paint_detail(raw: bytes, bounds, lines: list[list[tuple[float, float]]], pieces: list[tuple],
+                 width: float = ROAD_WIDTH) -> tuple[bytes, list[str]]:
+    """`lines` painted into the close-up map (`output\\div_map.tgv_pc`, the whole map in one DXT5 picture about 5 m
+    a pixel): what the game draws near the camera, where the tile pyramid's paint doesn't show (seen in the game,
+    2026-09-30: a painted road vanished up close). The map's own roads are there as a colour and a higher alpha;
+    new roads get the median of both along the map's road pieces. Returns (the new record, notes), or (b"", notes)
+    when there's nothing to paint."""
+    tex = Tgv(raw)
+    payload = tex.payload(0)
+    if not tex.format.upper().startswith("DXT5") or payload[:4] != b"ZIPO":
+        return b"", [f"close-up map: {tex.format} {payload[:4]!r} can't be painted yet"]
+    blocks = bytearray(zipo_unpack(payload))
+    w, h = tex.width, tex.height
+    if len(blocks) != w * h:
+        raise PaintError(f"the close-up map holds {len(blocks)} bytes, not {w}x{h} DXT5")
+    x0, y0, x1, y1 = bounds
+    pw, ph = (x1 - x0) / w, (y1 - y0) / h
+    nx = w // 4
+
+    def at(x, y):
+        px, py = min(w - 1, max(0, int((x - x0) / pw))), min(h - 1, max(0, int((y - y0) / ph)))
+        k = (py // 4) * nx + px // 4
+        rgb, alpha = dxt.dxt5_block(bytes(blocks[16 * k:16 * k + 16]))
+        i = (py % 4) * 4 + px % 4
+        return rgb[i] + (alpha[i],)
+    samples = []
+    for p in pieces[:: max(1, len(pieces) // 200)]:
+        for t in (0.25, 0.5, 0.75):
+            u = 1 - t
+            samples.append(at(u ** 3 * p[0] + 3 * u * u * t * p[2] + 3 * u * t * t * p[4] + t ** 3 * p[6],
+                              u ** 3 * p[1] + 3 * u * u * t * p[3] + 3 * u * t * t * p[5] + t ** 3 * p[7]))
+    if not samples:
+        return b"", ["close-up map: the map has no road to take the look from"]
+    look = tuple(sorted(s[c] for s in samples)[len(samples) // 2] for c in range(4))
+    segs = _segments(lines)
+    if not segs:
+        return b"", []
+    half = width / 2
+    soft = max(half * FEATHER, pw)
+    faint = min(1.0, width / pw)
+    reach = half + soft
+    touched = set()
+    for ax, ay, bx, by in segs:
+        for bxi in range(int((min(ax, bx) - reach - x0) / pw) // 4, int((max(ax, bx) + reach - x0) / pw) // 4 + 1):
+            for byi in range(int((min(ay, by) - reach - y0) / ph) // 4, int((max(ay, by) + reach - y0) / ph) // 4 + 1):
+                if 0 <= bxi < nx and 0 <= byi < h // 4:
+                    touched.add((bxi, byi))
+    painted = 0
+    for bxi, byi in sorted(touched):
+        cx0, cy0 = x0 + bxi * 4 * pw, y0 + byi * 4 * ph
+        near = [s for s in segs if _dist(cx0 + 2 * pw, cy0 + 2 * ph, s) <= reach + 3 * max(pw, ph)]
+        if not near:
+            continue
+        k = byi * nx + bxi
+        rgb, alpha = dxt.dxt5_block(bytes(blocks[16 * k:16 * k + 16]))
+        changed = False
+        for i in range(16):
+            px, py = cx0 + (i % 4 + 0.5) * pw, cy0 + (i // 4 + 0.5) * ph
+            a = max(0.0, min(1.0, (half + soft / 2 - min(_dist(px, py, s) for s in near)) / soft)) * faint
+            if a > 0:
+                r, g, b = rgb[i]
+                rgb[i] = (round(r + (look[0] - r) * a), round(g + (look[1] - g) * a), round(b + (look[2] - b) * a))
+                alpha[i] = round(alpha[i] + (look[3] - alpha[i]) * a)
+                changed = True
+        if changed:
+            blocks[16 * k:16 * k + 16] = dxt.encode_dxt5_block(rgb, alpha)
+            painted += 1
+    if not painted:
+        return b"", []
+    return _tgv_with_payload(raw, zipo_pack(bytes(blocks))), [
+        f"close-up map: {painted} block(s) painted, in the map's own road look {look}"]
+
+
 def paint_roads(read, path_of, lines: list[list[tuple[float, float]]], pieces: list[tuple],
                 width: float = ROAD_WIDTH) -> tuple[dict, list[str]]:
     """({member: new bytes}, notes): `lines` painted on both tile sets of a map pack, in its roads' colour. `read(name)`
@@ -197,4 +287,6 @@ def paint_roads(read, path_of, lines: list[list[tuple[float, float]]], pieces: l
         notes.append(f"{lod}: {len(tiles)} tile(s) painted")
     if colour is not None:
         notes.insert(0, f"road colour {colour}")
+    # not the close-up map (paint_detail): the map's own roads are only a faint lift there (alpha +7 to +20 over the
+    # ground beside them), not what shows a road up close; the road stickers do that (scenery.RoadPiece)
     return out, notes

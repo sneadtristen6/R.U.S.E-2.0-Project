@@ -443,6 +443,21 @@ TGU1. The checker test (`verify_tmst.py --make-test TwoIslands OUT checker`, Two
 checkerboards at two detail levels (magenta/yellow and cyan/red) with no problem. **So terrain textures can be written as
 plain DXT1: no TGU1 encoder is needed.** TGU1 decoding is still useful for reading the shipped textures.
 
+#### Road stickers, and the close-up map (2026-09-30; code `rusemod.scenery.RoadPiece`)
+
+The roads a player sees are drawn two ways. From afar: painted into the ground's tile pyramid (`highdef`/`lowdef`
+`.tmst`). Up close: by the scenery's **road pieces**, `Route` items, whose descriptor `TypeWarrior/Route` is a
+**STICKERS** type (category `STICKERS/Tunisie/AnciennesRoutes`, no model): decals laid along the curves (seen in the
+game: a road painted only into the pyramid vanished near the camera). D-Day has 431 pieces, all `Route` (name flag 2),
+in 40 blocks (many inside village blocks placed several times); a piece is 4 to 290 m long (about 16 m typical),
+straight, its two handles a tenth of it along it; its three trailing words are its chain's piece count, then two
+words the same on every piece of the map (D-Day 129840992 and 1567752; Blitz 129958752 and 1567752). The item word is
+`0x01000001 | symbol << 4`, no transform (the 15 words follow).
+
+`output\div_map.tgv_pc` (D-Day: 3072 x 2048 DXT5_LIN in one ZIPO mip, about 5 m a pixel; Blitz and Bulge 2048 x 2048)
+is a colour and alpha picture of the whole map. The map's own roads are only a faint lift in it (alpha +7 to +20 over
+the ground beside them, a little less green), so it isn't what shows a road up close.
+
 #### Bridge floors (`output\occlusioninfo_objectsonly.kdt`; 2026-09-30; code `rusemod.floors`)
 
 A third tree of the same kind, "objects only": what units stand on at bridges (the gameplay ground dips into the

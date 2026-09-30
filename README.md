@@ -22,9 +22,10 @@ mods to show
 </div>
 
 <p align="center">
-  <img src="docs/images/studio-maps.jpg" alt="RUSE Studio's Maps view: Leipzig in 3D, with its rivers, lakes and real ground" width="800">
+  <img src="docs/images/studio-maps.jpg" alt="RUSE Studio's Maps view: D-Day in 3D with its towns, the battle's zones and starting points, and the map tools along the bottom" width="800">
   <br>
-  <sub>RUSE Studio's Maps view: every map the game ships, in 3D, with its real ground and water. Here, Leipzig.</sub>
+  <sub>RUSE Studio's Maps view: every map the game ships, in 3D, with its real ground, water and towns. Here, D-Day
+  with its battle's zones and starting points, and the map tools along the bottom.</sub>
 </p>
 
 A modding platform for R.U.S.E. Its aim, step by step: new units, maps, models, missions and one-click modded
@@ -69,8 +70,11 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
   ground to every unit, to infantry or to vehicles, and placed buildings stop units (Solid). Proven in the game
   (2026-09-30, Studio 0.7.0).
 - The map tools sit in a bar along the bottom, Cities: Skylines style, in R.U.S.E.'s own HUD look (Studio 0.7.0).
-- **Draw roads**, Cities: Skylines style (straight, curved, freeform; ends snap onto roads): supply routes use them
-  in the game (2026-09-30, Studio 0.7.2). Not painted on the ground yet.
+- **Draw roads**, Cities: Skylines style (straight, curved, freeform; ends snap onto roads; their length shown as
+  you draw): supply routes use them, they're painted on the ground, and a road over water gets a bridge units drive
+  across, all in the game (2026-09-30, Studio 0.7.2 to 0.7.4).
+- **More players on a map, up to 8:** a Players count and an Add starting point tool (D-Day as a 4v4; built, the
+  in-game check is next).
 - **Add units in formations:** 1 to 10 at once, in a line, column, wedge, box or circle (Studio 0.7.1).
 - A **mod check** reads every file of your mod the way the game build does, names each problem and offers the fix
   (set a broken file aside, rename a map folder to the map's pack name) (Studio 0.7.1).
@@ -88,16 +92,21 @@ Modders who write mods by hand can also use the `ruse` command-line tool, from t
 <table>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/launcher.jpg" alt="RUSE Launcher: mod sets on the left, Play on the right" width="380"><br>
-      <sub>RUSE Launcher: a set of 75 mods, and why they can't be played together.</sub>
+      <img src="docs/images/launcher.jpg" alt="RUSE Launcher: mod sets on the left, how to play with mods in three steps, and Play" width="380"><br>
+      <sub>RUSE Launcher: pick a mod set and press Play. It builds a separate modded copy of the game; your Steam
+      game stays as it is.</sub>
     </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/launcher-set.jpg" alt="RUSE Launcher: a set of 75 mods, with why it can't be played and which mods overwrite which" width="380"><br>
+      <sub>A set of 75 community mods: the launcher says which can't go together, and which overwrite which.</sub>
+    </td>
+  </tr>
+  <tr>
     <td width="50%" valign="top">
       <img src="docs/images/studio-unit.jpg" alt="RUSE Studio: a unit's values, ready to edit" width="380"><br>
       <sub>RUSE Studio: a unit's values, flags and price, ready to edit.</sub>
     </td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center" valign="top">
+    <td width="50%" valign="top">
       <img src="docs/images/studio-units.jpg" alt="RUSE Studio: the unit list, with filters by type and nation" width="380"><br>
       <sub>RUSE Studio: the unit list, with filters by type and nation.</sub>
     </td>
@@ -141,6 +150,18 @@ Modders who write mods by hand can also use the `ruse` command-line tool, from t
       <img src="docs/images/movement-building-on-hill.jpg" alt="R.U.S.E. in game on Blitz: a building being placed by the player on the edited hill" width="380"><br>
       <sub>Building on the edited ground in the game works too. Four crashes on the way were read from the game's
       crash dumps and fixed the same evening (docs/LOG.md).</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/roads-bridges-ingame.jpg" alt="R.U.S.E. in game on D-Day: new roads drawn in the Studio, painted on the ground, with a new bridge where each crosses the river" width="380"><br>
+      <sub>D-Day: roads drawn in the Studio, painted into the ground, and a bridge where each crosses the river: the
+      map's own kind, one piece stretched bank to bank as the game's own are (2026-09-30).</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/bridge-tanks-ingame.jpg" alt="R.U.S.E. in game on D-Day: tanks driving across a new bridge, on its deck" width="380"><br>
+      <sub>Tanks crossing on a new bridge. Each gets the floor of a shipped bridge of its kind, so units drive on the
+      deck, not the riverbed under it (2026-09-30).</sub>
     </td>
   </tr>
 </table>
@@ -190,9 +211,17 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
   tool will write it.
 - **Community mods:** `.rmod` files (RUSE-Mod-Manager, by LittleGroove) work as they are, through LittleGroove's own
   engine (PLAN.md decision 26); all 75 on hand apply with 0 errors.
-- **Next, the map maker the Cities: Skylines way** (PLAN.md §10, "Roadmap from here"): movement (solid buildings,
-  impassable water and cliffs), roads you draw with a curve that clear the trees in their way, removing scenery,
-  capture zones, ground painting, finer terrain; then new maps in the game's menus, Browse mods and join codes.
+- **Roads and bridges in the game** (D-Day, 2026-09-30): a new road is a road to supply trucks (the network,
+  `mapinfo.win`'s first part) and painted into the ground's picture (seen from afar); laying the game's road stickers
+  along it too (the Route pieces, what draws a road up close) is built, and its in-game check is next. Where it
+  crosses water it gets the map's own bridge, one
+  piece stretched bank to bank, with a floor copied from a shipped bridge of its kind (`occlusioninfo_objectsonly.kdt`,
+  what units stand on): units cross on the deck.
+- **8 players:** a map's count is its menu entry (`TMultiMapInfo`) and a starting point per player; mods set both
+  (`maps/<map>/map.toml`, `[[start]]`). D-Day as a 4v4 is built; the lobby check is next.
+- **Next, the map maker the Cities: Skylines way** (PLAN.md §10, "Roadmap from here"): forest tracks for infantry
+  only, removing scenery, ruse areas, ground painting, finer terrain; then new maps in the game's menus, Browse mods
+  and join codes.
 - Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19).
 
 The order is in [PLAN.md §10 "Now"](docs/PLAN.md#10-now); the latest decisions are in PLAN.md §6.
