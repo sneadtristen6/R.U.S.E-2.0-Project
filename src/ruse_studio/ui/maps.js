@@ -581,6 +581,7 @@ async function loadRoads(pack, ask) {
   const res = await mv.api.map_roads(pack);
   if (ask !== mv.ask || !mv.edit) return;
   roads.pieces = res.pieces;
+  road.samples = null;  // snapping reads them
   drawRoads();
 }
 
@@ -596,7 +597,7 @@ function dropRoads() {
 function drawRoads() {
   const gl = mv.gl, P = roads.pieces;
   if (!gl || !P || !mv.edit) return;
-  if (!roads.show) {
+  if (!roads.show && !road.on) {
     if (roads.line && roads.line.visible) { roads.line.visible = false; gl.draw(); }
     return;
   }
@@ -850,6 +851,7 @@ function sceneryMeshes(data) {
 function placeScenery() {
   if (scen.group) drawScenario();
   drawRoads();  // the roads follow the ground too
+  drawModRoads();
   const shapes = Object.values(mv.scenery.meshes);
   if (!shapes.length || !mv.edit) return;
   const models = Object.values(mv.scenery.models || {}).flat();
@@ -1120,7 +1122,7 @@ function scenNote(text, kind) {
 function setScenTool(tool) {
   scen.tool = scen.tool === tool ? null : tool;
   scen.selected = null;
-  if (scen.tool) { if (mv.brush.on) setBrushMode(false); if (mv.place.on) setPlaceMode(false); }
+  if (scen.tool) { if (mv.brush.on) setBrushMode(false); if (mv.place.on) setPlaceMode(false); stopRoad(); }
   dock.scenario = true;  // the tool dropped again keeps the scenario's tray open
   pointerMode();
   renderScenTools();
@@ -1358,7 +1360,7 @@ function spacingOf(group) {
 
 function setPlaceMode(on) {
   mv.place.on = on;
-  if (on) dock.scenario = false;
+  if (on) { dock.scenario = false; stopRoad(); }
   if (on && scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); }
   if (!on) { mv.place.lineStart = null; showPlaceGuide(null); }
   if (on && mv.brush.on) setBrushMode(false);
@@ -1577,6 +1579,7 @@ async function show(pack, keepCamera) {
   const gl = mv.gl;
   for (const o of OVERLAYS) dropOverlay(o);
   dropRoads();
+  dropModRoads();
   forget(gl.ground);
   forget(gl.water);
   gl.ground = made.ground;
@@ -1615,6 +1618,7 @@ async function show(pack, keepCamera) {
   loadCover(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   loadMoves(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   loadRoads(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
+  loadModRoads(pack, ask).catch((err) => roadNote((err && err.message) || String(err), "error"));
   realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
 }
 
@@ -1626,6 +1630,7 @@ const DOCK = [
   ["water", ["water", "drain"]],
   ["cover", ["cover", "uncover", "town"]],
   ["movement", ["block", "block_infantry", "block_vehicles"]],
+  ["roads", null],
   ["building", null], ["prop", null], ["vegetation", null],
   ["scenario", null],
 ];
@@ -1642,6 +1647,10 @@ const ICONS = {
   prop: "M4 7l8-4 8 4v10l-8 4-8-4z M4 7l8 4 8-4 M12 11v10",
   vegetation: "M12 2l-6 9h4l-5 7h14l-5-7h4z M12 18v4",
   scenario: "M5 21V4 M5 4h11l-2 4 2 4H5",
+  roads: "M9 21l2-18 M15 21l-2-18 M12 5v2 M12 11v2 M12 17v2",
+  road_straight: "M5 20L19 4 M2 17L15 2 M8 22L22 7",
+  road_curve: "M3 21C3 11 10 4 21 4 M7 21c0-7 5-12 14-12",
+  road_free: "M2 18c4-7 6 1 10-5s5-8 10-6 M2 22c4-7 6 1 10-5s5-8 10-6",
   hill: "M2 19c4 0 6-11 10-11s6 11 10 11",
   raise: "M12 19V5 M6 11l6-6 6 6 M3 21h18",
   lower: "M12 5v14 M6 13l6 6 6-6 M3 3h18",
@@ -1687,13 +1696,14 @@ function brushKind(name) {
 
 function kindName(kind) {
   const w = mv.words;
-  return { terrain: w.dock_terrain, water: w.brush_water, cover: w.brush_cover, movement: w.dock_movement,
+  return { terrain: w.dock_terrain, water: w.brush_water, cover: w.brush_cover, movement: w.dock_movement, roads: w.dock_roads,
     scenario: w.scen_show }[kind] || w[`scenery_${kind}`] || kind;
 }
 
 // The kind open: the brush's, the place kind's, or the scenario's; null while just looking around.
 function dockKind() {
   if (mv.brush.on) return brushKind(mv.brush.name);
+  if (road.on) return "roads";
   if (mv.place.on) return mv.place.group;
   return dock.scenario || scen.tool ? "scenario" : null;
 }
@@ -1702,6 +1712,7 @@ function openKind(kind) {
   if (dockKind() === kind) { lookAround(); return; }  // the open kind again closes it
   const brushes = (DOCK.find(([k]) => k === kind) || [])[1];
   if (brushes) { pickBrush(dock.last[kind] || brushes[0]); return; }
+  if (kind === "roads") { setRoadMode(true); return; }
   if (kind === "scenario") {
     lookAround();
     dock.scenario = true;
@@ -1737,8 +1748,249 @@ function renderDock() {
   $("tray-brush").classList.toggle("hidden", !(kind && (DOCK.find(([k]) => k === kind) || [])[1]));
   $("tray-place").classList.toggle("hidden", !PLACEABLE.includes(kind));
   $("tray-scen").classList.toggle("hidden", kind !== "scenario");
+  $("tray-roads").classList.toggle("hidden", kind !== "roads");
   $("tray-title").textContent = kind ? kindName(kind) : "";
   $("tray-tip").textContent = kind ? w[`tip_dock_${kind}`] || "" : "";
+}
+
+// --- new roads, Cities: Skylines style (maps/<map>/roads.toml; StudioApi.road_add, rusemod.roadnet). Straight: click
+// where it starts, then where it ends; Curve: the start, the bend, the end; Freeform: click along the way, then
+// double-click or Enter (or Finish). An end near a road snaps onto it (a ring shows where) and joins it. New roads
+// are drawn as blue ribbons, the way the game draws a supply route. Proven in the game (2026-09-30): supply routes
+// follow a road added this way. Not painted on the ground yet (PLAN A6). ---
+const ROAD_TOOLS = ["straight", "curve", "free"];
+const ROAD_SNAP = 15000;    // map units (about 58 m): an end this near a road snaps onto it
+const ROAD_WIDTH = 1800;    // map units drawn (about 7 m)
+const ROAD_SAMPLE = 2000;   // map units between the points of a road's saved line
+const road = { on: false, tool: "straight", pts: [], mine: [], mod: null, mesh: null, preview: null, snap: null,
+  cursor: null };
+
+// Where the map's own roads run, as points (for snapping), from their pieces.
+function roadSamples() {
+  const P = roads.pieces || [], out = [];
+  for (let o = 0; o < P.length; o += 8) {
+    for (let s = 0; s <= 4; s++) {
+      const t = s / 4, u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+      out.push(a * P[o] + b * P[o + 2] + c * P[o + 4] + d * P[o + 6], a * P[o + 1] + b * P[o + 3] + c * P[o + 5] + d * P[o + 7]);
+    }
+  }
+  for (const r of road.mine) for (const [x, y] of r.points) out.push(x, y);
+  return out;
+}
+
+// The point to use for a click at (x, y): on the nearest road within ROAD_SNAP, or where it was clicked.
+function roadSnap(x, y) {
+  if (!road.samples) road.samples = roadSamples();
+  const S = road.samples;
+  let best = ROAD_SNAP * ROAD_SNAP, at = -1;
+  for (let i = 0; i < S.length; i += 2) {
+    const d = (S[i] - x) ** 2 + (S[i + 1] - y) ** 2;
+    if (d < best) { best = d; at = i; }
+  }
+  return at < 0 ? { x, y, snapped: false } : { x: S[at], y: S[at + 1], snapped: true };
+}
+
+// A road's line from its clicks (and the pointer, while it's being drawn), as points about ROAD_SAMPLE apart.
+function roadLine(tool, pts) {
+  if (pts.length < 2) return pts.slice();
+  let line;
+  if (tool === "curve" && pts.length >= 3) {  // a quadratic curve: the start, the bend it's pulled toward, the end
+    const [p0, p1, p2] = pts, n = 24;
+    line = [];
+    for (let k = 0; k <= n; k++) {
+      const t = k / n, u = 1 - t;
+      line.push([u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0], u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1]]);
+    }
+  } else if (tool === "free" && pts.length >= 3) {  // a smooth line through every click (Catmull-Rom)
+    line = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      for (let k = 0; k < 12; k++) {
+        const t = k / 12, t2 = t * t, t3 = t2 * t;
+        const f = (a, b, c, d) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+        line.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]);
+      }
+    }
+    line.push(pts[pts.length - 1]);
+  } else {
+    line = pts.slice();
+  }
+  const out = [line[0]];  // the same points, about ROAD_SAMPLE apart
+  for (let i = 1; i < line.length; i++) {
+    const [ax, ay] = out[out.length - 1], [bx, by] = line[i], d = Math.hypot(bx - ax, by - ay);
+    const n = Math.floor(d / ROAD_SAMPLE);
+    for (let k = 1; k <= n; k++) out.push([ax + (bx - ax) * k / (n + 1), ay + (by - ay) * k / (n + 1)]);
+    if (d > 1) out.push([bx, by]);
+  }
+  return out.map(([x, y]) => [Math.round(x), Math.round(y)]);
+}
+
+// Blue ribbons on the ground for `lines` (each a list of [x, y]), as one mesh.
+function roadRibbon(lines, mesh, color, opacity) {
+  const gl = mv.gl, { THREE } = gl, grid = makeGrid(mv.edit), pos = [], half = ROAD_WIDTH / 2;
+  for (const line of lines) {
+    for (let i = 0; i + 1 < line.length; i++) {
+      const [ax, ay] = line[i], [bx, by] = line[i + 1], len = Math.hypot(bx - ax, by - ay) || 1;
+      const nx = -(by - ay) / len * half, ny = (bx - ax) / len * half;
+      const corner = (x, y) => [x * SCALE, (groundAt(grid, x, y) + ROAD_LIFT) * SCALE, y * SCALE];
+      const a1 = corner(ax + nx, ay + ny), a2 = corner(ax - nx, ay - ny), b1 = corner(bx + nx, by + ny), b2 = corner(bx - nx, by - ny);
+      pos.push(...a1, ...a2, ...b1, ...b1, ...a2, ...b2);
+    }
+  }
+  if (!mesh) {
+    mesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color, transparent: true, opacity,
+      depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
+    mesh.renderOrder = 5;
+    mesh.frustumCulled = false;
+    gl.scene.add(mesh);
+  }
+  mesh.geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pos), 3));
+  mesh.visible = pos.length > 0;
+  return mesh;
+}
+
+function drawModRoads() {
+  if (!mv.gl || !mv.edit) return;
+  road.mesh = roadRibbon(road.mine.map((r) => r.points), road.mesh, 0x3f73d8, 0.8);
+  drawRoadPreview();
+}
+
+function drawRoadPreview() {
+  const gl = mv.gl;
+  if (!gl || !mv.edit) return;
+  const pts = road.on ? road.pts.concat(road.cursor ? [road.cursor] : []) : [];
+  road.preview = roadRibbon(pts.length >= 2 ? [roadLine(road.tool, pts)] : [], road.preview, 0x8fb4ff, 0.55);
+  const ring = gl.startRing, snap = road.on && road.snap;
+  if (ring) {
+    ring.visible = Boolean(snap);
+    if (snap) {
+      const r = ROAD_SNAP * SCALE * 0.35, grid = makeGrid(mv.edit);
+      ring.position.set(snap.x * SCALE, (groundAt(grid, snap.x, snap.y) + ROAD_LIFT) * SCALE, snap.y * SCALE);
+      ring.scale.set(r, r, r);
+    }
+  }
+  gl.draw();
+}
+
+function dropModRoads() {
+  for (const k of ["mesh", "preview"]) {
+    if (road[k]) { mv.gl.scene.remove(road[k]); road[k].geometry.dispose(); road[k].material.dispose(); }
+    road[k] = null;
+  }
+  Object.assign(road, { mine: [], pts: [], samples: null, snap: null, cursor: null });
+}
+
+async function loadModRoads(pack, ask) {
+  const res = await mv.api.roads(pack);
+  if (ask !== mv.ask || !mv.edit) return;
+  road.mine = res.roads;
+  road.mod = res.mod;
+  road.samples = null;
+  drawModRoads();
+  renderRoadTray();
+}
+
+function roadNote(text, kind) {
+  const n = $("road-note");
+  n.textContent = text || "";
+  n.className = "small" + (kind === "error" ? " error-text" : "");
+}
+
+function renderRoadTray() {
+  const w = mv.words;
+  $("road-tools").replaceChildren(...ROAD_TOOLS.map((t) => {
+    const tile = iconTile(el("button", { type: "button", className: "tool-tile", title: w["tip_road_" + t] || "" }), "road_" + t, w["road_" + t] || t);
+    tile.setAttribute("aria-pressed", String(road.on && road.tool === t));
+    tile.addEventListener("click", () => { road.tool = t; road.pts = []; setRoadMode(true); });
+    return tile;
+  }));
+  $("road-help").textContent = w["road_help_" + road.tool] || "";
+  $("road-finish").textContent = w.road_finish;
+  $("road-finish").title = w.tip_road_finish;
+  $("road-finish").classList.toggle("hidden", road.tool !== "free");
+  $("road-finish").disabled = road.pts.length < 2;
+  $("road-undo").textContent = w.brush_undo;
+  $("road-undo").title = w.tip_road_undo;
+  $("road-undo").disabled = !road.mine.length;
+  $("road-count").textContent = road.mine.length ? fill(w.road_count, { n: road.mine.length }) : "";
+  if (!$("road-note").textContent || !$("road-note").classList.contains("error-text")) roadNote(w.road_note);
+}
+
+// Road mode off, without redrawing the rest (the other tools turn it off as they turn on).
+function stopRoad() {
+  if (!road.on && !road.pts.length) return;
+  Object.assign(road, { on: false, pts: [], snap: null, cursor: null });
+  drawRoadPreview();
+}
+
+function setRoadMode(on) {
+  if (on) {
+    if (mv.brush.on) setBrushMode(false);
+    if (mv.place.on) setPlaceMode(false);
+    if (scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); }
+    dock.scenario = false;
+    road.on = true;
+    if (!road.mod) roadNote(mv.words.no_mod, "error");
+  } else stopRoad();
+  pointerMode();
+  renderRoadTray();
+  renderDock();
+  drawRoads();
+  drawRoadPreview();
+}
+
+async function finishRoad() {
+  const pts = road.pts, pack = mv.current;
+  road.pts = [];
+  road.cursor = null;
+  if (pts.length < 2) { drawRoadPreview(); return; }
+  const line = roadLine(road.tool, pts);
+  drawRoadPreview();
+  try {
+    await mv.api.road_add(pack, line);
+    if (pack !== mv.current) return;
+    road.mine.push({ points: line, join: 3000 });
+    road.samples = null;  // the new road's points snap too
+    drawModRoads();
+    renderRoadTray();
+    roadNote(mv.words.road_note);
+  } catch (err) { roadNote((err && err.message) || String(err), "error"); }
+}
+
+async function undoRoad() {
+  const pack = mv.current;
+  if (!road.mine.length) return;
+  try {
+    const res = await mv.api.road_undo(pack, 1);
+    if (pack !== mv.current) return;
+    road.mine.splice(road.mine.length - res.removed, res.removed);
+    road.samples = null;
+    drawModRoads();
+    renderRoadTray();
+  } catch (err) { roadNote((err && err.message) || String(err), "error"); }
+}
+
+// A click while drawing a road: the next point (snapped); Straight ends at its second, Curve at its third.
+function roadPointerDown(ev) {
+  if (!road.on || ev.button !== 0 || !mv.gl.ground || !mv.edit) return;
+  ev.preventDefault();
+  if (!road.mod) { roadNote(mv.words.no_mod, "error"); return; }
+  const hit = hitGround(ev);
+  if (!hit) return;
+  const p = roadSnap(hit.x / SCALE, hit.z / SCALE);
+  road.pts.push([p.x, p.y]);
+  const need = road.tool === "straight" ? 2 : road.tool === "curve" ? 3 : Infinity;
+  if (road.pts.length >= need) finishRoad();
+  else { renderRoadTray(); drawRoadPreview(); }
+}
+
+function roadPointerMove(ev) {
+  const hit = hitGround(ev);
+  if (!hit) return;
+  const p = roadSnap(hit.x / SCALE, hit.z / SCALE);
+  road.snap = p.snapped ? p : null;
+  road.cursor = [p.x, p.y];
+  drawRoadPreview();
 }
 
 // --- the brush tools ---
@@ -1819,7 +2071,7 @@ function cancelRamp() {
 
 function setBrushMode(on) {
   mv.brush.on = on;
-  if (on) dock.scenario = false;
+  if (on) { dock.scenario = false; stopRoad(); }
   if (on) { mv.place.on = false; if (scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); } }
   if (!on) cancelRamp();
   pointerMode();
@@ -1832,9 +2084,10 @@ function setBrushMode(on) {
 function pointerMode() {
   const gl = mv.gl;
   if (!gl) return;
-  const busy = mv.brush.on || mv.place.on || Boolean(scen.tool), M = gl.THREE.MOUSE;
+  const busy = mv.brush.on || mv.place.on || Boolean(scen.tool) || road.on, M = gl.THREE.MOUSE;
+  // the middle button turns the view in every mode (the wheel zooms), so the hand never has to change buttons
   gl.controls.mouseButtons = busy ? { LEFT: null, MIDDLE: M.ROTATE, RIGHT: M.PAN }
-                                  : { LEFT: M.ROTATE, MIDDLE: M.DOLLY, RIGHT: M.PAN };
+                                  : { LEFT: M.ROTATE, MIDDLE: M.ROTATE, RIGHT: M.PAN };
   if (!mv.brush.on && gl.ring) { gl.ring.visible = false; gl.draw(); }
   if (busy) $("scenery-hover").textContent = "";
   gl.renderer.domElement.style.cursor = busy ? "crosshair" : "";
@@ -2022,6 +2275,19 @@ function watchPointer() {
     canvas.addEventListener(type, () => { if (mv.brush.painting) finishStroke(); });
   }
   canvas.addEventListener("pointerdown", scenPointerDown);
+  canvas.addEventListener("pointerdown", roadPointerDown);
+  let roadMove = null, roadFrame = 0;
+  canvas.addEventListener("pointermove", (ev) => {
+    if (!road.on) return;
+    roadMove = ev;
+    if (!roadFrame) roadFrame = requestAnimationFrame(() => { roadFrame = 0; if (road.on && roadMove) roadPointerMove(roadMove); });
+  });
+  canvas.addEventListener("dblclick", () => {  // Freeform ends with a double-click (its two clicks add one point)
+    if (!road.on || road.tool !== "free") return;
+    const p = road.pts;
+    if (p.length >= 2 && Math.hypot(p[p.length - 1][0] - p[p.length - 2][0], p[p.length - 1][1] - p[p.length - 2][1]) < ROAD_SAMPLE) p.pop();
+    finishRoad();
+  });
   canvas.addEventListener("pointerdown", (ev) => {
     const p = mv.place;
     if (!p.on || ev.button !== 0 || !gl.ground || !mv.edit) return;
@@ -2191,6 +2457,7 @@ function renderWords() {
   foldMaps(Boolean(mv.folded));
   renderBrushes();
   renderScenTools();
+  renderRoadTray();
   renderDockBar();
 }
 
@@ -2384,6 +2651,7 @@ function nudge(what, dir) {
 
 function lookAround() {
   dock.scenario = false;
+  stopRoad();
   if (scen.tool) { scen.tool = null; scen.selected = null; pointerMode(); renderScenTools(); drawScenario(); }
   cancelRamp();
   mv.place.lineStart = null;
@@ -2402,15 +2670,17 @@ function onKey(e) {
   if (ctrl && !e.altKey && e.code === "KeyZ") {  // the one shortcut that works with a modifier
     if (fieldFocused(false)) return;              // a text box has its own undo
     e.preventDefault();
-    if (mv.brush.on) undoStroke(); else if (mv.place.on) undoPlace();
+    if (mv.brush.on) undoStroke(); else if (mv.place.on) undoPlace(); else if (road.on) undoRoad();
     return;
   }
   if (ctrl || e.altKey) return;
   if (e.key === "Escape") {
     if (fieldFocused(true)) { document.activeElement.blur(); return; }  // first out of the box, then back to Look
+    if (road.on && road.pts.length) { road.pts = []; renderRoadTray(); drawRoadPreview(); return; }  // then the road being drawn
     lookAround();
     return;
   }
+  if (e.key === "Enter" && road.on && road.tool === "free" && !fieldFocused(false)) { finishRoad(); return; }
   if (held) {
     if (fieldFocused(e.code.startsWith("Arrow"))) return;  // arrows in a slider are the slider's; letters in a box, the box's
     e.preventDefault();  // the arrows would scroll the page
@@ -2498,6 +2768,8 @@ function wire() {
   $("place-spacing").addEventListener("input", (e) => { mv.place.spacing[mv.place.group] = Number(e.target.value); renderPlace(); });
   $("place-area").addEventListener("input", (e) => { mv.place.area = Number(e.target.value); renderPlace(); });
   $("brush-undo").addEventListener("click", () => undoStroke());
+  $("road-finish").addEventListener("click", () => finishRoad());
+  $("road-undo").addEventListener("click", () => undoRoad());
   $("maps-fold").addEventListener("click", () => { foldMaps(!mv.folded); saveView(); });
   $("brush-clear").addEventListener("click", () => {
     $("brush-sure-text").textContent = fill(mv.words.really_clear, { n: mv.brush.strokes.length.toLocaleString() });
@@ -2577,6 +2849,7 @@ window.MapView = {
   modChanged() {
     if (mv.current && mv.edit) loadStrokes(mv.current, mv.ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
     if (mv.current && mv.edit) loadPlaced(mv.current, mv.ask).catch((err) => placeNote((err && err.message) || String(err), "error"));
+    if (mv.current && mv.edit) loadModRoads(mv.current, mv.ask).catch((err) => roadNote((err && err.message) || String(err), "error"));
   },
 };
 window.dispatchEvent(new Event("mapview-ready"));

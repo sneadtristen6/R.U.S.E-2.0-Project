@@ -38,6 +38,7 @@ from rusemod.steam import build_of, data_revisions, find_game
 from rusemod.build import find_pack
 from rusemod.edat import Edat
 from rusemod.modcheck import check_mod_folder
+from rusemod.roadnet import RoadNetError
 from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_folder, pick_save
 
@@ -157,7 +158,7 @@ class StudioError(Exception):
 
 # the ways a mod's map files can be wrong, as their readers say it
 _FILE_MISTAKES = (tomllib.TOMLDecodeError, UnicodeDecodeError, BrushError, scenario.ScenarioError,
-                  scenery.SceneryEditError)
+                  scenery.SceneryEditError, RoadNetError)
 
 
 def _save_checked(path: Path, text: str, read) -> None:
@@ -1246,6 +1247,85 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
         return {"count": len(left), "removed": n, "saved": str(path) if left else None}
 
     # --- shaping a map's ground: maps/<pack>/terrain.toml in the current mod (MOD_FORMAT §8, rusemod.brush) ---
+    # --- new roads: maps/<pack>/roads.toml in the current mod (MOD_FORMAT §8, rusemod.roadnet) ---
+    ROADS_HEADER = ("The roads this mod adds to this map, as lines (docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio, "
+                    "which rewrites this file.")
+    ROAD_POINTS_MOST = 5000   # points in one road's line
+
+    def _roads_file(self, pack: str) -> Path:
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first: new roads are saved in it.")
+        if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
+            raise StudioError(f"{pack!r} isn't a map's pack name")
+        return folder / "maps" / pack / "roads.toml"
+
+    @staticmethod
+    def _read_roads(path: Path) -> list:
+        from rusemod import roadnet
+        if not path.is_file():
+            return []
+        try:
+            return roadnet.parse_roads(tomllib.loads(path.read_text(encoding="utf-8")).get("road", []), str(path))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, roadnet.RoadNetError) as exc:
+            raise StudioError(f"{path} can't be read ({exc}). The mod check at the top can set it aside, or fix it by "
+                              f"hand: the Studio won't write over it.") from None
+
+    def _write_roads(self, path: Path, roads: list) -> None:
+        from rusemod import roadnet
+        if roads:
+            _save_checked(path, roadnet.roads_toml(roads, self.ROADS_HEADER),
+                          lambda data: roadnet.parse_roads(data.get("road", []), str(path)))
+            return
+        if path.is_file():
+            path.unlink()
+        for folder in (path.parent, path.parent.parent):  # maps/<pack>, then maps, when they're empty
+            try:
+                folder.rmdir()
+            except OSError:
+                break
+
+    def roads(self, pack: str) -> dict:
+        """The roads the current mod adds to a map, for the Maps view: {"roads": [{"points": [[x, y], ...], "join":
+        map units}], "saved": the file or None, "mod": the mod or None when none is picked}."""
+        folder = self._mod_dir()
+        if folder is None:
+            return {"roads": [], "saved": None, "mod": None}
+        path = self._roads_file(pack)
+        with self._saving:
+            roads = self._read_roads(path)
+        return {"roads": [{"points": [list(p) for p in r.points], "join": r.join} for r in roads],
+                "saved": str(path) if roads else None, "mod": str(folder)}
+
+    def road_add(self, pack: str, points: list, join: float = 3000.0) -> dict:
+        """Add a road (its line: [[x, y], ...] in map units, in order) to the map in the current mod. Its ends join a
+        road within `join` map units (the window snaps them onto one). Returns {"count": roads on the map now,
+        "saved": the file}."""
+        from rusemod import roadnet
+        path = self._roads_file(pack)
+        if not isinstance(points, list) or len(points) > self.ROAD_POINTS_MOST:
+            raise StudioError(f"A road's line holds 2 to {self.ROAD_POINTS_MOST} points")
+        try:
+            new = roadnet.parse_roads([{"points": [list(p) for p in points], "join": join}], "the new road")
+        except (roadnet.RoadNetError, TypeError) as exc:
+            raise StudioError(str(exc)) from None
+        with self._saving:
+            every = self._read_roads(path) + new
+            self._write_roads(path, every)
+        return {"count": len(every), "saved": str(path)}
+
+    def road_undo(self, pack: str, count: int = 1) -> dict:
+        """Take the last `count` new roads off the map (the file goes when none is left). Returns {"count": roads
+        left, "removed": how many went, "saved": the file or None}."""
+        path = self._roads_file(pack)
+        with self._saving:
+            every = self._read_roads(path)
+            n = max(0, min(int(count), len(every)))
+            left = every[:len(every) - n]
+            if n:
+                self._write_roads(path, left)
+        return {"count": len(left), "removed": n, "saved": str(path) if left else None}
+
     TERRAIN_HEADER = ("The ground this mod reshapes on this map: brush strokes, applied in order (docs/MOD_FORMAT.md "
                       "§8).\nMade in the RUSE Studio, which rewrites this file.")
 

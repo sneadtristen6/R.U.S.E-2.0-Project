@@ -867,6 +867,23 @@ class Terrain(WithMod):
         with mock.patch("rusemod.terrain.map_list", side_effect=FileNotFoundError):
             self.assertEqual(_meant(Path("game"), "Blitz"), "")
 
+    def test_new_roads_added_and_taken_back(self):
+        self.assertEqual(self.api.roads("Blitz"), {"roads": [], "saved": None, "mod": None})
+        folder = Path(self.api.new_mod("x")["current"])
+        file = folder / "maps" / "Blitz" / "roads.toml"
+        self.assertEqual(self.api.road_add("Blitz", [[1, 2], [3000.5, 4]])["count"], 1)
+        self.assertEqual(self.api.road_add("Blitz", [[10, 20], [30, 40], [50, 60]], 0)["count"], 2)
+        got = self.api.roads("Blitz")
+        self.assertEqual([r["points"] for r in got["roads"]], [[[1.0, 2.0], [3000.5, 4.0]], [[10.0, 20.0], [30.0, 40.0], [50.0, 60.0]]])
+        self.assertEqual([r["join"] for r in got["roads"]], [3000.0, 0.0])
+        self.assertEqual(got["saved"], str(file))
+        for bad in ([[1, 2]], [[1, 2], ["a", 3]], "nope", [[1, 2]] * 5001):
+            with self.assertRaises(StudioError):
+                self.api.road_add("Blitz", bad)
+        self.assertEqual(self.api.road_undo("Blitz"), {"count": 1, "removed": 1, "saved": str(file)})
+        self.assertEqual(self.api.road_undo("Blitz", 5), {"count": 0, "removed": 1, "saved": None})
+        self.assertFalse(file.exists())
+
     def test_a_water_stroke_keeps_its_level(self):  # Studio 0.7.0 and before saved it without, then couldn't read it
         self.api.new_mod("x")
         lake = {"brush": "water", "x": 1.0, "y": 2.0, "radius": 3.0, "level": 450.0}
