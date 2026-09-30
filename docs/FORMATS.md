@@ -15,7 +15,7 @@ Game build examined: Steam re-release, Steam build 24670294, data revision **190
 | Map registration (`mapinfo.cpp`, `clustermap.cpp`) | ZZ_GladPatchable | 86 maps | ✅ R | P1 |
 | Map support files (`save.boobspc`, `output.sdb`) | Maps\PC | per map | 🟡 checksums known | P1 |
 | Scenario (`.scenario`) | DataMap_Win | 102 | ✅ R (zones and design items; `rusemod.scenario`, all 102) | P1 |
-| AI map grids (`mapinfo.win`) | DataMap_Win | 34 | 🟡 the cover grid (buffer 4) written: `rusemod.cover`, from LittleGroove's `sdb.py` | P1 |
+| AI map grids (`mapinfo.win`) | DataMap_Win | 34 | 🟡 buffer 0: the road network (read); buffers 1-2: the infantry and vehicle navigation graphs, read and written byte-identical (`rusemod.nav`, `tools/verify_nav.py`); buffer 4: the cover grid, written (`rusemod.cover`, from LittleGroove's `sdb.py`) | P1 |
 | Terrain mesh (`.tms`) | Maps\PC | 64 (hi + low per map) | ✅ R W RT (not yet tried in-game) | P1 |
 | Terrain tiles (`.tmst_pc` + `.tmst_chunk_pc`) | Maps\PC | 64 sets, 29,254 tiles | ✅ container R W RT; plain tiles (ZIPO) work in-game; TGU1 body 🟡 (reading only) | P1 |
 | Textures (`.tgv`, `.tgv_pc`) | ZZ_Win, Maps\PC | 3,831 + maps | 🟡 header | P1 |

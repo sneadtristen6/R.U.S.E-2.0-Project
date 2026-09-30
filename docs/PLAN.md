@@ -685,7 +685,7 @@ ends with one in-game test (batched, one game start) and a release. Sessions are
 | # | Step | Needs | Sessions |
 |---|---|---|---|
 | A1 | Studio 0.6.9: placed objects that show (the far-view wrapper), after the all-maps check | — | done, releasing |
-| A2 | **Movement:** decode `mapinfo.win` buffers 1-2 (map-wide movement grids) and 0 (the road network: points, links, a lookup); placed buildings block units, and the Studio shows where units can go. Test: a wall of buildings, a lake, a pit | — | 2-3 |
+| A2 | **Movement:** `mapinfo.win` buffers 1-2 are the infantry and vehicle navigation graphs (circles units plan through; water and off-map ground uncovered; local graphs steer around town buildings), read and written byte-identical (`rusemod.nav`, 2026-09-30). Left: the spatial index, the rule for crossings, then edits (take circles away for a lake or cliff; a local graph around placed buildings) and the Studio showing where units can go. Test: a wall of buildings, a lake | — | 1-2 more |
 | A3 | **Roads, Cities: Skylines style:** draw the map's roads in the view; a road tool (click points, a curve follows, ends snap to roads) that writes the scenery's road pieces and the road network, and clears the trees along it (needs A4). Test: a new road, drawn? faster? | A2, A4 | 2-3 |
 | A4 | **Remove scenery:** take out the map's own trees, props and buildings (an Erase brush; roads and towns use it) | — | 1 |
 | A5 | **Zones:** draw and move the capture sectors (the scenario's AREA records, reader done) and their names. Test: a new sector captured in a skirmish | — | 1-2 |
