@@ -885,3 +885,21 @@ Players get it through the launcher like any mod.
 **Unknowns to check first (one game start each):** a copied pack under a new name loads as its own map; the menus
 show a new skirmish entry (LittleGroove proved it for Operations); a map with its own GUID works in multiplayer
 between two PCs with the mod.
+
+**The map tools, the way Cities: Skylines does them** (owner, 2026-09-30): click to lay things out, see them at
+once, the game's rules follow. What the data says, and the order:
+1. **Cover (where units hide), done in the build:** `maps/<map>/cover.toml` paints the cover (0x08) or blocked (0x04)
+   layer of the map's grid in `mapinfo.win` (`rusemod.cover`, all 34 grids checked). Eugen drew these by hand (the
+   editor set's forest and obstacle surfaces), so they don't follow the trees: a town or wood a mod adds gives cover
+   only where it's painted. On Blitz, two thirds of the buildings stand on blocked cells and few on cover.
+   In-game check waiting: `D:\RUSE-Instances\cover` (a cover patch 600 m east of player 1's HQ, ringed by water
+   towers; a blocked patch 700 m further east). Then: a Cover brush in the Studio (paint, erase, see the grid).
+2. **Town center:** pick buildings (or drag an area) and the Studio paints cover around them, a margin wide, so a
+   placed town hides infantry like the game's own. Built on 1.
+3. **Roads:** a road is a chain of curved pieces in the map's scenery (`save.boobspc` road items, 15 words: start
+   point and direction, end point and direction, a road type 1/3/9, two fixed codes; 310 on Blitz). The tool: click
+   points, a curve follows, ends snap to other roads; it clears the trees along it (removing scenery items: to build)
+   and saves `maps/<map>/roads.toml`. Units have `SpeedBonusOnRoad`; whether the game finds roads from these pieces
+   or from a road graph in `mapinfo.win` (its first buffer holds points) is the first in-game check: one new road
+   on open ground, drawn? faster?
+4. The rest follows the same way: zones (drawn sectors), ground painting, and every tool with click-and-see.
