@@ -17,14 +17,15 @@ Where things stand, and what's next. Tested-in-game features are marked ✅.
 - Several units at once, in formations (line, column, wedge, box, circle): Studio 0.7.1, in-game check next
 - A mod check that finds broken files and misnamed map folders, with the fix: Studio 0.7.1
 - **Report a problem** and **Help** in both apps: Studio 0.7.1, Launcher 0.2.7
+- ✅ **Draw roads** (straight, curve, freeform; ends snap onto roads): supply routes use them. Studio 0.7.2
 
 ### Next, in order
 
-1. **Roads**, drawn like in Cities: Skylines, clearing the trees in their way
-2. **Remove the map's own scenery** (trees, buildings)
+1. **Ground painting**: grass, sand, rock, and new roads painted where you drew them
+2. **Remove the map's own scenery** (trees, buildings), and clear the trees along a new road
 3. **Capture zones**: draw and move a map's sectors
-4. **Ground painting**: grass, sand, rock, road textures
-5. **Finer ground** where brushes need it, without slowing the game
+4. **Finer ground** where brushes need it, without slowing the game
+5. **Movable, foldable panels** in the map view
 
 ### Also coming
 
