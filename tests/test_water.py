@@ -4,7 +4,7 @@ import unittest
 
 from rusemod.brush import BrushError, parse_strokes
 from rusemod.tms import Tms
-from rusemod.water import CASE, TILE, _cell, apply_water
+from rusemod.water import CASE, TILE, _both, _cell, apply_water
 
 from test_tms import make_tms
 
@@ -96,7 +96,31 @@ class MeshWater(unittest.TestCase):
         self.assertEqual({p[3] for c in far.cells for p in c.positions()}, {400})
 
 
+class FarMesh(unittest.TestCase):
+    def test_the_far_mesh_floods_only_where_the_close_up_ground_is_under_the_water(self):
+        near, far = flat(500), flat(400)
+        # a level under the (flat, world 0.0) ground: the close-up mesh records it, nothing floods, the far mesh
+        # leaves its points alone
+        strokes = parse_strokes([{"brush": "water", "x": 1500, "y": 1500, "radius": 300, "level": -5.0}])
+        apply_water({"highdef": near, "lowdef": far}, strokes)
+        self.assertEqual({p[3] for c in far.cells for p in c.positions()}, {400})
+        self.assertTrue(all(not c.flags & 2 for c in near.cells))
+
+
 class TextureDepth(unittest.TestCase):
+    def test_far_only_water_is_covered_and_the_shore_gets_one_texel_of_spill(self):
+        n = TILE * TILE
+        near = ([0] * n, [0.0] * n, [0.0] * n)
+        far = ([0] * n, [0.0] * n, [0.0] * n)
+        far[0][0], far[1][0], far[2][0] = 200, 1.0, 8349.0     # water only the far mesh draws, in the corner texel
+        red, share, level = _both(near, far, 152.0)
+        self.assertEqual((red[0], share[0], level[0]), (200, 1.0, 8501.0))
+        self.assertEqual(red[1], 200)                            # the texel beside it: spill onto the shore
+        self.assertEqual(share[1], 0.0)                          # spill isn't counted as water
+        self.assertEqual(red[TILE + 1], 200)                     # diagonal neighbour too
+        self.assertEqual(red[2], 0)                              # two texels away: dry
+
+
     def test_red_is_depth_over_the_maps_scale(self):
         big = ((-10.0, -10.0), (3 * CASE, -10.0), (-10.0, 3 * CASE))   # covers cell (0, 0) completely
         red, share, level = _cell([(big, (500.0, 500.0, 500.0), (9000.0, 9000.0, 9000.0))], 0, 0, 1000.0)

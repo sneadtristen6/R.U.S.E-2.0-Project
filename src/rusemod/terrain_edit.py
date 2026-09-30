@@ -269,8 +269,11 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
     if "highdef" in meshes and FILES["highdef"] in changed:
         depth = max_depth_of() if max_depth_of else None
         if depth:
+            far = "lowdef" in meshes
             new_tex, tex_notes = update_textures(read, Tms(read(FILES["highdef"])), meshes["highdef"],
-                                                 [_area_of(s) for s in strokes + water_strokes], depth, name)
+                                                 [_area_of(s) for s in strokes + water_strokes], depth, name,
+                                                 far_before=Tms(read(FILES["lowdef"])) if far else None,
+                                                 far_after=meshes["lowdef"] if far else None)
             changed.update(new_tex)
             water_notes += tex_notes
         elif water_strokes:
