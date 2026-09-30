@@ -543,18 +543,128 @@ def _groups(objects: list[NewObject]) -> list[list[NewObject]]:
 
 
 def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]:
-    """The scenery file with `objects` added, the way DomesticNukes proved in the game: per group of neighbours
-    (GROUP), one object item near them, of a block placed once, becomes a same-size reference (with a transform that
-    changes nothing) to a new block at the end, which holds that object and the new ones. Every reference still
-    points forward; the grids are left alone. Types must be ones the map already uses (in its name table). Returns
-    (new file, notes)."""
+    """The scenery file with `objects` added, per group of neighbours (GROUP). The game draws the top block through
+    its tree: a spatial tree whose first node counts the entries seen from far (listed first). So each group goes in
+    a new block that wraps the nearest block the top block lists for far view (a village, a farm): that reference now
+    points to the new block, which places the old one where it was and the new objects; the tree is unchanged, and the
+    objects are drawn wherever and from however far that block is. The new block goes right after the top block (a
+    reference must point forward), so every later reference moves by its size. A map whose top block lists no block
+    for far view gets the first way DomesticNukes proved in the game (_add_block: an object near them becomes the
+    reference). The grids are left alone. Types must be ones the map already uses (in its name table). Returns (new
+    file, notes)."""
     if not objects:
         return bytes(data), []
     notes = []
     for group in _groups(objects):
-        data, more = _add_block(data, group)
+        sc = Scenery(data)
+        far = _far_children(sc)
+        data, more = _wrap(sc, data, group, far) if far else _add_block(data, group)
         notes += more
     return data, notes
+
+
+def _far_children(sc: Scenery) -> list[Item]:
+    """The top block's references to blocks that it lists for far view (its first node's count of entries)."""
+    roots = sc.roots()
+    if roots != [0] or len(sc.blocks[0].nodes) < 8:
+        return []
+    b = sc.blocks[0]
+    far = struct.unpack_from("<H", b.nodes, 4)[0]
+    by_at = {it.at: it for it in b.items}
+    return [by_at[a] for a in b.entries[:far] if a in by_at and by_at[a].kind == "child"]
+
+
+def _world_box(sc: Scenery, it: Item) -> tuple[float, float, float, float]:
+    """A top-block reference's block's box on the map (its corners through the reference's transform)."""
+    m = it.matrix()
+    x0, y0, x1, y1 = sc.block_at(it.child_offset).bbox
+    xs, ys = [], []
+    for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
+        xs.append(m[0] * x + m[1] * y + m[3])
+        ys.append(m[4] * x + m[5] * y + m[7])
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item]) -> tuple[bytes, list[str]]:
+    index = {name: i for i, name in enumerate(sc.names[:len(sc.flags)]) if sc.flags[i] == 1}
+    words: dict[int, int] = {}
+    for b in sc.blocks:
+        for it in b.items:
+            if it.kind == "object":
+                words.setdefault(it.symbol, it.word & 0x7C000000)
+    cx, cy = sum(o.x for o in objects) / len(objects), sum(o.y for o in objects) / len(objects)
+
+    def score(it):  # how far the group's middle is from the block's box (0 inside), then the smaller box
+        x0, y0, x1, y1 = _world_box(sc, it)
+        return math.hypot(max(x0 - cx, 0.0, cx - x1), max(y0 - cy, 0.0, cy - y1)), (x1 - x0) * (y1 - y0)
+    carrier = min(far, key=score)
+    top = sc.blocks[0]
+    ins = top.offset + len(top.raw)  # the new block goes right after the top block
+    if len(sc.blocks) > 1 and sc.blocks[1].offset != ins:
+        raise SceneryError("the scenery file's blocks aren't in the order this writer knows")
+    to_local = _inverse(carrier.matrix())
+    inner = sc.block_at(carrier.child_offset)
+    items, xs, ys = [], [inner.bbox[0], inner.bbox[2]], [inner.bbox[1], inner.bbox[3]]
+    for o in objects:
+        sym = index.get(o.type)
+        if sym is None:
+            raise SceneryEditError(f"{o.type} isn't used on this map, so the map can't take it (only types its "
+                                   f"scenery already lists)")
+        if not 0.05 <= o.size <= 50:
+            raise SceneryEditError(f"{o.type}: size {o.size} is outside 0.05 to 50")
+        t = math.radians(o.turn)
+        c, s = math.cos(t) * o.size, math.sin(t) * o.size
+        local = compose(to_local, (c, -s, 0.0, o.x, s, c, 0.0, o.y, 0.0, 0.0, o.size, 0.0))
+        kind, tdata = encode_transform(local)
+        items.append(struct.pack("<I", 0x80000000 | words.get(sym, 0) | (sym << 4) | kind) + tdata)
+        pad = MARGIN * o.size
+        xs += [local[3] - pad, local[3] + pad]
+        ys += [local[7] - pad, local[7] + pad]
+    probe = _new_block([b"\0" * 4] + items, (0.0, 0.0, 0.0, 0.0))  # its size, to know where the old block moves to
+    shift = len(probe)
+    moved_to = carrier.child_offset + shift
+    if (sc.fields[3] + shift) & ~0xFFFFFC:
+        raise SceneryEditError("the map's scenery is too big for a new block to be referenced")
+    # the old block, placed where it was (no transform: the reference to the new block keeps the old one's)
+    first = struct.pack("<I", (carrier.word & 0xFF000000) | moved_to | T_IDENTITY)
+    new = _new_block([first] + items, (min(xs), min(ys), max(xs), max(ys)))
+    # every block, its references to blocks after the top one moved by the new block's size
+    f = list(sc.fields)
+    tab_off, tab_n, data_off, data_len = f[0], f[1], f[2], f[3]
+    if tab_off != 124 or data_off != tab_off + 4 * tab_n:
+        raise SceneryError("the scenery file's tables aren't in the order this writer knows")
+    parts = []
+    for b in sc.blocks:
+        raw = bytearray(b.raw)
+        for it in b.items:
+            if it.kind != "child":
+                continue
+            at = b.items_start + it.at
+            if b.index == 0 and it.at == carrier.at:
+                target = ins
+            else:
+                target = it.child_offset + shift if it.child_offset >= ins else it.child_offset
+            struct.pack_into("<I", raw, at, (it.word & ~0x00FFFFFC) | target)
+        parts.append(bytes(raw))
+        if b.index == 0:
+            parts.append(new)
+    body_data = b"".join(parts)
+    if len(body_data) != data_len + shift:
+        raise SceneryError("the scenery file's blocks don't fill its data exactly")
+    end = data_off + data_len
+    for k in (4, 6, 8, 10, 12, 20, 22, 24):  # the tables after the data move by the table's new entry and the block
+        if f[k] < end:
+            raise SceneryError("the scenery file's tables aren't in the order this writer knows")
+        f[k] += 4 + shift
+    f[1], f[2], f[3] = tab_n + 1, data_off + 4, data_len + shift
+    table = list(struct.unpack_from(f"<{tab_n}I", data, tab_off))  # the offsets, then the end marker
+    table = [table[0], ins] + [v + shift for v in table[1:]]
+    body = (VERSION + struct.pack("<26I", *f) + struct.pack(f"<{len(table)}I", *table) + body_data + data[end:])
+    x0, y0, x1, y1 = _world_box(sc, carrier)
+    far_m = math.hypot(max(x0 - cx, 0.0, cx - x1), max(y0 - cy, 0.0, cy - y1)) / 100
+    return hashlib.md5(body).digest() + body, [
+        f"{len(objects)} object(s) added in a new block with block {inner.index} (drawn from far, {far_m:.0f} m "
+        f"from them), placed where the top block had it"]
 
 
 def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]:

@@ -217,6 +217,33 @@ class Adding(unittest.TestCase):
         self.assertEqual(add_objects(data, [])[0], data)
         self.assertIn("2 object(s) added", notes[0])
 
+    def test_new_objects_wrap_a_block_the_top_block_draws_from_far(self):
+        """The top block lists its second reference to the wood for far view: new objects near it go in a new block
+        right after the top block, which that reference now points to, holding the wood (placed where it was) and
+        them. Every later reference moves by the new block's size; nothing else moves."""
+        wood = block([struct.pack("<I", 0x80000000 | 1 << 4 | 1), moved(0x80000000 | 1 << 4, 100.0, 0.0), road()])
+        items = [compact(0, 1000.0, 2000.0), moved(0, 0, 0), moved(0, 0, 0)]
+        root_len = len(block(items)) + 4  # one far entry more
+        items = [compact(0, 1000.0, 2000.0), moved(root_len, 5000.0, 0.0), moved(root_len, 5000.0, 9000.0)]
+        offsets = [0, len(items[0]), len(items[0]) + len(items[1])]
+        head = struct.pack("<II4f", 0x80000000 | 4, 1, 0.0, 0.0, 1.0, 1.0) + bytes(8)
+        tree = struct.pack("<4I", offsets[2], *offsets) + struct.pack("<II", 0xC0000000 | 0x1F << 20, 0x00FF0000 | 1)
+        root = head + tree + b"".join(items)
+        self.assertEqual(len(root), root_len)
+        data = make_scenery([root, wood], NAMES)
+        new, notes = add_objects(data, [NewObject("TypeWarrior/MairieNormande", 5300.0, 9200.0, 45.0, 2.0)])
+        self.assertEqual(spots(new) - spots(data), Counter({(0, 5300.0, 9200.0): 1}))
+        self.assertEqual(spots(data) - spots(new), Counter())
+        s = Scenery(new)
+        self.assertEqual(len(s.blocks), 3)
+        refs = [(b.index, s._by_offset[it.child_offset]) for b in s.blocks for it in b.items if it.kind == "child"]
+        self.assertEqual(refs, [(0, 1), (0, 2), (1, 2)])  # the far one (listed first) goes through the new block
+        self.assertIn("with block 1", notes[0])
+        hall = next(m for sym, m in s.walk() if sym == 0 and round(m[3]) == 5300)
+        _x, _y, turn, size = placement(hall)
+        self.assertAlmostEqual(math.degrees(turn), 45.0, places=3)
+        self.assertAlmostEqual(size, 2.0, places=3)
+
     def test_a_map_whose_top_block_places_only_blocks(self):
         root_len = len(block([moved(0, 0.0, 0.0)]))
         data = make_scenery([block([moved(root_len, 5000.0, 1000.0)]), block([compact(1, 10.0, 20.0)])], NAMES)
