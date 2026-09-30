@@ -20,6 +20,17 @@ and again before **Test in game**, and names each file that has a mistake.
 
 The apps are new to Windows' reputation check. Click **More info**, then **Run anyway**.
 
+## "[WinError 5] Access is denied" when testing or playing
+
+Windows refused to remove a copy of the game the app made (in `RUSE-Instances`).
+
+- **R.U.S.E. still running from an earlier test?** Close it, then try again: a running game keeps its copy in use.
+- **Your game's files marked read-only** (a disc install, a restored backup)? RUSE Studio 0.7.4 and Launcher 0.2.9
+  handle that by themselves: update (the apps offer it when they open). With an older version, delete the folder
+  the message names (`...\RUSE-Instances\<name>.partial` or `.old`; Windows asks about read-only files: say yes;
+  only the copy goes, never the game), then try again.
+- Still there? [[Report it|Report-a-Bug]] with the whole message.
+
 ## The app can't find R.U.S.E.
 
 **Settings > Game folder > Choose folder...** and pick the folder that holds `RUSE.exe` (on Steam:

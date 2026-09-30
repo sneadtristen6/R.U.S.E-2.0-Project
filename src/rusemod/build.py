@@ -625,8 +625,13 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         # crossing (walk-through), and the crossing's deck kept for the movement graphs below
         # and bridges placed by hand (scenery.toml objects of a bridge kind, any size): coded as bridges, they open
         # their deck to units instead of blocking it, and a road crossing one gets no second bridge
+        # and a road over one of the map's own bridges gets the new one in its place: the old one sunk out of sight,
+        # its deck over water closed to units and to the road network (owner, 2026-09-30)
         bridge_spans: dict = {}   # map pack name -> [(x0, y0, x1, y1)]
         bridge_objects: dict = {}  # map pack name -> (the bridge objects, the mods' ids)
+        bridge_hide: dict = {}    # map pack name -> [(block index, item offset)]: old bridges to sink
+        bridge_closed: dict = {}  # map pack name -> [(x, y, r)]: where they stood over water
+        bridge_decks: dict = {}   # map pack name -> every deck a new road runs over (the painter leaves them)
         placed = scenery_edits(result.order, mods)
         road_edits = scenario_edits(result.order, mods, "roads")
         from .bridges import BridgeError, model_length, placed_spans, plan
@@ -667,13 +672,18 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     sc_raw, mesh = read_map(SCENERY), read_map("output\\highdef.tms")
                     if sc_raw is None or mesh is None:
                         raise BridgeError("the map has no scenery or no ground mesh")
-                    objects, road_spans, road_notes = plan(mesh, wanted, Scenery(sc_raw), descs, length_of,
-                                                           existing=spans)
+                    made = plan(mesh, wanted, Scenery(sc_raw), descs, length_of, existing=spans)
                 except (BridgeError, SceneryError, ValueError, KeyError, struct.error, zlib.error) as exc:
                     result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the roads' bridges can't be made ({exc})"))
                     continue
-                spans += road_spans
-                notes += road_notes
+                objects = made.objects
+                spans += made.spans
+                notes += made.notes
+                if made.hide:
+                    bridge_hide[name] = made.hide
+                    bridge_closed[name] = made.closed
+                if made.kept:
+                    bridge_decks[name] = list(made.kept)
             if objects:
                 bridge_objects[name] = (objects, road_ids)
             if spans:
@@ -697,11 +707,13 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             entry = next((e for e in map_packs if e[0] == map_path), None)
             map_arc = entry[1] if entry else open_pack(map_path)
             changed_members = entry[2] if entry else {}
-            from .scenery import MEMBER, SceneryEditError, SceneryError, add_objects
+            from .scenery import MEMBER, SceneryEditError, SceneryError, add_objects, bury_objects
             try:
                 member = map_arc.find(MEMBER).path
                 raw = changed_members.get(member) or bytes(map_arc.read(map_arc.find(MEMBER)))
+                raw, sunk = bury_objects(raw, bridge_hide.get(name, []))  # before the new blocks move them
                 changed_members[member], notes = add_objects(raw, objects)
+                notes = sunk + notes
             except KeyError:
                 result.findings.append(Finding("error", f"{map_path.name} has no scenery file, so nothing can be "
                                                         f"placed on {name}"))
@@ -723,7 +735,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             result.terrain_changed[map_path.name] = changed_members
         for name, (map_roads, ids) in scenario_edits(result.order, mods, "roads").items():  # new roads painted
             from .bridges import cut
-            lines = cut([r.points for r in map_roads if r.paint], bridge_spans.get(name, []))  # not on a bridge's deck
+            decks = bridge_spans.get(name, []) + bridge_decks.get(name, [])
+            lines = cut([r.points for r in map_roads if r.paint], decks)  # not on a bridge's deck
             map_path = find_pack(game, pack_file(name)) if lines else None
             if map_path is None:
                 continue  # (a missing map is said with the road network below)
@@ -812,7 +825,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {note}")
                 for name, spans in bridge_spans.items():  # the bridges' decks opened to units, after the blocks
                     try:
-                        new, notes = apply_spans(read_data, name, spans)
+                        new, notes = apply_spans(read_data, name, spans, bridge_closed.get(name, []))
                     except (BridgeError, NavError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{name}: the bridges' movement can't be opened ({exc})"))
                         continue
@@ -903,7 +916,14 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 replace[rel] = (lambda f, a=a, changed=changed: a.write_to(f, changed))
             copied = build_instance(str(game), str(instance), replace=replace)
             say(f"modded copy ready: {instance}  {copied}")
-            if copied.get("full copies"):
-                say(f"note: {instance} is on another drive than the game, so its {copied['full copies']} packs are "
-                    f"full copies, which take disk space. On the game's drive they'd be free.")
+            locked = copied.get("read-only packs", 0)
+            if copied.get("full copies", 0) > locked:
+                say(f"note: {instance} is on another drive than the game, so its {copied['full copies'] - locked} "
+                    f"packs are full copies, which take disk space. On the game's drive they'd be free.")
+            if locked:
+                say(f"note: {locked} of the game's packs are marked read-only, so they were copied rather than linked "
+                    f"(a link would share the mark, and the copy couldn't be removed later). Unticking Read-only in "
+                    f"the game folder's Properties would save that space.")
+            if copied.get("old copy left"):
+                say(f"note: the previous copy at {instance}.old couldn't be removed yet; the next build removes it.")
     return result

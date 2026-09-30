@@ -200,6 +200,32 @@ class Scenery:
                 elif it.kind == "child":
                     todo.append((self._by_offset[it.child_offset], compose(m, it.matrix())))
 
+    def placings(self) -> tuple[list[int], list]:
+        """(how many times the map places each block, its one transform in map coordinates or None when it's placed
+        more than once or not at all): parents come before children, so one pass does it."""
+        n = len(self.blocks)
+        weight, where = [0] * n, [None] * n
+        for r in self.roots():
+            weight[r] += 1
+            where[r] = IDENTITY
+        for b in self.blocks:
+            for it in b.items:
+                if it.kind == "child":
+                    j = self._by_offset[it.child_offset]
+                    weight[j] += weight[b.index]
+                    where[j] = compose(where[b.index], it.matrix()) if where[b.index] is not None else None
+        return weight, [w if weight[i] == 1 else None for i, w in enumerate(where)]
+
+    def objects_once(self):
+        """(block index, item, transform in map coordinates) for every object on the map exactly once (in a block
+        placed once), so it can be changed where it's stored."""
+        _weight, where = self.placings()
+        for b in self.blocks:
+            if where[b.index] is not None:
+                for it in b.items:
+                    if it.kind == "object":
+                        yield b.index, it, compose(where[b.index], it.matrix())
+
     def roads(self) -> list[tuple]:
         """Every road piece, in map coordinates: a cubic Bézier as (x0, y0, x1, y1, x2, y2, x3, y3). A piece's 15
         words are its start (x, y, z), the start's handle as an offset from it, its end, the end's handle as an offset
@@ -473,6 +499,17 @@ class NewObject:
     turn: float = 0.0    # degrees, from east toward south (clockwise on the minimap)
     size: float = 1.0
     solid: bool = True   # a building units can't go through (rusemod.nav.solid_blocks); false: only drawn
+    stretch: float = 1.0  # a further scale along the object's own y only: a bridge's length (the shipped maps
+                          # stretch theirs 0.9 to 1.9 to fit the river)
+    lift: float = 0.0    # its height against the ground the game puts it on (map units; shipped bridges sit
+                         # 130 to 850 below)
+
+    def matrix(self) -> tuple:
+        """Where it goes, in map coordinates: turned, sized, stretched along its own y, lifted."""
+        t = math.radians(self.turn)
+        c, s = math.cos(t) * self.size, math.sin(t) * self.size
+        k = self.stretch
+        return (c, -s * k, 0.0, self.x, s, c * k, 0.0, self.y, 0.0, 0.0, self.size, self.lift)
 
 
 def _inverse(m: tuple) -> tuple:
@@ -508,20 +545,10 @@ def _carrier(sc: Scenery, near: tuple | None = None) -> tuple[Block, Item, tuple
     the object nearest it, in the small block nearest it (a block's distance counts half its size, so the map-wide
     top block loses to a village's); else the top block first. An exact kind (none, a move, full) before a compact
     one. Returns (its block, it, the block's transform in map coordinates)."""
-    n = len(sc.blocks)
-    weight, where = [0] * n, [None] * n
-    for r in sc.roots():
-        weight[r] += 1
-        where[r] = IDENTITY
-    for b in sc.blocks:
-        for it in b.items:
-            if it.kind == "child":
-                j = sc._by_offset[it.child_offset]
-                weight[j] += weight[b.index]
-                where[j] = compose(where[b.index], it.matrix()) if where[b.index] is not None else None
+    _weight, where = sc.placings()
     best = None
     for b in sc.blocks:
-        if weight[b.index] != 1 or where[b.index] is None:
+        if where[b.index] is None:
             continue
         objects = [it for it in b.items if it.kind == "object"]
         if not objects:
@@ -593,6 +620,44 @@ def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]
     return data, notes
 
 
+BURY = 200000.0  # map units an object sunk out of sight goes under the ground (about 770 m)
+SHRINK = 0.05    # and the size it shrinks to, in case the game sets it on the ground whatever its height
+
+
+def bury_objects(data: bytes, places: list[tuple[int, int]]) -> tuple[bytes, list[str]]:
+    """The scenery file with the objects at `places` ((block index, item offset from the block's items start), as
+    Scenery.objects_once gives them) sunk BURY under the ground and shrunk to SHRINK: out of sight, while the file
+    keeps every size and offset (each transform is rewritten where it's stored, in its own kind). An object stored
+    with no transform (the bare "no change" kind) can't be sunk. Returns (new file, notes)."""
+    if not places:
+        return bytes(data), []
+    sc = Scenery(data)
+    out = bytearray(data)
+    for bi, at in places:
+        if not 0 <= bi < len(sc.blocks):
+            raise SceneryEditError(f"there's no block {bi} to sink an object in")
+        b = sc.blocks[bi]
+        it = next((i for i in b.items if i.at == at and i.kind == "object"), None)
+        if it is None:
+            raise SceneryEditError(f"block {bi} has no object at {at} to sink")
+        m = it.matrix()
+        if it.tform == T_IDENTITY:
+            raise SceneryEditError(f"block {bi}: the object at {at} is stored without a transform, so it can't be sunk")
+        if it.tform == T_MOVE:
+            new = struct.pack("<3f", m[3], m[7], m[11] - BURY)
+        elif it.tform == T_FULL:
+            new = struct.pack("<12f", *[v * SHRINK if k % 4 != 3 else v for k, v in enumerate(m[:11])], m[11] - BURY)
+        else:
+            q = struct.unpack_from("<4h", it.data)
+            new = struct.pack("<4h4f", *[round(v * SHRINK) for v in q], m[3], m[7], m[11] - BURY, m[10] * SHRINK)
+        if len(new) != len(it.data):
+            raise SceneryError("a sunk object's transform changed size")
+        at_file = sc.data_off + b.offset + b.items_start + it.at + 4
+        out[at_file:at_file + len(new)] = new
+    out[:16] = hashlib.md5(bytes(out[16:])).digest()
+    return bytes(out), [f"{len(places)} object(s) sunk out of sight"]
+
+
 def _far_children(sc: Scenery) -> list[Item]:
     """The top block's references to blocks that it lists for far view (its first node's count of entries)."""
     roots = sc.roots()
@@ -642,12 +707,10 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item]) -
                                    f"scenery already lists)")
         if not 0.05 <= o.size <= 50:
             raise SceneryEditError(f"{o.type}: size {o.size} is outside 0.05 to 50")
-        t = math.radians(o.turn)
-        c, s = math.cos(t) * o.size, math.sin(t) * o.size
-        local = compose(to_local, (c, -s, 0.0, o.x, s, c, 0.0, o.y, 0.0, 0.0, o.size, 0.0))
+        local = compose(to_local, o.matrix())
         kind, tdata = encode_transform(local)
         items.append(struct.pack("<I", 0x80000000 | words.get(sym, 0) | (sym << 4) | kind) + tdata)
-        pad = MARGIN * o.size
+        pad = MARGIN * o.size * max(1.0, o.stretch)
         xs += [local[3] - pad, local[3] + pad]
         ys += [local[7] - pad, local[7] + pad]
     probe = _new_block([b"\0" * 4] + items, (0.0, 0.0, 0.0, 0.0))  # its size, to know where the old block moves to
@@ -723,9 +786,7 @@ def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]
                                    f"scenery already lists)")
         if not 0.05 <= o.size <= 50:
             raise SceneryEditError(f"{o.type}: size {o.size} is outside 0.05 to 50")
-        t = math.radians(o.turn)
-        c, s = math.cos(t) * o.size, math.sin(t) * o.size
-        local = compose(to_local, (c, -s, 0.0, o.x, s, c, 0.0, o.y, 0.0, 0.0, o.size, 0.0))
+        local = compose(to_local, o.matrix())
         kind, tdata = encode_transform(local)
         items.append(struct.pack("<I", 0x80000000 | words.get(sym, 0) | (sym << 4) | kind) + tdata)
         xs.append(local[3])
@@ -767,20 +828,23 @@ def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]
 def parse_objects(rows: list, where: str = "scenery.toml") -> list[NewObject]:
     out = []
     for k, row in enumerate(rows):
-        extra = sorted(set(row) - {"type", "x", "y", "turn", "size", "solid"})
+        extra = sorted(set(row) - {"type", "x", "y", "turn", "size", "solid", "stretch", "lift"})
         if extra:
             raise SceneryEditError(f"{where}: object {k + 1}: unknown key {extra[0]!r}")
         try:
             if not isinstance(row.get("solid", True), bool):
                 raise SceneryEditError(f"{where}: object {k + 1}: solid must be true or false")
             o = NewObject(str(row["type"]), float(row["x"]), float(row["y"]), float(row.get("turn", 0.0)),
-                          float(row.get("size", 1.0)), row.get("solid", True))
+                          float(row.get("size", 1.0)), row.get("solid", True), float(row.get("stretch", 1.0)),
+                          float(row.get("lift", 0.0)))
         except KeyError as exc:
             raise SceneryEditError(f"{where}: object {k + 1} has no {exc.args[0]}") from None
         except (TypeError, ValueError):
-            raise SceneryEditError(f"{where}: object {k + 1}: x, y, turn and size must be numbers") from None
-        if not all(math.isfinite(v) for v in (o.x, o.y, o.turn, o.size)) or not 0.05 <= o.size <= 50:
-            raise SceneryEditError(f"{where}: object {k + 1}: a number is out of range (size: 0.05 to 50)")
+            raise SceneryEditError(f"{where}: object {k + 1}: x, y, turn, size, stretch and lift must be numbers") from None
+        if (not all(math.isfinite(v) for v in (o.x, o.y, o.turn, o.size, o.stretch, o.lift)) or not 0.05 <= o.size <= 50
+                or not 0.2 <= o.stretch <= 5 or abs(o.lift) > 100000):
+            raise SceneryEditError(f"{where}: object {k + 1}: a number is out of range (size: 0.05 to 50, stretch: "
+                                   f"0.2 to 5, lift: within 100,000)")
         out.append(o)
     return out
 
@@ -789,7 +853,8 @@ def objects_toml(objects: list[NewObject], header: str = "") -> str:
     lines = [f"# {ln}" if ln else "#" for ln in header.splitlines()] + ([""] if header else [])
     for o in objects:
         lines += ["[[object]]", f'type = "{o.type}"', f"x = {o.x!r}", f"y = {o.y!r}", f"turn = {o.turn!r}",
-                  f"size = {o.size!r}"] + ([] if o.solid else ["solid = false"]) + [""]
+                  f"size = {o.size!r}"] + ([] if o.solid else ["solid = false"])
+        lines += ([f"stretch = {o.stretch!r}"] if o.stretch != 1.0 else []) + ([f"lift = {o.lift!r}"] if o.lift else []) + [""]
     return "\n".join(lines) + "\n" if lines else "\n"
 
 

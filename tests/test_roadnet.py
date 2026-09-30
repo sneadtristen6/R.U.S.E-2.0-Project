@@ -103,6 +103,27 @@ class AddingARoad(unittest.TestCase):
         self.assertGreaterEqual(len(pts), 20000 / POINT_STEP)
 
 
+class Cutting(unittest.TestCase):
+    def test_links_through_a_zone_go_with_their_orphan_point(self):
+        net = ring()
+        east = net.points[0]
+        gone = net.cut([(east[0], east[1], 1000.0)])  # a small circle on the ring's east point
+        self.assertEqual(gone, 2)  # the two links that met there
+        self.assertEqual((len(net.points), len(net.links)), (23, 22))  # the point only they used is gone too
+        self.assertNotIn(east, net.points)
+        self.assertEqual(set(leaves(net.tree)), set(range(22)))
+        self.assertTrue(depth_ok(net.tree, net.points, net.links))
+        again = RoadNet.read(net.to_bytes())
+        self.assertEqual((again.links, again.to_bytes()), (net.links, net.to_bytes()))
+        degrees = [len(mine) for mine in again._lists()]
+        self.assertEqual(sorted(degrees)[:2], [1, 1])  # the ring is now an arc with two ends
+        self.assertEqual(net.cut([(0.0, 0.0, 10.0)]), 0)  # nothing there: untouched
+        net = ring()
+        (ax, ay), (bx, by) = net.points[0], net.points[1]
+        gone = net.cut([((ax + bx) / 2, (ay + by) / 2, 500.0)])
+        self.assertEqual((gone, len(net.points)), (1, 24))  # a link's middle: both its points still serve others
+
+
 class ModRoads(unittest.TestCase):
     """maps/<map>/roads.toml in a mod: read, written, and built into the modded copy's road network."""
 

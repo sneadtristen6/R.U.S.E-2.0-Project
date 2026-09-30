@@ -104,6 +104,35 @@ class RoadNet:
         self.tree = build_tree(self.points, self.links)
         return {"points": len(pts), "links": len(new_links), "joined": sum(e is not None for e in ends)}
 
+    def cut(self, zones: list[tuple[float, float, float]]) -> int:
+        """Take away the links that pass through `zones` (circles x, y, r: where a bridge that's gone stood) and the
+        points only they used; the other points are numbered again in their order, and the index is built again.
+        Returns how many links went."""
+        def through(link) -> bool:
+            (ax, ay), (bx, by) = self.points[link[0]], self.points[link[1]]
+            dx, dy = bx - ax, by - ay
+            n = dx * dx + dy * dy
+            for zx, zy, zr in zones:
+                t = 0.0 if n == 0 else max(0.0, min(1.0, ((zx - ax) * dx + (zy - ay) * dy) / n))
+                if math.hypot(ax + t * dx - zx, ay + t * dy - zy) <= zr:
+                    return True
+            return False
+        goes = [through(link) for link in self.links]
+        if not any(goes):
+            return 0
+        kept = [link for link, g in zip(self.links, goes) if not g]
+        used = {p for a, b, _cost in kept for p in (a, b)}
+        orphans = {p for (a, b, _cost), g in zip(self.links, goes) if g for p in (a, b)} - used
+        number, points = {}, []
+        for i, p in enumerate(self.points):
+            if i not in orphans:
+                number[i] = len(points)
+                points.append(p)
+        self.points = points
+        self.links = [(number[a], number[b], cost) for a, b, cost in kept]
+        self.tree = build_tree(self.points, self.links)
+        return sum(goes)
+
     def _cost(self, a: int, b: int) -> int:
         return min(0xFFFF, round(math.dist(self.points[a], self.points[b]) / 10))
 

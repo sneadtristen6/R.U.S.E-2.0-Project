@@ -150,6 +150,10 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .tabs button[aria-selected="true"] { background: var(--panel-hi); color: var(--accent); }
 .map-stage { position: relative; min-height: 0; overflow: hidden; }
 .map-canvas { position: absolute; inset: 0; }
+/* how long the road being drawn is, beside the pointer (Cities: Skylines style), in the map HUD's game look */
+.road-length { position: absolute; pointer-events: none; padding: 2px 8px; background: rgba(0, 0, 0, 0.74);
+               border: 1px solid #7d7d7d; border-radius: 2px; font-size: 12px; white-space: nowrap; }
+.road-length b { color: var(--accent); font-weight: 600; }
 .map-canvas canvas { display: block; }
 .map-pick { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 24px;
             text-align: center; pointer-events: none; }

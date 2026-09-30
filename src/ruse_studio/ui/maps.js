@@ -1856,6 +1856,35 @@ function roadRibbon(lines, mesh, color, opacity) {
   return mesh;
 }
 
+// A length in the game's metres (METRE map units each): "84 m", "1.2 km".
+function roadMetres(units) {
+  const m = units / METRE;
+  return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
+}
+
+function lineLength(line) {
+  let n = 0;
+  for (let i = 1; i < line.length; i++) n += Math.hypot(line[i][0] - line[i - 1][0], line[i][1] - line[i - 1][1]);
+  return n;
+}
+
+// The road being drawn, measured beside the pointer (Cities: Skylines style): the whole road so far along its line,
+// and for a freeform road the straight part from the last click too. Hidden when nothing is being drawn.
+function showRoadLength(ev) {
+  const tag = $("road-length");
+  if (!ev || !road.on || !road.pts.length || !road.cursor) { tag.classList.add("hidden"); return; }
+  const total = lineLength(roadLine(road.tool, road.pts.concat([road.cursor])));
+  tag.replaceChildren(el("b", {}, roadMetres(total)));
+  if (road.tool === "free" && road.pts.length >= 2) {
+    const [lx, ly] = road.pts[road.pts.length - 1];
+    tag.append(" · " + fill(mv.words.road_part, { len: roadMetres(Math.hypot(road.cursor[0] - lx, road.cursor[1] - ly)) }));
+  }
+  const box = tag.parentElement.getBoundingClientRect();
+  tag.style.left = `${Math.round(ev.clientX - box.left + 16)}px`;
+  tag.style.top = `${Math.round(ev.clientY - box.top + 18)}px`;
+  tag.classList.remove("hidden");
+}
+
 function drawModRoads() {
   if (!mv.gl || !mv.edit) return;
   road.mesh = roadRibbon(road.mine.map((r) => r.points), road.mesh, 0x3f73d8, 0.8);
@@ -1919,7 +1948,9 @@ function renderRoadTray() {
   $("road-undo").textContent = w.brush_undo;
   $("road-undo").title = w.tip_road_undo;
   $("road-undo").disabled = !road.mine.length;
-  $("road-count").textContent = road.mine.length ? fill(w.road_count, { n: road.mine.length }) : "";
+  const all = road.mine.reduce((n, r) => n + lineLength(r.points), 0);
+  $("road-count").textContent = road.mine.length
+    ? fill(w.road_count, { n: road.mine.length }) + " · " + fill(w.road_total, { len: roadMetres(all) }) : "";
   if (!$("road-note").textContent || !$("road-note").classList.contains("error-text")) roadNote(w.road_note);
 }
 
@@ -1927,6 +1958,7 @@ function renderRoadTray() {
 function stopRoad() {
   if (!road.on && !road.pts.length) return;
   Object.assign(road, { on: false, pts: [], snap: null, cursor: null });
+  showRoadLength(null);
   drawRoadPreview();
 }
 
@@ -1950,6 +1982,7 @@ async function finishRoad() {
   const pts = road.pts, pack = mv.current;
   road.pts = [];
   road.cursor = null;
+  showRoadLength(null);
   if (pts.length < 2) { drawRoadPreview(); return; }
   const line = roadLine(road.tool, pts);
   drawRoadPreview();
@@ -1988,16 +2021,17 @@ function roadPointerDown(ev) {
   road.pts.push([p.x, p.y]);
   const need = road.tool === "straight" ? 2 : road.tool === "curve" ? 3 : Infinity;
   if (road.pts.length >= need) finishRoad();
-  else { renderRoadTray(); drawRoadPreview(); }
+  else { renderRoadTray(); drawRoadPreview(); showRoadLength(ev); }
 }
 
 function roadPointerMove(ev) {
   const hit = hitGround(ev);
-  if (!hit) return;
+  if (!hit) { showRoadLength(null); return; }
   const p = roadSnap(hit.x / SCALE, hit.z / SCALE);
   road.snap = p.snapped ? p : null;
   road.cursor = [p.x, p.y];
   drawRoadPreview();
+  showRoadLength(ev);
 }
 
 // --- the brush tools ---
@@ -2684,7 +2718,13 @@ function onKey(e) {
   if (ctrl || e.altKey) return;
   if (e.key === "Escape") {
     if (fieldFocused(true)) { document.activeElement.blur(); return; }  // first out of the box, then back to Look
-    if (road.on && road.pts.length) { road.pts = []; renderRoadTray(); drawRoadPreview(); return; }  // then the road being drawn
+    if (road.on && road.pts.length) {  // then the road being drawn
+      road.pts = [];
+      showRoadLength(null);
+      renderRoadTray();
+      drawRoadPreview();
+      return;
+    }
     lookAround();
     return;
   }

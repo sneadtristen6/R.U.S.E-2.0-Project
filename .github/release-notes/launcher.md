@@ -1,6 +1,10 @@
 **RUSE Launcher 0.2, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.2.9:** **Play** works when your game's files are marked read-only: it failed with "[WinError 5] Access is
+denied" once a modded copy was left half-built. If the game is still running from the modded copy, you're told to
+close it instead of getting a Windows error. Mods with new roads build their painted roads and bridges.
+
 **0.2.8:** a mod you add is checked at once, the way the game build will read it: a broken map file, or a map
 folder named after the map's title (maps/Blitz instead of maps/SuperCrossRoads4), is named with its fix before
 Play would stop on it.

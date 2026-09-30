@@ -335,7 +335,17 @@ x    = 672688.0                         # map units: x grows east, y grows south
 y    = 659281.0
 turn = 45.0                             # degrees, from east toward south (clockwise on the minimap)
 size = 1.5                              # 0.05 to 50
+# optional:
+solid   = false                         # walk-through (a building is solid unless this says otherwise)
+stretch = 1.2                           # a further scale along the object's own y only, 0.2 to 5: a bridge's
+                                        # length (the shipped maps stretch theirs 0.9 to 1.9 to fit the river)
+lift    = -225.0                        # its height against the ground the game sets it on (map units; the
+                                        # shipped bridges sit 130 to 850 below)
 ```
+
+- **Bridges** (a type whose editor category ends `/Ponts`) are coded as bridges: never solid, and the ground along
+  their deck is opened to units. The game sets such a bridge on the ground under its two ends: both must be on dry
+  bank, or it tips into the water. The build's own bridges for new roads (`roads.toml`) follow that rule.
 
 - The build adds them to the map's `output\save.boobspc` (`rusemod.scenery.add_objects`) the way DomesticNukes
   proved in the game: one object of a block placed once becomes a same-size reference to a new block at the end,

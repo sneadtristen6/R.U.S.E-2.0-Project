@@ -1,6 +1,19 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.7.4:** Test in game works when your game's files are marked read-only.
+- **Fixed:** *Test in game* failed every time with "[WinError 5] Access is denied" when R.U.S.E.'s files are marked
+  read-only (a disc install, a restored backup): the test copy kept the mark, so a copy left half-built could never
+  be removed. The test copy never keeps the mark now, and a leftover from an older version is removed by itself
+  (your game's files end exactly as they were). If the game is still running from the test copy, you're told to
+  close it instead of getting a Windows error.
+- **A road shows its length** while you draw it, beside the pointer (Cities: Skylines style); the Roads tools show
+  the total of your new roads.
+- **New roads are painted on the ground** in the map's own road colour (proven in the game), and **a road over water
+  gets a bridge**: the map's own kind, one piece stretched bank to bank as the game's own bridges are, so units can
+  cross. A road over one of the map's own bridges gets the new bridge in its place. (Bridges are new: not checked in
+  the game yet.)
+
 **0.7.3:** arrange the map view your way. The map panel (top left) and the tools (bottom) move anywhere by their
 grip (⠿) and fold with the arrow next to it: the map panel down to its title, the tools down to their bar.
 Double-click a grip to put that panel back. Your layout is kept.

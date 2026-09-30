@@ -1,9 +1,11 @@
 """Tests for modded instances, on a small made-up game folder (no real game needed)."""
 import os
+import shutil
+import stat
 import tempfile
 import unittest
 
-from rusemod.instance import build_instance
+from rusemod.instance import InstanceError, build_instance
 
 
 def _write(path, data):
@@ -100,6 +102,90 @@ class InstanceTest(unittest.TestCase):
         self.assertFalse(os.path.samefile(a, os.path.join(self.game, "Data", "PC", "1", "A.dat")))
         with open(a, "rb") as f:
             self.assertEqual(f.read(), b"archive A")
+
+
+def _files(folder):
+    return [os.path.join(root, fn) for root, _dirs, files in os.walk(folder) for fn in files]
+
+
+def _read_only(path):
+    return not os.stat(path).st_mode & stat.S_IWRITE
+
+
+class ReadOnlyGame(unittest.TestCase):
+    """A game folder whose files are marked read-only (a disc install, a restored backup). A player's report,
+    2026-09-30: every "Test in game" failed with "[WinError 5] Access is denied: ...partial\\...\\ZZ_GladPatchableWin.dat":
+    copies and links kept the mark, and a copy left half-built could never be removed."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.game = os.path.join(self.tmp.name, "game")
+        _write(os.path.join(self.game, "RUSE.exe"), b"exe")
+        _write(os.path.join(self.game, "Data", "PC", "1", "A.dat"), b"archive A")
+        _write(os.path.join(self.game, "Data", "PC", "1", "B.dat"), b"archive B")
+        _write(os.path.join(self.game, "Data", "lang.ini"), b"lang=us")
+        for path in _files(self.game):
+            os.chmod(path, stat.S_IREAD)
+        self.dst = os.path.join(self.tmp.name, "inst")
+
+    def tearDown(self):
+        for folder in (self.game, self.dst, self.dst + ".partial", self.dst + ".old"):
+            for path in _files(folder):
+                os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
+        self.tmp.cleanup()
+
+    def test_nothing_in_the_copy_is_read_only_and_it_rebuilds(self):
+        counts = build_instance(self.game, self.dst)
+        self.assertEqual(counts, {"linked": 0, "copied": 2, "written": 0, "full copies": 2, "read-only packs": 2})
+        self.assertEqual([p for p in _files(self.dst) if _read_only(p)], [])
+        for _ in range(2):  # the old copy goes each time
+            build_instance(self.game, self.dst, replace={os.path.join("Data", "PC", "1", "B.dat"): b"MODDED"})
+        self.assertFalse(os.path.exists(self.dst + ".old") or os.path.exists(self.dst + ".partial"))
+        self.assertTrue(all(_read_only(p) for p in _files(self.game)))  # the game's files are as they were
+        with open(os.path.join(self.game, "Data", "PC", "1", "B.dat"), "rb") as f:
+            self.assertEqual(f.read(), b"archive B")
+
+    def test_a_half_built_copy_an_older_version_left(self):
+        # what the older build left: a read-only hard link to a read-only pack, and a read-only copy
+        partial = self.dst + ".partial"
+        pack = os.path.join(self.game, "Data", "PC", "1", "A.dat")
+        os.makedirs(os.path.join(partial, "Data", "PC", "1"))
+        os.link(pack, os.path.join(partial, "Data", "PC", "1", "A.dat"))
+        shutil.copy2(os.path.join(self.game, "Data", "lang.ini"), os.path.join(partial, "Data", "lang.ini"))
+        self.assertTrue(_read_only(os.path.join(partial, "Data", "lang.ini")))
+        old = self.dst + ".old"
+        os.makedirs(old)
+        shutil.copy2(os.path.join(self.game, "RUSE.exe"), os.path.join(old, "RUSE.exe"))
+        build_instance(self.game, self.dst)
+        self.assertFalse(os.path.exists(partial) or os.path.exists(old))
+        self.assertTrue(_read_only(pack))  # the mark was put back on the game's pack
+        self.assertEqual(os.stat(pack).st_nlink, 1)  # the old link is gone
+        with open(pack, "rb") as f:
+            self.assertEqual(f.read(), b"archive A")
+
+    @unittest.skipUnless(os.name == "nt", "Windows keeps a folder whose game is running from being replaced")
+    def test_a_copy_in_use_is_said_plainly(self):
+        build_instance(self.game, self.dst)
+        held = open(os.path.join(self.dst, "RUSE.exe"), "rb")  # as the running game holds its own .exe
+        try:
+            with self.assertRaisesRegex(InstanceError, "in use.*close the game"):
+                build_instance(self.game, self.dst)
+            self.assertFalse(os.path.exists(self.dst + ".partial"))  # nothing half-built left behind
+            self.assertTrue(os.path.exists(os.path.join(self.dst, "RUSE.exe")))  # the copy it runs from stays
+        finally:
+            held.close()
+        build_instance(self.game, self.dst)  # the game closed: it goes through
+
+    @unittest.skipUnless(os.name == "nt", "only Windows refuses to delete a file that's open")
+    def test_a_stuck_leftover_is_said_plainly(self):
+        partial = self.dst + ".partial"
+        _write(os.path.join(partial, "RUSE.exe"), b"exe")
+        held = open(os.path.join(partial, "RUSE.exe"), "rb")
+        try:
+            with self.assertRaisesRegex(InstanceError, "left half-built.*can't be removed.*delete that folder by hand"):
+                build_instance(self.game, self.dst)
+        finally:
+            held.close()
 
 
 if __name__ == "__main__":

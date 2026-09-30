@@ -1,24 +1,36 @@
 """Bridges where a mod's new road crosses water (maps/<map>/roads.toml, `bridges = true`, the default).
 
 A road's line is walked over the map's ground mesh; where it runs over the water triangles (the mesh's list 1), that
-run, plus a stretch of bank at each end, is a crossing. On it the build places the map's own bridge kind, end to end
-at its real size (the game only takes a scenery type the map already uses; 24 of the 32 maps ship one, the rest
-get a note and no bridge), walk-through so units can drive on it, and opens the movement graphs along the deck
-(rusemod.nav Graph.open). The road network already runs across (rusemod.roadnet), and the ground painter leaves the
-deck unpainted. Not tried in the game yet.
+run, plus a stretch of bank at each end, is a crossing. On it the build places the map's own bridge kind (the game
+only takes a scenery type the map already uses; 24 of the 32 maps ship one, the rest get a note and no bridge): ONE
+bridge, centred on the water and stretched along its length so both ends rest on the banks, as every shipped bridge
+does (the game sets a "TangeantFloor" bridge on the ground under its ends: one with an end over the river tips into
+it), sunk to its kind's usual height, walk-through so units can drive on it. The movement graphs are opened along the
+deck (rusemod.nav Graph.open), the road network already runs across (rusemod.roadnet), and the ground painter leaves
+the deck unpainted.
+
+A crossing where the map already has a bridge gets the new one in its place (owner, 2026-09-30: "if a road goes over
+an existing bridge, delete the old and replace it with the new one"): the old one is sunk out of sight
+(scenery.bury_objects), and its deck, where it's over water and off the new deck, is closed to units and to the road
+network.
 """
 from __future__ import annotations
 
 import math
 
+from dataclasses import dataclass, field
+
 from .scenery import NewObject, is_bridge
 from .tms import Tms
 
-BANK = 2500.0        # map units of bank each end of a bridge stands on (about 10 m)
+BANK = 2000.0        # map units of bank past the water each end of a bridge reaches, beyond half a SAMPLE (the
+                     # shipped bridges reach 200 to 4,600 past the water, about 2,200 in the middle)
 SAMPLE = 800.0       # map units between the places a road is tested for water
 LEAST = 1500.0       # a run of water shorter than this is a puddle: no bridge
 DECK = 2560.0        # the movement circles' radius on a bridge (the shipped bridges' circles are 2,240-3,520)
 FALLBACK_LENGTH = 8000.0  # a bridge model's length when its model can't be measured (about 30 m)
+STRETCH = (0.9, 2.0)  # how far a bridge is stretched along its length to fit (the shipped ones: 0.91 to 1.91)
+CLOSE = 1600.0       # the radius of the ground closed along an old bridge's deck, every CLOSE / 2 over water
 
 
 class BridgeError(ValueError):
@@ -131,21 +143,34 @@ def model_length(game, descs: dict, type_name: str) -> tuple[float, float]:
     return best if best[0] > 0 else (FALLBACK_LENGTH, 0.0)
 
 
-def bridge_objects(type_name: str, span: tuple, length: float, extra_turn: float = 0.0) -> list[NewObject]:
-    """Bridges of `type_name` end to end along `span`, each at its real size, turned along it (NewObject's turn:
-    degrees from east toward south, as the road's direction is in map coordinates), walk-through."""
+def bridge_objects(type_name: str, span: tuple, length: float, extra_turn: float = 0.0,
+                   lift: float = 0.0) -> list[NewObject]:
+    """One bridge of `type_name` along `span` (x0, y0, x1, y1: bank to bank), centred on it and stretched along its
+    length to reach both ends (within STRETCH; none when the water is too wide for it), turned along it (NewObject's
+    turn: degrees from east toward south, as the road's direction is in map coordinates), sunk by `lift`,
+    walk-through. `extra_turn` is 90 for a model whose length runs along its own y (every shipped bridge), whose
+    stretch is then along its length; one long on its x is sized instead."""
     x0, y0, x1, y1 = span
     total = math.hypot(x1 - x0, y1 - y0)
     if total <= 0 or length <= 0:
         return []
-    count = max(1, math.ceil(total / length - 0.15))  # a short overhang onto the bank rather than a gap
-    turn = (math.degrees(math.atan2(y1 - y0, x1 - x0)) + extra_turn) % 360
-    ux, uy = (x1 - x0) / total, (y1 - y0) / total
-    out = []
-    for k in range(count):
-        d = (k + 0.5) * total / count
-        out.append(NewObject(type_name, x0 + ux * d, y0 + uy * d, round(turn, 2), 1.0, False))
-    return out
+    need = total / length
+    if need > STRETCH[1]:
+        return []
+    k = max(STRETCH[0], need)
+    turn = round((math.degrees(math.atan2(y1 - y0, x1 - x0)) + extra_turn) % 360, 2)
+    mid = ((x0 + x1) / 2, (y0 + y1) / 2)
+    if extra_turn % 180 == 90:
+        return [NewObject(type_name, *mid, turn, 1.0, False, round(k, 4), lift)]
+    return [NewObject(type_name, *mid, turn, round(k, 4), False, 1.0, lift)]
+
+
+def deck(o: NewObject, length: float, extra_turn: float) -> tuple:
+    """A placed bridge's deck (x0, y0, x1, y1): its model's length through its size and stretch, along its turn less
+    the model's own axis turn."""
+    a = math.radians(o.turn - extra_turn)
+    half = length * o.size * (o.stretch if extra_turn % 180 == 90 else 1.0) / 2
+    return (o.x - math.cos(a) * half, o.y - math.sin(a) * half, o.x + math.cos(a) * half, o.y + math.sin(a) * half)
 
 
 def cut(lines, spans) -> list:
@@ -183,23 +208,56 @@ def _on_span(p, spans) -> bool:
 
 
 def placed_spans(objects, descs: dict, length_of) -> list[tuple]:
-    """The decks of the bridges a mod places by hand (scenery.toml objects of a bridge kind, any size): each one's
-    model length times its size, along its turn (less the model's own axis turn from `length_of`), as (x0, y0, x1,
-    y1). Placed like buildings, they're coded as bridges: they open the ground along them instead of blocking it."""
+    """The decks of the bridges a mod places by hand (scenery.toml objects of a bridge kind, any size and stretch),
+    as (x0, y0, x1, y1). Placed like buildings, they're coded as bridges: they open the ground along them instead of
+    blocking it."""
     out = []
     for o in objects:
         d = descs.get(o.type)
         if d is None or not is_bridge(d.category):
             continue
-        length, extra = length_of(o.type)
-        a = math.radians(o.turn - extra)
-        half = length * o.size / 2
-        out.append((o.x - math.cos(a) * half, o.y - math.sin(a) * half, o.x + math.cos(a) * half, o.y + math.sin(a) * half))
+        out.append(deck(o, *length_of(o.type)))
     return out
 
 
-def _covered(span, existing) -> bool:
-    """A crossing a bridge placed by hand already spans (its middle on that bridge's deck)."""
+@dataclass
+class Shipped:
+    """A bridge the map ships: its kind, its deck, how far it's sunk, and where it's stored (block index, item
+    offset) when it can be sunk out of sight (a block the map places once, an object stored with a transform)."""
+    kind: str
+    deck: tuple
+    lift: float
+    place: tuple | None
+
+
+def shipped_bridges(sc, descs: dict, length_of) -> list[Shipped]:
+    """Every bridge the map places (objects of a bridge kind), with its deck."""
+    from .scenery import T_IDENTITY
+    once = {}
+    for bi, it, m in sc.objects_once():
+        if it.tform != T_IDENTITY:
+            once[(it.symbol, round(m[3]), round(m[7]))] = (bi, it.at)
+    out = []
+    for sym, m in sc.walk():
+        name = sc.names[sym]
+        d = descs.get(name)
+        if d is None or not is_bridge(d.category):
+            continue
+        length, extra = length_of(name)
+        col = (m[1], m[5]) if extra % 180 == 90 else (m[0], m[4])
+        k = math.hypot(*col)
+        if k == 0:
+            continue
+        half = length * k / 2
+        ux, uy = col[0] / k, col[1] / k
+        out.append(Shipped(name, (m[3] - ux * half, m[7] - uy * half, m[3] + ux * half, m[7] + uy * half), m[11],
+                           once.get((sym, round(m[3]), round(m[7])))))
+    return out
+
+
+def _covered(span, existing, reach: float = DECK * 2) -> bool:
+    """A crossing one of the `existing` decks already spans: its middle within `reach` of the deck's line, and no
+    further along it than a quarter of the deck past either end."""
     mx, my = (span[0] + span[2]) / 2, (span[1] + span[3]) / 2
     for x0, y0, x1, y1 in existing:
         dx, dy = x1 - x0, y1 - y0
@@ -207,39 +265,111 @@ def _covered(span, existing) -> bool:
         if n == 0:
             continue
         t = ((mx - x0) * dx + (my - y0) * dy) / n
-        if -0.25 <= t <= 1.25 and math.hypot(mx - x0 - t * dx, my - y0 - t * dy) <= DECK * 2:
+        if -0.25 <= t <= 1.25 and math.hypot(mx - x0 - t * dx, my - y0 - t * dy) <= reach:
             return True
     return False
 
 
+@dataclass
+class Plan:
+    objects: list = field(default_factory=list)   # the new bridges (NewObject)
+    spans: list = field(default_factory=list)     # their decks, to open to units (x0, y0, x1, y1)
+    notes: list = field(default_factory=list)
+    hide: list = field(default_factory=list)      # old bridges to sink: (block index, item offset) in the scenery
+    closed: list = field(default_factory=list)    # ground to close where old bridges stood over water: (x, y, r)
+    kept: list = field(default_factory=list)      # decks of old bridges that stay and serve a road (not painted)
+
+
 def plan(mesh: bytes, lines, sc, descs: dict, length_of=None, game=None, sample: float = SAMPLE, bank: float = BANK,
-         least: float = LEAST, existing=()) -> tuple[list, list, list[str]]:
-    """The bridges for `lines` (the roads' lines) on a map: (the bridge objects to place, the spans to open for
-    movement (x0, y0, x1, y1), notes). `sc` is the map's rusemod.scenery.Scenery, `descs` the scenery descriptors;
-    the bridge model's length comes from `length_of(type name)` or, without it, the game's model files. A crossing
-    one of the `existing` spans (bridges placed by hand) already covers gets nothing more."""
+         least: float = LEAST, existing=()) -> Plan:
+    """The bridges for `lines` (the roads' lines) on a map. `sc` is the map's rusemod.scenery.Scenery, `descs` the
+    scenery descriptors; a bridge model's (length, axis turn) comes from `length_of(type name)` or, without it, the
+    game's model files. A crossing one of the `existing` spans (bridges placed by hand) already covers gets nothing
+    more; one where the map has a bridge of its own gets the new one in its place (the old one sunk, its deck over
+    water closed)."""
+    if length_of is None:
+        seen_lengths: dict = {}
+
+        def length_of(kind):
+            if kind not in seen_lengths:
+                seen_lengths[kind] = model_length(game, descs, kind)
+            return seen_lengths[kind]
+    out = Plan()
     water = Water(Tms(mesh))
     found = [span for line in lines for span in crossings(water, line, sample, bank, least)]
     spans = [s for s in found if not _covered(s, existing)]
+    if len(spans) < len(found):
+        out.notes.append(f"{len(found) - len(spans)} water crossing(s) already bridged by hand")
     if not spans:
-        return [], [], [f"{len(found)} water crossing(s), already bridged by hand"] if found else []
+        return out
     kind = bridge_type(sc.names, sc.types(), descs)
     if kind is None:
-        return [], [], [f"{len(spans)} water crossing(s), but this map has no bridge kind of its own: no bridge can go "
-                        f"there, and units can't cross"]
-    length, extra = length_of(kind) if length_of else model_length(game, descs, kind)
-    objects = [o for span in spans for o in bridge_objects(kind, span, length, extra)]
-    notes = [f"{len(spans)} water crossing(s): {len(objects)} x {kind.split('/')[-1]} placed, "
-             f"{round(length / 260)} m each; movement opened along the deck"]
-    return objects, spans, notes
+        out.notes.append(f"{len(spans)} water crossing(s), but this map has no bridge kind of its own: no bridge can "
+                         f"go there, and units can't cross")
+        return out
+    length, extra = length_of(kind)
+    shipped = shipped_bridges(sc, descs, length_of)
+    lifts = sorted(b.lift for b in shipped if b.kind == kind)
+    lift = lifts[len(lifts) // 2] if lifts else 0.0
+    wide, kept_old, old = [], 0, []
+    for span in spans:
+        under = [b for b in shipped if _covered(span, [b.deck], DECK)]  # the road runs over it, within a deck
+        if any(b.place is None for b in under):
+            kept_old += 1  # an old bridge that can't be sunk: it stays, and serves the road
+            out.kept += [b.deck for b in under]
+            continue
+        made = bridge_objects(kind, span, length, extra, lift)
+        if not made:
+            wide.append(math.hypot(span[2] - span[0], span[3] - span[1]))
+            continue
+        out.objects += made
+        out.spans.append(deck(made[0], length, extra))
+        old += under
+    if out.objects:
+        out.notes.append(f"{len(out.objects)} water crossing(s): {len(out.objects)} x {kind.split('/')[-1]} placed, "
+                         f"stretched to reach both banks; movement opened along the deck")
+    if old:
+        places = []
+        for b in old:
+            if b.place in places:
+                continue
+            places.append(b.place)
+            out.closed += _closing(water, b.deck, out.spans)
+        out.hide = places
+        out.notes.append(f"{len(places)} old bridge(s) replaced: sunk out of sight, their decks over water closed to "
+                         f"units and roads")
+    if kept_old:
+        out.notes.append(f"{kept_old} crossing(s) on an old bridge the map places in several places at once: it "
+                         f"can't be taken away, so it stays and serves the road")
+    if wide:
+        out.notes.append(f"{len(wide)} crossing(s) too wide for {kind.split('/')[-1]} (at most "
+                         f"{round(length * STRETCH[1] / 260)} m bank to bank, these are "
+                         f"{', '.join(str(round(w / 260)) for w in wide)} m): no bridge, and units can't cross there")
+    return out
 
 
-def apply_spans(read, pack: str, spans: list[tuple]) -> tuple[dict, list[str]]:
-    """({member: new mapinfo.win}, notes) for one map: both movement graphs opened along `spans` (the bridges'
-    decks); `read(member)` gives a DataMap_Win.dat file's bytes or None (the build's chain)."""
+def _closing(water: Water, old: tuple, new_decks: list) -> list[tuple]:
+    """Circles (x, y, CLOSE) along an old bridge's deck, where it's over water and off the new decks."""
+    x0, y0, x1, y1 = old
+    total = math.hypot(x1 - x0, y1 - y0)
+    n = max(1, int(total // (CLOSE / 2)))
+    out = []
+    for k in range(n + 1):
+        p = (x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n)
+        if water.at(*p) and not _on_span(p, new_decks):
+            out.append((p[0], p[1], CLOSE))
+    return out
+
+
+def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = ()) -> tuple[dict, list[str]]:
+    """({member: new mapinfo.win}, notes) for one map: both movement graphs closed in `closed` (circles x, y, r: where
+    old bridges stood over water) and then opened along `spans` (the new bridges' decks), and the road network's
+    links through `closed` taken away; `read(member)` gives a DataMap_Win.dat file's bytes or None (the build's
+    chain)."""
     from ruse_mod_engine import sdb
     from .cover import PACK, member
     from .nav import Graph, replace_buffers
+    from .roadnet import RoadNet
     name = member(pack)
     win = read(name)
     if win is None:
@@ -248,7 +378,15 @@ def apply_spans(read, pack: str, spans: list[tuple]) -> tuple[dict, list[str]]:
     new, notes = {}, []
     for k, what in ((1, "infantry"), (2, "vehicles")):
         g = Graph.read(bufs[k])
-        c = g.open(spans, DECK)
+        if closed:
+            c = g.block(list(closed), refill=False)
+            notes.append(f"{what}: {c['emptied']} circle(s) taken and {c['shrunk']} shrunk where old bridges stood")
+        c = g.open(spans, DECK) if spans else {"added": 0, "linked": 0}
         new[k] = g.to_bytes()
         notes.append(f"{what}: {c['added']} circle(s) and {c['linked']} link(s) added along {len(spans)} bridge(s)")
+    if closed:
+        net = RoadNet.read(bufs[0])
+        gone = net.cut(list(closed))
+        new[0] = net.to_bytes()
+        notes.append(f"road network: {gone} link(s) taken off the old bridges")
     return {name: replace_buffers(win, new)}, notes

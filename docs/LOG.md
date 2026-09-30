@@ -723,3 +723,29 @@ OPERATION, CAMPAIGN (text keys `BTN_SKIRMI`, `BTN_CHALLE`, `BTN_CAMPAI`); the St
 installed game in the player's language, shows under the scenario menu where each setup plays, and Test in game
 ends with what to open (e.g. "BATTLES > D-Day"). The middle mouse button zoomed in look-around mode and turned the
 view in every tool: it turns the view everywhere now. The launcher runs the mod check when a mod is added.
+
+### 2026-09-30, evening: roads painted and bridged; Studio 0.7.4 and Launcher 0.2.9
+
+**In the game (owner): painted roads show**, in the map's road colour, and bridges draw where a road crosses water.
+But the first bridges tipped into the river (a V or an X per crossing): each crossing got several pieces end to end,
+and each piece had one end out over the water. Every shipped bridge on every map (measured: `bridge_fit.py` in the
+scratchpad, 60+ bridges) is **one piece with both ends on dry bank**, stretched along its length to fit (0.91 to
+1.91 times), sunk 130 to 850 units by its kind, its deck along the model's own y. The game sets a "TangeantFloor"
+bridge on the ground under its ends. Now: one bridge per crossing, centred on the water, stretched bank to bank
+(`scenery.toml` objects take `stretch` and `lift`), sunk to the median of the map's own bridges of that kind.
+Owner's rule: **a road over one of the map's own bridges replaces it** (the old one sunk out of sight in place,
+`scenery.bury_objects`; its deck over water closed to units, `nav.Graph.block`, and to the road network,
+`RoadNet.cut`). Not tried in the game yet: `D:\RUSE-Instances\bridges` rebuilt for the owner.
+
+**A player's report:** *Test in game* failed every time with `[WinError 5] Access is denied:
+'E:\RUSE-Instances\studio-cascade-test.partial\Data\PC\190852\ZZ_GladPatchableWin.dat'`. Reproduced
+(scratch `perm_probe.py`): a copy of a read-only file keeps the mark (`shutil.copy2`), a hard link shares it, and
+Windows won't delete either; `rmtree(ignore_errors=True)` left them silently, and the next build's `rmtree` raised.
+A swap that failed while the game ran from the copy left the `.partial` behind in the first place. `rusemod.instance`
+now never marks a copy read-only (a read-only pack is copied, not linked), removes the instance's own read-only
+files, drops a read-only link left by an older version while putting the mark back on the game's file, and says
+plainly when the copy is in use. `tests/test_instance.py` ReadOnlyGame rebuilds the report's state: the old code
+fails all four tests, the new one passes. The owner's rule behind it: a mistake that repeats gets a guard (a test,
+a hook), not another rule.
+
+Also: a road shows its length while it's drawn (the owner, "so you know how far a straight line is").

@@ -13,8 +13,9 @@ from fixtures import make_edat, make_ndf, val
 from rusemod import scenery
 from rusemod.build import build_and_write, load_mod
 from rusemod.edat import Edat
-from rusemod.scenery import (SCALE16, T_COMPACT, T_FULL, NewObject, Scenery, SceneryEditError, SceneryError,
-                             add_objects, descriptors, group_of, layout, objects_toml, parse_objects, placement, view)
+from rusemod.scenery import (BURY, SCALE16, SHRINK, T_COMPACT, T_FULL, NewObject, Scenery, SceneryEditError,
+                             SceneryError, add_objects, bury_objects, descriptors, group_of, layout, objects_toml,
+                             parse_objects, placement, view)
 
 
 def compact(sym, x, y, turn=0.0, size=1.0):
@@ -269,10 +270,64 @@ class Adding(unittest.TestCase):
             parse_objects([{"type": "TypeWarrior/Chene_02", "y": 2}])
 
     def test_the_mod_file(self):
-        objs = [NewObject("TypeWarrior/Chene_02", 1.5, 2.0, 45.0, 2.0), NewObject("TypeWarrior/MairieNormande", 3.0, 4.0)]
+        objs = [NewObject("TypeWarrior/Chene_02", 1.5, 2.0, 45.0, 2.0), NewObject("TypeWarrior/MairieNormande", 3.0, 4.0),
+                NewObject("TypeWarrior/Pont", 5.0, 6.0, 90.0, 1.0, False, 1.5, -200.0)]  # a bridge: stretched, sunk
         text = objects_toml(objs, "Made in the Studio.")
         self.assertTrue(text.startswith("# Made in the Studio.\n"))
         self.assertEqual(parse_objects(tomllib.loads(text)["object"]), objs)
+        self.assertEqual(text.count("stretch"), 1)  # only written when it's not the plain 1.0 / 0.0
+        self.assertEqual(text.count("lift"), 1)
+        for bad in ({"stretch": 0.1}, {"stretch": 9}, {"lift": 1e6}, {"lift": "deep"}):
+            with self.assertRaises(SceneryEditError):
+                parse_objects([{"type": "TypeWarrior/Pont", "x": 1, "y": 2, **bad}])
+
+    def test_a_placed_objects_matrix(self):
+        m = NewObject("x", 10.0, 20.0, 90.0, 2.0, True, 1.5, -7.0).matrix()
+        self.assertEqual([round(v, 6) for v in m], [0.0, -3.0, 0.0, 10.0, 2.0, 0.0, 0.0, 20.0, 0.0, 0.0, 2.0, -7.0])
+        x, y, turn, size = placement(m)
+        self.assertEqual((x, y, round(math.degrees(turn)), size), (10.0, 20.0, 90, 2.0))
+
+
+class Sinking(unittest.TestCase):
+    """An object the map ships, sunk out of sight where it's stored (a bridge a new road replaces)."""
+
+    def test_objects_placed_once(self):
+        s = Scenery(village())
+        got = [(bi, it.at, round(m[3]), round(m[7])) for bi, it, m in s.objects_once()]
+        self.assertEqual(got, [(0, 0, 1000, 2000)])  # the hall; the oaks' block is placed twice
+
+    def test_sunk_in_place(self):
+        raw = village()
+        s = Scenery(raw)
+        hall = next(it for it in s.blocks[0].items if it.kind == "object")
+        new, notes = bury_objects(raw, [(0, hall.at)])
+        self.assertEqual(len(new), len(raw))
+        self.assertEqual(notes, ["1 object(s) sunk out of sight"])
+        again = Scenery(new)  # the sum was written again
+        m = next(m for sym, m in again.walk() if sym == 0)
+        x, y, turn, size = placement(m)
+        self.assertEqual((x, y), (1000.0, 2000.0))
+        self.assertAlmostEqual(turn, math.pi / 2, places=2)
+        self.assertAlmostEqual(size, SHRINK, places=3)
+        self.assertEqual(m[11], -BURY)
+        self.assertEqual(again.raw[16:][:len(raw) - 16].count(b"\0"), new[16:].count(b"\0"))  # nothing else moved
+        oaks = [it for it in s.blocks[1].items if it.kind == "object"]
+        moved_oak = next(it for it in oaks if it.tform == 2)
+        new2, _ = bury_objects(raw, [(1, moved_oak.at)])
+        got = sorted(round(m[11]) for sym, m in Scenery(new2).walk() if sym == 1)
+        self.assertEqual(got, [-BURY, -BURY, 0, 0])  # a moved object: sunk wherever its block is placed
+        self.assertEqual(bury_objects(raw, []), (raw, []))
+
+    def test_refusals(self):
+        raw = village()
+        s = Scenery(raw)
+        bare = next(it for it in s.blocks[1].items if it.tform == 1)
+        with self.assertRaisesRegex(SceneryEditError, "without a transform"):
+            bury_objects(raw, [(1, bare.at)])
+        with self.assertRaisesRegex(SceneryEditError, "no block 9"):
+            bury_objects(raw, [(9, 0)])
+        with self.assertRaisesRegex(SceneryEditError, "no object at 999"):
+            bury_objects(raw, [(0, 999)])
 
 
 class Building(unittest.TestCase):

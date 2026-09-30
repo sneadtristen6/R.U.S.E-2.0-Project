@@ -5,11 +5,13 @@ import unittest
 from types import SimpleNamespace
 
 from test_nav import row
-from test_scenery import block, compact, make_scenery
+from test_scenery import block, compact, make_scenery, moved
 from test_tms import make_tms
 from rusemod import nav
-from rusemod.bridges import DECK, Water, bridge_objects, bridge_type, crossings, cut, plan
-from rusemod.scenery import Scenery
+from rusemod.bridges import (CLOSE, DECK, STRETCH, Water, _closing, apply_spans, bridge_objects, bridge_type,
+                              crossings, cut, deck, placed_spans, plan)
+from rusemod.roadnet import RoadNet, build_tree
+from rusemod.scenery import SCALE16, NewObject, Scenery
 from rusemod.tms import Tms
 
 # the fixture's water: cell (0, 0)'s first row of quads, y from 0 to 125 across x 0..1000 (map units)
@@ -18,6 +20,12 @@ MESH = make_tms(water_cell=(0, 0))
 
 def desc(category, model="m.ase"):
     return SimpleNamespace(category=category, model=model, models=())
+
+
+def sunk(sym, x, y, z):
+    """An object stored the compact way, unturned, at height z (the shipped bridges sit a little under the ground)."""
+    one = round(1 / SCALE16)
+    return struct.pack("<I4h4f", 0x80000000 | sym << 4, one, 0, 0, one, x, y, z, 1.0)
 
 
 class Crossings(unittest.TestCase):
@@ -43,13 +51,25 @@ class Crossings(unittest.TestCase):
         self.assertEqual(bridge_type(names[:2] + names[3:], {1: 1, 2: 20}, descs), names[3])  # else the most used
         self.assertIsNone(bridge_type(names[:1], {0: 5}, descs))
 
-    def test_bridges_end_to_end_along_the_span(self):
-        got = bridge_objects("TypeWarrior/Pont", (0.0, 0.0, 10000.0, 0.0), 3000.0)
-        self.assertEqual([round(o.x) for o in got], [1250, 3750, 6250, 8750])
-        self.assertEqual({(o.y, o.turn, o.size, o.solid) for o in got}, {(0.0, 0.0, 1.0, False)})
-        south = bridge_objects("TypeWarrior/Pont", (0.0, 0.0, 0.0, 2000.0), 3000.0, 90.0)
-        self.assertEqual([(round(o.x), round(o.y), o.turn) for o in south], [(0, 1000, 180.0)])
+    def test_one_bridge_stretched_bank_to_bank(self):
+        # every shipped bridge is one piece resting on both banks: the game sets it on the ground under its ends, so
+        # a piece with an end over the water tips into the river (seen in the game, 2026-09-30)
+        got = bridge_objects("TypeWarrior/Pont", (0.0, 0.0, 10000.0, 0.0), 6000.0, 90.0, -200.0)
+        self.assertEqual(got, [NewObject("TypeWarrior/Pont", 5000.0, 0.0, 90.0, 1.0, False, 1.6667, -200.0)])
+        self.assertEqual(bridge_objects("x", (0.0, 0.0, 20000.0, 0.0), 6000.0, 90.0), [])  # wider than it stretches
+        short = bridge_objects("x", (0.0, 0.0, 3000.0, 0.0), 6000.0, 90.0)
+        self.assertEqual(short[0].stretch, STRETCH[0])  # a creek: never squeezed below the game's own
+        long_on_x = bridge_objects("x", (0.0, 0.0, 0.0, 2000.0), 1500.0, 0.0)  # a model long on its x is sized
+        self.assertEqual([(o.x, o.y, o.turn, o.size, o.stretch) for o in long_on_x], [(0.0, 1000.0, 90.0, 1.3333, 1.0)])
         self.assertEqual(bridge_objects("x", (0.0, 0.0, 0.0, 0.0), 3000.0), [])
+
+    def test_a_placed_bridges_deck(self):
+        o = NewObject("B", 5000.0, 0.0, 90.0, 1.0, False, 1.5)
+        self.assertEqual([round(v) for v in deck(o, 6000.0, 90.0)], [500, 0, 9500, 0])
+        self.assertEqual([round(v) for v in deck(NewObject("B", 0.0, 0.0, 0.0, 2.0), 1000.0, 0.0)], [-1000, 0, 1000, 0])
+        descs = {"B": desc("COC/Normandie/Ponts"), "H": desc("Normandie/Maisons")}
+        spans = placed_spans([o, NewObject("H", 1.0, 2.0)], descs, lambda k: (6000.0, 90.0))
+        self.assertEqual([[round(v) for v in d] for d in spans], [[500, 0, 9500, 0]])  # a house opens nothing
 
     def test_the_painter_skips_the_deck(self):
         pieces = cut([[(0.0, 0.0), (20000.0, 0.0)]], [(8000.0, 0.0, 12000.0, 0.0)])
@@ -62,20 +82,91 @@ class Crossings(unittest.TestCase):
 
     def test_a_plan_for_a_map(self):
         bridge = "TypeWarrior/Pont_TangeantFloor"
-        sc = Scenery(make_scenery([block([compact(0, 100.0, 100.0)])], [bridge]))
         descs = {bridge: desc("Italie/Ponts")}
+        sc = Scenery(make_scenery([block([sunk(0, 100.0, 900.0, -200.0), sunk(0, 900.0, 900.0, -260.0),
+                                          sunk(0, 900.0, 950.0, -210.0)])], [bridge]))  # the map's own, on dry land
         line = [(500.0, 400.0), (500.0, 20.0)]
-        objects, spans, notes = plan(MESH, [line], sc, descs, length_of=lambda k: (60.0, 0.0), sample=10.0, bank=50.0, least=50.0)
-        self.assertEqual(len(spans), 1)
-        self.assertEqual({o.type for o in objects}, {bridge})
-        self.assertEqual(len(objects), 3)  # about 155 units of deck, 60 each
-        self.assertTrue(all(o.solid is False and o.turn == 270.0 for o in objects))  # north on the map (y down)
-        self.assertIn("1 water crossing(s): 3 x Pont_TangeantFloor", notes[0])
-        objects, spans, notes = plan(MESH, [line], sc, {}, length_of=lambda k: (60.0, 0.0), sample=10.0, bank=50.0, least=50.0)
-        self.assertEqual((objects, spans), ([], []))  # no bridge kind: nothing placed, and the water stays closed
-        self.assertIn("no bridge kind of its own", notes[0])
-        self.assertEqual(plan(MESH, [[(1500.0, 400.0), (1500.0, 20.0)]], sc, descs, length_of=lambda k: (60.0, 0.0),
-                              sample=10.0, bank=50.0, least=50.0), ([], [], []))
+        got = plan(MESH, [line], sc, descs, length_of=lambda k: (100.0, 90.0), sample=10.0, bank=50.0, least=50.0)
+        self.assertEqual(len(got.objects), 1)
+        o = got.objects[0]
+        self.assertEqual((o.type, o.x, o.turn, o.size, o.solid, o.lift), (bridge, 500.0, 0.0, 1.0, False, -210.0))
+        self.assertTrue(1.4 < o.stretch < 1.7, o.stretch)  # about 155 units of crossing, the model 100 long
+        self.assertEqual([[round(v) for v in d] for d in got.spans], [[round(v) for v in deck(o, 100.0, 90.0)]])
+        self.assertIn("1 water crossing(s): 1 x Pont_TangeantFloor placed, stretched to reach both banks", got.notes[0])
+        self.assertEqual((got.hide, got.closed), ([], []))  # no old bridge on the way
+        wide = plan(MESH, [line], sc, descs, length_of=lambda k: (60.0, 90.0), sample=10.0, bank=50.0, least=50.0)
+        self.assertEqual((wide.objects, wide.spans), ([], []))  # would need 2.6 times its length
+        self.assertIn("too wide for Pont_TangeantFloor", wide.notes[0])
+        none = plan(MESH, [line], sc, {}, length_of=lambda k: (100.0, 90.0), sample=10.0, bank=50.0, least=50.0)
+        self.assertEqual((none.objects, none.spans), ([], []))  # no bridge kind: nothing placed, the water stays closed
+        self.assertIn("no bridge kind of its own", none.notes[0])
+        dry = plan(MESH, [[(1500.0, 400.0), (1500.0, 20.0)]], sc, descs, length_of=lambda k: (100.0, 90.0),
+                   sample=10.0, bank=50.0, least=50.0)
+        self.assertEqual((dry.objects, dry.spans, dry.notes), ([], [], []))
+        by_hand = plan(MESH, [line], sc, descs, length_of=lambda k: (100.0, 90.0), sample=10.0, bank=50.0, least=50.0,
+                       existing=[(500.0, 0.0, 500.0, 200.0)])
+        self.assertEqual(by_hand.objects, [])
+        self.assertIn("already bridged by hand", by_hand.notes[0])
+
+    def test_a_road_over_an_old_bridge_replaces_it(self):
+        # owner, 2026-09-30: "if a road goes over an existing bridge it should delete the old and replace it with a
+        # new one"
+        bridge = "TypeWarrior/Pont_TangeantFloor"
+        descs = {bridge: desc("Italie/Ponts")}
+        raw = make_scenery([block([sunk(0, 100.0, 900.0, -200.0), sunk(0, 500.0, 60.0, -200.0)])], [bridge])
+        sc = Scenery(raw)
+        across = [(500.0, 400.0), (500.0, -300.0)]  # right over the river, bank to bank
+        got = plan(MESH, [across], sc, descs, length_of=lambda k: (150.0, 90.0), sample=10.0, bank=50.0, least=50.0)
+        self.assertEqual(len(got.objects), 1)
+        old = next(it for it in sc.blocks[0].items if it.matrix()[3] == 500.0)
+        self.assertEqual(got.hide, [(0, old.at)])  # the one under the road, not the one on dry land
+        self.assertEqual(got.closed, [])  # it ran where the new one runs: nothing left over water to close
+        aslant = plan(MESH, [[(300.0, 400.0), (700.0, -300.0)]], sc, descs, length_of=lambda k: (150.0, 90.0),
+                      sample=10.0, bank=50.0, least=50.0)
+        self.assertEqual(aslant.hide, [(0, old.at)])
+        self.assertEqual(aslant.closed, [])  # still within a deck's width of the new one (the fixture is small)
+        line = [(500.0, 400.0), (500.0, 20.0)]
+        self.assertIn("1 old bridge(s) replaced", got.notes[-1])
+        # an old bridge in a block the map places twice can't be sunk without sinking both: it stays and serves
+        inner = block([sunk(0, 0.0, 0.0, -200.0)])
+        root_len = len(block([sunk(0, 100.0, 900.0, -200.0), moved(0, 0.0, 0.0), moved(0, 0.0, 0.0)]))
+        root = block([sunk(0, 100.0, 900.0, -200.0), moved(root_len, 500.0, 60.0), moved(root_len, 5000.0, 5000.0)])
+        twice = Scenery(make_scenery([root, inner], [bridge]))
+        kept = plan(MESH, [line], twice, descs, length_of=lambda k: (100.0, 90.0), sample=10.0, bank=50.0, least=50.0)
+        self.assertEqual((kept.objects, kept.spans, kept.hide), ([], [], []))
+        self.assertEqual([[round(v) for v in d] for d in kept.kept], [[500, 10, 500, 110]])  # the painter skips it
+        self.assertIn("can't be taken away, so it stays and serves the road", kept.notes[-1])
+
+    def test_where_an_old_bridge_stood_over_water_is_closed(self):
+        water = Water(Tms(MESH))
+        self.assertEqual(_closing(water, (100.0, 60.0, 400.0, 60.0), []),
+                         [(100.0, 60.0, CLOSE), (400.0, 60.0, CLOSE)])  # both ends over the water
+        self.assertEqual(_closing(water, (100.0, 60.0, 400.0, 60.0), [(250.0, 0.0, 250.0, 125.0)]), [])  # the new deck
+        self.assertEqual(_closing(water, (100.0, 400.0, 400.0, 400.0), []), [])  # over dry land
+
+    def test_opened_and_closed_in_the_maps_movement_and_roads(self):
+        from rusemod.cover import member
+        from rusemod import nav as navmod
+        from ruse_mod_engine import sdb
+        net = RoadNet([(0.0, 2000.0), (6000.0, 2000.0), (12000.0, 2000.0)], [])
+        net.links = [(0, 1, 600), (1, 2, 600)]
+        net.tree = build_tree(net.points, net.links)
+        head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 16000.0, 16000.0)
+        g = row()
+        win = navmod.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+            net.to_bytes(), g.to_bytes(), g.to_bytes(), b"cover")) + b"tail", {})
+        read = {member("Blitz"): win}.get
+        new, notes = apply_spans(read, "Blitz", [(11600.0, 2000.0, 16000.0, 2000.0)])
+        bufs = sdb.split_mapinfo(new[member("Blitz")])[1]
+        self.assertEqual(bufs[0], net.to_bytes())  # no old bridge: the road network is left alone
+        self.assertEqual(len(navmod.Graph.read(bufs[2]).circles) - 1, 3 + 3)  # 4,400 of deck, a circle every 2,560
+        new, notes = apply_spans(read, "Blitz", [], [(10000.0, 2000.0, 1000.0)])  # where an old one stood
+        bufs = sdb.split_mapinfo(new[member("Blitz")])[1]
+        for k in (1, 2):
+            self.assertEqual([c[2] > 0 for c in navmod.Graph.read(bufs[k]).circles[:-1]], [True, True, False])
+        roads = RoadNet.read(bufs[0])
+        self.assertEqual((roads.points, roads.links), ([(0.0, 2000.0), (6000.0, 2000.0)], [(0, 1, 600)]))
+        self.assertIn("road network: 1 link(s) taken off the old bridges", notes)
 
 
 class Opening(unittest.TestCase):
