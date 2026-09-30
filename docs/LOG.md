@@ -660,3 +660,16 @@ reach the hill, and a building placed in the game on that ground works. Four cra
 navigation graphs' spatial index, read from the crash dumps: it's one bounding-interval tree whose branches hold
 a jump to their right half; a tree appended at the end is never reached, and a leaf grown without fresh jumps sends
 the walk astray. `rusemod.nav` writes it the game's way (all 1,307 shipped graphs byte-identical).
+
+### 2026-09-30, night: Studio 0.7.0, the tools along the bottom
+
+The map view's movement side: a **Where units go** overlay (the two navigation graphs drawn as cells: red closed to
+every unit, yellow to vehicles only, purple to infantry only), the **Block**, **Block infantry** and **Block
+vehicles** brushes painting on it, and a **Solid** box for placed buildings. Cover and movement share one overlay
+engine in `maps.js`. The owner found the right panel crowded ("use bottom like city skylines"; "look at what the game
+looks like, don't make it up"), so the tools moved to a dock along the bottom: a bar of kinds (Look, Ground, Water,
+Cover, Movement, Buildings, Objects, Trees, Scenario) and the picked kind's tray above it; the open kind again, or
+Esc, closes it. Its look comes from the game's own HUD, read (not copied) from the in-game screenshots and the
+`res2d/interface` textures (`objectives_panel_cadre`, `hint_unit_info`: translucent black, a thin grey frame,
+gunmetal bands; raw A8R8G8B8): the player bar's blue marks what's picked, the money's gold names the tray. The
+scenario's four drop-downs became chips and a list.

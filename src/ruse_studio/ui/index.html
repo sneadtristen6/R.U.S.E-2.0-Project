@@ -89,64 +89,83 @@
           <select id="scen-pick" class="small scen-pick"></select>
         </div>
         <div id="scen-stats" class="muted small"></div>
-        <!-- editing the picked scenario (maps.js scen.tool): items moved, units and buildings spawned, in the mod -->
-        <div id="scen-tools" class="map-controls scen-tools">
-          <button id="scen-move" type="button" class="chip"></button>
-          <button id="scen-spawn" type="button" class="chip"></button>
-          <select id="scen-kind" class="small scen-camp"></select>
-          <select id="scen-group" class="small scen-camp"></select>
-          <select id="scen-unit" class="small scen-pick"></select>
-          <select id="scen-camp" class="small scen-camp"></select>
-        </div>
-        <div id="scen-note" class="small"></div>
         <div id="scenery-hover" class="small"></div>
         <div id="map-ground" class="small"></div>
         <div id="map-help" class="muted small"></div>
         <div id="map-keys" class="muted small map-keys"></div>
       </div>
-      <!-- the brushes (maps.js): strokes are saved in the current mod's maps/<map>/terrain.toml -->
-      <div id="map-tools" class="map-tools hidden">
-        <div id="brush-title" class="map-title"></div>
-        <div id="brush-list" class="chips brush-list" role="group"></div>
-        <label class="brush-slider small"><span id="brush-size-label"></span>
-          <input id="brush-size" type="range" min="1" max="15" step="1" value="6"></label>
-        <label class="brush-slider small"><span id="brush-strength-label"></span>
-          <input id="brush-strength" type="range" min="1" max="100" step="1" value="50"></label>
-        <div class="map-controls">
-          <button id="brush-look" type="button" class="chip"></button>
-          <button id="brush-undo" type="button" class="ghost" disabled></button>
-          <button id="brush-clear" type="button" class="ghost danger" disabled></button>
+      <!-- the tools along the bottom, by kind (maps.js DOCK), as Cities: Skylines does it: a bar of kinds, and above
+           it the picked kind's tray. Brush strokes are saved in the current mod's maps/<map>/terrain.toml, placed
+           objects in scenery.toml, scenario edits in scenario.toml. -->
+      <div id="map-dock" class="map-dock hidden">
+        <div id="dock-tray" class="dock-tray hidden">
+          <div class="tray-head"><span id="tray-title" class="tray-title"></span> <span id="tray-tip" class="muted small"></span></div>
+          <div id="tray-brush" class="tray-body hidden">
+            <div id="brush-list" class="tool-tiles" role="group"></div>
+            <div class="tray-side">
+              <label class="brush-slider small"><span id="brush-size-label"></span>
+                <input id="brush-size" type="range" min="1" max="15" step="1" value="6"></label>
+              <label id="brush-strength-row" class="brush-slider small"><span id="brush-strength-label"></span>
+                <input id="brush-strength" type="range" min="1" max="100" step="1" value="50"></label>
+              <div class="map-controls">
+                <button id="brush-undo" type="button" class="ghost" disabled></button>
+                <button id="brush-clear" type="button" class="ghost danger" disabled></button>
+                <span id="brush-count" class="muted small"></span>
+              </div>
+              <div id="brush-sure" class="sure hidden"><span id="brush-sure-text" class="small"></span>
+                <button id="brush-clear-yes" type="button" class="ghost danger"></button>
+                <button id="brush-clear-no" type="button" class="ghost"></button></div>
+              <div id="brush-note" class="small"></div>
+            </div>
+          </div>
+          <div id="tray-place" class="tray-body hidden">
+            <div class="tray-main">
+              <input id="place-search" type="search" class="place-search">
+              <select id="place-type" size="5" class="place-list"></select>
+              <!-- cover and movement live in other map files: placed scenery gives no cover, but buildings stop units (Solid) -->
+              <div id="place-scenery-note" class="muted small"></div>
+            </div>
+            <div class="tray-side">
+              <div id="place-how" class="chips" role="group"></div>
+              <label class="brush-slider small"><span id="place-turn-label"></span>
+                <input id="place-turn" type="range" min="0" max="345" step="15" value="0"></label>
+              <label class="brush-slider small"><span id="place-size-label"></span>
+                <input id="place-size" type="range" min="0.5" max="10" step="0.1" value="1"></label>
+              <label id="place-spacing-row" class="brush-slider small hidden"><span id="place-spacing-label"></span>
+                <input id="place-spacing" type="range" min="2" max="100" step="1" value="8"></label>
+              <label id="place-area-row" class="brush-slider small hidden"><span id="place-area-label"></span>
+                <input id="place-area" type="range" min="10" max="300" step="5" value="40"></label>
+              <label id="place-solid-row" class="small check-row"><input id="place-solid" type="checkbox" checked>
+                <span id="place-solid-label"></span></label>
+              <div class="map-controls">
+                <button id="place-undo" type="button" class="ghost" disabled></button>
+                <span id="place-count" class="muted small"></span>
+              </div>
+              <div id="place-note" class="small"></div>
+            </div>
+          </div>
+          <!-- editing the picked scenario (maps.js scen.tool): items moved, units and buildings spawned, in the mod -->
+          <div id="tray-scen" class="tray-body hidden">
+            <div class="tray-main">
+              <div id="scen-tools" class="tool-tiles" role="group">
+                <button id="scen-move" type="button" class="tool-tile"></button>
+                <button id="scen-spawn" type="button" class="tool-tile"></button>
+              </div>
+              <div id="scen-kind" class="chips hidden" role="group"></div>
+              <div id="scen-group" class="chips hidden" role="group"></div>
+            </div>
+            <div class="tray-side">
+              <select id="scen-unit" size="5" class="place-list hidden"></select>
+              <div id="scen-camp" class="chips hidden" role="group"></div>
+              <div id="scen-note" class="small"></div>
+            </div>
+          </div>
         </div>
-        <div id="brush-sure" class="sure hidden"><span id="brush-sure-text" class="small"></span>
-          <button id="brush-clear-yes" type="button" class="ghost danger"></button>
-          <button id="brush-clear-no" type="button" class="ghost"></button></div>
-        <div id="brush-count" class="muted small"></div>
-        <div id="brush-note" class="small"></div>
-        <!-- placing objects (maps.js): saved in the current mod's maps/<map>/scenery.toml -->
-        <div id="place-title" class="map-title place-title"></div>
-        <!-- cover and movement live in other map files: placed scenery gives no cover, but buildings stop units (Solid) -->
-        <div id="place-scenery-note" class="muted small"></div>
-        <div id="place-groups" class="chips brush-list" role="group"></div>
-        <input id="place-search" type="search" class="place-search">
-        <select id="place-type" size="6" class="place-list"></select>
-        <label class="brush-slider small"><span id="place-turn-label"></span>
-          <input id="place-turn" type="range" min="0" max="345" step="15" value="0"></label>
-        <label class="brush-slider small"><span id="place-size-label"></span>
-          <input id="place-size" type="range" min="0.5" max="10" step="0.1" value="1"></label>
-        <label id="place-solid-row" class="small"><input id="place-solid" type="checkbox" checked>
-          <span id="place-solid-label"></span></label>
-        <!-- how a click places: one object, an area painted by dragging, or a line between two clicks -->
-        <div id="place-how" class="chips brush-list" role="group"></div>
-        <label id="place-spacing-row" class="brush-slider small hidden"><span id="place-spacing-label"></span>
-          <input id="place-spacing" type="range" min="2" max="100" step="1" value="8"></label>
-        <label id="place-area-row" class="brush-slider small hidden"><span id="place-area-label"></span>
-          <input id="place-area" type="range" min="10" max="300" step="5" value="40"></label>
-        <div class="map-controls">
-          <button id="place-on" type="button" class="chip"></button>
-          <button id="place-undo" type="button" class="ghost" disabled></button>
+        <div id="dock-bar" class="dock-bar" role="toolbar">
+          <button id="brush-look" type="button" class="dock-tile"></button>
+          <span class="dock-gap"></span>
+          <div id="dock-kinds" class="dock-kinds"></div>
         </div>
-        <div id="place-count" class="muted small"></div>
-        <div id="place-note" class="small"></div>
       </div>
     </section>
   </main>

@@ -1,6 +1,14 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.7.0:** a new look and movement tools. The map tools moved to a bar along the bottom, as in Cities: Skylines, in
+R.U.S.E.'s own HUD style: pick a kind (Ground, Water, Cover, Movement, Buildings, Objects, Trees, Scenario) and its
+tools open above it; click it again or press Esc to just look around. The scenario's pickers are tiles now, not
+drop-downs. **Movement:** the **Where units go** box shows it on the map (red: no unit; yellow: infantry only), and
+three new brushes close ground: **Block** (every unit), **Block infantry** and **Block vehicles**. Buildings you place
+stop units (the **Solid** box, on by default). Proven in the game: units plan around a blocked pit and go between
+placed towers.
+
 **0.6.9:** buildings, props and trees you place now show in the game at every zoom (proven on Blitz, at up to 8×
 their size): each group goes in a new block wrapped around the nearest village or farm the map draws from far.
 Checked on all 32 maps: nothing else moves. Units still walk through placed buildings; making them solid is next.

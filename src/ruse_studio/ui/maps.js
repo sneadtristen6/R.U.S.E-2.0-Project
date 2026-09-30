@@ -830,7 +830,7 @@ const ALLIANCE = [0x3f7fe0, 0xe0503f, 0x49b85a, 0xe0c33f, 0xa35ee0, 0x3fc8d8];
 // tool: "move" or "spawn" (or null); selected: the item being moved; units: what can be spawned (StudioApi.units);
 // kind, type: the Spawn tool's first two dropdowns (the third is the unit, by nation)
 const scen = { data: null, pick: 0, show: true, group: null, tool: null, selected: null, units: null, kind: "ground",
-  type: null };
+  type: null, camp: "1" };
 const SPAWN_KINDS = ["buildings", "ground", "infantry", "air"];
 const GROUP_ORDER = ["hq", "money", "factory", "fort", "fake", "barracks", "armor", "antitank", "artillery", "prototype",
   "airfield", "turret", "other"];
@@ -993,9 +993,11 @@ function setScenTool(tool) {
   scen.tool = scen.tool === tool ? null : tool;
   scen.selected = null;
   if (scen.tool) { if (mv.brush.on) setBrushMode(false); if (mv.place.on) setPlaceMode(false); }
+  dock.scenario = true;  // the tool dropped again keeps the scenario's tray open
   pointerMode();
   renderScenTools();
   drawScenario();
+  renderDock();
 }
 
 async function loadSpawnUnits() {
@@ -1007,11 +1009,9 @@ async function loadSpawnUnits() {
 
 function renderScenTools() {
   const w = mv.words, s = ((scen.data || {}).scenarios || [])[scen.pick];
-  $("scen-move").textContent = w.scen_move_tool;
-  $("scen-move").title = w.tip_scen_move;
+  iconTile($("scen-move"), "move", w.scen_move_tool).title = w.tip_scen_move;
   $("scen-move").setAttribute("aria-pressed", String(scen.tool === "move"));
-  $("scen-spawn").textContent = w.scen_spawn_tool;
-  $("scen-spawn").title = w.tip_scen_spawn;
+  iconTile($("scen-spawn"), "spawn", w.scen_spawn_tool).title = w.tip_scen_spawn;
   $("scen-spawn").setAttribute("aria-pressed", String(scen.tool === "spawn"));
   $("scen-move").disabled = $("scen-spawn").disabled = !s;
   const kindPick = $("scen-kind"), typePick = $("scen-group"), unit = $("scen-unit"), camp = $("scen-camp");
@@ -1020,16 +1020,13 @@ function renderScenTools() {
     if (!scen.units) { loadSpawnUnits().catch((err) => scenNote((err && err.message) || String(err), "error")); }
     // 1: the kind; 2: what it's for (a building's job, or the factory that builds a unit); 3: the unit, by nation
     const all = scen.units || [];
-    kindPick.replaceChildren(...SPAWN_KINDS.map((k) => el("option", { value: k, textContent: w[k] || k })));
-    kindPick.value = scen.kind;
-    kindPick.title = w.tip_scen_kind;
+    kindPick.replaceChildren(...SPAWN_KINDS.map((k) => chipOf(w[k] || k, w.tip_scen_kind, scen.kind === k,
+      () => { scen.kind = k; scen.type = null; renderScenTools(); })));
     const ofKind = all.filter((u) => u.kind === scen.kind);
     const types = GROUP_ORDER.filter((g) => ofKind.some((u) => u.group === g));
     if (!types.includes(scen.type)) scen.type = types[0] || null;
-    typePick.replaceChildren(...types.map((g) => el("option", { value: g,
-      textContent: `${w["group_" + g] || g} (${ofKind.filter((u) => u.group === g).length})` })));
-    typePick.value = scen.type || "";
-    typePick.title = w.tip_group;
+    typePick.replaceChildren(...types.map((g) => chipOf(`${w["group_" + g] || g} (${ofKind.filter((u) => u.group === g).length})`,
+      w.tip_group, scen.type === g, () => { scen.type = g; renderScenTools(); })));
     const keep = unit.value, byNation = new Map();
     for (const u of ofKind.filter((x) => x.group === scen.type)) {
       if (!byNation.has(u.nation_name)) byNation.set(u.nation_name, []);
@@ -1040,12 +1037,8 @@ function renderScenTools() {
         textContent: u.name + (u.name !== u.base_name && mv.lang !== "base" ? ` (${u.base_name.replace(/^Descriptor_[A-Za-z]+_/, "")})` : "") })))));
     if (keep && [...unit.options].some((o) => o.value === keep)) unit.value = keep;
     unit.title = w.tip_scen_unit;
-    if (!camp.options.length) {
-      camp.append(el("option", { value: "", textContent: w.scen_side_none }),
-        ...[1, 2, 3, 4, 5, 6, 7].map((n) => el("option", { value: String(n), textContent: fill(w.scen_side_n, { n }) })));
-      camp.value = "1";
-    }
-    camp.title = w.tip_scen_camp;
+    camp.replaceChildren(...["", "1", "2", "3", "4", "5", "6", "7"].map((n) => chipOf(n ? fill(w.scen_side_n, { n }) : w.scen_side_none,
+      w.tip_scen_camp, scen.camp === n, () => { scen.camp = n; renderScenTools(); })));
   }
   if (!mv.brush.mod && scen.tool) { scenNote(w.no_mod, "error"); return; }
   if (scen.tool === "move") {
@@ -1103,7 +1096,7 @@ function scenPointerDown(ev) {
     else scenEdit(() => mv.api.scenario_move(mv.current, s.file, it.item, x, y));
     return;
   }
-  const unit = $("scen-unit").value, camp = $("scen-camp").value;
+  const unit = $("scen-unit").value, camp = scen.camp;
   if (!unit) { scenNote(mv.words.scen_pick_unit, "error"); return; }
   scenEdit(() => mv.api.scenario_spawn(mv.current, s.file, unit, x, y, camp === "" ? null : Number(camp)));
 }
@@ -1183,14 +1176,6 @@ function placeOptions() {
 
 function renderPlace() {
   const w = mv.words, p = mv.place;
-  $("place-title").textContent = w.place_title;
-  $("place-groups").replaceChildren(...PLACEABLE.map((g) => {
-    const chip = el("button", { type: "button", className: "chip", textContent: w[`scenery_${g}`], title: w.tip_place_group });
-    chip.setAttribute("aria-pressed", String(p.group === g));
-    // picking a kind starts placing, as picking a brush starts painting: a click on the ground then does something
-    chip.addEventListener("click", () => { p.group = g; placeOptions(); if (!p.on) setPlaceMode(true); else renderPlace(); });
-    return chip;
-  }));
   $("place-scenery-note").textContent = w.scenery_note;  // no cover from placed scenery; buildings stop units
   $("place-search").placeholder = w.search || "";
   $("place-search").title = w.tip_place_search;
@@ -1203,9 +1188,6 @@ function renderPlace() {
   $("place-solid").checked = p.solid;
   $("place-solid-label").textContent = w.place_solid;
   $("place-solid-row").title = w.tip_place_solid;
-  $("place-on").textContent = w.place_on;
-  $("place-on").title = w.tip_place_on;
-  $("place-on").setAttribute("aria-pressed", String(p.on));
   $("place-undo").textContent = w.brush_undo;
   $("place-undo").title = w.tip_place_undo;
   $("place-undo").disabled = !p.objects.length;
@@ -1233,6 +1215,7 @@ function spacingOf(group) {
 
 function setPlaceMode(on) {
   mv.place.on = on;
+  if (on) dock.scenario = false;
   if (on && scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); }
   if (!on) { mv.place.lineStart = null; showPlaceGuide(null); }
   if (on && mv.brush.on) setBrushMode(false);
@@ -1240,6 +1223,7 @@ function setPlaceMode(on) {
   if (on) placeNote(!mv.place.mod ? mv.words.no_mod : !mv.place.type ? whyNoType() : "", "error");
   if (!on) $("map-help").textContent = mv.brush.on ? mv.words.brush_help : mv.words.map_help;
   renderPlace();
+  renderDock();
 }
 
 // Nothing to place yet: the map's types are still being read (a second or two on a real map), or the kind picked has
@@ -1474,7 +1458,7 @@ async function show(pack, keepCamera) {
   $("map-stats").textContent = fill(w.map_stats, mv.stats);
   $("map-pick").classList.add("hidden");
   $("map-hud").classList.remove("hidden");
-  $("map-tools").classList.remove("hidden");
+  $("map-dock").classList.remove("hidden");
   loadStrokes(pack, ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
   loadScenery(pack, ask).then(() => loadModels(pack, ask).catch((err) => {  // the shapes stay when models can't be had
     $("map-ground").textContent = (err && err.message) || String(err);
@@ -1487,6 +1471,123 @@ async function show(pack, keepCamera) {
   loadCover(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   loadMoves(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
+}
+
+// --- the dock: the tools by kind along the bottom, as Cities: Skylines does it (a bar of kinds; the kind picked opens
+// its tray above), drawn in the game's own HUD look (style.css). [kind, its brushes]: the three place kinds place the
+// map's own types, the scenario kind edits the picked scenario. ---
+const DOCK = [
+  ["terrain", ["hill", "raise", "lower", "crater", "plateau", "flatten", "level", "smooth", "ramp"]],
+  ["water", ["water", "drain"]],
+  ["cover", ["cover", "uncover", "town"]],
+  ["movement", ["block", "block_infantry", "block_vehicles"]],
+  ["building", null], ["prop", null], ["vegetation", null],
+  ["scenario", null],
+];
+const dock = { scenario: false, last: {} };  // the scenario kind open (no tool picked yet); the last brush of each kind
+
+// 24-unit line drawings, one per kind and tool (stroked, see .dock-tile svg)
+const ICONS = {
+  look: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z",
+  terrain: "M2 20l7-12 4 6 3-4 6 10z",
+  water: "M2 9c2.5-2 5-2 7.5 0s5 2 7.5 0 3.5-1.5 5-1 M2 15c2.5-2 5-2 7.5 0s5 2 7.5 0 3.5-1.5 5-1",
+  cover: "M3 13a4 4 0 1 0 8 0a4 4 0 1 0-8 0z M11 10a5 5 0 1 0 10 0a5 5 0 1 0-10 0z M7 17v4 M16 15v6",
+  movement: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M5.6 5.6l12.8 12.8",
+  building: "M3 11l9-7 9 7 M5 10v10h14V10 M10 20v-6h4v6",
+  prop: "M4 7l8-4 8 4v10l-8 4-8-4z M4 7l8 4 8-4 M12 11v10",
+  vegetation: "M12 2l-6 9h4l-5 7h14l-5-7h4z M12 18v4",
+  scenario: "M5 21V4 M5 4h11l-2 4 2 4H5",
+  hill: "M2 19c4 0 6-11 10-11s6 11 10 11",
+  raise: "M12 19V5 M6 11l6-6 6 6 M3 21h18",
+  lower: "M12 5v14 M6 13l6 6 6-6 M3 3h18",
+  crater: "M2 9h4c1.5 7 10.5 7 12 0h4",
+  plateau: "M2 19h3l3-9h8l3 9h3",
+  flatten: "M3 12h18 M12 3v6 M9 6l3 3 3-3 M12 21v-6 M9 18l3-3 3 3",
+  level: "M3 9h18v6H3z M10 9v6 M14 9v6",
+  smooth: "M3 16c5-7 13-7 18 0 M6 20h12",
+  ramp: "M3 19h18V7z",
+  drop: "M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z",
+  drain: "M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z M4 4l16 16",
+  uncover: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M4 4l16 16",
+  town: "M2 20V11l5-4 5 4v9 M12 20v-7l5-4 5 4v7 M2 20h20",
+  block_infantry: "M12 3a2 2 0 1 0 0 4a2 2 0 1 0 0-4z M12 8v7 M8 11h8 M9 21l3-6 3 6 M3 3l18 18",
+  block_vehicles: "M3 16h18v4H3z M7 16v-4h8v4 M15 13h6 M3 3l18 18",
+  move: "M12 3v18 M3 12h18 M9 6l3-3 3 3 M9 18l3 3 3-3 M6 9l-3 3 3 3 M18 9l3 3-3 3",
+  spawn: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8v8 M8 12h8",
+};
+const BRUSH_ICON = { water: "drop", cover: "cover", block: "movement" };
+
+function iconTile(button, icon, label) {
+  button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[icon] || ICONS.spawn}"/></svg>`;
+  button.append(el("span", { textContent: label }));
+  return button;
+}
+
+function chipOf(label, title, pressed, onClick) {
+  const chip = el("button", { type: "button", className: "chip", textContent: label, title: title || "" });
+  chip.setAttribute("aria-pressed", String(pressed));
+  chip.addEventListener("click", onClick);
+  return chip;
+}
+
+function brushKind(name) {
+  return (DOCK.find(([, brushes]) => brushes && brushes.includes(name)) || ["terrain"])[0];
+}
+
+function kindName(kind) {
+  const w = mv.words;
+  return { terrain: w.dock_terrain, water: w.brush_water, cover: w.brush_cover, movement: w.dock_movement,
+    scenario: w.scen_show }[kind] || w[`scenery_${kind}`] || kind;
+}
+
+// The kind open: the brush's, the place kind's, or the scenario's; null while just looking around.
+function dockKind() {
+  if (mv.brush.on) return brushKind(mv.brush.name);
+  if (mv.place.on) return mv.place.group;
+  return dock.scenario || scen.tool ? "scenario" : null;
+}
+
+function openKind(kind) {
+  if (dockKind() === kind) { lookAround(); return; }  // the open kind again closes it
+  const brushes = (DOCK.find(([k]) => k === kind) || [])[1];
+  if (brushes) { pickBrush(dock.last[kind] || brushes[0]); return; }
+  if (kind === "scenario") {
+    lookAround();
+    dock.scenario = true;
+    renderDock();
+    return;
+  }
+  mv.place.group = kind;
+  mv.place.lineStart = null;
+  showPlaceGuide(null);
+  placeOptions();
+  setPlaceMode(true);
+}
+
+// The bar's tiles, again when the words change.
+function renderDockBar() {
+  const w = mv.words;
+  iconTile($("brush-look"), "look", w.brush_look).title = w.tip_look;
+  $("dock-kinds").replaceChildren(...DOCK.map(([kind]) => {
+    const tile = iconTile(el("button", { type: "button", className: "dock-tile", title: w[`tip_dock_${kind}`] || "" }),
+      kind, kindName(kind));
+    tile.dataset.kind = kind;
+    tile.addEventListener("click", () => openKind(kind));
+    return tile;
+  }));
+  renderDock();
+}
+
+function renderDock() {
+  const w = mv.words, kind = dockKind();
+  $("brush-look").setAttribute("aria-pressed", String(!kind));
+  for (const tile of $("dock-kinds").children) tile.setAttribute("aria-pressed", String(tile.dataset.kind === kind));
+  $("dock-tray").classList.toggle("hidden", !kind);
+  $("tray-brush").classList.toggle("hidden", !(kind && (DOCK.find(([k]) => k === kind) || [])[1]));
+  $("tray-place").classList.toggle("hidden", !PLACEABLE.includes(kind));
+  $("tray-scen").classList.toggle("hidden", kind !== "scenario");
+  $("tray-title").textContent = kind ? kindName(kind) : "";
+  $("tray-tip").textContent = kind ? w[`tip_dock_${kind}`] || "" : "";
 }
 
 // --- the brush tools ---
@@ -1525,19 +1626,21 @@ async function loadStrokes(pack, ask) {
 
 function renderBrushes() {
   const w = mv.words, b = mv.brush;
-  $("brush-list").replaceChildren(...Object.keys(BRUSHES).map((name, i) => {
-    const chip = el("button", { type: "button", className: "chip", textContent: w["brush_" + name] || name,
-      title: (w["tip_brush_" + name] ? w["tip_brush_" + name] + " " : "") + (i < 10 ? fill(w.tip_brush || "", { n: (i + 1) % 10 }) : "") });
-    chip.setAttribute("aria-pressed", String(b.on && b.name === name));
-    chip.addEventListener("click", () => pickBrush(name));
-    return chip;
+  const all = Object.keys(BRUSHES), kind = brushKind(b.name);
+  $("brush-list").replaceChildren(...DOCK.find(([k]) => k === kind)[1].map((name) => {
+    const i = all.indexOf(name);
+    const tile = iconTile(el("button", { type: "button", className: "tool-tile",
+      title: (w["tip_brush_" + name] ? w["tip_brush_" + name] + " " : "") + (i < 10 ? fill(w.tip_brush || "", { n: (i + 1) % 10 }) : "") }),
+    ICONS[name] ? name : BRUSH_ICON[name] || kind, w["brush_" + name] || name);
+    tile.setAttribute("aria-pressed", String(b.on && b.name === name));
+    tile.addEventListener("click", () => pickBrush(name));
+    return tile;
   }));
   const set = settingsOf(b.name);
   $("brush-size").value = set.size;
   $("brush-strength").value = set.strength;
-  $("brush-strength").disabled = ["cover", "town", "block"].includes(BRUSHES[b.name][0]);
+  $("brush-strength-row").classList.toggle("hidden", ["cover", "town", "block"].includes(BRUSHES[b.name][0]));
   showOverlays();
-  $("brush-look").setAttribute("aria-pressed", String(!b.on));
   $("map-help").textContent = b.on ? w.brush_help : w.map_help;
   showCount();
 }
@@ -1546,6 +1649,7 @@ function pickBrush(name) {
   const b = mv.brush;
   if (b.name !== name) cancelRamp();
   b.name = name;
+  dock.last[brushKind(name)] = name;
   setBrushMode(true);
   if (!b.mod) brushNote(mv.words.no_mod, "error");
   else if (name === "ramp") brushNote(mv.words.ramp_help);
@@ -1564,11 +1668,13 @@ function cancelRamp() {
 
 function setBrushMode(on) {
   mv.brush.on = on;
+  if (on) dock.scenario = false;
   if (on) { mv.place.on = false; if (scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); } }
   if (!on) cancelRamp();
   pointerMode();
   renderBrushes();
   renderPlace();
+  renderDock();
 }
 
 // Brushing or placing: the left button works on the ground (the middle one turns the view); else it turns the view.
@@ -1909,13 +2015,10 @@ function renderWords() {
   renderPlace();
   $("map-help").textContent = mv.brush.on ? w.brush_help : w.map_help;
   renderKeys();
-  $("brush-title").textContent = w.shape_ground;
   $("brush-size-label").textContent = w.brush_size;
   $("brush-size").title = w.tip_brush_size;
   $("brush-strength-label").textContent = w.brush_strength;
   $("brush-strength").title = w.tip_brush_strength;
-  $("brush-look").textContent = w.brush_look;
-  $("brush-look").title = w.tip_look;
   $("brush-undo").textContent = w.brush_undo;
   $("brush-undo").title = w.tip_brush_undo;
   $("brush-clear").textContent = w.brush_clear;
@@ -1926,6 +2029,8 @@ function renderWords() {
   $("brush-clear-no").title = w.tip_cancel;
   if (!mv.current) $("map-pick").textContent = w.pick_map;
   renderBrushes();
+  renderScenTools();
+  renderDockBar();
 }
 
 // --- keys, while the map view is open and no text box has the focus ---
@@ -2117,6 +2222,7 @@ function nudge(what, dir) {
 }
 
 function lookAround() {
+  dock.scenario = false;
   if (scen.tool) { scen.tool = null; scen.selected = null; pointerMode(); renderScenTools(); drawScenario(); }
   cancelRamp();
   mv.place.lineStart = null;
@@ -2202,8 +2308,6 @@ function wire() {
   });
   $("scen-move").addEventListener("click", () => setScenTool("move"));
   $("scen-spawn").addEventListener("click", () => setScenTool("spawn"));
-  $("scen-kind").addEventListener("change", (e) => { scen.kind = e.target.value; scen.type = null; renderScenTools(); });
-  $("scen-group").addEventListener("change", (e) => { scen.type = e.target.value; renderScenTools(); });
   for (const g of ["building", "prop", "vegetation"]) {
     $(`scenery-${g}`).addEventListener("change", (e) => {
       mv.scenery.show[g] = e.target.checked;
@@ -2215,8 +2319,7 @@ function wire() {
   }
   $("brush-size").addEventListener("input", (e) => { settingsOf(mv.brush.name).size = Number(e.target.value); });
   $("brush-strength").addEventListener("input", (e) => { settingsOf(mv.brush.name).strength = Number(e.target.value); });
-  $("brush-look").addEventListener("click", () => { mv.place.on = false; setBrushMode(false); });
-  $("place-on").addEventListener("click", () => setPlaceMode(!mv.place.on));
+  $("brush-look").addEventListener("click", () => lookAround());
   $("place-undo").addEventListener("click", () => undoPlace());
   $("place-search").addEventListener("input", () => { placeOptions(); if (mv.place.on) placeNote(mv.place.type ? "" : whyNoType(), "error"); });
   $("place-type").addEventListener("change", (e) => {  // picking a type starts placing, as picking a brush starts painting
