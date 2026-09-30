@@ -516,6 +516,17 @@ his Claude; checked here on all 32 maps.
 - **Proven in the game (DomesticNukes):** moving, turning and scaling objects in place; adding objects through a
   new block that an existing object's item is turned into (a same-size child reference). A child that points
   backward breaks the map.
+- **The draw tree:** every map has one top block (block 0). A block's 8-byte nodes are a spatial tree: bits 30-31
+  mark leaves, bits 20-24 the LOD mask (8 = far), the two bytes after the u16 look like split positions; the first
+  node's u16 is how many entries are listed for far view (listed first: 7,144 of Blitz's 18,770 top-block entries,
+  7,132 of them references to blocks, 12 objects: bridges and a lighthouse). The game reaches a block only through
+  the tree node holding its reference: objects hung on a close-view decal 3 km away never showed (owner's test,
+  2026-09-30). Proven the same day: new objects in a new block that wraps the nearest block the top block lists for
+  far view (the reference points to the new block, which places the old one where it was and the new objects;
+  inserted right after the top block, every later reference moved by its size) show in the game, at every zoom.
+  Placed buildings are only drawn: units walk through them (movement lives in the map's movement data).
+- **Header table at field 12** ("layer boundaries", 4-8 u32s): not block starts on most maps; left as they are when
+  a block is inserted, and the game ran fine.
 
 ## 7. Textures (`.tgv`, `.tgv_pc`)
 

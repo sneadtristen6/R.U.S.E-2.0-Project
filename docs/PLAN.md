@@ -670,17 +670,62 @@ move orders, the camera falls through it, trees stay at the old height, and big 
 in DomesticNukes' notes (private `notes/terrain-editing-what-we-fixed-…`): the engine still moves all four files
 separately and leaves the `.kdt` height limits stale.
 
-**Next, in order (2026-09-30, after Studio 0.6.0):** the terrain fix (DomesticNukes' recipe: the gameplay ground
-leads, the height limits follow, `rusemod.kdt_edit`) and each map's scenarios on the map (`rusemod.scenario`) shipped
-in Studio 0.6.0.
-1. **The owner's tests:** the terrain copy on Blitz **passed in the game, 2026-09-30** (hill, pit, flat patch and a
-   moved starting point); next a
-   brushed hill from the Studio's own "Test in game", then the Scenario row in the map view.
-2. **Scenery zones:** placed buildings and trees block movement and give cover (the `mapinfo.win` movement graphs
-   and the `.sdb` layer; research in LOG).
-3. **Scenario editing:** move starting points and spawns, draw zones (the reader is done; a writer next).
-4. **Re-meshing** (DomesticNukes' §6): cut the mesh finer where a brush needs it.
-5. Join codes (Task E); `sneadtristen6/Ruse-Mods` for Browse mods.
+**Where we stand (2026-09-30, evening):** Launcher 0.2.6 and Studio 0.6.8 are out. Passed in the game today:
+terrain brushes (hill, pit, level; orders and trees right), a moved starting point, **painted cover hides infantry**
+(Studio 0.6.8: Cover, Uncover and Town brushes), and **placed buildings show** once their new block wraps a block the
+top block draws from far (FORMATS §6; ships as Studio 0.6.9 after the all-maps check). Found in the game: the
+cover grid's "blocked" layer doesn't stop tanks, and units walk through placed buildings: movement lives in
+`mapinfo.win`'s other buffers. Buffer 0 is the **road network** (its 1,263 points on Blitz lie exactly on the
+scenery's road curves).
+
+**Roadmap from here (owner, 2026-09-30: "plan ahead").** Phases in order; within one, steps in order. Each step
+ends with one in-game test (batched, one game start) and a release. Sessions are estimates.
+
+*Phase A: the map maker, on the shipped maps* (the owner's current focus: Cities: Skylines-style tools)
+| # | Step | Needs | Sessions |
+|---|---|---|---|
+| A1 | Studio 0.6.9: placed objects that show (the far-view wrapper), after the all-maps check | — | done, releasing |
+| A2 | **Movement:** decode `mapinfo.win` buffers 1-2 (map-wide movement grids) and 0 (the road network: points, links, a lookup); placed buildings block units, and the Studio shows where units can go. Test: a wall of buildings, a lake, a pit | — | 2-3 |
+| A3 | **Roads, Cities: Skylines style:** draw the map's roads in the view; a road tool (click points, a curve follows, ends snap to roads) that writes the scenery's road pieces and the road network, and clears the trees along it (needs A4). Test: a new road, drawn? faster? | A2, A4 | 2-3 |
+| A4 | **Remove scenery:** take out the map's own trees, props and buildings (an Erase brush; roads and towns use it) | — | 1 |
+| A5 | **Zones:** draw and move the capture sectors (the scenario's AREA records, reader done) and their names. Test: a new sector captured in a skirmish | — | 1-2 |
+| A6 | **Ground painting:** grass, sand, rock, road texture with a brush (plain tiles work in-game) | — | 1-2 |
+| A7 | **Re-meshing:** finer ground only where brushes need it (adaptive, so no lag: far mesh and gameplay ground stay coarse); a warning when a brush is steeper than the mesh can show | DomesticNukes' index-buffer notes | 2-3 |
+| A8 | Spawn checks: which camp is the player in a skirmish, and does a skirmish honour unit spawns | — | 0 (one test) |
+
+*Phase B: new maps* (M6, M8)
+| # | Step | Needs | Sessions |
+|---|---|---|---|
+| B1 | **Clone a map** under a new name and register it (map list, skirmish menu, name in ten languages, menu picture); "New map…" in the Studio. Test: it's listed and plays | — | 2 |
+| B2 | A blank start (flattened copy), map sizes, **heightmap import** | B1, A7 | 2-3 |
+| B3 | The AI on edited maps: the 51×51 AI grid (`mapinfo.win`'s tail) and the other AI layers follow the new ground, roads and towns. Test: the AI plays the new map | A2 | 2 |
+| B4 | Multiplayer check of a new map between two PCs (join codes, C4 below) | B1, C4 | 1 + a second player |
+| B5 | The Pacific look: a tropical scenery set from the game's own assets (Italy, Tunisia), then new ones (M5, M7) | B1 | 2+ |
+
+*Phase C: players and multiplayer* (M3)
+| # | Step | Needs | Sessions |
+|---|---|---|---|
+| C1 | **Browse mods:** the `sneadtristen6/Ruse-Mods` index repo (owner), install with dependencies in one click (code done) | the repo | 1 |
+| C2 | Modpacks as their own instance (RUSE 2.0 in one click); one-click back to vanilla | C1 | 1-2 |
+| C3 | Studio: "Publish mod" to the index (a pull request made for the modder) | C1 | 1 |
+| C4 | **Join codes** in the launcher, and the 2-PC test | a second player | 1-2 |
+| C5 | Trust: code signing, a first public release on ModDB and Nexus; outreach (LittleGroove, Eugen) | C1-C4 | 1 + owner |
+
+*Phase D: the content tools* (M4, M5, M7, M9-M11)
+| # | Step | Needs | Sessions |
+|---|---|---|---|
+| D1 | Studio v1: checks before a build (validation), rebasing mods across game updates | — | 2 |
+| D2 | **Icons, flags and textures** (M5): unit cards, flags, retextured units | — | 3-5 |
+| D3 | **China, step 2** (M10): an 8th entry wherever the data has 7; does the game offer it? | — | 1 (one test) |
+| D4 | **Models** (M7): SPK to glTF and back, static then animated (with DomesticNukes) | D2 | 6-12 |
+| D5 | **Scripting** (M9): compile Python 2.5 scripts; game modes (Island Defense) | a CPython 2.5.1 download (owner's OK) | 3-6 |
+| D6 | Sound (M11), last | — | 4-10 |
+
+*Phase E: content* (after the tools it needs): **RUSE 2.0** (private: balance, units, China) grows alongside
+Phases A-D; **Pacific Island Defense** needs B, D2, D4 and D5.
+
+**Waiting on others:** DomesticNukes (the `.kdt` index buffers for A7; scenery know-how for A3-A4; models for D4),
+the owner (the in-game tests; the Ruse-Mods repo; a second player for C4 and B4; the name, outreach timing).
 
 **Where we stood (2026-09-29):** C1–C7 passed (mods build from the installed game, load in-game, add texts and
 new units that fight). Launcher v0.1 and Studio 0.4.1 are released (values edited in place, one box for a unit's
