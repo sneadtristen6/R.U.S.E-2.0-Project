@@ -31,6 +31,6 @@ A weapon can fire another unit's ammunition; its muzzle flash and sound come wit
 
 ## Test it
 
-**Test in game** builds the mod and starts R.U.S.E. Look for the unit where it's built (its factory) in a skirmish.
+**Test in game** builds the mod and starts R.U.S.E. Look for the unit where it's built (its factory) in a battle (main menu: **BATTLES**, then a map).
 
 **Next:** [[Export and share|Export-and-Share]]

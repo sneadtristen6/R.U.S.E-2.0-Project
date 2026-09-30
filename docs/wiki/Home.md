@@ -29,6 +29,7 @@ starts a quick test copy on its own, to check your work as you go.
 | Change a unit, make a new one, swap its ammo | [[Edit units|Edit-Units]] |
 | Raise hills, dig craters, make ramps, add lakes | [[Shape the ground|Shape-the-Ground]] |
 | Make a town or wood units can hide in; block ground | [[Cover and movement|Cover-and-Movement]] |
+| Draw new roads (supply trucks use them) | [[Draw roads|Draw-Roads]] |
 | Place buildings, props and trees | [[Place buildings and trees|Place-Buildings-and-Trees]] |
 | Move starting points, add units in formation | [[Edit a scenario|Edit-a-Scenario]] |
 | Put my mod out for others | [[Export and share|Export-and-Share]] |

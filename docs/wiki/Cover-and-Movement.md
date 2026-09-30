@@ -1,6 +1,6 @@
 # Cover and movement
 
-> **For:** modders · **You need:** RUSE Studio 0.7.1 and a mod · **Proven in the game:** infantry on painted cover
+> **For:** modders · **You need:** RUSE Studio 0.7.2 and a mod · **Proven in the game:** infantry on painted cover
 > are hidden; units plan around blocked ground
 
 Two invisible layers decide how a map plays: **cover** (where units hide) and **movement** (where units can go).
@@ -31,4 +31,4 @@ Two invisible layers decide how a map plays: **cover** (where units hide) and **
 Units plan their route around blocked ground. Buildings you place block units too (see
 [[Place buildings and trees|Place-Buildings-and-Trees]]).
 
-**Next:** [[Place buildings and trees|Place-Buildings-and-Trees]]
+**Next:** [[Draw roads|Draw-Roads]]

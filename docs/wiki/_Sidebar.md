@@ -9,6 +9,7 @@
 - [[Edit units|Edit-Units]]
 - [[Shape the ground|Shape-the-Ground]]
 - [[Cover and movement|Cover-and-Movement]]
+- [[Draw roads|Draw-Roads]]
 - [[Place buildings and trees|Place-Buildings-and-Trees]]
 - [[Edit a scenario|Edit-a-Scenario]]
 - [[Export and share|Export-and-Share]]

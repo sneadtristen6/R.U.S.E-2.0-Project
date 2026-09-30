@@ -1,6 +1,6 @@
 # Shape the ground
 
-> **For:** modders · **You need:** RUSE Studio 0.7.1 and a mod · **Proven in the game:** units drive on edited
+> **For:** modders · **You need:** RUSE Studio 0.7.2 and a mod · **Proven in the game:** units drive on edited
 > ground and take orders there
 
 ## Open the map
@@ -38,7 +38,8 @@ Click **Water** in the bar:
 
 ## See it in the game
 
-**Test in game**, then start a skirmish on that map.
+**Test in game**, then in the game's main menu click **BATTLES** and pick that map. The message at the bottom of
+the Studio says which.
 
 > [!TIP]
 > Steep cliffs look jagged: the game's ground is a mesh of triangles, and a sharp edge falls between them. Wide,

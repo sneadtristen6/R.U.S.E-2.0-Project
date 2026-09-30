@@ -15,6 +15,7 @@ import functools
 import json
 import math
 import re
+import sqlite3
 import struct
 import threading
 import tomllib
@@ -240,8 +241,26 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
     def languages(self) -> list[dict]:
         return schema.languages()
 
+    # A scenario's kind is named by the game's own main-menu button (its text files, in the player's language), so
+    # the Studio says exactly what to click: BATTLES (what other games call skirmish), OPERATION, CAMPAIGN.
+    GAME_MENU = {"scen_kind_skirmish": "BTN_SKIRMI", "scen_kind_operation": "BTN_CHALLE",
+                 "scen_kind_campaign": "BTN_CAMPAI"}
+
     def strings(self, lang: str = schema.BASE) -> dict:
-        return words(lang)
+        out = words(lang)
+        try:
+            ix = self._open()
+            try:
+                got = ix.names(list(self.GAME_MENU.values()), lang if lang in schema.LANGS else "us")
+            finally:
+                ix.close()
+        except (OSError, sqlite3.Error, KeyError, ValueError):
+            return out  # no index yet: the Studio's own words
+        for word, key in self.GAME_MENU.items():
+            text = (got.get(key) or "").strip()
+            if text:
+                out[word] = text[:1] + text[1:].lower() if text.isupper() else text  # BATTLES -> Battles
+        return out
 
     def nations(self, lang: str = schema.BASE) -> list[str]:
         return [schema.nation(n, lang) for n in range(NATIONS)]
@@ -1704,16 +1723,53 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
         if folder is None:
             raise StudioError("Pick or make a mod first.")
 
+        game = self._game()
+        instance = (self._instances or instances_dir(game)) / f"studio-{folder.name}" if game is not None else None
+        look = self._where_to_look(folder) if game is not None else []
+
         def work(say):
-            game = self._game()
             if game is None:
                 raise BuildError("We couldn't find R.U.S.E.")
-            instance = (self._instances or instances_dir(game)) / f"studio-{folder.name}"
             self._starter.modded(game, [folder], instance, folder.name, say)
+            say(f"Built in {instance}. To see your changes in the game:")
+            for line in look or ["Your unit changes show in every game mode."]:
+                say(f"  {line}")
 
         job = Job()
         self._jobs[job.id] = job
-        return job.start(work, "R.U.S.E. is starting.", plain=(BuildError, RndfError, OSError))
+        where = "; ".join(look) if look else "your unit changes show in every game mode"
+        return job.start(work, f"R.U.S.E. is starting from {instance}. To see your changes: {where}.",
+                         plain=(BuildError, RndfError, OSError))
+
+    def _where_to_look(self, folder: Path) -> list[str]:
+        """What to open in the game to see each map the mod changes: the scenario setups it spawns units in or moves
+        things on, else the map's skirmish (ground, scenery, cover, movement and roads show in every setup)."""
+        out = []
+        maps = folder / "maps"
+        for d in sorted((p for p in maps.iterdir() if p.is_dir()), key=lambda p: p.name.lower()) if maps.is_dir() else []:
+            files = {f.name for f in d.glob("*.toml")} & set(MAP_FILES)
+            if not files:
+                continue
+            try:
+                scenarios = self.map_scenarios(d.name, edited=False)["scenarios"]
+            except (StudioError, OSError, ValueError, KeyError):
+                continue
+            wanted = set()
+            if "scenario.toml" in files:
+                try:
+                    moves, spawns = self._read_scenario_edits(d.name)
+                    wanted = {m.file.lower() for m in moves} | {s.file.lower() for s in spawns}
+                except StudioError:
+                    pass
+            chosen = [s for s in scenarios if s["file"].lower() in wanted] if wanted else \
+                [s for s in scenarios if s.get("kind") == "skirmish"][:1] or scenarios[:1]
+            for s in chosen:
+                for e in s.get("entries", [])[:2]:
+                    title = (e.get("titles") or {}).get("us") or e.get("name") or d.name
+                    mode = {"skirmish": "BATTLES", "operation": "OPERATION",  # the game's main-menu buttons
+                            "campaign": "CAMPAIGN"}.get(e.get("kind"), e.get("kind") or "a game")
+                    out.append(f"{mode} > {title} ({e.get('name', s['file'])})")
+        return out
 
     # --- a mod as one file (MOD_FORMAT §2, rusemod.package) ---
     def mod_info(self) -> dict:

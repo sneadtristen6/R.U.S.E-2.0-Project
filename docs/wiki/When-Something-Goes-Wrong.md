@@ -28,7 +28,8 @@ The apps are new to Windows' reputation check. Click **More info**, then **Run a
 ## The game starts, but without my changes
 
 1. Was it started from **Play** (launcher) or **Test in game** (Studio)? From Steam, the game starts unmodded.
-2. Map changes show only on that map: start a skirmish on it.
+2. Map changes show only on that map: in the main menu click **BATTLES** and pick it (the Studio's message after
+   Test in game says which button and map).
 3. Is the mod in the set, and is a mod lower in the order changing the same thing?
 
 ## The game crashes

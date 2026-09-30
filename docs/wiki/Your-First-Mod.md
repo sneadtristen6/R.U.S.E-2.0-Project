@@ -26,7 +26,8 @@ From now on, everything you change is saved in this mod, never in the game.
 ## 4. Test it
 
 1. Click **Test in game** (header). The Studio checks the mod, builds its own modded copy and starts R.U.S.E.
-2. Start a skirmish as the USA and open the tank factory: the Sherman costs $1.
+2. In the game's main menu, click **BATTLES** (a free game against the computer), pick any map, play the USA and
+   open the tank factory: the Sherman costs $1.
 
 > [!TIP]
 > If a red bar appears under the header instead, the mod check found a mistake in a file of your mod. See

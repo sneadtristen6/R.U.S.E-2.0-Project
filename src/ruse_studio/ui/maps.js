@@ -1014,6 +1014,11 @@ function renderScenarioPick() {
   pick.disabled = !list.length;
   pick.title = w.tip_scen_pick;
   const s = list[scen.pick];
+  // where this setup plays in the game: its menu, its title, and the players it's made for
+  $("scen-where").textContent = s && (s.entries || []).length ? fill(w.scen_where, { where: s.entries.map((e) =>
+    `${w["scen_kind_" + e.kind] || e.kind} › ${(e.titles || {})[mv.lang] || (e.titles || {}).us || e.name}`
+    + ((/^\((\d+)\)/.exec(e.name || "") || [])[1] ? ` (${fill(w.scen_players, { n: /^\((\d+)\)/.exec(e.name)[1] })})` : "")).join(" · ") }) : "";
+  $("scen-where").title = w.tip_scen_where;
   if (!s) { $("scen-stats").textContent = scen.data ? w.scen_none : ""; return; }
   const n = (k) => s.items.filter((i) => i.kind === k).length;
   $("scen-stats").textContent = fill(w.scen_stats, { zones: s.zones.length, starts: n("StartingPoint"), spawns: n("Spawn"),

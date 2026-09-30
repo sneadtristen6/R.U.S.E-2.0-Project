@@ -1,6 +1,17 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.7.2:** roads, and clearer tests.
+- **Draw roads**, Cities: Skylines style (the Roads kind in the bar): **Straight**, **Curve** and **Freeform**. An
+  end near a road snaps onto it and joins it. New roads draw as blue ribbons and **supply routes use them** (proven
+  in the game). They aren't painted on the ground yet.
+- The **Roads** box shows the map's own roads in gold.
+- The game's own words: a scenario is named after the main-menu button that plays it (**Battles**, Operation,
+  Campaign, read from your game's text in your language), and a gold line under the scenario menu says where it
+  plays, e.g. *In the game: Battles › D-Day (6 players)*.
+- **Test in game** says where it built and exactly what to open to see your changes (e.g. *BATTLES > D-Day*).
+- The middle mouse button turns the view in look-around mode too (it zoomed there before).
+
 **0.7.1:** several units at once, a mod check, and help at hand.
 - **Add unit** places 1, 2, 4, 6, 8 or 10 at once, in a **line, column, wedge, box or circle** facing up the
   screen, with a spacing slider and rings showing where each will stand.

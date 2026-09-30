@@ -256,3 +256,4 @@ tr.edited .flag { border-color: var(--accent); }
 #maps-view.folded .browser > :not(.browser-head), #maps-view.folded .map-kind { display: none; }
 .small-tile { min-width: 64px; padding: 4px 6px 3px; }
 .small-tile svg { width: 22px; height: 22px; }
+.scen-where { color: #f2c12e; }

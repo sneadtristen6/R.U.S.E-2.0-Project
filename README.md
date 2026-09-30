@@ -13,7 +13,7 @@
 &nbsp;&nbsp;
 [![Download RUSE Studio](https://img.shields.io/badge/Download-RUSE%20Studio-b8913a?style=for-the-badge)](https://github.com/sneadtristen6/Ruse-Mod-Platform/releases?q=studio)
 
-**Launcher** for players (latest: 0.2.7) &middot; **Studio** for modders, a preview (latest: 0.7.1) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.2.8) &middot; **Studio** for modders, a preview (latest: 0.7.2) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 **[Field manual (wiki)](https://github.com/sneadtristen6/Ruse-Mod-Platform/wiki)** &middot;
 **[Discussions](https://github.com/sneadtristen6/Ruse-Mod-Platform/discussions)**: questions, ideas, bug reports and
@@ -69,6 +69,8 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
   ground to every unit, to infantry or to vehicles, and placed buildings stop units (Solid). Proven in the game
   (2026-09-30, Studio 0.7.0).
 - The map tools sit in a bar along the bottom, Cities: Skylines style, in R.U.S.E.'s own HUD look (Studio 0.7.0).
+- **Draw roads**, Cities: Skylines style (straight, curved, freeform; ends snap onto roads): supply routes use them
+  in the game (2026-09-30, Studio 0.7.2). Not painted on the ground yet.
 - **Add units in formations:** 1 to 10 at once, in a line, column, wedge, box or circle (Studio 0.7.1).
 - A **mod check** reads every file of your mod the way the game build does, names each problem and offers the fix
   (set a broken file aside, rename a map folder to the map's pack name) (Studio 0.7.1).
@@ -303,7 +305,7 @@ The two apps run on the engine, separate from each other (neither needs the othe
 desktop windows built like web pages; once: `py -3 -m pip install pywebview`. Their screens also open in a normal
 browser with made-up data: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_studio/ui/index.html?fake`.
 
-- **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/), released 0.2.7), for players: it finds the game,
+- **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/), released 0.2.8), for players: it finds the game,
   lists your mod sets and has a big Play button that builds the set's modded copy and starts the game (Vanilla
   starts through Steam). `py -3 -m ruse_launcher`. **Merged, not released yet: players never touch a file.** A
   mod library ("Add a mod file…" for a `.rusemod` from the Studio, a `.rmod` or a `.zip`, or drop a mod file or
@@ -313,7 +315,7 @@ browser with made-up data: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_stu
   with mods, in three steps"), and the launcher in the PC's own language (any of the game's ten). **Also merged:
   "Browse mods"**, a list of the community's mods from a GitHub repository (MOD_FORMAT §15), with Install: the file
   is checked against the list before it goes into the library; offline, the last copy of the list.
-- **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), released 0.7.1), for modders: browse every unit and
+- **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), released 0.7.2), for modders: browse every unit and
   building, see a unit's values, parts and what uses it, and pick a language: the game's own names by default, or
   any of the game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is
   saved in the mod's `src/studio.rndf` (with Undo); a part several units share changes for one of them or all.

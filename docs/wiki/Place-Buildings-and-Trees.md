@@ -1,6 +1,6 @@
 # Place buildings and trees
 
-> **For:** modders · **You need:** RUSE Studio 0.7.1 and a mod · **Proven in the game:** placed buildings show at
+> **For:** modders · **You need:** RUSE Studio 0.7.2 and a mod · **Proven in the game:** placed buildings show at
 > every zoom, up to 8× their size, and units go around them
 
 ## Place

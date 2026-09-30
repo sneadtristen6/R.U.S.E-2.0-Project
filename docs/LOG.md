@@ -713,3 +713,13 @@ Screenshots of the new windows for the README: from the owner, after updating.
 west of the HQ, the game's route preview runs along the roads, then straight north through open fields where no
 road is painted: the network-only road added by `roads.toml`. A road that exists only in buffer 0 is a road to the
 game's supply routing. Still to see: a truck driving it, and whether vehicles are faster on it.
+
+### 2026-09-30, late: Studio 0.7.2 and Launcher 0.2.8, the road tool
+
+The road tool (Straight, Curve, Freeform; ends snap onto the map's roads and the mod's; blue ribbons like the game's
+supply routes; `roads.toml` through `StudioApi.road_add`). The owner couldn't tell how to see spawned units: the
+Studio called the game's modes by our own words ("Skirmish"), which the game never uses. Its main menu says BATTLES,
+OPERATION, CAMPAIGN (text keys `BTN_SKIRMI`, `BTN_CHALLE`, `BTN_CAMPAI`); the Studio now reads those from the
+installed game in the player's language, shows under the scenario menu where each setup plays, and Test in game
+ends with what to open (e.g. "BATTLES > D-Day"). The middle mouse button zoomed in look-around mode and turned the
+view in every tool: it turns the view everywhere now. The launcher runs the mod check when a mod is added.

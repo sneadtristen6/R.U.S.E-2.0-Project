@@ -1,6 +1,10 @@
 **RUSE Launcher 0.2, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.2.8:** a mod you add is checked at once, the way the game build will read it: a broken map file, or a map
+folder named after the map's title (maps/Blitz instead of maps/SuperCrossRoads4), is named with its fix before
+Play would stop on it.
+
 **0.2.7:** **Help** and **Report a problem** in the bottom bar: the wiki (a field manual for playing mods),
 and a bug report in your browser with the launcher's version filled in. A problem message has its own **Report**
 link. Nothing is sent by the launcher: you read the report and post it. Mods whose map folder is named after the
