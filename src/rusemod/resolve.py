@@ -29,6 +29,7 @@ class ModInfo:
     texts: list = field(default_factory=list)                # loc.TextRow from text/*.csv
     terrain: dict = field(default_factory=dict)              # map pack name -> [brush.Stroke] (§8)
     rmod: object = None                                      # a .rmod mod: its file (rusemod.rmod applies it)
+    scenery: dict = field(default_factory=dict)              # map pack name -> [scenery.NewObject] (§8)
 
 
 # --- versions ---

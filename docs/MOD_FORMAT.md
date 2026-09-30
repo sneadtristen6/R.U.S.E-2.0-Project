@@ -306,6 +306,28 @@ weight = 1.0
   cutting the mesh finer. The game's acceptance of moved ground is the next in-game check
   (`tools/verify_terrain.py --make-test`).
 
+### Scenery: `maps/<map pack>/scenery.toml`
+
+Objects a mod adds to a map (buildings, props, trees), one table each:
+
+```toml
+[[object]]
+type = "TypeWarrior/Chateau_dEau_03"   # a scenery type the map already uses (the Studio lists them)
+x    = 672688.0                         # map units: x grows east, y grows south
+y    = 659281.0
+turn = 45.0                             # degrees, from east toward south (clockwise on the minimap)
+size = 1.5                              # 0.05 to 50
+```
+
+- The build adds them to the map's `output\save.boobspc` (`rusemod.scenery.add_objects`) the way DomesticNukes
+  proved in the game: one object of a block placed once becomes a same-size reference to a new block at the end,
+  which holds that object and the new ones. Nothing else moves; the file's MD5 is set again.
+- **For looks only:** scenery doesn't block units, give cover or change the AI's map (those are other layers, FORMATS
+  §6). Objects stand on the ground wherever the ground is, also after a terrain edit.
+- **Only types the map already uses**: a type from another theatre isn't loaded on that map. Removing or moving
+  shipped objects isn't offered yet.
+- Several mods' objects are added in load order.
+
 ## 9. Scripts
 
 - `scripts/<package>/*.py` holds Python 2.5-compatible source.

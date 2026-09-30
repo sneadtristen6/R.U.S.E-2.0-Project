@@ -105,11 +105,38 @@ def load_mod(path) -> tuple[ModInfo, list]:
             except loc.TextError as exc:
                 raise BuildError(str(exc)) from None
         info.terrain = read_terrain(path)
+        info.scenery = read_scenery(path)
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
 
 _MAP_NAME = re.compile(r"^[A-Za-z0-9_]+$")
+
+
+def read_scenery(folder: Path) -> dict:
+    """A mod's added scenery: {map pack name: [scenery.NewObject]} from maps/<map pack>/scenery.toml (MOD_FORMAT §8)."""
+    from .scenery import SceneryEditError, parse_objects
+    out = {}
+    maps = folder / "maps"
+    for f in sorted(maps.glob("*/scenery.toml"), key=lambda p: p.parent.name.lower()) if maps.is_dir() else []:
+        rel = f.relative_to(folder).as_posix()
+        if not _MAP_NAME.match(f.parent.name):
+            raise BuildError(f"{rel}: {f.parent.name!r} isn't a map's pack name (letters, digits and _, like "
+                             f"TwoIslands)")
+        try:
+            data = tomllib.loads(f.read_text(encoding="utf-8"))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+            raise BuildError(f"{rel}: {exc}") from None
+        extra = sorted(set(data) - {"object"})
+        if extra:
+            raise BuildError(f"{rel}: unknown key {extra[0]!r} (a scenery file holds [[object]] tables)")
+        try:
+            objects = parse_objects(data.get("object", []), rel)
+        except SceneryEditError as exc:
+            raise BuildError(str(exc)) from None
+        if objects:
+            out[f.parent.name] = objects
+    return out
 
 
 def read_terrain(folder: Path) -> dict:
@@ -333,6 +360,20 @@ def terrain_edits(order: list[str], mods: list) -> dict[str, tuple[list, list[st
     return out
 
 
+def scenery_edits(order: list[str], mods: list) -> dict[str, tuple[list, list[str]]]:
+    """Every map a mod places scenery on: {map pack name: (the objects of all the mods in load order, the mods' ids)}."""
+    by_id = {m.id: m for m, _ in mods}
+    out: dict[str, tuple[list, list[str]]] = {}
+    for mod_id in order:
+        if mod_id not in by_id:
+            continue
+        for pack, objects in by_id[mod_id].scenery.items():
+            every, ids = out.setdefault(pack, ([], []))
+            every.extend(objects)
+            ids.append(mod_id)
+    return out
+
+
 def find_pack(game: Path, name: str) -> Path | None:
     """A pack by path, or by name in the game folder (newest data revision first found, then Maps\\PC)."""
     p = Path(name)
@@ -447,6 +488,34 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if changed_members:
                 map_packs.append((map_path, map_arc, changed_members))
                 result.terrain_changed[map_path.name] = changed_members
+        for name, (objects, ids) in scenery_edits(result.order, mods).items():
+            map_path = find_pack(game, pack_file(name))
+            if map_path is None:
+                result.findings.append(Finding("error", f"{', '.join(ids)}: the map {name} isn't in this game "
+                                                        f"({pack_file(name)} is missing), so nothing can be placed "
+                                                        f"on it"))
+                continue
+            entry = next((e for e in map_packs if e[0] == map_path), None)
+            map_arc = entry[1] if entry else open_pack(map_path)
+            changed_members = entry[2] if entry else {}
+            from .scenery import MEMBER, SceneryEditError, SceneryError, add_objects
+            try:
+                member = map_arc.find(MEMBER).path
+                raw = changed_members.get(member) or bytes(map_arc.read(map_arc.find(MEMBER)))
+                changed_members[member], notes = add_objects(raw, objects)
+            except KeyError:
+                result.findings.append(Finding("error", f"{map_path.name} has no scenery file, so nothing can be "
+                                                        f"placed on {name}"))
+                continue
+            except (SceneryError, SceneryEditError) as exc:
+                result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: {exc}"))
+                continue
+            say(f"scenery: {name}, from {', '.join(ids)}")
+            for note in notes:
+                say(f"  {note}")
+            if entry is None:
+                map_packs.append((map_path, map_arc, changed_members))
+            result.terrain_changed[map_path.name] = changed_members
         if result.errors:
             for line in report_lines([f for f in result.findings if f.level == "error"], show_all=show_all):
                 say(line)

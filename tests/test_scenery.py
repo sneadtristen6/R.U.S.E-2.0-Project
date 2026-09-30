@@ -3,12 +3,18 @@ Studio shows, and the scenery types from made-up descriptor NDFs (no game files 
 import hashlib
 import math
 import struct
+import tempfile
+import tomllib
 import unittest
+from collections import Counter
+from pathlib import Path
 
 from fixtures import make_edat, make_ndf, val
 from rusemod import scenery
+from rusemod.build import build_and_write, load_mod
 from rusemod.edat import Edat
-from rusemod.scenery import SCALE16, Scenery, SceneryError, descriptors, group_of, layout, placement, view
+from rusemod.scenery import (SCALE16, T_COMPACT, T_FULL, NewObject, Scenery, SceneryEditError, SceneryError,
+                             add_objects, descriptors, group_of, layout, objects_toml, parse_objects, placement, view)
 
 
 def compact(sym, x, y, turn=0.0, size=1.0):
@@ -169,6 +175,89 @@ class Descriptors(unittest.TestCase):
         self.assertEqual(v["types"][hall[0]][:2], ["MairieNormande", "building"])
         self.assertEqual(hall[1:3], [1000, 2000])
         self.assertEqual(scenery.MEMBER, "output\\save.boobspc")
+
+
+def spots(data):
+    """Every object as (name index, x, y), for comparing whole maps."""
+    return Counter((sym, round(m[3], 2), round(m[7], 2)) for sym, m in Scenery(data).walk())
+
+
+class Adding(unittest.TestCase):
+    def test_new_objects_land_where_asked_and_nothing_else_moves(self):
+        data = village()
+        new, notes = add_objects(data, [NewObject("TypeWarrior/MairieNormande", 7000.0, 8000.0, 90.0, 1.5),
+                                        NewObject("TypeWarrior/Chene_02", -500.0, 300.0, 0.0, 4.0)])
+        self.assertEqual(spots(new) - spots(data), Counter({(0, 7000.0, 8000.0): 1, (1, -500.0, 300.0): 1}))
+        self.assertEqual(spots(data) - spots(new), Counter())
+        s = Scenery(new)
+        last = s.blocks[-1]
+        self.assertEqual(len(s.blocks), 3)
+        self.assertEqual([it.tform for it in last.items][1:], [T_COMPACT, T_FULL])  # size 4 needs the full form
+        hall = next(m for sym, m in s.walk() if sym == 0 and round(m[3]) == 7000)
+        _x, _y, turn, size = placement(hall)
+        self.assertAlmostEqual(math.degrees(turn), 90.0, places=2)
+        self.assertAlmostEqual(size, 1.5, places=3)
+        refs = [(b.index, s._by_offset[it.child_offset]) for b in s.blocks for it in b.items if it.kind == "child"]
+        self.assertTrue(all(child > parent for parent, child in refs))  # every reference still points forward
+        self.assertIn(last.index, [c for _p, c in refs])
+        self.assertEqual(add_objects(data, [])[0], data)
+        self.assertIn("2 object(s) added", notes[0])
+
+    def test_a_map_whose_top_block_places_only_blocks(self):
+        root_len = len(block([moved(0, 0.0, 0.0)]))
+        data = make_scenery([block([moved(root_len, 5000.0, 1000.0)]), block([compact(1, 10.0, 20.0)])], NAMES)
+        new, _ = add_objects(data, [NewObject("TypeWarrior/MairieNormande", 100.0, 200.0, 30.0)])
+        self.assertEqual(spots(new), Counter({(1, 5010.0, 1020.0): 1, (0, 100.0, 200.0): 1}))
+
+    def test_refusals(self):
+        with self.assertRaisesRegex(SceneryEditError, "isn't used on this map"):
+            add_objects(village(), [NewObject("TypeWarrior/Nope", 0.0, 0.0)])
+        with self.assertRaisesRegex(SceneryEditError, "size"):
+            add_objects(village(), [NewObject("TypeWarrior/Chene_02", 0.0, 0.0, 0.0, 99.0)])
+        with self.assertRaisesRegex(SceneryEditError, "unknown key 'colour'"):
+            parse_objects([{"type": "TypeWarrior/Chene_02", "x": 1, "y": 2, "colour": 3}])
+        with self.assertRaisesRegex(SceneryEditError, "has no x"):
+            parse_objects([{"type": "TypeWarrior/Chene_02", "y": 2}])
+
+    def test_the_mod_file(self):
+        objs = [NewObject("TypeWarrior/Chene_02", 1.5, 2.0, 45.0, 2.0), NewObject("TypeWarrior/MairieNormande", 3.0, 4.0)]
+        text = objects_toml(objs, "Made in the Studio.")
+        self.assertTrue(text.startswith("# Made in the Studio.\n"))
+        self.assertEqual(parse_objects(tomllib.loads(text)["object"]), objs)
+
+
+class Building(unittest.TestCase):
+    """A mod's maps/<map>/scenery.toml, built into the map's pack (MOD_FORMAT §8)."""
+
+    def test_objects_go_into_the_map(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            game = root / "R.U.S.E"
+            (game / "Data" / "PC" / "190852").mkdir(parents=True)
+            (game / "Maps" / "PC").mkdir(parents=True)
+            (game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").write_bytes(make_edat([("file", "x.bin", b"x")]))
+            shipped = make_edat([("dir", "output\\", [("file", "save.boobspc", village())])])
+            (game / "Maps" / "PC" / "DataMapTest_v09.dat").write_bytes(shipped)
+            mod = root / "mod"
+            (mod / "maps" / "Test").mkdir(parents=True)
+            (mod / "mod.toml").write_text('[mod]\nid = "trees"\nversion = "1.0.0"\n', encoding="utf-8")
+            (mod / "maps" / "Test" / "scenery.toml").write_text(
+                objects_toml([NewObject("TypeWarrior/Chene_02", 50.0, 60.0)]), encoding="utf-8")
+            info, _ops = load_mod(mod)
+            self.assertEqual(info.scenery, {"Test": [NewObject("TypeWarrior/Chene_02", 50.0, 60.0)]})
+            lines = []
+            result = build_and_write(game, [(info, _ops)], out=root / "out", say=lines.append)
+            self.assertEqual(result.errors, [], lines)
+            arc = Edat((root / "out" / "DataMapTest_v09.dat").read_bytes())
+            new = bytes(arc.read(arc.find(scenery.MEMBER)))
+            self.assertEqual(spots(new) - spots(village()), Counter({(1, 50.0, 60.0): 1}))
+            self.assertEqual((game / "Maps" / "PC" / "DataMapTest_v09.dat").read_bytes(), shipped)
+            (mod / "maps" / "Test" / "scenery.toml").write_text('[[object]]\ntype = "TypeWarrior/Nope"\nx = 1\ny = 2\n',
+                                                               encoding="utf-8")
+            lines = []
+            result = build_and_write(game, [load_mod(mod)], out=root / "out2", say=lines.append)
+            self.assertIn("isn't used on this map", result.errors[0].message)
+            self.assertIn("Nothing was written.", lines)
 
 
 if __name__ == "__main__":

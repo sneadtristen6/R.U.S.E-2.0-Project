@@ -404,6 +404,192 @@ def view(map_arc, unit_arc, descs: dict[str, Descriptor] | None = None, budget: 
             "groups": {g: {"shown": len(shown.get(g, [])), "total": totals.get(g, 0)} for g in budget}}
 
 
+# --- adding objects (a mod's maps/<map>/scenery.toml; docs/MOD_FORMAT.md §8) ---
+FILLER = 0xCAFE5A1E   # every block's items start with this word, which the game never reads
+BLOCK_TAIL = bytes.fromhex("000bb00bb00bb00b")  # bytes 0x18-0x1f of a long block header, as the shipped blocks have
+ALL_TIERS = 0x1F      # a block's LOD mask: drawn close, middle and far (a superset only costs culling)
+MARGIN = 5000.0       # added to a new block's box around its objects' positions (map units, times their size)
+
+
+class SceneryEditError(ValueError):
+    pass
+
+
+@dataclass(frozen=True)
+class NewObject:
+    type: str            # a scenery type the map already uses, e.g. TypeWarrior/MairieNormande
+    x: float
+    y: float
+    turn: float = 0.0    # degrees, from east toward south (clockwise on the minimap)
+    size: float = 1.0
+
+
+def _inverse(m: tuple) -> tuple:
+    a, b, c, tx, d, e, f, ty, g, h, i, tz = m
+    det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)
+    if abs(det) < 1e-12:
+        raise SceneryEditError("a block is placed with a flat transform")
+    r = [(e * i - f * h) / det, (c * h - b * i) / det, (b * f - c * e) / det,
+         (f * g - d * i) / det, (a * i - c * g) / det, (c * d - a * f) / det,
+         (d * h - e * g) / det, (b * g - a * h) / det, (a * e - b * d) / det]
+    t = [-(r[0] * tx + r[1] * ty + r[2] * tz), -(r[3] * tx + r[4] * ty + r[5] * tz), -(r[6] * tx + r[7] * ty + r[8] * tz)]
+    return (r[0], r[1], r[2], t[0], r[3], r[4], r[5], t[1], r[6], r[7], r[8], t[2])
+
+
+def encode_transform(m: tuple) -> tuple[int, bytes]:
+    """The shortest exact-enough form of a 3x4 transform: compact when it's a turn and scale about the vertical
+    (each of the four numbers within +-3), else the full 12 floats."""
+    a, b, c, tx, d, e, f, ty, g, h, i, tz = m
+    if c == f == g == h == 0 and max(abs(a), abs(b), abs(d), abs(e)) <= 3.0:
+        q = [max(-32767, min(32767, round(v / SCALE16))) for v in (a, b, d, e)]
+        return T_COMPACT, struct.pack("<4h4f", *q, tx, ty, tz, i)
+    return T_FULL, struct.pack("<12f", *m)
+
+
+def _identity_data(kind: int) -> bytes:
+    """A transform of the given kind that changes nothing (a compact one is within 1/32767 of it)."""
+    return {T_IDENTITY: b"", T_MOVE: struct.pack("<3f", 0, 0, 0), T_FULL: struct.pack("<12f", *IDENTITY),
+            T_COMPACT: struct.pack("<4h4f", round(1 / SCALE16), 0, 0, round(1 / SCALE16), 0, 0, 0, 1.0)}[kind]
+
+
+def _carrier(sc: Scenery) -> tuple[Block, Item, tuple]:
+    """An object item to turn into the reference to the new block: in a block placed exactly once (the top block
+    first), an exact kind first (none, a move, full) and a compact one last. Returns (its block, it, the block's
+    transform in map coordinates)."""
+    n = len(sc.blocks)
+    weight, where = [0] * n, [None] * n
+    for r in sc.roots():
+        weight[r] += 1
+        where[r] = IDENTITY
+    for b in sc.blocks:
+        for it in b.items:
+            if it.kind == "child":
+                j = sc._by_offset[it.child_offset]
+                weight[j] += weight[b.index]
+                where[j] = compose(where[b.index], it.matrix()) if where[b.index] is not None else None
+    for b in sc.blocks:
+        if weight[b.index] != 1 or where[b.index] is None:
+            continue
+        objects = [it for it in b.items if it.kind == "object"]
+        if objects:
+            best = min(objects, key=lambda it: (it.tform == T_COMPACT, it.at))
+            return b, best, where[b.index]
+    raise SceneryEditError("the map has no object to hang new ones on")
+
+
+def _new_block(items: list[bytes], box: tuple) -> bytes:
+    offsets, pos = [], 4
+    for it in items:
+        offsets.append(pos)
+        pos += len(it)
+    entries = offsets + offsets  # every item is drawn from far too: the far-view items first, then all of them
+    p = len(items)
+    nodes = (struct.pack("<IHBB", (ALL_TIERS << 20) | (2 << 2), p, 0xFF, 0)
+             + struct.pack("<IHBB", 0xC0000000 | (0x08 << 20), p, 0xFF, 0)
+             + struct.pack("<IHBB", 0xC0000000 | ((ALL_TIERS & ~0x08) << 20), 0, 0xFF, 0))
+    head = struct.pack("<II4f", 0x80000000 | len(entries), 3, *box) + BLOCK_TAIL
+    return head + struct.pack(f"<{len(entries)}I", *entries) + nodes + struct.pack("<I", FILLER) + b"".join(items)
+
+
+def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]:
+    """The scenery file with `objects` added, the way DomesticNukes proved in the game: one object item of a block
+    placed once becomes a same-size reference (with a transform that changes nothing) to a new block at the end,
+    which holds that object and the new ones. Every reference still points forward; the grids are left alone.
+    Types must be ones the map already uses (in its name table). Returns (new file, notes)."""
+    sc = Scenery(data)
+    if not objects:
+        return bytes(data), []
+    index = {name: i for i, name in enumerate(sc.names[:len(sc.flags)]) if sc.flags[i] == 1}  # not Route etc.
+    words: dict[int, int] = {}  # a placed item's high bits (its LOD tier and variation) per type
+    for b in sc.blocks:
+        for it in b.items:
+            if it.kind == "object":
+                words.setdefault(it.symbol, it.word & 0x7C000000)
+    block, carrier, frame = _carrier(sc)
+    # the reference's own "no change" transform: exact, except a compact one (a scale of 32766.99/32767); new
+    # objects are placed through it, and the carried object gets its inverse, so nothing moves
+    q = decode_transform(carrier.tform, _identity_data(carrier.tform))
+    to_local = _inverse(compose(frame, q))
+    if q == IDENTITY:
+        items = [struct.pack("<I", carrier.word) + carrier.data]
+    else:
+        kind, tdata = encode_transform(compose(_inverse(q), carrier.matrix()))
+        items = [struct.pack("<I", (carrier.word & ~3) | kind) + tdata]
+    xs, ys, notes = [], [], []
+    for o in objects:
+        sym = index.get(o.type)
+        if sym is None:
+            raise SceneryEditError(f"{o.type} isn't used on this map, so the map can't take it (only types its "
+                                   f"scenery already lists)")
+        if not 0.05 <= o.size <= 50:
+            raise SceneryEditError(f"{o.type}: size {o.size} is outside 0.05 to 50")
+        t = math.radians(o.turn)
+        c, s = math.cos(t) * o.size, math.sin(t) * o.size
+        local = compose(to_local, (c, -s, 0.0, o.x, s, c, 0.0, o.y, 0.0, 0.0, o.size, 0.0))
+        kind, tdata = encode_transform(local)
+        items.append(struct.pack("<I", 0x80000000 | words.get(sym, 0) | (sym << 4) | kind) + tdata)
+        xs.append(local[3])
+        ys.append(local[7])
+    cm = carrier.matrix()
+    xs.append(cm[3])
+    ys.append(cm[7])
+    pad = MARGIN * max([1.0] + [o.size for o in objects])
+    new = _new_block(items, (min(xs) - pad, min(ys) - pad, max(xs) + pad, max(ys) + pad))
+    f = list(sc.fields)
+    tab_off, tab_n, data_off, data_len = f[0], f[1], f[2], f[3]
+    if tab_off != 124 or data_off != tab_off + 4 * tab_n:
+        raise SceneryEditError("the scenery file's tables aren't in the order this writer knows")
+    offset = data_len  # the new block goes after every other block: all references stay forward
+    if offset & ~0xFFFFFC:
+        raise SceneryEditError("the map's scenery is too big for a new block to be referenced")
+    ref = (offset & 0xFFFFFC) | (carrier.word & 0x0C000000) | carrier.tform
+    patched = bytearray(data[data_off:data_off + data_len])
+    at = block.offset + block.items_start + carrier.at
+    patched[at:at + 4 + len(carrier.data)] = struct.pack("<I", ref) + _identity_data(carrier.tform)
+    end = data_off + data_len
+    shift = 4 + len(new)
+    for k in (4, 6, 8, 10, 12, 20, 22, 24):  # the tables after the data move by the table's new entry and the block
+        if f[k] < end:
+            raise SceneryEditError("the scenery file's tables aren't in the order this writer knows")
+        f[k] += shift
+    f[1], f[2], f[3] = tab_n + 1, data_off + 4, data_len + len(new)
+    table = list(struct.unpack_from(f"<{tab_n}I", data, tab_off))
+    table = table[:-1] + [offset, data_len + len(new)]
+    body = (VERSION + struct.pack("<26I", *f) + struct.pack(f"<{len(table)}I", *table) + bytes(patched) + new
+            + data[end:])
+    out = hashlib.md5(body).digest() + body
+    notes.append(f"{len(objects)} object(s) added in a new block, hung on {sc.names[carrier.symbol]} in block "
+                 f"{block.index}")
+    return out, notes
+
+
+def parse_objects(rows: list, where: str = "scenery.toml") -> list[NewObject]:
+    out = []
+    for k, row in enumerate(rows):
+        extra = sorted(set(row) - {"type", "x", "y", "turn", "size"})
+        if extra:
+            raise SceneryEditError(f"{where}: object {k + 1}: unknown key {extra[0]!r}")
+        try:
+            o = NewObject(str(row["type"]), float(row["x"]), float(row["y"]), float(row.get("turn", 0.0)),
+                          float(row.get("size", 1.0)))
+        except KeyError as exc:
+            raise SceneryEditError(f"{where}: object {k + 1} has no {exc.args[0]}") from None
+        except (TypeError, ValueError):
+            raise SceneryEditError(f"{where}: object {k + 1}: x, y, turn and size must be numbers") from None
+        if not all(math.isfinite(v) for v in (o.x, o.y, o.turn, o.size)) or not 0.05 <= o.size <= 50:
+            raise SceneryEditError(f"{where}: object {k + 1}: a number is out of range (size: 0.05 to 50)")
+        out.append(o)
+    return out
+
+
+def objects_toml(objects: list[NewObject], header: str = "") -> str:
+    lines = [f"# {ln}" if ln else "#" for ln in header.splitlines()] + ([""] if header else [])
+    for o in objects:
+        lines += ["[[object]]", f'type = "{o.type}"', f"x = {o.x!r}", f"y = {o.y!r}", f"turn = {o.turn!r}",
+                  f"size = {o.size!r}", ""]
+    return "\n".join(lines) + "\n" if lines else "\n"
+
+
 def placement(m: tuple) -> tuple[float, float, float, float]:
     """x, y, the turn (radians, counterclockwise from +x) and the size (the scale along the object's own x) of a
     placed object's transform."""
