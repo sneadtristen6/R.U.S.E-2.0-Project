@@ -652,3 +652,11 @@ import); the cloud tab's pull request #1 (Task A) is under review.
 - **A rule, enforced:** `tests/test_source.py` fails on Python strings whose backslashes mangle Windows paths (it
   happened four times that day).
 
+### 2026-09-30, night: movement edits pass in the game
+
+Blitz, one modded copy: a blocked pit (`movement.toml`), 24 placed buildings made solid, and the ground the
+shrunk circles gave up filled back with new circles. Units can't enter the pit, drive between the placed towers,
+reach the hill, and a building placed in the game on that ground works. Four crashes on the way, all in the
+navigation graphs' spatial index, read from the crash dumps: it's one bounding-interval tree whose branches hold
+a jump to their right half; a tree appended at the end is never reached, and a leaf grown without fresh jumps sends
+the walk astray. `rusemod.nav` writes it the game's way (all 1,307 shipped graphs byte-identical).
