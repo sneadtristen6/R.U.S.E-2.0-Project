@@ -19,4 +19,4 @@ v0.4: Maps, the start of the terrain editor: every map the game ships, drawn in 
   py -3 -m ruse_studio [--game DIR] [--index FILE] [--spike]
 """
 
-__version__ = "0.6.1"
+__version__ = "0.6.2"

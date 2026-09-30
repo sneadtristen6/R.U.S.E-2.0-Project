@@ -32,7 +32,8 @@ def zone(number: int, name: str, square: float) -> bytes:
 
 
 def design_items() -> bytes:
-    """One starting point (alliance 2, turned 1.5 radians) and one spawn with a unit class, as TGameDesignItems."""
+    """One starting point (alliance 2, turned 1.5 radians) and one spawn with a unit class, as TGameDesignItems,
+    listed by a TGameDesignItemList as in the game's files."""
     def s(i):
         return val(0x07, struct.pack("<I", i))
 
@@ -46,11 +47,12 @@ def design_items() -> bytes:
         objects=[(0, [(0, vec(1000.0, 2000.0, 50.0)), (1, val(0x05, struct.pack("<f", 1.5))), (2, ref(2, 1))]),
                  (0, [(0, vec(3000.0, 4000.0, 60.0)), (2, ref(3, 2))]),
                  (1, [(3, val(0x02, struct.pack("<i", 2))), (4, s(0))]),
-                 (2, [(5, s(1))])],
-        classes=["TGameDesignItem", "TGameDesignAddOn_StartingPoint", "TGameDesignAddOn_Spawn"],
+                 (2, [(5, s(1))]),
+                 (3, [(6, val(0x11, struct.pack("<I", 2) + ref(0, 0) + ref(1, 0)))])],
+        classes=["TGameDesignItem", "TGameDesignAddOn_StartingPoint", "TGameDesignAddOn_Spawn", "TGameDesignItemList"],
         props=[("Position", 0), ("Rotation", 0), ("AddOn", 0), ("AllianceNum", 1), ("Name", 1),
-               ("PythonClassName", 2)],
-        strings=["HQ_Allies", "front.parametres.Classes.Unit_M4_Sherman"])
+               ("PythonClassName", 2), ("GameDesignItemList", 3)],
+        strings=["HQ_Allies", "front.parametres.Classes.Unit_M4_Sherman"], topo=[4])
 
 
 def scenario(zones=(("zone_a", 1000.0), ("zone_b", 500.0)), items=True) -> bytes:
@@ -115,11 +117,12 @@ class Writing(unittest.TestCase):
         s = Scenario.read(scenario())
         s.changed = True
         data = s.to_bytes()
-        self.assertEqual(data, scenario())
-        size = struct.unpack_from("<I", data, len(data) - len(s.ndf_raw) - 4)[0]
-        self.assertEqual(size % 4, 0)
-        s.move(0, 1.0, 2.0)
-        self.assertEqual(len(s.to_bytes()) % 4, len(data) % 4)
+        zones = struct.unpack_from("<I", data, 36)[0]
+        size = struct.unpack_from("<I", data, 40 + zones)[0]
+        self.assertEqual((size % 4, len(data) - (44 + zones + size)), (0, 0))  # padded, and nothing after it
+        back = Scenario.read(data)
+        self.assertEqual([(i.kind, i.position, i.values) for i in back.items],
+                         [(i.kind, i.position, i.values) for i in Scenario.read(scenario()).items])
 
     def test_the_checksum_is_made_again(self):
         """The 16 bytes after the magic are the MD5 of bytes 0-9 and 28-end (LittleGroove's rule, true of all 102

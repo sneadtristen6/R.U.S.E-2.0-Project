@@ -1,6 +1,9 @@
 **RUSE Launcher 0.2, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.2.5:** finding updates is sturdier: when GitHub turns the one check at start away (it allows 60 an hour per
+internet address, shared by everything on it), the launcher reads GitHub's release list instead.
+
 **0.2.4:** your language is kept through restarts, updates and reinstalls.
 
 **0.2.3:** the red box folds up like the yellow one (a big set can list dozens of clashes).

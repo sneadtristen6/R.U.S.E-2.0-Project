@@ -410,6 +410,22 @@ class ScenarioMoves(unittest.TestCase):
         self.assertEqual(s.items[0].position, (1500.0, 2500.0, 50.0))
         self.assertEqual((self.game / "Data" / "PC" / "190852" / "DataMap_Win.dat").read_bytes(), self.data)  # untouched
 
+    def test_a_spawned_unit_goes_into_the_modded_copy(self):
+        from rusemod.scenario import Scenario
+        folder = self.mod("sherman", '[[move]]\nfile = "leveldesign.scenario"\nitem = 0\nkind = "StartingPoint"\n'
+                                     'x = 1500.0\ny = 2500.0\n\n[[spawn]]\nfile = "leveldesign.scenario"\n'
+                                     'what = "Unit_M4_Sherman"\nx = 1600.0\ny = 2600.0\ncamp = 1\nrotation = 0.5\n')
+        lines = []
+        result = build_and_write(self.game, [load_mod(folder)], instance=self.root / "copy", say=lines.append)
+        self.assertEqual(result.errors, [], lines)
+        self.assertIn("  Blitz: leveldesign.scenario: 1 item(s) moved, 1 spawn(s) added", lines)
+        arc = Edat((self.root / "copy" / "Data" / "PC" / "190852" / "DataMap_Win.dat").read_bytes())
+        s = Scenario.read(bytes(arc.read(arc.find("test/map/blitz/leveldesign.scenario".replace("/", "\\")))))
+        new = s.items[-1]
+        self.assertEqual((new.kind, new.position[:2], new.rotation), ("Spawn", (1600.0, 2600.0), 0.5))
+        self.assertEqual(new.values, {"Camp": 1, "PythonClassName": "front.parametres.Classes.Unit_M4_Sherman"})
+        self.assertEqual(s.items[0].position[:2], (1500.0, 2500.0))
+
     def test_a_move_for_another_version_of_the_map_is_refused(self):
         folder = self.mod("wrong", '[[move]]\nfile = "leveldesign.scenario"\nitem = 1\nkind = "StartingPoint"\n'
                                    'x = 1.0\ny = 2.0\n')

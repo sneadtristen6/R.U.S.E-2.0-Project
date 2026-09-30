@@ -13,7 +13,7 @@
 &nbsp;&nbsp;
 [![Download RUSE Studio](https://img.shields.io/badge/Download-RUSE%20Studio-b8913a?style=for-the-badge)](https://github.com/sneadtristen6/Ruse-Mod-Platform/releases?q=studio)
 
-**Launcher** for players (latest: 0.2.4) &middot; **Studio** for modders, a preview (latest: 0.6.1) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.2.5) &middot; **Studio** for modders, a preview (latest: 0.6.2) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 </div>
 
@@ -284,7 +284,7 @@ browser with made-up data: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_stu
   with mods, in three steps"), and the launcher in the PC's own language (any of the game's ten). **Also merged:
   "Browse mods"**, a list of the community's mods from a GitHub repository (MOD_FORMAT §15), with Install: the file
   is checked against the list before it goes into the library; offline, the last copy of the list.
-- **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), released 0.6.1), for modders: browse every unit and
+- **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), released 0.6.2), for modders: browse every unit and
   building, see a unit's values, parts and what uses it, and pick a language: the game's own names by default, or
   any of the game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is
   saved in the mod's `src/studio.rndf` (with Undo); a part several units share changes for one of them or all.

@@ -1,6 +1,10 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.6.2:** finding updates is sturdier: when GitHub turns the one check at start away (it allows 60 an hour
+per internet address, shared by everything on it), the Studio reads GitHub's release list instead. Mods can also
+spawn units and buildings in a scenario (`[[spawn]]` in `maps/<map>/scenario.toml`).
+
 **0.6.1:**
 
 - **Your language and keys are kept** through restarts, updates and reinstalls (they were lost at every start).

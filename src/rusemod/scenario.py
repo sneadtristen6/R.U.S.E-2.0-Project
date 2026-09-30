@@ -200,6 +200,55 @@ class Scenario:
             it.rotation = struct.unpack("<f", props["Rotation"].payload)[0]
         self.changed = True
 
+    def add_spawn(self, x: float, y: float, what: str, camp: int | None = None, rotation: float = 0.0,
+                  z: float = 0.0, name: str | None = None) -> int:
+        """A new design item that spawns `what` at x, y (world units) when the scenario starts, for side `camp`
+        (None: no side, like the shipped depots' -1 is written as it's given), turned `rotation` radians. `what` is
+        the game's Python class path of a unit or building (front.parametres.Classes.Unit_M4_Sherman), as the shipped
+        spawns name theirs. Returns the new item's number in `items`."""
+        from .ndf import Value
+        nd = self.ndf
+        if nd is None:
+            raise ScenarioError("this scenario has no design items to add a spawn to")
+        what.encode("latin-1")
+        lists = [o for o in nd.objects if nd.classes[o.cls] == "TGameDesignItemList"]
+        if len(lists) != 1:
+            raise ScenarioError("this scenario's design items aren't in one list")
+
+        def prop(name, cls):
+            for i, (n, c) in enumerate(nd.props):
+                if n == name and c == cls:
+                    return i
+            return nd.add_prop(name, cls)
+
+        def string(text):
+            i = nd.string_index(text)
+            return nd.add_string(text) if i is None else i
+        item_cls = nd.class_index("TGameDesignItem")
+        spawn_cls = nd.class_index("TGameDesignAddOn_Spawn")
+        addon_props = [(prop("PythonClassName", spawn_cls), Value(0x07, struct.pack("<I", string(what))))]
+        if camp is not None:
+            addon_props.insert(0, (prop("Camp", spawn_cls), Value(0x02, struct.pack("<i", int(camp)))))
+        if name:
+            addon_props.insert(0, (prop("Name", spawn_cls), Value(0x07, struct.pack("<I", string(name)))))
+        addon = nd.add_object(spawn_cls, addon_props)
+        item = nd.add_object(item_cls, [
+            (prop("Position", item_cls), Value(0x0B, struct.pack("<3f", x, y, z))),
+            (prop("Rotation", item_cls), Value(0x05, struct.pack("<f", rotation))),
+            (prop("AddOn", item_cls), Value(0x09, struct.pack("<III", 0xBBBBBBBB, addon, spawn_cls)))])
+        holder = lists[0]
+        ref = Value(0x09, struct.pack("<III", 0xBBBBBBBB, item, item_cls)).encode()
+        for k, (pi, v) in enumerate(holder.props):
+            if v.tc == 0x11:
+                count = struct.unpack_from("<I", v.payload)[0]
+                holder.props[k] = (pi, Value(0x11, struct.pack("<I", count + 1) + v.payload[4:] + ref))
+                break
+        else:  # an empty list is left out of the file (11 shipped scenarios): it gets its first item
+            holder.props.append((prop("GameDesignItemList", holder.cls), Value(0x11, struct.pack("<I", 1) + ref)))
+        self.items = _items(nd)
+        self.changed = True
+        return next(i for i, it in enumerate(self.items) if it.obj == item)
+
     def to_bytes(self) -> bytes:
         zones = struct.pack("<I", len(self.zones)) + b"".join(_zone_bytes(z) for z in self.zones)
         out = self.head + struct.pack("<3I", self.version, self.one, len(zones)) + zones
@@ -444,10 +493,69 @@ def moves_toml(moves: list[Move], header: str = "") -> str:
     return "\n".join(lines)
 
 
-def apply_moves(read, map_pack: str, moves: list[Move]) -> tuple[dict[str, bytes], list[str]]:
-    """Apply `moves` (in order) to a map's scenarios. `read(member)` gives a DataMap_Win.dat member's bytes, or None.
-    Returns ({member: new bytes}, report lines). A move whose file or item isn't there, or whose item is another
-    kind (the file isn't the one the mod was made for), raises ScenarioError."""
+CLASS_PATH = "front.parametres.Classes."  # where the shipped spawns name most units and buildings
+
+
+@dataclass
+class Spawn:
+    """A unit or building spawned when scenario `file` starts: `what` (a class name, Unit_M4_Sherman, or the full
+    class path the shipped spawns use), for side `camp` (None: no side), at x, y, turned `rotation` radians."""
+    file: str
+    what: str
+    x: float
+    y: float
+    camp: int | None = None
+    rotation: float = 0.0
+
+    @property
+    def class_path(self) -> str:
+        return self.what if "." in self.what else CLASS_PATH + self.what
+
+
+def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
+    out = []
+    for n, m in enumerate(items or [], start=1):
+        at = f"{where}: spawn {n}"
+        if not isinstance(m, dict):
+            raise ScenarioError(f"{at} isn't a table")
+        extra = sorted(set(m) - {"file", "what", "x", "y", "camp", "rotation"})
+        if extra:
+            raise ScenarioError(f"{at}: unknown key {extra[0]!r}")
+        for k in ("file", "what", "x", "y"):
+            if k not in m:
+                raise ScenarioError(f"{at}: {k} is missing")
+        f, what = str(m["file"]), str(m["what"])
+        if not f.lower().endswith(".scenario") or "/" in f or "\\" in f:
+            raise ScenarioError(f"{at}: file must be a scenario's name, like leveldesign.scenario")
+        if not what or not all(c.isalnum() or c in "._" for c in what):
+            raise ScenarioError(f"{at}: what must be a unit's or building's class name, like Unit_M4_Sherman")
+        try:
+            x, y = float(m["x"]), float(m["y"])
+            camp = int(m["camp"]) if "camp" in m else None
+            rot = float(m.get("rotation", 0.0))
+        except (TypeError, ValueError):
+            raise ScenarioError(f"{at}: x, y and rotation are numbers, camp a whole number") from None
+        out.append(Spawn(f, what, x, y, camp, rot))
+    return out
+
+
+def spawns_toml(spawns: list[Spawn]) -> str:
+    lines = []
+    for s in spawns:
+        lines += ["[[spawn]]", f'file = "{s.file}"', f'what = "{s.what}"', f"x = {s.x!r}", f"y = {s.y!r}"]
+        if s.camp is not None:
+            lines.append(f"camp = {s.camp}")
+        if s.rotation:
+            lines.append(f"rotation = {s.rotation!r}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], list[str]]:
+    """Apply a mod's scenario edits (in order: Move and Spawn) to a map's scenarios. `read(member)` gives a
+    DataMap_Win.dat member's bytes, or None. Returns ({member: new bytes}, report lines). A move whose file or item
+    isn't there, or whose item is another kind (the file isn't the one the mod was made for), raises ScenarioError;
+    so does a spawn in a scenario that isn't there."""
     folder = folder_of(map_pack)
     files: dict[str, Scenario] = {}
     notes = []
@@ -459,6 +567,9 @@ def apply_moves(read, map_pack: str, moves: list[Move]) -> tuple[dict[str, bytes
                 raise ScenarioError(f"{map_pack}: it has no scenario {m.file}")
             files[member.lower()] = (member, Scenario.read(raw))
         member, s = files[member.lower()]
+        if isinstance(m, Spawn):
+            s.add_spawn(m.x, m.y, m.class_path, camp=m.camp, rotation=m.rotation)
+            continue
         if m.item >= len(s.items):
             raise ScenarioError(f"{map_pack}: {m.file} has {len(s.items)} design items, not {m.item + 1}")
         if s.items[m.item].kind != m.kind:
@@ -466,6 +577,8 @@ def apply_moves(read, map_pack: str, moves: list[Move]) -> tuple[dict[str, bytes
                                 f"not a {m.kind}: the mod was made for another version of this map")
         s.move(m.item, m.x, m.y, rotation=m.rotation)  # an item without a rotation can't be turned: move() says so
     for member, s in files.values():
-        notes.append(f"{map_pack}: {member.rsplit(chr(92), 1)[-1]}: "
-                     f"{sum(1 for m in moves if (folder + m.file).lower() == member.lower())} item(s) moved")
+        mine = [m for m in moves if (folder + m.file).lower() == member.lower()]
+        moved, spawned = sum(1 for m in mine if isinstance(m, Move)), sum(1 for m in mine if isinstance(m, Spawn))
+        notes.append(f"{map_pack}: {member.rsplit(chr(92), 1)[-1]}: " + ", ".join(
+            p for p in (f"{moved} item(s) moved" if moved else "", f"{spawned} spawn(s) added" if spawned else "") if p))
     return {member: s.to_bytes() for member, s in files.values()}, notes

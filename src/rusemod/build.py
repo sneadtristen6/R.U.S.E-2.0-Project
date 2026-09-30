@@ -141,9 +141,10 @@ def read_scenery(folder: Path) -> dict:
 
 
 def read_scenario(folder: Path) -> dict:
-    """A mod's moved design items (starting points, spawns, names): {map pack name: [scenario.Move]} from
+    """A mod's scenario edits: moved design items (starting points, spawns, names) and new spawns (units and
+    buildings when the scenario starts): {map pack name: [scenario.Move, then scenario.Spawn]} from
     maps/<map pack>/scenario.toml (MOD_FORMAT §8)."""
-    from .scenario import ScenarioError, parse_moves
+    from .scenario import ScenarioError, parse_moves, parse_spawns
     out = {}
     maps = folder / "maps"
     for f in sorted(maps.glob("*/scenario.toml"), key=lambda p: p.parent.name.lower()) if maps.is_dir() else []:
@@ -155,11 +156,11 @@ def read_scenario(folder: Path) -> dict:
             data = tomllib.loads(f.read_text(encoding="utf-8"))
         except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
             raise BuildError(f"{rel}: {exc}") from None
-        extra = sorted(set(data) - {"move"})
+        extra = sorted(set(data) - {"move", "spawn"})
         if extra:
-            raise BuildError(f"{rel}: unknown key {extra[0]!r} (a scenario file holds [[move]] tables)")
-        try:
-            moves = parse_moves(data.get("move", []), rel)
+            raise BuildError(f"{rel}: unknown key {extra[0]!r} (a scenario file holds [[move]] and [[spawn]] tables)")
+        try:  # moves first: they name the shipped items by their number, which spawns (added at the end) don't shift
+            moves = parse_moves(data.get("move", []), rel) + parse_spawns(data.get("spawn", []), rel)
         except ScenarioError as exc:
             raise BuildError(str(exc)) from None
         if moves:

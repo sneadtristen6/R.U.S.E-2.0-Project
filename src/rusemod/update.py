@@ -66,15 +66,52 @@ def _get_json(url: str):
         return json.loads(r.read().decode("utf-8"))
 
 
-def latest(app: str, current: str, fetch=_get_json) -> Release | None:
-    """The newest release of `app` newer than `current`, or None. Raises UpdateError when GitHub can't be asked or the
-    release can't be checked."""
+FEED = f"https://github.com/{REPO}/releases.atom"
+
+
+def _get_text(url: str) -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": "RUSE-Mod-Platform-updater"})
+    with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:  # noqa: S310 (https only, fixed host)
+        return r.read().decode("utf-8")
+
+
+def feed_releases(text: str) -> list[dict]:
+    """The releases in GitHub's release feed (`FEED`), shaped like the API's answer: tag_name, html_url, body (the
+    notes, with the installer's SHA-256 our release workflow writes), and each app's installer as an asset at its
+    download address (no size, no GitHub digest: the notes' SHA-256 is then the check). The feed has no drafts.
+    It's the fallback when the API refuses: GitHub allows 60 API calls an hour per internet address, shared by every
+    program on it; the feed has no such limit."""
+    import html
+    out = []
+    for entry in text.split("<entry>")[1:]:
+        link = re.search(r'<link[^>]*href="([^"]+)"', entry)
+        content = re.search(r"<content[^>]*>(.*?)</content>", entry, re.S)
+        if not link or not link.group(1).startswith(f"https://github.com/{REPO}/releases/tag/"):
+            continue
+        tag = link.group(1).rsplit("/", 1)[-1]
+        m = re.match(r"^(launcher|studio)-v(\d+\.\d+\.\d+)$", tag)
+        assets = []
+        if m:
+            name = f"RUSE-{APPS[m.group(1)]}-Setup-{m.group(2)}.exe"
+            assets.append({"name": name, "browser_download_url": f"https://github.com/{REPO}/releases/download/{tag}/{name}",
+                           "size": 0})
+        out.append({"tag_name": tag, "html_url": link.group(1), "draft": False, "assets": assets,
+                    "body": html.unescape(content.group(1)) if content else ""})
+    return out
+
+
+def latest(app: str, current: str, fetch=_get_json, fetch_text=_get_text) -> Release | None:
+    """The newest release of `app` newer than `current`, or None. Asked once when the app starts. Raises UpdateError
+    when GitHub can't be asked (neither its API nor its release feed) or the release can't be checked."""
     if app not in APPS:
         raise ValueError(app)
     try:
         releases = fetch(API)
-    except (OSError, ValueError) as exc:
-        raise UpdateError(f"GitHub couldn't be reached to look for updates ({exc}).") from None
+    except (OSError, ValueError) as exc:  # refused (the hourly limit) or unreachable: the release feed instead
+        try:
+            releases = feed_releases(fetch_text(FEED))
+        except (OSError, ValueError):
+            raise UpdateError(f"GitHub couldn't be reached to look for updates ({exc}).") from None
     tag_re = re.compile(rf"^{app}-v(\d+\.\d+\.\d+)$")
     best = None
     for rel in releases if isinstance(releases, list) else []:
@@ -156,11 +193,13 @@ def _quit_soon(seconds: float = 1.0) -> None:
 
 class UpdateCalls:
     """The window API's update calls, for both apps (a mixin: the API sets UPDATE_APP and UPDATE_VERSION and has
-    `_home` and `_jobs`). Tests replace `_update_fetch`, `_update_opener`, `_update_popen` and `_update_quit`."""
+    `_home` and `_jobs`). Tests replace `_update_fetch`, `_update_fetch_text`, `_update_opener`, `_update_popen` and
+    `_update_quit`."""
 
     UPDATE_APP = ""
     UPDATE_VERSION = "0.0.0"
     _update_fetch = staticmethod(_get_json)
+    _update_fetch_text = staticmethod(_get_text)
     _update_opener = staticmethod(_open)
     _update_popen = staticmethod(subprocess.Popen)
     _update_quit = staticmethod(_quit_soon)
@@ -171,7 +210,7 @@ class UpdateCalls:
         """Is there a newer release of this app? {"available", "version", "page", "size", "installed" (False when
         running from the repo), "error"}. Asked once per start."""
         try:
-            rel = latest(self.UPDATE_APP, self.UPDATE_VERSION, fetch=self._update_fetch)
+            rel = latest(self.UPDATE_APP, self.UPDATE_VERSION, fetch=self._update_fetch, fetch_text=self._update_fetch_text)
         except UpdateError as exc:
             return {"available": False, "error": str(exc)}
         self._update_found = rel

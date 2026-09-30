@@ -365,6 +365,23 @@ rotation = 0.95                        # radians, optional: only items that have
   with the reason, and nothing is built.
 - Moves apply in load order; two mods moving one item: the later wins.
 
+A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
+Operations spawn theirs this way; skirmish maps spawn only their supply depots):
+
+```toml
+[[spawn]]
+file = "leveldesign_normal.scenario"
+what = "Unit_M4_Sherman"      # a unit's or building's class name (or the full class path the game's spawns use)
+x = 470000.0
+y = 650000.0
+camp = 1                      # the side it belongs to (campaigns use 1 to 7); left out: no side
+rotation = 0.5                # radians, optional
+```
+
+- The build adds a design item (`TGameDesignItem` + `TGameDesignAddOn_Spawn`) to the scenario's list; moves are
+  applied first, so their item numbers stay the shipped ones.
+- Which `camp` is which player in a skirmish isn't known yet (an in-game check).
+
 ## 9. Scripts
 
 - `scripts/<package>/*.py` holds Python 2.5-compatible source.

@@ -46,7 +46,24 @@ class Finding(unittest.TestCase):
         self.assertEqual(latest("launcher", "0.1.0", fetch=lambda url: [release("launcher-v0.2.0", digest=False)])
                          .sha256, SHA)  # the release notes' hash alone is enough
         with self.assertRaisesRegex(UpdateError, "couldn't be reached"):
-            latest("launcher", "0.1.0", fetch=mock.Mock(side_effect=OSError("offline")))
+            latest("launcher", "0.1.0", fetch=mock.Mock(side_effect=OSError("offline")),
+                   fetch_text=mock.Mock(side_effect=OSError("offline")))
+
+    def test_the_release_feed_when_the_api_refuses(self):
+        """GitHub allows 60 API calls an hour per internet address; when they're used up (by anything on it), the
+        release feed answers, with the installer's SHA-256 from the release notes as the check."""
+        base = "https://github.com/sneadtristen6/Ruse-Mod-Platform/releases"
+        feed = ("<feed><entry><link rel=\"alternate\" href=\"" + base + "/tag/studio-v0.6.1\"/>"
+                "<content type=\"html\">&lt;p&gt;SHA-256 `" + SHA + "`&lt;/p&gt;</content></entry>"
+                "<entry><link rel=\"alternate\" href=\"" + base + "/tag/launcher-v0.2.4\"/>"
+                "<content type=\"html\">no hash</content></entry></feed>")
+        refused = mock.Mock(side_effect=OSError("HTTP Error 403: rate limit exceeded"))
+        rel = latest("studio", "0.6.0", fetch=refused, fetch_text=lambda url: feed)
+        self.assertEqual((rel.version, rel.sha256, rel.url),
+                         ("0.6.1", SHA, base + "/download/studio-v0.6.1/RUSE-Studio-Setup-0.6.1.exe"))
+        with self.assertRaisesRegex(UpdateError, "can't be checked"):  # no hash in its notes: not installed
+            latest("launcher", "0.2.3", fetch=refused, fetch_text=lambda url: feed)
+        self.assertIsNone(latest("studio", "0.6.1", fetch=refused, fetch_text=lambda url: feed))
 
 
 class Response(io.BytesIO):
