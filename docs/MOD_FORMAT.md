@@ -427,6 +427,23 @@ units = "all"        # or "infantry" or "vehicles"
   reaches, times its size (`rusemod.nav.solid_blocks`); `solid = false` on an object leaves it walk-through.
 - Proven in the game (Blitz, 2026-09-30): units can't enter a blocked pit.
 
+### New roads: `maps/<map pack>/roads.toml` (not tried in the game yet)
+
+The roads units follow are each map's road network in `mapinfo.win` (buffer 0; `rusemod.roadnet`, FORMATS §2): points
+on the road curves about 9 m apart, linked with a cost of their distance / 10, and a k-d tree over the links. A mod
+adds a road as its line, in map units:
+
+```toml
+[[road]]
+points = [[500000.0, 650000.0], [640000.0, 700000.0], [800000.0, 650000.0]]
+join = 20000.0       # an end this near a road joins it (a junction); else it's a dead end (default 20000, ~77 m)
+```
+
+- The line gets points about 2,300 map units apart, linked in a chain; each end is linked to the nearest road point
+  within `join`. The network's index is built again the game's way (x then y, at the middle of the links).
+- What a road changes in the game is still to test: the roads a player sees are painted into the ground's texture
+  tiles, and the scenery holds each road again as curve pieces (FORMATS §6). A road here only changes the network.
+
 ## 9. Scripts
 
 - `scripts/<package>/*.py` holds Python 2.5-compatible source.

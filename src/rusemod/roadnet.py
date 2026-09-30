@@ -136,6 +136,64 @@ def _resample(line: list[tuple[float, float]], step: float) -> list[tuple[float,
     return out
 
 
+# --- a mod's roads: maps/<map>/roads.toml (docs/MOD_FORMAT.md §8) ---
+@dataclass
+class Road:
+    points: list[tuple[float, float]]   # the road's line, in map units, in order
+    join: float = 20000.0               # how near an end must be to a road to join it (map units; about 77 m)
+
+
+def parse_roads(items, where: str = "roads.toml") -> list[Road]:
+    out = []
+    for n, r in enumerate(items or [], start=1):
+        at = f"{where}: road {n}"
+        if not isinstance(r, dict):
+            raise RoadNetError(f"{at} isn't a table")
+        extra = sorted(set(r) - {"points", "join"})
+        if extra:
+            raise RoadNetError(f"{at}: unknown key {extra[0]!r}")
+        pts = r.get("points")
+        if not isinstance(pts, list) or len(pts) < 2:
+            raise RoadNetError(f"{at}: points must list at least two [x, y] places")
+        line = []
+        for p in pts:
+            if (not isinstance(p, list) or len(p) != 2
+                    or any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) for v in p)):
+                raise RoadNetError(f"{at}: every point is [x, y], two numbers")
+            line.append((float(p[0]), float(p[1])))
+        join = r.get("join", 20000.0)
+        if isinstance(join, bool) or not isinstance(join, (int, float)) or not 0 <= join <= 200000:
+            raise RoadNetError(f"{at}: join must be a number from 0 to 200000")
+        out.append(Road(line, float(join)))
+    return out
+
+
+def roads_toml(roads: list[Road], header: str = "") -> str:
+    lines = [f"# {line}" for line in header.splitlines()] + ([""] if header else [])
+    for r in roads:
+        pts = ", ".join(f"[{x!r}, {y!r}]" for x, y in r.points)
+        lines += ["[[road]]", f"points = [{pts}]", f"join = {r.join!r}", ""]
+    return "\n".join(lines)
+
+
+def apply_roads(read, pack: str, roads: list[Road]) -> tuple[dict, list[str]]:
+    """({member: new mapinfo.win}, notes) for one map: its road network with `roads` added; `read(member)` gives a
+    DataMap_Win.dat file's bytes or None (the build's chain, so earlier edits to the same file stay)."""
+    from ruse_mod_engine import sdb
+    from .cover import PACK, member
+    from .nav import replace_buffers
+    name = member(pack)
+    win = read(name)
+    if win is None:
+        raise RoadNetError(f"{pack} has no {name} in {PACK}, so no road can be added")
+    net = RoadNet.read(sdb.split_mapinfo(win)[1][0])
+    notes = []
+    for n, r in enumerate(roads, start=1):
+        got = net.add_road(r.points, r.join)
+        notes.append(f"road {n}: {got['points']} point(s), {got['links']} link(s), joined at {got['joined']} end(s)")
+    return {name: replace_buffers(win, {0: net.to_bytes()})}, notes
+
+
 # --- the index ---
 def _tree_read(data: bytes, q: int):
     tag = struct.unpack_from("<H", data, q)[0]

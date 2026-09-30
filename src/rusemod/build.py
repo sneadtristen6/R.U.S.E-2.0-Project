@@ -112,6 +112,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
         _cover_brushes(info)
         info.movement = read_movement(path)
         _block_brushes(info)
+        info.roads = _read_maps(path, "roads.toml")
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -124,6 +125,7 @@ def _map_readers() -> dict:
     read, and what its reader raises."""
     from .cover import CoverError, parse_paints
     from .nav import NavError, parse_blocks
+    from .roadnet import RoadNetError, parse_roads
     from .scenario import ScenarioError, parse_moves, parse_spawns
     from .scenery import SceneryEditError, parse_objects
     return {
@@ -139,10 +141,12 @@ def _map_readers() -> dict:
                        lambda d, rel: parse_paints(d.get("paint", []), rel), CoverError),
         "movement.toml": (("block",), "a movement file holds [[block]] tables",
                           lambda d, rel: parse_blocks(d.get("block", []), rel), NavError),
+        "roads.toml": (("road",), "a roads file holds [[road]] tables",
+                       lambda d, rel: parse_roads(d.get("road", []), rel), RoadNetError),
     }
 
 
-MAP_FILES = ("terrain.toml", "scenery.toml", "scenario.toml", "cover.toml", "movement.toml")
+MAP_FILES = ("terrain.toml", "scenery.toml", "scenario.toml", "cover.toml", "movement.toml", "roads.toml")
 
 
 def read_map_file(folder: Path, f: Path) -> list:
@@ -655,13 +659,15 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         data_packs = []  # (path, open pack, {member: new bytes}): DataMap_Win.dat, the scenarios and the cover grids
         moves, paints = scenario_edits(result.order, mods), scenario_edits(result.order, mods, "cover")
         blocks = scenario_edits(result.order, mods, "movement")
+        new_roads = scenario_edits(result.order, mods, "roads")
         for name, (walls, ids) in solid.items():  # placed buildings units go around, after the mods' own blocks
             every, who = blocks.setdefault(name, ([], []))
             every.extend(walls)
             who.extend(i for i in ids if i not in who)
-        if moves or paints or blocks:
+        if moves or paints or blocks or new_roads:
             from .cover import CoverError, apply_paints
             from .nav import NavError, apply_blocks
+            from .roadnet import RoadNetError, apply_roads
             from .scenario import PACK as SCENARIO_PACK, ScenarioError, apply_moves
             data_path = find_pack(game, SCENARIO_PACK)
             if data_path is None:
@@ -704,6 +710,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         continue
                     changed_members.update(new)
                     say(f"movement: {name}, from {', '.join(ids)}")
+                    for note in notes:
+                        say(f"  {note}")
+                for name, (map_roads, ids) in new_roads.items():  # the road network (buffer 0), after movement
+                    try:
+                        new, notes = apply_roads(read_data, name, map_roads)
+                    except (RoadNetError, ValueError, struct.error) as exc:
+                        result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
+                        continue
+                    changed_members.update(new)
+                    say(f"roads: {name}, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
                 if changed_members:

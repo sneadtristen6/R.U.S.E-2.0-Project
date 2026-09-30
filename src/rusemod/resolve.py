@@ -33,6 +33,7 @@ class ModInfo:
     scenario: dict = field(default_factory=dict)             # map pack name -> [scenario.Move] (§8)
     cover: dict = field(default_factory=dict)                # map pack name -> [cover.Paint] (§8)
     movement: dict = field(default_factory=dict)             # map pack name -> [nav.Block] (§8)
+    roads: dict = field(default_factory=dict)                # map pack name -> [roadnet.Road] (§8)
 
 
 # --- versions ---

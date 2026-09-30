@@ -103,5 +103,63 @@ class AddingARoad(unittest.TestCase):
         self.assertGreaterEqual(len(pts), 20000 / POINT_STEP)
 
 
+class ModRoads(unittest.TestCase):
+    """maps/<map>/roads.toml in a mod: read, written, and built into the modded copy's road network."""
+
+    def test_the_file(self):
+        from rusemod.roadnet import Road, parse_roads, roads_toml
+        import tomllib
+        roads = [Road([(1.0, 2.0), (3.5, 4.0)], 5000.0)]
+        self.assertEqual(parse_roads(tomllib.loads(roads_toml(roads, "made by hand"))["road"]), roads)
+        for bad, why in (([{"points": [[1, 2]]}], "at least two"), ([{"points": [[1, 2], [3]]}], r"\[x, y\]"),
+                         ([{"points": [[1, 2], [3, True]]}], r"\[x, y\]"), ([{"points": [[1, 2], [3, 4]], "join": -1}], "join"),
+                         ([{"points": [[1, 2], [3, 4]], "width": 3}], "unknown key 'width'"), (["x"], "isn't a table")):
+            with self.assertRaisesRegex(RoadNetError, why):
+                parse_roads(bad)
+
+    def test_built_into_the_modded_copy(self):
+        import hashlib
+        import tempfile
+        from pathlib import Path
+        from fixtures import make_edat
+        from test_build import PACK, write_mod
+        from rusemod import nav
+        from rusemod.build import build_and_write, load_mod
+        from rusemod.cover import member
+        from rusemod.edat import Edat
+        from ruse_mod_engine import sdb
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            game = root / "steamapps" / "common" / "R.U.S.E"
+            rev = game / "Data" / "PC" / "190852"
+            rev.mkdir(parents=True)
+            (game / "RUSE.exe").write_bytes(b"MZ")
+            (rev / "ZZ_GladPatchableWin.dat").write_bytes(PACK)
+            head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 16000.0, 16000.0)
+            net = ring()
+            win = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+                net.to_bytes(), b"infantry", b"vehicles", b"cover")) + b"tail", {})
+            (rev / "DataMap_Win.dat").write_bytes(
+                make_edat([("dir", "datasmap/blitz/".replace("/", "\\"), [("file", "mapinfo.win", win)])]))
+            (root / "steamapps" / "appmanifest_21970.acf").write_text('"AppState" { "buildid" "24687178" }')
+            folder = write_mod(root / "mods", "bypass", {})
+            (folder / "maps" / "Blitz").mkdir(parents=True)
+            east, west = net.points[0], net.points[12]
+            (folder / "maps" / "Blitz" / "roads.toml").write_text(
+                f"[[road]]\npoints = [[{east[0] + 3000}, {east[1]}], [{west[0] - 3000}, {west[1]}]]\n", encoding="utf-8")
+            lines = []
+            result = build_and_write(game, [load_mod(folder)], instance=root / "copy", say=lines.append)
+            self.assertEqual(result.errors, [], lines)
+            self.assertIn("roads: Blitz, from bypass", lines)
+            arc = Edat((root / "copy" / "Data" / "PC" / "190852" / "DataMap_Win.dat").read_bytes())
+            out = bytes(arc.read(arc.find(member("Blitz"))))
+            self.assertEqual(hashlib.md5(b"INFOIA\r\n" + b"Eugen Systems" + out[24:]).digest(), out[8:24])
+            bufs = sdb.split_mapinfo(out)[1]
+            built = RoadNet.read(bufs[0])
+            self.assertGreater(len(built.points), 24 + 50)  # the road across the ring, a point every ~9 m
+            self.assertEqual([len(mine) for mine in built._lists()][0], 3)  # joined to the ring's east point
+            self.assertEqual((bufs[1], bufs[2], bufs[3]), (b"infantry", b"vehicles", b"cover"))
+
+
 if __name__ == "__main__":
     unittest.main()

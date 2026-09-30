@@ -507,7 +507,10 @@ his Claude; checked here on all 32 maps.
 - **Item:** a u32 word, then its transform. Bit 31 = an object (name index = bits 4–23); bit 24 = a road piece (15
   more words, a cubic Bézier: its start x, y, z, the start's handle as an offset from it, its end, the end's handle
   as an offset from the end, then 3 and two codes on every piece seen; pieces chain end to start with their handles
-  in line; `Scenery.roads`); otherwise a child block (offset = bits 2–23, always after its parent). Transform by
+  in line; `Scenery.roads`). A road piece's name is the special type `Route` (flag 2); the first of its three
+  last words is how many pieces its chain has, the other two look like left-over editor addresses. **The roads a
+  player sees are painted into the ground's texture tiles**; the pieces lie exactly on them (checked on Blitz's
+  ground picture): whether the game draws anything from the pieces themselves is still to test; otherwise a child block (offset = bits 2–23, always after its parent). Transform by
   bits 0–1: 3 = 12 f32 (3 rows of 4), 2 = a move (3 f32), 1 = none, 0 = compact (4 int16 × 3/32767 for the 2×2 turn
   and scale, then x, y, z and the height scale as f32; so compact sizes stop at 3.0).
 - **Objects stand at height 0**; the game sets them on the ground. A name is a scenery type: a descriptor in the
