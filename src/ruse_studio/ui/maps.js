@@ -1893,7 +1893,10 @@ function moveStep(now) {
 function nudge(what, dir) {
   if (mv.place.on) {
     const p = mv.place;
-    if (what === "size") p.size = Math.round(Math.min(3, Math.max(0.5, p.size + dir * 0.1)) * 10) / 10;
+    if (what === "size") {  // fine steps up to 3×, bigger ones above (the build takes up to 50×)
+      const step = (dir > 0 ? p.size >= 3 : p.size > 3) ? 0.5 : 0.1;
+      p.size = Math.round(Math.min(10, Math.max(0.5, p.size + dir * step)) * 10) / 10;
+    }
     else p.turn = (p.turn + dir * 15 + 360) % 360;
     $("place-size").value = p.size;
     $("place-turn").value = p.turn;
