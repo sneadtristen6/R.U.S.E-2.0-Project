@@ -670,14 +670,15 @@ move orders, the camera falls through it, trees stay at the old height, and big 
 in DomesticNukes' notes (private `notes/terrain-editing-what-we-fixed-…`): the engine still moves all four files
 separately and leaves the `.kdt` height limits stale.
 
-**Next, in order (2026-09-30):**
-1. **Terrain fix** (his recipe): strokes move the gameplay `.kdt` only; the drawn meshes and the camera floor follow
-   its surface; widen the subtree and MainNode z clips, rebuilding a subtree where a moved triangle crosses a z
-   split. One in-game test on Blitz (a hill, a pit, a flatten), then Studio 0.6.
+**Next, in order (2026-09-30, after Studio 0.6.0):** the terrain fix (DomesticNukes' recipe: the gameplay ground
+leads, the height limits follow, `rusemod.kdt_edit`) and each map's scenarios on the map (`rusemod.scenario`) shipped
+in Studio 0.6.0.
+1. **The owner's tests:** the terrain copy on Blitz (`D:\RUSE-Instances	errain`: hill, pit, flat patch), then a
+   brushed hill from the Studio's own "Test in game", then the Scenario row in the map view.
 2. **Scenery zones:** placed buildings and trees block movement and give cover (the `mapinfo.win` movement graphs
    and the `.sdb` layer; research in LOG).
-3. **Re-meshing** (his §6): cut the mesh finer where a brush needs it.
-4. The owner's tests still open: T1/T6 placed scenery, T3 more `.rmod` mods, T5 a Studio unit, T7 the launcher.
+3. **Scenario editing:** move starting points and spawns, draw zones (the reader is done; a writer next).
+4. **Re-meshing** (DomesticNukes' §6): cut the mesh finer where a brush needs it.
 5. Join codes (Task E); `sneadtristen6/Ruse-Mods` for Browse mods.
 
 **Where we stood (2026-09-29):** C1–C7 passed (mods build from the installed game, load in-game, add texts and
