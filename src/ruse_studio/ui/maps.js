@@ -668,14 +668,27 @@ function clearScenario() {
   scen.group = null;
 }
 
-function scenarioLabel(file) {
-  const stem = file.replace(/\.scenario$/i, "").replace(/^leveldesign_?/i, "");
+// A scenario's name: what the game's menus call it in the Studio's language (Code names: the map list's own name),
+// else its file's name.
+function scenarioLabel(s) {
+  const e = (s.entries || [])[0];
+  if (e) return (mv.lang !== "base" && e.titles && e.titles[mv.lang]) || e.name;
+  const stem = s.file.replace(/\.scenario$/i, "").replace(/^leveldesign_?/i, "");
   return stem ? stem.replace(/_/g, " ") : mv.words.scen_main;
 }
 
+// The map's scenarios, grouped as the game uses them: skirmish maps, Operations, campaign chapters, demos, test
+// setups, and files no menu loads.
 function renderScenarioPick() {
   const w = mv.words, pick = $("scen-pick"), list = (scen.data || {}).scenarios || [];
-  pick.replaceChildren(...list.map((s, i) => el("option", { value: String(i), textContent: scenarioLabel(s.file) })));
+  const groups = [];
+  list.forEach((s, i) => {
+    const kind = s.kind || "unused";
+    let g = groups.find((x) => x.kind === kind);
+    if (!g) groups.push(g = { kind, options: [] });
+    g.options.push(el("option", { value: String(i), textContent: scenarioLabel(s), title: s.file }));
+  });
+  pick.replaceChildren(...groups.map((g) => el("optgroup", { label: w["scen_kind_" + g.kind] || g.kind }, ...g.options)));
   pick.value = String(scen.pick);
   pick.disabled = !list.length;
   pick.title = w.tip_scen_pick;

@@ -743,23 +743,37 @@ class StudioApi(UpdateCalls):
         return out
 
     def map_scenarios(self, pack: str) -> dict:
-        """A map's scenarios (rusemod.scenario), for the map view: {"scenarios": [{"file", "zones", "items"}]}, the
-        skirmish one first. Zones are drawn as their triangles; items are starting points, spawns, circle and
-        rectangle zones, labels and waypoints."""
+        """A map's scenarios (rusemod.scenario), for the map view: {"scenarios": [{"file", "kind", "entries",
+        "zones", "items"}]}, by kind (skirmish, operation, campaign, demo, test, unused: what the game's map list and
+        menus do with it), then by name. `entries`: the map list's entries that load it, each with its name and what
+        the menus call it in each language ({lang: text}). Zones are drawn as their triangles; items are starting
+        points, spawns, circle and rectangle zones, labels and waypoints."""
+        from rusemod.terrain import menu_texts
         game = self._game()
         if game is None:
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         path = find_pack(game, scenario.PACK)
-        if path is None:
-            raise StudioError(f"{scenario.PACK} isn't in the game folder.")
+        glad_path = find_pack(game, "ZZ_GladPatchableWin.dat")
+        if path is None or glad_path is None:
+            raise StudioError(f"{scenario.PACK if path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game folder.")
         key = ("scenarios", str(path), path.stat().st_mtime, pack.lower())
         with self._grounds_lock:
             if key in self._sceneries:
                 return self._sceneries[key]
         with Edat.open(str(path)) as arc:
             found = scenario.of_map(arc, pack)
-        order = sorted(found, key=lambda f: (f.lower() not in ("leveldesign.scenario", "leveldesign_normal.scenario"), f.lower()))
-        out = {"scenarios": [{"file": f, **scenario.view(found[f])} for f in order]}
+        with Edat.open(str(glad_path)) as glad:
+            kinds = scenario.kinds_of(glad, pack)
+        texts = menu_texts(game, {e["key"] for es in kinds.values() for e in es if e["key"] is not None})
+        out_list = []
+        for f, s in found.items():
+            entries = [{"name": e["name"], "kind": e["kind"],
+                        "titles": {lang: t[e["key"]] for lang, t in texts.items() if e["key"] in t}}
+                       for e in kinds.get(f.lower(), [])]
+            kind = entries[0]["kind"] if entries else "unused"
+            out_list.append({"file": f, "kind": kind, "entries": entries, **scenario.view(s)})
+        out_list.sort(key=lambda s: (scenario.KINDS.index(s["kind"]), (s["entries"][0]["name"] if s["entries"] else s["file"]).lower()))
+        out = {"scenarios": out_list}
         with self._grounds_lock:
             self._sceneries[key] = out
         return out

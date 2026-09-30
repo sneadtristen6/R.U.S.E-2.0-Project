@@ -4,6 +4,7 @@ import struct
 import unittest
 
 from fixtures import make_ndf, val
+from rusemod.edat import Edat
 from rusemod.scenario import AREA, MAGIC, Scenario, ScenarioError, with_checksum
 
 
@@ -134,6 +135,69 @@ class Writing(unittest.TestCase):
         s = Scenario.read(scenario())
         s.zones[1].name = "zone_new_longer_name"
         self.assertEqual([z.name for z in Scenario.read(s.to_bytes()).zones], ["zone_a", "zone_new_longer_name"])
+
+
+class Kinds(unittest.TestCase):
+    """What each scenario is, from the game's map list and menus: a map-list entry loads a scenario through its
+    cluster (ClusterLoads -> TNDFTransaction.BaseName -> that ClusterMap's ScenarioPath); the menus list the entry as
+    a multiplayer map, a campaign chapter or a challenge (an Operation)."""
+
+    def glad(self):
+        from fixtures import make_edat, make_ndf
+        from rusemod.dic import name_to_key
+        bs = chr(92)
+
+        def s(i):
+            return val(0x07, struct.pack("<I", i))
+
+        def ref(i, cls):
+            return val(0x09, struct.pack("<III", 0xBBBBBBBB, i, cls))
+
+        def mapv(*pairs):
+            return val(0x12, struct.pack("<I", len(pairs)) + b"".join(k + v for k, v in pairs))
+
+        guid_a, guid_b, guid_c = bytes(range(16)), bytes(range(16, 32)), bytes(range(32, 48))
+        # three entries on Blitz: a skirmish (menus: multiplayer), an Operation (menus: challenge), a test (no menu)
+        mapinfo = make_ndf(
+            objects=[(0, [(0, s(0)), (1, s(1)), (2, val(0x1A, guid_a)), (3, mapv((s(2), ref(3, 1))))]),
+                     (0, [(0, s(3)), (1, s(1)), (2, val(0x1A, guid_b)), (3, mapv((s(2), ref(4, 1))))]),
+                     (0, [(0, s(4)), (1, s(1)), (2, val(0x1A, guid_c)), (3, mapv((s(2), ref(5, 1))))]),
+                     (1, [(4, ref(6, 2))]), (1, [(4, ref(7, 2))]), (1, [(4, ref(8, 2))]),
+                     (2, [(5, s(5))]), (2, [(5, s(6))]), (2, [(5, s(7))])],
+            classes=["TMapLoadInfo", "TClusterWithNDFLoadedSubCluster", "TNDFTransaction"],
+            props=[("Name", 0), ("RootDatapackName", 0), ("GUID", 0), ("ClusterLoads", 0), ("NdfTransaction", 1),
+                   ("BaseName", 2)],
+            strings=["(2) Blitz", "Blitz", "Std", "Challenge - Blitz", "Tech: Test IA",
+                     bs.join(["Patchable", "Scenario", "Blitz", "Scenario", "ClusterMap"]),
+                     bs.join(["Patchable", "Scenario", "Blitz", "Scenario_Challenge", "ClusterMap"]),
+                     bs.join(["Patchable", "Scenario", "Blitz", "Scenario_TestIA", "ClusterMap"])])
+        globals_ = make_ndf(
+            objects=[(0, [(0, val(0x1A, guid_a)), (1, val(0x1D, struct.pack("<Q", name_to_key("BLITZ"))))]),
+                     (1, [(0, val(0x1A, guid_b)), (1, val(0x1D, struct.pack("<Q", name_to_key("ANZIO"))))])],
+            classes=["TMultiMapInfo", "TChallengeMapInfo"], props=[("GUID", 0), ("Description", 0)])
+
+        def cluster(file):
+            return make_ndf(objects=[(0, [(0, s(0))])], classes=["TScenarioPath"], props=[("ScenarioPath", 0)],
+                            strings=["DataDir:" + bs + "Test" + bs + "Map" + bs + "Blitz/" + file])
+        scen = [("dir", folder + bs, [("file", "clustermap.cpp.gladndfbin", cluster(f))])
+                for folder, f in (("scenario", "LevelDesign_Normal.scenario"),
+                                  ("scenario_challenge", "LevelDesign_Challenge.scenario"),
+                                  ("scenario_testia", "LevelDesign_TestIA.scenario"))]
+        return Edat(make_edat([("dir", "genglad" + bs + "patchable" + bs, [
+            ("file", "mapinfo.cpp.gladndfbin", mapinfo),
+            ("dir", "misc" + bs, [("file", "globals.cpp.gladndfbin", globals_)]),
+            ("dir", "scenario" + bs + "blitz" + bs, scen)])]))
+
+    def test_each_scenario_gets_its_kind_and_entries(self):
+        from rusemod.dic import name_to_key
+        from rusemod.scenario import kinds_of
+        k = kinds_of(self.glad(), "Blitz")
+        self.assertEqual({f: [(e["name"], e["kind"]) for e in es] for f, es in k.items()},
+                         {"leveldesign_normal.scenario": [("(2) Blitz", "skirmish")],
+                          "leveldesign_challenge.scenario": [("Challenge - Blitz", "operation")],
+                          "leveldesign_testia.scenario": [("Tech: Test IA", "test")]})
+        self.assertEqual(k["leveldesign_challenge.scenario"][0]["key"], name_to_key("ANZIO"))
+        self.assertEqual(kinds_of(self.glad(), "OtherMap"), {})
 
 
 class ForTheMapView(unittest.TestCase):

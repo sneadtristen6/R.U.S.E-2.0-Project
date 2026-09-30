@@ -258,6 +258,82 @@ def _plain(nd: Ndf, v):
 
 PACK = "DataMap_Win.dat"
 
+# What each scenario is, from the game's own map list and menus (ZZ_GladPatchableWin.dat): an entry of the map list
+# (TMapLoadInfo) loads a scenario through its cluster (ClusterLoads -> TNDFTransaction.BaseName =
+# Patchable\Scenario\<map>\<scenario folder>\ClusterMap, whose ScenarioPath names the .scenario file), and the
+# menus list the entry as a multiplayer map, a campaign chapter or a challenge (an Operation, in the game's menus).
+KINDS = ("skirmish", "operation", "campaign", "demo", "test", "unused")
+_MENU_KIND = {0: "skirmish", 1: "campaign", 2: "operation"}   # rusemod.terrain.MENU_CLASSES' order
+
+
+def _text(nd: Ndf, v) -> str | None:
+    return nd.strings[struct.unpack("<I", v.payload[:4])[0]] if v.tc in (0x07, 0x1C) else None
+
+
+def kinds_of(glad_arc, map_pack: str) -> dict[str, list[dict]]:
+    """What the game does with each scenario of a map: {scenario file name (lower case): [{"name": the map list's
+    name for it, "kind": skirmish / operation / campaign / demo / test, "key": the menu text's key or None}]}, from
+    an open ZZ_GladPatchableWin.dat. A scenario no entry loads isn't listed (it's unused)."""
+    from .ndf import sub_values
+    from .terrain import MAP_LIST, MENUS, menu_keys
+    nd = Ndf(bytes(glad_arc.read(glad_arc.find(MAP_LIST[1]))))
+    menu = glad_arc.entry(MENUS)
+    menus = menu_keys(Ndf(bytes(glad_arc.read(menu)))) if menu is not None else {}
+    out: dict[str, list[dict]] = {}
+    clusters: dict[str, str | None] = {}
+    for o in nd.objects:
+        if nd.classes[o.cls] != "TMapLoadInfo":
+            continue
+        props = {nd.prop_name(pi): v for pi, v in o.props}
+        name = _text(nd, props["Name"]) if "Name" in props else None
+        root = next((_text(nd, props[k]) for k in ("RootDatapackName", "Path") if k in props), None)
+        if not name or not root or root.lower() != map_pack.lower() or "ClusterLoads" not in props:
+            continue
+        base = None
+        for v in sub_values(props["ClusterLoads"])[1::2]:
+            cluster = local_ref(v)
+            if cluster is None:
+                continue
+            cprops = {nd.prop_name(pi): x for pi, x in nd.objects[cluster].props}
+            tr = local_ref(cprops["NdfTransaction"]) if "NdfTransaction" in cprops else None
+            if tr is not None:
+                tprops = {nd.prop_name(pi): x for pi, x in nd.objects[tr].props}
+                base = _text(nd, tprops["BaseName"]) if "BaseName" in tprops else None
+                if base:
+                    break
+        if not base:
+            continue
+        if base not in clusters:
+            clusters[base] = _scenario_file(glad_arc, base)
+        file = clusters[base]
+        if not file:
+            continue
+        guid = bytes(props["GUID"].payload) if "GUID" in props else b""
+        ranked = sorted(menus.get(guid, []), key=lambda rk: rk[0])
+        low = name.lower()
+        if ranked:
+            kind, key = _MENU_KIND.get(ranked[0][0], "skirmish"), ranked[0][1]
+        else:
+            kind, key = ("demo" if "demo" in low else "test"), None
+        out.setdefault(file, []).append({"name": name, "kind": kind, "key": key})
+    return out
+
+
+def _scenario_file(glad_arc, base: str) -> str | None:
+    """The .scenario file (its name, lower case) a scenario cluster loads: its ClusterMap's ScenarioPath."""
+    member = "genglad\\" + base.lower() + ".cpp.gladndfbin"
+    e = glad_arc.entry(member)
+    if e is None:
+        return None
+    try:
+        nd = Ndf(bytes(glad_arc.read(e)))
+    except (ValueError, struct.error):
+        return None
+    for s in nd.strings:
+        if s.lower().endswith(".scenario"):
+            return s.replace("/", "\\").rsplit("\\", 1)[-1].lower()
+    return None
+
 
 def folder_of(map_pack: str) -> str:
     """Where a map's scenarios live in DataMap_Win.dat: test/map/<pack>/ (the flat test maps: test/map/flat/<x>/),
