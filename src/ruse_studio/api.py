@@ -1306,15 +1306,54 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
 
     def roads(self, pack: str) -> dict:
         """The roads the current mod adds to a map, for the Maps view: {"roads": [{"points": [[x, y], ...], "join":
-        map units}], "saved": the file or None, "mod": the mod or None when none is picked}."""
+        map units, "crossings": [[x0, y0, x1, y1], ...] where it crosses water (a bridge goes there when the map has a
+        bridge kind)}], "bridge": the map's bridge kind or None, "saved": the file or None, "mod": the mod or None
+        when none is picked}."""
         folder = self._mod_dir()
         if folder is None:
-            return {"roads": [], "saved": None, "mod": None}
+            return {"roads": [], "bridge": None, "saved": None, "mod": None}
         path = self._roads_file(pack)
         with self._saving:
             roads = self._read_roads(path)
-        return {"roads": [{"points": [list(p) for p in r.points], "join": r.join} for r in roads],
-                "saved": str(path) if roads else None, "mod": str(folder)}
+        water, kind = self._water(pack) if roads else (None, None)
+        from rusemod.bridges import crossings
+        return {"roads": [{"points": [list(p) for p in r.points], "join": r.join,
+                           "crossings": [list(map(round, c)) for c in crossings(water, r.points)] if water and r.bridges else []}
+                          for r in roads],
+                "bridge": kind, "saved": str(path) if roads else None, "mod": str(folder)}
+
+    def _water(self, pack: str) -> tuple:
+        """(where a map has water, as rusemod.bridges.Water; its bridge kind or None), kept per map."""
+        from rusemod.bridges import Water, bridge_type
+        from rusemod.tms import Tms
+        game = self._game()
+        map_path = find_pack(game, pack_file(pack)) if game is not None else None
+        if map_path is None:
+            return None, None
+        key = ("water", str(map_path), map_path.stat().st_mtime)
+        with self._grounds_lock:
+            if key in self._sceneries:
+                return self._sceneries[key]
+        unit_path = find_pack(game, "ZZ_GladPatchableWin.dat")
+        with Edat.open(str(map_path)) as map_arc:
+            try:
+                water = Water(Tms(bytes(map_arc.read(map_arc.find("output\\highdef.tms")))))
+                sc = scenery.Scenery(bytes(map_arc.read(map_arc.find(scenery.MEMBER))))
+            except (KeyError, ValueError, struct.error) as exc:
+                raise StudioError(f"{map_path.name}: its ground can't be read ({exc}).") from None
+        kind = None
+        if unit_path is not None:
+            with Edat.open(str(unit_path)) as unit_arc:
+                dkey = (str(unit_path), unit_path.stat().st_mtime)
+                if self._descriptors[0] != dkey:
+                    self._descriptors = (dkey, scenery.descriptors(unit_arc))
+            kind = bridge_type(sc.names, sc.types(), self._descriptors[1])
+        out = (water, kind)
+        with self._grounds_lock:
+            self._sceneries[key] = out
+            while len(self._sceneries) > 3:
+                self._sceneries.pop(next(iter(self._sceneries)))
+        return out
 
     def road_add(self, pack: str, points: list, join: float = 3000.0) -> dict:
         """Add a road (its line: [[x, y], ...] in map units, in order) to the map in the current mod. Its ends join a

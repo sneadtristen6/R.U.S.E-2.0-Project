@@ -621,8 +621,73 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if changed_members:
                 map_packs.append((map_path, map_arc, changed_members))
                 result.terrain_changed[map_path.name] = changed_members
+        # bridges where new roads cross water (rusemod.bridges): the map's own bridge kind placed along each
+        # crossing (walk-through), and the crossing's deck kept for the movement graphs below
+        # and bridges placed by hand (scenery.toml objects of a bridge kind, any size): coded as bridges, they open
+        # their deck to units instead of blocking it, and a road crossing one gets no second bridge
+        bridge_spans: dict = {}   # map pack name -> [(x0, y0, x1, y1)]
+        bridge_objects: dict = {}  # map pack name -> (the bridge objects, the mods' ids)
+        placed = scenery_edits(result.order, mods)
+        road_edits = scenario_edits(result.order, mods, "roads")
+        from .bridges import BridgeError, model_length, placed_spans, plan
+        from .scenery import MEMBER as SCENERY, Scenery, SceneryError, descriptors, is_bridge
+        descs, lengths = None, {}
+
+        def length_of(kind):
+            if kind not in lengths:
+                lengths[kind] = model_length(game, descs, kind)
+            return lengths[kind]
+        for name in sorted(set(road_edits) | set(placed), key=str.lower):
+            map_roads, road_ids = road_edits.get(name, ([], []))
+            objects_here, object_ids = placed.get(name, ([], []))
+            wanted = [r.points for r in map_roads if r.bridges]
+            if descs is None and (wanted or objects_here):
+                descs = descriptors(arc)
+            by_hand = [o for o in objects_here if o.type in descs and is_bridge(descs[o.type].category)] if descs else []
+            map_path = find_pack(game, pack_file(name)) if wanted or by_hand else None
+            if map_path is None:
+                continue  # (a missing map is said with the road network and the scenery below)
+            ids = list(dict.fromkeys(road_ids + (object_ids if by_hand else [])))
+            spans = placed_spans(by_hand, descs, length_of) if by_hand else []
+            objects, notes = [], []
+            if by_hand:
+                notes.append(f"{len(by_hand)} bridge(s) placed by hand: movement opened along their decks")
+            if wanted:
+                entry = next((e for e in map_packs if e[0] == map_path), None)
+                map_arc = entry[1] if entry else open_pack(map_path)
+                done = entry[2] if entry else {}
+
+                def read_map(member, a=map_arc, done=done):
+                    try:
+                        e = a.find(member)
+                    except KeyError:
+                        return None
+                    return done.get(e.path) or bytes(a.read(e))
+                try:
+                    sc_raw, mesh = read_map(SCENERY), read_map("output\\highdef.tms")
+                    if sc_raw is None or mesh is None:
+                        raise BridgeError("the map has no scenery or no ground mesh")
+                    objects, road_spans, road_notes = plan(mesh, wanted, Scenery(sc_raw), descs, length_of,
+                                                           existing=spans)
+                except (BridgeError, SceneryError, ValueError, KeyError, struct.error, zlib.error) as exc:
+                    result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the roads' bridges can't be made ({exc})"))
+                    continue
+                spans += road_spans
+                notes += road_notes
+            if objects:
+                bridge_objects[name] = (objects, road_ids)
+            if spans:
+                bridge_spans[name] = spans
+            if notes:
+                say(f"bridges: {name}, from {', '.join(ids)}")
+                for note in notes:
+                    say(f"  {note}")
+        for name, (objects, ids) in bridge_objects.items():
+            every, who = placed.setdefault(name, ([], []))
+            every.extend(objects)
+            who.extend(i for i in ids if i not in who)
         solid: dict = {}  # map pack name -> (nav.Block for each placed building, the mods' ids)
-        for name, (objects, ids) in scenery_edits(result.order, mods).items():
+        for name, (objects, ids) in placed.items():
             map_path = find_pack(game, pack_file(name))
             if map_path is None:
                 result.findings.append(Finding("error", f"{', '.join(ids)}: the map {name} isn't in this game "
@@ -656,6 +721,38 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if entry is None:
                 map_packs.append((map_path, map_arc, changed_members))
             result.terrain_changed[map_path.name] = changed_members
+        for name, (map_roads, ids) in scenario_edits(result.order, mods, "roads").items():  # new roads painted
+            from .bridges import cut
+            lines = cut([r.points for r in map_roads if r.paint], bridge_spans.get(name, []))  # not on a bridge's deck
+            map_path = find_pack(game, pack_file(name)) if lines else None
+            if map_path is None:
+                continue  # (a missing map is said with the road network below)
+            entry = next((e for e in map_packs if e[0] == map_path), None)
+            map_arc = entry[1] if entry else open_pack(map_path)
+            changed_members = entry[2] if entry else {}
+
+            def read_map(member, a=map_arc, done=changed_members):
+                try:
+                    e = a.find(member)
+                except KeyError:
+                    return None
+                return done.get(e.path) or bytes(a.read(e))
+            from .groundpaint import PaintError, paint_roads
+            from .scenery import MEMBER as SCENERY, SceneryError, Scenery
+            try:
+                pieces = Scenery(read_map(SCENERY)).roads() if read_map(SCENERY) else []
+                painted, notes = paint_roads(read_map, lambda m, a=map_arc: a.find(m).path, lines, pieces)
+            except (PaintError, SceneryError, ValueError, KeyError, struct.error, zlib.error) as exc:
+                result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the new roads can't be painted ({exc})"))
+                continue
+            changed_members.update(painted)
+            say(f"roads painted: {name}, from {', '.join(ids)}")
+            for note in notes:
+                say(f"  {note}")
+            if entry is None and painted:
+                map_packs.append((map_path, map_arc, changed_members))
+            if painted:
+                result.terrain_changed[map_path.name] = changed_members
         data_packs = []  # (path, open pack, {member: new bytes}): DataMap_Win.dat, the scenarios and the cover grids
         moves, paints = scenario_edits(result.order, mods), scenario_edits(result.order, mods, "cover")
         blocks = scenario_edits(result.order, mods, "movement")
@@ -664,7 +761,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             every, who = blocks.setdefault(name, ([], []))
             every.extend(walls)
             who.extend(i for i in ids if i not in who)
-        if moves or paints or blocks or new_roads:
+        if moves or paints or blocks or new_roads or bridge_spans:
+            from .bridges import BridgeError, apply_spans
             from .cover import CoverError, apply_paints
             from .nav import NavError, apply_blocks
             from .roadnet import RoadNetError, apply_roads
@@ -710,6 +808,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         continue
                     changed_members.update(new)
                     say(f"movement: {name}, from {', '.join(ids)}")
+                    for note in notes:
+                        say(f"  {note}")
+                for name, spans in bridge_spans.items():  # the bridges' decks opened to units, after the blocks
+                    try:
+                        new, notes = apply_spans(read_data, name, spans)
+                    except (BridgeError, NavError, ValueError, struct.error) as exc:
+                        result.findings.append(Finding("error", f"{name}: the bridges' movement can't be opened ({exc})"))
+                        continue
+                    changed_members.update(new)
+                    say(f"bridges open: {name}")
                     for note in notes:
                         say(f"  {note}")
                 for name, (map_roads, ids) in new_roads.items():  # the road network (buffer 0), after movement

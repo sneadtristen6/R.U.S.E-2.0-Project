@@ -254,6 +254,16 @@ class Descriptor:
     source: str        # the NDF file it comes from
     models: tuple = ()  # every model it's drawn with close up: a tree is two (its leaves and its trunk)
 
+    @property
+    def bridge(self) -> bool:
+        return is_bridge(self.category)
+
+
+def is_bridge(category: str | None) -> bool:
+    """A bridge kind: the game editor files them under …/Ponts (Normandie, Italie, Allemagne, Ardennes, Tunisie).
+    Placed by a mod, a bridge opens the ground along its deck to units instead of blocking it (rusemod.bridges)."""
+    return (category or "").lower().rstrip("/").split("/")[-1] == "ponts"
+
 
 def group_of(category: str, cls: str) -> str:
     c = category.lower()

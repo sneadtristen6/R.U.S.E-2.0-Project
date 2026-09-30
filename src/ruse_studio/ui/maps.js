@@ -1843,8 +1843,10 @@ function roadRibbon(lines, mesh, color, opacity) {
     }
   }
   if (!mesh) {
+    // drawn over the ground like the game's own supply-route line: a strip seated at its points sinks into a bump
+    // between them (the owner's screenshot, 2026-09-30), so depth is ignored and the ribbon always shows
     mesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color, transparent: true, opacity,
-      depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
+      depthWrite: false, depthTest: false, side: THREE.DoubleSide }));
     mesh.renderOrder = 5;
     mesh.frustumCulled = false;
     gl.scene.add(mesh);

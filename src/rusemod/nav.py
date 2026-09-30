@@ -162,6 +162,16 @@ class Graph:
                     linked.add((a, b))
                     new_links.append((None, (a, b) + point))
                     counts["linked"] += 1
+        counts["crossings"] += self._finish(allc, kept, new_links, n)
+        if added:  # the index: each new circle joins the leaf of the old circle it lies in (see _index_add)
+            into: dict[int, list[int]] = {}
+            for j, (_x, _y, _r, source) in enumerate(filled):
+                into.setdefault(changed[source], []).append(n + j)
+            self.points = _index_add(self.points, into)
+
+    def _finish(self, allc, kept, new_links, n: int) -> int:
+        """The graph's circles, links, lists and crossings written again from `allc` (every circle, the first `n`
+        old), `kept` ((old number, link) pairs) and `new_links` ((None, link)); returns how many crossings went."""
         # every shipped graph lists its links by their second circle: kept ones are already in that order, new ones
         # go after the kept ones of the same second circle (a stable sort)
         ordered = sorted(kept + new_links, key=lambda pair: pair[1][1])
@@ -172,27 +182,71 @@ class Graph:
             mine[a].append(i)
             mine[b].append(i)
         cross = [self.crossings[28 * i:28 * i + 28] for i in range(len(self.crossings) // 28)]
-        circles, lists, kept = [], [], []
+        circles, lists, kept_cross = [], [], []
         for c in range(len(allc)):
-            start, cstart = len(lists), len(kept)
+            start, cstart = len(lists), len(kept_cross)
             lists += mine[c]
             if c < n:
                 c0, c1 = self.circles[c][4], self.circles[c + 1][4]
                 for rec in cross[c0:c1]:
                     la, lb = struct.unpack_from("<2H", rec, 20)
                     if la in number and lb in number:
-                        kept.append(rec[:20] + struct.pack("<2H", number[la], number[lb]) + rec[24:])
+                        kept_cross.append(rec[:20] + struct.pack("<2H", number[la], number[lb]) + rec[24:])
             circles.append((allc[c][0], allc[c][1], allc[c][2], start, cstart))
-        circles.append((0.0, 0.0, 0.0, len(lists), len(kept)))
-        counts["crossings"] += len(cross) - len(kept)
+        circles.append((0.0, 0.0, 0.0, len(lists), len(kept_cross)))
         if len(circles) > 65535 or len(links) > 65535 or len(lists) > 65535:
             raise NavError("the graph would be too big for its 16-bit numbers")
-        self.circles, self.links, self.lists, self.crossings = circles, links, lists, b"".join(kept)
-        if added:  # the index: each new circle joins the leaf of the old circle it lies in (see _index_add)
-            into: dict[int, list[int]] = {}
-            for j, (_x, _y, _r, source) in enumerate(filled):
-                into.setdefault(changed[source], []).append(n + j)
-            self.points = _index_add(self.points, into)
+        self.circles, self.links, self.lists, self.crossings = circles, links, lists, b"".join(kept_cross)
+        return len(cross) - len(kept_cross)
+
+    def open(self, spans: list[tuple[float, float, float, float]], radius: float = 2560.0) -> dict:
+        """Give units ground along `spans` (x0, y0, x1, y1: a bridge's deck) where there was none (water): circles
+        `radius` wide every `radius` along each span, linked to each other and to every circle they overlap by STEP
+        or more (the banks), and listed in the index under the nearest bank circle, whose branches widen to reach
+        them (the game's index keeps the exact reach of each half on the branch's axis; see _index_add). The local
+        town graphs are left as they are. Returns what was added."""
+        counts = {"added": 0, "linked": 0}
+        n = len(self.circles) - 1
+        old = [c[:3] for c in self.circles[:-1]]
+        live = [i for i, c in enumerate(old) if c[2] > 0]
+        new, boxes = [], {}
+        for x0, y0, x1, y1 in spans:
+            length = ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+            steps = max(1, int(-(-length // radius)))
+            bank = min(live, key=lambda i: (old[i][0] - x0) ** 2 + (old[i][1] - y0) ** 2) if live else None
+            for k in range(steps + 1):
+                t = k / steps
+                new.append((x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, float(radius), bank))
+            if bank is not None:
+                bx0, by0, bx1, by1 = boxes.get(bank, (x0, y0, x0, y0))
+                boxes[bank] = (min(bx0, x0, x1) - radius, min(by0, y0, y1) - radius,
+                               max(bx1, x0, x1) + radius, max(by1, y0, y1) + radius)
+        if not new:
+            return counts
+        allc = old + [c[:3] for c in new]
+        counts["added"] = len(new)
+        near = _Buckets(allc)
+        linked = {(a, b) for a, b, _x, _y in self.links}
+        new_links = []
+        for c in range(n, n + len(new)):
+            for d in near.around(c):
+                if d == c or allc[d][2] <= 0:
+                    continue
+                a, b = min(c, d), max(c, d)
+                if (a, b) in linked:
+                    continue
+                point = _meeting(allc[a], allc[b])
+                if point is None:
+                    continue
+                linked.add((a, b))
+                new_links.append((None, (a, b) + point))
+        counts["linked"] = len(new_links)
+        self._finish(allc, list(enumerate(self.links)), new_links, n)
+        into: dict[int, list[int]] = {}
+        for j, (_x, _y, _r, bank) in enumerate(new):
+            into.setdefault(bank if bank is not None else -1, []).append(n + j)
+        self.points = _index_add(self.points, into, boxes)
+        return counts
 
     # --- reading it ---
     def links_of(self, circle: int) -> list[int]:
@@ -389,27 +443,43 @@ def _tree_write(node, top: bool = True) -> bytes:
     return out + bytes(-len(out) % 4) if top else out
 
 
-def _index_add(points: bytes, into: dict[int, list[int]]) -> bytes:
+def _index_add(points: bytes, into: dict[int, list[int]], boxes: dict | None = None) -> bytes:
     """The spatial index with new circles added: {old circle: [new circle numbers]} puts each new number in the leaf
     that lists the old circle, and the tree is written again (the jumps and padding as the game's files have them).
-    A new circle lies inside the old one, so every edge on the way to that leaf already takes it in: a point in the
-    new circle is looked for where the old one would be. Numbers whose old circle is in no leaf go into the first
-    leaf (they'd be found only through their links)."""
+    A new circle inside the old one needs nothing more: every edge on the way to that leaf already takes it in, so
+    a point in it is looked for where the old one would be. A new circle that reaches outside (a bridge over water)
+    gives its box in `boxes` ({old circle: (x0, y0, x1, y1)}): on the way to that leaf, a left half's far edge grows
+    to the box's far side and a right half's near edge to its near side, on the branch's axis (x at even depths, y
+    at odd ones: on all 1,307 shipped graphs each edge is exactly its half's reach). Numbers whose old circle is in
+    no leaf go into the first leaf (they'd be found only through their links)."""
     tree = _tree_read(points)
     left = {old: list(new) for old, new in into.items()}
+    wide = dict(boxes or {})
     first = []
 
-    def visit(node):
+    def visit(node, depth):
         if node[0] == "leaf":
             if not first:
                 first.append(node)
+            got = []
             for i in list(node[1]):
                 node[1] += left.pop(i, [])
-        else:
-            visit(node[3])
-            visit(node[4])
+                if i in wide:
+                    got.append(wide.pop(i))
+            return got
+        axis = depth % 2
+        lb = visit(node[3], depth + 1)
+        rb = visit(node[4], depth + 1)
+        if lb or rb:
+            far, near = struct.unpack("<2f", node[2])
+            for b in lb:
+                far = max(far, b[2 + axis])
+            for b in rb:
+                near = min(near, b[axis])
+            node[2] = struct.pack("<2f", far, near)
+        return lb + rb
 
-    visit(tree)
+    visit(tree, 0)
     rest = [n for new in left.values() for n in new]
     if rest:
         first[0][1] += rest
@@ -441,7 +511,7 @@ def solid_blocks(game, objects) -> tuple[list[Block], list[str]]:
     out = []
     for o in wanted:
         d = descs.get(o.type)
-        if d is None or d.group != "building":
+        if d is None or d.group != "building" or d.bridge:  # a bridge opens ground instead (rusemod.bridges)
             continue
         if o.type not in reach:
             if lib is None:

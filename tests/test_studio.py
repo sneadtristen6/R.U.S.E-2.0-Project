@@ -870,7 +870,7 @@ class Terrain(WithMod):
             self.assertEqual(_meant(Path("game"), "Blitz"), "")
 
     def test_new_roads_added_and_taken_back(self):
-        self.assertEqual(self.api.roads("Blitz"), {"roads": [], "saved": None, "mod": None})
+        self.assertEqual(self.api.roads("Blitz"), {"roads": [], "bridge": None, "saved": None, "mod": None})
         folder = Path(self.api.new_mod("x")["current"])
         file = folder / "maps" / "Blitz" / "roads.toml"
         self.assertEqual(self.api.road_add("Blitz", [[1, 2], [3000.5, 4]])["count"], 1)
