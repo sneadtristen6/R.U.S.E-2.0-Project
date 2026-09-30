@@ -1,6 +1,7 @@
 # Keeps the private shared repo in step with this one (PLAN.md §10 "Two repos"): on every push to main, whoever
 # pushed (the PC session, a cloud session, a merged pull request), the shared repo's main gets the same commits and
-# its private branch gets them merged in (it's main plus the private/ folder, which this repo never touches).
+# its private branch gets them merged in (it's main plus the private/ folder, which this repo never touches). Every
+# release tag (launcher-v*, studio-v*) goes there too, so the shared repo builds the same release.
 # Needs the secret SHARED_REPO_TOKEN: a fine-grained token with Contents read/write on Ruse-Mod-Platform-Shared only.
 # Without it the job warns and does nothing. It never force-pushes: if the shared main has commits of its own, or the
 # merge conflicts, the job fails and says so, and nothing is changed there.
@@ -9,6 +10,7 @@ name: sync-private
 on:
   push:
     branches: [main]
+    tags: ["launcher-v*", "studio-v*"]
   workflow_dispatch:
 
 concurrency:
@@ -30,8 +32,13 @@ jobs:
         if: env.TOKEN != ''
         with:
           fetch-depth: 0
+      - name: Copy the release tag
+        if: env.TOKEN != '' && github.ref_type == 'tag'
+        run: |
+          git remote add shared "https://x-access-token:${TOKEN}@github.com/sneadtristen6/Ruse-Mod-Platform-Shared.git"
+          git push shared "refs/tags/${GITHUB_REF_NAME}"
       - name: Mirror main, merge it into private
-        if: env.TOKEN != ''
+        if: env.TOKEN != '' && github.ref_type == 'branch'
         run: |
           git config user.name "sync-private"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
