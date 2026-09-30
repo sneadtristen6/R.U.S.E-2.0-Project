@@ -237,6 +237,46 @@ class RmodToMod(unittest.TestCase):
         self.assertIn(data["id"], said.getvalue())
         return os.path.join(out, data["id"])
 
+    def test_new_objects_with_numbered_ids_get_names_the_engine_accepts(self):
+        """RUSE-Mod-Manager numbers the objects a mod adds (inst_63686, 254); a name of ours starts with a letter."""
+        weapon = {"anchor": {"root": ["ClassNameForDebug", "Unit_X"], "steps": [["Weapons", "[0]"]]}}
+        data = {"$schema": "ruse-mod/v1", "id": "numbered", "name": "Numbered", "version": "1.0.0", "patches": [
+            {"dat": "Data/PC/190852/ZZ_GladPatchableWin.dat", "ndf": NDF, "changes": [
+                {"action": "create", "table": "TAmmunition", "local_id": "inst_63686", "top_object": True,
+                 "set": {"AmmunitionId": {"type": "UInt32", "value": 9001}}},
+                {"action": "create", "table": "TAmmunition", "local_id": "63686",
+                 "set": {"AmmunitionId": {"type": "UInt32", "value": 9002}}},
+                {"action": "create", "table": "TUIResourceTexture", "local_id": "254", "set": {}},
+                {"action": "patch", "table": "TWeapon", "match": weapon, "set": {"Ammunition": {"$ref": "inst_63686"}}},
+                # a value that can't be rebuilt becomes a note: it must not swallow the statement's closing bracket
+                {"action": "patch", "table": "TUniteAuSolDescriptor", "match": {"ClassNameForDebug": "Unit_X"},
+                 "set": {"SeuilMort": {"type": "Float32", "value": 9.0}, "Scale": {"type": "Vector3", "value": [9.0, 9.0, 9.0]}}},
+                # a text key that doesn't decode to a name of ours is written as its number
+                {"action": "patch", "table": "TTunableConstante", "match": {},
+                 "set": {"Title": {"type": "LocHash", "value": loc_hash("3mbieWeap")}}},
+            ]}]}
+        self.assertEqual(rmod_to_mod.our_name("inst_63686", {"table": "TAmmunition"}), "Ammunition_63686")
+        self.assertEqual(rmod_to_mod.our_name("254", {"table": "TUIResourceTexture"}), "UIResourceTexture_254")
+        self.assertEqual(rmod_to_mod.our_name("inst_new_gun", {"table": "TAmmunition"}), "New_Gun")  # as before
+        self.assertEqual(rmod_to_mod.unique_names({"a": "X", "b": "X", "c": "X_2", "d": "Y"}),
+                         {"a": "X", "b": "X_3", "c": "X_2", "d": "Y"})
+        folder = self.convert(data, "Numbered_V1.rmod")
+        info, ops = load_mod(folder)  # it failed here: "expected the new object's name (found '63686')"
+        r = Engine(synthetic_game()).run([(ModInfo("numbered"), ops)])
+        self.assertEqual([f.message for f in r.errors], [])
+        made = sorted(n.rsplit("/", 1)[1] for n in r.game.objects if "63686" in n or "254" in n)
+        self.assertEqual(made, ["Ammunition_63686", "Ammunition_63686_2", "UIResourceTexture_254"])
+        unit = r.game.objects["$/GFX/Everything/Descriptor_Unit_X"]
+        self.assertEqual(unit.props["Weapons"].items[0].obj.props["Ammunition"], Ref("$/GFX/Everything/Ammunition_63686"))
+        self.assertEqual(unit.props["SeuilMort"].value, 9)
+        self.assertEqual(r.game.objects["$/Const"].props["Title"], Text("key", f"0x{name_to_key('3mbieWeap'):016X}"))
+        with open(os.path.join(folder, "src", "numbered.rndf"), encoding="utf-8") as f:
+            text = f.read()
+        self.assertIn("// not rebuilt: Scale", text)
+        for line in text.splitlines():  # no statement line carries a note before its closing bracket
+            if line.lstrip().startswith(("patch", "export")) or " is " in line.split("//")[0]:
+                self.assertFalse("//" in line and line.rstrip().endswith(")"), line)
+
     def test_everything_carries_over_and_runs(self):
         folder = self.convert(SYNTHETIC_RMOD)
         info, ops = load_mod(folder)

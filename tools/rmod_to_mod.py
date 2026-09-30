@@ -121,12 +121,36 @@ def toml_str(text: str) -> str:
 
 
 def our_name(local_id: str, create: dict) -> str:
-    """Our export name for an object the original created: Descriptor_<debug name>, else from its local id."""
+    """Our export name for an object the original created: Descriptor_<debug name>, else from its local id.
+    A name of ours starts with a letter, so an id that is only a number (inst_63686) is named after its class too:
+    Ammunition_63686."""
     debug = (create.get("set") or {}).get("ClassNameForDebug", {})
     if isinstance(debug, dict) and debug.get("value"):
-        return f"Descriptor_{debug['value']}"
+        return "Descriptor_" + re.sub(r"[^A-Za-z0-9_]+", "_", str(debug["value"])).strip("_")
     base = re.sub(r"[^A-Za-z0-9_]+", "_", re.sub(r"^inst_", "", local_id)).strip("_") or "Object"
-    return "_".join(p.capitalize() if p.islower() else p for p in base.split("_"))
+    base = "_".join(p.capitalize() if p.islower() else p for p in base.split("_"))
+    if not re.match(r"[A-Za-z_]", base):
+        cls = re.sub(r"[^A-Za-z0-9_]+", "_", str(create.get("table") or "")).strip("_")
+        if len(cls) > 1 and cls[0] == "T" and cls[1].isupper():
+            cls = cls[1:]
+        base = f"{cls if re.match(r'[A-Za-z_]', cls) else 'Object'}_{base}"
+    return base
+
+
+def unique_names(names: dict) -> dict:
+    """The same names, with _2, _3, ... on the ones that repeat (two objects can't share an export name)."""
+    seen, out = Counter(), {}
+    taken = set(names.values())
+    for lid, name in names.items():
+        seen[name] += 1
+        if seen[name] > 1:
+            n = seen[name]
+            while f"{name}_{n}" in taken:
+                n += 1
+            name = f"{name}_{n}"
+            taken.add(name)
+        out[lid] = name
+    return out
 
 
 def lang_of(dic_path: str) -> str | None:
@@ -150,7 +174,7 @@ class Rebuild:
         self.assumptions: list[tuple[str, str]] = []
         self.counts = Counter()
         self.creates = self._creates()      # local_id -> change
-        self.names = {lid: our_name(lid, c) for lid, c in self.creates.items()}
+        self.names = unique_names({lid: our_name(lid, c) for lid, c in self.creates.items()})
         self.dropped: set[str] = set()      # local ids of creates that can't be rebuilt
         self.shipped = {Path(f.get("path", "").replace("\\", "/")).stem.lower()
                         for fp in data.get("file_patches", []) for f in fp.get("files", [])}
@@ -260,7 +284,9 @@ class Rebuild:
                 return f"loc('{self.added[val]}')"
             k = loc_key(val)
             name = key_to_name(k)
-            return f"key({name})" if name else f"key(0x{k:016X})"
+            # by name only when it is a name of ours (it starts with a letter); a key made some other way, such
+            # as from a text longer than ten characters, decodes to something else and is written as its number
+            return f"key({name})" if name and re.fullmatch(r"[A-Za-z_]\w*", name) else f"key(0x{k:016X})"
         if t == "ObjRef":
             return self.ref(val)
         if t.startswith("List<") and t.endswith(">"):
@@ -292,7 +318,8 @@ class Rebuild:
         return lines, left
 
     def block(self, head: str, lines: list[str]) -> str:
-        if len(lines) <= 3 and sum(map(len, lines)) < 80:
+        # one line only without comments: a `//` note would comment out the closing bracket too
+        if len(lines) <= 3 and sum(map(len, lines)) < 80 and not any("//" in ln for ln in lines):
             return f"{head} ( {'  '.join(lines)} )"
         return f"{head}\n(\n" + "".join(f"    {ln}\n" for ln in lines) + ")"
 
