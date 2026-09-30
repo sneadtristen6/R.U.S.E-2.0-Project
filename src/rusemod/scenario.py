@@ -202,7 +202,11 @@ class Scenario:
         zones = struct.pack("<I", len(self.zones)) + b"".join(_zone_bytes(z) for z in self.zones)
         out = self.head + struct.pack("<3I", self.version, self.one, len(zones)) + zones
         if self.ndf is not None:
-            nd = self.ndf.to_member(compress=bool(self.ndf.flags & 0x80)) if self.changed else self.ndf_raw
+            if self.changed:  # the file pads the NDF with zeros to a multiple of 4 bytes (all 102 shipped files)
+                nd = self.ndf.to_member(compress=bool(self.ndf.flags & 0x80))
+                nd += bytes(-len(nd) % 4)
+            else:
+                nd = self.ndf_raw
             out += struct.pack("<I", len(nd)) + nd
         return out
 

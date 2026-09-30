@@ -108,6 +108,18 @@ class Writing(unittest.TestCase):
         with self.assertRaises(ScenarioError):  # the spawn has no rotation to change
             s.move(1, 0.0, 0.0, rotation=1.0)
 
+    def test_a_rewritten_ndf_keeps_the_padding_to_4_bytes(self):
+        """The game pads the design items' NDF with zeros to a multiple of 4; without it the game crashed at start
+        (2026-09-30). Rewritten unchanged, every shipped file comes back byte for byte this way."""
+        s = Scenario.read(scenario())
+        s.changed = True
+        data = s.to_bytes()
+        self.assertEqual(data, scenario())
+        size = struct.unpack_from("<I", data, len(data) - len(s.ndf_raw) - 4)[0]
+        self.assertEqual(size % 4, 0)
+        s.move(0, 1.0, 2.0)
+        self.assertEqual(len(s.to_bytes()) % 4, len(data) % 4)
+
     def test_a_renamed_zone_is_written_with_its_new_name(self):
         s = Scenario.read(scenario())
         s.zones[1].name = "zone_new_longer_name"
