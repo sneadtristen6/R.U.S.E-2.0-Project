@@ -37,6 +37,10 @@ def mapinfo() -> bytes:
     return sdb.replace_buffer4(head + body, buf3)  # the checksum made
 
 
+def info_and_ops(folder):
+    return load_mod(folder)
+
+
 def cells(win):
     g = cover.grid(win)
     return g["size"], g["cells"]
@@ -143,6 +147,37 @@ class Built(unittest.TestCase):
         size, c = cells(bytes(arc.read(arc.find(cover.member("Blitz")))))
         self.assertTrue(c[4 * 8 + 4] & 0x08)
         self.assertEqual((self.game / "Data" / "PC" / "190852" / "DataMap_Win.dat").read_bytes(), self.data)  # untouched
+
+    def test_the_studio_brushes_in_terrain_toml(self):
+        """The Studio's cover and uncover brushes are saved with the other strokes; the build paints them on the
+        cover grid (after cover.toml's circles) and leaves the ground files alone."""
+        from rusemod.brush import parse_strokes, strokes_toml
+        folder = self.mod("brushed", '[[paint]]\nx = 1000.0\ny = 1000.0\nradius = 1500.0\nerase = true\n')
+        strokes = parse_strokes([{"brush": "cover", "x": 4500.0, "y": 4500.0, "radius": 1200.0},
+                                 {"brush": "uncover", "x": 4500.0, "y": 4500.0, "radius": 400.0}])
+        self.assertEqual([s.height_at(4500.0, 4500.0, 7.0) for s in strokes], [7.0, 7.0])  # the ground stays
+        (folder / "maps" / "Blitz" / "terrain.toml").write_text(strokes_toml(strokes), encoding="utf-8")
+        info, _ops = load_mod(folder)
+        self.assertEqual(info.terrain, {})  # nothing for the ground files
+        self.assertEqual([(p.radius, p.erase) for p in info.cover["Blitz"]], [(1500.0, True), (1200.0, False), (400.0, True)])
+        lines = []
+        result = build_and_write(self.game, [info_and_ops(folder)], instance=self.root / "copy3", say=lines.append)
+        self.assertEqual(result.errors, [], lines)
+        arc = Edat((self.root / "copy3" / "Data" / "PC" / "190852" / "DataMap_Win.dat").read_bytes())
+        size, c = cells(bytes(arc.read(arc.find(cover.member("Blitz")))))
+        self.assertEqual(sorted(i for i in range(64) if c[i] & 0x08), [3 * 8 + 4, 4 * 8 + 3, 4 * 8 + 5, 5 * 8 + 4])
+        # the wood cleared by cover.toml, the plus painted by the brush, its middle taken away again
+
+    def test_the_map_view_gets_the_grid(self):
+        import base64
+        from ruse_studio.api import StudioApi, StudioError
+        api = StudioApi(index_path=self.root / "none.sqlite", game_dir=self.game, home=self.root / "home")
+        got = api.map_cover("Blitz")
+        self.assertEqual((got["size"], got["box"]), (8, [0.0, 0.0, WIDTH, WIDTH]))
+        bits = base64.b64decode(got["bits"])
+        self.assertEqual([i for i in range(64) if bits[i >> 3] >> (i & 7) & 1], [0, 1, 8, 9])  # the wood only
+        with self.assertRaisesRegex(StudioError, "no cover grid"):
+            api.map_cover("Nowhere")
 
     def test_mistakes(self):
         with self.assertRaisesRegex(BuildError, "unknown key 'circle'"):

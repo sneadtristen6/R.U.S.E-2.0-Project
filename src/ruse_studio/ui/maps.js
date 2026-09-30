@@ -33,8 +33,19 @@ const BRUSHES = {
   ramp: ["ramp", "flat", 1, true, 3, 100],  // two clicks: where it starts, then where it ends; size is half its width
   water: ["water", "flat", 1, false, 4, 5],  // the water surface, not the ground: a lake up to a level (rusemod.water)
   drain: ["drain", "flat", 1, false, 4, 0],  // the map's base water level again
+  cover: ["cover", "flat", 1, false, 3, 0],  // where units hide (the map's cover grid, not the ground: rusemod.cover)
+  uncover: ["cover", "flat", -1, false, 3, 0],
+  town: ["town", "flat", 1, true, 3, 0],  // one click: cover around every building of the town clicked
 };
 const WATER = new Set(["water", "drain"]);
+const COVER = new Set(["cover", "uncover"]);
+const SIZE_UNIT = { cover: 0.25, uncover: 0.25, town: 0.1 };  // finer sizes than the ground brushes' (share of 1%)
+
+// A brush's radius in map units: its Size slider as a share of the map's width.
+function brushRadius(name) {
+  const [x0, , , x1] = mv.edit.bounds;
+  return settingsOf(name).size / 100 * (x1 - x0) * (SIZE_UNIT[name] || 1);
+}
 const CRATER_RIM = 0.35;
 const HEIGHT_SHARE = 0.6;  // strength 100% = this share of the map's height range (hill, raise, lower, crater, plateau)
 
@@ -329,6 +340,7 @@ function gridApply(g, s, average) {
 }
 
 function applyStroke(ed, s) {
+  if (COVER.has(s.brush)) { coverDab(s); return; }  // the cover grid, not the ground
   if (WATER.has(s.brush)) {  // the water surface inside the circle, as rusemod.water does: no falloff
     const [xlo, xhi, ylo, yhi] = boxOf(s), level = s.brush === "water" ? s.level : ed.baseWater;
     near(ed.index, xlo, xhi, ylo, yhi, (i) => {
@@ -409,9 +421,140 @@ function reapply() {
   ed.grid = null;
   ed.waterAt.set(ed.baseW);
   ed.waterTouched = false;
+  if (cover.cells) cover.cells.set(cover.base);
+  cover.batch = true;
   for (const s of mv.brush.strokes) applyStroke(ed, s);
+  cover.batch = false;
+  coverDraw(0, cover.size - 1, 0, cover.size - 1);
   redraw(true, true);
   placeScenery();
+}
+
+// --- cover: where units hide (the map's cover grid, StudioApi.map_cover), drawn in green over the ground. The cover
+// and uncover brushes paint it and the town tool paints it around a town's buildings; the build writes them into
+// the grid (rusemod.cover). Proven in the game: infantry on painted cover are hidden (2026-09-30). ---
+const COVER_RGBA = [60, 210, 90, 125];
+const cover = { base: null, cells: null, size: 0, box: null, canvas: null, ctx: null, img: null, tex: null, mesh: null,
+  show: false, batch: false };
+
+function coverShown() {
+  return cover.show || (mv.brush.on && ["cover", "town"].includes(BRUSHES[mv.brush.name][0]));
+}
+
+function showCover() {
+  if (!cover.mesh) return;
+  cover.mesh.visible = coverShown();
+  mv.gl.draw();
+}
+
+async function loadCover(pack, ask) {
+  dropCover();
+  const res = await mv.api.map_cover(pack);
+  if (ask !== mv.ask || !mv.edit) return;
+  const raw = atob(res.bits), n = res.size, base = new Uint8Array(n * n);
+  for (let i = 0; i < n * n; i++) base[i] = (raw.charCodeAt(i >> 3) >> (i & 7)) & 1;
+  Object.assign(cover, { base, cells: base.slice(), size: n, box: res.box });
+  coverMesh();
+  cover.batch = true;
+  for (const s of mv.brush.strokes) if (COVER.has(s.brush)) coverDab(s);
+  cover.batch = false;
+  coverDraw(0, n - 1, 0, n - 1);
+}
+
+function dropCover() {
+  if (cover.mesh) {
+    mv.gl.scene.remove(cover.mesh);
+    cover.mesh.geometry.dispose();
+    cover.mesh.material.dispose();
+  }
+  Object.assign(cover, { base: null, cells: null, mesh: null });
+}
+
+// The overlay shares the ground's points (so it follows every stroke), with its own place in the cover picture.
+function coverMesh() {
+  const gl = mv.gl, ed = mv.edit, { THREE } = gl, n = cover.size, [bx, by, bw, bh] = cover.box;
+  if (!cover.canvas || cover.canvas.width !== n) {
+    cover.canvas = document.createElement("canvas");
+    cover.canvas.width = cover.canvas.height = n;
+    cover.ctx = cover.canvas.getContext("2d");
+    cover.img = cover.ctx.createImageData(n, n);
+    if (cover.tex) cover.tex.dispose();
+    cover.tex = new THREE.CanvasTexture(cover.canvas);
+    cover.tex.flipY = false;  // row 0 is the grid's first row (y0), as the uv below says
+    cover.tex.userData.keep = true;
+  }
+  const src = gl.ground.geometry, g = new THREE.BufferGeometry(), uv = new Float32Array(ed.n * 2);
+  for (let i = 0; i < ed.n; i++) { uv[2 * i] = (ed.wx[i] - bx) / bw; uv[2 * i + 1] = (ed.wy[i] - by) / bh; }
+  g.setAttribute("position", src.attributes.position);
+  g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+  g.setIndex(src.index);
+  cover.mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: cover.tex, transparent: true, depthWrite: false,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide }));
+  cover.mesh.frustumCulled = false;  // its points move with the ground's
+  cover.mesh.renderOrder = 1;
+  cover.mesh.visible = coverShown();
+  gl.scene.add(cover.mesh);
+}
+
+// One cover or uncover circle on the cells whose centres are inside it (rusemod.cover.paint's rule).
+function coverDab(s) {
+  if (!cover.cells) return;
+  const n = cover.size, [bx, by, bw, bh] = cover.box, cw = bw / n, ch = bh / n, on = s.brush === "cover" ? 1 : 0;
+  const c0 = Math.max(0, Math.floor((s.x - s.radius - bx) / cw)), c1 = Math.min(n - 1, Math.ceil((s.x + s.radius - bx) / cw));
+  const r0 = Math.max(0, Math.floor((s.y - s.radius - by) / ch)), r1 = Math.min(n - 1, Math.ceil((s.y + s.radius - by) / ch));
+  if (c0 > c1 || r0 > r1) return;
+  const rr = s.radius * s.radius;
+  for (let r = r0; r <= r1; r++) {
+    const dy = by + (r + 0.5) * ch - s.y;
+    for (let c = c0; c <= c1; c++) {
+      const dx = bx + (c + 0.5) * cw - s.x;
+      if (dx * dx + dy * dy <= rr) cover.cells[r * n + c] = on;
+    }
+  }
+  if (!cover.batch) coverDraw(r0, r1, c0, c1);
+}
+
+function coverDraw(r0, r1, c0, c1) {
+  if (!cover.cells || !cover.img) return;
+  const n = cover.size, px = cover.img.data;
+  for (let r = r0; r <= r1; r++) {
+    for (let c = c0; c <= c1; c++) {
+      const i = r * n + c, k = 4 * i;
+      if (cover.cells[i]) { px[k] = COVER_RGBA[0]; px[k + 1] = COVER_RGBA[1]; px[k + 2] = COVER_RGBA[2]; px[k + 3] = COVER_RGBA[3]; }
+      else px[k + 3] = 0;
+    }
+  }
+  cover.ctx.putImageData(cover.img, 0, 0, c0, r0, c1 - c0 + 1, r1 - r0 + 1);
+  cover.tex.needsUpdate = true;
+  if (mv.gl) mv.gl.draw();
+}
+
+// Every building the map and the mod put here: the map's (map_scenery) and the ones placed in this mod.
+function buildingSpots() {
+  const d = mv.scenery.data, out = [];
+  const flat = (d && d.items && d.items.building) || [];
+  for (let i = 0; i < flat.length; i += 5) out.push([flat[i + 1], flat[i + 2]]);
+  const groupOf = new Map(((d && d.palette) || []).map((r) => [r[0], r[2]]));
+  for (const o of mv.place.objects) if (groupOf.get(o.type) === "building") out.push([o.x, o.y]);
+  return out;
+}
+
+// The town clicked: the building nearest the click, and every building linked to it by a chain of neighbours
+// (no further apart than twice the margin, at least 60 m), within 800 m of the click. Each gets a cover circle.
+function townStrokes(x, y) {
+  const r = brushRadius("town"), link = Math.max(2 * r, 6000), reach = 80000;
+  const pts = buildingSpots().filter(([px, py]) => (px - x) ** 2 + (py - y) ** 2 <= reach * reach);
+  let seed = -1, best = 15000 * 15000;  // a building within 150 m of the click
+  pts.forEach(([px, py], i) => { const d = (px - x) ** 2 + (py - y) ** 2; if (d < best) { best = d; seed = i; } });
+  if (seed < 0) return [];
+  const town = new Set([seed]), queue = [seed];
+  while (queue.length && town.size < 3000) {
+    const [qx, qy] = pts[queue.shift()];
+    pts.forEach(([px, py], j) => {
+      if (!town.has(j) && (px - qx) ** 2 + (py - qy) ** 2 <= link * link) { town.add(j); queue.push(j); }
+    });
+  }
+  return [...town].map((i) => ({ brush: "cover", x: Math.round(pts[i][0]), y: Math.round(pts[i][1]), radius: r }));
 }
 
 function forget(mesh) {
@@ -1259,6 +1402,7 @@ async function show(pack, keepCamera) {
   }
   if (ask !== mv.ask) return;
   const gl = mv.gl;
+  dropCover();
   forget(gl.ground);
   forget(gl.water);
   gl.ground = made.ground;
@@ -1294,6 +1438,7 @@ async function show(pack, keepCamera) {
   });
   loadPlaced(pack, ask).catch((err) => placeNote((err && err.message) || String(err), "error"));
   loadScenarios(pack, ask).catch((err) => { $("scen-stats").textContent = (err && err.message) || String(err); });
+  loadCover(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
 }
 
@@ -1343,6 +1488,8 @@ function renderBrushes() {
   const set = settingsOf(b.name);
   $("brush-size").value = set.size;
   $("brush-strength").value = set.strength;
+  $("brush-strength").disabled = ["cover", "town"].includes(BRUSHES[b.name][0]);
+  showCover();
   $("brush-look").setAttribute("aria-pressed", String(!b.on));
   $("map-help").textContent = b.on ? w.brush_help : w.map_help;
   showCount();
@@ -1392,8 +1539,8 @@ function pointerMode() {
 // The world numbers of a new stroke, from the brush picked and its sliders.
 function newStroke(x, y, level, end) {
   const name = mv.brush.name, [kind] = BRUSHES[name], set = settingsOf(name);
-  const [x0, , z0, x1, , z1] = mv.edit.bounds;
-  const s = { brush: name, x, y, radius: set.size / 100 * (x1 - x0) };
+  const [, , z0, , , z1] = mv.edit.bounds;
+  const s = { brush: name, x, y, radius: brushRadius(name) };
   if (kind === "add") s.height = lift(set.strength, z0, z1);
   if (kind === "level") { s.level = level; s.weight = name === "plateau" ? 1 : set.strength / 100; }
   if (kind === "smooth") s.weight = set.strength / 100;
@@ -1413,8 +1560,7 @@ function hitGround(ev) {
 function showRing(p) {
   const gl = mv.gl;
   if (!gl.ring) return;
-  const set = settingsOf(mv.brush.name), [x0, , , x1] = mv.edit.bounds;
-  const r = set.size / 100 * (x1 - x0) * SCALE, lift = r * 0.02;
+  const r = brushRadius(mv.brush.name) * SCALE, lift = r * 0.02;
   gl.ring.visible = Boolean(p);
   if (p) {
     gl.ring.position.set(p.x, p.y + lift, p.z);
@@ -1540,6 +1686,16 @@ function watchPointer() {
     const x = p.x / SCALE, y = p.z / SCALE, z = p.y / SCALE, [, , z0, , , z1] = mv.edit.bounds;
     // a plateau's top and a lake's surface sit Strength above the ground clicked; Level and Flatten take its height
     const level = kind === "water" || name === "plateau" ? z + lift(set.strength, z0, z1) : kind === "level" ? z : 0;
+    if (kind === "town") {  // one click: cover circles around the town's buildings, saved as one group
+      const strokes = townStrokes(x, y);
+      if (!strokes.length) { brushNote(mv.words.town_none, "error"); return; }
+      const group = { strokes: [], last: null, stamp: true, start: mv.brush.strokes.length };
+      for (const s of strokes) { group.strokes.push(s); mv.brush.strokes.push(s); coverDab(s); }
+      mv.brush.painting = group;
+      const saved = mv.brush.groups.length;
+      finishStroke().then(() => { if (mv.brush.groups.length > saved) brushNote(fill(mv.words.town_done, { n: strokes.length })); });
+      return;
+    }
     if (kind === "ramp") {  // two clicks: where it starts (the ground's height there), then where it ends
       const start = mv.brush.rampStart;
       if (!start) { mv.brush.rampStart = { x, y, z, sx: p.x, sy: p.y, sz: p.z }; showRing(p); return; }
@@ -1690,6 +1846,8 @@ function renderWords() {
   $("map-detail").textContent = mv.lod === "highdef" ? w.detail_high : w.detail_low;
   $("map-detail").title = w.tip_detail;
   $("map-water-label").textContent = w.water;
+  $("map-cover-label").textContent = w.cover_show;
+  $("map-cover").parentElement.title = w.tip_cover_show;
   $("scen-show-label").textContent = w.scen_show;
   $("scen-show").parentElement.title = w.tip_scen_show;
   if (scen.data) renderScenarioPick();
@@ -1969,6 +2127,10 @@ function wire() {
     mv.kind = e.target.value;
     renderList();
     if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind }).catch(() => {});
+  });
+  $("map-cover").addEventListener("change", (e) => {
+    cover.show = e.target.checked;
+    showCover();
   });
   $("map-water").addEventListener("change", (e) => {
     mv.water = e.target.checked;

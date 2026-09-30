@@ -95,10 +95,55 @@ def _tree(win: bytes):
 
 def grid(win: bytes) -> dict:
     """The map's grid, for showing it: {"size": R, "box": (x0, y0, width, height) in map units, "cells": R*R
-    bytes}, row by row from the box's corner (a row is one y, going up the map)."""
+    bytes}, row by row from the box's corner (a row is one y, going down the map: y grows south)."""
     tree, box = _tree(win)
-    cells, r = sdb.to_grid(tree)
-    return {"size": r, "box": box, "cells": bytes(cells)}
+    r = sdb.tree_grid_R(tree)
+    return {"size": r, "box": box, "cells": _cells(tree, r)}
+
+
+def _cells(tree, r: int) -> bytes:
+    """The tree's cells, R*R bytes (sdb.to_grid's layout), filled a row slice at a time: a second or two on the
+    biggest maps, where filling cell by cell takes half a minute."""
+    nodes, ns = tree["nodes"], tree["node_start"]
+    out = bytearray(r * r)
+    stack = [(ns, 0, 0, r)]
+    visits = len(nodes) * 4 + 16  # a malformed tree that loops stops here
+    while stack and visits:
+        visits -= 1
+        off, x0, y0, size = stack.pop()
+        idx = (off - ns) // _NODE
+        if size < 2 or not 0 <= idx < len(nodes):
+            continue
+        h = size >> 1
+        for q, (qx, qy) in enumerate(((x0, y0), (x0 + h, y0), (x0, y0 + h), (x0 + h, y0 + h))):
+            v = nodes[idx][q]
+            if not v & 1:
+                stack.append((v, qx, qy, h))
+                continue
+            hh = max(h >> 1, 1)
+            for s, (sx, sy) in enumerate(((qx, qy), (qx + hh, qy), (qx, qy + hh), (qx + hh, qy + hh))):
+                run = bytes([(v >> (8 * s)) & 0xFF]) * min(hh, r - sx)
+                for yy in range(sy, min(sy + hh, r)):
+                    out[yy * r + sx:yy * r + sx + len(run)] = run
+    return bytes(out)
+
+
+def cover_bits(win: bytes, most: int = 1024) -> dict:
+    """Where units hide, small enough to send to the map view: {"size": n (at most `most`; bigger grids are
+    sampled), "box": (x0, y0, width, height), "bits": n*n bits, cell i at byte i // 8, bit i % 8, 1 = cover}."""
+    g = grid(win)
+    r, cells = g["size"], g["cells"]
+    step = max(1, r // most)
+    n = r // step
+    bits = bytearray((n * n + 7) // 8)
+    i = 0
+    for row in range(0, n * step, step):
+        line = cells[row * r:(row + 1) * r:step]
+        for b in line[:n]:
+            if b & LAYERS["cover"]:
+                bits[i >> 3] |= 1 << (i & 7)
+            i += 1
+    return {"size": n, "box": g["box"], "bits": bytes(bits)}
 
 
 def paint(win: bytes, paints: list[Paint]) -> bytes:

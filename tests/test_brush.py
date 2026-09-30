@@ -105,7 +105,7 @@ class TerrainFile(unittest.TestCase):
 
     def test_brushes_and_their_values(self):
         self.assertEqual(set(BRUSHES), {"hill", "raise", "lower", "crater", "plateau", "flatten", "level", "smooth", "ramp",
-                                        "water", "drain"})
+                                        "water", "drain", "cover", "uncover"})
         self.assertEqual(parse_strokes([{"brush": "smooth", "x": 1, "y": 2, "radius": 3}])[0].weight, 0.5)
         self.assertEqual(parse_strokes([{"brush": "flatten", "x": 1, "y": 2, "radius": 3, "level": 4}])[0].weight, 1.0)
 

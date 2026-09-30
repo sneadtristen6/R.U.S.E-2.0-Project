@@ -23,9 +23,13 @@ order, each to the ground the ones before it left.
             ground below it floods, a lake (the ground is unchanged)
   drain     puts the water surface inside its circle back to the        -
             map's base level: lakes and rivers there dry up
+  cover     paints cover in its circle: units there are hidden, as in a   -
+            wood (the map's cover grid, rusemod.cover; proven in the game)
+  uncover   takes the cover in its circle away                           -
 
 Water brushes change the drawn meshes' water surface and the map's water textures, never the ground (and never the
-.kdt trees, which hold no water); rusemod.terrain_edit and rusemod.water apply them after the height brushes.
+.kdt trees, which hold no water); rusemod.terrain_edit and rusemod.water apply them after the height brushes. Cover
+brushes change neither: the build turns them into cover.Paint circles on the map's cover grid (in DataMap_Win.dat).
 
 Every map's ground lives in four files that must change together (FORMATS.md §6): the two drawn meshes and the two
 .kdt trees. rusemod.terrain_edit applies every stroke to all four through `Stroke.height_at`, a function of the
@@ -48,7 +52,8 @@ class BrushError(ValueError):
 class Brush:
     kind: str    # "add": z + sign * height * shape; "level": toward `level`; "smooth": toward the local average;
                  # "ramp": toward the line from `level` at (x, y) to `level2` at (x2, y2);
-                 # "water" / "drain": the water surface, not the ground (height_at leaves z alone)
+                 # "water" / "drain": the water surface, not the ground (height_at leaves z alone);
+                 # "cover": where units hide (sign -1 takes it away), not the ground either
     shape: str   # "soft", "flat" or "crater" (see shape_weight)
     sign: int = 1
 
@@ -65,8 +70,11 @@ BRUSHES = {
     "ramp": Brush("ramp", "flat"),
     "water": Brush("water", "flat"),
     "drain": Brush("drain", "flat"),
+    "cover": Brush("cover", "flat"),
+    "uncover": Brush("cover", "flat", -1),
 }
 WATER_KINDS = ("water", "drain")
+GROUND_UNCHANGED = WATER_KINDS + ("cover",)  # kinds that never move the ground
 CRATER_RIM = 0.35      # the crater's rim rises by this share of the bowl's depth
 
 
@@ -146,7 +154,7 @@ class Stroke:
         """The new height of a point at world (x, y) whose ground is at z now (z itself outside the circle, or
         outside a ramp's band). `average(x, y)` gives the local average height, which only the smooth brush uses."""
         b = self.kind
-        if b.kind in WATER_KINDS:
+        if b.kind in GROUND_UNCHANGED:
             return z
         r2 = self.radius * self.radius
         if b.kind == "ramp":
@@ -171,7 +179,7 @@ class Stroke:
 
 # --- the mod file: maps/<map pack>/terrain.toml -------------------------------------------------------------------
 _NEEDS = {"add": ("height",), "level": ("level",), "smooth": (), "ramp": ("x2", "y2", "level", "level2"),
-          "water": ("level",), "drain": ()}
+          "water": ("level",), "drain": (), "cover": ()}
 _NUMBERS = ("x", "y", "radius", "height", "level", "weight", "x2", "y2", "level2")
 
 

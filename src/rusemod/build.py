@@ -108,6 +108,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.scenery = read_scenery(path)
         info.scenario = read_scenario(path)
         info.cover = read_cover(path)
+        _cover_brushes(info)
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -139,6 +140,23 @@ def read_scenery(folder: Path) -> dict:
         if objects:
             out[f.parent.name] = objects
     return out
+
+
+def _cover_brushes(info) -> None:
+    """The Studio's cover and uncover brushes live in terrain.toml with the others, but paint the map's cover grid,
+    not the ground: they move to `info.cover` (after the mod's own cover.toml circles), and a map whose strokes are
+    all cover ones leaves the ground files alone."""
+    from .cover import Paint
+    for pack, strokes in list(info.terrain.items()):
+        cover = [s for s in strokes if s.kind.kind == "cover"]
+        if not cover:
+            continue
+        info.cover.setdefault(pack, []).extend(Paint(s.x, s.y, s.radius, "cover", s.kind.sign < 0) for s in cover)
+        rest = [s for s in strokes if s.kind.kind != "cover"]
+        if rest:
+            info.terrain[pack] = rest
+        else:
+            del info.terrain[pack]
 
 
 def read_cover(folder: Path) -> dict:

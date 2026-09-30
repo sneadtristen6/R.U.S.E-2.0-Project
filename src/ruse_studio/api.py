@@ -10,6 +10,7 @@ launcher.
 """
 from __future__ import annotations
 
+import base64
 import functools
 import json
 import re
@@ -781,6 +782,37 @@ class StudioApi(UpdateCalls, PrefsCalls):
             self._sceneries[key] = out
             while len(self._sceneries) > 3:
                 self._sceneries.pop(next(iter(self._sceneries)))
+        return out
+
+    def map_cover(self, pack: str) -> dict:
+        """Where units hide on a map, as the game has it (rusemod.cover: the cover grid in DataMap_Win.dat), for the
+        map view to draw under the mod's cover brushes: {"size": n, "box": [x0, y0, width, height] in map units,
+        "bits": base64 of n*n bits (cell i at byte i // 8, bit i % 8; row by row from y0), 1 = cover}. n is at most
+        1024 (bigger grids are sampled); kept per map."""
+        from rusemod import cover
+        game = self._game()
+        if game is None:
+            raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
+        path = find_pack(game, cover.PACK)
+        if path is None:
+            raise StudioError(f"{cover.PACK} isn't in the game folder.")
+        key = ("cover", str(path), path.stat().st_mtime, pack.lower())
+        with self._grounds_lock:
+            cached = self._sceneries.get(key)
+        if cached is not None:
+            return cached
+        with Edat.open(str(path)) as arc:
+            try:
+                win = bytes(arc.read(arc.find(cover.member(pack))))
+            except KeyError:
+                raise StudioError(f"{pack} has no cover grid in {cover.PACK}, so its cover can't be shown or painted.") from None
+        try:
+            got = cover.cover_bits(win)
+        except (cover.CoverError, ValueError, struct.error) as exc:
+            raise StudioError(f"{pack}: its cover grid can't be read ({exc}).") from None
+        out = {"size": got["size"], "box": list(got["box"]), "bits": base64.b64encode(got["bits"]).decode("ascii")}
+        with self._grounds_lock:
+            self._sceneries[key] = out
         return out
 
     def map_scenarios(self, pack: str, edited: bool = True) -> dict:

@@ -259,7 +259,7 @@ list shows it under each map). The file holds strokes, one dab of a brush each:
 
 ```toml
 [[stroke]]
-brush  = "hill"      # hill, raise, lower, crater, plateau, flatten, smooth, ramp, water, drain
+brush  = "hill"      # hill, raise, lower, crater, plateau, flatten, smooth, ramp, water, drain, cover, uncover
 x      = 983040.0    # the centre, in world units: x grows east, y grows south
 y      = 983040.0
 radius = 60000.0
@@ -303,6 +303,8 @@ level  = 23500.0     # water: the water surface (world z); the ground under it f
 | `ramp` | an even slope from `level` at (`x`, `y`) to `level2` at (`x2`, `y2`); `radius` is half its width | flat across the middle half of the width, then an S-curve back to the old ground at the sides and beyond the ends |
 | `water` | the water surface to `level`: wherever the ground is lower, it floods (a lake); the ground doesn't move | the whole circle; end it on higher ground so the shore follows the ground |
 | `drain` | the water surface back to the map's base level: lakes and rivers inside dry up | the whole circle |
+| `cover` | cover (units there are hidden, as in a wood; proven in the game): the build paints the circle on the map's cover grid, as a `cover.toml` circle after the mod's own; the ground doesn't move | the cells whose centres are inside |
+| `uncover` | the same, taking cover away | the cells whose centres are inside |
 
 - **Water.** Water brushes run after the height brushes. They change the water surface of the two drawn meshes and
   the map's three water textures, never the ground or the `.kdt` files (units are kept out of water by the map's
