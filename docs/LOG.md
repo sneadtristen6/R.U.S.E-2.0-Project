@@ -638,3 +638,17 @@ import); the cloud tab's pull request #1 (Task A) is under review.
     `rusemod.ndf` and `rusemod.edat`. Nothing new for us.
   - Ulibos/ndf-parse (MIT): parses WARNO's **text** NDF. R.U.S.E. ships binary `.ndfbin`, so it doesn't apply.
   Only format facts were taken, never code (the first two are GPL/LGPL).
+
+### 2026-09-30, in-game: the terrain fix and a moved starting point PASSED (owner)
+
+- **Blitz test copy** (`D:\RUSE-Instances\terrain`): a hill, a pit and a flattened patch (terrain fix: the gameplay
+  ground leads, the height limits widened), and player 1's starting point moved onto the flattened patch
+  (`maps/SuperCrossRoads4/scenario.toml`). The game starts, the HQ is at the new place, units drive up the hill and
+  take orders there, the ground and trees draw right. First in-game proof that the terrain editor works.
+- **Two crashes on the way, both fixed:** the scenario's design-item NDF must be zero-padded to 4 bytes, and the 16
+  bytes after `SCENARIO\r\n` are an MD5 (bytes 0-9 and 28-end, LittleGroove's rule) the game checks at launch; a
+  moved item without it crashed 8 seconds in. The terrain-only copy (`D:\RUSE-Instances\terrain-only`) split the
+  cause in one start.
+- **A rule, enforced:** `tests/test_source.py` fails on Python strings whose backslashes mangle Windows paths (it
+  happened four times that day).
+

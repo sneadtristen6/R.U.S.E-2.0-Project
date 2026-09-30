@@ -673,7 +673,8 @@ separately and leaves the `.kdt` height limits stale.
 **Next, in order (2026-09-30, after Studio 0.6.0):** the terrain fix (DomesticNukes' recipe: the gameplay ground
 leads, the height limits follow, `rusemod.kdt_edit`) and each map's scenarios on the map (`rusemod.scenario`) shipped
 in Studio 0.6.0.
-1. **The owner's tests:** the terrain copy on Blitz (`D:\RUSE-Instances\terrain`: hill, pit, flat patch), then a
+1. **The owner's tests:** the terrain copy on Blitz **passed in the game, 2026-09-30** (hill, pit, flat patch and a
+   moved starting point); next a
    brushed hill from the Studio's own "Test in game", then the Scenario row in the map view.
 2. **Scenery zones:** placed buildings and trees block movement and give cover (the `mapinfo.win` movement graphs
    and the `.sdb` layer; research in LOG).
