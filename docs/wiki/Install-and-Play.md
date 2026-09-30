@@ -1,0 +1,39 @@
+# Install and play
+
+> **For:** players · **You need:** R.U.S.E. on Steam, installed · **Takes:** 5 minutes
+
+## 1. Install the launcher
+
+1. Download the installer (`.exe`) from the
+   [launcher releases](https://github.com/sneadtristen6/Ruse-Mod-Platform/releases?q=launcher).
+2. Run it. If Windows says "Windows protected your PC", click **More info**, then **Run anyway** (the app is new to
+   Windows' reputation check; its code is public on GitHub).
+3. Start **RUSE Launcher**. It finds the game by itself. If it can't: **Settings > Game folder > Choose folder...** and
+   pick the folder that holds `RUSE.exe`.
+
+## 2. Add a mod
+
+1. Click **Add a mod file...** and pick the file, or drag the file onto the window.
+2. The launcher takes `.rusemod` (made with RUSE Studio), `.rmod` (made for RUSE-Mod-Manager) and `.zip` (a zipped
+   mod folder).
+3. It checks the file first. A file that isn't a mod, or that holds a program, is refused with the reason.
+
+## 3. Make a mod set
+
+1. A **mod set** is a list of mods in load order. When two mods change the same thing, the lower one wins.
+2. Click **New mod set...**, add the mods you want and put them in order.
+3. If two mods can't be played together, the launcher says which and why.
+
+## 4. Play
+
+Press **Play**. The first time, the launcher builds the modded copy of the game (a minute or so); after that, only
+what changed. Then R.U.S.E. starts.
+
+> [!NOTE]
+> Starting R.U.S.E. from Steam starts the game **without** mods, as always. Your Steam install is never changed.
+
+## Updates
+
+The launcher checks for a new version each time it starts. Click **Update** when it offers one.
+
+**Next:** [[Play with friends|Play-With-Friends]]

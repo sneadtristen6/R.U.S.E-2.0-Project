@@ -1,0 +1,45 @@
+# Mod folders and files
+
+> **Reference** · You never need to touch these by hand: the Studio writes them. This page is for when something
+> looks wrong, or for modders who edit files directly.
+
+## Where things are
+
+| What | Where |
+|---|---|
+| The Studio's mods | `%LOCALAPPDATA%\RUSE Mod Platform\mods\<mod>` (paste that into File Explorer's address bar) |
+| The launcher's installed mods | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
+| Modded copies of the game | `RUSE-Instances` on the same drive as the game (for example `D:\RUSE-Instances`) |
+| The game itself | Never changed |
+
+## Inside a mod
+
+```
+my-mod/
+  mod.toml                    the mod's name, id, version, author (required)
+  src/studio.rndf             unit changes made in the Studio
+  text/studio.baseunite.csv   names of new units
+  maps/<map pack name>/       one folder per map the mod changes:
+    terrain.toml                ground brushes (also water, cover and block brushes)
+    scenery.toml                buildings, props and trees placed
+    scenario.toml               starting points and spawns moved, units added
+    cover.toml, movement.toml   cover and movement written by hand
+```
+
+## The map folder's name is the map's pack name, not its title
+
+Players know a map by its title (**Blitz**); the game's files use its pack name (**SuperCrossRoads4**). A map folder
+must use the pack name: `maps/SuperCrossRoads4/`, not `maps/Blitz/`. Every map's pair is in [[Map names|Map-Names]],
+and the Studio's map list shows both: the title first, the pack name after the dot.
+
+## Common mistakes
+
+| Mistake | What happens | Fix |
+|---|---|---|
+| The zip holds a folder inside a folder | The launcher looks one folder down and finds it. Two or more down, it says it found no mod. | Zip the folder that holds `mod.toml`. |
+| A map folder named after the map's title | The build says it isn't a map's pack name. | Rename it to the pack name. |
+| A file edited by hand has a typo | The mod check names the file and the line. | Fix it, or **Set aside** in the Studio. |
+| A `.exe`, `.dll` or script inside the mod | Refused: mods carry data only. | Take it out. |
+
+If a file can't be read, the Studio never writes over it: your work is never lost. **Set aside** renames it
+`<name>.broken.toml` next to the original.

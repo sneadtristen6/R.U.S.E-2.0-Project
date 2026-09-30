@@ -1,0 +1,83 @@
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! The apps' **Report a problem** button fills in the app and its version for you.
+        Please don't paste paths with your Windows user name in them: `%LOCALAPPDATA%\...` is enough.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you post
+      options:
+        - label: I searched Bug reports, and this isn't there yet.
+          required: true
+        - label: I'm on the latest version (each app offers updates when it starts).
+  - type: dropdown
+    id: app
+    attributes:
+      label: Which app?
+      options:
+        - RUSE Studio
+        - RUSE Launcher
+        - Both / not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Settings shows it (for example 0.7.1).
+      placeholder: "0.7.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where did it happen?
+      options:
+        - "Studio: units"
+        - "Studio: maps"
+        - "Studio: Test in game"
+        - "Studio: export"
+        - "Launcher: adding a mod"
+        - "Launcher: mod sets"
+        - "Launcher: Play"
+        - "In the game"
+        - Somewhere else
+    validations:
+      required: true
+  - type: input
+    id: map
+    attributes:
+      label: Which map or mod? (if any)
+      placeholder: "Blitz (SuperCrossRoads4), my mod cheap-sherman"
+  - type: textarea
+    id: steps
+    attributes:
+      label: What did you do?
+      description: Step by step, so we can do the same.
+      placeholder: |
+        1. Opened Maps, picked Blitz
+        2. Added 6 tanks in a wedge
+        3. Pressed Test in game
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: message
+    attributes:
+      label: The message, if there was one
+      description: The red bar under the header, or the line at the bottom. Select it and copy it here.
+      render: text
+  - type: textarea
+    id: pictures
+    attributes:
+      label: Screenshots
+      description: Drag them in here.
