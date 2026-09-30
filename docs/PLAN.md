@@ -849,3 +849,39 @@ the ground** (T5). Scenery and roads come after the ground works in-game (M6, M8
    points), and nothing in the data does that yet.
 
 Both go to §11 (RUSE 2.0 design notes) when they're taken up; until then this is the record.
+
+## 13. Making a new map (design draft, 2026-09-30)
+
+**What a map is, in files** (all read today; the checksums and layouts known):
+- **Its pack** `Maps\PC\DataMap<Name>_v09.dat`: the drawn ground (`highdef.tms`, `lowdef.tms`, texture tiles), the
+  gameplay ground and camera floor (`.kdt`), scenery (`save.boobspc`), water textures, the sight layer (`output.sdb`).
+- **Its scenarios** in `DataMap_Win.dat` (`test\map\<name>\*.scenario`: zones, starting points, spawns, names), with
+  `mapinfo.win` (the AI's grids and the movement graphs) and camera paths.
+- **Its registration** in `ZZ_GladPatchableWin.dat`: a `TMapLoadInfo` in the map list (a GUID, the pack, its
+  scenario clusters `genglad\patchable\scenario\<name>\<scenario>\clustermap` + `mapia`), and a menu entry
+  (`TMultiMapInfo` for skirmish, `TChallengeMapInfo` for an Operation) with its name as a text key.
+
+**Three levels, easiest first:**
+1. **A new scenario on a shipped map** (a new skirmish layout or an Operation on Blitz's ground): clone a scenario
+   under a new name and register it (LittleGroove's engine already does both: `scenario_gen.py`, and
+   `registration.py`, proven in-game with his Overlord Operation), then edit it in the Studio: starting points,
+   depots, spawned units (being built now), zones. Works with what exists.
+2. **A new map from a shipped one's ground** (the main goal): copy a map's pack under a new name
+   (`DataMap<New>_v09.dat`; new maps can ship their own pack, C3), register it, then reshape everything with the
+   Studio: Start over and Level to flatten, brushes to sculpt (proven in-game 2026-09-30), water, scenery, the
+   scenario. Missing pieces, in order: (a) cloning a pack and registering a new map (with its name in all ten
+   languages and a menu picture); (b) drawing zones (the sectors players capture); (c) ground painting (sand, grass,
+   rock); (d) the movement graphs and AI grid in `mapinfo.win` following the new ground where it becomes
+   impassable (hills are fine today: units drove up one; cliffs, new lakes and blocked valleys aren't); (e) the sight
+   layer (`output.sdb`: forests and towns hiding units).
+3. **A map from scratch** (a heightmap, any size): everything in 2, plus building the meshes, trees of the `.kdt`
+   and texture tiles from nothing (M8). Only after 2 works.
+
+**The Studio, for level 2:** "New map…" → pick the map to start from (its theatre: the trees, buildings and ground
+textures available) and a name → a blank copy (flattened) opens in the map view → brushes, water, scenery,
+scenario → "Test in game" plays it as a skirmish → Export shares it as one `.rusemod`, which carries the new pack.
+Players get it through the launcher like any mod.
+
+**Unknowns to check first (one game start each):** a copied pack under a new name loads as its own map; the menus
+show a new skirmish entry (LittleGroove proved it for Operations); a map with its own GUID works in multiplayer
+between two PCs with the mod.
