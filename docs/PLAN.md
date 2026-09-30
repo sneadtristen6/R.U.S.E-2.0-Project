@@ -640,6 +640,8 @@ bridges replaces it, and a road's length while it's drawn. **In the game (owner,
    of sink.
 5. Then the roadmap below: **A5 Ruse areas**, A6 ground painting.
 
+*Planned (owner, 2026-09-30):* **A10**, at least 8 players on a map (D-Day first), past 8 tried later.
+
 *Open, the owner's to decide* (ideas, not decisions): "two tabs open" in the map builder; bridges for chokepoint maps.
 
 **Order** (sessions are estimates for the shorter sessions):
@@ -739,6 +741,7 @@ ends with one in-game test (batched, one game start) and a release. Sessions are
 | A7 | **Re-meshing:** finer ground only where brushes need it (adaptive, so no lag: far mesh and gameplay ground stay coarse); a warning when a brush is steeper than the mesh can show | DomesticNukes' index-buffer notes | 2-3 |
 | A8 | Spawn checks: which camp is the player in a skirmish, and does a skirmish honour unit spawns; formations (Studio 0.7.1): do the units face the way the formation does | — | 0 (one test) |
 | A9 | *Idea (owner, 2026-09-30):* units drawn as their real 3D models in the map view (a tank as a tank, infantry as soldiers) instead of markers, like the buildings already are | — | 1-2 |
+| A10 | **More players on a map, at least 8** (owner, 2026-09-30: "add at least limit to 8; if it can go higher, try later on, just plan for it"). A map's player count is data: `NbPlayers` in its `TMultiMapInfo` (`misc/globals.cpp`; the 30 online maps use 2, 3, 4, 6 or 8, and MP23-MP24 are 8 already), its size group `CategoryId` (seen: 1 for 3-4 players, 2 for 6, 3 for 8), its team layouts (`DispoMulti2Teams` / `3Teams` / `FFA`), and a starting point per player in its scenario (D-Day's 3v3 has six); the "(6)" in its name is only text. So: raise a shipped map (D-Day first) to 8, and let new maps (B1) pick theirs: the Studio gets **Add starting point** (it moves them now; each has an alliance, a camera and a warm-up path), and the build sets the count, the group, the layouts and the name in ten languages. Test: 8 slots in the lobby, and an 8-player game starts with every player on their own starting point. **Past 8: later.** Probably the program's own limit; if so it's RUSE 2.0's (private), if a data value holds it, both apps | — | 1-2 |
 
 *Phase B: new maps* (M6, M8)
 | # | Step | Needs | Sessions |
