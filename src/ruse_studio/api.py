@@ -27,7 +27,7 @@ from rusemod import identity, package, scenario, scenery, schema
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import CommunityCalls
 from rusemod.update import UpdateCalls
-from rusemod.build import MAP_FILES, BuildError, build_and_write, load_mod, read_map_file
+from rusemod.build import MAP_FILES, BuildError, build_and_write, load_mod
 from rusemod.lock import fingerprint_text
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
@@ -37,7 +37,8 @@ from rusemod.rndf import RndfError
 from rusemod.steam import build_of, data_revisions, find_game
 from rusemod.build import find_pack
 from rusemod.edat import Edat
-from rusemod.terrain import LODS, ground_png, map_list, pack_file, pack_for, terrain
+from rusemod.modcheck import check_mod_folder
+from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_folder, pick_save
 
 from .edits import EditsFileError, Link, ModEdits, NewUnit
@@ -1301,54 +1302,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
         folder = self._mod_dir()
         if folder is None:
             return {"mod": None, "problems": []}
-        problems = self._folder_problems(folder)
-        maps = folder / "maps"
-        for f in sorted(maps.glob("*/*.toml"), key=lambda p: p.as_posix().lower()) if maps.is_dir() else []:
-            if f.name in MAP_FILES:
-                try:
-                    read_map_file(folder, f)
-                except BuildError as exc:
-                    problems.append({"file": f.relative_to(folder).as_posix(), "problem": str(exc), "set_aside": True})
-        try:  # the rest: mod.toml, the unit edits, the names (the build stops at the first mistake)
-            load_mod(folder)
-        except (BuildError, RndfError, OSError) as exc:
-            if not any(p["file"] and p["file"] in str(exc) for p in problems):
-                problems.append({"file": None, "problem": str(exc), "set_aside": False})
-        return {"mod": str(folder), "problems": problems}
-
-    def _folder_problems(self, folder: Path) -> list:
-        """Map files where the build won't look: loose in maps/ (they go in maps/<pack>/), or in a folder that
-        isn't a map's pack name, often the map's title (maps/Blitz for SuperCrossRoads4): "rename_to" is the pack
-        it most likely means, for the window's Rename button."""
-        maps = folder / "maps"
-        if not maps.is_dir():
-            return []
-        problems = [{"file": f"maps/{f.name}", "set_aside": False,
-                     "problem": f"maps/{f.name} is loose in maps/: a map's files go in a folder named after the map's "
-                                f"pack, like maps/SuperCrossRoads4/{f.name} for Blitz"}
-                    for f in sorted(maps.iterdir(), key=lambda p: p.name.lower()) if f.is_file() and f.name in MAP_FILES]
-        game = self._game()
-        try:
-            known = map_list(game) if game is not None else None
-        except (OSError, ValueError, KeyError):
-            known = None  # the game's map list can't be read: the build will say it
-        if not known:
-            return problems
-        packs = {m["pack"] for m in known}
-        for d in sorted((p for p in maps.iterdir() if p.is_dir()), key=lambda p: p.name.lower()):
-            if d.name in packs or not any(d.glob("*.toml")):
-                continue
-            guess = pack_for(d.name, known)
-            if guess and guess.lower() == d.name.lower():
-                why = f"the pack is written {guess}"
-            elif guess:
-                why = f"{d.name} is the title of a map whose pack is {guess}"
-            else:
-                why = "no map in the game has that pack name or title (see the wiki's Map names page)"
-            problems.append({"file": f"maps/{d.name}", "set_aside": False, "rename_to": guess,
-                             "problem": f"maps/{d.name}: the build only reads folders named after a map's pack, and "
-                                        f"{why}."})
-        return problems
+        return {"mod": str(folder), "problems": check_mod_folder(folder, self._game())}
 
     def rename_map_folder(self, name: str, to: str) -> dict:
         """Rename the current mod's maps/<name> to maps/<to> (the fix the mod check offers). Refused when maps/<to>

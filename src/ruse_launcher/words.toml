@@ -1575,3 +1575,15 @@ ru = "Открывает вики в браузере: как добавлять
 cz = "Otevře wiki v prohlížeči: přidávání modů, hraní, hraní s přáteli."
 jpn = "ブラウザでWikiを開きます：モッドの追加、プレイ、友達とのプレイ。"
 sc = "在浏览器中打开 Wiki：添加模组、游玩、与好友一起玩。"
+
+[mod_check_warn]
+us = "The mod check found {n} problem(s) Play would stop at; its author can fix them:"
+fr = "La vérification a trouvé {n} problème(s) qui bloqueraient Jouer ; son auteur peut les corriger :"
+ger = "Die Mod-Prüfung fand {n} Problem(e), an denen Spielen scheitern würde; der Autor kann sie beheben:"
+ita = "Il controllo ha trovato {n} problema/i che bloccherebbero Gioca; l'autore può correggerli:"
+spa = "La comprobación encontró {n} problema(s) que detendrían Jugar; su autor puede corregirlos:"
+pol = "Sprawdzenie znalazło {n} problem(y), które zatrzymają Graj; autor może je poprawić:"
+ru = "Проверка нашла проблем: {n}, из-за них «Играть» не сработает; автор мода может их исправить:"
+cz = "Kontrola našla {n} problém(y), na kterých by Hrát skončilo; autor je může opravit:"
+jpn = "モッドの検査で「プレイ」を止める問題が {n} 件見つかりました。作者が直せます："
+sc = "模组检查发现 {n} 个会让“开始游戏”停止的问题；作者可以修复："

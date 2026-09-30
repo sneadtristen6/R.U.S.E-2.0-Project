@@ -679,7 +679,10 @@ function added(res) {
   const w = state.words;
   useLists(res);
   if (!res.mod) return;
-  setMessage(res.replaced ? fill(w.mod_updated, { name: res.mod.name, v: res.mod.version }) : fill(w.mod_added, { name: res.mod.name }), "good");
+  const done = res.replaced ? fill(w.mod_updated, { name: res.mod.name, v: res.mod.version }) : fill(w.mod_added, { name: res.mod.name });
+  const problems = res.problems || [];  // the mod check: said now rather than when Play stops
+  if (problems.length) setMessage(`${done} ${fill(w.mod_check_warn, { n: problems.length })} ${problems.map((p) => p.problem).join(" · ")}`, "bad");
+  else setMessage(done, "good");
 }
 
 async function addModFile() {

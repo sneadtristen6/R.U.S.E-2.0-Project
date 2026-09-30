@@ -176,7 +176,16 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls):
             info, replaced = self._library.add(path)
         except LibraryError as exc:
             raise LauncherError(str(exc)) from None
-        return self._lists(mod=info, replaced=replaced)
+        return self._lists(mod=info, replaced=replaced, problems=self._mod_problems(info))
+
+    def _mod_problems(self, info: dict) -> list:
+        """The mod check (rusemod.modcheck) on a mod just added: what Play would stop at, or map files the build
+        would skip, said now (the mod stays in the library; its author has the fix)."""
+        folder = Path(info.get("path") or "")
+        if not info.get("path") or not folder.is_dir():
+            return []  # an .rmod is one file, checked by its own engine
+        from rusemod.modcheck import check_mod_folder
+        return check_mod_folder(folder, self._game()[0])
 
     def add_mod_file(self) -> dict:
         """Ask for a mod file (the window's dialog), then add it. Nothing picked: the lists as they are."""

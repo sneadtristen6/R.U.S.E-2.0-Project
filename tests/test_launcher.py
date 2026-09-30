@@ -185,6 +185,18 @@ class Library(Base):
         res = api.add_mod(str(make_zip(Path(self.tmp.name, "b.zip"), files)))  # mod.toml at the top
         self.assertEqual((res["replaced"], len(res["library"])), (True, 1))
 
+    def test_a_mod_with_a_misnamed_map_folder_is_added_and_the_problem_said(self):
+        api = self.api()
+        files = {"mod.toml": '[mod]\nid = "blitz-hill"\nversion = "1.0.0"\nname = "Blitz hill"\n',
+                 "maps/Blitz/terrain.toml": '[[stroke]]\nbrush = "hill"\nx = 1.0\ny = 2.0\nradius = 3.0\nheight = 4.0\n'}
+        maps = [{"pack": "SuperCrossRoads4", "titles": {"us": ["Blitz"]}}]
+        with mock.patch("rusemod.modcheck.map_list", return_value=maps):
+            res = api.add_mod(str(make_zip(Path(self.tmp.name, "c.zip"), files)))
+        self.assertEqual(res["mod"]["id"], "blitz-hill")  # it goes in: the author has the fix
+        self.assertEqual([(p["file"], p["rename_to"]) for p in res["problems"]], [("maps/Blitz", "SuperCrossRoads4")])
+        good = api.add_mod(str(make_zip(Path(self.tmp.name, "d.zip"), {"mod.toml": files["mod.toml"]})))
+        self.assertEqual(good["problems"], [])
+
     def test_mods_that_cant_go_in(self):
         api = self.api()
         bad_rndf = self.mod("broken", {"x.rndf": "patch $/B ( ProductionPrice = \n"})

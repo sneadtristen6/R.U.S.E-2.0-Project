@@ -836,7 +836,7 @@ class Terrain(WithMod):
             if name != "Empty":
                 (folder / "maps" / name / "terrain.toml").write_text(hill, encoding="utf-8")
         (folder / "maps" / "scenery.toml").write_text("", encoding="utf-8")
-        with mock.patch("ruse_studio.api.map_list", return_value=self.MAPS):
+        with mock.patch("rusemod.modcheck.map_list", return_value=self.MAPS):
             got = {p["file"]: p for p in self.api.check_mod()["problems"]}
             self.assertEqual(sorted(got), ["maps/Blitz", "maps/Nowhere", "maps/scenery.toml", "maps/twoislands"])
             self.assertEqual(got["maps/Blitz"]["rename_to"], "SuperCrossRoads4")
