@@ -84,6 +84,7 @@
         <div id="scenery-hover" class="small"></div>
         <div id="map-ground" class="small"></div>
         <div id="map-help" class="muted small"></div>
+        <div id="map-keys" class="muted small map-keys"></div>
       </div>
       <!-- the brushes (maps.js): strokes are saved in the current mod's maps/<map>/terrain.toml -->
       <div id="map-tools" class="map-tools hidden">
@@ -105,6 +106,8 @@
         <div id="brush-note" class="small"></div>
         <!-- placing objects (maps.js): saved in the current mod's maps/<map>/scenery.toml -->
         <div id="place-title" class="map-title place-title"></div>
+        <!-- for now, scenery is only for looks (DomesticNukes' note): cover and movement live in other map files -->
+        <div id="place-scenery-note" class="muted small"></div>
         <div id="place-groups" class="chips brush-list" role="group"></div>
         <input id="place-search" type="search" class="place-search">
         <select id="place-type" size="6" class="place-list"></select>
@@ -112,6 +115,12 @@
           <input id="place-turn" type="range" min="0" max="345" step="15" value="0"></label>
         <label class="brush-slider small"><span id="place-size-label"></span>
           <input id="place-size" type="range" min="0.5" max="3" step="0.1" value="1"></label>
+        <!-- how a click places: one object, an area painted by dragging, or a line between two clicks -->
+        <div id="place-how" class="chips brush-list" role="group"></div>
+        <label id="place-spacing-row" class="brush-slider small hidden"><span id="place-spacing-label"></span>
+          <input id="place-spacing" type="range" min="2" max="100" step="1" value="8"></label>
+        <label id="place-area-row" class="brush-slider small hidden"><span id="place-area-label"></span>
+          <input id="place-area" type="range" min="10" max="300" step="5" value="40"></label>
         <div class="map-controls">
           <button id="place-on" type="button" class="chip"></button>
           <button id="place-undo" type="button" class="ghost" disabled></button>

@@ -8,7 +8,8 @@ const state = { lang: "base", kind: "all", nation: -1, search: "", selected: nul
   nationNames: [], mods: [], mod: null, edited: new Set(),
   page: null,     // the object shown: { address, via }; via = the named unit the modder came from
   mode: "own",    // a part several units share: change it for "own" (that unit only) or "shared" (all of them)
-  view: "units" };  // the tab: "units" or "maps" (maps.js)
+  view: "units",  // the tab: "units" or "maps" (maps.js)
+  lastEdit: null };  // the last value changed this session, for Ctrl+Z: { address, prop, mode, via, label }
 const KINDS = ["all", "ground", "infantry", "air", "buildings"];
 const WHOLE = new Set(["int8", "int16", "uint16", "int32", "uint32", "int64"]);
 const NEW = "\u0001new", OPEN = "\u0001open", EXPORT = "\u0001export";  // the mod menu's actions (never a folder path)
@@ -69,6 +70,12 @@ async function setLanguage(lang) {
   $("export-cancel").textContent = w.cancel;
   $("export-help").textContent = w.export_help;
   $("test-log-close").textContent = w.close;
+  // tooltips: one sentence on every control, from words.toml (tip_*)
+  const tips = { "tab-units": "tip_tab_units", "tab-maps": "tip_tab_maps", mod: "tip_mod", test: "tip_test", lang: "tip_lang",
+    "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
+    "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close",
+    "build-index": "tip_build_index", search: "tip_search" };
+  for (const [id, key] of Object.entries(tips)) $(id).title = w[key] || "";
   $("lang").replaceChildren(...state.languages.map((l) =>
     el("option", { value: l.code, textContent: l.code === "base" ? w.game_names : l.name, selected: l.code === lang })));
   $("search").placeholder = w.search;
@@ -103,6 +110,7 @@ function useMods(res) {
 }
 
 async function modChanged() {
+  state.lastEdit = null;  // the change was in the other mod
   await refreshMarks();
   if (state.page) await showUnit(state.page.address, state.page.via);
   if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // a map's strokes are the mod's
@@ -179,14 +187,14 @@ function mark(button) {
 function renderChips() {
   const w = state.words;
   $("kinds").replaceChildren(...KINDS.map((k) => {
-    const b = el("button", { type: "button", className: "chip", textContent: w[k] });
+    const b = el("button", { type: "button", className: "chip", textContent: w[k], title: w.tip_kind });
     b.setAttribute("aria-pressed", String(state.kind === k));
     b.addEventListener("click", () => { state.kind = k; renderChips(); refreshList(); });
     return b;
   }));
   const nations = [-1, 0, 1, 2, 3, 4, 5, 6];
   $("nations").replaceChildren(...nations.map((n) => {
-    const b = el("button", { type: "button", className: "chip",
+    const b = el("button", { type: "button", className: "chip", title: w.tip_nation,
       textContent: n < 0 ? w.all : state.nationNames[n] || String(n) });
     b.setAttribute("aria-pressed", String(state.nation === n));
     b.addEventListener("click", () => { state.nation = n; renderChips(); refreshList(); });
@@ -202,7 +210,7 @@ async function refreshList() {
   } catch (err) { problem(err); return; }
   $("count").textContent = state.words.units.replace("{n}", res.units.length);
   $("unit-list").replaceChildren(...res.units.map((u) => {
-    const b = el("button", { type: "button" },
+    const b = el("button", { type: "button", title: state.words.tip_open_unit },
       el("span", { className: "name", textContent: u.name }),
       el("span", { className: "sub", textContent: `${u.nation_name} · ${state.words[u.kind]}` +
         (u.name !== u.base_name ? ` · ${u.base_name}` : "") }));
@@ -225,7 +233,7 @@ function sameNumbers(a, b) {
 
 function numberBox(r, value, label) {
   const bool = r.type === "bool";
-  const box = el("input", { type: bool ? "checkbox" : "number", disabled: !state.mod });
+  const box = el("input", { type: bool ? "checkbox" : "number", disabled: !state.mod, title: state.words.tip_value });
   if (bool) box.checked = Boolean(value);
   else {
     box.value = String(value);
@@ -267,7 +275,7 @@ function row(u, r, mode) {
     ? numberBox(r, shown[0], `${r.label} (${w.all_values.replace("{n}", shown.length)})`) : null;
   const holder = el("div", { className: "boxes" }, ...(one ? [one] : boxes));
   if (one) {
-    const each = el("button", { type: "button", className: "link", textContent: w.each_value });
+    const each = el("button", { type: "button", className: "link", textContent: w.each_value, title: w.tip_each_value });
     each.addEventListener("click", () => {
       boxes.forEach((b) => { b.value = one.value; });
       one = null;
@@ -289,10 +297,11 @@ function row(u, r, mode) {
   const showWas = () => {
     tr.classList.toggle("edited", st.mine !== null);
     if (st.mine === null) { was.replaceChildren(); return; }
-    const undo = el("button", { type: "button", className: "link", textContent: w.reset });
+    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_reset });
     undo.addEventListener("click", async () => {
       try {
         await api().reset(u.address, r.prop, mode, via);
+        if (isLastEdit(u.address, r.prop, mode, via)) state.lastEdit = null;  // nothing left for Ctrl+Z to take back
         setMine(null);
         boxes.forEach((b, i) => {
           if (b.type === "checkbox") b.checked = Boolean(st.base[i]); else b.value = String(st.base[i]);
@@ -320,6 +329,7 @@ function row(u, r, mode) {
       value.forEach((n, i) => { if (boxes[i].type !== "checkbox") boxes[i].value = String(n); });
       if (one) one.value = String(value[0]);
       setMine(sameNumbers(value, st.base) ? null : value);
+      state.lastEdit = { address: u.address, prop: r.prop, mode, via, label: r.label };  // what Ctrl+Z takes back
       showWas();
       await refreshMarks();
       say(w.saved.replace("{file}", res.saved), "ok");
@@ -345,9 +355,10 @@ function shareChoice(u) {
   const choice = el("div", { className: "choice", role: "radiogroup" }, el("span", { textContent: w.change_for }));
   for (const [mode, text] of [["own", w.only_unit.replace("{name}", u.share.via.name)],
     ["shared", w.all_units.replace("{n}", names.length)]]) {
-    const input = el("input", { type: "radio", name: "share-mode", value: mode, checked: state.mode === mode });
+    const input = el("input", { type: "radio", name: "share-mode", value: mode, checked: state.mode === mode,
+      title: w.tip_change_for });
     input.addEventListener("change", () => { state.mode = mode; showUnit(state.page.address, state.page.via); });
-    choice.append(el("label", {}, input, " " + text));
+    choice.append(el("label", { title: w.tip_change_for }, input, " " + text));
   }
   box.append(choice);
   return box;
@@ -361,18 +372,19 @@ function factoryLabel(f) {
 
 function newUnitForm(u) {
   const w = state.words;
-  const open = el("button", { type: "button", className: "ghost", textContent: w.new_unit });
+  const open = el("button", { type: "button", className: "ghost", textContent: w.new_unit, title: w.tip_new_unit });
   const form = el("form", { className: "new-unit hidden" });
-  const name = el("input", { autocomplete: "off", maxLength: 60, required: true, placeholder: w.new_unit_name });
+  const name = el("input", { autocomplete: "off", maxLength: 60, required: true, placeholder: w.new_unit_name,
+    title: w.tip_unit_name });
   name.setAttribute("aria-label", w.new_unit_name);
   const priceRow = u.groups.flatMap((g) => g.rows).find((r) => r.prop === "ProductionPrice");
   const first = priceRow ? [].concat(priceRow.edited ?? priceRow.numbers)[0] : 0;
   const price = el("input", { type: "number", min: "0", step: "1", inputMode: "numeric", required: true,
-    value: String(first) });
+    value: String(first), title: w.tip_price });
   price.setAttribute("aria-label", w.price);
-  const same = el("input", { type: "radio", name: "menu", value: "same", checked: true });
-  const other = el("input", { type: "radio", name: "menu", value: "other" });
-  const nation = el("select", { disabled: true }), factory = el("select", { disabled: true });
+  const same = el("input", { type: "radio", name: "menu", value: "same", checked: true, title: w.tip_menu });
+  const other = el("input", { type: "radio", name: "menu", value: "other", title: w.tip_menu });
+  const nation = el("select", { disabled: true, title: w.tip_menu }), factory = el("select", { disabled: true, title: w.tip_menu });
   nation.setAttribute("aria-label", w.nation);
   factory.setAttribute("aria-label", w.factory);
   let menus = null;
@@ -395,8 +407,8 @@ function newUnitForm(u) {
   same.addEventListener("change", menuChoice);
   other.addEventListener("change", menuChoice);
   nation.addEventListener("change", fillFactories);
-  const create = el("button", { type: "submit", className: "primary", textContent: w.create });
-  const cancel = el("button", { type: "button", className: "ghost", textContent: w.cancel });
+  const create = el("button", { type: "submit", className: "primary", textContent: w.create, title: w.tip_create_unit });
+  const cancel = el("button", { type: "button", className: "ghost", textContent: w.cancel, title: w.tip_cancel });
   cancel.addEventListener("click", () => { form.classList.add("hidden"); open.classList.remove("hidden"); });
   form.append(
     el("label", {}, el("span", { textContent: w.new_unit_name }), name),
@@ -431,15 +443,15 @@ function newUnitForm(u) {
 
 function copyNotice(u) {
   const w = state.words;
-  const source = el("button", { type: "button", className: "link", textContent: u.new.source_name });
+  const source = el("button", { type: "button", className: "link", textContent: u.new.source_name, title: w.tip_source });
   source.addEventListener("click", () => showUnit(u.new.source));
   const [before, after] = w.copy_of.split("{name}");
   const box = el("div", { className: "notice new" }, el("p", {}, before, source, after || ""));
   if (!state.mod) return box;
-  const del = el("button", { type: "button", className: "ghost danger", textContent: w.delete_unit });
+  const del = el("button", { type: "button", className: "ghost danger", textContent: w.delete_unit, title: w.tip_delete_unit });
   const sure = el("div", { className: "actions hidden" }, el("span", { textContent: w.really_delete.replace("{name}", u.name) }));
-  const yes = el("button", { type: "button", className: "ghost danger", textContent: w.delete_unit });
-  const no = el("button", { type: "button", className: "ghost", textContent: w.cancel });
+  const yes = el("button", { type: "button", className: "ghost danger", textContent: w.delete_unit, title: w.tip_delete_unit });
+  const no = el("button", { type: "button", className: "ghost", textContent: w.cancel, title: w.tip_cancel });
   no.addEventListener("click", () => { sure.classList.add("hidden"); del.classList.remove("hidden"); });
   del.addEventListener("click", () => { del.classList.add("hidden"); sure.classList.remove("hidden"); yes.focus(); });
   yes.addEventListener("click", async () => {
@@ -469,7 +481,7 @@ async function showUnit(address, via) {
   const inside = u.named ? u.address : via;  // the named unit its parts are opened from
   const mode = u.share ? (u.share.via ? state.mode : "shared") : "";
   const w = state.words;
-  const copy = el("button", { type: "button", textContent: w.copy_address });
+  const copy = el("button", { type: "button", textContent: w.copy_address, title: w.tip_copy_address });
   copy.addEventListener("click", () => navigator.clipboard && navigator.clipboard.writeText(u.address));
   const parts = [el("h1", { textContent: u.name }),
     el("div", { className: "address" }, el("code", { textContent: u.address }), copy),
@@ -491,7 +503,7 @@ async function showUnit(address, via) {
   if (u.parts.length) {
     const list = el("ul", { className: "parts" });
     for (const p of u.parts) {
-      const b = el("button", { type: "button" }, `${p.address.split(":").pop()}  ·  ${p.class}`,
+      const b = el("button", { type: "button", title: w.tip_part }, `${p.address.split(":").pop()}  ·  ${p.class}`,
         el("span", { className: "badge" + (p.shared ? " shared" : ""), textContent: p.shared ? w.shared_part : w.own_part }));
       b.addEventListener("click", () => showUnit(p.address, inside));
       list.append(el("li", {}, b));
@@ -501,7 +513,7 @@ async function showUnit(address, via) {
   if (u.uses.length) {
     const list = el("ul", { className: "parts" });
     for (const p of u.uses) {
-      const b = el("button", { type: "button" }, `${p.address.split("/").pop()}  ·  ${p.class}`);
+      const b = el("button", { type: "button", title: w.tip_part }, `${p.address.split("/").pop()}  ·  ${p.class}`);
       b.addEventListener("click", () => showUnit(p.address));
       list.append(el("li", {}, b));
     }
@@ -568,6 +580,60 @@ async function showNoIndex(status) {
       else button.disabled = false;
     });
   };
+}
+
+// --- keys in the Units view: / or Ctrl+F to the search box, Esc clears it, Up and Down walk the list (and open
+// what they land on), Ctrl+Z takes back the last value changed this session ---
+function isLastEdit(address, prop, mode, via) {
+  const l = state.lastEdit;
+  return Boolean(l && l.address === address && l.prop === prop && l.mode === mode && l.via === via);
+}
+
+async function undoLastEdit() {
+  const last = state.lastEdit;
+  if (!last) return;
+  try {
+    await api().reset(last.address, last.prop, last.mode, last.via);
+    state.lastEdit = null;
+    await refreshMarks();
+    if (state.page) await showUnit(state.page.address, state.page.via);  // drawn again: the row shows the old value
+    say(fill(state.words.undone, { name: last.label }), "ok");
+  } catch (err) { problem(err); }
+}
+
+let moveTimer = null;
+function moveSelection(dir) {
+  const buttons = [...$("unit-list").querySelectorAll("button[data-address]")];
+  if (!buttons.length) return;
+  const at = buttons.findIndex((b) => b.getAttribute("aria-current") === "true");
+  const next = buttons[Math.min(buttons.length - 1, Math.max(0, at + dir))];
+  if (!next || next.getAttribute("aria-current") === "true") return;
+  for (const b of buttons) b.setAttribute("aria-current", String(b === next));
+  next.scrollIntoView({ block: "nearest" });
+  clearTimeout(moveTimer);  // held down: open where it stops, not every step on the way
+  moveTimer = setTimeout(() => showUnit(next.dataset.address), 120);
+}
+
+function unitKeys(e) {
+  if (state.view !== "units" || !$("no-index").classList.contains("hidden")) return;
+  const a = document.activeElement, tag = a ? a.tagName : "", inSearch = a === $("search");
+  const inText = !inSearch && (tag === "TEXTAREA" || (tag === "INPUT" && !["number", "range", "checkbox", "radio", "button"].includes(a.type)));
+  const inField = inSearch || inText || tag === "SELECT" || (tag === "INPUT" && a.type === "number");
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && !e.altKey && e.code === "KeyZ") { if (inText || inSearch) return; e.preventDefault(); undoLastEdit(); return; }
+  if (ctrl && !e.altKey && e.code === "KeyF") { e.preventDefault(); $("search").focus(); $("search").select(); return; }
+  if (ctrl || e.altKey) return;
+  if (e.key === "/" && !inField) { e.preventDefault(); $("search").focus(); $("search").select(); return; }
+  if (!inSearch && inField) return;
+  if (e.key === "Escape" && inSearch) {
+    if ($("search").value) { $("search").value = ""; state.search = ""; refreshList(); } else $("search").blur();
+    return;
+  }
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); moveSelection(e.key === "ArrowDown" ? 1 : -1); return; }
+  if (e.key === "Enter" && inSearch) {
+    const current = $("unit-list").querySelector('button[aria-current="true"]') || $("unit-list").querySelector("button");
+    if (current) { e.preventDefault(); showUnit(current.dataset.address); }
+  }
 }
 
 // --- the tabs: units, or maps (maps.js, a module: it may still be loading) ---
@@ -654,6 +720,7 @@ async function start() {
     clearTimeout(timer);
     timer = setTimeout(refreshList, 150);
   });
+  window.addEventListener("keydown", unitKeys);
   const res = await api().mods();
   state.mods = res.mods;
   state.mod = res.current;
