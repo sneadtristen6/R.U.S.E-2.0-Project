@@ -27,12 +27,19 @@ function el(tag, props, ...children) {
   return node;
 }
 
-function loadLang() {
+// The language is kept by the Studio (settings.json in the platform folder, api.set_pref): the window's own
+// storage is lost every start (its address changes), and on an update or a reinstall.
+async function loadLang() {
+  try {
+    const kept = (await api().prefs()).lang;
+    if (kept) return kept;
+  } catch { /* an older Studio: the window's storage */ }
   try { return localStorage.getItem("studio.lang") || "base"; } catch { return "base"; }
 }
 
 function saveLang(lang) {
   try { localStorage.setItem("studio.lang", lang); } catch { /* private window: fine */ }
+  Promise.resolve().then(() => api().set_pref("lang", lang)).catch(() => {});
 }
 
 // --- the bar at the bottom: what just happened ---
@@ -878,7 +885,7 @@ async function start() {
   $("tab-units").addEventListener("click", () => showView("units"));
   $("tab-maps").addEventListener("click", () => showView("maps"));
   state.languages = await api().languages();
-  state.lang = loadLang();
+  state.lang = await loadLang();
   if (!state.languages.some((l) => l.code === state.lang)) state.lang = "base";
   $("lang").addEventListener("change", (e) => setLanguage(e.target.value));
   $("mod").addEventListener("change", pickMod);

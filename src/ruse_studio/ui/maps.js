@@ -1589,6 +1589,22 @@ function loadKeys() {
 
 function saveKeys() {
   try { localStorage.setItem("studio.keys", JSON.stringify(keys.map)); } catch { /* private window: fine */ }
+  if (mv.api && mv.api.set_pref) mv.api.set_pref("keys", keys.map).catch(() => {});  // kept by the Studio too
+}
+
+// The keys the Studio kept (settings.json): they outlive a restart, an update and a reinstall, which the window's
+// own storage doesn't.
+async function loadKeptKeys() {
+  if (!mv.api || !mv.api.prefs) return;
+  try {
+    const kept = (await mv.api.prefs()).keys;
+    if (!kept || typeof kept !== "object") return;
+    const map = { ...KEY_DEFAULTS };
+    for (const a of Object.keys(map)) if (a in kept && (kept[a] === null || typeof kept[a] === "string")) map[a] = kept[a];
+    keys.map = map;
+    rebuildKeys();
+    renderKeys();
+  } catch { /* the window's own copy stays */ }
 }
 
 // MOVE (code -> direction) and HELD (codes that act while held) from the current keys; `by` finds an action by code.
@@ -1842,6 +1858,7 @@ window.MapView = {
     mv.words = words;
     mv.lang = lang || "base";
     wire();
+    loadKeptKeys();
     renderWords();
     if (!mv.maps.length) {
       try {

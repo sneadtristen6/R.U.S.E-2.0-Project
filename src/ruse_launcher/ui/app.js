@@ -29,12 +29,19 @@ function fill(word, values) {
   return Object.entries(values || {}).reduce((s, [k, v]) => s.split(`{${k}}`).join(String(v)), word || "");
 }
 
-function loadLang() {
+// The language is kept by the launcher (settings.json in the platform folder, api.set_pref): the window's own
+// storage is lost every start (its address changes), and on an update or a reinstall.
+async function loadLang() {
+  try {
+    const kept = (await api().prefs()).lang;
+    if (kept) return kept;
+  } catch { /* an older launcher: the window's storage */ }
   try { return localStorage.getItem("launcher.lang"); } catch { return null; }
 }
 
 function saveLang(lang) {
   try { localStorage.setItem("launcher.lang", lang); } catch { /* private window: fine */ }
+  Promise.resolve().then(() => api().set_pref("lang", lang)).catch(() => {});
 }
 
 // --- messages ---
@@ -691,7 +698,7 @@ async function play() {
 
 async function start() {
   state.languages = await api().languages();
-  state.lang = loadLang() || await api().default_language();
+  state.lang = (await loadLang()) || await api().default_language();
   if (!state.languages.some((l) => l.code === state.lang)) state.lang = "us";
   $("lang").addEventListener("change", (e) => setLanguage(e.target.value).catch(problem));
   $("play").addEventListener("click", play);

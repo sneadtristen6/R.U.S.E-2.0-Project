@@ -38,7 +38,7 @@ from rusemod.loadorder import match as match_order, parse as parse_order, share_
 from rusemod.mod_index import DEFAULT_URL, ModIndexError, size_text, states
 from rusemod.package import PackageError
 from rusemod.rmod import best_order as rmod_best_order, clashes as rmod_clashes, data_layout, overwritten as rmod_overwritten, sizes as rmod_sizes
-from rusemod.home import default_home, game_dir as find_game_dir, save_settings, settings
+from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir, save_settings, settings
 from rusemod.play import Starter, instances_dir
 from rusemod.rndf import RndfError
 from rusemod.steam import build_of, find_game
@@ -86,11 +86,12 @@ def pc_language() -> str:
     return locale.getlocale()[0] or os.environ.get("LANG", "") or "en"
 
 
-class LauncherApi(UpdateCalls):
+class LauncherApi(UpdateCalls, PrefsCalls):
     """The launcher's back end. The arguments replace the real world in tests: the game folder, the launcher's own
     folder, where modded copies go, how links, the game and Steam get started, and the window's dialogs."""
 
     UPDATE_APP, UPDATE_VERSION = "launcher", __version__  # rusemod.update: the app looks for its newer releases
+    PREFS_APP = "launcher"  # rusemod.home: the language, kept in settings.json
 
     def __init__(self, game_dir=None, home=None, instances=None, open_url=game_start.open_url,
                  start_game=game_start.start_game, steam_running=game_start.steam_running, find=find_game,

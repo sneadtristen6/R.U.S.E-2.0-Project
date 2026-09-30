@@ -1,6 +1,8 @@
 **RUSE Launcher 0.2, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.2.4:** your language is kept through restarts, updates and reinstalls.
+
 **0.2.3:** the red box folds up like the yellow one (a big set can list dozens of clashes).
 
 **0.2.2: Put in best order.** When mods in a set change the same values, the yellow box has a **Put in best order**

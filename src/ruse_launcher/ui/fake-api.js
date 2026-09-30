@@ -6,6 +6,7 @@
 (function () {
   const mode = new URLSearchParams(location.search).get("fake");
   if (mode === null) return;
+  const prefs = {};  // what the real app keeps in settings.json (rusemod.home.PrefsCalls)
   const words = {
     us: { best_order: "Put in best order", best_order_why: "Where two mods change the same thing, the lower one wins. The best order puts the mods that change more first and the smaller ones after, so each keeps as much as it can.", best_order_helps: "{names} would keep most of their changes instead of losing them.", best_order_done: "{name}: mods put in the best order.", clash_cant_play: "This set can't be played:", clash_overwrites: "Later mods overwrite earlier ones ({n}):", clash_file: "{a} and {b} both replace the same file, {file} ({kind}), with different contents. Only one of them can be in a set.", clash_archive: "{a} replaces the whole archive {file}, and {b} changes files inside it; one of the two would be lost. Only one of them can be in a set.", clash_create: "{a} and {b} each add a new object called {example}; two objects can't share a name. Only one of them can be in a set.", clash_value: "{a} changes {n} values {b} changed too, e.g. {example}; it comes later, so it wins. Put {b} after {a} if you want {b}'s values.", clash_value_one: "{a} changes a value {b} changed too, {example}; it comes later, so it wins. Put {b} after {a} if you want {b}'s value.", clash_text: "{a} changes {n} texts {b} changed too, e.g. {example}; it comes later, so it wins. Put {b} after {a} if you want {b}'s texts.", clash_text_one: "{a} changes a text {b} changed too, {example}; it comes later, so it wins. Put {b} after {a} if you want {b}'s text.", kind_script: "a script", kind_script_archive: "a script archive", kind_video: "a video", kind_sound: "a sound", kind_sound_archive: "a sound archive", kind_picture: "a picture", kind_map_file: "a map file", kind_text_file: "a text file", kind_game_data: "game data",
       update_out: "{app} {version} is out.", update_now: "Update", whats_new: "What's new", update_progress: "Downloading the update… {pct}", update_installing: "Installing: {app} closes and opens again by itself.", update_repo: "(This copy runs from the repo: update it with git pull.)", update_failed: "The update didn't work: {why}",
@@ -255,6 +256,8 @@
         return lists({ set: copy.id });
       },
       check_mods: async (mods) => clashesOf(mods || []),
+      prefs: async () => ({ ...prefs }),
+      set_pref: async (key, value) => { if (value === null) delete prefs[key]; else prefs[key] = value; return { ...prefs }; },
       set_check: async (id) => clashesOf((sets.find((x) => x.id === id) || { mods: [] }).mods),
       best_order: async (id) => {
         const s = sets.find((x) => x.id === id);

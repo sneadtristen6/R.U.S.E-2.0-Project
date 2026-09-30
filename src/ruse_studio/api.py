@@ -26,7 +26,7 @@ from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.update import UpdateCalls
 from rusemod.build import BuildError, build_and_write, load_mod
 from rusemod.lock import fingerprint_text
-from rusemod.home import default_home, game_dir as find_game_dir
+from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
 from rusemod.patch import INT_RANGES
 from rusemod.play import Starter, instances_dir
@@ -136,8 +136,9 @@ def words(lang: str = schema.BASE) -> dict:
     return {key: texts.get(lang) or texts["us"] for key, texts in _words().items()}
 
 
-class StudioApi(UpdateCalls):
+class StudioApi(UpdateCalls, PrefsCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
+    PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
 
     def __init__(self, index_path=None, game_dir=None, find=find_game, home=None, starter=None, instances=None,
                  pick_save=None):

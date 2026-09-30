@@ -6,6 +6,7 @@
 (function () {
   const mode = new URLSearchParams(location.search).get("fake");
   if (mode === null) return;
+  const prefs = {};  // what the real app keeps in settings.json (rusemod.home.PrefsCalls)
   const words = {
     us: { update_out: "{app} {version} is out.", update_now: "Update", whats_new: "What's new", update_progress: "Downloading the update… {pct}", update_installing: "Installing: {app} closes and opens again by itself.", update_repo: "(This copy runs from the repo: update it with git pull.)", update_failed: "The update didn't work: {why}",
       language: "Language", game_names: "Code names", search: "Search", all: "All", ground: "Ground",
@@ -620,6 +621,8 @@
         return { address: newAddress(stem), name, saved: current + "/src/studio.rndf" };
       },
       weapons: async (address, lang) => weaponsOf(address, lang),
+      prefs: async () => ({ ...prefs }),
+      set_pref: async (key, value) => { if (value === null) delete prefs[key]; else prefs[key] = value; return { ...prefs }; },
       set_ammo: async (unitAddress, weapon, chosen) => {
         if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
         const w = weaponsOf(unitAddress, "us");
