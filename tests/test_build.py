@@ -258,7 +258,7 @@ class Examples(unittest.TestCase):
         for folder in folders:
             info, ops = load_mod(folder)
             self.assertEqual(info.id, folder.name)
-            self.assertTrue(ops or info.texts or info.terrain, folder.name)
+            self.assertTrue(ops or info.texts or info.terrain or info.scenery, folder.name)
 
 
 HILL = ('[[stroke]]\nbrush = "hill"\nx = 1500.0\ny = 1500.0\nradius = 600.0\nheight = 400.0\n')

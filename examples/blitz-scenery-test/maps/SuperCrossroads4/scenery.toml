@@ -1,0 +1,142 @@
+# Test: a ring of water towers and big oaks around the town in the middle of Blitz.
+
+[[object]]
+type = "TypeWarrior/Chateau_dEau_03"
+x = 672688.0
+y = 659281.0
+turn = 0.0
+size = 1.5
+
+[[object]]
+type = "TypeWarrior/Chateau_dEau_03"
+x = 668001.7084989848
+y = 670594.7084989848
+turn = 45.0
+size = 1.5
+
+[[object]]
+type = "TypeWarrior/Chateau_dEau_03"
+x = 656688.0
+y = 675281.0
+turn = 90.0
+size = 1.5
+
+[[object]]
+type = "TypeWarrior/Chateau_dEau_03"
+x = 645374.2915010152
+y = 670594.7084989848
+turn = 135.0
+size = 1.5
+
+[[object]]
+type = "TypeWarrior/Chateau_dEau_03"
+x = 640688.0
+y = 659281.0
+turn = 180.0
+size = 1.5
+
+[[object]]
+type = "TypeWarrior/Chateau_dEau_03"
+x = 645374.2915010152
+y = 647967.2915010152
+turn = 225.0
+size = 1.5
+
+[[object]]
+type = "TypeWarrior/Chateau_dEau_03"
+x = 656688.0
+y = 643281.0
+turn = 270.0
+size = 1.5
+
+[[object]]
+type = "TypeWarrior/Chateau_dEau_03"
+x = 668001.7084989848
+y = 647967.2915010152
+turn = 315.0
+size = 1.5
+
+[[object]]
+type = "TypeWarrior/Chene_02"
+x = 680688.0
+y = 659281.0
+turn = 0.0
+size = 2.5
+
+[[object]]
+type = "TypeWarrior/Chene_02"
+x = 677472.6096908265
+y = 671281.0
+turn = 0.0
+size = 2.5
+
+[[object]]
+type = "TypeWarrior/Chene_02"
+x = 668688.0
+y = 680065.6096908265
+turn = 0.0
+size = 2.5
+
+[[object]]
+type = "TypeWarrior/Chene_02"
+x = 656688.0
+y = 683281.0
+turn = 0.0
+size = 2.5
+
+[[object]]
+type = "TypeWarrior/Chene_02"
+x = 644688.0
+y = 680065.6096908265
+turn = 0.0
+size = 2.5
+
+[[object]]
+type = "TypeWarrior/Chene_02"
+x = 635903.3903091735
+y = 671281.0
+turn = 0.0
+size = 2.5
+
+[[object]]
+type = "TypeWarrior/Chene_02"
+x = 632688.0
+y = 659281.0
+turn = 0.0
+size = 2.5
+
+[[object]]
+type = "TypeWarrior/Chene_02"
+x = 635903.3903091735
+y = 647281.0
+turn = 0.0
+size = 2.5
+
+[[object]]
+type = "TypeWarrior/Chene_02"
+x = 644688.0
+y = 638496.3903091735
+turn = 0.0
+size = 2.5
+
+[[object]]
+type = "TypeWarrior/Chene_02"
+x = 656688.0
+y = 635281.0
+turn = 0.0
+size = 2.5
+
+[[object]]
+type = "TypeWarrior/Chene_02"
+x = 668688.0
+y = 638496.3903091735
+turn = 0.0
+size = 2.5
+
+[[object]]
+type = "TypeWarrior/Chene_02"
+x = 677472.6096908265
+y = 647281.0
+turn = 0.0
+size = 2.5
+

@@ -1,0 +1,8 @@
+# In-game check of placing scenery (docs/MOD_FORMAT.md §8, docs/TESTS.md T1): a ring of 8 water towers (1.5x) and
+# 12 big oaks around the town in the middle of Blitz. Only types Blitz already uses.
+[mod]
+id          = "blitz-scenery-test"
+name        = "Blitz scenery test"
+version     = "0.1.0"
+license     = "MIT"
+description = "Blitz (SuperCrossroads4): 8 water towers and 12 big oaks around the town in the middle of the map."

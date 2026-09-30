@@ -613,7 +613,7 @@ one is shorter. Rules:
 | Who | Does | Next |
 |---|---|---|
 | **The owner** | plays the in-game tests below (one game start each, screenshots), makes the calls, talks to the community and DomesticNukes, makes GitHub repos and adds collaborators | the tests below; `sneadtristen6/Ruse-Mods` for Browse mods; add DomesticNukes to the shared repo when he sends his GitHub name |
-| **DomesticNukes and his Claude** | what he knows best: the `.kdt` index buffers, triangle lists and tree nodes (needed to re-cut the ground, T5); scenery (trees, buildings, roads: the scenery file and its models); new unit textures and models (M5, M7); script know-how for the Pacific (beach landings, air drops; RUSE 2.0, private). Both Claudes review each other's notes | the `.kdt` notes; then scenery |
+| **DomesticNukes and his Claude** | what he knows best: the `.kdt` index buffers, triangle lists and tree nodes (needed to re-cut the ground, T5); scenery (trees, buildings, roads: the scenery file and its models); new unit textures and models (M5, M7); script know-how for the Pacific (beach landings, air drops; RUSE 2.0, private). Both Claudes review each other's notes. **A request from the owner (2026-09-29):** could he take on the in-game tests queued below ("The owner's tests"), if he can? They are the bottleneck: each one decides a release | the in-game tests below, if he can take them; then scenery |
 | **The PC session** (has the game) | everything that needs game files: checks the cloud's work on the real maps, builds the test copies, merges, releases, the China data test | fix and re-check the terrain editor on every map; build the hill copy; releases after the tests |
 | **The cloud sessions** (no game) | code and docs from [TASKS.md](TASKS.md): join codes (E), Studio follow-ups (F), painting the ground, water that follows the ground (§12) | E |
 
@@ -628,22 +628,22 @@ until he has caught up and reviewed. Open for him, found by the PC session's che
 3. Fixed and pushed: the terrain check compared ground points with the wrong point where the mesh stacks several at
    one spot (cliffs); the engine's normal lookup had the same flaw. All 32 maps pass.
 4. Community mods: five hold absolute values that reveal the game's tables (speed, range, altitude, health); four
-   could be relative (`*=`). Descriptions repeat the originals' "confirmed in-game" claims. The owner is asked whose
-   the 17 unattributed mods are. DomesticNukes' FNAT mod was taken out of the public repo (kept in the private
-   repo) until he agrees; it remains in the public repo's history.
+   could be relative (`*=`). Descriptions repeat the originals' "confirmed in-game" claims. The 17 mods that had no
+   author listed are DomesticNukes' (owner, 2026-09-29). His FNAT mod was taken out of the public repo (kept in the
+   private repo) until he agrees; it remains in the public repo's history.
 
-**The owner's tests, in this order** (the PC session prepares each one and gives click-level steps; stop at the
-first failure and report what happened):
-1. **The hill** (terrain editor, pull request #6): start `D:\RUSE-Instances\hill\RUSE.exe` with Steam open, play
-   Centre de gravité, find the hill: drawn close and far, tanks drive up it, orders and the camera work. Decides
-   whether the game accepts ground we move (Studio 0.6).
-2. **A new unit** (Studio, #1): a copy of the M4 Sherman, "Sherman Test", price 5, in the US armour factory,
-   built and fighting. Decides Studio 0.5.
-3. **The launcher** (#2, #4): a mod set made in the window, a mod exported from the Studio and added as one file,
-   Play. Decides launcher 0.2.
-4. **Community mods** (#3): `airfield-capacity`, then `cheat-mod-v2`, through the launcher.
-5. **Browse mods** (#5): after `sneadtristen6/Ruse-Mods` exists with an `index.toml`.
-6. **China** (M10 step 2): the copy with an 8th nation, when the PC session has built it.
+**The owner's tests** (DomesticNukes, if he can take them; else the owner). Every step is in
+[TESTS.md](TESTS.md), with the commands to build each modded copy from this repo on any PC. Stop at the first failure
+and report what happened.
+1. **T1 Placing scenery:** a ring of water towers and oaks on Blitz. Decides Studio 0.6, with T6.
+2. **T2 Water brushes** (DomesticNukes' pull request #11): a new lake, and a drained one, on Blitz. Decides the merge.
+3. **T3 Community `.rmod` mods** through our build: five that each change something different. Passed so far: Dev
+   Toolkit with 10x Artillery Price (owner, 2026-09-29).
+4. **T4 The hill** (terrain brushes, pull request #6). Decides whether the game accepts ground we move.
+5. **T5 A new unit** made in the Studio (a Sherman copy). Decides Studio 0.5.
+6. **T6 Placing scenery from the Studio.**
+7. **T7 The launcher:** mod sets, sharing and importing a load order. Decides launcher 0.2.
+8. Later: **Browse mods** (after `sneadtristen6/Ruse-Mods` exists) and **China** (M10 step 2).
 
 **Parked until asked:** the "look like R.U.S.E." polish and terrain T5; icons and unit textures (M5); map
 cloning and scenarios (M6); models (M7); new maps from heightmaps (M8); scripting (M9); sound (M11).
