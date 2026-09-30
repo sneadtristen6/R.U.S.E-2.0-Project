@@ -249,6 +249,83 @@ class Scenario:
         self.changed = True
         return next(i for i, it in enumerate(self.items) if it.obj == item)
 
+    def places(self) -> dict[int, set[int]]:
+        """Where players can start: {team (AllianceNum): {places (AlliancePriority)}}."""
+        out: dict[int, set[int]] = {}
+        for it in self.items:
+            if it.kind == "StartingPoint" and isinstance(it.values.get("AllianceNum"), int):
+                out.setdefault(it.values["AllianceNum"], set()).add(int(it.values.get("AlliancePriority") or 1))
+        return out
+
+    def add_start(self, x: float, y: float, team: int, place: int | None = None,
+                  rotation: float | None = None, z: float | None = None) -> int:
+        """A new starting point at x, y (and height z: the ground's, as every shipped one has it) for `team`
+        (AllianceNum), at `place` (AlliancePriority; default: the team's next). It copies a starting point of the same
+        team (the one with the highest place; else the nearest of any team): its camera shifted by the same offset,
+        its warm-up camera path, its angles, its height when z isn't given and, unless `rotation` is given, its turn.
+        Returns the new item's number in `items`."""
+        from .ndf import Value
+        nd = self.ndf
+        starts = [it for it in self.items if it.kind == "StartingPoint"]
+        if nd is None or not starts:
+            raise ScenarioError("this scenario has no starting point to copy a new one from")
+        mine = [it for it in starts if it.values.get("AllianceNum") == team]
+        if place is None:
+            place = max((int(it.values.get("AlliancePriority") or 1) for it in mine), default=0) + 1
+        if any(int(it.values.get("AlliancePriority") or 1) == place for it in mine):
+            raise ScenarioError(f"team {team} already has a starting point at place {place}")
+        model = (max(mine, key=lambda it: int(it.values.get("AlliancePriority") or 1)) if mine else
+                 min(starts, key=lambda it: (it.position[0] - x) ** 2 + (it.position[1] - y) ** 2))
+        lists = [o for o in nd.objects if nd.classes[o.cls] == "TGameDesignItemList"]
+        if len(lists) != 1:
+            raise ScenarioError("this scenario's design items aren't in one list")
+        mo = nd.objects[model.obj]
+        mprops = {nd.prop_name(pi): v for pi, v in mo.props}
+        addon_at = local_ref(mprops["AddOn"])
+        maddon = nd.objects[addon_at]
+        dx, dy = x - model.position[0], y - model.position[1]
+        props = []
+        for pi, v in maddon.props:
+            name, payload = nd.prop_name(pi), bytes(v.payload)
+            if name == "AllianceNum":
+                payload = struct.pack("<i", int(team))
+            elif name == "AlliancePriority":
+                payload = struct.pack("<i", int(place))
+            elif name == "PositionCamera" and len(payload) >= 12:
+                cx, cy, cz = struct.unpack_from("<3f", payload)
+                payload = struct.pack("<3f", cx + dx, cy + dy, cz) + payload[12:]
+            props.append((pi, Value(v.tc, payload)))
+        if not any(nd.prop_name(pi) == "AlliancePriority" for pi, _v in props):
+            pi = next((i for i, (n, c) in enumerate(nd.props) if n == "AlliancePriority" and c == maddon.cls), None)
+            props.append((pi if pi is not None else nd.add_prop("AlliancePriority", maddon.cls),
+                          Value(0x02, struct.pack("<i", int(place)))))
+        addon = nd.add_object(maddon.cls, props)
+        item_props = []
+        for pi, v in mo.props:
+            name = nd.prop_name(pi)
+            if name == "Position":
+                h = model.position[2] if z is None else z
+                item_props.append((pi, Value(v.tc, struct.pack("<3f", x, y, h) + bytes(v.payload[12:]))))
+            elif name == "Rotation" and rotation is not None:
+                item_props.append((pi, Value(v.tc, struct.pack("<f", rotation))))
+            elif name == "AddOn":
+                item_props.append((pi, Value(0x09, struct.pack("<III", 0xBBBBBBBB, addon, maddon.cls))))
+            else:
+                item_props.append((pi, Value(v.tc, bytes(v.payload))))
+        item = nd.add_object(mo.cls, item_props)
+        holder = lists[0]
+        ref = Value(0x09, struct.pack("<III", 0xBBBBBBBB, item, mo.cls)).encode()
+        for k, (pi, v) in enumerate(holder.props):
+            if v.tc == 0x11:
+                count = struct.unpack_from("<I", v.payload)[0]
+                holder.props[k] = (pi, Value(0x11, struct.pack("<I", count + 1) + v.payload[4:] + ref))
+                break
+        else:
+            raise ScenarioError("this scenario's design item list is empty")
+        self.items = _items(nd)
+        self.changed = True
+        return next(i for i, it in enumerate(self.items) if it.obj == item)
+
     def to_bytes(self) -> bytes:
         zones = struct.pack("<I", len(self.zones)) + b"".join(_zone_bytes(z) for z in self.zones)
         out = self.head + struct.pack("<3I", self.version, self.one, len(zones)) + zones
@@ -423,6 +500,7 @@ def view(s: "Scenario") -> dict:
                  "turn": round(it.rotation, 3), "name": str(v.get("Name", "") or "")}
         if it.kind == "StartingPoint":
             entry["alliance"] = v.get("AllianceNum")
+            entry["place"] = v.get("AlliancePriority") or 1
         elif it.kind == "Spawn":
             entry["camp"] = v.get("Camp")
             entry["what"] = str(v.get("PythonClassName", "") or "").rsplit(".", 1)[-1]
@@ -551,6 +629,61 @@ def spawns_toml(spawns: list[Spawn]) -> str:
     return "\n".join(lines)
 
 
+@dataclass
+class Start:
+    """A new starting point in scenario `file`: where a player of `team` (the game's AllianceNum) starts, at `place`
+    in the team (AlliancePriority; None: the team's next), at x, y, turned `rotation` radians (None: as its
+    teammate). More players on a map need one per player (rusemod.players, PLAN A10)."""
+    file: str
+    team: int
+    x: float
+    y: float
+    place: int | None = None
+    rotation: float | None = None
+    z: float | None = None   # the ground's height there: the build fills it from the map (the shipped ones match it)
+
+
+def parse_starts(items, where: str = "scenario.toml") -> list[Start]:
+    out = []
+    for n, m in enumerate(items or [], start=1):
+        at = f"{where}: start {n}"
+        if not isinstance(m, dict):
+            raise ScenarioError(f"{at} isn't a table")
+        extra = sorted(set(m) - {"file", "team", "x", "y", "place", "rotation"})
+        if extra:
+            raise ScenarioError(f"{at}: unknown key {extra[0]!r}")
+        for k in ("file", "team", "x", "y"):
+            if k not in m:
+                raise ScenarioError(f"{at}: {k} is missing")
+        f = str(m["file"])
+        if not f.lower().endswith(".scenario") or "/" in f or "\\" in f:
+            raise ScenarioError(f"{at}: file must be a scenario's name, like leveldesign.scenario")
+        try:
+            if any(isinstance(m.get(k), bool) for k in ("team", "place")):
+                raise TypeError
+            team, x, y = int(m["team"]), float(m["x"]), float(m["y"])
+            place = int(m["place"]) if "place" in m else None
+            rot = float(m["rotation"]) if "rotation" in m else None
+        except (TypeError, ValueError):
+            raise ScenarioError(f"{at}: team and place are whole numbers; x, y and rotation are numbers") from None
+        if not 1 <= team <= 8 or (place is not None and not 1 <= place <= 8):
+            raise ScenarioError(f"{at}: team and place go from 1 to 8")
+        out.append(Start(f, team, x, y, place, rot))
+    return out
+
+
+def starts_toml(starts: list[Start]) -> str:
+    lines = []
+    for s in starts:
+        lines += ["[[start]]", f'file = "{s.file}"', f"team = {s.team}", f"x = {s.x!r}", f"y = {s.y!r}"]
+        if s.place is not None:
+            lines.append(f"place = {s.place}")
+        if s.rotation is not None:
+            lines.append(f"rotation = {s.rotation!r}")
+        lines.append("")
+    return "\n".join(lines)
+
+
 def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], list[str]]:
     """Apply a mod's scenario edits (in order: Move and Spawn) to a map's scenarios. `read(member)` gives a
     DataMap_Win.dat member's bytes, or None. Returns ({member: new bytes}, report lines). A move whose file or item
@@ -570,6 +703,9 @@ def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], lis
         if isinstance(m, Spawn):
             s.add_spawn(m.x, m.y, m.class_path, camp=m.camp, rotation=m.rotation)
             continue
+        if isinstance(m, Start):
+            s.add_start(m.x, m.y, m.team, m.place, m.rotation, m.z)
+            continue
         if m.item >= len(s.items):
             raise ScenarioError(f"{map_pack}: {m.file} has {len(s.items)} design items, not {m.item + 1}")
         if s.items[m.item].kind != m.kind:
@@ -579,6 +715,8 @@ def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], lis
     for member, s in files.values():
         mine = [m for m in moves if (folder + m.file).lower() == member.lower()]
         moved, spawned = sum(1 for m in mine if isinstance(m, Move)), sum(1 for m in mine if isinstance(m, Spawn))
+        started = sum(1 for m in mine if isinstance(m, Start))
         notes.append(f"{map_pack}: {member.rsplit(chr(92), 1)[-1]}: " + ", ".join(
-            p for p in (f"{moved} item(s) moved" if moved else "", f"{spawned} spawn(s) added" if spawned else "") if p))
+            p for p in (f"{moved} item(s) moved" if moved else "", f"{started} starting point(s) added" if started else "",
+                        f"{spawned} spawn(s) added" if spawned else "") if p))
     return {member: s.to_bytes() for member, s in files.values()}, notes

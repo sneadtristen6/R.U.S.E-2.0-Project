@@ -113,6 +113,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.movement = read_movement(path)
         _block_brushes(info)
         info.roads = _read_maps(path, "roads.toml")
+        info.players = _read_maps(path, "map.toml")
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -125,17 +126,20 @@ def _map_readers() -> dict:
     read, and what its reader raises."""
     from .cover import CoverError, parse_paints
     from .nav import NavError, parse_blocks
+    from .players import PlayersError, parse_map
     from .roadnet import RoadNetError, parse_roads
-    from .scenario import ScenarioError, parse_moves, parse_spawns
+    from .scenario import ScenarioError, parse_moves, parse_spawns, parse_starts
     from .scenery import SceneryEditError, parse_objects
     return {
         "terrain.toml": (("stroke",), "a terrain file holds [[stroke]] tables",
                          lambda d, rel: parse_strokes(d.get("stroke", []), rel), BrushError),
         "scenery.toml": (("object",), "a scenery file holds [[object]] tables",
                          lambda d, rel: parse_objects(d.get("object", []), rel), SceneryEditError),
-        # moves first: they name the shipped items by their number, which spawns (added at the end) don't shift
-        "scenario.toml": (("move", "spawn"), "a scenario file holds [[move]] and [[spawn]] tables",
-                          lambda d, rel: parse_moves(d.get("move", []), rel) + parse_spawns(d.get("spawn", []), rel),
+        # moves first: they name the shipped items by their number, which starts and spawns (added at the end)
+        # don't shift
+        "scenario.toml": (("move", "start", "spawn"), "a scenario file holds [[move]], [[start]] and [[spawn]] tables",
+                          lambda d, rel: (parse_moves(d.get("move", []), rel) + parse_starts(d.get("start", []), rel)
+                                          + parse_spawns(d.get("spawn", []), rel)),
                           ScenarioError),
         "cover.toml": (("paint",), "a cover file holds [[paint]] tables",
                        lambda d, rel: parse_paints(d.get("paint", []), rel), CoverError),
@@ -143,10 +147,12 @@ def _map_readers() -> dict:
                           lambda d, rel: parse_blocks(d.get("block", []), rel), NavError),
         "roads.toml": (("road",), "a roads file holds [[road]] tables",
                        lambda d, rel: parse_roads(d.get("road", []), rel), RoadNetError),
+        "map.toml": (("players", "entry"), "a map file holds players = N (and entry = the map-list name)",
+                     lambda d, rel: parse_map(d, rel), PlayersError),
     }
 
 
-MAP_FILES = ("terrain.toml", "scenery.toml", "scenario.toml", "cover.toml", "movement.toml", "roads.toml")
+MAP_FILES = ("terrain.toml", "scenery.toml", "scenario.toml", "cover.toml", "movement.toml", "roads.toml", "map.toml")
 
 
 def read_map_file(folder: Path, f: Path) -> list:
@@ -774,7 +780,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             every, who = blocks.setdefault(name, ([], []))
             every.extend(walls)
             who.extend(i for i in ids if i not in who)
-        if moves or paints or blocks or new_roads or bridge_spans:
+        players = scenario_edits(result.order, mods, "players")
+        if moves or paints or blocks or new_roads or bridge_spans or players:
             from .bridges import BridgeError, apply_spans
             from .cover import CoverError, apply_paints
             from .nav import NavError, apply_blocks
@@ -794,6 +801,20 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     except KeyError:
                         return None
                 for name, (map_moves, ids) in moves.items():
+                    from .scenario import Start
+                    unset = [m for m in map_moves if isinstance(m, Start) and m.z is None]
+                    map_path = find_pack(game, pack_file(name)) if unset else None
+                    if map_path is not None:  # a new starting point sits at the ground's height, as the shipped ones
+                        from .tms import Tms
+                        entry = next((e for e in map_packs if e[0] == map_path), None)
+                        map_arc = entry[1] if entry else open_pack(map_path)
+                        try:
+                            e = map_arc.find("output\\highdef.tms")
+                            ground = Tms((entry[2].get(e.path) if entry else None) or bytes(map_arc.read(e)))
+                            for m in unset:
+                                m.z = ground.height_at(m.x, m.y)
+                        except (KeyError, ValueError, struct.error, zlib.error):
+                            pass  # without the ground, a start takes its teammate's height
                     try:
                         new, notes = apply_moves(read_data, name, map_moves)
                     except (ScenarioError, ValueError, struct.error) as exc:
@@ -841,6 +862,37 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         continue
                     changed_members.update(new)
                     say(f"roads: {name}, from {', '.join(ids)}")
+                    for note in notes:
+                        say(f"  {note}")
+                for name, (settings, ids) in players.items():  # how many players: after the mods' starting points
+                    from .players import PlayersError, apply_players
+                    from .scenario import Scenario, folder_of
+
+                    def read_glad(member, a=arc):
+                        key = member.lower()
+                        mine = next((d for m, d in result.changed.items() if m.lower() == key), None)
+                        if mine is not None:
+                            return mine
+                        e = a.entry(member)
+                        return bytes(a.read(e)) if e is not None else None
+
+                    def places(file, n=name):
+                        raw = read_data(folder_of(n) + file)
+                        try:
+                            return Scenario.read(raw).places() if raw else None
+                        except (ScenarioError, ValueError, struct.error):
+                            return None
+                    try:
+                        new, notes = apply_players(read_glad, name, settings[-1], places)  # the last mod's count
+                    except (PlayersError, ValueError, KeyError, struct.error) as exc:
+                        result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
+                        continue
+                    for member, data in new.items():
+                        e = arc.entry(member)
+                        for old in [m for m in result.changed if m.lower() == member.lower()]:
+                            del result.changed[old]
+                        result.changed[e.path if e is not None else member] = data
+                    say(f"players: {name}, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
                 if changed_members:

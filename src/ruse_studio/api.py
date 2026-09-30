@@ -988,8 +988,8 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
 
     def _with_scenario_edits(self, pack: str, base: dict) -> dict:
         """The map's scenarios as the current mod leaves them (a copy; the cached ones stay the game's)."""
-        moves, spawns = self._read_scenario_edits(pack)
-        if not moves and not spawns:
+        moves, starts, spawns = self._read_scenario_all(pack)
+        if not moves and not spawns and not starts:
             return base
         out = []
         for s in base["scenarios"]:
@@ -997,6 +997,17 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
             for m in moves:
                 if m.file.lower() == s["file"].lower() and m.item < len(s["items"]):
                     s["items"][m.item].update(x=m.x, y=m.y, moved=True)
+            places: dict = {}
+            for it in s["items"]:
+                if it["kind"] == "StartingPoint" and it.get("alliance") is not None:
+                    places.setdefault(it["alliance"], set()).add(it.get("place") or 1)
+            for n, st in enumerate(starts):
+                if st.file.lower() == s["file"].lower():
+                    place = st.place or max(places.get(st.team, {0}), default=0) + 1
+                    places.setdefault(st.team, set()).add(place)
+                    s["items"].append({"kind": "StartingPoint", "x": st.x, "y": st.y, "turn": st.rotation or 0.0,
+                                       "name": "", "alliance": st.team, "place": place, "mine": True, "start": n,
+                                       "item": len(s["items"])})
             for n, sp in enumerate(spawns):
                 if sp.file.lower() == s["file"].lower():
                     s["items"].append({"kind": "Spawn", "x": sp.x, "y": sp.y, "turn": sp.rotation, "name": "",
@@ -1080,25 +1091,36 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
 
     def _read_scenario_edits(self, pack: str) -> tuple[list, list]:
         """(moves, spawns) the current mod makes on this map's scenarios; none without a mod."""
+        moves, _starts, spawns = self._read_scenario_all(pack)
+        return moves, spawns
+
+    def _read_scenario_all(self, pack: str) -> tuple[list, list, list]:
+        """(moves, new starting points, spawns) the current mod makes on this map's scenarios; none without a mod."""
         if self._mod_dir() is None:
-            return [], []
+            return [], [], []
         path = self._scenario_file(pack)
         if not path.is_file():
-            return [], []
+            return [], [], []
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8"))
             return (scenario.parse_moves(data.get("move", []), str(path)),
+                    scenario.parse_starts(data.get("start", []), str(path)),
                     scenario.parse_spawns(data.get("spawn", []), str(path)))
         except (tomllib.TOMLDecodeError, UnicodeDecodeError, scenario.ScenarioError) as exc:
             raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
                               f"by hand.") from None
 
-    def _write_scenario_edits(self, pack: str, moves: list, spawns: list) -> Path:
+    def _write_scenario_edits(self, pack: str, moves: list, spawns: list, starts: list | None = None) -> Path:
+        """Write the mod's scenario edits; `starts` None keeps the file's own new starting points."""
         path = self._scenario_file(pack)
-        if moves or spawns:
-            _save_checked(path, scenario.moves_toml(moves, self.SCENARIO_HEADER) + "\n" + scenario.spawns_toml(spawns),
-                          lambda data: (scenario.parse_moves(data.get("move", []), str(path)),
-                                        scenario.parse_spawns(data.get("spawn", []), str(path))))
+        if starts is None:
+            starts = self._read_scenario_all(pack)[1]
+        if moves or spawns or starts:
+            text = (scenario.moves_toml(moves, self.SCENARIO_HEADER) + "\n" + scenario.starts_toml(starts) + "\n"
+                    + scenario.spawns_toml(spawns))
+            _save_checked(path, text, lambda data: (scenario.parse_moves(data.get("move", []), str(path)),
+                                                    scenario.parse_starts(data.get("start", []), str(path)),
+                                                    scenario.parse_spawns(data.get("spawn", []), str(path))))
         elif path.is_file():
             path.unlink()
         return path
@@ -1189,6 +1211,107 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
             del spawns[int(number)]
             self._write_scenario_edits(pack, moves, spawns)
         return self.map_scenarios(pack)
+
+    def scenario_add_start(self, pack: str, file: str, team: int, x: float, y: float) -> dict:
+        """A new starting point in scenario `file` for `team` (1-8), at the team's next place, at x, y: more players
+        on a map need one each (PLAN A10). Returns the map's scenarios as the mod leaves them."""
+        if isinstance(team, bool) or not 1 <= int(team) <= 8 or not all(map(math.isfinite, (float(x), float(y)))):
+            raise StudioError("a starting point needs a team from 1 to 8 and a place on the map")
+        self._base_scenario(pack, file)
+        with self._saving:
+            moves, starts, spawns = self._read_scenario_all(pack)
+            starts.append(scenario.Start(file, int(team), float(x), float(y)))
+            self._write_scenario_edits(pack, moves, spawns, starts)
+        return self.map_scenarios(pack)
+
+    def scenario_move_start(self, pack: str, number: int, x: float, y: float) -> dict:
+        """Put the current mod's new starting point number `number` at x, y."""
+        with self._saving:
+            moves, starts, spawns = self._read_scenario_all(pack)
+            if not 0 <= int(number) < len(starts):
+                raise StudioError("that starting point isn't in the mod any more")
+            starts[int(number)] = replace(starts[int(number)], x=float(x), y=float(y))
+            self._write_scenario_edits(pack, moves, spawns, starts)
+        return self.map_scenarios(pack)
+
+    def scenario_remove_start(self, pack: str, number: int) -> dict:
+        """Take back the current mod's new starting point number `number`."""
+        with self._saving:
+            moves, starts, spawns = self._read_scenario_all(pack)
+            if not 0 <= int(number) < len(starts):
+                raise StudioError("that starting point isn't in the mod any more")
+            del starts[int(number)]
+            self._write_scenario_edits(pack, moves, spawns, starts)
+        return self.map_scenarios(pack)
+
+    # --- how many players a map takes: maps/<pack>/map.toml in the current mod (MOD_FORMAT §8, rusemod.players) ---
+    MAP_HEADER = ("How many players this map takes in this mod (docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio, "
+                  "which rewrites this file.")
+
+    def _map_file(self, pack: str) -> Path:
+        return self._scenario_file(pack).with_name("map.toml")
+
+    def map_players(self, pack: str) -> dict:
+        """The map's online entries and how many players each takes: {"entries": [{"name", "players", "layouts",
+        "file"}], "mod": the mod's count or None, "entry": the entry it sets, "missing": the starting points the
+        mod's count still needs ([team, place] pairs), "most": 8}. No entries: the map isn't played online."""
+        from rusemod import players as pl
+        from rusemod.ndf import Ndf
+        game = self._game()
+        glad_path = find_pack(game, "ZZ_GladPatchableWin.dat") if game is not None else None
+        if glad_path is None:
+            raise StudioError("ZZ_GladPatchableWin.dat isn't in the game folder.")
+        with Edat.open(str(glad_path)) as glad:
+            def read(member):
+                e = glad.entry(member)
+                return bytes(glad.read(e)) if e is not None else None
+            g, m = Ndf(read(pl.GLOBALS)), Ndf(read(pl.MAPINFO))
+            found = []
+            for mi, gi, name in pl.entries(m, g, pack):
+                p = {g.prop_name(pi): v for pi, v in g.objects[gi].props}
+                layouts = [t for key, t in pl.LAYOUTS if key in p and p[key].scalar()]
+                found.append({"name": name, "players": p["NbPlayers"].scalar() if "NbPlayers" in p else None,
+                              "layouts": layouts, "file": pl.scenario_of(m, mi, read)})
+        setting = self._read_players(pack)
+        out = {"entries": found, "mod": setting.count if setting else None, "entry": setting.entry if setting else None,
+               "missing": [], "most": pl.PLAYERS_MOST}
+        target = next((e for e in found if setting and (setting.entry is None or e["name"] == setting.entry)), None)
+        if setting and target and target["file"]:
+            places = {}
+            s = next((x for x in self.map_scenarios(pack)["scenarios"] if x["file"].lower() == target["file"]), None)
+            for it in (s["items"] if s else []):
+                if it["kind"] == "StartingPoint" and it.get("alliance") is not None:
+                    places.setdefault(int(it["alliance"]), set()).add(int(it.get("place") or 1))
+            out["missing"] = [list(pair) for pair in pl.seats(places, target["layouts"], setting.count)]
+        return out
+
+    def _read_players(self, pack: str):
+        from rusemod import players as pl
+        if self._mod_dir() is None:
+            return None
+        path = self._map_file(pack)
+        if not path.is_file():
+            return None
+        try:
+            got = pl.parse_map(tomllib.loads(path.read_text(encoding="utf-8")), str(path))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, pl.PlayersError) as exc:
+            raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
+                              f"by hand.") from None
+        return got[0] if got else None
+
+    def set_players(self, pack: str, count: int | None, entry: str | None = None) -> dict:
+        """Set how many players the map takes in the current mod (None: as the game has it). Returns map_players."""
+        from rusemod import players as pl
+        path = self._map_file(pack)
+        with self._saving:
+            if count is None:
+                if path.is_file():
+                    path.unlink()
+            else:
+                setting = pl.parse_map({"players": int(count), **({"entry": entry} if entry else {})}, "the count")[0]
+                _save_checked(path, pl.map_toml(setting, self.MAP_HEADER),
+                              lambda data: pl.parse_map(data, str(path)))
+        return self.map_players(pack)
 
     # --- placing objects on a map: maps/<pack>/scenery.toml in the current mod (MOD_FORMAT §8, rusemod.scenery) ---
     SCENERY_HEADER = ("The objects this mod adds to this map, in order (docs/MOD_FORMAT.md §8).\nMade in the RUSE "

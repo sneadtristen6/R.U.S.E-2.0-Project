@@ -394,6 +394,40 @@ rotation = 0.5                # radians, optional
   applied first, so their item numbers stay the shipped ones.
 - Which `camp` is which player in a skirmish isn't known yet (an in-game check).
 
+A mod adds starting points, one table each: a player starts at the point of their team (the game's `AllianceNum`) and
+their place in it (`AlliancePriority`). A two-team 8-player game needs places 1-4 in teams 1 and 2; free-for-all,
+place 1 in teams 1-8 (see `map.toml` below):
+
+```toml
+[[start]]
+file = "leveldesign_3v3_v01.scenario"
+team = 1              # 1 to 8
+x = 2710720.0
+y = 1774720.0
+place = 4             # optional: the team's next place when left out
+rotation = 1.2        # radians, optional: as its teammate when left out
+```
+
+- The build copies a starting point of the same team (the one with the highest place; else the nearest of any
+  team): its camera moved by the same offset, its warm-up camera path, its angles. It stands at the ground's height
+  there, read from the map (every shipped starting point matches its ground).
+
+### How many players: `maps/<map pack>/map.toml`
+
+```toml
+players = 8                   # 2 to 8 (the most any shipped map takes; past 8 is tried later, PLAN A10)
+entry = "(6) Cotentin (3v3)"  # optional: which of the map's entries, when it has several (the map list's name)
+```
+
+- A map played online and in BATTLES has an entry in the menus (`TMultiMapInfo` in `misc\globals.cpp`, tied by GUID
+  to its `TMapLoadInfo` in `mapinfo.cpp`). The build sets its `NbPlayers`, its size group `CategoryId` (the shipped
+  maps: none for 2 players, 1 for 3-4, 2 for 6, 3 for 8), a two-team map's `GameType` (1v1 = 1, 2v2 = 2, 3v3 = 3;
+  4v4 = 4 is inferred: no shipped map is 4v4), and the name's count ("(6) Cotentin (3v3)" becomes "(8) Cotentin
+  (4v4)"), in `ZZ_GladPatchableWin.dat`.
+- It refuses a count the entry's scenario can't seat, naming each starting point that's missing (`[[start]]` above,
+  or the Studio's Add starting point).
+- Not tried in the game yet (`TESTS.md` T12).
+
 ### Cover and blocked ground: `maps/<map pack>/cover.toml`
 
 Where units hide is baked into each map: a grid in `datasmap\<map>\mapinfo.win` (`DataMap_Win.dat`; its fourth
@@ -452,8 +486,10 @@ join = 20000.0       # an end this near a road joins it (a junction); else it's 
 - The line gets points about 2,300 map units apart, linked in a chain; each end is linked to the nearest road point
   within `join`. The network's index is built again the game's way (x then y, at the middle of the links).
 - Proven in the game (Blitz, 2026-09-30): **supply routes follow it** (a depot's route took a new shortcut road).
-  It isn't drawn: the roads a player sees are painted into the ground's texture tiles, and the scenery holds each
-  road again as curve pieces (FORMATS §6). A road here only changes the network.
+- `paint = true` (the default) paints it into the ground's texture tiles in the map's own road colour (proven in the
+  game); `bridges = true` (the default) puts the map's own bridge kind where it crosses water, one piece stretched
+  bank to bank (rusemod.bridges). Units don't stand on new bridges yet (their floors are in
+  `occlusioninfo_objectsonly.kdt`, PLAN §10).
 
 ## 9. Scripts
 

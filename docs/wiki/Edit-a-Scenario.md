@@ -41,6 +41,26 @@ colour, spawns as white diamonds, zones as shaded areas.
 
 A unit you added can be moved like any spawn, or taken out with **Remove**.
 
+## More players on a map (up to 8)
+
+Each player starts at a **starting point** of their team, one per player: in a 3v3, teams 1 and 2 each have places
+1 to 3. A 4v4 needs place 4 in both.
+
+1. Pick the scenario the game plays online (its gold line says **Battles**), then in the bar click **Scenario**.
+2. **Players** (on the right) shows the map's count, the game's marked *(game)*. Pick the new count, 8 at most.
+   The line under it names each starting point that's still missing, e.g. *team 1, place 4*.
+3. Click **Add starting point**, pick the **team**, then click open ground where that player starts, away from the
+   others. It takes the team's next place, and its camera and intro from a teammate.
+4. When the line says **Every player has a starting point**, **Test in game** and open **BATTLES**: the map is listed
+   with its new count, e.g. *(8) Cotentin (4v4)*.
+
+A starting point you added moves with **Move**, or goes with **Remove**. More than 8: not yet (the game's own
+limit is still to test).
+
+> [!NOTE]
+> New, not yet checked in the game: tell us in [Discussions](https://github.com/sneadtristen6/Ruse-Mod-Platform/discussions)
+> how an 8-player game goes.
+
 ## See your units in the game
 
 1. Click **Test in game** (at the top of the Studio). The Studio builds your mod into its own copy of the game

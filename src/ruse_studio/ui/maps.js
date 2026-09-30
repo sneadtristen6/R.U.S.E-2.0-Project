@@ -899,7 +899,7 @@ const ALLIANCE = [0x3f7fe0, 0xe0503f, 0x49b85a, 0xe0c33f, 0xa35ee0, 0x3fc8d8];
 // tool: "move" or "spawn" (or null); selected: the item being moved; units: what can be spawned (StudioApi.units);
 // kind, type: the Spawn tool's first two dropdowns (the third is the unit, by nation)
 const scen = { data: null, pick: 0, show: true, group: null, tool: null, selected: null, units: null, kind: "ground",
-  type: null, camp: "1", count: 1, formation: "line", gap: {} };
+  type: null, camp: "1", count: 1, formation: "line", gap: {}, team: 1, players: null };
 const SPAWN_KINDS = ["buildings", "ground", "infantry", "air"];
 // Several at once: how many one click adds, in which shape, how far apart (metres, per kind to start with). The shape
 // faces up the screen (away from the camera), its middle on the click; each unit is turned that way too.
@@ -976,6 +976,44 @@ async function loadScenarios(pack, ask) {
   renderScenarioPick();
   drawScenario();
   renderScenTools();
+  loadPlayers(pack, ask);
+}
+
+// --- how many players the map takes (PLAN A10; StudioApi.map_players / set_players, the mod's maps/<map>/map.toml):
+// the map's online entry, a count from 2 to 8, and the starting points a count still needs (Add starting point) ---
+async function loadPlayers(pack, ask) {
+  try {
+    const got = await mv.api.map_players(pack);
+    if (ask !== undefined && ask !== mv.ask) return;
+    scen.players = got;
+  } catch (err) { scen.players = null; }
+  renderPlayers();
+}
+
+function renderPlayers() {
+  const w = mv.words, box = $("scen-players"), note = $("scen-players-note"), p = scen.players;
+  const entry = p ? p.entries.find((e) => !p.entry || e.name === p.entry) : null;
+  box.classList.toggle("hidden", !entry);
+  note.className = "small";
+  if (!entry) { note.textContent = p && !p.entries.length ? w.scen_players_none : ""; return; }
+  const now = p.mod || entry.players, most = p.most || 8;
+  const counts = [];
+  for (let n = 2; n <= most; n++) counts.push(n);
+  box.replaceChildren(el("span", { className: "muted small", textContent: w.scen_players_label }),
+    ...counts.map((n) => chipOf(n === entry.players ? fill(w.scen_players_game, { n }) : String(n), w.tip_scen_players,
+      now === n, () => setPlayers(n === entry.players ? null : n))));
+  if (!p.mod) { note.textContent = ""; return; }
+  note.className = "small" + (p.missing.length ? " error-text" : "");
+  const list = p.missing.map(([n, q]) => fill(w.scen_seat, { n, p: q })).join("; ");
+  note.textContent = p.missing.length ? fill(w.scen_players_missing, { n: p.mod, list, where: entry.name }) : w.scen_players_ok;
+}
+
+async function setPlayers(n) {
+  if (!mv.brush.mod) { scenNote(mv.words.no_mod, "error"); return; }
+  try {
+    scen.players = await mv.api.set_players(mv.current, n);
+    renderPlayers();
+  } catch (err) { scenNote((err && err.message) || String(err), "error"); }
 }
 
 function clearScenario() {
@@ -1074,8 +1112,9 @@ function drawScenario() {
       const m = new THREE.Mesh(new THREE.CylinderGeometry(pillar * 0.08, pillar * 0.08, pillar, 12),
         new THREE.MeshLambertMaterial({ color: scen.selected === it.item ? 0xffffff : colour }));
       m.position.copy(at(it.x, it.y, pillar / 2));
-      m.userData.label = fill(mv.words.scen_start, { n: it.alliance || "?" }) + (it.name ? ` · ${it.name}` : "")
-        + (it.moved ? ` · ${mv.words.scen_moved}` : "");
+      m.userData.label = fill(mv.words.scen_start_place, { n: it.alliance || "?", p: it.place || 1 })
+        + (it.name ? ` · ${it.name}` : "") + (it.moved ? ` · ${mv.words.scen_moved}` : "")
+        + (it.mine ? ` · ${mv.words.scen_mine}` : "");
       m.userData.item = it.item;
       group.add(m);
     } else if (it.kind === "Spawn") {  // a small diamond where reinforcements arrive
@@ -1148,7 +1187,15 @@ function renderScenTools() {
   $("scen-move").setAttribute("aria-pressed", String(scen.tool === "move"));
   iconTile($("scen-spawn"), "spawn", w.scen_spawn_tool).title = w.tip_scen_spawn;
   $("scen-spawn").setAttribute("aria-pressed", String(scen.tool === "spawn"));
-  $("scen-move").disabled = $("scen-spawn").disabled = !s;
+  iconTile($("scen-start"), "start", w.scen_start_tool).title = w.tip_scen_start;
+  $("scen-start").setAttribute("aria-pressed", String(scen.tool === "start"));
+  $("scen-move").disabled = $("scen-spawn").disabled = $("scen-start").disabled = !s;
+  const team = $("scen-team");
+  team.classList.toggle("hidden", scen.tool !== "start");
+  if (scen.tool === "start") {
+    team.replaceChildren(...[1, 2, 3, 4, 5, 6, 7, 8].map((n) => chipOf(fill(w.scen_team_n, { n }), w.tip_scen_team,
+      scen.team === n, () => { scen.team = n; renderScenTools(); })));
+  }
   const kindPick = $("scen-kind"), typePick = $("scen-group"), unit = $("scen-unit"), camp = $("scen-camp");
   for (const box of [kindPick, typePick, unit, camp, $("scen-count"), $("scen-gap-row")]) box.classList.toggle("hidden", scen.tool !== "spawn");
   $("scen-formation").classList.toggle("hidden", scen.tool !== "spawn" || scen.count === 1);
@@ -1193,16 +1240,20 @@ function renderScenTools() {
   if (scen.tool === "move") {
     const it = s && scen.selected !== null ? s.items[scen.selected] : null;
     if (!it) { scenNote(w.scen_pick_item); return; }
-    const parts = [fill(w.scen_pick_place, { what: it.kind === "StartingPoint" ? fill(w.scen_start, { n: it.alliance || "?" }) : w.scen_spawn })];
+    const parts = [fill(w.scen_pick_place, { what: it.kind === "StartingPoint"
+      ? fill(w.scen_start_place, { n: it.alliance || "?", p: it.place || 1 }) : w.scen_spawn })];
     const n = $("scen-note");
     scenNote(parts[0]);
     if (it.mine || it.moved) {
       const b = el("button", { type: "button", className: "link", textContent: it.mine ? w.scen_remove : w.scen_put_back });
-      b.addEventListener("click", () => it.mine ? scenEdit(() => mv.api.scenario_remove_spawn(mv.current, it.spawn))
+      b.addEventListener("click", () => it.mine
+        ? scenEdit(() => it.start !== undefined ? mv.api.scenario_remove_start(mv.current, it.start)
+          : mv.api.scenario_remove_spawn(mv.current, it.spawn)).then(() => loadPlayers(mv.current))
         : scenEdit(() => mv.api.scenario_put_back(mv.current, s.file, it.item)));
       n.append(" ", b);
     }
   } else if (scen.tool === "spawn") scenNote(w.scen_spawn_help);
+  else if (scen.tool === "start") scenNote(w.scen_start_help);
   else scenNote("");
 }
 
@@ -1241,8 +1292,13 @@ function scenPointerDown(ev) {
   const x = p.x / SCALE, y = p.z / SCALE;
   if (scen.tool === "move") {
     const it = s.items[scen.selected];
-    if (it.mine) scenEdit(() => mv.api.scenario_move_spawn(mv.current, it.spawn, x, y));  // the mod's own spawn
+    if (it.mine && it.start !== undefined) scenEdit(() => mv.api.scenario_move_start(mv.current, it.start, x, y));
+    else if (it.mine) scenEdit(() => mv.api.scenario_move_spawn(mv.current, it.spawn, x, y));  // the mod's own spawn
     else scenEdit(() => mv.api.scenario_move(mv.current, s.file, it.item, x, y));
+    return;
+  }
+  if (scen.tool === "start") {  // a new starting point: the team's next place
+    scenEdit(() => mv.api.scenario_add_start(mv.current, s.file, scen.team, x, y)).then(() => loadPlayers(mv.current));
     return;
   }
   const unit = $("scen-unit").value, camp = scen.camp, [fx, fy] = screenAhead();
@@ -1673,6 +1729,7 @@ const ICONS = {
   block_vehicles: "M3 16h18v4H3z M7 16v-4h8v4 M15 13h6 M3 3l18 18",
   move: "M12 3v18 M3 12h18 M9 6l3-3 3 3 M9 18l3 3 3-3 M6 9l-3 3 3 3 M18 9l3 3-3 3",
   spawn: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8v8 M8 12h8",
+  start: "M6 21V3 M6 4h11l-3 4 3 4H6",
 };
 const BRUSH_ICON = { water: "drop", cover: "cover", block: "movement" };
 for (const f of FORMATIONS) {
@@ -2869,6 +2926,7 @@ function wire() {
   $("scen-move").addEventListener("click", () => setScenTool("move"));
   $("scen-gap").addEventListener("input", (e) => { scen.gap[scen.kind] = Number(e.target.value); renderScenTools(); });
   $("scen-spawn").addEventListener("click", () => setScenTool("spawn"));
+  $("scen-start").addEventListener("click", () => setScenTool("start"));
   for (const g of ["building", "prop", "vegetation"]) {
     $(`scenery-${g}`).addEventListener("change", (e) => {
       mv.scenery.show[g] = e.target.checked;

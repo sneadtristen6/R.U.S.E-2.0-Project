@@ -600,6 +600,27 @@ class Tms:
         return [(self.to_world(0, p[0]), self.to_world(1, p[1]), self.to_world(2, p[2]))
                 for p in self.cells[k].positions()]
 
+    def height_at(self, x: float, y: float) -> float | None:
+        """The ground's height (world z) at map point x, y: the ground triangle (list 0) under it, interpolated; None
+        off the mesh. Scans the cells whose box holds the point (for a few points, not a grid: see height_grid)."""
+        for k, c in enumerate(self.cells):
+            pts = self.world_vertices(k)
+            if not pts or not (min(p[0] for p in pts) <= x <= max(p[0] for p in pts)
+                               and min(p[1] for p in pts) <= y <= max(p[1] for p in pts)):
+                continue
+            tri = c.triangles(0)
+            for t in range(0, len(tri) - 2, 3):
+                a, b, d = (pts[v] for v in tri[t:t + 3])
+                den = (b[1] - d[1]) * (a[0] - d[0]) + (d[0] - b[0]) * (a[1] - d[1])
+                if den == 0:
+                    continue
+                l1 = ((b[1] - d[1]) * (x - d[0]) + (d[0] - b[0]) * (y - d[1])) / den
+                l2 = ((d[1] - a[1]) * (x - d[0]) + (a[0] - d[0]) * (y - d[1])) / den
+                l3 = 1.0 - l1 - l2
+                if min(l1, l2, l3) >= -1e-9:
+                    return l1 * a[2] + l2 * b[2] + l3 * d[2]
+        return None
+
     def height_grid(self, width: int = 256) -> list[list[float | None]]:
         """Ground heights (world z) sampled on a width x height grid over the map by rasterizing triangle list 0.
         Row 0 is y = min (the top row of the map's terrain.png); height follows the map's aspect ratio."""

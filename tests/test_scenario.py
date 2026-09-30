@@ -140,6 +140,93 @@ class Writing(unittest.TestCase):
         self.assertEqual([z.name for z in Scenario.read(s.to_bytes()).zones], ["zone_a", "zone_new_longer_name"])
 
 
+def two_team_items() -> bytes:
+    """Two starting points like the game's: team 1 place 1 and team 2 place 1, each with its camera (a point), its
+    warm-up camera path and its angles."""
+    def s(i):
+        return val(0x07, struct.pack("<I", i))
+
+    def ref(i, cls):
+        return val(0x09, struct.pack("<III", 0xBBBBBBBB, i, cls))
+
+    def vec(x, y, z):
+        return val(0x0B, struct.pack("<3f", x, y, z))
+
+    def i32(v):
+        return val(0x02, struct.pack("<i", v))
+
+    def f32(v):
+        return val(0x05, struct.pack("<f", v))
+    return make_ndf(
+        objects=[(0, [(0, vec(1000.0, 2000.0, 50.0)), (1, f32(1.5)), (2, ref(2, 1))]),
+                 (0, [(0, vec(9000.0, 8000.0, 70.0)), (1, f32(-1.5)), (2, ref(3, 1))]),
+                 (1, [(3, i32(1)), (4, i32(1)), (5, vec(1100.0, 2600.0, 900.0)), (6, s(0)), (7, f32(-130.0))]),
+                 (1, [(3, i32(2)), (4, i32(1)), (5, vec(8900.0, 7400.0, 900.0)), (6, s(1)), (7, f32(-270.0))]),
+                 (2, [(8, val(0x11, struct.pack("<I", 2) + ref(0, 0) + ref(1, 0)))])],
+        classes=["TGameDesignItem", "TGameDesignAddOn_StartingPoint", "TGameDesignItemList"],
+        props=[("Position", 0), ("Rotation", 0), ("AddOn", 0), ("AllianceNum", 1), ("AlliancePriority", 1),
+               ("PositionCamera", 1), ("WarmupCamPath", 1), ("Azimut", 1), ("GameDesignItemList", 2)],
+        strings=["Warmup_J1", "Warmup_J4"], topo=[4])
+
+
+def two_teams() -> bytes:
+    nd = two_team_items()
+    return with_checksum(MAGIC + bytes(16) + bytes(2) + u32(4, 1) + u32(4) + u32(0) + u32(len(nd)) + nd)
+
+
+class Starts(unittest.TestCase):
+    """More players need more starting points (PLAN A10): a new one copies a teammate's."""
+
+    def test_a_new_place_for_a_team(self):
+        s = Scenario.read(two_teams())
+        self.assertEqual(s.places(), {1: {1}, 2: {1}})
+        n = s.add_start(1500.0, 2300.0, 1, z=64.0)
+        back = Scenario.read(s.to_bytes())
+        it = back.items[n]
+        self.assertEqual((it.kind, it.position, it.rotation), ("StartingPoint", (1500.0, 2300.0, 64.0), 1.5))
+        self.assertEqual((it.values["AllianceNum"], it.values["AlliancePriority"], it.values["WarmupCamPath"],
+                          it.values["Azimut"]), (1, 2, "Warmup_J1", -130.0))
+        camera = struct.unpack("<3f", bytes.fromhex(it.values["PositionCamera"]))
+        self.assertEqual(camera, (1600.0, 2900.0, 900.0))  # moved with it, same height
+        self.assertEqual(back.places(), {1: {1, 2}, 2: {1}})
+        self.assertEqual(back.items[1].position, (9000.0, 8000.0, 70.0))  # the others stay
+
+    def test_a_team_with_no_start_yet_and_refusals(self):
+        s = Scenario.read(two_teams())
+        n = s.add_start(8500.0, 7000.0, 3, rotation=0.25)  # copies the nearest: team 2's, keeps its height
+        it = s.items[n]
+        self.assertEqual((it.values["AllianceNum"], it.values["AlliancePriority"], it.position[2], it.rotation),
+                         (3, 1, 70.0, 0.25))
+        with self.assertRaisesRegex(ScenarioError, "already has a starting point at place 1"):
+            s.add_start(0.0, 0.0, 2, place=1)
+        with self.assertRaisesRegex(ScenarioError, "no starting point to copy"):
+            Scenario.read(scenario(items=False)).add_start(0.0, 0.0, 1)
+
+    def test_the_mod_file(self):
+        import tomllib
+        from rusemod.scenario import Start, parse_starts, starts_toml
+        starts = [Start("leveldesign_3v3_v01.scenario", 1, 2710720.0, 1774720.0),
+                  Start("leveldesign_3v3_v01.scenario", 2, 1959360.0, 1831360.0, place=4, rotation=1.5)]
+        self.assertEqual(parse_starts(tomllib.loads(starts_toml(starts))["start"]), starts)
+        for bad, why in (({"file": "a.scenario", "team": 0, "x": 1, "y": 2}, "1 to 8"),
+                         ({"file": "a.scenario", "team": 9, "x": 1, "y": 2}, "1 to 8"),
+                         ({"file": "a.scenario", "team": True, "x": 1, "y": 2}, "whole numbers"),
+                         ({"file": "a.txt", "team": 1, "x": 1, "y": 2}, "scenario's name"),
+                         ({"file": "a.scenario", "team": 1, "x": 1}, "y is missing"),
+                         ({"file": "a.scenario", "team": 1, "x": 1, "y": 2, "camp": 1}, "unknown key 'camp'")):
+            with self.assertRaisesRegex(ScenarioError, why):
+                parse_starts([bad])
+
+    def test_applied_with_the_moves(self):
+        from rusemod.scenario import Start, apply_moves, folder_of
+        member = folder_of("Blitz") + "leveldesign.scenario"
+        new, notes = apply_moves({member: two_teams()}.get, "Blitz",
+                                 [Start("leveldesign.scenario", 1, 1500.0, 2300.0),
+                                  Start("leveldesign.scenario", 2, 8000.0, 7000.0)])
+        self.assertEqual(Scenario.read(new[member]).places(), {1: {1, 2}, 2: {1, 2}})
+        self.assertIn("2 starting point(s) added", notes[0])
+
+
 class Kinds(unittest.TestCase):
     """What each scenario is, from the game's map list and menus: a map-list entry loads a scenario through its
     cluster (ClusterLoads -> TNDFTransaction.BaseName -> that ClusterMap's ScenarioPath); the menus list the entry as

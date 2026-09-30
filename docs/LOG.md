@@ -758,3 +758,17 @@ visible ground), not the movement graphs (ordinary circles), but a third tree in
 **`output\occlusioninfo_objectsonly.kdt`** (D-Day: 6 KB, 556 triangles, 690 points, one subtree, its points in
 clusters exactly at the map's 21 bridges; scratch `bridge_floor.py`). New bridges need their decks written there.
 Also seen: a tank couldn't take a new road into the woods, infantry could; the owner wants that as a choice per road.
+
+### 2026-09-30, night: 8 players on a map (PLAN A10), built
+
+The owner's call: at least 8 players; past 8 later. What sets a map's count: its menu entry `TMultiMapInfo` in
+`misc\globals.cpp` (D-Day: MP22, `NbPlayers` 6, `CategoryId` 2, `GameType` 3, `DispoMulti2Teams`), tied by GUID to
+its `TMapLoadInfo` (name "(6) Cotentin (3v3)"), and a starting point per player in the entry's scenario: a point is a
+team (`AllianceNum`) and a place in it (`AlliancePriority`), with a camera (`PositionCamera`, `Azimut`, `Site`) and a
+warm-up camera path (`WarmupCamPath` = `Warmup_J<n>`). D-Day's 3v3 has team 1 and 2 in places 1-3 and teams 3-6 in
+place 1; the 8-player Valley has teams 1 and 2 in places 1-4 and more. Game types seen: 1v1 = 1, 2v2 = 2, 3v3 = 3,
+2v2v2 = 5, 2v2v2v2 = 6 (4v4 = 4 inferred). Every shipped starting point sits at the ground's height
+(`Tms.height_at` matches them within one unit). Built: `rusemod.players` (map.toml), `Scenario.add_start`
+(`[[start]]`), the Studio's Add starting point and Players row; D-Day for 8 at `D:\RUSE-Instances\eight` (team 1's
+fourth start in a 150 m field 690 m from the nearest start, team 2's in a 205 m field 960 m away). Not tried in the
+game yet (TESTS.md T12).

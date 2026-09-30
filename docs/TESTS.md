@@ -143,6 +143,19 @@ From a player's report: every **Test in game** failed with "[WinError 5] Access 
   **Read-only** (right-click it > Properties)? Was R.U.S.E. still running from an earlier test when it first failed?
 - **Fail:** the whole message (the new one names the file and says why).
 
+## T12. D-Day for 8 players (PLAN A10)
+
+The copy: `D:\RUSE-Instances\eight` on the owner's PC; anywhere, from the test mod
+(`maps/M04_cotentin/map.toml` with `players = 8`, and `scenario.toml` with a `[[start]]` for team 1 and one for
+team 2): `py -3 -m rusemod build <the mod's folder> --instance D:\RUSE-Instances\eight`. The build says
+`'(6) Cotentin (3v3)': 6 -> 8 players, named '(8) Cotentin (4v4)'`.
+1. **BATTLES**: is D-Day listed as `(8) ... (4v4)`, and does its lobby have 8 slots?
+2. Fill them (AI players are fine) and start.
+- **Pass:** the game starts with 8 players, each on their own starting point (the new ones: team 1's north-west of
+  its others, team 2's east of its others, on open fields).
+- **Fail:** what the lobby shows, or where it stops. If the lobby shows 8 but the game refuses, try with 7.
+- **Then, if it passes:** past 8 (a 10-player copy, 5v5) tells whether the program caps it.
+
 ## T11. Launcher 0.2.9
 
 - **Pass:** the launcher offers 0.2.9 when it opens; **Update** installs it and it starts again; **Play** works.
