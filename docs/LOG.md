@@ -693,3 +693,18 @@ Welcome and Roadmap posts from `docs/community` via `tools/post_discussions.py` 
 can't make categories or pin), and a bug-report form with two self-checks. Both apps: **Help** / **Report a
 problem** (`rusemod.community`: a pre-filled report; the Windows user name taken out of paths; nothing sent).
 Screenshots of the new windows for the README: from the owner, after updating.
+
+### 2026-09-30, evening: roads, steps 1 to 3 (owner away; one in-game test waiting)
+
+- **The map's roads drawn in the Studio** (the Roads box): the scenery's road pieces are cubic Béziers (start, its
+  handle, end, its handle, as offsets; the type `Route`; the chain's length in the first trailing word), placed with
+  their blocks' transforms (`Scenery.roads`; Blitz: 1,389 pieces).
+- **The road network decoded:** `mapinfo.win` buffer 0 is points on the road curves (~9 m apart), links (cost =
+  distance / 10), per-point link lists, and a k-d tree over the links (x then y; the navigation index's jump rule).
+  `rusemod.roadnet` writes it back byte-identical on all 33 maps (`tools/verify_roadnet.py`); `add_road` chains a new
+  road and joins its ends to the nearest road; `maps/<map>/roads.toml` builds it (MOD_FORMAT §8).
+- **Found:** the roads a player sees are **painted into the ground's texture tiles**; the pieces lie exactly on them.
+  A visible new road will need ground painting (A6) as well.
+- **Test copy waiting:** `D:\RUSE-Instances\roads` (scratch `make_road_test.py`): one straight shortcut road on Blitz,
+  network only, west of player 1's HQ, 2.9× shorter than the existing way round, a water tower beside each end.
+  Question: do vehicles take it, and are they faster on it than beside it?
