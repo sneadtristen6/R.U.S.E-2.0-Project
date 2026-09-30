@@ -772,3 +772,15 @@ place 1; the 8-player Valley has teams 1 and 2 in places 1-4 and more. Game type
 (`[[start]]`), the Studio's Add starting point and Players row; D-Day for 8 at `D:\RUSE-Instances\eight` (team 1's
 fourth start in a 150 m field 690 m from the nearest start, team 2's in a 205 m field 960 m away). Not tried in the
 game yet (TESTS.md T12).
+
+### 2026-09-30, night: floors for new bridges
+
+What units stand on at a bridge is each map pack's `occlusioninfo_objectsonly.kdt` (FORMATS §6). Measured on D-Day's
+21 bridges (scratch `floor_probe.py`): a floor runs straight (the stone ones arched) from end to end, 5 to 60 units
+above the ground at the deck's ends; Pont_Metallique_02's is 8 triangles in four sections along the deck. The height
+I first read as "7,500 above the ground" was a comparison with the wrong place: the floors sit on their own banks.
+`rusemod.floors`: a new bridge gets the floor of the flattest shipped bridge of its kind on the map, each point kept
+as (along, across, height above the line between the ends' ground) and put back on the new banks; the file is built
+again as one subtree with its own k-d tree (every node clipped to its triangles, split at the middle of the longest
+side, leaves of at most 8; every triangle found from its middle). D-Day's own 556 triangles rebuilt: every point
+exactly where it was; with the test mod's two bridges: 572, each new floor 47 above its banks.

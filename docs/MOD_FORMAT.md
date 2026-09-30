@@ -488,8 +488,9 @@ join = 20000.0       # an end this near a road joins it (a junction); else it's 
 - Proven in the game (Blitz, 2026-09-30): **supply routes follow it** (a depot's route took a new shortcut road).
 - `paint = true` (the default) paints it into the ground's texture tiles in the map's own road colour (proven in the
   game); `bridges = true` (the default) puts the map's own bridge kind where it crosses water, one piece stretched
-  bank to bank (rusemod.bridges). Units don't stand on new bridges yet (their floors are in
-  `occlusioninfo_objectsonly.kdt`, PLAN §10).
+  bank to bank (rusemod.bridges), with a floor units stand on: the floor of a shipped bridge of its kind, carried
+  onto the new banks, in the map's `occlusioninfo_objectsonly.kdt` (rusemod.floors). A bridge placed by hand in
+  `scenery.toml` gets one the same way.
 
 ## 9. Scripts
 

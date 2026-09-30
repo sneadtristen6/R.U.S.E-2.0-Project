@@ -6,7 +6,8 @@ only takes a scenery type the map already uses; 24 of the 32 maps ship one, the 
 bridge, centred on the water and stretched along its length so both ends rest on the banks, as every shipped bridge
 does (the game sets a "TangeantFloor" bridge on the ground under its ends: one with an end over the river tips into
 it), sunk to its kind's usual height, walk-through so units can drive on it. The movement graphs are opened along the
-deck (rusemod.nav Graph.open), the road network already runs across (rusemod.roadnet), and the ground painter leaves
+deck (rusemod.nav Graph.open), it gets a floor units stand on (a shipped bridge's, rusemod.floors: without one they
+walk the riverbed under it), the road network already runs across (rusemod.roadnet), and the ground painter leaves
 the deck unpainted.
 
 A crossing where the map already has a bridge gets the new one in its place (owner, 2026-09-30: "if a road goes over
@@ -278,6 +279,8 @@ class Plan:
     hide: list = field(default_factory=list)      # old bridges to sink: (block index, item offset) in the scenery
     closed: list = field(default_factory=list)    # ground to close where old bridges stood over water: (x, y, r)
     kept: list = field(default_factory=list)      # decks of old bridges that stay and serve a road (not painted)
+    gone: list = field(default_factory=list)      # decks of the old bridges sunk: their floors go too (floors.py)
+    kind: str | None = None                       # the map's bridge kind the new ones are
 
 
 def plan(mesh: bytes, lines, sc, descs: dict, length_of=None, game=None, sample: float = SAMPLE, bank: float = BANK,
@@ -307,6 +310,7 @@ def plan(mesh: bytes, lines, sc, descs: dict, length_of=None, game=None, sample:
         out.notes.append(f"{len(spans)} water crossing(s), but this map has no bridge kind of its own: no bridge can "
                          f"go there, and units can't cross")
         return out
+    out.kind = kind
     length, extra = length_of(kind)
     shipped = shipped_bridges(sc, descs, length_of)
     lifts = sorted(b.lift for b in shipped if b.kind == kind)
@@ -334,6 +338,7 @@ def plan(mesh: bytes, lines, sc, descs: dict, length_of=None, game=None, sample:
             if b.place in places:
                 continue
             places.append(b.place)
+            out.gone.append(b.deck)
             out.closed += _closing(water, b.deck, out.spans)
         out.hide = places
         out.notes.append(f"{len(places)} old bridge(s) replaced: sunk out of sight, their decks over water closed to "

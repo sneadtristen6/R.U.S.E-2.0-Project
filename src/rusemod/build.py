@@ -660,20 +660,20 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 continue  # (a missing map is said with the road network and the scenery below)
             ids = list(dict.fromkeys(road_ids + (object_ids if by_hand else [])))
             spans = placed_spans(by_hand, descs, length_of) if by_hand else []
-            objects, notes = [], []
+            objects, notes, gone = [], [], []
             if by_hand:
                 notes.append(f"{len(by_hand)} bridge(s) placed by hand: movement opened along their decks")
-            if wanted:
-                entry = next((e for e in map_packs if e[0] == map_path), None)
-                map_arc = entry[1] if entry else open_pack(map_path)
-                done = entry[2] if entry else {}
+            entry = next((e for e in map_packs if e[0] == map_path), None)
+            map_arc = entry[1] if entry else open_pack(map_path)
+            done = entry[2] if entry else {}
 
-                def read_map(member, a=map_arc, done=done):
-                    try:
-                        e = a.find(member)
-                    except KeyError:
-                        return None
-                    return done.get(e.path) or bytes(a.read(e))
+            def read_map(member, a=map_arc, done=done):
+                try:
+                    e = a.find(member)
+                except KeyError:
+                    return None
+                return done.get(e.path) or bytes(a.read(e))
+            if wanted:
                 try:
                     sc_raw, mesh = read_map(SCENERY), read_map("output\\highdef.tms")
                     if sc_raw is None or mesh is None:
@@ -685,11 +685,34 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 objects = made.objects
                 spans += made.spans
                 notes += made.notes
+                gone = made.gone
                 if made.hide:
                     bridge_hide[name] = made.hide
                     bridge_closed[name] = made.closed
                 if made.kept:
                     bridge_decks[name] = list(made.kept)
+            if objects or by_hand or gone:  # the floors units stand on (rusemod.floors): new bridges get their kind's
+                from . import floors
+                from .bridges import deck as deck_of, shipped_bridges
+                from .kdt import Kdt
+                from .tms import Tms
+                try:
+                    k_raw, mesh, sc_raw = read_map(floors.MEMBER), read_map("output\\highdef.tms"), read_map(SCENERY)
+                    if k_raw is None or mesh is None or sc_raw is None:
+                        raise floors.FloorError("the map has no objects-only ground to hold bridge floors")
+                    shipped = shipped_bridges(Scenery(sc_raw), descs, length_of)
+                    new = [(floors.Deck.of(*deck_of(o, *length_of(o.type))),
+                            [floors.Deck.of(*b.deck) for b in shipped if b.kind == o.type]) for o in objects + by_hand]
+                    data, floor_notes = floors.floors_for(Kdt(k_raw), Tms(mesh).height_at, new,
+                                                          [floors.Deck.of(*d) for d in gone])
+                    if data:
+                        done[map_arc.find(floors.MEMBER).path] = data
+                        if entry is None:
+                            map_packs.append((map_path, map_arc, done))
+                        result.terrain_changed[map_path.name] = done
+                    notes += floor_notes
+                except (floors.FloorError, SceneryError, ValueError, KeyError, struct.error, zlib.error) as exc:
+                    notes.append(f"no floors for the new bridges ({exc}): units won't stand on them")
             if objects:
                 bridge_objects[name] = (objects, road_ids)
             if spans:

@@ -443,6 +443,16 @@ TGU1. The checker test (`verify_tmst.py --make-test TwoIslands OUT checker`, Two
 checkerboards at two detail levels (magenta/yellow and cyan/red) with no problem. **So terrain textures can be written as
 plain DXT1: no TGU1 encoder is needed.** TGU1 decoding is still useful for reading the shipped textures.
 
+#### Bridge floors (`output\occlusioninfo_objectsonly.kdt`; 2026-09-30; code `rusemod.floors`)
+
+A third tree of the same kind, "objects only": what units stand on at bridges (the gameplay ground dips into the
+river under them like the visible ground). D-Day's: one subtree, 556 triangles, 690 points, in clusters exactly at
+its 21 bridges; each floor runs from end to end 5 to 60 units above the ground at the deck's ends (Pont_Metallique_02:
+8 triangles in four sections along the deck; _03: 24; the stone Pont_TangeantFloor: 12, arched). Its MainNode is the
+six bound clips and one leaf. A new bridge without a floor is drawn, but units walk the riverbed under it (seen in
+the game, 2026-09-30). `rusemod.floors` rebuilds the file as one subtree (its own k-d tree, every triangle found from
+its middle; D-Day's rebuilt keeps every shipped point exactly).
+
 #### Gameplay ground (`.kdt`; 2026-09-29; code `rusemod.kdt`; check `tools/verify_kdt.py`)
 
 Two per map pack: `output\occlusioninfo_terrainonly.kdt`, the ground gameplay runs on (same bounds as `highdef.tms`;
