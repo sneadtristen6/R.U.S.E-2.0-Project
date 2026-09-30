@@ -593,3 +593,24 @@ import); the cloud tab's pull request #1 (Task A) is under review.
   with the two heights), Esc, Undo, the Start over question, No, then Yes (the file is gone, the button greys out).
 - **Tests:** the ramp's heights, band and box, the file written and read back, its two refusals; on the made-up
   map, the ground inside the band lies on the ramp's line in all four files. 379 tests.
+
+### 2026-09-29, PC session: .rmod mods in our builds, through LittleGroove's engine (PLAN decision 26)
+
+- **Owner's call:** use LittleGroove's RUSE-Mod-Manager code directly. His engine is in `src/ruse_mod_engine`
+  (from his v1.1.9, as it is, two comments reworded); `rusemod.rmod` puts it in our builds.
+- **How:** his applier runs on `Layered` packs: the game's pack read-only (memory-mapped) with the changes so far
+  on top; his writes are recorded, and the build writes the changed packs into the modded copy like every other
+  change. So nothing is copied first (his own way copies each whole pack, 2.4 GB for `ZZ_Win.dat`) and the install
+  is never touched. `.rmod` mods apply first, in set order, our mods on top. A mod stamped for another build is moved
+  with his version maps. `rusemod.edat` can now add files to a pack (his way: new top-level entries in front of the
+  dictionary, their data at the end; read back by his reader in a test).
+- **Owner's call, scripts:** a `.rmod` may replace the game's own scripts (`.xyz`, `.ipk`); the build report warns.
+  Programs are still refused. Our own mod format keeps decision 23.
+- **Launcher:** "Add a mod file…" takes a `.rmod` (kept as it is, next to a `mod.toml` made from it); `ruse build`
+  takes `.rmod` files too.
+- **Checked on the real game, read-only:** all 75 `.rmod` files on D:\ (the 74 community mods + Dev Toolkit) apply
+  with 0 errors; the game's packs unchanged. Warnings: the 9 with game scripts; RCRBM 2 (made for compat-2) has 388
+  changes on values the game changed since, applied anyway (his rule). A modded copy with Dev Toolkit + 10x
+  Artillery Price (`D:\RUSE-Instances\rmod-test`) has exactly the expected files changed (3 NDFs, which our reader
+  reads, and the script archive with its 2 scripts), every other file byte-identical. **In-game test: owner.**
+- **Tests:** 450.

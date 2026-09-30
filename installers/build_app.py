@@ -40,7 +40,8 @@ def nuitka_command(app: str, icon: Path, out: Path) -> list[str]:
     return [sys.executable, "-m", "nuitka", "--mode=standalone", "--windows-console-mode=disable",
             "--assume-yes-for-downloads", f"--output-dir={out}", "--output-folder-name=app",
             f"--output-filename={exe_name(app)}", f"--include-package-data={a['package']}",
-            "--include-package-data=rusemod", f"--windows-icon-from-ico={icon}", "--company-name=RUSE Mod Platform",
+            "--include-package-data=rusemod", "--include-package-data=ruse_mod_engine",
+            f"--windows-icon-from-ico={icon}", "--company-name=RUSE Mod Platform",
             f"--product-name={a['name']}", f"--file-version={v}", f"--product-version={v}",
             f"--file-description={a['description']}", "--copyright=MIT License", f"--report={out / 'report.xml'}",
             str(ROOT / "installers" / f"{app}.py")]

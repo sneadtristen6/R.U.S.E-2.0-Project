@@ -1,8 +1,8 @@
 # Study: LittleGroove/RUSE-Mod-Manager, and how we go further
 
-Read-only study of https://github.com/LittleGroove/RUSE-Mod-Manager (GPLv3), 2026-09-28. **We never copy its
-code.** This records *what* it does and *where it stops*, so our own (MIT) versions can be better and do more.
-File paths refer to their repo.
+Study of https://github.com/LittleGroove/RUSE-Mod-Manager, 2026-09-28. This records *what* it does and *where it
+stops*. **Since 2026-09-29 his engine is part of the platform** (`src/ruse_mod_engine`, used by `rusemod.rmod` for
+.rmod mods, PLAN decision 26). File paths refer to their repo.
 
 ## What it is
 

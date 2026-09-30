@@ -78,6 +78,30 @@ class Writing(unittest.TestCase):
         self.assertEqual(len(rebuilt._dict), len(self.arc._dict))
         self.assertEqual([e.path for e in rebuilt.entries], [e.path for e in self.arc.entries])
 
+    def test_added_files_go_in_front_of_the_dictionary_and_after_the_data(self):
+        new = {"genglad\\patchable\\new.cpp.gladndfbin": b"NEW NDF", "extra/odd.txt": b"odd name, even data!"}
+        rebuilt = Edat(self.arc.to_bytes({"top.bin": b"changed"}, add=new))
+        got = {e.path: rebuilt.read(e) for e in rebuilt.entries}
+        self.assertEqual(got, {**PATHS, "top.bin": b"changed", "genglad\\patchable\\new.cpp.gladndfbin": b"NEW NDF",
+                               "extra\\odd.txt": b"odd name, even data!"})
+        self.assertEqual(rebuilt._dict[-len(self.arc._dict):][:8], self.arc._dict[:8])  # the original trie follows
+        self.assertEqual(rebuilt.data_offset, rebuilt.dict_offset + rebuilt.dict_len)
+        self.assertEqual(rebuilt.data_len, sum(len(v) for v in got.values()))
+        with self.assertRaises(ValueError):
+            self.arc.to_bytes(add={"GENGLAD/readme.txt": b"already there"})
+
+    def test_added_files_read_back_with_littlegrooves_reader_too(self):
+        from ruse_mod_engine.edata import EdataFile
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "x.dat")
+            with open(path, "wb") as f:
+                self.arc.write_to(f, {"readme.txt": b"hi"}, add={"a\\b.bin": b"12345"})
+            theirs = EdataFile.open(path)
+            self.assertEqual(theirs.get("a/b.bin"), b"12345")
+            self.assertEqual(theirs.get("genglad/readme.txt"), b"hi")
+            self.assertEqual(theirs.get("genglad/patchable/everything.cpp.gladndfbin"), PATHS[
+                "genglad\\patchable\\everything.cpp.gladndfbin"])
+
     def test_nested_archive_round_trips(self):
         inner = make_edat([("file", "eugen\\base\\camp.xyz", b"XYZ0 code")])
         outer = Edat(make_edat([("dir", "genpython\\", [("file", "eugen.ipk", inner)])]))

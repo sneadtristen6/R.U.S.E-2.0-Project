@@ -234,7 +234,7 @@ class Library(Base):
             api.add_mod(str(broken))
         self.assertIn("mistake", str(cm.exception))
         self.assertEqual(len(api.library()), 1)
-        self.assertEqual(MOD_FILES[0], "Mods (*.rusemod;*.zip;*.toml)")
+        self.assertEqual(MOD_FILES[0], "Mods (*.rusemod;*.rmod;*.zip;*.toml)")
 
     def test_removing_a_mod(self):
         api = self.api()

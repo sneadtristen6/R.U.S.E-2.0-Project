@@ -1,6 +1,8 @@
 """The launcher's mod library: the mods a player has added, one folder each in `<home>/library/<mod id>/`
 (PLAN.md L5, Launcher 0.2). A mod comes in as a folder with `mod.toml` (or that file itself), or as one file: a
-`.rusemod` from the Studio's "Export mod…", or a `.zip` of the folder (MOD_FORMAT §2, `rusemod.package`). It's checked before it goes in: the engine reads it the way a build would (`rusemod.build.load_mod`),
+`.rusemod` from the Studio's "Export mod…", a `.zip` of the folder (MOD_FORMAT §2, `rusemod.package`), or a community
+`.rmod` (kept as it is, next to a mod.toml made from it; `rusemod.rmod`). It's checked before it goes in: the engine
+reads it the way a build would (`rusemod.build.load_mod`),
 so a mod with a mistake, or one carrying scripts or programs, never reaches the library. Adding a mod whose id is
 already there replaces it (a new version, usually).
 """
@@ -13,6 +15,7 @@ import uuid
 import zipfile
 from pathlib import Path
 
+from rusemod import rmod
 from rusemod.build import BuildError, load_mod
 from rusemod.package import PackageError, info_of
 from rusemod.package import unpack as unpack_package
@@ -82,11 +85,16 @@ class Library:
                     raise LibraryError(f"{source} isn't a mod: it has no {MANIFEST} in it. Pick the mod's own folder, "
                                        f"or a .zip of it.")
                 shutil.copytree(source, incoming, ignore=shutil.ignore_patterns("__pycache__", ".git"))
+            elif source.suffix.lower() == rmod.EXTENSION:
+                try:
+                    rmod.make_folder(source, incoming)
+                except BuildError as exc:
+                    raise LibraryError(f"This mod can't be added: {exc}") from None
             elif zipfile.is_zipfile(source):
                 _unpack(source, incoming)
             else:
-                raise LibraryError(f"{source.name} isn't a mod: add a mod file (.rusemod or .zip), or a mod folder "
-                                   f"(with {MANIFEST} in it).")
+                raise LibraryError(f"{source.name} isn't a mod: add a mod file (.rusemod, .rmod or .zip), or a mod "
+                                   f"folder (with {MANIFEST} in it).")
             info = check(incoming)
             if not _safe_id(info["id"]):
                 raise LibraryError(f"This mod's id {info['id']!r} isn't allowed (lowercase letters, digits and -).")

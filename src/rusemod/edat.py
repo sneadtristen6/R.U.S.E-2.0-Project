@@ -100,15 +100,29 @@ class Edat:
         start = self.data_offset + entry.offset
         return self.raw[start:start + entry.size]
 
-    def iter_chunks(self, replace: dict[str, bytes] | None = None) -> Iterator[bytes]:
-        """Stream the rebuilt archive. `replace` maps a path suffix -> new member bytes.
+    def entry(self, path: str) -> Entry | None:
+        """The member at exactly `path` (either slash, any case), or None."""
+        key = path.replace("/", "\\").lower()
+        if not hasattr(self, "_by_path"):
+            self._by_path = {e.path.lower(): e for e in self.entries}
+        return self._by_path.get(key)
+
+    def iter_chunks(self, replace: dict[str, bytes] | None = None,
+                    add: dict[str, bytes] | None = None) -> Iterator[bytes]:
+        """Stream the rebuilt archive. `replace` maps a member's path (or a path suffix) -> new member bytes; `add`
+        maps the path of a member the archive doesn't have -> its bytes.
 
         Members keep their original storage order (by offset). Unchanged members are copied verbatim, so
         with no replacements the output is byte-identical to the original file. Only one member is held in
-        memory at a time, so this works for multi-GB packs.
+        memory at a time, so this works for multi-GB packs. Added members follow LittleGroove's RUSE Mod Manager:
+        each goes in front of the dictionary as a top-level entry named by its full path (so the original trie
+        stays as it is), and its data after all the others.
         """
-        replace = replace or {}
-        targets = {self.find(suffix).dict_pos: blob for suffix, blob in replace.items()}
+        replace, add = replace or {}, add or {}
+        targets = {}
+        for key, blob in replace.items():
+            e = self.entry(key) or self.find(key)
+            targets[e.dict_pos] = blob
         order = sorted(self.entries, key=lambda e: e.offset)
 
         # Lay out first (sizes only) so the header/dictionary can be written before the data.
@@ -119,21 +133,37 @@ class Edat:
             struct.pack_into("<II", new_dict, e.dict_pos, pos, size)
             pos += size
 
-        head = bytearray(self.raw[:self.data_offset])
-        head[self.dict_offset:self.dict_offset + self.dict_len] = new_dict
+        if not add:
+            head = bytearray(self.raw[:self.data_offset])
+            head[self.dict_offset:self.dict_offset + self.dict_len] = new_dict
+        else:
+            front = bytearray()
+            for path, blob in add.items():
+                if self.entry(path) is not None:
+                    raise ValueError(f"can't add {path}: the archive already has it")
+                name = path.replace("/", "\\").encode("latin-1") + b"\0"
+                size = 17 + len(name)
+                pad = size % 2  # entries start on even bytes
+                front += struct.pack("<IIIIB", 0, size + pad, pos, len(blob), 0) + name + b"\0" * pad
+                pos += len(blob)
+            new_dict = front + new_dict
+            head = bytearray(self.raw[:self.dict_offset]) + new_dict
+            struct.pack_into("<II", head, 0x1D, len(new_dict), len(head))  # dict_len, data_offset
         struct.pack_into("<I", head, 0x25, pos)  # data_len
         yield bytes(head)
         for e in order:
             yield targets[e.dict_pos] if e.dict_pos in targets else self.read(e)
+        yield from add.values()
 
-    def to_bytes(self, replace: dict[str, bytes] | None = None) -> bytes:
+    def to_bytes(self, replace: dict[str, bytes] | None = None, add: dict[str, bytes] | None = None) -> bytes:
         """Rebuild the whole archive in memory (fine for small packs; use `write_to` for big ones)."""
-        return b"".join(self.iter_chunks(replace))
+        return b"".join(self.iter_chunks(replace, add))
 
-    def write_to(self, out: BinaryIO, replace: dict[str, bytes] | None = None) -> int:
+    def write_to(self, out: BinaryIO, replace: dict[str, bytes] | None = None,
+                 add: dict[str, bytes] | None = None) -> int:
         """Stream the rebuilt archive to an open binary file. Returns bytes written."""
         n = 0
-        for chunk in self.iter_chunks(replace):
+        for chunk in self.iter_chunks(replace, add):
             out.write(chunk)
             n += len(chunk)
         return n

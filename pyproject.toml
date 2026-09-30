@@ -27,5 +27,6 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "rusemod" = ["labels.toml"]
+"ruse_mod_engine" = ["data/*.json", "data/migrations/*.json", "data/version_maps/*.json.gz"]
 "ruse_launcher" = ["ui/*", "words.toml"]
 "ruse_studio" = ["ui/*", "words.toml"]

@@ -42,8 +42,8 @@ from .library import MANIFEST, Library, LibraryError
 
 _SET_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 VANILLA = "vanilla"
-MOD_FILES = ("Mods (*.rusemod;*.zip;*.toml)", "All files (*.*)")  # the file dialog's filter: a mod file (.rusemod,
-# the Studio's export), a .zip of a mod folder, or a mod's own mod.toml
+MOD_FILES = ("Mods (*.rusemod;*.rmod;*.zip;*.toml)", "All files (*.*)")  # the file dialog's filter: a mod file
+# (.rusemod, the Studio's export), a community .rmod, a .zip of a mod folder, or a mod's own mod.toml
 
 
 class LauncherError(Exception):

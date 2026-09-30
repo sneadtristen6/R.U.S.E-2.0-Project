@@ -275,7 +275,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", default="extracted", help="where to put them (default: extracted/, ignored by git)")
     p.set_defaults(fn=cmd_extract)
     p = sub.add_parser("build", help="build mods into a rebuilt pack or a modded copy of the game")
-    p.add_argument("mods", nargs="+", help="mod folders (with mod.toml) or single .rndf files")
+    p.add_argument("mods", nargs="+", help="mod folders (with mod.toml), .rmod files, or single .rndf files")
     p.add_argument("--pack", default="ZZ_GladPatchableWin.dat", help="the pack the mods change (default: the unit data)")
     p.add_argument("--out", help="write the rebuilt pack to this .dat file, or every rebuilt pack into this folder")
     p.add_argument("--instance", help="build a modded copy of the game in this folder (never the Steam install)")

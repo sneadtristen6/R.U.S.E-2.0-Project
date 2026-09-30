@@ -50,6 +50,12 @@ def load_mod(path) -> tuple[ModInfo, list]:
     """A mod folder (mod.toml + src/**/*.rndf, files in path order, + text/*.csv), or a single .rndf file as a quick
     mod. Text rows end up in `ModInfo.texts`."""
     path = Path(path)
+    if path.is_file() and path.suffix.lower() == ".rmod":  # a community mod as it comes (rusemod.rmod)
+        from . import rmod
+        mod = rmod.check(path)
+        info = ModInfo(rmod.mod_id(mod, path), rmod.version_of(mod))
+        info.rmod = path
+        return info, []
     if path.is_file() and path.suffix.lower() == ".rndf":
         mod_id = re.sub(r"[^a-z0-9-]+", "-", path.stem.lower()).strip("-") or "mod"
         info = ModInfo(mod_id)
@@ -77,6 +83,15 @@ def load_mod(path) -> tuple[ModInfo, list]:
                        dict(manifest.get("optional", {})), list(load_rules.get("after", [])),
                        list(load_rules.get("before", [])), dict(manifest.get("conflicts", {})),
                        text_prefix=str(m.get("text_prefix", "")))
+        if "rmod" in manifest:  # a .rmod mod in the library: mod.toml + the file (rusemod.rmod.make_folder)
+            from . import rmod
+            name = str(manifest["rmod"].get("file", ""))
+            file = path / name
+            if not name or Path(name).name != name or not file.is_file():
+                raise BuildError(f"{manifest_file}: [rmod] file must name a .rmod file next to mod.toml (got {name!r})")
+            rmod.check(file)
+            info.rmod = file
+            return info, []
         src = path / "src"
         files = sorted(src.rglob("*.rndf"), key=lambda p: p.relative_to(src).as_posix().lower()) if src.is_dir() else []
         ops = []
@@ -150,9 +165,10 @@ class PackModel:
 def load_pack(arc: Edat) -> PackModel:
     """The data files of `arc` as the engine's model, the way builds see them (debug-info copies left out)."""
     members, files, shadows = {}, {}, []
+    changed = getattr(arc, "changed", {})  # a pack that .rmod mods changed first (rusemod.rmod.Layered)
     for e in arc.entries:
         start = arc.data_offset + e.offset
-        head = arc.raw[start:start + 12]
+        head = changed[e.path][:12] if e.path in changed else arc.raw[start:start + 12]
         if head[:4] == b"EUG0" and head[8:12] == b"CNDF":
             if SHADOW.search(game_path(e.path)):
                 shadows.append(e.path)
@@ -308,6 +324,8 @@ def terrain_edits(order: list[str], mods: list) -> dict[str, tuple[list, list[st
     by_id = {m.id: m for m, _ in mods}
     out: dict[str, tuple[list, list[str]]] = {}
     for mod_id in order:
+        if mod_id not in by_id:  # a .rmod mod: rusemod.rmod applies its map changes
+            continue
         for pack, strokes in by_id[mod_id].terrain.items():
             all_strokes, ids = out.setdefault(pack, ([], []))
             all_strokes.extend(strokes)
@@ -356,7 +374,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
     """Build `mods` [(ModInfo, ops)] against the game at `game` and write the result: rebuilt packs to `out` (a .dat
     file, or a folder for several packs) and/or a modded copy at `instance`. This is `ruse build`, and the launcher's
     Play. `say` gets every report line as it comes. Nothing is written when the build has errors. Problems the user
-    can fix raise BuildError."""
+    can fix raise BuildError.
+
+    .rmod mods (rusemod.rmod) are applied first, in their order in `mods`, and the other mods on top of them."""
+    rmods = [m for m, _ops in mods if m.rmod is not None]
+    mods = [(m, ops) for m, ops in mods if m.rmod is None]
     pack_path = find_pack(game, pack)
     if pack_path is None:
         raise BuildError(f"No pack called {pack!r} in {game}.")
@@ -368,12 +390,27 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                              f"it.")
     build_id = build_of(game) or "0"  # the fingerprint includes the game build
     with ExitStack() as stack:
-        arc = stack.enter_context(Edat.open(str(pack_path)))
-        text_arc = stack.enter_context(Edat.open(str(text_path))) if text_path else None
+        run = None
+        if rmods:
+            from . import rmod
+            say(".rmod mods first: " + " -> ".join(m.id for m in rmods))
+            run = rmod.apply(game, [m.rmod for m in rmods], build_of(game), say)
+            stack.callback(run.close)
+
+        def open_pack(path: Path) -> Edat:
+            """A pack as the .rmod mods left it (or as shipped)."""
+            layered = run.layered(path) if run else None
+            return layered if layered is not None else stack.enter_context(Edat.open(str(path)))
+
+        arc = open_pack(pack_path)
+        text_arc = open_pack(text_path) if text_path else None
         try:
-            result = build_pack(arc, mods, build_id, text_arc)
+            result = build_pack(arc, mods, build_id, text_arc) if mods else BuildResult()
         except ResolveError as exc:
             raise BuildError(f"load order: {exc}") from None
+        if run:
+            result.order = [m.id for m in rmods] + result.order
+            result.findings = run.findings + result.findings
         say("load order: " + " -> ".join(result.order))
         for line in report_lines(result.findings, show_all=show_all):
             say(line)
@@ -391,7 +428,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                                                         f"({pack_file(name)} is missing), so its ground can't be "
                                                         f"changed"))
                 continue
-            map_arc = stack.enter_context(Edat.open(str(map_path)))
+            map_arc = open_pack(map_path)
 
             def read(member, a=map_arc):
                 try:
@@ -415,11 +452,18 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 say(line)
             say("Nothing was written.")
             return result
-        if map_packs:
-            gameplay = dict(result.changed)
+        rmod_packs = run.changed_packs() if run else {}
+        if map_packs or rmod_packs:
+            gameplay = {}
+            for p, a in rmod_packs.items():
+                where = f"Maps/PC/{p.name}/" if p.parent.parent.name.lower() == "maps" else ""
+                gameplay.update({where + m: d for m, d in {**a.changed, **a.added}.items()})
+            gameplay.update(result.changed)
             for map_path, _a, changed_members in map_packs:
                 gameplay.update({f"Maps/PC/{map_path.name}/{m}": d for m, d in changed_members.items()})
             result.fingerprint = fingerprint(build_id, gameplay)
+        for p, a in rmod_packs.items():
+            say(f"changed by .rmod mods: {p.name} ({len(a.changed)} file(s) changed, {len(a.added)} added)")
         for path in result.changed:
             say(f"changed: {path}")
         if result.text_changed:
@@ -436,14 +480,17 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say(f"changed: {map_path.name} ({len(changed_members)} file(s): "
                 + ", ".join(m.rsplit(chr(92), 1)[-1] for m in changed_members) + ")")
         zz_win_changed = {**result.text_changed, **result.script_changed}
-        if not result.changed and not zz_win_changed and not map_packs:
+        rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, zz_win_changed)] + map_packs
+        listed = {Path(path).resolve() for path, _a, _c in rebuilt if path}
+        rebuilt += [(p, a, {}) for p, a in rmod_packs.items() if p not in listed]
+        # a pack the .rmod mods changed writes their changes too, even when the other mods leave it alone
+        rebuilt = [(path, a, changed) for path, a, changed in rebuilt if changed or getattr(a, "is_changed", False)]
+        if not rebuilt:
             say("The mods change nothing in these packs.")
             return result
         if result.fingerprint is None:
             result.fingerprint = fingerprint(build_id, result.changed)
         say(f"fingerprint: {fingerprint_text(result.fingerprint)}")
-        rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, zz_win_changed)] + map_packs
-        rebuilt = [(path, a, changed) for path, a, changed in rebuilt if changed]
         if out is not None:
             out = Path(out)
             if out.suffix.lower() == ".dat":
