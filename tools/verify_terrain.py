@@ -3,15 +3,18 @@ r"""Check terrain edits (rusemod.terrain_edit) on every map, and make the in-gam
 Without --make-test (READ-ONLY on the game): on every Maps\PC\DataMap*_v09.dat a test hill goes, in memory, on the
 dry land nearest the middle of the map, and the four ground files are checked:
   A. all four change and read back,
-  B. in each file the point nearest the hill's centre rose by what the brush says, to within the file's height step,
+  B. in the gameplay ground and the close-up mesh, the point nearest the hill's centre rose by what the brush says,
+     to within the file's height step (the far mesh and the camera floor follow the gameplay ground's triangles),
   C. every gameplay-ground point still has the height of the close-up mesh point it sat on (same x, y and height;
      the mesh can hold several points at one x, y, a cliff's top and foot, so x and y alone don't say which),
-  D. the mesh cells and tree parts the hill doesn't reach keep their exact bytes.
+  D. the gameplay ground's parts the hill doesn't reach keep their exact bytes,
+  E. both .kdt files' trees hold the moved ground: every triangle a leaf lists touches the leaf's cell, and every
+     moved part fits its MainNode region (stale limits made the game refuse move orders; rusemod.kdt_edit).
 One line per map with the time it took, then a summary. Nothing is written.
 
 With --make-test MAP COPY: builds a modded copy of the game at COPY (never the Steam install) with that hill on MAP,
-through the same build as `ruse build` and the Studio's "Test in game", and says where the hill is and what to look
-for in the game.
+and next to it a pit (Lower) and a flattened patch (Level), through the same build as `ruse build` and the Studio's
+"Test in game", and says where they are and what to look for in the game.
 
 Usage:  set PYTHONPATH=<repo>\src  &&  py -3 tools\verify_terrain.py [game_dir] [--only Name]
         py -3 tools\verify_terrain.py [game_dir] --make-test TwoIslands D:\RUSE-Instances\hill [--radius R] [--height H]
@@ -27,7 +30,7 @@ import zlib
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
-from rusemod import Edat  # noqa: E402
+from rusemod import Edat, kdt_edit  # noqa: E402
 from rusemod.brush import Stroke, strokes_toml  # noqa: E402
 from rusemod.kdt import Kdt  # noqa: E402
 from rusemod.terrain_edit import FILES, LABELS, edit_map  # noqa: E402
@@ -70,6 +73,17 @@ def test_hill(hd: Tms, radius: float | None = None, height: float | None = None)
     return Stroke("hill", x, y, radius, height=height)
 
 
+def _ground_at(hd: Tms, x: float, y: float) -> float:
+    """The close-up mesh's height at the point nearest (x, y)."""
+    best = None
+    for cell in hd.cells:
+        for qx, qy, qz, _qw in cell.positions():
+            d = (hd.to_world(0, qx) - x) ** 2 + (hd.to_world(1, qy) - y) ** 2
+            if best is None or d < best[0]:
+                best = (d, hd.to_world(2, qz))
+    return best[1]
+
+
 def nearest(points, x, y):
     return min(points, key=lambda p: (p[0] - x) ** 2 + (p[1] - y) ** 2)
 
@@ -108,6 +122,8 @@ def check(read, name: str) -> tuple[list[str], str]:
         return problems + [f"an edited file doesn't read back: {exc}"], ""
     # B
     for key, obj in new.items():
+        if key not in ("highdef", "ground"):
+            continue
         old = Tms(raw[key]) if key in ("highdef", "lowdef") else Kdt(raw[key])
         pts = world_points_mesh(old) if key in ("highdef", "lowdef") else world_points_tree(old)
         x, y, z, part, i = nearest([p for p in pts if hill.covers(p[0], p[1])] or pts, hill.x, hill.y)
@@ -146,23 +162,25 @@ def check(read, name: str) -> tuple[list[str], str]:
                 problems.append(f"{off} gameplay-ground point(s) differ from the close-up mesh")
             if lost:
                 problems.append(f"{lost} gameplay-ground point(s) sit on no close-up mesh point (before the edit)")
-    # D
-    for key in ("highdef", "lowdef"):
-        if key in new:
-            old = Tms(raw[key])
-            for k, (a, b) in enumerate(zip(old.cells, new[key].cells)):
-                reach = any(hill.covers(old.to_world(0, p[0]), old.to_world(1, p[1])) for p in a.positions())
-                if not reach and a.vb != b.vb:
-                    problems.append(f"{LABELS[key]} cell {k} changed though the hill doesn't reach it")
-    for key in ("ground", "camera"):
+    # D: the gameplay ground (the other files follow its triangles, which can reach past the hill's circle)
+    for key in ("ground",):
         if key in new:
             old = Kdt(raw[key])
             for s, (a, b) in enumerate(zip(old.subtrees, new[key].subtrees)):
                 reach = any(hill.covers(old.to_world(0, p[0]), old.to_world(1, p[1])) for p in old.positions(s))
                 if not reach and a.positions != b.positions:
                     problems.append(f"{LABELS[key]} part {s} changed though the hill doesn't reach it")
+    # E
+    for key in ("ground", "camera"):
+        if key in new:
+            old = Kdt(raw[key])
+            moved = [s for s in range(len(old.subtrees)) if old.subtrees[s].positions != new[key].subtrees[s].positions]
+            bad = [m for s in moved for m in kdt_edit.check(new[key], s)] + kdt_edit.check_main(new[key], moved)
+            if bad:
+                problems.append(f"{LABELS[key]}: {len(bad)} tree problem(s), e.g. {bad[0]}")
+    fitted = "; ".join(n.split(": ", 1)[1] for n in notes if "part(s) widened" in n)
     summary = (f"hill at ({hill.x:.0f}, {hill.y:.0f}), radius {hill.radius:.0f}, height {hill.height:.0f}; "
-               f"{notes[0].split(': ', 1)[1]}; {took:.1f} s")
+               f"{notes[0].split(': ', 1)[1]}; {fitted}; {took:.1f} s")
     return problems, summary
 
 
@@ -176,13 +194,19 @@ def make_test(game: str, name: str, copy: str, radius=None, height=None) -> int:
         hd = Tms(bytes(arc.read(arc.find(FILES["highdef"]))))
     hill = test_hill(hd, radius, height)
     b = hd.bounds
+    # a pit three hill-widths east and a flattened patch three hill-widths west, if the map has room there
+    gap = 3 * hill.radius
+    pit_x = min(hill.x + gap, b[3] - hill.radius * 1.5)
+    flat_x = max(hill.x - gap, b[0] + hill.radius * 1.5)
+    strokes = [hill, Stroke("lower", pit_x, hill.y, hill.radius, height=hill.height * 0.5),
+               Stroke("level", flat_x, hill.y, hill.radius, level=_ground_at(hd, flat_x, hill.y), weight=1.0)]
     with tempfile.TemporaryDirectory() as tmp:
-        mod = Path(tmp, "hill-test")
+        mod = Path(tmp, "terrain-test")
         (mod / "maps" / name).mkdir(parents=True)
-        (mod / "mod.toml").write_text('[mod]\nid = "hill-test"\nname = "Hill test"\nversion = "0.1.0"\n',
+        (mod / "mod.toml").write_text('[mod]\nid = "terrain-test"\nname = "Terrain test"\nversion = "0.2.0"\n',
                                       encoding="utf-8")
         (mod / "maps" / name / "terrain.toml").write_text(
-            strokes_toml([hill], "The in-game hill test (tools/verify_terrain.py --make-test)."), encoding="utf-8")
+            strokes_toml(strokes, "The in-game terrain test (tools/verify_terrain.py --make-test)."), encoding="utf-8")
         result = build_and_write(Path(game), [load_mod(mod)], instance=Path(copy), say=print)
     if result.errors:
         return 1
@@ -190,13 +214,14 @@ def make_test(game: str, name: str, copy: str, radius=None, height=None) -> int:
     south = (hill.y - b[1]) / (b[4] - b[1]) * 100
     print(f"""
 The hill: {east:.0f}% of the way from the map's west edge and {south:.0f}% from its north edge (the dry land nearest
-the middle), with a radius of {hill.radius:.0f} units and {hill.height:.0f} units high at its top.
-Start RUSE.exe in {copy} (Steam running), play a skirmish on this map and check:
-  1. the hill is drawn, close up and zoomed out, with no holes or seams around it;
-  2. units drive up it and stop on top; move orders on its slopes work;
-  3. the camera stays above the hill when you fly over it;
-  4. line of sight: a unit behind the hill can't see one on the other side.
-Screenshot the hill from the side, close and far.""")
+the middle), with a radius of {hill.radius:.0f} units and {hill.height:.0f} units high at its top. East of it a pit
+half as deep, west of it a patch flattened to the ground's height there.
+Start RUSE.exe in {copy} (Steam running), play a skirmish on this map and check, on all three:
+  1. drawn close up and zoomed out, with no holes, steps or seams;
+  2. move orders onto the hill, into the pit and onto the flat patch are taken, and units drive there;
+  3. the camera stays above the ground when you fly over them (it doesn't speed up or drop through);
+  4. trees and buildings on them stand on the new ground (not floating, not buried).
+Screenshot each from the side, close and far.""")
     return 0
 
 

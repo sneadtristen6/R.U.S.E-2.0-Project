@@ -6,14 +6,25 @@ four files that hold a map's ground, together (FORMATS.md §6):
   output\\occlusioninfo_terrainonly.kdt  the gameplay ground (its points sit on highdef's)
   output\\occlusioninfo_camera.kdt       the camera floor
 
-Every stroke (rusemod.brush) moves every point of every file inside its circle, as a function of the point's position
-and height only, so points the files share end up at the same height. The map's outer edge stays where it is (the
-drawn mesh's curtain hangs from it). Heights stay inside each file's own height range: a point pushed past the top or
-the bottom stops there, and the report says how many did. In the meshes, the normals around moved points and the
-height bounds of their patches are recomputed (rusemod.tms); in the .kdt trees, a moved point takes the normal of the
-nearest close-up mesh point (nearest in x, y, then in height: the close-up mesh can hold several points at one x, y,
-a cliff's top and foot, and a gameplay-ground point sits on one of them). Parts nothing touched keep their exact
-bytes.
+The gameplay ground leads (the recipe of DomesticNukes and his Claude, checked in the game on Blitz, 2026-09-28):
+1. The strokes (rusemod.brush) move the gameplay ground's points only.
+2. The other three files follow its surface: each of their points moves by the change of the gameplay ground's
+   triangle under it (its corners' changes, weighted by where the point lies in it). The files don't share one
+   set of triangles, so moving each by the brush itself left the drawn slope up to 1,700 units off the ground units
+   stand on (units sank into it).
+3. Both .kdt files keep their trees true (rusemod.kdt_edit): the height limits over every moved triangle, and the
+   MainNode's over every moved part, are widened (a part is rebuilt when a moved triangle crosses a height split).
+   Stale limits made the game refuse move orders there and let the camera fall through.
+4. Scenery is never lifted: the game stands it on the ground at load, through the drawn meshes' patch bounds, which
+   rusemod.tms recomputes around moved points (stale bounds left trees at the old height).
+Without a gameplay ground file, every stroke moves every file's points by itself, as before.
+
+The map's outer edge stays where it is (the drawn mesh's curtain hangs from it). Heights stay inside each file's own
+height range: a point pushed past the top or the bottom stops there, and the report says how many did. In the
+meshes, the normals around moved points are recomputed (rusemod.tms); in the .kdt trees, a moved point takes the
+normal of the nearest close-up mesh point (nearest in x, y, then in height: the close-up mesh can hold several points
+at one x, y, a cliff's top and foot, and a gameplay-ground point sits on one of them). Parts nothing touched keep
+their exact bytes.
 
 Not yet (MOD_FORMAT §8): raising the ground above a map's highest point, water that follows the ground (lakes keep
 their outline), and cutting the mesh finer.
@@ -23,6 +34,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
+from . import kdt_edit
 from .brush import HeightGrid, Stroke
 from .kdt import MEMBERS as KDT_MEMBERS, Q_MASK, Kdt
 from .tms import Q_MAX, Tms
@@ -124,9 +136,9 @@ def _commit_mesh(tms: Tms, pts: _Points) -> tuple[int, int, int]:
     return (moved,) + _held(pts, tms.bounds[2], tms.bounds[5])
 
 
-def _commit_tree(kdt: Kdt, pts: _Points, normal_at) -> tuple[int, int, int]:
+def _commit_tree(kdt: Kdt, pts: _Points, normal_at) -> tuple[int, int, int, dict]:
     """Write the new heights into the tree; moved points take `normal_at(x, y, z)` (or keep theirs when it's
-    None)."""
+    None). Returns (points moved, held at the top, held at the bottom, {subtree: its moved vertices})."""
     by_sub: dict[int, dict[int, int]] = {}
     positions: dict[int, list] = {}
     for n in range(len(pts.z)):
@@ -148,7 +160,68 @@ def _commit_tree(kdt: Kdt, pts: _Points, normal_at) -> tuple[int, int, int]:
         kdt.set_positions(s, [tuple(p) for p in pos])
         kdt.set_normals(s, normals)
         moved += len(points)
-    return (moved,) + _held(pts, kdt.bounds_min[2], kdt.bounds_max[2])
+    return (moved,) + _held(pts, kdt.bounds_min[2], kdt.bounds_max[2]) + ({s: set(v) for s, v in by_sub.items()},)
+
+
+class _Surface:
+    """How much the gameplay ground's surface moved, at any x, y: inside a triangle of it that moved, its corners'
+    changes weighted by where the point lies (barycentric); 0 elsewhere. Built from the ground before its new heights
+    are written."""
+
+    def __init__(self, kdt: Kdt, pts: _Points):
+        new_q: dict[int, dict[int, int]] = {}
+        for n in range(len(pts.z)):
+            new_q.setdefault(pts.part[n], {})[pts.index[n]] = kdt.to_quant(2, pts.z[n])
+        self.tris: list[tuple] = []
+        for s, heights in sorted(new_q.items()):
+            pos = kdt.positions(s)
+            dz = {i: kdt.to_world(2, q) - kdt.to_world(2, pos[i][2]) for i, q in heights.items() if q != pos[i][2]}
+            if not dz:
+                continue
+            idx = kdt.indices(s)
+            for k in range(0, len(idx), 3):
+                a, b, c = idx[k], idx[k + 1], idx[k + 2]
+                if a in dz or b in dz or c in dz:
+                    corners = [(kdt.to_world(0, pos[v][0]), kdt.to_world(1, pos[v][1]), dz.get(v, 0.0)) for v in (a, b, c)]
+                    (x0, y0, _), (x1, y1, _), (x2, y2, _) = corners
+                    det = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2)
+                    if det:  # a wall (no area seen from above) has no surface to follow
+                        self.tris.append((corners, det))
+        self.step = max(kdt.bounds_max[0] - kdt.bounds_min[0], kdt.bounds_max[1] - kdt.bounds_min[1], 1.0) / 256.0
+        self.x0, self.y0 = kdt.bounds_min[0], kdt.bounds_min[1]
+        self.buckets: dict[tuple, list[int]] = {}
+        for n, (corners, _det) in enumerate(self.tris):
+            xs, ys = [c[0] for c in corners], [c[1] for c in corners]
+            for bx in range(self._b(min(xs), self.x0), self._b(max(xs), self.x0) + 1):
+                for by in range(self._b(min(ys), self.y0), self._b(max(ys), self.y0) + 1):
+                    self.buckets.setdefault((bx, by), []).append(n)
+
+    def _b(self, v: float, origin: float) -> int:
+        return int((v - origin) // self.step)
+
+    def __bool__(self) -> bool:
+        return bool(self.tris)
+
+    def change(self, x: float, y: float) -> float:
+        for n in self.buckets.get((self._b(x, self.x0), self._b(y, self.y0)), ()):
+            ((x0, y0, d0), (x1, y1, d1), (x2, y2, d2)), det = self.tris[n]
+            l0 = ((y1 - y2) * (x - x2) + (x2 - x1) * (y - y2)) / det
+            l1 = ((y2 - y0) * (x - x2) + (x0 - x2) * (y - y2)) / det
+            l2 = 1.0 - l0 - l1
+            if l0 >= -1e-9 and l1 >= -1e-9 and l2 >= -1e-9:
+                return l0 * d0 + l1 * d1 + l2 * d2
+        return 0.0
+
+
+def _refit(kdt: Kdt, moved: dict) -> str:
+    """Widen the trees of a .kdt over its moved vertices (rusemod.kdt_edit); the report's words for it."""
+    done = {"widened": 0, "rebuilt": 0}
+    for s, vertices in sorted(moved.items()):
+        result = kdt_edit.refit(kdt, s, vertices)
+        if result in done:
+            done[result] += 1
+    main = kdt_edit.widen_main(kdt, moved)
+    return f"{done['widened']} part(s) widened, {done['rebuilt']} rebuilt, {main} top limit(s) widened"
 
 
 def _normal_lookup(tms: Tms, pts: _Points):
@@ -237,11 +310,13 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
             grid = HeightGrid(ref.height_grid(cols), b[0], b[1], b[3], b[4])
 
     area = _area(meshes, trees)
+    # the gameplay ground leads; without it, every file is moved by the strokes themselves
+    painted = [points["ground"]] if "ground" in points else list(points.values())
     for n, stroke in enumerate(strokes, start=1):
         if stroke.brush == "smooth" and grid is None:
             continue
         average = grid.average_for(stroke) if stroke.brush == "smooth" else None
-        covered = sum(pts.apply(stroke, average) for pts in points.values())
+        covered = sum(pts.apply(stroke, average) for pts in painted)
         if grid is not None:
             grid.apply(stroke, average)
         if not covered:
@@ -251,6 +326,14 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
                              f"nothing")
             else:
                 notes.append(f"{name}: {where} is outside the map")
+
+    if "ground" in points:  # the others follow the gameplay ground's surface, sampled inside its triangles
+        surface = _Surface(trees["ground"], points["ground"])
+        if surface:
+            for key, pts in points.items():
+                if key != "ground":
+                    for k in range(len(pts.z)):
+                        pts.z[k] += surface.change(pts.x[k], pts.y[k])
 
     changed: dict[str, bytes] = {}
     counts = []
@@ -280,15 +363,17 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
             water_notes.append(f"{name}: the map's water depth scale couldn't be read, so its water textures were "
                                f"left as they are")
     normal_at = _normal_lookup(meshes["highdef"], points["highdef"]) if "highdef" in meshes else None
+    fitted = []
     for key in ("ground", "camera"):
         if key in trees:
-            moved, top, bottom = _commit_tree(trees[key], points[key], normal_at)
+            moved, top, bottom, by_sub = _commit_tree(trees[key], points[key], normal_at)
             held_top, held_bottom = held_top + top, held_bottom + bottom
             counts.append(f"{LABELS[key]} {moved}")
             if moved:
+                fitted.append(f"{name}: {LABELS[key]}: {_refit(trees[key], by_sub)}")
                 changed[FILES[key]] = trees[key].to_bytes()
     notes.insert(0, f"{name}: {len(strokes) + len(water_strokes)} stroke(s); points moved: " + ", ".join(counts))
-    notes[1:1] = water_notes
+    notes[1:1] = water_notes + fitted
     if held_top:
         notes.append(f"{name}: {held_top} point(s) reached the top of the map's height range and stop there "
                      f"(raising the ground above the map's highest point comes later)")
