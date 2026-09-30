@@ -50,6 +50,9 @@ class Strokes(unittest.TestCase):
         self.assertTrue(z < plateau.height_at(75, 0, z) < 30.0)
         flatten = Stroke("flatten", 0, 0, 100, level=30.0, weight=0.5)
         self.assertEqual(flatten.height_at(0, 0, z), 20.0)
+        level = Stroke("level", 0, 0, 100, level=30.0)  # flat to the height where the drag started
+        self.assertEqual([level.height_at(d, 0, z) for d in (0, 50)], [30.0, 30.0])
+        self.assertTrue(z < level.height_at(75, 0, z) < 30.0)
         smooth = Stroke("smooth", 0, 0, 100, weight=0.5)
         self.assertEqual(smooth.height_at(0, 0, z, lambda x, y: 20.0), 15.0)
         with self.assertRaises(ValueError):
@@ -101,7 +104,7 @@ class TerrainFile(unittest.TestCase):
         self.assertEqual(strokes_toml([]), "\n")
 
     def test_brushes_and_their_values(self):
-        self.assertEqual(set(BRUSHES), {"hill", "raise", "lower", "crater", "plateau", "flatten", "smooth", "ramp"})
+        self.assertEqual(set(BRUSHES), {"hill", "raise", "lower", "crater", "plateau", "flatten", "level", "smooth", "ramp"})
         self.assertEqual(parse_strokes([{"brush": "smooth", "x": 1, "y": 2, "radius": 3}])[0].weight, 0.5)
         self.assertEqual(parse_strokes([{"brush": "flatten", "x": 1, "y": 2, "radius": 3, "level": 4}])[0].weight, 1.0)
 

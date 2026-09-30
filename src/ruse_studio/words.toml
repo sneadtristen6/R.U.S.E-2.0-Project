@@ -2410,3 +2410,27 @@ ru = "Вспышка и звук выстрела: {fx}. Другой боепр
 cz = "Záblesk a zvuk výstřelu: {fx}. Jiná munice převezme záblesk a zvuk zbraně, která ji střílí."
 jpn = "発砲の閃光と音: {fx}。別の弾薬を選ぶと、その弾薬を撃つ武器の閃光と音になります。"
 sc = "开火闪光与声音：{fx}。选择其他弹药时，会换成发射该弹药的武器的闪光与声音。"
+
+[brush_level]
+us = "Level"
+fr = "Niveler"
+ger = "Nivellieren"
+ita = "Livella"
+spa = "Nivelar"
+pol = "Poziomuj"
+ru = "Уровень"
+cz = "Srovnat"
+jpn = "高さをそろえる"
+sc = "整平"
+
+[tip_brush_level]
+us = "Paints the ground flat at one height: the height where you start dragging. Start on ground at the height you want."
+fr = "Peint le terrain à plat à une hauteur : celle où vous commencez à glisser. Commencez sur un terrain à la hauteur voulue."
+ger = "Malt den Boden flach auf eine Höhe: die, wo du zu ziehen beginnst. Beginne auf Boden in der gewünschten Höhe."
+ita = "Dipinge il terreno piatto a un'altezza: quella dove inizi a trascinare. Inizia su un terreno all'altezza che vuoi."
+spa = "Pinta el terreno plano a una altura: la de donde empiezas a arrastrar. Empieza sobre terreno a la altura que quieras."
+pol = "Maluje płaski teren na jednej wysokości: tam, gdzie zaczynasz przeciągać. Zacznij na terenie o żądanej wysokości."
+ru = "Делает землю ровной на одной высоте: там, где вы начинаете вести кисть. Начните на земле нужной высоты."
+cz = "Maluje zem rovně v jedné výšce: tam, kde začnete táhnout. Začněte na zemi v požadované výšce."
+jpn = "ドラッグを始めた地点の高さで地形を平らに塗ります。望む高さの地面から始めてください。"
+sc = "把地面刷平到同一高度：即开始拖动处的高度。请从所需高度的地面开始。"

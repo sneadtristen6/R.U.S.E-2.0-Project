@@ -1,6 +1,10 @@
 **RUSE Launcher 0.2, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.2.2: Put in best order.** When mods in a set change the same values, the yellow box has a **Put in best order**
+button: mods that change more go first and smaller ones after, so each keeps as much of its changes as it can. It
+says which mods it saves, and the mods can still be moved by hand.
+
 **0.2.1: mods that don't go together can't be played, and the launcher says why.** When two mods in a set replace
 the same file or script, a red box names the mods and what they both change, and Play stays off until one is taken
 out. When a later mod only overwrites values of an earlier one (a ship's speed, say), a yellow box lists

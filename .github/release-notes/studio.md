@@ -1,6 +1,17 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.5.1:**
+
+- **A gun keeps its own flash and sound:** when a weapon fires another unit's ammo, it now also takes that unit's
+  muzzle flash and firing sound (the Sherman's gun on a rifleman fires like a Sherman). The weapon shows which one it
+  plays.
+- **Level brush** (key 7): paints the ground flat at the height where you start dragging.
+- **WASD moves with the camera**: W is always forward on screen, however the view is turned.
+- The game index is built again once, the first time 0.5.1 opens (about half a minute).
+- **Known problem:** in the game, ground raised or lowered a lot can show steps and cliffs, and trees on it stay
+  at the old height. The fix is being worked on.
+
 **New in 0.5:**
 
 - **New units:** copy a unit from its page, name it, price it and put it in a build menu.

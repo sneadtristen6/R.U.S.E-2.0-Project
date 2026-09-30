@@ -28,6 +28,7 @@ const BRUSHES = {
   crater: ["add", "crater", 1, true, 4, 30],
   plateau: ["level", "flat", 1, true, 6, 20],
   flatten: ["level", "soft", 1, false, 4, 60],
+  level: ["level", "flat", 1, false, 3, 100],  // the ground where the drag starts, painted flat at that height
   smooth: ["smooth", "soft", 1, false, 4, 60],
   ramp: ["ramp", "flat", 1, true, 3, 100],  // two clicks: where it starts, then where it ends; size is half its width
 };
@@ -992,7 +993,7 @@ function renderBrushes() {
   const w = mv.words, b = mv.brush;
   $("brush-list").replaceChildren(...Object.keys(BRUSHES).map((name, i) => {
     const chip = el("button", { type: "button", className: "chip", textContent: w["brush_" + name] || name,
-      title: fill(w.tip_brush || "", { n: i + 1 }) });
+      title: (w["tip_brush_" + name] ? w["tip_brush_" + name] + " " : "") + fill(w.tip_brush || "", { n: i + 1 }) });
     chip.setAttribute("aria-pressed", String(b.on && b.name === name));
     chip.addEventListener("click", () => pickBrush(name));
     return chip;
@@ -1356,8 +1357,8 @@ function renderWords() {
 }
 
 // --- keys, while the map view is open and no text box has the focus ---
-// W/S and A/D (or the arrows) slide the camera along the map's own north-south and east-west axes, whichever way it
-// looks; Q/E turn it around the point it looks at; R/F zoom. Held keys move smoothly, frame by frame, at a speed
+// W/S and A/D (or the arrows) slide the camera forward, back, left and right as it looks (turned with Q/E, W still
+// goes up the screen); Q/E turn it around the point it looks at; R/F zoom. Held keys move smoothly, frame by frame, at a speed
 // scaled to the map (and to the zoom, so a close view doesn't fly), three times as fast with Shift. The tool keys
 // do what the buttons do (the tooltips name them).
 const MOVE = { KeyW: [0, -1], ArrowUp: [0, -1], KeyS: [0, 1], ArrowDown: [0, 1], KeyA: [-1, 0], ArrowLeft: [-1, 0],
@@ -1391,7 +1392,12 @@ function moveStep(now) {
   for (const code of keys.down) { const m = MOVE[code]; if (m) { dx += m[0]; dz += m[1]; } }
   if (dx || dz) {
     const speed = Math.min(mv.size * 0.5, dist) * fast * dt / Math.hypot(dx, dz);
-    controls.target.add(new THREE.Vector3(dx * speed, 0, dz * speed));
+    // forward: where the camera looks, flat on the map (looking straight down: the top of the screen)
+    const ahead = controls.target.clone().sub(camera.position).setY(0);
+    if (ahead.lengthSq() < 1e-9 * dist * dist) ahead.set(0, 1, 0).applyQuaternion(camera.quaternion).setY(0);
+    ahead.normalize();
+    const right = new THREE.Vector3(-ahead.z, 0, ahead.x);
+    controls.target.addScaledVector(right, dx * speed).addScaledVector(ahead, -dz * speed);
   }
   const turn = (keys.down.has("KeyQ") ? 1 : 0) - (keys.down.has("KeyE") ? 1 : 0);
   if (turn) offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), turn * 1.2 * fast * dt);
@@ -1454,7 +1460,7 @@ function onKey(e) {
     return;
   }
   if (fieldFocused(false)) return;
-  const digit = /^Digit([1-8])$/.exec(e.code);
+  const digit = /^Digit([1-9])$/.exec(e.code);
   if (digit) { pickBrush(Object.keys(BRUSHES)[Number(digit[1]) - 1]); return; }
   if (e.code === "KeyB") { if (mv.brush.on) lookAround(); else pickBrush(mv.brush.name); }
   else if (e.code === "KeyP") setPlaceMode(!mv.place.on);

@@ -13,6 +13,8 @@ order, each to the ground the ones before it left.
   plateau   levels the ground at a height, flat across the middle      level (world z), weight (0..1)
             half, sloping back to the old ground at the edge
   flatten   pulls the ground toward a level, most at the centre        level, weight
+  level     paints the ground at a level, flat across the middle half  level, weight
+            (the height where the drag starts, all along the drag)
   smooth    pulls the ground toward its own local average              weight
   ramp      an even slope from one point to another: flat across the    level (z at the start), x2, y2 and
             middle half of its width, sloping back to the old ground     level2 (the end and z there), weight;
@@ -50,6 +52,7 @@ BRUSHES = {
     "crater": Brush("add", "crater"),
     "plateau": Brush("level", "flat"),
     "flatten": Brush("level", "soft"),
+    "level": Brush("level", "flat"),
     "smooth": Brush("smooth", "soft"),
     "ramp": Brush("ramp", "flat"),
 }
