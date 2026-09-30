@@ -35,6 +35,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 from rusemod.dic import key_to_name  # noqa: E402
 
 LANG_FOLDERS = ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc")
+DEFAULT_NAMESPACE = "$/GFX/Everything"  # where the game's units are exported
 UNIT_PATH = "WeaponDescriptor.TurretDescriptorList[0].MountedWeaponDescriptorList[0]"  # a unit's first gun
 
 # Per-mod recipes, by the original mod id. Each one is written down in the README as an assumption.
@@ -466,7 +467,30 @@ class Rebuild:
                 if not settled:
                     self.notes, self.assumptions, self.counts = notes, assumptions, counts
             parts += [s + "\n" for s in body]
-        return head + "".join(parts).replace("\n\n\n", "\n\n")
+        return self.unambiguous(head + "".join(parts).replace("\n\n\n", "\n\n"))
+
+    def unambiguous(self, text: str) -> str:
+        """Debug names that change while the mod runs are named by export path instead, which never changes:
+        $/GFX/Everything/Descriptor_Unit_X for `@[ClassNameForDebug='Unit_X']`. Two cases:
+          - a copy keeps its source's debug name until the build gives it its own (MOD_FORMAT §10.5), so the name
+            would match both the source and the copy;
+          - a mod that renames an object (sets its ClassNameForDebug) and changes it again later, by the old name,
+            as RUSE-Mod-Manager allows: once renamed, the old name matches nothing."""
+        sources = set()
+        for src in (self.recipe.get("create_as_clone") or {}).values():
+            m = re.fullmatch(r"@\w*\[ClassNameForDebug='([^']+)'\]", src)
+            if m:
+                sources.add(m.group(1))
+        for patch in self.d.get("patches", []):
+            for c in patch.get("changes", []):
+                match, new = c.get("match") or {}, (c.get("set") or {}).get("ClassNameForDebug")
+                if (c.get("action") == "patch" and set(match) == {"ClassNameForDebug"} and isinstance(new, dict)
+                        and new.get("value") not in (None, match["ClassNameForDebug"])):
+                    sources.add(str(match["ClassNameForDebug"]))
+        for name in sorted(sources):
+            pattern = r"@\w*\[ClassNameForDebug=(['\"])" + re.escape(name) + r"\1\]"
+            text = re.sub(pattern, f"{DEFAULT_NAMESPACE}/Descriptor_{name}", text)
+        return text
 
     def manifest(self) -> str:
         m = self.d

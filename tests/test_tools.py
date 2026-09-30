@@ -238,6 +238,59 @@ class RmodToMod(unittest.TestCase):
         self.assertIn(data["id"], said.getvalue())
         return os.path.join(out, data["id"])
 
+    def test_a_copied_unit_is_named_by_its_export_path_so_it_matches_one_object(self):
+        """A copy keeps its source's debug name while the mod runs, so a debug-name match would find two objects."""
+        by_debug = {"anchor": {"root": ["ClassNameForDebug", "Unit_X"], "steps": [["Weapons", "[0]"]]}}
+        data = {"$schema": "ruse-mod/v1", "id": "armed-factories", "name": "Copies", "version": "1.0.0", "patches": [
+            {"dat": "Data/PC/190852/ZZ_GladPatchableWin.dat", "ndf": NDF, "changes": [
+                {"action": "create", "table": "TUniteAuSolDescriptor", "local_id": "inst_afg_unit", "top_object": True,
+                 "set": {"ClassNameForDebug": {"type": "StringRef", "value": "Unit_Guard"},
+                         "SeuilMort": {"type": "Float32", "value": 300.0},
+                         "Weapons": {"type": "List<ObjRef>", "value": [by_debug]}}},
+                {"action": "patch", "table": "TUniteAuSolDescriptor", "match": {"ClassNameForDebug": "Unit_X"},
+                 "set": {"SeuilPinned": {"type": "Float32", "value": 60.0}}},
+            ]}]}
+        saved = rmod_to_mod.RECIPES.get("armed-factories")
+        rmod_to_mod.RECIPES["armed-factories"] = {"create_as_clone": {"inst_afg_unit": "@[ClassNameForDebug='Unit_X']"}}
+        try:
+            folder = self.convert(data, "Copies_V1.rmod")
+        finally:
+            rmod_to_mod.RECIPES["armed-factories"] = saved
+        with open(os.path.join(folder, "src", "armed-factories.rndf"), encoding="utf-8") as f:
+            text = f.read()
+        self.assertNotIn("ClassNameForDebug='Unit_X'", text)
+        self.assertIn("is clone $/GFX/Everything/Descriptor_Unit_X", text)
+        info, ops = load_mod(folder)
+        r = Engine(synthetic_game()).run([(ModInfo("armed-factories"), ops)])
+        self.assertEqual([f.message for f in r.errors], [])  # it failed: "matches 2 objects"
+        self.assertEqual(r.game.objects["$/GFX/Everything/Descriptor_Unit_X"].props["SeuilPinned"].value, 60)
+        guard = r.game.objects["$/GFX/Everything/Descriptor_Unit_Guard"]
+        self.assertEqual(guard.props["SeuilMort"].value, 300)
+
+    def test_a_renamed_unit_is_still_found_by_later_changes(self):
+        """RUSE-Mod-Manager lets a mod rename a unit (its debug name) and change it again under the old name."""
+        data = {"$schema": "ruse-mod/v1", "id": "renames", "name": "Renames", "version": "1.0.0", "patches": [
+            {"dat": "Data/PC/190852/ZZ_GladPatchableWin.dat", "ndf": NDF, "changes": [
+                {"action": "patch", "table": "TWeapon",
+                 "match": {"anchor": {"root": ["ClassNameForDebug", "Unit_X"], "steps": [["Weapons", "[0]"]]}},
+                 "set": {"Portee": {"type": "Float32", "value": 5.0}}},
+                {"action": "patch", "table": "TUniteAuSolDescriptor", "match": {"ClassNameForDebug": "Unit_X"},
+                 "set": {"SeuilMort": {"type": "Float32", "value": 80.0},
+                         "ClassNameForDebug": {"type": "StringRef", "value": "Unit_Renamed"},
+                         "SeuilPinned": {"type": "Float32", "value": 70.0}}},
+                {"action": "delete_props", "table": "TUniteAuSolDescriptor", "match": {"ClassNameForDebug": "Unit_X"},
+                 "props": ["InitialFlagSet"]},
+            ]}]}
+        folder = self.convert(data, "Renames_V1.rmod")
+        info, ops = load_mod(folder)
+        r = Engine(synthetic_game()).run([(ModInfo("renames"), ops)])
+        self.assertEqual([f.message for f in r.errors], [])  # it failed: "[ClassNameForDebug='Unit_X'] doesn't exist"
+        unit = r.game.objects["$/GFX/Everything/Descriptor_Unit_X"]
+        self.assertEqual((unit.props["SeuilMort"].value, unit.props["SeuilPinned"].value), (80, 70))
+        self.assertEqual(unit.props["ClassNameForDebug"], Text("string", "Unit_Renamed"))
+        self.assertNotIn("InitialFlagSet", unit.props)
+        self.assertEqual(unit.props["Weapons"].items[0].obj.props["Portee"].value, 5)
+
     def test_new_objects_with_numbered_ids_get_names_the_engine_accepts(self):
         """RUSE-Mod-Manager numbers the objects a mod adds (inst_63686, 254); a name of ours starts with a letter."""
         weapon = {"anchor": {"root": ["ClassNameForDebug", "Unit_X"], "steps": [["Weapons", "[0]"]]}}
