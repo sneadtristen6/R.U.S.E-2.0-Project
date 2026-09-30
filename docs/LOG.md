@@ -750,3 +750,11 @@ fails all four tests, the new one passes. The owner's rule behind it: a mistake 
 a hook), not another rule.
 
 Also: a road shows its length while it's drawn (the owner, "so you know how far a straight line is").
+
+**In the game (owner, 17:18): units go under the new bridges.** A unit ordered across crossed along the deck's line
+(the movement graphs opened there work) but on the riverbed, under the deck. Where the game keeps shipped bridges'
+floors: not the gameplay ground (`occlusioninfo_terrainonly.kdt` dips into the river under them, same z as the
+visible ground), not the movement graphs (ordinary circles), but a third tree in each map pack,
+**`output\occlusioninfo_objectsonly.kdt`** (D-Day: 6 KB, 556 triangles, 690 points, one subtree, its points in
+clusters exactly at the map's 21 bridges; scratch `bridge_floor.py`). New bridges need their decks written there.
+Also seen: a tank couldn't take a new road into the woods, infantry could; the owner wants that as a choice per road.

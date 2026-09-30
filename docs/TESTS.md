@@ -113,6 +113,11 @@ The two new bridges stand where the new roads cross the river, between Briquevil
    17:15):** one piece per crossing, bank to bank, the painted roads meeting it (the first build tipped into the river).
 2. **Units:** order a tank, then an infantry squad, to a point across the river right behind a new bridge.
    - **Pass:** they drive over the bridge. **Fail:** they stop at the bank, go the long way round, or walk on water.
+   - **First try (owner, 2026-09-30, 17:18): failed.** The unit crossed along the deck's line, but under it, on the
+     riverbed: the decks units stand on are in `occlusioninfo_objectsonly.kdt`, which new bridges aren't in yet
+     (PLAN §10, next steps).
+   - **Seen on the way (owner):** a tank couldn't take a new road into the woods, infantry could; the owner likes
+     that, and wants it as a choice per road (PLAN §10, next steps).
 3. **Supply:** place a supply depot so its route needs the new road across the river.
    - **Pass:** the route line and the trucks use the bridge.
 4. **The glow** (seen once: the ground glows, then turns normal): if it comes back, a screenshot while it glows and

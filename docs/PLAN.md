@@ -611,20 +611,34 @@ bridges replaces it, and a road's length while it's drawn. **In the game (owner,
 
 | Test | Who | Decides | State |
 |---|---|---|---|
-| **T8 Bridges:** units (a tank, then infantry) and a supply route cross the new D-Day bridges; the glow if it returns; the spawned units' side and facing (A8) | owner, `D:\RUSE-Instances\bridges` | bridges done, or what to fix | the look passed |
+| **T8 Bridges:** units (a tank, then infantry) and a supply route cross the new D-Day bridges; the glow if it returns; the spawned units' side and facing (A8) | owner, `D:\RUSE-Instances\bridges` | bridges done, or what to fix | the look passed; **units go under** (owner, 17:18): step 1 below |
 | **T9 A road over an old bridge:** the old one gone, units cross on the new one, nothing on the water where it stood | owner | the replace rule | its copy is built next session |
 | **T10 Read-only game folder:** Test in game after updating, and is his folder read-only? | the player who reported it | the fix | waiting for him |
 | **T11 Launcher 0.2.9:** the update is offered, Play works | owner | — | — |
 
 *Next steps* (one goal per session):
-1. Fix what T8-T10 find; build the T9 copy (a road across one of D-Day's own bridges) for the owner.
+1. **Units under the new bridges** (T8, owner 17:18: a unit crossed along the deck's line, but on the riverbed under
+   it). Found: the decks units stand on are in the map pack's own **`output\occlusioninfo_objectsonly.kdt`** (the
+   same `TStreamedMeshKdTree` as the ground; D-Day: 556 triangles, 690 points, one subtree, in clusters exactly at
+   its 21 bridges). The gameplay ground (`occlusioninfo_terrainonly.kdt`) dips into the river under shipped bridges
+   just like the visible ground, and the movement circles there are ordinary. So: write each new bridge's deck into
+   `objectsonly.kdt` (the model's floor, turned, stretched, sunk as placed), and take a sunk old bridge's deck out;
+   `rusemod.kdt` has the codecs. Check first: the first look put the decks' z about 7,500 above the ground (the
+   file's own z scale?). Then rebuild the D-Day copy; T8 again. Also build the T9 copy (a road across one of D-Day's
+   own bridges) for the owner.
 2. **Studio: a Bridges kind in the bar**, placed like buildings (the map's own bridge kinds, the palette rows whose
    category ends `/Ponts`, taken out of Buildings; a Length slider = `stretch`; coded as bridges: never solid, the
    deck opened), and the road tool drawing its water crossings in gold and saying when the map has no bridge kind.
    Studio 0.7.5.
-3. **A4 Remove scenery** (an Erase brush): trees along the new roads (T8's screenshots show the forest roads); the
-   old-bridge rule could then remove instead of sink.
-4. Then the roadmap below: **A5 Ruse areas**, A6 ground painting.
+3. **Road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
+   tanks, I like that"). In the game a new road into the woods stayed closed to tanks while infantry used it: the
+   woods are closed to vehicles and a road doesn't open them. Make it a choice per road in the road tool: a
+   **forest track**, infantry only (as now; best left out of the supply network so trucks don't route into it), or
+   a **road** that opens the woods to vehicles along it (the vehicle graph's closed ground opened along the line,
+   as a bridge's deck is). Which one a new road is by default: the owner's call.
+4. **A4 Remove scenery** (an Erase brush): trees along the new roads; the old-bridge rule could then remove instead
+   of sink.
+5. Then the roadmap below: **A5 Ruse areas**, A6 ground painting.
 
 *Open, the owner's to decide* (ideas, not decisions): "two tabs open" in the map builder; bridges for chokepoint maps.
 
