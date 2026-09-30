@@ -1508,8 +1508,24 @@ function nameLine(m) {
   return names.length ? [names[0], el("span", { className: "map-code", textContent: ` · ${m.pack}` })] : [m.pack];
 }
 
+// The map list's filter: every map, or those the game offers as skirmish maps, Operations, campaign chapters, demos
+// or test setups (rusemod.terrain: from its menus; a map can be several). Kept by the Studio (prefs "view").
+const MAP_KINDS = ["all", "skirmish", "operation", "campaign", "demo", "test"];
+
+function renderKindPick() {
+  const w = mv.words, pick = $("map-kind");
+  pick.replaceChildren(...MAP_KINDS.map((k) => {
+    const n = k === "all" ? mv.maps.length : mv.maps.filter((m) => (m.kinds || []).includes(k)).length;
+    return el("option", { value: k, textContent: `${k === "all" ? w.maps_all : w["scen_kind_" + k] || k} (${n})` });
+  }).filter((o) => o.value === "all" || !o.textContent.endsWith("(0)")));
+  pick.value = mv.kind || "all";
+  pick.title = w.tip_map_kind || "";
+}
+
 function renderList() {
-  $("map-list").replaceChildren(...mv.maps.map((m) => {
+  renderKindPick();
+  const shown = mv.kind && mv.kind !== "all" ? mv.maps.filter((m) => (m.kinds || []).includes(mv.kind)) : mv.maps;
+  $("map-list").replaceChildren(...shown.map((m) => {
     const names = menuNames(m);
     const b = el("button", { type: "button", title: fill(mv.words.tip_open_map || "{file}", { file: m.file }) },
       el("span", { className: "name" }, ...nameLine(m)),
@@ -1801,6 +1817,11 @@ function wire() {
     renderWords();
     if (mv.current) show(mv.current, true);
   });
+  $("map-kind").addEventListener("change", (e) => {
+    mv.kind = e.target.value;
+    renderList();
+    if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind }).catch(() => {});
+  });
   $("map-water").addEventListener("change", (e) => {
     mv.water = e.target.checked;
     if (mv.gl && mv.gl.water) { mv.gl.water.visible = mv.water; mv.gl.draw(); }
@@ -1861,6 +1882,7 @@ window.MapView = {
     renderWords();
     if (!mv.maps.length) {
       try {
+        try { mv.kind = ((await api.prefs()).view || {}).map_kind || mv.kind; } catch { /* kept nothing */ }
         mv.maps = (await api.maps()).maps;
       } catch (err) {
         $("map-pick").textContent = (err && err.message) || String(err);

@@ -1,6 +1,9 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.6.4:** the map list has a type filter: all maps, or only the skirmish maps, Operations, campaign, demo or
+test maps (from the game's own menus; a map can be several). It's remembered.
+
 **0.6.3:** a **Settings** tab (next to Units and Maps): the language, the map view's keys, the game folder and
 updates in one place, ready for more.
 

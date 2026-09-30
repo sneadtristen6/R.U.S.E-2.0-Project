@@ -125,8 +125,8 @@ class MapList(unittest.TestCase):
         maps = maps_from_ndf(Ndf(map_list_ndf()))
         self.assertEqual(maps, [
             {"pack": "Test", "names": ["(6) Test map", "Test_chapter1", "(2) Test duel"],
-             "paths": ["Test", "Test_chapter1"], "keys": []},
-            {"pack": "Missing", "names": ["(2) Gone"], "paths": ["Missing"], "keys": []},
+             "paths": ["Test", "Test_chapter1"], "keys": [], "kinds": ["test"]},  # no menus: nothing says otherwise
+            {"pack": "Missing", "names": ["(2) Gone"], "paths": ["Missing"], "keys": [], "kinds": ["test"]},
         ])
         self.assertEqual(pack_file("Test"), "DataMapTest_v09.dat")
 
@@ -136,6 +136,8 @@ class MapList(unittest.TestCase):
         maps = maps_from_ndf(Ndf(map_list_ndf()), menus)
         # the multiplayer map's name first, though the chapter comes first in the file; then the challenge
         self.assertEqual([m["keys"] for m in maps], [[MP, CHAPTER, CHALLENGE], [GONE]])
+        # what each map is, from the menus that list its entries: the map list's filter
+        self.assertEqual([sorted(m["kinds"]) for m in maps], [["campaign", "operation", "skirmish"], ["skirmish"]])
 
 
 class Ground(unittest.TestCase):

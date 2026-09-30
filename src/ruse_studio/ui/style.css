@@ -205,4 +205,5 @@ tr.edited .flag { border-color: var(--accent); }
 .flag .x { padding: 0 4px; background: none; border: 0; color: var(--muted); font-size: 14px; line-height: 1; cursor: pointer; }
 .flag .x:hover { color: var(--error); }
 .flags select { max-width: 22em; font-size: 12px; }
+.map-kind { width: 100%; margin-bottom: 8px; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
 .scen-pick { max-width: 190px; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }

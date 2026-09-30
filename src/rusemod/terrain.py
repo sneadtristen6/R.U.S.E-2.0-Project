@@ -26,6 +26,7 @@ MAP_LIST = ("ZZ_GladPatchableWin.dat", "genglad\\patchable\\mapinfo.cpp.gladndfb
 MENUS = "genglad\\patchable\\misc\\globals.cpp.gladndfbin"  # the menus' entries for the maps, in the same pack
 # What the menus call a map, best first: a multiplayer map's name, else a campaign chapter's, else a challenge's.
 MENU_CLASSES = ("TMultiMapInfo", "TChapterMapInfo", "TChallengeMapInfo")
+MENU_KINDS = ("skirmish", "campaign", "operation")  # what each of MENU_CLASSES is (a challenge is an Operation in-game)
 MENU_TEXTS = "flash_txt"  # the dictionary those names are in, one per language (rusemod.loc)
 LODS = {"highdef": "output\\highdef.tms", "lowdef": "output\\lowdef.tms"}
 PICTURE = "output\\terrain.png"
@@ -71,13 +72,19 @@ def maps_from_ndf(nd: Ndf, menus: dict | None = None) -> list[dict]:
         root = texts.get("RootDatapackName") or texts.get("Path")
         if not root:
             continue
-        entry = by_pack.setdefault(root.lower(), {"pack": root, "names": [], "paths": [], "keys": []})
+        entry = by_pack.setdefault(root.lower(), {"pack": root, "names": [], "paths": [], "keys": [], "kinds": []})
         if texts.get("Name") and texts["Name"] not in entry["names"]:
             entry["names"].append(texts["Name"])
         if texts.get("Path") and texts["Path"] not in entry["paths"]:
             entry["paths"].append(texts["Path"])
         guid = next((bytes(v.payload) for pi, v in obj.props if v.tc == _GUID and nd.prop_name(pi) == "GUID"), None)
-        ranked.setdefault(root.lower(), []).extend((menus or {}).get(guid, []))
+        found = (menus or {}).get(guid, [])
+        ranked.setdefault(root.lower(), []).extend(found)
+        # what the entry is: the menus' kind for it (skirmish, campaign, operation), else demo or test by its name
+        name = (texts.get("Name") or "").lower()
+        kind = MENU_KINDS[min(r for r, _k in found)] if found else ("demo" if "demo" in name else "test")
+        if kind not in entry["kinds"]:
+            entry["kinds"].append(kind)
     for pack, keys in ranked.items():
         for _rank, key in sorted(keys, key=lambda rk: rk[0]):  # stable: the game's order within a rank
             if key not in by_pack[pack]["keys"]:
