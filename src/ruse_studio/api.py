@@ -21,7 +21,7 @@ from dataclasses import asdict
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from rusemod import identity, package, scenery, schema
+from rusemod import identity, package, scenario, scenery, schema
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.update import UpdateCalls
 from rusemod.build import BuildError, build_and_write, load_mod
@@ -740,6 +740,28 @@ class StudioApi(UpdateCalls):
             self._sceneries[key] = out
             while len(self._sceneries) > 3:
                 self._sceneries.pop(next(iter(self._sceneries)))
+        return out
+
+    def map_scenarios(self, pack: str) -> dict:
+        """A map's scenarios (rusemod.scenario), for the map view: {"scenarios": [{"file", "zones", "items"}]}, the
+        skirmish one first. Zones are drawn as their triangles; items are starting points, spawns, circle and
+        rectangle zones, labels and waypoints."""
+        game = self._game()
+        if game is None:
+            raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
+        path = find_pack(game, scenario.PACK)
+        if path is None:
+            raise StudioError(f"{scenario.PACK} isn't in the game folder.")
+        key = ("scenarios", str(path), path.stat().st_mtime, pack.lower())
+        with self._grounds_lock:
+            if key in self._sceneries:
+                return self._sceneries[key]
+        with Edat.open(str(path)) as arc:
+            found = scenario.of_map(arc, pack)
+        order = sorted(found, key=lambda f: (f.lower() not in ("leveldesign.scenario", "leveldesign_normal.scenario"), f.lower()))
+        out = {"scenarios": [{"file": f, **scenario.view(found[f])} for f in order]}
+        with self._grounds_lock:
+            self._sceneries[key] = out
         return out
 
     @property

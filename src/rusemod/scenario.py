@@ -178,3 +178,59 @@ def _plain(nd: Ndf, v):
     if len(p) >= 4 and struct.unpack_from("<I", p)[0] == len(p) - 4 and len(p) % 2 == 0:  # a label's own text
         return p[4:].decode("utf-16-le", "replace")
     return p.hex()
+
+
+PACK = "DataMap_Win.dat"
+
+
+def folder_of(map_pack: str) -> str:
+    """Where a map's scenarios live in DataMap_Win.dat: test/map/<pack>/ (the flat test maps: test/map/flat/<x>/),
+    with the pack's backslashes."""
+    name = map_pack.lower()
+    if name.startswith("flat_"):
+        name = "flat\\" + name[len("flat_"):]
+    return "test\\map\\" + name + "\\"
+
+
+def of_map(arc, map_pack: str) -> dict[str, "Scenario"]:
+    """Every scenario of one map, by file name (leveldesign.scenario, leveldesign_challenge.scenario, ...), from an
+    open DataMap_Win.dat. Files that can't be read are left out."""
+    folder = folder_of(map_pack)
+    out = {}
+    for e in arc.entries:
+        p = e.path.lower()
+        if p.startswith(folder) and p.endswith(".scenario") and "\\" not in p[len(folder):]:
+            try:
+                out[e.path[len(folder):]] = Scenario.read(bytes(arc.read(e)))
+            except (ScenarioError, ValueError, struct.error):
+                continue
+    return dict(sorted(out.items()))
+
+
+def view(s: "Scenario") -> dict:
+    """A scenario for the map view: zones as their triangles (x, y pairs, flat) and the design items that have a place
+    on the map (starting points, spawns, circle and rectangle zones, labels, waypoints), in world units."""
+    zones = []
+    for z in s.zones:
+        zones.append({"name": z.name, "number": z.number,
+                      "points": [round(c, 1) for v in z.vertices for c in v[:2]],
+                      "triangles": [i for t in z.triangles for i in t]})
+    items = []
+    for it in s.items:
+        v = it.values
+        entry = {"kind": it.kind, "x": round(it.position[0], 1), "y": round(it.position[1], 1),
+                 "turn": round(it.rotation, 3), "name": str(v.get("Name", "") or "")}
+        if it.kind == "StartingPoint":
+            entry["alliance"] = v.get("AllianceNum")
+        elif it.kind == "Spawn":
+            entry["camp"] = v.get("Camp")
+            entry["what"] = str(v.get("PythonClassName", "") or "").rsplit(".", 1)[-1]
+        elif it.kind == "CircularZone":
+            entry["radius"] = v.get("Radius")
+        elif it.kind == "RectangleZone":
+            entry["width"], entry["height"] = v.get("Width"), v.get("Height")
+        elif it.kind in ("LabelVille", "LabelMontagne"):
+            text = v.get("ChampTexte")
+            entry["text"] = text if isinstance(text, str) and not all(c in "0123456789abcdef" for c in text) else entry["name"]
+        items.append(entry)
+    return {"zones": zones, "items": items}

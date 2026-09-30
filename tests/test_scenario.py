@@ -88,5 +88,36 @@ class Reading(unittest.TestCase):
             Scenario.read(bytes(broken))
 
 
+class ForTheMapView(unittest.TestCase):
+    def test_folders_and_the_view(self):
+        from rusemod.scenario import folder_of, of_map, view
+        self.assertEqual(folder_of("SuperCrossRoads4"), "test/map/supercrossroads4/".replace("/", "\\"))
+        self.assertEqual(folder_of("Flat_France"), "test/map/flat/france/".replace("/", "\\"))
+        v = view(Scenario.read(scenario()))
+        self.assertEqual([z["name"] for z in v["zones"]], ["zone_a", "zone_b"])
+        self.assertEqual(v["zones"][0]["points"][:4], [0.0, 0.0, 1000.0, 0.0])
+        self.assertEqual(v["zones"][0]["triangles"], [0, 1, 2, 0, 2, 3])
+        start, spawn = v["items"]
+        self.assertEqual((start["kind"], start["alliance"], start["name"]), ("StartingPoint", 2, "HQ_Allies"))
+        self.assertEqual((spawn["kind"], spawn["what"]), ("Spawn", "Unit_M4_Sherman"))
+
+        class Entry:
+            def __init__(self, path):
+                self.path = path
+
+        files = {p.replace("/", "\\"): data for p, data in (
+            ("test/map/blitz/leveldesign.scenario", scenario()), ("test/map/blitz/bad.scenario", b"junk"),
+            ("test/map/blitz/sub/leveldesign.scenario", scenario()), ("test/map/other/leveldesign.scenario", scenario()))}
+
+        class Arc:
+            entries = [Entry(p) for p in files]
+
+            @staticmethod
+            def read(e):
+                return files[e.path]
+
+        self.assertEqual(list(of_map(Arc, "Blitz")), ["leveldesign.scenario"])  # not the bad one, the sub folder or others
+
+
 if __name__ == "__main__":
     unittest.main()

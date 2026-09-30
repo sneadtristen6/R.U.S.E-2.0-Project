@@ -599,6 +599,7 @@ function sceneryMeshes(data) {
 // (userData.rows: their numbers in flat). Shapes are scaled to the look's size; models keep their own, times the
 // object's size.
 function placeScenery() {
+  if (scen.group) drawScenario();
   const shapes = Object.values(mv.scenery.meshes);
   if (!shapes.length || !mv.edit) return;
   const models = Object.values(mv.scenery.models || {}).flat();
@@ -638,6 +639,148 @@ function showSceneryStats() {
   const g = d.groups, n = (k, f) => ((g[k] || {})[f] || 0).toLocaleString();
   $("scenery-stats").textContent = fill(w.scenery_stats, { buildings: n("building", "shown"), props: n("prop", "shown"),
     props_total: n("prop", "total"), trees: n("vegetation", "shown"), trees_total: n("vegetation", "total") });
+}
+
+// --- the map's scenarios (StudioApi.map_scenarios, rusemod.scenario): zones, starting points, spawns and names, drawn
+// over the ground for the scenario picked. Read-only for now: the first step toward making maps of one's own.
+const ALLIANCE = [0x3f7fe0, 0xe0503f, 0x49b85a, 0xe0c33f, 0xa35ee0, 0x3fc8d8];
+const scen = { data: null, pick: 0, show: true, group: null };
+
+async function loadScenarios(pack, ask) {
+  clearScenario();
+  scen.data = null;
+  const data = await mv.api.map_scenarios(pack);
+  if (ask !== mv.ask) return;
+  scen.data = data;
+  scen.pick = 0;
+  renderScenarioPick();
+  drawScenario();
+}
+
+function clearScenario() {
+  if (scen.group && mv.gl) {
+    mv.gl.scene.remove(scen.group);
+    scen.group.traverse((o) => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); }
+    });
+  }
+  scen.group = null;
+}
+
+function scenarioLabel(file) {
+  const stem = file.replace(/\.scenario$/i, "").replace(/^leveldesign_?/i, "");
+  return stem ? stem.replace(/_/g, " ") : mv.words.scen_main;
+}
+
+function renderScenarioPick() {
+  const w = mv.words, pick = $("scen-pick"), list = (scen.data || {}).scenarios || [];
+  pick.replaceChildren(...list.map((s, i) => el("option", { value: String(i), textContent: scenarioLabel(s.file) })));
+  pick.value = String(scen.pick);
+  pick.disabled = !list.length;
+  pick.title = w.tip_scen_pick;
+  const s = list[scen.pick];
+  if (!s) { $("scen-stats").textContent = scen.data ? w.scen_none : ""; return; }
+  const n = (k) => s.items.filter((i) => i.kind === k).length;
+  $("scen-stats").textContent = fill(w.scen_stats, { zones: s.zones.length, starts: n("StartingPoint"), spawns: n("Spawn"),
+    names: n("LabelVille") + n("LabelMontagne") });
+}
+
+// A word on the map (a town's or a mountain's name), always facing the camera.
+function mapLabel(text, colour, size) {
+  const { THREE } = mv.gl, c = document.createElement("canvas"), g = c.getContext("2d");
+  g.font = "600 44px system-ui, sans-serif";
+  c.width = Math.ceil(g.measureText(text).width) + 24;
+  c.height = 64;
+  g.font = "600 44px system-ui, sans-serif";
+  g.textBaseline = "middle";
+  g.lineWidth = 8;
+  g.strokeStyle = "rgba(0,0,0,0.75)";
+  g.strokeText(text, 12, 32);
+  g.fillStyle = colour;
+  g.fillText(text, 12, 32);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+  sprite.scale.set(size * c.width / c.height, size, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+// Everything the picked scenario puts on the map, on the ground as it is now (strokes too).
+function drawScenario() {
+  clearScenario();
+  const gl = mv.gl, s = ((scen.data || {}).scenarios || [])[scen.pick];
+  if (!gl || !mv.edit || !s) { if (gl) gl.draw(); return; }
+  const { THREE } = gl, grid = makeGrid(mv.edit), group = new THREE.Group(), size = mv.size || 1000;
+  const lift = size * 0.0015, at = (x, y, up = 0) => new THREE.Vector3(x * SCALE, groundAt(grid, x, y) * SCALE + lift + up, y * SCALE);
+  s.zones.forEach((z, k) => {  // a zone: its own triangles, see-through, in a colour of its own
+    const n = z.points.length / 2, pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      const v = at(z.points[2 * i], z.points[2 * i + 1]);
+      pos[3 * i] = v.x; pos[3 * i + 1] = v.y; pos[3 * i + 2] = v.z;
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setIndex(z.triangles);
+    const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL((k * 0.137) % 1, 0.7, 0.55),
+      transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
+    mesh.userData.label = `${mv.words.scen_zone} ${k + 1} · ${z.name}`;
+    group.add(mesh);
+  });
+  const pillar = size * 0.03;
+  for (const it of s.items) {
+    if (it.kind === "StartingPoint") {  // a tall pillar in the alliance's colour
+      const colour = ALLIANCE[((it.alliance || 1) - 1) % ALLIANCE.length];
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(pillar * 0.08, pillar * 0.08, pillar, 12),
+        new THREE.MeshLambertMaterial({ color: colour }));
+      m.position.copy(at(it.x, it.y, pillar / 2));
+      m.userData.label = fill(mv.words.scen_start, { n: it.alliance || "?" }) + (it.name ? ` · ${it.name}` : "");
+      group.add(m);
+    } else if (it.kind === "Spawn") {  // a small diamond where reinforcements arrive
+      const m = new THREE.Mesh(new THREE.OctahedronGeometry(pillar * 0.12), new THREE.MeshLambertMaterial({ color: 0xf0f0f0 }));
+      m.position.copy(at(it.x, it.y, pillar * 0.15));
+      m.userData.label = `${mv.words.scen_spawn}${it.name ? " · " + it.name : ""}${it.what ? " · " + it.what : ""}`;
+      group.add(m);
+    } else if (it.kind === "CircularZone" && it.radius) {
+      const pts = [];
+      for (let a = 0; a <= 64; a++) {
+        const r = a / 64 * Math.PI * 2;
+        pts.push(at(it.x + Math.cos(r) * it.radius, it.y + Math.sin(r) * it.radius));
+      }
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x7fe0f0 }));
+      line.userData.label = it.name;
+      group.add(line);
+    } else if (it.kind === "RectangleZone" && it.width && it.height) {
+      const c = Math.cos(it.turn), sn = Math.sin(it.turn), hw = it.width / 2, hh = it.height / 2;
+      const pts = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh], [-hw, -hh]].map(([dx, dy]) =>
+        at(it.x + dx * c - dy * sn, it.y + dx * sn + dy * c));
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x7fe0f0 }));
+      line.userData.label = it.name;
+      group.add(line);
+    } else if ((it.kind === "LabelVille" || it.kind === "LabelMontagne") && (it.text || it.name)) {
+      const sprite = mapLabel(it.text || it.name, it.kind === "LabelVille" ? "#ffffff" : "#e8d9a8", size * 0.012);
+      sprite.position.copy(at(it.x, it.y, pillar * 0.4));
+      group.add(sprite);
+    }
+  }
+  group.visible = scen.show;
+  scen.group = group;
+  gl.scene.add(group);
+  gl.draw();
+}
+
+// Pointing at a zone, a starting point or a spawn says what it is.
+function scenarioAt(ev) {
+  const gl = mv.gl;
+  if (!scen.group || !scen.group.visible) return "";
+  const rect = gl.renderer.domElement.getBoundingClientRect();
+  gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
+  gl.raycaster.setFromCamera(gl.ndc, gl.camera);
+  const shown = scen.group.children.filter((o) => o.isMesh && o.userData.label);
+  const hits = gl.raycaster.intersectObjects(shown, false);
+  const solid = hits.find((h) => h.object.geometry.type !== "BufferGeometry");  // a pillar or a diamond before a zone
+  return ((solid || hits[0]) || { object: { userData: {} } }).object.userData.label || "";
 }
 
 async function loadScenery(pack, ask) {
@@ -994,6 +1137,7 @@ async function show(pack, keepCamera) {
     placeNote((err && err.message) || String(err), "error");
   });
   loadPlaced(pack, ask).catch((err) => placeNote((err && err.message) || String(err), "error"));
+  loadScenarios(pack, ask).catch((err) => { $("scen-stats").textContent = (err && err.message) || String(err); });
   realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
 }
 
@@ -1322,12 +1466,13 @@ function watchPointer() {
   // Looking around: say what the pointer is on. Only then: the ray is tested against every drawn object (tens of
   // thousands on a real map), which is too slow to run under a painting or placing pointer.
   canvas.addEventListener("pointermove", (ev) => {
-    if (mv.brush.on || mv.place.on || !mv.scenery.data) return;
+    if (mv.brush.on || mv.place.on || (!mv.scenery.data && !scen.group)) return;
     hoverEv = ev;
     if (!hoverFrame) hoverFrame = requestAnimationFrame(() => {
       hoverFrame = 0;
-      const t = sceneryAt(hoverEv);
-      $("scenery-hover").textContent = t ? `${t[0]} · ${t[2] || t[1]}` : "";
+      const s = scenarioAt(hoverEv);
+      const t = s ? null : sceneryAt(hoverEv);
+      $("scenery-hover").textContent = s || (t ? `${t[0]} · ${t[2] || t[1]}` : "");
     });
   });
   canvas.addEventListener("pointerleave", () => {
@@ -1372,6 +1517,9 @@ function renderWords() {
   $("map-detail").textContent = mv.lod === "highdef" ? w.detail_high : w.detail_low;
   $("map-detail").title = w.tip_detail;
   $("map-water-label").textContent = w.water;
+  $("scen-show-label").textContent = w.scen_show;
+  $("scen-show").parentElement.title = w.tip_scen_show;
+  if (scen.data) renderScenarioPick();
   $("map-water").title = w.tip_water;
   for (const g of ["building", "prop", "vegetation"]) {
     $(`scenery-${g}-label`).textContent = w[`scenery_${g}`];
@@ -1629,6 +1777,15 @@ function wire() {
     mv.water = e.target.checked;
     if (mv.gl && mv.gl.water) { mv.gl.water.visible = mv.water; mv.gl.draw(); }
   });
+  $("scen-show").addEventListener("change", (e) => {
+    scen.show = e.target.checked;
+    if (scen.group) { scen.group.visible = scen.show; mv.gl.draw(); }
+  });
+  $("scen-pick").addEventListener("change", (e) => {
+    scen.pick = Number(e.target.value) || 0;
+    renderScenarioPick();
+    drawScenario();
+  });
   for (const g of ["building", "prop", "vegetation"]) {
     $(`scenery-${g}`).addEventListener("change", (e) => {
       mv.scenery.show[g] = e.target.checked;
@@ -1696,7 +1853,8 @@ window.MapView = {
   camera() {
     const gl = mv.gl;
     if (!gl) return null;
-    return { position: gl.camera.position.toArray(), target: gl.controls.target.toArray(), placed: mv.place.objects.length };
+    return { position: gl.camera.position.toArray(), target: gl.controls.target.toArray(), placed: mv.place.objects.length,
+      scenario: scen.group ? scen.group.children.map((o) => o.userData.label || o.type) : null };
   },
   // another mod was picked: its strokes on this map (or none) replace the ones drawn
   modChanged() {
