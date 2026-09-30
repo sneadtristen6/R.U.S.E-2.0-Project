@@ -524,9 +524,9 @@ The file's role and its container framing follow the notes of DomesticNukes and 
 
 ## 10. The game's program
 
-Out of scope. The platform works only through the game's data files and never changes, loads into or
-publishes details of RUSE.exe (PLAN.md principles; Eugen has reportedly asked modders not to post
-details about unpacking the program).
+Out of scope here. The public platform works only through the game's data files and never changes, loads into or
+publishes details of RUSE.exe. That's the owner's rule (PLAN.md decision 3), not Eugen's: Eugen has never said the
+program can't be edited. Program work happens in the private repo.
 
 ## Open questions (ordered by impact)
 

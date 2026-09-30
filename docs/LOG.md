@@ -612,5 +612,9 @@ import); the cloud tab's pull request #1 (Task A) is under review.
   with 0 errors; the game's packs unchanged. Warnings: the 9 with game scripts; RCRBM 2 (made for compat-2) has 388
   changes on values the game changed since, applied anyway (his rule). A modded copy with Dev Toolkit + 10x
   Artillery Price (`D:\RUSE-Instances\rmod-test`) has exactly the expected files changed (3 NDFs, which our reader
-  reads, and the script archive with its 2 scripts), every other file byte-identical. **In-game test: owner.**
+  reads, and the script archive with its 2 scripts), every other file byte-identical. **In-game: passed** (the
+  owner started it: "works").
 - **Tests:** 450.
+- **Owner, the same evening:** Eugen has never said the game's program can't be edited. The docs said he had; fixed
+  (PLAN L4 and decision 3, FORMATS §10, TASKS rules). Keeping the public code data-only is the owner's rule;
+  program work is allowed in the private repo, for editing game files and mods.

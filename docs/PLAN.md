@@ -277,8 +277,9 @@ search by name and see where each text is used. It costs some disk space (a gues
 
   Tools never write into a hard-linked file; they replace it. Several instances can sit side by side.
 - **Launch/join:** Steam-compatible launch; `+connect_lobby <id>` when joining a lobby (checked in M3).
-- **Runtime extender: on hold (2026-09-29).** The platform works only through data files and never changes or
-  loads into the game's program (Eugen has reportedly asked modders not to publish details about unpacking it).
+- **Runtime extender: on hold (2026-09-29).** The public platform works only through data files and never changes
+  or loads into the game's program. That's the owner's rule, not Eugen's (Eugen has never said the program can't be
+  edited): program work happens in the private repo, where it may be used for editing game files and mods.
   China stays as a real 8th nation (owner): the route without program changes is being worked out.
 
 ### L5 Front-ends
@@ -454,7 +455,7 @@ volunteer from the R.U.S.E. community: with a join code, joining takes them a co
 |---|---|---|---|---|
 | 1 | Core language | Python 3.11+ with type hints | runs inside Blender; same language as community tools; fastest for reverse engineering; AI-friendly | C#/.NET, Rust |
 | 2 | UI stack | Web UI (TypeScript, three.js for 3D) in a desktop window (pywebview), served by the local service. **Confirmed by the owner 2026-09-28.** v0.1 uses plain JavaScript with no build step, and pywebview's bridge instead of a separate service; TypeScript once the screens grow | best 3D and UI ecosystem; one UI codebase for Launcher and Studio; runs on Linux/Deck | Qt / PySide6 |
-| 3 | Runtime extender | **On hold (2026-09-29):** data files only; nothing changes or loads into the game's program | respects Eugen's reported wish and our own rule; keeps mods safe to share | a program add-on |
+| 3 | Runtime extender | **On hold (2026-09-29):** data files only; nothing changes or loads into the game's program | the owner's rule: program work stays in the private repo (Eugen has never said the program can't be edited); keeps public mods safe to share | a program add-on |
 | 4 | Deployment | Modded instances via hard links | never touch the Steam install; mod sets side by side | in-place swap with backups (fallback) |
 | 5 | Mod identity | Engine export paths + owner paths + selectors | stable across updates, human-readable | indices (.rmod `index_map`) |
 | 6 | Source format | NDF-style text + CSV + standard asset formats | familiar to Eugen modders (WARNO/SD2 use text NDF); git-friendly | JSON / YAML |

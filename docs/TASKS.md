@@ -90,8 +90,9 @@ the last comment on the pull request when it is merged. The owner's tests so far
 - **F, G:** as their briefs say; F re-runs the A test with a unit moved to another menu.
 
 **Rules for every task**
-- Public code is data-only: it never patches, injects into or reads addresses of RUSE.exe. MIT; never copy
-  RUSE-Mod-Manager's code (LITTLEGROOVE_STUDY.md is a study, not a source).
+- Public code is data-only: it never patches, injects into or reads addresses of RUSE.exe. That's the owner's rule
+  (Eugen has never said the program can't be edited); program work belongs in the private repo. LittleGroove's
+  RUSE-Mod-Manager engine is part of the platform (`src/ruse_mod_engine`, PLAN decision 26): use it as it is.
 - Never commit game files or anything extracted from the game.
 - Tests: `PYTHONPATH=src python3 -m unittest discover -s tests` (Windows: `py -3`). Add tests for what you build;
   the suite must pass on Linux and Windows (GitHub runs both on every push).
