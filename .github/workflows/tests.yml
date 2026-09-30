@@ -18,6 +18,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Nothing private in the public repo (tools/check_public.py)
+        if: github.repository == 'sneadtristen6/Ruse-Mod-Platform'
+        run: python tools/check_public.py
       - name: Run tests
         env:
           PYTHONPATH: src
