@@ -1,0 +1,8 @@
+# In-game check of the water brushes (docs/MOD_FORMAT.md §8): water that looks like water where there was none.
+[mod]
+id          = "blitz-water-test"
+name        = "Blitz water test"
+version     = "0.1.0"
+authors     = ["DomesticNukes and his Claude"]
+license     = "MIT"
+description = "Blitz (SuperCrossroads4): a new lake in a dry hollow in the north-west hills, and the lake north-east of Cashel drained. The ground is not changed. Look at both close up and from far away."

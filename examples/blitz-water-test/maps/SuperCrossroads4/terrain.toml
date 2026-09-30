@@ -1,0 +1,18 @@
+# The water brushes' in-game check. World units; x grows east, y grows south (north is up on the minimap).
+
+# A new lake: a natural hollow in the north-west hills, dry in the shipped map (ground about 23,065, rim about 23,700
+# all round between 20,500 and 25,600 from the centre), flooded to 23,500. The circle ends on the rim, which is
+# higher than the water, so the shore follows the ground.
+[[stroke]]
+brush = "water"
+x = 284160.0
+y = 376320.0
+radius = 24000.0
+level = 23500.0
+
+# The lake north-east of Cashel, drained back to the map's base level: it should become a dry basin.
+[[stroke]]
+brush = "drain"
+x = 870000.0
+y = 470000.0
+radius = 40000.0

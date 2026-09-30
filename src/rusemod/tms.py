@@ -676,14 +676,86 @@ class Tms:
         for i, n in self._normals(pos, tri, affected).items():
             nor[i][:3] = n
         c.set_vertices(pos, nor)
-        has_water = bool(c.flags & 2)
+        if c.flags & 2 or any(pos[i][3] >= pos[i][2] for i in changed):
+            self._water_lists(c, pos)   # ground moved under water or into it: the water triangles follow
+            return
         patches = c.patch_list()
         for p in patches:
             if p.vcount and any(p.vstart <= i < p.vstart + p.vcount for i in changed):
-                run = pos[p.vstart:p.vstart + p.vcount]
-                p.zhi = self._z_f32(max(max(v[2], v[3]) for v in run))
-                if has_water:
-                    p.zlo = self._z_f32(min(v[2] for v in run))
+                p.zhi = self._z_f32(max(v[2] for v in pos[p.vstart:p.vstart + p.vcount]))
+        c.set_patches(patches)
+
+    # -- water -------------------------------------------------------------------------------------------------
+    # The shipped maps' water rules (private notes water-and-trees-2026-09-29, checked on all 32 maps): a vertex's
+    # 4th value w is the water surface over it; list 1 holds the water triangles, copies of list-0 triangles (same
+    # corners, same order) whose corners all have w >= z; a cell has flag bit 1 exactly when it has a list 1; and the
+    # patch bounds follow a per-cell rule (see _water_lists). Dry vertices carry the map's base level, under the
+    # ground.
+
+    def base_water(self) -> int:
+        """The map's base water level in this mesh (quantized): the w most vertices carry. The far mesh's sits about
+        150 world units below the close-up mesh's on every shipped map."""
+        counts: dict[int, int] = {}
+        for c in self.cells:
+            for p in c.positions():
+                counts[p[3]] = counts.get(p[3], 0) + 1
+        return max(sorted(counts), key=lambda w: counts[w])
+
+    def set_water(self, k: int, levels: dict[int, int]) -> int:
+        """Give vertices of cell `k` new quantized water levels ({vertex index: w, 0..32767}), then rebuild the
+        cell's water triangles, its water flag and all its patch bounds. Returns how many levels changed."""
+        c = self.cells[k]
+        pos = [list(p) for p in c.positions()]
+        changed = 0
+        for i, q in sorted(levels.items()):
+            q = min(max(int(q), 0), Q_MAX)
+            if pos[i][3] != q:
+                pos[i][3] = q
+                changed += 1
+        if changed:
+            c.set_vertices(pos, [list(n) for n in c.normals()])
+            self._water_lists(c, pos)
+        return changed
+
+    def _water_lists(self, c: Cell, pos: list) -> None:
+        """Rebuild list 1 patch by patch (a patch's water triangles are the ones of its own list-0 run that lie under
+        water), set or clear flag bit 1, and set every patch's bounds by the per-cell rule: in a cell with a list 1,
+        zlo = the patch's lowest ground and zhi = its highest max(z, w); in a cell without one, zlo = 0.0 exactly and
+        zhi = its highest ground."""
+        tri0 = c.triangles(0)
+        patches = c.patch_list()
+        water: list[int] = []
+        for p in patches:
+            start = len(water)
+            for t in range(p.i0start, p.i0start + p.i0count, 3):
+                a, b, d = tri0[t], tri0[t + 1], tri0[t + 2]
+                if all(pos[v][3] >= pos[v][2] for v in (a, b, d)) and any(pos[v][3] > pos[v][2] for v in (a, b, d)):
+                    water += (a, b, d)
+            p.i1start, p.i1count = start, len(water) - start
+        had = bool(c.flags & 2)
+        if water:
+            blob = encode_indices(water)
+            if had:
+                c.ib[1], c.icount[1] = blob, len(water)
+            else:
+                c.ib.append(blob)
+                c.icount.append(len(water))
+                c.flags |= 2
+        elif had:
+            del c.ib[1], c.icount[1]
+            c.flags &= ~2
+        wet = bool(water)
+        for p in patches:
+            if not wet:
+                p.i1start = p.i1count = 0   # a cell without water has no list 1 to point into
+            if not p.vcount:
+                continue
+            run = pos[p.vstart:p.vstart + p.vcount]
+            p.zlo = self._z_f32(min(v[2] for v in run)) if wet else 0.0
+            p.zhi = self._z_f32(max(max(v[2], v[3]) if wet else v[2] for v in run))
+        if (c.flags & 4) == 0 and any(max(p.vstart, p.vcount, p.i0start, p.i0count, p.i1start, p.i1count) > 0xFFFF
+                                      for p in patches):
+            c.flags |= 4                # the 32-bit patch table, as the game uses for big cells
         c.set_patches(patches)
 
     def _normals(self, pos: list, tri: list[int], which: set[int]) -> dict[int, list[int]]:
