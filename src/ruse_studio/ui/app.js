@@ -55,7 +55,7 @@ async function setLanguage(lang) {
   const w = state.words;
   $("tab-units").textContent = w.units_tab;
   $("tab-maps").textContent = w.maps_tab;
-  if (state.view === "maps" && window.MapView) window.MapView.setWords(w);
+  if (state.view === "maps" && window.MapView) window.MapView.setWords(w, lang);
   $("lang-label").textContent = w.language;
   $("mod-label").textContent = w.mod;
   $("test").textContent = w.test_in_game;
@@ -578,7 +578,7 @@ function showView(view) {
   $("tab-units").setAttribute("aria-selected", String(view === "units"));
   $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
   if (view !== "maps") return;
-  const open = () => window.MapView.open(api(), state.words).catch(problem);
+  const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
   if (window.MapView) open();
   else window.addEventListener("mapview-ready", open, { once: true });
 }

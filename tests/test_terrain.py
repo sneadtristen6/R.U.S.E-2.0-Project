@@ -12,11 +12,13 @@ from array import array
 from pathlib import Path
 
 from fixtures import make_edat, make_ndf, val
+from test_dic import make_dic
 from test_tmst import make_set
 from test_tms import make_tms
 from rusemod import dxt
+from rusemod.dic import name_to_key
 from rusemod.ndf import Ndf
-from rusemod.terrain import ground_picture, map_list, maps_from_ndf, mesh_buffers, pack_file, terrain
+from rusemod.terrain import ground_picture, map_list, maps_from_ndf, menu_keys, mesh_buffers, pack_file, terrain
 from rusemod.tms import Tms
 from rusemod.tmst import Tmst, dxt1_solid, rgb565, zipo_tile
 from rusemod.webui import serve
@@ -33,18 +35,54 @@ def p(i):
     return val(0x1C, struct.pack("<I", i))
 
 
+def g(i):
+    return val(0x1A, bytes([i]) * 16)
+
+
+def text_key(key):
+    return val(0x1D, struct.pack("<Q", key))
+
+
+# the menus' names for the made-up maps: a multiplayer map, a chapter and a challenge on "Test", one on "Missing"
+MP, CHAPTER, CHALLENGE, GONE = (name_to_key(n) for n in ("M_D_01", "S_D_01", "C_D_01", "M_D_02"))
+
+
 def map_list_ndf() -> bytes:
-    """Three map entries (two share the pack "Test"), one for a pack that isn't shipped, and an unrelated object."""
-    strings = ["(6) Test map", "Test", "Test_chapter1", "Missing", "(2) Gone"]
+    """Four map entries (three on the pack "Test", one of them spelt "TEST"), one for a pack that isn't shipped, and
+    an unrelated object."""
+    strings = ["(6) Test map", "Test", "Test_chapter1", "Missing", "(2) Gone", "TEST", "(2) Test duel"]
     classes = ["TMapLoadInfo", "TSomethingElse"]
-    props = [("Name", 0), ("Path", 0), ("RootDatapackName", 0), ("Other", 1)]
+    props = [("Name", 0), ("Path", 0), ("RootDatapackName", 0), ("Other", 1), ("GUID", 0)]
     objects = [
-        (0, [(0, s(0)), (1, p(1)), (2, s(1))]),
+        (0, [(0, s(0)), (1, p(1)), (2, s(1)), (4, g(1))]),
         (1, [(3, s(0))]),
-        (0, [(0, s(2)), (1, p(2)), (2, s(1))]),
-        (0, [(0, s(4)), (1, p(3)), (2, s(3))]),
+        (0, [(0, s(2)), (1, p(2)), (2, s(1)), (4, g(2))]),
+        (0, [(0, s(4)), (1, p(3)), (2, s(3)), (4, g(3))]),
+        (0, [(0, s(6)), (1, p(1)), (2, s(5)), (4, g(4))]),
     ]
     return make_ndf(objects, classes, props, strings=strings)
+
+
+def menus_ndf() -> bytes:
+    """The menus' entries: a chapter (listed first), the multiplayer maps, a challenge, and an unrelated object."""
+    classes = ["TChapterMapInfo", "TMultiMapInfo", "TChallengeMapInfo", "TOther"]
+    props = [("GUID", 0), ("Description", 0), ("GUID", 1), ("Description", 1), ("GUID", 2), ("Description", 2),
+             ("GUID", 3)]
+    objects = [
+        (0, [(0, g(2)), (1, text_key(CHAPTER))]),
+        (1, [(2, g(1)), (3, text_key(MP))]),
+        (2, [(4, g(4)), (5, text_key(CHALLENGE))]),
+        (1, [(2, g(3)), (3, text_key(GONE))]),
+        (3, [(6, g(1))]),
+    ]
+    return make_ndf(objects, classes, props)
+
+
+def menu_texts_edat() -> bytes:
+    us = make_dic([(MP, "Test Valley"), (CHAPTER, "1. FIRST  STEPS\n"), (CHALLENGE, "Duel at Dawn"), (GONE, "Gone")])
+    fr = make_dic([(MP, "Vallée d'essai"), (CHAPTER, "1. PREMIERS PAS")])  # a text missing in one language
+    return make_edat([("dir", "genlocalisation\\ww2\\localisation\\translations\\", [
+        ("dir", "us\\", [("file", "flash_txt.dic", us)]), ("dir", "fr\\", [("file", "flash_txt.dic", fr)])])])
 
 
 COLOURS = [rgb565(40 * i % 256, 255 - 20 * i, 90 + 10 * i) for i in range(11)]
@@ -60,7 +98,9 @@ def make_game(root: Path) -> Path:
     core = game / "Data" / "PC" / "190852"
     core.mkdir(parents=True)
     (core / "ZZ_GladPatchableWin.dat").write_bytes(make_edat([("dir", "genglad\\patchable\\", [
-        ("file", "mapinfo.cpp.gladndfbin", map_list_ndf())])]))
+        ("file", "mapinfo.cpp.gladndfbin", map_list_ndf()),
+        ("dir", "misc\\", [("file", "globals.cpp.gladndfbin", menus_ndf())])])]))
+    (core / "ZZ_Win.dat").write_bytes(menu_texts_edat())
     maps = game / "Maps" / "PC"
     maps.mkdir(parents=True)
     index, chunk = tile_set()
@@ -84,10 +124,18 @@ class MapList(unittest.TestCase):
     def test_entries_grouped_by_pack_in_the_game_order(self):
         maps = maps_from_ndf(Ndf(map_list_ndf()))
         self.assertEqual(maps, [
-            {"pack": "Test", "names": ["(6) Test map", "Test_chapter1"], "paths": ["Test", "Test_chapter1"]},
-            {"pack": "Missing", "names": ["(2) Gone"], "paths": ["Missing"]},
+            {"pack": "Test", "names": ["(6) Test map", "Test_chapter1", "(2) Test duel"],
+             "paths": ["Test", "Test_chapter1"], "keys": []},
+            {"pack": "Missing", "names": ["(2) Gone"], "paths": ["Missing"], "keys": []},
         ])
         self.assertEqual(pack_file("Test"), "DataMapTest_v09.dat")
+
+    def test_the_menus_names_best_first(self):
+        menus = menu_keys(Ndf(menus_ndf()))
+        self.assertEqual(menus[bytes([2]) * 16], [(1, CHAPTER)])
+        maps = maps_from_ndf(Ndf(map_list_ndf()), menus)
+        # the multiplayer map's name first, though the chapter comes first in the file; then the challenge
+        self.assertEqual([m["keys"] for m in maps], [[MP, CHAPTER, CHALLENGE], [GONE]])
 
 
 class Ground(unittest.TestCase):
@@ -127,6 +175,13 @@ class OnAGameFolder(unittest.TestCase):
         maps = map_list(self.game)
         self.assertEqual([(m["pack"], m["found"], m["file"]) for m in maps],
                          [("Test", True, "DataMapTest_v09.dat"), ("Missing", False, "DataMapMissing_v09.dat")])
+
+    def test_map_list_has_what_the_menus_call_each_map_in_each_language(self):
+        maps = map_list(self.game)
+        self.assertEqual(maps[0]["titles"], {"us": ["Test Valley", "1. FIRST STEPS", "Duel at Dawn"],
+                                             "fr": ["Vallée d'essai", "1. PREMIERS PAS"]})
+        self.assertEqual(maps[1]["titles"], {"us": ["Gone"], "fr": []})
+        self.assertNotIn("keys", maps[0])
 
     def test_terrain_view(self):
         view = terrain(self.game, "Test", "lowdef")

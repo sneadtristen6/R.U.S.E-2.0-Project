@@ -6,7 +6,7 @@
 // three.js is loaded from the internet (see index.html) the first time the view opens.
 const $ = (id) => document.getElementById(id);
 const SCALE = 1 / 1000;  // world units to scene units: a standard map is about 1,300 scene units wide
-const mv = { api: null, words: {}, maps: [], current: null, lod: "lowdef", water: true, gl: null, ask: 0,
+const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "lowdef", water: true, gl: null, ask: 0,
   stats: null, groundTex: {}, edit: null,
   // brush: the tool picked, its size and strength per brush (slider values), the strokes on this map (as saved),
   // the size of each group of strokes made this session (for Undo), the drag being painted, and the mod saved into
@@ -686,8 +686,7 @@ async function show(pack, keepCamera) {
     gl.controls.update();
   }
   gl.draw();
-  const m = mv.maps.find((x) => x.pack === pack);
-  $("map-title").textContent = m ? m.names[0] || m.pack : pack;
+  showTitle();
   mv.stats = { points: view.vertices.toLocaleString(), triangles: view.triangle_count.toLocaleString() };
   $("map-stats").textContent = fill(w.map_stats, mv.stats);
   $("map-pick").classList.add("hidden");
@@ -974,15 +973,35 @@ function watchPointer() {
   canvas.addEventListener("pointerleave", () => { if (mv.brush.on && gl.ring) { gl.ring.visible = false; gl.draw(); } });
 }
 
+// What the game's menus call a map in the Studio's language, best first (a map can hold a multiplayer map, campaign
+// chapters and challenges); none in "Code names", which shows the maps' own names (rusemod/terrain.py map_list).
+function menuNames(m) {
+  if (mv.lang === "base") return [];
+  const t = m.titles || {};
+  return t[mv.lang] || t.us || [];
+}
+
+// "Strongholds · Swamps": the name players know, then the map's own name, the one its files and folders go by
+function nameLine(m) {
+  const names = menuNames(m);
+  return names.length ? [names[0], el("span", { className: "map-code", textContent: ` · ${m.pack}` })] : [m.pack];
+}
+
 function renderList() {
   $("map-list").replaceChildren(...mv.maps.map((m) => {
+    const names = menuNames(m);
     const b = el("button", { type: "button", title: m.file },
-      el("span", { className: "name", textContent: m.names[0] || m.pack }),
-      el("span", { className: "sub", textContent: m.names.length > 1 ? `${m.pack} · ${m.names.length}` : m.pack }));
+      el("span", { className: "name" }, ...nameLine(m)),
+      el("span", { className: "sub", textContent: (names.length ? names.slice(1) : m.names).join(" · ") }));
     b.setAttribute("aria-current", String(m.pack === mv.current));
     b.addEventListener("click", () => show(m.pack));
     return el("li", null, b);
   }));
+}
+
+function showTitle() {
+  const m = mv.maps.find((x) => x.pack === mv.current);
+  if (mv.current) $("map-title").replaceChildren(...(m ? nameLine(m) : [mv.current]));
 }
 
 function renderWords() {
@@ -1045,11 +1064,12 @@ function wire() {
   window.addEventListener("keydown", (e) => { if (e.key === "Escape") cancelRamp(); });
 }
 
-// app.js opens the view when its tab is picked, and passes the words on every language change.
+// app.js opens the view when its tab is picked, and passes the words and the language on every language change.
 window.MapView = {
-  async open(api, words) {
+  async open(api, words, lang) {
     mv.api = api;
     mv.words = words;
+    mv.lang = lang || "base";
     wire();
     renderWords();
     if (!mv.maps.length) {
@@ -1059,12 +1079,16 @@ window.MapView = {
         $("map-pick").textContent = (err && err.message) || String(err);
         return;
       }
-      renderList();
     }
+    renderList();  // the language may have changed while the view was closed
+    showTitle();
   },
-  setWords(words) {
+  setWords(words, lang) {
     mv.words = words;
+    mv.lang = lang || "base";
     renderWords();
+    renderList();
+    showTitle();
     if (mv.stats) $("map-stats").textContent = fill(words.map_stats, mv.stats);
   },
   // another mod was picked: its strokes on this map (or none) replace the ones drawn

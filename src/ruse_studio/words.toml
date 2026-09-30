@@ -1,5 +1,6 @@
-# The Studio's own words (buttons, headings, messages) in the game's ten languages. `base` (the game's names) uses
-# English for these. The game's vocabulary (property names, groups, nations) is shared: rusemod/labels.toml.
+# The Studio's own words (buttons, headings, messages) in the game's ten languages. `base` (the code names: units,
+# properties and maps by the names the game's files use) uses English for these. The game's vocabulary (property
+# names, groups, nations) is shared: rusemod/labels.toml.
 # Starter translations: corrections welcome. Language codes are the game's folders: us fr ger ita spa pol ru cz jpn sc.
 
 [language]
@@ -15,16 +16,16 @@ jpn = "言語"
 sc = "语言"
 
 [game_names]
-us = "Game names"
-fr = "Noms du jeu"
-ger = "Spielnamen"
-ita = "Nomi del gioco"
-spa = "Nombres del juego"
-pol = "Nazwy z gry"
-ru = "Имена из игры"
-cz = "Názvy ze hry"
-jpn = "ゲーム内の名前"
-sc = "游戏原名"
+us = "Code names"
+fr = "Noms internes"
+ger = "Interne Namen"
+ita = "Nomi interni"
+spa = "Nombres internos"
+pol = "Nazwy wewnętrzne"
+ru = "Внутренние имена"
+cz = "Interní názvy"
+jpn = "内部名"
+sc = "内部名称"
 
 [search]
 us = "Search"

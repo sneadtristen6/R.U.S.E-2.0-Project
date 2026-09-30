@@ -8,7 +8,7 @@
   if (mode === null) return;
   const words = {
     us: { update_out: "{app} {version} is out.", update_now: "Update", whats_new: "What's new", update_progress: "Downloading the update… {pct}", update_installing: "Installing: {app} closes and opens again by itself.", update_repo: "(This copy runs from the repo: update it with git pull.)", update_failed: "The update didn't work: {why}",
-      language: "Language", game_names: "Game names", search: "Search", all: "All", ground: "Ground",
+      language: "Language", game_names: "Code names", search: "Search", all: "All", ground: "Ground",
       infantry: "Infantry", air: "Air", buildings: "Buildings", units: "{n} units", parts: "Parts", uses: "Uses",
       own_part: "its own", shared_part: "shared with other units", used_by: "Used by", copy_address: "Copy address",
       no_index: "No game index yet. Build it once (about a minute).", build_index: "Build the index",
@@ -49,7 +49,7 @@
       unit_made: "{name} is in the mod. Test in game to see it in its build menu.",
       unit_deleted: "{name} was deleted from the mod." },
     fr: { update_out: "{app} {version} est disponible.", update_now: "Mettre à jour", whats_new: "Nouveautés", update_progress: "Téléchargement de la mise à jour… {pct}", update_installing: "Installation : {app} se ferme puis se rouvre automatiquement.", update_repo: "(Cette copie s'exécute depuis le dépôt Git : mettez-la à jour avec git pull.)", update_failed: "La mise à jour n'a pas fonctionné : {why}",
-      language: "Langue", game_names: "Noms du jeu", search: "Rechercher", all: "Tous", ground: "Terrestre",
+      language: "Langue", game_names: "Noms internes", search: "Rechercher", all: "Tous", ground: "Terrestre",
       infantry: "Infanterie", air: "Aérien", buildings: "Bâtiments", units: "{n} unités", parts: "Composants",
       uses: "Utilise", own_part: "le sien", shared_part: "partagé avec d'autres unités", used_by: "Utilisé par",
       copy_address: "Copier l'adresse", no_index: "Pas encore d'index du jeu.", build_index: "Construire l'index",
@@ -94,7 +94,7 @@
       unit_made: "{name} est dans le mod. Testez en jeu pour le voir dans son menu de production.",
       unit_deleted: "{name} a été supprimé du mod." },
     sc: { update_out: "{app} {version} 已发布。", update_now: "更新", whats_new: "更新内容", update_progress: "正在下载更新… {pct}", update_installing: "正在安装：{app} 会自动关闭并重新打开。", update_repo: "（此副本从代码仓库运行：请用 git pull 更新。）", update_failed: "更新失败：{why}",
-      language: "语言", game_names: "游戏原名", search: "搜索", all: "全部", ground: "地面", infantry: "步兵",
+      language: "语言", game_names: "内部名称", search: "搜索", all: "全部", ground: "地面", infantry: "步兵",
       air: "空军", buildings: "建筑", units: "{n} 个单位", parts: "组件", uses: "使用", own_part: "自有",
       shared_part: "与其他单位共享", used_by: "被引用于", copy_address: "复制地址", no_index: "尚无游戏索引。",
       build_index: "建立索引", pick_unit: "请在左侧选择一个单位。", mod: "模组", new_mod: "新建模组…",
@@ -273,11 +273,19 @@
   }
 
   // The Maps view: a made-up island, packed like rusemod.terrain (uint16 positions over the bounds, zlib, base64)
+  // (titles: what the game's menus call each map, as the game has them)
   const fakeMaps = [
-    { pack: "TwoIslands", names: ["(6) Centre de gravite"], paths: ["TwoIslands"], file: "DataMapTwoIslands_v09.dat" },
-    { pack: "SuperCrossroads4", names: ["(4) Blitz"], paths: ["SuperCrossroads4"], file: "DataMapSuperCrossroads4_v09.dat" },
-    { pack: "M02_Tunisie", names: ["M02_Tunisie_chapter1", "M02_Tunisie_chapter2"], paths: ["M02_Tunisie_chapter1"],
-      file: "DataMapM02_Tunisie_v09.dat" },
+    { pack: "TwoIslands", names: ["(6) Centre de gravite", "Challenge - 1v3 Centre de Gravite (Maginot)"],
+      paths: ["TwoIslands"], file: "DataMapTwoIslands_v09.dat",
+      titles: { us: ["Centre of Gravity", "The Maginot Line"], fr: ["Centre de gravité", "Ligne Maginot"],
+                sc: ["引力中心", "马奇诺防线"] } },
+    { pack: "SuperCrossRoads4", names: ["(2) Blitz", "Challenge - 1v1 39 Blitz_2 (Anzio)"], paths: ["SuperCrossRoads4"],
+      file: "DataMapSuperCrossRoads4_v09.dat",
+      titles: { us: ["Blitz", "Anzio"], fr: ["Blitz", "Anzio"], sc: ["闪电战", "安齐奥"] } },
+    { pack: "M02_Tunisie", names: ["M02_Tunisie_chapter1", "M02_Tunisie_chapter2"], paths: ["M02_Tunisie"],
+      file: "DataMapM02_Tunisie_v09.dat",
+      titles: { us: ["2. TAKING COMMAND!", "3. KASSERINE PASS"], fr: ["2. AUX COMMANDES !", "3. PASSE DE KASSERINE"],
+                sc: ["2. 接管指挥权！", "3. 卡塞林山口"] } },
   ].map((m) => ({ ...m, found: true }));
 
   async function packed(typed) {

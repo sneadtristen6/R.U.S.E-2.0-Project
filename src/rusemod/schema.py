@@ -21,7 +21,7 @@ def _data() -> dict:
 
 
 def languages() -> list[dict]:
-    """The choices for the language selector, the game's names first."""
+    """The choices for the language selector, the code names (`BASE`) first."""
     names = _data()["languages"]
     return [{"code": BASE, "name": None}] + [{"code": c, "name": names[c]} for c in LANGS]
 

@@ -157,6 +157,7 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
            max-width: 420px; padding: 10px 14px; background: rgba(21, 24, 27, 0.78); border: 1px solid var(--line);
            border-radius: var(--radius); }
 .map-title { font-weight: 600; font-size: 15px; }
+.map-code { color: var(--muted); font-weight: normal; }
 .map-controls { display: flex; align-items: center; gap: 12px; }
 .map-controls label { display: flex; align-items: center; gap: 6px; }
 /* the brushes: a panel on the right, like the map's own on the left */

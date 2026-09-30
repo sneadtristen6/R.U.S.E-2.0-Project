@@ -15,15 +15,22 @@ import zlib
 from array import array
 from pathlib import Path
 
+from . import loc
 from .build import find_pack
+from .dic import Dic
 from .edat import Edat
 from .ndf import Ndf
 from .tms import Q_MAX, Tms
 
 MAP_LIST = ("ZZ_GladPatchableWin.dat", "genglad\\patchable\\mapinfo.cpp.gladndfbin")
+MENUS = "genglad\\patchable\\misc\\globals.cpp.gladndfbin"  # the menus' entries for the maps, in the same pack
+# What the menus call a map, best first: a multiplayer map's name, else a campaign chapter's, else a challenge's.
+MENU_CLASSES = ("TMultiMapInfo", "TChapterMapInfo", "TChallengeMapInfo")
+MENU_TEXTS = "flash_txt"  # the dictionary those names are in, one per language (rusemod.loc)
 LODS = {"highdef": "output\\highdef.tms", "lowdef": "output\\lowdef.tms"}
 PICTURE = "output\\terrain.png"
 _TEXT = (0x07, 0x1C)  # a string or a path: an index into the file's string table
+_GUID, _TEXT_KEY = 0x1A, 0x1D  # 16 bytes; a text key (u64) into a .dic
 
 
 def pack_file(root: str) -> str:
@@ -31,11 +38,31 @@ def pack_file(root: str) -> str:
     return f"DataMap{root}_v09.dat"
 
 
-def maps_from_ndf(nd: Ndf) -> list[dict]:
-    """Every `TMapLoadInfo` of the map list, grouped by terrain pack, in the game's order: {pack, names, paths}.
-    Several entries (a skirmish map and campaign missions, say) can share one pack."""
+def menu_keys(nd: Ndf) -> dict[bytes, list[tuple[int, int]]]:
+    """The menus' map entries (`MENUS`): GUID -> [(rank, text key)], the text keys of what the menus call the map a
+    `TMapLoadInfo` with that GUID loads. Rank: the entry's class's place in `MENU_CLASSES` (0 = a multiplayer map)."""
+    ranks = {c: r for r, c in enumerate(MENU_CLASSES)}
+    out: dict[bytes, list[tuple[int, int]]] = {}
+    for obj in nd.objects:
+        rank = ranks.get(nd.classes[obj.cls])
+        if rank is None:
+            continue
+        values = {nd.prop_name(pi): v for pi, v in obj.props}
+        guid, name = values.get("GUID"), values.get("Description")
+        if guid is None or name is None or guid.tc != _GUID or name.tc != _TEXT_KEY:
+            continue
+        out.setdefault(bytes(guid.payload), []).append((rank, struct.unpack("<Q", name.payload)[0]))
+    return out
+
+
+def maps_from_ndf(nd: Ndf, menus: dict | None = None) -> list[dict]:
+    """Every `TMapLoadInfo` of the map list, grouped by terrain pack, in the game's order: {pack, names, paths, keys}.
+    Several entries (a skirmish map and campaign missions, say) can share one pack, and a pack named in two
+    spellings (M04_cotentin, M04_Cotentin) is one file. `keys`: the text keys of what the menus call its entries,
+    best first (from `menus`, see `menu_keys`; none without)."""
     wanted = {i for i, c in enumerate(nd.classes) if c == "TMapLoadInfo"}
     by_pack: dict[str, dict] = {}
+    ranked: dict[str, list[tuple[int, int]]] = {}
     for obj in nd.objects:
         if obj.cls not in wanted:
             continue
@@ -44,27 +71,56 @@ def maps_from_ndf(nd: Ndf) -> list[dict]:
         root = texts.get("RootDatapackName") or texts.get("Path")
         if not root:
             continue
-        entry = by_pack.setdefault(root, {"pack": root, "names": [], "paths": []})
+        entry = by_pack.setdefault(root.lower(), {"pack": root, "names": [], "paths": [], "keys": []})
         if texts.get("Name") and texts["Name"] not in entry["names"]:
             entry["names"].append(texts["Name"])
         if texts.get("Path") and texts["Path"] not in entry["paths"]:
             entry["paths"].append(texts["Path"])
+        guid = next((bytes(v.payload) for pi, v in obj.props if v.tc == _GUID and nd.prop_name(pi) == "GUID"), None)
+        ranked.setdefault(root.lower(), []).extend((menus or {}).get(guid, []))
+    for pack, keys in ranked.items():
+        for _rank, key in sorted(keys, key=lambda rk: rk[0]):  # stable: the game's order within a rank
+            if key not in by_pack[pack]["keys"]:
+                by_pack[pack]["keys"].append(key)
     return list(by_pack.values())
 
 
+def menu_texts(game: Path, keys) -> dict[str, dict[int, str]]:
+    """Language -> {text key: text} for `keys`, from each language's menu texts (`MENU_TEXTS`); a language whose file
+    isn't there is left out."""
+    zz = find_pack(game, loc.PACK)
+    if zz is None or not keys:
+        return {}
+    out = {}
+    with Edat.open(str(zz)) as arc:
+        for lang in loc.LANGS:
+            e = arc.entry(loc.member(MENU_TEXTS, lang))
+            if e is None:
+                continue
+            dic = Dic(bytes(arc.read(e)))
+            out[lang] = {k: " ".join(t.split()) for k in keys if (t := dic.text(k)) and t.strip()}
+    return out
+
+
 def map_list(game: Path) -> list[dict]:
-    """The game's maps, one per terrain pack, with the names the game lists them by and whether the pack is there."""
+    """The game's maps, one per terrain pack: the names the game lists them by, whether the pack is there, and
+    `titles`, what the menus call it in each language ({lang: [names]}, best first as in `MENU_CLASSES`; none for
+    the test maps no menu shows)."""
     core = find_pack(game, MAP_LIST[0])
     if core is None:
         raise FileNotFoundError(f"{MAP_LIST[0]} isn't in {game}")
     with Edat.open(str(core)) as arc:
         nd = Ndf(bytes(arc.read(arc.find(MAP_LIST[1]))))
-    out = []
-    for m in maps_from_ndf(nd):
+        menus = arc.entry(MENUS)
+        menus = menu_keys(Ndf(bytes(arc.read(menus)))) if menus is not None else {}
+    maps = maps_from_ndf(nd, menus)
+    texts = menu_texts(game, {k for m in maps for k in m["keys"]})
+    for m in maps:
+        keys = m.pop("keys")
+        m["titles"] = {lang: [t[k] for k in keys if k in t] for lang, t in texts.items()}
         m["file"] = pack_file(m["pack"])
         m["found"] = find_pack(game, m["file"]) is not None
-        out.append(m)
-    return out
+    return maps
 
 
 def _pack(a: array) -> str:
