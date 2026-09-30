@@ -14,7 +14,7 @@ const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "
   // scenery: which groups are shown, the map's scenery (StudioApi.map_scenery) and its drawn shapes per group
   scenery: { show: { building: true, prop: true, vegetation: true }, data: null, meshes: {}, models: {} },
   // placing: on or not, the group and type picked, the next object's turn and size, what the mod places on this map
-  place: { on: false, group: "building", type: null, turn: 0, size: 1, objects: [], meshes: {}, mod: null,
+  place: { on: false, group: "building", type: null, turn: 0, size: 1, solid: true, objects: [], meshes: {}, mod: null,
     // how: one, area or line; area: the area brush's radius and spacing: per kind, in metres; groups: how many objects
     // each click, area or line placed (for Undo); lineStart: a line's first click; painting: an area being dragged
     how: "one", area: 40, spacing: {}, groups: [], lineStart: null, painting: null } };
@@ -36,10 +36,12 @@ const BRUSHES = {
   cover: ["cover", "flat", 1, false, 3, 0],  // where units hide (the map's cover grid, not the ground: rusemod.cover)
   uncover: ["cover", "flat", -1, false, 3, 0],
   town: ["town", "flat", 1, true, 3, 0],  // one click: cover around every building of the town clicked
+  block: ["block", "all", 1, false, 3, 0],  // ground units can't use (the map's navigation graphs: rusemod.nav)
+  block_infantry: ["block", "infantry", 1, false, 3, 0],
+  block_vehicles: ["block", "vehicles", 1, false, 3, 0],
 };
 const WATER = new Set(["water", "drain"]);
-const COVER = new Set(["cover", "uncover"]);
-const SIZE_UNIT = { cover: 0.25, uncover: 0.25, town: 0.1 };  // finer sizes than the ground brushes' (share of 1%)
+const SIZE_UNIT = { cover: 0.25, uncover: 0.25, town: 0.1, block: 0.25, block_infantry: 0.25, block_vehicles: 0.25 };  // finer sizes than the ground brushes' (share of 1%)
 
 // A brush's radius in map units: its Size slider as a share of the map's width.
 function brushRadius(name) {
@@ -340,7 +342,7 @@ function gridApply(g, s, average) {
 }
 
 function applyStroke(ed, s) {
-  if (COVER.has(s.brush)) { coverDab(s); return; }  // the cover grid, not the ground
+  if (PAINTS[s.brush]) { overlayDab(s); return; }  // the cover grid or where units go, not the ground
   if (WATER.has(s.brush)) {  // the water surface inside the circle, as rusemod.water does: no falloff
     const [xlo, xhi, ylo, yhi] = boxOf(s), level = s.brush === "water" ? s.level : ed.baseWater;
     near(ed.index, xlo, xhi, ylo, yhi, (i) => {
@@ -421,85 +423,123 @@ function reapply() {
   ed.grid = null;
   ed.waterAt.set(ed.baseW);
   ed.waterTouched = false;
-  if (cover.cells) cover.cells.set(cover.base);
-  cover.batch = true;
+  for (const o of OVERLAYS) {
+    if (o.cells) o.cells.set(o.base);
+    o.batch = true;
+  }
   for (const s of mv.brush.strokes) applyStroke(ed, s);
-  cover.batch = false;
-  coverDraw(0, cover.size - 1, 0, cover.size - 1);
+  for (const o of OVERLAYS) {
+    o.batch = false;
+    overlayDraw(o, 0, o.size - 1, 0, o.size - 1);
+  }
   redraw(true, true);
   placeScenery();
 }
 
-// --- cover: where units hide (the map's cover grid, StudioApi.map_cover), drawn in green over the ground. The cover
-// and uncover brushes paint it and the town tool paints it around a town's buildings; the build writes them into
-// the grid (rusemod.cover). Proven in the game: infantry on painted cover are hidden (2026-09-30). ---
-const COVER_RGBA = [60, 210, 90, 125];
-const cover = { base: null, cells: null, size: 0, box: null, canvas: null, ctx: null, img: null, tex: null, mesh: null,
-  show: false, batch: false };
+// --- overlays over the ground, each a grid of cells drawn as a picture on the ground's own points (so they follow
+// every stroke):
+// cover, where units hide (the map's cover grid, StudioApi.map_cover), in green. The cover and uncover brushes paint
+//   it and the town tool paints it around a town's buildings; the build writes them into the grid (rusemod.cover).
+//   Proven in the game: infantry on painted cover are hidden (2026-09-30).
+// moves, where units go (the map's two navigation graphs, StudioApi.map_movement): bit 1 = closed to infantry, bit 2
+//   = closed to vehicles, so red is closed to every unit (water, cliffs, off the map), yellow to vehicles only (woods),
+//   purple to infantry only. The block brushes close ground; the build takes it out of the graphs (rusemod.nav).
+//   Proven in the game: units plan around a blocked pit (2026-09-30). ---
+const cover = { kinds: ["cover", "town"], colors: [null, [60, 210, 90, 125]] };
+const moves = { kinds: ["block"], colors: [null, [170, 90, 220, 120], [235, 200, 40, 115], [220, 50, 40, 120]] };
+const OVERLAYS = [cover, moves];
+for (const o of OVERLAYS) {
+  Object.assign(o, { base: null, cells: null, size: 0, box: null, canvas: null, ctx: null, img: null, tex: null,
+    mesh: null, show: false, batch: false });
+}
+// what a brush does to an overlay's cells: [overlay, bits it sets, bits it clears]
+const PAINTS = { cover: [cover, 1, 0], uncover: [cover, 0, 1], block: [moves, 3, 0], block_infantry: [moves, 1, 0],
+  block_vehicles: [moves, 2, 0] };
 
-function coverShown() {
-  return cover.show || (mv.brush.on && ["cover", "town"].includes(BRUSHES[mv.brush.name][0]));
+function overlayShown(o) {
+  return o.show || (mv.brush.on && o.kinds.includes(BRUSHES[mv.brush.name][0]));
 }
 
-function showCover() {
-  if (!cover.mesh) return;
-  cover.mesh.visible = coverShown();
-  mv.gl.draw();
+function showOverlays() {
+  for (const o of OVERLAYS) if (o.mesh) o.mesh.visible = overlayShown(o);
+  if (mv.gl) mv.gl.draw();
+}
+
+// n*n bits in base64 (cell i at byte i >> 3, bit i & 7): `value` goes into each cell whose bit is set.
+function unpackBits(bits, n, into, value) {
+  const raw = atob(bits);
+  for (let i = 0; i < n * n; i++) if ((raw.charCodeAt(i >> 3) >> (i & 7)) & 1) into[i] |= value;
 }
 
 async function loadCover(pack, ask) {
-  dropCover();
+  dropOverlay(cover);
   const res = await mv.api.map_cover(pack);
   if (ask !== mv.ask || !mv.edit) return;
-  const raw = atob(res.bits), n = res.size, base = new Uint8Array(n * n);
-  for (let i = 0; i < n * n; i++) base[i] = (raw.charCodeAt(i >> 3) >> (i & 7)) & 1;
-  Object.assign(cover, { base, cells: base.slice(), size: n, box: res.box });
-  coverMesh();
-  cover.batch = true;
-  for (const s of mv.brush.strokes) if (COVER.has(s.brush)) coverDab(s);
-  cover.batch = false;
-  coverDraw(0, n - 1, 0, n - 1);
+  const base = new Uint8Array(res.size * res.size);
+  unpackBits(res.bits, res.size, base, 1);
+  startOverlay(cover, base, res);
 }
 
-function dropCover() {
-  if (cover.mesh) {
-    mv.gl.scene.remove(cover.mesh);
-    cover.mesh.geometry.dispose();
-    cover.mesh.material.dispose();
+async function loadMoves(pack, ask) {
+  dropOverlay(moves);
+  const res = await mv.api.map_movement(pack);
+  if (ask !== mv.ask || !mv.edit) return;
+  const n = res.size, open = new Uint8Array(n * n);
+  unpackBits(res.infantry, n, open, 1);
+  unpackBits(res.vehicles, n, open, 2);
+  startOverlay(moves, open.map((v) => 3 & ~v), res);
+}
+
+function startOverlay(o, base, res) {
+  Object.assign(o, { base, cells: base.slice(), size: res.size, box: res.box });
+  overlayMesh(o);
+  o.batch = true;
+  for (const s of mv.brush.strokes) if (PAINTS[s.brush] && PAINTS[s.brush][0] === o) overlayDab(s);
+  o.batch = false;
+  overlayDraw(o, 0, o.size - 1, 0, o.size - 1);
+}
+
+function dropOverlay(o) {
+  if (o.mesh) {
+    mv.gl.scene.remove(o.mesh);
+    o.mesh.geometry.dispose();
+    o.mesh.material.dispose();
   }
-  Object.assign(cover, { base: null, cells: null, mesh: null });
+  Object.assign(o, { base: null, cells: null, mesh: null });
 }
 
-// The overlay shares the ground's points (so it follows every stroke), with its own place in the cover picture.
-function coverMesh() {
-  const gl = mv.gl, ed = mv.edit, { THREE } = gl, n = cover.size, [bx, by, bw, bh] = cover.box;
-  if (!cover.canvas || cover.canvas.width !== n) {
-    cover.canvas = document.createElement("canvas");
-    cover.canvas.width = cover.canvas.height = n;
-    cover.ctx = cover.canvas.getContext("2d");
-    cover.img = cover.ctx.createImageData(n, n);
-    if (cover.tex) cover.tex.dispose();
-    cover.tex = new THREE.CanvasTexture(cover.canvas);
-    cover.tex.flipY = false;  // row 0 is the grid's first row (y0), as the uv below says
-    cover.tex.userData.keep = true;
+// The overlay shares the ground's points, with its own place in its picture; later overlays draw over earlier ones.
+function overlayMesh(o) {
+  const gl = mv.gl, ed = mv.edit, { THREE } = gl, n = o.size, [bx, by, bw, bh] = o.box, k = OVERLAYS.indexOf(o);
+  if (!o.canvas || o.canvas.width !== n) {
+    o.canvas = document.createElement("canvas");
+    o.canvas.width = o.canvas.height = n;
+    o.ctx = o.canvas.getContext("2d");
+    o.img = o.ctx.createImageData(n, n);
+    if (o.tex) o.tex.dispose();
+    o.tex = new THREE.CanvasTexture(o.canvas);
+    o.tex.flipY = false;  // row 0 is the grid's first row (y0), as the uv below says
+    o.tex.userData.keep = true;
   }
   const src = gl.ground.geometry, g = new THREE.BufferGeometry(), uv = new Float32Array(ed.n * 2);
   for (let i = 0; i < ed.n; i++) { uv[2 * i] = (ed.wx[i] - bx) / bw; uv[2 * i + 1] = (ed.wy[i] - by) / bh; }
   g.setAttribute("position", src.attributes.position);
   g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
   g.setIndex(src.index);
-  cover.mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: cover.tex, transparent: true, depthWrite: false,
-    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide }));
-  cover.mesh.frustumCulled = false;  // its points move with the ground's
-  cover.mesh.renderOrder = 1;
-  cover.mesh.visible = coverShown();
-  gl.scene.add(cover.mesh);
+  o.mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: o.tex, transparent: true, depthWrite: false,
+    polygonOffset: true, polygonOffsetFactor: -2 - k, polygonOffsetUnits: -2 - k, side: THREE.DoubleSide }));
+  o.mesh.frustumCulled = false;  // its points move with the ground's
+  o.mesh.renderOrder = 1 + k;
+  o.mesh.visible = overlayShown(o);
+  gl.scene.add(o.mesh);
 }
 
-// One cover or uncover circle on the cells whose centres are inside it (rusemod.cover.paint's rule).
-function coverDab(s) {
-  if (!cover.cells) return;
-  const n = cover.size, [bx, by, bw, bh] = cover.box, cw = bw / n, ch = bh / n, on = s.brush === "cover" ? 1 : 0;
+// One brush circle on the cells whose centres are inside it (rusemod.cover.paint's rule; rusemod.nav closes the
+// graphs' circles that reach into it).
+function overlayDab(s) {
+  const [o, on, off] = PAINTS[s.brush];
+  if (!o.cells) return;
+  const n = o.size, [bx, by, bw, bh] = o.box, cw = bw / n, ch = bh / n;
   const c0 = Math.max(0, Math.floor((s.x - s.radius - bx) / cw)), c1 = Math.min(n - 1, Math.ceil((s.x + s.radius - bx) / cw));
   const r0 = Math.max(0, Math.floor((s.y - s.radius - by) / ch)), r1 = Math.min(n - 1, Math.ceil((s.y + s.radius - by) / ch));
   if (c0 > c1 || r0 > r1) return;
@@ -507,25 +547,25 @@ function coverDab(s) {
   for (let r = r0; r <= r1; r++) {
     const dy = by + (r + 0.5) * ch - s.y;
     for (let c = c0; c <= c1; c++) {
-      const dx = bx + (c + 0.5) * cw - s.x;
-      if (dx * dx + dy * dy <= rr) cover.cells[r * n + c] = on;
+      const dx = bx + (c + 0.5) * cw - s.x, i = r * n + c;
+      if (dx * dx + dy * dy <= rr) o.cells[i] = (o.cells[i] & ~off) | on;
     }
   }
-  if (!cover.batch) coverDraw(r0, r1, c0, c1);
+  if (!o.batch) overlayDraw(o, r0, r1, c0, c1);
 }
 
-function coverDraw(r0, r1, c0, c1) {
-  if (!cover.cells || !cover.img) return;
-  const n = cover.size, px = cover.img.data;
+function overlayDraw(o, r0, r1, c0, c1) {
+  if (!o.cells || !o.img) return;
+  const n = o.size, px = o.img.data;
   for (let r = r0; r <= r1; r++) {
     for (let c = c0; c <= c1; c++) {
-      const i = r * n + c, k = 4 * i;
-      if (cover.cells[i]) { px[k] = COVER_RGBA[0]; px[k + 1] = COVER_RGBA[1]; px[k + 2] = COVER_RGBA[2]; px[k + 3] = COVER_RGBA[3]; }
+      const i = r * n + c, k = 4 * i, rgba = o.colors[o.cells[i]];
+      if (rgba) { px[k] = rgba[0]; px[k + 1] = rgba[1]; px[k + 2] = rgba[2]; px[k + 3] = rgba[3]; }
       else px[k + 3] = 0;
     }
   }
-  cover.ctx.putImageData(cover.img, 0, 0, c0, r0, c1 - c0 + 1, r1 - r0 + 1);
-  cover.tex.needsUpdate = true;
+  o.ctx.putImageData(o.img, 0, 0, c0, r0, c1 - c0 + 1, r1 - r0 + 1);
+  o.tex.needsUpdate = true;
   if (mv.gl) mv.gl.draw();
 }
 
@@ -1151,7 +1191,7 @@ function renderPlace() {
     chip.addEventListener("click", () => { p.group = g; placeOptions(); if (!p.on) setPlaceMode(true); else renderPlace(); });
     return chip;
   }));
-  $("place-scenery-note").textContent = w.scenery_note;  // DomesticNukes' note: scenery is only for looks, for now
+  $("place-scenery-note").textContent = w.scenery_note;  // no cover from placed scenery; buildings stop units
   $("place-search").placeholder = w.search || "";
   $("place-search").title = w.tip_place_search;
   $("place-type").title = w.tip_place_type;
@@ -1159,6 +1199,10 @@ function renderPlace() {
   $("place-turn").title = w.tip_place_turn;
   $("place-size-label").textContent = `${w.brush_size} ${p.size.toFixed(1)}×`;
   $("place-size").title = w.tip_place_size;
+  $("place-solid-row").classList.toggle("hidden", p.group !== "building");  // only buildings stop units
+  $("place-solid").checked = p.solid;
+  $("place-solid-label").textContent = w.place_solid;
+  $("place-solid-row").title = w.tip_place_solid;
   $("place-on").textContent = w.place_on;
   $("place-on").title = w.tip_place_on;
   $("place-on").setAttribute("aria-pressed", String(p.on));
@@ -1256,7 +1300,8 @@ async function placeAt(ev) {
   if (!p.type) { placeNote(whyNoType(), "error"); return; }
   const hit = hitGround(ev);
   if (!hit) { placeNote(w.place_ground, "error"); return; }
-  const obj = { type: p.type, x: Math.round(hit.x / SCALE), y: Math.round(hit.z / SCALE), turn: p.turn, size: p.size };
+  const obj = { type: p.type, x: Math.round(hit.x / SCALE), y: Math.round(hit.z / SCALE), turn: p.turn, size: p.size,
+    solid: p.solid };
   p.objects.push(obj);
   drawPlaced();
   try {
@@ -1297,7 +1342,8 @@ async function placeMany(objs) {
 function objectAt(x, y, turn) {
   const p = mv.place, varied = p.group !== "building";
   const size = p.group === "vegetation" ? Math.round(p.size * (0.85 + Math.random() * 0.3) * 100) / 100 : p.size;
-  return { type: p.type, x: Math.round(x), y: Math.round(y), turn: varied ? Math.floor(Math.random() * 360) : turn, size };
+  return { type: p.type, x: Math.round(x), y: Math.round(y), turn: varied ? Math.floor(Math.random() * 360) : turn, size,
+    solid: p.solid };
 }
 
 // Painting an area: each spot the pointer passes scatters objects in the circle, never closer than the spacing to
@@ -1402,7 +1448,7 @@ async function show(pack, keepCamera) {
   }
   if (ask !== mv.ask) return;
   const gl = mv.gl;
-  dropCover();
+  for (const o of OVERLAYS) dropOverlay(o);
   forget(gl.ground);
   forget(gl.water);
   gl.ground = made.ground;
@@ -1439,6 +1485,7 @@ async function show(pack, keepCamera) {
   loadPlaced(pack, ask).catch((err) => placeNote((err && err.message) || String(err), "error"));
   loadScenarios(pack, ask).catch((err) => { $("scen-stats").textContent = (err && err.message) || String(err); });
   loadCover(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
+  loadMoves(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
 }
 
@@ -1488,8 +1535,8 @@ function renderBrushes() {
   const set = settingsOf(b.name);
   $("brush-size").value = set.size;
   $("brush-strength").value = set.strength;
-  $("brush-strength").disabled = ["cover", "town"].includes(BRUSHES[b.name][0]);
-  showCover();
+  $("brush-strength").disabled = ["cover", "town", "block"].includes(BRUSHES[b.name][0]);
+  showOverlays();
   $("brush-look").setAttribute("aria-pressed", String(!b.on));
   $("map-help").textContent = b.on ? w.brush_help : w.map_help;
   showCount();
@@ -1690,7 +1737,7 @@ function watchPointer() {
       const strokes = townStrokes(x, y);
       if (!strokes.length) { brushNote(mv.words.town_none, "error"); return; }
       const group = { strokes: [], last: null, stamp: true, start: mv.brush.strokes.length };
-      for (const s of strokes) { group.strokes.push(s); mv.brush.strokes.push(s); coverDab(s); }
+      for (const s of strokes) { group.strokes.push(s); mv.brush.strokes.push(s); overlayDab(s); }
       mv.brush.painting = group;
       const saved = mv.brush.groups.length;
       finishStroke().then(() => { if (mv.brush.groups.length > saved) brushNote(fill(mv.words.town_done, { n: strokes.length })); });
@@ -1848,6 +1895,8 @@ function renderWords() {
   $("map-water-label").textContent = w.water;
   $("map-cover-label").textContent = w.cover_show;
   $("map-cover").parentElement.title = w.tip_cover_show;
+  $("map-move-label").textContent = w.move_show;
+  $("map-move").parentElement.title = w.tip_move_show;
   $("scen-show-label").textContent = w.scen_show;
   $("scen-show").parentElement.title = w.tip_scen_show;
   if (scen.data) renderScenarioPick();
@@ -2130,7 +2179,11 @@ function wire() {
   });
   $("map-cover").addEventListener("change", (e) => {
     cover.show = e.target.checked;
-    showCover();
+    showOverlays();
+  });
+  $("map-move").addEventListener("change", (e) => {
+    moves.show = e.target.checked;
+    showOverlays();
   });
   $("map-water").addEventListener("change", (e) => {
     mv.water = e.target.checked;
@@ -2172,6 +2225,7 @@ function wire() {
   });
   $("place-turn").addEventListener("input", (e) => { mv.place.turn = Number(e.target.value); renderPlace(); });
   $("place-size").addEventListener("input", (e) => { mv.place.size = Number(e.target.value); renderPlace(); });
+  $("place-solid").addEventListener("change", (e) => { mv.place.solid = e.target.checked; });
   $("place-spacing").addEventListener("input", (e) => { mv.place.spacing[mv.place.group] = Number(e.target.value); renderPlace(); });
   $("place-area").addEventListener("input", (e) => { mv.place.area = Number(e.target.value); renderPlace(); });
   $("brush-undo").addEventListener("click", () => undoStroke());

@@ -1582,16 +1582,16 @@ sc = "武器 {n}"
 # --- the Maps view's keys, and what the Place tool says (maps.js) ---
 # DomesticNukes' note: what the Place tool puts down is drawn, and nothing more, until cover and movement get written
 [scenery_note]
-us = "Placed trees and buildings give no cover by themselves: paint it with the Cover brush, or click a town with the Town brush. Buildings don't block movement yet."
-fr = "Les arbres et bâtiments posés n'offrent pas de couvert d'eux-mêmes : peignez-le avec le pinceau Couvert, ou cliquez sur une ville avec le pinceau Ville. Les bâtiments ne bloquent pas encore les déplacements."
-ger = "Gesetzte Bäume und Gebäude geben von sich aus keine Deckung: mit dem Pinsel Deckung malen oder mit dem Pinsel Stadt auf eine Stadt klicken. Gebäude sperren noch keine Wege."
-ita = "Alberi ed edifici posati non danno copertura da soli: dipingila con il pennello Copertura o fai clic su una città con il pennello Città. Gli edifici non bloccano ancora il movimento."
-spa = "Los árboles y edificios colocados no dan cobertura por sí solos: píntala con el pincel Cobertura o haz clic en un pueblo con el pincel Pueblo. Los edificios aún no bloquean el movimiento."
-pol = "Postawione drzewa i budynki same nie dają osłony: namaluj ją pędzlem Osłona albo kliknij miasto pędzlem Miasto. Budynki jeszcze nie blokują ruchu."
-ru = "Поставленные деревья и здания сами не дают укрытия: нарисуйте его кистью «Укрытие» или щёлкните по городу кистью «Город». Здания пока не мешают движению."
-cz = "Položené stromy a budovy samy kryt nedávají: namalujte ho štětcem Kryt nebo klikněte na město štětcem Město. Budovy zatím nebrání pohybu."
-jpn = "置いた木や建物はそれだけでは遮蔽になりません。「遮蔽」ブラシで塗るか、「町」ブラシで町をクリックしてください。建物はまだ移動を妨げません。"
-sc = "放置的树木和建筑本身不提供掩护：用“掩护”画笔绘制，或用“城镇”画笔点击城镇。建筑暂时还不阻挡移动。"
+us = "Placed trees and buildings give no cover by themselves: paint it with the Cover brush, or click a town with the Town brush. Buildings stop units (Solid)."
+fr = "Les arbres et bâtiments posés n'offrent pas de couvert d'eux-mêmes : peignez-le avec le pinceau Couvert, ou cliquez sur une ville avec le pinceau Ville. Les bâtiments arrêtent les unités (Solide)."
+ger = "Gesetzte Bäume und Gebäude geben von sich aus keine Deckung: mit dem Pinsel Deckung malen oder mit dem Pinsel Stadt auf eine Stadt klicken. Gebäude halten Einheiten auf (Massiv)."
+ita = "Alberi ed edifici posati non danno copertura da soli: dipingila con il pennello Copertura o fai clic su una città con il pennello Città. Gli edifici fermano le unità (Solido)."
+spa = "Los árboles y edificios colocados no dan cobertura por sí solos: píntala con el pincel Cobertura o haz clic en un pueblo con el pincel Pueblo. Los edificios detienen a las unidades (Sólido)."
+pol = "Postawione drzewa i budynki same nie dają osłony: namaluj ją pędzlem Osłona albo kliknij miasto pędzlem Miasto. Budynki zatrzymują jednostki (Lity)."
+ru = "Поставленные деревья и здания сами не дают укрытия: нарисуйте его кистью «Укрытие» или щёлкните по городу кистью «Город». Здания преграждают путь юнитам («Непроходимое»)."
+cz = "Položené stromy a budovy samy kryt nedávají: namalujte ho štětcem Kryt nebo klikněte na město štětcem Město. Budovy zastaví jednotky (Pevné)."
+jpn = "置いた木や建物はそれだけでは遮蔽になりません。「遮蔽」ブラシで塗るか、「町」ブラシで町をクリックしてください。建物はユニットの通行を妨げます（通行不可）。"
+sc = "放置的树木和建筑本身不提供掩护：用“掩护”画笔绘制，或用“城镇”画笔点击城镇。建筑会阻挡单位（实体）。"
 
 [place_ground]
 us = "Click on the ground of the map."

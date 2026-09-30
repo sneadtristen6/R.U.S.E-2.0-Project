@@ -59,7 +59,7 @@
       flag_used_by: "{n} units have it, e.g. {names}", flag_count: "{n} units",
       old_index: "The game index was made by an older Studio. Build it again (about a minute).",
       keys_head: "Keys: ", keys_move: "{k} or arrows move", keys_turn: "{k} turn", keys_zoom: "{k} zoom", keys_fast: "Shift faster", keys_brushes: "1-9 0 brushes", keys_brush: "{k} brush", keys_place: "{k} place", keys_look: "Esc look around", keys_undo: "Ctrl+Z undo", keys_size: "{k} size", keys_strength: "{k} strength or turn", keys_change: "Change keys…", tip_keys_change: "Pick your own keys for the map view.", keys_press: "Press a key…", keys_reset: "Defaults", keys_fixed: "Click a key and press another. The arrows, Esc, Ctrl+Z and the digits stay as they are.", key_forward: "Forward", key_back: "Back", key_left: "Left", key_right: "Right", key_turn_left: "Turn left", key_turn_right: "Turn right", key_zoom_in: "Zoom in", key_zoom_out: "Zoom out", key_brush: "Brush", key_place: "Place", key_size_down: "Smaller", key_size_up: "Bigger", key_strength_down: "Weaker, or turn left", key_strength_up: "Stronger, or turn right",
-      scenery_note: "Placed trees and buildings give no cover by themselves: paint it with the Cover brush, or click a town with the Town brush. Buildings don't block movement yet.", undone: "Undone: {name} is back to what it was.",
+      scenery_note: "Placed trees and buildings give no cover by themselves: paint it with the Cover brush, or click a town with the Town brush. Buildings stop units (Solid).", undone: "Undone: {name} is back to what it was.",
       tip_tab_units: "Browse the game's units and change their numbers.",
       tip_tab_maps: "See a map's ground in 3D, shape it and place objects on it.",
       tip_mod: "The mod your changes are saved in.", tip_test: "Build the mod into a copy of the game and start it.",
@@ -154,7 +154,7 @@
       flag_used_by: "{n} unités l'ont, p. ex. {names}", flag_count: "{n} unités",
       old_index: "L'index du jeu vient d'un Studio plus ancien. Reconstruisez-le (environ une minute).",
       keys_head: "Touches : ", keys_move: "{k} ou flèches pour déplacer", keys_turn: "{k} tourner", keys_zoom: "{k} zoom", keys_fast: "Maj plus vite", keys_brushes: "1-9 0 pinceaux", keys_brush: "{k} pinceau", keys_place: "{k} placer", keys_look: "Échap regarder", keys_undo: "Ctrl+Z annuler", keys_size: "{k} taille", keys_strength: "{k} force ou rotation", keys_change: "Changer les touches…", tip_keys_change: "Choisissez vos propres touches pour la vue carte.", keys_press: "Appuyez sur une touche…", keys_reset: "Par défaut", keys_fixed: "Cliquez sur une touche et appuyez sur une autre. Les flèches, Échap, Ctrl+Z et les chiffres ne changent pas.", key_forward: "Avancer", key_back: "Reculer", key_left: "Gauche", key_right: "Droite", key_turn_left: "Tourner à gauche", key_turn_right: "Tourner à droite", key_zoom_in: "Zoom avant", key_zoom_out: "Zoom arrière", key_brush: "Pinceau", key_place: "Placer", key_size_down: "Plus petit", key_size_up: "Plus grand", key_strength_down: "Moins fort, ou tourner à gauche", key_strength_up: "Plus fort, ou tourner à droite",
-      scenery_note: "Les arbres et bâtiments posés n'offrent pas de couvert d'eux-mêmes : peignez-le avec le pinceau Couvert, ou cliquez sur une ville avec le pinceau Ville. Les bâtiments ne bloquent pas encore les déplacements.", undone: "Annulé : {name} est revenu à sa valeur précédente.",
+      scenery_note: "Les arbres et bâtiments posés n'offrent pas de couvert d'eux-mêmes : peignez-le avec le pinceau Couvert, ou cliquez sur une ville avec le pinceau Ville. Les bâtiments arrêtent les unités (Solide).", undone: "Annulé : {name} est revenu à sa valeur précédente.",
       tip_tab_units: "Parcourir les unités du jeu et modifier leurs valeurs.",
       tip_tab_maps: "Voir le terrain d'une carte en 3D, le modeler et y placer des objets.",
       tip_mod: "Le mod dans lequel vos modifications sont enregistrées.",
@@ -236,7 +236,7 @@
       flag_used_by: "{n} 个单位具有，例如 {names}", flag_count: "{n} 个单位",
       old_index: "游戏索引由旧版Studio生成。请重新构建（约一分钟）。",
       keys_head: "按键：", keys_move: "{k} 或方向键移动", keys_turn: "{k} 旋转", keys_zoom: "{k} 缩放", keys_fast: "Shift 加速", keys_brushes: "1-9 0 选笔刷", keys_brush: "{k} 笔刷", keys_place: "{k} 放置", keys_look: "Esc 查看", keys_undo: "Ctrl+Z 撤销", keys_size: "{k} 大小", keys_strength: "{k} 强度或旋转", keys_change: "更改按键…", tip_keys_change: "为地图视图选择自己的按键。", keys_press: "按下一个键…", keys_reset: "默认", keys_fixed: "点击一个按键再按下新键。方向键、Esc、Ctrl+Z 和数字键保持不变。", key_forward: "前进", key_back: "后退", key_left: "左", key_right: "右", key_turn_left: "向左旋转", key_turn_right: "向右旋转", key_zoom_in: "放大", key_zoom_out: "缩小", key_brush: "笔刷", key_place: "放置", key_size_down: "变小", key_size_up: "变大", key_strength_down: "减弱，或向左旋转", key_strength_up: "增强，或向右旋转",
-      scenery_note: "放置的树木和建筑本身不提供掩护：用“掩护”画笔绘制，或用“城镇”画笔点击城镇。建筑暂时还不阻挡移动。", place_ground: "请点击地图的地面。",
+      scenery_note: "放置的树木和建筑本身不提供掩护：用“掩护”画笔绘制，或用“城镇”画笔点击城镇。建筑会阻挡单位（实体）。", place_ground: "请点击地图的地面。",
       undone: "已撤销：{name} 恢复原值。", tip_tab_units: "浏览游戏单位并修改其数值。", tip_tab_maps: "以 3D 查看地图地形，塑造它并放置物体。",
       tip_mod: "保存你修改的模组。", tip_test: "将模组构建进游戏副本并启动。", tip_lang: "名称和标签的语言；内部名称显示游戏自己的名称。",
       tip_update_now: "下载并安装新版本；应用会自动重新打开。", tip_update_info: "在浏览器中打开更新说明。", tip_create_mod: "新建一个空模组并选中它。",
@@ -781,6 +781,17 @@
           if ((c - 20) ** 2 + (r - 34) ** 2 < 49 || (c - 44) ** 2 / 4 + (r - 20) ** 2 < 16) bits[(r * n + c) >> 3] |= 1 << ((r * n + c) & 7);
         }
         return { size: n, box: [0, 0, 1310720, 1310720], bits: btoa(String.fromCharCode(...bits)) };
+      },
+      map_movement: async () => {  // off the map's edge is closed to all; the cover wood above is closed to vehicles
+        const n = 64, inf = new Uint8Array(n * n / 8), veh = new Uint8Array(n * n / 8);
+        for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+          const i = r * n + c, bit = 1 << (i & 7);
+          if ((c - 32) ** 2 + (r - 32) ** 2 > 29 ** 2) continue;
+          inf[i >> 3] |= bit;
+          if (!((c - 20) ** 2 + (r - 34) ** 2 < 49)) veh[i >> 3] |= bit;
+        }
+        const b64 = (a) => btoa(String.fromCharCode(...a));
+        return { size: n, box: [0, 0, 1310720, 1310720], infantry: b64(inf), vehicles: b64(veh) };
       },
       map_scenarios: async (pack) => withScenarioEdits(pack),
       scenario_move: async (pack, file, item, x, y) => {

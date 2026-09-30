@@ -74,6 +74,7 @@
           <button id="map-detail" type="button" class="chip"></button>
           <label class="small"><input id="map-water" type="checkbox" checked> <span id="map-water-label"></span></label>
           <label class="small"><input id="map-cover" type="checkbox"> <span id="map-cover-label"></span></label>
+          <label class="small"><input id="map-move" type="checkbox"> <span id="map-move-label"></span></label>
         </div>
         <!-- what stands on the map (maps.js, StudioApi.map_scenery): every building, a sample of props and trees -->
         <div class="map-controls">
@@ -123,7 +124,7 @@
         <div id="brush-note" class="small"></div>
         <!-- placing objects (maps.js): saved in the current mod's maps/<map>/scenery.toml -->
         <div id="place-title" class="map-title place-title"></div>
-        <!-- for now, scenery is only for looks (DomesticNukes' note): cover and movement live in other map files -->
+        <!-- cover and movement live in other map files: placed scenery gives no cover, but buildings stop units (Solid) -->
         <div id="place-scenery-note" class="muted small"></div>
         <div id="place-groups" class="chips brush-list" role="group"></div>
         <input id="place-search" type="search" class="place-search">
@@ -132,6 +133,8 @@
           <input id="place-turn" type="range" min="0" max="345" step="15" value="0"></label>
         <label class="brush-slider small"><span id="place-size-label"></span>
           <input id="place-size" type="range" min="0.5" max="10" step="0.1" value="1"></label>
+        <label id="place-solid-row" class="small"><input id="place-solid" type="checkbox" checked>
+          <span id="place-solid-label"></span></label>
         <!-- how a click places: one object, an area painted by dragging, or a line between two clicks -->
         <div id="place-how" class="chips brush-list" role="group"></div>
         <label id="place-spacing-row" class="brush-slider small hidden"><span id="place-spacing-label"></span>

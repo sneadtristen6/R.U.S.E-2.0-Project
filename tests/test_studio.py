@@ -910,8 +910,8 @@ class Labels(unittest.TestCase):
         from ruse_studio.api import AMMO_GROUP_ORDER, GROUPS
         used |= {"group_" + g for g in GROUPS + AMMO_GROUP_ORDER}  # each type's name too
         maps = (ui / "maps.js").read_text(encoding="utf-8")  # each brush's name is looked up by key
-        used |= {"brush_" + name for name in re.findall(r"^  (\w+): \[\"(?:add|level|smooth|ramp)\"", maps, re.M)}
-        self.assertEqual(len(used & {"brush_hill", "brush_smooth", "brush_ramp"}), 3)
+        used |= {"brush_" + name for name in re.findall(r'^  (\w+): \["\w+", "\w+", -?1, (?:true|false),', maps, re.M)}
+        self.assertEqual(len(used & {"brush_hill", "brush_ramp", "brush_cover", "brush_town", "brush_block_vehicles"}), 5)
         self.assertGreater(len(used), 25)
         self.assertEqual(sorted(used - set(_words())), [])
 
