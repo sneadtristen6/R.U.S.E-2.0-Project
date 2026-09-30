@@ -691,6 +691,22 @@ LittleGroove's own engine (`src/ruse_mod_engine`, PLAN.md decision 26). The form
 - **Builds.** Matches by property survive a build change; positions don't. A rebuilt mod is built against the
   installed game whatever build the original was made on (the values are the author's, the objects are found by name).
 - **Export** (later): the subset of operations `.rmod` can express, so RUSE-Mod-Manager users can install our mods.
+- **Mods that don't go together** (built: `rusemod.rmod.clashes`, 2026-09-30). Before any `.rmod` set is built, and
+  live while a set is edited in the launcher, the `.rmod` files are compared (read only, no pack opened: under a
+  second for 75 mods). Found after DomesticNukes put all 75 community mods in one set: the build said 0 errors and the
+  game crashed (seven mods each brought their own copy of one map script, and only the last one's survived).
+
+  | Kind | When | What happens |
+  |---|---|---|
+  | file | two mods replace the same whole file (a script, video, sound, picture, map file, text file or game data) with different bytes | **refused** |
+  | script | two mods replace the same file inside the same archive (`.ipk`…) with different bytes | **refused** |
+  | archive | one mod replaces a whole archive, another edits files inside it (either order) | **refused** |
+  | create | two mods add a new object with the same name (`ClassNameForDebug`, `AmmunitionId` or `_ShortDatabaseName`) in the same file | **refused** |
+  | value, text | a later mod changes values (or texts, or map layers) an earlier one changed | allowed; the later wins, and the launcher says so before Play, pair by pair |
+
+  Refused means the build stops before building anything and names every clash; the launcher greys out Play and
+  shows the reasons in a red box. Identical bytes in two mods aren't a clash. Our own mods keep their rules (§10.4,
+  §10.6).
 
 ## 14. Open questions
 

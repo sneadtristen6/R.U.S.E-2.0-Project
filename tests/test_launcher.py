@@ -372,6 +372,39 @@ class SetsOnScreen(Base):
         self.assertEqual((a.after, b.after, c.after), (["b"], [], []))  # c and b already say how they relate
 
 
+class Clashing(Base):
+    """.rmod mods that don't go together (rusemod.rmod.clashes): the set screen asks set_check / check_mods and
+    shows them before Play; Play refuses the set with the reason."""
+
+    def test_set_check_and_play_refuse_clashing_mods(self):
+        from test_rmod import rmod_json, set_values
+        dl = Path(self.tmp.name, "dl")
+        dl.mkdir()
+        api = self.api()
+        for name, files, patches in (
+                ("Alpha", {"genpython/map/effetmap.xyz": b"XYZ0 A"}, [set_values("Unit_Battleship", VitesseLineaire=9.5)]),
+                ("Beta", {"genpython/map/effetmap.xyz": b"XYZ0 B"}, []),
+                ("Gamma", {}, [set_values("Unit_Battleship", VitesseLineaire=0)])):
+            path = dl / f"{name}.rmod"
+            path.write_text(rmod_json(files, mod_id=name.lower(), name=name, patches=patches), encoding="utf-8")
+            api.add_mod(str(path))
+        api.new_set("Clashing", ["alpha", "gamma", "beta"])
+        check = api.set_check("clashing")
+        self.assertEqual([(c["kind"], c["hard"], c["a"], c["b"], c["mods"]) for c in check["hard"]],
+                         [("file", True, "Alpha", "Beta", ["Alpha", "Beta"])])
+        self.assertEqual([(c["kind"], c["a"], c["b"], c["count"], c["what"]) for c in check["soft"]],
+                         [("value", "Gamma", "Alpha", 1, "Unit_Battleship.VitesseLineaire")])
+        self.assertEqual(api.check_mods(["alpha", "gamma"])["hard"], [])   # while a set is edited: ids, no set yet
+        self.assertEqual(api.check_mods(["alpha", "nope"]), {"hard": [], "soft": []})
+        self.assertEqual(api.set_check("vanilla"), {"hard": [], "soft": []})
+        j = wait_for(api, api.play("clashing")["job"])
+        self.assertEqual(j["state"], "failed")
+        self.assertIn("These mods can't be played together (1 clash):", j["message"])
+        self.assertIn("Alpha and Beta each replace the same script, effetmap.xyz", j["message"])
+        self.assertEqual(self.started, [])
+        self.assertFalse((self.instances / "clashing").exists())
+
+
 class Browse(Base):
     """Browse mods: the mod index on a local web server, installs checked against it, the copy kept for offline."""
 

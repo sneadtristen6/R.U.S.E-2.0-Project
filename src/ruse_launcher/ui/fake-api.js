@@ -7,7 +7,8 @@
   const mode = new URLSearchParams(location.search).get("fake");
   if (mode === null) return;
   const words = {
-    us: { update_out: "{app} {version} is out.", update_now: "Update", whats_new: "What's new", update_progress: "Downloading the update… {pct}", update_installing: "Installing: {app} closes and opens again by itself.", update_repo: "(This copy runs from the repo: update it with git pull.)", update_failed: "The update didn't work: {why}",
+    us: { clash_cant_play: "This set can't be played:", clash_overwrites: "Later mods overwrite earlier ones ({n}):", clash_file: "{a} and {b} both replace the same file, {file} ({kind}), with different contents. Only one of them can be in a set.", clash_archive: "{a} replaces the whole archive {file}, and {b} changes files inside it; one of the two would be lost. Only one of them can be in a set.", clash_create: "{a} and {b} each add a new object called {example}; two objects can't share a name. Only one of them can be in a set.", clash_value: "{a} changes {n} values {b} changed too, e.g. {example}; it comes later, so it wins. Put {b} after {a} if you want {b}'s values.", clash_value_one: "{a} changes a value {b} changed too, {example}; it comes later, so it wins. Put {b} after {a} if you want {b}'s value.", clash_text: "{a} changes {n} texts {b} changed too, e.g. {example}; it comes later, so it wins. Put {b} after {a} if you want {b}'s texts.", clash_text_one: "{a} changes a text {b} changed too, {example}; it comes later, so it wins. Put {b} after {a} if you want {b}'s text.", kind_script: "a script", kind_script_archive: "a script archive", kind_video: "a video", kind_sound: "a sound", kind_sound_archive: "a sound archive", kind_picture: "a picture", kind_map_file: "a map file", kind_text_file: "a text file", kind_game_data: "game data",
+      update_out: "{app} {version} is out.", update_now: "Update", whats_new: "What's new", update_progress: "Downloading the update… {pct}", update_installing: "Installing: {app} closes and opens again by itself.", update_repo: "(This copy runs from the repo: update it with git pull.)", update_failed: "The update didn't work: {why}",
       guide_title: "Playing with mods, in three steps", guide_add: "Add mods: “Add a mod file…” on the left, or drop the file on this window. RUSE Studio mods (.rusemod), RUSE Mod Manager mods (.rmod) and .zip files all work. Or find one under “Browse mods”.", guide_set: "Make a mod set: “New mod set…”, tick the mods and put them in order. Where two mods change the same thing, the lower one wins.", guide_play: "Pick the set and press Play. The launcher builds a separate modded copy of the game and starts it; your Steam game stays as it is.", share: "Share", share_title: "Share this load order", share_help: "Copy this and send it to a friend (Discord, a message…). They import it in RUSE Launcher (“Import a load order…”) or in RUSE Mod Manager and get the same mods in the same order. They need the mods too.", copy: "Copy", copied: "Copied.", import_order: "Import a load order…", import_help: "Paste a load order a friend shared, from RUSE Launcher or RUSE Mod Manager. The new mod set gets the mods you have, in the same order.", import_paste: "Paste the load order here", check_order: "Check", make_set: "Make the mod set", import_found: "{n} of {total} mods are in your library.", import_missing: "Not in your library yet: {names}. Add them (Add a mod file… or Browse mods) and import again, or make the set without them.", import_version: "In your library in another version: {list}.", import_wrong_game: "Made for the other version of the game (R.U.S.E. or R.U.S.E. COMPAT): the mods may not fit yours.", import_done: "Mod set “{name}” made from the shared load order.",
       language: "Language", looking: "Looking for R.U.S.E.…", choose_folder: "Choose folder…", mod_sets: "Mod sets",
       vanilla: "Vanilla", vanilla_desc: "The game as Steam installed it.", no_mods: "No mods", one_mod: "1 mod",
@@ -32,7 +33,8 @@
       list_failed: "The mod list couldn't be loaded: {why}", list_empty: "No mods match.", for_build: "for game build {build}",
       more_info: "More about this mod", refresh_list: "Refresh",
       browse_help: "Mods from the community's list. Install puts one in your library; then tick it in a mod set." },
-    fr: { update_out: "{app} {version} est disponible.", update_now: "Mettre à jour", whats_new: "Nouveautés", update_progress: "Téléchargement de la mise à jour… {pct}", update_installing: "Installation : {app} se ferme puis se rouvre automatiquement.", update_repo: "(Cette copie s'exécute depuis le dépôt Git : mettez-la à jour avec git pull.)", update_failed: "La mise à jour n'a pas fonctionné : {why}",
+    fr: { clash_cant_play: "Cet ensemble ne peut pas être joué :", clash_overwrites: "Des mods plus bas écrasent des mods plus haut ({n}) :", clash_file: "{a} et {b} remplacent tous deux le même fichier ({kind}), {file}, avec des contenus différents. Un seul d'entre eux peut être dans un ensemble.", clash_archive: "{a} remplace toute l'archive {file}, et {b} modifie des fichiers à l'intérieur ; l'un des deux serait perdu. Un seul d'entre eux peut être dans un ensemble.", clash_create: "{a} et {b} ajoutent chacun un nouvel objet nommé {example} ; deux objets ne peuvent pas porter le même nom. Un seul d'entre eux peut être dans un ensemble.", clash_value: "{a} modifie {n} valeurs que {b} modifie aussi, par ex. {example} ; il vient après, donc il l'emporte. Placez {b} après {a} si vous voulez les valeurs de {b}.", clash_value_one: "{a} modifie une valeur que {b} modifie aussi, {example} ; il vient après, donc il l'emporte. Placez {b} après {a} si vous voulez la valeur de {b}.", clash_text: "{a} modifie {n} textes que {b} modifie aussi, par ex. {example} ; il vient après, donc il l'emporte. Placez {b} après {a} si vous voulez les textes de {b}.", clash_text_one: "{a} modifie un texte que {b} modifie aussi, {example} ; il vient après, donc il l'emporte. Placez {b} après {a} si vous voulez le texte de {b}.", kind_script: "un script", kind_script_archive: "une archive de scripts", kind_video: "une vidéo", kind_sound: "un son", kind_sound_archive: "une archive de sons", kind_picture: "une image", kind_map_file: "un fichier de carte", kind_text_file: "un fichier de textes", kind_game_data: "des données du jeu",
+      update_out: "{app} {version} est disponible.", update_now: "Mettre à jour", whats_new: "Nouveautés", update_progress: "Téléchargement de la mise à jour… {pct}", update_installing: "Installation : {app} se ferme puis se rouvre automatiquement.", update_repo: "(Cette copie s'exécute depuis le dépôt Git : mettez-la à jour avec git pull.)", update_failed: "La mise à jour n'a pas fonctionné : {why}",
       guide_title: "Jouer avec des mods, en trois étapes", guide_add: "Ajoutez des mods : « Ajouter un fichier de mod… » à gauche, ou déposez le fichier dans cette fenêtre. Les mods de RUSE Studio (.rusemod), les mods de RUSE Mod Manager (.rmod) et les fichiers .zip fonctionnent tous. Ou trouvez-en un dans « Parcourir les mods ».", guide_set: "Créez un ensemble de mods : « Nouvel ensemble de mods… », cochez les mods et mettez-les dans l'ordre. Si deux mods modifient la même chose, le plus bas l'emporte.", guide_play: "Choisissez l'ensemble et appuyez sur Jouer. Le lanceur crée une copie distincte du jeu avec les mods et la démarre ; votre jeu Steam reste tel quel.", share: "Partager", share_title: "Partager cet ordre de chargement", share_help: "Copiez ceci et envoyez-le à un ami (Discord, un message…). Il l'importe dans RUSE Launcher (« Importer un ordre de chargement… ») ou dans RUSE Mod Manager et obtient les mêmes mods dans le même ordre. Il lui faut aussi les mods.", copy: "Copier", copied: "Copié.", import_order: "Importer un ordre de chargement…", import_help: "Collez un ordre de chargement partagé par un ami, depuis RUSE Launcher ou RUSE Mod Manager. Le nouvel ensemble de mods reçoit les mods que vous avez, dans le même ordre.", import_paste: "Collez l'ordre de chargement ici", check_order: "Vérifier", make_set: "Créer l'ensemble de mods", import_found: "Mods présents dans votre bibliothèque : {n} sur {total}.", import_missing: "Pas encore dans votre bibliothèque : {names}. Ajoutez-les (Ajouter un fichier de mod… ou Parcourir les mods) et importez à nouveau, ou créez l'ensemble sans eux.", import_version: "Dans votre bibliothèque, mais dans une autre version : {list}.", import_wrong_game: "Conçu pour l'autre version du jeu (R.U.S.E. ou R.U.S.E. COMPAT) : les mods risquent de ne pas convenir à la vôtre.", import_done: "Ensemble de mods « {name} » créé à partir de l'ordre de chargement partagé.",
       language: "Langue", looking: "Recherche de R.U.S.E.…", choose_folder: "Choisir le dossier…",
       mod_sets: "Ensembles de mods", vanilla: "Jeu d'origine", vanilla_desc: "Le jeu tel que Steam l'a installé.",
@@ -62,7 +64,8 @@
       list_failed: "La liste des mods n'a pas pu être chargée : {why}", list_empty: "Aucun mod ne correspond.",
       for_build: "pour la version du jeu {build}", more_info: "En savoir plus sur ce mod", refresh_list: "Actualiser",
       browse_help: "Les mods de la liste de la communauté. Installer le place dans votre bibliothèque ; cochez-le ensuite dans un ensemble de mods." },
-    sc: { update_out: "{app} {version} 已发布。", update_now: "更新", whats_new: "更新内容", update_progress: "正在下载更新… {pct}", update_installing: "正在安装：{app} 会自动关闭并重新打开。", update_repo: "（此副本从代码仓库运行：请用 git pull 更新。）", update_failed: "更新失败：{why}",
+    sc: { clash_cant_play: "此组合无法游玩：", clash_overwrites: "后面的模组覆盖了前面的模组（{n}）：", clash_file: "{a} 和 {b} 都用不同的内容替换了同一个文件（{kind}）{file}。组合中只能保留其中一个。", clash_archive: "{a} 替换了整个归档 {file}，而 {b} 修改了其中的文件；两者之一会丢失。组合中只能保留其中一个。", clash_create: "{a} 和 {b} 各自添加了一个名为 {example} 的新对象；两个对象不能同名。组合中只能保留其中一个。", clash_value: "{a} 修改了 {b} 也修改过的 {n} 个数值，例如 {example}；它在后面，所以它优先。如果想要 {b} 的数值，请把 {b} 放到 {a} 后面。", clash_value_one: "{a} 修改了 {b} 也修改过的数值 {example}；它在后面，所以它优先。如果想要 {b} 的数值，请把 {b} 放到 {a} 后面。", clash_text: "{a} 修改了 {b} 也修改过的 {n} 条文本，例如 {example}；它在后面，所以它优先。如果想要 {b} 的文本，请把 {b} 放到 {a} 后面。", clash_text_one: "{a} 修改了 {b} 也修改过的文本 {example}；它在后面，所以它优先。如果想要 {b} 的文本，请把 {b} 放到 {a} 后面。", kind_script: "脚本", kind_script_archive: "脚本归档", kind_video: "视频", kind_sound: "音效", kind_sound_archive: "音效归档", kind_picture: "图片", kind_map_file: "地图文件", kind_text_file: "文本文件", kind_game_data: "游戏数据",
+      update_out: "{app} {version} 已发布。", update_now: "更新", whats_new: "更新内容", update_progress: "正在下载更新… {pct}", update_installing: "正在安装：{app} 会自动关闭并重新打开。", update_repo: "（此副本从代码仓库运行：请用 git pull 更新。）", update_failed: "更新失败：{why}",
       guide_title: "使用模组游玩，只需三步", guide_add: "添加模组：点击左侧的“添加模组文件…”，或将文件拖放到此窗口。RUSE Studio 模组（.rusemod）、RUSE Mod Manager 模组（.rmod）和 .zip 文件都可以使用。也可以在“浏览模组”中查找。", guide_set: "创建模组组合：点击“新建模组组合…”，勾选模组并排好顺序。两个模组修改同一项时，下面的优先。", guide_play: "选择组合，然后点击“开始游戏”。启动器会创建一份单独的模组版游戏副本并启动它；你的 Steam 游戏保持原样。", share: "分享", share_title: "分享此加载顺序", share_help: "复制这段内容并发送给好友（Discord、消息…）。对方在 RUSE Launcher（“导入加载顺序…”）或 RUSE Mod Manager 中导入，即可按相同顺序获得相同的模组。对方也需要拥有这些模组。", copy: "复制", copied: "已复制。", import_order: "导入加载顺序…", import_help: "粘贴好友分享的加载顺序（来自 RUSE Launcher 或 RUSE Mod Manager）。新的模组组合会按相同顺序包含你已有的模组。", import_paste: "在此粘贴加载顺序", check_order: "检查", make_set: "创建模组组合", import_found: "{total} 个模组中有 {n} 个在你的库中。", import_missing: "库中尚无：{names}。请添加它们（“添加模组文件…”或“浏览模组”）后重新导入，或不含它们直接创建组合。", import_version: "库中版本不同的模组：{list}。", import_wrong_game: "为游戏的另一个版本（R.U.S.E. 或 R.U.S.E. COMPAT）制作：这些模组可能与你的版本不兼容。", import_done: "已根据分享的加载顺序创建模组组合“{name}”。",
       language: "语言", looking: "正在查找 R.U.S.E.…", choose_folder: "选择文件夹…", mod_sets: "模组组合", vanilla: "原版",
       vanilla_desc: "Steam 安装的原始游戏。", no_mods: "无模组", one_mod: "1 个模组", n_mods: "{n} 个模组", has_mistake: "有错误",
@@ -90,10 +93,20 @@
       description: "Airfields hold 128 planes instead of 8.", builds: ["24087620"], used_in: 1 },
     { id: "passable-forests", name: "Passable Forests", version: "1.0.0", authors: [], author: "",
       description: "Tanks and other vehicles can enter forests, like recon units already can.", builds: ["24087620"], used_in: 1 },
+    // made-up .rmod mods for the clash boxes (rusemod.rmod.clashes): two rewrite the same map script, two set ship speeds
+    { id: "harbour-pack", name: "Harbour Pack", version: "2.1", authors: [], author: "", description: "Faster, tougher ships.",
+      builds: [build], used_in: 1 },
+    { id: "anchored-ships", name: "Anchored Ships", version: "1.0", authors: [], author: "", description: "Battleships stay put.",
+      builds: [build], used_in: 1 },
+    { id: "ardennes-rescripted", name: "Ardennes Rescripted", version: "1.0", authors: [], author: "",
+      description: "A new script for the Ardennes mission.", builds: [build], used_in: 1 },
+    { id: "ardennes-endless", name: "Ardennes Endless", version: "3.0", authors: [], author: "",
+      description: "The Ardennes mission never ends.", builds: [build], used_in: 1 },
   ];
   let sets = mode === "empty" ? [] : [
     { id: "my-set", name: "My set", description: "", mods: ["airfield-capacity", "passable-forests"] },
     { id: "missing-mod", name: "Sample set with a missing mod", description: "", mods: ["some-other-mod"] },
+    { id: "clashing", name: "Sample set with clashing mods", description: "", mods: ["harbour-pack", "anchored-ships", "ardennes-rescripted", "ardennes-endless"] },
   ];
   const wordsOf = (lang) => words[lang] || words.us;
   const known = (id) => library.find((m) => m.id === id);
@@ -114,6 +127,25 @@
     let id = base, n = 2;
     while (id === "vanilla" || sets.some((s) => s.id === id)) id = `${base}-${n++}`;
     return id;
+  };
+  // what rusemod.rmod.clashes would say about these mods: a hard clash when both Ardennes mods are in (the same script
+  // with different contents), a soft one when Harbour Pack and Anchored Ships both set the ships' values
+  const clashesOf = (mods) => {
+    const name = (id) => (known(id) || { name: id }).name;
+    const hard = [], soft = [];
+    if (mods.includes("ardennes-rescripted") && mods.includes("ardennes-endless")) {
+      const pair = mods.filter((m) => m === "ardennes-rescripted" || m === "ardennes-endless").map(name);
+      hard.push({ kind: "file", hard: true, mods: pair, what: "genpython/1000/test/map/m06_ardennes/scripting_chapter1/effetmap.xyz",
+        message: `${pair[0]} and ${pair[1]} each replace the same script, effetmap.xyz, with different contents. Only one of them can be in a set.`,
+        count: 1, file_kind: "script", a: pair[0], b: pair[1] });
+    }
+    if (mods.includes("harbour-pack") && mods.includes("anchored-ships")) {
+      const pair = mods.filter((m) => m === "harbour-pack" || m === "anchored-ships").map(name);
+      soft.push({ kind: "value", hard: false, mods: pair, what: "Unit_Battleship.VitesseLineaire",
+        message: `${pair[1]} changes 8 values ${pair[0]} changed too, e.g. Unit_Battleship.VitesseLineaire; it comes later, so it wins.`,
+        count: 8, file_kind: "", a: pair[1], b: pair[0] });
+    }
+    return { hard, soft };
   };
   const checkMods = (mods) => {
     if (!mods || !mods.length) throw new Error("Tick at least one mod for this mod set.");
@@ -214,6 +246,8 @@
         sets.push(copy);
         return lists({ set: copy.id });
       },
+      check_mods: async (mods) => clashesOf(mods || []),
+      set_check: async (id) => clashesOf((sets.find((x) => x.id === id) || { mods: [] }).mods),
       delete_set: async (id) => {
         sets = sets.filter((x) => x.id !== id);
         return lists({ set: "vanilla" });

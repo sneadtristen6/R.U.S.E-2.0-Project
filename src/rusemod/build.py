@@ -417,9 +417,22 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
     Play. `say` gets every report line as it comes. Nothing is written when the build has errors. Problems the user
     can fix raise BuildError.
 
-    .rmod mods (rusemod.rmod) are applied first, in their order in `mods`, and the other mods on top of them."""
+    .rmod mods (rusemod.rmod) are applied first, in their order in `mods`, and the other mods on top of them. Two
+    .rmod mods that can't go together (the same file replaced with different contents, MOD_FORMAT.md §13) stop the
+    build before anything is built, with every such clash named; a later mod overwriting an earlier one's values is
+    a warning."""
     rmods = [m for m, _ops in mods if m.rmod is not None]
     mods = [(m, ops) for m, ops in mods if m.rmod is None]
+    overwrites: list = []
+    if len(rmods) > 1:
+        from . import rmod
+        found = rmod.clashes([m.rmod for m in rmods])
+        hard = [c for c in found if c.hard]
+        if hard:
+            for c in hard:
+                say(f"  error    {c.message}")
+            raise BuildError(rmod.refusal(hard))
+        overwrites = [Finding("warning", c.message) for c in found]
     pack_path = find_pack(game, pack)
     if pack_path is None:
         raise BuildError(f"No pack called {pack!r} in {game}.")
@@ -451,7 +464,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             raise BuildError(f"load order: {exc}") from None
         if run:
             result.order = [m.id for m in rmods] + result.order
-            result.findings = run.findings + result.findings
+            result.findings = overwrites + run.findings + result.findings
         say("load order: " + " -> ".join(result.order))
         for line in report_lines(result.findings, show_all=show_all):
             say(line)
