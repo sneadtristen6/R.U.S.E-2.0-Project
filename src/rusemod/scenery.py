@@ -427,6 +427,9 @@ FILLER = 0xCAFE5A1E   # every block's items start with this word, which the game
 BLOCK_TAIL = bytes.fromhex("000bb00bb00bb00b")  # bytes 0x18-0x1f of a long block header, as the shipped blocks have
 ALL_TIERS = 0x1F      # a block's LOD mask: drawn close, middle and far (a superset only costs culling)
 MARGIN = 5000.0       # added to a new block's box around its objects' positions (map units, times their size)
+GROUP = 40000.0       # objects further apart than this (400 m) go in separate new blocks, each hung on an object near
+                      # them: the game draws a block when the object it hangs on is in view (owner's test, 2026-09-30:
+                      # towers hung on a decal 3 km away never showed)
 
 
 class SceneryEditError(ValueError):
@@ -470,10 +473,11 @@ def _identity_data(kind: int) -> bytes:
             T_COMPACT: struct.pack("<4h4f", round(1 / SCALE16), 0, 0, round(1 / SCALE16), 0, 0, 0, 1.0)}[kind]
 
 
-def _carrier(sc: Scenery) -> tuple[Block, Item, tuple]:
-    """An object item to turn into the reference to the new block: in a block placed exactly once (the top block
-    first), an exact kind first (none, a move, full) and a compact one last. Returns (its block, it, the block's
-    transform in map coordinates)."""
+def _carrier(sc: Scenery, near: tuple | None = None) -> tuple[Block, Item, tuple]:
+    """An object item to turn into the reference to the new block: in a block placed exactly once. `near` (x, y):
+    the object nearest it, in the small block nearest it (a block's distance counts half its size, so the map-wide
+    top block loses to a village's); else the top block first. An exact kind (none, a move, full) before a compact
+    one. Returns (its block, it, the block's transform in map coordinates)."""
     n = len(sc.blocks)
     weight, where = [0] * n, [None] * n
     for r in sc.roots():
@@ -485,14 +489,31 @@ def _carrier(sc: Scenery) -> tuple[Block, Item, tuple]:
                 j = sc._by_offset[it.child_offset]
                 weight[j] += weight[b.index]
                 where[j] = compose(where[b.index], it.matrix()) if where[b.index] is not None else None
+    best = None
     for b in sc.blocks:
         if weight[b.index] != 1 or where[b.index] is None:
             continue
         objects = [it for it in b.items if it.kind == "object"]
-        if objects:
-            best = min(objects, key=lambda it: (it.tform == T_COMPACT, it.at))
-            return b, best, where[b.index]
-    raise SceneryEditError("the map has no object to hang new ones on")
+        if not objects:
+            continue
+        if near is None:
+            return b, min(objects, key=lambda it: (it.tform == T_COMPACT, it.at)), where[b.index]
+        w = where[b.index]
+        x0, y0, x1, y1 = b.bbox
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        wx, wy = w[0] * cx + w[1] * cy + w[3], w[4] * cx + w[5] * cy + w[7]
+        score = math.hypot(wx - near[0], wy - near[1]) + math.hypot(x1 - x0, y1 - y0) * math.hypot(w[0], w[4]) / 2
+        if best is None or score < best[0]:
+            best = (score, b, objects)
+    if best is None:
+        raise SceneryEditError("the map has no object to hang new ones on")
+    _s, b, objects = best
+    w = where[b.index]
+
+    def distance(it):
+        m = it.matrix()
+        return math.hypot(w[0] * m[3] + w[1] * m[7] + w[3] - near[0], w[4] * m[3] + w[5] * m[7] + w[7] - near[1])
+    return b, min(objects, key=lambda it: (distance(it), it.tform == T_COMPACT, it.at)), w
 
 
 def _new_block(items: list[bytes], box: tuple) -> bytes:
@@ -509,21 +530,42 @@ def _new_block(items: list[bytes], box: tuple) -> bytes:
     return head + struct.pack(f"<{len(entries)}I", *entries) + nodes + struct.pack("<I", FILLER) + b"".join(items)
 
 
+def _groups(objects: list[NewObject]) -> list[list[NewObject]]:
+    """Objects in groups of neighbours: each joins the first group with an object within GROUP of it."""
+    out: list[list[NewObject]] = []
+    for o in objects:
+        home = next((g for g in out if any(math.hypot(o.x - p.x, o.y - p.y) <= GROUP for p in g)), None)
+        if home is None:
+            out.append([o])
+        else:
+            home.append(o)
+    return out
+
+
 def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]:
-    """The scenery file with `objects` added, the way DomesticNukes proved in the game: one object item of a block
-    placed once becomes a same-size reference (with a transform that changes nothing) to a new block at the end,
-    which holds that object and the new ones. Every reference still points forward; the grids are left alone.
-    Types must be ones the map already uses (in its name table). Returns (new file, notes)."""
-    sc = Scenery(data)
+    """The scenery file with `objects` added, the way DomesticNukes proved in the game: per group of neighbours
+    (GROUP), one object item near them, of a block placed once, becomes a same-size reference (with a transform that
+    changes nothing) to a new block at the end, which holds that object and the new ones. Every reference still
+    points forward; the grids are left alone. Types must be ones the map already uses (in its name table). Returns
+    (new file, notes)."""
     if not objects:
         return bytes(data), []
+    notes = []
+    for group in _groups(objects):
+        data, more = _add_block(data, group)
+        notes += more
+    return data, notes
+
+
+def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]:
+    sc = Scenery(data)
     index = {name: i for i, name in enumerate(sc.names[:len(sc.flags)]) if sc.flags[i] == 1}  # not Route etc.
     words: dict[int, int] = {}  # a placed item's high bits (its LOD tier and variation) per type
     for b in sc.blocks:
         for it in b.items:
             if it.kind == "object":
                 words.setdefault(it.symbol, it.word & 0x7C000000)
-    block, carrier, frame = _carrier(sc)
+    block, carrier, frame = _carrier(sc, (sum(o.x for o in objects) / len(objects), sum(o.y for o in objects) / len(objects)))
     # the reference's own "no change" transform: exact, except a compact one (a scale of 32766.99/32767); new
     # objects are placed through it, and the carried object gets its inverse, so nothing moves
     q = decode_transform(carrier.tform, _identity_data(carrier.tform))
@@ -576,8 +618,9 @@ def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]
     body = (VERSION + struct.pack("<26I", *f) + struct.pack(f"<{len(table)}I", *table) + bytes(patched) + new
             + data[end:])
     out = hashlib.md5(body).digest() + body
+    cw = compose(frame, cm)
     notes.append(f"{len(objects)} object(s) added in a new block, hung on {sc.names[carrier.symbol]} in block "
-                 f"{block.index}")
+                 f"{block.index}, {math.hypot(cw[3] - objects[0].x, cw[7] - objects[0].y) / 100:.0f} m away")
     return out, notes
 
 
