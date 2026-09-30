@@ -2464,6 +2464,7 @@ function renderWords() {
   renderScenTools();
   renderRoadTray();
   renderDockBar();
+  renderPanelWords();
 }
 
 // --- keys, while the map view is open and no text box has the focus ---
@@ -2705,10 +2706,87 @@ function onKey(e) {
   else if (action === "strength_up") nudge("strength", 1);
 }
 
+// --- panels the modder arranges (owner: "move windows around ... or at the very least less bulky"): the map panel
+// (top left) and the tools (bottom) move by their grip and fold (the map panel to its title, the tools to their bar).
+// Where each is and whether it's folded is kept per viewer (browser storage); a double-click on a grip puts that
+// panel back. ---
+const PANELS = [["map-hud", "hud"], ["map-dock", "dock"]];
+const panels = {};
+
+function panelState(key) {
+  try { return JSON.parse(localStorage.getItem("studio.panel." + key)) || {}; } catch { return {}; }
+}
+
+function savePanel(key) {
+  try { localStorage.setItem("studio.panel." + key, JSON.stringify(panels[key].state)); } catch { /* not kept: fine */ }
+}
+
+function placePanel(key) {
+  const { el: panel, state: s, fold } = panels[key], st = panel.style;
+  if (s.left == null) {
+    st.left = st.top = st.right = st.bottom = st.transform = "";
+    panel.classList.remove("moved");
+  } else {
+    panel.classList.add("moved");
+    Object.assign(st, { left: s.left + "px", top: s.top + "px", right: "auto", bottom: "auto", transform: "none" });
+  }
+  panel.classList.toggle("folded", Boolean(s.folded));
+  const w = mv.words;
+  fold.textContent = s.folded ? "▸" : "▾";
+  fold.title = (s.folded ? w.tip_panel_unfold : w.tip_panel_fold) || "";
+}
+
+function makePanels() {
+  for (const [id, key] of PANELS) {
+    const panel = $(id), stage = panel.parentElement;
+    const grip = el("span", { className: "grip", textContent: "⠿" });
+    const fold = el("button", { type: "button", className: "panel-fold" });
+    panel.prepend(el("div", { className: "panel-grip" }, grip, fold));
+    panels[key] = { el: panel, grip, fold, state: panelState(key) };
+    placePanel(key);
+    fold.addEventListener("click", () => {
+      panels[key].state.folded = !panels[key].state.folded;
+      placePanel(key);
+      savePanel(key);
+    });
+    grip.addEventListener("dblclick", () => {  // back where it started
+      panels[key].state = { folded: panels[key].state.folded };
+      placePanel(key);
+      savePanel(key);
+    });
+    grip.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault();
+      try { grip.setPointerCapture(ev.pointerId); } catch { /* the drag still follows the grip without it */ }
+      const r = panel.getBoundingClientRect(), sr = stage.getBoundingClientRect(), dx = ev.clientX - r.left, dy = ev.clientY - r.top;
+      const move = (e) => {  // kept inside the map, with its grip always reachable
+        const s = panels[key].state;
+        s.left = Math.round(Math.min(Math.max(0, e.clientX - sr.left - dx), Math.max(0, sr.width - 80)));
+        s.top = Math.round(Math.min(Math.max(0, e.clientY - sr.top - dy), Math.max(0, sr.height - 40)));
+        placePanel(key);
+      };
+      const up = () => {
+        grip.removeEventListener("pointermove", move);
+        grip.removeEventListener("pointerup", up);
+        savePanel(key);
+      };
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", up);
+    });
+  }
+}
+
+function renderPanelWords() {
+  for (const key of Object.keys(panels)) {
+    panels[key].grip.title = mv.words.tip_panel_grip || "";
+    placePanel(key);
+  }
+}
+
 let wired = false;
 function wire() {
   if (wired) return;
   wired = true;
+  makePanels();
   $("map-detail").addEventListener("click", () => {
     mv.lod = mv.lod === "lowdef" ? "highdef" : "lowdef";
     renderWords();

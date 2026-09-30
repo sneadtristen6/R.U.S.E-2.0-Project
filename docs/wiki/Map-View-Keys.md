@@ -17,11 +17,17 @@ D are the same keys on an AZERTY keyboard.
 | **Esc** | back to looking around |
 | **Ctrl+Z** | undo the last stroke or placed object |
 
+## Arrange the panels
+
+The map panel (top left) and the tools (bottom) move anywhere: drag them by their grip (⠿). The arrow next to it
+folds a panel (the map panel down to its title, the tools down to their bar). Double-click a grip to put that
+panel back. Your layout is kept.
+
 ## With the mouse
 
 | Mouse | Does |
 |---|---|
 | drag | turn the view (while a tool is on: use the tool) |
-| middle-drag | turn the view, while a tool is on |
+| middle-drag | turn the view (with a tool on too) |
 | right-drag | move the view |
 | wheel | zoom |

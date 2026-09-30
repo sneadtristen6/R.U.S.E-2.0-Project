@@ -1,6 +1,10 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.7.3:** arrange the map view your way. The map panel (top left) and the tools (bottom) move anywhere by their
+grip (⠿) and fold with the arrow next to it: the map panel down to its title, the tools down to their bar.
+Double-click a grip to put that panel back. Your layout is kept.
+
 **0.7.2:** roads, and clearer tests.
 - **Draw roads**, Cities: Skylines style (the Roads kind in the bar): **Straight**, **Curve** and **Freeform**. An
   end near a road snaps onto it and joins it. New roads draw as blue ribbons and **supply routes use them** (proven
