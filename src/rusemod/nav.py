@@ -140,14 +140,12 @@ class Graph:
             cx, cy, cr = allc[c]
             return cr > 0 and (px - cx) ** 2 + (py - cy) ** 2 <= cr * cr + 1.0
 
-        number, links = {}, []  # old link number -> new; the links kept, in their order
-        for i, (a, b, x, y) in enumerate(self.links):
-            if holds(a, x, y) and holds(b, x, y) and not in_zone(x, y):
-                number[i] = len(links)
-                links.append((a, b, x, y))
-        counts["links"] += len(self.links) - len(links)
+        kept = [(i, lk) for i, lk in enumerate(self.links) if holds(lk[0], lk[2], lk[3]) and holds(lk[1], lk[2], lk[3])
+                and not in_zone(lk[2], lk[3])]
+        counts["links"] += len(self.links) - len(kept)
+        new_links = []
         if refill:  # new links: new circles to everything they overlap; shrunk circles to each other again
-            linked = {(a, b) for a, b, _x, _y in links}
+            linked = {(a, b) for _i, (a, b, _x, _y) in kept}
             near = _Buckets([c for c in allc])
             shrunk = [i for i in changed if radius[i] > 0]
             for c in shrunk + list(range(n, n + len(added))):
@@ -161,8 +159,13 @@ class Graph:
                     if point is None or in_zone(*point):
                         continue
                     linked.add((a, b))
-                    links.append((a, b) + point)
+                    new_links.append((None, (a, b) + point))
                     counts["linked"] += 1
+        # every shipped graph lists its links by their second circle: kept ones are already in that order, new ones
+        # go after the kept ones of the same second circle (a stable sort)
+        ordered = sorted(kept + new_links, key=lambda pair: pair[1][1])
+        number = {i: k for k, (i, _lk) in enumerate(ordered) if i is not None}  # old link number -> new
+        links = [lk for _i, lk in ordered]
         mine = [[] for _ in allc]
         for i, (a, b, _x, _y) in enumerate(links):
             mine[a].append(i)

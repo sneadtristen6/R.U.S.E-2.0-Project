@@ -103,6 +103,7 @@ class Blocking(unittest.TestCase):
                 self.assertLessEqual((x - cx) ** 2 + (y - cy) ** 2, cr * cr + 1.0)
                 self.assertIn(i, g.links_of(c))
         self.assertTrue(all(g.links_of(c) for c in range(len(g.circles) - 1)))  # nothing left unlinked
+        self.assertEqual([b for _a, b, _x, _y in g.links], sorted(b for _a, b, _x, _y in g.links))  # as the game's files
         leaf = struct.unpack_from(f"<{1 + counts['added']}H", g.points, 6)
         self.assertEqual(leaf, (2 * counts["added"],) + tuple(range(2, 2 + counts["added"])))
         self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
