@@ -12,8 +12,9 @@ import zlib
 
 from fixtures import make_edat, make_ndf, val
 from rusemod.kdt import (
-    FILL, OFFSETS, Kdt, compress, decode_normal, decode_normals, decode_positions, encode_normal, encode_normals,
-    encode_positions, inflate, read_chunk,
+    FILL, OFFSETS, Clip, Kdt, Leaf, Split, compress, decode_indices, decode_main_node, decode_normal, decode_normals,
+    decode_positions, decode_tree, decode_trilists, encode_indices, encode_main_node, encode_normal, encode_normals,
+    encode_positions, encode_tree, encode_trilists, inflate, leaves, main_regions, read_chunk,
 )
 from rusemod.tms import encode_parents
 
@@ -71,7 +72,8 @@ def hand_storage(positions=POSITIONS, parents=PARENTS, normals=NORMALS, opaque=N
     starts = []
     for s in range(n_sub):
         starts.append(len(out) - base)
-        out += struct.pack("<I", 3 * (s + 5)) + game_chunk(opaque["indices"][s])
+        count = opaque["counts"][s] if "counts" in opaque else 3 * (s + 5)
+        out += struct.pack("<I", count) + game_chunk(opaque["indices"][s])
     off["OffsetOfIndexBufferIndexes"] = len(out)
     out += struct.pack(f"<{n_sub}I", *starts)
     off["OffsetOfTriangleIndexLists"] = base = len(out)
@@ -95,6 +97,30 @@ def hand_storage(positions=POSITIONS, parents=PARENTS, normals=NORMALS, opaque=N
     for t in trees:
         out += t
     return bytes(out), off
+
+
+def tag(kind: int, axis: int, rest: int, value: float) -> bytes:
+    return struct.pack("<If", (kind << 28) | (rest << 2) | axis, value)
+
+
+# Real parts for the two subtrees, laid out by hand from the documented encodings:
+#   subtree 0: triangles (0 1 2) (1 3 2): history codes 0 1 2 1 3 2; a split on x at 25 with two leaves that list
+#   both triangles; subtree 1: the degenerate triangle (0 1 0); a keep-below clip on z at 400 over one leaf.
+#   MainNode: the six bounding clips, a split on x, and a leaf for each subtree. TriangleCount: 3 distinct.
+VALID_PARTS = {
+    "counts": [6, 3],
+    "indices": [bytes((0x10, 0x12, 0x23)), bytes((0x10, 0x01))],
+    "trees": [bytes((0x40, 25, 0x81, 0x81)), bytes((0x11, 0x90, 0x80))],
+    "trilists": [bytes((0x40, 0x41, 0x40, 0x41)), bytes((0x40,))],
+    "main": (tag(0, 0, 0, 491520.0) + tag(2, 0, 0, 0.0) + tag(0, 1, 0, 491520.0) + tag(2, 1, 0, 0.0)
+             + tag(0, 2, 0, 117000.0) + tag(2, 2, 0, 9.0) + tag(4, 0, 4, 245760.0) + tag(5, 0, 0, 0.0)
+             + tag(5, 0, 1, 0.0)),
+}
+
+
+def make_valid_kdt() -> bytes:
+    storage, off = hand_storage(opaque=VALID_PARTS)
+    return make_kdt(storage, off, triangle_count=3)
 
 
 def make_kdt(storage=None, offsets=None, subtree_count=2, triangle_count=17, cls="TStreamedMeshKdTree",
@@ -362,9 +388,131 @@ class Editing(unittest.TestCase):
             self.k.set_normals(1, NORMALS[0])
 
 
+class Indices(unittest.TestCase):
+    """The index buffer: 4-bit codes over a move-to-front history of the last 8 values (seeded 0..7)."""
+
+    def test_history_codes(self):
+        self.assertEqual(decode_indices(bytes((0x10, 0x12, 0x23)), 6), [0, 1, 2, 1, 3, 2])
+        self.assertEqual(encode_indices([0, 1, 2, 1, 3, 2]), bytes((0x10, 0x12, 0x23)))
+
+    def test_small_step(self):
+        self.assertEqual(decode_indices(bytes((0xA7,)), 2), [7, 9])     # 7 from the history, then 7 + 2
+        self.assertEqual(encode_indices([7, 9]), bytes((0xA7,)))
+
+    def test_one_byte_escape_at_an_odd_nibble_reads_high_nibble_first(self):
+        self.assertEqual(decode_indices(bytes((0x5F, 0x04)), 1), [20])  # 15, then the byte 0x54 = 20 + 0x40
+        self.assertEqual(encode_indices([20]), bytes((0x5F, 0x04)))
+
+    def test_two_byte_escape_at_an_even_nibble(self):
+        self.assertEqual(decode_indices(bytes((0xF0, 0xC0, 0x64)), 2), [0, 100])
+        self.assertEqual(encode_indices([0, 100]), bytes((0xF0, 0xC0, 0x64)))
+
+    def test_round_trip_and_checks(self):
+        import random
+        rnd = random.Random(7)
+        values = [rnd.choice((rnd.randrange(3000), rnd.randrange(40))) for _ in range(900)]
+        self.assertEqual(decode_indices(encode_indices(values), len(values)), values)
+        with self.assertRaises(ValueError):
+            decode_indices(bytes((0x10, 0x12, 0x23, 0x00)), 6)            # bytes left over
+        with self.assertRaises(ValueError):
+            encode_indices([0, 20000])                                    # a step the escape can't hold
+
+
+class Trees(unittest.TestCase):
+    """The subtree k-d tree: pre-order opcodes, values relative to the nearest ancestor on the same axis."""
+
+    def test_hand_made_tree(self):
+        root = decode_tree(bytes((0x40, 25, 0x81, 0x81)))
+        self.assertEqual(root, Split(0, 25, Leaf(2), Leaf(2)))
+        self.assertEqual([(lo, hi) for _, lo, hi in leaves(root)], [((25, None, None), (None, None, None)),
+                                                                      ((None, None, None), (25, None, None))])
+        clip = decode_tree(bytes((0x11, 0x90, 0x80)))                   # 9-bit narrow value: 0x190 = 400
+        self.assertEqual(clip, Clip(2, 400, False, Leaf(1)))
+        self.assertEqual(leaves(clip)[0][1:], ((None, None, None), (None, None, 400)))
+
+    def test_values_are_relative_to_the_nearest_ancestor_on_the_same_axis(self):
+        root = Split(0, 1000, Clip(2, 500, True, Split(0, 1200, Leaf(1), Leaf(3, 2))),
+                     Clip(0, 800, False, Leaf(32)))
+        raw = encode_tree(root)
+        # x 1000 (wide, since 0x3E8 > 0x1FF); z 500 keeping above (narrow: 0x1F4 fits 9 bits); x +200 from the
+        # split above (narrow); a leaf; a leaf of variant 2; x -200 from 1000 (narrow, negative); a leaf of 32 (the
+        # count escape)
+        self.assertEqual(raw, bytes((0x44, 0x03, 0xE8, 0x31, 0xF4, 0x40, 0xC8, 0x80, 0xC2, 0x02, 0xC8, 0x9F, 31)))
+        self.assertEqual(decode_tree(raw), root)
+
+    def test_round_trip_of_random_trees(self):
+        import random
+        rnd = random.Random(3)
+
+        def make(depth):
+            if depth == 0 or rnd.random() < 0.3:
+                return Leaf(rnd.choice((1, 5, 31, 32, 200, 256)), rnd.randrange(4))
+            axis, value = rnd.randrange(3), rnd.randrange(32768)
+            if rnd.random() < 0.5:
+                return Split(axis, value, make(depth - 1), make(depth - 1))
+            return Clip(axis, value, rnd.random() < 0.5, make(depth - 1))
+
+        for _ in range(50):
+            root = make(7)
+            self.assertEqual(decode_tree(encode_tree(root)), root)
+        with self.assertRaises(ValueError):
+            encode_tree(Leaf(257))
+        with self.assertRaises(ValueError):
+            decode_tree(bytes((0x81, 0x81)))                              # a byte after the root's last node
+
+
+class TriangleLists(unittest.TestCase):
+    def test_short_and_long_forms(self):
+        lists = [[0, 1, 70, 69], [5000], []]
+        raw = encode_trilists(lists)
+        self.assertEqual(raw, bytes((0x40, 0x41, 0x80, 0, 0, 70, 0x3F, 0x80, 0, 0x13, 0x88)))
+        self.assertEqual(decode_trilists(raw, [4, 1, 0]), lists)
+        with self.assertRaises(ValueError):
+            decode_trilists(raw + bytes((0x40,)), [4, 1, 0])
+
+
+class MainNode(unittest.TestCase):
+    def test_walk_gives_each_subtree_its_region(self):
+        entries = decode_main_node(VALID_PARTS["main"])
+        self.assertEqual(encode_main_node(entries), VALID_PARTS["main"])
+        self.assertEqual(entries[6], (4, 0, 4, 245760.0))
+        regions = main_regions(entries)
+        self.assertEqual(sorted(regions), [0, 1])
+        self.assertEqual(regions[0], ((245760.0, 0.0, 9.0), (491520.0, 491520.0, 117000.0), [0, 1, 2, 3, 4, 5]))
+        self.assertEqual(regions[1][:2], ((0.0, 0.0, 9.0), (245760.0, 491520.0, 117000.0)))
+
+    def test_a_subtree_reached_twice_is_an_error(self):
+        entries = decode_main_node(tag(4, 0, 4, 1.0) + tag(5, 0, 0, 0.0) + tag(5, 0, 0, 0.0))
+        with self.assertRaises(ValueError):
+            main_regions(entries)
+
+
+class Parts(unittest.TestCase):
+    """The file's own accessors for the index buffers, trees, lists and the MainNode, on a valid made-up file."""
+
+    def test_read_edit_and_rebuild(self):
+        raw = make_valid_kdt()
+        k = Kdt(raw)
+        self.assertEqual((k.indices(0), k.indices(1)), ([0, 1, 2, 1, 3, 2], [0, 1, 0]))
+        self.assertEqual(k.tree(1), Clip(2, 400, False, Leaf(1)))
+        self.assertEqual(k.trilists(0), [[0, 1], [0, 1]])
+        self.assertEqual(len(k.main_entries()), 9)
+        k.set_indices(0, [0, 1, 2, 1, 3, 2, 2, 3, 0])
+        k.set_tree(0, Split(0, 25, Leaf(3), Clip(2, 40, False, Leaf(3))), [[0, 1, 2], [0, 1, 2]])
+        r = Kdt(k.to_bytes())
+        self.assertEqual((r.subtrees[0].index_count, r.indices(0)), (9, [0, 1, 2, 1, 3, 2, 2, 3, 0]))
+        self.assertEqual(r.trilists(0), [[0, 1, 2], [0, 1, 2]])
+        self.assertEqual(r.subtrees[1], k.subtrees[1])
+        with self.assertRaises(ValueError):
+            k.set_indices(1, [0, 1, 2])                                  # subtree 1 has 2 vertices
+        with self.assertRaises(ValueError):
+            k.set_tree(1, Leaf(2), [[0]])                                 # the list must be as long as the leaf
+        self.assertEqual(Kdt(raw).to_bytes(), raw)
+
+
 class VerifyTool(unittest.TestCase):
     def test_runs_on_a_made_up_game_folder(self):
-        good = make_kdt()
+        good = make_valid_kdt()
         storage, off = hand_storage()
         bad = bytearray(good)
         i = bad.index(storage[:32])                  # break the first chunk's zlib bytes

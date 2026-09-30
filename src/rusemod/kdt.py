@@ -6,9 +6,10 @@ bounds, a triangle count, eight OffsetOf* offsets into Storage, and Storage itse
 subtree (a positions chunk, a normals chunk, an index buffer, a triangle list, the subtree's own node data) plus
 the MainNode bytes and the index tables that point at all of it. Layout in docs/FORMATS.md §6.
 
-Positions and normals are decoded and re-encoded; the index buffers, triangle lists, MainNode and subtree chunks are
-kept as opaque bytes. Unchanged chunks keep their original compressed bytes, so an unchanged file re-serializes
-byte-for-byte; the writer rebuilds every table, the padding and the offset properties from the parts.
+Every part decodes and re-encodes: positions and normals; the index buffers, the triangle lists and the subtrees'
+k-d trees, and the MainNode (the tree over the subtrees), whose encodings follow the notes of DomesticNukes and his
+Claude. Unchanged chunks keep their original compressed bytes, so an unchanged file re-serializes byte-for-byte; the
+writer rebuilds every table, the padding and the offset properties from the parts.
 """
 from __future__ import annotations
 
@@ -164,6 +165,290 @@ def decode_normals(data: bytes) -> list[tuple[float, float, float]]:
 def encode_normals(normals: list) -> bytes:
     """Normals -> inflated normals chunk."""
     return struct.pack(f"<{len(normals)}I", *(encode_normal(n) for n in normals))
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# The index buffer, the triangle lists, the subtree trees and the MainNode. These encodings follow the notes of
+# DomesticNukes and his Claude (2026-09-29), checked here on every shipped file (tools/verify_kdt.py).
+
+def _nibbles(data: bytes) -> list[int]:
+    out = []
+    for b in data:
+        out += (b & 0xF, b >> 4)          # low nibble first
+    return out
+
+
+def decode_indices(data: bytes, count: int) -> list[int]:
+    """An index buffer chunk's content: `count` vertex numbers, 3 per triangle.
+
+    4-bit codes, low nibble first, over a move-to-front history of the last 8 values (seeded 0..7):
+    0-7 = the value at that place in the history (moved to the front); 8-14 = the last value + 0..6;
+    15 = an escape: one byte B < 0x81 for a step of B - 0x40, else two bytes for ((B & 0x7F) << 8 | B2) - 0x4000.
+    A byte after an escape starts at the nibble after the 15: at an odd nibble it reads high nibble first."""
+    nib, k, last, hist, out = _nibbles(data), 0, 0, list(range(8)), []
+
+    def byte() -> int:
+        nonlocal k
+        b = (nib[k] << 4) | nib[k + 1] if k & 1 else nib[k] | (nib[k + 1] << 4)
+        k += 2
+        return b
+
+    for _ in range(count):
+        c = nib[k]
+        k += 1
+        if c < 8:
+            v = hist.pop(c)
+            hist.insert(0, v)
+        else:
+            if c < 15:
+                v = last + c - 8
+            else:
+                b = byte()
+                v = last + (b - 0x40 if b < 0x81 else (((b & 0x7F) << 8) | byte()) - 0x4000)
+            hist.insert(0, v)
+            hist.pop()
+        out.append(v)
+        last = v
+    if (k + 1) // 2 != len(data):
+        raise ValueError(f"index buffer: {len(data)} bytes, {count} values used {(k + 1) // 2}")
+    return out
+
+
+def encode_indices(values: list[int]) -> bytes:
+    """The index buffer chunk content for `values` (the shipped chunks come out byte for byte)."""
+    nib, last, hist = [], 0, list(range(8))
+
+    def byte(b: int) -> None:
+        nib.extend((b >> 4, b & 0xF) if len(nib) & 1 else (b & 0xF, b >> 4))
+
+    for v in values:
+        if v in hist:
+            c = hist.index(v)
+            nib.append(c)
+            hist.insert(0, hist.pop(c))
+        else:
+            d = v - last
+            if 0 <= d <= 6:
+                nib.append(8 + d)
+            elif -64 <= d <= 63:
+                nib.append(15)
+                byte(d + 0x40)
+            else:
+                if not -0x4000 <= d < 0x4000:
+                    raise ValueError(f"index step {d} is out of range")
+                e = (d + 0x4000) & 0x7FFF
+                nib.append(15)
+                byte(0x80 | (e >> 8))
+                byte(e & 0xFF)
+            hist.insert(0, v)
+            hist.pop()
+        last = v
+    if len(nib) & 1:
+        nib.append(0)
+    return bytes(nib[i] | (nib[i + 1] << 4) for i in range(0, len(nib), 2))
+
+
+@dataclass
+class Leaf:
+    count: int          # triangles listed (an empty leaf lists one: triangle 0)
+    variant: int = 0    # bits 5-6 of the leaf byte, meaning unknown; 0 for new leaves
+
+
+@dataclass
+class Split:
+    axis: int           # 0 x, 1 y, 2 z
+    value: int          # quantized, like the positions
+    above: object       # first child: lo = value on the axis
+    below: object       # second child: hi = value
+
+
+@dataclass
+class Clip:
+    axis: int
+    value: int
+    keep_above: bool    # False: the child is below (hi = value); True: above (lo = value)
+    child: object
+
+
+def decode_tree(data: bytes):
+    """A subtree's tree chunk content: its k-d tree, stored pre-order. A value is stored as its difference from
+    the nearest ancestor's value on the same axis (0 at the root), 9 bits in the byte and the next, or 16 bits in
+    the next two bytes big-endian."""
+    pos = 0
+
+    def node(anc: tuple):
+        nonlocal pos
+        b = data[pos]
+        pos += 1
+        if b & 0x80:
+            n = b & 0x1F
+            if n == 0x1F:
+                n = data[pos]
+                pos += 1
+            return Leaf(n + 1, (b >> 5) & 3)
+        axis = (b >> 3) & 3
+        if axis == 3:
+            raise ValueError("tree node on axis 3")
+        if b & 4:
+            mag = (data[pos] << 8) | data[pos + 1]
+            pos += 2
+        else:
+            mag = ((b & 1) << 8) | data[pos]
+            pos += 1
+        v = anc[axis] + (-mag if b & 2 else mag)
+        if not -0x8000 <= v < 0x8000:
+            v = (v + 0x8000) % 0x10000 - 0x8000
+        inner = anc[:axis] + (v,) + anc[axis + 1:]
+        if b & 0x40:
+            return Split(axis, v, node(inner), node(inner))
+        return Clip(axis, v, bool(b & 0x20), node(inner))
+
+    root = node((0, 0, 0))
+    if pos != len(data):
+        raise ValueError(f"tree: {len(data) - pos} bytes after the root's last node")
+    return root
+
+
+def encode_tree(root) -> bytes:
+    out = bytearray()
+
+    def node(n, anc: tuple) -> None:
+        if isinstance(n, Leaf):
+            if not 1 <= n.count <= 256:
+                raise ValueError(f"a leaf lists 1 to 256 triangles, not {n.count}")
+            if n.count - 1 < 0x1F:
+                out.append(0x80 | (n.variant << 5) | (n.count - 1))
+            else:
+                out.extend((0x80 | (n.variant << 5) | 0x1F, n.count - 1))
+            return
+        d = n.value - anc[n.axis]
+        mag = abs(d)
+        if mag > 0xFFFF:
+            raise ValueError(f"tree value step {d} is out of range")
+        b = (0x40 if isinstance(n, Split) else (0x20 if n.keep_above else 0)) | (n.axis << 3) | (2 if d < 0 else 0)
+        if mag <= 0x1FF:
+            out.extend((b | (mag >> 8), mag & 0xFF))
+        else:
+            out.extend((b | 4, mag >> 8, mag & 0xFF))
+        inner = anc[:n.axis] + (n.value,) + anc[n.axis + 1:]
+        if isinstance(n, Split):
+            node(n.above, inner)
+            node(n.below, inner)
+        else:
+            node(n.child, inner)
+
+    node(root, (0, 0, 0))
+    return bytes(out)
+
+
+def leaves(root) -> list:
+    """The leaves in stored order, each with its cell: (leaf, lo, hi) with lo/hi per axis (None = unbounded)."""
+    out, stack = [], [(root, (None,) * 3, (None,) * 3)]
+    while stack:
+        n, lo, hi = stack.pop()
+        if isinstance(n, Leaf):
+            out.append((n, lo, hi))
+        elif isinstance(n, Split):
+            a = n.axis
+            stack.append((n.below, lo, hi[:a] + (n.value,) + hi[a + 1:]))   # pushed first: visited second
+            stack.append((n.above, lo[:a] + (n.value,) + lo[a + 1:], hi))
+        else:
+            a = n.axis
+            if n.keep_above:
+                stack.append((n.child, lo[:a] + (n.value,) + lo[a + 1:], hi))
+            else:
+                stack.append((n.child, lo, hi[:a] + (n.value,) + hi[a + 1:]))
+    return out
+
+
+def decode_trilists(data: bytes, counts: list[int]) -> list[list[int]]:
+    """A triangle list chunk's content: one list of triangle numbers per leaf, in leaf order. Each list starts from
+    0; a byte < 0x80 adds byte - 0x40, a byte >= 0x80 starts a 4-byte big-endian absolute value (top bit dropped)."""
+    pos, out = 0, []
+    for n in counts:
+        prev, lst = 0, []
+        for _ in range(n):
+            b = data[pos]
+            if b < 0x80:
+                prev += b - 0x40
+                pos += 1
+            else:
+                prev = ((b & 0x7F) << 24) | (data[pos + 1] << 16) | (data[pos + 2] << 8) | data[pos + 3]
+                pos += 4
+            lst.append(prev)
+        out.append(lst)
+    if pos != len(data):
+        raise ValueError(f"triangle lists: {len(data) - pos} bytes after the last list")
+    return out
+
+
+def encode_trilists(lists: list[list[int]]) -> bytes:
+    out = bytearray()
+    for lst in lists:
+        prev = 0
+        for v in lst:
+            d = v - prev
+            if -64 <= d <= 63:
+                out.append(d + 0x40)
+            else:
+                if not 0 <= v < 1 << 31:
+                    raise ValueError(f"triangle number {v} is out of range")
+                out += bytes((0x80 | (v >> 24), (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF))
+            prev = v
+    return bytes(out)
+
+
+MAIN_SPLIT, MAIN_LEAF = 4, 5
+
+
+def decode_main_node(data: bytes) -> list[tuple[int, int, int, float]]:
+    """The MainNode's 8-byte entries as (type, axis, rest, value): type = tag >> 28, axis = tag & 3,
+    rest = (tag & 0x0FFFFFFF) >> 2, value in world units. Types: 4 split (above = the next entry, below = entry
+    i + rest / 2); 0 / 2 clip keeping below / above, child = the next entry; 1 / 3 the same clips, child =
+    subtree `rest`; 5 leaf = subtree `rest`."""
+    if len(data) % 8:
+        raise ValueError("MainNode is not a whole number of 8-byte entries")
+    out = []
+    for o in range(0, len(data), 8):
+        tag, value = struct.unpack_from("<If", data, o)
+        out.append((tag >> 28, tag & 3, (tag & 0x0FFFFFFF) >> 2, value))
+    return out
+
+
+def encode_main_node(entries: list[tuple[int, int, int, float]]) -> bytes:
+    return b"".join(struct.pack("<If", (t << 28) | (rest << 2) | axis, value) for t, axis, rest, value in entries)
+
+
+def main_regions(entries: list) -> dict[int, tuple[tuple, tuple, list[int]]]:
+    """Each subtree's region from the MainNode walk: subtree -> (lo, hi, the clip entries on its path) with lo/hi
+    per axis in world units (None = unbounded). Raises if a subtree is reached twice."""
+    out: dict[int, tuple] = {}
+    stack = [(0, (None,) * 3, (None,) * 3, ())]
+    while stack:
+        i, lo, hi, path = stack.pop()
+        t, a, rest, v = entries[i]
+        cut_lo = lo[:a] + (v,) + lo[a + 1:]
+        cut_hi = hi[:a] + (v,) + hi[a + 1:]
+        if t == MAIN_SPLIT:
+            if rest & 1:
+                raise ValueError(f"MainNode entry {i}: odd split offset")
+            stack.append((i + rest // 2, lo, cut_hi, path))
+            stack.append((i + 1, cut_lo, hi, path))
+            continue
+        if t == MAIN_LEAF:
+            sub, box = rest, (lo, hi)
+        elif t in (0, 2):
+            stack.append((i + 1, lo if t == 0 else cut_lo, cut_hi if t == 0 else hi, path + (i,)))
+            continue
+        elif t in (1, 3):
+            sub, box = rest, ((lo, cut_hi) if t == 1 else (cut_lo, hi))
+            path = path + (i,)
+        else:
+            raise ValueError(f"MainNode entry {i}: unknown type {t}")
+        if sub in out:
+            raise ValueError(f"MainNode reaches subtree {sub} twice")
+        out[sub] = (box[0], box[1], list(path))
+    return out
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -371,6 +656,46 @@ class Kdt:
         if len(normals) != t.count:
             raise ValueError(f"subtree {s} has {t.count} vertices, got {len(normals)}")
         t.normals = compress(encode_normals(normals))
+
+    # -- triangles and trees ---------------------------------------------------------------------------------
+
+    def indices(self, s: int) -> list[int]:
+        """Subtree `s`'s triangles as vertex numbers, 3 per triangle."""
+        t = self.subtrees[s]
+        return decode_indices(inflate(t.indices), t.index_count)
+
+    def tree(self, s: int):
+        """Subtree `s`'s k-d tree (Leaf, Split and Clip nodes; values quantized like the positions)."""
+        return decode_tree(inflate(self.subtrees[s].tree))
+
+    def trilists(self, s: int, root=None) -> list[list[int]]:
+        """The triangle numbers each leaf of subtree `s`'s tree lists, in leaf order."""
+        root = self.tree(s) if root is None else root
+        return decode_trilists(inflate(self.subtrees[s].trilist), [leaf.count for leaf, _, _ in leaves(root)])
+
+    def set_indices(self, s: int, values: list[int]) -> None:
+        """Replace subtree `s`'s triangles (vertex numbers, 3 per triangle, each below its vertex count)."""
+        if len(values) % 3:
+            raise ValueError("triangles need 3 vertex numbers each")
+        n = self.subtrees[s].count
+        if any(not 0 <= v < n for v in values):
+            raise ValueError(f"a vertex number is outside subtree {s}'s {n} vertices")
+        t = self.subtrees[s]
+        t.index_count, t.indices = len(values), compress(encode_indices(values))
+
+    def set_tree(self, s: int, root, lists: list[list[int]]) -> None:
+        """Replace subtree `s`'s k-d tree and its leaves' triangle lists (one list per leaf, in leaf order)."""
+        found = leaves(root)
+        if len(found) != len(lists) or any(leaf.count != len(lst) for (leaf, _, _), lst in zip(found, lists)):
+            raise ValueError("one triangle list per leaf, as long as the leaf's count")
+        t = self.subtrees[s]
+        t.tree, t.trilist = compress(encode_tree(root)), compress(encode_trilists(lists))
+
+    def main_entries(self) -> list[tuple[int, int, int, float]]:
+        return decode_main_node(self.main_node)
+
+    def set_main_entries(self, entries: list[tuple[int, int, int, float]]) -> None:
+        self.main_node = encode_main_node(entries)
 
     def to_world(self, axis: int, q: int) -> float:
         """Quantized value -> world units on axis 0 (x), 1 (y) or 2 (z)."""
