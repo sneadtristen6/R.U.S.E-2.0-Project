@@ -60,6 +60,14 @@ BUILDING_GROUPS = (("fake", ("Leurre", "Fake")), ("hq", ("Headquarter",)),
 FACTORY_GROUPS = {8: "barracks", 10: "armor", 11: "antitank", 13: "artillery", 12: "prototype", 9: "airfield",
                   3: "turret"}
 GROUPS = ("hq", "money", "factory", "fort", "fake", *FACTORY_GROUPS.values(), "other")  # the order lists show them in
+# Ammunition by what it is: its kind's English name in the game's texts (TypeName), the same in every language.
+AMMO_GROUPS = {"ap": ("AP shell",), "he": ("HE shell", "Assault gun", "Mortar", "Navy gun", "Nuclear gun"),
+               "aa": ("AA gun",), "mg": ("Machine-gun", "Machine-guns", "MG turrets", "Fixed MG"),
+               "infantry_weapons": ("Infantry weapon", "Handguns", "Grenades", "Flamethrower", "Satchel charge"),
+               "antitank_weapons": ("Bazooka", "PIAT", "Panzerfaust", "Panzerschreck", "Panzerknacker"),
+               "bombs": ("Carpet bombing", "Diving bomb", "HE bomb"), "rockets": ("Rocket", "Rockets", "V2")}
+AMMO_GROUP_OF = {text: g for g, texts in AMMO_GROUPS.items() for text in texts}
+AMMO_GROUP_ORDER = (*AMMO_GROUPS, "other")
 
 
 def group_of(kind: str, address: str, factory: int | None) -> str:
@@ -240,7 +248,7 @@ class StudioApi(UpdateCalls, PrefsCalls):
         (what it's for, group_of); `group` lists only those. `groups`: the groups there are of `kind` and `nation`. The current mod's new units come first, under the nation
         and factory they were given, marked `new`. `kind` "ammo" lists the ammunition instead (see `ammo`)."""
         if kind == "ammo":
-            return self.ammo(lang, search)
+            return self.ammo(lang, search, group)
         ix = self._open()
         try:
             rows = self._all_units(ix)
@@ -294,13 +302,15 @@ class StudioApi(UpdateCalls, PrefsCalls):
         texts = ix.names(keys, lang) if lang != schema.BASE else {}
         return {a["address"]: ammo_name(texts, a["name_key"], a["type_key"]) or _tail(a["address"]) for a in rows}
 
-    def ammo(self, lang: str = schema.BASE, search: str = "") -> dict:
-        """The ammunition to list, like `units`: the current mod's copies first (marked `new`), then the game's,
-        each with the units whose weapons fire it (`users`, names in `lang`)."""
+    def ammo(self, lang: str = schema.BASE, search: str = "", group: str = "all") -> dict:
+        """The ammunition to list, like `units`: the current mod's copies first (marked `new`), then the game's by
+        `group` (AMMO_GROUPS: what it is) and kind, each with the units whose weapons fire it (`users`, names in
+        `lang`). `group` lists only those; `groups`: the groups there are."""
         ix = self._open()
         try:
             rows = self._all_ammo(ix)
             names = self._ammo_names(ix, rows, lang)
+            english = ix.names([a["type_key"] for a in rows if a["type_key"]], "us")
             users = {u for a in rows for u in a["users"]}
             user_names = self._names(ix, sorted(users), lang)
             nation_of = {u["address"]: u["nation"] for u in self._all_units(ix)}
@@ -314,9 +324,17 @@ class StudioApi(UpdateCalls, PrefsCalls):
                 continue
             new.append({"address": unit.target, "id": None, "users": [], "new": True, "source": unit.source,
                         "name": unit.name, "source_name": names[unit.source]})
+        group_of = {a["address"]: AMMO_GROUP_OF.get(english.get(a["type_key"], ""), "other") for a in rows}
+        order = {g: n for n, g in enumerate(AMMO_GROUP_ORDER)}
+        # by group, then the game's kind (MG turrets apart from machine-guns), then the game's own order
+        rows = sorted(rows, key=lambda a: (order[group_of[a["address"]]], english.get(a["type_key"], "")))
         words = search.strip().lower()
-        out = []
+        out, present = [], set()
         for a in new + rows:
+            g = group_of[a.get("source") or a["address"]]
+            present.add(g)
+            if group != "all" and g != group:
+                continue
             name = a.get("name") or names[a["address"]]
             used = [user_names[u] for u in a["users"]]
             if words and words not in name.lower() and words not in a["address"].lower() \
@@ -326,8 +344,8 @@ class StudioApi(UpdateCalls, PrefsCalls):
             out.append({"address": a["address"], "name": name, "base_name": _tail(a["address"]), "kind": "ammo",
                         "id": a["id"], "users": used, "nations": nations, "nation": -1, "nation_name": "",
                         "factory": None, "slot": None, "new": a.get("new", False), "source": a.get("source"),
-                        "source_name": a.get("source_name")})
-        return {"units": out, "total": len(rows) + len(new)}
+                        "source_name": a.get("source_name"), "group": g})
+        return {"units": out, "total": len(rows) + len(new), "groups": [g for g in AMMO_GROUP_ORDER if g in present]}
 
     @staticmethod
     def _nations_of(users, nation_of: dict, lang: str) -> list[str]:

@@ -651,6 +651,9 @@ class AmmoAndFlags(WithMod):
         self.assertEqual(self.api.ammo("fr")["units"][0]["nations"], ["Allemagne"])
         self.assertEqual([a["name"] for a in self.api.ammo()["units"]], ["Ammo_Canon_75", "Ammo_Canon_88"])  # code names
         self.assertEqual([a["address"] for a in self.api.ammo("us", search="panzer")["units"]], [AMMO_75])  # by user too
+        self.assertEqual((listed["groups"], [a["group"] for a in listed["units"]]), (["ap"], ["ap", "ap"]))  # AP shells
+        self.assertEqual(len(self.api.units("us", kind="ammo", group="ap")["units"]), 2)
+        self.assertEqual(self.api.units("us", kind="ammo", group="bombs")["units"], [])
         page = self.api.unit(AMMO_75)
         self.assertEqual((page["can_copy"], page["can_copy_ammo"], page["has_weapons"]), (False, True, False))
         self.assertTrue(self.api.unit(PANZER_IV)["has_weapons"])
@@ -904,8 +907,8 @@ class Labels(unittest.TestCase):
         app = "\n".join((ui / f).read_text(encoding="utf-8") for f in ("app.js", "maps.js"))
         used = set(re.findall(r"\b(?:w|state\.words|mv\.words)\.([a-z_]+)", app))
         used |= {"all", "ground", "infantry", "air", "buildings", "not_stable"}  # looked up by key
-        from ruse_studio.api import GROUPS
-        used |= {"group_" + g for g in GROUPS}  # each type's name too
+        from ruse_studio.api import AMMO_GROUP_ORDER, GROUPS
+        used |= {"group_" + g for g in GROUPS + AMMO_GROUP_ORDER}  # each type's name too
         maps = (ui / "maps.js").read_text(encoding="utf-8")  # each brush's name is looked up by key
         used |= {"brush_" + name for name in re.findall(r"^  (\w+): \[\"(?:add|level|smooth|ramp)\"", maps, re.M)}
         self.assertEqual(len(used & {"brush_hill", "brush_smooth", "brush_ramp"}), 3)

@@ -1,6 +1,10 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.6.6:** the ammunition is sorted by type too: AP shells, HE shells, anti-aircraft, machine guns, infantry
+weapons, infantry anti-tank, bombs and rockets (the Type list above the ammunition). Mods can also paint cover (where
+units hide, like in a wood) and blocked ground on a map (`maps/<map>/cover.toml`); the Studio tool for it comes next.
+
 **0.6.5:** scenarios can be edited on the map. **Move** a starting point or a spawn (click it, then where it goes;
 Put back undoes it). **Add unit** spawns a unit or building when the scenario starts: pick its kind (buildings, ground,
 infantry, air), then its type (for buildings: HQ, money, factories, forts and defenses, fake decoys; for units: the
