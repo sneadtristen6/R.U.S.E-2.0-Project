@@ -113,7 +113,19 @@ Modders who write mods by hand can also use the `ruse` command-line tool, from t
     <td width="50%" valign="top">
       <img src="docs/images/map-placed-buildings.jpg" alt="R.U.S.E. in game on Blitz: water towers at 8 times their size around a hill, barns at 6 times around a pit" width="380"><br>
       <sub>Buildings placed by a mod: water towers at 8× their size ring the hill, barns at 6× ring a pit next to it
-      (2026-09-30). Units still walk through placed buildings; making them solid is next.</sub>
+      (2026-09-30).</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/movement-solid-towers.jpg" alt="R.U.S.E. in game on Blitz: a tank stopped between two giant placed water towers instead of driving through them" width="380"><br>
+      <sub>Movement, later the same day: placed buildings are solid (the tank threads between the towers), and a
+      pit is blocked for every unit. The map's own movement data is read and written now.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/movement-building-on-hill.jpg" alt="R.U.S.E. in game on Blitz: a building being placed by the player on the edited hill" width="380"><br>
+      <sub>Building on the edited ground in the game works too. Four crashes on the way were read from the game's
+      crash dumps and fixed the same evening (docs/LOG.md).</sub>
     </td>
   </tr>
 </table>
@@ -156,9 +168,11 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
 - **Scenarios:** every map's scenarios read and shown on the map; mods move starting points and spawns and add units
   and buildings a scenario starts with (`maps/<map>/scenario.toml`). Which side number is the player in a skirmish
   is the next in-game check.
-- **Found in the game:** units walk through placed buildings, and the cover grid's "blocked" layer doesn't stop
-  them. Movement lives in the map's other AI data (`mapinfo.win`): its first part is the map's road network, which
-  the road tool will write.
+- **Movement works in the game** (Blitz, the same night): the map's navigation graphs (`mapinfo.win`, one for
+  infantry and one for vehicles: circles units plan through, with a spatial index) are read and written
+  byte-identical (`rusemod.nav`). Mods block ground (`maps/<map>/movement.toml`), the ground freed around a block is
+  filled back, and every building a mod places is solid. The road network is the same file's first part; the road
+  tool will write it.
 - **Community mods:** `.rmod` files (RUSE-Mod-Manager, by LittleGroove) work as they are, through LittleGroove's own
   engine (PLAN.md decision 26); all 75 on hand apply with 0 errors.
 - **Next, the map maker the Cities: Skylines way** (PLAN.md §10, "Roadmap from here"): movement (solid buildings,
