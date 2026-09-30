@@ -382,6 +382,28 @@ rotation = 0.5                # radians, optional
   applied first, so their item numbers stay the shipped ones.
 - Which `camp` is which player in a skirmish isn't known yet (an in-game check).
 
+### Cover and blocked ground: `maps/<map pack>/cover.toml`
+
+Where units hide is baked into each map: a grid in `datasmap\<map>\mapinfo.win` (`DataMap_Win.dat`; its fourth
+buffer, an SDB quadtree, FORMATS §2). A cell's byte holds layers; the game asks two (LittleGroove's notes): 0x08,
+"in forest" (units there are hidden, and ambush), and 0x04, blocked. Eugen drew them as zones, not from the trees:
+a town or a wood a mod adds gives cover only where cover is painted. A mod paints circles, in order:
+
+```toml
+[[paint]]
+x = 801088.0        # map units, like a scenario's positions
+y = 881645.0
+radius = 20000.0    # a cell is painted when its centre is inside (Blitz: 1,024 cells a side, 1,280 units each)
+layer = "cover"     # or "blocked"
+erase = true        # optional: clears the layer instead (a wood's cover taken away)
+```
+
+- `rusemod.cover` edits the tree in place: leaves no circle touches keep their bytes, a leaf a circle's edge
+  crosses becomes a node of four, and both checksums are made again. Checked on all 34 shipped grids: exactly the
+  cells in the circles change.
+- Circles apply in load order, a later mod's over an earlier one's.
+- Whether units hide in painted cover the way they do in a wood is the next in-game check.
+
 ## 9. Scripts
 
 - `scripts/<package>/*.py` holds Python 2.5-compatible source.

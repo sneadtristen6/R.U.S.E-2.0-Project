@@ -31,6 +31,7 @@ class ModInfo:
     rmod: object = None                                      # a .rmod mod: its file (rusemod.rmod applies it)
     scenery: dict = field(default_factory=dict)              # map pack name -> [scenery.NewObject] (§8)
     scenario: dict = field(default_factory=dict)             # map pack name -> [scenario.Move] (§8)
+    cover: dict = field(default_factory=dict)                # map pack name -> [cover.Paint] (§8)
 
 
 # --- versions ---

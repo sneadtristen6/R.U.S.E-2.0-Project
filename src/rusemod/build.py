@@ -1,6 +1,6 @@
 """Build mods into game files: from mod folders to rebuilt packs (docs/MOD_FORMAT.md §2, §3, §6, §8, §10).
 
-  mod folders (mod.toml + src/**/*.rndf + text/*.csv + maps/<map>/terrain.toml, scenery.toml, scenario.toml)  ->  load order  ->  the pack's data
+  mod folders (mod.toml + src/**/*.rndf + text/*.csv + maps/<map>/terrain.toml, scenery.toml, scenario.toml, cover.toml)  ->  load order  ->  the pack's data
   files into the engine's model  ->  run the mods  ->  texts: game keys handed out, loc('...') values filled in  ->
   write changed files back  ->  rebuilt unit-data pack + fingerprint, the rebuilt ZZ_Win.dat when mods add texts or
   new units, and a rebuilt map pack for every map whose ground a mod reshapes (rusemod.terrain_edit)
@@ -107,6 +107,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.terrain = read_terrain(path)
         info.scenery = read_scenery(path)
         info.scenario = read_scenario(path)
+        info.cover = read_cover(path)
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -137,6 +138,33 @@ def read_scenery(folder: Path) -> dict:
             raise BuildError(str(exc)) from None
         if objects:
             out[f.parent.name] = objects
+    return out
+
+
+def read_cover(folder: Path) -> dict:
+    """A mod's painted cover and blocked ground: {map pack name: [cover.Paint]} from maps/<map pack>/cover.toml
+    (MOD_FORMAT §8)."""
+    from .cover import CoverError, parse_paints
+    out = {}
+    maps = folder / "maps"
+    for f in sorted(maps.glob("*/cover.toml"), key=lambda p: p.parent.name.lower()) if maps.is_dir() else []:
+        rel = f.relative_to(folder).as_posix()
+        if not _MAP_NAME.match(f.parent.name):
+            raise BuildError(f"{rel}: {f.parent.name!r} isn't a map's pack name (letters, digits and _, like "
+                             f"TwoIslands)")
+        try:
+            data = tomllib.loads(f.read_text(encoding="utf-8"))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+            raise BuildError(f"{rel}: {exc}") from None
+        extra = sorted(set(data) - {"paint"})
+        if extra:
+            raise BuildError(f"{rel}: unknown key {extra[0]!r} (a cover file holds [[paint]] tables)")
+        try:
+            paints = parse_paints(data.get("paint", []), rel)
+        except CoverError as exc:
+            raise BuildError(str(exc)) from None
+        if paints:
+            out[f.parent.name] = paints
     return out
 
 
@@ -403,14 +431,15 @@ def scenery_edits(order: list[str], mods: list) -> dict[str, tuple[list, list[st
     return out
 
 
-def scenario_edits(order: list[str], mods: list) -> dict[str, tuple[list, list[str]]]:
-    """Every map a mod moves design items on: {map pack name: (the moves of all the mods in load order, their ids)}."""
+def scenario_edits(order: list[str], mods: list, what: str = "scenario") -> dict[str, tuple[list, list[str]]]:
+    """Every map a mod moves design items on: {map pack name: (the moves of all the mods in load order, their ids)}.
+    `what` "cover": the circles they paint on its cover instead (a later mod's circle over an earlier one's)."""
     by_id = {m.id: m for m, _ in mods}
     out: dict[str, tuple[list, list[str]]] = {}
     for mod_id in order:
         if mod_id not in by_id:
             continue
-        for pack, moves in getattr(by_id[mod_id], "scenario", {}).items():
+        for pack, moves in getattr(by_id[mod_id], what, {}).items():
             every, ids = out.setdefault(pack, ([], []))
             every.extend(moves)
             ids.append(mod_id)
@@ -585,14 +614,15 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if entry is None:
                 map_packs.append((map_path, map_arc, changed_members))
             result.terrain_changed[map_path.name] = changed_members
-        data_packs = []  # (path, open pack, {member: new bytes}): DataMap_Win.dat, where the scenarios are
-        moves = scenario_edits(result.order, mods)
-        if moves:
+        data_packs = []  # (path, open pack, {member: new bytes}): DataMap_Win.dat, the scenarios and the cover grids
+        moves, paints = scenario_edits(result.order, mods), scenario_edits(result.order, mods, "cover")
+        if moves or paints:
+            from .cover import CoverError, apply_paints
             from .scenario import PACK as SCENARIO_PACK, ScenarioError, apply_moves
             data_path = find_pack(game, SCENARIO_PACK)
             if data_path is None:
                 result.findings.append(Finding("error", f"{SCENARIO_PACK} isn't in this game, so no starting point or "
-                                                        f"spawn can be moved"))
+                                                        f"spawn can be moved, and no cover painted"))
             else:
                 data_arc = open_pack(data_path)
                 changed_members: dict = {}
@@ -610,6 +640,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         continue
                     changed_members.update(new)
                     say(f"scenario: {name}, from {', '.join(ids)}")
+                    for note in notes:
+                        say(f"  {note}")
+                for name, (map_paints, ids) in paints.items():
+                    try:
+                        new, notes = apply_paints(read_data, name, map_paints)
+                    except (CoverError, ValueError, struct.error) as exc:
+                        result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}"))
+                        continue
+                    changed_members.update(new)
+                    say(f"cover: {name}, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
                 if changed_members:
@@ -650,7 +690,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 + ", ".join(m.rsplit(chr(92), 1)[-1] for m in changed_members) + ")")
         zz_win_changed = {**result.text_changed, **result.script_changed}
         for data_path, _a, changed_members in data_packs:
-            say(f"changed: {data_path.name} ({len(changed_members)} scenario file(s))")
+            say(f"changed: {data_path.name} ({len(changed_members)} file(s): "
+                + ", ".join(m.rsplit(chr(92), 1)[-1] for m in changed_members) + ")")
         rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, zz_win_changed)] + map_packs + data_packs
         listed = {Path(path).resolve() for path, _a, _c in rebuilt if path}
         rebuilt += [(p, a, {}) for p, a in rmod_packs.items() if p not in listed]
