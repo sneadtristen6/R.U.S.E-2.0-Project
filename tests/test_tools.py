@@ -7,6 +7,7 @@ import struct
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 from fixtures import make_edat, make_ndf, val
 from test_dic import MP01_KEY, make_dic
@@ -273,6 +274,9 @@ class RmodToMod(unittest.TestCase):
         with open(os.path.join(folder, "src", "numbered.rndf"), encoding="utf-8") as f:
             text = f.read()
         self.assertIn("// not rebuilt: Scale", text)
+        for path in Path(folder).rglob("*"):  # the same bytes on every PC: no Windows line ends
+            if path.is_file():
+                self.assertNotIn(b"\r", path.read_bytes(), path.name)
         for line in text.splitlines():  # no statement line carries a note before its closing bracket
             if line.lstrip().startswith(("patch", "export")) or " is " in line.split("//")[0]:
                 self.assertFalse("//" in line and line.rstrip().endswith(")"), line)

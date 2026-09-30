@@ -539,18 +539,19 @@ class Rebuild:
             lines += ["Everything in the original is here.", ""]
         return "\n".join(lines)
 
+    # every file gets Unix line ends, so a rebuilt mod is the same bytes on every PC
     def write(self, out_root: Path) -> Path:
         folder = out_root / self.id
         (folder / "src").mkdir(parents=True, exist_ok=True)
         rndf = self.rndf()
         csvs = self.csvs()
-        (folder / "src" / f"{self.id}.rndf").write_text(rndf, encoding="utf-8")
+        (folder / "src" / f"{self.id}.rndf").write_text(rndf, encoding="utf-8", newline="\n")
         if csvs:
             (folder / "text").mkdir(exist_ok=True)
             for name, text in csvs.items():
-                (folder / "text" / name).write_text(text, encoding="utf-8")
-        (folder / "mod.toml").write_text(self.manifest(), encoding="utf-8")
-        (folder / "README.md").write_text(self.readme(), encoding="utf-8")
+                (folder / "text" / name).write_text(text, encoding="utf-8", newline="\n")
+        (folder / "mod.toml").write_text(self.manifest(), encoding="utf-8", newline="\n")
+        (folder / "README.md").write_text(self.readme(), encoding="utf-8", newline="\n")
         return folder
 
 
