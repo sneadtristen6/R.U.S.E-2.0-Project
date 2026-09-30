@@ -420,11 +420,12 @@ units = "all"        # or "infantry" or "vehicles"
 ```
 
 - A circle whose middle is inside a block is emptied; one reaching into it shrinks to keep clear (in steps of 320);
-  the links and route costs through what's gone are taken out. Circle numbers stay, so the graph's spatial index
-  doesn't change.
-- For now the ground taken is more than the block: shrinking a big circle uncovers ground around it too. New
-  circles to fill that back come next.
-- The in-game check (units plan around a blocked pit on Blitz) is waiting.
+  the links and route costs through what's gone are taken out. The ground those circles gave up outside the block
+  gets new circles (numbered after the old ones, listed in the spatial index as one more tree) and links, so only
+  the block itself is lost.
+- **Placed buildings are solid:** every building in the mod's `scenery.toml` becomes a block as wide as its model
+  reaches, times its size (`rusemod.nav.solid_blocks`); `solid = false` on an object leaves it walk-through.
+- Proven in the game (Blitz, 2026-09-30): units can't enter a blocked pit.
 
 ## 9. Scripts
 

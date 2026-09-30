@@ -443,6 +443,7 @@ class NewObject:
     y: float
     turn: float = 0.0    # degrees, from east toward south (clockwise on the minimap)
     size: float = 1.0
+    solid: bool = True   # a building units can't go through (rusemod.nav.solid_blocks); false: only drawn
 
 
 def _inverse(m: tuple) -> tuple:
@@ -737,12 +738,14 @@ def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]
 def parse_objects(rows: list, where: str = "scenery.toml") -> list[NewObject]:
     out = []
     for k, row in enumerate(rows):
-        extra = sorted(set(row) - {"type", "x", "y", "turn", "size"})
+        extra = sorted(set(row) - {"type", "x", "y", "turn", "size", "solid"})
         if extra:
             raise SceneryEditError(f"{where}: object {k + 1}: unknown key {extra[0]!r}")
         try:
+            if not isinstance(row.get("solid", True), bool):
+                raise SceneryEditError(f"{where}: object {k + 1}: solid must be true or false")
             o = NewObject(str(row["type"]), float(row["x"]), float(row["y"]), float(row.get("turn", 0.0)),
-                          float(row.get("size", 1.0)))
+                          float(row.get("size", 1.0)), row.get("solid", True))
         except KeyError as exc:
             raise SceneryEditError(f"{where}: object {k + 1} has no {exc.args[0]}") from None
         except (TypeError, ValueError):
@@ -757,7 +760,7 @@ def objects_toml(objects: list[NewObject], header: str = "") -> str:
     lines = [f"# {ln}" if ln else "#" for ln in header.splitlines()] + ([""] if header else [])
     for o in objects:
         lines += ["[[object]]", f'type = "{o.type}"', f"x = {o.x!r}", f"y = {o.y!r}", f"turn = {o.turn!r}",
-                  f"size = {o.size!r}", ""]
+                  f"size = {o.size!r}"] + ([] if o.solid else ["solid = false"]) + [""]
     return "\n".join(lines) + "\n" if lines else "\n"
 
 

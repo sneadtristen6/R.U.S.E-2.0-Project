@@ -61,7 +61,7 @@ class Blocking(unittest.TestCase):
     def test_a_circle_emptied_and_one_shrunk(self):
         g = row()
         counts = g.block([(10800.0, 2000.0, 400.0)])  # C's middle is 800 away: C keeps 400 clear, too small
-        self.assertEqual(counts, {"emptied": 1, "shrunk": 0, "links": 1, "crossings": 1})
+        self.assertEqual(counts, {"emptied": 1, "shrunk": 0, "links": 1, "crossings": 1, "added": 0, "linked": 0})
         self.assertEqual([c[2] for c in g.circles[:-1]], [3200.0, 3200.0, 0.0])
         self.assertEqual(g.links, [(0, 1, 4500.0, 2000.0)])
         self.assertEqual([g.links_of(i) for i in range(3)], [[0], [0], []])
@@ -77,6 +77,44 @@ class Blocking(unittest.TestCase):
         self.assertEqual(g.links, [(1, 2, 9000.0, 2000.0)])
         self.assertEqual(struct.unpack_from("<2H", g.crossings, 20) if g.crossings else None, None)
         self.assertEqual(g.points, row().points)  # the index isn't touched
+
+    def test_the_ground_given_up_is_filled_back(self):
+        """A big circle with a small block at its edge: it shrinks a lot, and new circles fill what it gave up,
+        right up to the block, linked in, and listed in the index as one more tree."""
+        g = nav.Graph(box=(0, 0, 80000.0), circles=[(20000.0, 20000.0, 16000.0, 0, 0), (40000.0, 20000.0, 8000.0, 1, 0),
+                                                     (0.0, 0.0, 0.0, 2, 0)],
+                      links=[(0, 1, 34000.0, 20000.0)], lists=[0, 0], crossings=b"", points=struct.pack("<3H", 4, 0, 1),
+                      head_rest=bytes(nav.HEADER - 20))
+        zone = (20000.0, 33000.0, 2000.0)  # near the big circle's top edge
+        counts = g.block([zone])
+        self.assertEqual((counts["shrunk"], counts["emptied"]), (1, 0))
+        self.assertEqual(g.circles[0][2], 10880.0)  # 11000 clear, in steps of 320
+        self.assertGreater(counts["added"], 3)
+        new = g.circles[2:-1]
+        for x, y, r, _l, _c in new:
+            self.assertGreaterEqual(r, nav.MIN_RADIUS)
+            self.assertLessEqual(((x - 20000.0) ** 2 + (y - 20000.0) ** 2) ** 0.5 + r, 16000.0)  # inside the old one
+            self.assertGreaterEqual(((x - zone[0]) ** 2 + (y - zone[1]) ** 2) ** 0.5, zone[2] + r)  # clear of the zone
+            self.assertEqual((x % nav.STEP, y % nav.STEP, r % nav.STEP), (0.0, 0.0, 0.0))
+        for i, (a, b, x, y) in enumerate(g.links):  # every link inside both its circles, and listed for both
+            self.assertLess(a, b)
+            for c in (a, b):
+                cx, cy, cr = g.circles[c][:3]
+                self.assertLessEqual((x - cx) ** 2 + (y - cy) ** 2, cr * cr + 1.0)
+                self.assertIn(i, g.links_of(c))
+        self.assertTrue(all(g.links_of(c) for c in range(len(g.circles) - 1)))  # nothing left unlinked
+        leaf = struct.unpack_from(f"<{1 + counts['added']}H", g.points, 6)
+        self.assertEqual(leaf, (2 * counts["added"],) + tuple(range(2, 2 + counts["added"])))
+        self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
+        # the old ground outside the zone is covered again, but for thin slivers along the circles' edges
+        import random
+        rnd, lost = random.Random(1), 0
+        for _ in range(400):
+            x, y = rnd.uniform(4000, 36000), rnd.uniform(4000, 36000)
+            if (x - 20000) ** 2 + (y - 20000) ** 2 > 15000 ** 2 or (x - zone[0]) ** 2 + (y - zone[1]) ** 2 < 3000 ** 2:
+                continue
+            lost += not g.at(x, y)
+        self.assertLess(lost, 12)
 
     def test_the_file(self):
         import tomllib

@@ -633,6 +633,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if changed_members:
                 map_packs.append((map_path, map_arc, changed_members))
                 result.terrain_changed[map_path.name] = changed_members
+        solid: dict = {}  # map pack name -> (nav.Block for each placed building, the mods' ids)
         for name, (objects, ids) in scenery_edits(result.order, mods).items():
             map_path = find_pack(game, pack_file(name))
             if map_path is None:
@@ -658,12 +659,22 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say(f"scenery: {name}, from {', '.join(ids)}")
             for note in notes:
                 say(f"  {note}")
+            from .nav import solid_blocks
+            walls, wall_notes = solid_blocks(game, objects)
+            for note in wall_notes:
+                say(f"  {note}")
+            if walls:
+                solid[name] = (walls, ids)
             if entry is None:
                 map_packs.append((map_path, map_arc, changed_members))
             result.terrain_changed[map_path.name] = changed_members
         data_packs = []  # (path, open pack, {member: new bytes}): DataMap_Win.dat, the scenarios and the cover grids
         moves, paints = scenario_edits(result.order, mods), scenario_edits(result.order, mods, "cover")
         blocks = scenario_edits(result.order, mods, "movement")
+        for name, (walls, ids) in solid.items():  # placed buildings units go around, after the mods' own blocks
+            every, who = blocks.setdefault(name, ([], []))
+            every.extend(walls)
+            who.extend(i for i in ids if i not in who)
         if moves or paints or blocks:
             from .cover import CoverError, apply_paints
             from .nav import NavError, apply_blocks

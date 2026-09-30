@@ -90,60 +90,103 @@ class Graph:
         return head + struct.pack(f"<{len(offsets)}I", *offsets) + b"".join(body)
 
     # --- changing it ---
-    def block(self, zones: list[tuple[float, float, float]]) -> dict:
+    def block(self, zones: list[tuple[float, float, float]], refill: bool = True) -> dict:
         """Take the ground inside `zones` (circles: x, y, radius) away, here and in the local graphs: units plan
-        around it. A circle whose middle is in a zone, or that would be smaller than MIN_RADIUS once it keeps clear
-        of every zone, is emptied (radius 0, no links); one that reaches into a zone shrinks to keep clear (its
-        radius a multiple of STEP). A link goes when one of its circles is emptied or its meeting point is no longer
-        inside both circles, or lies in a zone; the crossings that use it go too, and the links left are numbered
-        again. Circle numbers stay, so the index (points) needs no change. Returns what changed."""
-        counts = {"emptied": 0, "shrunk": 0, "links": 0, "crossings": 0}
+        around it (proven in the game, 2026-09-30).
+
+        A circle whose middle is in a zone, or that would be smaller than MIN_RADIUS once it keeps clear of every
+        zone, is emptied (radius 0, no links); one that reaches into a zone shrinks to keep clear (its radius a
+        multiple of STEP). A link goes when one of its circles is emptied or its meeting point is no longer inside
+        both circles, or lies in a zone; the crossings that use it go too. With `refill`, the ground those circles
+        gave up outside the zones gets new circles (the largest first, centres on the STEP grid), linked to every
+        circle they overlap by STEP or more, and to each other; the shrunk circles are linked again where they still
+        overlap. New circles are numbered after the old ones and listed in the index as one more tree (a leaf), so
+        the old numbers and the old trees stay. Returns what changed."""
+        counts = {"emptied": 0, "shrunk": 0, "links": 0, "crossings": 0, "added": 0, "linked": 0}
         if zones:
-            n = len(self.circles) - 1
-            radius = []
-            for x, y, r, _l, _c in self.circles[:-1]:
-                clear = min(((x - zx) ** 2 + (y - zy) ** 2) ** 0.5 - zr for zx, zy, zr in zones)
-                if clear >= r:
-                    radius.append(r)
-                    continue
-                new = (clear // STEP) * STEP if clear > 0 else 0.0
-                if new < MIN_RADIUS:
-                    new = 0.0
-                counts["emptied" if new == 0 else "shrunk"] += 1
-                radius.append(new)
+            self._block(zones, refill, counts)
+        for s in self.subs:
+            for k, v in s.block(zones, refill).items():
+                counts[k] += v
+        return counts
 
-            def inside(c, px, py):
-                cx, cy = self.circles[c][:2]
-                return radius[c] > 0 and (px - cx) ** 2 + (py - cy) ** 2 <= radius[c] ** 2 + 1.0
+    def _block(self, zones, refill, counts) -> None:
+        n = len(self.circles) - 1
+        old = [c[:3] for c in self.circles[:-1]]
+        radius = []
+        for x, y, r in old:
+            clear = min(((x - zx) ** 2 + (y - zy) ** 2) ** 0.5 - zr for zx, zy, zr in zones)
+            if clear >= r:
+                radius.append(r)
+                continue
+            new = (clear // STEP) * STEP if clear > 0 else 0.0
+            if new < MIN_RADIUS:
+                new = 0.0
+            counts["emptied" if new == 0 else "shrunk"] += 1
+            radius.append(new)
+        changed = [i for i in range(n) if radius[i] != old[i][2]]
+        if not changed:
+            return
 
-            keep = [inside(a, x, y) and inside(b, x, y)
-                    and all((x - zx) ** 2 + (y - zy) ** 2 > zr * zr for zx, zy, zr in zones)
-                    for a, b, x, y in self.links]
-            number, links = {}, []
-            for i, (lk, k) in enumerate(zip(self.links, keep)):
-                if k:
-                    number[i] = len(links)
-                    links.append(lk)
-            counts["links"] = len(self.links) - len(links)
-            cross = [self.crossings[28 * i:28 * i + 28] for i in range(len(self.crossings) // 28)]
-            circles, lists, kept = [], [], []
-            for c in range(n):
-                x, y, _r, l0, c0 = self.circles[c]
-                l1, c1 = self.circles[c + 1][3], self.circles[c + 1][4]
-                start, cstart = len(lists), len(kept)
-                lists += [number[k] for k in self.lists[l0:l1] if k in number]
+        def in_zone(px, py):
+            return any((px - zx) ** 2 + (py - zy) ** 2 <= zr * zr for zx, zy, zr in zones)
+
+        now = [(x, y, radius[i]) for i, (x, y, _r) in enumerate(old)]
+        added = _fill([old[i] for i in changed], zones, now) if refill else []
+        allc = now + added
+        counts["added"] += len(added)
+
+        def holds(c, px, py):
+            cx, cy, cr = allc[c]
+            return cr > 0 and (px - cx) ** 2 + (py - cy) ** 2 <= cr * cr + 1.0
+
+        number, links = {}, []  # old link number -> new; the links kept, in their order
+        for i, (a, b, x, y) in enumerate(self.links):
+            if holds(a, x, y) and holds(b, x, y) and not in_zone(x, y):
+                number[i] = len(links)
+                links.append((a, b, x, y))
+        counts["links"] += len(self.links) - len(links)
+        if refill:  # new links: new circles to everything they overlap; shrunk circles to each other again
+            linked = {(a, b) for a, b, _x, _y in links}
+            near = _Buckets([c for c in allc])
+            shrunk = [i for i in changed if radius[i] > 0]
+            for c in shrunk + list(range(n, n + len(added))):
+                for d in near.around(c):
+                    if d == c or allc[d][2] <= 0 or (c < n and d < n and d not in shrunk):
+                        continue
+                    a, b = min(c, d), max(c, d)
+                    if (a, b) in linked:
+                        continue
+                    point = _meeting(allc[a], allc[b])
+                    if point is None or in_zone(*point):
+                        continue
+                    linked.add((a, b))
+                    links.append((a, b) + point)
+                    counts["linked"] += 1
+        mine = [[] for _ in allc]
+        for i, (a, b, _x, _y) in enumerate(links):
+            mine[a].append(i)
+            mine[b].append(i)
+        cross = [self.crossings[28 * i:28 * i + 28] for i in range(len(self.crossings) // 28)]
+        circles, lists, kept = [], [], []
+        for c in range(len(allc)):
+            start, cstart = len(lists), len(kept)
+            lists += mine[c]
+            if c < n:
+                c0, c1 = self.circles[c][4], self.circles[c + 1][4]
                 for rec in cross[c0:c1]:
                     la, lb = struct.unpack_from("<2H", rec, 20)
                     if la in number and lb in number:
                         kept.append(rec[:20] + struct.pack("<2H", number[la], number[lb]) + rec[24:])
-                circles.append((x, y, radius[c], start, cstart))
-            circles.append((0.0, 0.0, 0.0, len(lists), len(kept)))
-            counts["crossings"] = len(cross) - len(kept)
-            self.circles, self.links, self.lists, self.crossings = circles, links, lists, b"".join(kept)
-        for s in self.subs:
-            for k, v in s.block(zones).items():
-                counts[k] += v
-        return counts
+            circles.append((allc[c][0], allc[c][1], allc[c][2], start, cstart))
+        circles.append((0.0, 0.0, 0.0, len(lists), len(kept)))
+        counts["crossings"] += len(cross) - len(kept)
+        if len(circles) > 65535 or len(links) > 65535 or len(lists) > 65535:
+            raise NavError("the graph would be too big for its 16-bit numbers")
+        self.circles, self.links, self.lists, self.crossings = circles, links, lists, b"".join(kept)
+        if added:  # the index: one more tree, a leaf of the new circles
+            ids = range(n, n + len(added))
+            self.points += struct.pack(f"<H{len(added)}H", 2 * len(added), *ids)
 
     # --- reading it ---
     def links_of(self, circle: int) -> list[int]:
@@ -230,5 +273,121 @@ def apply_blocks(read, pack: str, blocks: list[Block]) -> tuple[dict, list[str]]
         c = g.block(zones)
         new[k] = g.to_bytes()
         notes.append(f"{what}: {len(zones)} block(s); {c['emptied']} circle(s) emptied, {c['shrunk']} shrunk, "
-                     f"{c['links']} link(s) and {c['crossings']} crossing(s) taken out")
+                     f"{c['links']} link(s) and {c['crossings']} crossing(s) taken out; {c['added']} circle(s) and "
+                     f"{c['linked']} link(s) added to fill the ground back")
     return {name: replace_buffers(win, new)}, notes
+
+
+# --- filling ground back after a block ------------------------------------------------------------------------------
+class _Buckets:
+    """Circles by place, for finding the ones that may overlap a circle."""
+
+    def __init__(self, circles, size: float = 20480.0):
+        self.circles, self.size, self.cells = circles, size, {}
+        for i, (x, y, r) in enumerate(circles):
+            if r > 0:
+                for key in self._keys(x, y, r):
+                    self.cells.setdefault(key, []).append(i)
+
+    def _keys(self, x, y, r):
+        s = self.size
+        return [(i, j) for i in range(int((x - r) // s), int((x + r) // s) + 1)
+                for j in range(int((y - r) // s), int((y + r) // s) + 1)]
+
+    def around(self, c):
+        x, y, r = self.circles[c]
+        seen = set()
+        for key in self._keys(x, y, r):
+            for d in self.cells.get(key, ()):
+                if d not in seen:
+                    seen.add(d)
+                    yield d
+
+
+def _meeting(p, q) -> tuple[float, float] | None:
+    """Where two circles meet, for a link: the middle of their overlap along the line between their centres, when
+    they overlap by STEP or more."""
+    (ax, ay, ar), (bx, by, br) = p, q
+    d = ((bx - ax) ** 2 + (by - ay) ** 2) ** 0.5
+    if d == 0 or ar + br - d < STEP:
+        return None
+    t = (d - br + ar) / 2 / d
+    return (ax + (bx - ax) * t, ay + (by - ay) * t)
+
+
+def _fill(sources, zones, now) -> list[tuple[float, float, float]]:
+    """New circles over the ground `sources` (the old circles that were emptied or shrunk) covered and no circle
+    in `now` covers any more, outside the zones: each inside one source circle and clear of every zone, centres on
+    the STEP grid, the largest first, each on ground no circle covers yet, down to MIN_RADIUS."""
+    live = [c for c in now if c[2] > 0]
+    near = _Buckets(live)
+
+    def covered(x, y, extra):
+        key = (int(x // near.size), int(y // near.size))
+        return any((x - live[i][0]) ** 2 + (y - live[i][1]) ** 2 < live[i][2] ** 2 for i in near.cells.get(key, ())) \
+            or any((x - cx) ** 2 + (y - cy) ** 2 < cr * cr for cx, cy, cr in extra)
+
+    step = 2 * STEP
+    spots = []
+    for sx, sy, sr in sources:
+        for i in range(int((sx - sr) // step), int((sx + sr) // step) + 1):
+            for j in range(int((sy - sr) // step), int((sy + sr) // step) + 1):
+                x, y = i * step, j * step
+                room = max((cr - ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5 for cx, cy, cr in sources), default=0.0)
+                room = min([room] + [((x - zx) ** 2 + (y - zy) ** 2) ** 0.5 - zr for zx, zy, zr in zones])
+                room = (room // STEP) * STEP
+                if room >= MIN_RADIUS and not covered(x, y, ()):
+                    spots.append((room, x, y))
+    spots.sort(key=lambda s: (-s[0], s[1], s[2]))
+    out = []
+    for r, x, y in spots:
+        if not covered(x, y, out):
+            out.append((float(x), float(y), float(r)))
+    return out
+
+
+# --- placed buildings units can't go through ---------------------------------------------------------------------
+FOOTPRINT = 800.0  # a building's reach from its middle when its model can't be found (map units, times its size)
+
+
+def solid_blocks(game, objects) -> tuple[list[Block], list[str]]:
+    """Blocks for the buildings a mod places (rusemod.scenery.NewObject, unless `solid` is false): one per
+    building, as far as its model reaches from its middle (across the ground), times its size. Units then go around
+    them. Returns (blocks, notes)."""
+    from pathlib import Path
+    from .build import find_pack
+    from .edat import Edat
+    from .scenery import descriptors
+    wanted = [o for o in objects if o.solid]
+    if not wanted:
+        return [], []
+    unit_path = find_pack(Path(game), "ZZ_GladPatchableWin.dat")
+    if unit_path is None:
+        return [], ["ZZ_GladPatchableWin.dat isn't in the game: placed buildings stay walk-through"]
+    with Edat.open(str(unit_path)) as arc:
+        descs = descriptors(arc)
+    reach: dict[str, float] = {}
+    lib = None
+    out = []
+    for o in wanted:
+        d = descs.get(o.type)
+        if d is None or d.group != "building":
+            continue
+        if o.type not in reach:
+            if lib is None:
+                from .models import Library
+                lib = Library(Path(game))
+            far = 0.0
+            for model in (d.models or ([d.model] if d.model else [])):
+                name = lib.find(model)
+                if name is None:
+                    continue
+                for part, _tex in lib.parts(name):
+                    pos = part.positions
+                    for k in range(0, len(pos) - 2, 3):
+                        far = max(far, (pos[k] * pos[k] + pos[k + 1] * pos[k + 1]) ** 0.5)
+            reach[o.type] = far or FOOTPRINT
+        out.append(Block(o.x, o.y, reach[o.type] * o.size, "all"))
+    if lib is not None:
+        lib.close()
+    return out, [f"{len(out)} placed building(s) made solid"] if out else []
