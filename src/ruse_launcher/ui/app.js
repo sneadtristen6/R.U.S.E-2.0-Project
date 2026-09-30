@@ -277,9 +277,12 @@ function renderClashes(holder, check, onBest) {
     if ((c.kind === "file" || c.kind === "script") && c.what.includes("/")) li.append(" ", el("span", { className: "path", textContent: c.what }));
     return li;
   };
-  if (check.hard.length) {
-    holder.append(el("div", { className: "clash-box hard", role: "alert" }, el("div", { className: "title", textContent: w.clash_cant_play }),
-      el("ul", {}, ...check.hard.map(item))));
+  if (check.hard.length) {  // open, since Play is off because of it; folds like the yellow one (a 75-mod set lists dozens)
+    const box = el("details", { className: "clash-box hard", role: "alert" },
+      el("summary", {}, el("span", { textContent: w.clash_cant_play }), " ", el("span", { className: "count", textContent: `(${check.hard.length})` })),
+      el("ul", {}, ...check.hard.map(item)));
+    box.open = true;
+    holder.append(box);
   }
   if (check.soft.length) {
     const box = el("details", { className: "clash-box soft" }, el("summary", { textContent: fill(w.clash_overwrites, { n: check.soft.length }) }),

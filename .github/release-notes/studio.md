@@ -1,6 +1,13 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.5.2:**
+
+- **Water and Drain brushes** (Water on key 0): flood the ground below a level into a lake, or dry a lake
+  or river up. By DomesticNukes and his Claude, checked in the game on Blitz.
+- **Your own keys:** "Change keys…" under the map view's help line: click an action, press a key. Defaults puts them
+  back.
+
 **0.5.1:**
 
 - **A gun keeps its own flash and sound:** when a weapon fires another unit's ammo, it now also takes that unit's

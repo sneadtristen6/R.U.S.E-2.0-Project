@@ -662,7 +662,25 @@ cloning and scenarios (M6); models (M7); new maps from heightmaps (M8); scriptin
 - **GitHub `main` is the record.** Push when done; keep README's "Current stage", this section and LOG.md current.
 - Open decisions in §9: the name, outreach timing, a second player.
 
-**Where we stand (2026-09-29):** C1–C7 passed (mods build from the installed game, load in-game, add texts and
+**Where we stand (2026-09-30):** Launcher 0.2.3 (mod clashes refused with the reason, Put in best order, .rmod
+mods) and Studio 0.5.2 (new units, ammo and flags with the shot following the ammo, real 3D models, map names,
+brushes with Level, Water and Drain, the Place tool, keys you can change) are out; DomesticNukes' water brushes (#11)
+merged after his in-game pass. **Open, found in the game (owner, 2026-09-30):** ground moved by the brushes refuses
+move orders, the camera falls through it, trees stay at the old height, and big edits show steps. Cause and cure are
+in DomesticNukes' notes (private `notes/terrain-editing-what-we-fixed-…`): the engine still moves all four files
+separately and leaves the `.kdt` height limits stale.
+
+**Next, in order (2026-09-30):**
+1. **Terrain fix** (his recipe): strokes move the gameplay `.kdt` only; the drawn meshes and the camera floor follow
+   its surface; widen the subtree and MainNode z clips, rebuilding a subtree where a moved triangle crosses a z
+   split. One in-game test on Blitz (a hill, a pit, a flatten), then Studio 0.6.
+2. **Scenery zones:** placed buildings and trees block movement and give cover (the `mapinfo.win` movement graphs
+   and the `.sdb` layer; research in LOG).
+3. **Re-meshing** (his §6): cut the mesh finer where a brush needs it.
+4. The owner's tests still open: T1/T6 placed scenery, T3 more `.rmod` mods, T5 a Studio unit, T7 the launcher.
+5. Join codes (Task E); `sneadtristen6/Ruse-Mods` for Browse mods.
+
+**Where we stood (2026-09-29):** C1–C7 passed (mods build from the installed game, load in-game, add texts and
 new units that fight). Launcher v0.1 and Studio 0.4.1 are released (values edited in place, one box for a unit's
 five per-date prices, the Maps view with each map's real ground in 3D). The terrain mesh and tile files read and
 write losslessly, and plain tiles we write are drawn in-game. The `.kdt` gameplay ground reads and writes losslessly on every map (`rusemod.kdt`,

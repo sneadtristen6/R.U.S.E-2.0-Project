@@ -31,7 +31,10 @@ const BRUSHES = {
   level: ["level", "flat", 1, false, 3, 100],  // the ground where the drag starts, painted flat at that height
   smooth: ["smooth", "soft", 1, false, 4, 60],
   ramp: ["ramp", "flat", 1, true, 3, 100],  // two clicks: where it starts, then where it ends; size is half its width
+  water: ["water", "flat", 1, false, 4, 5],  // the water surface, not the ground: a lake up to a level (rusemod.water)
+  drain: ["drain", "flat", 1, false, 4, 0],  // the map's base water level again
 };
+const WATER = new Set(["water", "drain"]);
 const CRATER_RIM = 0.35;
 const HEIGHT_SHARE = 0.6;  // strength 100% = this share of the map's height range (hill, raise, lower, crater, plateau)
 
@@ -212,8 +215,13 @@ async function meshes(view) {
   wg.computeVertexNormals();
   const water = new THREE.Mesh(wg, new THREE.MeshLambertMaterial({ color: 0x2f6f8f, transparent: true, opacity: 0.72,
     side: THREE.DoubleSide, depthWrite: false }));
+  // the water surface too: each point's level (most carry the map's base level: the sea), for the water brushes
+  const w = new Float64Array(n), counts = new Map();
+  for (let i = 0; i < n; i++) { w[i] = z0 + wq[i] * sz; counts.set(wq[i], (counts.get(wq[i]) || 0) + 1); }
+  const baseWater = z0 + [...counts].reduce((a, b) => (b[1] > a[1] ? b : a))[0] * sz;
   const edit = { n, wx, wy, base, z: Float64Array.from(base), fixed, touched: new Uint8Array(n),
-    baseNormals: nor.slice(), bounds: view.bounds, index: bucketIndex(wx, wy, x0, y0, x1, y1), grid: null };
+    baseNormals: nor.slice(), bounds: view.bounds, index: bucketIndex(wx, wy, x0, y0, x1, y1), grid: null,
+    waterAt: w, baseW: Float64Array.from(w), baseWater, tri, waterIndex: wtri, waterTouched: false };
   return { ground, water, center: [(x0 + x1) / 2 * SCALE, (z0 + z1) / 2 * SCALE, (y0 + y1) / 2 * SCALE],
     size: Math.max(x1 - x0, y1 - y0) * SCALE, edit };
 }
@@ -321,6 +329,15 @@ function gridApply(g, s, average) {
 }
 
 function applyStroke(ed, s) {
+  if (WATER.has(s.brush)) {  // the water surface inside the circle, as rusemod.water does: no falloff
+    const [xlo, xhi, ylo, yhi] = boxOf(s), level = s.brush === "water" ? s.level : ed.baseWater;
+    near(ed.index, xlo, xhi, ylo, yhi, (i) => {
+      if (ed.fixed[i] || !covers(s, ed.wx[i], ed.wy[i])) return;
+      ed.waterAt[i] = level;
+    });
+    ed.waterTouched = true;
+    return;
+  }
   let average = null;
   if (s.brush === "smooth") {
     if (!ed.grid) ed.grid = makeGrid(ed);
@@ -335,6 +352,28 @@ function applyStroke(ed, s) {
   if (ed.grid) gridApply(ed.grid, s, average);
 }
 
+// The water surface as the strokes left it: each point at its level, and a triangle is water when its three corners
+// lie under the surface (the shipped meshes' rule, rusemod.tms). Untouched water keeps the game's own triangles.
+function redrawWater() {
+  const ed = mv.edit, gl = mv.gl;
+  if (!ed || !gl || !gl.water) return;
+  const g = gl.water.geometry, pos = g.attributes.position.array;
+  for (let i = 0; i < ed.n; i++) pos[3 * i + 1] = ed.waterAt[i] * SCALE;
+  g.attributes.position.needsUpdate = true;
+  let index = ed.waterIndex;
+  if (ed.waterTouched) {
+    const tri = ed.tri, out = [];
+    for (let k = 0; k < tri.length; k += 3) {
+      const a = tri[k], b = tri[k + 1], c = tri[k + 2];
+      if (ed.waterAt[a] >= ed.z[a] && ed.waterAt[b] >= ed.z[b] && ed.waterAt[c] >= ed.z[c]) out.push(a, b, c);
+    }
+    index = Uint32Array.from(out);
+  }
+  if (g.index.array !== index) g.setIndex(new gl.THREE.BufferAttribute(index, 1));
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+}
+
 // Copy the heights into what the screen draws; `all` also puts back the points no stroke touches any more.
 // Normals are worked out again where the ground moved (the game's own everywhere else).
 function redraw(all, normals) {
@@ -346,6 +385,7 @@ function redraw(all, normals) {
     if (all || ed.touched[i]) pos[3 * i + 1] = Math.min(Math.max(ed.z[i], z0), z1) * SCALE;
   }
   g.attributes.position.needsUpdate = true;
+  if (all || ed.waterTouched) redrawWater();
   if (normals) {
     g.computeVertexNormals();
     const nor = g.attributes.normal.array;
@@ -367,6 +407,8 @@ function reapply() {
   ed.z.set(ed.base);
   ed.touched.fill(0);
   ed.grid = null;
+  ed.waterAt.set(ed.baseW);
+  ed.waterTouched = false;
   for (const s of mv.brush.strokes) applyStroke(ed, s);
   redraw(true, true);
   placeScenery();
@@ -993,7 +1035,7 @@ function renderBrushes() {
   const w = mv.words, b = mv.brush;
   $("brush-list").replaceChildren(...Object.keys(BRUSHES).map((name, i) => {
     const chip = el("button", { type: "button", className: "chip", textContent: w["brush_" + name] || name,
-      title: (w["tip_brush_" + name] ? w["tip_brush_" + name] + " " : "") + fill(w.tip_brush || "", { n: i + 1 }) });
+      title: (w["tip_brush_" + name] ? w["tip_brush_" + name] + " " : "") + (i < 10 ? fill(w.tip_brush || "", { n: (i + 1) % 10 }) : "") });
     chip.setAttribute("aria-pressed", String(b.on && b.name === name));
     chip.addEventListener("click", () => pickBrush(name));
     return chip;
@@ -1056,6 +1098,7 @@ function newStroke(x, y, level, end) {
   if (kind === "level") { s.level = level; s.weight = name === "plateau" ? 1 : set.strength / 100; }
   if (kind === "smooth") s.weight = set.strength / 100;
   if (kind === "ramp") { s.level = level; s.weight = set.strength / 100; s.x2 = end.x; s.y2 = end.y; s.level2 = end.z; }
+  if (kind === "water") s.level = level;
   return s;
 }
 
@@ -1195,7 +1238,8 @@ function watchPointer() {
     ev.preventDefault();
     const name = mv.brush.name, [kind, , , stamp] = BRUSHES[name], set = settingsOf(name);
     const x = p.x / SCALE, y = p.z / SCALE, z = p.y / SCALE, [, , z0, , , z1] = mv.edit.bounds;
-    const level = kind !== "level" ? 0 : name === "plateau" ? z + lift(set.strength, z0, z1) : z;
+    // a plateau's top and a lake's surface sit Strength above the ground clicked; Level and Flatten take its height
+    const level = kind === "water" || name === "plateau" ? z + lift(set.strength, z0, z1) : kind === "level" ? z : 0;
     if (kind === "ramp") {  // two clicks: where it starts (the ground's height there), then where it ends
       const start = mv.brush.rampStart;
       if (!start) { mv.brush.rampStart = { x, y, z, sx: p.x, sy: p.y, sz: p.z }; showRing(p); return; }
@@ -1336,7 +1380,7 @@ function renderWords() {
   showSceneryStats();
   renderPlace();
   $("map-help").textContent = mv.brush.on ? w.brush_help : w.map_help;
-  $("map-keys").textContent = w.map_keys;
+  renderKeys();
   $("brush-title").textContent = w.shape_ground;
   $("brush-size-label").textContent = w.brush_size;
   $("brush-size").title = w.tip_brush_size;
@@ -1361,10 +1405,109 @@ function renderWords() {
 // goes up the screen); Q/E turn it around the point it looks at; R/F zoom. Held keys move smoothly, frame by frame, at a speed
 // scaled to the map (and to the zoom, so a close view doesn't fly), three times as fast with Shift. The tool keys
 // do what the buttons do (the tooltips name them).
-const MOVE = { KeyW: [0, -1], ArrowUp: [0, -1], KeyS: [0, 1], ArrowDown: [0, 1], KeyA: [-1, 0], ArrowLeft: [-1, 0],
-  KeyD: [1, 0], ArrowRight: [1, 0] };  // physical keys (e.code): the same places on an AZERTY keyboard
-const HELD = new Set([...Object.keys(MOVE), "KeyQ", "KeyE", "KeyR", "KeyF"]);
-const keys = { down: new Set(), shift: false, frame: 0, at: 0 };
+// The keys can be changed (the Keys panel under the help line, kept in this browser's storage): each action has one
+// physical key (e.code, so W A S D are the same places on an AZERTY keyboard); the arrows always move, Esc always
+// looks around, Ctrl+Z always undoes, and the digits always pick brushes.
+const KEY_DEFAULTS = { forward: "KeyW", back: "KeyS", left: "KeyA", right: "KeyD", turn_left: "KeyQ", turn_right: "KeyE",
+  zoom_in: "KeyR", zoom_out: "KeyF", brush: "KeyB", place: "KeyP", size_down: "BracketLeft", size_up: "BracketRight",
+  strength_down: "Minus", strength_up: "Equal" };
+const ARROWS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+const MOVES = { forward: [0, -1], back: [0, 1], left: [-1, 0], right: [1, 0] };
+const HELD_ACTIONS = ["forward", "back", "left", "right", "turn_left", "turn_right", "zoom_in", "zoom_out"];
+const keys = { down: new Set(), shift: false, frame: 0, at: 0, map: loadKeys(), by: {}, arming: null };
+let MOVE = {}, HELD = new Set();
+rebuildKeys();
+
+function loadKeys() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem("studio.keys") || "{}") || {}; } catch { saved = {}; }
+  const map = { ...KEY_DEFAULTS };
+  for (const a of Object.keys(map)) if (a in saved && (saved[a] === null || typeof saved[a] === "string")) map[a] = saved[a];
+  return map;
+}
+
+function saveKeys() {
+  try { localStorage.setItem("studio.keys", JSON.stringify(keys.map)); } catch { /* private window: fine */ }
+}
+
+// MOVE (code -> direction) and HELD (codes that act while held) from the current keys; `by` finds an action by code.
+function rebuildKeys() {
+  MOVE = { ...ARROWS };
+  HELD = new Set(Object.keys(ARROWS));
+  keys.by = {};
+  for (const [action, code] of Object.entries(keys.map)) {
+    if (!code) continue;
+    keys.by[code] = action;
+    if (action in MOVES) MOVE[code] = MOVES[action];
+    if (HELD_ACTIONS.includes(action)) HELD.add(code);
+  }
+}
+
+function codeOf(action) { return keys.map[action] || null; }
+
+// A key's name for the screen, from its physical code.
+function keyName(code) {
+  if (!code) return "\u2014";
+  const fixed = { BracketLeft: "[", BracketRight: "]", Minus: "-", Equal: "=", Space: "Space", Comma: ",", Period: ".",
+    Slash: "/", Backslash: "\\", Semicolon: ";", Quote: "'", Backquote: "`", Tab: "Tab", Enter: "Enter",
+    Backspace: "Backspace", Delete: "Del", Insert: "Ins", Home: "Home", End: "End", PageUp: "PgUp", PageDown: "PgDn",
+    ArrowUp: "\u2191", ArrowDown: "\u2193", ArrowLeft: "\u2190", ArrowRight: "\u2192", NumpadAdd: "Num +",
+    NumpadSubtract: "Num -", NumpadMultiply: "Num *", NumpadDivide: "Num /", NumpadDecimal: "Num .", NumpadEnter: "Num Enter" };
+  if (fixed[code]) return fixed[code];
+  let m;
+  if ((m = /^Key([A-Z])$/.exec(code))) return m[1];
+  if ((m = /^Digit(\d)$/.exec(code))) return m[1];
+  if ((m = /^Numpad(\d)$/.exec(code))) return "Num " + m[1];
+  return code;
+}
+
+// The help line, from the keys as they are.
+function keysLine() {
+  const w = mv.words, k = (a) => keyName(codeOf(a));
+  return [fill(w.keys_move, { k: `${k("forward")} ${k("left")} ${k("back")} ${k("right")}` }),
+    fill(w.keys_turn, { k: `${k("turn_left")} ${k("turn_right")}` }), fill(w.keys_zoom, { k: `${k("zoom_in")} ${k("zoom_out")}` }),
+    w.keys_fast, w.keys_brushes, fill(w.keys_brush, { k: k("brush") }), fill(w.keys_place, { k: k("place") }), w.keys_look,
+    w.keys_undo, fill(w.keys_size, { k: `${k("size_down")} ${k("size_up")}` }),
+    fill(w.keys_strength, { k: `${k("strength_down")} ${k("strength_up")}` })].join(" \u00b7 ");
+}
+
+// The Keys panel: every action with its key; click a key, press another. A key taken from another action leaves
+// that one without a key. Defaults puts them all back.
+function renderKeys() {
+  const w = mv.words, line = $("map-keys"), panel = $("keys-panel");
+  const change = el("button", { type: "button", className: "link", textContent: w.keys_change, title: w.tip_keys_change });
+  change.setAttribute("aria-expanded", String(!panel.classList.contains("hidden")));
+  change.addEventListener("click", () => { panel.classList.toggle("hidden"); keys.arming = null; renderKeys(); });
+  line.replaceChildren(el("span", { textContent: w.keys_head + keysLine() }), " ", change);
+  panel.replaceChildren();
+  if (panel.classList.contains("hidden")) return;
+  const rows = el("div", { className: "keys-rows" });
+  for (const action of Object.keys(KEY_DEFAULTS)) {
+    const key = el("button", { type: "button", className: "key" + (keys.arming === action ? " arming" : ""),
+      textContent: keys.arming === action ? w.keys_press : keyName(codeOf(action)) });
+    key.setAttribute("aria-label", w["key_" + action]);
+    key.addEventListener("click", () => { keys.arming = keys.arming === action ? null : action; renderKeys(); });
+    rows.append(el("span", { className: "small", textContent: w["key_" + action] }), key);
+  }
+  const reset = el("button", { type: "button", className: "small ghost", textContent: w.keys_reset });
+  reset.addEventListener("click", () => { keys.map = { ...KEY_DEFAULTS }; keys.arming = null; saveKeys(); rebuildKeys(); renderKeys(); });
+  panel.append(el("div", { className: "muted small", textContent: w.keys_fixed }), rows, el("div", { className: "actions" }, reset));
+}
+
+function armKey(e) {
+  const action = keys.arming;
+  if (e.type !== "keydown") return;
+  e.preventDefault();
+  if (e.key === "Escape") { keys.arming = null; renderKeys(); return; }
+  if (/^(Shift|Control|Alt|Meta)/.test(e.code) || !e.code) return;  // a modifier alone isn't a key
+  const other = keys.by[e.code];
+  if (other && other !== action) keys.map[other] = null;
+  keys.map[action] = e.code;
+  keys.arming = null;
+  saveKeys();
+  rebuildKeys();
+  renderKeys();
+}
 
 function mapViewOpen() {
   return Boolean(mv.gl && mv.gl.ground && mv.edit) && !$("maps-view").classList.contains("hidden");
@@ -1399,9 +1542,10 @@ function moveStep(now) {
     const right = new THREE.Vector3(-ahead.z, 0, ahead.x);
     controls.target.addScaledVector(right, dx * speed).addScaledVector(ahead, -dz * speed);
   }
-  const turn = (keys.down.has("KeyQ") ? 1 : 0) - (keys.down.has("KeyE") ? 1 : 0);
+  const has = (a) => keys.down.has(codeOf(a));
+  const turn = (has("turn_left") ? 1 : 0) - (has("turn_right") ? 1 : 0);
   if (turn) offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), turn * 1.2 * fast * dt);
-  const zoom = (keys.down.has("KeyF") ? 1 : 0) - (keys.down.has("KeyR") ? 1 : 0);
+  const zoom = (has("zoom_out") ? 1 : 0) - (has("zoom_in") ? 1 : 0);
   if (zoom) offset.setLength(Math.min(mv.size * 3, Math.max(mv.size * 0.01, dist * Math.pow(2, zoom * fast * dt))));
   camera.position.copy(controls.target).add(offset);
   controls.update();  // keeps the camera's own limits (never under the ground) and redraws
@@ -1435,6 +1579,7 @@ function lookAround() {
 }
 
 function onKey(e) {
+  if (keys.arming && !$("maps-view").classList.contains("hidden")) { armKey(e); return; }  // choosing a key: any key
   if (!mapViewOpen()) return;
   keys.shift = e.shiftKey;
   const held = HELD.has(e.code);
@@ -1453,21 +1598,22 @@ function onKey(e) {
     return;
   }
   if (held) {
-    if (fieldFocused(!e.code.startsWith("Key"))) return;  // arrows in a slider are the slider's; letters in a box, the box's
+    if (fieldFocused(e.code.startsWith("Arrow"))) return;  // arrows in a slider are the slider's; letters in a box, the box's
     e.preventDefault();  // the arrows would scroll the page
     keys.down.add(e.code);
     if (!keys.frame) { keys.at = performance.now(); keys.frame = requestAnimationFrame(moveStep); }
     return;
   }
   if (fieldFocused(false)) return;
-  const digit = /^Digit([1-9])$/.exec(e.code);
-  if (digit) { pickBrush(Object.keys(BRUSHES)[Number(digit[1]) - 1]); return; }
-  if (e.code === "KeyB") { if (mv.brush.on) lookAround(); else pickBrush(mv.brush.name); }
-  else if (e.code === "KeyP") setPlaceMode(!mv.place.on);
-  else if (e.code === "BracketLeft") nudge("size", -1);
-  else if (e.code === "BracketRight") nudge("size", 1);
-  else if (e.code === "Minus") nudge("strength", -1);
-  else if (e.code === "Equal") nudge("strength", 1);
+  const digit = /^Digit([0-9])$/.exec(e.code);
+  if (digit) { const b = Object.keys(BRUSHES)[(Number(digit[1]) + 9) % 10]; if (b) pickBrush(b); return; }
+  const action = keys.by[e.code];
+  if (action === "brush") { if (mv.brush.on) lookAround(); else pickBrush(mv.brush.name); }
+  else if (action === "place") setPlaceMode(!mv.place.on);
+  else if (action === "size_down") nudge("size", -1);
+  else if (action === "size_up") nudge("size", 1);
+  else if (action === "strength_down") nudge("strength", -1);
+  else if (action === "strength_up") nudge("strength", 1);
 }
 
 let wired = false;
