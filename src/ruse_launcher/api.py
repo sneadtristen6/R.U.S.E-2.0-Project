@@ -30,6 +30,7 @@ from pathlib import Path
 
 from rusemod import mod_index
 from rusemod import play as game_start, schema
+from rusemod.update import UpdateCalls
 from rusemod.build import BuildError
 from rusemod.loadorder import match as match_order, parse as parse_order, share_text
 from rusemod.mod_index import DEFAULT_URL, ModIndexError, size_text, states
@@ -42,6 +43,7 @@ from rusemod.steam import build_of, find_game
 from rusemod.webui import Job, job_view
 
 from .library import MANIFEST, Library, LibraryError, read_info
+from . import __version__
 
 _SET_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 VANILLA = "vanilla"
@@ -82,9 +84,11 @@ def pc_language() -> str:
     return locale.getlocale()[0] or os.environ.get("LANG", "") or "en"
 
 
-class LauncherApi:
+class LauncherApi(UpdateCalls):
     """The launcher's back end. The arguments replace the real world in tests: the game folder, the launcher's own
     folder, where modded copies go, how links, the game and Steam get started, and the window's dialogs."""
+
+    UPDATE_APP, UPDATE_VERSION = "launcher", __version__  # rusemod.update: the app looks for its newer releases
 
     def __init__(self, game_dir=None, home=None, instances=None, open_url=game_start.open_url,
                  start_game=game_start.start_game, steam_running=game_start.steam_running, find=find_game,

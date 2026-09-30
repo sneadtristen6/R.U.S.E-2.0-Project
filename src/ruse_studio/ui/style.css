@@ -174,3 +174,8 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
                              border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-size: 13px; }
 .place-list option { padding: 2px 4px; }
 .error-text { color: var(--error); }
+
+/* a newer release, offered in the header (rusemod/update.py) */
+.update-bar { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-size: 13px;
+              background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41); }
+.update-bar.hidden { display: none; }

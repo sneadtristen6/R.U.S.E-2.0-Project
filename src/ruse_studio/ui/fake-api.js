@@ -7,7 +7,8 @@
   const mode = new URLSearchParams(location.search).get("fake");
   if (mode === null) return;
   const words = {
-    us: { language: "Language", game_names: "Game names", search: "Search", all: "All", ground: "Ground",
+    us: { update_out: "{app} {version} is out.", update_now: "Update", whats_new: "What's new", update_progress: "Downloading the update… {pct}", update_installing: "Installing: {app} closes and opens again by itself.", update_repo: "(This copy runs from the repo: update it with git pull.)", update_failed: "The update didn't work: {why}",
+      language: "Language", game_names: "Game names", search: "Search", all: "All", ground: "Ground",
       infantry: "Infantry", air: "Air", buildings: "Buildings", units: "{n} units", parts: "Parts", uses: "Uses",
       own_part: "its own", shared_part: "shared with other units", used_by: "Used by", copy_address: "Copy address",
       no_index: "No game index yet. Build it once (about a minute).", build_index: "Build the index",
@@ -47,7 +48,8 @@
       really_delete: "Delete {name}? Its changes go with it.", new_mark: "new",
       unit_made: "{name} is in the mod. Test in game to see it in its build menu.",
       unit_deleted: "{name} was deleted from the mod." },
-    fr: { language: "Langue", game_names: "Noms du jeu", search: "Rechercher", all: "Tous", ground: "Terrestre",
+    fr: { update_out: "{app} {version} est disponible.", update_now: "Mettre à jour", whats_new: "Nouveautés", update_progress: "Téléchargement de la mise à jour… {pct}", update_installing: "Installation : {app} se ferme puis se rouvre automatiquement.", update_repo: "(Cette copie s'exécute depuis le dépôt Git : mettez-la à jour avec git pull.)", update_failed: "La mise à jour n'a pas fonctionné : {why}",
+      language: "Langue", game_names: "Noms du jeu", search: "Rechercher", all: "Tous", ground: "Terrestre",
       infantry: "Infanterie", air: "Aérien", buildings: "Bâtiments", units: "{n} unités", parts: "Composants",
       uses: "Utilise", own_part: "le sien", shared_part: "partagé avec d'autres unités", used_by: "Utilisé par",
       copy_address: "Copier l'adresse", no_index: "Pas encore d'index du jeu.", build_index: "Construire l'index",
@@ -91,7 +93,8 @@
       really_delete: "Supprimer {name} ? Ses modifications disparaissent aussi.", new_mark: "nouveau",
       unit_made: "{name} est dans le mod. Testez en jeu pour le voir dans son menu de production.",
       unit_deleted: "{name} a été supprimé du mod." },
-    sc: { language: "语言", game_names: "游戏原名", search: "搜索", all: "全部", ground: "地面", infantry: "步兵",
+    sc: { update_out: "{app} {version} 已发布。", update_now: "更新", whats_new: "更新内容", update_progress: "正在下载更新… {pct}", update_installing: "正在安装：{app} 会自动关闭并重新打开。", update_repo: "（此副本从代码仓库运行：请用 git pull 更新。）", update_failed: "更新失败：{why}",
+      language: "语言", game_names: "游戏原名", search: "搜索", all: "全部", ground: "地面", infantry: "步兵",
       air: "空军", buildings: "建筑", units: "{n} 个单位", parts: "组件", uses: "使用", own_part: "自有",
       shared_part: "与其他单位共享", used_by: "被引用于", copy_address: "复制地址", no_index: "尚无游戏索引。",
       build_index: "建立索引", pick_unit: "请在左侧选择一个单位。", mod: "模组", new_mod: "新建模组…",
@@ -447,6 +450,12 @@
       maps: async () => ({ maps: fakeMaps }),
       map_view: async (pack, lod) => fakeGround(pack, lod || "lowdef"),
       map_ground: async () => ({ url: null }),  // the made-up island has only its colours
+      update_check: async () => mode === "update"
+        ? { available: true, version: "9.9.9", installed: true, size: 60000000,
+            page: "https://github.com/sneadtristen6/Ruse-Mod-Platform/releases" }
+        : { available: false },
+      update_install: async () => { throw new Error("The preview can't install updates."); },
+      update_page: async () => ({ opened: "" }),
       map_scenery: async (pack) => fakeScenery(pack),
       scenery: async (pack) => ({ objects: current ? (placed.get(`${current}|${pack}`) || []) : [], saved: null, mod: current }),
       scenery_add: async (pack, objects) => {

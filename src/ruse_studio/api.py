@@ -23,6 +23,7 @@ from pathlib import Path
 
 from rusemod import identity, package, scenery, schema
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
+from rusemod.update import UpdateCalls
 from rusemod.build import BuildError, build_and_write, load_mod
 from rusemod.lock import fingerprint_text
 from rusemod.home import default_home, game_dir as find_game_dir
@@ -37,6 +38,7 @@ from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_folder, pick_save
 
 from .edits import EditsFileError, ModEdits, NewUnit
+from . import __version__
 
 KINDS = {"ground": ("TUniteAuSolDescriptor",), "infantry": ("TInfanterieDescriptor",),
          "air": ("TAvionDescriptor",), "buildings": ("TBatimentDescriptor",)}
@@ -116,7 +118,9 @@ def words(lang: str = schema.BASE) -> dict:
     return {key: texts.get(lang) or texts["us"] for key, texts in _words().items()}
 
 
-class StudioApi:
+class StudioApi(UpdateCalls):
+    UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
+
     def __init__(self, index_path=None, game_dir=None, find=find_game, home=None, starter=None, instances=None,
                  pick_save=None):
         self._index_path = Path(index_path) if index_path else None

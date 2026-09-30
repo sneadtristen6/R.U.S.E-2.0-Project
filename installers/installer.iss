@@ -60,6 +60,8 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#ExeName}"; Comment: "{#AppD
 
 [Run]
 Filename: "{app}\{#ExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+; An update from the app itself (rusemod/update.py runs this installer with /SILENT /relaunch=1): start it again.
+Filename: "{app}\{#ExeName}"; Flags: nowait skipifnotsilent; Check: Relaunch
 
 [Code]
 // The apps' screens need Microsoft's WebView2 Runtime (built into Windows 11, on most Windows 10 PCs). The apps check
@@ -69,6 +71,11 @@ var
   Version: String;
 begin
   Result := RegQueryStringValue(Root, Key, 'pv', Version) and (Version <> '') and (Version <> '0.0.0.0');
+end;
+
+function Relaunch: Boolean;
+begin
+  Result := ExpandConstant('{param:relaunch|0}') = '1';
 end;
 
 function HasWebView2: Boolean;

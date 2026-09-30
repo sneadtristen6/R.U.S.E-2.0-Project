@@ -15,6 +15,10 @@ const NEW = "\u0001new", OPEN = "\u0001open", EXPORT = "\u0001export";  // the m
 
 function api() { return window.pywebview.api; }
 
+function fill(word, values) {
+  return Object.entries(values || {}).reduce((s, [k, v]) => s.split(`{${k}}`).join(String(v)), word || "");
+}
+
 function el(tag, props, ...children) {
   const node = document.createElement(tag);
   Object.assign(node, props || {});
@@ -46,6 +50,7 @@ async function setLanguage(lang) {
   state.lang = lang;
   saveLang(lang);
   state.words = await api().strings(lang);
+  renderUpdate();
   state.nationNames = await api().nations(lang);
   const w = state.words;
   $("tab-units").textContent = w.units_tab;
@@ -578,6 +583,57 @@ function showView(view) {
   else window.addEventListener("mapview-ready", open, { once: true });
 }
 
+// --- a newer release (rusemod/update.py): offered in the header; Update downloads it, checks it and installs it,
+// then the app closes and the installer opens it again ---
+const APP_NAME = "RUSE Studio";
+
+async function checkUpdate() {
+  try { state.update = await api().update_check(); } catch { state.update = null; }
+  renderUpdate();
+}
+
+function renderUpdate() {
+  const u = state.update, w = state.words, bar = $("update-bar");
+  if (!u || !u.available || !w.update_out) { bar.classList.add("hidden"); return; }
+  $("update-text").textContent = state.updateNote
+    || fill(w.update_out, { app: APP_NAME, version: u.version }) + (u.installed ? "" : " " + w.update_repo);
+  $("update-now").textContent = w.update_now;
+  $("update-now").classList.toggle("hidden", !u.installed);
+  $("update-now").disabled = Boolean(state.updating);
+  $("update-info").textContent = w.whats_new;
+  bar.classList.remove("hidden");
+}
+
+async function installUpdate() {
+  const w = state.words;
+  state.updating = true;
+  state.updateNote = fill(w.update_progress, { pct: "" });
+  renderUpdate();
+  let job;
+  try {
+    ({ job } = await api().update_install());
+  } catch (err) {
+    state.updating = false;
+    state.updateNote = fill(w.update_failed, { why: (err && err.message) || String(err) });
+    renderUpdate();
+    return;
+  }
+  let seen = 0;
+  const tick = async () => {
+    let j;
+    try { j = await api().job(job, seen); } catch { return; }  // the app is closing for the installer
+    seen = j.count;
+    const last = j.lines[j.lines.length - 1];
+    if (last) state.updateNote = last === "installing" ? fill(w.update_installing, { app: APP_NAME })
+      : fill(w.update_progress, { pct: last });
+    if (j.state === "running") { renderUpdate(); setTimeout(tick, 400); return; }
+    if (j.state === "failed") { state.updating = false; state.updateNote = fill(w.update_failed, { why: j.message }); }
+    else state.updateNote = fill(w.update_installing, { app: APP_NAME });
+    renderUpdate();
+  };
+  tick();
+}
+
 async function start() {
   $("tab-units").addEventListener("click", () => showView("units"));
   $("tab-maps").addEventListener("click", () => showView("maps"));
@@ -606,7 +662,10 @@ async function start() {
     state.words = await api().strings(state.lang);
     await showNoIndex(status);
   }
+  $("update-now").addEventListener("click", installUpdate);
+  $("update-info").addEventListener("click", () => api().update_page().catch(() => {}));
   await setLanguage(state.lang);
+  checkUpdate();
 }
 
 let started = false;
