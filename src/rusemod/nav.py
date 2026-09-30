@@ -353,35 +353,67 @@ def _fill(sources, zones, now) -> list[tuple[float, float, float]]:
     return out
 
 
+# --- the spatial index (a graph's `points`) ---------------------------------------------------------------------------
+# One bounding-interval tree, its root at the start (checked on all 1,307 shipped graphs: walked from the root it
+# reaches every circle exactly once, and written back with the rules below it gives the same bytes).
+#   branch  u16 tag (bit 0 set; tag & ~1, shifted 16 left, is the jump's high part), u16 word (word & ~1, times 2, is
+#           the jump's low part; bit 0 is set on every shipped branch), f32 the left half's far edge, f32 the right
+#           half's near edge, on the branch's axis (x and y by turns down the tree). The left half starts right after
+#           the branch; the right half starts `jump` bytes after the left half's start, the left half padded to a
+#           multiple of 4 bytes to get there.
+#   leaf    u16 byte length (even), then that many bytes of circle numbers (u16).
+# A point is looked for down both halves where the two edges overlap. The whole section is padded to 4 bytes.
+def _tree_read(points: bytes, q: int = 0):
+    """The index as nested lists: ["leaf", [circle numbers]] or ["branch", word bit 0, 8 bytes of edges, left, right]."""
+    tag = struct.unpack_from("<H", points, q)[0]
+    if tag & 1:
+        word = struct.unpack_from("<H", points, q + 2)[0]
+        left = q + 12
+        jump = ((tag & 0xFFFE) << 16) + 2 * (word & 0xFFFE)
+        return ["branch", word & 1, points[q + 4:q + 12], _tree_read(points, left), _tree_read(points, left + jump)]
+    return ["leaf", list(struct.unpack_from(f"<{tag // 2}H", points, q + 2))]
+
+
+def _tree_write(node, top: bool = True) -> bytes:
+    if node[0] == "leaf":
+        out = struct.pack(f"<H{len(node[1])}H", 2 * len(node[1]), *node[1])
+    else:
+        _kind, bit, edges, left, right = node
+        lb = _tree_write(left, False)
+        lb += bytes(-len(lb) % 4)
+        jump = len(lb)
+        if jump >= 1 << 32:
+            raise NavError("the graph's index is too big")
+        out = struct.pack("<HH", 1 | ((jump >> 16) & 0xFFFE), ((jump & 0x1FFFF) // 2) | bit) + edges + lb \
+            + _tree_write(right, False)
+    return out + bytes(-len(out) % 4) if top else out
+
+
 def _index_add(points: bytes, into: dict[int, list[int]]) -> bytes:
-    """The spatial index (a graph's `points`) with new circles added: {old circle: [new circle numbers]} puts each
-    new number in the leaf that lists the old circle. The index is a row of two-way trees: a branch is (u16 1, u16,
-    f32, f32) with its left tree right after it and its right tree after that (on the split axis, the first float
-    is the left tree's far edge, the second usually the right tree's near edge); a leaf is (u16 byte length, u16
-    circle numbers...). A new circle lies inside the old one, so the walk that reaches the old circle's leaf for a
-    point in it reaches the new circle too. Branches are left as they are. Numbers whose old circle is in no leaf
-    go in one more leaf at the end."""
-    out = bytearray()
+    """The spatial index with new circles added: {old circle: [new circle numbers]} puts each new number in the leaf
+    that lists the old circle, and the tree is written again (the jumps and padding as the game's files have them).
+    A new circle lies inside the old one, so every edge on the way to that leaf already takes it in: a point in the
+    new circle is looked for where the old one would be. Numbers whose old circle is in no leaf go into the first
+    leaf (they'd be found only through their links)."""
+    tree = _tree_read(points)
     left = {old: list(new) for old, new in into.items()}
+    first = []
 
-    def parse(q: int) -> int:
-        tag = struct.unpack_from("<H", points, q)[0]
-        if tag == 1:
-            out.extend(points[q:q + 12])
-            return parse(parse(q + 12))
-        ids = list(struct.unpack_from(f"<{tag // 2}H", points, q + 2))
-        for i in list(ids):
-            ids += left.pop(i, [])
-        out.extend(struct.pack(f"<H{len(ids)}H", 2 * len(ids), *ids))
-        return q + 2 + tag
+    def visit(node):
+        if node[0] == "leaf":
+            if not first:
+                first.append(node)
+            for i in list(node[1]):
+                node[1] += left.pop(i, [])
+        else:
+            visit(node[3])
+            visit(node[4])
 
-    pos = 0
-    while pos < len(points):
-        pos = parse(pos)
+    visit(tree)
     rest = [n for new in left.values() for n in new]
     if rest:
-        out.extend(struct.pack(f"<H{len(rest)}H", 2 * len(rest), *rest))
-    return bytes(out)
+        first[0][1] += rest
+    return _tree_write(tree)
 
 
 # --- placed buildings units can't go through ---------------------------------------------------------------------

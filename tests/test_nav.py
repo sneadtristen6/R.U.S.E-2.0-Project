@@ -104,11 +104,18 @@ class Blocking(unittest.TestCase):
                 self.assertIn(i, g.links_of(c))
         self.assertTrue(all(g.links_of(c) for c in range(len(g.circles) - 1)))  # nothing left unlinked
         self.assertEqual([b for _a, b, _x, _y in g.links], sorted(b for _a, b, _x, _y in g.links))  # as the game's files
-        # the index: the leaf that listed the shrunk circle (0) lists the new ones too; nothing is appended
+        # the index: the leaf that listed the shrunk circle (0) lists the new ones too, padded to 4 bytes
         n = counts["added"]
         self.assertEqual(struct.unpack_from(f"<{3 + n}H", g.points, 0), (2 * (2 + n), 0, 1) + tuple(range(2, 2 + n)))
-        self.assertEqual(len(g.points), 2 + 2 * (2 + n))
-        self.assertEqual(nav._index_add(struct.pack("<3H", 4, 0, 1), {7: [9]}), struct.pack("<3H", 4, 0, 1) + struct.pack("<2H", 2, 9))
+        self.assertEqual(len(g.points), (2 + 2 * (2 + n) + 3) // 4 * 4)
+        self.assertEqual(nav._index_add(struct.pack("<3H", 4, 0, 1), {7: [9]}), struct.pack("<4H", 6, 0, 1, 9))
+        # a branch: its right half is found through the jump, the left half padded to 4 bytes
+        tree = struct.pack("<HHff", 1, 3, 100.0, 200.0) + struct.pack("<2H", 2, 0) + struct.pack("<2H", 2, 1)
+        self.assertEqual(nav._tree_read(tree), ["branch", 1, struct.pack("<ff", 100.0, 200.0), ["leaf", [0]], ["leaf", [1]]])
+        self.assertEqual(nav._tree_write(nav._tree_read(tree)), tree)
+        grown = nav._index_add(tree, {0: [5, 6]})
+        self.assertEqual(nav._tree_read(grown), ["branch", 1, struct.pack("<ff", 100.0, 200.0), ["leaf", [0, 5, 6]], ["leaf", [1]]])
+        self.assertEqual(struct.unpack_from("<HH", grown, 0), (1, 5))  # the jump grew from 4 to 8 bytes: word 4 | bit
         self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
         # the old ground outside the zone is covered again, but for thin slivers along the circles' edges
         import random
