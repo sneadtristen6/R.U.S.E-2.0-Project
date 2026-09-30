@@ -21,7 +21,7 @@ from dataclasses import asdict
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from rusemod import identity, package, schema
+from rusemod import identity, package, scenery, schema
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.build import BuildError, build_and_write, load_mod
 from rusemod.lock import fingerprint_text
@@ -32,6 +32,7 @@ from rusemod.play import Starter, instances_dir
 from rusemod.rndf import RndfError
 from rusemod.steam import build_of, data_revisions, find_game
 from rusemod.build import find_pack
+from rusemod.edat import Edat
 from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_folder, pick_save
 
@@ -133,6 +134,8 @@ class StudioApi:
         self._grounds: dict[tuple, dict] = {}  # the last maps shown in 3D, so switching back is instant
         self._grounds_lock = threading.Lock()
         self._ground_jobs: dict[str, str] = {}  # picture being made -> its job, so asking twice doesn't make it twice
+        self._sceneries: dict[tuple, dict] = {}  # the last maps' scenery (map_scenery)
+        self._descriptors: tuple = (None, {})    # (unit pack, its scenery types), read once per game build
 
     # --- where things are ---
     def _game(self) -> Path | None:
@@ -411,6 +414,34 @@ class StudioApi:
             while len(self._grounds) > 4:
                 self._grounds.pop(next(iter(self._grounds)))
         return view
+
+    def map_scenery(self, pack: str) -> dict:
+        """What stands on a map, for the 3D view (rusemod.scenery.view): every building, and a sample of props and
+        trees, each with its type (name, group, the game editor's category, its model). About a second per map."""
+        game = self._game()
+        if game is None:
+            raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
+        map_path, unit_path = find_pack(game, pack_file(pack)), find_pack(game, "ZZ_GladPatchableWin.dat")
+        if map_path is None or unit_path is None:
+            raise StudioError(f"{pack_file(pack) if map_path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game "
+                              f"folder.")
+        key = (str(map_path), map_path.stat().st_mtime)
+        with self._grounds_lock:
+            if key in self._sceneries:
+                return self._sceneries[key]
+        with Edat.open(str(unit_path)) as unit_arc, Edat.open(str(map_path)) as map_arc:
+            dkey = (str(unit_path), unit_path.stat().st_mtime)
+            if self._descriptors[0] != dkey:
+                self._descriptors = (dkey, scenery.descriptors(unit_arc))
+            try:
+                out = scenery.view(map_arc, unit_arc, self._descriptors[1])
+            except (KeyError, scenery.SceneryError) as exc:
+                raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
+        with self._grounds_lock:
+            self._sceneries[key] = out
+            while len(self._sceneries) > 3:
+                self._sceneries.pop(next(iter(self._sceneries)))
+        return out
 
     @property
     def cache_dir(self) -> Path:

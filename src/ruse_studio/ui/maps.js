@@ -10,7 +10,9 @@ const mv = { api: null, words: {}, maps: [], current: null, lod: "lowdef", water
   stats: null, groundTex: {}, edit: null,
   // brush: the tool picked, its size and strength per brush (slider values), the strokes on this map (as saved),
   // the size of each group of strokes made this session (for Undo), the drag being painted, and the mod saved into
-  brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null, rampStart: null } };
+  brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null, rampStart: null },
+  // scenery: which groups are shown, the map's scenery (StudioApi.map_scenery) and its drawn shapes per group
+  scenery: { show: { building: true, prop: true, vegetation: true }, data: null, meshes: {} } };
 
 // --- brushes: the same shapes and rules as rusemod/brush.py (the build's own copy decides; this one only draws) ---
 // name: [kind, shape, sign, one dab per click (else dabs along a drag), size %, strength %]
@@ -361,6 +363,7 @@ function reapply() {
   ed.grid = null;
   for (const s of mv.brush.strokes) applyStroke(ed, s);
   redraw(true, true);
+  placeScenery();
 }
 
 function forget(mesh) {
@@ -409,6 +412,102 @@ async function realGround(pack, ask) {
   mat.needsUpdate = true;
   mv.gl.draw();
   note.textContent = "";
+}
+
+// --- what stands on the map: every building, a sample of props and trees (StudioApi.map_scenery) ---
+// Simple shapes until the game's models can be read: a building is a box, a prop a small block, a tree a cone, turned
+// and sized as the game places them and stood on the ground (the game sets scenery on the ground itself).
+const SCENERY_LOOK = {  // group: [shape, width, height (map units at size 1), colour]
+  building: ["box", 1100, 900, 0xb4866a],
+  prop: ["box", 260, 220, 0x8f8a7c],
+  vegetation: ["cone", 420, 1300, 0x3c6a34],
+};
+
+function groundAt(g, x, y) {
+  const fc = (x - g.x0) / g.sx - 0.5, fr = (y - g.y0) / g.sy - 0.5;
+  const c = Math.max(0, Math.min(Math.floor(fc), g.cols - 2)), r = Math.max(0, Math.min(Math.floor(fr), g.rows - 2));
+  const tx = Math.min(Math.max(fc - c, 0), 1), ty = Math.min(Math.max(fr - r, 0), 1), z = g.z, k = r * g.cols + c;
+  const right = g.cols > 1 ? 1 : 0, down = g.rows > 1 ? g.cols : 0;
+  const top = z[k] + (z[k + right] - z[k]) * tx, bottom = z[k + down] + (z[k + down + right] - z[k + down]) * tx;
+  return top + (bottom - top) * ty;
+}
+
+function sceneryMeshes(data) {
+  const { THREE } = mv.gl, out = {};
+  for (const [group, [shape, , , colour]] of Object.entries(SCENERY_LOOK)) {
+    const flat = (data.items || {})[group] || [], n = flat.length / 5;
+    if (!n) continue;
+    const geo = shape === "cone" ? new THREE.ConeGeometry(0.5, 1, 6) : new THREE.BoxGeometry(1, 1, 1);
+    geo.translate(0, 0.5, 0);  // standing on the ground, not half in it
+    const mesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: colour }), n);
+    mesh.userData = { group, flat };
+    mesh.visible = mv.scenery.show[group];
+    out[group] = mesh;
+  }
+  return out;
+}
+
+// Stand every shown object on the ground as it is now (after strokes, too).
+function placeScenery() {
+  const meshes = Object.values(mv.scenery.meshes);
+  if (!meshes.length || !mv.edit) return;
+  const { THREE } = mv.gl, grid = makeGrid(mv.edit);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3();
+  const up = new THREE.Vector3(0, 1, 0);
+  for (const mesh of meshes) {
+    const { group, flat } = mesh.userData, [, width, height] = SCENERY_LOOK[group];
+    for (let k = 0; k < flat.length / 5; k++) {
+      const x = flat[5 * k + 1], y = flat[5 * k + 2], size = Math.max(0.3, Math.min(flat[5 * k + 4], 4));
+      p.set(x * SCALE, groundAt(grid, x, y) * SCALE, y * SCALE);
+      q.setFromAxisAngle(up, -flat[5 * k + 3]);  // the game turns from east toward south; the scene's Y turns the other way
+      s.set(width * size * SCALE, height * size * SCALE, width * size * SCALE);
+      mesh.setMatrixAt(k, m.compose(p, q, s));
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
+  }
+  mv.gl.draw();
+}
+
+function clearScenery() {
+  for (const mesh of Object.values(mv.scenery.meshes)) forget(mesh);
+  mv.scenery.meshes = {};
+  mv.scenery.data = null;
+  $("scenery-stats").textContent = "";
+  $("scenery-hover").textContent = "";
+}
+
+function showSceneryStats() {
+  const d = mv.scenery.data, w = mv.words;
+  if (!d) return;
+  const g = d.groups, n = (k, f) => ((g[k] || {})[f] || 0).toLocaleString();
+  $("scenery-stats").textContent = fill(w.scenery_stats, { buildings: n("building", "shown"), props: n("prop", "shown"),
+    props_total: n("prop", "total"), trees: n("vegetation", "shown"), trees_total: n("vegetation", "total") });
+}
+
+async function loadScenery(pack, ask) {
+  clearScenery();
+  $("scenery-stats").textContent = mv.words.scenery_loading;
+  const data = await mv.api.map_scenery(pack);
+  if (ask !== mv.ask || !mv.edit) return;
+  mv.scenery.data = data;
+  mv.scenery.meshes = sceneryMeshes(data);
+  for (const mesh of Object.values(mv.scenery.meshes)) mv.gl.scene.add(mesh);
+  placeScenery();
+  showSceneryStats();
+}
+
+// Pointing at an object says what it is: its name and the game editor's category.
+function sceneryAt(ev) {
+  const gl = mv.gl, d = mv.scenery.data;
+  if (!d) return null;
+  const rect = gl.renderer.domElement.getBoundingClientRect();
+  gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
+  gl.raycaster.setFromCamera(gl.ndc, gl.camera);
+  const shown = Object.values(mv.scenery.meshes).filter((m) => m.visible);
+  const hit = shown.length ? gl.raycaster.intersectObjects(shown, false)[0] : null;
+  if (!hit || hit.instanceId === undefined) return null;
+  return d.types[hit.object.userData.flat[5 * hit.instanceId]] || null;
 }
 
 // --- showing one map ---
@@ -463,6 +562,7 @@ async function show(pack, keepCamera) {
   $("map-hud").classList.remove("hidden");
   $("map-tools").classList.remove("hidden");
   loadStrokes(pack, ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
+  loadScenery(pack, ask).catch((err) => { $("scenery-stats").textContent = (err && err.message) || String(err); });
   realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
 }
 
@@ -626,6 +726,7 @@ async function finishStroke() {
   mv.brush.painting = null;
   if (!g || !g.strokes.length) return;
   redraw(false, true);
+  placeScenery();
   const pack = mv.current;
   try {
     await mv.api.terrain_add(pack, g.strokes);
@@ -716,6 +817,16 @@ function watchPointer() {
   for (const type of ["pointerup", "pointercancel"]) {
     canvas.addEventListener(type, () => { if (mv.brush.painting) finishStroke(); });
   }
+  let hoverEv = null, hoverFrame = 0;
+  canvas.addEventListener("pointermove", (ev) => {  // looking around: say what the pointer is on
+    if (mv.brush.on || !mv.scenery.data) return;
+    hoverEv = ev;
+    if (!hoverFrame) hoverFrame = requestAnimationFrame(() => {
+      hoverFrame = 0;
+      const t = sceneryAt(hoverEv);
+      $("scenery-hover").textContent = t ? `${t[0]} · ${t[2] || t[1]}` : "";
+    });
+  });
   canvas.addEventListener("pointerleave", () => { if (mv.brush.on && gl.ring) { gl.ring.visible = false; gl.draw(); } });
 }
 
@@ -734,6 +845,8 @@ function renderWords() {
   const w = mv.words;
   $("map-detail").textContent = mv.lod === "highdef" ? w.detail_high : w.detail_low;
   $("map-water-label").textContent = w.water;
+  for (const g of ["building", "prop", "vegetation"]) $(`scenery-${g}-label`).textContent = w[`scenery_${g}`];
+  showSceneryStats();
   $("map-help").textContent = mv.brush.on ? w.brush_help : w.map_help;
   $("brush-title").textContent = w.shape_ground;
   $("brush-size-label").textContent = w.brush_size;
@@ -760,6 +873,13 @@ function wire() {
     mv.water = e.target.checked;
     if (mv.gl && mv.gl.water) { mv.gl.water.visible = mv.water; mv.gl.draw(); }
   });
+  for (const g of ["building", "prop", "vegetation"]) {
+    $(`scenery-${g}`).addEventListener("change", (e) => {
+      mv.scenery.show[g] = e.target.checked;
+      const mesh = mv.scenery.meshes[g];
+      if (mesh) { mesh.visible = e.target.checked; mv.gl.draw(); }
+    });
+  }
   $("brush-size").addEventListener("input", (e) => { settingsOf(mv.brush.name).size = Number(e.target.value); });
   $("brush-strength").addEventListener("input", (e) => { settingsOf(mv.brush.name).strength = Number(e.target.value); });
   $("brush-look").addEventListener("click", () => setBrushMode(false));

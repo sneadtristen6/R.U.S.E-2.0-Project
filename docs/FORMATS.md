@@ -490,6 +490,33 @@ acceptance of a moved vertex.
 
 The file's role and its container framing follow the notes of DomesticNukes and his Claude; the vertex and normal encodings were worked out here.
 
+### Scenery: `output\save.boobspc` (code `rusemod.scenery`; check `tools/verify_scenery.py`)
+
+Every tree, house, field, road piece and ground decal of a map. The layout follows the notes of DomesticNukes and
+his Claude; checked here on all 32 maps.
+- **Container:** bytes 0–15 = MD5 of the rest (the game refuses a wrong sum); `0.6\0`; 26 u32 fields, offsets from
+  the file's start: block table (offset, count), block data (offset, size), per-name flags (offset, count), name
+  table (offset, size), an optional table, a second name table, layer boundaries (u32s), the three grids' sizes
+  (Low, Mid, Hi: 16×16, 64×64, 256×256 on Blitz) and each grid's (offset, size). Then the block table (one u32 per
+  block, from the data's start, and the data size as an end marker), the data, the names (u32 length + text; one
+  per flag byte, then an empty one), the flags (1 = a scenery type, 2 = special: `Route`, factory markers), the
+  other tables and the grids.
+- **Block:** u32 (bit 31 = long header, the rest = entry count), u32 tree-node count, bbox 4 × f32, then to +0x20
+  (long) or +0x1C; the entries (u32 item offsets from the items' start; a block seen from far lists its far-view
+  items first, then every item again), the tree's 8-byte nodes, the items.
+- **Item:** a u32 word, then its transform. Bit 31 = an object (name index = bits 4–23); bit 24 = a road piece (15
+  more words, a cubic Bézier); otherwise a child block (offset = bits 2–23, always after its parent). Transform by
+  bits 0–1: 3 = 12 f32 (3 rows of 4), 2 = a move (3 f32), 1 = none, 0 = compact (4 int16 × 3/32767 for the 2×2 turn
+  and scale, then x, y, z and the height scale as f32; so compact sizes stop at 3.0).
+- **Objects stand at height 0**; the game sets them on the ground. A name is a scenery type: a descriptor in the
+  unit-data pack under `genglad\patchable\scenery\` (by `RegistrationName`), whose `Classement` is the game
+  editor's category and whose close-up model is a `ModelASE` path (through `SDFalse` and the nearest `ModeEntry`).
+- **Counts:** 321,029,228 objects and 78,417 road pieces on the 32 maps (Blitz: 5,028,739 and 1,389, in 753
+  blocks). A few names on Blitz, Chess, Cotentin and Swamps resolve to no descriptor in the game itself.
+- **Proven in the game (DomesticNukes):** moving, turning and scaling objects in place; adding objects through a
+  new block that an existing object's item is turned into (a same-size child reference). A child that points
+  backward breaks the map.
+
 ## 7. Textures (`.tgv`, `.tgv_pc`)
 
 | Offset | Meaning |

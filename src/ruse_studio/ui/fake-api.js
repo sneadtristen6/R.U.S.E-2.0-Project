@@ -22,7 +22,9 @@
       not_stable: "No stable address, so it can't be edited yet.", locked: "Ids and nation stay as they are.",
       edited: "edited", units_tab: "Units", maps_tab: "Maps",
       pick_map: "Pick a map to see its ground in 3D.", map_loading: "Loading the map…", detail_high: "Full detail",
-      detail_low: "Light", water: "Water", map_help: "Drag to turn · right-drag to move · wheel to zoom",
+      detail_low: "Light", water: "Water", scenery_building: "Buildings", scenery_prop: "Props", scenery_vegetation: "Trees",
+      scenery_loading: "Reading what stands on the map…",
+      scenery_stats: "{buildings} buildings · {props} of {props_total} props · {trees} of {trees_total} trees shown", map_help: "Drag to turn · right-drag to move · wheel to zoom",
       map_stats: "{points} points, {triangles} triangles",
       no_viewer: "The map view couldn't load its 3D library (it needs the internet the first time).",
       ground_loading: "Loading the real ground textures… {progress}", shape_ground: "Shape the ground",
@@ -59,7 +61,9 @@
       not_stable: "Pas d'adresse stable : pas encore modifiable.",
       locked: "Les identifiants et la nation restent tels quels.", edited: "modifié", units_tab: "Unités",
       maps_tab: "Cartes", pick_map: "Choisissez une carte pour voir son terrain en 3D.",
-      map_loading: "Chargement de la carte…", detail_high: "Détail complet", detail_low: "Allégé", water: "Eau",
+      map_loading: "Chargement de la carte…", detail_high: "Détail complet", detail_low: "Allégé", water: "Eau", scenery_building: "Bâtiments", scenery_prop: "Objets", scenery_vegetation: "Arbres",
+      scenery_loading: "Lecture de ce qui se trouve sur la carte…",
+      scenery_stats: "{buildings} bâtiments · {props} objets sur {props_total} · {trees} arbres sur {trees_total} affichés",
       map_help: "Glisser pour tourner · clic droit pour déplacer · molette pour zoomer",
       map_stats: "{points} points, {triangles} triangles",
       no_viewer: "La vue de carte n'a pas pu charger sa bibliothèque 3D (il faut Internet la première fois).",
@@ -94,7 +98,8 @@
       all_units: "全部 {n} 个", no_via: "从其中一个单位的页面打开,即可只修改那一个。", not_stable: "没有固定地址,暂时无法编辑。",
       locked: "编号和国家保持不变。", edited: "已修改", units_tab: "单位", maps_tab: "地图",
       pick_map: "选择一张地图，以 3D 查看其地形。", map_loading: "正在加载地图…", detail_high: "完整细节", detail_low: "简化",
-      water: "水面", map_help: "拖动旋转 · 右键拖动平移 · 滚轮缩放", map_stats: "{points} 个点，{triangles} 个三角形",
+      water: "水面", scenery_building: "建筑", scenery_prop: "道具", scenery_vegetation: "树木", scenery_loading: "正在读取地图上的物体…",
+      scenery_stats: "已显示：建筑 {buildings} · 道具 {props}/{props_total} · 树木 {trees}/{trees_total}", map_help: "拖动旋转 · 右键拖动平移 · 滚轮缩放", map_stats: "{points} 个点，{triangles} 个三角形",
       no_viewer: "地图视图无法加载 3D 库（首次需要联网）。", ground_loading: "正在加载真实地面纹理… {progress}",
       shape_ground: "塑造地形", brush_hill: "山丘", brush_raise: "抬高", brush_lower: "降低", brush_crater: "弹坑", brush_plateau: "高台",
       brush_flatten: "压平", brush_smooth: "平滑", brush_size: "大小", brush_strength: "强度", brush_look: "查看", brush_undo: "撤销",
@@ -272,6 +277,25 @@
     return btoa(s);
   }
 
+  // A made-up village in the island's middle, a wood to its north and a few carts about.
+  function fakeScenery(pack) {
+    const types = [["MairieNormande", "building", "COC/Normandie/Batiments_Villes_Villages", ""],
+      ["TownHouseB2_Haut", "building", "COC/Normandie/BatimentsMorceaux/TownHouseB/B2", ""],
+      ["Charette_1", "prop", "Props/Ferme", ""], ["Chene_02", "vegetation", "Vegetation/Arbres", ""]];
+    const items = { building: [], prop: [], vegetation: [] }, c = 655360, seed = pack.length;
+    for (let k = 0; k < 40; k++) {
+      const a = k * 2.4, r = 9000 + 1500 * k;
+      items.building.push(k ? 1 : 0, Math.round(c + r * Math.cos(a)), Math.round(c + r * Math.sin(a)), a, k ? 1 : 1.5);
+    }
+    for (let k = 0; k < 30; k++) items.prop.push(2, c + 20000 + 700 * k, c + 30000 + (k % 5) * 900, k * 0.7, 1);
+    for (let k = 0; k < 900; k++) {
+      const u = (k * 7919 + seed) % 97 / 97, v = (k * 104729) % 89 / 89;
+      items.vegetation.push(3, Math.round(c - 90000 + u * 180000), Math.round(c - 200000 + v * 90000), k, 0.8 + (k % 5) / 10);
+    }
+    return { types, items, groups: { building: { shown: 40, total: 40 }, prop: { shown: 30, total: 30 },
+      vegetation: { shown: 900, total: 12000 } } };
+  }
+
   async function fakeGround(pack, lod) {
     const n = lod === "highdef" ? 257 : 129, Q = 32767, size = 1310720, top = 60000, sea = 11000;
     const seed = pack.length;
@@ -411,6 +435,7 @@
       maps: async () => ({ maps: fakeMaps }),
       map_view: async (pack, lod) => fakeGround(pack, lod || "lowdef"),
       map_ground: async () => ({ url: null }),  // the made-up island has only its colours
+      map_scenery: async (pack) => fakeScenery(pack),
       terrain: async (pack) => {
         if (!current) return { strokes: [], saved: null, mod: null };
         const list = terrains.get(`${current}|${pack}`) || [];
