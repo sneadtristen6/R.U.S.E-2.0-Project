@@ -18,9 +18,9 @@
 </div>
 
 <p align="center">
-  <img src="docs/images/studio-maps.jpg" alt="RUSE Studio's Maps view: Centre of Gravity in 3D, with the map's real ground and textures" width="800">
+  <img src="docs/images/studio-maps.jpg" alt="RUSE Studio's Maps view: Leipzig in 3D, with its rivers, lakes and real ground" width="800">
   <br>
-  <sub>RUSE Studio's Maps view: every map the game ships, in 3D, with its real ground. Here, Centre of Gravity.</sub>
+  <sub>RUSE Studio's Maps view: every map the game ships, in 3D, with its real ground and water. Here, Leipzig.</sub>
 </p>
 
 A modding platform for R.U.S.E. Its aim, step by step: new units, maps, models, missions and one-click modded
@@ -49,9 +49,13 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - Browse every unit and building by its code name or in any of the game's ten languages.
 - Change a unit's numbers in your own mod, with Undo, then **Test in game**.
 - See every map in 3D with its real ground, listed by the name players know (in any of the ten languages) next to
-  its code name.
-- Make new units, shape a map's ground, place buildings, props and trees, and export a mod as one file. *Coming.*
-- The Studio offers its own new versions too. *Coming.*
+  its code name, with the game's own 3D models of its buildings and trees.
+- Make new units, and give a weapon another unit's ammo (its muzzle flash and sound come with it).
+- Shape a map's ground with brushes (hills, craters, ramps, level, lakes) that **work in the game**: units drive on
+  it and take orders there (checked on Blitz, 2026-09-30).
+- See each map's scenarios: zones, starting points, spawns and town names; mods can move starting points.
+- Place buildings, props and trees, and export a mod as one file.
+- The Studio offers its own new versions.
 
 *Coming* means merged and in the test builds, not in a release yet.
 
@@ -62,17 +66,34 @@ Modders who write mods by hand can also use the `ruse` command-line tool, from t
   <tr>
     <td width="50%" valign="top">
       <img src="docs/images/launcher.jpg" alt="RUSE Launcher: mod sets on the left, Play on the right" width="380"><br>
-      <sub>RUSE Launcher 0.1.0: mod sets on the left, Play on the right.</sub>
+      <sub>RUSE Launcher: a set of 75 mods, and why they can't be played together.</sub>
     </td>
     <td width="50%" valign="top">
       <img src="docs/images/studio-unit.jpg" alt="RUSE Studio: a unit's values, ready to edit" width="380"><br>
-      <sub>RUSE Studio: a unit's values, ready to edit (preview mode, with sample units).</sub>
+      <sub>RUSE Studio: a unit's values, flags and price, ready to edit.</sub>
     </td>
   </tr>
   <tr>
     <td colspan="2" align="center" valign="top">
       <img src="docs/images/studio-units.jpg" alt="RUSE Studio: the unit list, with filters by type and nation" width="380"><br>
-      <sub>RUSE Studio: the unit list, with filters by type and nation; an edited unit is marked (preview mode, with sample units).</sub>
+      <sub>RUSE Studio: the unit list, with filters by type and nation.</sub>
+    </td>
+  </tr>
+</table>
+
+### Terrain editing, in the game
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/terrain-ingame-hill.jpg" alt="R.U.S.E. in game on Blitz: a hill raised with the Studio's brushes, units driving up it" width="380"><br>
+      <sub>Blitz, in the game: a hill raised with the Studio's brushes. Units drive up it and take orders on it, and
+      the player's HQ starts at a place the mod moved it to.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/terrain-ingame-units.jpg" alt="R.U.S.E. in game: units on top of the raised hill, the town of Cahir lifted with it" width="380"><br>
+      <sub>On top of the hill: the town of Cahir and its trees rise with the ground (2026-09-30). The recipe is
+      DomesticNukes and his Claude's.</sub>
     </td>
   </tr>
 </table>
