@@ -1104,3 +1104,27 @@ objects (buildings, bridges, trees):
   grid (woods, tree lines, open ground) follows a mod's cover, blocks, bridges and water (`rusemod/aigrid.py`, the
   rules fitted to the 34 shipped grids; an unchanged map keeps its grid byte for byte).
 - Still being built: new roads in the movement graphs' crossings (units follow them, not only supply trucks).
+
+**New roads for units, another nation's units, and the mod list in both apps (2026-10-01, three agents' branches,
+merged; suite 859 OK).**
+- **Units follow new roads** (`feat/crossings`). Units plan along roads only through the movement graphs' crossings,
+  and new roads had none, so units crossed country beside them. A shipped crossing's points are where the road crosses
+  each gate's line (through the link's point, square to the line between the two circles' middles), its length is the
+  way along the roads between them, and a circle has one for each two gates a road passes in a row. The build now makes
+  them for every main-graph circle a new road passes, in both graphs, never through a block or across 640 map units or
+  more of ground units can't stand on. Checked by taking each map's own crossings out and making them again from its
+  roads (`tools/verify_crossings.py`): D-Day 92% (infantry) and 95% (vehicles) made again, 4-5% extra; Bulge,
+  SuperCrossroads4 and TwoIslands 86-97%. Not done: crossings inside towns' and bridges' local maps. In-game: a unit
+  ordered from one end of a new road to the other should drive along it.
+- **A unit from another nation's factory** (`feat/nations`). A skirmish loads a nation's unit models only when a player
+  of it is in the match, or when a cluster map's loader has that nation's bit set (`ForceLoadBitFieldIfSkirmish` on
+  the 3 loaders of each of the 85 cluster maps; no shipped one sets it). Instead of refusing such a unit, the build now
+  sets the bit for that nation everywhere and says so (matches take a little more memory and loading time). On the
+  real game, in memory: a Ju 87 copy for the US builds clean, and each rewritten cluster map differs from the shipped
+  one only by the new bits. T13 tests it.
+- **Supported mods** (`feat/modlist`). The launcher's mod tab is "Supported mods", reading the list at
+  sneadtristen6/Ruse-Mods: tick boxes install several mods in one go (each checked against the list's size and
+  SHA-256; one that fails is named, the others still install), cheat mods sit in their own group and are never ticked
+  for the player, and a first run with an empty library opens "Choose your mods" (works offline from the saved list).
+  The Studio's export shows the file's size and SHA-256 and opens "Share your mod": how to add it to the list and
+  become a contributor.
