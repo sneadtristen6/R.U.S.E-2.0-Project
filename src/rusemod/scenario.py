@@ -35,6 +35,7 @@ the checksum made again.
 from __future__ import annotations
 
 import hashlib
+import math
 import struct
 from dataclasses import dataclass, field
 
@@ -42,6 +43,7 @@ from .ndf import Ndf, local_ref
 
 MAGIC = b"SCENARIO\r\n"
 AREA = b"AREA"
+NEUTRAL = -1   # the camp of neutral items (the shipped depots); the only camp a skirmish game spawns
 
 
 class ScenarioError(ValueError):
@@ -211,12 +213,15 @@ class Scenario:
                         it.values["PositionCamera"] = _plain(self.ndf, v)
         self.changed = True
 
-    def add_spawn(self, x: float, y: float, what: str, camp: int | None = None, rotation: float = 0.0,
-                  z: float = 0.0, name: str | None = None) -> int:
-        """A new design item that spawns `what` at x, y (world units) when the scenario starts, for side `camp`
-        (None: no side, like the shipped depots' -1 is written as it's given), turned `rotation` radians. `what` is
-        the game's Python class path of a unit or building (front.parametres.Classes.Unit_M4_Sherman), as the shipped
-        spawns name theirs. Returns the new item's number in `items`."""
+    def add_spawn(self, x: float, y: float, what: str, camp: int | None = NEUTRAL, rotation: float = 0.0,
+                  z: float = 0.0, name: str | None = None, trucks: int | None = None) -> int:
+        """A new design item that spawns `what` at x, y, z (world units; z the ground's height, as every shipped
+        spawn has it) when the scenario starts, for side `camp` (None: neutral, -1, as the shipped depots: the game
+        reads a spawn without a Camp as camp 0, which no game plays), turned `rotation` radians. `what` is the game's
+        Python class path of a unit or building (front.parametres.Classes.Unit_M4_Sherman), as the shipped spawns
+        name theirs. `trucks`: a depot's trucks (ChampInteger), written when given. Returns the new item's number in
+        `items`."""
+        camp = NEUTRAL if camp is None else camp
         from .ndf import Value
         nd = self.ndf
         if nd is None:
@@ -238,8 +243,9 @@ class Scenario:
         item_cls = nd.class_index("TGameDesignItem")
         spawn_cls = nd.class_index("TGameDesignAddOn_Spawn")
         addon_props = [(prop("PythonClassName", spawn_cls), Value(0x07, struct.pack("<I", string(what))))]
-        if camp is not None:
-            addon_props.insert(0, (prop("Camp", spawn_cls), Value(0x02, struct.pack("<i", int(camp)))))
+        if trucks is not None:  # the shipped depots' order: PythonClassName, ChampInteger, Camp
+            addon_props.append((prop("ChampInteger", spawn_cls), Value(0x02, struct.pack("<i", int(trucks)))))
+        addon_props.append((prop("Camp", spawn_cls), Value(0x02, struct.pack("<i", int(camp)))))
         if name:
             addon_props.insert(0, (prop("Name", spawn_cls), Value(0x07, struct.pack("<I", string(name)))))
         addon = nd.add_object(spawn_cls, addon_props)
@@ -594,22 +600,28 @@ def moves_toml(moves: list[Move], header: str = "") -> str:
 
 
 CLASS_PATH = "front.parametres.Classes."  # where the shipped spawns name most units and buildings
+DEPOT = "front.batiment_depot.DalleBatimentDepot"  # a supply depot's slab: the shipped spawns name it this way (1,625)
+SHIPPED_PATHS = {"DalleBatimentDepot": DEPOT}       # class names the game finds elsewhere than CLASS_PATH
+DEPOT_TRUCKS = 25   # the trucks a depot slab starts with (ChampInteger): what most shipped depots have (800 of them)
 
 
 @dataclass
 class Spawn:
     """A unit or building spawned when scenario `file` starts: `what` (a class name, Unit_M4_Sherman, or the full
-    class path the shipped spawns use), for side `camp` (None: no side), at x, y, turned `rotation` radians."""
+    class path the shipped spawns use), for side `camp` (None: neutral, -1), at x, y, turned `rotation` radians.
+    `trucks`: a depot's trucks (None: DEPOT_TRUCKS)."""
     file: str
     what: str
     x: float
     y: float
     camp: int | None = None
     rotation: float = 0.0
+    trucks: int | None = None
+    z: float | None = None   # the ground's height there: the build fills it from the map (the shipped ones match it)
 
     @property
     def class_path(self) -> str:
-        return self.what if "." in self.what else CLASS_PATH + self.what
+        return self.what if "." in self.what else SHIPPED_PATHS.get(self.what, CLASS_PATH + self.what)
 
 
 def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
@@ -618,7 +630,7 @@ def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
         at = f"{where}: spawn {n}"
         if not isinstance(m, dict):
             raise ScenarioError(f"{at} isn't a table")
-        extra = sorted(set(m) - {"file", "what", "x", "y", "camp", "rotation"})
+        extra = sorted(set(m) - {"file", "what", "x", "y", "camp", "rotation", "trucks"})
         if extra:
             raise ScenarioError(f"{at}: unknown key {extra[0]!r}")
         for k in ("file", "what", "x", "y"):
@@ -630,12 +642,24 @@ def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
         if not what or not all(c.isalnum() or c in "._" for c in what):
             raise ScenarioError(f"{at}: what must be a unit's or building's class name, like Unit_M4_Sherman")
         try:
+            if any(isinstance(m.get(k), bool) for k in ("camp", "trucks")):
+                raise TypeError
             x, y = float(m["x"]), float(m["y"])
             camp = int(m["camp"]) if "camp" in m else None
             rot = float(m.get("rotation", 0.0))
+            trucks = int(m["trucks"]) if "trucks" in m else None
         except (TypeError, ValueError):
-            raise ScenarioError(f"{at}: x, y and rotation are numbers, camp a whole number") from None
-        out.append(Spawn(f, what, x, y, camp, rot))
+            raise ScenarioError(f"{at}: x, y and rotation are numbers; camp and trucks whole numbers") from None
+        if not all(math.isfinite(v) for v in (x, y, rot)):
+            raise ScenarioError(f"{at}: x, y and rotation must be finite numbers")
+        if camp is not None and not (camp == NEUTRAL or 1 <= camp <= 16):
+            raise ScenarioError(f"{at}: camp is -1 (neutral, like the shipped depots) or a side from 1 up")
+        if trucks is not None:
+            if Spawn(f, what, x, y).class_path != DEPOT:
+                raise ScenarioError(f"{at}: trucks is only for a supply depot (what = \"DalleBatimentDepot\")")
+            if not 0 <= trucks <= 1000:
+                raise ScenarioError(f"{at}: trucks goes from 0 to 1000 (the shipped depots have 15 to 72)")
+        out.append(Spawn(f, what, x, y, camp, rot, trucks))
     return out
 
 
@@ -647,6 +671,8 @@ def spawns_toml(spawns: list[Spawn]) -> str:
             lines.append(f"camp = {s.camp}")
         if s.rotation:
             lines.append(f"rotation = {s.rotation!r}")
+        if s.trucks is not None:
+            lines.append(f"trucks = {s.trucks}")
         lines.append("")
     return "\n".join(lines)
 
@@ -706,13 +732,18 @@ def starts_toml(starts: list[Start]) -> str:
     return "\n".join(lines)
 
 
-def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], list[str]]:
+def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None) -> tuple[dict[str, bytes], list[str]]:
     """Apply a mod's scenario edits (in order: Move and Spawn) to a map's scenarios. `read(member)` gives a
-    DataMap_Win.dat member's bytes, or None. Returns ({member: new bytes}, report lines). A move whose file or item
-    isn't there, or whose item is another kind (the file isn't the one the mod was made for), raises ScenarioError;
-    so does a spawn in a scenario that isn't there."""
+    DataMap_Win.dat member's bytes, or None. `skirmish`: the map's scenarios (file names, lower case) that its
+    skirmish and online entries load (rusemod.players.skirmish_files). Returns ({member: new bytes}, report lines).
+    A move whose file or item isn't there, or whose item is another kind (the file isn't the one the mod was made
+    for), raises ScenarioError; so does a spawn in a scenario that isn't there, and a spawn for a player's camp in a
+    skirmish scenario (a skirmish game spawns only neutral items: the game leaves the others out without a word).
+    `warn(message)` is told of a spawn for a camp the scenario's own spawns never use (an Operation spawns only the
+    camps it plays)."""
     folder = folder_of(map_pack)
     files: dict[str, Scenario] = {}
+    camps: dict[str, set] = {}   # member (lower case) -> the camps its shipped spawns use (no Camp reads as 0)
     notes, later = [], []
     for m in moves:
         member = folder + m.file
@@ -721,9 +752,28 @@ def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], lis
             if raw is None:
                 raise ScenarioError(f"{map_pack}: it has no scenario {m.file}")
             files[member.lower()] = (member, Scenario.read(raw))
+            camps[member.lower()] = {it.values.get("Camp", 0) for it in files[member.lower()][1].items
+                                     if it.kind == "Spawn"}
         member, s = files[member.lower()]
         if isinstance(m, Spawn):
-            s.add_spawn(m.x, m.y, m.class_path, camp=m.camp, rotation=m.rotation)
+            camp = NEUTRAL if m.camp is None else m.camp
+            at = f"{map_pack}: scenario.toml: the spawn of {m.what} at ({m.x:.0f}, {m.y:.0f}) in {m.file}"
+            if m.file.lower() in skirmish and camp != NEUTRAL:
+                raise ScenarioError(f"{at} is for camp {camp}, but {m.file} is a skirmish map's scenario, and a "
+                                    f"skirmish game spawns only neutral items: the game would leave it out without a "
+                                    f"word. Set camp = -1 (or leave camp out), or spawn it in an Operation's scenario")
+            if camp != NEUTRAL and camp not in camps[member.lower()] and warn is not None:
+                used = ", ".join(str(c) for c in sorted(camps[member.lower()])) or "none"
+                warn(f"{at} is for camp {camp}, which none of the scenario's own spawns use (theirs: {used}); the game "
+                     f"spawns items only for the camps the scenario plays, so it may never appear. Check it in the "
+                     f"game, or use one of those camps")
+            trucks = (DEPOT_TRUCKS if m.trucks is None else m.trucks) if m.class_path == DEPOT else m.trucks
+            z = m.z
+            if z is None:  # no ground to read: the height of the nearest design item, never 0 under a hill
+                near = min(s.items, key=lambda it: (it.position[0] - m.x) ** 2 + (it.position[1] - m.y) ** 2,
+                           default=None)
+                z = near.position[2] if near is not None else 0.0
+            s.add_spawn(m.x, m.y, m.class_path, camp=camp, rotation=m.rotation, z=z, trucks=trucks)
             continue
         if isinstance(m, Start):
             s.add_start(m.x, m.y, m.team, m.place, m.rotation, m.z)

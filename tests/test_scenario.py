@@ -252,6 +252,67 @@ class Starts(unittest.TestCase):
         self.assertIn("2 starting point(s) added", notes[0])
 
 
+class Spawns(unittest.TestCase):
+    """New spawns as the game takes them: a skirmish game spawns only neutral items (camp -1), a spawn without a
+    Camp reads as camp 0, a depot slab starts with ChampInteger trucks, and every shipped spawn has the ground's z."""
+    MEMBER = "test\\map\\blitz\\leveldesign.scenario"
+
+    def apply(self, spawns, skirmish=(), warned=None):
+        from rusemod.scenario import apply_moves
+        new, _notes = apply_moves({self.MEMBER: scenario()}.get, "Blitz", spawns, skirmish,
+                                  warned.append if warned is not None else None)
+        return Scenario.read(new[self.MEMBER]).items[-1]
+
+    def test_a_skirmish_scenario_takes_only_neutral_spawns(self):
+        from rusemod.scenario import Spawn
+        with self.assertRaisesRegex(ScenarioError, "scenario.toml: the spawn of Unit_M4_Sherman .* is for camp 1, but "
+                                                   "leveldesign.scenario is a skirmish map's scenario.*camp = -1"):
+            self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0, camp=1)], {"leveldesign.scenario"})
+        it = self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0, camp=-1)], {"leveldesign.scenario"})
+        self.assertEqual(it.values["Camp"], -1)
+        it = self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0)], {"leveldesign.scenario"})
+        self.assertEqual(it.values["Camp"], -1)  # no camp given: written neutral, never left out (camp 0)
+
+    def test_a_camp_the_scenario_never_spawns_for_warns(self):
+        from rusemod.scenario import Spawn
+        warned = []
+        self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0, camp=3)], warned=warned)
+        self.assertEqual(len(warned), 1)
+        self.assertIn("camp 3, which none of the scenario's own spawns use (theirs: 0)", warned[0])
+        warned.clear()
+        self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0, camp=-1)], warned=warned)
+        self.assertEqual(warned, [])
+
+    def test_a_depot_takes_the_shipped_class_path_and_trucks(self):
+        from rusemod.scenario import DEPOT, Spawn
+        it = self.apply([Spawn("leveldesign.scenario", "DalleBatimentDepot", 5.0, 6.0)])
+        self.assertEqual(it.values, {"PythonClassName": DEPOT, "ChampInteger": 25, "Camp": -1})
+        it = self.apply([Spawn("leveldesign.scenario", "DalleBatimentDepot", 5.0, 6.0, trucks=40)])
+        self.assertEqual(it.values["ChampInteger"], 40)
+        it = self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0)])
+        self.assertNotIn("ChampInteger", it.values)
+
+    def test_the_height(self):
+        from rusemod.scenario import Spawn
+        self.assertEqual(self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0, z=33.0)]).position,
+                         (5.0, 6.0, 33.0))
+        # no ground given: the nearest design item's height (the start at 1000, 2000 is at 50), never 0 under a hill
+        self.assertEqual(self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 900.0, 2100.0)]).position[2],
+                         50.0)
+
+    def test_the_mod_file(self):
+        import tomllib
+        from rusemod.scenario import Spawn, parse_spawns, spawns_toml
+        spawns = [Spawn("a.scenario", "DalleBatimentDepot", 1.0, 2.0, -1, 0.5, 30), Spawn("a.scenario", "Unit_X", 3.0, 4.0, 2)]
+        self.assertEqual(parse_spawns(tomllib.loads(spawns_toml(spawns))["spawn"]), spawns)
+        for bad, why in (({"camp": 0}, "camp is -1"), ({"camp": True}, "whole numbers"),
+                         ({"trucks": 5}, "only for a supply depot"),
+                         ({"what": "DalleBatimentDepot", "trucks": -1}, "0 to 1000"),
+                         ({"x": float("inf")}, "finite")):
+            with self.subTest(bad=bad), self.assertRaisesRegex(ScenarioError, why):
+                parse_spawns([{"file": "a.scenario", "what": "Unit_X", "x": 1, "y": 2, **bad}])
+
+
 class Kinds(unittest.TestCase):
     """What each scenario is, from the game's map list and menus: a map-list entry loads a scenario through its
     cluster (ClusterLoads -> TNDFTransaction.BaseName -> that ClusterMap's ScenarioPath); the menus list the entry as

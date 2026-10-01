@@ -129,6 +129,20 @@ def scenario_of(mapinfo: Ndf, obj: int, read_glad) -> str | None:
     return None
 
 
+def skirmish_files(read_glad, pack: str) -> set[str]:
+    """The map's scenarios (file names, lower case) that its online and skirmish entries load: in those games only
+    neutral items (camp -1) are spawned. `read_glad(member)` gives a ZZ_GladPatchableWin.dat member's bytes or None;
+    a game without the map list or menus gives none."""
+    g_raw, m_raw = read_glad(GLOBALS), read_glad(MAPINFO)
+    if g_raw is None or m_raw is None:
+        return set()
+    try:
+        m = Ndf(m_raw)
+        return {f for mi, _gi, _name in entries(m, Ndf(g_raw), pack) if (f := scenario_of(m, mi, read_glad))}
+    except (ValueError, KeyError, struct.error):
+        return set()
+
+
 def seats(counts: dict, layouts: list[int], players: int) -> list[tuple[int, int]]:
     """What's missing for `players` in each offered layout (2, 3, 4 teams; 0 = free-for-all), given how many starting
     points the scenario has per team ({team: count}, or {team: a collection of them}): [(team, k), ...] in order, the

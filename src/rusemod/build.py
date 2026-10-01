@@ -889,7 +889,17 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         return changed_members.get(member) or bytes(a.read(a.find(member)))
                     except KeyError:
                         return None
+
+                def read_glad(member, a=arc):
+                    """A ZZ_GladPatchableWin.dat member as the build has it so far (any case), or None."""
+                    key = member.lower()
+                    mine = next((d for m, d in result.changed.items() if m.lower() == key), None)
+                    if mine is not None:
+                        return mine
+                    e = a.entry(member)
+                    return bytes(a.read(e)) if e is not None else None
                 for name, (map_moves, ids) in moves.items():
+                    from .players import skirmish_files
                     from .scenario import Move
                     unset = [m for m in map_moves if getattr(m, "z", 0.0) is None and (
                         not isinstance(m, Move) or m.kind in ("StartingPoint", "Spawn"))]
@@ -907,7 +917,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         except (KeyError, ValueError, struct.error, zlib.error):
                             pass  # without the ground, a start takes its teammate's height
                     try:
-                        new, notes = apply_moves(read_data, name, map_moves)
+                        new, notes = apply_moves(read_data, name, map_moves, skirmish_files(read_glad, name),
+                                                 warn=lambda msg, ids=ids: warn(f"{', '.join(ids)}: {msg}"))
                     except (ScenarioError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
@@ -960,14 +971,6 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 for name, (settings, ids) in players.items():  # how many players: after the mods' starting points
                     from .players import PlayersError, apply_players
                     from .scenario import Scenario, folder_of
-
-                    def read_glad(member, a=arc):
-                        key = member.lower()
-                        mine = next((d for m, d in result.changed.items() if m.lower() == key), None)
-                        if mine is not None:
-                            return mine
-                        e = a.entry(member)
-                        return bytes(a.read(e)) if e is not None else None
 
                     def places(file, n=name):
                         raw = read_data(folder_of(n) + file)

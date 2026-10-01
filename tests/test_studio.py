@@ -1012,13 +1012,34 @@ class ScenarioEdits(WithMod):
                                                             [[1, 2], [3, 4], [5, 6]], None, 1.5))
             mine = items[before:]
             self.assertEqual([(m["x"], m["y"], m["camp"], m["spawn"]) for m in mine],
-                             [(1.0, 2.0, None, 0), (3.0, 4.0, None, 1), (5.0, 6.0, None, 2)])
+                             [(1.0, 2.0, -1, 0), (3.0, 4.0, -1, 1), (5.0, 6.0, -1, 2)])  # no side: neutral
             data = tomllib.loads(self.file.read_text(encoding="utf-8"))
             self.assertEqual({s["rotation"] for s in data["spawn"]}, {1.5})
             for bad in ([], [[1, 2]] * 51, [[1, "a"]], [[1, float("nan")]], [[1, 2, 3]]):
                 with self.assertRaisesRegex(StudioError, "places|pairs"):
                     self.api.scenario_spawn_many("Blitz", "leveldesign.scenario", M4, bad)
         self.assertEqual(len(self.items(self.api.map_scenarios("Blitz"))), before + 3)
+
+    def test_neutral_by_default_and_only_neutral_on_a_skirmish_map(self):
+        """A skirmish game spawns only neutral items (camp -1): the tool's default is neutral, and a skirmish
+        scenario refuses a player's side; a depot is spawned under the class path the shipped depots use."""
+        from rusemod.scenario import DEPOT, Spawn
+        shown = {"values": [("ClassNameForDebug", 0, "Unit_M4_Sherman")]}
+        with mock.patch("rusemod.index.Index.show", return_value=shown):
+            self.assertEqual(self.items(self.api.scenario_spawn("Blitz", "leveldesign.scenario", M4, 5.0, 6.0))[-1]
+                             ["camp"], -1)
+            skirmish = {"leveldesign.scenario": [{"name": "(2) Blitz", "kind": "skirmish", "key": None}]}
+            self.api._sceneries.clear()
+            with mock.patch("rusemod.scenario.kinds_of", return_value=skirmish):
+                with self.assertRaisesRegex(StudioError, "skirmish game spawns only neutral items"):
+                    self.api.scenario_spawn("Blitz", "leveldesign.scenario", M4, 5.0, 6.0, 1)
+                self.api.scenario_spawn("Blitz", "leveldesign.scenario", M4, 7.0, 8.0, -1)
+            self.api._sceneries.clear()
+        with mock.patch("rusemod.index.Index.show", return_value={"values": [("ClassNameForDebug", 0, "DalleBatimentDepot")]}):
+            self.api.scenario_spawn("Blitz", "leveldesign.scenario", M4, 9.0, 9.0)
+        data = tomllib.loads(self.file.read_text(encoding="utf-8"))
+        self.assertEqual([s.get("camp") for s in data["spawn"]], [-1, -1, -1])
+        self.assertEqual(Spawn("x.scenario", data["spawn"][-1]["what"], 0.0, 0.0).class_path, DEPOT)
 
 
 class Troubleshooter(WithMod):

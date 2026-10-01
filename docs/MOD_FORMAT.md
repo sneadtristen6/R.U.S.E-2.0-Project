@@ -376,6 +376,9 @@ rotation = 0.95                        # radians, optional: only items that have
 - `kind` guards against a file that isn't the one the mod was made for: a move whose item is another kind is refused
   with the reason, and nothing is built.
 - Moves apply in load order; two mods moving one item: the later wins.
+- A moved starting point takes its opening camera (`PositionCamera`, when it has one) along by the same offset, and
+  a moved starting point or spawn stands at the ground's height there. Its warm-up camera flight (`WarmupCamPath`, a
+  path in the map's camera file) can't move: it still ends over the old place, and the build says so.
 
 A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
 Operations spawn theirs this way; skirmish maps spawn only their supply depots):
@@ -386,13 +389,20 @@ file = "leveldesign_normal.scenario"
 what = "Unit_M4_Sherman"      # a unit's or building's class name (or the full class path the game's spawns use)
 x = 470000.0
 y = 650000.0
-camp = 1                      # the side it belongs to (campaigns use 1 to 7); left out: no side
+camp = 1                      # the side: -1 neutral (the default, as the map's depots), or 1 up (an Operation's sides)
 rotation = 0.5                # radians, optional
+trucks = 25                   # a supply depot (what = "DalleBatimentDepot") only: its trucks (default 25)
 ```
 
 - The build adds a design item (`TGameDesignItem` + `TGameDesignAddOn_Spawn`) to the scenario's list; moves are
-  applied first, so their item numbers stay the shipped ones.
-- Which `camp` is which player in a skirmish isn't known yet (an in-game check).
+  applied first, so their item numbers stay the shipped ones. It stands at the ground's height there (every shipped
+  spawn does), and a depot gets its trucks (`ChampInteger`; the game gives a depot without it none).
+- **A skirmish game spawns only neutral items** (camp -1): a spawn for a player's side in a scenario that a
+  skirmish or online entry loads is refused, since the game would leave it out without a word. A spawn left without
+  a camp is written as -1 (the game reads no camp as camp 0, which no game plays).
+- In other scenarios (Operations, campaign chapters) a camp none of the scenario's own spawns use gets a warning: the
+  game spawns items only for the camps the scenario plays. Which `camp` is which player isn't known yet (an in-game
+  check).
 
 A mod adds starting points, one table each: a player starts at a point of their team (the game's `AllianceNum`); the
 game hands a team's points out in order of their place (`AlliancePriority`, lowest first), whatever the numbers are,

@@ -154,6 +154,12 @@ class Applying(unittest.TestCase):
         other = {g.prop_name(pi): v.scalar() for pi, v in g.objects[1].props if v.tc in (0x00, 0x02)}
         self.assertEqual(other["NbPlayers"], 2)  # the other map's entry is left alone
 
+    def test_the_scenarios_skirmish_games_load(self):
+        from rusemod.players import skirmish_files
+        self.assertEqual(skirmish_files(reader(glad()), "M04_cotentin"), {"leveldesign_3v3_v01.scenario"})
+        self.assertEqual(skirmish_files(reader(glad()), "Elsewhere"), set())
+        self.assertEqual(skirmish_files(reader({}), "M04_cotentin"), set())  # no map list: none known
+
     def test_up_to_3v3_the_game_type_follows(self):
         new, _notes = apply_players(reader(glad()), "M04_cotentin", Players(4), lambda f: {1: 2, 2: 2})
         g = Ndf(new[GLOBALS])
