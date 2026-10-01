@@ -10,8 +10,10 @@ const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "
   stats: null, groundTex: {}, edit: null, size: 0,  // size: the map's longer side in scene units (the keys' speed)
   // brush: the tool picked, its size and strength per brush (slider values), the strokes on this map (as saved),
   // the size of each group of strokes made this session (for Undo; a Forest stroke's: { n, objects: its trees }), the
-  // drag being painted, and the mod saved into
-  brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null, rampStart: null },
+  // drag being painted, and the mod saved into; a Remove stroke's group: { n: 0, erase: its circles }; erase: the Remove brush's circles saved on this map (the scenery
+  // file's [[erase]] tables), eraseWhat: what new ones take
+  brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null, rampStart: null,
+    erase: [], eraseWhat: { vegetation: true, prop: true, building: false } },
   // scenery: which groups are shown, the map's scenery (StudioApi.map_scenery) and its drawn shapes per group
   scenery: { show: { building: true, prop: true, vegetation: true }, data: null, meshes: {}, models: {} },
   // placing: on or not, the group and type picked, the next object's turn and size, what the mod places on this map
@@ -44,10 +46,11 @@ const BRUSHES = {
   open_infantry: ["open", "infantry", 1, false, 3, 0],
   open_vehicles: ["open", "vehicles", 1, false, 3, 0],
   forest: ["forest", "flat", 1, false, 3, 0],  // trees (as Place, Area scatters them) and cover over them: cover strokes
+  erase: ["erase", "flat", 1, false, 3, 0],  // the map's own scenery taken away (scenery.toml [[erase]] circles)
 };
 const WATER = new Set(["water", "drain"]);
 const SIZE_UNIT = { cover: 0.25, uncover: 0.25, town: 0.1, block: 0.25, block_infantry: 0.25, block_vehicles: 0.25,
-  open: 0.25, open_infantry: 0.25, open_vehicles: 0.25, forest: 0.25 };  // finer sizes than the ground brushes' (share of 1%)
+  open: 0.25, open_infantry: 0.25, open_vehicles: 0.25, forest: 0.25, erase: 0.25 };  // finer sizes than the ground brushes' (share of 1%)
 
 // A brush's radius in map units: its Size slider as a share of the map's width.
 function brushRadius(name) {
@@ -883,6 +886,44 @@ function placeScenery() {
     mesh.computeBoundingSphere();
   }
   drawPlaced();
+  dimScenery();
+}
+
+// The Remove brush's circles (the scenery file's [[erase]] tables): the map's own objects they take off the map when
+// the mod is built are drawn dimmed. A test (group, x, y) -> taken, or null when there are no circles.
+const DIMMED = 0.25;
+function erasedTest() {
+  const areas = mv.brush.erase, C = 20000, cells = new Map();
+  if (!areas.length) return null;
+  for (const a of areas) {
+    for (let cx = Math.floor((a.x - a.radius) / C); cx <= Math.floor((a.x + a.radius) / C); cx++) {
+      for (let cy = Math.floor((a.y - a.radius) / C); cy <= Math.floor((a.y + a.radius) / C); cy++) {
+        const key = `${cx},${cy}`;
+        (cells.get(key) || cells.set(key, []).get(key)).push(a);
+      }
+    }
+  }
+  return (group, x, y) => (cells.get(`${Math.floor(x / C)},${Math.floor(y / C)}`) || [])
+    .some((a) => (a.what || []).includes(group) && (x - a.x) ** 2 + (y - a.y) ** 2 <= a.radius * a.radius);
+}
+
+function dimScenery() {
+  const gl = mv.gl;
+  if (!gl) return;
+  const test = erasedTest(), c = new gl.THREE.Color();
+  for (const mesh of Object.values(mv.scenery.meshes).concat(Object.values(mv.scenery.models || {}).flat())) {
+    if (!test && !mesh.instanceColor) continue;
+    const { group, flat, rows } = mesh.userData, n = rows ? rows.length : flat.length / 5, fresh = !mesh.instanceColor;
+    for (let j = 0; j < n; j++) {
+      const k = rows ? rows[j] : j;
+      const v = test && test(group, flat[5 * k + 1], flat[5 * k + 2]) ? DIMMED : 1;
+      mesh.setColorAt(j, c.setRGB(v, v, v));
+    }
+    if (!mesh.instanceColor) continue;
+    mesh.instanceColor.needsUpdate = true;
+    if (fresh) mesh.material.needsUpdate = true;  // (its shader takes the colours from now on)
+  }
+  gl.draw();
 }
 
 function clearScenery() {
@@ -1495,6 +1536,9 @@ async function loadPlaced(pack, ask) {
   mv.place.groups = [];
   mv.place.lineStart = null;
   mv.place.mod = res.mod;
+  mv.brush.erase = res.erase || [];
+  dimScenery();
+  showCount();
   placeNote("");
   drawPlaced();
   renderPlace();
@@ -1728,7 +1772,7 @@ const DOCK = [
   ["cover", ["cover", "uncover", "town", "forest"]],
   ["movement", ["block", "block_infantry", "block_vehicles", "open", "open_infantry", "open_vehicles"]],
   ["roads", null], ["bridges", null],
-  ["building", null], ["prop", null], ["vegetation", null],
+  ["building", null], ["prop", null], ["vegetation", null], ["erase", ["erase"]],
   ["scenario", null], ["check", null],
 ];
 // the scenario kind open (no tool picked yet); "Check this map" open; the last brush of each kind
@@ -1770,6 +1814,7 @@ const ICONS = {
   open_infantry: "M12 3a2 2 0 1 0 0 4a2 2 0 1 0 0-4z M12 8v7 M8 11h8 M9 21l3-6 3 6",
   open_vehicles: "M3 16h18v4H3z M7 16v-4h8v4 M15 13h6",
   forest: "M7 3l-4 7h3l-3 5h8l-3-5h3z M7 15v5 M17 6l-4 7h3l-3 5h8l-3-5h3z M17 18v3",
+  erase: "M4 15l9-9 7 7-6 6H8z M9 10l7 7 M3 21h18",
   move: "M12 3v18 M3 12h18 M9 6l3-3 3 3 M9 18l3 3 3-3 M6 9l-3 3 3 3 M18 9l3 3-3 3",
   spawn: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8v8 M8 12h8",
   start: "M6 21V3 M6 4h11l-3 4 3 4H6",
@@ -1802,7 +1847,7 @@ function brushKind(name) {
 function kindName(kind) {
   const w = mv.words;
   return { terrain: w.dock_terrain, water: w.brush_water, cover: w.brush_cover, movement: w.dock_movement, roads: w.dock_roads,
-    bridges: w.dock_bridges, check: w.dock_check, scenario: w.scen_show }[kind] || w[`scenery_${kind}`] || kind;
+    bridges: w.dock_bridges, check: w.dock_check, scenario: w.scen_show, erase: w.brush_erase }[kind] || w[`scenery_${kind}`] || kind;
 }
 
 // The kind open: the brush's, the place kind's, or the scenario's; null while just looking around.
@@ -2482,7 +2527,7 @@ function brushNote(text, kind) {
 }
 
 function showCount() {
-  const w = mv.words, n = mv.brush.strokes.length;
+  const w = mv.words, n = mv.brush.strokes.length + mv.brush.erase.length;
   $("brush-count").textContent = n ? fill(w.brush_count, { n: n.toLocaleString() }) : "";
   $("brush-undo").disabled = !n || !mv.brush.mod;
   $("brush-clear").disabled = !n || !mv.brush.mod;
@@ -2518,7 +2563,15 @@ function renderBrushes() {
   const set = settingsOf(b.name);
   $("brush-size").value = set.size;
   $("brush-strength").value = set.strength;
-  $("brush-strength-row").classList.toggle("hidden", ["cover", "town", "block", "open", "forest"].includes(BRUSHES[b.name][0]));
+  $("brush-strength-row").classList.toggle("hidden", ["cover", "town", "block", "open", "forest", "erase"].includes(BRUSHES[b.name][0]));
+  const erasing = BRUSHES[b.name][0] === "erase";  // what the Remove brush takes: trees and props unless picked
+  $("brush-erase-row").classList.toggle("hidden", !erasing);
+  $("brush-erase-warn").classList.toggle("hidden", !erasing || !b.eraseWhat.building);
+  if (erasing) {
+    $("brush-erase-row").replaceChildren(...["vegetation", "prop", "building"].map((g) => chipOf(w[`scenery_${g}`],
+      w.tip_erase_what, b.eraseWhat[g], () => { b.eraseWhat[g] = !b.eraseWhat[g]; renderBrushes(); })));
+    $("brush-erase-warn").textContent = w.erase_buildings_warn;
+  }
   showOverlays();
   $("map-help").textContent = b.on ? w.brush_help : w.map_help;
   showCount();
@@ -2617,6 +2670,14 @@ function showRing(p) {
 }
 
 function dab(group, x, y) {
+  if (group.erase) {  // a Remove stroke: an erase circle, the map's objects in it dimmed
+    const a = { x: Math.round(x), y: Math.round(y), radius: Math.round(brushRadius(mv.brush.name)), what: group.what };
+    group.erase.push(a);
+    group.last = [x, y];
+    mv.brush.erase.push(a);
+    dimScenery();
+    return;
+  }
   const s = newStroke(x, y, group.level, group.end);
   group.strokes.push(s);
   group.last = [x, y];
@@ -2649,7 +2710,7 @@ function forestOf(radius) {
 function paintTo(p) {
   const g = mv.brush.painting;
   if (!g || g.stamp || !g.last) return;
-  const x = p.x / SCALE, y = p.z / SCALE, spacing = g.strokes[0].radius / 3;
+  const x = p.x / SCALE, y = p.z / SCALE, spacing = g.erase ? g.erase[0].radius / 2 : g.strokes[0].radius / 3;
   let [lx, ly] = g.last;
   let dist = Math.hypot(x - lx, y - ly);
   while (dist >= spacing) {
@@ -2663,6 +2724,7 @@ function paintTo(p) {
 async function finishStroke() {
   const g = mv.brush.painting;
   mv.brush.painting = null;
+  if (g && g.erase) { await finishErase(g); return; }
   if (!g || !g.strokes.length) return;
   redraw(false, true);
   placeScenery();
@@ -2697,15 +2759,43 @@ async function finishStroke() {
   }
 }
 
-// Undo takes back the last stroke or drag; a Forest stroke's trees go with its cover.
+// A Remove stroke's circles saved in the mod's scenery file (StudioApi.scenery_erase), or taken off the view again.
+async function finishErase(g) {
+  const b = mv.brush, pack = mv.current;
+  if (!g.erase.length) return;
+  try {
+    const res = await mv.api.scenery_erase(pack, g.erase);
+    if (pack !== mv.current) return;
+    b.groups.push({ n: 0, erase: g.erase.length });
+    showCount();
+    brushNote(fill(mv.words.erase_done, { n: res.count.toLocaleString() }));
+  } catch (err) {
+    if (pack !== mv.current) return;
+    b.erase.splice(g.start, g.erase.length);
+    dimScenery();
+    showCount();
+    brushNote((err && err.message) || String(err), "error");
+  }
+}
+
+// Undo takes back the last stroke or drag; a Forest stroke's trees go with its cover; a Remove stroke's circles.
 async function undoStroke() {
   const b = mv.brush, pack = mv.current;
-  if (!b.mod || !b.strokes.length || b.painting) return;
-  const last = b.groups.length ? b.groups.pop() : 1, n = typeof last === "number" ? last : last.n;
+  if (!b.mod || (!b.strokes.length && !b.erase.length) || b.painting) return;
+  const last = b.groups.length ? b.groups.pop() : b.strokes.length ? 1 : { n: 0, erase: 1 };
+  const n = typeof last === "number" ? last : last.n;
   try {
-    const res = await mv.api.terrain_undo(pack, n);
-    if (pack !== mv.current) return;
-    b.strokes.splice(b.strokes.length - res.removed, res.removed);
+    if (n) {
+      const res = await mv.api.terrain_undo(pack, n);
+      if (pack !== mv.current) return;
+      b.strokes.splice(b.strokes.length - res.removed, res.removed);
+    }
+    if (last.erase) {
+      const res = await mv.api.scenery_erase_undo(pack, last.erase);
+      if (pack !== mv.current) return;
+      b.erase.splice(b.erase.length - res.removed, res.removed);
+      dimScenery();
+    }
     if (last.objects && last.objects.length) {
       await mv.api.scenery_undo(pack, last.objects.length, last.objects);
       if (pack !== mv.current) return;
@@ -2721,11 +2811,15 @@ async function undoStroke() {
 async function clearStrokes() {
   const b = mv.brush, pack = mv.current;
   $("brush-sure").classList.add("hidden");
-  if (!b.mod || !b.strokes.length || b.painting) return;
+  if (!b.mod || (!b.strokes.length && !b.erase.length) || b.painting) return;
   try {
-    await mv.api.terrain_undo(pack, b.strokes.length);
+    if (b.strokes.length) await mv.api.terrain_undo(pack, b.strokes.length);
     if (pack !== mv.current) return;
     b.strokes = [];
+    if (b.erase.length) await mv.api.scenery_erase_undo(pack, b.erase.length);
+    if (pack !== mv.current) return;
+    b.erase = [];
+    dimScenery();
     b.groups = [];
     reapply();
     showCount();
@@ -2781,6 +2875,14 @@ function watchPointer() {
       mv.brush.painting = ramp;
       dab(ramp, start.x, start.y);
       finishStroke();
+      return;
+    }
+    if (kind === "erase") {  // erase circles along the drag, of what is picked (trees and props unless changed)
+      const what = Object.keys(mv.brush.eraseWhat).filter((g) => mv.brush.eraseWhat[g]);
+      if (!what.length) { brushNote(mv.words.erase_none, "error"); return; }
+      mv.brush.painting = { strokes: [], erase: [], what, last: null, stamp: false, start: mv.brush.erase.length };
+      dab(mv.brush.painting, x, y);
+      canvas.setPointerCapture(ev.pointerId);
       return;
     }
     const group = { strokes: [], last: null, level, stamp, start: mv.brush.strokes.length };

@@ -213,6 +213,48 @@ def _erase_areas(info) -> None:
             del info.scenery[pack]
 
 
+def _clearings(game: Path, road_edits: dict, placed: dict, spans: dict, descs=None) -> dict:
+    """Where the build clears the map's trees and props for what the mods build: {map pack name: ([(where, erase
+    areas)], the mods' ids)}: a strip along each new road (roads.toml, unless clear = false), a circle under each
+    building placed (its model's reach and a margin) and around each end of each new bridge (MOD_FORMAT §8)."""
+    from .nav import building_reach
+    from .scenery import CLEAR_MARGIN, EraseArea, NewObject, bridge_end_clearing, road_clearing
+    from .terrain import pack_file
+    out: dict = {}
+    for name in sorted(set(road_edits) | set(placed) | set(spans), key=str.lower):
+        if find_pack(game, pack_file(name)) is None:
+            continue  # (a missing map is said with the roads and the scenery)
+        jobs, ids = [], []
+        roads, road_ids = road_edits.get(name, ([], []))
+        for n, r in enumerate(roads, start=1):
+            if r.clear:
+                x, y = r.points[0]
+                jobs.append((f"along road {n} (from ({x:.0f}, {y:.0f}))", road_clearing(r.points)))
+                ids += road_ids
+        objects, object_ids = placed.get(name, ([], []))
+        buildings, _notes = building_reach(game, [o for o in objects if isinstance(o, NewObject)], descs)
+        if buildings:
+            jobs.append((f"under the {len(buildings)} new building(s)",
+                         [EraseArea(o.x, o.y, r + CLEAR_MARGIN) for o, r in buildings]))
+            ids += object_ids
+        if spans.get(name):
+            jobs.append((f"at the ends of the {len(spans[name])} new bridge(s)", bridge_end_clearing(spans[name])))
+            ids += road_ids + object_ids
+        if jobs:
+            out[name] = (jobs, list(dict.fromkeys(ids)))
+    return out
+
+
+def _cleared_notes(jobs: list, tally: dict, first: int) -> list[str]:
+    """How many of the map's objects each clearing took (`tally`: erase_objects', its areas from index `first`)."""
+    notes, k = [], first
+    for where, areas in jobs:
+        n = sum(tally.get(i, 0) for i in range(k, k + len(areas)))
+        k += len(areas)
+        notes.append(f"{n:,} of the map's trees and props cleared {where}")
+    return notes
+
+
 def _cover_brushes(info) -> None:
     """The Studio's cover and uncover brushes live in terrain.toml with the others, but paint the map's cover grid,
     not the ground: they move to `info.cover` (after the mod's own cover.toml circles), and a map whose strokes are
@@ -1027,6 +1069,12 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         for name, (_areas, ids) in erasing.items():
             every, who = with_pieces.setdefault(name, ([], []))
             who.extend(i for i in ids if i not in who)
+        # the map's trees and props cleared where the mods build: along each new road (unless clear = false), under
+        # each building placed and at each new bridge's ends (rusemod.scenery.road_clearing): [(what, its areas)]
+        clearing = _clearings(game, road_edits, with_pieces, bridge_spans, descs)
+        for name, (_jobs, ids) in clearing.items():
+            every, who = with_pieces.setdefault(name, ([], []))
+            who.extend(i for i in ids if i not in who)
         solid: dict = {}  # map pack name -> (nav.Block for each placed building, the mods' ids)
         for name, (objects, ids) in with_pieces.items():
             map_path = find_pack(game, pack_file(name))
@@ -1038,26 +1086,36 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             entry = next((e for e in map_packs if e[0] == map_path), None)
             map_arc = entry[1] if entry else open_pack(map_path)
             changed_members = entry[2] if entry else {}
-            from .scenery import (MEMBER, SceneryEditError, SceneryError, add_objects, bury_objects,
+            from .scenery import (MEMBER, SceneryEditError, SceneryError, SceneryFull, add_objects, bury_objects,
                                   erase_objects)
             areas, erase_ids = erasing.get(name, ([], []))
+            jobs = clearing.get(name, ([], []))[0]
+            cleared = [a for _what, job in jobs for a in job]
             try:
                 member = map_arc.find(MEMBER).path
                 raw = changed_members.get(member) or bytes(map_arc.read(map_arc.find(MEMBER)))
                 raw, sunk = bury_objects(raw, bridge_hide.get(name, []))  # before the new blocks move them
-                erased_notes, erased = [], {}
-                if areas:  # the map's own scenery out first: the new objects then stay whatever the areas cover
+                erased_notes, erased, tally = [], {}, {}
+                if areas or cleared:  # the map's own scenery out first: the new objects then stay whatever it covers
                     if descs is None:
                         descs = descriptors(arc)
                     names = Scenery(raw).names
                     kinds = {i: descs[n].group for i, n in enumerate(names) if n in descs}
                     bridges = {i for i, n in enumerate(names) if n in descs and descs[n].bridge}
-                    raw, erased_notes, erased = erase_objects(raw, areas, kinds, bridges)
+                    raw, erased_notes, erased = erase_objects(raw, list(areas) + cleared, kinds, bridges, tally)
+                    erased_notes = ([n for n in erased_notes  # (the clearing's own counts said below)
+                                     if areas or not (n.startswith("the erase area") or " erased in " in n)]
+                                    + _cleared_notes(jobs, tally, len(areas)))
                 changed_members[member], notes = add_objects(raw, objects)
                 notes = sunk + erased_notes + notes
             except KeyError:
                 result.findings.append(Finding("error", f"{map_path.name} has no scenery file, so nothing can be "
                                                         f"placed on {name}"))
+                continue
+            except SceneryFull as exc:
+                result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: {exc}" + (
+                    ". The clearing along the new roads, under the new buildings and at the new bridges' ends counts "
+                    "too: set clear = false on roads.toml roads that run through open ground" if cleared else "")))
                 continue
             except (SceneryError, SceneryEditError) as exc:
                 result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: {exc}"))

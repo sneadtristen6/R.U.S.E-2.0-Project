@@ -568,6 +568,7 @@ adds a road as its line, in map units:
 [[road]]
 points = [[500000.0, 650000.0], [640000.0, 700000.0], [800000.0, 650000.0]]
 join = 20000.0       # an end this near a road joins it (a junction); else it's a dead end (default 20000, ~77 m)
+# optional: paint = false, bridges = false, clear = false (each below)
 ```
 
 - The line gets points about 2,300 map units apart, linked in a chain; each end is linked to the nearest road point
@@ -587,6 +588,13 @@ join = 20000.0       # an end this near a road joins it (a junction); else it's 
   bank to bank (rusemod.bridges), with a floor units stand on: the floor of a shipped bridge of its kind, carried
   onto the new banks, in the map's `occlusioninfo_objectsonly.kdt` (rusemod.floors). A bridge placed by hand in
   `scenery.toml` gets one the same way.
+- `clear = true` (the default) takes the map's trees and props off a strip along the road, 1,500 map units each side
+  of its line: as far as the shipped maps keep their trees from their own roads (of the trees within 4,000 of a road,
+  the nearest 5% stand 1,450 to 1,700 away on D-Day, Hurtgen, the Ardennes, Holland, Italy and Germany). `clear =
+  false` keeps them. The build also clears under each building a mod places (as far as its model reaches, times its
+  size, and 600 more) and around both ends of each new bridge (2,560). Buildings, bridges, decals and road pieces
+  stay. It works as the `[[erase]]` areas of `scenery.toml` do, so the 16 MB limit counts it: a build past it is
+  refused, saying which `clear` to turn off. The build's notes say how many objects each road cleared.
 
 ## 9. Scripts
 
