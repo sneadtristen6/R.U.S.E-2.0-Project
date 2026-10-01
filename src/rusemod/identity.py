@@ -131,7 +131,8 @@ def refresh(game, name: str, source: str, skip=(), new=()) -> list:
 def clashes(game, names) -> list[tuple[str, str]]:
     """For new objects `names`: identity values some other object also has (same class for ids, any object for debug
     names, same build menu for slots), as [(new object, message)]. Ids a class's own objects share aren't ids, so aren't
-    checked."""
+    checked; nor is a unit's DescriptorId, which no other unit of any kind may share (rusemod.unitcheck)."""
+    from .unitcheck import UNIT_CLASSES  # a unit's DescriptorId: an error there (patch.Engine._unit_rules)
     scan, out, new = _scan(game), [], set(names)
     for name in names:
         obj = game.objects.get(name)
@@ -139,7 +140,7 @@ def clashes(game, names) -> list[tuple[str, str]]:
             continue
         for prop in IDS:
             v = _int(obj.props.get(prop))
-            if v is None or not _is_id(scan, prop, obj.cls, new):
+            if v is None or not _is_id(scan, prop, obj.cls, new) or (prop == "DescriptorId" and obj.cls in UNIT_CLASSES):
                 continue
             others = [n for n in scan.by_class[(prop, obj.cls)][v] if n != name]
             if others:

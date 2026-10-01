@@ -312,12 +312,12 @@ class FindingObjects(unittest.TestCase):
 
     def test_a_designator_must_find_exactly_one_object(self):
         r = run(("m", [Op("set", "@TAmmunition[AmmunitionId=1120]", "Puissance", num(3)),
-                       Op("set", "@[ClassNameForDebug='Unit_M3_Lee']", "Nationalite", num(9)),
+                       Op("set", "@[ClassNameForDebug='Unit_M3_Lee']", "Nationalite", num(5)),
                        Op("set", "@TTunableConstante[NbAvionsParAeroport=8]", "NbAvionsParAeroport", num(128))]),
                 game=named())
         self.assertEqual(levels(r), [])
         self.assertEqual(puissance(r), 3)
-        self.assertEqual(int(r.game.objects["$/Lee"].props["Nationalite"].value), 9)
+        self.assertEqual(int(r.game.objects["$/Lee"].props["Nationalite"].value), 5)
         self.assertEqual(int(r.game.objects["$/Const"].props["NbAvionsParAeroport"].value), 128)
         r = run(("m", [Op("set", "@[class=TUniteAuSolDescriptor]", "Nationalite", num(1))]), game=named())
         self.assertIn("matches 2 objects ($/Lee, $/Sherman); it must match exactly one", r.errors[0].message)
