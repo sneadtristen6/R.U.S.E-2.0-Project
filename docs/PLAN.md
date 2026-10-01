@@ -606,8 +606,9 @@ one is shorter. Rules:
 
 **Now (updated 2026-10-01, evening): start here.** The owner's order (2026-10-01): **the road fix, its test, the
 audit, the release, then the players' suggestions.** All done up to the release: **Studio 0.8.0 and Launcher 0.3.0
-are out** (2026-10-01, after the owner's in-game tests, TESTS.md batches 1-3). Next: units from another nation that
-work (step 5 below).
+are out** (2026-10-01, after the owner's in-game tests, TESTS.md batches 1-3). Next (steps 5-9 below): new roads
+drawn up close, then units from another nation that work, then the community's Total War research fix, the Erase
+tool and new maps in the menus.
 
 Out in 0.8.0 / 0.3.0: the troubleshooter and the clean-game backup in both apps; every unit flag explained; square
 cover; the road fix and all the audit's fixes (LOG.md, 2026-10-01); units following new roads; the mod list at
@@ -642,27 +643,44 @@ don't hide in; placed objects on the ground at any size; cover painted in place 
      contributor) (`feat/modlist`).
 3. **Release** (done 2026-10-01): Studio 0.8.0 and Launcher 0.3.0, the owner's numbers and his go after batch 3.
 
-*After the release* (in order; cheap and certain first, one game start per test batch):
+*After the release* (planned 2026-10-01, evening; in order, cheap and certain first, one game start per test batch,
+the test spots beside the player's HQ with a top-down map):
 4. **Test batches** (done 2026-10-01, TESTS.md batches 1-3): what failed was fixed and checked again. T9 (a road over
-   an old bridge) is still to run.
-5. **Units from another nation that work** (owner, 2026-10-01: "have a tiger on the USA ... a special scenario where
+   an old bridge) and T14 (D-Day for 8 players: the lobby) ride along in the next batch.
+5. **New roads drawn up close (T12), first.** The release's one known issue, and the owner's most repeated report.
+   The build already marks the new blocks and the path to them as holding road pieces, and a simulation of the game's
+   walk reaches every piece, yet the game still drops a new road near the camera. Steps:
+   1. find what the close view asks of a road piece beyond the scenery tree (how the game draws it, first);
+   2. a probe copy: one of the map's own road pieces copied into a new block exactly as it is, beside a new road. If
+      the copy draws up close, our pieces' own data is the cause; if it doesn't, the new block is;
+   3. what the game's own road blocks always have and ours don't (the far list, the trailing word, the boxes);
+   4. a guard test that simulates the close-up road pass after every build, then one test batch.
+   Asked DomesticNukes too (his scenery notes; the shared repo's issue #11).
+6. **Units from another nation that work** (owner, 2026-10-01: "have a tiger on the USA ... a special scenario where
    you captured a tiger"). Making the game load that nation's models in every match crashed it in T13 (a German Ju 87
    copy for the US crashed the game when its gunner was set up: its model wasn't ready for it), so the build refuses
-   these units for now (`build.FORCE_LOAD`). Next: copy the unit's models into the new nation's own skirmish packs, so
-   its matches load them with their own units; test with a plane and a tank (a Tiger for the US).
-6. **The players' suggestions, the cheap ones** (done in 0.8.0): the Open brushes (unblock), the Forest brush, the
-   Bridges dock and Check this map.
-7. **A4 Remove scenery:** the build's side is out in 0.8.0 (`[[erase]]` circles, copy on write; a cleared wood is
+   these units for now (`build.FORCE_LOAD`). Next: an `.spk` writer, then copy the unit's models (mesh, skeleton,
+   animations, proxies) into the new nation's own skirmish packs, so its matches load them with their own units; test
+   with a plane (the Ju 87 for the US) and a tank (a Tiger for the US). DomesticNukes' `.spk` notes asked for (#11).
+7. **A community mod to look at:** Rastapopoulos' "Total War research fix" (ModDB, 2026-09-30; he offered it to us):
+   in Total War mode, research the next era's units yourself instead of getting them free. If it works with our build,
+   it goes on the mod list (sneadtristen6/Ruse-Mods); nothing of it goes into the apps unless it brings code we need.
+   Downloading it waits for the owner's go.
+8. **The Studio's Erase tool and new maps in the game's menus** (branches `feat/eraseui` and `feat/newmap`, started by
+   agents; resumed with the owner's "go agents").
+9. **Small ones, when a session has room:** the town-names mod (names readable from any height, §14) on the mod list;
+   the players' wishlist done in 0.8.0 (Open and Forest brushes, Bridges dock, Check this map) needs nothing more.
+10. **A4 Remove scenery:** the build's side is out in 0.8.0 (`[[erase]]` circles, copy on write; a cleared wood is
    opened to units and loses its cover); the Studio's Erase tool is on the branch `feat/eraseui`. Measured 2026-09-30: only 0.2-0.3% of a map's trees (D-Day 11.6 million, Blitz 3.9 million) sit in blocks
    placed once, the only ones `bury_objects` can sink one by one; the rest are in blocks the map places many times.
    So erasing needs a block copied for the erased spot (copy on write, down from the top block) or whole placed
    patches sunk; which one is the first decision of A4. The same work builds the top block's tree again, which also
    reaches new objects in open ground far from the map's scenery (the audit's one open scenery case, LOG.md).
-8. **A city template** (the wishlist): save a group of buildings, roads and cover, and stamp it on a map. Needs A4.
-9. **Road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
+11. **A city template** (the wishlist): save a group of buildings, roads and cover, and stamp it on a map. Needs A4.
+12. **Road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
    tanks"): a forest track (infantry only, out of the supply network) or a road that opens the woods to vehicles
    along it; which is the default is the owner's call.
-10. **A5 Ruse areas, A6 ground painting** (the forest-floor texture for the forest brush), **A7 finer ground**
+13. **A5 Ruse areas, A6 ground painting** (the forest-floor texture for the forest brush), **A7 finer ground**
    (re-meshing): the smallest ground brush is 1% of the map's width (cover and block go four times finer), and below
    one cell of the gameplay ground a brush does nothing, so **smaller brushes** and finer ground up close come
    with A7.
