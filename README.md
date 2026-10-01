@@ -14,6 +14,12 @@
 
 </div>
 
+## What R.U.S.E. 2.0 is
+
+**A game that plays a game with R.U.S.E.** It learns how R.U.S.E. reads every file it uses, and checks your mod the
+way the game will before the game ever starts: anything that would break in the game is stopped first, with a note
+saying what to change. The goal: what you make works in the game every time, the first time.
+
 ## Bridges work. Map making starts here.
 
 Reshape any R.U.S.E. map. Hills, towns, roads, and bridges your units actually cross. Draw a road in RUSE Studio.

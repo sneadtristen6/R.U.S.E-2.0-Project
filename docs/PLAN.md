@@ -13,6 +13,11 @@ game moddable, plus a player launcher that makes modded play (including multipla
 Content is built on top of it: **RUSE 2.0** (balance, units, tactics, nation rosters) and later
 **Pacific Island Defense**.
 
+**What R.U.S.E. 2.0 is (the owner, 2026-10-01): a game that plays a game with R.U.S.E.** It understands how the base
+game works with every file it reads, so whatever a modder makes works in the game every time, the first time; that is
+the goal. In practice: every rule the game follows becomes a check in the build (the audit, LOG.md 2026-10-01), so a
+mod that would break in the game is refused, with what to change, before anything is written.
+
 **Goals**
 - Modders can change or add anything the game's data allows: units, weapons, rosters, maps, textures,
   models and scripts. Sound comes last.
