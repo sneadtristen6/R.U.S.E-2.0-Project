@@ -139,6 +139,21 @@ class Blocking(unittest.TestCase):
         untouched = row()
         self.assertEqual(nav.Graph.read(untouched.to_bytes()).points, untouched.points)  # nothing emptied: as it was
 
+    def test_a_crossing_whose_road_runs_through_a_block_goes(self):
+        """The game routes a unit through a circle along its crossing's road without asking whether the ground is
+        walkable: a block on that road (a building placed on a town's road) has to take the crossing out, or units
+        drive through it. The road itself stays (supply trucks use it)."""
+        from rusemod.roadnet import RoadNet
+        road = RoadNet([(1000.0 * i, 2000.0) for i in range(13)], [(i, i + 1, 100) for i in range(12)])
+        g = row()  # its crossing through B runs on road links 7 (x 7,000-8,000) and 0 (x 0-1,000)
+        self.assertEqual(g.drop_crossings_through(lambda: road, [(7000.0, 4500.0, 400.0)]), 0)  # in B, off the road
+        self.assertEqual(g.drop_crossings_through(lambda: road, [(5000.0, 5000.0, 400.0)]), 0)  # near no circle's road
+        self.assertEqual(len(g.crossings), 28)
+        self.assertEqual(g.drop_crossings_through(lambda: road, [(5000.0, 2000.0, 400.0)]), 1)  # on the road, in B
+        self.assertEqual((g.crossings, [c[4] for c in g.circles]), (b"", [0, 0, 0, 0]))
+        self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
+        self.assertEqual(len(road.links), 12)
+
     def test_a_circle_emptied_and_one_shrunk(self):
         g = row()
         counts = g.block([(10800.0, 2000.0, 400.0)])  # C's middle is 800 away: C keeps 400 clear, too small

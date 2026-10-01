@@ -1047,3 +1047,9 @@ shipped files first:
   test mod's road 2 (69 points) joined no road within its join distance (77 m). The build now refuses a road network
   in more than one piece, naming the road (draw its end onto a road, or give it a larger `join`). The owner's `test`
   mod needs its road 2 joined before it builds again.
+- **A block on a town's road takes the crossings through it out.** A circle's crossings send units along the road
+  network through it without asking whether the ground is walkable, and that part of a route is never refined
+  through the circle's local map. Blocks keep the circles that own local maps whole (towns, bridges), so their
+  crossings stayed, and a building placed on a town's road had units driving through it (the audit: 15 of 15 such
+  blocks left one). After blocks, every crossing whose road (the shortest road path between its two road links)
+  runs through a block goes; the road stays for supply trucks. Measured on SuperCrossroads4 and D-Day: none left.

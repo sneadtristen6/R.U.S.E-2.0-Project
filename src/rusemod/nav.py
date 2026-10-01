@@ -741,6 +741,75 @@ class Graph:
             g.crossings = b"".join(recs)
         return gone
 
+    def drop_crossings_through(self, road_net, zones: list[tuple[float, float, float]]) -> int:
+        """After blocks: take out every crossing, here and in the local maps, whose road (the road network's path
+        between its two road links; `road_net()` gives the roadnet.RoadNet, read only if a crossing is near a zone)
+        runs through one of `zones`. The game routes a unit through a circle along that road without asking whether
+        the ground is walkable, and never refines that part through the circle's local map, so a block on a town's
+        road (a placed building) whose circle kept its crossings had units driving through it. The road itself
+        stays: supply trucks use it. Returns how many went."""
+        if not zones or not any(g.crossings for g in [self] + self.subs):
+            return 0
+        roads, adj = None, []
+
+        def road(r0: int, r1: int, limit: float) -> list:
+            """The points of the shortest road path from link r0 to link r1 (from either end), or [] past `limit`."""
+            import heapq
+            nonlocal roads, adj
+            if roads is None:
+                roads = road_net()
+                adj = [[] for _ in roads.points]
+                for a, b, _cost in roads.links:
+                    d = math.dist(roads.points[a], roads.points[b])
+                    adj[a].append((b, d))
+                    adj[b].append((a, d))
+            if max(r0, r1) >= len(roads.links):
+                return []
+            src, goal = set(roads.links[r0][:2]), set(roads.links[r1][:2])
+            dist, prev = {p: 0.0 for p in src}, {}
+            todo = [(0.0, p) for p in src]
+            while todo:
+                d, p = heapq.heappop(todo)
+                if d > dist.get(p, math.inf) or d > limit:
+                    continue
+                if p in goal:
+                    out = [p]
+                    while out[-1] in prev:
+                        out.append(prev[out[-1]])
+                    return [roads.points[q] for q in reversed(out)]
+                for q, w in adj[p]:
+                    if d + w < dist.get(q, math.inf):
+                        dist[q], prev[q] = d + w, p
+                        heapq.heappush(todo, (d + w, q))
+            return []
+
+        def gap(px, py, ax, ay, bx, by) -> float:
+            dx, dy = bx - ax, by - ay
+            n = dx * dx + dy * dy
+            t = 0.0 if n == 0 else max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / n))
+            return math.hypot(px - ax - t * dx, py - ay - t * dy)
+        gone = 0
+        for g in [self] + self.subs:
+            recs, starts = [], []
+            for c in range(len(g.circles) - 1):
+                starts.append(len(recs))
+                cx, cy, cr = g.circles[c][:3]
+                near = [z for z in zones if math.hypot(z[0] - cx, z[1] - cy) < cr + z[2]]
+                for k in range(g.circles[c][4], g.circles[c + 1][4]):
+                    rec = g.crossings[28 * k:28 * k + 28]
+                    if near:
+                        x0, y0, x1, y1, length = struct.unpack_from("<5f", rec)
+                        r0, r1 = struct.unpack_from("<2H", rec, 24)
+                        line = [(x0, y0)] + road(r0, r1, 2 * length + 5000.0) + [(x1, y1)]
+                        if any(gap(zx, zy, *a, *b) < zr for zx, zy, zr in near for a, b in zip(line, line[1:])):
+                            gone += 1
+                            continue
+                    recs.append(rec)
+            starts.append(len(recs))
+            g.circles = [c[:4] + (s,) for c, s in zip(g.circles, starts)]
+            g.crossings = b"".join(recs)
+        return gone
+
     def _empty(self, gone: set[int]) -> None:
         """Empty the circles `gone` as a block empties one: radius 0, their links and those links' crossings out."""
         n = len(self.circles) - 1
@@ -896,7 +965,13 @@ def apply_blocks(read, pack: str, blocks: list[Block]) -> tuple[dict, list[str]]
     if win is None:
         raise NavError(f"{pack} has no {name} in {PACK}, so its movement can't be changed")
     bufs = sdb.split_mapinfo(win)[1]
-    new, notes = {}, []
+    new, notes, roads = {}, [], []
+
+    def road_net():  # the road network (buffer 0), read once if a crossing's road needs following
+        if not roads:
+            from .roadnet import RoadNet
+            roads.append(RoadNet.read(bufs[0]))
+        return roads[0]
     for k, what in ((1, "infantry"), (2, "vehicles")):
         zones = [(b.x, b.y, b.radius) for b in blocks if k in UNITS[b.units]]
         if not zones:
@@ -915,6 +990,10 @@ def apply_blocks(read, pack: str, blocks: list[Block]) -> tuple[dict, list[str]]
         if cut:
             notes.append(f"{what}: {cut} circle(s) the blocks cut off from the rest taken out too (no unit could "
                          f"reach them, and an order onto them crashes the game)")
+        through = g.drop_crossings_through(road_net, zones)
+        if through:
+            notes.append(f"{what}: {through} crossing(s) whose road ran through a block taken out (units routed "
+                         f"along that road drove through it; the road stays for supply trucks)")
         new[k] = g.to_bytes()
     return {name: replace_buffers(win, new)}, notes
 
