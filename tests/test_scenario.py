@@ -191,6 +191,31 @@ class Starts(unittest.TestCase):
         self.assertEqual(back.places(), {1: {1, 2}, 2: {1}})
         self.assertEqual(back.items[1].position, (9000.0, 8000.0, 70.0))  # the others stay
 
+    def test_a_moved_start_takes_its_camera_along(self):
+        """The game opens a skirmish looking from the start's PositionCamera when it has one, so a moved start's
+        camera moves by the same offset (a start shaped like Chess's, which carry one each); z is the given height."""
+        from rusemod.scenario import Move, apply_moves, folder_of
+        s = Scenario.read(two_teams())
+        s.move(0, 1000.0 + 5000.0, 2000.0 + 5000.0, z=77.0)
+        back = Scenario.read(s.to_bytes())
+        it = back.items[0]
+        self.assertEqual(it.position, (6000.0, 7000.0, 77.0))
+        self.assertEqual(struct.unpack("<3f", bytes.fromhex(it.values["PositionCamera"])), (6100.0, 7600.0, 900.0))
+        self.assertEqual(struct.unpack("<3f", bytes.fromhex(back.items[1].values["PositionCamera"])),
+                         (8900.0, 7400.0, 900.0))  # the other start's stays
+        member = folder_of("Blitz") + "leveldesign.scenario"
+        new, notes = apply_moves({member: two_teams()}.get, "Blitz",
+                                 [Move("leveldesign.scenario", 1, "StartingPoint", 100.0, 200.0, z=5.0)])
+        it = Scenario.read(new[member]).items[1]
+        self.assertEqual(it.position, (100.0, 200.0, 5.0))
+        self.assertEqual(struct.unpack("<3f", bytes.fromhex(it.values["PositionCamera"])), (0.0, -400.0, 900.0))
+        self.assertTrue(any("warm-up camera flight (Warmup_J4)" in n for n in notes), notes)
+
+    def test_a_start_without_a_camera_of_its_own(self):
+        s = Scenario.read(scenario())  # its start has no PositionCamera: the game looks at the start itself
+        s.move(0, 10.0, 20.0)
+        self.assertNotIn("PositionCamera", Scenario.read(s.to_bytes()).items[0].values)
+
     def test_a_team_with_no_start_yet_and_refusals(self):
         s = Scenario.read(two_teams())
         n = s.add_start(8500.0, 7000.0, 3, rotation=0.25)  # copies the nearest: team 2's, keeps its height

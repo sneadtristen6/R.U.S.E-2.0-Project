@@ -890,10 +890,12 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     except KeyError:
                         return None
                 for name, (map_moves, ids) in moves.items():
-                    from .scenario import Start
-                    unset = [m for m in map_moves if isinstance(m, Start) and m.z is None]
+                    from .scenario import Move
+                    unset = [m for m in map_moves if getattr(m, "z", 0.0) is None and (
+                        not isinstance(m, Move) or m.kind in ("StartingPoint", "Spawn"))]
                     map_path = find_pack(game, pack_file(name)) if unset else None
-                    if map_path is not None:  # a new starting point sits at the ground's height, as the shipped ones
+                    if map_path is not None:  # a new or moved starting point or spawn sits at the ground's height,
+                        # as every shipped one does (the game puts a spawned unit at the height it's given)
                         from .tms import Tms
                         entry = next((e for e in map_packs if e[0] == map_path), None)
                         map_arc = entry[1] if entry else open_pack(map_path)

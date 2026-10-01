@@ -185,19 +185,30 @@ class Scenario:
 
     def move(self, item: int, x: float, y: float, z: float | None = None, rotation: float | None = None) -> None:
         """Put design item number `item` (in `items`) at x, y (and z; else it keeps its height), turned to `rotation`
-        radians when given (only items that have a Rotation can turn)."""
+        radians when given (only items that have a Rotation can turn). A starting point's opening camera
+        (PositionCamera, when it has one: the game opens a skirmish looking from there) moves by the same offset, as
+        add_start does; its warm-up camera flight (WarmupCamPath, a path in the map's camera file) can't move."""
         it = self.items[item]
         o = self.ndf.objects[it.obj]
         props = {self.ndf.prop_name(pi): v for pi, v in o.props}
+        if rotation is not None and "Rotation" not in props:
+            raise ScenarioError(f"design item {item} ({it.kind}) has no rotation to change")
         pos = props["Position"]
+        dx, dy = x - it.position[0], y - it.position[1]
         z = it.position[2] if z is None else z
         pos.payload = struct.pack("<3f", x, y, z) + pos.payload[12:]
         it.position = struct.unpack("<3f", pos.payload[:12])
         if rotation is not None:
-            if "Rotation" not in props:
-                raise ScenarioError(f"design item {item} ({it.kind}) has no rotation to change")
             props["Rotation"].payload = struct.pack("<f", rotation)
             it.rotation = struct.unpack("<f", props["Rotation"].payload)[0]
+        addon = local_ref(props["AddOn"]) if "AddOn" in props else None
+        if it.kind == "StartingPoint" and addon is not None:
+            for _pi, v in self.ndf.objects[addon].props:
+                if self.ndf.prop_name(_pi) == "PositionCamera" and len(v.payload) >= 12:
+                    cx, cy, cz = struct.unpack_from("<3f", v.payload)
+                    if cx or cy:  # (0, 0): no camera of its own, the game looks at the start itself
+                        v.payload = struct.pack("<3f", cx + dx, cy + dy, cz) + bytes(v.payload[12:])
+                        it.values["PositionCamera"] = _plain(self.ndf, v)
         self.changed = True
 
     def add_spawn(self, x: float, y: float, what: str, camp: int | None = None, rotation: float = 0.0,
@@ -540,6 +551,7 @@ class Move:
     x: float
     y: float
     rotation: float | None = None
+    z: float | None = None   # the ground's height there: the build fills it for starting points and spawns
 
 
 def parse_moves(items, where: str = "scenario.toml") -> list[Move]:
@@ -701,7 +713,7 @@ def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], lis
     so does a spawn in a scenario that isn't there."""
     folder = folder_of(map_pack)
     files: dict[str, Scenario] = {}
-    notes = []
+    notes, later = [], []
     for m in moves:
         member = folder + m.file
         if member.lower() not in files:
@@ -721,7 +733,11 @@ def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], lis
         if s.items[m.item].kind != m.kind:
             raise ScenarioError(f"{map_pack}: {m.file} item {m.item} is a {s.items[m.item].kind or 'plain item'}, "
                                 f"not a {m.kind}: the mod was made for another version of this map")
-        s.move(m.item, m.x, m.y, rotation=m.rotation)  # an item without a rotation can't be turned: move() says so
+        s.move(m.item, m.x, m.y, m.z, rotation=m.rotation)  # an item without a rotation can't be turned: move() says so
+        path = s.items[m.item].values.get("WarmupCamPath") if m.kind == "StartingPoint" else None
+        if path:
+            later.append(f"{map_pack}: {m.file}: the starting point moved (item {m.item}) keeps its warm-up camera "
+                         f"flight ({path}), which still ends over its old place; its opening camera moved with it")
     for member, s in files.values():
         mine = [m for m in moves if (folder + m.file).lower() == member.lower()]
         moved, spawned = sum(1 for m in mine if isinstance(m, Move)), sum(1 for m in mine if isinstance(m, Spawn))
@@ -729,4 +745,4 @@ def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], lis
         notes.append(f"{map_pack}: {member.rsplit(chr(92), 1)[-1]}: " + ", ".join(
             p for p in (f"{moved} item(s) moved" if moved else "", f"{started} starting point(s) added" if started else "",
                         f"{spawned} spawn(s) added" if spawned else "") if p))
-    return {member: s.to_bytes() for member, s in files.values()}, notes
+    return {member: s.to_bytes() for member, s in files.values()}, notes + later
