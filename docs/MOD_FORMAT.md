@@ -307,8 +307,11 @@ level  = 23500.0     # water: the water surface (world z); the ground under it f
 | `uncover` | the same, taking cover away (also `square = true`) | the cells whose centres are inside |
 
 - **Water.** Water brushes run after the height brushes. They change the water surface of the two drawn meshes and
-  the map's three water textures, never the ground or the `.kdt` files (units are kept out of water by the map's
-  movement data, which water brushes don't change: a new lake is for looks until that is written too). What is
+  the map's three water textures, never the ground or the `.kdt` files. Units are kept out of water by the map's
+  movement graphs (ground under water is never walkable on a shipped map), so the build blocks every new water (a
+  water stroke's, or ground a height brush lowered under the water) in both graphs, as `movement.toml` blocks would
+  (`rusemod.nav.water_blocks`: circles over it, sampled every 640 map units or more, reaching about half a step past
+  the shore at most). Drained ground stays closed to units, as it was under the water: the build warns. What is
   written follows the rules every shipped map keeps (the water triangles, the per-cell patch bounds, the far mesh's
   water about 150 lower, the textures' depth, tiles and cell flags; `rusemod.water`). A height brush near water
   also keeps the water triangles and textures in step.
@@ -454,8 +457,9 @@ entry = "(6) Cotentin (3v3)"  # optional: which of the map's entries, when it ha
 
 Where units hide is baked into each map: a grid in `datasmap\<map>\mapinfo.win` (`DataMap_Win.dat`; its fourth
 buffer, an SDB quadtree, FORMATS §2). A cell's byte holds layers; the game asks two (LittleGroove's notes): 0x08,
-"in forest" (units there are hidden, and ambush), and 0x04, blocked. Eugen drew them as zones, not from the trees:
-a town or a wood a mod adds gives cover only where cover is painted. A mod paints circles (or squares), in order:
+"in forest" (units there are hidden, and ambush), and 0x04, **"AI: blocked"**. Eugen drew them as zones, not from
+the trees: a town or a wood a mod adds gives cover only where cover is painted. A mod paints circles (or squares), in
+order:
 
 ```toml
 [[paint]]
@@ -468,6 +472,10 @@ square = true       # optional: a square along the map's axes, `radius` (map uni
                     # its edges follow the grid's rows and columns
 ```
 
+- **`blocked` doesn't stop units.** It is what the AI asks about ground (its sight lines, where it builds and
+  defends, and the AI grid's clearance); units move by the movement graphs alone, and walk on shipped "blocked" cells
+  too (from 3% of them on SuperCrossroads4 to half on Ardennes). To keep units off, add a `movement.toml` block with
+  the same x, y and radius: the build warns about a blocked paint with no block holding its middle.
 - `square` is written by hand for now, here or on a `cover` / `uncover` stroke in terrain.toml: the Studio's cover
   brushes paint circles (its map view draws a square stroke of terrain.toml as a square).
 - `rusemod.cover` edits the tree in place: leaves no circle touches keep their bytes, a leaf a circle's edge
@@ -500,7 +508,9 @@ units = "all"        # or "infantry" or "vehicles"
 ### New roads: `maps/<map pack>/roads.toml`
 
 The roads units follow are each map's road network in `mapinfo.win` (buffer 0; `rusemod.roadnet`, FORMATS §2): points
-on the road curves about 9 m apart, linked with a cost of their distance / 10, and a k-d tree over the links. A mod
+on the road curves about 9 m apart, linked (each link's cost the game works out from its length; one flag bit, set
+where the vehicles' movement has ground at the link's middle, as on most shipped links), and a k-d tree over the
+links. A mod
 adds a road as its line, in map units:
 
 ```toml

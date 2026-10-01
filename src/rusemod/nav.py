@@ -66,6 +66,8 @@ LOCAL_RADIUS = 640.0   # a new deck's circles in its local map: units keep withi
                        # local circles are mostly 640)
 LOCAL_SPACING = 640.0  # between them along the deck (a link needs an overlap of STEP: at most 960 apart for 640)
 LEAF = 4               # the most circles in a leaf of an index built here (the shipped ones hold 1 to 7)
+MAX_DEPTH = 24         # the deepest an index may go: the game walks it with a fixed stack of 32 entries and no test of
+                       # running past it (the deepest shipped index is 18 levels; one built here, balanced, about 14)
 
 
 class NavError(ValueError):
@@ -998,6 +1000,77 @@ def apply_blocks(read, pack: str, blocks: list[Block]) -> tuple[dict, list[str]]
     return {name: replace_buffers(win, new)}, notes
 
 
+def water_blocks(old_at, new_at, areas) -> tuple[list[tuple[float, float, float]], list[tuple[float, float]]]:
+    """Blocks (x, y, r) over the water terrain edits made, and the places they drained. On every shipped map ground
+    under water is never walkable (0.1% of wet samples at most, on both graphs), but the water and height brushes
+    change only the ground files: units would walk the bed of a new lake. `old_at(x, y)` and `new_at(x, y)` say where
+    the map had water and has it now (bridges.Water.at); `areas` are the strokes' circles (x, y, r: nothing changed
+    outside them).
+
+    Each group of overlapping areas is sampled on a square grid (a step of 640, or more for big areas: at most about
+    250 samples across one). The new water (wet now, dry before) is covered by circles, the biggest first: each
+    centred on a sample whose square (a step a side) no circle holds yet, reaching half a step short of the nearest
+    sample that is neither new nor old water (the shore), at least 3/4 of a step (its own square): every new water
+    sample's square is blocked, and dry ground at most about half a step past the shore. Returns (the blocks, the
+    drained samples: wet before, dry now). Units can't walk a drained bed either until it's opened (the graphs have no
+    ground there)."""
+    groups: list[list[tuple[float, float, float]]] = []
+    for a in areas:  # areas that overlap go together
+        into = [g for g in groups if any(math.hypot(a[0] - b[0], a[1] - b[1]) < a[2] + b[2] for b in g)]
+        merged = [a] + [b for g in into for b in g]
+        groups = [g for g in groups if g not in into] + [merged]
+    zones, drained = [], []
+    for g in groups:
+        s = max(2 * STEP, math.ceil(max(r for _x, _y, r in g) / 125.0 / STEP) * STEP)
+        x0 = math.floor(min(x - r for x, _y, r in g) / s) * s - s
+        y0 = math.floor(min(y - r for _x, y, r in g) / s) * s - s
+        nx = int(math.ceil((max(x + r for x, _y, r in g) - x0) / s)) + 2
+        ny = int(math.ceil((max(y + r for _x, y, r in g) - y0) / s)) + 2
+        fresh = set()       # new water samples (i, j)
+        seed = {}           # the nearest sample that is neither new nor old water, for every sample: (i, j)
+        for j in range(ny):
+            for i in range(nx):
+                x, y = x0 + i * s, y0 + j * s
+                if not any((x - ax) ** 2 + (y - ay) ** 2 <= ar * ar for ax, ay, ar in g):
+                    seed[i, j] = (i, j)
+                    continue
+                now, before = bool(new_at(x, y)), bool(old_at(x, y))
+                if now and not before:
+                    fresh.add((i, j))
+                elif before and not now:
+                    drained.append((x, y))
+                if not (now or before):
+                    seed[i, j] = (i, j)
+        if not fresh:
+            continue
+
+        def d2(i, j, k):
+            return (i - k[0]) ** 2 + (j - k[1]) ** 2
+        for order, steps in ((range(ny), ((-1, -1), (0, -1), (1, -1), (-1, 0))),  # the nearest shore sample of each,
+                             (range(ny - 1, -1, -1), ((1, 1), (0, 1), (-1, 1), (1, 0)))):  # in two sweeps
+            for j in order:
+                for i in (range(nx) if steps[0][1] < 0 else range(nx - 1, -1, -1)):
+                    best = seed.get((i, j))
+                    for di, dj in steps:
+                        k = seed.get((i + di, j + dj))
+                        if k is not None and (best is None or d2(i, j, k) < d2(i, j, best)):
+                            best = k
+                    if best is not None:
+                        seed[i, j] = best
+        left = set(fresh)
+        for i, j in sorted(fresh, key=lambda p: (-d2(*p, seed[p]), p)):
+            if (i, j) not in left:
+                continue
+            r = max(math.sqrt(d2(i, j, seed[i, j])) * s - s / 2, 0.75 * s)
+            zones.append((x0 + i * s, y0 + j * s, r))
+            reach = int(r // s)
+            for a in range(i - reach, i + reach + 1):  # the samples whose whole square it holds are done
+                for b in range(j - reach, j + reach + 1):
+                    if (a, b) in left and math.hypot(a - i, b - j) * s + 0.71 * s <= r:
+                        left.discard((a, b))
+    return zones, drained
+
+
 def _drop_cut_off(g: Graph) -> int:
     """After blocks: every local map, and then the main graph, kept in one piece (as every shipped graph is). A local
     map's cut-off pieces go first; an owner whose local map has no ground left goes too (no route could pass it);
@@ -1174,29 +1247,42 @@ def _fill(sources, zones, now) -> list[tuple[float, float, float]]:
     the STEP grid, the largest first, each on ground no circle covers yet, down to MIN_RADIUS."""
     live = [c for c in now if c[2] > 0]
     near = _Buckets(live)
+    placed = _Buckets([])  # the new circles so far
 
-    def covered(x, y, extra):
+    def covered(x, y, extra=None):
         key = (int(x // near.size), int(y // near.size))
         return any((x - live[i][0]) ** 2 + (y - live[i][1]) ** 2 < live[i][2] ** 2 for i in near.cells.get(key, ())) \
-            or any((x - c[0]) ** 2 + (y - c[1]) ** 2 < c[2] * c[2] for c in extra)
+            or extra is not None and any((x - extra.circles[i][0]) ** 2 + (y - extra.circles[i][1]) ** 2
+                                         < extra.circles[i][2] ** 2 for i in extra.cells.get(key, ()))
 
+    # each spot is weighed once, against the sources that hold it and the zones that can bound it (a spot is never
+    # deeper in a source than the largest source's radius): many zones (a new lake's blocks) stay quick
     step = 2 * STEP
-    spots = []
+    spots, seen = [], set()
+    most = max((sr for _x, _y, sr in sources), default=0.0)
+    holders, bounds = _Buckets(list(sources)), _Buckets(list(zones))
     for sx, sy, sr in sources:
         for i in range(int((sx - sr) // step), int((sx + sr) // step) + 1):
             for j in range(int((sy - sr) // step), int((sy + sr) // step) + 1):
+                if (i, j) in seen:
+                    continue
+                seen.add((i, j))
                 x, y = i * step, j * step
-                deep, source = max(((cr - ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5, k) for k, (cx, cy, cr) in enumerate(sources)),
-                                   default=(0.0, 0))
-                room = min([deep] + [((x - zx) ** 2 + (y - zy) ** 2) ** 0.5 - zr for zx, zy, zr in zones])
+                deep, source = max(((sources[k][2] - ((x - sources[k][0]) ** 2 + (y - sources[k][1]) ** 2) ** 0.5, k)
+                                    for k in holders.near(x, y, 0.0)), default=(-1.0, 0))
+                if deep < MIN_RADIUS:
+                    continue
+                room = min([deep] + [((x - zones[k][0]) ** 2 + (y - zones[k][1]) ** 2) ** 0.5 - zones[k][2]
+                                     for k in bounds.near(x, y, most)])
                 room = (room // STEP) * STEP
-                if room >= MIN_RADIUS and not covered(x, y, ()):
+                if room >= MIN_RADIUS and not covered(x, y):
                     spots.append((room, x, y, source))
     spots.sort(key=lambda s: (-s[0], s[1], s[2]))
     out = []  # (x, y, r, the source circle it lies deepest in)
     for r, x, y, source in spots:
-        if not covered(x, y, out):
+        if not covered(x, y, placed):
             out.append((float(x), float(y), float(r), source))
+            placed.add((float(x), float(y), float(r)))
     return out
 
 
@@ -1305,18 +1391,20 @@ def _tree_read(points: bytes, q: int = 0):
     return ["leaf", list(struct.unpack_from(f"<{tag // 2}H", points, q + 2))]
 
 
-def _tree_write(node, top: bool = True) -> bytes:
+def _tree_write(node, top: bool = True, depth: int = 0) -> bytes:
     if node[0] == "leaf":
         out = struct.pack(f"<H{len(node[1])}H", 2 * len(node[1]), *node[1])
     else:
+        if depth >= MAX_DEPTH:  # a guard: the game's walk of a deeper index runs off its fixed stack
+            raise NavError(f"the graph's index would be more than {MAX_DEPTH} levels deep")
         _kind, bit, edges, left, right = node
-        lb = _tree_write(left, False)
+        lb = _tree_write(left, False, depth + 1)
         lb += bytes(-len(lb) % 4)
         jump = len(lb)
         if jump >= 1 << 32:
             raise NavError("the graph's index is too big")
         out = struct.pack("<HH", 1 | ((jump >> 16) & 0xFFFE), ((jump & 0x1FFFF) // 2) | bit) + edges + lb \
-            + _tree_write(right, False)
+            + _tree_write(right, False, depth + 1)
     return out + bytes(-len(out) % 4) if top else out
 
 

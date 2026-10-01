@@ -659,6 +659,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             result.findings.append(Finding("warning", message))
             say(f"warning: {message}")
         map_packs = []  # (path, open pack, {member: new bytes})
+        flooded: dict = {}  # map pack name -> (nav.Block over each new water, the mods' ids)
         for name, (strokes, ids) in terrain_edits(result.order, mods).items():
             map_path = find_pack(game, pack_file(name))
             if map_path is None:
@@ -695,6 +696,30 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say(f"terrain: {name}, from {', '.join(ids)}")
             for note in notes:
                 say(f"  {note}")
+            from .terrain_edit import FILES as GROUND, _area_of
+            before = read(GROUND["highdef"]) if GROUND["highdef"] in changed_members else None
+            if before is not None:  # ground under water is never walkable on a shipped map: new water is blocked
+                from .bridges import Water
+                from .nav import Block, water_blocks
+                from .tms import Tms
+                try:
+                    zones, drained = water_blocks(Water(Tms(before)).at, Water(Tms(changed_members[GROUND["highdef"]])).at,
+                                                  [_area_of(s) for s in strokes])
+                except (ValueError, struct.error, zlib.error) as exc:
+                    result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: where the terrain edits put "
+                                                            f"water can't be worked out ({exc}), so units could walk "
+                                                            f"on the bed of new water"))
+                    continue
+                if zones:
+                    flooded[name] = ([Block(x, y, r, "all") for x, y, r in zones], ids)
+                    say(f"  {name}: {len(zones)} block(s) over the new water, so units keep out of it")
+                if len(drained) >= 3:
+                    mx, my = (sum(p[k] for p in drained) / len(drained) for k in (0, 1))
+                    result.findings.append(Finding("warning", (
+                        f"{', '.join(ids)}: {name}: the terrain edits drain water around ({mx:.0f}, {my:.0f}), but "
+                        f"the dried ground stays closed to units: the map's movement has no ground where the water "
+                        f"was, and the build doesn't open it yet. Leave the water there, or expect units to go "
+                        f"around")))
             if changed_members:
                 map_packs.append((map_path, map_arc, changed_members))
                 result.terrain_changed[map_path.name] = changed_members
@@ -929,8 +954,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         moves, paints = scenario_edits(result.order, mods), scenario_edits(result.order, mods, "cover")
         blocks = scenario_edits(result.order, mods, "movement")
         new_roads = scenario_edits(result.order, mods, "roads")
-        for name, (walls, ids) in solid.items():  # placed buildings units go around, after the mods' own blocks
-            every, who = blocks.setdefault(name, ([], []))
+        for name, (walls, ids) in list(solid.items()) + list(flooded.items()):  # placed buildings units go around,
+            every, who = blocks.setdefault(name, ([], []))                    # and new water, after the mods' blocks
             every.extend(walls)
             who.extend(i for i in ids if i not in who)
         players = scenario_edits(result.order, mods, "players")
@@ -1017,6 +1042,13 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     for note in notes:
                         say(f"  {note}")
                 for name, (map_paints, ids) in paints.items():
+                    from .cover import unpaired_blocked
+                    for p in unpaired_blocked(map_paints, blocks.get(name, ([], []))[0]):
+                        result.findings.append(Finding("warning", (
+                            f"{', '.join(ids)}: {name}: cover.toml paints the blocked layer at ({p.x:.0f}, {p.y:.0f}) "
+                            f"with no movement.toml block there. The blocked layer only tells the AI where it can't "
+                            f"see or build; units still walk on it. To keep units off, add a [[block]] with the same "
+                            f"x, y and radius to movement.toml")))
                     try:
                         new, notes = apply_paints(read_data, name, map_paints)
                     except (CoverError, ValueError, struct.error) as exc:
@@ -1088,6 +1120,17 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     say(f"players: {name}, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
+                from .aigrid import AiGridError, refresh
+                for member in [m for m in changed_members if m.lower().endswith("mapinfo.win")]:
+                    try:  # the AI's grid follows the cover, blocks, bridges and water (rusemod.aigrid)
+                        changed_members[member], notes = refresh(bytes(data_arc.read(data_arc.find(member))),
+                                                                 changed_members[member])
+                    except (AiGridError, KeyError, ValueError, struct.error) as exc:
+                        notes = [f"the AI grid couldn't be updated ({exc}): the AI keeps the map's old woods and "
+                                 f"open ground"]
+                    where = member.split("\\")[-2]
+                    for note in notes:
+                        say(f"  {where}: {note}")
                 if changed_members:
                     data_packs.append((data_path, data_arc, changed_members))
         if result.errors:

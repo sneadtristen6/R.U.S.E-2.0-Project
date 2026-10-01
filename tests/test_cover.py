@@ -161,6 +161,26 @@ class Built(unittest.TestCase):
         self.assertTrue(c[4 * 8 + 4] & 0x08)
         self.assertEqual((self.game / "Data" / "PC" / "190852" / "DataMap_Win.dat").read_bytes(), self.data)  # untouched
 
+    def test_blocked_paint_with_no_block_is_warned(self):
+        """The blocked layer is what the AI asks about ground; units move by the movement graphs alone and walk on
+        shipped "blocked" cells too. Painting it with no movement.toml block there gets a warning saying so."""
+        from rusemod.nav import Block
+        folder = self.mod("pit", '[[paint]]\nx = 4500.0\ny = 4500.0\nradius = 1200.0\nlayer = "blocked"\n'
+                                 '[[paint]]\nx = 1500.0\ny = 1500.0\nradius = 900.0\nlayer = "blocked"\nerase = true\n'
+                                 '[[paint]]\nx = 6000.0\ny = 1500.0\nradius = 900.0\n')
+        lines = []
+        result = build_and_write(self.game, [load_mod(folder)], instance=self.root / "copy5", say=lines.append)
+        self.assertEqual(result.errors, [], lines)
+        warned = [f.message for f in result.findings if f.level == "warning" and "blocked layer" in f.message]
+        self.assertEqual(len(warned), 1, warned)  # the erase and the cover paint aren't warned
+        self.assertIn("pit: Blitz: cover.toml paints the blocked layer at (4500, 4500) with no movement.toml block "
+                      "there", warned[0])
+        self.assertIn("units still walk on it", warned[0])
+        paints = load_mod(folder)[0].cover["Blitz"]
+        self.assertEqual(cover.unpaired_blocked(paints, []), paints[:1])
+        self.assertEqual(cover.unpaired_blocked(paints, [Block(4000.0, 4000.0, 1000.0)]), [])  # a block holds its middle
+        self.assertEqual(cover.unpaired_blocked(paints, [Block(9000.0, 9000.0, 1000.0)]), paints[:1])
+
     def test_the_studio_brushes_in_terrain_toml(self):
         """The Studio's cover and uncover brushes are saved with the other strokes; the build paints them on the
         cover grid (after cover.toml's circles) and leaves the ground files alone."""

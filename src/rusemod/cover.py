@@ -1,10 +1,13 @@
-"""Where units hide, and where they can't go: a map's cover and blocked ground, painted by a mod.
+"""Where units hide, and the ground the AI treats as blocked: a map's cover grid, painted by a mod.
 
 Each map has a baked grid in DataMap_Win.dat, `datasmap\\<map>\\mapinfo.win` (its fourth buffer, an SDB quadtree:
 LittleGroove's `ruse_mod_engine.sdb` reads and writes it). A cell's byte holds layers; the game asks two of them
-(LittleGroove's notes): 0x08, "in forest" (units there are hidden, and ambush), and 0x04, blocked. Eugen's designers
-drew these as zones in their editor (forest, obstacle), not from the trees, so a town or a wood made in a mod gives
-cover only once cover is painted over it. On Blitz, the trees' cells are 0x08 twice as often as the map's, and two
+(LittleGroove's notes): 0x08, "in forest" (units there are hidden, and ambush), and 0x04, "AI: blocked": the AI's
+sight lines, its placing of buildings and its defence ask it, and it goes into the AI grid's clearance, but units
+move by the movement graphs alone (rusemod.nav), so they walk on it (on shipped maps infantry can stand on 3% to
+half of the "blocked" cells). Ground units must keep off needs a movement.toml block too (unpaired_blocked).
+Eugen's designers drew these as zones in their editor (forest, obstacle), not from the trees, so a town or a wood
+made in a mod gives cover only once cover is painted over it. On Blitz, the trees' cells are 0x08 twice as often as the map's, and two
 thirds of the buildings stand on 0x04 cells.
 
 A mod paints circles (or squares) in maps/<map>/cover.toml (MOD_FORMAT §8), in order, each setting or clearing one
@@ -14,8 +17,8 @@ layer:
     x = 500000.0      # map units, like a scenario's positions
     y = 640000.0
     radius = 20000.0
-    layer = "cover"   # or "blocked"
-    erase = false     # true clears it (a wood's cover taken away)
+    layer = "cover"   # or "blocked" (for the AI only: units still walk there without a movement.toml block)
+    erase = false    # true clears it (a wood's cover taken away)
     square = false    # true: a square along the map's axes, `radius` (map units) from its middle to each side (the
                       # owner asked for a square brush, 2026-09-30; its edges follow the grid's rows and columns)
 
@@ -215,6 +218,15 @@ def paint(win: bytes, paints: list[Paint]) -> bytes:
         if 0 <= cx + rx and cx - rx < r and 0 <= cy + ry and cy - ry < r:  # a circle off the map changes nothing
             rec(ns, 0, 0, r)
     return sdb.replace_buffer4(win, sdb.serialize(tree))
+
+
+def unpaired_blocked(paints: list[Paint], blocks) -> list[Paint]:
+    """The paints that set the blocked layer where no block (nav.Block: x, y, radius) holds their middle. The blocked
+    layer is what the AI asks about ground (where it looks and places things), not where units go: units move by the
+    movement graphs alone, and walk on shipped "blocked" cells too (3% of them on SuperCrossroads4, half on Ardennes).
+    A modder painting it as no-go ground needs a movement.toml block there as well."""
+    return [p for p in paints if p.layer == "blocked" and not p.erase
+            and not any((p.x - b.x) ** 2 + (p.y - b.y) ** 2 <= b.radius ** 2 for b in blocks)]
 
 
 def apply_paints(read, pack: str, paints: list[Paint]) -> tuple[dict, list[str]]:
