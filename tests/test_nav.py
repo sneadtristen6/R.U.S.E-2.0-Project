@@ -441,6 +441,96 @@ def bridged():
                 [local])
 
 
+def road(line, step=1000.0):
+    """A road network along the polyline `line`: points every `step` (its corners kept), linked in a chain."""
+    from rusemod.roadnet import RoadNet
+    pts = [line[0]]
+    for (ax, ay), (bx, by) in zip(line, line[1:]):
+        k = max(1, round(((bx - ax) ** 2 + (by - ay) ** 2) ** 0.5 / step))
+        pts += [(ax + (bx - ax) * i / k, ay + (by - ay) * i / k) for i in range(1, k + 1)]
+    return RoadNet(pts, [(i, i + 1, 100) for i in range(len(pts) - 1)])
+
+
+def crossings(g):
+    """{circle: [(x0, y0, x1, y1, length, gate a, gate b, road link 0, road link 1)]} of a graph."""
+    out = {}
+    for c in range(len(g.circles) - 1):
+        for k in range(g.circles[c][4], g.circles[c + 1][4]):
+            out.setdefault(c, []).append(struct.unpack_from("<5f4H", g.crossings, 28 * k))
+    return out
+
+
+class Crossings(unittest.TestCase):
+    """New roads get crossings (Graph.add_crossings): units plan along a road only through them."""
+    ROW = [(7000.0, 2000.0, 3200.0), (2000.0, 2000.0, 3200.0), (12000.0, 2000.0, 3200.0)]  # B, A west, C east
+
+    def test_a_road_through_a_circle_from_gate_to_gate(self):
+        g = made(self.ROW, [(0, 1), (0, 2)])  # A-B meet at x 4,500, B-C at x 9,500
+        net = road([(250.0, 2000.0), (14250.0, 2000.0)])  # links of 1,000: x 4,500 on link 4, 9,500 on link 9
+        got = g.add_crossings(net)
+        self.assertEqual((got["added"], got["circles"], got["full"]), (1, 1, 0))
+        (x0, y0, x1, y1, length, ga, gb, r0, r1), = crossings(g)[0]  # in B only: A and C have one gate each
+        self.assertEqual((ga, gb), (0, 1))  # the lower gate first
+        self.assertEqual({g.links[ga][:2], g.links[gb][:2]}, {(0, 1), (0, 2)})
+        self.assertAlmostEqual(x0, 4500.0, 2)
+        self.assertAlmostEqual(x1, 9500.0, 2)
+        self.assertEqual((y0, y1), (2000.0, 2000.0))
+        self.assertAlmostEqual(length, 5000.0, 1)  # along the road
+        self.assertEqual((r0, r1), (4, 9))
+        self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
+        self.assertEqual(g.add_crossings(net)["added"], 0)  # never twice
+
+    def test_only_for_the_new_roads(self):
+        net = road([(250.0, 2000.0), (14250.0, 2000.0)])
+        g = made(self.ROW, [(0, 1), (0, 2)])
+        self.assertEqual(g.add_crossings(net, fresh={0, 13})["added"], 0)  # new links in A and C only: none through B
+        got = g.add_crossings(net, fresh={6})  # one in B's middle
+        self.assertEqual((got["added"], got["named"]), (1, set(range(4, 10))))
+
+    def test_kept_with_the_circles_own(self):
+        """The new crossing goes in its circle's range, in order of gates and road links; the rest stay as they were."""
+        g = made(self.ROW, [(0, 1), (0, 2)], crossings=[(0, 0, 1, 50, 51), (2, 1, 1, 60, 61)])
+        before = crossings(g)
+        g.add_crossings(road([(250.0, 2000.0), (14250.0, 2000.0)]))
+        after = crossings(g)
+        self.assertEqual([r[5:] for r in after[0]], [(0, 1, 4, 9), (0, 1, 50, 51)])
+        self.assertEqual(after[2], before[2])
+        self.assertEqual([c[4] for c in g.circles], [0, 2, 2, 3])
+
+    def test_never_through_a_block(self):
+        """The game moves a unit along a crossing's road without asking whether the ground is walkable: a crossing
+        whose road runs through a block (a placed building) would have units drive through it."""
+        net = road([(250.0, 2000.0), (14250.0, 2000.0)])
+        g = made(self.ROW, [(0, 1), (0, 2)])
+        self.assertEqual(g.add_crossings(net, zones=[(7000.0, 2600.0, 400.0)])["added"], 1)  # beside the road
+        g = made(self.ROW, [(0, 1), (0, 2)])
+        self.assertEqual(g.add_crossings(net, zones=[(7000.0, 2300.0, 400.0)])["added"], 0)  # on it
+
+    def test_a_road_through_three_gates_has_one_for_each_two_in_a_row(self):
+        """A road that comes in by W's gate, runs up to N's and back down, and leaves by E's: crossings W-N and N-E,
+        none W-E (on the shipped maps no crossing has a third gate's point on its way)."""
+        circles = [(10000.0, 2000.0, 6400.0), (2000.0, 2000.0, 3200.0), (18000.0, 2000.0, 3200.0),
+                   (10000.0, 9000.0, 3200.0)]  # B, then W, E and N around it
+        g = made(circles, [(0, 1), (0, 2), (0, 3)])
+        net = road([(0.0, 2000.0), (6000.0, 2000.0), (10000.0, 7400.0), (14000.0, 2000.0), (20000.0, 2000.0)])
+        g.add_crossings(net)
+        gate = {g.links[k][1]: k for k in g.links_of(0)}  # gate link by B's neighbour
+        self.assertEqual(sorted(r[5:7] for r in crossings(g)[0]),
+                         sorted([tuple(sorted((gate[1], gate[3]))), tuple(sorted((gate[3], gate[2])))]))
+
+    def test_not_over_ground_a_towns_own_map_keeps_units_off(self):
+        """In a circle that owns a local map (a town), units stand only on its local map's circles: a crossing whose
+        road runs over a gap in them (a building) isn't made; slips narrower than nav.GAP between them don't count
+        (the shipped towns' roads cross many)."""
+        net = road([(250.0, 2000.0), (14250.0, 2000.0)])
+        local = [(4000.0 + 640.0 * i, 2000.0, 300.0) for i in range(10)]  # 40 apart: slips
+        g = made(self.ROW, [(0, 1), (0, 2)], [made(local, [])])
+        self.assertEqual(g.add_crossings(net)["added"], 1)
+        gap = [c for i, c in enumerate(local) if i not in (4, 5, 6)]  # x 6,220 to 8,180 closed
+        g = made(self.ROW, [(0, 1), (0, 2)], [made(gap, [])])
+        self.assertEqual(g.add_crossings(net)["added"], 0)
+
+
 class Index(unittest.TestCase):
     def test_an_index_built_as_the_games_are(self):
         import random

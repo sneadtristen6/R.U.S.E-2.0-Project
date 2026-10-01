@@ -25,9 +25,11 @@ circle through the meeting points. Circle centres sit on a 320-unit grid and rad
     links        links × 12 bytes: u16 circle a < circle b, f32 x, y (a point where they meet); sorted by b
     lists        u16 link numbers: each circle's links, the circles one after another (every link twice)
     crossings    crossings × 28 bytes: the road through a circle: f32 x, y where it comes in and x, y where it leaves
-                 (points on road links r0 and r1), f32 its length along the road, u16 the two links (gates) it goes
-                 between, u16 r0, r1: road network links (buffer 0; 7,862 of 7,862 checked on 4 maps, 2026-09-30),
-                 so a road link renumbered must be renumbered here too (Graph.renumber_roads)
+                 (points on road links r0 and r1, each where the road crosses its gate's line), f32 its length along
+                 the road (the shortest way), u16 the two links (gates) it goes between, the lower first, u16 r0, r1:
+                 road network links (buffer 0; 7,862 of 7,862 checked on 4 maps, 2026-09-30), so a road link
+                 renumbered must be renumbered here too (Graph.renumber_roads). Units plan along roads only through
+                 these; new roads get theirs from Graph.add_crossings
     points       a spatial index of the circles, up to the first sub-graph: branch records (u16 1, u16 how far
                  to skip, f32 x, y: a split point) and leaf records (u16 count, then that many circle numbers);
                  see _tree_read
@@ -812,6 +814,177 @@ class Graph:
             g.crossings = b"".join(recs)
         return gone
 
+    def add_crossings(self, net, fresh=None, zones=()) -> dict:
+        """Crossings for the roads of `net` (a roadnet.RoadNet) through this graph's circles (the main graph's; its
+        local maps are left as they are), laid out as the shipped ones are (their points, lengths and gates: 892 of
+        892 of D-Day's vehicle crossings, 2026-10-01; made again from D-Day's own roads, 95% of them come out the same,
+        tools/verify_crossings.py). Units plan along a road only through these: a road no crossing names is driven
+        across country. A circle's crossing is a stretch of road that comes in through one of its gates and leaves
+        through another:
+
+        - its points: where the road crosses each gate's line (through the link's point, square to the line between the
+          two circles' middles, inside both circles), on road links r0 and r1;
+        - its length: the shortest way along the roads between them, through road points inside the circle;
+        - its gates: the in point's link is the lower number (a < b, as on every shipped crossing);
+        - one for each two such points on two gates, when the road from each point heads into the circle, and no
+          third gate's point lies on the way between them (the shipped ones skip those: a road through three gates
+          has a crossing for each two in a row, not for the first and the last).
+
+        With `fresh` (a set of road link numbers: the new roads), only crossings whose road uses one of them are
+        made, in the circles those links reach; without it, every circle's are. Never one whose road runs through
+        one of `zones` (x, y, r: the blocks), or over GAP or more of ground units can't stand on (walkable: a
+        town's buildings, a river): the game moves a unit along a crossing's road without asking whether the ground
+        is walkable. One the circle already has (the same gates and road links) isn't made twice. New ones go in
+        their circle's range, the circle's crossings in order of gates and road links.
+
+        Returns {"added": crossings made, "circles": circles that got one, "full": crossings left out because the
+        graph holds no more (65,535), "named": the road links the new crossings' roads run on}."""
+        import heapq
+        out = {"added": 0, "circles": 0, "full": 0, "named": set()}
+        points, links = net.points, net.links
+        if not links:
+            return out
+        n = len(self.circles) - 1
+        circles = [c[:3] for c in self.circles[:-1]]
+        cell = 20480.0
+        by_cell: dict = {}
+        for i, (a, b, _w) in enumerate(links):
+            (ax, ay), (bx, by) = points[a], points[b]
+            for key in _cells(min(ax, bx), min(ay, by), max(ax, bx), max(ay, by), cell):
+                by_cell.setdefault(key, []).append(i)
+        adj = [[] for _ in points]
+        for i, (a, b, _w) in enumerate(links):
+            d = math.dist(points[a], points[b])
+            adj[a].append((b, d, i))
+            adj[b].append((a, d, i))
+        if fresh is None:
+            todo = [c for c in range(n) if circles[c][2] > 0]
+        else:
+            fresh = set(fresh)
+            near = _Buckets(circles)
+            todo = set()
+            for i in fresh:
+                (ax, ay), (bx, by) = points[links[i][0]], points[links[i][1]]
+                mx, my, half = (ax + bx) / 2, (ay + by) / 2, math.dist((ax, ay), (bx, by)) / 2
+                todo.update(c for c in near.near(mx, my, half)
+                            if _seg_dist(circles[c][0], circles[c][1], (ax, ay, bx, by)) < circles[c][2])
+            todo = sorted(todo)
+        cross = [self.crossings[28 * i:28 * i + 28] for i in range(len(self.crossings) // 28)]
+        mine = [cross[self.circles[c][4]:self.circles[c + 1][4]] for c in range(n)]
+        total = len(cross)
+        for c in todo:
+            cx, cy, r = circles[c]
+            # where the roads cross each gate's line: (gate link, road link, how far along it, x, y)
+            at = []
+            for g in self.links_of(c):
+                a, b, gx, gy = self.links[g]
+                ox, oy, orad = circles[b if a == c else a]
+                ends = _gate_line((cx, cy, r), (ox, oy, orad), (gx, gy))
+                if ends is None:
+                    continue
+                (px, py), (qx, qy) = ends
+                seen = set()
+                for rl in sorted({i for key in _cells(min(px, qx), min(py, qy), max(px, qx), max(py, qy), cell)
+                                  for i in by_cell.get(key, ())}):
+                    got = _crossing_at((px, py), (qx, qy), points[links[rl][0]], points[links[rl][1]])
+                    if got is None:
+                        continue
+                    s, u = got
+                    x, y = px + (qx - px) * s, py + (qy - py) * s
+                    if (round(x), round(y)) not in seen:
+                        seen.add((round(x), round(y)))
+                        at.append((g, rl, u, x, y))
+            if len({p[0] for p in at}) < 2:
+                continue
+            at.sort(key=lambda p: (p[0], p[1], p[2]))
+            have = {struct.unpack_from("<4H", rec, 20) for rec in mine[c]}
+            made = []
+            for ga, ra, ua, xa, ya in at:
+                if not any(p[0] > ga for p in at):
+                    continue
+                a0, b0, _w = links[ra]
+                sa = math.dist(points[a0], points[b0])
+                dist, prev = {a0: ua * sa, b0: (1 - ua) * sa}, {}
+                heap = [(d, p) for p, d in dist.items()]
+                heapq.heapify(heap)
+                while heap:  # every road point inside the circle, by the shortest way from this one
+                    d, p = heapq.heappop(heap)
+                    if d > dist[p]:
+                        continue
+                    for q, w, li in adj[p]:
+                        if li != ra and d + w < dist.get(q, math.inf) \
+                                and (points[q][0] - cx) ** 2 + (points[q][1] - cy) ** 2 <= r * r:
+                            dist[q], prev[q] = d + w, (p, li)
+                            heapq.heappush(heap, (d + w, q))
+                for gb, rb, ub, xb, yb in at:
+                    if gb <= ga:
+                        continue
+                    key = (ga, gb, ra, rb)
+                    if key in have:
+                        continue
+                    if rb == ra:
+                        length, nodes, used = abs(ub - ua) * sa, [], set()
+                        spans = {ra: (min(ua, ub), max(ua, ub))}
+                    else:
+                        a1, b1, _w = links[rb]
+                        sb = math.dist(points[a1], points[b1])
+                        options = [(dist[e] + (ub if e == a1 else 1 - ub) * sb, e) for e in (a1, b1) if e in dist]
+                        if not options:
+                            continue
+                        length, end = min(options)
+                        nodes, used, p = [end], set(), end
+                        while p in prev:
+                            p, li = prev[p]
+                            used.add(li)
+                            nodes.append(p)
+                        nodes.reverse()
+                        start = nodes[0]
+                        spans = {ra: (0.0, ua) if start == a0 else (ua, 1.0),
+                                 rb: (0.0, ub) if end == a1 else (ub, 1.0)}
+                    if fresh is not None and not (fresh & (used | {ra, rb})):
+                        continue
+                    if any(_on_way(p, used, spans) for p in at if p[0] not in (ga, gb)):
+                        continue  # a third gate between: the road leaves the circle there
+                    line = [(xa, ya)] + [points[k] for k in nodes] + [(xb, yb)]
+                    if not (_heads_in(line, (cx, cy), self._other_middle(c, ga))
+                            and _heads_in(line[::-1], (cx, cy), self._other_middle(c, gb))):
+                        continue
+                    if any(_seg_dist(zx, zy, (*p0, *p1)) < zr for zx, zy, zr in zones for p0, p1 in zip(line, line[1:])):
+                        continue
+                    if not _open_along(self.walkable, line):
+                        continue
+                    have.add(key)
+                    made.append((struct.pack("<5f4H", xa, ya, xb, yb, length, ga, gb, ra, rb), used | {ra, rb}))
+            if not made:
+                continue
+            room = 65535 - total
+            if len(made) > room:
+                out["full"] += len(made) - room
+                made = made[:room]
+            if not made:
+                continue
+            for _rec, way in made:
+                out["named"] |= way
+            made = [rec for rec, _way in made]
+            mine[c] = sorted(mine[c] + made, key=lambda rec: struct.unpack_from("<4H", rec, 20))
+            total += len(made)
+            out["added"] += len(made)
+            out["circles"] += 1
+        if out["added"]:
+            starts, at_ = [], 0
+            for c in range(n):
+                starts.append(at_)
+                at_ += len(mine[c])
+            starts.append(at_)
+            self.circles = [rec[:4] + (s,) for rec, s in zip(self.circles, starts)]
+            self.crossings = b"".join(rec for recs in mine for rec in recs)
+        return out
+
+    def _other_middle(self, c: int, link: int) -> tuple[float, float]:
+        """The middle of the circle that link `link` joins circle `c` to."""
+        a, b, _x, _y = self.links[link]
+        return tuple(self.circles[b if a == c else a][:2])
+
     def _empty(self, gone: set[int]) -> None:
         """Empty the circles `gone` as a block empties one: radius 0, their links and those links' crossings out."""
         n = len(self.circles) - 1
@@ -1139,6 +1312,90 @@ def _seg_dist(x: float, y: float, span) -> float:
     n = dx * dx + dy * dy
     t = max(0.0, min(1.0, ((x - x0) * dx + (y - y0) * dy) / n)) if n else 0.0
     return math.hypot(x - x0 - t * dx, y - y0 - t * dy)
+
+
+def _cells(x0: float, y0: float, x1: float, y1: float, size: float):
+    """The grid cells (i, j) of side `size` a box touches."""
+    return [(i, j) for i in range(int(x0 // size), int(x1 // size) + 1) for j in range(int(y0 // size), int(y1 // size) + 1)]
+
+
+def _gate_line(c, o, gate) -> tuple | None:
+    """A gate's line: through the link's point `gate`, square to the line from circle c's middle to circle o's (both
+    x, y, r), as far as it stays inside both circles; its two ends, or None. The shipped crossings' points lie on it
+    (892 of 892 on D-Day, within 0.4 map units)."""
+    (cx, cy, cr), (ox, oy, orad), (gx, gy) = c, o, gate
+    d = math.hypot(ox - cx, oy - cy)
+    if d == 0:
+        return None
+    ux, uy = (ox - cx) / d, (oy - cy) / d
+    lo, hi = -math.inf, math.inf
+    for x, y, r in ((cx, cy, cr), (ox, oy, orad)):
+        off = (gx - x) * ux + (gy - y) * uy  # how far the line is from this middle
+        if abs(off) >= r:
+            return None
+        half = math.sqrt(r * r - off * off)
+        at = (gx - x) * -uy + (gy - y) * ux  # where the gate is along the line, from this middle's foot
+        lo, hi = max(lo, -half - at), min(hi, half - at)
+    if lo >= hi:
+        return None
+    return (gx - uy * lo, gy + ux * lo), (gx - uy * hi, gy + ux * hi)
+
+
+def _crossing_at(p, q, a, b) -> tuple[float, float] | None:
+    """Where segment p-q crosses segment a-b: (how far along p-q, how far along a-b), both 0..1, or None."""
+    rx, ry = q[0] - p[0], q[1] - p[1]
+    sx, sy = b[0] - a[0], b[1] - a[1]
+    den = rx * sy - ry * sx
+    if den == 0:
+        return None
+    t = ((a[0] - p[0]) * sy - (a[1] - p[1]) * sx) / den
+    u = ((a[0] - p[0]) * ry - (a[1] - p[1]) * rx) / den
+    return (t, u) if 0 <= t <= 1 and 0 <= u <= 1 else None
+
+
+def _on_way(point, used: set, spans: dict) -> bool:
+    """Whether a gate's point (gate, road link, how far along it, x, y) lies on a crossing's way: on a road link it
+    runs all along (`used`), or inside the part of its first or last link it runs (`spans`: link -> (from, to))."""
+    _g, rl, u, _x, _y = point
+    if rl in used:
+        return True
+    lo, hi = spans.get(rl, (2.0, -1.0))
+    return lo + 1e-6 < u < hi - 1e-6
+
+
+def _heads_in(line, middle, other) -> bool:
+    """Whether the way `line` (points), from its first point (on a gate), heads into the circle whose middle is
+    `middle`: away from `other`, the middle of the circle on the gate's other side."""
+    x0, y0 = line[0]
+    for x, y in line[1:]:
+        if math.hypot(x - x0, y - y0) > 1.0:
+            return (x - x0) * (middle[0] - other[0]) + (y - y0) * (middle[1] - other[1]) > 0
+    return False
+
+
+def _along(line, step: float):
+    """Points along the polyline `line`, at most `step` apart, its ends included."""
+    yield line[0]
+    for (ax, ay), (bx, by) in zip(line, line[1:]):
+        k = max(1, math.ceil(math.hypot(bx - ax, by - ay) / step))
+        for i in range(1, k + 1):
+            yield ax + (bx - ax) * i / k, ay + (by - ay) * i / k
+
+
+GAP = 2 * STEP  # the most of a crossing's road that may run off ground units stand on: the shipped crossings in towns
+                # (a local map's) cross slips of up to a few thousand between its circles, but no building is this
+                # narrow (most of those slips are under 640, 2026-10-01)
+
+
+def _open_along(walkable, line) -> bool:
+    """Whether `walkable(x, y)` holds all along the polyline `line` (sampled every STEP / 4), but for stretches
+    shorter than GAP."""
+    step, run = STEP / 4, 0.0
+    for x, y in _along(line, step):
+        run = 0.0 if walkable(x, y) else run + step
+        if run >= GAP:
+            return False
+    return True
 
 
 def _owner_middle(span) -> tuple[float, float, float]:

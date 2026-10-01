@@ -974,7 +974,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {note}")
                 for name, (map_roads, ids) in new_roads.items():  # the road network (buffer 0), after movement
                     try:
-                        new, notes = apply_roads(read_data, name, map_roads)
+                        new, notes = apply_roads(read_data, name, map_roads, blocks.get(name, ([], []))[0])
                     except (RoadNetError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
