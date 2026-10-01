@@ -666,6 +666,8 @@ launcher reads (75 mods, cheats kept apart).
 
 *Asked for 1.0 (owner, 2026-10-01):* a R.U.S.E. 2.0 image when the game starts. Waits for the owner's artwork.
 
+*The owner's ideas for later:* §12 (maps), §14 (the rest, e.g. game UI mods), §11 (RUSE 2.0's game).
+
 *Open, the owner's to decide* (ideas, not decisions): "two tabs open" in the map builder; bridges for chokepoint maps.
 
 *After the Studio is done* (owner, 2026-09-30, night: "we need to finish studio"): DomesticNukes' split of the parts
@@ -1035,3 +1037,23 @@ once, the game's rules follow. What the data says, and the order:
    or from a road graph in `mapinfo.win` (its first buffer holds points) is the first in-game check: one new road
    on open ground, drawn? faster?
 4. The rest follows the same way: zones (drawn sectors), ground painting, and every tool with click-and-see.
+
+## 14. The owner's ideas for later (kept so none are lost)
+
+The owner's standing ask (2026-10-01): every idea he has goes on a list, to be taken up later. **These are ideas,
+not decisions or an order: the map editor comes first.** Map ideas are in §12, RUSE 2.0's game ideas in §11.
+
+1. **Game UI mods (2026-10-01).** Change how the game looks and works on screen: the battle HUD (building, making
+   units, managing them) and the main menu. Three layers, from cheapest:
+   - **The look** is data: the menus are Flash screens drawn into texture tiles, one archive per screen (our tools
+     open them; 428 tiles decoded), and the HUD's buttons, icons and flags are textures the data points to; every
+     label is game text. A full reskin (new art, colours, a R.U.S.E. 2.0 menu, new icons) needs no code. The startup
+     image (§10, asked for 1.0) is the same layer.
+   - **How the HUD works** (which tabs and buttons, their order, what they do, hotkeys) is built by the game's own
+     scripts. A shared mod of ours can't carry scripts (decision 23), so this would be a short list of safe changes
+     the Studio offers (move, hide or add a button, a hotkey), turned by the build into checked script code, as it
+     already does for new units' entries; or an `.rmod`, installed with a warning.
+   - **How the menus move and behave** (their animation; the escape, end-of-game and controls screens) isn't mapped
+     yet. A few parts aren't in the data at all (the two ruse slots on a sector's panel), out of a data mod's reach.
+   First step when taken up: one study session (which archive and tiles make which screen, which script builds which
+   part of the HUD), written up as what can be reskinned, what can be changed safely, and what can't.
