@@ -480,18 +480,47 @@ TGU1. The checker test (`verify_tmst.py --make-test TwoIslands OUT checker`, Two
 checkerboards at two detail levels (magenta/yellow and cyan/red) with no problem. **So terrain textures can be written as
 plain DXT1: no TGU1 encoder is needed.** TGU1 decoding is still useful for reading the shipped textures.
 
-#### Road stickers, and the close-up map (2026-09-30; code `rusemod.scenery.RoadPiece`)
+#### Road stickers, the road model and the close-up map (2026-09-30, 2026-10-01; code `rusemod.scenery.RoadPiece`, `rusemod.roadstrips`)
 
 The roads a player sees are drawn two ways. From afar: painted into the ground's tile pyramid (`highdef`/`lowdef`
-`.tmst`). Up close: by the scenery's **road pieces**, `Route` items, whose descriptor `TypeWarrior/Route` is a
-**STICKERS** type (category `STICKERS/Tunisie/AnciennesRoutes`, no model): decals laid along the curves (seen in the
-game: a road painted only into the pyramid vanished near the camera). D-Day has 431 pieces, all `Route` (name flag 2),
-in 40 blocks (many inside village blocks placed several times); a piece is 4 to 290 m long (about 16 m typical),
-straight, its two handles a tenth of it along it; its three trailing words are its block's count of road pieces
-(10,505 of 10,505 on the shipped maps), then two words the same on every piece of the map (D-Day 129840992 and
-1567752; Blitz 129958752 and 1567752). The item word is `0x01000001 | symbol << 4`, no transform (the 15 words
-follow). The game draws them up close only through draw-tree nodes with the road mark (§6, the draw tree), and never
-lists one for far view (0 of 10,505).
+`.tmst`). Up close: by the map's **road model**, below (a road painted only into the pyramid vanishes near the camera:
+T12, every test batch). The scenery's **road pieces** are what that model was made from: `Route` items, whose
+descriptor `TypeWarrior/Route` (category `LB`) is a `TSceneryDescriptorMultiMode` whose mode 128 is a
+`TSceneryDescriptorBezierTriangleString` (Width 400, Color dcdcdc64, BezierMaxError 500), the strip. The game doesn't
+draw the pieces themselves: the maps' decor levels gather modes 8, 4, 0x14 and 3, never 128; mode 128 comes from the
+static mesh `Road` (below). D-Day has 431 pieces, all `Route` (name flag 2), in 40 blocks (many inside village blocks
+placed several times); a piece is 4 to 290 m long (about 16 m typical), straight, its two handles a tenth of it along
+it; its three trailing words are its block's count of road pieces (10,505 of 10,505 on the shipped maps), then two
+words the same on every piece of the map (D-Day 129840992 and 1567752; Blitz 129958752 and 1567752). The item word is
+`0x01000001 | symbol << 4`, no transform (the 15 words follow). Every shipped piece sits under draw-tree nodes with
+the road mark (§6, the draw tree) and none is listed for far view (0 of 10,505); new pieces keep both.
+
+**The road model (`output\staticmeshes.spkpc`, model `road`; 28 of the 32 maps).** Each map's terrain settings
+(`genglad\patchable\map\<map>\mapterrain`) hold a `TStaticLevelBuildManager` (CaseSize 81,920) with two static meshes,
+`Road` (mode 128) and `Bridges` (mode 8192), from `DatasMap:\Output\StaticMeshes_v02` or, missing that (every map),
+`StaticMeshes`: this member, a mesh pack (§8) of two models, `bridges` and `road`. The road model is one draw call
+(always the pack's last vertex and index buffer, stored as is, u16 indices) over the whole map:
+- **vertex** (44 bytes, `TVertex__Position_3f__NormalIn01_4ubn__Normal2In01_4ubn__PSize_1f__Color0_col32__ArcLengths_2f__TexCoord0_2f`):
+  position on the ground (z within a few units of `highdef.tms`), the road's direction, the flat side it widens to
+  (b / 255 × 2 − 1), a width factor around 1 (0.9 to 1.8), colour dcdcdc64, two f32 0, (u, v): u −0.5, 0 or 0.5
+  across the road, v 400 (the Width). Three vertices at each point.
+- **strips**: every road piece is its own strip, two points (more on a curved piece: D-Day's 4,693 pieces make 4,678
+  strips, 4,612 of two points), 12 indices `0 4 3 0 1 4 1 5 4 1 2 5` from its first vertex. Pieces that meet share
+  the point's direction and width factor, so the strips join.
+- **parts**: the pack's fourth section, 48 bytes each: the vertices' box (6 f32), u16 case, u16 filler, u32 first
+  vertex, vertex count, first index, index count, u32 filler; the fifth section: u16 first part, u16 count per draw
+  call, the draw call's fifth word naming its group (0xFFFF in the unit packs, whose two sections are empty). A draw
+  call's parts are listed by case, one each, its buffers in that order with no gap; indices count from the buffer's
+  start. A **case** is a square of 81,920 map units; the cases are numbered along a curve (`roadstrips.curve`, order
+  ceil(log2) of the longer side) over the map's grid, the squares off it skipped: every road part of the 28 maps but
+  5 edge ones lies in its case.
+- **header**: the hash at 0x10 is MD5 of bytes 0-15 and 0x20-0x2F; 0x20 (0, start of the index data), 0x28 (start of
+  the index data, the rest of the file's size); 0x30 the model count; 0xB0 (x, 0, 0, x, 0) with x the index-buffer
+  table's start; after the materials, `~` up to a multiple of 4. `rusemod.roadstrips` rebuilds all 28 files byte for
+  byte, and adds a new road's pieces as strips in the map's own look, in the parts of their middles' cases.
+
+The maps with no road model (Alpha, Gam_Ostfriesland, Gamma, Robert) have road pieces (1,059 to 2,164) but nothing
+draws them up close; a new road there shows from afar only, as theirs do.
 
 `output\div_map.tgv_pc` (D-Day: 3072 x 2048 DXT5_LIN in one ZIPO mip, about 5 m a pixel; Blitz and Bulge 2048 x 2048)
 is a colour and alpha picture of the whole map. The map's own roads are only a faint lift in it (alpha +7 to +20 over
@@ -674,8 +703,9 @@ his Claude; checked here on all 32 maps.
 - **The draw tree:** every map has one top block (block 0). A block's 8-byte nodes (u32 word, u16 split, two bytes)
   are a spatial tree over its entries: a node holds entries [lo, hi), its left side [lo, split) is the next node and
   its right side [split, hi) the node `(word & 0xFFFFF) >> 2` further on; word bit 30 makes the left side a leaf,
-  bit 31 the right, bit 28 the whole node. Bits 20-24 are the LOD mask (8 = far), **bit 25 the road mark**: road
-  pieces are drawn up close only through nodes that carry it, from the block's root down (every shipped piece is).
+  bit 31 the right, bit 28 the whole node. Bits 20-24 are the LOD mask (8 = far), **bit 25 the road mark**: every
+  shipped road piece sits under nodes that carry it, from the block's root down (the game draws the roads from the
+  map's road model instead, below: the mark is kept on new pieces to match).
   A node splits its box along x (`word & 3` = 0) or y, the two bytes being the left side's top and the right side's
   bottom as shares /255 of its extent (the root's box is the block's), so each node's box is a share of its
   parent's: widening one moves every node below it. The first node's split is how many entries are listed for far

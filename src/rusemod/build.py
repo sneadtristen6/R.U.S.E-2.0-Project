@@ -791,6 +791,21 @@ def scenario_edits(order: list[str], mods: list, what: str = "scenario") -> dict
     return out
 
 
+def draw_new_roads(read_map, path_of, lines: list) -> tuple[dict, list[str]]:
+    """({member: new bytes}, notes): new roads (map points, in order) drawn the two ways the game shows a map's own:
+    painted into the ground's tiles, which show from afar (rusemod.groundpaint), and added to the map's road model,
+    the only thing that shows a road near the camera (rusemod.roadstrips; without it a new road vanished up close in
+    every test, T12). `read_map(member)` gives the map pack's member as the build has it so far (a reshaped ground
+    counts) or None, `path_of(member)` its full path."""
+    from .groundpaint import paint_roads
+    from .roadstrips import draw_roads
+    from .scenery import MEMBER as SCENERY, Scenery
+    raw = read_map(SCENERY)
+    painted, notes = paint_roads(read_map, path_of, lines, Scenery(raw).roads() if raw else [])
+    strips, more = draw_roads(read_map, path_of, lines)
+    return {**painted, **strips}, notes + more
+
+
 def find_pack(game: Path, name: str) -> Path | None:
     """A pack by path, or by name in the game folder (newest data revision first found, then Maps\\PC)."""
     p = Path(name)
@@ -1112,9 +1127,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             every, who = placed.setdefault(name, ([], []))
             every.extend(objects)
             who.extend(i for i in ids if i not in who)
-        # new roads are drawn up close by road stickers (the game's Route pieces), from afar by the painted ground:
-        # the pieces go into the scenery with the placed objects (seen in the game, 2026-09-30: without them a new
-        # road vanished near the camera)
+        # new roads get the map's own road pieces (Route stickers) in the scenery, as the map's roads have them; what
+        # shows a road is drawn below (draw_new_roads): the painted ground from afar, the road model up close
         from .bridges import cut
         from .scenery import RoadPiece, road_pieces
         with_pieces = {name: (list(objects), list(ids)) for name, (objects, ids) in placed.items()}
@@ -1212,16 +1226,15 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 except KeyError:
                     return None
                 return done.get(e.path) or bytes(a.read(e))
-            from .groundpaint import PaintError, paint_roads
-            from .scenery import MEMBER as SCENERY, SceneryError, Scenery
+            from .groundpaint import PaintError
+            from .scenery import SceneryError
             try:
-                pieces = Scenery(read_map(SCENERY)).roads() if read_map(SCENERY) else []
-                painted, notes = paint_roads(read_map, lambda m, a=map_arc: a.find(m).path, lines, pieces)
+                painted, notes = draw_new_roads(read_map, lambda m, a=map_arc: a.find(m).path, lines)
             except (PaintError, SceneryError, ValueError, KeyError, struct.error, zlib.error) as exc:
-                result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the new roads can't be painted ({exc})"))
+                result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the new roads can't be drawn ({exc})"))
                 continue
             changed_members.update(painted)
-            say(f"roads painted: {name}, from {', '.join(ids)}")
+            say(f"roads painted and drawn up close: {name}, from {', '.join(ids)}")
             for note in notes:
                 say(f"  {note}")
             if entry is None and painted:
