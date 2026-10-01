@@ -334,6 +334,35 @@ class Terrain(unittest.TestCase):
         self.assertTrue(centre and before)
         self.assertEqual(centre[0][2] - before[0][2], 3000)   # +400 then -100 at the very centre: +300, in 0.1 steps
 
+    def test_new_water_is_closed_to_units(self):
+        """Ground under water is never walkable on a shipped map, but a water stroke changes only the ground files:
+        the build blocks the new water in both movement graphs (nav.water_blocks), so units don't walk a lake's bed."""
+        import struct
+        from test_nav import made
+        from rusemod import nav
+        from rusemod.cover import member
+        from ruse_mod_engine import sdb
+        g = made([(1500.0, 1500.0, 1280.0), (3000.0, 1500.0, 1280.0), (5000.0, 1500.0, 1280.0), (7000.0, 1500.0, 1280.0)],
+                 [(0, 1), (1, 2), (2, 3)])
+        head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 8000.0, 8000.0)
+        win = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+            b"roads", g.to_bytes(), g.to_bytes(), b"cover")) + b"tail", {})
+        rev = self.game / "Data" / "PC" / "190852"
+        (rev / "DataMap_Win.dat").write_bytes(make_edat([("dir", "datasmap\\test\\", [("file", "mapinfo.win", win)])]))
+        self.assertTrue(g.walkable(1500.0, 1500.0))
+        lake = '[[stroke]]\nbrush = "water"\nx = 1500.0\ny = 1500.0\nradius = 1000.0\nlevel = 1200.0\n'
+        result, lines = self.build(self.mod("lake", lake))
+        self.assertEqual(result.errors, [], lines)
+        self.assertTrue(any(line.startswith("  Test: ") and "block(s) over the new water" in line for line in lines), lines)
+        self.assertIn("movement: Test, from lake", lines)
+        arc = Edat((self.root / "copy" / "Data" / "PC" / "190852" / "DataMap_Win.dat").read_bytes())
+        bufs = sdb.split_mapinfo(bytes(arc.read(arc.find(member("Test")))))[1]
+        for k in (1, 2):
+            after = nav.Graph.read(bufs[k])
+            self.assertEqual([after.walkable(1500.0 + dx, 1500.0 + dy) for dx in (-300.0, 0.0, 300.0)
+                              for dy in (-300.0, 0.0, 300.0)], [False] * 9)
+            self.assertTrue(after.walkable(6000.0, 1500.0))  # ground off the lake stays
+
     def test_mistakes(self):
         result, lines = self.build(self.mod("elsewhere", map_name="Nope"))
         self.assertIn("elsewhere: the map Nope isn't in this game (DataMapNope_v09.dat is missing)",

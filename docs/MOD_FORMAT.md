@@ -307,8 +307,11 @@ level  = 23500.0     # water: the water surface (world z); the ground under it f
 | `uncover` | the same, taking cover away (also `square = true`) | the cells whose centres are inside |
 
 - **Water.** Water brushes run after the height brushes. They change the water surface of the two drawn meshes and
-  the map's three water textures, never the ground or the `.kdt` files (units are kept out of water by the map's
-  movement data, which water brushes don't change: a new lake is for looks until that is written too). What is
+  the map's three water textures, never the ground or the `.kdt` files. Units are kept out of water by the map's
+  movement graphs (ground under water is never walkable on a shipped map), so the build blocks every new water (a
+  water stroke's, or ground a height brush lowered under the water) in both graphs, as `movement.toml` blocks would
+  (`rusemod.nav.water_blocks`: circles over it, sampled every 640 map units or more, reaching about half a step past
+  the shore at most). Drained ground stays closed to units, as it was under the water: the build warns. What is
   written follows the rules every shipped map keeps (the water triangles, the per-cell patch bounds, the far mesh's
   water about 150 lower, the textures' depth, tiles and cell flags; `rusemod.water`). A height brush near water
   also keeps the water triangles and textures in step.

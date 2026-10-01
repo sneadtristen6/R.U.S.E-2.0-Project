@@ -492,6 +492,50 @@ class Index(unittest.TestCase):
         self.assertFalse(nav._wet(None, 13000.0, 2000.0, 1280.0))
 
 
+class NewWater(unittest.TestCase):
+    """Ground under water is never walkable on a shipped map, but the water and height brushes change only the ground
+    files: the build blocks the new water (nav.water_blocks)."""
+
+    def test_new_water_is_covered_and_the_shore_kept(self):
+        def old(x, y):  # a river, and a pond the stroke drains
+            return 0.0 <= x <= 10000.0 or math.hypot(x - 60000.0, y - 30000.0) < 3000.0
+
+        def new(x, y):  # the river, and a new lake running into it
+            return 0.0 <= x <= 10000.0 or math.hypot(x - 30000.0, y - 30000.0) < 8000.0 or (
+                10000.0 <= x <= 30000.0 and abs(y - 30000.0) < 1500.0)
+        import math
+        zones, drained = nav.water_blocks(old, new, [(30000.0, 30000.0, 21000.0), (60000.0, 30000.0, 5000.0)])
+        self.assertTrue(zones)
+        for i in range(-60, 61):  # every new water point (inside the strokes) is in a block, the shore just outside
+            for j in range(-60, 61):
+                x, y = 30000.0 + 300.0 * i, 30000.0 + 300.0 * j
+                inside = any(math.hypot(x - zx, y - zy) <= zr for zx, zy, zr in zones)
+                deep = math.hypot(x - 30000.0, y - 30000.0) < 7300.0 or (10700.0 <= x <= 29000.0 and abs(y - 30000.0) < 800.0)
+                if deep:
+                    self.assertTrue(inside, (x, y))
+                if not (old(x, y) or new(x, y)) and min(math.hypot(x - 30000.0, y - 30000.0) - 8000.0,
+                                                        abs(y - 30000.0) - 1500.0 if 10000.0 <= x <= 30000.0 else 1e9) > 700.0:
+                    self.assertFalse(inside, (x, y))  # dry ground more than a step from the water stays open
+        self.assertTrue(drained)
+        self.assertTrue(all(math.hypot(x - 60000.0, y - 30000.0) < 3000.0 for x, y in drained))
+        self.assertLess(len(zones), 200)  # (about two a step of shore: the graphs' blocking stays quick)
+        self.assertEqual(nav.water_blocks(old, old, [(30000.0, 30000.0, 21000.0)]), ([], []))
+        # blocked in the graphs: no point of the lake is walkable afterwards, ground well off it still is
+        circles = [(x, y, 6400.0) for x in range(14000, 50000, 8000) for y in range(14000, 50000, 8000)]
+        pairs = [(a, b) for a in range(len(circles)) for b in range(a + 1, len(circles))
+                 if nav._meeting(circles[a], circles[b]) is not None]
+        g = made([(float(x), float(y), r) for x, y, r in circles], pairs)
+        self.assertTrue(g.walkable(30000.0, 30000.0))
+        g.block(zones)
+        g = nav.Graph.read(g.to_bytes())
+        for i in range(-25, 26):
+            for j in range(-25, 26):
+                x, y = 30000.0 + 300.0 * i, 30000.0 + 300.0 * j
+                if math.hypot(x - 30000.0, y - 30000.0) < 7300.0:
+                    self.assertFalse(g.walkable(x, y), (x, y))
+        self.assertTrue(g.walkable(44000.0, 44000.0))
+
+
 class Built(unittest.TestCase):
     """maps/<map>/movement.toml in a mod, built into the modded copy's DataMap_Win.dat."""
 
