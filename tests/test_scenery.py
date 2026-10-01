@@ -588,6 +588,17 @@ class Studio(unittest.TestCase):
             self.assertEqual(api.scenery_undo("Test", 1)["count"], 1)
             self.assertEqual(api.scenery_undo("Test", 5), {"count": 0, "removed": 1, "saved": None})
             self.assertFalse((folder / "maps").exists())
+            # a Forest stroke's trees, with an object placed after them: Undo takes those trees, by the objects
+            tree = {"type": "TypeWarrior/Chene_02", "x": 1, "y": 2, "turn": 30, "size": 0.9}
+            api.scenery_add("Test", [tree, dict(tree, x=5)])
+            api.scenery_add("Test", [{"type": "TypeWarrior/MairieNormande", "x": 70, "y": 80}])
+            api.scenery_add("Test", [tree])  # the same tree again, later: the last one like it goes
+            res = api.scenery_undo("Test", 2, [tree, dict(tree, x=5)])
+            self.assertEqual((res["count"], res["removed"]), (2, 2))
+            info, _ops = load_mod(folder)
+            self.assertEqual(info.scenery["Test"], [NewObject("TypeWarrior/Chene_02", 1.0, 2.0, 30.0, 0.9),
+                                                    NewObject("TypeWarrior/MairieNormande", 70.0, 80.0)])
+            self.assertEqual(api.scenery_undo("Test", 1, [dict(tree, x=99)])["removed"], 0)  # not there: nothing
 
 
 if __name__ == "__main__":

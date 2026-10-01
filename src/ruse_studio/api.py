@@ -1390,14 +1390,29 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             self._write_objects(path, every)
         return {"count": len(every), "saved": str(path)}
 
-    def scenery_undo(self, pack: str, count: int = 1) -> dict:
-        """Take the last `count` placed objects off the map. Returns {"count": left, "removed": how many went,
-        "saved": the file or None}."""
+    def scenery_undo(self, pack: str, count: int = 1, objects: list | None = None) -> dict:
+        """Take the last `count` placed objects off the map; or, given `objects` (dicts with the scenery file's keys),
+        those objects, wherever they are in the file (for each, the last one like it): the trees of a Forest stroke,
+        with other objects placed after them. Returns {"count": left, "removed": how many went, "saved": the file or
+        None}."""
         path = self._scenery_file(pack)
+        if objects is not None:
+            try:
+                gone = scenery.parse_objects(list(objects), "the objects to take off")
+            except scenery.SceneryEditError as exc:
+                raise StudioError(str(exc)) from None
         with self._saving:
             every = self._read_objects(path)
-            n = max(0, min(int(count), len(every)))
-            left = every[:len(every) - n]
+            if objects is None:
+                n = max(0, min(int(count), len(every)))
+                left = every[:len(every) - n]
+            else:
+                left = list(every)
+                for o in reversed(gone):
+                    at = next((i for i in range(len(left) - 1, -1, -1) if left[i] == o), None)
+                    if at is not None:
+                        del left[at]
+                n = len(every) - len(left)
             self._write_objects(path, left)
         return {"count": len(left), "removed": n, "saved": str(path) if left else None}
 
