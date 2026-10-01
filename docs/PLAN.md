@@ -1067,3 +1067,7 @@ not decisions or an order: the map editor comes first.** Map ideas are in §12, 
      yet. A few parts aren't in the data at all (the two ruse slots on a sector's panel), out of a data mod's reach.
    First step when taken up: one study session (which archive and tiles make which screen, which script builds which
    part of the HUD), written up as what can be reskinned, what can be changed safely, and what can't.
+2. **Town names you can read from far away (2026-10-01).** A mod that makes the map's town names big and visible
+   from high up, so a town is an easy landmark ("the river 750 m south-east of Toulaville") without zooming in. The
+   names are the scenarios' town labels (`LabelVille`); how far away they show and how big is to be found (likely the
+   labels' display settings in the data). Handy for every test copy too.
