@@ -211,6 +211,18 @@ button:disabled { cursor: default; opacity: 0.45; }
 .browse-card .small { grid-column: 2; grid-row: 1 / span 5; align-self: center; }
 .browse-card .link { background: none; border: 0; padding: 0; color: var(--accent); font-size: 12px;
                      text-decoration: underline; grid-column: 1; justify-self: start; }
+/* ticking several mods at once: the box beside the name, the state ("Installed", "Update to 1.1") on the right */
+.browse-card.tickable { grid-template-columns: auto 1fr auto; cursor: pointer; }
+.browse-card.tickable > input { grid-column: 1; grid-row: 1; width: 18px; height: 18px; margin: 2px 0 0;
+                                accent-color: var(--accent); }
+.browse-card.tickable > :not(input):not(.state) { grid-column: 2; }
+.browse-card.tickable .state { grid-column: 3; grid-row: 1; font-size: 12px; color: var(--muted); }
+.browse-card.ticked { border-color: var(--accent); }
+.browse-group { margin: 14px 0 6px; font-size: 15px; }
+.browse-group + p { margin: 0 0 8px; font-size: 12px; }
+.browse .actions { display: flex; gap: 8px; }
+.browse > p > .link { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline;
+                              font: inherit; cursor: pointer; }
 
 .drop-zone { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(21, 24, 27, 0.85);
              border: 3px dashed var(--accent); color: var(--accent); font-size: 22px; font-weight: 700; z-index: 10;

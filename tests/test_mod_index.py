@@ -7,7 +7,8 @@ from pathlib import Path
 
 from test_build import write_mod
 from rusemod import package
-from rusemod.mod_index import IndexResult, ModIndexError, download, fetch, parse, size_text, states
+from rusemod.mod_index import (IndexResult, ModIndexError, download, entry_text, fetch, is_cheat, parse, size_text,
+                               states)
 from rusemod.webui import serve
 
 HALF = {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"}
@@ -116,6 +117,40 @@ class Reading(unittest.TestCase):
             parse("format = [")
         with self.assertRaisesRegex(ModIndexError, "newer launcher"):
             parse("format = 2\n")
+
+    def test_the_cheat_tag(self):
+        """A mod tagged "cheat" (any case; tags = "cheat" is one tag) is a cheat or a test tool: the launcher shows it in
+        its own group and never ticks it. Tags that aren't words skip the entry, so a cheat can't slip into the list
+        unmarked."""
+        text = "format = 1\n"
+        for i, tags in enumerate((["cheat"], ["Gameplay", "CHEAT"], "cheat", ["gameplay"], [], "cheats")):
+            text += entry(id=f"m{i}", version="1.0.0", download=f"https://x/{i}", size=1, sha256="a" * 64, tags=tags)
+        text += entry(id="bad", version="1.0.0", download="https://x/b", size=1, sha256="b" * 64, tags=[1, 2])
+        text += "[[mod]]\nid = \"bad2\"\nversion = \"1.0.0\"\ndownload = \"https://x/c\"\nsize = 1\nsha256 = \"%s\"\ntags = 5\n" % ("c" * 64)
+        mods, problems = parse(text)
+        self.assertEqual([(m["id"], m["cheat"]) for m in mods],
+                         [("m0", True), ("m1", True), ("m2", True), ("m3", False), ("m4", False), ("m5", False)])
+        self.assertEqual(mods[2]["tags"], ["cheat"])
+        self.assertEqual([p.split(": ", 1)[1] for p in problems], ['the tags aren\'t a list of words, like ["cheat"]'] * 2)
+        self.assertEqual((is_cheat(["x", " Cheat "]), is_cheat([]), is_cheat(None)), (True, False, False))
+
+    def test_an_exported_files_entry(self):
+        """The Studio's "Share your mod" shows the entry to paste into index.toml: it reads back as the same mod, and
+        without a download link it's skipped (a half-finished entry never points at nothing)."""
+        info = {"id": "tank-test", "name": "Tank \"Test\"", "version": "1.2.0", "authors": ["Tristen", "Nuke"],
+                "description": "Tanks are tougher.\nTwo lines.", "builds": ["24087620", "24687178"], "fingerprint": "K7Q2-M9XD"}
+        text = entry_text(info, 2711, "AB" * 32, download="https://example.com/tank-test-1.2.0.rusemod")
+        mods, problems = parse("format = 1\n" + text)
+        self.assertEqual(problems, [])
+        m = mods[0]
+        self.assertEqual((m["id"], m["name"], m["version"], m["author"], m["description"], m["size"], m["sha256"],
+                          m["game_build"], m["fingerprint"], m["tags"], m["cheat"]),
+                         ("tank-test", 'Tank "Test"', "1.2.0", "Tristen, Nuke", "Tanks are tougher.\nTwo lines.", 2711,
+                          "ab" * 32, "24687178", "K7Q2-M9XD", [], False))
+        unfinished = entry_text({"id": "plain", "version": "0.1.0"}, 5, "c" * 64)
+        self.assertIn('download = ""  # the https:// link to the .rusemod once it is uploaded', unfinished)
+        mods, problems = parse("format = 1\n" + unfinished)
+        self.assertEqual((mods, problems), ([], ["entry 1 (plain) skipped: the download isn't an https:// link"]))
 
     def test_states_and_sizes(self):
         mods = [{"id": "a", "version": "1.2.0"}, {"id": "b", "version": "1.0.0"}, {"id": "c", "version": "2.0.0"}]

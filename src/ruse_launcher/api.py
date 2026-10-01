@@ -252,7 +252,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             raise LauncherError(str(exc)) from None
         return self._lists(mod=info)
 
-    # --- browse mods: the mod index (MOD_FORMAT §15) ---
+    # --- Supported mods: the mod index (MOD_FORMAT §15), installed one or several at a time ---
     def _index_url(self) -> str:
         return self._index_url_given or settings(self._home).get("index_url") or DEFAULT_URL
 
@@ -272,33 +272,92 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             mods = [m for m in mods if q in " ".join([m["id"], m["name"], m["author"], m["description"]] + m["tags"]).lower()]
         for m in mods:
             m["size_text"] = size_text(m["size"])
+        # the supported mods first, then the cheats and test tools (tag "cheat"), each group as the list has it
+        mods.sort(key=lambda m: m["cheat"])
         return {"mods": mods, "source": result.source, "as_of": result.as_of, "message": result.message,
-                "problems": list(result.problems)}
+                "problems": list(result.problems), "page": mod_index.PAGE}
+
+    def _entries(self, mod_ids) -> list[dict]:
+        if not isinstance(mod_ids, list) or not all(isinstance(m, str) for m in mod_ids):
+            raise LauncherError("Tick the mods to install.")
+        if self._index is None:
+            self.browse()
+        listed = {m["id"]: m for m in (self._index.mods if self._index else [])}
+        unknown = [m for m in mod_ids if m not in listed]
+        if unknown:
+            raise LauncherError(f"There's no mod called {unknown[0]!r} in the mod list.")
+        return [listed[m] for m in dict.fromkeys(mod_ids)]  # each once, in the order ticked
+
+    def _install_one(self, entry: dict, say) -> None:
+        say(f"Downloading {entry['name']} {entry['version']} ({size_text(entry['size'])})…")
+        file = mod_index.download(entry, self._home / "downloads")
+        say("The file matches the mod list (size and checksum).")
+        try:
+            info, replaced = self._library.add(file)
+        except LibraryError as exc:
+            raise ModIndexError(str(exc)) from None
+        finally:
+            file.unlink(missing_ok=True)
+        say(f"{info['name']} {info['version']} is in the library" + (" (it replaced the older copy)." if replaced else "."))
+
+    def _install_job(self, work, done: str) -> dict:
+        """One install at a time: two would add to the library at once."""
+        busy = self._jobs.get(getattr(self, "_installing", None))
+        if busy is not None and busy.state == "running":
+            raise LauncherError("Mods are being installed: wait for it to finish.")
+        job = Job()
+        self._jobs[job.id] = job
+        self._installing = job.id
+        return job.start(work, done, plain=(ModIndexError, OSError))
 
     def install_from_index(self, mod_id: str) -> dict:
         """Download a mod from the mod index, check it against the list (size and checksum) and add it to the
         library, in the background. Returns {'job': id}; follow it with job(id)."""
-        if self._index is None:
-            self.browse()
-        entry = next((m for m in (self._index.mods if self._index else []) if m["id"] == mod_id), None)
-        if entry is None:
-            raise LauncherError(f"There's no mod called {mod_id!r} in the mod list.")
+        entry = self._entries([str(mod_id)])[0]
+        return self._install_job(lambda say: self._install_one(entry, say), f"{entry['name']} is in the library.")
+
+    def install_mods(self, mod_ids: list[str]) -> dict:
+        """Install the ticked mods of the list, one after another, in the background (each checked like
+        install_from_index; one that fails doesn't stop the others). Only the mods ticked are downloaded: a cheat
+        never comes along unless it was ticked. Returns {'job': id}; the job fails, naming the mods that didn't
+        install and why, when any didn't."""
+        entries = self._entries(mod_ids)
+        if not entries:
+            raise LauncherError("Tick the mods to install.")
 
         def work(say):
-            say(f"Downloading {entry['name']} {entry['version']} ({size_text(entry['size'])})…")
-            file = mod_index.download(entry, self._home / "downloads")
-            say("The file matches the mod list (size and checksum).")
-            try:
-                info, replaced = self._library.add(file)
-            except LibraryError as exc:
-                raise ModIndexError(str(exc)) from None
-            finally:
-                file.unlink(missing_ok=True)
-            say(f"{info['name']} {info['version']} is in the library" + (" (it replaced the older copy)." if replaced else "."))
+            failed = []
+            for n, entry in enumerate(entries, start=1):
+                if len(entries) > 1:
+                    say(f"({n}/{len(entries)}) {entry['name']}")
+                try:
+                    self._install_one(entry, say)
+                except (ModIndexError, OSError) as exc:
+                    say(str(exc))
+                    failed.append(f"{entry['name']} ({str(exc).rstrip('.')})")
+            if failed:
+                raise ModIndexError(f"{len(entries) - len(failed)} of {len(entries)} mods were installed. Not "
+                                    f"installed: {'; '.join(failed)}.")
 
-        job = Job()
-        self._jobs[job.id] = job
-        return job.start(work, f"{entry['name']} is in the library.", plain=(ModIndexError, OSError))
+        done = f"{entries[0]['name']} is in the library." if len(entries) == 1 else \
+            f"The {len(entries)} mods are in the library."
+        return self._install_job(work, done)
+
+    # --- the first run: choosing the mods to start with ---
+    FIRST_RUN_KEY = "launcher_mods_chosen"  # settings.json: the player has chosen (or skipped) once
+
+    def first_run(self) -> dict:
+        """Whether to show "Choose your mods": on the launcher's first run, while the library is empty and the
+        player hasn't chosen or skipped yet. The list itself comes from browse() (offline: the copy from before, or
+        none, and then only Skip)."""
+        return {"show": not settings(self._home).get(self.FIRST_RUN_KEY) and not self._library.mods()}
+
+    def first_run_done(self) -> dict:
+        """The player installed their mods or skipped: "Choose your mods" isn't shown again."""
+        values = settings(self._home)
+        values[self.FIRST_RUN_KEY] = True
+        save_settings(self._home, values)
+        return {"show": False}
 
     def open_link(self, url: str) -> dict:
         """Open a mod's page in the browser (https links only)."""
@@ -530,7 +589,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         lists (the new set selected) and what the check found."""
         check = self.import_check(text)
         if not check["found"]:
-            raise LauncherError("None of these mods are in your library yet. Add them first (Add a mod file… or Browse "
+            raise LauncherError("None of these mods are in your library yet. Add them first (Add a mod file… or Supported "
                                 "mods), then import the load order again.")
         name = (name or check["set_name"] or "Shared load order").strip()[:60]
         return self.new_set(name, [f["id"] for f in check["found"]]) | {"import": check}
