@@ -919,28 +919,52 @@ function buildNote(mod) {
   return note;
 }
 
+// The library: one compact row per mod (its name, its version and sets; a mistake in red), so a long library fits;
+// a row opens on a click to its description, the builds it was made for and Remove. The search box narrows it.
+const libraryOpen = new Set();  // the ids of the rows opened
+
 function renderLibrary() {
-  const w = state.words;
-  $("library-empty").classList.toggle("hidden", state.library.length > 0);
-  $("mod-list").replaceChildren(...state.library.map((mod) => {
-    const meta = [mod.version ? fill(w.version_v, { v: mod.version }) : "", mod.author ? fill(w.by, { authors: mod.author }) : "",
+  const w = state.words, all = state.library;
+  const q = ($("library-search").value || "").trim().toLowerCase();
+  const shown = q ? all.filter((m) => `${m.name} ${m.description || ""} ${m.author || ""}`.toLowerCase().includes(q)) : all;
+  $("library-empty").classList.toggle("hidden", all.length > 0 && shown.length > 0);
+  text($("library-empty"), all.length ? fill(w.library_no_match, { q }) : w.library_empty);
+  $("library-search").classList.toggle("hidden", all.length < 8);  // a short library needs no search
+  $("library-search").placeholder = w.library_search;
+  text($("library-count"), all.length ? fill(w.library_count, { n: all.length }) : "");
+  $("drop-hint").classList.toggle("hidden", all.length > 0);  // the empty library's words say it already
+  $("mod-list").replaceChildren(...shown.map((mod) => {
+    const meta = [mod.version ? fill(w.version_v, { v: mod.version }) : "",
       mod.used_in ? (mod.used_in === 1 ? w.used_in_one : fill(w.used_in, { n: mod.used_in })) : ""].filter(Boolean).join(" · ");
-    const li = el("li", { className: "mod-card" },
+    const open = libraryOpen.has(mod.id);
+    const sum = el("button", { type: "button", className: "lib-sum", title: mod.description || mod.name },
       el("span", { className: "name", textContent: mod.name }),
       el("span", { className: "meta", textContent: meta }));
-    if (mod.description) li.append(el("span", { className: "meta", textContent: mod.description }));
+    sum.setAttribute("aria-expanded", String(open));
+    const li = el("li", { className: "mod-card lib-row" + (open ? " open" : "") + (mod.error ? " bad" : "") }, sum);
+    sum.addEventListener("click", () => {
+      if (libraryOpen.has(mod.id)) libraryOpen.delete(mod.id); else libraryOpen.add(mod.id);
+      renderLibrary();
+    });
+    if (mod.error && !open) li.append(el("div", { className: "lib-more" }, el("span", { className: "warn", textContent: w.has_mistake })));
+    if (!open) return li;
+    const more = el("div", { className: "lib-more" });
+    if (mod.author) more.append(el("span", { className: "meta", textContent: fill(w.by, { authors: mod.author }) }));
+    if (mod.description) more.append(el("span", { className: "meta", textContent: mod.description }));
     const note = buildNote(mod);
-    if (note) li.append(el("span", { className: "meta", textContent: note }));
-    if (mod.error) li.append(el("span", { className: "warn", textContent: `${w.has_mistake}: ${mod.error}` }));
+    if (note) more.append(el("span", { className: "meta", textContent: note }));
+    if (mod.error) more.append(el("span", { className: "warn", textContent: `${w.has_mistake}: ${mod.error}` }));
     const remove = el("button", { type: "button", className: "small ghost danger", textContent: w.remove, disabled: state.playing });
     remove.addEventListener("click", () => {
       remove.disabled = true;
       confirmRow(fill(w.really_remove_mod, { name: mod.name }), w.remove, async () => {
+        libraryOpen.delete(mod.id);
         useLists(await api().remove_mod(mod.id));
         setMessage(fill(w.mod_removed, { name: mod.name }), "good");
-      }, li, remove);
+      }, more, remove);
     });
-    li.append(remove);
+    more.append(remove);
+    li.append(more);
     return li;
   }));
   $("add-mod").disabled = state.playing;
@@ -1147,6 +1171,7 @@ async function start() {
   $("browse-refresh").addEventListener("click", () => openBrowse(true));
   $("browse-back").addEventListener("click", () => { state.browse = null; render(); });
   let searching = null;
+  $("library-search").addEventListener("input", renderLibrary);
   $("browse-search").addEventListener("input", (e) => {
     if (!state.browse) return;
     state.browse.search = e.target.value;

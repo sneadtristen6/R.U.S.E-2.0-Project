@@ -22,15 +22,20 @@
       <section class="sets" aria-labelledby="sets-title">
         <h2 id="sets-title"></h2>
         <ul id="set-list" class="set-list"></ul>
-        <button id="new-set" class="small" type="button"></button>
-        <button id="import-set" class="small ghost" type="button"></button>
+        <div class="set-buttons">
+          <button id="new-set" class="small" type="button"></button>
+          <button id="import-set" class="small ghost" type="button"></button>
+        </div>
       </section>
       <section class="library" aria-labelledby="library-title">
-        <h2 id="library-title"></h2>
+        <div class="library-head"><h2 id="library-title"></h2><span id="library-count" class="muted"></span></div>
+        <input id="library-search" class="library-search hidden" type="search" spellcheck="false">
         <ul id="mod-list" class="mod-list"></ul>
         <p id="library-empty" class="muted note hidden"></p>
-        <button id="add-mod" class="small" type="button"></button>
-        <p id="drop-hint" class="muted note"></p>
+        <div class="library-foot">
+          <button id="add-mod" class="small" type="button"></button>
+          <p id="drop-hint" class="muted note"></p>
+        </div>
       </section>
     </aside>
 

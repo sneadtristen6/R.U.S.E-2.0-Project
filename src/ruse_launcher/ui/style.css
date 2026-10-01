@@ -71,15 +71,39 @@ button:disabled { cursor: default; opacity: 0.45; }
   min-height: 0;
 }
 
+/* The sidebar: the mod sets on top (at most about a third of it, scrolling on their own) and the library below,
+   filling the rest with its own scrolling list, so every mod can be reached however many there are */
 .side {
   display: flex;
   flex-direction: column;
   min-height: 0;
   border-right: 1px solid var(--line);
-  overflow: auto;
+  overflow: hidden;
 }
 .sets, .library { padding: 18px; }
-.library { border-top: 1px solid var(--line); }
+.sets { flex: 0 1 auto; max-height: 42%; display: flex; flex-direction: column; padding-bottom: 12px; }
+.sets .set-list { flex: 0 1 auto; min-height: 110px; overflow-y: auto; margin-right: -6px; padding-right: 6px; gap: 6px; }
+.sets .set-buttons { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px; }
+.sets .set-buttons .small { padding: 4px 9px; font-size: 12px; }
+.sets .set-card { padding: 7px 10px; }
+.library { border-top: 1px solid var(--line); flex: 1 1 0; min-height: 160px; display: flex; flex-direction: column;
+           padding-bottom: 12px; }
+.library-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.library-head span { font-size: 12px; }
+.library-search { width: 100%; margin: 0 0 10px; padding: 6px 9px; background: var(--panel); color: var(--text);
+                  border: 1px solid var(--line); border-radius: var(--radius); font: inherit; font-size: 13px; }
+.library-search:focus { outline: none; border-color: var(--accent); }
+.library .mod-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -6px 10px 0; padding-right: 6px;
+                     align-content: start; }
+.library-foot { flex: 0 0 auto; }
+.library-foot .note { margin: 6px 0 0; }
+
+/* dark scrollbars, the window's own look (WebView2 is Chromium) */
+* { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 .sets h2, .library h2 {
   margin: 0 0 12px;
   font-size: 13px;
@@ -175,6 +199,18 @@ button:disabled { cursor: default; opacity: 0.45; }
 .mod-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
 .mod-card { display: grid; gap: 2px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line);
             border-radius: var(--radius); }
+/* a library row: the name and one line, its details (description, builds, Remove) when it's opened */
+.library .mod-list { gap: 4px; }
+.lib-row { padding: 0; }
+.lib-row > button.lib-sum { display: grid; gap: 1px; width: 100%; text-align: left; padding: 7px 10px; background: none;
+                            border: 0; border-radius: var(--radius); color: inherit; font: inherit; cursor: pointer; }
+.lib-row > button.lib-sum:hover { background: var(--panel-hi); }
+.lib-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib-row .meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib-row.open .meta { white-space: normal; }
+.lib-row.bad { border-color: var(--bad); }
+.lib-more { display: grid; gap: 4px; padding: 0 10px 9px; }
+.lib-more .small { justify-self: start; }
 .mod-card .name { font-weight: 600; }
 .mod-card .meta, .pick-list .meta { font-size: 12px; color: var(--muted); }
 .mod-card .warn { font-size: 12px; color: var(--bad); }
