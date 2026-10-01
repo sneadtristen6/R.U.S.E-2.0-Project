@@ -599,13 +599,15 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Now (written 2026-10-01, morning): start here.** The owner's order (2026-10-01): **the road fix, its test, the
-audit, the release, then the players' suggestions.**
+**Now (updated 2026-10-01, afternoon): start here.** The owner's order (2026-10-01): **the road fix, its test, the
+audit, the release, then the players' suggestions.** The road fix and the audit are done; the release is next.
 
 Out: **Studio 0.7.6 and Launcher 0.2.11** (`a605cf3`). Committed, not released: the troubleshooter in both apps and
 the map check's backend (`f14e634`); the bridges' floor aprons, T8 passed (`934d414`); the clean-game backup and
 restore in both apps, every unit flag explained with a build error for flags 62 and 63 on a unit that isn't a truck,
-and square cover brushes (`28bee64`); the new README (`a1880d5`).
+and square cover brushes (`28bee64`); the new README (`a1880d5`); the road fix and all the audit's fixes (LOG.md,
+2026-10-01); the mod list at [sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods), which the
+launcher reads (75 mods, cheats kept apart).
 
 *Testing plan* (steps and commands in [TESTS.md](TESTS.md); one game start each):
 
@@ -616,49 +618,53 @@ and square cover brushes (`28bee64`); the new README (`a1880d5`).
 | **T9 A road over an old bridge:** the old one gone, units cross on the new one | owner | the replace rule | after T8 (the new deck goes into the old bridge's local map; the old floor and its aprons go) |
 | **T10 Read-only game folder:** Test in game after updating | the player who reported it | the fix | waiting for him |
 | **T11 Launcher 0.2.11:** the update is offered, Play works | owner | — | — |
+| **T13 A unit from another nation's factory:** it shows and fights in a skirmish with no player of its own nation | owner | the force-load fix | when the fix is merged |
 
 *Next steps* (in order):
 1. **New roads up close (built 2026-10-01; T12 decides).** A new road's texture showed from afar but not up close
-   (T8). The scenery blocks the build made weren't marked as holding road pieces, the way the map's own road blocks
-   are, so their pieces were skipped when the game draws roads up close. The build now marks new blocks and the path
-   down to them, and gives each road piece what the map's own pieces have (LOG.md). Test T12.
-2. **The audit: the game's rules, checked by the build** (the owner's ask, 2026-10-01). Go through what the game does
-   with every file the build writes, five areas one at a time: map info and ground are done; scenery and two more
-   are left. Found so far, to check and fix before the release (**fixed 2026-10-01**: a deck with no floor is
-   refused, the Dutch bridges are recognised, the water textures' tiles and non-square maps; LOG.md):
-   - a block inside a town leaves road links running through it, so units can drive through placed buildings;
-   - emptied movement circles stay in the movement index;
-   - new roads aren't named by any crossing, so routes may not follow them, and the road network can come out in
-     two pieces;
-   - water and height edits don't update movement, and the AI's tactical grid isn't redone;
-   - terrain strokes don't update bridge floors, and a brush does nothing where the gameplay ground is coarse
-     without saying so.
-   Each rule becomes a check in the build with a test, so a build that would break in the game is refused before
-   it's written.
+   (T8). The build now marks its new scenery blocks as holding road pieces, as the map's own road blocks are, and
+   gives each road piece what the map's own pieces have (LOG.md). Test T12. The owner's Studio `test` mod has a road
+   that joins no other road; since the audit such a mod is refused until the road is joined.
+2. **The audit (done 2026-10-01).** All five areas (map info, ground, scenery, units, scenario) were checked against
+   what the game does with every file the build writes, and each rule became a check in the build with a test (LOG.md
+   has every fix). Being finished on branches, merged before the release:
+   - new roads in the movement graphs' crossings, so units follow them and not only supply trucks (`feat/crossings`);
+   - a unit from another nation's factory: the build makes the game load that nation's models (`feat/nations`, T13);
+   - the launcher's **Supported mods** (the mod list with tick boxes, cheats unticked and apart, a "Choose your mods"
+     step on first run) and the Studio's **Share your mod** screen (how to add a mod to the list and become a
+     contributor) (`feat/modlist`).
 3. **Release** Studio 0.7.7 and Launcher 0.2.12: the troubleshooter, the clean-game backup, the flags, square
-   brushes, the road fix and the audit's fixes. Run by the owner before tagging.
-4. **The players' suggestions** (a player's wishlist after using the Studio, 2026-10-01; the owner: "include all in
-   plan"):
-   - **Smaller brushes.** The smallest ground brush is 1% of the map's width (cover and block go four times finer).
-     Below one cell of the gameplay ground a brush does nothing, so finer detail there needs A7 (re-meshing).
-   - **A forest brush:** trees (Place, Area already paints them) and cover in one stroke. The forest-floor texture
-     comes with A6 (ground painting).
+   brushes, the road fix, the audit's fixes, the mod list. Run by the owner before tagging.
+
+*After the release* (in order; cheap and certain first, one game start per test batch):
+4. **One test batch** in one modded copy: T12 (roads up close), T13 (another nation's unit), T9 (a road over an old
+   bridge). What fails is fixed before anything new.
+5. **The players' suggestions, the cheap ones** (a player's wishlist, 2026-10-01; the owner: "include all in plan"):
    - **An unblock brush:** the reverse of the Block brushes, opening ground the map blocks. Units stand on whatever
-     ground is there, so unblocking a river puts them on the riverbed.
-   - **A city template:** save a group of buildings, roads and cover, and stamp it on a map. Needs A4 (Remove
-     scenery) first.
-   Also waiting: the Studio's **Bridges dock** (the map's own bridge kinds, a Length slider, roads' water crossings
-   in gold, a note when a map has no bridge kind) and the **map check's screen** ("Check this map" lists what would
-   go wrong: ground cut off, roads or bridges units can't use, road ends not joined, buildings on roads).
-5. Then: **road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
+     ground is there, so unblocking a river puts them on the riverbed (the Studio says so).
+   - **A forest brush:** trees (Place, Area already paints them) and cover in one stroke.
+   - The Studio's **Bridges dock** (the map's own bridge kinds, a Length slider, roads' water crossings in gold, a note
+     when a map has no bridge kind) and the **map check's screen** ("Check this map" lists what would go wrong:
+     ground cut off, roads or bridges units can't use, road ends not joined, buildings on roads). Both backends exist.
+   Then a release.
+6. **A4 Remove scenery** (an Erase brush: trees along new roads; the old-bridge rule could then remove instead of
+   sink). Measured 2026-09-30: only 0.2-0.3% of a map's trees (D-Day 11.6 million, Blitz 3.9 million) sit in blocks
+   placed once, the only ones `bury_objects` can sink one by one; the rest are in blocks the map places many times.
+   So erasing needs a block copied for the erased spot (copy on write, down from the top block) or whole placed
+   patches sunk; which one is the first decision of A4. The same work builds the top block's tree again, which also
+   reaches new objects in open ground far from the map's scenery (the audit's one open scenery case, LOG.md).
+7. **A city template** (the wishlist): save a group of buildings, roads and cover, and stamp it on a map. Needs A4.
+8. **Road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
    tanks"): a forest track (infantry only, out of the supply network) or a road that opens the woods to vehicles
-   along it; which is the default is the owner's call. **A4 Remove scenery** (an Erase brush: trees along new roads;
-   the old-bridge rule could then remove instead of sink). Measured 2026-09-30: only 0.2-0.3% of a map's trees
-   (D-Day 11.6 million, Blitz 3.9 million) sit in blocks placed once, the only ones `bury_objects` can sink one by one;
-   the rest are in blocks the map places many times. So erasing needs a block copied for the erased spot (copy on
-   write, down from the top block) or whole placed patches sunk; which one is the first decision of A4. **A5 Ruse areas**, A6 ground painting.
+   along it; which is the default is the owner's call.
+9. **A5 Ruse areas, A6 ground painting** (the forest-floor texture for the forest brush), **A7 finer ground**
+   (re-meshing): the smallest ground brush is 1% of the map's width (cover and block go four times finer), and below
+   one cell of the gameplay ground a brush does nothing, so **smaller brushes** and finer ground up close come
+   with A7.
 
 *Planned (owner, 2026-09-30):* **A10**, at least 8 players on a map (D-Day first), past 8 tried later.
+
+*Asked for 1.0 (owner, 2026-10-01):* a R.U.S.E. 2.0 image when the game starts. Waits for the owner's artwork.
 
 *Open, the owner's to decide* (ideas, not decisions): "two tabs open" in the map builder; bridges for chokepoint maps.
 
