@@ -330,6 +330,52 @@
   let checkProblems = [{ file: "maps/SuperCrossRoads4/terrain.toml", set_aside: true,
     problem: "maps/SuperCrossRoads4/terrain.toml: stroke 1: the water brush needs level" }];
   const fakeRoads = {};  // the made-up mod's new roads, per map
+  // the made-up maps' own bridge kinds (rusemod.bridges.kinds): the Tunisian one has none, so the dock says so
+  const bridgeKind = (name, placed, metres, roads) => ({ type: `TypeWarrior/${name}`, name, placed, length: Math.round(metres * 260),
+    turn: 90, least: Math.ceil(metres * 260 * 0.9), most: Math.floor(metres * 260 * 2), lift: -640, roads });
+  const fakeBridges = {
+    TwoIslands: [bridgeKind("Pont_Italie_01_TangeantFloor", 6, 42, true), bridgeKind("Pont_Italie_02_TangeantFloor", 4, 39, false),
+      bridgeKind("Pont_Italie_03", 0, 30, false)],
+    SuperCrossRoads4: [bridgeKind("Pont_Metallique_02_TangeantFloor", 5, 41, true)],
+    M02_Tunisie: [],
+  };
+  // where a made-up road crosses the sea round the island (fakeGround's heights): runs of water, a bank each end
+  const fakeHeight = (pack, x, y) => {
+    const u = x / 1310720, v = y / 1310720, r = Math.hypot(u - 0.5, v - 0.5) * 2.1, seed = pack.length;
+    return Math.max(0, 48000 * (1 - r * r) + 7000 * Math.sin(u * (11 + seed)) * Math.cos(v * 9) + 3000 * Math.sin((u + v) * 31));
+  };
+  function fakeCrossings(pack, points) {
+    const out = [], step = 800, bank = 2000, wet = [];
+    for (let i = 0; i + 1 < points.length; i++) {
+      const [ax, ay] = points[i], [bx, by] = points[i + 1], n = Math.max(1, Math.round(Math.hypot(bx - ax, by - ay) / step));
+      for (let k = 0; k < n; k++) { const x = ax + (bx - ax) * k / n, y = ay + (by - ay) * k / n; wet.push([x, y, fakeHeight(pack, x, y) < 11000]); }
+    }
+    for (let i = 0; i < wet.length;) {
+      if (!wet[i][2]) { i++; continue; }
+      const s = i;
+      while (i < wet.length && wet[i][2]) i++;
+      const a = wet[Math.max(0, s - Math.round(bank / step))], b = wet[Math.min(wet.length - 1, i - 1 + Math.round(bank / step))];
+      if (i - s >= 2) out.push([a[0], a[1], b[0], b[1]].map(Math.round));
+    }
+    return out;
+  }
+  // "Check this map": made-up findings from the made-up mod's roads (rusemod.mapcheck's kinds), or nothing found
+  let checkPack = null;
+  function fakeFindings(pack) {
+    const f = (key, level, say, data) => ({ key, level, say, data, fix: null });
+    const roads = fakeRoads[pack] || [];
+    if (!roads.length) return [f("map", "ok", "mc_ok", {})];
+    const [x, y] = roads[0][roads[0].length - 1].map(Math.round), [sx, sy] = roads[0][0].map(Math.round);
+    const out = [f("pieces", "fail", "mc_cut_off", { units: "vehicles", sub: 0, circles: 3, metres: 41, x: 640000, y: 905000 }),
+      f("join", "info", "mc_road_unjoined", { road: 1, x, y }),
+      f("object", "info", "mc_object_on_road", { type: "TypeWarrior/MairieNormande", name: "MairieNormande", group: "building", road: 1, x: sx, y: sy })];
+    for (const [n, line] of roads.entries()) {
+      for (const [x0, y0, x1, y1] of fakeCrossings(pack, line)) {
+        out.splice(1, 0, f("bridge", "fail", "mc_bridge_closed", { units: "infantry", road: n + 1, x: Math.round((x0 + x1) / 2), y: Math.round((y0 + y1) / 2) }));
+      }
+    }
+    return out;
+  }
   let current = mode === "nomod" ? null : mods[0].path;
   const edits = new Map();  // `${mod}|${address}|${prop}|${how}|${via}` -> value, like the mod's src/studio.rndf
   const terrains = new Map();  // `${mod}|${map pack}` -> strokes, like the mod's maps/<pack>/terrain.toml
@@ -663,6 +709,8 @@
   Object.assign(words.us, {"share_mod": "Share your mod…", "share_title": "Share your mod", "share_lead": "Made a mod? Add it to the list and become a contributor.", "share_step_export": "Export it as a .rusemod (Export mod… in the mod menu). Its size and SHA-256 show here.", "share_step_pr": "Upload the .rusemod (a GitHub Release is easiest), then open a pull request to {repo} that adds its entry to index.toml, with the size and SHA-256 the export shows.", "share_step_post": "Or post it in the Discussions, and it's added to the list for you.", "share_file": "File: {file} ({size} bytes)", "share_sha": "SHA-256: {sha}", "share_entry": "Its entry for index.toml (put the file's link in download):", "share_copy": "Copy the entry", "share_copied": "Copied: paste it into index.toml.", "share_open": "Open the mod list on GitHub", "share_discussions": "Open the Discussions"});
   Object.assign(words.fr, {"share_mod": "Partager votre mod…", "share_title": "Partagez votre mod", "share_lead": "Vous avez fait un mod ? Ajoutez-le à la liste et devenez contributeur.", "share_step_export": "Exportez-le en .rusemod (Exporter le mod… dans le menu du mod). Sa taille et son SHA-256 s'affichent ici.", "share_step_pr": "Mettez le .rusemod en ligne (une GitHub Release est le plus simple), puis ouvrez une pull request sur {repo} qui ajoute son entrée à index.toml, avec la taille et le SHA-256 qu'affiche l'export.", "share_step_post": "Ou publiez-le dans les Discussions, et il sera ajouté à la liste pour vous.", "share_file": "Fichier : {file} ({size} octets)", "share_sha": "SHA-256 : {sha}", "share_entry": "Son entrée pour index.toml (mettez le lien du fichier dans download) :", "share_copy": "Copier l'entrée", "share_copied": "Copié : collez-la dans index.toml.", "share_open": "Ouvrir la liste des mods sur GitHub", "share_discussions": "Ouvrir les Discussions"});
   Object.assign(words.sc, {"share_mod": "分享你的模组…", "share_title": "分享你的模组", "share_lead": "做了模组？把它加入列表，成为贡献者。", "share_step_export": "将其导出为 .rusemod（模组菜单中的“导出模组…”）。其大小和 SHA-256 会显示在这里。", "share_step_pr": "上传 .rusemod（用 GitHub Release 最简单），然后向 {repo} 提交一个拉取请求，把它的条目加入 index.toml，并填上导出时显示的大小和 SHA-256。", "share_step_post": "或者在 Discussions 中发布，我们会替你把它加入列表。", "share_file": "文件：{file}（{size} 字节）", "share_sha": "SHA-256：{sha}", "share_entry": "它在 index.toml 中的条目（在 download 中填入文件链接）：", "share_copy": "复制条目", "share_copied": "已复制：请粘贴到 index.toml 中。", "share_open": "在 GitHub 上打开模组列表", "share_discussions": "打开 Discussions"});
+  // the Bridges dock and "Check this map" (words.toml dock_bridges, bridges_*, check_*, mc_*)
+  Object.assign(words.us, {"dock_bridges": "Bridges", "tip_dock_bridges": "The map's own bridge kinds: place one by hand, and see where new roads cross water (in gold).", "bridges_help": "Pick a kind, set its length and turn, then click the ground where the bridge's middle goes. Both ends should rest on dry bank.", "bridges_kind_info": "{n} on the map · {least} to {most} m", "bridges_roads_kind": "new roads' bridges", "bridges_no_floor": "not placed on this map: no floor to copy, so the build refuses it", "bridges_length": "Length {m} m", "tip_bridges_length": "How long the deck is, bank to bank: the map's own bridges are stretched from 0.9 to 2 times their model's length.", "tip_bridges_turn": "Which way the bridge runs, in degrees (- and = keys too).", "tip_bridges_undo": "Take the last bridge placed by hand off the map.", "bridges_count": "{n} placed by hand", "bridges_crossings": "{n} water crossing(s) on the new roads, in gold: the build puts a bridge of the new roads' kind on each.", "bridges_none": "{n} water crossing(s), but this map has no bridge kind of its own: no bridge can go there, and units can't cross", "bridges_none_map": "This map has no bridge kind of its own: no bridge can go on it, and units can't cross water on a new road.", "bridges_loading": "Reading the map's bridges…", "dock_check": "Check", "tip_dock_check": "Find what would go wrong on this map with your mod, before the game starts.", "check_run": "Check this map", "tip_check_run": "Builds your mod's changes to this map as Test in game would, in a folder removed afterwards, and lists what would go wrong: ground cut off, roads or bridges units can't use, road ends not joined, buildings on roads.", "check_running": "Checking: building your mod on this map (a minute or so)…", "check_found": "{n} thing(s) to look at. Click one with a place to see it on the map.", "check_stale": "Checked before your last change: check again to be sure.", "mc_ok": "Nothing found that would go wrong on this map.", "mc_build_failed": "The map couldn't be built, so it wasn't checked: {why}", "mc_cut_off": "Ground around ({x}, {y}), {metres} m across, is cut off for {units}: they can't reach it from the rest of the map, and an order onto it crashes the game.", "mc_road_closed": "Road {road}: {metres} m around ({x}, {y}) is ground {units} can't use.", "mc_bridge_closed": "The crossing at ({x}, {y}) is closed to {units}: they can't get from one bank to the other.", "mc_road_unjoined": "Road {road} ends at ({x}, {y}) without joining the road network. Supply trucks use the road network.", "mc_object_on_road": "{name} stands on road {road} at ({x}, {y}).", "mc_objects_more": "{n} more objects stand on the new roads.", "mc_units_infantry": "infantry", "mc_units_vehicles": "vehicles"});
   const exported = { path: "C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod", file: "sherman-test-0.1.0.rusemod",
     size: 2711, size_text: "3 KB", sha256: "5d1c0f4b0e7f7c3ad8b0a4f6f1f0a0e8c4b2d6e1f3a5c7e9b1d3f5a7c9e1b3d5",
     entry: ["[[mod]]", 'id = "sherman-test"', 'name = "sherman-test"', 'version = "0.1.0"', 'description = "Made in the RUSE Studio."',
@@ -675,6 +723,8 @@
       "Saved as C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod", "Size: 2711 bytes",
       "SHA-256: 5d1c0f4b0e7f7c3ad8b0a4f6f1f0a0e8c4b2d6e1f3a5c7e9b1d3f5a7c9e1b3d5"],
       "Saved as C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod"],
+    check: [["Building the mod on this map, in a folder removed afterwards…", "  roads: 1 new road joined to the road network",
+      "  bridges open", "Checking the movement graphs for infantry and vehicles…"], "The map is checked."],
     test: [["Building the modded copy of R.U.S.E. for sherman-test in D:\\RUSE-Instances\\studio-sherman-test…",
       "  1 change in 1 file", "  modded copy ready: 41 files linked, 1 replaced", "Starting R.U.S.E. from the modded copy…"],
       "R.U.S.E. is starting."],
@@ -901,7 +951,8 @@
         ? { state: "failed", message: "[WinError 5] Access is denied: 'D:\\RUSE-Instances\\studio-sherman-test.old'",
           lines: jobs.test[0].slice(0, 1), count: 1 }
         : { state: "done", message: jobs[id][1], lines: jobs[id][0], count: jobs[id][0].length,
-            ...(id === "export" ? { result: exported } : {}) },  // the file for "Share your mod"
+            ...(id === "export" ? { result: exported } : {}),  // the file for "Share your mod"
+            ...(id === "check" ? { result: { pack: checkPack, findings: fakeFindings(checkPack) } } : {}) },
       share_info: async () => ({ repo: "sneadtristen6/Ruse-Mods", page: "https://github.com/sneadtristen6/Ruse-Mods" }),
       maps: async () => ({ maps: fakeMaps }),
       map_view: async (pack, lod) => fakeGround(pack, lod || "lowdef"),
@@ -948,8 +999,27 @@
         }
         return { size: n, box: [0, 0, 1310720, 1310720], bits: btoa(String.fromCharCode(...bits)) };
       },
-      roads: async (pack) => ({ roads: (fakeRoads[pack] || []).map((points) => ({ points, join: 3000 })), mod: current,
+      roads: async (pack) => ({ roads: (fakeRoads[pack] || []).map((points) => ({ points, join: 3000,
+        crossings: fakeCrossings(pack, points) })), bridge: (fakeBridges[pack] || [])[0]?.type || null, mod: current,
         saved: null }),
+      map_bridges: async (pack) => ({ kinds: fakeBridges[pack] || [], kind: (fakeBridges[pack] || [])[0]?.type || null }),
+      bridge_add: async (pack, kind, x, y, turn, length) => {
+        if (!current) throw new Error("Pick or make a mod first: what you place is saved in it.");
+        const k = (fakeBridges[pack] || []).find((b) => b.type === kind);
+        if (!k) throw new Error(`${kind} isn't one of this map's own bridge kinds, so the map can't take it.`);
+        if (!k.placed) throw new Error(`This map places no ${k.name} of its own, so there's no floor to copy for one: units would walk on the riverbed under it. Pick a kind the map places.`);
+        if (length < k.least || length > k.most) throw new Error(`${k.name} stretches from ${Math.ceil(k.least / 260)} to ${Math.floor(k.most / 260)} m long`);
+        const o = { type: kind, x, y, turn: (turn + k.turn) % 360, size: 1, solid: false,
+          stretch: Math.round(Math.max(0.9, length / k.length) * 1e4) / 1e4, lift: k.lift };
+        const key = `${current}|${pack}`, list = (placed.get(key) || []).concat([o]);
+        placed.set(key, list);
+        return { count: list.length, saved: `${current}/maps/${pack}/scenery.toml`, object: o };
+      },
+      map_check: async (pack) => {
+        if (!current) throw new Error("Pick or make a mod first: the check builds it.");
+        checkPack = pack;
+        return { job: "check" };
+      },
       road_add: async (pack, points) => { (fakeRoads[pack] = fakeRoads[pack] || []).push(points); return { count: fakeRoads[pack].length, saved: null }; },
       road_undo: async (pack, n = 1) => { const list = fakeRoads[pack] || []; const removed = Math.min(n, list.length);
         list.splice(list.length - removed, removed); return { count: list.length, removed, saved: null }; },

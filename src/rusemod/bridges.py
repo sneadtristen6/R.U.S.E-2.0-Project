@@ -312,11 +312,9 @@ def shipped_bridges(sc, descs: dict, length_of) -> list[Shipped]:
         if it.tform != T_IDENTITY:
             once[(it.symbol, round(m[3]), round(m[7]))] = (bi, it.at)
     out = []
-    for sym, m in sc.walk():
+    bridges = {i for i, name in enumerate(sc.names) if name in descs and is_bridge(descs[name].category, name)}
+    for sym, m in sc.walk(only=bridges):
         name = sc.names[sym]
-        d = descs.get(name)
-        if d is None or not is_bridge(d.category, name):
-            continue
         length, extra = length_of(name)
         col = (m[1], m[5]) if extra % 180 == 90 else (m[0], m[4])
         k = math.hypot(*col)
@@ -342,6 +340,49 @@ def _covered(span, existing, reach: float = DECK * 2) -> bool:
         if -0.25 <= t <= 1.25 and math.hypot(mx - x0 - t * dx, my - y0 - t * dy) <= reach:
             return True
     return False
+
+
+def no_kind_note(n: int) -> str:
+    """What the build says of `n` water crossings on a map with no bridge kind of its own (the Studio's Bridges dock
+    says the same: its words.toml bridges_none)."""
+    return (f"{n} water crossing(s), but this map has no bridge kind of its own: no bridge can go there, and units "
+            f"can't cross")
+
+
+def kinds(sc, descs: dict, length_of) -> list[dict]:
+    """The map's own bridge kinds, for the Studio's Bridges dock: each as {"type", "name" (its short name), "placed"
+    (how many the map ships), "length" (its model's length, map units), "turn" (the model's axis turn), "least" and
+    "most" (the deck lengths it stretches to, STRETCH), "lift" (how far the map sinks its own: the median), "roads"
+    (whether new roads' bridges are this kind: bridge_type)}. The kind roads use first, then the most placed. A kind the
+    map doesn't place has no floor to copy (rusemod.floors): the build refuses one placed by hand."""
+    roads = bridge_type(sc.names, sc.types(), descs)
+    shipped = shipped_bridges(sc, descs, length_of)
+    out = []
+    for name in dict.fromkeys(sc.names):
+        d = descs.get(name)
+        if d is None or not is_bridge(d.category, name):
+            continue
+        length, extra = length_of(name)
+        lifts = sorted(b.lift for b in shipped if b.kind == name)
+        out.append({"type": name, "name": name.split("/")[-1], "placed": len(lifts), "length": round(length),
+                    "turn": extra, "least": math.ceil(length * STRETCH[0]), "most": math.floor(length * STRETCH[1]),
+                    "lift": round(lifts[len(lifts) // 2], 1) if lifts else 0.0, "roads": name == roads})
+    out.sort(key=lambda k: (not k["roads"], -k["placed"], k["name"].lower()))
+    return out
+
+
+def by_hand(type_name: str, x: float, y: float, turn: float, length: float, model: float, extra: float = 0.0,
+            lift: float = 0.0) -> NewObject:
+    """A bridge placed by hand: centred on (x, y), its deck `length` map units long along `turn` (degrees from east
+    toward south, as a road's direction), of a kind whose model is `model` long on its axis turn `extra`, sunk by
+    `lift`. Stretched as the build's own (bridge_objects); a length past STRETCH raises BridgeError."""
+    from .nav import METRE
+    if model <= 0 or not STRETCH[0] - 1e-6 <= length / model <= STRETCH[1] + 1e-6:
+        raise BridgeError(f"{type_name.split('/')[-1]} stretches from {math.ceil(model * STRETCH[0] / METRE)} to "
+                          f"{math.floor(model * STRETCH[1] / METRE)} m long")
+    a, length = math.radians(turn), min(length, model * STRETCH[1] * (1 - 1e-9))
+    dx, dy = math.cos(a) * length / 2, math.sin(a) * length / 2
+    return bridge_objects(type_name, (x - dx, y - dy, x + dx, y + dy), model, extra, lift)[0]
 
 
 @dataclass
@@ -381,8 +422,7 @@ def plan(mesh: bytes, lines, sc, descs: dict, length_of=None, game=None, sample:
         return out
     kind = bridge_type(sc.names, sc.types(), descs)
     if kind is None:
-        out.notes.append(f"{len(spans)} water crossing(s), but this map has no bridge kind of its own: no bridge can "
-                         f"go there, and units can't cross")
+        out.notes.append(no_kind_note(len(spans)))
         return out
     out.kind = kind
     length, extra = length_of(kind)

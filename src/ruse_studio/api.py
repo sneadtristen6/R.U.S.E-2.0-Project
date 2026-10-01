@@ -223,6 +223,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         self._sceneries: dict[tuple, dict] = {}  # the last maps' scenery (map_scenery)
         self._descriptors: tuple = (None, {})    # (unit pack, its scenery types), read once per game build
         self._models_done: dict[str, dict] = {}  # map -> the index of its 3D models (map_models), once made
+        self._check_jobs: dict[str, str] = {}  # map -> its "Check this map" job, so asking twice runs it once
 
     # --- where things are ---
     def _game(self) -> Path | None:
@@ -1494,6 +1495,106 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             while len(self._sceneries) > 3:
                 self._sceneries.pop(next(iter(self._sceneries)))
         return out
+
+    # --- "Check this map" (rusemod.mapcheck) ---
+    def map_check(self, pack: str) -> dict:
+        """What would go wrong on the map `pack` with the current mod, found before the game starts: the mod built as
+        Test in game builds it (its changes to this map only) into a folder removed afterwards, and the built map
+        checked (rusemod.mapcheck.check_map), in the background. Returns {'job': id}, the one already running for this
+        map if there is one; follow it with job(id). Its result, once done: {"pack", "findings"} (mapcheck's findings,
+        their "say" a word in words.toml filled with their "data"; one "ok" finding when nothing was found)."""
+        from rusemod import mapcheck
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first: the check builds it.")
+        if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
+            raise StudioError(f"{pack!r} isn't a map's pack name")
+        game = self._game()
+        if game is None:
+            raise StudioError("We couldn't find R.U.S.E., so there's no map to check.")
+        if self._restoring():  # the build would take half-restored files (rusemod.backup)
+            raise StudioError("The game's files are being restored: wait for it to finish.")
+        with self._grounds_lock:
+            running = self._check_jobs.get(pack)
+            if running and running in self._jobs and self._jobs[running].state == "running":
+                return {"job": running}
+            job = Job()
+            job.result = None
+            self._jobs[job.id] = job
+            self._check_jobs[pack] = job.id
+
+        def work(say):
+            job.result = {"pack": pack, "findings": mapcheck.check_map(game, folder, pack, say)}
+        return job.start(self._reading_game(game, work), "The map is checked.",
+                         plain=(BuildError, RndfError, OSError))
+
+    # --- the Bridges dock: the map's own bridge kinds, and bridges placed by hand (rusemod.bridges) ---
+    def map_bridges(self, pack: str) -> dict:
+        """The map's own bridge kinds, for the Bridges dock: {"kinds": [rusemod.bridges.kinds' dicts], "kind": the
+        kind new roads' bridges are, or None when the map has none}. Kept per map (each kind's model is measured)."""
+        from rusemod.bridges import kinds, model_length
+        game = self._game()
+        if game is None:
+            raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
+        map_path, unit_path = find_pack(game, pack_file(pack)), find_pack(game, "ZZ_GladPatchableWin.dat")
+        if map_path is None or unit_path is None:
+            raise StudioError(f"{pack_file(pack) if map_path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game "
+                              f"folder.")
+        key = ("bridges", str(map_path), map_path.stat().st_mtime)
+        with self._grounds_lock:
+            if key in self._sceneries:
+                return self._sceneries[key]
+        with Edat.open(str(unit_path)) as unit_arc:
+            dkey = (str(unit_path), unit_path.stat().st_mtime)
+            if self._descriptors[0] != dkey:
+                self._descriptors = (dkey, scenery.descriptors(unit_arc))
+        descs = self._descriptors[1]
+        with Edat.open(str(map_path)) as map_arc:
+            try:
+                sc = scenery.Scenery(bytes(map_arc.read(map_arc.find(scenery.MEMBER))))
+            except (KeyError, scenery.SceneryError, struct.error) as exc:
+                raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
+        lengths: dict = {}
+
+        def length_of(kind):
+            if kind not in lengths:
+                lengths[kind] = model_length(game, descs, kind)
+            return lengths[kind]
+        found = kinds(sc, descs, length_of)
+        out = {"kinds": found, "kind": next((k["type"] for k in found if k["roads"]), None)}
+        with self._grounds_lock:
+            self._sceneries[key] = out
+            while len(self._sceneries) > 3:
+                self._sceneries.pop(next(iter(self._sceneries)))
+        return out
+
+    def bridge_add(self, pack: str, kind: str, x: float, y: float, turn: float, length: float) -> dict:
+        """Place a bridge of the map's own `kind` by hand, centred on (x, y), its deck `length` map units long along
+        `turn` (degrees from east toward south), sunk as the map sinks its own; saved in the mod's scenery.toml. Only a
+        kind the map places (its floor is copied from one). Returns {"count": objects placed on the map now, "saved":
+        the file, "object": the bridge as saved}."""
+        from rusemod.bridges import BridgeError, by_hand
+        path = self._scenery_file(pack)
+        found = next((k for k in self.map_bridges(pack)["kinds"] if k["type"] == kind), None)
+        if found is None:
+            raise StudioError(f"{kind} isn't one of this map's own bridge kinds, so the map can't take it.")
+        if not found["placed"]:
+            raise StudioError(f"This map places no {found['name']} of its own, so there's no floor to copy for one: "
+                              f"units would walk on the riverbed under it. Pick a kind the map places.")
+        try:
+            x, y, turn, length = (float(v) for v in (x, y, turn, length))
+            if not all(math.isfinite(v) for v in (x, y, turn, length)):
+                raise ValueError
+            o = by_hand(kind, x, y, turn, length, found["length"], found["turn"], found["lift"])
+        except BridgeError as exc:  # (a ValueError too)
+            raise StudioError(str(exc)) from None
+        except (TypeError, ValueError):
+            raise StudioError("A bridge's place, turn and length are numbers") from None
+        o = replace(o, x=round(o.x), y=round(o.y))
+        with self._saving:
+            every = self._read_objects(path) + [o]
+            self._write_objects(path, every)
+        return {"count": len(every), "saved": str(path), "object": asdict(o)}
 
     def road_add(self, pack: str, points: list, join: float = 3000.0) -> dict:
         """Add a road (its line: [[x, y], ...] in map units, in order) to the map in the current mod. Its ends join a

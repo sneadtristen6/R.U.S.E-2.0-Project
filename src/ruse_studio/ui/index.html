@@ -169,6 +169,38 @@
               <div id="road-note" class="small"></div>
             </div>
           </div>
+          <!-- the map's own bridge kinds (maps.js bridge): one placed by hand, saved with the mod's placed objects;
+               new roads' water crossings drawn in gold -->
+          <div id="tray-bridges" class="tray-body hidden">
+            <div class="tray-main">
+              <div id="bridge-kinds" class="kind-list" role="group"></div>
+              <div id="bridge-map-note" class="small"></div>
+            </div>
+            <div class="tray-side">
+              <div id="bridge-help" class="muted small"></div>
+              <label class="brush-slider small"><span id="bridge-length-label"></span>
+                <input id="bridge-length" type="range" min="30" max="90" step="1" value="40"></label>
+              <label class="brush-slider small"><span id="bridge-turn-label"></span>
+                <input id="bridge-turn" type="range" min="0" max="355" step="5" value="0"></label>
+              <div class="map-controls">
+                <button id="bridge-undo" type="button" class="ghost" disabled></button>
+                <span id="bridge-count" class="muted small"></span>
+              </div>
+              <div id="bridge-note" class="small"></div>
+            </div>
+          </div>
+          <!-- "Check this map" (maps.js check): what would go wrong with the mod on this map, found before the game -->
+          <div id="tray-check" class="tray-body hidden">
+            <div class="tray-main">
+              <div class="map-controls">
+                <button id="check-run" type="button"></button>
+              </div>
+              <div id="check-status" class="muted small"></div>
+            </div>
+            <div class="tray-side">
+              <div id="check-list" class="finding-list"></div>
+            </div>
+          </div>
           <!-- editing the picked scenario (maps.js scen.tool): items moved, units and buildings spawned, in the mod -->
           <div id="tray-scen" class="tray-body hidden">
             <div class="tray-main">

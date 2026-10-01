@@ -1056,6 +1056,78 @@ class ScenarioEdits(WithMod):
         self.assertEqual(Spawn("x.scenario", data["spawn"][-1]["what"], 0.0, 0.0).class_path, DEPOT)
 
 
+class MapDocks(WithMod):
+    """The map editor's Bridges dock (map_bridges, bridge_add) and "Check this map" (map_check), on the made-up game:
+    its map's bridge kinds and the check stood in for (the made-up game has no map pack)."""
+
+    KINDS = {"kinds": [
+        {"type": "TypeWarrior/Pont_TangeantFloor", "name": "Pont_TangeantFloor", "placed": 3, "length": 26000,
+         "turn": 90.0, "least": 23400, "most": 52000, "lift": -650.0, "roads": True},
+        {"type": "TypeWarrior/Pont_Old", "name": "Pont_Old", "placed": 0, "length": 26000, "turn": 90.0,
+         "least": 23400, "most": 52000, "lift": 0.0, "roads": False}], "kind": "TypeWarrior/Pont_TangeantFloor"}
+
+    def wait(self, job_id):
+        for _ in range(200):
+            got = self.api.job(job_id)
+            if got["state"] != "running":
+                return got
+            time.sleep(0.02)
+        self.fail("the job never ended")
+
+    def test_a_bridge_placed_by_hand(self):
+        with mock.patch.object(StudioApi, "map_bridges", return_value=self.KINDS):
+            with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+                self.api.bridge_add("Blitz", "TypeWarrior/Pont_TangeantFloor", 1000, 2000, 0, 30000)
+            folder = Path(self.api.new_mod("x")["current"])
+            got = self.api.bridge_add("Blitz", "TypeWarrior/Pont_TangeantFloor", 1000.4, 2000, 0, 39000)
+            self.assertEqual(got["object"], {"type": "TypeWarrior/Pont_TangeantFloor", "x": 1000, "y": 2000, "turn": 90.0,
+                                             "size": 1.0, "solid": False, "stretch": 1.5, "lift": -650.0})
+            self.assertEqual((got["count"], got["saved"]), (1, str(folder / "maps" / "Blitz" / "scenery.toml")))
+            self.assertEqual(self.api.scenery("Blitz")["objects"], [got["object"]])  # read back as saved
+            for args, said in ((("TypeWarrior/Chene_02", 0, 0, 0, 30000), "isn't one of this map's own bridge kinds"),
+                               (("TypeWarrior/Pont_Old", 0, 0, 0, 30000), "places no Pont_Old of its own"),
+                               (("TypeWarrior/Pont_TangeantFloor", 0, 0, 0, 60000), "stretches from 90 to 200 m"),
+                               (("TypeWarrior/Pont_TangeantFloor", "a", 0, 0, 30000), "are numbers"),
+                               (("TypeWarrior/Pont_TangeantFloor", 0, float("nan"), 0, 30000), "are numbers")):
+                with self.assertRaisesRegex(StudioError, said):
+                    self.api.bridge_add("Blitz", *args)
+            self.assertEqual(self.api.scenery_undo("Blitz")["count"], 0)  # Undo takes it back like any placed object
+
+    def test_check_this_map(self):
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+            self.api.map_check("SuperCrossRoads4")
+        folder = Path(self.api.new_mod("x")["current"])
+        with self.assertRaisesRegex(StudioError, "isn't a map's pack name"):
+            self.api.map_check("../x")
+        found = [{"key": "join", "level": "info", "say": "mc_road_unjoined", "data": {"road": 1, "x": 5, "y": 6},
+                  "fix": None}]
+        go = threading.Event()
+
+        def check(game, mod, pack, say):
+            self.assertEqual((Path(game), Path(mod), pack), (self.game, folder, "SuperCrossRoads4"))
+            say("roads: SuperCrossRoads4")
+            go.wait(5)
+            return found
+        with mock.patch("rusemod.mapcheck.check_map", side_effect=check):
+            first = self.api.map_check("SuperCrossRoads4")["job"]
+            self.assertEqual(self.api.map_check("SuperCrossRoads4")["job"], first)  # asked twice: run once
+            go.set()
+            done = self.wait(first)
+        self.assertEqual(done["state"], "done", done)
+        self.assertEqual(done["result"], {"pack": "SuperCrossRoads4", "findings": found})
+        self.assertEqual(done["lines"], ["roads: SuperCrossRoads4"])
+        with mock.patch("rusemod.mapcheck.check_map", side_effect=OSError("the disk is full")):
+            failed = self.wait(self.api.map_check("SuperCrossRoads4")["job"])  # a new one once the last has ended
+        self.assertEqual((failed["state"], failed["message"]), ("failed", "the disk is full"))
+
+    def test_the_docks_words_match_the_builds(self):
+        from rusemod import mapcheck
+        from rusemod.bridges import no_kind_note
+        words = _words()
+        self.assertEqual({k: words[k]["us"] for k in mapcheck.WORDS}, mapcheck.WORDS)  # the findings' own words
+        self.assertEqual(words["bridges_none"]["us"].replace("{n}", "2"), no_kind_note(2))  # the build's own note
+
+
 class Troubleshooter(WithMod):
     """The troubleshooter's two calls (what it checks is rusemod.doctor's: tests/test_doctor.py)."""
 

@@ -191,16 +191,33 @@ class Scenery:
             out[b.index] = n
         return out
 
-    def walk(self, block: int | None = None, matrix: tuple = IDENTITY):
-        """(name index, 3x4 transform in map coordinates) for every object under `block` (default: every root)."""
+    def holding(self, symbols) -> list[bool]:
+        """Whether each block puts an object of one of `symbols` (name indexes) on the map, itself or through its
+        children: one pass from the last block back, as counts()."""
+        out = [False] * len(self.blocks)
+        for b in reversed(self.blocks):
+            out[b.index] = any(it.symbol in symbols if it.kind == "object"
+                               else it.kind == "child" and out[self._by_offset[it.child_offset]] for it in b.items)
+        return out
+
+    def walk(self, block: int | None = None, matrix: tuple = IDENTITY, only=None):
+        """(name index, 3x4 transform in map coordinates) for every object under `block` (default: every root); with
+        `only` (a set of name indexes), those objects alone, and blocks holding none of them aren't walked (a map
+        places millions of objects: its bridges are found in a moment)."""
+        keep = self.holding(only) if only is not None else None
         todo = [(r, IDENTITY) for r in reversed(self.roots())] if block is None else [(block, matrix)]
         while todo:
             i, m = todo.pop()
+            if keep is not None and not keep[i]:
+                continue
             for it in self.blocks[i].items:
                 if it.kind == "object":
-                    yield it.symbol, compose(m, it.matrix())
+                    if only is None or it.symbol in only:
+                        yield it.symbol, compose(m, it.matrix())
                 elif it.kind == "child":
-                    todo.append((self._by_offset[it.child_offset], compose(m, it.matrix())))
+                    j = self._by_offset[it.child_offset]
+                    if keep is None or keep[j]:
+                        todo.append((j, compose(m, it.matrix())))
 
     def placings(self) -> tuple[list[int], list]:
         """(how many times the map places each block, its one transform in map coordinates or None when it's placed

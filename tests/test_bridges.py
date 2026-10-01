@@ -10,7 +10,8 @@ from test_scenery import block, compact, make_scenery, moved
 from test_tms import make_tms
 from rusemod import nav
 from rusemod.bridges import (CLOSE, DECK, STRETCH, BridgeError, Water, _closing, apply_spans, bridge_objects,
-                              bridge_type, crossings, cut, deck, placed_spans, plan)
+                              bridge_type, by_hand, crossings, cut, deck, kinds, no_kind_note, placed_spans, plan,
+                              shipped_bridges)
 from rusemod.roadnet import RoadNet, build_tree
 from rusemod.scenery import SCALE16, NewObject, Scenery
 from rusemod.tms import Tms
@@ -153,6 +154,14 @@ class Crossings(unittest.TestCase):
         self.assertEqual(by_hand.objects, [])
         self.assertIn("already bridged by hand", by_hand.notes[0])
 
+    def test_the_note_on_a_map_with_no_bridge_kind(self):  # the Studio's Bridges dock says the same (test_studio)
+        sc = Scenery(make_scenery([block([sunk(0, 100.0, 900.0, -200.0)])], ["TypeWarrior/Chene_02"]))
+        none = plan(MESH, [[(500.0, 400.0), (500.0, 20.0)]], sc, {}, length_of=lambda k: (100.0, 90.0), sample=10.0,
+                    bank=50.0, least=50.0)
+        self.assertEqual(none.notes, [no_kind_note(1)])
+        self.assertEqual(no_kind_note(3), "3 water crossing(s), but this map has no bridge kind of its own: no bridge "
+                                          "can go there, and units can't cross")
+
     def test_a_road_over_an_old_bridge_replaces_it(self):
         # owner, 2026-09-30: "if a road goes over an existing bridge it should delete the old and replace it with a
         # new one"
@@ -232,6 +241,64 @@ class Crossings(unittest.TestCase):
         roads = RoadNet.read(bufs[0])
         self.assertEqual((roads.points, roads.links), ([(0.0, 2000.0), (6000.0, 2000.0)], [(0, 1, 600)]))
         self.assertIn("road network: 1 link(s) taken off the old bridges", notes)
+
+
+class Dock(unittest.TestCase):
+    """What the Studio's Bridges dock shows and places: the map's own bridge kinds, a bridge placed by hand."""
+
+    NAMES = ["TypeWarrior/Pont_TangeantFloor", "TypeWarrior/Chene_02", "TypeWarrior/Pont_Old",
+             "TypeWarrior/Pont_Metallique_02"]
+    DESCS = {NAMES[0]: desc("Italie/Ponts"), NAMES[1]: desc("Vegetation"), NAMES[2]: desc("Italie/Ponts"),
+             NAMES[3]: desc("COC/Normandie/Ponts")}
+
+    def scenery(self):
+        """Two floor bridges and a tree in the root; a block of trees placed twice; a block with a metal bridge and a
+        tree, placed once (its bridge found through it)."""
+        trees = block([sunk(1, 0.0, 0.0, 0.0), sunk(1, 50.0, 0.0, 0.0)])
+        metal = block([sunk(3, 0.0, 0.0, -300.0), sunk(1, 10.0, 0.0, 0.0)])
+        head = [sunk(0, 100.0, 900.0, -200.0), sunk(0, 900.0, 900.0, -260.0), sunk(1, 5.0, 5.0, 0.0)]
+        size = len(block(head + [moved(0, 0.0, 0.0)] * 3))
+        root = block(head + [moved(size, 1000.0, 0.0), moved(size, 2000.0, 0.0), moved(size + len(trees), 7000.0, 0.0)])
+        return Scenery(make_scenery([root, trees, metal], self.NAMES))
+
+    def test_only_the_bridges_are_walked(self):
+        sc = self.scenery()
+        every = list(sc.walk())
+        self.assertEqual(len(every), 3 + 2 * 2 + 2)
+        only = list(sc.walk(only={0, 3}))
+        self.assertEqual(only, [(s, m) for s, m in every if s in (0, 3)])  # the same, in the same order
+        self.assertEqual(sc.holding({3}), [True, False, True])
+        self.assertEqual(list(sc.walk(only=set())), [])
+        found = shipped_bridges(sc, self.DESCS, lambda k: (100.0, 90.0))
+        self.assertEqual(sorted((b.kind.split("/")[-1], round(b.deck[0])) for b in found),
+                         [("Pont_Metallique_02", 7000), ("Pont_TangeantFloor", 100), ("Pont_TangeantFloor", 900)])
+
+    def test_the_maps_kinds(self):
+        got = kinds(self.scenery(), self.DESCS, lambda k: (100.0, 90.0) if k != self.NAMES[3] else (120.0, 0.0))
+        self.assertEqual([(k["name"], k["placed"], k["roads"]) for k in got],  # the roads' kind first, then the most placed
+                         [("Pont_TangeantFloor", 2, True), ("Pont_Metallique_02", 1, False), ("Pont_Old", 0, False)])
+        floor, metal, old = got
+        self.assertEqual((floor["type"], floor["length"], floor["turn"], floor["least"], floor["most"], floor["lift"]),
+                         (self.NAMES[0], 100, 90.0, 90, 200, -200.0))  # the median of -260 and -200: the higher
+        self.assertEqual((metal["length"], metal["turn"], metal["least"], metal["most"], metal["lift"]),
+                         (120, 0.0, 108, 240, -300.0))
+        self.assertEqual(old["lift"], 0.0)  # the map places none: no floor to copy (the Studio refuses it)
+        self.assertEqual(kinds(Scenery(make_scenery([block([sunk(0, 0.0, 0.0, 0.0)])], ["TypeWarrior/Chene_02"])),
+                               self.DESCS, lambda k: (100.0, 90.0)), [])
+
+    def test_a_bridge_placed_by_hand(self):
+        o = by_hand("B", 5000.0, 0.0, 0.0, 150.0, 100.0, 90.0, -200.0)
+        self.assertEqual((o.x, o.y, o.turn, o.size, o.stretch, o.lift, o.solid), (5000.0, 0.0, 90.0, 1.0, 1.5, -200.0, False))
+        self.assertEqual([round(v) for v in deck(o, 100.0, 90.0)], [4925, 0, 5075, 0])  # its deck: the length asked
+        south = by_hand("B", 0.0, 0.0, 90.0, 200.0, 100.0, 90.0)  # the longest it stretches
+        self.assertEqual([round(v) for v in deck(south, 100.0, 90.0)], [0, -100, 0, 100])
+        sized = by_hand("B", 0.0, 0.0, 45.0, 90.0, 100.0, 0.0)  # a model long on its own x is sized instead
+        self.assertEqual((sized.turn, sized.size, sized.stretch), (45.0, 0.9, 1.0))
+        for bad in (23140.0, 52260.0):  # a model 100 m long: 0.89 and 2.01 times
+            with self.assertRaisesRegex(BridgeError, "^B stretches from 90 to 200 m long"):  # its short name
+                by_hand("TypeWarrior/B", 0.0, 0.0, 0.0, bad, 26000.0, 90.0)
+        with self.assertRaises(BridgeError):
+            by_hand("B", 0.0, 0.0, 0.0, 100.0, 0.0)
 
 
 class LocalMovement(unittest.TestCase):
