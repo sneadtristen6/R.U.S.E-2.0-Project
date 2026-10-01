@@ -144,6 +144,19 @@ requirement, and the engine doesn't check member bytes against anything we chang
 - Property names are French. Examples seen in mods: `ProductionPrice` (list of 5), `ProductionTime`,
   `VitesseLineaire` (speed), `SeuilMort` (death threshold), `SeuilPinned`, `Puissance` (power),
   `PorteeMaximale` (max range), `DetectionBase`, `ShowInMenu`, `ArmorDescriptor`, `GfxDescriptor`, `Nationalite`.
+- **What the game needs of a unit** (all 468 shipped units keep these; `ruse build` checks every unit a mod made or
+  changed, `rusemod/unitcheck.py`, gap audit 2026-10-01):
+  - `DescriptorId` is the unit's id across every kind of unit (`TUniteDescriptor` and its subclasses): one unit per
+    id, never 0. A second unit with the same id, or id 0, is left out of its nation's unit list, and orders for it
+    build the first one (or nothing). Clones get a fresh one (MOD_FORMAT §10.5).
+  - `ProductionPrice` and `ShowInMenu` have exactly 5 items (one per battle date): at a date with no item the game's
+    scripts make the unit free or hide it, and a `ShowInMenu` of 1 or 2 items is read past its end.
+  - Flags (`InitialFlagSet`): the game reads 0–104 and ignores higher numbers. 2 (avion) is on all 63 aircraft and
+    nothing else; 59 (transport_parachutiste) is on 10 aircraft, each with the unit it drops in `UniteTransportee`,
+    and on anything else, or without that unit, the game crashes; 62 and 63 only on trucks (62 on all 18).
+  - Salvos: a mounted weapon's `SalveNumber` is -1 (none) or 0–4, and then its weapon's `Salves[SalveNumber]` is
+    above 0 (a weapon without `Salves` has none). Otherwise the game stops at load with a "Quit game ?" box. 14 of
+    the 551 mounted weapons fire salvo 1; none is shared between two weapons.
 - **Values and tricks from 37 community mods (2026-09-29; the mods' own findings, not checked by us in-game;
   the rebuilt ones are kept in the private repo until their authors agree):**
   - Units (`TUniteAuSolDescriptor`, `TInfanterieDescriptor`, `TAvionDescriptor`, `TTruckDescriptor`): `SeuilMort`
@@ -219,7 +232,9 @@ with them rewritten too (C4), so which one it reads, if any, is unknown. `ruse b
 
 - `Nationalite` is an int32 on unit, infantry, aircraft, building, truck and acknowledgement descriptors.
   Stored values are 1–6; 0 is the default and is not written.
-- The enum: **0 US, 1 GER, 2 UK, 3 FR, 4 ITA, 5 USSR, 6 JAP.**
+- The enum: **0 US, 1 GER, 2 UK, 3 FR, 4 ITA, 5 USSR, 6 JAP.** The game keeps its units in exactly seven
+  per-nation lists, fixed in the game itself, not in its data: a unit with any other `Nationalite` corrupts the game
+  as it loads, so `ruse build` refuses it. An 8th nation can't be added there through data.
 - Several structures have exactly 7 slots: `SubClusterNationaliteList` (every map), flag-icon lists, per-nation
   mesh packs, and the bit field `BitFieldNationaliteIfNotSkirmish` (values 0x3F, 0x403F…; bit 14 unexplained).
 - **Conclusion (medium confidence):** rosters are data-only. Whether an 8th nation can be added through data alone

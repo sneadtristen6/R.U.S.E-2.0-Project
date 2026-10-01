@@ -115,12 +115,18 @@ class FreshIdentity(unittest.TestCase):
 
     def test_clashes_made_later_are_warnings(self):
         r = run(f"export Descriptor_Unit_X is clone {SHERMAN} ( )\n"
-                f"patch ~/Descriptor_Unit_X ( DescriptorId = 187 )\n"
                 f"patch {E}Descriptor_Unit_M3A1_Stuart ( PositionInMenu = 304 )")
         self.assertEqual(sorted(f.message for f in r.warnings), [
-            f"{E}Descriptor_Unit_X has DescriptorId 187, the same as {SHERMAN}",
             f"{E}Descriptor_Unit_X has build-menu slot 304, the same as {E}Descriptor_Unit_M3A1_Stuart "
             f"(they overlap in the menu)"])
+
+    def test_a_unit_s_id_taken_later_is_an_error(self):
+        # the game keeps one unit per DescriptorId (rusemod.unitcheck): no longer a warning, and only once
+        r = run(f"export Descriptor_Unit_X is clone {SHERMAN} ( )\n"
+                f"patch ~/Descriptor_Unit_X ( DescriptorId = 187 )")
+        self.assertEqual(r.warnings, [])
+        self.assertEqual(len(r.errors), 1)
+        self.assertIn(f"{E}Descriptor_Unit_X: DescriptorId 187 is also {SHERMAN}'s", r.errors[0].message)
 
     def test_new_objects_from_scratch_are_left_as_written(self):
         r = Engine(game()).run([(ModInfo("m"), [Op("create", E + "New", cls="TUniteAuSolDescriptor",

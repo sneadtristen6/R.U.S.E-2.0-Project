@@ -226,6 +226,12 @@ class Engine:
         self._index_gen, self._by_class, self._all = -1, {}, []
         from .unitflags import truck_flags  # the truck-only flags units carry before any mod (_truck_flags)
         self._had_truck_flags = {n: f for n, o in self.game.objects.items() if (f := truck_flags(o))}
+        from . import unitcheck  # what's wrong with the units before any mod: not the mods' doing (_unit_rules)
+        self._had_unit = {n: {why for _lvl, _prop, why in unitcheck.problems(o)}
+                          for n, o in self.game.objects.items() if unitcheck.is_unit(o)}
+        self._had_ids = unitcheck.ids(self.game)
+        self._had_salvos = {(top, path, why) for top, path, _named, why in unitcheck.salvo_problems(self.game)}
+        self._done: list = []  # (owner, path, op) of every property operation, in the order they ran
 
     def run(self, mods) -> Result:
         """`mods`: [(ModInfo, [Op])] already in load order (resolve.load_order)."""
@@ -421,6 +427,7 @@ class Engine:
             self._gen += 1  # a part came or went: the object index is rebuilt before the next find
         self.touch[key].append((op, category, op.value))
         self.trail[key].append((op, copy.deepcopy(new)))
+        self._done.append((owner, path, op))
 
     def _locate(self, op: Op, name: str):
         """Walk the property path. Returns (owner name, Obj holding the property, property, list index or None, path
@@ -685,7 +692,7 @@ class Engine:
             if isinstance(v, Ref) and v.target in self.deleted and v.target not in self.game.objects:
                 raise PatchError(f"{op.at()} refers to {v.target}, which {self.deleted[v.target].at()} deleted")
 
-    # --- the end: round numbers once, check references and the truck flags ---
+    # --- the end: round numbers once, check references, the truck flags and what the game needs of units ---
     def _finish(self) -> None:
         for name, obj in self.game.objects.items():
             for v in _walk_obj(obj):
@@ -703,6 +710,50 @@ class Engine:
             for name, message in clashes(self.game, new):
                 self._find("warning", message, self.created[name])
         self._truck_flags(new)
+        self._unit_rules(new)
+
+    def _blame(self, hit) -> Op | None:
+        """The last property operation for which `hit(owner, path)` holds."""
+        for owner, path, op in reversed(self._done):
+            if hit(owner, path):
+                return op
+        return None
+
+    def _unit_rules(self, new: list) -> None:
+        """What the game needs of a unit and its weapons (rusemod.unitcheck), on every unit a mod made or changed and
+        every weapon: an error or warning for each thing the mods made wrong, naming the last operation on the property
+        concerned, else the one that made the unit, else the last one on it. What the game's data already had isn't the
+        mods' doing, nor what a copy has from the unit it copies."""
+        from . import unitcheck as uc
+        touched = set(new) | {owner for owner, _path, _op in self._done if owner in self.game.objects}
+        units = sorted(n for n in touched if uc.is_unit(self.game.objects[n]))
+        found = []  # (unit, property, level, why)
+        for name in units:
+            obj = self.game.objects[name]
+            made = self.created.get(name)
+            # a copy is compared with what it copies, as the game had it: what it inherits isn't the mod's doing
+            had = self._had_unit.get(made.source if made else name, set()) if not made or made.kind == "clone" \
+                else set()
+            found += [(name, prop, level, why) for level, prop, why in uc.problems(obj) if why not in had]
+            if uc.ID not in obj.props and (made.kind == "create" if made else self._had_ids.get(name) is not None):
+                found.append((name, uc.ID, "error", f"it has no {uc.ID}, so the game leaves it out of its nation's "
+                                                    f"list and can't build it; give it a number no other unit has"))
+        now = uc.ids(self.game)
+        moved = [n for n in units if n in self.created or now.get(n) != self._had_ids.get(n)]
+        found += [(name, uc.ID, "error", why) for name, why in uc.id_clashes(self.game, moved).items()]
+        for name, prop, level, why in found:
+            op = self._blame(lambda o, p, n=name, r=prop: o == n and _root(p) == r) or self.created.get(name) \
+                or self._blame(lambda o, p, n=name: o == n)
+            self._find(level, f"{op.at()}: {name}: {why}" if op else f"{name}: {why}", op)
+        for top, path, named, why in uc.salvo_problems(self.game):
+            made = self.created.get(top)
+            if (made.source if made else top, path, why) in self._had_salvos:  # the game's own, or a copy of it
+                continue
+            root = _root(path) if path else None
+            op = self._blame(lambda o, p, t=top, r=root, s=named: (o == t and r in (None, _root(p))) or o in s) \
+                or self.created.get(top)
+            where = f"{top}:{path}" if path else top
+            self._find("error", f"{op.at()}: {where}: {why}" if op else f"{where}: {why}", op)
 
     def _truck_flags(self, new: list) -> None:
         """Flags 62 and 63 on a unit that isn't a truck crash the game (rusemod.unitflags): an error for each, on every
@@ -727,6 +778,11 @@ class Engine:
             had = set() if name in self.created else self._had_truck_flags.get(name, set())
             for why in crashes(self.game.objects[name], had):
                 self._find("error", f"{blame[name].at()}: {name}: {why}", blame[name])
+
+
+def _root(path: str) -> str:
+    """The property a path starts at: `Weapons[0].Ammunition` -> `Weapons`."""
+    return path.split(".", 1)[0].split("[", 1)[0]
 
 
 def _round(v: Num) -> Decimal:
