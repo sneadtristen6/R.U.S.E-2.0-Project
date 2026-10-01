@@ -918,3 +918,15 @@ bridge" looked like. A new bridge's floor is now carried 1.5 times as wide (`flo
 so every place a unit can stand has floor under it with about 1.2 m to spare. The floor isn't drawn, so a wider one
 only means a unit at the deck's edge still stands at the deck's height. On the owner's D-Day test: the floor covers
 the whole span out to 900 either side, flat to 0.01 m, and the movement still reaches only 640.
+
+**A mod's blocks were opening the water beside the map's own bridges (2026-10-01).** The owner's screenshots of an
+infantry squad standing in the river turned out to be at a bridge of the map's own, on a copy built from a mod that
+had only placed some buildings there. Diffing the built movement against the game's: two of the map's 44 local maps
+changed, several of its largest circles were shrunk (one of 67,200 to 8,320, one emptied outright), and 961 places
+beside each of two of its own bridges had been opened to vehicles. The cause is in `apply_blocks`: a building becomes
+a block zone, and a zone shrinks every circle it reaches into - including the circles that own a local map. The game
+decides what is ground inside such a circle from its local map, so shrinking the owner opens everything its local map
+kept closed, the water beside a bridge included. `apply_blocks` now passes `keep_owners=True`, as the bridge code
+already did: owners keep their size and the block goes into their local maps instead (`Graph.block` walks them).
+After it, on the owner's D-Day test: 0 of the map's 21 own bridges have any ground changed beside them (was 2), and
+its local maps change only where a building really stands. `tests/test_nav.py` has the case.

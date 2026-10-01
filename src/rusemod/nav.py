@@ -894,7 +894,12 @@ def apply_blocks(read, pack: str, blocks: list[Block]) -> tuple[dict, list[str]]
         if not zones:
             continue
         g = Graph.read(bufs[k])
-        c = g.block(zones)
+        # never shrink a circle that owns a local map (a town, a bridge of the map's): the game decides what is
+        # ground inside such a circle from its local map, so shrinking it opens everything the local map kept
+        # closed, water beside the map's own bridges included (seen in the game, 2026-10-01: an infantry squad
+        # standing in the river beside a bridge of the map's own, on a map where the mod had only placed buildings).
+        # The block goes into those local maps instead (Graph.block walks them).
+        c = g.block(zones, keep_owners=True)
         notes.append(f"{what}: {len(zones)} block(s); {c['emptied']} circle(s) emptied, {c['shrunk']} shrunk, "
                      f"{c['links']} link(s) and {c['crossings']} crossing(s) taken out; {c['added']} circle(s) and "
                      f"{c['linked']} link(s) added to fill the ground back")

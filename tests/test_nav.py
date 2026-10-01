@@ -99,6 +99,29 @@ class Blocking(unittest.TestCase):
         self.assertEqual((g.circles[0][2], g.parts()), (0.0, [5]))
         self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
 
+    def test_a_block_never_shrinks_a_circle_that_owns_a_local_map(self):
+        # the owner's D-Day test (2026-10-01): a mod that only placed buildings left an infantry squad standing in the
+        # river beside a bridge of the map's own. The blocks had shrunk the owner circles the game decides ground by,
+        # so everything their local maps kept closed opened up. apply_blocks keeps owners whole and blocks in the
+        # local maps instead
+        from rusemod.cover import member
+        import struct
+        head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 32000.0, 32000.0)
+        g = bridged()  # an owner of 8,000 over a river, its local map lining the deck
+        win = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+            b"roads", g.to_bytes(), g.to_bytes(), b"cover")) + b"tail", {})
+        block = nav.Block(x=12000.0, y=2000.0, radius=600.0, units="all")  # a building on the bank inside the owner
+        new, _notes = nav.apply_blocks({member("Blitz"): win}.get, "Blitz", [block])
+        from ruse_mod_engine import sdb
+        after = nav.Graph.read(sdb.split_mapinfo(new[member("Blitz")])[1][2])
+        self.assertEqual(after.circles[0][2], 8000.0)           # the owner is untouched
+        self.assertEqual(len(after.subs), len(g.subs))
+        before_local = [c[2] for c in g.subs[0].circles[:-1]]
+        after_local = [c[2] for c in after.subs[0].circles[:-1]]
+        self.assertNotEqual(after_local[:len(before_local)], before_local)  # the block went into its local map
+        self.assertFalse(after.walkable(12000.0, 2000.0))       # the building's own ground is closed
+        self.assertTrue(after.walkable(14000.0, 2000.0))        # the deck beyond it still isn't
+
     def test_a_circle_emptied_and_one_shrunk(self):
         g = row()
         counts = g.block([(10800.0, 2000.0, 400.0)])  # C's middle is 800 away: C keeps 400 clear, too small
