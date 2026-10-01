@@ -1083,3 +1083,24 @@ objects (buildings, bridges, trees):
 - Already there: a stroke that moves no ground point is named. Wrecks no longer count as bridges (the Dutch-bridge
   fix). Not done: an old bridge's baked strip in `staticmeshes.spkpc` may stay over the water when the bridge is
   replaced (plausible); T9 looks for it in the game.
+
+**The units, scenario and map-info fixes (2026-10-01, three agents' branches, merged).**
+- **Units** (`rusemod/unitcheck.py`; each check reports only what a mod made wrong, nothing on the shipped game):
+  refused: a salvo number the weapon doesn't define (the game quits with a "Quit game?" box), a `DescriptorId` of 0 or
+  used twice (the clone builds as another unit), a `Nationalite` outside 0-6, a `ProductionPrice` or `ShowInMenu`
+  that isn't 5 items, flag 59 on a unit that isn't an aircraft or on one with no `UniteTransportee`; warned: flag 2
+  on a non-aircraft, an aircraft without it, a truck without 62, flags above 104 (ignored by the game). And a unit
+  whose models are only in another nation's pack is refused (a skirmish loads a nation's models only when a player
+  of it is in the match): that refuses the Studio's "another nation's factory" for nearly every unit, until the
+  build sets the game's own force-load for that nation (being built, T13).
+- **Scenario:** spawns are neutral (camp -1) by default, and a player's camp is refused in a skirmish scenario (the
+  game spawns only neutral items there; the Studio's spawn tool defaults to Neutral); a spawn class the game can't
+  find is refused; a moved start takes its opening camera along and stands on the ground (new spawns too, a depot
+  slab gets its 25 trucks); a start where vehicles can't go is refused, one far from a road warned; seats are counted
+  per team from its starting points (shipped maps were refused before); GameType is only changed up to 3v3.
+- **Map info:** water a terrain edit makes is blocked in both movement graphs (and drained ground warned); a cover
+  paint marked "blocked" with no movement block is warned (that layer is the AI's, units still walk there); new road
+  links get the flag bit the game's own have, and the road index never goes deeper than the game walks; the AI's map
+  grid (woods, tree lines, open ground) follows a mod's cover, blocks, bridges and water (`rusemod/aigrid.py`, the
+  rules fitted to the 34 shipped grids; an unchanged map keeps its grid byte for byte).
+- Still being built: new roads in the movement graphs' crossings (units follow them, not only supply trucks).
