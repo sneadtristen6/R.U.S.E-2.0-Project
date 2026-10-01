@@ -193,6 +193,41 @@ class ModRoads(unittest.TestCase):
         new, _notes = apply_roads(read, "Blitz", [far, Road([(50000.0, 0.0), (east[0] + 3000, east[1])])])
         self.assertIn(member("Blitz"), new)  # a later road joins it to the rest: one piece again
 
+    def test_units_follow_the_new_road(self):
+        """A new road gets crossings in both movement graphs, through every circle it enters and leaves by two gates,
+        so units plan along it; never through a block their graph's units are kept out of."""
+        from test_nav import crossings, made
+        from rusemod import nav
+        from rusemod.cover import member
+        from rusemod.roadnet import Road, apply_roads
+        from ruse_mod_engine import sdb
+        row = [(400000.0 + 50000.0 * i, 500000.0, 25600.0) for i in range(5)]  # overlapping by 1,200 along the road
+        g = made(row, [(i, i + 1) for i in range(4)])
+        head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 1000000.0, 1000000.0)
+        net = ring()
+        win = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+            net.to_bytes(), g.to_bytes(), g.to_bytes(), b"cover")) + b"tail", {})
+        read = {member("Blitz"): win}.get
+        east, west = net.points[0], net.points[12]
+        across = Road([(east[0] - 3000, east[1] + 100), (west[0] + 3000, west[1] + 100)])
+        new, notes = apply_roads(read, "Blitz", [across])
+        bufs = sdb.split_mapinfo(new[member("Blitz")])[1]
+        self.assertEqual(bufs[3], b"cover")
+        for k in (1, 2):
+            cross = crossings(nav.Graph.read(bufs[k]))
+            self.assertEqual(sorted(cross), [1, 2, 3])  # the three middle circles; the ends have one gate each
+            self.assertTrue(all(r[7] >= 24 and r[8] >= 24 for rs in cross.values() for r in rs))  # on the new links
+        self.assertIn("vehicles: 3 crossing(s) in 3 circle(s), so units follow the new roads", notes)
+        block = nav.Block(500000.0, 500000.0, 2000.0, "vehicles")  # on the road in the middle circle
+        new, notes = apply_roads(read, "Blitz", [across], [block])
+        bufs = sdb.split_mapinfo(new[member("Blitz")])[1]
+        self.assertEqual(sorted(crossings(nav.Graph.read(bufs[1]))), [1, 2, 3])  # infantry: not kept out
+        self.assertEqual(sorted(crossings(nav.Graph.read(bufs[2]))), [1, 3])
+        short = Road([(east[0] - 3000, east[1] + 100), (east[0] - 9000, east[1] + 100)])  # in the east circle only
+        _new, notes = apply_roads(read, "Blitz", [across, short])
+        self.assertIn("infantry: road 2 has no crossing (it runs through no circle of the movement from one gate to "
+                      "another on open ground): units go across country there, not along it", notes)
+
     def test_the_file(self):
         from rusemod.roadnet import Road, parse_roads, roads_toml
         import tomllib

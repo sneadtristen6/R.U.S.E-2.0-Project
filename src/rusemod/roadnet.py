@@ -251,13 +251,17 @@ def roads_toml(roads: list[Road], header: str = "") -> str:
     return "\n".join(lines)
 
 
-def apply_roads(read, pack: str, roads: list[Road]) -> tuple[dict, list[str]]:
+def apply_roads(read, pack: str, roads: list[Road], blocks=()) -> tuple[dict, list[str]]:
     """({member: new mapinfo.win}, notes) for one map: its road network with `roads` added; `read(member)` gives a
     DataMap_Win.dat file's bytes or None (the build's chain, so earlier edits to the same file stay). The network
-    must come out in one piece, as every shipped one is (RoadNet.parts): a road that joins no other is refused."""
+    must come out in one piece, as every shipped one is (RoadNet.parts): a road that joins no other is refused.
+
+    Units plan along a road only through the movement graphs' crossings (nav.Graph.add_crossings), so each graph
+    (buffers 1 and 2) gets crossings for the new roads through its circles, never through one of `blocks`
+    (nav.Block, the map's blocks and solid buildings) the graph's units are kept out of."""
     from ruse_mod_engine import sdb
     from .cover import PACK, member
-    from .nav import Graph, NavError, replace_buffers
+    from .nav import UNITS, Graph, NavError, replace_buffers
     name = member(pack)
     win = read(name)
     if win is None:
@@ -269,6 +273,7 @@ def apply_roads(read, pack: str, roads: list[Road]) -> tuple[dict, list[str]]:
     except (NavError, struct.error):
         open_at = None
     notes, spans = [], []
+    old_links = len(net.links)
     for n, r in enumerate(roads, start=1):
         first = len(net.points)
         got = net.add_road(r.points, r.join, open_at)
@@ -283,7 +288,33 @@ def apply_roads(read, pack: str, roads: list[Road]) -> tuple[dict, list[str]]:
         raise RoadNetError(f"{pack}: {what} would be cut off from the rest of the map's roads; every road network the "
                            f"game ships is one piece, and supply routes between two pieces fail. Draw each end onto a "
                            f"road, or give the road a larger join")
-    return {name: replace_buffers(win, {0: net.to_bytes()})}, notes
+    new = {0: net.to_bytes()}
+    fresh = set(range(old_links, len(net.links)))
+    for k, what in ((1, "infantry"), (2, "vehicles")):
+        try:
+            g = Graph.read(bufs[k])
+        except (NavError, struct.error):
+            continue  # (no movement graph to follow the roads in)
+        zones = [(b.x, b.y, b.radius) for b in blocks if k in UNITS[b.units]]
+        got = g.add_crossings(net, fresh, zones)
+        if got["added"]:
+            new[k] = g.to_bytes()
+        notes.append(f"{what}: {got['added']} crossing(s) in {got['circles']} circle(s), so units follow the new "
+                     f"roads")
+        for n, links in _links_of(spans, net, old_links):
+            if not links & got["named"]:
+                notes.append(f"{what}: road {n} has no crossing (it runs through no circle of the movement from one "
+                             f"gate to another on open ground): units go across country there, not along it")
+        if got["full"]:
+            notes.append(f"{what}: {got['full']} crossing(s) left out: the movement holds no more than 65,535")
+    return {name: replace_buffers(win, new)}, notes
+
+
+def _links_of(spans, net: RoadNet, old_links: int):
+    """(road number, {its link numbers}) of the new roads (`spans`: (number, its points' range, join)): the links
+    after `old_links` that touch its points."""
+    for n, points, _join in spans:
+        yield n, {i for i in range(old_links, len(net.links)) if net.links[i][0] in points or net.links[i][1] in points}
 
 
 # --- the index ---
