@@ -644,7 +644,12 @@ launcher reads (75 mods, cheats kept apart).
 *After the release* (in order; cheap and certain first, one game start per test batch):
 4. **One test batch** in one modded copy: T12 (roads up close), T13 (another nation's unit), T9 (a road over an old
    bridge). What fails is fixed before anything new.
-5. **The players' suggestions, the cheap ones** (a player's wishlist, 2026-10-01; the owner: "include all in plan"):
+5. **Units from another nation that work** (owner, 2026-10-01: "have a tiger on the USA ... a special scenario where
+   you captured a tiger"). Making the game load that nation's models in every match crashed it in T13 (a German Ju 87
+   copy for the US crashed the game when its gunner was set up: its model wasn't ready for it), so the build refuses
+   these units for now (`build.FORCE_LOAD`). Next: copy the unit's models into the new nation's own skirmish packs, so
+   its matches load them with their own units; test with a plane and a tank (a Tiger for the US).
+6. **The players' suggestions, the cheap ones** (a player's wishlist, 2026-10-01; the owner: "include all in plan"):
    - **An unblock brush:** the reverse of the Block brushes, opening ground the map blocks. Units stand on whatever
      ground is there, so unblocking a river puts them on the riverbed (the Studio says so).
    - **A forest brush:** trees (Place, Area already paints them) and cover in one stroke.
@@ -652,17 +657,17 @@ launcher reads (75 mods, cheats kept apart).
      when a map has no bridge kind) and the **map check's screen** ("Check this map" lists what would go wrong:
      ground cut off, roads or bridges units can't use, road ends not joined, buildings on roads). Both backends exist.
    Then a release.
-6. **A4 Remove scenery** (an Erase brush: trees along new roads; the old-bridge rule could then remove instead of
+7. **A4 Remove scenery** (an Erase brush: trees along new roads; the old-bridge rule could then remove instead of
    sink). Measured 2026-09-30: only 0.2-0.3% of a map's trees (D-Day 11.6 million, Blitz 3.9 million) sit in blocks
    placed once, the only ones `bury_objects` can sink one by one; the rest are in blocks the map places many times.
    So erasing needs a block copied for the erased spot (copy on write, down from the top block) or whole placed
    patches sunk; which one is the first decision of A4. The same work builds the top block's tree again, which also
    reaches new objects in open ground far from the map's scenery (the audit's one open scenery case, LOG.md).
-7. **A city template** (the wishlist): save a group of buildings, roads and cover, and stamp it on a map. Needs A4.
-8. **Road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
+8. **A city template** (the wishlist): save a group of buildings, roads and cover, and stamp it on a map. Needs A4.
+9. **Road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
    tanks"): a forest track (infantry only, out of the supply network) or a road that opens the woods to vehicles
    along it; which is the default is the owner's call.
-9. **A5 Ruse areas, A6 ground painting** (the forest-floor texture for the forest brush), **A7 finer ground**
+10. **A5 Ruse areas, A6 ground painting** (the forest-floor texture for the forest brush), **A7 finer ground**
    (re-meshing): the smallest ground brush is 1% of the map's width (cover and block go four times finer), and below
    one cell of the gameplay ground a brush does nothing, so **smaller brushes** and finer ground up close come
    with A7.
