@@ -117,6 +117,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
         _block_brushes(info)
         info.roads = _read_maps(path, "roads.toml")
         info.players = _read_maps(path, "map.toml")
+        _new_maps(info)
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -129,7 +130,8 @@ def _map_readers() -> dict:
     read, and what its reader raises."""
     from .cover import CoverError, parse_paints
     from .nav import NavError, parse_blocks
-    from .players import PlayersError, parse_map
+    from .newmap import NewMapError
+    from .players import PlayersError
     from .roadnet import RoadNetError, parse_roads
     from .scenario import ScenarioError, parse_moves, parse_spawns, parse_starts
     from .scenery import SceneryEditError, parse_erase, parse_objects
@@ -152,9 +154,21 @@ def _map_readers() -> dict:
                                           + parse_blocks(d.get("open", []), rel, "open")), NavError),
         "roads.toml": (("road",), "a roads file holds [[road]] tables",
                        lambda d, rel: parse_roads(d.get("road", []), rel), RoadNetError),
-        "map.toml": (("players", "entry"), "a map file holds players = N (and entry = the map-list name)",
-                     lambda d, rel: parse_map(d, rel), PlayersError),
+        "map.toml": (("players", "entry", "clone_of", "name"),
+                     "a map file holds players = N (and entry = the map-list name), or a new map's clone_of and name",
+                     _map_toml, (PlayersError, NewMapError)),
     }
+
+
+def _map_toml(data: dict, rel: str) -> list:
+    """A map.toml's rows: a new map (newmap.NewMap) when it says clone_of, and its players (players.Players). On a
+    new map, `entry` picks the shipped map's entry to copy, and players = N applies to the copy."""
+    from .newmap import parse
+    from .players import parse_map
+    folder = rel.replace("\\", "/").split("/")[-2] if "/" in rel.replace("\\", "/") else ""
+    made = parse(data, rel, folder)
+    rest = {k: v for k, v in data.items() if not (made and k == "entry")}
+    return made + parse_map(rest, rel)
 
 
 MAP_FILES = ("terrain.toml", "scenery.toml", "scenario.toml", "cover.toml", "movement.toml", "roads.toml", "map.toml")
@@ -211,6 +225,21 @@ def _erase_areas(info) -> None:
             info.scenery[pack] = rest
         else:
             del info.scenery[pack]
+
+
+def _new_maps(info) -> None:
+    """The new maps of a mod's map.toml files go to `info.new_maps`; their player counts stay in `info.players`."""
+    from .newmap import NewMap
+    for pack, rows in list(info.players.items()):
+        made = [r for r in rows if isinstance(r, NewMap)]
+        if not made:
+            continue
+        info.new_maps[pack] = made
+        rest = [r for r in rows if not isinstance(r, NewMap)]
+        if rest:
+            info.players[pack] = rest
+        else:
+            del info.players[pack]
 
 
 def _cover_brushes(info) -> None:
@@ -357,8 +386,8 @@ def needs_zz_win(mods: list) -> bool:
     """Whether building `mods` [(ModInfo, ops)] needs ZZ_Win.dat: some mod adds texts, or new objects (a new unit
     needs a class in the Python unit list, which lives there), or moves a unit to another nation or model (the
     skirmish mesh packs there say whether its models are loaded for it: unit_models)."""
-    return any(m.texts for m, _ in mods) or any(op.kind in ("create", "clone") or _moves(op)
-                                                for _, ops in mods for op in ops)
+    return any(m.texts or getattr(m, "new_maps", None) for m, _ in mods) or any(op.kind in ("create", "clone") or _moves(op)
+                                                              for _, ops in mods for op in ops)
 
 
 def _spawns(mods: list) -> bool:
