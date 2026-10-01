@@ -1386,6 +1386,18 @@ async function start() {
   $("update-info").addEventListener("click", () => api().update_page().catch(() => {}));
   await setLanguage(state.lang);
   checkUpdate();
+  firstBackup(status.ready).catch(problem);
+}
+
+// The installer's "Keep a clean copy of my game's files" (rusemod.backup.BackupCalls.backup_requested): made on this
+// start, in Settings, where its help says why (behind the first run's game index, while that is built)
+async function firstBackup(show) {
+  let ask;
+  try { ask = await api().backup_requested(); } catch { return; }  // an older back end
+  if (!ask || !ask.make) return;
+  if (show) showView("settings");
+  await loadBackup();
+  makeBackup();
 }
 
 let started = false;

@@ -2,7 +2,8 @@
 // (?fake=notfound shows the "game not found" state, ?fake=empty a launcher with no mods yet, ?fake=first its first
 // run ("Choose your mods"), ?fake=firstoffline the first run with no list to show, ?fake=offline the list's saved
 // copy, ?fake=installfail one mod of several that fails its check; ?fake=backup,
-// ?fake=oldbackup, ?fake=nospace and ?fake=running the clean game backup's states, in Settings). Only English, French
+// ?fake=oldbackup, ?fake=nospace and ?fake=running the clean game backup's states, in Settings; ?fake=firstbackup the
+// installer's "Keep a clean copy" ask, made on the first start). Only English, French
 // and Chinese words are included here; the real launcher has all ten languages. It does nothing in the real window.
 "use strict";
 
@@ -430,6 +431,7 @@
       },
       open_link: async (url) => ({ opened: url }),
       backup_status: async () => backupStatus(),
+      backup_requested: async () => ({ make: mode === "firstbackup" && !backups.some((b) => b.matches) }),  // the installer asked
       backup_make: async (replace) => {
         if (backups.some((b) => b.matches) && !replace) throw new Error("There's already a backup of this build.");
         if (mode === "nospace") {

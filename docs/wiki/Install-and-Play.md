@@ -7,7 +7,11 @@
 1. Download the installer (`.exe`) from the
    [launcher releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher).
 2. Run it. If Windows says "Windows protected your PC", click **More info**, then **Run anyway** (the app is new to
-   Windows' reputation check; its code is public on GitHub).
+   Windows' reputation check; its code is public on GitHub). Beside **Create a desktop shortcut**, leave **Keep a
+   clean copy of my game's files** ticked: the apps never change the game's folder, but other mod managers and hand
+   edits can, and every modded game is built from those files. The copy is made the first time the app starts (a
+   few minutes, about as much disk space as the game, in `RUSE-Backup` on the game's drive); then **Settings > Clean
+   game backup** can check the game's files and put back any that changed.
 3. Start **RUSE Launcher**. It finds the game by itself. If it can't: **Settings > Game folder > Choose folder...** and
    pick the folder that holds `RUSE.exe`.
 
