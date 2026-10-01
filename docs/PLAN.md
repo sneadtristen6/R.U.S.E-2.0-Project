@@ -587,8 +587,8 @@ one is shorter. Rules:
 - **Cheap and certain first.** Work the engine already does (new units, mod sets) ships before work that needs
   reverse engineering. The uncertain part of the terrain editor (the `.kdt` codecs) waits for DomesticNukes'
   published research and our exchange; we crack it ourselves only if that falls through.
-- **Agents: up to four at once** (owner, 2026-09-30, night: "open up to 4 agents"; that evening it was "ask
-  first"). Replies stay short.
+- **Agents: only with the owner's "go agents" for that launch** (2026-10-01, after a night that spent far too many
+  tokens; a hook enforces it). Replies stay short.
 - **No heredocs:** a hook (`~/.claude/hooks/no_heredoc.py`, on since 2026-09-30) refuses them in the shell; scripts
   and commit messages go in files (`git commit -F <file>`). A mistake that repeats gets a guard like this one, not
   another rule.
@@ -599,52 +599,60 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Next session (written 2026-09-30, after midnight): start here.** The owner's priority: **finish the Studio**.
+**Now (written 2026-10-01, morning): start here.** The owner's order (2026-10-01): **the road fix, its test, the
+audit, the release, then the players' suggestions.**
 
-Out: **Studio 0.7.6 and Launcher 0.2.11** (`a605cf3`): the same as 0.7.5 and 0.2.10, which never built because after
-the repo's rename every workflow skipped itself (they now check the repo's number, `d0a03d2`). Players' old
-Launchers get the update (checked). The license is now **GPL-3.0** (decision 8, `d2d1c2e`). Committed, not released:
-the troubleshooter in both apps and the map check's backend (`f14e634`).
-
-Being built (agents; uncommitted until reviewed):
-- the clean-game backup and restore in both apps (built; its review found 5 bugs to fix first: a restore can write
-  outside the game folder through a junction or a damaged file list, two apps making one backup at once, a file
-  changed while it's copied, a leftover temporary file);
-- every unit flag explained in the Studio's flag picker (DomesticNukes' handoff), and a build error for flags 62 and
-  63 on a unit that isn't a truck;
-- the Studio's Bridges kind, roads' water crossings and the map check's screen (next steps 2 and 3);
-- the square cover brush (next step 4).
+Out: **Studio 0.7.6 and Launcher 0.2.11** (`a605cf3`). Committed, not released: the troubleshooter in both apps and
+the map check's backend (`f14e634`); the bridges' floor aprons, T8 passed (`934d414`); the clean-game backup and
+restore in both apps, every unit flag explained with a build error for flags 62 and 63 on a unit that isn't a truck,
+and square cover brushes (`28bee64`); the new README (`a1880d5`).
 
 *Testing plan* (steps and commands in [TESTS.md](TESTS.md); one game start each):
 
 | Test | Who | Decides | State |
 |---|---|---|---|
-| **T8 Bridges:** units (a tank, then infantry) and a supply route cross the new D-Day bridges | owner, `D:\RUSE-Instances\bridges` | bridges done, or what to fix | **passed 2026-10-01, 04:27**: tanks, infantry and a supply truck cross on the decks, the men at the deck's height (the floor's aprons, `934d414`); open: new roads' close-up texture |
+| **T8 Bridges:** units (a tank, then infantry) and a supply route cross the new D-Day bridges | owner, `D:\RUSE-Instances\bridges` | bridges done, or what to fix | **passed 2026-10-01, 04:27**: tanks, infantry and a supply truck cross on the decks, the men at the deck's height (the floor's aprons, `934d414`) |
+| **T12 New roads up close:** a new road's texture still shows with the camera close to the ground | owner | the road fix (step 1) | after step 1 |
 | **T9 A road over an old bridge:** the old one gone, units cross on the new one | owner | the replace rule | after T8 (the new deck goes into the old bridge's local map; the old floor and its aprons go) |
 | **T10 Read-only game folder:** Test in game after updating | the player who reported it | the fix | waiting for him |
 | **T11 Launcher 0.2.11:** the update is offered, Play works | owner | — | — |
 
 *Next steps* (in order):
-1. **Bridges: the floor's aprons (built 2026-10-01; T8 decides).** Where a unit is comes from the movement graph, how
-   high it stands from the floor under it, and nothing ties the two; an infantry squad is five men on an arc 2,828
-   wide, each on the floor under his own feet. The game's metal bridges have aprons beside the deck 12,000 to 17,000
-   wide (its infantry "float" there); ours had the deck's band alone, so the men beside it stood on the riverbed. A
-   new bridge's floor now reaches 3,200 either side over water (`floors.apron`); its movement stays a chain of
-   circles 640 wide in the main graph (no owner circle, no local map: tried, and it can't move a man).
-   [LESSONS.md](LESSONS.md) has why this took six rounds.
-   **Then, the owner's ask (2026-10-01): the game's rules, checked by the build.** Go through what the game does
-   with every file the build writes, list what our program doesn't account for yet (known: the AI's tactical
-   grid in `mapinfo.win` isn't redone when movement changes; a replaced bridge keeps its old road crossings; what a
-   destroyed bridge does to its floor), and make each rule a check in the build with a test, so a build that would
-   break in the game is refused before it's written.
-2. **Studio: Bridges in the dock** (the map's own bridge kinds, a Length slider), the road tool drawing its water
-   crossings in gold, and a note when a map has no bridge kind.
-3. **The map check in the Studio:** "Check this map" builds the mod's changes to the map and lists what would go
-   wrong: ground cut off, roads or bridges units can't use, road ends not joined, buildings on roads.
-4. **A square cover brush** (owner, 2026-09-30): cover files and strokes take `square = true` (done, MOD_FORMAT
-   §8); the cover tools get round or square.
-5. **Release** Studio 0.7.7 and Launcher 0.2.12: the troubleshooter, the clean-game backup, the flags and the above.
-6. Then: **road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
+1. **New roads up close.** A new road's texture shows from afar but not up close (T8). The scenery blocks the build
+   makes aren't marked as holding road pieces, the way the map's own road blocks are, so their pieces are skipped
+   when the game draws roads up close. The build marks new blocks and the path down to them, and gives each road
+   piece what the map's own pieces have. Test T12.
+2. **The audit: the game's rules, checked by the build** (the owner's ask, 2026-10-01). Go through what the game does
+   with every file the build writes, five areas one at a time: map info and ground are done; scenery and two more
+   are left. Found so far, to check and fix before the release:
+   - a bridge deck is opened to units even when it gets no floor, so they would walk on the riverbed under it;
+   - the Dutch bridges aren't recognised, so 4 maps can't get bridges;
+   - the water texture lands in the wrong tiles on 11 of 32 maps, and its writer assumes a square map;
+   - a block inside a town leaves road links running through it, so units can drive through placed buildings;
+   - emptied movement circles stay in the movement index;
+   - new roads aren't named by any crossing, so routes may not follow them, and the road network can come out in
+     two pieces;
+   - water and height edits don't update movement, and the AI's tactical grid isn't redone;
+   - terrain strokes don't update bridge floors, and a brush does nothing where the gameplay ground is coarse
+     without saying so.
+   Each rule becomes a check in the build with a test, so a build that would break in the game is refused before
+   it's written.
+3. **Release** Studio 0.7.7 and Launcher 0.2.12: the troubleshooter, the clean-game backup, the flags, square
+   brushes, the road fix and the audit's fixes. Run by the owner before tagging.
+4. **The players' suggestions** (a player's wishlist after using the Studio, 2026-10-01; the owner: "include all in
+   plan"):
+   - **Smaller brushes.** The smallest ground brush is 1% of the map's width (cover and block go four times finer).
+     Below one cell of the gameplay ground a brush does nothing, so finer detail there needs A7 (re-meshing).
+   - **A forest brush:** trees (Place, Area already paints them) and cover in one stroke. The forest-floor texture
+     comes with A6 (ground painting).
+   - **An unblock brush:** the reverse of the Block brushes, opening ground the map blocks. Units stand on whatever
+     ground is there, so unblocking a river puts them on the riverbed.
+   - **A city template:** save a group of buildings, roads and cover, and stamp it on a map. Needs A4 (Remove
+     scenery) first.
+   Also waiting: the Studio's **Bridges dock** (the map's own bridge kinds, a Length slider, roads' water crossings
+   in gold, a note when a map has no bridge kind) and the **map check's screen** ("Check this map" lists what would
+   go wrong: ground cut off, roads or bridges units can't use, road ends not joined, buildings on roads).
+5. Then: **road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
    tanks"): a forest track (infantry only, out of the supply network) or a road that opens the woods to vehicles
    along it; which is the default is the owner's call. **A4 Remove scenery** (an Erase brush: trees along new roads;
    the old-bridge rule could then remove instead of sink). Measured 2026-09-30: only 0.2-0.3% of a map's trees
