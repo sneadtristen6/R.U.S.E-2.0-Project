@@ -81,6 +81,21 @@ class Crossings(unittest.TestCase):
         self.assertEqual(bridge_type(names[:2] + names[3:], {1: 1, 2: 20}, descs), names[3])  # else the most used
         self.assertIsNone(bridge_type(names[:1], {0: 5}, descs))
 
+    def test_what_counts_as_a_bridge(self):
+        from rusemod.scenery import is_bridge
+        self.assertTrue(is_bridge("COC/Normandie/Ponts", "TypeWarrior/Pont_Metallique_02"))
+        self.assertTrue(is_bridge("COC/Tunisie/DecorsKasserine/Ponts", "TypeWarrior/COC_PontDesert_A"))
+        # Holland files its bridges with its town's buildings (on 4 maps, with floors): by their name
+        self.assertTrue(is_bridge("Hollande/Batiments_ville", "TypeWarrior/Pont_Hollande_02_Bois_TangeantFloor"))
+        self.assertFalse(is_bridge("Hollande/Batiments_ville", "TypeWarrior/MaisonHollande_01"))
+        self.assertFalse(is_bridge("COC/Normandie/Ponts", "TypeWarrior/Bridge_Dest"))  # wrecks: no deck, no floor
+        self.assertFalse(is_bridge("Allemagne/Ponts", "TypeWarrior/Pont_Allemagne_03_Detruit"))
+        self.assertFalse(is_bridge("Props", "TypeWarrior/ponton_01"))  # jetties
+        self.assertFalse(is_bridge("LB/SnapBox", "Snap Box Pont"))
+        dutch = ["TypeWarrior/Pont_Hollande_01_Arnhem", "TypeWarrior/Pont_Hollande_03_Petit_TangeantFloor"]
+        self.assertEqual(bridge_type(dutch, {0: 1, 1: 4}, {n: desc("Hollande/Batiments_ville") for n in dutch}),
+                         dutch[1])
+
     def test_one_bridge_stretched_bank_to_bank(self):
         # every shipped bridge is one piece resting on both banks: the game sets it on the ground under its ends, so
         # a piece with an end over the water tips into the river (seen in the game, 2026-09-30)

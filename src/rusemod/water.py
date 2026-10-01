@@ -7,8 +7,10 @@ checks them rule by rule):
   meshes    a vertex's 4th value w is the water surface over it; list 1 = the water triangles (Tms._water_lists);
             the far mesh's water sits about 150 world units below the close-up mesh's (each mesh's base level, the w
             most vertices carry, says by how much)
-  textures  one water cell = 27,306.67 world units, one 16 x 16 tile per cell; rows run north to south
-    riverindirectionsurface  per cell (B, G, R, A): (G, R) = the cell's tile (G * 32 + R); B = 255 when the cell's
+  textures  one water cell = 27,306.67 world units, one 16 x 16 tile per cell; rows run north to south; the maps
+            aren't all square (D-Day: 144 x 96 cells)
+    riverindirectionsurface  per cell (B, G, R, A): (G, R) = the cell's tile, row G and column R of the waterinputs
+                             atlas (16, 32 or 64 tiles across, by map: all 32 maps checked); B = 255 when the cell's
                              water is NOT at the map's base level (rivers, lakes); A = 255 only on all-water cells at
                              the base level that use the shared all-sea tile; a dry cell uses the shared dry tile
     waterinputs              R = the water DEPTH: 255 * (w - z) / MaxDepthForSimulationDepthMap, capped at 255 (the
@@ -119,9 +121,10 @@ def _repack(t: Tgv, px: bytearray) -> bytes:
     return make_tgv(t.width, t.height, t.format, [zipo_pack(bytes(px))])
 
 
-def _water_triangles(tms: Tms, cases: int) -> dict:
-    """Every water triangle of the mesh, bucketed per water cell: (corners in world x, y; depth w - z and water
-    level w per corner in world units)."""
+def _water_triangles(tms: Tms, cases: tuple[int, int]) -> dict:
+    """Every water triangle of the mesh, bucketed per water cell (`cases`: the map's cells across and down):
+    (corners in world x, y; depth w - z and water level w per corner in world units)."""
+    across, down = cases
     step = (tms.bounds[5] - tms.bounds[2]) / 32767
     out: dict[tuple[int, int], list] = {}
     for c in tms.cells:
@@ -135,8 +138,8 @@ def _water_triangles(tms: Tms, cases: int) -> dict:
             dep = [(p[3] - p[2]) * step for p in v]
             lvl = [tms.to_world(2, p[3]) for p in v]
             xs, ys = [q[0] for q in xy], [q[1] for q in xy]
-            for cx in range(max(int(min(xs) // CASE), 0), min(int(max(xs) // CASE), cases - 1) + 1):
-                for cy in range(max(int(min(ys) // CASE), 0), min(int(max(ys) // CASE), cases - 1) + 1):
+            for cx in range(max(int(min(xs) // CASE), 0), min(int(max(xs) // CASE), across - 1) + 1):
+                for cy in range(max(int(min(ys) // CASE), 0), min(int(max(ys) // CASE), down - 1) + 1):
                     out.setdefault((cx, cy), []).append((xy, dep, lvl))
     return out
 
@@ -219,21 +222,29 @@ def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, floa
     if any(v is None for v in raws.values()):
         return {}, [f"{name} has no water textures; only the meshes' water was changed"]
     (ti, ind), (tw, inp), (tf, flow) = (_pixels(raws[k]) for k in ("indirection", "inputs", "flow"))
-    cases = round((after.bounds[3] - after.bounds[0]) / CASE)
-    if cases > ti.width or cases > ti.height:
+    across = round((after.bounds[3] - after.bounds[0]) / CASE)
+    down = round((after.bounds[4] - after.bounds[1]) / CASE)
+    cases = (across, down)
+    if across > ti.width or down > ti.height:
         return {}, [f"{name}: its water textures cover fewer cells than the map has; they were left as they are"]
-    cols = tw.width // TILE
+    cols = tw.width // TILE  # a tile t is row t // cols, column t % cols of the atlas: (G, R) in the indirection
     ntiles = cols * (tw.height // TILE)
 
     def ipx(x, y):
         o = (y * ti.width + x) * 4
         return ind[o], ind[o + 1], ind[o + 2], ind[o + 3]
 
+    def tile_of(g, r):
+        return g * cols + r
+
+    def gr(t):
+        return t // cols, t % cols
+
     users: dict[int, int] = {}
-    for cy in range(cases):
-        for cx in range(cases):
+    for cy in range(down):
+        for cx in range(across):
             _b, g, r, _a = ipx(cx, cy)
-            users[g * 32 + r] = users.get(g * 32 + r, 0) + 1
+            users[tile_of(g, r)] = users.get(tile_of(g, r), 0) + 1
 
     def texel(tex, width, t, x, y):
         return ((t // cols) * TILE + y) * width * 4 + ((t % cols) * TILE + x) * 4
@@ -249,7 +260,7 @@ def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, floa
     for x, y, rad in areas:
         for cx in range(int((x - rad - CASE) // CASE), int((x + rad + CASE) // CASE) + 1):
             for cy in range(int((y - rad - CASE) // CASE), int((y + rad + CASE) // CASE) + 1):
-                if 0 <= cx < cases and 0 <= cy < cases:
+                if 0 <= cx < across and 0 <= cy < down:
                     cells.add((cx, cy))
     new_tris, old_tris = _water_triangles(after, cases), _water_triangles(before, cases)
     far_new = _water_triangles(far_after, cases) if far_after is not None else None
@@ -268,13 +279,13 @@ def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, floa
         if not any(changed):
             continue
         b, g, r, a = ipx(cx, cy)
-        t = g * 32 + r
+        t = tile_of(g, r)
         o = (cy * ti.width + cx) * 4
         if not any(share):
             if dry is not None and t != dry:          # dry now: the shared dry tile, no flags
                 users[t] -= 1
                 users[dry] = users.get(dry, 0) + 1
-                ind[o:o + 4] = bytes((0, dry // 32, dry % 32, 0))
+                ind[o:o + 4] = bytes((0, *gr(dry), 0))
                 stats["dried"] += 1
                 stats["updated"] += 1
             continue
@@ -305,7 +316,7 @@ def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, floa
         for i in range(TILE * TILE):
             if changed[i]:
                 inp[texel(inp, tw.width, t, i % TILE, i // TILE) + 2] = red[i]
-        ind[o:o + 4] = bytes((255 if other else 0, t // 32, t % 32, 0))
+        ind[o:o + 4] = bytes((255 if other else 0, *gr(t), 0))
         stats["updated"] += 1
     if not stats["updated"]:
         return {}, []

@@ -4,7 +4,8 @@ import unittest
 
 from rusemod.brush import BrushError, parse_strokes
 from rusemod.tms import Tms
-from rusemod.water import CASE, TILE, _both, _cell, apply_water
+from rusemod.tmst import make_tgv, zipo_pack
+from rusemod.water import CASE, TEXTURES, TILE, _both, _cell, _pixels, apply_water, update_textures
 
 from test_tms import make_tms
 
@@ -132,6 +133,42 @@ class TextureDepth(unittest.TestCase):
         self.assertTrue(all(r == 255 for r in red))     # capped
         red, share, _ = _cell([], 0, 0, 1000.0)
         self.assertEqual((max(red), max(share)), (0, 0.0))
+
+
+def texture(width, height, px):
+    return make_tgv(width, height, "A8R8G8B8_LIN", [zipo_pack(bytes(px))])
+
+
+class TextureTiles(unittest.TestCase):
+    """A map 2 water cells across and 3 down (the maps aren't all square: D-Day is 144 x 96), whose atlas is 16
+    tiles across (4 maps have 16, 7 have 64, the rest 32): a lake in its last row gets a tile of its own, and the
+    cell's (G, R) say that tile's row and column of the atlas."""
+
+    def test_a_new_lake_in_a_tall_map_with_a_narrow_atlas(self):
+        t = Tms(make_tms(gw=2, gh=3, n=5, zf=lambda x, y: 1000))
+        t.bounds = [0.0, 0.0, -100.0, 2 * CASE, 3 * CASE, 3176.7]  # one mesh cell per water cell
+        before = Tms(t.to_bytes())
+        after = Tms(t.to_bytes())
+        after.set_water(5, {i: 1200 for i in range(len(after.cells[5].positions()))})  # cell (1, 2): 20 deep
+        after = Tms(after.to_bytes())
+        ind = bytearray(4 * 4 * 4)                     # every cell on tile 0, the dry one
+        cols, rows = 16, 2
+        inp = bytearray(cols * TILE * rows * TILE * 4)
+        for t_used in range(1, 18):                    # tiles 1-17 hold something: the first free one is 18
+            row, col = divmod(t_used, cols)
+            inp[(row * TILE * cols * TILE + col * TILE) * 4] = 1
+        flow = bytearray(len(inp))
+        raws = {TEXTURES["indirection"]: texture(4, 4, ind), TEXTURES["inputs"]: texture(cols * TILE, rows * TILE, inp),
+                TEXTURES["flow"]: texture(cols * TILE, rows * TILE, flow)}
+        out, notes = update_textures(raws.get, before, after, [(1.5 * CASE, 2.5 * CASE, 100.0)], 1000.0, "test")
+        self.assertIn("1 cell(s) updated, 1 new tile(s)", notes[0])
+        _t, new_ind = _pixels(out[TEXTURES["indirection"]])
+        o = (2 * 4 + 1) * 4
+        self.assertEqual(tuple(new_ind[o:o + 4]), (255, 1, 2, 0))  # tile 18: row 1, column 2 (not 0, 18)
+        _t, new_inp = _pixels(out[TEXTURES["inputs"]])
+        corner = (1 * TILE * cols * TILE + 2 * TILE) * 4  # that tile's first texel: the cell's column and row
+        self.assertEqual((new_inp[corner], new_inp[corner + 3]), (1, 2))
+        self.assertEqual(new_inp[corner + 2], 5)          # its depth: 255 * 20 / 1000
 
 
 if __name__ == "__main__":

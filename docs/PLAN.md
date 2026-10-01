@@ -624,10 +624,8 @@ and square cover brushes (`28bee64`); the new README (`a1880d5`).
    down to them, and gives each road piece what the map's own pieces have (LOG.md). Test T12.
 2. **The audit: the game's rules, checked by the build** (the owner's ask, 2026-10-01). Go through what the game does
    with every file the build writes, five areas one at a time: map info and ground are done; scenery and two more
-   are left. Found so far, to check and fix before the release:
-   - a bridge deck is opened to units even when it gets no floor, so they would walk on the riverbed under it;
-   - the Dutch bridges aren't recognised, so 4 maps can't get bridges;
-   - the water texture lands in the wrong tiles on 11 of 32 maps, and its writer assumes a square map;
+   are left. Found so far, to check and fix before the release (**fixed 2026-10-01**: a deck with no floor is
+   refused, the Dutch bridges are recognised, the water textures' tiles and non-square maps; LOG.md):
    - a block inside a town leaves road links running through it, so units can drive through placed buildings;
    - emptied movement circles stay in the movement index;
    - new roads aren't named by any crossing, so routes may not follow them, and the road network can come out in

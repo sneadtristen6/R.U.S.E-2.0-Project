@@ -413,7 +413,7 @@ def check_map(game: Path, mod_folder: Path, pack: str, say=None) -> list[dict]:
     from .cover import PACK, member
     from .edat import Edat
     from .rndf import RndfError
-    from .scenery import MEMBER, Scenery, descriptors, is_bridge
+    from .scenery import MEMBER, Scenery, descriptors
     from .terrain import pack_file
     from .tms import Tms
     game = Path(game)
@@ -456,7 +456,7 @@ def check_map(game: Path, mod_folder: Path, pack: str, say=None) -> list[dict]:
             descs = descriptors(arc)
     lines = [r.points for r in roads]
     hand = []
-    by_hand = [o for o in placed if o.type in descs and is_bridge(descs[o.type].category)]
+    by_hand = [o for o in placed if o.type in descs and descs[o.type].bridge]
     if by_hand:
         lengths: dict = {}
 

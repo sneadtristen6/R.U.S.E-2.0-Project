@@ -146,12 +146,12 @@ def crossings(water: Water, line, sample: float = SAMPLE, bank: float = BANK, le
 
 
 def bridge_type(names: list[str], counts: dict[int, int], descs: dict) -> str | None:
-    """The map's own bridge kind: a scenery type it uses whose editor category is a bridge one (…/Ponts), the ones
-    with a floor (…_TangeantFloor, what the shipped maps place) first, then the most used."""
+    """The map's own bridge kind: a scenery type it uses that is a bridge (scenery.is_bridge), the ones with a floor
+    (…_TangeantFloor, what the shipped maps place) first, then the most used."""
     found = []
     for i, name in enumerate(names):
         d = descs.get(name)
-        if d is None or not is_bridge(d.category):
+        if d is None or not is_bridge(d.category, name):
             continue
         found.append((0 if name.lower().endswith("_tangeantfloor") else 1, -counts.get(i, 0), name))
     return min(found)[2] if found else None
@@ -254,7 +254,7 @@ def placed_spans(objects, descs: dict, length_of) -> list[tuple]:
     out = []
     for o in objects:
         d = descs.get(o.type)
-        if d is None or not is_bridge(d.category):
+        if d is None or not is_bridge(d.category, o.type):
             continue
         out.append(deck(o, *length_of(o.type)))
     return out
@@ -315,7 +315,7 @@ def shipped_bridges(sc, descs: dict, length_of) -> list[Shipped]:
     for sym, m in sc.walk():
         name = sc.names[sym]
         d = descs.get(name)
-        if d is None or not is_bridge(d.category):
+        if d is None or not is_bridge(d.category, name):
             continue
         length, extra = length_of(name)
         col = (m[1], m[5]) if extra % 180 == 90 else (m[0], m[4])

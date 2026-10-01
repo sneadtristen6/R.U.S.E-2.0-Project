@@ -61,6 +61,16 @@ class FloorError(ValueError):
     pass
 
 
+class NoFloor(FloorError):
+    """New bridges with no floor to copy: units would walk on the riverbed under them, so the build refuses them.
+    `missing`: their places in floors_for's `new`."""
+
+    def __init__(self, missing: list[int]):
+        self.missing = missing
+        super().__init__(f"{len(missing)} new bridge(s) have no floor to copy (no shipped bridge of their kind on "
+                         f"this map has one)")
+
+
 @dataclass
 class Deck:
     """A bridge's deck on the map: its middle, the unit vector along it, half its length."""
@@ -350,11 +360,12 @@ def floors_for(k: K.Kdt, height_at, new: list, gone: list[Deck], water=None) -> 
     """The objects-only file with a floor for each new bridge and none for the sunk ones. `new`: [(the new deck,
     [the decks of the shipped bridges of its kind on this map])]; `height_at(x, y)`: the ground (None off the mesh);
     `gone`: decks whose floors go, their aprons with them; `water(x, y)`: where the map's water is, for the new
-    floors' aprons (without it they get the band alone). Returns (the file, notes)."""
+    floors' aprons (without it they get the band alone). Returns (the file, notes). Raises NoFloor when a new deck
+    gets no floor: the build opens movement along every new deck, and units there would stand on the riverbed."""
     shipped = triangles(k)
     tris = [t for t in shipped if not any(on_deck(t, d) or beside_deck(t, d) for d in gone)] if gone else list(shipped)
     removed = len(shipped) - len(tris)
-    notes, added, reaches = [], 0, []
+    notes, added, reaches, missing = [], 0, [], []
 
     def ground(deck):
         (x0, y0), (x1, y1) = deck.ends()
@@ -364,7 +375,7 @@ def floors_for(k: K.Kdt, height_at, new: list, gone: list[Deck], water=None) -> 
     def tilt(deck):
         g = ground(deck)
         return abs(g[1] - g[0]) if g else math.inf
-    for deck, sources in new:
+    for i, (deck, sources) in enumerate(new):
         floor, src, src_g = [], None, None
         for s in sorted(sources, key=tilt):  # the flattest shipped bridge of the kind gives the truest floor
             f, g = [t for t in shipped if on_deck(t, s)], ground(s)
@@ -373,8 +384,7 @@ def floors_for(k: K.Kdt, height_at, new: list, gone: list[Deck], water=None) -> 
                 break
         dst_g = ground(deck)
         if not floor or dst_g is None:
-            notes.append("a new bridge has no floor to copy (no shipped bridge of its kind has one on this map): "
-                         "units won't stand on it")
+            missing.append(i)
             continue
         band = carry(floor, src, src_g, deck, dst_g)
         tris += band
@@ -383,6 +393,8 @@ def floors_for(k: K.Kdt, height_at, new: list, gone: list[Deck], water=None) -> 
             beside = apron(band, deck, dst_g, water, height_at)
             tris += beside
             reaches.append(max((abs(deck.local(p[0], p[1])[1]) for t in beside for p in t), default=0.0))
+    if missing:
+        raise NoFloor(missing)
     if not added and not removed:
         return b"", notes
     if not tris:  # the file can't be empty: the old floor stays (its ground over the water is closed to units)

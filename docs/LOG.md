@@ -1019,3 +1019,19 @@ of their own, each on the far-listed reference whose leaf box in the top block's
 fewest such references; D-Day: 6), with the mark on every node down to it; no piece is listed for far view; and each
 piece's first trailing word is its block's count, as on every shipped piece. Rebuilt T8 copy: 480 of 480 new pieces
 reached, 431 of 431 of the map's own, every piece's middle inside its carrier's box.
+
+**The audit's first fixes (2026-10-01).** From the ground area's findings (PLAN §10 step 2), each checked on the
+shipped files first:
+- **A bridge with no floor is refused.** Movement opens along every new deck, so a deck the build can't give a floor
+  (a kind with no floored bridge on the map, or no objects-only ground) put units on the riverbed, with only a note.
+  Now it's a build error naming the bridge and the map's own kind to use instead (`floors.NoFloor`).
+- **Holland's bridges are bridges.** The game files `Pont_Hollande_*` under Holland's town buildings, not `…/Ponts`, so
+  on M05_Hollande, CompassRose, DiplomatieTriangulaire and Robert the build found no bridge kind (no new bridges, and
+  a hand-placed one blocked the river like a house). A `Pont_` name counts now; a wreck (`Bridge_Dest`, `…_Detruit`:
+  no deck, no floor) and the jetties (`ponton…`) don't. Checked: those 4 maps now get their own floored kind, and
+  their shipped bridges are found with floors on their decks.
+- **The water textures on 11 maps.** A cell's (G, R) is its tile's row and column in the atlas, which is 16 tiles
+  across on 4 maps and 64 on 7 (32 on the rest); the writer read and wrote them as `G * 32 + R`, so near water a
+  brush could repaint other cells' tiles. And it took the map's cells down from its cells across: on maps that
+  aren't square (D-Day is 144 x 96) it refused, or on M05_Hollande never looked at the northern half. Both fixed,
+  with a test on a map taller than wide and a 16-tile atlas.

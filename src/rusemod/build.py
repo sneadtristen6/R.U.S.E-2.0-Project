@@ -646,7 +646,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         placed = scenery_edits(result.order, mods)
         road_edits = scenario_edits(result.order, mods, "roads")
         from .bridges import BridgeError, model_length, placed_spans, plan
-        from .scenery import MEMBER as SCENERY, Scenery, SceneryError, descriptors, is_bridge
+        from .scenery import MEMBER as SCENERY, Scenery, SceneryError, descriptors
         descs, lengths = None, {}
 
         def length_of(kind):
@@ -659,7 +659,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             wanted = [r.points for r in map_roads if r.bridges]
             if descs is None and (wanted or objects_here):
                 descs = descriptors(arc)
-            by_hand = [o for o in objects_here if o.type in descs and is_bridge(descs[o.type].category)] if descs else []
+            by_hand = [o for o in objects_here if o.type in descs and descs[o.type].bridge] if descs else []
             map_path = find_pack(game, pack_file(name)) if wanted or by_hand else None
             if map_path is None:
                 continue  # (a missing map is said with the road network and the scenery below)
@@ -733,8 +733,26 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                             map_packs.append((map_path, map_arc, done))
                         result.terrain_changed[map_path.name] = done
                     notes += floor_notes
+                except floors.NoFloor as exc:  # movement opens along every deck: refused, never the riverbed
+                    from .bridges import bridge_type
+                    every = objects + by_hand
+                    what = ", ".join(f"the {every[i].type.split('/')[-1]} at ({every[i].x:.0f}, {every[i].y:.0f})"
+                                     for i in exc.missing)
+                    try:
+                        sc_own = Scenery(read_map(SCENERY))
+                        own = bridge_type(sc_own.names, sc_own.types(), descs)
+                    except (SceneryError, ValueError, KeyError, TypeError, struct.error, zlib.error):
+                        own = None
+                    result.findings.append(Finding("error", (
+                        f"{', '.join(ids)}: {name}: {what} would have no floor (no bridge of its kind on this map has "
+                        f"one to copy), so units would walk on the riverbed under it: use the map's own bridge kind"
+                        + (f" ({own})" if own else "") + " or take it out")))
+                    continue
                 except (floors.FloorError, SceneryError, ValueError, KeyError, struct.error, zlib.error) as exc:
-                    notes.append(f"no floors for the new bridges ({exc}): units won't stand on them")
+                    result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the new bridges' floors can't "
+                                                            f"be made ({exc}), so units would walk on the riverbed "
+                                                            f"under them"))
+                    continue
             if objects:
                 bridge_objects[name] = (objects, road_ids)
             if spans:

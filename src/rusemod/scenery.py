@@ -282,13 +282,21 @@ class Descriptor:
 
     @property
     def bridge(self) -> bool:
-        return is_bridge(self.category)
+        return is_bridge(self.category, self.name)
 
 
-def is_bridge(category: str | None) -> bool:
-    """A bridge kind: the game editor files them under …/Ponts (Normandie, Italie, Allemagne, Ardennes, Tunisie).
-    Placed by a mod, a bridge opens the ground along its deck to units instead of blocking it (rusemod.bridges)."""
-    return (category or "").lower().rstrip("/").split("/")[-1] == "ponts"
+RUINS = ("_detruit", "_dest")  # a bridge's wreck (Bridge_Dest, Pont_Allemagne_03_Detruit): no deck, no floor
+
+
+def is_bridge(category: str | None, name: str = "") -> bool:
+    """A bridge kind units can cross. The game editor files most under …/Ponts (Normandie, Italie, Allemagne,
+    Ardennes, Tunisie) but Holland's (Pont_Hollande_*, on 4 maps, with floors) under its town buildings, so a `Pont_`
+    name counts too; a wreck doesn't, nor do the jetties (Ponton…). Placed by a mod, a bridge opens the ground along
+    its deck to units instead of blocking it (rusemod.bridges)."""
+    last = name.rsplit("/", 1)[-1].lower()
+    if last.endswith(RUINS):
+        return False
+    return (category or "").lower().rstrip("/").split("/")[-1] == "ponts" or last.startswith("pont_")
 
 
 def group_of(category: str, cls: str) -> str:

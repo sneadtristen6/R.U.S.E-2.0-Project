@@ -6,7 +6,7 @@ import unittest
 
 from test_kdt import make_valid_kdt
 from rusemod import floors, nav
-from rusemod.floors import WIDEN, Deck, build_tree, carry, floors_for, found_at, rebuild, triangles
+from rusemod.floors import WIDEN, Deck, NoFloor, build_tree, carry, floors_for, found_at, rebuild, triangles
 from rusemod.kdt import Kdt
 
 
@@ -144,14 +144,19 @@ class ForABuild(unittest.TestCase):
         data, notes = floors_for(Kdt(two), lambda x, y: FLAT, [], [SHIPPED])
         self.assertEqual(notes, ["floors: 0 bridge(s) given one, 8 triangle(s) of sunk bridges taken out"])
         self.assertEqual(len(triangles(Kdt(data))), 8)
-        elsewhere = Deck.of(0.0, 400000.0, 5000.0, 400000.0)
-        data, notes = floors_for(Kdt(base_file()), lambda x, y: FLAT, [(Deck.of(300000.0, 0.0, 310000.0, 0.0),
-                                                                         [elsewhere])], [])
-        self.assertEqual(data, b"")
-        self.assertIn("no floor to copy", notes[0])
-        data, notes = floors_for(Kdt(base_file()), lambda x, y: None, [(Deck.of(300000.0, 0.0, 310000.0, 0.0),
-                                                                          [SHIPPED])], [])
-        self.assertIn("no floor to copy", notes[0])  # off the ground mesh: no banks to sit on
+    def test_a_new_bridge_with_no_floor_to_copy_is_refused(self):
+        """Movement opens along every new deck, so a deck with no floor would put units on the riverbed: refused,
+        naming which of the new bridges it is."""
+        elsewhere = Deck.of(0.0, 400000.0, 5000.0, 400000.0)  # a shipped bridge of the kind, but with no floor
+        new = Deck.of(300000.0, 0.0, 310000.0, 0.0)
+        fine = Deck.of(200000.0, 150000.0, 212000.0, 150000.0)  # its kind's shipped bridge has a floor to copy
+        with self.assertRaises(NoFloor) as got:
+            floors_for(Kdt(base_file()), lambda x, y: FLAT, [(fine, [SHIPPED]), (new, [elsewhere])], [])
+        self.assertEqual(got.exception.missing, [1])
+        self.assertIn("no floor to copy", str(got.exception))
+        with self.assertRaises(NoFloor) as got:  # off the ground mesh: no banks to sit on
+            floors_for(Kdt(base_file()), lambda x, y: None, [(new, [SHIPPED])], [])
+        self.assertEqual(got.exception.missing, [0])
 
 
 def metal(deck: Deck, z: float) -> list:
