@@ -928,9 +928,11 @@ LittleGroove's own engine (`src/ruse_mod_engine`, PLAN.md decision 26). The form
 Built: `src/rusemod/mod_index.py`, the launcher's "Browse mods" (TASKS.md D, 2026-09-29). No server of ours: a
 small public git repository is the index, GitHub serves its file, and GitHub Releases hold the packages.
 
-- **The repository:** `sneadtristen6/Ruse-Mods` (the owner creates it; until then the launcher can be pointed at any
-  copy with the `index_url` setting in `settings.json`). Its `index.toml` is what the launcher reads
-  (`https://raw.githubusercontent.com/sneadtristen6/Ruse-Mods/main/index.toml`).
+- **The repository:** [`sneadtristen6/Ruse-Mods`](https://github.com/sneadtristen6/Ruse-Mods) (published
+  2026-10-01: the 75 mods of the launcher's library, their packages in the release `mods-2026-10-01`, and a README
+  that lists them with a download link each). Its `index.toml` is what the launcher reads
+  (`https://raw.githubusercontent.com/sneadtristen6/Ruse-Mods/main/index.toml`); the `index_url` setting in
+  `settings.json` points the launcher at another copy.
 - **The file:**
 
   ```toml
@@ -953,7 +955,7 @@ small public git repository is the index, GitHub serves its file, and GitHub Rel
 
   `id`, `version`, `download` (an `https://` link), `size` and `sha256` are required; an entry that lacks one, or
   repeats an id, is skipped and listed in the launcher's log, never the whole list. A `format` above 1 means "made
-  for a newer launcher".
+  for a newer launcher". The tag `cheat` marks a cheat mod: listed apart, never installed unless the player picks it.
 - **Adding a mod:** export it from the Studio (§2), attach the `.rusemod` to a GitHub Release (of the mod's own
   repository, or of the index repository), and open a pull request to the index repository that adds the
   `[[mod]]` entry with the file's size and SHA-256. A new version is a new entry line: change `version`,
