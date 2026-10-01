@@ -188,13 +188,15 @@ team 2): `py -3 -m rusemod build <the mod's folder> --instance D:\RUSE-Instances
 ## T13. A unit given to another nation (Studio 0.7.7)
 
 A nation's unit models only load in a match where a player has that nation. So for a unit given to another nation,
-the build now has its models' nation load in every skirmish. Untested in the game until now.
+the build copies its models (meshes, skeletons, animations, texture stand-ins) into the skirmish packs of the nation
+it now belongs to, so they load with that nation's own units (`rusemod.unitpacks`; FORMATS §8). The first way, having
+the other nation's packs load in every skirmish, crashed the game in batch 1 and is off (`build.FORCE_LOAD`).
 1. In the Studio, make a mod (or pick a test one), open the German **Ju 87** (`Descriptor_Avion_Junkers_87`) and
    click **New unit…**. Name it "Stuka US", set price 5, and put it in **another nation's factory**: the US air
    factory.
-2. Click **Test in game**. The build's report has two notes: `Germany's unit models and animations now load in every
-   skirmish ... (255 loaders in 85 cluster maps ...)`, and one saying the Stuka US uses Germany's models. There are no
-   errors.
+2. Click **Test in game**. The build's report has a note saying the Stuka US's models go into the US's skirmish packs
+   too (`1 mesh, 1 skeleton, 1 texture stand-in copied in from Germany's packs`; the skeleton holds the rear gunner's
+   turret bones), and the line `unit models: 5 skirmish pack(s) in ZZ_Win.dat (...)`. There are no errors.
    - Without the Studio: a mod whose `src/stuka.rndf` holds
      `export Descriptor_Avion_Stuka_US is clone $/GFX/Everything/Descriptor_Avion_Junkers_87 ( Nationalite = 0 )`
      (every nation's aircraft are factory 9), built with

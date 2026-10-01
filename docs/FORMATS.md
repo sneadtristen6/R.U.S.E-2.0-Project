@@ -252,11 +252,11 @@ with them rewritten too (C4), so which one it reads, if any, is unknown. `ruse b
 - A unit's models are the `.ase2ndfbin` files its `Gfx…` parts name (the mesh is an unnamed object they refer to).
   Every shipped buildable unit has its models in its own nation's pack or the common one, except the six non-US
   atomic cannons, which use the US Long Tom's. Moved to another nation, a buildable unit misses its model in every
-  case (1,362 unit × nation pairs). So for a new or moved unit whose models are only in another nation's pack (what
-  the game's own units already have aside), `ruse build` sets that nation's bit in every loader's
-  `ForceLoadBitFieldIfSkirmish` (a Ju 87 copy for the US: Germany's bit, 2, in 255 loaders of 85 cluster maps) and
-  says so in a note; it refuses the unit only when the unit data has no loader with that nation's pack. Copying the
-  models into the target nation's pack would be the other way.
+  case (1,362 unit × nation pairs). Setting that nation's bit in every loader's `ForceLoadBitFieldIfSkirmish` (a Ju 87
+  copy for the US: Germany's bit, 2, in 255 loaders of 85 cluster maps) crashed the game when the unit was built
+  (T13, batch 1), so that is off (`build.FORCE_LOAD`). Instead `ruse build` copies such a unit's models into the
+  skirmish packs of the nation it now belongs to, and a spawned unit's into the common ones (§8, "Skirmish unit
+  packs"), and says so in a note; it refuses the unit only when a model can't be copied.
 - Several structures have exactly 7 slots: `SubClusterNationaliteList` (every map), flag-icon lists, per-nation
   mesh packs, and the bit field `BitFieldNationaliteIfNotSkirmish` (values 0x3F, 0x403F…; bit 14 unexplained).
 - **Conclusion (medium confidence):** rosters are data-only. Whether an 8th nation can be added through data alone
@@ -800,7 +800,28 @@ number below the material count, every position inside its model's box.
   min + uv × size.
 - **Scenery descriptors**: a tree is a `TSceneryDescriptorComposite` of two models, its leaves and its trunk
   (`DescriptorComposition`), so `rusemod.scenery` gives every descriptor all its models.
-- Not read yet: skeleton packs, mirrored vertices (no shipped pack uses them), writing models (PLAN M7).
+- Not read yet: mirrored vertices (no shipped pack uses them), writing new models (PLAN M7).
+
+### Skirmish unit packs: ✅ written (`src/rusemod/unitpacks.py`; check `tools/verify_unitpacks.py`)
+
+A skirmish loads four packs of `ZZ_Win.dat` per nation in the match (§3), plus the `common` ones every skirmish loads
+(`<tag>`: `us ger uk fr ita urss japan common`):
+
+| Pack | Holds |
+|---|---|
+| `gen_5\pack\gfxdescriptor\meshskirmish_<tag>.spk` (the US also `meshskirmishwitboat_us.spk`) | the meshes |
+| `gen_5\pack\gfxdescriptor\skeleton_<tag>.spk` | their skeletons, under the same names (a pack with no meshes or buffers) |
+| `gentexproxy\pack\gfxdescriptor\proxyskirmish_<tag>.ppk` (the US: two again) | small stand-ins of their textures (`PRXYPCPC`) |
+| `genanim_15\pack\gfxdescriptor_<tag>.apk` | their animations (`.baf`), an EDAT archive |
+
+- The game's own packs already carry another nation's models where its units need them (Germany's hold the US Long
+  Tom's mesh, skeleton and stand-in), so `rusemod.unitpacks` copies a unit's models the same way: what the target
+  packs (or the common ones) lack, from the pack of the nation that has it. The full textures are loose files of
+  `ZZ_Win.dat`, the same for every nation.
+- The layout of each pack (offsets, the name trie, the section order and padding, the stand-ins' table) is in the
+  module's docstring. Every `.spk`, `.ppk` and `.apk` in `ZZ_Win.dat` writes back byte for byte, and every unit's
+  models copied into every other nation's packs and the common ones read back as in the pack they came from, the
+  packs' own models unchanged (2026-10-01).
 - `.apk` (nested EDAT), `.baf` (`0f000000`), `.ppk` (`PRXY` or nested EDAT), `.gpk` (UI, likely Scaleform GFx).
 - Scenery sets are European/African only: africa, allemagne, ardennes, europe, france, givre, hollande, italie. There is no tropical set.
 
