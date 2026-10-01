@@ -413,6 +413,11 @@ def skirmish_models(zz_win: Edat) -> dict | None:
     return unitcheck.pack_models(names) if names else None
 
 
+FORCE_LOAD = False  # set a nation's force-load bit in the cluster maps (unitcheck.load_everywhere): off since the game
+# crashed with it (T13, 2026-10-01: a German Ju 87 copy for the US crashed the game when it was built; the same plane
+# type of the US's own didn't), so such units and spawns are refused, as before
+
+
 def unit_models(base, run, zz_win, result: BuildResult) -> None:
     """New units, and units moved to another nation or given other models, whose models are only in another nation's
     skirmish mesh pack: the game loads a nation's unit models only in matches where a player has that nation, or that
@@ -451,7 +456,7 @@ def unit_models(base, run, zz_win, result: BuildResult) -> None:
         wanted.append((name, op, missing, need))
     if not wanted:
         return
-    loaded = unitcheck.load_everywhere(run.game, chosen)
+    loaded = unitcheck.load_everywhere(run.game, chosen) if FORCE_LOAD else {i: (0, 0) for i in chosen}
     for nation, (count, maps) in sorted(loaded.items()):
         if count:
             result.findings.append(Finding("note", f"{unitcheck.NATIONS[nation]}'s unit models and animations now load "
@@ -472,13 +477,16 @@ def unit_models(base, run, zz_win, result: BuildResult) -> None:
                                                    f"{packs_of}'s unit models now load in every skirmish, so it shows "
                                                    f"in matches where no player has {packs_of} too", op))
             continue
+        why = ("the unit data has no cluster maps that could load " if FORCE_LOAD else
+               "having the game load another nation's models in every match crashed it (T13: a German Ju 87 copy "
+               "for the US crashed the game as it was built), so the build can't load ")
         result.findings.append(Finding("error", f"{at}{name} is in {nation}'s army (Nationalite {n}), but its model "
                                                 f"{model}{more} is in the mesh pack of {' and '.join(where)}'s units "
-                                                f"only, and the unit data has no cluster maps that could load "
-                                                f"{packs_of}'s models in every match: the game loads a nation's unit "
-                                                f"models only in matches where a player has that nation, so in other "
-                                                f"matches this unit has no model, or crashes the game. Copy one of "
-                                                f"{nation}'s units instead, or leave it in {where[0]}'s army", op))
+                                                f"only, and {why}{packs_of}'s models in every match: the game loads a "
+                                                f"nation's unit models only in matches where a player has that nation, "
+                                                f"so in other matches this unit has no model, or crashes the game. "
+                                                f"Copy one of {nation}'s units instead, or leave it in {where[0]}'s "
+                                                f"army", op))
 
 
 def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult) -> None:
@@ -513,7 +521,7 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult)
                 need.setdefault(pick, {}).setdefault(name.rsplit("/", 1)[-1], ids)
     if not need:
         return
-    loaded = unitcheck.load_everywhere(run.game, set(need))
+    loaded = unitcheck.load_everywhere(run.game, set(need)) if FORCE_LOAD else {}
     for nation, units in sorted(need.items()):
         which = ", ".join(sorted(units))
         ids = ", ".join(sorted({i for v in units.values() for i in v}))
@@ -524,11 +532,13 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult)
                                                    f"skirmish loads only when a player has {country}: they now load "
                                                    f"in every skirmish ({count} loaders in {maps} cluster maps)"))
         else:
+            why = ("the unit data has no cluster maps that could load them in every match" if FORCE_LOAD else
+                   "having the game load another nation's models in every match crashed it (T13)")
             result.findings.append(Finding("error", f"{ids}: the spawned {which} use {country}'s unit models, which a "
-                                                    f"skirmish loads only when a player has {country}, and the unit "
-                                                    f"data has no cluster maps that could load them in every match: "
-                                                    f"the game would crash as the match starts. Spawn units whose "
-                                                    f"models every match has, or leave these out"))
+                                                    f"skirmish loads only when a player has {country}, and {why}: "
+                                                    f"the game would crash as the match starts (a D-Day test with "
+                                                    f"Japanese units spawned and no Japanese player did). Spawn units "
+                                                    f"whose models every match has, or leave these out"))
 
 
 def fill_loc(game, keys: dict) -> list[str]:
