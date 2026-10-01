@@ -450,9 +450,11 @@ The roads a player sees are drawn two ways. From afar: painted into the ground's
 **STICKERS** type (category `STICKERS/Tunisie/AnciennesRoutes`, no model): decals laid along the curves (seen in the
 game: a road painted only into the pyramid vanished near the camera). D-Day has 431 pieces, all `Route` (name flag 2),
 in 40 blocks (many inside village blocks placed several times); a piece is 4 to 290 m long (about 16 m typical),
-straight, its two handles a tenth of it along it; its three trailing words are its chain's piece count, then two
-words the same on every piece of the map (D-Day 129840992 and 1567752; Blitz 129958752 and 1567752). The item word is
-`0x01000001 | symbol << 4`, no transform (the 15 words follow).
+straight, its two handles a tenth of it along it; its three trailing words are its block's count of road pieces
+(10,505 of 10,505 on the shipped maps), then two words the same on every piece of the map (D-Day 129840992 and
+1567752; Blitz 129958752 and 1567752). The item word is `0x01000001 | symbol << 4`, no transform (the 15 words
+follow). The game draws them up close only through draw-tree nodes with the road mark (§6, the draw tree), and never
+lists one for far view (0 of 10,505).
 
 `output\div_map.tgv_pc` (D-Day: 3072 x 2048 DXT5_LIN in one ZIPO mip, about 5 m a pixel; Blitz and Bulge 2048 x 2048)
 is a colour and alpha picture of the whole map. The map's own roads are only a faint lift in it (alpha +7 to +20 over
@@ -605,9 +607,10 @@ his Claude; checked here on all 32 maps.
   more words, a cubic Bézier: its start x, y, z, the start's handle as an offset from it, its end, the end's handle
   as an offset from the end, then 3 and two codes on every piece seen; pieces chain end to start with their handles
   in line; `Scenery.roads`). A road piece's name is the special type `Route` (flag 2); the first of its three
-  last words is how many pieces its chain has, the other two look like left-over editor addresses. **The roads a
-  player sees are painted into the ground's texture tiles**; the pieces lie exactly on them (checked on Blitz's
-  ground picture): whether the game draws anything from the pieces themselves is still to test; otherwise a child block (offset = bits 2–23, always after its parent). Transform by
+  last words is how many road pieces its block holds, the other two look like left-over editor addresses. **From
+  afar, the roads a player sees are painted into the ground's texture tiles**; the pieces lie exactly on them
+  (checked on Blitz's ground picture) and draw the road up close (a road painted only into the tiles vanished near
+  the camera, 2026-09-30); otherwise a child block (offset = bits 2–23, always after its parent). Transform by
   bits 0–1: 3 = 12 f32 (3 rows of 4), 2 = a move (3 f32), 1 = none, 0 = compact (4 int16 × 3/32767 for the 2×2 turn
   and scale, then x, y, z and the height scale as f32; so compact sizes stop at 3.0).
 - **Objects stand at height 0**; the game sets them on the ground. A name is a scenery type: a descriptor in the
@@ -618,10 +621,16 @@ his Claude; checked here on all 32 maps.
 - **Proven in the game (DomesticNukes):** moving, turning and scaling objects in place; adding objects through a
   new block that an existing object's item is turned into (a same-size child reference). A child that points
   backward breaks the map.
-- **The draw tree:** every map has one top block (block 0). A block's 8-byte nodes are a spatial tree: bits 30-31
-  mark leaves, bits 20-24 the LOD mask (8 = far), the two bytes after the u16 look like split positions; the first
-  node's u16 is how many entries are listed for far view (listed first: 7,144 of Blitz's 18,770 top-block entries,
-  7,132 of them references to blocks, 12 objects: bridges and a lighthouse). The game reaches a block only through
+- **The draw tree:** every map has one top block (block 0). A block's 8-byte nodes (u32 word, u16 split, two bytes)
+  are a spatial tree over its entries: a node holds entries [lo, hi), its left side [lo, split) is the next node and
+  its right side [split, hi) the node `(word & 0xFFFFF) >> 2` further on; word bit 30 makes the left side a leaf,
+  bit 31 the right, bit 28 the whole node. Bits 20-24 are the LOD mask (8 = far), **bit 25 the road mark**: road
+  pieces are drawn up close only through nodes that carry it, from the block's root down (every shipped piece is).
+  A node splits its box along x (`word & 3` = 0) or y, the two bytes being the left side's top and the right side's
+  bottom as shares /255 of its extent (the root's box is the block's), so each node's box is a share of its
+  parent's: widening one moves every node below it. The first node's split is how many entries are listed for far
+  view (listed first: 7,144 of Blitz's 18,770 top-block entries, 7,132 of them references to blocks, 12 objects:
+  bridges and a lighthouse); with the far bit on the root, close-up drawing starts at its right side. The game reaches a block only through
   the tree node holding its reference: objects hung on a close-view decal 3 km away never showed (owner's test,
   2026-09-30). Proven the same day: new objects in a new block that wraps the nearest block the top block lists for
   far view (the reference points to the new block, which places the old one where it was and the new objects;

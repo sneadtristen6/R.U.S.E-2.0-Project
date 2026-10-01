@@ -140,6 +140,16 @@ The two new bridges stand where the new roads cross the river, between Briquevil
 5. While there: the mod's spawned units on this map (PLAN A8): which side they're on, and whether a formation faces
    the way it was drawn.
 
+## T12. New roads up close (Studio 0.7.7)
+
+The copy: `D:\RUSE-Instances\bridges` (rebuilt 2026-10-01 from the Studio mod `test` with the road fix). In the game:
+**BATTLES > D-Day**, the new roads between Briqueville and Les Pieux.
+1. Zoom the camera right down onto a new road, away from the bridges.
+   - **Pass:** the road's texture stays as the camera comes close (as the map's own roads do).
+   - **Fail:** it fades out near the camera, as on 2026-10-01.
+2. Pan along each new road up close, then onto one of the map's own roads near them: both stay drawn.
+3. While there: the bridges as in T8 (one tank and one squad across), to see nothing went back.
+
 ## T9. A road over one of the map's own bridges (Studio 0.7.4)
 
 The owner's rule: the old bridge goes and the new road's bridge takes its place. The copy is built first (next

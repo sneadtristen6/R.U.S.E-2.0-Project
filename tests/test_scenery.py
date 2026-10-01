@@ -35,8 +35,9 @@ def road(start=(0.0, 0.0), handle=(0.0, 0.0), end=(0.0, 0.0), back=(0.0, 0.0)):
     return struct.pack("<I12f3I", 0x01000141, *f, 3, 129958752, 1567752)
 
 
-def block(items, far=False):
-    """A block with a one-leaf tree; far: its entries list the first item again in front (the far-view rule)."""
+def block(items, far=False, mask=0x1F):
+    """A block with a one-leaf tree; far: its entries list the first item again in front (the far-view rule); mask:
+    its root's (0x3F: with the road mark)."""
     entries, off = [], 0
     for it in items:
         entries.append(off)
@@ -44,8 +45,67 @@ def block(items, far=False):
     if far:
         entries = [0] + entries
     head = struct.pack("<II4f", 0x80000000 | len(entries), 1, 0.0, 0.0, 1.0, 1.0) + bytes(8)
-    tree = struct.pack(f"<{len(entries)}I", *entries) + struct.pack("<II", 0xC0000000 | 0x1F << 20, 0x00FF0000)
+    tree = struct.pack(f"<{len(entries)}I", *entries) + struct.pack("<II", 0xC0000000 | mask << 20, 0x00FF0000)
     return head + tree + b"".join(items)
+
+
+def road_pass(s):
+    """(block, item offset) of every road piece the game's close-up road pass reaches, walked the way the game walks
+    a scenery file: a block is entered only when its root has the road mark (bit 25), a block seen from far starts
+    at its root's right side, and inside it a node is entered only with the mark."""
+    reached, todo = set(), [0]
+    while todo:
+        b = s.blocks[todo.pop()]
+        nodes = [struct.unpack_from("<IHBB", b.nodes, 8 * k) for k in range(len(b.nodes) // 8)]
+        w0, split = nodes[0][:2]
+        if not w0 & scenery.ROAD_BIT:
+            continue
+        k, lo = ((w0 & 0xFFFFF) >> 2, split) if w0 & 0x00800000 else (0, 0)
+        hi, out = len(b.entries), []
+        if k and nodes[k][0] >= 0xC0000000:
+            out = list(range(lo, hi))
+        else:
+            stack = [(k, lo, hi)]
+            while stack:
+                k2, a, z = stack.pop()
+                w, sp = nodes[k2][:2]
+                if not w & scenery.ROAD_BIT:
+                    continue
+                if w & 0x40000000:
+                    out += range(a, sp)
+                else:
+                    stack.append((k2 + 1, a, sp))
+                if w & 0x80000000:
+                    out += range(sp, z)
+                else:
+                    stack.append((k2 + ((w & 0xFFFFF) >> 2), sp, z))
+        by_at = {it.at: it for it in b.items}
+        for e in out:
+            it = by_at[b.entries[e]]
+            if it.kind == "road":
+                reached.add((b.index, it.at))
+            elif it.kind == "child":
+                todo.append(s._by_offset[it.child_offset])
+    return reached
+
+
+def two_woods():
+    """The top block places a town hall and a wood (with a road piece of the map's own) twice, south and north, and
+    lists both references for far view. Its tree: the root splits the far list off; the full list's node splits
+    along y, the hall and the south wood's reference in its lower part (y up to 4,392), the north one's in its upper
+    part (from 5,647). No node on the top block's paths has the road mark yet."""
+    wood = block([compact(1, 0.0, 0.0), road((10.0, 20.0), (5.0, 0.0), (40.0, 20.0), (-5.0, 0.0))], mask=0x3F)
+    items = [compact(0, 1000.0, 2000.0), moved(0, 0, 0), moved(0, 0, 0)]
+    offsets = [0, len(items[0]), len(items[0]) + len(items[1])]
+    nodes = (struct.pack("<IHBB", 0x1F << 20 | 2 << 2, 2, 0xFF, 0)            # the root: far list | full list
+             + struct.pack("<IHBB", 0xC0000000 | 0x08 << 20, 2, 0xFF, 0)     # the far list's leaf
+             + struct.pack("<IHBB", 0xC0000000 | 0x17 << 20 | 1, 4, 0x70, 0x90))  # the full list, split along y
+    entries = [offsets[1], offsets[2]] + offsets
+    head = struct.pack("<II4f", 0x80000000 | len(entries), 3, 0.0, 0.0, 10000.0, 10000.0) + bytes(8)
+    root_len = len(head) + 4 * len(entries) + len(nodes) + sum(map(len, items))
+    items = [compact(0, 1000.0, 2000.0), moved(root_len, 2000.0, 1000.0), moved(root_len, 2000.0, 8000.0)]
+    root = head + struct.pack(f"<{len(entries)}I", *entries) + nodes + b"".join(items)
+    return make_scenery([root, wood], NAMES)
 
 
 def make_scenery(blocks, names):
@@ -297,7 +357,6 @@ class RoadStickers(unittest.TestCase):
         self.assertEqual([(q.x0, q.y0, q.x1, q.y1) for q in pieces],
                          [(0.0, 0.0, 5000.0, 0.0), (5000.0, 0.0, 10000.0, 0.0), (10000.0, 0.0, 10000.0, 3500.0),
                           (10000.0, 3500.0, 10000.0, 7000.0)])
-        self.assertEqual({q.chain for q in pieces}, {4})  # the road's length in pieces, as the game counts them
         self.assertEqual((pieces[0].hx0, pieces[0].hy0, pieces[0].hx1, pieces[0].hy1), (500.0, 0.0, -500.0, 0.0))
         close = scenery.road_pieces([(0.0, 0.0), (500.0, 0.0), (1000.0, 0.0), (6000.0, 0.0)])
         self.assertEqual([(q.x0, q.x1) for q in close], [(0.0, 6000.0)])  # a line's close points joined up
@@ -316,8 +375,63 @@ class RoadStickers(unittest.TestCase):
         road_items = [it for b in after.blocks for it in b.items if it.kind == "road"]
         self.assertEqual({it.symbol for it in road_items}, {20})  # the map's own Route name
         self.assertEqual({struct.unpack_from("<3I", it.data, 48) for it in road_items} - {(3, 129958752, 1567752)},
-                         {(2, 129958752, 1567752)})  # its trailing words, with the new road's own count
-        self.assertIn("1 object(s) and 2 road sticker piece(s) added", notes[0])
+                         {(2, 129958752, 1567752)})  # its trailing words, with its block's own count of pieces
+        self.assertIn("1 object(s) added", notes[0])
+        self.assertIn("2 road sticker piece(s) added", notes[1])  # road pieces go in a block of their own
+        new_pieces = {(b.index, it.at) for b in after.blocks for it in b.items if it.kind == "road"
+                      and (round(struct.unpack_from("<f", it.data)[0]), round(struct.unpack_from("<f", it.data, 4)[0]))
+                      in {(1000, 2500), (5000, 2500)}}
+        self.assertEqual(len(new_pieces), 2)
+        self.assertLessEqual(new_pieces, road_pass(after))  # drawn up close: the road mark from the map's top down
+
+    def test_a_new_block_lists_road_pieces_for_close_view_only(self):
+        piece = scenery.road_pieces([(0.0, 0.0), (4000.0, 0.0)])[0]
+        style = (20, (129958752, 1567752))
+        items = [moved(0, 0.0, 0.0), scenery._road_item(piece, scenery.IDENTITY, style, 1)[0], compact(0, 1.0, 2.0)]
+        raw = scenery._new_block(items, (0.0, 0.0, 1.0, 1.0))
+        s = Scenery(make_scenery([raw], NAMES))
+        b = s.blocks[0]
+        root, far_leaf, full = [struct.unpack_from("<IH", b.nodes, 8 * k) for k in range(3)]
+        self.assertEqual(root[1], 2)  # the far list: the reference and the object, not the road piece
+        kinds = {it.at: it.kind for it in b.items}
+        self.assertEqual([kinds[a] for a in b.entries[:2]], ["child", "object"])
+        self.assertEqual([kinds[a] for a in b.entries[2:]], ["child", "road", "object"])
+        self.assertTrue(root[0] & scenery.ROAD_BIT and full[0] & scenery.ROAD_BIT)
+        self.assertFalse(far_leaf[0] & scenery.ROAD_BIT)
+        self.assertEqual(b.mask, scenery.ALL_TIERS)  # the LOD mask itself is unchanged
+
+    def test_each_piece_goes_with_the_reference_whose_box_holds_it(self):
+        """Two roads, one by each wood: each road's pieces go in a new block on the reference whose leaf box in the
+        top block's tree holds them; the top block's nodes down to both get the road mark (not the far list's leaf);
+        the road pass then reaches every new piece and still the wood's own."""
+        data = two_woods()
+        s0 = Scenery(data)
+        own = {(1, it.at) for it in s0.blocks[1].items if it.kind == "road"}
+        self.assertEqual(road_pass(s0), set())  # nothing yet: the top block's root has no road mark
+        south = scenery.road_pieces([(1000.0, 1500.0), (9000.0, 1500.0)])
+        north = scenery.road_pieces([(1000.0, 9000.0), (9000.0, 9000.0)])
+        new, notes = add_objects(data, south + north)
+        s = Scenery(new)
+        self.assertEqual(spots(new), spots(data))  # no object moved
+        self.assertEqual(len(s.blocks), 4)
+        top = s.blocks[0]
+        refs = {it.at: s._by_offset[it.child_offset] for it in top.items if it.kind == "child"}
+        held = {}
+        for at, bi in refs.items():
+            pieces = [it for it in s.blocks[bi].items if it.kind == "road"]
+            held[at] = sorted(round(struct.unpack_from("<f", it.data, 4)[0]) for it in pieces)
+            self.assertEqual({struct.unpack_from("<I", it.data, 48)[0] for it in pieces}, {2})  # the block's count
+        south_ref, north_ref = (next(it for it in top.items if it.kind == "child" and round(it.matrix()[7]) == y)
+                                for y in (1000, 8000))
+        self.assertEqual(held[south_ref.at], [500, 500])  # 1,500 in the south wood's own frame
+        self.assertEqual(held[north_ref.at], [1000, 1000])
+        nodes = [struct.unpack_from("<I", top.nodes, 8 * k)[0] for k in range(3)]
+        self.assertEqual([bool(w & scenery.ROAD_BIT) for w in nodes], [True, False, True])
+        mine = {(bi, it.at) for bi in refs.values() for it in s.blocks[bi].items if it.kind == "road"}
+        self.assertEqual(len(mine), 4)
+        wood = s._by_offset[s.blocks[refs[south_ref.at]].items[0].child_offset]
+        self.assertEqual(road_pass(s), mine | {(wood, at) for _b, at in own})
+        self.assertEqual(len(notes), 2)
 
     def test_a_map_without_stickers_gets_none(self):
         raw = make_scenery([block([compact(0, 100.0, 100.0)])], NAMES)

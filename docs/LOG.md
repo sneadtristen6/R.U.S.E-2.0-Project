@@ -1009,3 +1009,13 @@ took six rounds.
 truck cross the four new bridges on their decks, every man upright at the deck's height, the ones by the rails too
 ("FINALLY WE CAN MOVE ON"). Screenshots in `docs/images/bridge-*.jpg` and the README. Still open from the same test:
 new roads' close-up texture (the road stickers).
+
+**New roads up close (2026-10-01, morning; T12 decides).** A new road's pieces never reached the game's close-up
+drawing: the game draws road pieces only through draw-tree nodes with the road mark (bit 25, FORMATS §6), and the
+blocks the build made had it on no node, nor did the top block's nodes over the references they hung on. A walk of
+the tree done the way the game draws (`road_pass` in `tests/test_scenery.py`) reached 0 of the 480 new pieces on the
+T8 copy, and all 431 of D-Day's own. Now: a new block's root and full list carry the mark; road pieces go in blocks
+of their own, each on the far-listed reference whose leaf box in the top block's tree holds the piece's middle (the
+fewest such references; D-Day: 6), with the mark on every node down to it; no piece is listed for far view; and each
+piece's first trailing word is its block's count, as on every shipped piece. Rebuilt T8 copy: 480 of 480 new pieces
+reached, 431 of 431 of the map's own, every piece's middle inside its carrier's box.

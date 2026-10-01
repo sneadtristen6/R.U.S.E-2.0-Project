@@ -612,16 +612,16 @@ and square cover brushes (`28bee64`); the new README (`a1880d5`).
 | Test | Who | Decides | State |
 |---|---|---|---|
 | **T8 Bridges:** units (a tank, then infantry) and a supply route cross the new D-Day bridges | owner, `D:\RUSE-Instances\bridges` | bridges done, or what to fix | **passed 2026-10-01, 04:27**: tanks, infantry and a supply truck cross on the decks, the men at the deck's height (the floor's aprons, `934d414`) |
-| **T12 New roads up close:** a new road's texture still shows with the camera close to the ground | owner | the road fix (step 1) | after step 1 |
+| **T12 New roads up close:** a new road's texture still shows with the camera close to the ground | owner, `D:\RUSE-Instances\bridges` | the road fix (step 1) | **ready** (copy rebuilt 2026-10-01 with the fix) |
 | **T9 A road over an old bridge:** the old one gone, units cross on the new one | owner | the replace rule | after T8 (the new deck goes into the old bridge's local map; the old floor and its aprons go) |
 | **T10 Read-only game folder:** Test in game after updating | the player who reported it | the fix | waiting for him |
 | **T11 Launcher 0.2.11:** the update is offered, Play works | owner | — | — |
 
 *Next steps* (in order):
-1. **New roads up close.** A new road's texture shows from afar but not up close (T8). The scenery blocks the build
-   makes aren't marked as holding road pieces, the way the map's own road blocks are, so their pieces are skipped
-   when the game draws roads up close. The build marks new blocks and the path down to them, and gives each road
-   piece what the map's own pieces have. Test T12.
+1. **New roads up close (built 2026-10-01; T12 decides).** A new road's texture showed from afar but not up close
+   (T8). The scenery blocks the build made weren't marked as holding road pieces, the way the map's own road blocks
+   are, so their pieces were skipped when the game draws roads up close. The build now marks new blocks and the path
+   down to them, and gives each road piece what the map's own pieces have (LOG.md). Test T12.
 2. **The audit: the game's rules, checked by the build** (the owner's ask, 2026-10-01). Go through what the game does
    with every file the build writes, five areas one at a time: map info and ground are done; scenery and two more
    are left. Found so far, to check and fix before the release:

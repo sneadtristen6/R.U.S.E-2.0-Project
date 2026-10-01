@@ -481,6 +481,8 @@ PLACEABLE = ("building", "prop", "vegetation")  # what the Studio offers to plac
 FILLER = 0xCAFE5A1E   # every block's items start with this word, which the game never reads
 BLOCK_TAIL = bytes.fromhex("000bb00bb00bb00b")  # bytes 0x18-0x1f of a long block header, as the shipped blocks have
 ALL_TIERS = 0x1F      # a block's LOD mask: drawn close, middle and far (a superset only costs culling)
+ROAD_TIER = 0x20      # a tree node's road mark, above the LOD mask (bit 25 of its word): the game draws Route pieces
+ROAD_BIT = ROAD_TIER << 20  # up close only through nodes that carry it (every Route piece of the shipped maps does)
 MARGIN = 5000.0       # added to a new block's box around its objects' positions (map units, times their size)
 GROUP = 40000.0       # objects further apart than this (400 m) go in separate new blocks, each hung on an object near
                       # them: the game draws a block when the object it hangs on is in view (owner's test, 2026-09-30:
@@ -519,8 +521,7 @@ ROAD_PIECE = 4000.0   # map units a new road's sticker pieces run (the shipped o
 class RoadPiece:
     """One piece of a road sticker (the game's `Route` items, a STICKERS type: what draws a road up close; the painted
     ground only shows it from afar, seen in the game 2026-09-30). A cubic from (x0, y0) to (x1, y1), each end's
-    handle an offset from it (the shipped pieces' are a tenth of the piece, along it); `chain`: how many pieces its
-    road has (the game's first trailing word)."""
+    handle an offset from it (the shipped pieces' are a tenth of the piece, along it)."""
     x0: float
     y0: float
     hx0: float
@@ -529,7 +530,6 @@ class RoadPiece:
     y1: float
     hx1: float
     hy1: float
-    chain: int
 
     @property
     def x(self) -> float:
@@ -557,8 +557,8 @@ def road_pieces(line, step: float = ROAD_PIECE) -> list[RoadPiece]:
     out = []
     for (ax, ay), (bx, by) in zip(merged, merged[1:]):
         dx, dy = (bx - ax) / 10, (by - ay) / 10
-        out.append(RoadPiece(ax, ay, dx, dy, bx, by, -dx, -dy, 0))
-    return [RoadPiece(q.x0, q.y0, q.hx0, q.hy0, q.x1, q.y1, q.hx1, q.hy1, len(out)) for q in out]
+        out.append(RoadPiece(ax, ay, dx, dy, bx, by, -dx, -dy))
+    return out
 
 
 def _road_style(sc: "Scenery") -> tuple[int, tuple[int, int]] | None:
@@ -576,8 +576,10 @@ def _road_style(sc: "Scenery") -> tuple[int, tuple[int, int]] | None:
     return syms.most_common(1)[0][0], tails.most_common(1)[0][0]
 
 
-def _road_item(piece: RoadPiece, m: tuple, style) -> tuple[bytes, list[float], list[float]]:
-    """A road piece's item bytes in the block whose map-to-block transform is `m`, and its ends' x and y there."""
+def _road_item(piece: RoadPiece, m: tuple, style, count: int) -> tuple[bytes, list[float], list[float]]:
+    """A road piece's item bytes in the block whose map-to-block transform is `m`, and its ends' x and y there.
+    `count`: how many road pieces the block holds (the first trailing word: the shipped maps' every piece has its
+    block's count, 10,505 of 10,505)."""
     sym, tail = style
 
     def pt(x, y):
@@ -588,7 +590,7 @@ def _road_item(piece: RoadPiece, m: tuple, style) -> tuple[bytes, list[float], l
     a, b = pt(piece.x0, piece.y0), pt(piece.x1, piece.y1)
     h0, h1 = vec(piece.hx0, piece.hy0), vec(piece.hx1, piece.hy1)
     body = struct.pack("<I12f3I", 0x01000001 | (sym << 4), a[0], a[1], 0.0, h0[0], h0[1], 0.0, b[0], b[1], 0.0,
-                       h1[0], h1[1], 0.0, piece.chain, *tail)
+                       h1[0], h1[1], 0.0, count, *tail)
     return body, [a[0], b[0]], [a[1], b[1]]
 
 
@@ -653,16 +655,26 @@ def _carrier(sc: Scenery, near: tuple | None = None) -> tuple[Block, Item, tuple
     return b, min(objects, key=lambda it: (distance(it), it.tform == T_COMPACT, it.at)), w
 
 
+def _is_road(item: bytes) -> bool:
+    (w,) = struct.unpack_from("<I", item)
+    return not w >> 31 and bool(w & 0x01000000)  # as Scenery._block tells them: not an object, not a reference
+
+
 def _new_block(items: list[bytes], box: tuple) -> bytes:
-    offsets, pos = [], 4
+    """A block of `items` in `box`, with a two-leaf tree: the far-view list (every item but road pieces, which the
+    shipped maps never list for far view: 0 of 10,505), then every item. The root and the full list's node carry the
+    road mark, so road pieces in it, or in a block it places, are drawn up close (a superset only costs culling)."""
+    offsets, far, pos = [], [], 4
     for it in items:
         offsets.append(pos)
+        if not _is_road(it):
+            far.append(pos)
         pos += len(it)
-    entries = offsets + offsets  # every item is drawn from far too: the far-view items first, then all of them
-    p = len(items)
-    nodes = (struct.pack("<IHBB", (ALL_TIERS << 20) | (2 << 2), p, 0xFF, 0)
+    entries = far + offsets  # the far-view items first, then all of them
+    p = len(far)
+    nodes = (struct.pack("<IHBB", ((ALL_TIERS | ROAD_TIER) << 20) | (2 << 2), p, 0xFF, 0)
              + struct.pack("<IHBB", 0xC0000000 | (0x08 << 20), p, 0xFF, 0)
-             + struct.pack("<IHBB", 0xC0000000 | ((ALL_TIERS & ~0x08) << 20), 0, 0xFF, 0))
+             + struct.pack("<IHBB", 0xC0000000 | (((ALL_TIERS & ~0x08) | ROAD_TIER) << 20), 0, 0xFF, 0))
     head = struct.pack("<II4f", 0x80000000 | len(entries), 3, *box) + BLOCK_TAIL
     return head + struct.pack(f"<{len(entries)}I", *entries) + nodes + struct.pack("<I", FILLER) + b"".join(items)
 
@@ -688,21 +700,32 @@ def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]
     reference must point forward), so every later reference moves by its size. A map whose top block lists no block
     for far view gets the first way DomesticNukes proved in the game (_add_block: an object near them becomes the
     reference). The grids are left alone. Types must be ones the map already uses (in its name table). `objects` may
-    hold RoadPiece too (a new road's stickers, in the map's own Route style; a map without one gets none). Returns
-    (new file, notes)."""
+    hold RoadPiece too (a new road's stickers, in the map's own Route style; a map without one gets none): they go in
+    blocks of their own, each on the reference whose box in the top block's tree holds them (_road_carriers), and
+    the tree's nodes down to it get the road mark. Returns (new file, notes)."""
     if not objects:
         return bytes(data), []
     notes = []
-    if any(isinstance(o, RoadPiece) for o in objects) and _road_style(Scenery(data)) is None:
-        objects = [o for o in objects if not isinstance(o, RoadPiece)]
+    pieces = [o for o in objects if isinstance(o, RoadPiece)]
+    objects = [o for o in objects if not isinstance(o, RoadPiece)]
+    if pieces and _road_style(Scenery(data)) is None:
+        pieces = []
         notes.append("this map has no road stickers to copy: its new roads show from afar only")
-        if not objects:
-            return bytes(data), notes
     for group in _groups(objects):
         sc = Scenery(data)
         far = _far_children(sc)
         data, more = _wrap(sc, data, group, far) if far else _add_block(data, group)
         notes += more
+    if pieces and _far_children(Scenery(data)):
+        for at, group in _road_carriers(Scenery(data), pieces):
+            sc = Scenery(data)  # the top block's items and tree stay where they are: `at` still names the carrier
+            far = _far_children(sc)
+            data, more = _wrap(sc, data, group, far, next(it for it in far if it.at == at))
+            notes += more
+    elif pieces:
+        for group in _groups(pieces):
+            data, more = _add_block(data, group)
+            notes += more
     return data, notes
 
 
@@ -766,7 +789,144 @@ def _world_box(sc: Scenery, it: Item) -> tuple[float, float, float, float]:
     return min(xs), min(ys), max(xs), max(ys)
 
 
-def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item]) -> tuple[bytes, list[str]]:
+def _tree(b: Block) -> list[tuple[int, int, int, int]]:
+    """A block's search tree, one (word, split, b1, b2) per node. A node holds the entries [lo, hi) it's reached with:
+    its left side [lo, split) is the next node, its right side [split, hi) the node (word & 0xFFFFF) >> 2 further on;
+    word flag 0x40000000 makes the left side a leaf, 0x80000000 the right, 0x10000000 the whole node. Bits 20-24
+    are its LOD mask, bit 25 the road mark; it splits its box along x (word & 3 == 0) or y, at b1 (the left side's
+    top) and b2 (the right side's bottom), shares /255 of its extent."""
+    return [struct.unpack_from("<IHBB", b.nodes, 8 * k) for k in range(len(b.nodes) // 8)]
+
+
+def _path(nodes: list, e: int) -> list[int]:
+    """The nodes from the root down to the leaf that holds entry `e`."""
+    out, k = [], 0
+    while True:
+        if not 0 <= k < len(nodes) or len(out) > len(nodes):
+            raise SceneryError("a block's tree points outside itself")
+        out.append(k)
+        w, split = nodes[k][0], nodes[k][1]
+        if w & 0x10000000:
+            return out
+        if e < split:
+            if w & 0x40000000:
+                return out
+            k += 1
+        else:
+            if w & 0x80000000:
+                return out
+            k += (w & 0xFFFFF) >> 2
+
+
+def _leaf_boxes(b: Block) -> dict[int, tuple]:
+    """Entry index -> the box of the leaf that holds it, in the block's own coordinates (the root's box is the
+    block's)."""
+    nodes, out, steps = _tree(b), {}, 0
+    if not nodes:
+        return out
+    todo = [(0, 0, len(b.entries), tuple(b.bbox))]
+    while todo:
+        k, lo, hi, (x0, y0, x1, y1) = todo.pop()
+        steps += 1
+        if not 0 <= k < len(nodes) or steps > len(nodes):
+            raise SceneryError("a block's tree points outside itself")
+        w, split, b1, b2 = nodes[k]
+        if w & 0x10000000:
+            out.update((e, (x0, y0, x1, y1)) for e in range(lo, hi))
+            continue
+        if w & 3 == 0:
+            left, right = (x0, y0, x0 + b1 / 255 * (x1 - x0), y1), (x0 + b2 / 255 * (x1 - x0), y0, x1, y1)
+        else:
+            left, right = (x0, y0, x1, y0 + b1 / 255 * (y1 - y0)), (x0, y0 + b2 / 255 * (y1 - y0), x1, y1)
+        if w & 0x40000000:
+            out.update((e, left) for e in range(lo, split))
+        else:
+            todo.append((k + 1, lo, split, left))
+        if w & 0x80000000:
+            out.update((e, right) for e in range(split, hi))
+        else:
+            todo.append((k + ((w & 0xFFFFF) >> 2), split, hi, right))
+    return out
+
+
+def _mark_road_path(raw: bytearray, b: Block, at: int, base: int = 0) -> None:
+    """Give the road mark to every node of block `b`'s tree on the way to item `at`: to its entries in the full list
+    when the root is seen from far (the game then starts the road pass at the root's right side), else to all of
+    them. A node with no LOD mask is left alone (the mark would leave it the road pass only). `raw` holds the block
+    at `base`."""
+    nodes = _tree(b)
+    if not nodes:
+        return
+    w0, split = nodes[0][0], nodes[0][1]
+    skip = split if (w0 >> 20) & 0x08 else 0
+    start = base + (0x20 if b.long else 0x1C) + 4 * len(b.entries)
+    for e, a in enumerate(b.entries):
+        if a != at or e < skip:
+            continue
+        for k in _path(nodes, e):
+            w = nodes[k][0]
+            if (w >> 20) & ALL_TIERS:
+                struct.pack_into("<I", raw, start + 8 * k, w | ROAD_BIT)
+
+
+def _mark_for_roads(sc: Scenery, blob: bytearray, bi: int, at: int) -> None:
+    """The road mark on the way to item `at` of block `bi`, and on up through every block that places it, to the
+    map's top. `blob`: the file's blocks, from the data's start."""
+    parents: dict[int, list] = {}
+    for b in sc.blocks:
+        for it in b.items:
+            if it.kind == "child":
+                parents.setdefault(sc._by_offset[it.child_offset], []).append((b.index, it.at))
+    todo, seen = [(bi, at)], set()
+    while todo:
+        i, a = todo.pop()
+        if (i, a) in seen:
+            continue
+        seen.add((i, a))
+        _mark_road_path(blob, sc.blocks[i], a, sc.blocks[i].offset)
+        todo += parents.get(i, [])
+
+
+def _road_carriers(sc: Scenery, pieces: list[RoadPiece]) -> list[tuple[int, list[RoadPiece]]]:
+    """New road pieces per carrier, as (the top block's reference's `at`, its pieces): the far-listed reference
+    whose leaf box in the top block's tree holds a piece's middle (the game finds a block's items through these
+    boxes: on D-Day 416 of the 431 shipped road middles lie in their leaf's box, while one carrier for a whole road
+    left up to 1.8 km of it outside). The fewest carriers win, then one whose path already has the road mark; a
+    piece in no such box goes with the nearest carrier. The boxes are never widened: a node's bounds are shares of
+    its parent's, so widening one moves every node below it."""
+    top, far = sc.blocks[0], _far_children(sc)
+    nodes = _tree(top)
+    boxes = _leaf_boxes(top)
+    by_at = {it.at: it for it in far}
+    cands = []  # (box, at, path already marked)
+    for e in range(nodes[0][1], len(top.entries)):
+        a = top.entries[e]
+        if a in by_at and e in boxes:
+            cands.append((boxes[e], a, all(nodes[k][0] & ROAD_BIT for k in _path(nodes, e))))
+
+    def holds(box, p):
+        return box[0] <= p.x <= box[2] and box[1] <= p.y <= box[3]
+    out: dict[int, list[RoadPiece]] = {}
+    left = list(pieces)
+    while left and cands:
+        box, a, _marked = max(cands, key=lambda c: (sum(holds(c[0], p) for p in left), c[2]))
+        got = [p for p in left if holds(box, p)]
+        if not got:
+            break
+        out.setdefault(a, []).extend(got)
+        left = [p for p in left if not holds(box, p)]
+    for p in left:  # outside every carrier's box: the nearest block, as new objects get
+        def gap(it):
+            x0, y0, x1, y1 = _world_box(sc, it)
+            return math.hypot(max(x0 - p.x, 0.0, p.x - x1), max(y0 - p.y, 0.0, p.y - y1)), (x1 - x0) * (y1 - y0)
+        out.setdefault(min(far, key=gap).at, []).append(p)
+    return list(out.items())
+
+
+def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
+          carrier: Item | None = None) -> tuple[bytes, list[str]]:
+    """`objects` in a new block that wraps a block the top block lists for far view: `carrier`, the reference to it,
+    else the one nearest the objects (add_objects)."""
     index = {name: i for i, name in enumerate(sc.names[:len(sc.flags)]) if sc.flags[i] == 1}
     words: dict[int, int] = {}
     for b in sc.blocks:
@@ -778,7 +938,9 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item]) -
     def score(it):  # how far the group's middle is from the block's box (0 inside), then the smaller box
         x0, y0, x1, y1 = _world_box(sc, it)
         return math.hypot(max(x0 - cx, 0.0, cx - x1), max(y0 - cy, 0.0, cy - y1)), (x1 - x0) * (y1 - y0)
-    carrier = min(far, key=score)
+    if carrier is None:
+        carrier = min(far, key=score)
+    roads = sum(1 for o in objects if isinstance(o, RoadPiece))
     top = sc.blocks[0]
     ins = top.offset + len(top.raw)  # the new block goes right after the top block
     if len(sc.blocks) > 1 and sc.blocks[1].offset != ins:
@@ -791,7 +953,7 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item]) -
         if isinstance(o, RoadPiece):
             if style is None:
                 raise SceneryEditError("this map has no road stickers to copy, so a new road can't be drawn up close")
-            body, px, py = _road_item(o, to_local, style)
+            body, px, py = _road_item(o, to_local, style, roads)
             items.append(body)
             xs += px
             ys += py
@@ -833,6 +995,8 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item]) -
             else:
                 target = it.child_offset + shift if it.child_offset >= ins else it.child_offset
             struct.pack_into("<I", raw, at, (it.word & ~0x00FFFFFC) | target)
+        if b.index == 0 and roads:  # the top block's nodes down to the new block's reference: road-marked
+            _mark_road_path(raw, b, carrier.at)
         parts.append(bytes(raw))
         if b.index == 0:
             parts.append(new)
@@ -882,11 +1046,12 @@ def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]
         items = [struct.pack("<I", (carrier.word & ~3) | kind) + tdata]
     xs, ys, notes = [], [], []
     style = _road_style(sc)
+    roads = sum(1 for o in objects if isinstance(o, RoadPiece))
     for o in objects:
         if isinstance(o, RoadPiece):
             if style is None:
                 raise SceneryEditError("this map has no road stickers to copy, so a new road can't be drawn up close")
-            body, px, py = _road_item(o, to_local, style)
+            body, px, py = _road_item(o, to_local, style, roads)
             items.append(body)
             xs += px
             ys += py
@@ -918,6 +1083,8 @@ def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]
     patched = bytearray(data[data_off:data_off + data_len])
     at = block.offset + block.items_start + carrier.at
     patched[at:at + 4 + len(carrier.data)] = struct.pack("<I", ref) + _identity_data(carrier.tform)
+    if roads:  # every tree node from the map's top down to the new block's reference: road-marked
+        _mark_for_roads(sc, patched, block.index, carrier.at)
     end = data_off + data_len
     shift = 4 + len(new)
     for k in (4, 6, 8, 10, 12, 20, 22, 24):  # the tables after the data move by the table's new entry and the block
