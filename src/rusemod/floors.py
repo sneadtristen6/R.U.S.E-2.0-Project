@@ -12,10 +12,21 @@ far across it, its height above the line between the ground at the deck's ends),
 at the new ends' ground. A bridge sunk out of sight loses its floor. The file is then built again as one subtree,
 as the shipped ones are: the vertices (shared by the triangles that meet there), their normals, the triangles, and a
 k-d tree whose leaves list every triangle that reaches into their box (rusemod.kdt has the codecs).
+
+A floor is wider than the deck (2026-10-01). Where a unit is comes from the movement graph, how high it stands from
+the floor under it, and nothing ties the two: an infantry squad is five men on an arc 2,828 wide around the squad's
+own place (the game data's Dispersion 500 for 5 men), each man standing on the floor under his own feet. So beside a
+deck whose movement is 640 either side of its line two of the five are 2,054 out, and a man who has drifted to the
+squad's limit (DispersionMax 620 for 5 men: 2,480) is 3,120 out. The game's metal bridges have, beside the deck's
+band, two flat aprons as long as the band reaching 12,000 to 17,000 either side, so its infantry stand at the deck's
+height over the river ("vanilla ruse they float"); its stone bridges have none, and infantry stand in the river
+beside them. A new bridge with the band alone put every man beside the deck on the riverbed ("ours are in water").
+So a new bridge gets an apron too (`apron`): in its band's plane, out to APRON either side, over water only.
 """
 from __future__ import annotations
 
 import math
+import struct
 from dataclasses import dataclass
 
 from . import kdt as K
@@ -28,6 +39,22 @@ WIDEN = 1.5            # how much wider than the shipped bridge's a new bridge's
                        # nudged past it by another, found no floor and dropped to the riverbed, which is what "under
                        # the bridge" looked like in the game, 2026-10-01). The floor isn't drawn: a wider one only
                        # means a unit near the deck's edge still stands at the deck's height.
+APRON = 3200.0         # map units either side of a new deck's line its floor reaches over the water: the movement on
+                       # the deck (640) and a squad's limit (2,480), see the top of this file
+CELL = 160.0           # an apron is tested for water in cells this size (so at a bank at most this much water is
+                       # left without floor: a man there wades at the water's edge)
+LAP = 150.0            # how far an apron's pieces lap over the band and each other: the file's points sit on a grid
+                       # (61 by 40 map units on D-Day), so pieces that only met could leave a crack to fall through
+GAP = 150.0            # an apron piece is kept only where the riverbed is at least this far below it
+RISE = 200.0           # ...and, at the water's edge, over dry ground no more than this far below it: a steep bank
+                       # whose top is about the deck's height (else the last CELL of water under such a bank is left
+                       # without floor, and it's deep there: a man 4 m under at D-Day's fourth new bridge). A unit on
+                       # that edge of the bank stands this much higher at most; a low bank is never under the floor.
+FAR = 20000.0          # the farthest a shipped bridge's apron reaches from its line (D-Day's: 17,230)
+EDGE = (300.0, 800.0)  # where a shipped apron's near edge lies from its bridge's line (D-Day's: 438 to 630)
+UP = 0x7FFDFFF5        # the normal every point of every shipped floor file has (all 45,188 points on the 29 maps that
+                       # have one): straight up, whatever the floor's slope. The game turns a man to the normal of
+                       # what he stands on, so a floor file never gets normals worked out from its triangles.
 
 
 class FloorError(ValueError):
@@ -82,6 +109,117 @@ def on_deck(tri, deck: Deck, reach: float = 1.2) -> bool:
     return True
 
 
+def beside_deck(tri, deck: Deck, reach: float = 1.2) -> bool:
+    """A triangle of an apron beside `deck` (the shipped metal bridges': one flat piece either side, as long as the
+    deck's band): every point within the deck's length, all on one side of its line, the nearest at the band's edge
+    (EDGE) and none farther than FAR."""
+    across = []
+    for x, y, _z in tri:
+        t, s = deck.local(x, y)
+        if abs(t) > reach or abs(s) > FAR:
+            return False
+        across.append(s)
+    near = min(abs(s) for s in across)
+    return EDGE[0] <= near <= EDGE[1] and (all(s > 0 for s in across) or all(s < 0 for s in across))
+
+
+def apron(band: list, deck: Deck, ground: tuple[float, float], water, height_at, half: float = APRON) -> list[tuple]:
+    """The floor beside a new deck's `band` (its carried floor: triangles on `deck`, whose ends' ground is `ground`),
+    out to `half` either side of the deck's line wherever that's over water: flat pieces in the band's own plane (at
+    each place along the deck, the band's height there), so a man beside the deck stands at the deck's height, not on
+    the riverbed. `water(x, y)` says where the map's water is, `height_at(x, y)` gives the ground (None off the
+    mesh). Tested in cells of CELL: a cell is floor when its corners and middle are over water with the riverbed
+    GAP or more below (at the water's edge a corner may be on dry ground no more than RISE below the floor: a steep
+    bank's top), so the floor never lifts a unit standing on dry ground by more than RISE, and a bank that runs at an
+    angle to the deck (dry beside the deck, water farther out) still gets floor over its water. Cells that are clear
+    alike join into one piece; the pieces lap over the band and over each other by LAP, always inside what was
+    tested."""
+    def base(t):
+        return ground[0] + (ground[1] - ground[0]) * (t + 1) / 2
+    points = sorted({(deck.local(x, y), z) for tri in band for x, y, z in tri})
+    lines: list[list] = []  # the band's cross lines, in order along the deck: the points 200 or less apart along it
+    for (t, s), z in points:  # (a line's points sit on the file's grid, so they aren't at exactly one place along)
+        if lines and (t - lines[-1][0][0]) * deck.half <= 200.0:
+            lines[-1].append((t, s, z))
+        else:
+            lines.append([(t, s, z)])
+    if len(lines) < 2:
+        return []
+    ts = [sum(p[0] for p in line) / len(line) for line in lines]
+    lift = {t: sum(p[2] - base(p[0]) for p in line) / len(line) for t, line in zip(ts, lines)}
+    width = {side: {t: max(side * p[1] for p in line) for t, line in zip(ts, lines)} for side in (1, -1)}
+
+    def height(t):
+        for a, b in zip(ts, ts[1:]):
+            if t <= b:
+                f = min(max((t - a) / (b - a), 0.0), 1.0)
+                return base(t) + lift[a] + (lift[b] - lift[a]) * f
+        return base(t) + lift[ts[-1]]
+
+    def clear(t, s):
+        """May (t, s) be under the floor: 2 over water (the riverbed GAP or more below), 1 on dry ground RISE or
+        less below the floor (a steep bank's top), 0 not."""
+        x, y = deck.world(t, s)
+        g = height_at(x, y)
+        if g is None:
+            return 0
+        if water(x, y):
+            return 2 if height(t) - g >= GAP else 0
+        return 1 if height(t) - g <= RISE else 0
+
+    def cell(u0, u1, s0, s1):  # a cell is floor when every corner and its middle may be, and one of them is water
+        marks = [clear(u, s) for u, s in ((u0, s0), (u0, s1), (u1, s0), (u1, s1), ((u0 + u1) / 2, (s0 + s1) / 2))]
+        return min(marks) > 0 and max(marks) == 2
+    def quad(u0, u1, s0, s1, side):
+        p = [(*deck.world(u0, side * s0), height(u0)), (*deck.world(u0, side * s1), height(u0)),
+             (*deck.world(u1, side * s0), height(u1)), (*deck.world(u1, side * s1), height(u1))]
+        return [(p[0], p[1], p[2]), (p[1], p[3], p[2])]
+    out = []
+    lap = LAP / deck.half
+    for side in (1, -1):
+        inner = max(min(width[side].values()) - LAP, 0.0)  # (0: the band has no edge on this side at some line)
+        if inner >= half:
+            continue
+        edges = []  # the cells' edges across, from just inside the band's edge out to `half`
+        s = inner
+        while s < half:
+            edges.append(s)
+            s += CELL
+        edges.append(half)
+        runs = []  # [from t, to t, the stretches across that are clear ((s0, s1), ...), the band's section], in order
+        for section, (a, b) in enumerate(zip(ts, ts[1:])):
+            n = max(1, math.ceil((b - a) * deck.half / CELL))
+            cuts = [a + (b - a) * i / n for i in range(n)] + [b]
+            for u0, u1 in zip(cuts, cuts[1:]):
+                spans: list[tuple[float, float]] = []
+                for s0, s1 in zip(edges, edges[1:]):
+                    if cell(u0, u1, side * s0, side * s1):
+                        if spans and spans[-1][1] == s0:
+                            spans[-1] = (spans[-1][0], s1)
+                        else:
+                            spans.append((s0, s1))
+                if runs and runs[-1][3] == section and runs[-1][2] == tuple(spans):
+                    runs[-1][1] = u1  # clear across as the cells before it are: one piece (within a section of the
+                else:                 # band, where its height runs straight)
+                    runs.append([u0, u1, tuple(spans), section])
+        for i, (u0, u1, spans, _section) in enumerate(runs):
+            before = runs[i - 1] if i else None
+            after = runs[i + 1] if i + 1 < len(runs) else None
+            for s0, s1 in spans:
+                v0, v1 = u0, u1
+                # lap over a neighbour's stretch that holds this one whole (what's lapped was tested for it)
+                if before and any(n0 <= s0 and s1 <= n1 for n0, n1 in before[2]):
+                    v0 = max(u0 - lap, before[0])
+                if after and any(n0 <= s0 and s1 <= n1 for n0, n1 in after[2]):
+                    v1 = min(u1 + lap, after[1])
+                out += quad(v0, v1, s0, s1, side)
+                for n0, n1 in after[2] if after else ():  # one that only partly meets it: a piece over their joint
+                    lo, hi = max(s0, n0), min(s1, n1)
+                    if lo < hi and not (n0 <= s0 and s1 <= n1) and not (s0 <= n0 and n1 <= s1):
+                        out += quad(max(u1 - lap, u0), min(u1 + lap, after[1]), lo, hi, side)
+    return out
+
+
 def carry(floor: list, src: Deck, src_ground: tuple[float, float], dst: Deck,
           dst_ground: tuple[float, float], widen: float = WIDEN) -> list[tuple]:
     """`floor` (triangles on deck `src`, whose ends' ground is `src_ground`) put on deck `dst` (ends' ground
@@ -98,13 +236,6 @@ def carry(floor: list, src: Deck, src_ground: tuple[float, float], dst: Deck,
             pts.append((wx, wy, base(dst_ground, t) + z - base(src_ground, t)))
         out.append(tuple(pts))
     return out
-
-
-def _normal(a, b, c) -> tuple[float, float, float]:
-    ux, uy, uz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
-    vx, vy, vz = c[0] - a[0], c[1] - a[1], c[2] - a[2]
-    n = (uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx)
-    return n if n[2] >= 0 else (-n[0], -n[1], -n[2])   # floors face up
 
 
 def build_tree(boxes: list[tuple[tuple, tuple]]):
@@ -156,8 +287,8 @@ def build_tree(boxes: list[tuple[tuple, tuple]]):
 
 def rebuild(k: K.Kdt, tris: list[tuple]) -> bytes:
     """The file `k` holding exactly `tris` (world units) as one subtree: the bounds grown to hold them (kept when
-    they already do, so the old points keep their exact values), vertices shared where triangles meet, per-vertex
-    normals, a new k-d tree, and the MainNode's bounds."""
+    they already do, so the old points keep their exact values), vertices shared where triangles meet, every
+    triangle facing up, every point's normal straight up (UP), a new k-d tree, and the MainNode's bounds."""
     if not tris:
         raise FloorError("a floor file needs at least one triangle")
     lo = [min(p[a] for t in tris for p in t) for a in range(3)]
@@ -167,31 +298,33 @@ def rebuild(k: K.Kdt, tris: list[tuple]) -> bytes:
         k.bounds_max = tuple(max(hi[a], k.bounds_max[a]) for a in range(3))
     index: dict[tuple, int] = {}
     verts: list[tuple[int, int, int]] = []
-    normals: list[list[float]] = []
     idx: list[int] = []
     boxes = []
     for t in tris:
         q = [tuple(k.to_quant(a, p[a]) for a in range(3)) for p in t]
-        n = _normal(*t)
+        # every shipped floor triangle faces up by the order of its points (all 556 of D-Day's), so ours do too;
+        # one that's no triangle any more on the file's grid (a sliver) is left out: nothing can stand on it
+        ux, uy, uz = (q[1][a] - q[0][a] for a in range(3))
+        vx, vy, vz = (q[2][a] - q[0][a] for a in range(3))
+        nz = ux * vy - uy * vx
+        if nz == 0 and uy * vz - uz * vy == 0 and uz * vx - ux * vz == 0:
+            continue
+        if nz < 0:
+            q[1], q[2] = q[2], q[1]
         for v in q:
             if v not in index:
                 index[v] = len(verts)
                 verts.append(v)
-                normals.append([0.0, 0.0, 0.0])
-            i = index[v]
-            idx.append(i)
-            normals[i] = [normals[i][a] + n[a] for a in range(3)]
+            idx.append(index[v])
         boxes.append((tuple(min(v[a] for v in q) for a in range(3)), tuple(max(v[a] for v in q) for a in range(3))))
-    unit = []
-    for n in normals:
-        length = math.sqrt(sum(c * c for c in n))
-        unit.append(tuple(c / length for c in n) if length > 0 else (0.0, 0.0, 1.0))
+    if not boxes:
+        raise FloorError("a floor file needs at least one triangle")
     root, lists = build_tree(boxes)
-    sub = K.Subtree(K.compress(K.encode_positions(verts)), K.compress(K.encode_normals(unit)), len(idx),
-                    K.compress(K.encode_indices(idx)), b"", b"")
+    sub = K.Subtree(K.compress(K.encode_positions(verts)), K.compress(struct.pack(f"<{len(verts)}I", *[UP] * len(verts))),
+                    len(idx), K.compress(K.encode_indices(idx)), b"", b"")
     k.subtrees = [sub]
     k.set_tree(0, root, lists)
-    k.triangle_count = len(tris)
+    k.triangle_count = len(boxes)
     entries = k.main_entries()
     leaf = next((e for e in entries if e[0] == K.MAIN_LEAF), (K.MAIN_LEAF, 0, 0, 0.0))
     k.set_main_entries([(0, 0, 0, k.bounds_max[0]), (2, 0, 0, k.bounds_min[0]),
@@ -213,14 +346,15 @@ def found_at(k: K.Kdt, x: float, y: float) -> list[int]:
     return sorted(set(out))
 
 
-def floors_for(k: K.Kdt, height_at, new: list, gone: list[Deck]) -> tuple[bytes, list[str]]:
+def floors_for(k: K.Kdt, height_at, new: list, gone: list[Deck], water=None) -> tuple[bytes, list[str]]:
     """The objects-only file with a floor for each new bridge and none for the sunk ones. `new`: [(the new deck,
     [the decks of the shipped bridges of its kind on this map])]; `height_at(x, y)`: the ground (None off the mesh);
-    `gone`: decks whose floors go. Returns (the file, notes)."""
+    `gone`: decks whose floors go, their aprons with them; `water(x, y)`: where the map's water is, for the new
+    floors' aprons (without it they get the band alone). Returns (the file, notes)."""
     shipped = triangles(k)
-    tris = [t for t in shipped if not any(on_deck(t, d) for d in gone)] if gone else list(shipped)
+    tris = [t for t in shipped if not any(on_deck(t, d) or beside_deck(t, d) for d in gone)] if gone else list(shipped)
     removed = len(shipped) - len(tris)
-    notes, added = [], 0
+    notes, added, reaches = [], 0, []
 
     def ground(deck):
         (x0, y0), (x1, y1) = deck.ends()
@@ -242,12 +376,21 @@ def floors_for(k: K.Kdt, height_at, new: list, gone: list[Deck]) -> tuple[bytes,
             notes.append("a new bridge has no floor to copy (no shipped bridge of its kind has one on this map): "
                          "units won't stand on it")
             continue
-        tris += carry(floor, src, src_g, deck, dst_g)
+        band = carry(floor, src, src_g, deck, dst_g)
+        tris += band
         added += 1
+        if water is not None:
+            beside = apron(band, deck, dst_g, water, height_at)
+            tris += beside
+            reaches.append(max((abs(deck.local(p[0], p[1])[1]) for t in beside for p in t), default=0.0))
     if not added and not removed:
         return b"", notes
     if not tris:  # the file can't be empty: the old floor stays (its ground over the water is closed to units)
         return b"", notes + ["the sunk bridge's floor stays: it's the only one on this map"]
     notes.insert(0, f"floors: {added} bridge(s) given one" + (f", {removed} triangle(s) of sunk bridges taken out"
                                                                  if removed else ""))
+    dry = sum(1 for r in reaches if r < APRON / 2)
+    if dry:  # (no water beside the deck, or a bank within a few metres of its line all the way)
+        notes.append(f"{dry} new bridge(s) have little or no water beside the deck for their floor to reach over: "
+                     f"infantry beside the deck stand on the ground there")
     return rebuild(k, tris), notes

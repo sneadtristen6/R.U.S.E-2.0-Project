@@ -75,6 +75,40 @@ class Water:
         return False
 
 
+class Ground:
+    """A map's ground mesh (triangle list 0) bucketed by place: its height at a point, fast. Tms.height_at scans every
+    cell (fine for a few points, 55 ms each on D-Day); a bridge floor's apron asks for thousands (rusemod.floors)."""
+
+    def __init__(self, mesh: Tms, bucket: float = 8192.0):
+        self.bucket = bucket
+        self.grid: dict[tuple[int, int], list] = {}
+        for k, c in enumerate(mesh.cells):
+            tri = c.triangles(0)
+            if not tri:
+                continue
+            pts = mesh.world_vertices(k)
+            for t in range(0, len(tri) - 2, 3):
+                p = [pts[v] for v in tri[t:t + 3]]
+                x0, x1 = min(q[0] for q in p), max(q[0] for q in p)
+                y0, y1 = min(q[1] for q in p), max(q[1] for q in p)
+                for gx in range(int(x0 // bucket), int(x1 // bucket) + 1):
+                    for gy in range(int(y0 // bucket), int(y1 // bucket) + 1):
+                        self.grid.setdefault((gx, gy), []).append(p)
+
+    def height_at(self, x: float, y: float) -> float | None:
+        """The ground's height at (x, y), as Tms.height_at gives it (None off the mesh)."""
+        for a, b, c in self.grid.get((int(x // self.bucket), int(y // self.bucket)), ()):
+            den = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1])
+            if den == 0:
+                continue
+            l1 = ((b[1] - c[1]) * (x - c[0]) + (c[0] - b[0]) * (y - c[1])) / den
+            l2 = ((c[1] - a[1]) * (x - c[0]) + (a[0] - c[0]) * (y - c[1])) / den
+            l3 = 1.0 - l1 - l2
+            if min(l1, l2, l3) >= -1e-9:
+                return l1 * a[2] + l2 * b[2] + l3 * c[2]
+        return None
+
+
 def _along(line, dist: float) -> tuple[float, float]:
     """The point `dist` map units along the polyline `line` (its end past its length)."""
     for (ax, ay), (bx, by) in zip(line, line[1:]):

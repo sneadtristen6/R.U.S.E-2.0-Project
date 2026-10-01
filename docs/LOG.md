@@ -930,3 +930,43 @@ kept closed, the water beside a bridge included. `apply_blocks` now passes `keep
 already did: owners keep their size and the block goes into their local maps instead (`Graph.block` walks them).
 After it, on the owner's D-Day test: 0 of the map's 21 own bridges have any ground changed beside them (was 2), and
 its local maps change only where a building really stands. `tests/test_nav.py` has the case.
+
+**A new bridge's floor reaches out over the water, as the game's metal bridges' do (2026-10-01, round 6).** Tanks held
+the deck; infantry beside it still stood in the river ("they are in water not like vanilla ruse ... vanilla ruse they
+float"). Where a unit is comes from the movement graph, how high it stands from the topmost floor under that point,
+and nothing ties the two. A tank is one point. An infantry squad is five men on an arc 2,828 wide (the game data's
+`Dispersion` 500 for `NbSoldatInGroupeCombat` 5; a man strays up to `DispersionMax` 620 x 4 = 2,480 from the squad's
+place), each man on the floor under his own feet, and only the squad's own place is ever held to the movement graph.
+So beside a deck 640 wide two of the five are 2,054 from its line. Measured on D-Day: each metal bridge's floor is
+three slabs, the deck's band (440 to 670 either side) and two flat aprons the length of the band reaching 12,170 to
+17,230 from the line over open river, so the game's infantry stand at the deck's height there (740 to 840 above the
+water's surface); its five stone bridges have the band alone (1,400), and infantry stand in the river beside them.
+Our copy of a bridge's floor kept only the triangles within 2,500 of the deck's line (`floors.ACROSS`): the band,
+never the aprons. The men beside our decks had the riverbed, about 2,000 below the surface.
+
+`floors.apron`: beside each new deck's band, floor in the band's own plane out to 3,200 either side (`APRON`: the
+deck's 640 and the squad's limit 2,480), tested in cells of 160: a cell is floor when its corners and middle are over
+water with the riverbed 150 or more below (at the water's edge a corner may be on dry ground no more than 200 below
+the floor: a steep bank's top), so a unit on dry ground is never lifted, and a bank at an angle to the deck (dry
+beside the deck, water farther out) still gets floor over its water. Cells clear alike join into one piece; pieces
+lap the band and each other by 150 (the file's points sit on a grid, 61 by 40 map units on D-Day). A sunk bridge's
+aprons go with its band (`beside_deck`). The ground under thousands of test points comes from `bridges.Ground` (the
+mesh bucketed by place: `Tms.height_at` scans every cell, 55 ms a point on D-Day, which made the build take 12
+minutes; the same answers 5,000 times faster).
+
+Three rules of the game's floor files, found from the owner's 04:14 screenshots (men lying sideways on the decks, on
+one of the map's own stone bridges too) and now kept by `floors.rebuild`: every triangle faces up by the order of its
+points (all 556 of D-Day's; the first aprons had one side's the other way round, 161 triangles); every point's normal
+is the one word `0x7FFDFFF5`, straight up, whatever the slope (all 45,188 points on the 29 maps with a floor file; we
+wrote normals worked out from the triangles, changing 207 of D-Day's 690 shipped points; the game turns a man to the
+normal of what he stands on); no triangle is a sliver on the file's grid (3 were).
+
+The check before the game test, on the built copy (`D:\RUSE-Instances\bridges`, the owner's `test` mod, 4 new
+bridges): a squad placed everywhere the movement lets it stand on each deck, walking either way, its five men at their
+places on the arc. Before: 1,777 to 2,159 of about 4,600 men per bridge under the water (down to 2,060 below the
+surface; 6,430 at one). After: 31 to 53, all within a cell of the water's edge (283 to 446 below; 1,098 at one steep
+bank). No floor below the water's surface, no dry ground a unit may walk on lifted by the aprons, the map's own 556
+floor triangles and 690 points unchanged, every triangle found by the file's tree, the movement file byte for byte
+what it was. 889 triangles (333 new). What the game should show: a squad on a new bridge as on one of the map's own
+metal bridges, the men beside the deck upright at its height over the water. [LESSONS.md](LESSONS.md) has why this
+took six rounds.

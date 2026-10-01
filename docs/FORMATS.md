@@ -468,6 +468,28 @@ six bound clips and one leaf. A new bridge without a floor is drawn, but units w
 the game, 2026-09-30). `rusemod.floors` rebuilds the file as one subtree (its own k-d tree, every triangle found from
 its middle; D-Day's rebuilt keeps every shipped point exactly).
 
+**A floor is the deck's band and, on the metal bridges, two aprons (2026-10-01).** The 8 (or 24) triangles above are
+only the middle slab. Each metal bridge has three slabs that abut within 2 or 3 units: the band, 440 to 670 either
+side of the deck's line, and beside it two flat aprons exactly as long as the band, 20 to 30 above it, reaching 12,170
+(the short Pont_Metallique_02), 12,790 (_03) or 17,230 (_02_TangeantFloor) from the line, over open river. The five
+stone bridges have the band alone, 1,400 either side. Why it matters: where a unit is comes from the movement graph
+and how high it stands from the topmost floor under that point, with nothing tying the two; and an infantry squad is
+five men on an arc 2,828 wide (the game data's `Dispersion` 500 for `NbSoldatInGroupeCombat` 5; a man strays up to
+`DispersionMax` 620 x 4 = 2,480 from the squad's place), each man standing on the floor under his own feet. Beside a
+metal bridge the men off the deck stand on the apron, at the deck's height (740 to 840 above the water's surface on
+D-Day); beside a stone bridge, or a new bridge given the band alone, they stand on the riverbed (about 2,000 below
+it). So `rusemod.floors.apron` gives a new bridge a floor out to 3,200 either side of its line, in its band's plane,
+over water only (tested in cells of 320: never over dry ground, never within 150 of the ground's height), its pieces
+lapping the band and each other by 150 (the file's points sit on a grid, 61 by 40 map units on D-Day).
+
+**Three rules every shipped floor file keeps (checked on all 29 maps that have one; `floors.rebuild` keeps them):**
+every triangle faces up by the order of its points (all 556 of D-Day's); every point's normal is the one word
+`0x7FFDFFF5`, straight up, whatever the floor's slope (all 45,188 points; the ground trees' normals do vary); no
+triangle is a sliver. The game turns each man to the normal of what he stands on. Before 2026-10-01 our rebuilt file
+had normals worked out from its triangles (207 of D-Day's 690 shipped points changed, the map's own bridges
+included), and the first aprons had the points of one side's triangles the other way round: in the game men lay
+sideways on the decks (the owner's screenshots, 04:14).
+
 #### Movement graphs (`mapinfo.win` buffers 1 and 2; 2026-09-30; code `rusemod.nav`; check `tools/verify_nav.py`)
 
 Where units can go: buffer 1 for infantry, buffer 2 for vehicles, each a graph of overlapping circles of ground,

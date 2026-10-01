@@ -712,7 +712,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                                  f"may run through them")
             if objects or by_hand or gone:  # the floors units stand on (rusemod.floors): new bridges get their kind's
                 from . import floors
-                from .bridges import deck as deck_of, shipped_bridges
+                from .bridges import Ground, Water, deck as deck_of, shipped_bridges
                 from .kdt import Kdt
                 from .tms import Tms
                 try:
@@ -722,8 +722,10 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     shipped = shipped_bridges(Scenery(sc_raw), descs, length_of)
                     new = [(floors.Deck.of(*deck_of(o, *length_of(o.type))),
                             [floors.Deck.of(*b.deck) for b in shipped if b.kind == o.type]) for o in objects + by_hand]
-                    data, floor_notes = floors.floors_for(Kdt(k_raw), Tms(mesh).height_at, new,
-                                                          [floors.Deck.of(*d) for d in gone])
+                    ground_mesh = Tms(mesh)  # (the water, and the ground bucketed: for the floors' aprons, which
+                    data, floor_notes = floors.floors_for(  # test thousands of places beside the new decks)
+                        Kdt(k_raw), Ground(ground_mesh).height_at, new, [floors.Deck.of(*d) for d in gone],
+                        made.water.at if wanted else Water(ground_mesh).at)
                     if data:
                         done[map_arc.find(floors.MEMBER).path] = data
                         if entry is None:

@@ -70,6 +70,28 @@ class Rebuilding(unittest.TestCase):
         entries = k.main_entries()
         self.assertEqual([e[0] for e in entries], [0, 2, 0, 2, 0, 2, 5])  # the bounds, then the one subtree
 
+    def test_the_file_keeps_the_games_own_rules(self):
+        # what every shipped floor file does (all 29 maps): each triangle faces up by the order of its points, each
+        # point's normal is the one word UP (the game turns a man to the normal of what he stands on: with normals
+        # worked out from the triangles, and aprons whose points ran the other way round, men lay sideways on the
+        # decks and fell through one side's floor; the owner's test, 2026-10-01), and no triangle is a sliver
+        import struct
+        from rusemod.kdt import inflate
+        deck = Deck.of(200000.0, 150000.0, 212000.0, 150000.0)
+        flipped = [(a, c, b) for a, b, c in strip(deck, 500.0, 900.0)]           # the points the other way round
+        sliver = [((205000.0, 151000.0, 700.0), (205000.5, 151000.0, 700.0), (205000.0, 151000.5, 700.0))]
+        k = Kdt(rebuild(Kdt(make_valid_kdt()), strip(SHIPPED, FLAT, FLAT) + flipped + sliver))
+        self.assertEqual(k.triangle_count, 16)                                    # the sliver is no triangle: left out
+        pos, idx = k.positions(0), k.indices(0)
+        for i in range(0, len(idx), 3):
+            a, b, c = (pos[v] for v in idx[i:i + 3])
+            self.assertGreater((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]), 0, i // 3)
+        words = struct.unpack(f"<{len(pos)}I", inflate(k.subtrees[0].normals))
+        self.assertEqual(set(words), {floors.UP})
+        self.assertEqual(floors.UP, 0x7FFDFFF5)
+        with self.assertRaises(floors.FloorError):
+            rebuild(Kdt(make_valid_kdt()), sliver)
+
     def test_the_old_points_keep_their_values(self):
         first = Kdt(base_file())
         again = Kdt(rebuild(Kdt(base_file()), triangles(first)))
@@ -130,6 +152,140 @@ class ForABuild(unittest.TestCase):
         data, notes = floors_for(Kdt(base_file()), lambda x, y: None, [(Deck.of(300000.0, 0.0, 310000.0, 0.0),
                                                                           [SHIPPED])], [])
         self.assertIn("no floor to copy", notes[0])  # off the ground mesh: no banks to sit on
+
+
+def metal(deck: Deck, z: float) -> list:
+    """A floor like the shipped metal bridges': a band 650 either side of the deck's line, and beside it two flat
+    aprons as long as the band, from 620 out to 17,000, 30 above it (24 triangles: 8 each)."""
+    out = []
+    ts = [-1.0, -0.5, 0.0, 0.5, 1.0]
+    for s0, s1, lift in ((-650.0, 650.0, 0.0), (620.0, 17000.0, 30.0), (-17000.0, -620.0, 30.0)):
+        for a, b in zip(ts, ts[1:]):
+            p = [(*deck.world(a, s0), z + lift), (*deck.world(a, s1), z + lift), (*deck.world(b, s0), z + lift),
+                 (*deck.world(b, s1), z + lift)]
+            out += [(p[0], p[1], p[2]), (p[1], p[3], p[2])]
+    return out
+
+
+def top(tris, x: float, y: float):
+    """The highest floor over (x, y): what a unit there stands on (None: no floor, so the ground under it)."""
+    best = None
+    for a, b, c in tris:
+        den = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1])
+        if den == 0:
+            continue
+        l1 = ((b[1] - c[1]) * (x - c[0]) + (c[0] - b[0]) * (y - c[1])) / den
+        l2 = ((c[1] - a[1]) * (x - c[0]) + (a[0] - c[0]) * (y - c[1])) / den
+        l3 = 1.0 - l1 - l2
+        if min(l1, l2, l3) >= -1e-9:
+            z = l1 * a[2] + l2 * b[2] + l3 * c[2]
+            best = z if best is None else max(best, z)
+    return best
+
+
+class Aprons(unittest.TestCase):
+    """A squad's five men stand on an arc 2,828 wide, each on the floor under his own feet: beside a deck whose
+    movement is 640 wide two of them are 2,054 from its line. With the band alone they stood on the riverbed (the
+    owner's test, 2026-10-01: "they are in water not like vanilla ruse ... vanilla ruse they float")."""
+    NEW = Deck.of(200000.0, 150000.0, 212000.0, 150000.0)   # 12,000 long, along x; its banks 1,500 in from each end
+    BANK = 2000.0
+
+    @staticmethod
+    def river(x, y):
+        return 201500.0 < x < 210500.0
+
+    def ground(self, x, y):
+        return 0.0 if self.river(x, y) else self.BANK   # the riverbed 2,000 below the banks
+
+    def band(self):
+        return carry(strip(SHIPPED, FLAT, FLAT), SHIPPED, (FLAT, FLAT), self.NEW, (self.BANK, self.BANK))
+
+    def fair(self, tris, water, ground=None):
+        """Every point of the floor `tris` is over water, or on dry ground no more than RISE below it (the top of a
+        steep bank at the water's edge: here the banks stand 50 below the floor)."""
+        ground = ground or self.ground
+        return all(water(x, y) or z - ground(x, y) <= floors.RISE for t in tris for x, y, z in t)
+
+    def test_beside_the_band_over_the_water_at_its_height(self):
+        band = self.band()
+        beside = floors.apron(band, self.NEW, (self.BANK, self.BANK), self.river, self.ground)
+        self.assertEqual(len(beside), 16)  # one piece per section of the band either side, where there's water
+        pts = [p for t in beside for p in t]
+        self.assertTrue(self.fair(beside, self.river))
+        along = [x for x, _y, _z in pts]                                   # to the water's edge under the steep banks
+        self.assertTrue(201500.0 - floors.CELL < min(along) <= 201500.0 and 210500.0 <= max(along) < 210500.0
+                        + floors.CELL, (min(along), max(along)))           # and no farther over them than a cell
+        self.assertTrue(all(abs(z - (self.BANK + 50.0)) < 1e-6 for _x, _y, z in pts))  # in the band's plane
+        across = [abs(self.NEW.local(x, y)[1]) for x, y, _z in pts]
+        self.assertAlmostEqual(max(across), floors.APRON)
+        self.assertAlmostEqual(min(across), 1200.0 * WIDEN - floors.LAP)  # lapping over the band's edge
+        both = band + beside
+        for x in (201510.0, 203000.0, 206000.0, 209000.0, 210490.0):       # (203000, 206000...: where pieces meet)
+            for s in (0.0, 640.0, 640.0 + 1414.0, 640.0 + 2480.0, -640.0 - 1414.0, -3190.0):
+                self.assertAlmostEqual(top(both, x, 150000.0 + s), self.BANK + 50.0, msg=(x, s))
+        self.assertIsNone(top(both, 206000.0, 150000.0 + 3300.0))          # past the apron: the river
+        self.assertIsNone(top(both, 201000.0, 150000.0 + 2054.0))          # beside the deck on the bank: the ground
+        self.assertIsNone(top(band, 206000.0, 150000.0 + 2054.0))          # (the band alone: the riverbed)
+
+    def test_a_bank_that_cuts_in_and_ground_near_its_height(self):
+        def water(x, y):  # the far bank comes in to 2,500 from the line along the deck's first third
+            return self.river(x, y) and (x >= 204000.0 or y < 152500.0)
+        beside = floors.apron(self.band(), self.NEW, (self.BANK, self.BANK), water, self.ground)
+        pts = [p for t in beside for p in t]
+        self.assertTrue(all(water(x, y) or not self.river(x, y) for x, y, _z in pts))  # (the bank that cuts in is
+        near = [self.NEW.local(x, y)[1] for x, y, _z in pts if x < 204000.0 - 1.0]
+        self.assertLessEqual(max(near), 2500.0)
+        self.assertAlmostEqual(min(near), -floors.APRON)                   # the other side still reaches all the way
+        self.assertAlmostEqual(max(self.NEW.local(x, y)[1] for x, y, _z in pts if x > 204200.0), floors.APRON)
+
+        # a bank at an angle to the deck: dry ground beside the deck, water farther out (the owner's D-Day decks:
+        # stopping at the first dry cell left men 1,400 to 2,000 out over deep water with no floor)
+        def spit(x, y):
+            return self.river(x, y) and not (x < 204000.0 and 151500.0 < y < 152100.0)
+        beside = floors.apron(self.band(), self.NEW, (self.BANK, self.BANK), spit, self.ground)
+        self.assertTrue(all(spit(x, y) or not self.river(x, y) for t in beside for x, y, _z in t))  # (a low spit)
+        self.assertIsNone(top(beside, 203000.0, 151800.0))                 # the spit: the ground
+        self.assertAlmostEqual(top(beside, 203000.0, 152600.0), self.BANK + 50.0)  # the water past it: floor
+        self.assertAlmostEqual(top(beside, 205000.0, 151800.0), self.BANK + 50.0)
+
+        # two stretches that only partly meet where two pieces join (at a line of the band): no crack between them
+        def steps(x, y):
+            return self.river(x, y) and (y < 152500.0 if x < 203000.0 else y > 152100.0 or y < 150000.0)
+        beside = floors.apron(self.band(), self.NEW, (self.BANK, self.BANK), steps, self.ground)
+        self.assertTrue(all(steps(x, y) or not self.river(x, y) for t in beside for x, y, _z in t))
+        for x in (202960.0, 203000.0, 203040.0):
+            self.assertAlmostEqual(top(beside, x, 152300.0), self.BANK + 50.0, msg=x)
+
+        def shoal(x, y):  # water everywhere, but a shoal 100 below the deck on one side: no floor over it
+            return self.BANK if y > 151000.0 else self.ground(x, y)
+        beside = floors.apron(self.band(), self.NEW, (self.BANK, self.BANK), self.river, shoal)
+        self.assertTrue(all(self.NEW.local(x, y)[1] < 0 for t in beside for x, y, _z in t))
+        self.assertEqual(floors.apron(self.band(), self.NEW, (self.BANK, self.BANK), lambda x, y: False, self.ground),
+                         [])                                               # no water: the band alone
+
+    def test_a_build_gives_new_bridges_one_and_takes_a_sunk_bridges(self):
+        k = Kdt(rebuild(Kdt(make_valid_kdt()), metal(SHIPPED, self.BANK)))
+        data, notes = floors_for(k, self.ground, [(self.NEW, [SHIPPED])], [], self.river)
+        tris = triangles(Kdt(data))
+        mine = [t for t in tris if all(abs(self.NEW.local(p[0], p[1])[0]) <= 1.2 for p in t)]
+        self.assertEqual(len(tris) - len(mine), 24)                        # the shipped bridge keeps all of its own
+        self.assertEqual(len([t for t in mine if floors.on_deck(t, self.NEW)
+                              and max(abs(self.NEW.local(p[0], p[1])[1]) for p in t) < 1100]), 8)  # its band: not
+        reach = max(abs(self.NEW.local(p[0], p[1])[1]) for t in mine for p in t)   # the shipped aprons, 17,000 wide
+        self.assertAlmostEqual(reach, floors.APRON, delta=70)              # (the file's grid)
+        for s in (0.0, 2054.0, -2054.0, 3000.0):
+            self.assertAlmostEqual(top(tris, 206000.0, 150000.0 + s), self.BANK, delta=5, msg=s)
+        self.assertEqual(notes, ["floors: 1 bridge(s) given one"])
+        _data, notes = floors_for(k, self.ground, [(self.NEW, [SHIPPED])], [], lambda x, y: False)
+        self.assertIn("little or no water beside the deck", notes[1])
+        # a sunk bridge's aprons go with its band (they'd hold units up over the river where no bridge is)
+        other = Deck.of(0.0, 300000.0, 9000.0, 300000.0)
+        two = Kdt(rebuild(Kdt(make_valid_kdt()), metal(SHIPPED, FLAT) + metal(other, FLAT)))
+        data, notes = floors_for(two, self.ground, [], [SHIPPED])
+        self.assertEqual(notes, ["floors: 0 bridge(s) given one, 24 triangle(s) of sunk bridges taken out"])
+        left = triangles(Kdt(data))
+        self.assertEqual(len(left), 24)
+        self.assertTrue(all(abs(other.local(p[0], p[1])[0]) <= 1.2 for t in left for p in t))
 
 
 if __name__ == "__main__":
