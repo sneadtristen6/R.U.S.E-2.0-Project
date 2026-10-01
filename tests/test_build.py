@@ -588,3 +588,20 @@ class PlacedObjectsStandOnTheGround(unittest.TestCase):
         self.assertEqual(moved, 2)
         self.assertEqual([o.lift for o in out], [-12110.0, -1216.0, 0.0, -400.0, 0.0])
         self.assertEqual([(o.x, o.y, o.size) for o in out], [(o.x, o.y, o.size) for o in objs])
+
+
+class ClearedWoods(unittest.TestCase):
+    """Erasing trees opens the ground to every unit and takes its forest cover away; erasing props alone doesn't (a
+    D-Day test: tanks couldn't drive into a cleared wood)."""
+
+    def test_trees_gone_open_the_ground_and_take_the_cover(self):
+        from rusemod.build import cleared_woods
+        from rusemod.scenery import EraseArea
+        erasing = {"Map": ([EraseArea(1.0, 2.0, 300.0), EraseArea(5.0, 6.0, 50.0, what=("prop",))], ["m"]),
+                   "Other": ([EraseArea(7.0, 8.0, 10.0, what=("prop",))], ["m"])}
+        opens, uncover = cleared_woods(erasing)
+        self.assertEqual(list(opens), ["Map"])
+        [b] = opens["Map"][0]
+        self.assertEqual((b.x, b.y, b.radius, b.open), (1.0, 2.0, 300.0, True))
+        [p] = uncover["Map"][0]
+        self.assertEqual((p.x, p.y, p.radius, p.layer, p.erase), (1.0, 2.0, 300.0, "cover", True))

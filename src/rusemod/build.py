@@ -259,6 +259,22 @@ def _block_brushes(info) -> None:
 BED_RADII = (3840.0, 2560.0, 1920.0, 1280.0)  # down to nav.MIN_RADIUS: a new movement circle fits in one of these
 
 
+def cleared_woods(erasing: dict) -> tuple[dict, dict]:
+    """For each map's erase areas that take trees ({map: (areas, ids)}): (opens of that ground to every unit, the
+    forest cover taken away there), each {map: (list, ids)}. With its trees gone the ground is no wood any more, but
+    the map's movement still keeps vehicles off it and its cover still hides infantry there (a D-Day test,
+    2026-10-01: tanks couldn't drive into a cleared wood). Erasing only props leaves both."""
+    from .cover import Paint
+    from .nav import Block
+    opens, uncover = {}, {}
+    for name, (areas, ids) in erasing.items():
+        woods = [a for a in areas if "vegetation" in a.what]
+        if woods:
+            opens[name] = ([Block(a.x, a.y, a.radius, "all", True) for a in woods], list(ids))
+            uncover[name] = ([Paint(a.x, a.y, a.radius, "cover", True) for a in woods], list(ids))
+    return opens, uncover
+
+
 GROUND_GAP = 64.0  # map units (a quarter metre): a model starting higher than this above its base point is lowered
 
 
@@ -1216,9 +1232,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         moves, paints = scenario_edits(result.order, mods), scenario_edits(result.order, mods, "cover")
         blocks = scenario_edits(result.order, mods, "movement")
         new_roads = scenario_edits(result.order, mods, "roads")
-        for name, (walls, ids) in list(solid.items()) + list(flooded.items()) + list(beds.items()):  # placed buildings
-            every, who = blocks.setdefault(name, ([], []))  # units go around, new water, and dried beds opened, after
-            every.extend(walls)                              # the mods' own blocks and opens
+        from .scenario import PACK as MOVEMENT_PACK  # (the movement and cover grids live in the scenarios' pack)
+        cleared, uncover = cleared_woods(erasing) if find_pack(game, MOVEMENT_PACK) is not None else ({}, {})
+        for name, (more, ids) in uncover.items():
+            every, who = paints.setdefault(name, ([], []))
+            every.extend(more)
+            who.extend(i for i in ids if i not in who)
+        for name, (walls, ids) in (list(cleared.items()) + list(beds.items()) + list(flooded.items())
+                                   + list(solid.items())):  # after the mods' own blocks and opens: cleared woods and
+            every, who = blocks.setdefault(name, ([], []))    # dried beds opened, new water closed, and placed
+            every.extend(walls)                               # buildings last, so units always go around them
             who.extend(i for i in ids if i not in who)
         players = scenario_edits(result.order, mods, "players")
         if moves or paints or blocks or new_roads or bridge_spans or players:
