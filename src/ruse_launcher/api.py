@@ -30,9 +30,9 @@ import time
 import tomllib
 from pathlib import Path
 
-from rusemod import mod_index
+from rusemod import doctor, mod_index
 from rusemod import play as game_start, schema
-from rusemod.community import CommunityCalls
+from rusemod.community import APP_NAMES, CommunityCalls
 from rusemod.update import UpdateCalls
 from rusemod.build import BuildError
 from rusemod.loadorder import match as match_order, parse as parse_order, share_text
@@ -155,6 +155,35 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls):
         values["game_dir"] = str(folder)  # the Studio uses it too
         save_settings(self._home, values)
         return self.status()
+
+    # --- the troubleshooter (rusemod.doctor): what can stop Play, checked in one go ---
+    def _doctor_places(self) -> tuple[Path | None, Path | None]:
+        """The game folder and where its modded copies go; both None when there's no game (yet)."""
+        game, _found = self._game()
+        if game is None or not game.is_dir():
+            return None, None
+        return game, self._instances or instances_dir(game)
+
+    def troubleshoot(self) -> dict:
+        """Every check of the troubleshooter: {"findings": [...], "report": the same as plain text, for a bug report}.
+        A finding's "say" is a word of words.toml, filled with its "data"; its "fix" goes to troubleshoot_fix, apart
+        from "choose_game", which is the screen's own Choose folder…"""
+        game, instances = self._doctor_places()
+        findings = doctor.checks(game, instances, steam_running=self._starter.steam_running)
+        report = doctor.report(findings, APP_NAMES[self.UPDATE_APP], self.UPDATE_VERSION)
+        return {"findings": findings, "report": report}
+
+    def troubleshoot_fix(self, action: str) -> dict:
+        """Run a finding's fix: "close_game" (a R.U.S.E. left running from a modded copy) or "clear_leftovers" (copies
+        a build left behind). Returns {"done": how many, "left": what couldn't be done}."""
+        if action not in ("close_game", "clear_leftovers"):
+            raise LauncherError(f"There's no fix called {action!r}.")
+        if self._starting():  # the copy being built looks like a leftover, the game it starts like one left running
+            raise LauncherError("R.U.S.E. is being started: wait for it to finish, then try again.")
+        game, instances = self._doctor_places()
+        if instances is None:
+            raise LauncherError("We couldn't find R.U.S.E. Choose its folder first.")
+        return doctor.fix(action, game, instances)
 
     # --- the mod library ---
     def library(self) -> list[dict]:
@@ -490,10 +519,10 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls):
     def play(self, set_id: str) -> dict:
         """Start playing a mod set in the background. Returns {'job': id}; follow it with job(id)."""
         chosen = next((s for s in self._read_sets() if s["id"] == set_id), None)
-        busy = self._jobs.get(getattr(self, "_play_job", None))
+        busy = self._starting()
         job = Job()
         self._jobs[job.id] = job
-        if busy is not None and busy.state == "running":  # one at a time: two would race for the same copy
+        if busy:  # one at a time: two would race for the same copy
             job.state, job.message = "failed", "R.U.S.E. is already being started: wait for it to finish."
         elif chosen is None:
             job.state, job.message = "failed", f"There's no mod set called {set_id!r}."
@@ -504,6 +533,11 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls):
             job.start(lambda say: self._play(chosen, say), "R.U.S.E. is starting.",
                       plain=(BuildError, RndfError, OSError))
         return {"job": job.id}
+
+    def _starting(self) -> bool:
+        """Whether a Play is still building its copy or starting the game."""
+        busy = self._jobs.get(getattr(self, "_play_job", None))
+        return busy is not None and busy.state == "running"
 
     def job(self, job_id: str, since: int = 0) -> dict:
         return job_view(self._jobs, job_id, since)

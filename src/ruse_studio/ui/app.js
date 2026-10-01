@@ -74,6 +74,8 @@ async function setLanguage(lang) {
   $("lang-label").textContent = w.language;
   $("mod-label").textContent = w.mod;
   $("test").textContent = w.test_in_game;
+  $("troubleshoot").textContent = w.doc_button;
+  $("troubleshoot").title = w.doc_intro;
   renderCheck();
   $("new-mod-name").placeholder = w.mod_name;
   $("new-mod-create").textContent = w.create;
@@ -814,11 +816,106 @@ async function testInGame() {
     button.dataset.running = "0";
     button.disabled = !state.mod;
     if (message) say(message, ok ? "ok" : "error");
+    if (!ok) offerTroubleshoot();
   };
   try {
     const { job } = await api().test_in_game();
     follow(job, log, finish);
   } catch (err) { problem(err); finish(false); }
+}
+
+// --- the troubleshooter (StudioApi.troubleshoot, rusemod.doctor): what can stop a test, checked in one go, each
+// finding with a fix button when the app can run one; the report goes into a bug report or on Discord ---
+const DOC_MARKS = { ok: "✔︎", info: "ℹ︎", warn: "⚠︎", fail: "✖︎" };  // ︎: drawn as text, not emoji
+let doctorReport = "";
+
+// A failed test: a link to the troubleshooter beside its message (a game left running from the copy, or a leftover
+// copy Windows won't delete, stopped every second test for a player, 2026-09-30)
+function offerTroubleshoot() {
+  const w = state.words;
+  const link = el("button", { type: "button", className: "link", textContent: w.doc_troubleshoot_link, title: w.doc_intro });
+  link.addEventListener("click", openDoctor);
+  $("status").append(" ", link);
+}
+
+function openDoctor() {
+  const w = state.words, box = $("doctor");
+  $("doctor-title").textContent = w.doc_title;
+  $("doctor-intro").textContent = w.doc_intro;
+  $("doctor-again").textContent = w.doc_again;
+  $("doctor-copy").textContent = w.doc_copy;
+  $("doctor-close").textContent = w.doc_close;
+  doctorNote("");
+  if (!box.open) box.showModal();
+  runDoctor();
+}
+
+function doctorNote(text, ok) {
+  const note = $("doctor-note");
+  note.textContent = text || "";
+  note.className = "small " + (ok ? "ok-text" : "error-text");
+}
+
+async function runDoctor() {
+  const w = state.words, list = $("doctor-list");
+  $("doctor-again").disabled = $("doctor-copy").disabled = true;
+  list.replaceChildren(el("li", { className: "muted", textContent: w.doc_checking }));
+  try {
+    const res = await api().troubleshoot();
+    doctorReport = res.report;
+    list.replaceChildren(...res.findings.map(findingRow));
+    $("doctor-copy").disabled = false;
+  } catch (err) {
+    list.replaceChildren();
+    doctorNote((err && err.message) || String(err), false);
+  }
+  $("doctor-again").disabled = false;
+}
+
+function findingRow(f) {
+  const w = state.words;
+  const row = el("li", { className: "doc-row " + f.level },
+    el("span", { className: "doc-mark", textContent: DOC_MARKS[f.level] || "•" }),
+    el("span", { className: "doc-say", textContent: fill(w[f.say] || f.say, f.data) }));
+  if (f.fix) {
+    const button = el("button", { type: "button", className: "small", textContent: w["doc_fix_" + f.fix] || f.fix });
+    button.addEventListener("click", () => fixFinding(f.fix));
+    row.append(button);
+  }
+  return row;
+}
+
+async function fixFinding(action) {
+  const w = state.words;
+  for (const b of $("doctor-list").querySelectorAll("button")) b.disabled = true;
+  try {
+    if (action === "choose_game") {  // Settings' own "Choose folder…"
+      const g = await chooseGame();
+      doctorNote(g.message, false);
+    } else {
+      const res = await api().troubleshoot_fix(action);
+      const left = res.left || [];
+      doctorNote(left.length ? fill(w.doc_fix_left, { left: left.join("; ") }) : fill(w.doc_fixed, { done: res.done }),
+        !left.length);
+    }
+  } catch (err) { doctorNote((err && err.message) || String(err), false); }
+  await runDoctor();
+}
+
+async function copyReport() {
+  try {
+    await navigator.clipboard.writeText(doctorReport);
+  } catch (err) {  // a window that refuses the clipboard call: the old way, from a box inside the dialog
+    const box = el("textarea", { value: doctorReport, readOnly: true, className: "sr-only" });
+    $("doctor").append(box);
+    box.focus();
+    box.select();
+    const copied = document.execCommand("copy");
+    box.remove();
+    $("doctor-copy").focus();
+    if (!copied) { doctorNote((err && err.message) || String(err), false); return; }
+  }
+  doctorNote(state.words.doc_copied, true);
 }
 
 // --- no index yet ---
@@ -935,8 +1032,18 @@ const SETTINGS = [
       $(id).textContent = w[word];
       $(id).title = w["tip_" + word] || "";
     }
+    $("help-troubleshoot").textContent = w.doc_button;
+    $("help-troubleshoot").title = w.doc_intro;
   } },
 ];
+
+// The game folder chosen by hand: Settings' "Choose folder…", and the troubleshooter's fix when R.U.S.E. wasn't found
+async function chooseGame() {
+  const g = await api().choose_game_folder();
+  renderSettings();
+  if (g.message) $("set-game-path").textContent = g.message;
+  return g;
+}
 
 function renderSettings() {
   const w = state.words;
@@ -1011,14 +1118,17 @@ async function start() {
   $("tab-units").addEventListener("click", () => showView("units"));
   $("tab-maps").addEventListener("click", () => showView("maps"));
   $("tab-settings").addEventListener("click", () => showView("settings"));
-  $("set-game-change").addEventListener("click", async () => {
-    const g = await api().choose_game_folder().catch(problem);
-    if (g) renderSettings();
-    if (g && g.message) $("set-game-path").textContent = g.message;
-  });
+  $("set-game-change").addEventListener("click", () => chooseGame().catch(problem));
   $("help-wiki").addEventListener("click", () => api().open_help("wiki").catch(problem));
   $("help-discussions").addEventListener("click", () => api().open_help("discussions").catch(problem));
   $("help-report").addEventListener("click", () => api().report_problem("").catch(problem));
+  $("help-troubleshoot").addEventListener("click", openDoctor);
+  $("troubleshoot").addEventListener("click", openDoctor);
+  $("doctor-again").addEventListener("click", () => { doctorNote(""); runDoctor(); });
+  $("doctor-copy").addEventListener("click", copyReport);
+  $("doctor-close").addEventListener("click", () => $("doctor").close());
+  // keys pressed in the troubleshooter stay in it: the unit list's and the map's own keys wait behind it
+  window.addEventListener("keydown", (e) => { if ($("doctor").open) e.stopPropagation(); }, true);
   $("set-updates-check").addEventListener("click", async () => {
     $("set-updates-text").textContent = state.words.set_updates_checking;
     try { state.update = await api().update_check(); } catch (err) { state.update = { error: (err && err.message) || String(err) }; }

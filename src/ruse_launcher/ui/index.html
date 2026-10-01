@@ -116,12 +116,28 @@
     <button id="join" class="small ghost" type="button" disabled></button>
     <button id="browse" class="small ghost" type="button"></button>
     <span class="bottom-gap"></span>
-    <!-- the wiki and a bug report (rusemod.community): the launcher only opens pages, it sends nothing -->
+    <!-- the troubleshooter (rusemod.doctor), the wiki and a bug report (rusemod.community): the launcher only opens
+         pages, it sends nothing -->
+    <button id="doc-open" class="small ghost" type="button"></button>
     <button id="help" class="small ghost" type="button"></button>
     <button id="report" class="small ghost" type="button"></button>
   </footer>
 
   <div id="drop-zone" class="drop-zone hidden"><span id="drop-text"></span></div>
+
+  <!-- the troubleshooter: what can stop Play, checked in one go (app.js openDoctor, api.troubleshoot) -->
+  <dialog id="doc" class="doc" aria-labelledby="doc-title">
+    <h2 id="doc-title"></h2>
+    <p id="doc-intro" class="muted"></p>
+    <ul id="doc-list" class="doc-list"></ul>
+    <p id="doc-note" class="message" role="status"></p>
+    <textarea id="doc-report" class="hidden" rows="7" readonly spellcheck="false"></textarea>
+    <div class="actions">
+      <button id="doc-again" class="small" type="button"></button>
+      <button id="doc-copy" class="small ghost" type="button"></button>
+      <button id="doc-close" class="small ghost" type="button"></button>
+    </div>
+  </dialog>
 
   <script src="fake-api.js"></script>
   <script src="app.js"></script>

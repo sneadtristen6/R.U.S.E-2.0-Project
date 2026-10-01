@@ -12,9 +12,9 @@ from pathlib import Path
 from unittest import mock
 
 from test_build import PACK, price, write_mod
-from ruse_launcher import app
+from ruse_launcher import __version__, app
 from ruse_launcher.api import MOD_FILES, LauncherApi, LauncherError, _words, language_code, words
-from rusemod import package, schema
+from rusemod import doctor, package, schema
 from rusemod.play import STEAM_OPEN, STEAM_PLAY, keep_order
 from rusemod.resolve import ModInfo
 from rusemod.webui import serve
@@ -534,8 +534,61 @@ class Browse(Base):
         self.assertIn("couldn't be loaded", res["message"])
 
 
+class Troubleshooter(Base):
+    """The troubleshooter (rusemod.doctor) as the window asks for it: the launcher's own game, folder for modded
+    copies and Steam check, and the two fixes it can run."""
+
+    def test_findings_and_the_report(self):
+        with mock.patch("rusemod.winfiles.processes", return_value=[]):
+            res = self.api().troubleshoot()
+            got = {f["key"]: f for f in res["findings"]}
+            self.assertEqual((got["game"]["level"], got["game"]["data"]), ("ok", {"path": str(self.game)}))
+            self.assertEqual((got["steam"]["level"], got["running"]["level"], got["leftovers"]["level"]), ("ok", "ok", "ok"))
+            self.assertEqual(got["write"]["data"], {"path": str(self.instances)})  # where this launcher puts its copies
+            self.assertTrue(res["report"].startswith(f"RUSE Launcher {__version__}, Windows "), res["report"])
+            self.assertIn("[ok] game: doc_game_ok (path=", res["report"])
+            steam_off = self.api(steam_running=lambda: False).troubleshoot()["findings"]
+            self.assertEqual([f["level"] for f in steam_off if f["key"] == "steam"], ["info"])
+            none = self.api(game_dir=None, find=lambda: None).troubleshoot()["findings"]
+        self.assertEqual([(f["key"], f["fix"]) for f in none], [("game", "choose_game"), ("steam", None), ("running", None)])
+
+    def test_its_fixes(self):
+        api = self.api()
+        for action in ("format the drive", "choose_game"):  # Choose folder… is the window's own
+            with self.subTest(action=action), self.assertRaisesRegex(LauncherError, "no fix called"):
+                api.troubleshoot_fix(action)
+        (self.instances / "half.old" / "Data").mkdir(parents=True)
+        (self.instances / "half.old" / "Data" / "A.dat").write_bytes(b"pack")
+        game_in_copy = str(self.instances / "half" / "RUSE.exe")
+        with mock.patch("rusemod.winfiles.processes", return_value=[(7, game_in_copy)]):
+            got = {f["key"]: f for f in api.troubleshoot()["findings"]}
+            self.assertEqual((got["running"]["fix"], got["leftovers"]["fix"]), ("close_game", "clear_leftovers"))
+            with mock.patch("rusemod.winfiles.close", return_value=True) as close:
+                self.assertEqual(api.troubleshoot_fix("close_game"), {"done": 1, "left": []})
+            close.assert_called_once_with(7)
+        self.assertEqual(api.troubleshoot_fix("clear_leftovers"), {"done": 1, "left": []})
+        self.assertFalse((self.instances / "half.old").exists())
+        from rusemod.webui import Job
+        busy = Job()  # a Play still building its copy: the copy would look like a leftover
+        api._jobs[busy.id] = busy
+        api._play_job = busy.id
+        with self.assertRaisesRegex(LauncherError, "being started"):
+            api.troubleshoot_fix("clear_leftovers")
+        with self.assertRaisesRegex(LauncherError, "Choose its folder"):
+            self.api(game_dir=None, find=lambda: None).troubleshoot_fix("clear_leftovers")
+
+
 class Words(unittest.TestCase):
     """The launcher's words in all ten languages, every one the screen uses, and the language it starts in."""
+
+    def test_every_word_of_the_troubleshooter(self):
+        """rusemod.doctor names each finding's sentence and fix; the window shows them with these words."""
+        source = Path(doctor.__file__).read_text(encoding="utf-8")
+        said = set(re.findall(r'"(doc_[a-z_]+)"', source))
+        fixes = set(re.findall(r'_finding\("\w+", "\w+", "doc_\w+", "(\w+)"', source))
+        self.assertGreater(len(said), 15)
+        self.assertEqual(fixes, {"choose_game", "close_game", "clear_leftovers"})
+        self.assertEqual(sorted((said | {f"doc_fix_{fix}" for fix in fixes}) - set(_words())), [])
 
     def test_complete_and_used(self):
         for key, entry in _words().items():

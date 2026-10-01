@@ -18,7 +18,9 @@ from rusemod.build import build_pack, load_mod
 from rusemod.dic import name_to_key
 from rusemod.index import build_index
 from rusemod import package
+from rusemod.community import private_paths_out
 from rusemod.play import Starter
+from ruse_studio import __version__
 from ruse_studio.api import StudioApi, StudioError, _short, _words
 from ruse_studio.edits import EditsFileError, ModEdits, number
 
@@ -1012,6 +1014,47 @@ class ScenarioEdits(WithMod):
         self.assertEqual(len(self.items(self.api.map_scenarios("Blitz"))), before + 3)
 
 
+class Troubleshooter(WithMod):
+    """The troubleshooter's two calls (what it checks is rusemod.doctor's: tests/test_doctor.py)."""
+
+    def test_findings_and_a_report_for_a_bug_report(self):
+        res = self.api.troubleshoot()
+        got = {f["key"]: f for f in res["findings"]}
+        self.assertLessEqual({"game", "steam", "running", "drive", "leftovers", "write"}, set(got))
+        self.assertEqual((got["game"]["level"], got["game"]["data"]), ("ok", {"path": str(self.game)}))
+        self.assertEqual(got["steam"]["say"], "doc_steam_ok")  # the Studio's own Steam check (the test's here)
+        self.assertEqual(got["leftovers"]["level"], "ok")
+        self.assertEqual(got["write"]["data"], {"path": str(self.home / "copies")})  # where Test in game builds
+        self.assertLessEqual({f["say"] for f in res["findings"]}, set(_words()))
+        self.assertTrue(res["report"].startswith(f"RUSE Studio {__version__}, Windows "), res["report"])
+        self.assertIn(f"[ok] game: doc_game_ok (path={private_paths_out(str(self.game))})", res["report"])
+        (self.home / "copies" / "studio-x.old").mkdir(parents=True)  # a copy an earlier test couldn't remove
+        left = {f["key"]: f for f in self.api.troubleshoot()["findings"]}["leftovers"]
+        self.assertEqual((left["fix"], left["data"]), ("clear_leftovers", {"names": "studio-x.old"}))
+        self.assertEqual(self.api.troubleshoot_fix("clear_leftovers"), {"done": 1, "left": []})
+        self.assertFalse((self.home / "copies" / "studio-x.old").exists())
+
+    def test_what_is_refused(self):
+        for action in ("format the drive", "choose_game"):  # choosing the game folder is the window's own
+            with self.assertRaisesRegex(StudioError, "no fix called"):
+                self.api.troubleshoot_fix(action)
+        from rusemod.webui import Job
+        busy = Job()  # a test being built: its half-built copy looks like a leftover
+        self.api._jobs[busy.id] = busy
+        self.api._test_job = busy.id
+        with self.assertRaisesRegex(StudioError, "being built"):
+            self.api.troubleshoot_fix("clear_leftovers")
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("RUSE_GAME", None)
+            no_game = StudioApi(index_path=self.index, find=lambda: None, home=self.home,
+                                starter=Starter(steam_running=lambda: True))
+            with self.assertRaisesRegex(StudioError, "couldn't find R.U.S.E."):
+                no_game.troubleshoot_fix("close_game")
+            found = no_game.troubleshoot()["findings"]
+        self.assertEqual([f["key"] for f in found], ["game", "steam", "running"])  # no place for copies yet
+        self.assertEqual((found[0]["level"], found[0]["fix"]), ("fail", "choose_game"))
+
+
 class Labels(unittest.TestCase):
     """Every display name has all ten languages, so no modder gets a half-translated tool."""
 
@@ -1041,6 +1084,21 @@ class Labels(unittest.TestCase):
         self.assertEqual(len(used & {"brush_hill", "brush_ramp", "brush_cover", "brush_town", "brush_block_vehicles"}), 5)
         self.assertGreater(len(used), 25)
         self.assertEqual(sorted(used - set(_words())), [])
+
+    def test_each_word_has_the_same_blanks_in_every_language(self):  # a {name} lost in a translation stays empty
+        for name, entry in _words().items():
+            blanks = {lang: set(re.findall(r"\{(\w+)\}", text)) for lang, text in entry.items()}
+            self.assertEqual([lang for lang, b in blanks.items() if b != blanks["us"]], [], name)
+
+    def test_every_troubleshooter_word_exists(self):  # the dialog looks them up by the findings' own keys
+        from rusemod import doctor
+        source = Path(doctor.__file__).read_text(encoding="utf-8")
+        says = set(re.findall(r'"(doc_\w+)"', source))
+        fixes = set(re.findall(r'_finding\("\w+", "\w+", "doc_\w+", "(\w+)"', source))
+        self.assertGreater(len(says), 15)
+        self.assertEqual(fixes, {"choose_game", "close_game", "clear_leftovers"})  # a new one: the window shows it
+        self.assertLessEqual(set(StudioApi.FIXES), fixes)
+        self.assertEqual(sorted((says | {"doc_fix_" + f for f in fixes}) - set(_words())), [])
 
 
 if __name__ == "__main__":

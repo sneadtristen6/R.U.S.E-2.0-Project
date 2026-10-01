@@ -24,6 +24,7 @@
       <select id="mod"></select>
     </label>
     <button id="test" type="button" class="primary" disabled></button>
+    <button id="troubleshoot" type="button" class="ghost"></button>
   </header>
   <div id="update-bar" class="update-bar hidden" role="status"><span id="update-text"></span>
     <button id="update-now" class="small" type="button"></button>
@@ -231,10 +232,25 @@
         <h2 id="set-help-title"></h2><p id="set-help-help" class="muted small"></p>
         <div class="actions"><button id="help-wiki" type="button" class="small"></button>
           <button id="help-discussions" type="button" class="small"></button>
+          <button id="help-troubleshoot" type="button" class="small"></button>
           <button id="help-report" type="button" class="small primary"></button></div>
       </section>
     </div>
   </main>
+
+  <!-- the troubleshooter (app.js openDoctor, StudioApi.troubleshoot): one row per finding, a fix button when the app
+       can run one -->
+  <dialog id="doctor" class="doctor" aria-labelledby="doctor-title">
+    <h2 id="doctor-title"></h2>
+    <p id="doctor-intro" class="muted small"></p>
+    <ul id="doctor-list" class="doctor-list" aria-live="polite"></ul>
+    <p id="doctor-note" class="small" role="status"></p>
+    <div class="actions">
+      <button id="doctor-again" type="button" class="small"></button>
+      <button id="doctor-copy" type="button" class="small"></button>
+      <button id="doctor-close" type="button" class="small ghost"></button>
+    </div>
+  </dialog>
 
   <footer id="status" class="status" role="status"></footer>
 

@@ -36,6 +36,7 @@ button:disabled { cursor: default; opacity: 0.5; }
                                  padding: 5px 8px; }
 .pick-mod select { max-width: 300px; color: var(--text); }
 .top .primary { padding: 6px 14px; }
+.top .ghost { padding: 6px 12px; font-size: 13px; }
 .new-mod { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 20px; background: var(--panel);
            border-bottom: 1px solid var(--line); }
 .new-mod .muted { flex-basis: 100%; }
@@ -225,6 +226,30 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
                              border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-size: 13px; }
 .place-list option { padding: 2px 4px; }
 .error-text { color: var(--error); }
+.ok-text { color: var(--ok); }
+
+/* the troubleshooter (app.js openDoctor): a dialog over the app, one row per finding, marked by its level */
+.doctor { width: min(680px, calc(100% - 40px)); padding: 16px 18px; background: var(--panel); color: var(--text);
+          border: 1px solid var(--line); border-radius: var(--radius); }
+.doctor::backdrop { background: rgba(0, 0, 0, 0.55); }
+.doctor h2 { margin: 0 0 4px; font-size: 17px; }
+.doctor p { margin: 0; }
+.doctor p:empty { display: none; }
+.doctor-list { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 6px; max-height: 60vh; overflow: auto; }
+.doc-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--panel-hi);
+           border-left: 3px solid var(--line); border-radius: 0 var(--radius) var(--radius) 0; }
+.doc-mark { flex: none; width: 1.2em; text-align: center; font-weight: 700; }
+.doc-say { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.doc-row button { flex: none; }
+.doc-row.ok { border-left-color: var(--ok); }
+.doc-row.ok .doc-mark { color: var(--ok); }
+.doc-row.info { border-left-color: var(--shared); }
+.doc-row.info .doc-mark { color: var(--shared); }
+.doc-row.warn { border-left-color: var(--accent); }
+.doc-row.warn .doc-mark { color: var(--accent); }
+.doc-row.fail { border-left-color: var(--error); }
+.doc-row.fail .doc-mark { color: var(--error); }
+.doctor .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
 /* a newer release, offered in the header (rusemod/update.py) */
 .update-bar { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-size: 13px;

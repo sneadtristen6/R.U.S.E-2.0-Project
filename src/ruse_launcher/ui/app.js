@@ -8,7 +8,8 @@ const $ = (id) => document.getElementById(id);
 const state = { lang: "us", words: {}, languages: [], status: null, sets: [], library: [], active: "vanilla",
   playing: false, editing: null,   // editing: { id (null for a new set), name, mods: [entries in order] }
   browse: null,                    // browse: the mod index on screen { mods, source, as_of, message, search, busy }
-  importing: null };               // importing: a pasted load order { text, check (what the launcher found), name }
+  importing: null,                 // importing: a pasted load order { text, check (what the launcher found), name }
+  doctor: null };                  // doctor: the troubleshooter's dialog { busy, findings, report, note, noteKind }
 
 function api() {
   return window.pywebview.api;
@@ -49,6 +50,11 @@ function setMessage(message, kind) {
   const node = $("play-message"), w = state.words || {};
   text(node, message);
   node.className = "message" + (kind ? " " + kind : "");
+  if (kind === "bad" && message && w.doc_troubleshoot_link) {  // the troubleshooter may find what stopped it
+    const doc = el("button", { type: "button", className: "link", textContent: w.doc_troubleshoot_link });
+    doc.addEventListener("click", openDoctor);
+    node.append(" ", doc);
+  }
   if (kind === "bad" && message && w.report) {  // a problem can go straight into a bug report (the player posts it)
     const report = el("button", { type: "button", className: "link", textContent: w.report, title: w.tip_report || "" });
     report.addEventListener("click", () => api().report_problem(message).catch(() => {}));
@@ -81,6 +87,12 @@ async function setLanguage(lang) {
   text($("details"), w.details);
   text($("join"), w.join);
   text($("browse"), w.browse);
+  text($("doc-open"), w.doc_button);
+  text($("doc-title"), w.doc_title);
+  text($("doc-intro"), w.doc_intro);
+  text($("doc-again"), w.doc_again);
+  text($("doc-copy"), w.doc_copy);
+  text($("doc-close"), w.doc_close);
   text($("help"), w.help);
   $("help").title = w.tip_help;
   text($("report"), w.report_problem);
@@ -127,6 +139,7 @@ function render() {
   if (state.settings) renderSettings();
   else if (state.browse) renderBrowse(); else if (state.importing) renderImport(); else if (state.editing) renderEditor();
   else renderActive();
+  if (state.doctor) renderDoctor();  // its words, and its fixes on or off as Play starts and ends
 }
 
 // --- Settings: one entry per section (its words are set_<id>_title); a new setting is one more entry and its
@@ -744,6 +757,93 @@ async function play() {
   tick();
 }
 
+// --- the troubleshooter (rusemod.doctor through api.troubleshoot): what can stop Play, checked in one go. Each
+// finding's sentence is its "say" word filled with its data; a fix the launcher can run has a button ---
+const DOC_SIGNS = { ok: "✔\uFE0E", info: "ℹ\uFE0E", warn: "⚠\uFE0E", fail: "✖\uFE0E" };  // \uFE0E: a sign, not an emoji
+
+function openDoctor() {
+  if (!$("doc").open) $("doc").showModal();
+  checkDoctor();
+}
+
+// note: what the last fix did, kept on screen while everything is checked again
+async function checkDoctor(note, kind) {
+  const run = (state.doctorRun || 0) + 1;
+  state.doctorRun = run;  // only the latest check is shown
+  const d = state.doctor = { busy: true, findings: state.doctor ? state.doctor.findings : [], report: "",
+    note: note || "", noteKind: kind || "" };
+  $("doc-report").classList.add("hidden");
+  renderDoctor();
+  try {
+    Object.assign(d, await api().troubleshoot());
+  } catch (err) {
+    Object.assign(d, { note: (err && err.message) || String(err), noteKind: "bad" });
+  }
+  if (run !== state.doctorRun) return;
+  d.busy = false;
+  renderDoctor();
+}
+
+function renderDoctor() {
+  const w = state.words, d = state.doctor;
+  const list = $("doc-list");
+  list.classList.toggle("busy", d.busy);
+  list.replaceChildren(...d.findings.map((f) => {
+    const li = el("li", { className: "doc-item " + f.level },
+      el("span", { className: "sign", textContent: DOC_SIGNS[f.level] || "•" }),
+      el("span", { className: "say", textContent: fill(w[f.say] || f.say, f.data) }));
+    if (f.fix) {  // while Play builds a copy, its folder would look like a leftover: only the game folder can change
+      const fix = el("button", { type: "button", className: "small", textContent: w["doc_fix_" + f.fix] || f.fix,
+        disabled: d.busy || (state.playing && f.fix !== "choose_game") });
+      fix.addEventListener("click", () => fixDoctor(f.fix));
+      li.append(fix);
+    }
+    return li;
+  }));
+  const note = $("doc-note");
+  text(note, [d.note, d.busy ? w.doc_checking : ""].filter(Boolean).join(" "));
+  note.className = "message" + (d.note && d.noteKind ? " " + d.noteKind : "");
+  $("doc-again").disabled = d.busy;
+  $("doc-copy").disabled = d.busy || !d.report;
+}
+
+async function fixDoctor(action) {
+  const w = state.words;
+  state.doctor.busy = true;
+  renderDoctor();
+  if (action === "choose_game") {  // the launcher's own Choose folder…, as in the header
+    try {
+      const status = await api().choose_game_folder();
+      renderStatus(status);
+      await refresh();
+      return checkDoctor(status.found ? "" : status.message, "bad");
+    } catch (err) { return checkDoctor((err && err.message) || String(err), "bad"); }
+  }
+  try {
+    const res = await api().troubleshoot_fix(action);
+    const said = [];
+    if (res.done || !res.left.length) said.push(fill(w.doc_fixed, { done: res.done }));
+    if (res.left.length) said.push(fill(w.doc_fix_left, { left: res.left.join("; ") }));
+    return checkDoctor(said.join(" "), res.left.length ? "bad" : "good");
+  } catch (err) { return checkDoctor((err && err.message) || String(err), "bad"); }
+}
+
+async function copyDoctorReport() {
+  const d = state.doctor, area = $("doc-report");
+  try {
+    await navigator.clipboard.writeText(d.report);
+    area.classList.add("hidden");
+    Object.assign(d, { note: state.words.doc_copied, noteKind: "good" });
+  } catch {  // no clipboard access here: the report is shown, selected, so Ctrl+C copies it
+    area.value = d.report;
+    area.classList.remove("hidden");
+    area.focus();
+    area.select();
+    Object.assign(d, { note: "", noteKind: "" });
+  }
+  renderDoctor();
+}
+
 async function start() {
   state.languages = await api().languages();
   state.lang = (await loadLang()) || await api().default_language();
@@ -771,6 +871,10 @@ async function start() {
   $("share-close").addEventListener("click", () => $("share-box").classList.add("hidden"));
   $("add-mod").addEventListener("click", addModFile);
   $("browse").addEventListener("click", () => openBrowse(true));
+  $("doc-open").addEventListener("click", openDoctor);
+  $("doc-again").addEventListener("click", () => checkDoctor());
+  $("doc-copy").addEventListener("click", copyDoctorReport);
+  $("doc-close").addEventListener("click", () => $("doc").close());
   $("help").addEventListener("click", () => api().open_help("wiki").catch(problem));
   $("report").addEventListener("click", () => api().report_problem("").catch(problem));
   $("browse-refresh").addEventListener("click", () => openBrowse(true));

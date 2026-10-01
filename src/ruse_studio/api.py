@@ -24,9 +24,9 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from rusemod import identity, package, scenario, scenery, schema
+from rusemod import doctor, identity, package, scenario, scenery, schema
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
-from rusemod.community import CommunityCalls
+from rusemod.community import APP_NAMES, CommunityCalls, private_paths_out
 from rusemod.update import UpdateCalls
 from rusemod.build import MAP_FILES, BuildError, build_and_write, load_mod
 from rusemod.lock import fingerprint_text
@@ -1884,12 +1884,12 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
         folder = self._mod_dir()
         if folder is None:
             raise StudioError("Pick or make a mod first.")
-        busy = self._jobs.get(getattr(self, "_test_job", None))
-        if busy is not None and busy.state == "running":  # one build at a time: two raced for the same copy
+        if self._building():  # one build at a time: two raced for the same copy
             raise StudioError("A test is already being built: wait for it to finish.")
 
         game = self._game()
-        instance = (self._instances or instances_dir(game)) / f"studio-{folder.name}" if game is not None else None
+        copies = self._copies(game)
+        instance = copies / f"studio-{folder.name}" if copies is not None else None
         look = self._where_to_look(folder) if game is not None else []
 
         def work(say):
@@ -1936,6 +1936,39 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
                             "campaign": "CAMPAIGN"}.get(e.get("kind"), e.get("kind") or "a game")
                     out.append(f"{mode} > {title} ({e.get('name', s['file'])})")
         return out
+
+    def _copies(self, game: Path | None) -> Path | None:
+        """Where Test in game puts its modded copies; None without the game (no place for them yet)."""
+        return (self._instances or instances_dir(game)) if game is not None else None
+
+    def _building(self) -> bool:
+        """Whether a Test in game is still being built."""
+        busy = self._jobs.get(getattr(self, "_test_job", None))
+        return busy is not None and busy.state == "running"
+
+    # --- the troubleshooter (rusemod.doctor): what can stop Test in game, checked in one go ---
+    FIXES = ("close_game", "clear_leftovers")  # the findings' fixes run here; "choose_game" is the window's own
+
+    def troubleshoot(self) -> dict:
+        """Every finding (rusemod.doctor.checks, with the Studio's own Steam check), and the same as plain text for a
+        bug report, the player's own folders left out (rusemod.community): {"findings": [...], "report": text}."""
+        game = self._game()
+        findings = doctor.checks(game, self._copies(game), steam_running=self._starter.steam_running)
+        report = doctor.report(findings, APP_NAMES[self.UPDATE_APP], self.UPDATE_VERSION)
+        return {"findings": findings, "report": private_paths_out(report)}
+
+    def troubleshoot_fix(self, action: str) -> dict:
+        """Run one finding's fix: "close_game" or "clear_leftovers" (rusemod.doctor.fix). Returns {"done": how many,
+        "left": what couldn't be done}."""
+        if action not in self.FIXES:
+            raise StudioError(f"There's no fix called {action!r}.")
+        game = self._game()
+        copies = self._copies(game)
+        if copies is None:
+            raise StudioError("We couldn't find R.U.S.E., so there are no modded copies yet.")
+        if action == "clear_leftovers" and self._building():  # the copy being built looks like a leftover
+            raise StudioError("A test is being built: wait for it to finish.")
+        return doctor.fix(action, game, copies)
 
     # --- a mod as one file (MOD_FORMAT §2, rusemod.package) ---
     def mod_info(self) -> dict:

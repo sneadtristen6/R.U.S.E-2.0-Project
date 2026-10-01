@@ -266,7 +266,33 @@ button:disabled { cursor: default; opacity: 0.45; }
 .clash-box .best-order { margin-top: 10px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .clash-box .best-order p { margin: 0; flex: 1 1 260px; }
 
-/* Help and Report a problem sit at the right end of the bottom bar */
+/* Troubleshoot, Help and Report a problem sit at the right end of the bottom bar */
 .bottom-gap { flex: 1; }
 .message .link { margin-left: 6px; padding: 0; background: none; border: 0; color: var(--accent); text-decoration: underline;
                  font-size: 12px; cursor: pointer; }
+
+/* the troubleshooter (rusemod.doctor): a dialog over the screen, one line per finding, marked by its level */
+.doc { width: min(700px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 22px 24px; background: var(--panel);
+       color: var(--text); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); }
+.doc::backdrop { background: rgba(21, 24, 27, 0.75); }
+.doc h2 { margin: 0 0 4px; font-size: 20px; }
+.doc p { margin: 0; }
+.doc .message { margin: 12px 0 0; }
+.doc-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+.doc-list.busy { opacity: 0.5; }
+.doc-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--panel-hi);
+            border: 1px solid var(--line); border-left-width: 4px; border-radius: var(--radius); }
+.doc-item .say { flex: 1; overflow-wrap: anywhere; }
+.doc-item .sign { width: 1.2em; text-align: center; font-weight: 700; }
+.doc-item.ok { border-left-color: var(--good); }
+.doc-item.ok .sign { color: var(--good); }
+.doc-item.info { border-left-color: var(--muted); }
+.doc-item.info .sign { color: var(--muted); }
+.doc-item.warn { border-left-color: var(--warn); }
+.doc-item.warn .sign { color: var(--warn); }
+.doc-item.fail { border-left-color: var(--bad); }
+.doc-item.fail .sign { color: var(--bad); }
+.doc-item .small { flex: none; }
+.doc textarea { width: 100%; margin-top: 10px; padding: 10px 12px; background: var(--panel-hi); color: inherit;
+                border: 1px solid var(--line); border-radius: var(--radius); font: 12px/1.4 Consolas, monospace; resize: vertical; }
+.doc .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
