@@ -12,6 +12,7 @@ rusemod.pyscript adds from its one fixed template (PLAN.md decision 23). Mods ne
 """
 from __future__ import annotations
 
+import os
 import re
 import struct
 import tomllib
@@ -714,6 +715,10 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                              f"it.")
     elif _spawns(mods):  # spawned units' models are checked against its packs when it's there (spawn_models)
         text_path = find_pack(game, loc.PACK)
+    if instance is not None and os.path.lexists(instance):  # the old copy goes first, so it can't be started by
+        from .instance import set_aside_old                  # mistake while the new one builds (the owner did, twice)
+        set_aside_old(str(game), str(instance))
+        say(f"the old copy at {instance} is set aside until the new one is ready")
     build_id = build_of(game) or "0"  # the fingerprint includes the game build
     with ExitStack() as stack:
         run = None

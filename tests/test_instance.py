@@ -5,7 +5,7 @@ import stat
 import tempfile
 import unittest
 
-from rusemod.instance import InstanceError, build_instance
+from rusemod.instance import InstanceError, build_instance, set_aside_old
 
 
 def _write(path, data):
@@ -27,6 +27,14 @@ class InstanceTest(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_the_old_copy_goes_before_a_build_starts(self):
+        build_instance(self.game, self.dst)
+        set_aside_old(self.game, self.dst)  # a stale copy can't be started while the new one builds
+        self.assertFalse(os.path.exists(self.dst))
+        self.assertTrue(os.path.exists(os.path.join(self.game, "Data", "PC", "1", "A.dat")))  # the game untouched
+        build_instance(self.game, self.dst)
+        self.assertTrue(os.path.exists(os.path.join(self.dst, "RUSE.exe")))
 
     def test_links_copies_and_appid(self):
         counts = build_instance(self.game, self.dst)

@@ -11,8 +11,8 @@ Layout of an instance:
     folder whose files are read-only);
   - replaced files are written fresh (never through a hard link, which would change the original);
   - `steam_appid.txt` lets RUSE.exe start from the copy with Steam running.
-The instance is built in `<dst>.partial` and only then swapped in, so a half-built instance never looks usable and the
-last working one stays until the new one is complete.
+A build first sets the old copy aside (set_aside_old), so it can't be started by mistake while the new one builds;
+the instance is built in `<dst>.partial` and only then swapped in, so a half-built instance never looks usable.
 
 A leftover (the old copy, or one left half-built) never blocks a build: what can't be removed is moved into the trash
 folder next to the copies (`RUSE-Instances\\.trash`) and removed there once nothing holds it (a player's report,
@@ -162,6 +162,13 @@ def _set_aside(path: str, src: str, what: str) -> str | None:
                             f"({refused.strerror or refused}){_who(refused.filename)}. If R.U.S.E. is running from "
                             f"it, close the game and try again; otherwise restart Windows, or delete that folder by "
                             f"hand, then try again.") from exc
+
+
+def set_aside_old(src: str, dst: str) -> None:
+    """Take the old copy at `dst` away before a long build, so it can't be started by mistake while the new one is
+    built (a test copy started early ran the old build, twice in one afternoon). Refuses while R.U.S.E. runs from it."""
+    refuse_if_running(dst)
+    _set_aside(dst, src, "the old modded copy")
 
 
 def _sweep(trash: str, src: str) -> None:
