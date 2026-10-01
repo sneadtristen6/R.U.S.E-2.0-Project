@@ -168,7 +168,7 @@ From a player's report: every **Test in game** failed with "[WinError 5] Access 
   **Read-only** (right-click it > Properties)? Was R.U.S.E. still running from an earlier test when it first failed?
 - **Fail:** the whole message (the new one names the file and says why).
 
-## T12. D-Day for 8 players (PLAN A10)
+## T14. D-Day for 8 players (PLAN A10)
 
 The copy: `D:\RUSE-Instances\eight` on the owner's PC; anywhere, from the test mod
 (`maps/M04_cotentin/map.toml` with `players = 8`, and `scenario.toml` with a `[[start]]` for team 1 and one for
