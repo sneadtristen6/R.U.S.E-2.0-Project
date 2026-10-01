@@ -823,3 +823,13 @@ manager): the 0.7.4 cleanup only cleared the mark on a link that was still the g
 mark); a leftover Windows won't delete is moved into `RUSE-Instances\.trash` and removed on a later build; a game still
 running from the copy is refused before building, by name; the Studio's Test button can't start two builds at once
 (a double click did), and neither can the Launcher's Play.
+
+**Studio 0.7.5 and Launcher 0.2.10 never came out: the repo rename skipped every workflow.** The owner renamed
+the repo to R.U.S.E-2.0-Project. Every job ran only `if: github.repository == 'sneadtristen6/Ruse-Mod-Platform'`
+(so the shared private repo, which mirrors .github/, doesn't build), which never matched again: tests, app builds,
+the private sync and both releases were skipped, and a skipped run isn't a failed one, so nothing said so. The
+jobs now check `github.repository_id` (1393317090), which a rename keeps, and `tests/test_installers.py`
+WorkflowGuards fails on a check by name. Moving the two pushed tags to the fix needs a force-push, which Claude
+Code's safety check refuses even when the owner says go; so the same release went out as Studio 0.7.6 and
+Launcher 0.2.11 (new tags, nothing forced), and every link to the old repo name now uses the new one.
+**Rule:** a release tag that didn't build is never moved: the next version number goes out instead.

@@ -5,7 +5,7 @@
 ## 1. Install the launcher
 
 1. Download the installer (`.exe`) from the
-   [launcher releases](https://github.com/sneadtristen6/Ruse-Mod-Platform/releases?q=launcher).
+   [launcher releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher).
 2. Run it. If Windows says "Windows protected your PC", click **More info**, then **Run anyway** (the app is new to
    Windows' reputation check; its code is public on GitHub).
 3. Start **RUSE Launcher**. It finds the game by itself. If it can't: **Settings > Game folder > Choose folder...** and

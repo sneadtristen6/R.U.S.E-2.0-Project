@@ -23,7 +23,7 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-REPO = "sneadtristen6/Ruse-Mod-Platform"
+REPO = "sneadtristen6/R.U.S.E-2.0-Project"
 API = f"https://api.github.com/repos/{REPO}/releases?per_page=40"
 APPS = {"launcher": "Launcher", "studio": "Studio"}
 _TIMEOUT = 15

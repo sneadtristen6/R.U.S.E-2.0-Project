@@ -12,7 +12,7 @@ import re
 from pathlib import Path
 from urllib.parse import urlencode
 
-REPO_URL = "https://github.com/sneadtristen6/Ruse-Mod-Platform"
+REPO_URL = "https://github.com/sneadtristen6/R.U.S.E-2.0-Project"
 LINKS = {"wiki": f"{REPO_URL}/wiki", "discussions": f"{REPO_URL}/discussions",
          "help": f"{REPO_URL}/discussions/categories/help"}
 BUG_CATEGORY = "bug-reports"      # the category's slug: .github/DISCUSSION_TEMPLATE/bug-reports.yml is its form

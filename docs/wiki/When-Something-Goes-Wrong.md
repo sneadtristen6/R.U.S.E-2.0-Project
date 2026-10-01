@@ -10,7 +10,7 @@ and again before **Test in game**, and names each file that has a mistake.
 - **Set aside** (next to a broken map file) renames it `<name>.broken.toml` beside the original: nothing is lost, the
   mod works without it, and that map starts clean.
 - A problem in `mod.toml` or the unit edits has no Set aside: open the file and fix the line the bar names, or ask in
-  [Discussions > Help](https://github.com/sneadtristen6/Ruse-Mod-Platform/discussions).
+  [Discussions > Help](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions).
 
 > [!NOTE]
 > Known case: RUSE Studio 0.7.0 and earlier saved **Water** strokes without their water level ("the water brush
@@ -25,7 +25,7 @@ The apps are new to Windows' reputation check. Click **More info**, then **Run a
 Windows refused to remove a copy of the game the app made (in `RUSE-Instances`). Also: "An old modded copy at
 `...\RUSE-Instances\<name>.old` can't be removed", on every second **Test in game** or **Play**.
 
-- **Update first** (the apps offer it when they open): from RUSE Studio 0.7.5 and Launcher 0.2.10, a copy Windows
+- **Update first** (the apps offer it when they open): from RUSE Studio 0.7.6 and Launcher 0.2.11, a copy Windows
   won't delete never stops a test: it's moved into `RUSE-Instances\.trash` and removed there once nothing holds it.
 - **R.U.S.E. still running from an earlier test?** The app says so, with the program's name: close the game (check
   the Details tab of Task Manager for `RUSE.exe`), then try again.

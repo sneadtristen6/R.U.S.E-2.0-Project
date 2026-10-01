@@ -1,7 +1,7 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
-**0.7.5:** a second Test in game works, and bridges units can always reach.
+**0.7.6:** a second Test in game works, and bridges units can always reach.
 - **Fixed:** every second *Test in game* could fail with "An old modded copy ... can't be removed ... (Access is
   denied)". A copy Windows won't delete (a file an older version linked to a replaced game file, a program still
   holding it) no longer stops a test: it's moved aside into `RUSE-Instances\.trash` and removed once nothing holds
@@ -142,6 +142,6 @@ spawn units and buildings in a scenario (`[[spawn]]` in `maps/<map>/scenario.tom
 
 It's new and has barely been tested outside the developer's PC, so please report anything odd on GitHub Issues.
 
-![RUSE Studio's Maps: Centre of Gravity in 3D](https://raw.githubusercontent.com/sneadtristen6/Ruse-Mod-Platform/main/docs/images/studio-maps.jpg)
+![RUSE Studio's Maps: Centre of Gravity in 3D](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/studio-maps.jpg)
 
-![RUSE Studio in its preview mode, with sample units](https://raw.githubusercontent.com/sneadtristen6/Ruse-Mod-Platform/main/docs/images/studio-unit.jpg)
+![RUSE Studio in its preview mode, with sample units](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/studio-unit.jpg)

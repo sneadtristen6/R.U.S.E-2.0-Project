@@ -772,11 +772,11 @@
       map_models: async () => ({}),  // no game models in the preview: the shapes stay  // the made-up island has only its colours
       update_check: async () => mode === "update"
         ? { available: true, version: "9.9.9", installed: true, size: 60000000,
-            page: "https://github.com/sneadtristen6/Ruse-Mod-Platform/releases" }
+            page: "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases" }
         : { available: false, version: "0.6.3" },
       update_install: async () => { throw new Error("The preview can't install updates."); },
       update_page: async () => ({ opened: "" }),
-      help_links: async () => ({ wiki: "https://github.com/sneadtristen6/Ruse-Mod-Platform/wiki" }),
+      help_links: async () => ({ wiki: "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki" }),
       open_help: async (what) => ({ opened: what }),
       report_problem: async (message) => ({ opened: `report: ${message}` }),
       map_scenery: async (pack) => fakeScenery(pack),

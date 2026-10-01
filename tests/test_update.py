@@ -18,11 +18,11 @@ def release(tag, *, draft=False, digest=True, notes=True, name=None, url=None, p
     version = tag.split("-v")[1]
     app = "Launcher" if tag.startswith("launcher") else "Studio"
     asset = {"name": name or f"RUSE-{app}-Setup-{version}.exe", "size": len(SETUP),
-             "browser_download_url": url or f"https://github.com/sneadtristen6/Ruse-Mod-Platform/releases/download/{tag}/x.exe"}
+             "browser_download_url": url or f"https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/download/{tag}/x.exe"}
     if digest:
         asset["digest"] = "sha256:" + (digest if isinstance(digest, str) else SHA)
     return {"tag_name": tag, "draft": draft, "prerelease": pre, "assets": [asset],
-            "html_url": f"https://github.com/sneadtristen6/Ruse-Mod-Platform/releases/tag/{tag}",
+            "html_url": f"https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/{tag}",
             "body": f"compare its SHA-256 with `{SHA}`" if notes else "no hash here"}
 
 
@@ -52,7 +52,7 @@ class Finding(unittest.TestCase):
     def test_the_release_feed_when_the_api_refuses(self):
         """GitHub allows 60 API calls an hour per internet address; when they're used up (by anything on it), the
         release feed answers, with the installer's SHA-256 from the release notes as the check."""
-        base = "https://github.com/sneadtristen6/Ruse-Mod-Platform/releases"
+        base = "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases"
         feed = ("<feed><entry><link rel=\"alternate\" href=\"" + base + "/tag/studio-v0.6.1\"/>"
                 "<content type=\"html\">&lt;p&gt;SHA-256 `" + SHA + "`&lt;/p&gt;</content></entry>"
                 "<entry><link rel=\"alternate\" href=\"" + base + "/tag/launcher-v0.2.4\"/>"

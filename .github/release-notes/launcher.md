@@ -1,7 +1,7 @@
 **RUSE Launcher 0.2, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
-**0.2.10:** **Play** works every time: a modded copy Windows won't delete (a file an older version linked, a
+**0.2.11:** **Play** works every time: a modded copy Windows won't delete (a file an older version linked, a
 program still holding it) is moved aside into `RUSE-Instances\.trash` instead of stopping the game, and a game still
 running from the copy is named. Mods with new bridges never make ground units can't reach (it crashed the game).
 
@@ -51,4 +51,4 @@ them and the set still plays.
 
 Your mod sets from 0.1 are kept. Problems and ideas: GitHub Issues.
 
-![RUSE Launcher](https://raw.githubusercontent.com/sneadtristen6/Ruse-Mod-Platform/main/docs/images/launcher.jpg)
+![RUSE Launcher](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/launcher.jpg)

@@ -29,7 +29,7 @@ class ReportLink(unittest.TestCase):
     def fields(self, url):
         parts = urlsplit(url)
         self.assertEqual(parts.scheme + "://" + parts.netloc + parts.path,
-                         "https://github.com/sneadtristen6/Ruse-Mod-Platform/discussions/new")
+                         "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions/new")
         return {k: v[0] for k, v in parse_qs(parts.query).items()}
 
     def test_the_form_filled_in(self):

@@ -1,7 +1,7 @@
 # Ask a question
 
 Didn't find it in the manual? Ask in
-[Discussions > ❓ Help](https://github.com/sneadtristen6/Ruse-Mod-Platform/discussions) (a free GitHub account is
+[Discussions > ❓ Help](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions) (a free GitHub account is
 needed to post).
 
 1. Search Help first: someone may have asked already.

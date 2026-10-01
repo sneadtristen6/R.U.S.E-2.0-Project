@@ -6,7 +6,7 @@ A full walkthrough: install the Studio, make a mod that makes the M4 Sherman cos
 
 ## 1. Install RUSE Studio
 
-1. Download the installer from the [Studio releases](https://github.com/sneadtristen6/Ruse-Mod-Platform/releases?q=studio)
+1. Download the installer from the [Studio releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio)
    and run it ("Windows protected your PC": **More info**, **Run anyway**).
 2. The first start reads the game's files into an index: a minute or two, once per game update.
 

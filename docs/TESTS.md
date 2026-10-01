@@ -93,7 +93,7 @@ Studio with `py -3 -m ruse_studio`.
 
 ## T7. The launcher: mod sets, sharing and importing (launcher 0.2)
 
-Install RUSE Launcher 0.2.0 from [Releases](https://github.com/sneadtristen6/Ruse-Mod-Platform/releases?q=launcher)
+Install RUSE Launcher 0.2.0 from [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)
 (or run `py -3 -m ruse_launcher` from the repo).
 1. Click **Add a mod file…** and add a `.rmod`. Then make a mod set with it and press **Play**.
 2. On the set, click **Share**. Then use **Import a load order…** with that text.

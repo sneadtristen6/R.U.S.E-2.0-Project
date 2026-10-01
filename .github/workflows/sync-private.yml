@@ -2,7 +2,7 @@
 # pushed (the PC session, a cloud session, a merged pull request), the shared repo's main gets the same commits and
 # its private branch gets them merged in (it's main plus the private/ folder, which this repo never touches). Every
 # release tag (launcher-v*, studio-v*) goes there too, so the shared repo builds the same release.
-# Needs the secret SHARED_REPO_TOKEN: a fine-grained token with Contents read/write on Ruse-Mod-Platform-Shared only.
+# Needs the secret SHARED_REPO_TOKEN: a fine-grained token with Contents read/write on R.U.S.E-2.0-Project-Shared only.
 # Without it the job warns and does nothing. It never force-pushes: if the shared main has commits of its own, or the
 # merge conflicts, the job fails and says so, and nothing is changed there.
 name: sync-private
@@ -38,7 +38,7 @@ jobs:
       - name: Copy the release tags
         if: env.TOKEN != ''
         run: |
-          git remote add shared "https://x-access-token:${TOKEN}@github.com/sneadtristen6/Ruse-Mod-Platform-Shared.git"
+          git remote add shared "https://x-access-token:${TOKEN}@github.com/sneadtristen6/R.U.S.E-2.0-Project-Shared.git"
           git push shared "refs/tags/launcher-v*:refs/tags/launcher-v*" "refs/tags/studio-v*:refs/tags/studio-v*"
       - name: Mirror main, merge it into private
         if: env.TOKEN != '' && github.ref_type == 'branch'

@@ -12,7 +12,7 @@ next to one). Nothing is sent until you post it yourself.
 
 ## From the website
 
-[Discussions](https://github.com/sneadtristen6/Ruse-Mod-Platform/discussions) > **🐞 Bug reports** > **New
+[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions) > **🐞 Bug reports** > **New
 discussion**. A short form asks for the details.
 
 ## What helps us fix it

@@ -570,7 +570,7 @@ and results are in [LOG.md](LOG.md) §1.
 1. Working name. Ideas: *RUSE Reforged*, *OpenRUSE*, *RUSE Forever* (a nod to FAF).
 2. ~~License~~ **Decided: MIT.** We study RUSE-Mod-Manager's approach (terrain, `TGU1`, scenarios, AI layers,
    capture zones) as reference and write our own, better version. Never copy its code.
-3. ~~GitHub account/org and repo, project folder, git~~ **Done:** github.com/sneadtristen6/Ruse-Mod-Platform.
+3. ~~GitHub account/org and repo, project folder, git~~ **Done:** github.com/sneadtristen6/R.U.S.E-2.0-Project.
 4. ~~UI stack~~ **Decided (owner, 2026-09-28): web-style** (ADR 2). The launcher v0.1 is built that way.
 5. Outreach timing. Recommended: LittleGroove now (align on `.rmod` import/export), Eugen after the M2 demo.
 6. Which unit to clone as the M2 test (suggestion: a US infantry unit, for Pacific later). **C5 uses the M4 Sherman**:
@@ -639,7 +639,7 @@ bridges replaces it, and a road's length while it's drawn. **In the game (owner,
 2. **Studio: a Bridges kind in the bar**, placed like buildings (the map's own bridge kinds, the palette rows whose
    category ends `/Ponts`, taken out of Buildings; a Length slider = `stretch`; coded as bridges: never solid, the
    deck opened), and the road tool drawing its water crossings in gold and saying when the map has no bridge kind.
-   Studio 0.7.5.
+   Studio 0.7.6.
 3. **Road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
    tanks, I like that"). In the game a new road into the woods stayed closed to tanks while infantry used it: the
    woods are closed to vehicles and a road doesn't open them. Make it a choice per road in the road tool: a
@@ -710,8 +710,8 @@ and report what happened.
 cloning and scenarios (M6); models (M7); new maps from heightmaps (M8); scripting (M9); sound (M11).
 
 **Standing:**
-- **Two repos (owner, 2026-09-29):** `Ruse-Mod-Platform` (public) releases only the Studio and the launcher.
-  `Ruse-Mod-Platform-Shared` (private: the owner, DomesticNukes, the cloud sessions) holds the same code plus a
+- **Two repos (owner, 2026-09-29):** `R.U.S.E-2.0-Project` (public; Ruse-Mod-Platform until 2026-09-30) releases only the Studio and the launcher.
+  `R.U.S.E-2.0-Project-Shared` (private: the owner, DomesticNukes, the cloud sessions) holds the same code plus a
   `private/` folder (the research handover, community guides) and RUSE 2.0, which is never released publicly
   (decision 19). Code goes to the public `main`; the shared repo's `main` mirrors it; private work stays there.
 - **DomesticNukes** is credited as "DomesticNukes and his Claude" (decision 25).

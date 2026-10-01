@@ -17,7 +17,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO = ("sneadtristen6", "Ruse-Mod-Platform")
+REPO = ("sneadtristen6", "R.U.S.E-2.0-Project")
 FOLDER = Path(__file__).resolve().parents[1] / "docs" / "community"
 POSTED = FOLDER / "posted.json"
 

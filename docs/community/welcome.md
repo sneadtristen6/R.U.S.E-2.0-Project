@@ -5,7 +5,7 @@ order: 1
 ---
 This is the place to talk about **RUSE Launcher**, **RUSE Studio** and the mods made with them.
 
-**New here?** Start with the [wiki](https://github.com/sneadtristen6/Ruse-Mod-Platform/wiki): how to play mods, how
+**New here?** Start with the [wiki](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki): how to play mods, how
 to make them, and what to do when something goes wrong.
 
 ### Where to post

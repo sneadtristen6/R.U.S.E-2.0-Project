@@ -14,7 +14,7 @@ That file is all a player needs: they add it in RUSE Launcher ([[Install and pla
 
 ## 2. Share
 
-**Today:** post it in [Discussions > Mods & maps](https://github.com/sneadtristen6/Ruse-Mod-Platform/discussions)
+**Today:** post it in [Discussions > Mods & maps](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)
 with a screenshot and what it changes (drag the `.rusemod` into the post), or share it on Discord.
 
 **Coming: Browse mods.** The launcher will list the community's mods and install them in one click. To be listed,
@@ -27,7 +27,7 @@ your mod goes in a public index on GitHub:
 3. A new version is a new file with a new version number: a published file never changes.
 
 The entry's exact format:
-[MOD_FORMAT.md, section 15](https://github.com/sneadtristen6/Ruse-Mod-Platform/blob/main/docs/MOD_FORMAT.md#15-the-mod-index-browse-mods).
+[MOD_FORMAT.md, section 15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/MOD_FORMAT.md#15-the-mod-index-browse-mods).
 
 ## What a mod can hold
 

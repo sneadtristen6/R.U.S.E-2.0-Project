@@ -58,7 +58,7 @@ A starting point you added moves with **Move**, or goes with **Remove**. More th
 limit is still to test).
 
 > [!NOTE]
-> New, not yet checked in the game: tell us in [Discussions](https://github.com/sneadtristen6/Ruse-Mod-Platform/discussions)
+> New, not yet checked in the game: tell us in [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)
 > how an 8-player game goes.
 
 ## See your units in the game
@@ -74,6 +74,6 @@ limit is still to test).
 
 > [!NOTE]
 > Which side number is which player in a battle is still being tested. Try Side 1 first, and tell us what you find in
-> [Discussions](https://github.com/sneadtristen6/Ruse-Mod-Platform/discussions).
+> [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions).
 
 **Next:** [[Export and share|Export-and-Share]]

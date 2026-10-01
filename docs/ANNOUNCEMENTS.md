@@ -11,6 +11,6 @@ RUSE Studio 0.4.1 is up (early test build, free, MIT):
 - Mods are built from whatever R.U.S.E. you have installed, so they don't break on the current Steam build.
   Nothing in your install is touched.
 
-Download: https://github.com/sneadtristen6/Ruse-Mod-Platform/releases
+Download: https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases
 
 Next: making new units from the window, and a terrain editor.

@@ -1,7 +1,7 @@
 # Field manual
 
 Step-by-step guides for **RUSE Launcher** and **RUSE Studio**. For what the project is, news and downloads, see the
-[project page](https://github.com/sneadtristen6/Ruse-Mod-Platform).
+[project page](https://github.com/sneadtristen6/R.U.S.E-2.0-Project).
 
 ## Two apps, two jobs
 
