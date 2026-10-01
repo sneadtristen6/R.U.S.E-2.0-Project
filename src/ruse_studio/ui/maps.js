@@ -9,14 +9,15 @@ const SCALE = 1 / 1000;  // world units to scene units: a standard map is about 
 const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "lowdef", water: true, gl: null, ask: 0,
   stats: null, groundTex: {}, edit: null, size: 0,  // size: the map's longer side in scene units (the keys' speed)
   // brush: the tool picked, its size and strength per brush (slider values), the strokes on this map (as saved),
-  // the size of each group of strokes made this session (for Undo), the drag being painted, and the mod saved into
+  // the size of each group of strokes made this session (for Undo; a Forest stroke's: { n, objects: its trees }), the
+  // drag being painted, and the mod saved into
   brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null, rampStart: null },
   // scenery: which groups are shown, the map's scenery (StudioApi.map_scenery) and its drawn shapes per group
   scenery: { show: { building: true, prop: true, vegetation: true }, data: null, meshes: {}, models: {} },
   // placing: on or not, the group and type picked, the next object's turn and size, what the mod places on this map
   place: { on: false, group: "building", type: null, turn: 0, size: 1, solid: true, objects: [], meshes: {}, mod: null,
-    // how: one, area or line; area: the area brush's radius and spacing: per kind, in metres; groups: how many objects
-    // each click, area or line placed (for Undo); lineStart: a line's first click; painting: an area being dragged
+    // how: one, area or line; area: the area brush's radius and spacing: per kind, in metres; groups: the objects each
+    // click, area or line placed this session (for Undo); lineStart: a line's first click; painting: an area being dragged
     how: "one", area: 40, spacing: {}, groups: [], lineStart: null, painting: null } };
 
 // --- brushes: the same shapes and rules as rusemod/brush.py (the build's own copy decides; this one only draws) ---
@@ -39,9 +40,14 @@ const BRUSHES = {
   block: ["block", "all", 1, false, 3, 0],  // ground units can't use (the map's navigation graphs: rusemod.nav)
   block_infantry: ["block", "infantry", 1, false, 3, 0],
   block_vehicles: ["block", "vehicles", 1, false, 3, 0],
+  open: ["open", "all", 1, false, 3, 0],  // ground units can use where the map has none (the reverse of block)
+  open_infantry: ["open", "infantry", 1, false, 3, 0],
+  open_vehicles: ["open", "vehicles", 1, false, 3, 0],
+  forest: ["forest", "flat", 1, false, 3, 0],  // trees (as Place, Area scatters them) and cover over them: cover strokes
 };
 const WATER = new Set(["water", "drain"]);
-const SIZE_UNIT = { cover: 0.25, uncover: 0.25, town: 0.1, block: 0.25, block_infantry: 0.25, block_vehicles: 0.25 };  // finer sizes than the ground brushes' (share of 1%)
+const SIZE_UNIT = { cover: 0.25, uncover: 0.25, town: 0.1, block: 0.25, block_infantry: 0.25, block_vehicles: 0.25,
+  open: 0.25, open_infantry: 0.25, open_vehicles: 0.25, forest: 0.25 };  // finer sizes than the ground brushes' (share of 1%)
 
 // A brush's radius in map units: its Size slider as a share of the map's width.
 function brushRadius(name) {
@@ -443,10 +449,11 @@ function reapply() {
 //   Proven in the game: infantry on painted cover are hidden (2026-09-30).
 // moves, where units go (the map's two navigation graphs, StudioApi.map_movement): bit 1 = closed to infantry, bit 2
 //   = closed to vehicles, so red is closed to every unit (water, cliffs, off the map), yellow to vehicles only (woods),
-//   purple to infantry only. The block brushes close ground; the build takes it out of the graphs (rusemod.nav).
+//   purple to infantry only. The block brushes close ground; the build takes it out of the graphs (rusemod.nav). The
+//   open brushes open it again; the build adds it to the graphs where they have none (nav.Graph.open_ground).
 //   Proven in the game: units plan around a blocked pit (2026-09-30). ---
-const cover = { kinds: ["cover", "town"], colors: [null, [60, 210, 90, 125]] };
-const moves = { kinds: ["block"], colors: [null, [170, 90, 220, 120], [235, 200, 40, 115], [220, 50, 40, 120]] };
+const cover = { kinds: ["cover", "town", "forest"], colors: [null, [60, 210, 90, 125]] };
+const moves = { kinds: ["block", "open"], colors: [null, [170, 90, 220, 120], [235, 200, 40, 115], [220, 50, 40, 120]] };
 const OVERLAYS = [cover, moves];
 for (const o of OVERLAYS) {
   Object.assign(o, { base: null, cells: null, size: 0, box: null, canvas: null, ctx: null, img: null, tex: null,
@@ -454,7 +461,7 @@ for (const o of OVERLAYS) {
 }
 // what a brush does to an overlay's cells: [overlay, bits it sets, bits it clears]
 const PAINTS = { cover: [cover, 1, 0], uncover: [cover, 0, 1], block: [moves, 3, 0], block_infantry: [moves, 1, 0],
-  block_vehicles: [moves, 2, 0] };
+  block_vehicles: [moves, 2, 0], open: [moves, 0, 3], open_infantry: [moves, 0, 1], open_vehicles: [moves, 0, 2] };
 
 function overlayShown(o) {
   return o.show || (mv.brush.on && o.kinds.includes(BRUSHES[mv.brush.name][0]));
@@ -1366,6 +1373,8 @@ const PLACE_HOW = ["one", "area", "line"];
 const METRE = 260;  // world units in a metre (the game's distances: 260,000 to a kilometre)
 const SPACING = { building: 20, prop: 8, vegetation: 6 };  // metres between objects to start with, per kind
 const MOST = 800;  // objects one area or line may place at most, so a slip of the mouse can't bury a map
+// the trees Forest strokes placed: the brushes' Undo takes them back with their cover, not the Place panel's
+const forestTrees = new WeakSet();
 const around = (turn, spread) => (turn + Math.round((Math.random() * 2 - 1) * spread) + 360) % 360;
 
 function placeNote(text, kind) {
@@ -1509,6 +1518,7 @@ async function placeAt(ev) {
   try {
     await mv.api.scenery_add(pack, [obj]);
     if (pack !== mv.current) return;
+    p.groups.push([obj]);
     placeNote(w.brush_note);
   } catch (err) {
     if (pack !== mv.current) return;
@@ -1528,7 +1538,7 @@ async function placeMany(objs) {
   try {
     await mv.api.scenery_add(pack, objs);
     if (pack !== mv.current) return;
-    p.groups.push(objs.length);
+    p.groups.push(objs);
     placeNote(fill(w.place_placed, { n: objs.length.toLocaleString() }) + (objs.length >= MOST ? " " + w.place_most : ""));
   } catch (err) {
     if (pack !== mv.current) return;
@@ -1549,9 +1559,11 @@ function objectAt(x, y, turn) {
 }
 
 // Painting an area: each spot the pointer passes scatters objects in the circle, never closer than the spacing to
-// another one (this stroke's, or any the mod placed before), so going over a spot twice doesn't pile them up.
-function scatter(stroke, x, y) {
-  const p = mv.place, gap = spacingOf(p.group) * METRE, r = p.area * METRE, cell = gap;
+// another one (this stroke's, or any the mod placed before), so going over a spot twice doesn't pile them up. The
+// Forest brush scatters its trees the same way: `how` gives its circle, spacing and trees ({ r, gap, make(x, y) }).
+function scatter(stroke, x, y, how) {
+  const p = mv.place, gap = how ? how.gap : spacingOf(p.group) * METRE, r = how ? how.r : p.area * METRE, cell = gap;
+  const make = how ? how.make : (ox, oy) => objectAt(ox, oy, around(p.turn, 45));
   const key = (a, b) => `${Math.floor(a / cell)},${Math.floor(b / cell)}`;
   if (!stroke.grid) {
     stroke.grid = new Map();
@@ -1570,7 +1582,7 @@ function scatter(stroke, x, y) {
     const a = Math.random() * 2 * Math.PI, d = r * Math.sqrt(Math.random());
     const ox = x + d * Math.cos(a), oy = y + d * Math.sin(a);
     if (ox < x0 || ox > x1 || oy < y0 || oy > y1 || !free(ox, oy)) continue;
-    const o = objectAt(ox, oy, around(p.turn, 45));
+    const o = make(ox, oy);
     stroke.objects.push(o);
     (stroke.grid.get(key(o.x, o.y)) || stroke.grid.set(key(o.x, o.y), []).get(key(o.x, o.y))).push(o);
   }
@@ -1612,17 +1624,27 @@ function showPlaceGuide(pt) {
   gl.draw();
 }
 
+// Undo takes back the last click, area or line placed, by the objects themselves: a Forest stroke's trees (the
+// brushes' Undo takes those, with its cover) may have come after them.
 async function undoPlace() {
   const p = mv.place, pack = mv.current;
   if (!p.mod || !p.objects.length || p.painting) return;
-  const n = p.groups.length ? p.groups.pop() : 1;  // an area or a line goes back in one go
+  const mine = p.objects.filter((o) => !forestTrees.has(o));
+  const group = p.groups.length ? p.groups.pop() : mine.slice(-1);  // an area or a line goes back in one go
+  if (!group.length) return;
   try {
-    const res = await mv.api.scenery_undo(pack, n);
+    await mv.api.scenery_undo(pack, group.length, group);
     if (pack !== mv.current) return;
-    p.objects.splice(p.objects.length - res.removed, res.removed);
-    drawPlaced();
+    takeOff(group);
     renderPlace();
   } catch (err) { placeNote((err && err.message) || String(err), "error"); }
+}
+
+// Objects taken off the map: out of the list and the view.
+function takeOff(objs) {
+  const gone = new Set(objs);
+  mv.place.objects = mv.place.objects.filter((o) => !gone.has(o));
+  drawPlaced();
 }
 
 // --- showing one map ---
@@ -1703,8 +1725,8 @@ async function show(pack, keepCamera) {
 const DOCK = [
   ["terrain", ["hill", "raise", "lower", "crater", "plateau", "flatten", "level", "smooth", "ramp"]],
   ["water", ["water", "drain"]],
-  ["cover", ["cover", "uncover", "town"]],
-  ["movement", ["block", "block_infantry", "block_vehicles"]],
+  ["cover", ["cover", "uncover", "town", "forest"]],
+  ["movement", ["block", "block_infantry", "block_vehicles", "open", "open_infantry", "open_vehicles"]],
   ["roads", null], ["bridges", null],
   ["building", null], ["prop", null], ["vegetation", null],
   ["scenario", null], ["check", null],
@@ -1744,6 +1766,10 @@ const ICONS = {
   town: "M2 20V11l5-4 5 4v9 M12 20v-7l5-4 5 4v7 M2 20h20",
   block_infantry: "M12 3a2 2 0 1 0 0 4a2 2 0 1 0 0-4z M12 8v7 M8 11h8 M9 21l3-6 3 6 M3 3l18 18",
   block_vehicles: "M3 16h18v4H3z M7 16v-4h8v4 M15 13h6 M3 3l18 18",
+  open: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M7 12h10 M13 8l4 4-4 4",
+  open_infantry: "M12 3a2 2 0 1 0 0 4a2 2 0 1 0 0-4z M12 8v7 M8 11h8 M9 21l3-6 3 6",
+  open_vehicles: "M3 16h18v4H3z M7 16v-4h8v4 M15 13h6",
+  forest: "M7 3l-4 7h3l-3 5h8l-3-5h3z M7 15v5 M17 6l-4 7h3l-3 5h8l-3-5h3z M17 18v3",
   move: "M12 3v18 M3 12h18 M9 6l3-3 3 3 M9 18l3 3 3-3 M6 9l-3 3 3 3 M18 9l3 3-3 3",
   spawn: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8v8 M8 12h8",
   start: "M6 21V3 M6 4h11l-3 4 3 4H6",
@@ -2492,7 +2518,7 @@ function renderBrushes() {
   const set = settingsOf(b.name);
   $("brush-size").value = set.size;
   $("brush-strength").value = set.strength;
-  $("brush-strength-row").classList.toggle("hidden", ["cover", "town", "block"].includes(BRUSHES[b.name][0]));
+  $("brush-strength-row").classList.toggle("hidden", ["cover", "town", "block", "open", "forest"].includes(BRUSHES[b.name][0]));
   showOverlays();
   $("map-help").textContent = b.on ? w.brush_help : w.map_help;
   showCount();
@@ -2547,7 +2573,7 @@ function pointerMode() {
 function newStroke(x, y, level, end) {
   const name = mv.brush.name, [kind] = BRUSHES[name], set = settingsOf(name);
   const [, , z0, , , z1] = mv.edit.bounds;
-  const s = { brush: name, x, y, radius: brushRadius(name) };
+  const s = { brush: kind === "forest" ? "cover" : name, x, y, radius: brushRadius(name) };  // a forest's cover
   if (kind === "add") s.height = lift(set.strength, z0, z1);
   if (kind === "level") { s.level = level; s.weight = name === "plateau" ? 1 : set.strength / 100; }
   if (kind === "smooth") s.weight = set.strength / 100;
@@ -2596,8 +2622,28 @@ function dab(group, x, y) {
   group.last = [x, y];
   mv.brush.strokes.push(s);
   applyStroke(mv.edit, s);
+  if (group.forest) {  // the trees in the same circle, scattered as Place's Area scatters them
+    scatter(group, x, y, group.forest);
+    const p = mv.place, keep = p.objects;
+    p.objects = keep.concat(group.objects);
+    drawPlaced();
+    p.objects = keep;
+    return;
+  }
   const ed = mv.edit;
   redraw(false, !ed.normalsAt || performance.now() - ed.normalsAt > 150);
+}
+
+// The trees a Forest stroke places: the Place panel's tree when a tree is picked there, else the map's most used one
+// (a map takes only the types it already uses); null when the map has none.
+function forestOf(radius) {
+  const p = mv.place, rows = ((mv.scenery.data && mv.scenery.data.palette) || []).filter((r) => r[2] === "vegetation");
+  const picked = p.group === "vegetation" && rows.some((r) => r[0] === p.type) ? p.type : null;
+  const type = picked || (rows.length ? rows.reduce((a, b) => ((b[4] || 0) > (a[4] || 0) ? b : a))[0] : null);
+  if (!type) return null;
+  return { type, r: radius, gap: spacingOf("vegetation") * METRE, make: (x, y) => ({ type, x: Math.round(x), y: Math.round(y),
+    turn: Math.floor(Math.random() * 360), size: Math.round((picked ? p.size : 1) * (0.85 + Math.random() * 0.3) * 100) / 100,
+    solid: true }) };
 }
 
 function paintTo(p) {
@@ -2620,30 +2666,52 @@ async function finishStroke() {
   if (!g || !g.strokes.length) return;
   redraw(false, true);
   placeScenery();
-  const pack = mv.current;
+  const pack = mv.current, trees = g.objects || [];
+  let placed = false;
   try {
+    if (trees.length) {  // a Forest stroke: its trees, then its cover; both or neither
+      await mv.api.scenery_add(pack, trees);
+      placed = true;
+    }
     await mv.api.terrain_add(pack, g.strokes);
     if (pack !== mv.current) return;
-    mv.brush.groups.push(g.strokes.length);
+    if (g.objects) {
+      for (const o of trees) forestTrees.add(o);
+      mv.place.objects.push(...trees);
+      mv.brush.groups.push({ n: g.strokes.length, objects: trees });
+      drawPlaced();
+      renderPlace();
+    } else {
+      mv.brush.groups.push(g.strokes.length);
+    }
     showCount();
-    brushNote(mv.words.brush_note);
+    brushNote(g.objects ? fill(mv.words.forest_done, { n: trees.length.toLocaleString() }) : mv.words.brush_note);
   } catch (err) {
+    if (placed) { try { await mv.api.scenery_undo(pack, trees.length, trees); } catch (_) { /* said below */ } }
     if (pack !== mv.current) return;
     mv.brush.strokes.splice(g.start, g.strokes.length);  // not saved: take it off the view again
+    if (g.objects) drawPlaced();
     reapply();
     showCount();
     brushNote((err && err.message) || String(err), "error");
   }
 }
 
+// Undo takes back the last stroke or drag; a Forest stroke's trees go with its cover.
 async function undoStroke() {
   const b = mv.brush, pack = mv.current;
   if (!b.mod || !b.strokes.length || b.painting) return;
-  const n = b.groups.length ? b.groups.pop() : 1;
+  const last = b.groups.length ? b.groups.pop() : 1, n = typeof last === "number" ? last : last.n;
   try {
     const res = await mv.api.terrain_undo(pack, n);
     if (pack !== mv.current) return;
     b.strokes.splice(b.strokes.length - res.removed, res.removed);
+    if (last.objects && last.objects.length) {
+      await mv.api.scenery_undo(pack, last.objects.length, last.objects);
+      if (pack !== mv.current) return;
+      takeOff(last.objects);
+      renderPlace();
+    }
     reapply();
     showCount();
   } catch (err) { brushNote((err && err.message) || String(err), "error"); }
@@ -2716,6 +2784,11 @@ function watchPointer() {
       return;
     }
     const group = { strokes: [], last: null, level, stamp, start: mv.brush.strokes.length };
+    if (kind === "forest") {  // trees and cover from one stroke
+      group.forest = forestOf(brushRadius(name));
+      if (!group.forest) { brushNote(mv.scenery.data ? mv.words.forest_no_trees : mv.words.scenery_loading, "error"); return; }
+      group.objects = [];
+    }
     mv.brush.painting = group;
     dab(group, x, y);
     if (stamp) finishStroke();

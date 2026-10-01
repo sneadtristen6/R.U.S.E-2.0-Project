@@ -582,6 +582,92 @@ class Graph:
             raise NavError("opening the bridges would leave ground units can't reach, which crashes the game")
         return counts
 
+    def open_ground(self, zones: list[tuple[float, float, float]]) -> dict:
+        """Give units the ground inside `zones` (circles: x, y, radius) where the graph has none: the reverse of
+        Graph.block. Ground a shipped map closes to units has no circle over it at all (no shipped graph has a circle
+        without links, or an emptied one: FORMATS.md §6, movement graphs), so opening it is adding circles there.
+
+        The main graph gets new circles over the zones where no live circle is (Graph.block's refill, _fill: centres
+        on the STEP grid, the largest first, each inside a zone, down to MIN_RADIUS, their middles on the map and never
+        in a circle that owns a local map), linked to every circle they overlap by STEP or more (to an owner only where
+        its local map has ground at the meeting point). Inside an owner the game decides from its local map, so the
+        zones that reach an owner get new circles in its local map too (down to STEP, the smallest a shipped local map
+        has; their middles inside the owner). New circles that can't reach the old ones through their links (an
+        island, ground the zone touches nowhere) are left out: the graph and each local map stay in as many pieces as
+        before (one, on every shipped map). New circles are numbered after the old ones and listed in the index under
+        the nearest old circle (_index_more), so the old numbers, local maps and crossings stay as they were.
+
+        Returns {"added": main circles added, "linked": main links added, "local": local-map circles added,
+        "left_out": new circles left out (couldn't be reached), "idle": [zone index: nothing was added in it]}."""
+        counts = {"added": 0, "linked": 0, "local": 0, "left_out": 0, "idle": []}
+        live = [z for z in zones if z[2] > 0]
+        if not live:
+            counts["idle"] = list(range(len(zones)))
+            return counts
+        size = float(self.box[2])
+        nx = len(self.subs)
+        middles = []
+
+        def on_map(x, y) -> bool:
+            return 0.0 <= x <= size and 0.0 <= y <= size
+        new, linked, out = self._open_here(live, MIN_RADIUS, on_map, nx)
+        counts["added"], counts["linked"], counts["left_out"] = len(new), linked, out
+        middles += new
+        for k in range(nx):
+            ox, oy, orad = self.circles[k][:3]
+            if orad <= 0:
+                continue
+            here = [z for z in live if math.hypot(z[0] - ox, z[1] - oy) < z[2] + orad]
+            if not here:
+                continue
+
+            def inside(x, y, ox=ox, oy=oy, orad=orad) -> bool:
+                return math.hypot(x - ox, y - oy) < orad
+            got, _linked, out = self.subs[k]._open_here(here, STEP, inside)
+            counts["local"] += len(got)
+            counts["left_out"] += out
+            middles += got
+        counts["idle"] = [i for i, (zx, zy, zr) in enumerate(zones)
+                          if not any(math.hypot(x - zx, y - zy) < zr for x, y, _r in middles)]
+        return counts
+
+    def _open_here(self, zones, least: float, where, nx: int = 0) -> tuple[list, int, int]:
+        """Graph.open_ground on this graph alone (no local maps): (the circles added, links added, circles left
+        out). The first `nx` circles own local maps: a link to one only where its local map has ground."""
+        n = len(self.circles) - 1
+        old = [c[:3] for c in self.circles[:-1]]
+        ground = _Buckets(list(old))
+
+        def meets(c, d):
+            """Where new circle c meets old circle d, for a link (an owner only where its local map has ground)."""
+            point = _meeting(c, old[d]) if old[d][2] > 0 else None
+            if point is None or (d < nx and self.subs[d].find(*point) is None):
+                return None
+            return point
+
+        def joins(c) -> bool:
+            return any(meets(c, d) is not None for d in ground.near(*c))
+        rest: list = []
+        new = [c[:3] for c in _fill(list(zones), [], old, least, where, joins, rest)]
+        if not new:
+            return [], 0, len(rest)
+        parts_before = len(self._labels()[1])
+        allc = old + new
+        near = _Buckets(list(allc))
+        links = []
+        for c in range(n, len(allc)):
+            for d in near.around(c):
+                if d == c or allc[d][2] <= 0 or n <= d < c:  # (two new circles: once, from the later one)
+                    continue
+                point = meets(allc[c], d) if d < n else _meeting(allc[c], allc[d])
+                if point is not None:
+                    links.append((min(c, d), max(c, d)) + point)
+        self._finish(allc, list(enumerate(self.links)), [(None, lk) for lk in links], n)
+        self.points = _index_more(self.points, old, [(n + j, c) for j, c in enumerate(new)])
+        if len(self._labels()[1]) > parts_before:  # a guard: never write ground units can't reach
+            raise NavError("opening ground would leave ground units can't reach, which crashes the game")
+        return new, len(links), len(rest)
+
     def _owner_for(self, span, deck, every, nx: int, anchors, chains, owners, extra=()) -> dict | None:
         """The owner circle for a deck (its circles `deck`, along `span`): centred at the deck's middle on the STEP
         grid; its radius on the STEP grid, from the least that holds the deck up to the most that leaves the middle of
@@ -1080,17 +1166,26 @@ UNITS = {"all": (1, 2), "infantry": (1,), "vehicles": (2,)}  # which of mapinfo.
 
 @dataclass
 class Block:
-    """Ground units can't use: a circle (map units) taken out of the infantry graph, the vehicles' or both."""
+    """Ground units can't use: a circle (map units) taken out of the infantry graph, the vehicles' or both. With
+    `open`, the reverse: ground given to them where the graph has none (Graph.open_ground). Blocks and opens apply in
+    order, so where two meet the later one wins."""
     x: float
     y: float
     radius: float
     units: str = "all"
+    open: bool = False
 
 
-def parse_blocks(items, where: str = "movement.toml") -> list[Block]:
+def closing(blocks) -> list[Block]:
+    """The blocks that take ground away (not the opens): what bridges, roads and the cover check keep clear of."""
+    return [b for b in blocks if not b.open]
+
+
+def parse_blocks(items, where: str = "movement.toml", table: str = "block") -> list[Block]:
+    """movement.toml's [[block]] tables, or with table="open" its [[open]] ones (Block.open)."""
     out = []
     for n, b in enumerate(items or [], start=1):
-        at = f"{where}: block {n}"
+        at = f"{where}: {table} {n}"
         if not isinstance(b, dict):
             raise NavError(f"{at} isn't a table")
         extra = sorted(set(b) - {"x", "y", "radius", "units"})
@@ -1106,15 +1201,34 @@ def parse_blocks(items, where: str = "movement.toml") -> list[Block]:
         units = b.get("units", "all")
         if units not in UNITS:
             raise NavError(f"{at}: units must be one of {', '.join(UNITS)}")
-        out.append(Block(float(b["x"]), float(b["y"]), float(b["radius"]), units))
+        out.append(Block(float(b["x"]), float(b["y"]), float(b["radius"]), units, table == "open"))
     return out
 
 
 def blocks_toml(blocks: list[Block], header: str = "") -> str:
+    """A movement file: the blocks as [[block]] tables, then the opens as [[open]] ones (the build applies a file's
+    blocks first, then its opens)."""
     lines = [f"# {line}" for line in header.splitlines()] + ([""] if header else [])
-    for b in blocks:
-        lines += ["[[block]]", f"x = {b.x!r}", f"y = {b.y!r}", f"radius = {b.radius!r}", f'units = "{b.units}"', ""]
+    for b in sorted(blocks, key=lambda b: b.open):
+        lines += ["[[open]]" if b.open else "[[block]]", f"x = {b.x!r}", f"y = {b.y!r}", f"radius = {b.radius!r}",
+                  f'units = "{b.units}"', ""]
     return "\n".join(lines)
+
+
+def wet_opens(blocks, water, step: float = 4 * STEP) -> list[tuple[Block, tuple[float, float]]]:
+    """The opens (Block.open) with water inside them, each with a wet spot (`water(x, y)`: bridges.Water.at), sampled
+    every `step`: units given ground there stand on the bed under the water (an opened river puts them on the
+    riverbed), which the build allows with a warning."""
+    out = []
+    for b in blocks:
+        if not b.open:
+            continue
+        k = max(1, int(b.radius // step))
+        wet = [(i * i + j * j, (b.x + i * step, b.y + j * step)) for j in range(-k, k + 1) for i in range(-k, k + 1)
+               if (i * step) ** 2 + (j * step) ** 2 < b.radius ** 2 and water(b.x + i * step, b.y + j * step)]
+        if wet:
+            out.append((b, min(wet)[1]))  # the wet spot nearest its middle
+    return out
 
 
 def replace_buffers(win: bytes, new: dict) -> bytes:
@@ -1131,8 +1245,11 @@ def replace_buffers(win: bytes, new: dict) -> bytes:
     return bytes(out)
 
 
-def apply_blocks(read, pack: str, blocks: list[Block]) -> tuple[dict, list[str]]:
-    """({member: new mapinfo.win}, notes) for one map; `read(member)` gives a DataMap_Win.dat file's bytes or None."""
+def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None) -> tuple[dict, list[str]]:
+    """({member: new mapinfo.win}, notes) for one map; `read(member)` gives a DataMap_Win.dat file's bytes or None.
+    Blocks and opens (Block.open) apply in order, a run of blocks at once (Graph.block), then a run of opens
+    (Graph.open_ground), and so on: where two meet, the later one wins. The opens that opened nothing in any graph
+    they name (the ground was open already, or they reach no ground units use) go into `idle`."""
     from ruse_mod_engine import sdb
     from .cover import PACK, member
     name = member(pack)
@@ -1147,29 +1264,50 @@ def apply_blocks(read, pack: str, blocks: list[Block]) -> tuple[dict, list[str]]
             from .roadnet import RoadNet
             roads.append(RoadNet.read(bufs[0]))
         return roads[0]
+    opened = set()  # the opens (their numbers in `blocks`) that opened something in a graph
     for k, what in ((1, "infantry"), (2, "vehicles")):
-        zones = [(b.x, b.y, b.radius) for b in blocks if k in UNITS[b.units]]
-        if not zones:
+        mine = [(i, b) for i, b in enumerate(blocks) if k in UNITS[b.units]]
+        if not mine:
             continue
         g = Graph.read(bufs[k])
-        # never shrink a circle that owns a local map (a town, a bridge of the map's): the game decides what is
-        # ground inside such a circle from its local map, so shrinking it opens everything the local map kept
-        # closed, water beside the map's own bridges included (seen in the game, 2026-10-01: an infantry squad
-        # standing in the river beside a bridge of the map's own, on a map where the mod had only placed buildings).
-        # The block goes into those local maps instead (Graph.block walks them).
-        c = g.block(zones, keep_owners=True)
-        notes.append(f"{what}: {len(zones)} block(s); {c['emptied']} circle(s) emptied, {c['shrunk']} shrunk, "
-                     f"{c['links']} link(s) and {c['crossings']} crossing(s) taken out; {c['added']} circle(s) and "
-                     f"{c['linked']} link(s) added to fill the ground back")
+        runs: list[list] = []  # [open?, [(number, Block)]]: blocks and opens in order, each run applied at once
+        for i, b in mine:
+            if runs and runs[-1][0] == b.open:
+                runs[-1][1].append((i, b))
+            else:
+                runs.append([b.open, [(i, b)]])
+        for is_open, run in runs:
+            zones = [(b.x, b.y, b.radius) for _i, b in run]
+            if is_open:
+                c = g.open_ground(zones)
+                opened |= {run[j][0] for j in range(len(run)) if j not in c["idle"]}
+                notes.append(f"{what}: {len(zones)} open(s); {c['added']} circle(s) and {c['linked']} link(s) added, "
+                             f"{c['local']} circle(s) in towns' and bridges' own movement")
+                if c["left_out"]:
+                    notes.append(f"{what}: {c['left_out']} circle(s) left out: ground no unit could reach from the "
+                                 f"rest (an order onto it would crash the game)")
+                continue
+            # never shrink a circle that owns a local map (a town, a bridge of the map's): the game decides what is
+            # ground inside such a circle from its local map, so shrinking it opens everything the local map kept
+            # closed, water beside the map's own bridges included (seen in the game, 2026-10-01: an infantry squad
+            # standing in the river beside a bridge of the map's own, on a map where the mod had only placed
+            # buildings). The block goes into those local maps instead (Graph.block walks them).
+            c = g.block(zones, keep_owners=True)
+            notes.append(f"{what}: {len(zones)} block(s); {c['emptied']} circle(s) emptied, {c['shrunk']} shrunk, "
+                         f"{c['links']} link(s) and {c['crossings']} crossing(s) taken out; {c['added']} circle(s) "
+                         f"and {c['linked']} link(s) added to fill the ground back")
+        zones = [(b.x, b.y, b.radius) for _i, b in mine if not b.open]
         cut = _drop_cut_off(g)
         if cut:
             notes.append(f"{what}: {cut} circle(s) the blocks cut off from the rest taken out too (no unit could "
                          f"reach them, and an order onto them crashes the game)")
-        through = g.drop_crossings_through(road_net, zones)
+        through = g.drop_crossings_through(road_net, zones) if zones else 0
         if through:
             notes.append(f"{what}: {through} crossing(s) whose road ran through a block taken out (units routed "
                          f"along that road drove through it; the road stays for supply trucks)")
         new[k] = g.to_bytes()
+    if idle is not None:
+        idle += [b for i, b in enumerate(blocks) if b.open and i not in opened]
     return {name: replace_buffers(win, new)}, notes
 
 
@@ -1498,10 +1636,17 @@ def _walk_out(at, out, roads, step: float, reach: float, away=None):
         walked += seg
 
 
-def _fill(sources, zones, now) -> list[tuple[float, float, float]]:
+def _fill(sources, zones, now, least: float = MIN_RADIUS, where=None, joins=None, rest=None) -> list:
     """New circles over the ground `sources` (the old circles that were emptied or shrunk) covered and no circle
     in `now` covers any more, outside the zones: each inside one source circle and clear of every zone, centres on
-    the STEP grid, the largest first, each on ground no circle covers yet, down to MIN_RADIUS."""
+    the STEP grid, the largest first, each on ground no circle covers yet, down to `least` (MIN_RADIUS); with
+    `where(x, y)`, only middles it allows. (x, y, r, the source it lies deepest in) each.
+
+    With `joins(circle)` (whether a circle meets ground units can reach, for a link), grown from that ground instead
+    (Graph.open_ground): a circle is taken only when it joins, or overlaps one taken before it by STEP or more, in
+    passes over the spots left (the largest first in each) until one takes none; so every circle taken is reached
+    from the ground, and a big one in the middle of a stroke that wouldn't reach it leaves room for smaller ones that
+    do. How many circles the ground no circle reached would have had goes in `rest` (a list) when given."""
     live = [c for c in now if c[2] > 0]
     near = _Buckets(live)
     placed = _Buckets([])  # the new circles so far
@@ -1527,19 +1672,43 @@ def _fill(sources, zones, now) -> list[tuple[float, float, float]]:
                 x, y = i * step, j * step
                 deep, source = max(((sources[k][2] - ((x - sources[k][0]) ** 2 + (y - sources[k][1]) ** 2) ** 0.5, k)
                                     for k in holders.near(x, y, 0.0)), default=(-1.0, 0))
-                if deep < MIN_RADIUS:
+                if deep < least or (where is not None and not where(x, y)):
                     continue
                 room = min([deep] + [((x - zones[k][0]) ** 2 + (y - zones[k][1]) ** 2) ** 0.5 - zones[k][2]
                                      for k in bounds.near(x, y, most)])
                 room = (room // STEP) * STEP
-                if room >= MIN_RADIUS and not covered(x, y):
+                if room >= least and not covered(x, y):
                     spots.append((room, x, y, source))
     spots.sort(key=lambda s: (-s[0], s[1], s[2]))
     out = []  # (x, y, r, the source circle it lies deepest in)
-    for r, x, y, source in spots:
-        if not covered(x, y, placed):
-            out.append((float(x), float(y), float(r), source))
-            placed.add((float(x), float(y), float(r)))
+    if joins is None:
+        for r, x, y, source in spots:
+            if not covered(x, y, placed):
+                out.append((float(x), float(y), float(r), source))
+                placed.add((float(x), float(y), float(r)))
+        return out
+    left = spots
+    while left:
+        later, took = [], len(out)
+        for spot in left:
+            r, x, y, source = spot
+            if covered(x, y, placed):
+                continue
+            c = (float(x), float(y), float(r))
+            if joins(c) or any(_meeting(c, placed.circles[i]) is not None for i in placed.near(*c)):
+                out.append(c + (source,))
+                placed.add(c)
+            else:
+                later.append(spot)
+        left = later
+        if len(out) == took:
+            break
+    if rest is not None:  # the ground left closed, as circles
+        unreached = _Buckets(list(placed.circles))
+        for r, x, y, _source in left:
+            if not covered(x, y, unreached):
+                rest.append((float(x), float(y), float(r)))
+                unreached.add((float(x), float(y), float(r)))
     return out
 
 

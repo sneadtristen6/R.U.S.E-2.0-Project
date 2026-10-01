@@ -575,6 +575,19 @@ in their old owner, 3 with an owner of their own), none with water units can sta
 stay closed (a deck past its owner's edge; two bridges with no ground of their owner anywhere near). Not tried in the
 game yet: a graph with more local maps than it shipped with.
 
+**Closed ground has no circles** (2026-10-01; TwoIslands, Valley and D-Day, both graphs, sampled 200 × 200 over the
+map's square). No shipped graph has a circle of radius 0 or a live circle without links, main or local (6 of 6
+graphs, every local map): ground the map closes to units is simply ground no circle covers. Water: 4 of 3,706 wet
+samples walkable on TwoIslands (infantry), 0 of 17,145 on D-Day, 17 of 1,395 on Valley. Dry ground closed inside the
+circles' reach: 7,370 samples on TwoIslands for infantry, 12,190 for vehicles (woods), 2,241 / 3,434 on D-Day,
+8,570 / 12,213 on Valley; and every dry sample that is under a circle but closed is inside an owner whose local map
+leaves it out (a town's buildings: 335 on TwoIslands' infantry graph, 160 on D-Day's, 235 on Valley's). So opening
+ground (`Graph.open_ground`, the Open brushes) is adding circles: in the main graph where no circle is, and in the
+local map where the ground is inside an owner. Tried in memory on those three maps (an open of 3,000 on a town's
+building, on closed dry ground and on water, vehicles): 8 of 9 walkable after, the graph and its local maps still one
+piece each, read back byte for byte; the ninth (TwoIslands' dry spot) reached no ground units use by 320 and stayed
+closed, with a note.
+
 #### Gameplay ground (`.kdt`; 2026-09-29; code `rusemod.kdt`; check `tools/verify_kdt.py`)
 
 Two per map pack: `output\occlusioninfo_terrainonly.kdt`, the ground gameplay runs on (same bounds as `highdef.tms`;
