@@ -188,13 +188,15 @@ team 2): `py -3 -m rusemod build <the mod's folder> --instance D:\RUSE-Instances
 ## T13. A unit given to another nation (Studio 0.7.7)
 
 A nation's unit models only load in a match where a player has that nation. So for a unit given to another nation,
-the build now has its models' nation load in every skirmish. Untested in the game until now.
+the build copies its models (meshes, skeletons, animations, texture stand-ins) into the skirmish packs of the nation
+it now belongs to, so they load with that nation's own units (`rusemod.unitpacks`; FORMATS §8). The first way, having
+the other nation's packs load in every skirmish, crashed the game in batch 1 and is off (`build.FORCE_LOAD`).
 1. In the Studio, make a mod (or pick a test one), open the German **Ju 87** (`Descriptor_Avion_Junkers_87`) and
    click **New unit…**. Name it "Stuka US", set price 5, and put it in **another nation's factory**: the US air
    factory.
-2. Click **Test in game**. The build's report has two notes: `Germany's unit models and animations now load in every
-   skirmish ... (255 loaders in 85 cluster maps ...)`, and one saying the Stuka US uses Germany's models. There are no
-   errors.
+2. Click **Test in game**. The build's report has a note saying the Stuka US's models go into the US's skirmish packs
+   too (`1 mesh, 1 skeleton, 1 texture stand-in copied in from Germany's packs`; the skeleton holds the rear gunner's
+   turret bones), and the line `unit models: 5 skirmish pack(s) in ZZ_Win.dat (...)`. There are no errors.
    - Without the Studio: a mod whose `src/stuka.rndf` holds
      `export Descriptor_Avion_Stuka_US is clone $/GFX/Everything/Descriptor_Avion_Junkers_87 ( Nationalite = 0 )`
      (every nation's aircraft are factory 9), built with
@@ -273,6 +275,40 @@ road east of Toulaville; a top-down map of the test spots goes with it.
      (owner, 2026-10-01, 15:46: "works great"): the squad in the hole looks as it does in the open, a tank beside it.
 3. **A 10x house** beside the HQ. **Passed:** it stands on the ground.
 4. **A lone stone bridge** placed by hand. **Passed:** units cross on the deck.
+
+## Batch 4: roads up close, units from another nation, Blitz Twin (2026-10-01)
+
+`D:\RUSE-Instances\batch4` from `D:\ruse-test-mods\batch4` (batch 3's clean mod plus `src/nations.rndf`: the German
+Ju 87 and Tiger copied for the US), with Blitz Twin (`D:\ruse-test-mods\newmap-agent`), the town names and the Dev
+Toolkit; built from branch `batch4` (the Erase tool, new maps, roads up close, the launcher's new look and the unit
+packs, merged). No spawned units in it. The build: 0 errors, 1 warning (the Dev Toolkit's scripts). The HQ is where
+batch 3 had it, on the main road east of Toulaville; a top-down map of the spots goes with it. Start `RUSE.exe` inside
+the copy's folder, Steam running.
+
+**BATTLES > D-Day, as the US against one UK or USSR AI (no German player).**
+1. **T12, roads up close:** the new road leaves the map's road 50 m north of the HQ and runs north-west. Zoom the
+   camera right down onto it 200 m north-west of the HQ (the ring on the map), then pan along it to where it joins
+   the map's road and onto that road. The build now adds a new road to the map's road model, what the game draws near
+   the camera (77 pieces here).
+   - **Pass:** the new road's texture stays as the camera comes close, and both roads stay drawn as you pan.
+   - **Fail:** the new road fades out near the camera (as in batches 1-3), or the map's road does.
+2. **T13, units from another nation:** a tank factory and an airfield (the build menu's **Dev** tab gives +500 a
+   click), then the **Tiger US** in the US tank factory and the **Stuka US** in the US air factory (40 and 20, the
+   German prices). Their models are now copied into the US's own skirmish packs (the Stuka: its mesh, its skeleton
+   with the rear gunner's turret, a texture stand-in; the Tiger: the meshes and skeletons of the tank and its wreck,
+   two texture stand-ins). The Tiger US keeps a Tiger's speed (the 3x is for the US's own units).
+   - **Pass:** both are in their factories and drawn (not invisible); the Tiger drives and fights; the Stuka takes
+     off, dive-bombs a target and comes back; no crash, when they're built or later.
+   - **Fail:** a unit missing from its factory, invisible or frozen, or a crash (note when: built, first seen,
+     firing). Batch 1's Stuka US crashed the game when it was built.
+3. **T15, Blitz Twin:** after the D-Day game, back in BATTLES, T15's steps 1-5 below in this copy.
+   - **Pass / Fail:** as there.
+4. **Optional, spawned units:** `D:\RUSE-Instances\batch4-spawn` (from `D:\ruse-test-mods\batch4-spawn`: batch 3's
+   HQ move and 3 neutral German Tigers spawned 150 m south of the US HQ, nothing else; their models copied into the
+   packs every skirmish loads). BATTLES > D-Day as the US against a UK or USSR AI.
+   - **Pass:** the match starts and the 3 Tigers stand south of the HQ, drawn.
+   - **Fail:** a crash as the match starts (as batch 1's Japanese spawns did), or Tigers that aren't drawn.
+- **Tell us:** did D-Day take noticeably longer to load than in batch 3?
 
 ## T15. A new map in the menus: Blitz Twin (PLAN §13)
 

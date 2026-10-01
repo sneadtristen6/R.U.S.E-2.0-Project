@@ -300,8 +300,8 @@ def mesh_pack(models) -> bytes:
     head = bytearray(0xC4)
     head[0:8] = b"MESHPCPC"
     struct.pack_into("<I", head, 8, 4)
-    for i, sec in enumerate([(0xC4, len(names), 1), (fo, 4, 0), (mo, 0, 0), (mo, 0, 0), (mo, 0, 0), (mo, 4, 1),
-                             (mo, 0, 0), (mo, 0, 0)]):
+    for i, sec in enumerate([(0xC4, len(names), len(models)), (fo, 4, 0), (mo, 0, 0), (mo, 0, 0), (mo, 0, 0),
+                             (mo, 4, 1), (mo, 0, 0), (mo, 0, 0)]):
         struct.pack_into("<III", head, 0x34 + 12 * i, *sec)
     struct.pack_into("<III", head, 0x9C, mo, 0, 0)
     return bytes(head) + body
@@ -381,14 +381,46 @@ class ForceLoadOn:
 
 
 class ForceLoadOff(unittest.TestCase):
-    def test_a_unit_for_another_nation_and_its_spawn_are_refused(self):
-        r = Models.check(self, clone(("Nationalite", num(1)), source="$/Sherman"), maps=LoadedEverywhere.MAPS)
-        self.assertEqual(len(r.errors), 1)
-        self.assertIn("crashed it (T13", r.errors[0].message)
+    """With FORCE_LOAD off (as built), a unit for another nation, and a spawned one, get their models copied into the
+    packs their matches load (rusemod.unitpacks; tests/test_unitpacks.py has the packs themselves), and nothing in the
+    cluster maps changes."""
+
+    def test_a_unit_for_another_nation_gets_its_models_copied(self):
+        result = BuildResult()
+        base = army()
+        base.objects.update(LoadedEverywhere.MAPS)
+        r = run(clone(("Nationalite", num(1)), source="$/Sherman"), base=base)
+        unit_models(base, r, zz_win(), result)
+        self.assertEqual(result.errors, [])
+        self.assertEqual([f.message for f in result.findings], [
+            f"m (m.rndf:1): {NEW} is in Germany's army (Nationalite 1), but its model ww2\\res3d\\units\\"
+            f"{SHERMAN_MODEL} is in the mesh pack of US's units only: its models go into Germany's skirmish packs too "
+            f"(1 mesh copied in from US's packs), so it loads with Germany's own units"])
+        self.assertEqual(sorted(result.model_changed), ["gen_5\\pack\\gfxdescriptor\\meshskirmish_ger.spk"])
+        from rusemod.spk import Spk
+        self.assertIn(f"ww2\\res3d\\units\\{SHERMAN_MODEL}",
+                      Spk(result.model_changed["gen_5\\pack\\gfxdescriptor\\meshskirmish_ger.spk"]).items)
         self.assertEqual(forced(r.game), [None] * 3)  # nothing forced
+
+    def test_a_spawned_unit_s_models_go_into_the_common_packs(self):
         s = SpawnedUnits.check(self, "Unit_Panzer", maps=LoadedEverywhere.MAPS)
-        self.assertEqual(len(s.errors), 1)
-        self.assertIn("would crash as the match starts", s.errors[0].message)
+        self.assertEqual(s.errors, [])
+        self.assertEqual([f.message for f in s.findings], [
+            "spawner: the spawned Panzer use Germany's unit models, which a skirmish loads only when a player has "
+            "Germany: they go into the skirmish packs every match loads too (1 mesh copied in from Germany's packs)"])
+        self.assertEqual(sorted(s.model_changed), ["gen_5\\pack\\gfxdescriptor\\meshskirmish_common.spk"])
+        self.assertEqual(forced(s.game), [None] * 3)
+
+    def test_what_can_t_be_copied_is_refused(self):
+        # no German mesh pack to copy the Sherman into
+        result = BuildResult()
+        base = army()
+        r = run(clone(("Nationalite", num(1)), source="$/Sherman"), base=base)
+        unit_models(base, r, zz_win({k: v for k, v in PACKS.items() if k != "ger"}), result)
+        self.assertEqual(len(result.errors), 1)
+        self.assertIn("it can't be copied into Germany's skirmish packs: ZZ_Win.dat has no meshskirmish_ger.spk",
+                      result.errors[0].message)
+        self.assertEqual(result.model_changed, {})
 
 
 class Models(ForceLoadOn, unittest.TestCase):

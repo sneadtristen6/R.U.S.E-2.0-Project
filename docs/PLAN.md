@@ -627,7 +627,7 @@ don't hide in; placed objects on the ground at any size; cover painted in place 
 | **T9 A road over an old bridge:** the old one gone, units cross on the new one | owner | the replace rule | after T8 (the new deck goes into the old bridge's local map; the old floor and its aprons go) |
 | **T10 Read-only game folder:** Test in game after updating | the player who reported it | the fix | waiting for him |
 | **T11 Launcher 0.2.11:** the update is offered, Play works | owner | — | — |
-| **T13 A unit from another nation's factory:** it shows and fights in a skirmish with no player of its own nation | owner | the force-load fix | when the fix is merged |
+| **T13 A unit from another nation's factory:** it shows and fights in a skirmish with no player of its own nation | owner | the unit packs fix | batch 4 (the force-load of batch 1 crashed) |
 
 *Next steps* (in order):
 1. **New roads up close: STILL BROKEN (T12 failed in every batch, 2026-10-01; the owner has said so many times).** A
@@ -664,13 +664,13 @@ the test spots beside the player's HQ with a top-down map):
    4. a guard test that simulates the close-up road pass after every build, then one test batch.
    Asked DomesticNukes too (his scenery notes; the shared repo's issue #11).
 6. **Units from another nation that work** (owner, 2026-10-01: "have a tiger on the USA ... a special scenario where
-   you captured a tiger"). **Built 2026-10-01 (night), in-game test in batch 4** (`rusemod.unitpacks`: the unit's
-   models copied into its new nation's skirmish packs; spawned units' into the common ones; checked on every unit of
-   every nation). Making the game load that nation's models in every match crashed it in T13 (a German Ju 87
-   copy for the US crashed the game when its gunner was set up: its model wasn't ready for it), so the build refuses
-   these units for now (`build.FORCE_LOAD`). Next: an `.spk` writer, then copy the unit's models (mesh, skeleton,
-   animations, proxies) into the new nation's own skirmish packs, so its matches load them with their own units; test
-   with a plane (the Ju 87 for the US) and a tank (a Tiger for the US). DomesticNukes' `.spk` notes asked for (#11).
+   you captured a tiger"). Making the game load that nation's models in every match crashed it in T13 (a German Ju 87
+   copy for the US crashed the game when its gunner was set up: its model wasn't ready for it), so that is off
+   (`build.FORCE_LOAD`). **Built** (branch `feat/spk`, 2026-10-01): the build copies the unit's models (meshes,
+   skeletons, animations, texture stand-ins) into the skirmish packs of the nation it now belongs to, so its matches
+   load them with their own units, and a spawned unit's into the common packs (`rusemod.unitpacks`; every pack writes
+   back byte for byte, every unit copied into every nation's packs reads back the same). In-game test in batch 4: a
+   Ju 87 and a Tiger for the US (T13), and German Tigers spawned on D-Day.
 7. **A community mod to look at:** Rastapopoulos' "Total War research fix" (ModDB, 2026-09-30; he offered it to us):
    in Total War mode, research the next era's units yourself instead of getting them free. If it works with our build,
    it goes on the mod list (sneadtristen6/Ruse-Mods); nothing of it goes into the apps unless it brings code we need.

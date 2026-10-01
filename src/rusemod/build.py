@@ -21,7 +21,7 @@ from contextlib import ExitStack
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import loc, pyscript, unitcheck
+from . import loc, pyscript, unitcheck, unitpacks
 from .brush import BrushError, parse_strokes
 from .edat import Edat
 from .lock import fingerprint, fingerprint_text
@@ -440,6 +440,7 @@ class BuildResult:
     changed: dict = field(default_factory=dict)     # member path in the pack -> new bytes
     text_changed: dict = field(default_factory=dict)  # member path in the text pack (ZZ_Win.dat) -> new bytes
     script_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (the script pack) -> new bytes
+    model_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (a skirmish unit pack) -> new bytes
     new_classes: list = field(default_factory=list)  # class names added to the game's Python unit list
     terrain_changed: dict = field(default_factory=dict)  # map pack file name -> {member path: new bytes}
     new_maps: dict = field(default_factory=dict)    # new map's pack name -> newmap.Clone (what it adds)
@@ -531,15 +532,28 @@ def skirmish_models(zz_win: Edat) -> dict | None:
 
 FORCE_LOAD = False  # set a nation's force-load bit in the cluster maps (unitcheck.load_everywhere): off since the game
 # crashed with it (T13, 2026-10-01: a German Ju 87 copy for the US crashed the game when it was built; the same plane
-# type of the US's own didn't), so such units and spawns are refused, as before
+# type of the US's own didn't). The skeleton packs load through another kind of cluster (one per nation, in each
+# scenario's cluster map), which that bit doesn't reach. Instead the models are copied into the packs the unit's own
+# nation loads (rusemod.unitpacks), as the game's packs already do for the few models two nations share
 
 
-def unit_models(base, run, zz_win, result: BuildResult) -> None:
+def _pack_names(paths) -> str:
+    return ", ".join(p.rsplit("\\", 1)[-1] for p in paths)
+
+
+def _given_note(given) -> str:
+    if not given:
+        return "copied there already for another unit of this build"
+    return f"{given.summary()} copied in from {' and '.join(unitcheck.NATIONS[unitpacks.TAGS.index(t)] if t in unitpacks.TAGS else t for t in given.sources)}'s packs"
+
+
+def unit_models(base, run, zz_win, result: BuildResult, into=None) -> None:
     """New units, and units moved to another nation or given other models, whose models are only in another nation's
-    skirmish mesh pack: the game loads a nation's unit models only in matches where a player has that nation, or that
-    the cluster maps' loaders force (unitcheck). So that such a unit shows in every match, that nation's packs are set
-    to load in every skirmish (unitcheck.load_everywhere, on `run.game`), with a note; a unit the cluster maps can't
-    do that for (the unit data has none) is refused. What the game's own units already have is fine."""
+    skirmish mesh pack: the game loads a nation's unit models only in matches where a player has that nation
+    (unitcheck). So the models (meshes, skeletons, animations, texture stand-ins) are copied into the skirmish packs
+    of the unit's own nation (rusemod.unitpacks; `into`, a unitpacks.Packs, gathers them for the build, else they go
+    straight into result.model_changed), with a note; a unit whose models can't be copied is refused, saying why. What the game's
+    own units already have is fine. (FORCE_LOAD: the old way, the other nation's packs loaded in every skirmish.)"""
     moved = {owner for owner, path in run.trail if owner in run.game.objects and _moves_path(path)}
     names = sorted(n for n in set(run.created) | moved if n in run.game.objects and unitcheck.is_unit(run.game.objects[n]))
     names = [n for n in names if unitcheck.model_files(run.game.objects[n], run.game)]
@@ -572,7 +586,41 @@ def unit_models(base, run, zz_win, result: BuildResult) -> None:
         wanted.append((name, op, missing, need))
     if not wanted:
         return
-    loaded = unitcheck.load_everywhere(run.game, chosen) if FORCE_LOAD else {i: (0, 0) for i in chosen}
+    if not FORCE_LOAD:
+        own = into is None
+        into = into or unitpacks.Packs(zz_win)
+        for name, op, missing, need in wanted:
+            obj = run.game.objects[name]
+            n = unitcheck.nation_of(obj)
+            nation, tag = unitcheck.NATIONS[n], unitpacks.TAGS[n]
+            model, where = next(iter(missing.items()))
+            more = f" (and {len(missing) - 1} more)" if len(missing) > 1 else ""
+            at = f"{op.at()}: " if op else ""
+            try:
+                given, why = into.give(sorted(unitcheck.model_files(obj, run.game)), tag,
+                                       [unitpacks.TAGS[i] for i in need])
+            except (unitpacks.PackError, ValueError, KeyError, IndexError, struct.error) as exc:
+                given, why = None, [f"the packs can't be read ({exc})"]
+            if why:
+                more_why = f" (and {len(why) - 1} more)" if len(why) > 1 else ""
+                result.findings.append(Finding("error", f"{at}{name} is in {nation}'s army (Nationalite {n}), but its "
+                                                        f"model {model}{more} is in the mesh pack of "
+                                                        f"{' and '.join(where)}'s units only, and it can't be copied "
+                                                        f"into {nation}'s skirmish packs: {why[0]}{more_why}. The game "
+                                                        f"loads a nation's unit models only in matches where a player "
+                                                        f"has that nation, so in other matches this unit would have no "
+                                                        f"model, or crash the game. Copy one of {nation}'s units "
+                                                        f"instead, or leave it in {where[0]}'s army", op))
+                continue
+            result.findings.append(Finding("note", f"{at}{name} is in {nation}'s army (Nationalite {n}), but its model "
+                                                   f"{model}{more} is in the mesh pack of {' and '.join(where)}'s "
+                                                   f"units only: its models go into {nation}'s skirmish packs too "
+                                                   f"({_given_note(given)}), so it loads with {nation}'s own units",
+                                           op))
+        if own:
+            result.model_changed.update(into.output())
+        return
+    loaded = unitcheck.load_everywhere(run.game, chosen)
     for nation, (count, maps) in sorted(loaded.items()):
         if count:
             result.findings.append(Finding("note", f"{unitcheck.NATIONS[nation]}'s unit models and animations now load "
@@ -593,28 +641,26 @@ def unit_models(base, run, zz_win, result: BuildResult) -> None:
                                                    f"{packs_of}'s unit models now load in every skirmish, so it shows "
                                                    f"in matches where no player has {packs_of} too", op))
             continue
-        why = ("the unit data has no cluster maps that could load " if FORCE_LOAD else
-               "having the game load another nation's models in every match crashed it (T13: a German Ju 87 copy "
-               "for the US crashed the game as it was built), so the build can't load ")
         result.findings.append(Finding("error", f"{at}{name} is in {nation}'s army (Nationalite {n}), but its model "
                                                 f"{model}{more} is in the mesh pack of {' and '.join(where)}'s units "
-                                                f"only, and {why}{packs_of}'s models in every match: the game loads a "
+                                                f"only, and the unit data has no cluster maps that could load "
+                                                f"{packs_of}'s models in every match: the game loads a "
                                                 f"nation's unit models only in matches where a player has that nation, "
                                                 f"so in other matches this unit has no model, or crashes the game. "
                                                 f"Copy one of {nation}'s units instead, or leave it in {where[0]}'s "
                                                 f"army", op))
 
 
-def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult) -> None:
-    """Units a mod's scenarios spawn. A skirmish loads a nation's unit models only when a player has that nation, or
-    when the cluster maps' loaders force it (unitcheck); a spawned unit whose models aren't loaded crashes the game as
-    the match starts (a D-Day test with Japanese units spawned and no Japanese player, 2026-10-01). So the nations
-    whose packs hold a spawned unit's models are set to load in every skirmish, as for units given to another nation;
-    a spawn the cluster maps can't do that for is refused."""
+def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult, into=None) -> None:
+    """Units a mod's scenarios spawn. A skirmish loads a nation's unit models only when a player has that nation
+    (unitcheck); a spawned unit whose models aren't loaded crashes the game as the match starts (a D-Day test with
+    Japanese units spawned and no Japanese player, 2026-10-01). So a spawned unit's models are copied into the common
+    skirmish packs, which every skirmish loads (rusemod.unitpacks; `into` as for unit_models); a spawn whose models
+    can't be copied is refused, saying why. (FORCE_LOAD: the old way, the nation's packs loaded everywhere.)"""
     from .scenario import Spawn
     spawns = [(m, ids) for moves, ids in scenario_edits(order, mods).values() for m in moves if isinstance(m, Spawn)]
-    packs = skirmish_models(zz_win) if spawns and zz_win is not None else None
-    if packs is None:
+    in_packs = skirmish_models(zz_win) if spawns and zz_win is not None else None
+    if in_packs is None:
         return
     by_class = {}
     for name, obj in run.game.objects.items():
@@ -622,6 +668,7 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult)
         if cls:
             by_class.setdefault(cls, name)
     need: dict[int, dict[str, list[str]]] = {}  # nation -> {spawned class: the mods spawning it}
+    names: dict[str, str] = {}  # the spawned unit's short name -> its object
     for s, ids in spawns:
         name = by_class.get(s.class_path.rpartition(".")[2])
         if name is None:
@@ -629,15 +676,52 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult)
         obj = run.game.objects[name]
         home = unitcheck.nation_of(obj)
         for model in sorted(unitcheck.model_files(obj, run.game)):
-            if model in packs["common"]:
+            if model in in_packs["common"]:
                 continue
-            where = [i for i, tag in enumerate(unitcheck.PACK_TAGS) if model in packs[tag]]
+            where = [i for i, tag in enumerate(unitcheck.PACK_TAGS) if model in in_packs[tag]]
             if where:
                 pick = next((i for i in where if i in need), home if home in where else where[0])
                 need.setdefault(pick, {}).setdefault(name.rsplit("/", 1)[-1], ids)
+                names[name.rsplit("/", 1)[-1]] = name
     if not need:
         return
-    loaded = unitcheck.load_everywhere(run.game, set(need)) if FORCE_LOAD else {}
+    if not FORCE_LOAD:
+        own = into is None
+        into = into or unitpacks.Packs(zz_win)
+        for nation, units in sorted(need.items()):
+            which = ", ".join(sorted(units))
+            ids = ", ".join(sorted({i for v in units.values() for i in v}))
+            country = unitcheck.NATIONS[nation]
+            gave, why = unitpacks.Given(), []
+            for short in sorted(units):
+                obj = run.game.objects[names[short]]
+                home = unitcheck.nation_of(obj)
+                prefer = [unitpacks.TAGS[nation]] + ([unitpacks.TAGS[home]] if 0 <= home < len(unitpacks.TAGS) else [])
+                try:
+                    given, w = into.give(sorted(unitcheck.model_files(obj, run.game)), unitpacks.COMMON, prefer)
+                except (unitpacks.PackError, ValueError, KeyError, IndexError, struct.error) as exc:
+                    given, w = unitpacks.Given(), [f"the packs can't be read ({exc})"]
+                why += [f"{short}: {x}" for x in w]
+                for k in ("meshes", "skeletons", "animations", "textures", "sources"):
+                    getattr(gave, k).extend(x for x in getattr(given, k) if x not in getattr(gave, k))
+            if why:
+                more = f" (and {len(why) - 1} more)" if len(why) > 1 else ""
+                result.findings.append(Finding("error", f"{ids}: the spawned {which} use {country}'s unit models, "
+                                                        f"which a skirmish loads only when a player has {country}, and "
+                                                        f"they can't be copied into the packs every skirmish loads: "
+                                                        f"{why[0]}{more}. The game would crash as the match starts (a "
+                                                        f"D-Day test with Japanese units spawned and no Japanese player "
+                                                        f"did). Spawn units whose models every match has, or leave "
+                                                        f"these out"))
+            else:
+                result.findings.append(Finding("note", f"{ids}: the spawned {which} use {country}'s unit models, which "
+                                                       f"a skirmish loads only when a player has {country}: they go "
+                                                       f"into the skirmish packs every match loads too "
+                                                       f"({_given_note(gave)})"))
+        if own:
+            result.model_changed.update(into.output())
+        return
+    loaded = unitcheck.load_everywhere(run.game, set(need))
     for nation, units in sorted(need.items()):
         which = ", ".join(sorted(units))
         ids = ", ".join(sorted({i for v in units.values() for i in v}))
@@ -648,8 +732,7 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult)
                                                    f"skirmish loads only when a player has {country}: they now load "
                                                    f"in every skirmish ({count} loaders in {maps} cluster maps)"))
         else:
-            why = ("the unit data has no cluster maps that could load them in every match" if FORCE_LOAD else
-                   "having the game load another nation's models in every match crashed it (T13)")
+            why = "the unit data has no cluster maps that could load them in every match"
             result.findings.append(Finding("error", f"{ids}: the spawned {which} use {country}'s unit models, which a "
                                                     f"skirmish loads only when a player has {country}, and {why}: "
                                                     f"the game would crash as the match starts (a D-Day test with "
@@ -751,10 +834,17 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
                                                   f"({', '.join(p.rsplit(chr(92), 1)[-1] for p in shadows)})"))
     if run.errors:
         return result
-    unit_models(base, run, text_arc, result)
-    spawn_models(run, text_arc, mods, result.order, result)
+    into = unitpacks.Packs(text_arc) if text_arc is not None else None
+    unit_models(base, run, text_arc, result, into)
+    spawn_models(run, text_arc, mods, result.order, result, into)
     if result.errors:
         return result
+    if into is not None:
+        try:
+            result.model_changed = into.output()
+        except (unitpacks.PackError, ValueError, struct.error) as exc:
+            result.findings.append(Finding("error", f"the skirmish unit packs can't be written: {exc}"))
+            return result
     text_mods = [(m.id, m.text_prefix, m.texts) for m in order if m.texts]
     text_plan, read, entries = None, None, {}
     if text_mods:
@@ -1606,6 +1696,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         if result.new_classes:
             say(f"unit list: {len(result.new_classes)} class(es) added to {pyscript.UNIT_LIST} in {text_path.name} ("
                 + ", ".join(result.new_classes) + ")")
+        if result.model_changed:
+            say(f"unit models: {len(result.model_changed)} skirmish pack(s) in {text_path.name} ("
+                + _pack_names(result.model_changed) + ")")
         for map_path, a, changed_members in map_packs:
             files = ", ".join(m.rsplit(chr(92), 1)[-1] for m in changed_members)
             if map_path in new_packs:
@@ -1613,7 +1706,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     + (f" ({len(changed_members)} file(s) changed: {files})" if changed_members else ""))
             else:
                 say(f"changed: {map_path.name} ({len(changed_members)} file(s): {files})")
-        zz_win_changed = {**result.text_changed, **result.script_changed}
+        zz_win_changed = {**result.text_changed, **result.script_changed, **result.model_changed}
         for data_path, _a, changed_members in data_packs:
             new_ones = {m.lower() for m in result.added.get(data_path.name, {})}
             shipped = [m for m in changed_members if m.replace("/", "\\").lower() not in new_ones]  # (new: "added")
