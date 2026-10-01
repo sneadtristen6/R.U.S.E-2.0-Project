@@ -2,31 +2,84 @@
 
 # R.U.S.E. 2.0
 
-**A mod launcher and a mod editor for R.U.S.E. (Eugen Systems, 2010).**
+**Build the battlefield, then fight on it.**
 
-[![Launcher release](https://img.shields.io/github/v/release/sneadtristen6/R.U.S.E-2.0-Project?filter=launcher-v*&label=launcher)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)
-[![Studio release](https://img.shields.io/github/v/release/sneadtristen6/R.U.S.E-2.0-Project?filter=studio-v*&include_prereleases&label=studio)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio)
-[![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
-[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+<img src="docs/images/bridge-infantry-at-deck-height.jpg" alt="R.U.S.E. in game: two infantry squads and a supply truck crossing a new bridge, every man standing at the deck's height" width="800">
 
 [![Download RUSE Launcher](https://img.shields.io/badge/Download-RUSE%20Launcher-b8913a?style=for-the-badge)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)
 &nbsp;&nbsp;
 [![Download RUSE Studio](https://img.shields.io/badge/Download-RUSE%20Studio-b8913a?style=for-the-badge)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio)
 
-**Launcher** for players (latest: 0.2.11) &middot; **Studio** for modders, a preview (latest: 0.7.6) &middot; Windows &middot; needs R.U.S.E. on Steam
-
-**[Field manual (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki)** &middot;
-**[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)**: questions, ideas, bug reports and
-mods to show
+<sub>Windows. Needs R.U.S.E. on Steam. Never touches your Steam install.</sub>
 
 </div>
 
-<p align="center">
-  <img src="docs/images/studio-maps.jpg" alt="RUSE Studio's Maps view: D-Day in 3D with its towns, the battle's zones and starting points, and the map tools along the bottom" width="800">
-  <br>
-  <sub>RUSE Studio's Maps view: every map the game ships, in 3D, with its real ground, water and towns. Here, D-Day
-  with its battle's zones and starting points, and the map tools along the bottom.</sub>
-</p>
+## Bridges work. Map making starts here.
+
+Reshape any R.U.S.E. map. Hills, towns, roads, and bridges your units actually cross. Draw a road in RUSE Studio.
+Where it meets water, the build puts the map's own kind of bridge across it, and tanks, infantry, and supply trucks
+cross on the deck. Roads and bridges are what new maps get built on, so this is the piece everything else stands on.
+
+<table>
+  <tr>
+    <th width="50%">Before</th>
+    <th width="50%">After</th>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/bridge-before-in-the-river.jpg" alt="R.U.S.E. in game: the new bridges before the fix, a tank and squads standing in the river under the decks" width="400">
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/bridge-two-crossings.jpg" alt="R.U.S.E. in game on D-Day: two new bridges over the same river, units crossing both" width="400">
+    </td>
+  </tr>
+</table>
+
+Twelve hours, six rounds of testing. [The full story](docs/LESSONS.md)
+
+## What you can do on a map
+
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <img src="docs/images/terrain-ingame-hill.jpg" alt="R.U.S.E. in game on Blitz: a hill raised with the Studio's brushes, units driving up it" width="260"><br>
+      <sub>A hill raised with brushes. Units drive up it.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/images/terrain-ingame-units.jpg" alt="R.U.S.E. in game: units on top of the raised hill, the town of Cahir lifted with it" width="260"><br>
+      <sub>The town and its trees rise with the ground.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/images/map-cover-hidden.jpg" alt="R.U.S.E. in game on Blitz: infantry on top of a painted cover patch, shown as hidden" width="260"><br>
+      <sub>Painted cover. Infantry on it are hidden.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top">
+      <img src="docs/images/map-placed-buildings.jpg" alt="R.U.S.E. in game on Blitz: water towers at 8 times their size around a hill, barns at 6 times around a pit" width="260"><br>
+      <sub>Buildings placed by a mod, up to 8x size.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/images/movement-solid-towers.jpg" alt="R.U.S.E. in game on Blitz: a tank stopped between two giant placed water towers instead of driving through them" width="260"><br>
+      <sub>Placed buildings are solid. Tanks go around.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/images/roads-bridges-ingame.jpg" alt="R.U.S.E. in game on D-Day: new roads drawn in the Studio, painted on the ground, with a new bridge where each crosses the river" width="260"><br>
+      <sub>Roads drawn in the Studio, bridges over water.</sub>
+    </td>
+  </tr>
+</table>
+
+| For players | For modders |
+|---|---|
+| Pick a mod set and press Play | Change any unit's numbers, then test in game |
+| Drop mod files on the window to add them | Make new units |
+| Run community mods as they are | Shape the ground with brushes |
+| Share a load order with a friend | Draw roads with bridges over water |
+| New versions install themselves | Place buildings, cover, and starting points |
+
+<details>
+<summary><b>Everything the apps can do</b></summary>
 
 A modding platform for R.U.S.E. Its aim, step by step: new units, maps, models, missions and one-click modded
 multiplayer (today: units, and the first map tools). The content goals on top are RUSE 2.0 and Pacific Island
@@ -35,53 +88,12 @@ Defense.
 **Your Steam install is never changed.** Mods are built into a separate modded copy of the game (hard links to the
 game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 
-## Milestone: new bridges units really cross (2026-10-01)
-
-<table>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/bridge-tank-and-squad.jpg" alt="R.U.S.E. in game on D-Day: a tank and an infantry squad crossing a new bridge the build placed where a road drawn in the Studio meets the river" width="400"><br>
-      <sub>A road drawn in the Studio meets the river, the build puts the map's own kind of bridge across it, and units
-      take it: a tank and a squad on the deck (D-Day, in the game).</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/bridge-infantry-at-deck-height.jpg" alt="R.U.S.E. in game: two infantry squads and a supply truck crossing a new bridge, every man standing at the deck's height" width="400"><br>
-      <sub>Two squads and a supply truck crossing. Every man stands at the deck's height, the ones by the rails too:
-      the part that took all night.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/bridge-two-crossings.jpg" alt="R.U.S.E. in game on D-Day: two new bridges over the same river, units crossing both" width="400"><br>
-      <sub>Two new bridges on the same river, units on both, joined to the roads the map's own units use.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/bridge-tank-column.jpg" alt="R.U.S.E. in game on D-Day: a column of tanks crossing a new bridge" width="400"><br>
-      <sub>A tank column on its way over.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/bridge-before-in-the-river.jpg" alt="R.U.S.E. in game: the same new bridges a few hours earlier, a tank and squads standing in the river under the decks" width="400"><br>
-      <sub>The same bridges a few hours earlier: a tank and squads in the river under the decks.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <b>One night, twelve hours, six rounds</b> of building a bridge and testing it in the game. Five rounds changed
-      where units may <i>walk</i>. What settled it was working out how the game places a unit: its position comes
-      from the map's movement circles, its height from the floor under it, and nothing ties the two. An infantry
-      squad is five men spread 11 m wide, each standing on whatever floor is under his own feet. The game's metal
-      bridges carry invisible floor 47 to 66 m out over the river beside the deck; ours had the deck alone, so the
-      men beside it stood on the riverbed. New bridges now get floor 12 m out each side, over water only, in the
-      deck's own plane.<br><br>
-      On the way: decks joined to the roads units already use, never through a farmyard; a mod's buildings no longer
-      open the water beside the map's own bridges; the floor file keeps the game's own rules (men stopped lying
-      sideways). The full story and the checks that came out of it: <a href="docs/LESSONS.md">docs/LESSONS.md</a>.
-      The movement-map reading is shared with DomesticNukes and his Claude.
-    </td>
-  </tr>
-</table>
-
-## What you can do
+<p align="center">
+  <img src="docs/images/studio-maps.jpg" alt="RUSE Studio's Maps view: D-Day in 3D with its towns, the battle's zones and starting points, and the map tools along the bottom" width="800">
+  <br>
+  <sub>RUSE Studio's Maps view: every map the game ships, in 3D, with its real ground, water and towns. Here, D-Day
+  with its battle's zones and starting points, and the map tools along the bottom.</sub>
+</p>
 
 **Players, with RUSE Launcher**
 
@@ -160,50 +172,27 @@ Modders who write mods by hand can also use the `ruse` command-line tool, from t
   </tr>
 </table>
 
-### Map making, in the game
+**Map making, in the game, in more detail:**
+
+- Blitz, in the game: a hill raised with the Studio's brushes. Units drive up it and take orders on it, and the
+  player's HQ starts at a place the mod moved it to.
+- On top of the hill: the town of Cahir and its trees rise with the ground (2026-09-30). The recipe is
+  DomesticNukes and his Claude's.
+- Cover painted on open ground (here on a test hill): the infantry standing on it are hidden, as in a wood. That's
+  how new towns and woods hide units.
+- Buildings placed by a mod: water towers at 8× their size ring the hill, barns at 6× ring a pit next to it
+  (2026-09-30).
+- Movement, later the same day: placed buildings are solid (the tank threads between the towers), and a pit is
+  blocked for every unit. The map's own movement data is read and written now.
+- D-Day: roads drawn in the Studio, painted into the ground, and a bridge where each crosses the river: the map's own
+  kind, one piece stretched bank to bank as the game's own are (2026-09-30).
 
 <table>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/terrain-ingame-hill.jpg" alt="R.U.S.E. in game on Blitz: a hill raised with the Studio's brushes, units driving up it" width="380"><br>
-      <sub>Blitz, in the game: a hill raised with the Studio's brushes. Units drive up it and take orders on it, and
-      the player's HQ starts at a place the mod moved it to.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/terrain-ingame-units.jpg" alt="R.U.S.E. in game: units on top of the raised hill, the town of Cahir lifted with it" width="380"><br>
-      <sub>On top of the hill: the town of Cahir and its trees rise with the ground (2026-09-30). The recipe is
-      DomesticNukes and his Claude's.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/map-cover-hidden.jpg" alt="R.U.S.E. in game on Blitz: infantry on top of a painted cover patch, shown as hidden" width="380"><br>
-      <sub>Cover painted on open ground (here on a test hill): the infantry standing on it are hidden, as in a wood.
-      That's how new towns and woods hide units.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/map-placed-buildings.jpg" alt="R.U.S.E. in game on Blitz: water towers at 8 times their size around a hill, barns at 6 times around a pit" width="380"><br>
-      <sub>Buildings placed by a mod: water towers at 8× their size ring the hill, barns at 6× ring a pit next to it
-      (2026-09-30).</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/movement-solid-towers.jpg" alt="R.U.S.E. in game on Blitz: a tank stopped between two giant placed water towers instead of driving through them" width="380"><br>
-      <sub>Movement, later the same day: placed buildings are solid (the tank threads between the towers), and a
-      pit is blocked for every unit. The map's own movement data is read and written now.</sub>
-    </td>
-    <td width="50%" valign="top">
       <img src="docs/images/movement-building-on-hill.jpg" alt="R.U.S.E. in game on Blitz: a building being placed by the player on the edited hill" width="380"><br>
       <sub>Building on the edited ground in the game works too. Four crashes on the way were read from the game's
       crash dumps and fixed the same evening (docs/LOG.md).</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/roads-bridges-ingame.jpg" alt="R.U.S.E. in game on D-Day: new roads drawn in the Studio, painted on the ground, with a new bridge where each crosses the river" width="380"><br>
-      <sub>D-Day: roads drawn in the Studio, painted into the ground, and a bridge where each crosses the river: the
-      map's own kind, one piece stretched bank to bank as the game's own are (2026-09-30).</sub>
     </td>
     <td width="50%" valign="top">
       <img src="docs/images/bridge-tanks-ingame.jpg" alt="R.U.S.E. in game on D-Day: tanks driving across a new bridge, on its deck" width="380"><br>
@@ -211,7 +200,31 @@ Modders who write mods by hand can also use the `ruse` command-line tool, from t
       deck, not the riverbed under it (2026-09-30).</sub>
     </td>
   </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/bridge-tank-and-squad.jpg" alt="R.U.S.E. in game on D-Day: a tank and an infantry squad crossing a new bridge the build placed where a road drawn in the Studio meets the river" width="380"><br>
+      <sub>A road drawn in the Studio meets the river, the build puts the map's own kind of bridge across it, and units
+      take it: a tank and a squad on the deck (D-Day, in the game, 2026-10-01).</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/bridge-tank-column.jpg" alt="R.U.S.E. in game on D-Day: a column of tanks crossing a new bridge" width="380"><br>
+      <sub>A tank column on its way over.</sub>
+    </td>
+  </tr>
 </table>
+
+**The bridge night (2026-10-01).** One night, twelve hours, six rounds of building a bridge and testing it in the
+game. Five rounds changed where units may *walk*. What settled it was working out how the game places a unit: its
+position comes from the map's movement circles, its height from the floor under it, and nothing ties the two. An
+infantry squad is five men spread 11 m wide, each standing on whatever floor is under his own feet. The game's metal
+bridges carry invisible floor 47 to 66 m out over the river beside the deck; ours had the deck alone, so the men
+beside it stood on the riverbed. New bridges now get floor 12 m out each side, over water only, in the deck's own
+plane. On the way: decks joined to the roads units already use, never through a farmyard; a mod's buildings no
+longer open the water beside the map's own bridges; the floor file keeps the game's own rules (men stopped lying
+sideways). The full story and the checks that came out of it: [docs/LESSONS.md](docs/LESSONS.md). The movement-map
+reading is shared with DomesticNukes and his Claude.
+
+</details>
 
 ## Install in three steps
 
@@ -230,7 +243,15 @@ library from the web). To try what is merged but not released yet: the repo's **
 run, **Artifacts** (needs a GitHub login; the files expire after 90 days). More in
 [installers/README.md](installers/README.md), including what to do about browser warnings.
 
-## Status
+<details>
+<summary><b>Status</b></summary>
+
+[![Launcher release](https://img.shields.io/github/v/release/sneadtristen6/R.U.S.E-2.0-Project?filter=launcher-v*&label=launcher)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)
+[![Studio release](https://img.shields.io/github/v/release/sneadtristen6/R.U.S.E-2.0-Project?filter=studio-v*&include_prereleases&label=studio)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio)
+[![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+
+**Launcher** for players (latest: 0.2.11) &middot; **Studio** for modders, a preview (latest: 0.7.6) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -283,7 +304,14 @@ The order is in [PLAN.md §10 "Now"](docs/PLAN.md#10-now); the latest decisions 
 
 </details>
 
-## Docs
+</details>
+
+<details>
+<summary><b>Docs</b></summary>
+
+**[Field manual (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki)** &middot;
+**[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)**: questions, ideas, bug reports and
+mods to show
 
 | Doc | What it covers |
 |---|---|
@@ -298,7 +326,11 @@ The order is in [PLAN.md §10 "Now"](docs/PLAN.md#10-now); the latest decisions 
 | [docs/LOG.md](docs/LOG.md) | what each session did, newest last |
 | [docs/ANNOUNCEMENTS.md](docs/ANNOUNCEMENTS.md) | what we post to the community, newest first |
 
-## For contributors
+</details>
+
+<a name="for-contributors"></a>
+<details>
+<summary><b>For contributors</b></summary>
 
 <details>
 <summary><b>Code so far</b>: the engine, the <code>ruse</code> tool and what it builds</summary>
@@ -423,6 +455,8 @@ browser with made-up data: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_stu
   `RUSE-Studio-Setup-<version>.exe` on every push that changes the apps (Actions, **apps**, Artifacts). A tag
   `launcher-v<version>` or `studio-v<version>` publishes one as a Release. No Python or Git needed, no admin rights.
   Not signed yet, so Windows warns once ("More info", then "Run anyway").
+
+</details>
 
 </details>
 
