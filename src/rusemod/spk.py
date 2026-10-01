@@ -37,7 +37,8 @@ FORMAT_NAME = 256
 # The vertex components a format name can spell, with their size in bytes (DomesticNukes' table).
 COMPONENTS = {"Position_3f": 12, "NormalIn01_4ubn": 4, "NormalAndChenilleIndexIn01_4ubn": 4, "BlW_4ubn": 4,
               "BlIdx_4ub": 4, "TexCoord0_2wn": 4, "TexCoord0_2f": 8, "TexPackedAtlas0_4ubn": 4,
-              "TexPackedAtlas1_4ubn": 4, "Color_4ub": 4, "Color0_4ub": 4, "TexCoord1_2wn": 4, "TexCoord1_2f": 8}
+              "TexPackedAtlas1_4ubn": 4, "Color_4ub": 4, "Color0_4ub": 4, "TexCoord1_2wn": 4, "TexCoord1_2f": 8,
+              "Color0_col32": 4}  # (the last: the maps' road strips, rusemod.roadstrips)
 UV_WORD = 65535.0  # a stored `_2wn` UV is value / 65535 (not confirmed in-game; compressed ones use their own mask)
 
 
@@ -217,6 +218,8 @@ def _code(comp: str, size: int) -> str:
         return "<2f"
     if comp.endswith("_2wn") or comp.endswith("_2w"):
         return "<2H"
+    if comp.endswith("_1f"):
+        return "<f"
     if size == 4:
         return "<4B"
     raise SpkError(f"no reader for {comp}")

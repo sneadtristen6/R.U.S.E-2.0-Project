@@ -549,9 +549,10 @@ ROAD_PIECE = 4000.0   # map units a new road's sticker pieces run (the shipped o
 
 @dataclass(frozen=True)
 class RoadPiece:
-    """One piece of a road sticker (the game's `Route` items, a STICKERS type: what draws a road up close; the painted
-    ground only shows it from afar, seen in the game 2026-09-30). A cubic from (x0, y0) to (x1, y1), each end's
-    handle an offset from it (the shipped pieces' are a tenth of the piece, along it)."""
+    """One piece of a road sticker (the game's `Route` items, a STICKERS type). The game doesn't draw these itself:
+    the map's road model (rusemod.roadstrips) is made from them and shows the road up close, the painted ground from
+    afar; a new road gets both, and these pieces to match the map's own. A cubic from (x0, y0) to (x1, y1), each
+    end's handle an offset from it (the shipped pieces' are a tenth of the piece, along it)."""
     x0: float
     y0: float
     hx0: float

@@ -2,7 +2,8 @@
 of 512x512 DXT1 tiles over the map's cells. A painted tile is written back as a plain ZIPO DXT1 tile, which the game
 draws (proven with plain tiles, 2026-09-29); only the 4x4 blocks the paint touches are encoded again, the rest keep
 their bytes. First use: the roads a mod draws, painted in the colour of the map's own roads, so a new road shows
-where supply trucks already drive it (the roads a player sees are painted into these tiles, 2026-09-30).
+where supply trucks already drive it (the roads a player sees from afar are painted into these tiles, 2026-09-30;
+near the camera only the map's road model shows one: rusemod.roadstrips).
 """
 from __future__ import annotations
 
@@ -305,5 +306,5 @@ def paint_roads(read, path_of, lines: list[list[tuple[float, float]]], pieces: l
     if colour is not None:
         notes.insert(0, f"road colour {colour}")
     # not the close-up map (paint_detail): the map's own roads are only a faint lift there (alpha +7 to +20 over the
-    # ground beside them), not what shows a road up close; the road stickers do that (scenery.RoadPiece)
+    # ground beside them), not what shows a road up close; the map's road model does that (rusemod.roadstrips)
     return out, notes
