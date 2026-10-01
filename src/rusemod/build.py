@@ -1013,6 +1013,17 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     say(f"players: {name}, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
+                from .aigrid import AiGridError, refresh
+                for member in [m for m in changed_members if m.lower().endswith("mapinfo.win")]:
+                    try:  # the AI's grid follows the cover, blocks, bridges and water (rusemod.aigrid)
+                        changed_members[member], notes = refresh(bytes(data_arc.read(data_arc.find(member))),
+                                                                 changed_members[member])
+                    except (AiGridError, KeyError, ValueError, struct.error) as exc:
+                        notes = [f"the AI grid couldn't be updated ({exc}): the AI keeps the map's old woods and "
+                                 f"open ground"]
+                    where = member.split("\\")[-2]
+                    for note in notes:
+                        say(f"  {where}: {note}")
                 if changed_members:
                     data_packs.append((data_path, data_arc, changed_members))
         if result.errors:
