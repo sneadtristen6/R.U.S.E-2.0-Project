@@ -95,6 +95,14 @@ class Loading(unittest.TestCase):
         self.assertEqual(game.objects[f"{OTHER}#0"].cls, "T")
         self.assertIn("$/A is named in both", game.notes[0])
 
+    def test_each_scenarios_own_copy_of_a_file_is_kept_apart_quietly(self):
+        one = make_ndf(objects=[(0, [])], classes=["T"], props=[], exports={0: "C"})
+        two = make_ndf(objects=[(0, [])], classes=["T"], props=[], exports={0: "C"})
+        game, _ = load({"genglad/patchable/scenario/a/scenario/clustermap.cpp.gladndfbin": one,
+                        "genglad/patchable/scenario/b/scenario_2v2/clustermap.cpp.gladndfbin": two})
+        self.assertEqual(game.notes, [])
+        self.assertIn("genglad/patchable/scenario/b/scenario_2v2/clustermap.cpp.gladndfbin#0", game.objects)
+
 
 class WritingBack(unittest.TestCase):
     def test_value_changes_land_and_everything_else_keeps_its_bytes(self):

@@ -189,8 +189,9 @@ def load(files: dict[str, bytes]) -> tuple[Game, dict[str, NdfFile]]:
         for i, name in list(nf.names.items()):
             if name in owner:  # MOD_FORMAT §14 q3: which copy the game uses is unknown, so say so
                 alt = f"{nf.path}#{i}"
-                game.notes.append(f"{name} is named in both {owner[name]} and {nf.path}; mods reach the first, "
-                                  f"the second is {alt}")
+                if not _per_scenario(owner[name], nf.path):  # each scenario's own copy of a file: expected
+                    game.notes.append(f"{name} is named in both {owner[name]} and {nf.path}; mods reach the first, "
+                                      f"the second is {alt}")
                 nf.names[i] = alt
                 nf.index_of[alt] = nf.index_of.pop(name)
             else:
@@ -203,6 +204,11 @@ def load(files: dict[str, bytes]) -> tuple[Game, dict[str, NdfFile]]:
             if isinstance(v, Ref) and v.target and v.target not in game.objects:
                 game.objects[v.target] = Obj(EXTERNAL)
     return game, loaded
+
+
+def _per_scenario(a: str, b: str) -> bool:
+    """Two scenarios' own copies of one file (clustermap, mapia...), which name the same objects by design."""
+    return "/scenario/" in a and "/scenario/" in b and a.rsplit("/", 1)[-1] == b.rsplit("/", 1)[-1]
 
 
 def _by_origin(game: Game) -> dict[tuple, Obj]:
