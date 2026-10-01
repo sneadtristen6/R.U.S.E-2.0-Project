@@ -106,10 +106,18 @@ class Graph:
                    bytes(data[20:HEADER]))
 
     def to_bytes(self) -> bytes:
+        """The graph as stored. One with an emptied circle (radius 0) gets its index built again from the live
+        circles, the numbers kept (local maps are tied to their owners by number): the game looks for the nearest
+        circle to an order or a route's end through the index, with no test of the radius, so an emptied circle left
+        in it is landed on, and a route to a circle with no links fails. No shipped graph has one."""
+        live = [c[:3] for c in self.circles[:-1]]
+        points = self.points
+        if any(r <= 0 for _x, _y, r in live) and any(r > 0 for _x, _y, r in live):
+            points = _tree_write(_tree_build(live))
         body = [b"".join(struct.pack("<3f2H", *c) for c in self.circles),
                 b"".join(struct.pack("<2H2f", *lk) for lk in self.links),
                 struct.pack(f"<{len(self.lists)}H", *self.lists),
-                self.crossings, self.points] + [s.to_bytes() for s in self.subs]
+                self.crossings, points] + [s.to_bytes() for s in self.subs]
         offsets, at = [], HEADER + 4 * len(body)
         for part in body:
             offsets.append(at)

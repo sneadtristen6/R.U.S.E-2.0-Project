@@ -122,6 +122,23 @@ class Blocking(unittest.TestCase):
         self.assertFalse(after.walkable(12000.0, 2000.0))       # the building's own ground is closed
         self.assertTrue(after.walkable(14000.0, 2000.0))        # the deck beyond it still isn't
 
+    def test_an_emptied_circle_leaves_the_index(self):
+        """The game finds the circle nearest an order or a route's end through the index, with no test of the radius:
+        an emptied circle left in it is landed on, and a route to it (it has no links) fails. Written, the index holds
+        the live circles only, by their own numbers."""
+        def listed(node):
+            return node[1] if node[0] == "leaf" else listed(node[3]) + listed(node[4])
+        g = row()
+        g.block([(10800.0, 2000.0, 400.0)], refill=False)  # C emptied
+        self.assertEqual(sorted(listed(nav._tree_read(g.points))), [0, 1, 2])  # still listed until it's written
+        back = nav.Graph.read(g.to_bytes())
+        self.assertEqual(sorted(listed(nav._tree_read(back.points))), [0, 1])
+        self.assertEqual((back.find(2000.0, 2000.0), back.find(7000.0, 2000.0), back.find(11000.0, 2000.0)),
+                         (0, 1, None))  # (11,000: C's ground only)
+        self.assertEqual(back.to_bytes(), g.to_bytes())
+        untouched = row()
+        self.assertEqual(nav.Graph.read(untouched.to_bytes()).points, untouched.points)  # nothing emptied: as it was
+
     def test_a_circle_emptied_and_one_shrunk(self):
         g = row()
         counts = g.block([(10800.0, 2000.0, 400.0)])  # C's middle is 800 away: C keeps 400 clear, too small

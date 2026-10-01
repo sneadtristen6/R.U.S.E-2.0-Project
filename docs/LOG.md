@@ -1035,3 +1035,10 @@ shipped files first:
   brush could repaint other cells' tiles. And it took the map's cells down from its cells across: on maps that
   aren't square (D-Day is 144 x 96) it refused, or on M05_Hollande never looked at the northern half. Both fixed,
   with a test on a map taller than wide and a 16-tile atlas.
+- **Emptied movement circles leave the index.** A block or a replaced bridge empties circles (radius 0, no links)
+  but they stayed in the graph's spatial index, and the game finds the circle nearest an order or a route's end
+  through the index without testing the radius: near a placed building, a block or an old bridge, an order could
+  land on a circle with no links and its route fail. A graph with an emptied circle now gets its index built again
+  from the live circles when it's written (numbers kept: local maps hang on them). On the T8 copy: 1 such circle in
+  the infantry index and 147 in the vehicles' (3 graphs) before, none after; every live circle still found at its
+  middle, each graph one piece.
