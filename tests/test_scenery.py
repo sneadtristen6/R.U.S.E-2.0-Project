@@ -522,8 +522,229 @@ class Sinking(unittest.TestCase):
             bury_objects(raw, [(0, 999)])
 
 
+OAK = 0x80000000 | 1 << 4
+E_NAMES = ["TypeWarrior/MairieNormande", "TypeWarrior/Chene_02", "TypeWarrior/Pont_Normandie"]
+E_KINDS = {0: "building", 1: "vegetation", 2: "building"}
+
+
+def tree_top(items, far):
+    """A top block over `items` with a three-node tree: the root splits the far list (the items at `far`, listed
+    first) from the full list, whose node splits its first two items from the rest."""
+    offsets, pos = [], 0
+    for it in items:
+        offsets.append(pos)
+        pos += len(it)
+    entries = [offsets[i] for i in far] + offsets
+    f = len(far)
+    nodes = (struct.pack("<IHBB", 0x1F << 20 | 2 << 2, f, 0xFF, 0)
+             + struct.pack("<IHBB", 0xC0000000 | 0x08 << 20, f, 0xFF, 0)
+             + struct.pack("<IHBB", 0xC0000000 | 0x17 << 20 | 1, f + 2, 0x80, 0x80))
+    head = struct.pack("<II4f", 0x80000000 | len(entries), 3, 0.0, 0.0, 20000.0, 20000.0) + bytes(8)
+    return head + struct.pack(f"<{len(entries)}I", *entries) + nodes + b"".join(items)
+
+
+def forest(patch_road=False):
+    """Block 2, a patch: three oaks in a row, 100 apart (and a road piece with `patch_road`). Block 1, a wood: a road
+    piece and the patch twice, at (0, 0) and (0, 1000). Block 0: a town hall at (5000, 5000), a bridge at (6000,
+    6000) and the wood twice, at (0, 0) and (10000, 0), both listed for far view. So each oak is on the map 4 times."""
+    patch = block([moved(OAK, 0, 0), moved(OAK, 100, 0), moved(OAK, 200, 0)]
+                  + ([road((0.0, 50.0), (5.0, 0.0), (50.0, 50.0), (-5.0, 0.0))] if patch_road else []))
+    piece = road((10.0, 20.0), (5.0, 0.0), (40.0, 20.0), (-5.0, 0.0))
+
+    def wood(at):
+        return block([piece, moved(at, 0, 0), moved(at, 0, 1000)])
+
+    def top(at):
+        return tree_top([compact(0, 5000.0, 5000.0), moved(0x80000000 | 2 << 4, 6000, 6000), moved(at, 0, 0),
+                         moved(at, 10000, 0)], [2, 3])
+    n0 = len(top(0))
+    n1 = len(wood(0))
+    return make_scenery([top(n0), wood(n0 + n1), patch], E_NAMES)
+
+
+def leaves(s, bi=0):
+    """Each item of block `bi` (its kind, name and transform: a reference's offset may move) -> the boxes of the
+    tree's leaves that list it."""
+    b = s.blocks[bi]
+    boxes = scenery._leaf_boxes(b)
+    by_at = {it.at: (it.kind, it.symbol if it.kind == "object" else None, it.data) for it in b.items}
+    out = {}
+    for e, at in enumerate(b.entries):
+        out.setdefault(by_at[at], []).append(boxes[e])
+    return {k: sorted(v) for k, v in out.items()}
+
+
+class Erasing(unittest.TestCase):
+    """A mod's erase areas: the map's own scenery taken out where they lie, shared blocks copied for that spot."""
+
+    def check(self, raw, new):
+        """What every erase keeps: the file reads back, each reference points forward to a block's start, every block
+        is placed (one top), the roads, the grids and the names stay."""
+        s, t = Scenery(raw), Scenery(new)
+        for b in t.blocks:
+            for it in b.items:
+                if it.kind == "child":
+                    self.assertGreater(t._by_offset[it.child_offset], b.index)
+        self.assertEqual(t.roots(), [0])
+        self.assertEqual(sorted(t.roads()), sorted(s.roads()))
+        self.assertEqual(new[t.grids[0][0]:], raw[s.grids[0][0]:])
+        self.assertEqual(t.names, s.names)
+        return t
+
+    def test_a_shared_patch_is_copied_for_the_erased_spot(self):
+        raw = forest()
+        new, notes, by = scenery.erase_objects(raw, [scenery.EraseArea(10100.0, 0.0, 50.0)], E_KINDS, {2})
+        t = self.check(raw, new)
+        self.assertEqual(spots(raw) - spots(new), Counter({(1, 10100.0, 0.0): 1}))  # that oak only
+        self.assertEqual(spots(new) - spots(raw), Counter())
+        self.assertEqual(by, {"vegetation": 1})
+        self.assertEqual(len(t.blocks), 5)  # the wood and its patch copied once each, before the blocks they copy
+        self.assertEqual(t.placings()[0], [1, 1, 1, 1, 3])
+        self.assertEqual(notes[0], "1 object(s) erased in 1 area(s): 1 vegetation")
+        self.assertIn("2 shared block(s) copied for the erased spots", notes[1])
+        self.assertEqual(leaves(t), leaves(Scenery(raw)))  # the top block's tree finds what it found
+        self.assertEqual(t.blocks[0].nodes, Scenery(raw).blocks[0].nodes)
+
+    def test_buildings_and_bridges_stay_unless_named(self):
+        raw = forest()
+        around = (5500.0, 5500.0, 1000.0)
+        new, notes, by = scenery.erase_objects(raw, [scenery.EraseArea(*around)], E_KINDS, {2})
+        self.assertEqual((new, by), (raw, {}))
+        self.assertIn("cover nothing they may remove", notes[0])
+        new, _notes, by = scenery.erase_objects(raw, [scenery.EraseArea(*around, what=("building",))], E_KINDS, {2})
+        self.assertEqual(spots(raw) - spots(new), Counter({(0, 5000.0, 5000.0): 1}))  # the hall, not the bridge
+        self.assertEqual(by, {"building": 1})
+        new, _notes, by = scenery.erase_objects(
+            raw, [scenery.EraseArea(*around, what=(), types=("TypeWarrior/Pont_Normandie",))], E_KINDS, {2})
+        self.assertEqual(spots(raw) - spots(new), Counter({(2, 6000.0, 6000.0): 1}))
+        self.assertEqual(by, {"bridge": 1})
+        _new, notes, _by = scenery.erase_objects(raw, [scenery.EraseArea(*around, types=("TypeWarrior/Nope",))],
+                                                 E_KINDS, {2})
+        self.assertIn("TypeWarrior/Nope: not on this map, so the erase areas take none of it", notes)
+
+    def test_several_areas_in_one_go(self):
+        raw = forest()
+        areas = [scenery.EraseArea(0.0, 0.0, 10.0), scenery.EraseArea(10200.0, 1000.0, 10.0),
+                 scenery.EraseArea(5000.0, 5000.0, 10.0, ("building",))]
+        new, notes, by = scenery.erase_objects(raw, areas, E_KINDS, {2})
+        self.check(raw, new)
+        self.assertEqual(spots(raw) - spots(new), Counter({(1, 0.0, 0.0): 1, (1, 10200.0, 1000.0): 1,
+                                                           (0, 5000.0, 5000.0): 1}))
+        self.assertEqual(by, {"vegetation": 2, "building": 1})
+        self.assertEqual(notes[0], "3 object(s) erased in 3 area(s): 2 vegetation, 1 building")
+
+    def test_entries_out_of_the_top_blocks_tree(self):
+        raw = forest()
+        s = Scenery(raw)
+        new, _notes, _by = scenery.erase_objects(raw, [scenery.EraseArea(5000.0, 5000.0, 10.0, ("building",))],
+                                                 E_KINDS, {2})
+        t = self.check(raw, new)
+        self.assertEqual(len(t.blocks[0].entries), len(s.blocks[0].entries) - 1)
+        self.assertEqual([n[1] for n in scenery._tree(t.blocks[0])], [2, 2, 3])  # the full list's split moved back
+        before, after = leaves(s), leaves(t)
+        self.assertEqual(len(after), len(before) - 1)
+        for item, boxes in after.items():
+            self.assertEqual(boxes, before[item])
+        self.assertEqual(len(t.blocks), 3)  # a block placed once changes where it is
+        self.assertEqual(len(t.blocks[0].raw) % 16, 0)  # padded as the shipped blocks are
+
+    def test_a_placement_left_empty_loses_its_reference(self):
+        raw = forest()
+        new, notes, by = scenery.erase_objects(raw, [scenery.EraseArea(10100.0, 1000.0, 150.0)], E_KINDS, {2})
+        t = self.check(raw, new)
+        self.assertEqual(by, {"vegetation": 3})
+        self.assertEqual(len(t.blocks), 4)  # the wood copied, without its reference to that patch
+        copy = t.blocks[1]
+        self.assertEqual(sum(1 for it in copy.items if it.kind == "child"), 1)
+        self.assertEqual(spots(raw) - spots(new), Counter({(1, x, 1000.0): 1 for x in (10000.0, 10100.0, 10200.0)}))
+        # every oak everywhere: both woods keep only their road piece; the patch nothing places goes, so does the wood
+        new, notes, by = scenery.erase_objects(raw, [scenery.EraseArea(5000.0, 500.0, 9000.0)], E_KINDS, {2})
+        t = self.check(raw, new)
+        self.assertEqual(by, {"vegetation": 12})
+        self.assertEqual(len(t.blocks), 3)
+        self.assertEqual(t.placings()[0], [1, 1, 1])
+        self.assertIn("2 no longer placed anywhere left out", notes[1])
+        self.assertEqual(Counter(sym for sym, _m in t.walk()), Counter({0: 1, 2: 1}))
+
+    def test_road_pieces_stay(self):
+        raw = forest(patch_road=True)
+        new, _notes, by = scenery.erase_objects(raw, [scenery.EraseArea(5000.0, 500.0, 9000.0)], E_KINDS, {2})
+        t = self.check(raw, new)
+        self.assertEqual(by, {"vegetation": 12})
+        self.assertEqual(len(t.roads()), 6)
+
+    def test_too_big_a_copy_is_refused(self):
+        raw = forest()
+        old = scenery.DATA_LIMIT
+        scenery.DATA_LIMIT = len(Scenery(raw).blocks[0].raw) + 10
+        try:
+            with self.assertRaisesRegex(SceneryEditError, "copies too many of the map's shared blocks"):
+                scenery.erase_objects(raw, [scenery.EraseArea(10100.0, 0.0, 50.0)], E_KINDS, {2})
+        finally:
+            scenery.DATA_LIMIT = old
+
+    def test_the_mod_file(self):
+        areas = scenery.parse_erase([{"x": 1, "y": 2, "radius": 300},
+                                     {"x": 3, "y": 4, "radius": 5, "what": ["building"],
+                                      "types": ["TypeWarrior/Pont_Normandie"]}])
+        self.assertEqual(areas, [scenery.EraseArea(1.0, 2.0, 300.0),
+                                 scenery.EraseArea(3.0, 4.0, 5.0, ("building",), ("TypeWarrior/Pont_Normandie",))])
+        text = objects_toml([NewObject("TypeWarrior/Chene_02", 50.0, 60.0)], "header", areas)
+        data = tomllib.loads(text)
+        self.assertEqual(scenery.parse_erase(data["erase"]), areas)
+        self.assertEqual(parse_objects(data["object"]), [NewObject("TypeWarrior/Chene_02", 50.0, 60.0)])
+        for row, msg in [({"x": 1, "y": 2}, "has no radius"), ({"x": 1, "y": 2, "radius": 0}, "above 0"),
+                         ({"x": 1, "y": 2, "radius": 1e9}, "at most"), ({"x": "a", "y": 2, "radius": 1}, "numbers"),
+                         ({"x": 1, "y": 2, "radius": 1, "what": ["other"]}, "isn't something it can erase"),
+                         ({"x": 1, "y": 2, "radius": 1, "what": "prop"}, "must be a list"),
+                         ({"x": 1, "y": 2, "radius": 1, "what": [], "types": []}, "names nothing"),
+                         ({"x": 1, "y": 2, "radius": 1, "types": [3]}, "type names"),
+                         ({"x": 1, "y": 2, "radius": 1, "size": 1}, "unknown key")]:
+            with self.assertRaisesRegex(SceneryEditError, msg):
+                scenery.parse_erase([row])
+
+
 class Building(unittest.TestCase):
     """A mod's maps/<map>/scenery.toml, built into the map's pack (MOD_FORMAT §8)."""
+
+    def test_erase_areas_go_into_the_map(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            game = root / "R.U.S.E"
+            (game / "Data" / "PC" / "190852").mkdir(parents=True)
+            (game / "Maps" / "PC").mkdir(parents=True)
+            (game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").write_bytes(unit_pack_raw())
+            shipped = make_edat([("dir", "output\\", [("file", "save.boobspc", village())])])
+            (game / "Maps" / "PC" / "DataMapTest_v09.dat").write_bytes(shipped)
+            mod = root / "mod"
+            (mod / "maps" / "Test").mkdir(parents=True)
+            (mod / "mod.toml").write_text('[mod]\nid = "clearing"\nversion = "1.0.0"\n', encoding="utf-8")
+            # the village: the hall at (1000, 2000); oaks at (5000, 0), (5100, 0), (5000, 9000), (5100, 9000)
+            (mod / "maps" / "Test" / "scenery.toml").write_text(
+                '[[erase]]\nx = 5050\ny = 0\nradius = 100\n\n[[erase]]\nx = 1000\ny = 2000\nradius = 10\n',
+                encoding="utf-8")
+            info, _ops = load_mod(mod)
+            self.assertEqual(info.scenery, {})
+            self.assertEqual(info.erase, {"Test": [scenery.EraseArea(5050.0, 0.0, 100.0),
+                                                   scenery.EraseArea(1000.0, 2000.0, 10.0)]})
+            lines = []
+            result = build_and_write(game, [(info, _ops)], out=root / "out", say=lines.append)
+            self.assertEqual(result.errors, [], lines)
+            self.assertEqual([f for f in result.findings if f.level == "warning"], [])
+            self.assertIn("  2 object(s) erased in 2 area(s): 2 vegetation", lines)
+            arc = Edat((root / "out" / "DataMapTest_v09.dat").read_bytes())
+            new = bytes(arc.read(arc.find(scenery.MEMBER)))
+            self.assertEqual(spots(village()) - spots(new), Counter({(1, 5000.0, 0.0): 1, (1, 5100.0, 0.0): 1}))
+            self.assertEqual((game / "Maps" / "PC" / "DataMapTest_v09.dat").read_bytes(), shipped)
+            # the hall only when the area names buildings, with a word that units still can't walk there
+            (mod / "maps" / "Test" / "scenery.toml").write_text(
+                '[[erase]]\nx = 1000\ny = 2000\nradius = 10\nwhat = ["building"]\n', encoding="utf-8")
+            result = build_and_write(game, [load_mod(mod)], out=root / "out2", say=lines.append)
+            self.assertEqual(result.errors, [])
+            self.assertIn("stays closed to units", " ".join(f.message for f in result.findings))
+            arc = Edat((root / "out2" / "DataMapTest_v09.dat").read_bytes())
+            new = bytes(arc.read(arc.find(scenery.MEMBER)))
+            self.assertEqual(spots(village()) - spots(new), Counter({(0, 1000.0, 2000.0): 1}))
 
     def test_objects_go_into_the_map(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -588,6 +809,14 @@ class Studio(unittest.TestCase):
             self.assertEqual(api.scenery_undo("Test", 1)["count"], 1)
             self.assertEqual(api.scenery_undo("Test", 5), {"count": 0, "removed": 1, "saved": None})
             self.assertFalse((folder / "maps").exists())
+            # erase areas written by hand stay when the Studio rewrites the file
+            path = folder / "maps" / "Test" / "scenery.toml"
+            path.parent.mkdir(parents=True)
+            path.write_text('[[erase]]\nx = 5050\ny = 0\nradius = 100\n', encoding="utf-8")
+            api.scenery_add("Test", [{"type": "TypeWarrior/Chene_02", "x": 50, "y": 60}])
+            self.assertEqual(api.scenery_undo("Test", 1), {"count": 0, "removed": 1, "saved": str(path)})
+            info, _ops = load_mod(folder)
+            self.assertEqual(info.erase, {"Test": [scenery.EraseArea(5050.0, 0.0, 100.0)]})
 
 
 if __name__ == "__main__":

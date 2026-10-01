@@ -379,8 +379,8 @@ def _one_map(info, pack: str):
     cover, movement and roads (no unit changes, texts, scenario or player counts)."""
     def only(d):
         return {k: v for k, v in d.items() if k.lower() == pack.lower()}
-    return replace(info, texts=[], terrain=only(info.terrain), scenery=only(info.scenery), scenario={},
-                   cover=only(info.cover), movement=only(info.movement), roads=only(info.roads), players={})
+    return replace(info, texts=[], terrain=only(info.terrain), scenery=only(info.scenery), erase=only(info.erase),
+                   scenario={}, cover=only(info.cover), movement=only(info.movement), roads=only(info.roads), players={})
 
 
 def _named(folder: Path, name: str) -> Path | None:

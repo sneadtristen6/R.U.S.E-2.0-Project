@@ -680,6 +680,43 @@ his Claude; checked here on all 32 maps.
   object takes none, so it stands as placed).
 - **Header table at field 12** ("layer boundaries", 4-8 u32s): not block starts on most maps; left as they are when
   a block is inserted, and the game ran fine.
+- **Blocks are padded** to 16 bytes with zeros after their last item (on Blitz: 116 blocks end flush, the rest with 4,
+  8 or 12 bytes), and **hundreds of shipped tree leaves are empty** (a node side holding no entry: 74 on Edge, 362 on
+  D-Day), so a leaf may be left with nothing in it.
+- **Erasing (2026-10-01; code `scenery.erase_objects`; check `tools/verify_erase.py`).** Almost every tree is in a
+  block the map places many times (D-Day: 11,550,293 trees, 34,487 of them, 0.30%, in blocks placed once; Blitz
+  0.25%, Ardennes 0.10%), so an object can't be taken out where it's stored without taking it out everywhere that
+  block is placed. Two ways were measured read-only, 50 m and 200 m circles (radius) over each map's densest wood and
+  densest town; trees and props erased:
+
+  | map, spot, radius | erased | (a) copies | (a) bytes added | (b) wrongly lost |
+  |---|---|---|---|---|
+  | D-Day, wood, 50 m | 548 | 20 | 134,752 | 23,651 |
+  | D-Day, wood, 200 m | 5,461 | 60 | 283,616 | 46,641 |
+  | D-Day, town, 50 m | 74 | 13 | 4,916 | 137 |
+  | D-Day, town, 200 m | 1,447 | 13 | −17,580 | 135 |
+  | Blitz, wood, 50 m | 668 | 15 | 103,708 | 5,752 |
+  | Blitz, wood, 200 m | 6,606 | 65 | 304,660 | 34,085 |
+  | Blitz, town, 50 m | 249 | 8 | 140,896 | 17,961 |
+  | Blitz, town, 200 m | 4,557 | 63 | 391,692 | 31,262 |
+  | Ardennes, wood, 50 m | 332 | 11 | 37,196 | 33,230 |
+  | Ardennes, wood, 200 m | 2,804 | 29 | 43,700 | 30,758 |
+  | Ardennes, town, 50 m | 161 | 6 | 67,720 | 4,516 |
+  | Ardennes, town, 200 m | 3,542 | 69 | 320,724 | 13,149 |
+
+  (a) is copy on write: each placement that loses objects gets a copy of its block without them, from the top block
+  down (the reference that placed it points to the copy; references to blocks under it that don't change still
+  point to the shared ones); (b) sinks each whole shared placement that holds an erased object, losing everything
+  else in it. (a) removes exactly what the circle covers for 5-400 KB a stroke (a placement left with nothing loses
+  its reference instead, so a stroke can shrink the file), so it is the one built. Taking an item out of a block:
+  its entries leave the lists, every tree node's split moves back by the entries taken out before it (the boxes and
+  LOD masks stay: a box holding less is still right), the items close up and the block is padded again. A copy goes
+  right before the block it copies (references still point forward); a block nothing places any more is left out.
+  The grids and road marks stay as they are (roads are never erased). The check on D-Day, 100 m circles: the wood
+  (2,125 erased, 37 copies, +135,620 bytes) and the town (723 erased, 13 copies, 1,476 bytes smaller) read back,
+  nothing erasable is left inside, and every other object is drawn where it was through the same top-block leaves.
+  The limit: a reference holds a block's offset in 24 bits, so the blocks' data stops at 16 MB (D-Day uses 10.3 MB:
+  about 6 MB of copies, some 20 large strokes in woods); past it the build refuses.
 
 ## 7. Textures (`.tgv`, `.tgv_pc`)
 
