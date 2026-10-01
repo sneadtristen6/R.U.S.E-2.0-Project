@@ -5,12 +5,17 @@ along its curve, linked in a chain and to the nearest road at each end, with the
 Layout (little-endian):
 - header: u16 point count, u16 link count, then u32 offsets of the points (20), the links, the lists and the index;
 - points: u32 (start of its links in the lists << 8 | how many), f32 x, f32 y; on the road curves, about 9 m apart;
-- links: u16 a, u16 b, u16 cost (the distance between them / 10, the game's own rounding within 2); padded to 4;
+- links: u16 a, u16 b, u16 word, padded to 4. The game works bits 1-15 out again from the points when it loads the
+  map (the distance between them / 20, at most 0x7FFF); only bit 0 is kept from the file, a flag the game's own
+  road finder tests. On the shipped maps it is set on 87% of the open links where vehicles can go, about half the
+  links in towns and 10% of the links where vehicles can't go, so a new link has it where the vehicles' graph has
+  ground at the link's middle (cost_word);
 - lists: every point's links in turn, ascending (u16 link numbers); padded to 4;
 - index: a k-d tree over the links. A branch is u16 tag (bit 0 set; the jump's high bits), u16 word ((word & ~1) *
   2 = the jump's low part, bit 0 set), f32 split: x at even depths, y at odd ones; its left half follows it, the right
   half starts `jump` bytes after the left. A leaf is u16 byte length, then its links (u16; a link crossing a split is
-  in both halves), padded to 4. The same jump rule as the navigation graphs' index (rusemod.nav).
+  in both halves), padded to 4. The same jump rule as the navigation graphs' index (rusemod.nav). The game walks it
+  with a fixed stack of 32 entries, so it is never deeper than MAX_DEPTH (the deepest shipped one is 12).
 """
 from __future__ import annotations
 
@@ -21,10 +26,18 @@ from dataclasses import dataclass, field
 HEAD = 20
 LEAF_MOST = 6          # links a leaf holds before it's split (the shipped maps' leaves hold 2 to 8)
 POINT_STEP = 2300.0    # map units between a new road's points (the shipped links' median, about 9 m)
+MAX_DEPTH = 24         # the deepest the index goes: the game walks it with a fixed stack of 32 entries and no test
+                       # of running past it (the deepest shipped index is 12 levels)
 
 
 class RoadNetError(ValueError):
     pass
+
+
+def cost_word(dist: float, flag: bool = True) -> int:
+    """A link's u16 word as the game keeps it once loaded: the distance / 20 (at most 0x7FFF) in bits 1-15, and the
+    flag bit 0 (see the module's notes)."""
+    return min(int(dist / 20), 0x7FFF) << 1 | (1 if flag else 0)
 
 
 def _pad(data: bytes) -> bytes:
@@ -84,10 +97,12 @@ class RoadNet:
                 + _tree_write(self.tree))
 
     # --- adding a road ---
-    def add_road(self, line: list[tuple[float, float]], join: float = 20000.0) -> dict:
+    def add_road(self, line: list[tuple[float, float]], join: float = 20000.0, open_at=None) -> dict:
         """Add a road along `line` (map points, in order: a new road's curve, sampled): points about POINT_STEP
         apart, linked in a chain; each end linked to the nearest road point within `join` map units (a junction),
-        else left as a dead end. The index is built again. Returns what was added."""
+        else left as a dead end. A new link's flag bit (cost_word) is `open_at(x, y)` at its middle: whether the
+        vehicles' graph has ground there (set when it isn't given). The index is built again. Returns what was
+        added."""
         if len(line) < 2:
             raise RoadNetError("a road needs at least two points")
         pts = _resample(line, POINT_STEP)
@@ -100,7 +115,7 @@ class RoadNet:
         if ends[1] is not None and ends[1] != ends[0]:
             new_links.append((first + len(pts) - 1, ends[1]))
         for a, b in new_links:
-            self.links.append((a, b, self._cost(a, b)))
+            self.links.append((a, b, self._cost(a, b, open_at)))
         self.tree = build_tree(self.points, self.links)
         return {"points": len(pts), "links": len(new_links), "joined": sum(e is not None for e in ends)}
 
@@ -156,8 +171,10 @@ class RoadNet:
             pieces.setdefault(root(i), set()).add(i)
         return sorted(pieces.values(), key=lambda p: (-len(p), min(p)))
 
-    def _cost(self, a: int, b: int) -> int:
-        return min(0xFFFF, round(math.dist(self.points[a], self.points[b]) / 10))
+    def _cost(self, a: int, b: int, open_at=None) -> int:
+        (ax, ay), (bx, by) = self.points[a], self.points[b]
+        flag = True if open_at is None else bool(open_at((ax + bx) / 2, (ay + by) / 2))
+        return cost_word(math.hypot(bx - ax, by - ay), flag)
 
     def _nearest(self, at: tuple[float, float], within: float) -> int | None:
         best, where = within, None
@@ -240,16 +257,21 @@ def apply_roads(read, pack: str, roads: list[Road]) -> tuple[dict, list[str]]:
     must come out in one piece, as every shipped one is (RoadNet.parts): a road that joins no other is refused."""
     from ruse_mod_engine import sdb
     from .cover import PACK, member
-    from .nav import replace_buffers
+    from .nav import Graph, NavError, replace_buffers
     name = member(pack)
     win = read(name)
     if win is None:
         raise RoadNetError(f"{pack} has no {name} in {PACK}, so no road can be added")
-    net = RoadNet.read(sdb.split_mapinfo(win)[1][0])
+    bufs = sdb.split_mapinfo(win)[1]
+    net = RoadNet.read(bufs[0])
+    try:
+        open_at = Graph.read(bufs[2]).walkable  # the vehicles' graph, as the blocks and bridges left it
+    except (NavError, struct.error):
+        open_at = None
     notes, spans = [], []
     for n, r in enumerate(roads, start=1):
         first = len(net.points)
-        got = net.add_road(r.points, r.join)
+        got = net.add_road(r.points, r.join, open_at)
         spans.append((n, range(first, len(net.points)), r.join))
         notes.append(f"road {n}: {got['points']} point(s), {got['links']} link(s), joined at {got['joined']} end(s)")
     pieces = net.parts()
@@ -277,13 +299,16 @@ def _tree_read(data: bytes, q: int):
     return ["leaf", list(struct.unpack_from(f"<{tag // 2}H", data, q + 2))]
 
 
-def _tree_write(node, top: bool = True) -> bytes:
+def _tree_write(node, top: bool = True, depth: int = 0) -> bytes:
     if node[0] == "leaf":
         return _pad(struct.pack(f"<H{len(node[1])}H", 2 * len(node[1]), *node[1]))
+    if depth >= MAX_DEPTH:  # a guard: the game's walk of a deeper index runs off its fixed stack
+        raise RoadNetError(f"the road index would be more than {MAX_DEPTH} levels deep")
     _, split, left, right = node
-    lb = _tree_write(left, False)
+    lb = _tree_write(left, False, depth + 1)
     jump = len(lb)
-    out = struct.pack("<HHf", 1 | ((jump >> 16) & 0xFFFE), ((jump & 0x1FFFF) // 2) | 1, split) + lb + _tree_write(right, False)
+    out = struct.pack("<HHf", 1 | ((jump >> 16) & 0xFFFE), ((jump & 0x1FFFF) // 2) | 1, split) + lb \
+        + _tree_write(right, False, depth + 1)
     return _pad(out) if top else out
 
 
@@ -291,9 +316,9 @@ def build_tree(points: list[tuple[float, float]], links: list[tuple[int, int, in
                ids: list[int] | None = None):
     """A k-d tree over the links, split the game's way: x at even depths, y at odd ones, at the middle of the links'
     midpoints; a link crossing the split goes to both halves; a leaf holds at most LEAF_MOST links (or stops
-    shrinking)."""
+    shrinking, or is MAX_DEPTH down: long links crossing every split can't go deeper)."""
     ids = list(range(len(links))) if ids is None else ids
-    if len(ids) <= LEAF_MOST or depth > 40:
+    if len(ids) <= LEAF_MOST or depth >= MAX_DEPTH:
         return ["leaf", sorted(ids)]
     axis = depth % 2
     ends = {i: (points[links[i][0]][axis], points[links[i][1]][axis]) for i in ids}

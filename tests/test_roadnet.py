@@ -3,7 +3,8 @@ import math
 import struct
 import unittest
 
-from rusemod.roadnet import LEAF_MOST, POINT_STEP, RoadNet, RoadNetError, _resample, build_tree
+from rusemod.roadnet import (LEAF_MOST, MAX_DEPTH, POINT_STEP, RoadNet, RoadNetError, _resample, _tree_write,
+                             build_tree, cost_word)
 
 
 def leaves(node):
@@ -45,10 +46,23 @@ class Layout(unittest.TestCase):
         self.assertEqual(len(again.points), 24)
         self.assertEqual(again.links, net.links)
 
-    def test_costs_are_a_tenth_of_the_distance(self):
+    def test_a_links_word_is_what_the_game_keeps_once_loaded(self):
+        """The game works bits 1-15 out again from the points (the distance / 20, at most 0x7FFF) and keeps bit 0, a
+        flag set on most shipped links where vehicles can go: a new link has it where the vehicles' graph has ground
+        at the link's middle."""
         net = ring()
-        a, b, cost = net.links[0]
-        self.assertEqual(cost, round(math.dist(net.points[a], net.points[b]) / 10))
+        a, b, word = net.links[0]
+        self.assertEqual(word, min(int(math.dist(net.points[a], net.points[b]) / 20), 0x7FFF) << 1 | 1)
+        self.assertEqual((cost_word(4599.0, True), cost_word(4600.0, False), cost_word(1e9, True)),
+                         (229 << 1 | 1, 230 << 1, 0xFFFF))
+        net = ring()
+        first = len(net.links)
+        net.add_road([(380000.0, 500000.0), (420000.0, 500000.0)], join=0.0, open_at=lambda x, y: x < 400000.0)
+        for a, b, word in net.links[first:]:
+            (ax, ay), (bx, by) = net.points[a], net.points[b]
+            self.assertEqual(word & 1, int((ax + bx) / 2 < 400000.0))
+            self.assertEqual(word >> 1, min(int(math.hypot(bx - ax, by - ay) / 20), 0x7FFF))
+        self.assertEqual({w & 1 for _a, _b, w in net.links[first:]}, {0, 1})
 
     def test_the_index_the_game_way(self):
         net = ring(200, 400000.0)
@@ -59,6 +73,29 @@ class Layout(unittest.TestCase):
             return [len(node[1])] if node[0] == "leaf" else leaf_sizes(node[2]) + leaf_sizes(node[3])
         self.assertLessEqual(max(leaf_sizes(net.tree)), LEAF_MOST + 2)  # a split's crossing links can add a couple
         self.assertGreater(len(leaf_sizes(net.tree)), 200 // LEAF_MOST)
+
+    def test_the_index_is_never_deeper_than_the_games_stack(self):
+        """The game walks the index with a fixed stack of 32 entries: long links that cross every split (they go into
+        both halves, so splitting never shrinks them) once built an index 41 levels deep."""
+        def depth(node):
+            return 0 if node[0] == "leaf" else 1 + max(depth(node[2]), depth(node[3]))
+        for build in (lambda k: ((100000.0 + 200 * k, 100000.0), (1200000.0 + 200 * k, 1200000.0)),  # long diagonals
+                      lambda k: ((1000.0 * k, 0.0), (1000.0 * k + 900000.0, 900000.0 - 3000.0 * k)),   # a fan of them
+                      lambda k: ((0.0, 1000.0 * k), (500000.0, 1000.0 * k + 1.0))):                  # near parallels
+            net = RoadNet()
+            for k in range(60):
+                net.points += list(build(k))
+                net.links.append((len(net.points) - 2, len(net.points) - 1, 0))
+            net.tree = build_tree(net.points, net.links)
+            self.assertLessEqual(depth(net.tree), MAX_DEPTH)
+            self.assertEqual(set(leaves(net.tree)), set(range(60)))
+            self.assertTrue(depth_ok(net.tree, net.points, net.links))
+            self.assertEqual(RoadNet.read(net.to_bytes()).to_bytes(), net.to_bytes())
+        deep = ["leaf", [0]]
+        for _ in range(MAX_DEPTH + 1):
+            deep = ["branch", 1.0, deep, ["leaf", [0]]]
+        with self.assertRaisesRegex(RoadNetError, "more than 24 levels deep"):
+            _tree_write(deep)
 
     def test_mistakes(self):
         with self.assertRaisesRegex(RoadNetError, "shorter than its header"):

@@ -478,7 +478,9 @@ units = "all"        # or "infantry" or "vehicles"
 ### New roads: `maps/<map pack>/roads.toml`
 
 The roads units follow are each map's road network in `mapinfo.win` (buffer 0; `rusemod.roadnet`, FORMATS §2): points
-on the road curves about 9 m apart, linked with a cost of their distance / 10, and a k-d tree over the links. A mod
+on the road curves about 9 m apart, linked (each link's cost the game works out from its length; one flag bit, set
+where the vehicles' movement has ground at the link's middle, as on most shipped links), and a k-d tree over the
+links. A mod
 adds a road as its line, in map units:
 
 ```toml

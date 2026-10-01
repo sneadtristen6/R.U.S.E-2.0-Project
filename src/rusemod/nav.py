@@ -66,6 +66,8 @@ LOCAL_RADIUS = 640.0   # a new deck's circles in its local map: units keep withi
                        # local circles are mostly 640)
 LOCAL_SPACING = 640.0  # between them along the deck (a link needs an overlap of STEP: at most 960 apart for 640)
 LEAF = 4               # the most circles in a leaf of an index built here (the shipped ones hold 1 to 7)
+MAX_DEPTH = 24         # the deepest an index may go: the game walks it with a fixed stack of 32 entries and no test of
+                       # running past it (the deepest shipped index is 18 levels; one built here, balanced, about 14)
 
 
 class NavError(ValueError):
@@ -1305,18 +1307,20 @@ def _tree_read(points: bytes, q: int = 0):
     return ["leaf", list(struct.unpack_from(f"<{tag // 2}H", points, q + 2))]
 
 
-def _tree_write(node, top: bool = True) -> bytes:
+def _tree_write(node, top: bool = True, depth: int = 0) -> bytes:
     if node[0] == "leaf":
         out = struct.pack(f"<H{len(node[1])}H", 2 * len(node[1]), *node[1])
     else:
+        if depth >= MAX_DEPTH:  # a guard: the game's walk of a deeper index runs off its fixed stack
+            raise NavError(f"the graph's index would be more than {MAX_DEPTH} levels deep")
         _kind, bit, edges, left, right = node
-        lb = _tree_write(left, False)
+        lb = _tree_write(left, False, depth + 1)
         lb += bytes(-len(lb) % 4)
         jump = len(lb)
         if jump >= 1 << 32:
             raise NavError("the graph's index is too big")
         out = struct.pack("<HH", 1 | ((jump >> 16) & 0xFFFE), ((jump & 0x1FFFF) // 2) | bit) + edges + lb \
-            + _tree_write(right, False)
+            + _tree_write(right, False, depth + 1)
     return out + bytes(-len(out) % 4) if top else out
 
 

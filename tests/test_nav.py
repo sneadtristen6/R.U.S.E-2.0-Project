@@ -474,6 +474,18 @@ class Index(unittest.TestCase):
         self.assertEqual(nav._f32(1578973.3, up=False), 1578973.25)
         self.assertEqual(nav._f32(11400.0, up=True), 11400.0)
 
+    def test_never_deeper_than_the_games_stack(self):
+        """The game walks an index with a fixed stack of 32 entries: one deeper than MAX_DEPTH is never written."""
+        def depth(node):
+            return 0 if node[0] == "leaf" else 1 + max(depth(node[3]), depth(node[4]))
+        circles = [(320.0 * i, 320.0 * (i % 7), 640.0) for i in range(60000)]
+        self.assertLessEqual(depth(nav._tree_build(circles)), nav.MAX_DEPTH)
+        deep = ["leaf", [0]]
+        for _ in range(nav.MAX_DEPTH + 1):
+            deep = ["branch", 1, struct.pack("<2f", 1.0, 0.0), deep, ["leaf", [1]]]
+        with self.assertRaisesRegex(nav.NavError, "more than 24 levels deep"):
+            nav._tree_write(deep)
+
     def test_a_circle_near_water_is_tested_all_over(self):
         self.assertFalse(nav._wet(river, 9000.0, 2000.0, 1280.0))
         self.assertTrue(nav._wet(river, 10500.0, 2000.0, 1280.0))  # its middle is dry, its rim isn't
