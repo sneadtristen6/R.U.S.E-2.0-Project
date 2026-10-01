@@ -21,16 +21,19 @@ def leaf(a, b, c, d):
     return a | b << 8 | c << 16 | d << 24 | 1
 
 
-def mapinfo() -> bytes:
-    """A mapinfo.win whose grid is 8×8 cells. The root's quarter at x 4-7, y 0-3 is one leaf (a byte for each 2×2
-    cells); its other quarters are nodes of four leaves (a byte a cell). Cells (0-1, 0-1) are a wood, (6-7, 6-7) are
-    blocked, the rest is open."""
+WIDE = (0.0, -2000.0, WIDTH, WIDTH - 2000.0)  # the grid of a map 8000 by 4000: a square reaching past its short side
+
+
+def mapinfo(corners=(0.0, 0.0, WIDTH, WIDTH)) -> bytes:
+    """A mapinfo.win whose grid is 8×8 cells, between `corners` (x0, y0, x1, y1). The root's quarter at x 4-7, y 0-3
+    is one leaf (a byte for each 2×2 cells); its other quarters are nodes of four leaves (a byte a cell). Cells
+    (0-1, 0-1) are a wood, (6-7, 6-7) are blocked, the rest is open."""
     root_at = 0x20
     kid = [root_at + 16 * k for k in (1, 2, 3)]
     plain = [leaf(OPEN, OPEN, OPEN, OPEN)] * 4
     nodes = [[kid[0], leaf(OPEN, OPEN, OPEN, OPEN), kid[1], kid[2]],
              [leaf(WOOD, WOOD, WOOD, WOOD)] + plain[1:], plain, plain[:3] + [leaf(WALL, WALL, WALL, WALL)]]
-    prefix = struct.pack("<4ffIII", 0.0, 0.0, WIDTH, WIDTH, 960.0, 0, 0, root_at)  # 28 bytes, then the root
+    prefix = struct.pack("<4ffIII", *corners, 960.0, 0, 0, root_at)  # 28 bytes, then the root
     buf3 = sdb.serialize({"ver": 2, "prefix": prefix, "node_start": root_at, "nodes": nodes, "tail": b""})
     head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, WIDTH, WIDTH)
     body = b"".join(struct.pack("<I", len(b)) + b for b in (b"graph", b"grid1", b"grid2", buf3)) + b"tail"
@@ -104,6 +107,25 @@ class Painting(unittest.TestCase):
         size, c = cells(out)
         self.assertEqual([i for i in range(64) if c[i] & 0x08 and i >= 16], [3 * 8 + 1])
 
+    def test_a_grid_that_reaches_past_the_map(self):
+        """A map that isn't square: its grid is a square as wide as the long side, stored as two corners (D-Day's is
+        (0, -655360, 3932160, 3276800) on a map 2621440 tall). Read as a corner and a size, its rows came out too
+        short and a paint landed off its place: a wood cleared on D-Day kept hiding infantry (in the game,
+        2026-10-01), its cover untouched and the paint 1.3 km south of it."""
+        win = mapinfo(WIDE)
+        self.assertEqual(cover.grid(win)["box"], (0.0, -2000.0, WIDTH, WIDTH))  # 8 rows of 1000 from y = -2000
+        size, c = cells(cover.paint(win, [cover.Paint(4500.0, 2500.0, 400.0)]))  # the middle of cell (4, 4)
+        self.assertEqual([(i % 8, i // 8) for i in range(64) if c[i] & 0x08 and i >= 16], [(4, 4)])
+        size, c = cells(cover.paint(win, [cover.Paint(1500.0, -500.0, 400.0, erase=True)]))  # the wood's cell (1, 1)
+        self.assertEqual([(i % 8, i // 8) for i in range(64) if c[i] & 0x08], [(0, 0), (1, 0), (0, 1)])
+        size, c = cells(cover.paint(win, [cover.Paint(6500.0, 4500.0, 400.0, "blocked", True, square=True)]))
+        self.assertEqual([i for i in range(64) if c[i] & 0x04], [6 * 8 + 7, 7 * 8 + 6, 7 * 8 + 7])  # cell (6, 6) opened
+
+    def test_a_grid_with_no_box_is_refused(self):
+        for corners in ((0.0, 0.0, 0.0, WIDTH), (0.0, WIDTH, WIDTH, 0.0), (float("nan"), 0.0, WIDTH, WIDTH)):
+            with self.assertRaisesRegex(cover.CoverError, "not a box"):
+                cover.grid(mapinfo(corners))
+
 
 class File(unittest.TestCase):
     def test_read_and_written(self):
@@ -135,7 +157,9 @@ class Built(unittest.TestCase):
         rev.mkdir(parents=True)
         (self.game / "RUSE.exe").write_bytes(b"MZ")
         (rev / "ZZ_GladPatchableWin.dat").write_bytes(PACK)
-        self.data = make_edat([("dir", "datasmap/blitz/".replace("/", "\\"), [("file", "mapinfo.win", mapinfo())])])
+        self.data = make_edat([("dir", "datasmap/".replace("/", "\\"), [
+            ("dir", "blitz/".replace("/", "\\"), [("file", "mapinfo.win", mapinfo())]),
+            ("dir", "wide/".replace("/", "\\"), [("file", "mapinfo.win", mapinfo(WIDE))])])])
         (rev / "DataMap_Win.dat").write_bytes(self.data)
         (root / "steamapps" / "appmanifest_21970.acf").write_text('"AppState" { "buildid" "24687178" }')
         self.root = root
@@ -246,6 +270,23 @@ class Built(unittest.TestCase):
         self.assertEqual([i for i in range(64) if bits[i >> 3] >> (i & 7) & 1], [0, 1, 8, 9])  # the wood only
         with self.assertRaisesRegex(StudioError, "no cover grid"):
             api.map_cover("Nowhere")
+        got = api.map_cover("Wide")  # a grid reaching past the map: the view lays it where the game reads it
+        self.assertEqual((got["size"], got["box"]), (8, [0.0, -2000.0, WIDTH, WIDTH]))
+
+    def test_cover_painted_on_a_map_that_isnt_square(self):
+        """The Studio's brushes and cover.toml on a map whose grid reaches past it (D-Day and 7 more shipped maps):
+        the build paints the cell the stroke was drawn on."""
+        from rusemod.brush import parse_strokes, strokes_toml
+        folder = self.mod("wide", '[[paint]]\nx = 1000.0\ny = -1000.0\nradius = 1500.0\nerase = true\n', "Wide")
+        strokes = parse_strokes([{"brush": "cover", "x": 4500.0, "y": 2500.0, "radius": 400.0}])
+        (folder / "maps" / "Wide" / "terrain.toml").write_text(strokes_toml(strokes), encoding="utf-8")
+        lines = []
+        result = build_and_write(self.game, [load_mod(folder)], instance=self.root / "copy6", say=lines.append)
+        self.assertEqual(result.errors, [], lines)
+        arc = Edat((self.root / "copy6" / "Data" / "PC" / "190852" / "DataMap_Win.dat").read_bytes())
+        size, c = cells(bytes(arc.read(arc.find(cover.member("Wide")))))
+        self.assertEqual([(i % 8, i // 8) for i in range(64) if c[i] & 0x08], [(4, 4)])  # the wood gone, the stroke in
+        self.assertEqual(bytes(arc.read(arc.find(cover.member("Blitz")))), mapinfo())  # the other map as it was
 
     def test_mistakes(self):
         with self.assertRaisesRegex(BuildError, "unknown key 'circle'"):

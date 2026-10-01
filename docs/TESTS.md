@@ -258,7 +258,15 @@ road east of Toulaville; a top-down map of the test spots goes with it.
    `SpeedBonusOnRoad`; infantry +83%, the Greyhound +16%), so they take the shortest way, on the map's own roads too.
 2. **A hole cleared in a dense wood** (4,135 trees) with a water tower in it. **Failed:** tanks couldn't drive in: the
    map's movement still kept vehicles off the old wood. Fixed (`eac6fd0`): a cleared wood is opened to every unit and
-   loses its forest cover. To check again.
+   loses its forest cover.
+   - **Checked again** (`batch3b`): a tank drives in. **Passed.** Infantry in the hole still showed the purple
+     "hidden" glow. **Failed:** the hole's cover was never cleared. D-Day isn't square, and the cover grid of such a
+     map is a square reaching past its short side, stored as two corners; the build read it as a corner and a size,
+     so the paint landed 1.3 km south of the hole (8 shipped maps are like this; on the square ones, Blitz among
+     them, cover was always painted in place). Fixed in `rusemod.cover`: in `batch3c` the hole's 946 cover cells
+     are clear and the wood around it keeps its own.
+   - **To check** (`D:\RUSE-Instances\batch3c`): send infantry into the hole with the water tower. **Pass:** no
+     purple glow inside the hole; in the wood around it they are hidden as before.
 3. **A 10x house** beside the HQ. **Passed:** it stands on the ground.
 4. **A lone stone bridge** placed by hand. **Passed:** units cross on the deck.
 
