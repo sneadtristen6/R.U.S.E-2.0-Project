@@ -355,9 +355,30 @@ lift    = -225.0                        # its height against the ground the game
   which holds that object and the new ones. Nothing else moves; the file's MD5 is set again.
 - **For looks only:** scenery doesn't block units, give cover or change the AI's map (those are other layers, FORMATS
   §6). Objects stand on the ground wherever the ground is, also after a terrain edit.
-- **Only types the map already uses**: a type from another theatre isn't loaded on that map. Removing or moving
-  shipped objects isn't offered yet.
+- **Only types the map already uses**: a type from another theatre isn't loaded on that map. Moving shipped objects
+  isn't offered yet.
 - Several mods' objects are added in load order.
+
+The same file takes the map's own scenery away, one circle each:
+
+```toml
+[[erase]]
+x      = 672688.0                       # the circle's middle (map units)
+y      = 659281.0
+radius = 5000.0                         # map units (100 = 1 m), at most 200,000
+# optional:
+what  = ["vegetation", "prop"]          # what it takes: vegetation, prop, decal, building (default: trees and props)
+types = ["TypeWarrior/Pont_Normandie"]  # and these types, whatever they are (the only way to erase a bridge)
+```
+
+- An object goes when its place lies in the circle. Road pieces and level-design markers always stay; buildings and
+  decals only when `what` names them, bridges only when `types` does.
+- **Buildings and bridges are drawn only**: the map's movement still has them, so where an erased building stood stays
+  closed to units, and an erased bridge's deck stays open over the water. The build says so as a warning.
+- Erase areas are applied before the mod's own objects are added, so objects placed inside a circle stay.
+- Most of a map's trees are in blocks it places many times, so the build copies each such block for the erased spot
+  (`rusemod.scenery.erase_objects`; a 200 m circle in a wood adds about 300 KB). A map's scenery holds at most
+  16 MB of blocks (D-Day: about 6 MB left); a build past that is refused: erase smaller areas.
 
 ### Starting points, spawns and names: `maps/<map pack>/scenario.toml`
 

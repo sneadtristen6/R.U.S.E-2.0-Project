@@ -109,6 +109,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
                 raise BuildError(str(exc)) from None
         info.terrain = read_terrain(path)
         info.scenery = read_scenery(path)
+        _erase_areas(info)
         info.scenario = read_scenario(path)
         info.cover = read_cover(path)
         _cover_brushes(info)
@@ -131,12 +132,13 @@ def _map_readers() -> dict:
     from .players import PlayersError, parse_map
     from .roadnet import RoadNetError, parse_roads
     from .scenario import ScenarioError, parse_moves, parse_spawns, parse_starts
-    from .scenery import SceneryEditError, parse_objects
+    from .scenery import SceneryEditError, parse_erase, parse_objects
     return {
         "terrain.toml": (("stroke",), "a terrain file holds [[stroke]] tables",
                          lambda d, rel: parse_strokes(d.get("stroke", []), rel), BrushError),
-        "scenery.toml": (("object",), "a scenery file holds [[object]] tables",
-                         lambda d, rel: parse_objects(d.get("object", []), rel), SceneryEditError),
+        "scenery.toml": (("object", "erase"), "a scenery file holds [[object]] and [[erase]] tables",
+                         lambda d, rel: parse_objects(d.get("object", []), rel) + parse_erase(d.get("erase", []), rel),
+                         SceneryEditError),
         # moves first: they name the shipped items by their number, which starts and spawns (added at the end)
         # don't shift
         "scenario.toml": (("move", "start", "spawn"), "a scenario file holds [[move]], [[start]] and [[spawn]] tables",
@@ -190,8 +192,24 @@ def _read_maps(folder: Path, file: str) -> dict:
 
 
 def read_scenery(folder: Path) -> dict:
-    """A mod's added scenery: {map pack name: [scenery.NewObject]} from maps/<map pack>/scenery.toml (MOD_FORMAT §8)."""
+    """A mod's added scenery: {map pack name: [scenery.NewObject]} from maps/<map pack>/scenery.toml (MOD_FORMAT §8),
+    with its erase areas (scenery.EraseArea) among them: _erase_areas moves those to `info.erase`."""
     return _read_maps(folder, "scenery.toml")
+
+
+def _erase_areas(info) -> None:
+    """The erase areas of a mod's scenery.toml files go to `info.erase`; its objects stay in `info.scenery`."""
+    from .scenery import EraseArea
+    for pack, rows in list(info.scenery.items()):
+        areas = [r for r in rows if isinstance(r, EraseArea)]
+        if not areas:
+            continue
+        info.erase[pack] = areas
+        rest = [r for r in rows if not isinstance(r, EraseArea)]
+        if rest:
+            info.scenery[pack] = rest
+        else:
+            del info.scenery[pack]
 
 
 def _cover_brushes(info) -> None:
@@ -978,6 +996,10 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 every, who = with_pieces.setdefault(name, ([], []))
                 every.extend(pieces)
                 who.extend(i for i in ids if i not in who)
+        erasing = scenario_edits(result.order, mods, "erase")  # the mods' erase areas (scenery.toml [[erase]])
+        for name, (_areas, ids) in erasing.items():
+            every, who = with_pieces.setdefault(name, ([], []))
+            who.extend(i for i in ids if i not in who)
         solid: dict = {}  # map pack name -> (nav.Block for each placed building, the mods' ids)
         for name, (objects, ids) in with_pieces.items():
             map_path = find_pack(game, pack_file(name))
@@ -989,13 +1011,23 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             entry = next((e for e in map_packs if e[0] == map_path), None)
             map_arc = entry[1] if entry else open_pack(map_path)
             changed_members = entry[2] if entry else {}
-            from .scenery import MEMBER, SceneryEditError, SceneryError, add_objects, bury_objects
+            from .scenery import (MEMBER, SceneryEditError, SceneryError, add_objects, bury_objects,
+                                  erase_objects)
+            areas, erase_ids = erasing.get(name, ([], []))
             try:
                 member = map_arc.find(MEMBER).path
                 raw = changed_members.get(member) or bytes(map_arc.read(map_arc.find(MEMBER)))
                 raw, sunk = bury_objects(raw, bridge_hide.get(name, []))  # before the new blocks move them
+                erased_notes, erased = [], {}
+                if areas:  # the map's own scenery out first: the new objects then stay whatever the areas cover
+                    if descs is None:
+                        descs = descriptors(arc)
+                    names = Scenery(raw).names
+                    kinds = {i: descs[n].group for i, n in enumerate(names) if n in descs}
+                    bridges = {i for i, n in enumerate(names) if n in descs and descs[n].bridge}
+                    raw, erased_notes, erased = erase_objects(raw, areas, kinds, bridges)
                 changed_members[member], notes = add_objects(raw, objects)
-                notes = sunk + notes
+                notes = sunk + erased_notes + notes
             except KeyError:
                 result.findings.append(Finding("error", f"{map_path.name} has no scenery file, so nothing can be "
                                                         f"placed on {name}"))
@@ -1006,6 +1038,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say(f"scenery: {name}, from {', '.join(ids)}")
             for note in notes:
                 say(f"  {note}")
+            if erased.get("building"):
+                result.findings.append(Finding("warning", (
+                    f"{', '.join(erase_ids)}: {name}: {erased['building']} of the map's buildings erased: the ground "
+                    f"where they stood stays closed to units (the map's movement still has them). Leave buildings "
+                    f"out of the erase areas' what, or expect units to go around where they were")))
+            if erased.get("bridge"):
+                result.findings.append(Finding("warning", (
+                    f"{', '.join(erase_ids)}: {name}: {erased['bridge']} of the map's bridges erased: units can still "
+                    f"cross the water where they stood (the map's movement still has the decks). Leave the bridges "
+                    f"out of the erase areas' types, or place a bridge there again")))
             from .nav import solid_blocks
             walls, wall_notes = solid_blocks(game, [o for o in objects if not isinstance(o, RoadPiece)])
             for note in wall_notes:

@@ -1339,20 +1339,24 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         return folder / "maps" / pack / "scenery.toml"
 
     @staticmethod
-    def _read_objects(path: Path) -> list:
+    def _read_objects(path: Path, table: str = "object") -> list:
+        """The file's objects, or with `table` "erase" its erase areas (kept as they are when the Studio rewrites it)."""
         if not path.is_file():
             return []
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8"))
-            return scenery.parse_objects(data.get("object", []), str(path))
+            parse = scenery.parse_erase if table == "erase" else scenery.parse_objects
+            return parse(data.get(table, []), str(path))
         except (tomllib.TOMLDecodeError, UnicodeDecodeError, scenery.SceneryEditError) as exc:
             raise StudioError(f"{path} can't be read ({exc}). The mod check at the top can set it aside, or fix it by "
                               f"hand: the Studio won't write over it.") from None
 
     def _write_objects(self, path: Path, objects: list) -> None:
-        if objects:
-            _save_checked(path, scenery.objects_toml(objects, self.SCENERY_HEADER),
-                          lambda data: scenery.parse_objects(data.get("object", []), str(path)))
+        erase = self._read_objects(path, "erase")
+        if objects or erase:
+            _save_checked(path, scenery.objects_toml(objects, self.SCENERY_HEADER, erase),
+                          lambda data: (scenery.parse_objects(data.get("object", []), str(path))
+                                        + scenery.parse_erase(data.get("erase", []), str(path))))
             return
         if path.is_file():
             path.unlink()
@@ -1399,7 +1403,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             n = max(0, min(int(count), len(every)))
             left = every[:len(every) - n]
             self._write_objects(path, left)
-        return {"count": len(left), "removed": n, "saved": str(path) if left else None}
+        return {"count": len(left), "removed": n, "saved": str(path) if path.is_file() else None}
 
     # --- shaping a map's ground: maps/<pack>/terrain.toml in the current mod (MOD_FORMAT §8, rusemod.brush) ---
     # --- new roads: maps/<pack>/roads.toml in the current mod (MOD_FORMAT §8, rusemod.roadnet) ---

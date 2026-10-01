@@ -14,7 +14,9 @@ after its parent). Objects are stored at height 0: the game puts them on the gro
 """
 from __future__ import annotations
 
+import bisect
 import hashlib
+import json
 import math
 import struct
 from dataclasses import dataclass, field
@@ -790,6 +792,285 @@ def bury_objects(data: bytes, places: list[tuple[int, int]]) -> tuple[bytes, lis
     return bytes(out), [f"{len(places)} object(s) sunk out of sight"]
 
 
+# --- erasing the map's own scenery (a mod's [[erase]] areas in scenery.toml; docs/MOD_FORMAT.md §8) ---
+ERASE_GROUPS = ("vegetation", "prop", "decal", "building")  # what an erase area may name in `what`
+ERASE_DEFAULT = ("vegetation", "prop")                        # trees and props, unless the area says otherwise
+ERASE_MAX = 200000.0  # map units an erase area's radius may reach (2 km)
+DATA_LIMIT = 0xFFFFFC  # a reference holds a block's offset in 24 bits (4-byte steps): the blocks' data stops there
+
+
+@dataclass(frozen=True)
+class EraseArea:
+    """A circle whose scenery the build takes off the map: the groups in `what` (never a bridge) and the types named
+    in `types` (any kind, bridges too). Road pieces and level-design markers stay."""
+    x: float
+    y: float
+    radius: float
+    what: tuple = ERASE_DEFAULT
+    types: tuple = ()
+
+
+@dataclass
+class _Cut:
+    """What an erase takes out of one placement of a block: its items (by offset) that go, and the placements under
+    it that change."""
+    block: int
+    removed: set
+    changes: dict                                # child item's offset -> _Cut
+    gone: dict = field(default_factory=dict)     # name index -> objects erased under this placement
+    empty: bool = False                          # nothing would be left in it: its reference goes instead
+
+
+def _object_boxes(sc: Scenery) -> list:
+    """Per block, the box (x0, y0, x1, y1) in its own coordinates of every object under it, children included, or
+    None for a block with none (children are stored after their parents: one pass from the end)."""
+    out: list = [None] * len(sc.blocks)
+    for b in reversed(sc.blocks):
+        xs, ys = [], []
+        for it in b.items:
+            if it.kind == "object":
+                m = it.matrix()
+                xs.append(m[3])
+                ys.append(m[7])
+            elif it.kind == "child":
+                cb = out[sc._by_offset[it.child_offset]]
+                if cb is not None:
+                    m = it.matrix()
+                    for x, y in ((cb[0], cb[1]), (cb[2], cb[1]), (cb[0], cb[3]), (cb[2], cb[3])):
+                        xs.append(m[0] * x + m[1] * y + m[3])
+                        ys.append(m[4] * x + m[5] * y + m[7])
+        if xs:
+            out[b.index] = (min(xs), min(ys), max(xs), max(ys))
+    return out
+
+
+def _meeting(box: tuple, m: tuple, areas: list) -> list:
+    """The (area, its names) of `areas` whose circle meets the box (in a placement's coordinates, placed with `m`)."""
+    xs, ys = [], []
+    for x, y in ((box[0], box[1]), (box[2], box[1]), (box[0], box[3]), (box[2], box[3])):
+        xs.append(m[0] * x + m[1] * y + m[3])
+        ys.append(m[4] * x + m[5] * y + m[7])
+    x0, y0, x1, y1 = min(xs), min(ys), max(xs), max(ys)
+    return [(a, ok) for a, ok in areas
+            if max(x0 - a.x, 0.0, a.x - x1) ** 2 + max(y0 - a.y, 0.0, a.y - y1) ** 2 <= a.radius ** 2]
+
+
+def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridges=frozenset()) -> _Cut | None:
+    """What erasing `areas` takes out, placement by placement from the top block down, or None for nothing. An object
+    goes when its place lies in an area that may remove its kind: its group (`kinds`: name index -> group) is in the
+    area's `what` and it isn't a bridge (`bridges`: name indexes), or its name is in the area's `types`."""
+    roots = sc.roots()
+    if roots != [0]:
+        raise SceneryError("the scenery file's blocks aren't in the order this writer knows")
+    pairs = []
+    for a in areas:
+        named = set(a.types)
+        pairs.append((a, {s for s, n in enumerate(sc.names[:len(sc.flags)])
+                          if n in named or (kinds.get(s) in a.what and s not in bridges)}))
+    boxes = _object_boxes(sc)
+
+    def visit(bi: int, m: tuple, near: list) -> _Cut | None:
+        """`near`: the areas that meet this placement (only they can take anything from it)."""
+        b = sc.blocks[bi]
+        removed, changes, gone = set(), {}, {}
+        for it in b.items:
+            if it.kind == "object":
+                local = it.matrix()
+                x = m[0] * local[3] + m[1] * local[7] + m[2] * local[11] + m[3]
+                y = m[4] * local[3] + m[5] * local[7] + m[6] * local[11] + m[7]
+                if any(it.symbol in ok and (x - a.x) ** 2 + (y - a.y) ** 2 <= a.radius ** 2 for a, ok in near):
+                    removed.add(it.at)
+                    gone[it.symbol] = gone.get(it.symbol, 0) + 1
+            elif it.kind == "child":
+                j = sc._by_offset[it.child_offset]
+                if boxes[j] is None:
+                    continue
+                cm = compose(m, it.matrix())
+                inner = _meeting(boxes[j], cm, near)
+                if not inner:
+                    continue
+                c = visit(j, cm, inner)
+                if c is None:
+                    continue
+                for s, n in c.gone.items():
+                    gone[s] = gone.get(s, 0) + n
+                if c.empty:
+                    removed.add(it.at)
+                else:
+                    changes[it.at] = c
+        if not removed and not changes:
+            return None
+        return _Cut(bi, removed, changes, gone, len(removed) == len(b.items) and bi != 0)
+    return visit(0, IDENTITY, pairs)
+
+
+def _rebuilt(b: Block, removed: set) -> tuple[bytes, dict[int, int]]:
+    """Block `b` without the items at `removed`: their entries leave the lists, every tree node's split moves back by
+    the entries taken out before it (a node's boxes and LOD masks stay: a box holding fewer items is still right; a
+    leaf may end up empty, as hundreds of the shipped ones are), the items close up, and the block is padded to 16
+    bytes as the shipped ones are. Returns (the block, {old item offset: new}) for the references in it."""
+    if not removed:
+        return b.raw, {it.at: it.at for it in b.items}
+    head = 0x20 if b.long else 0x1C
+    gone_idx = [e for e, at in enumerate(b.entries) if at in removed]
+    first = min(it.at for it in b.items)  # what comes before the first item (the shipped blocks' filler word)
+    new_at, items, pos = {}, [], first
+    for it in sorted(b.items, key=lambda i: i.at):
+        if it.at in removed:
+            continue
+        new_at[it.at] = pos
+        items.append(struct.pack("<I", it.word) + it.data)
+        pos += 4 + len(it.data)
+    entries = [new_at[at] for at in b.entries if at not in removed]
+    nodes = b"".join(struct.pack("<IHBB", w, split - bisect.bisect_left(gone_idx, split), b1, b2)
+                     for w, split, b1, b2 in _tree(b))
+    (w0,) = struct.unpack_from("<I", b.raw)
+    out = (struct.pack("<I", (w0 & 0x80000000) | len(entries)) + b.raw[4:head]
+           + struct.pack(f"<{len(entries)}I", *entries) + nodes
+           + b.raw[b.items_start:b.items_start + first] + b"".join(items))
+    return out + b"\0" * (-len(out) % 16), new_at
+
+
+def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
+                  bridges=frozenset()) -> tuple[bytes, list[str], dict[str, int]]:
+    """The scenery file with the objects in `areas` taken out (erase_plan says which). Most of a map's trees are in
+    blocks it places many times (a wood's patch, repeated across the map), so a placement that loses objects gets a
+    copy of its block of its own, without them (copy on write): the reference that placed it points to the copy, the
+    copy's references to the blocks under it that change point to their own copies, and the rest still point to the
+    shared blocks. A block placed once is changed where it is; a placement left with nothing loses its reference; a
+    block nothing places any more goes. Every copy goes right before the block it copies, so references still point
+    forward. The trees' boxes, the road marks and the grids stay as they are (a cell or box that holds less is still
+    right). Returns (new file, notes, objects erased per group: `kinds`' groups, "bridge" for `bridges`, "other" for
+    a name with no group)."""
+    if not areas:
+        return bytes(data), [], {}
+    sc = Scenery(data)
+    unknown = sorted({t for a in areas for t in a.types} - set(sc.names[:len(sc.flags)]))
+    said = [f"{', '.join(unknown)}: not on this map, so the erase areas take none of it"] if unknown else []
+    cut = erase_plan(sc, areas, kinds, bridges)
+    if cut is None:
+        return bytes(data), [f"the erase area(s) cover nothing they may remove: {len(areas)} area(s), no change"] + said, {}
+    weight, _where = sc.placings()
+    inplace: dict[int, _Cut] = {}
+    copies: dict[int, list] = {}
+    todo = [cut]
+    while todo:
+        c = todo.pop()
+        if weight[c.block] == 1:
+            inplace[c.block] = c
+        else:
+            copies.setdefault(c.block, []).append(c)
+        todo += c.changes.values()
+    # the blocks out, in order: each block's copies right before it
+    order: list[tuple[int, _Cut | None]] = []
+    out_of_cut: dict[int, int] = {}
+    out_of_block: dict[int, int] = {}
+    for b in sc.blocks:
+        for c in copies.get(b.index, []):
+            out_of_cut[id(c)] = len(order)
+            order.append((b.index, c))
+        out_of_block[b.index] = len(order)
+        if b.index in inplace:
+            out_of_cut[id(inplace[b.index])] = len(order)
+        order.append((b.index, inplace.get(b.index)))
+
+    def targets(k: int):
+        """(the child item, the output block it points to) for output block k's references that stay."""
+        bi, c = order[k]
+        for it in sc.blocks[bi].items:
+            if it.kind != "child" or (c is not None and it.at in c.removed):
+                continue
+            ch = c.changes.get(it.at) if c is not None else None
+            yield it, (out_of_cut[id(ch)] if ch is not None else out_of_block[sc._by_offset[it.child_offset]])
+    reached, todo_k = {out_of_block[0]}, [out_of_block[0]]
+    while todo_k:
+        k = todo_k.pop()
+        for _it, t in targets(k):
+            if t not in reached:
+                reached.add(t)
+                todo_k.append(t)
+    kept = [k for k in range(len(order)) if k in reached]
+    raws, maps, offset_of, pos = {}, {}, {}, 0
+    for k in kept:
+        bi, c = order[k]
+        raws[k], maps[k] = _rebuilt(sc.blocks[bi], c.removed if c is not None else set())
+        offset_of[k] = pos
+        pos += len(raws[k])
+    if pos > DATA_LIMIT:
+        raise SceneryEditError(f"erasing there copies too many of the map's shared blocks: its scenery would grow to "
+                               f"{pos:,} bytes, past the {DATA_LIMIT:,} a map can hold. Erase smaller areas")
+    parts = []
+    for k in kept:
+        bi, _c = order[k]
+        b = sc.blocks[bi]
+        raw = bytearray(raws[k])
+        start = (0x20 if b.long else 0x1C) + 4 * (struct.unpack_from("<I", raw)[0] & 0x7FFFFFFF) + len(b.nodes)
+        for it, t in targets(k):
+            struct.pack_into("<I", raw, start + maps[k][it.at], (it.word & ~0x00FFFFFC) | offset_of[t])
+        parts.append(bytes(raw))
+    body_data = b"".join(parts)
+    f = list(sc.fields)
+    tab_off, tab_n, data_off, data_len = f[0], f[1], f[2], f[3]
+    if tab_off != 124 or data_off != tab_off + 4 * tab_n:
+        raise SceneryError("the scenery file's tables aren't in the order this writer knows")
+    end = data_off + data_len
+    new_n = len(kept) + 1
+    shift = (124 + 4 * new_n + len(body_data)) - end
+    for k in (4, 6, 8, 10, 12, 20, 22, 24):  # the tables after the data move with its end
+        if f[k] < end:
+            raise SceneryError("the scenery file's tables aren't in the order this writer knows")
+        f[k] += shift
+    f[1], f[2], f[3] = new_n, 124 + 4 * new_n, len(body_data)
+    table = [offset_of[k] for k in kept] + [len(body_data)]
+    body = VERSION + struct.pack("<26I", *f) + struct.pack(f"<{len(table)}I", *table) + body_data + data[end:]
+    by_group: dict[str, int] = {}
+    for s, n in cut.gone.items():
+        g = "bridge" if s in bridges else kinds.get(s, "other")
+        by_group[g] = by_group.get(g, 0) + n
+    n_copies = sum(len(v) for v in copies.values())
+    dropped = len(sc.blocks) + n_copies - len(kept)
+    notes = [f"{sum(cut.gone.values()):,} object(s) erased in {len(areas)} area(s): "
+             + ", ".join(f"{n:,} {g}" for g, n in sorted(by_group.items(), key=lambda kv: -kv[1]))]
+    if n_copies:
+        grew = len(body) + 16 - len(data)
+        notes.append(f"{n_copies} shared block(s) copied for the erased spots"
+                     + (f", {dropped} no longer placed anywhere left out" if dropped else "")
+                     + (f": the scenery grew by {grew:,} bytes" if grew >= 0 else
+                        f": the scenery shrank by {-grew:,} bytes"))
+    return hashlib.md5(body).digest() + body, notes + said, by_group
+
+
+def parse_erase(rows: list, where: str = "scenery.toml") -> list[EraseArea]:
+    out = []
+    for k, row in enumerate(rows):
+        extra = sorted(set(row) - {"x", "y", "radius", "what", "types"})
+        if extra:
+            raise SceneryEditError(f"{where}: erase area {k + 1}: unknown key {extra[0]!r}")
+        try:
+            x, y, r = float(row["x"]), float(row["y"]), float(row["radius"])
+        except KeyError as exc:
+            raise SceneryEditError(f"{where}: erase area {k + 1} has no {exc.args[0]}") from None
+        except (TypeError, ValueError):
+            raise SceneryEditError(f"{where}: erase area {k + 1}: x, y and radius must be numbers") from None
+        if not all(math.isfinite(v) for v in (x, y, r)) or not 0 < r <= ERASE_MAX:
+            raise SceneryEditError(f"{where}: erase area {k + 1}: the radius must be above 0 and at most "
+                                   f"{ERASE_MAX:,.0f} map units ({ERASE_MAX / 100:,.0f} m)")
+        what, types = row.get("what", list(ERASE_DEFAULT)), row.get("types", [])
+        if not isinstance(what, list) or not all(isinstance(g, str) for g in what):
+            raise SceneryEditError(f"{where}: erase area {k + 1}: what must be a list, like [\"vegetation\", \"prop\"]")
+        bad = [g for g in what if g not in ERASE_GROUPS]
+        if bad:
+            raise SceneryEditError(f"{where}: erase area {k + 1}: {bad[0]!r} isn't something it can erase (one of "
+                                   f"{', '.join(ERASE_GROUPS)}; a bridge or another type goes by its name in types)")
+        if not isinstance(types, list) or not all(isinstance(t, str) and t for t in types):
+            raise SceneryEditError(f"{where}: erase area {k + 1}: types must be a list of type names, like "
+                                   f"[\"TypeWarrior/MairieNormande\"]")
+        if not what and not types:
+            raise SceneryEditError(f"{where}: erase area {k + 1} names nothing to erase (what and types are empty)")
+        out.append(EraseArea(x, y, r, tuple(what), tuple(types)))
+    return out
+
+
 def _far_children(sc: Scenery) -> list[Item]:
     """The top block's references to blocks that it lists for far view (its first node's count of entries)."""
     roots = sc.roots()
@@ -1223,8 +1504,12 @@ def parse_objects(rows: list, where: str = "scenery.toml") -> list[NewObject]:
     return out
 
 
-def objects_toml(objects: list[NewObject], header: str = "") -> str:
+def objects_toml(objects: list[NewObject], header: str = "", erase: list[EraseArea] = ()) -> str:
     lines = [f"# {ln}" if ln else "#" for ln in header.splitlines()] + ([""] if header else [])
+    for a in erase:
+        lines += ["[[erase]]", f"x = {a.x!r}", f"y = {a.y!r}", f"radius = {a.radius!r}"]
+        lines += [f"what = [{', '.join(json.dumps(g) for g in a.what)}]"] if tuple(a.what) != ERASE_DEFAULT else []
+        lines += ([f"types = [{', '.join(json.dumps(t) for t in a.types)}]"] if a.types else []) + [""]
     for o in objects:
         lines += ["[[object]]", f'type = "{o.type}"', f"x = {o.x!r}", f"y = {o.y!r}", f"turn = {o.turn!r}",
                   f"size = {o.size!r}"] + ([] if o.solid else ["solid = false"])
