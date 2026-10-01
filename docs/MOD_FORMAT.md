@@ -913,9 +913,11 @@ LittleGroove's own engine (`src/ruse_mod_engine`, PLAN.md decision 26). The form
 5. The exact gameplay/cosmetic split (depends on what the desync checker hashes).
 6. Scenario source format: design it once the binary format is decoded (M6).
 
-## 15. The mod index (Browse mods)
+## 15. The mod index (Supported mods)
 
-Built: `src/rusemod/mod_index.py`, the launcher's "Browse mods" (TASKS.md D, 2026-09-29). No server of ours: a
+Built: `src/rusemod/mod_index.py`, the launcher's "Supported mods" tab (TASKS.md D, 2026-09-29; called "Browse
+mods" until Launcher 0.2.12, which added ticking several mods, the cheats' group and the first run's "Choose your
+mods"). No server of ours: a
 small public git repository is the index, GitHub serves its file, and GitHub Releases hold the packages.
 
 - **The repository:** `sneadtristen6/Ruse-Mods` (the owner creates it; until then the launcher can be pointed at any
@@ -938,18 +940,30 @@ small public git repository is the index, GitHub serves its file, and GitHub Rel
   sha256      = "…"                                # 64 hex characters, of the package
   game_build  = "24670294"                         # the build it was made on (mod.toml [game] builds)
   fingerprint = "K7Q2-M9XD"                        # from the export (§12), for join codes later
-  tags        = ["gameplay", "air"]
+  tags        = ["gameplay", "air"]               # "cheat": a cheat or a test tool (below)
   ```
 
   `id`, `version`, `download` (an `https://` link), `size` and `sha256` are required; an entry that lacks one, or
   repeats an id, is skipped and listed in the launcher's log, never the whole list. A `format` above 1 means "made
-  for a newer launcher".
-- **Adding a mod:** export it from the Studio (§2), attach the `.rusemod` to a GitHub Release (of the mod's own
-  repository, or of the index repository), and open a pull request to the index repository that adds the
-  `[[mod]]` entry with the file's size and SHA-256. A new version is a new entry line: change `version`,
-  `download`, `size`, `sha256` (a published file never changes, §12).
+  for a newer launcher". `tags` is a list of words (a single word is taken as one tag); anything else skips the
+  entry.
+- **Cheats and test tools:** an entry tagged `"cheat"` (any case) is shown in its own group, "Cheats and test tools
+  (optional)", after the others. It is never ticked for the player, on the Supported mods tab or on the first run,
+  and only the mods the player ticks are downloaded.
+- **Adding a mod:** export it from the Studio (§2). The export says the file's size and SHA-256, and the Studio's
+  "Share your mod" (opened after the export, and from the Mod menu) shows them with the `[[mod]]` entry ready to
+  copy, `download` left empty (an entry left so is skipped). Attach the `.rusemod` to a GitHub Release (of the mod's
+  own repository, or of the index repository), put its link in `download`, and open a pull request to the index
+  repository that adds the entry; or post the mod in the Discussions and it's added for you. A new version is a new
+  entry line: change `version`, `download`, `size`, `sha256` (a published file never changes, §12).
 - **What the launcher does:** fetches the list (10 s timeout), keeps a copy in `<home>/index/` and shows that copy
   when offline, saying from when it is; marks each entry against the library ("new", "update available",
   "installed"); on Install, downloads the package, checks the size and the SHA-256 against the entry (anything else
   is deleted and refused), then adds it through the library like a file the player picked (§2). The list is
-  searched by id, name, author, description and tags.
+  searched by id, name, author, description and tags. Several ticked mods install in one go, one after another; one
+  that fails (a download cut off, a checksum that differs) is named and the others still install. One install runs
+  at a time. "See the list on GitHub" opens the repository's page.
+- **The first run:** while the library is empty and the player hasn't chosen yet, the launcher opens "Choose your
+  mods": the list with every mod ticked except the cheats, and Install or Skip. Either one is kept in
+  `settings.json` (`launcher_mods_chosen`), so it isn't shown again. Offline it shows the copy from before; with no
+  copy at all it says so and offers only Skip.

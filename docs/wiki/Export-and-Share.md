@@ -12,22 +12,29 @@
 
 That file is all a player needs: they add it in RUSE Launcher ([[Install and play|Install-and-Play]]).
 
-## 2. Share
+When the export is done, the Studio opens **Share your mod** with the file's size, its SHA-256 checksum and its entry
+for the list, ready to copy. You can open it again any time from the **Mod** menu (**Share your mod...**).
 
-**Today:** post it in [Discussions > Mods & maps](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)
-with a screenshot and what it changes (drag the `.rusemod` into the post), or share it on Discord.
+## 2. Share: add it to the supported mods
 
-**Coming: Browse mods.** The launcher will list the community's mods and install them in one click. To be listed,
-your mod goes in a public index on GitHub:
+Made a mod? Add it to the list and become a contributor. RUSE Launcher's **Supported mods** tab shows the mods on
+the list at [sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods), and players install them in one
+click (new players get them offered on the launcher's first start):
 
-1. Attach the `.rusemod` to a GitHub Release (your own repository's, or the index's).
-2. Open a pull request to the index adding your mod's entry: id, name, version, download link, the file's size and
-   its SHA-256 checksum. The launcher refuses a download that doesn't match the checksum, so nobody can swap your
-   file for another.
-3. A new version is a new file with a new version number: a published file never changes.
+1. Upload the `.rusemod` (a GitHub Release is easiest: your own repository's, or the list's).
+2. Open a pull request to [sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods) that adds your mod's
+   entry to `index.toml`: paste the entry Share your mod shows and put the file's link in `download`. The size and
+   SHA-256 must be the ones the export showed: the launcher refuses a download that doesn't match, so nobody can swap
+   your file for another.
+3. Or post it in [Discussions > Mods & maps](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions) with a
+   screenshot and what it changes (drag the `.rusemod` into the post), and it's added to the list for you.
+
+A cheat or a test tool (free units, instant building...) gets the tag `"cheat"`: the launcher shows it in its own
+group, "Cheats and test tools (optional)", and never ticks or downloads it unless the player does. A new version is a
+new file with a new version number: a published file never changes.
 
 The entry's exact format:
-[MOD_FORMAT.md, section 15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/MOD_FORMAT.md#15-the-mod-index-browse-mods).
+[MOD_FORMAT.md, section 15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/MOD_FORMAT.md#15-the-mod-index-supported-mods).
 
 ## What a mod can hold
 
