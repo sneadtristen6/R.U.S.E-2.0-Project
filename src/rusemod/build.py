@@ -154,19 +154,19 @@ def _map_readers() -> dict:
                                           + parse_blocks(d.get("open", []), rel, "open")), NavError),
         "roads.toml": (("road",), "a roads file holds [[road]] tables",
                        lambda d, rel: parse_roads(d.get("road", []), rel), RoadNetError),
-        "map.toml": (("players", "entry", "clone_of", "name"),
-                     "a map file holds players = N (and entry = the map-list name), or a new map's clone_of and name",
+        "map.toml": (("players", "entry", "copy_of", "name"),
+                     "a map file holds players = N (and entry = the map-list name), and for a new map copy_of and name",
                      _map_toml, (PlayersError, NewMapError)),
     }
 
 
 def _map_toml(data: dict, rel: str) -> list:
-    """A map.toml's rows: a new map (newmap.NewMap) when it says clone_of, and its players (players.Players). On a
-    new map, `entry` picks the shipped map's entry to copy, and players = N applies to the copy."""
+    """A map.toml's rows: a new map (newmap.NewMap) when it says copy_of, and its players (players.Players). On a new
+    map, `entry` picks the shipped map's entry to copy, and players = N applies to the copy."""
     from .newmap import parse
     from .players import parse_map
-    folder = rel.replace("\\", "/").split("/")[-2] if "/" in rel.replace("\\", "/") else ""
-    made = parse(data, rel, folder)
+    parts = rel.replace("\\", "/").split("/")
+    made = parse(data, rel, parts[-2] if len(parts) > 1 else "")
     rest = {k: v for k, v in data.items() if not (made and k == "entry")}
     return made + parse_map(rest, rel)
 
@@ -228,7 +228,8 @@ def _erase_areas(info) -> None:
 
 
 def _new_maps(info) -> None:
-    """The new maps of a mod's map.toml files go to `info.new_maps`; their player counts stay in `info.players`."""
+    """The new maps of a mod's map.toml files (copy_of) go to `info.new_maps`; their player counts stay in
+    `info.players`."""
     from .newmap import NewMap
     for pack, rows in list(info.players.items()):
         made = [r for r in rows if isinstance(r, NewMap)]
@@ -376,17 +377,17 @@ def _bed_circles(drained: list[tuple[float, float]], wet=None) -> list[tuple[flo
     return zones
 
 
-def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs) -> list:
+def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs, find_map=None) -> list:
     """nav.wet_opens for a map's opens, on its ground as the terrain edits left it (map_packs: (pack path, archive,
-    changed members); `open_pack(path)` opens a map pack); none when the map has no opens or its ground can't be
-    read."""
+    changed members); `open_pack(path)` opens a map pack, `find_map(name)` finds it, a new map's too); none when the
+    map has no opens or its ground can't be read."""
     from .bridges import Water
     from .nav import wet_opens
     from .terrain import pack_file
     from .tms import Tms
     if not any(b.open for b in blocks):
         return []
-    map_path = find_pack(game, pack_file(name))
+    map_path = find_map(name) if find_map is not None else find_pack(game, pack_file(name))
     if map_path is None:
         return []
     entry = next((e for e in map_packs if e[0] == map_path), None)
@@ -441,6 +442,8 @@ class BuildResult:
     script_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (the script pack) -> new bytes
     new_classes: list = field(default_factory=list)  # class names added to the game's Python unit list
     terrain_changed: dict = field(default_factory=dict)  # map pack file name -> {member path: new bytes}
+    new_maps: dict = field(default_factory=dict)    # new map's pack name -> newmap.Clone (what it adds)
+    added: dict = field(default_factory=dict)       # pack file name -> {member path: bytes}: members new maps add
     fingerprint: bytes | None = None
 
     @property
@@ -474,11 +477,26 @@ def load_pack(arc: Edat) -> PackModel:
 
 
 def needs_zz_win(mods: list) -> bool:
-    """Whether building `mods` [(ModInfo, ops)] needs ZZ_Win.dat: some mod adds texts, or new objects (a new unit
-    needs a class in the Python unit list, which lives there), or moves a unit to another nation or model (the
-    skirmish mesh packs there say whether its models are loaded for it: unit_models)."""
-    return any(m.texts or getattr(m, "new_maps", None) for m, _ in mods) or any(op.kind in ("create", "clone") or _moves(op)
-                                                              for _, ops in mods for op in ops)
+    """Whether building `mods` [(ModInfo, ops)] needs ZZ_Win.dat: some mod adds texts or a new map (its name in the
+    menus), or new objects (a new unit needs a class in the Python unit list, which lives there), or moves a unit to
+    another nation or model (the skirmish mesh packs there say whether its models are loaded for it: unit_models)."""
+    return any(m.texts or m.new_maps for m, _ in mods) or any(op.kind in ("create", "clone") or _moves(op)
+                                                               for _, ops in mods for op in ops)
+
+
+def new_maps(order: list[str], mods: list) -> dict:
+    """Every new map the mods make: {its pack name: (newmap.NewMap, the mod's id)}, in load order. Two mods making
+    maps of one name is a BuildError."""
+    by_id = {m.id: m for m, _ in mods}
+    out: dict = {}
+    for mod_id in order:
+        for name, specs in getattr(by_id.get(mod_id), "new_maps", {}).items():
+            same = next((n for n in out if n.lower() == name.lower()), None)
+            if same is not None:
+                raise BuildError(f"{out[same][1]} and {mod_id} both make a new map called {name} (maps/{name}/map.toml "
+                                 f"copy_of): give one another folder name, or leave one mod out")
+            out[name] = (specs[-1], mod_id)
+    return out
 
 
 def _spawns(mods: list) -> bool:
@@ -886,8 +904,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
     if needs_zz_win(mods):
         text_path = find_pack(game, loc.PACK)
         if text_path is None:
-            raise BuildError(f"These mods add texts or new units, which need {loc.PACK}, but {game} doesn't have "
-                             f"it.")
+            raise BuildError(f"These mods add texts, new units or new maps, which need {loc.PACK}, but {game} "
+                             f"doesn't have it.")
     elif _spawns(mods):  # spawned units' models are checked against its packs when it's there (spawn_models)
         text_path = find_pack(game, loc.PACK)
     if instance is not None and os.path.lexists(instance):  # the old copy goes first, so it can't be started by
@@ -903,8 +921,12 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             run = rmod.apply(game, [m.rmod for m in rmods], build_of(game), say)
             stack.callback(run.close)
 
+        new_packs: dict = {}  # a new map's pack (a path the game hasn't got) -> newmap.NewPack over the shipped one
+
         def open_pack(path: Path) -> Edat:
-            """A pack as the .rmod mods left it (or as shipped)."""
+            """A pack as the .rmod mods left it (or as shipped); a new map's, as the copy it is."""
+            if path in new_packs:
+                return new_packs[path]
             layered = run.layered(path) if run else None
             return layered if layered is not None else stack.enter_context(Edat.open(str(path)))
 
@@ -933,11 +955,79 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             result.findings.append(Finding("warning", message))
             said.add(id(result.findings[-1]))
             say(f"warning: {message}")
+        # new maps first (rusemod.newmap): the mods' other map files then edit them like any map
+        new_paths: dict = {}  # new map's pack name, lower case -> its pack's path, as the copy will have it
+        sources: dict = {}    # new map's pack name, lower case -> the shipped map's folder (its water constants)
+        data_base, data_new = None, {}  # DataMap_Win.dat as opened for the new maps, and the members they add
+        try:
+            making = new_maps(result.order, mods)
+        except BuildError as exc:
+            result.findings.append(Finding("error", str(exc)))
+            making = {}
+        if making:
+            from .newmap import Grown, NewMapError, NewPack, make
+            from .scenario import PACK as DATA_PACK
+            data_path = find_pack(game, DATA_PACK)
+            if data_path is None:
+                result.findings.append(Finding("error", f"{DATA_PACK} isn't in this game, so no map can be added (the "
+                                                        f"maps' scenarios and grids live there)"))
+                making = {}
+            else:
+                data_base = open_pack(data_path)
+            glad_new: dict = {}
+
+            def reading(*layers):
+                """read(member) over {member: bytes} layers (any case), then a pack (the last)."""
+                def read(member):
+                    key = member.replace("/", "\\").lower()
+                    for layer in layers[:-1]:
+                        found = next((d for m, d in layer.items() if m.lower() == key), None)
+                        if found is not None:
+                            return found
+                    e = layers[-1].entry(member) if layers[-1] is not None else None
+                    return bytes(layers[-1].read(e)) if e is not None else None
+                return read
+            for name, (spec, mod_id) in making.items():
+                try:
+                    clone = make(name, spec, reading(result.changed, glad_new, arc), reading(data_new, data_base),
+                                 reading(result.text_changed, text_arc))
+                except (NewMapError, ValueError, KeyError, struct.error) as exc:
+                    result.findings.append(Finding("error", f"{mod_id}: {exc}"))
+                    continue
+                source = find_pack(game, clone.pack_from)
+                if source is None:
+                    result.findings.append(Finding("error", f"{mod_id}: maps/{name}: {clone.pack_from}, the pack of "
+                                                            f"{spec.copy_of}, isn't in this game, so it can't be copied"))
+                    continue
+                for member, data in clone.glad_changed.items():
+                    e = arc.entry(member)
+                    for old in [m for m in result.changed if m.lower() == member.lower()]:
+                        del result.changed[old]
+                    result.changed[e.path if e is not None else member] = data
+                for member, data in clone.texts.items():
+                    e = text_arc.entry(member)
+                    result.text_changed[e.path if e is not None else member] = data
+                glad_new.update(clone.glad)
+                data_new.update(clone.data)
+                path = Path(game) / "Maps" / "PC" / pack_file(name)
+                new_packs[path] = NewPack(open_pack(source), clone.pack_id, source.name)
+                new_paths[name.lower()] = path
+                sources[name.lower()] = clone.map_folder
+                result.new_maps[name] = clone
+                say(f"new map: {name}, from {mod_id}")
+                for note in clone.notes:
+                    say(f"  {note}")
+            if glad_new:
+                arc = Grown(arc, glad_new)
+
+        def find_map(name: str):
+            """A map's pack: a new map's (the path its copy gets), else the game's; None when it has none."""
+            return new_paths.get(name.lower()) or find_pack(game, pack_file(name))
         map_packs = []  # (path, open pack, {member: new bytes})
         flooded: dict = {}  # map pack name -> (nav.Block over each new water, the mods' ids)
         beds: dict = {}     # map pack name -> (nav.Block opens over each dried bed, the mods' ids)
         for name, (strokes, ids) in terrain_edits(result.order, mods).items():
-            map_path = find_pack(game, pack_file(name))
+            map_path = find_map(name)
             if map_path is None:
                 result.findings.append(Finding("error", f"{', '.join(ids)}: the map {name} isn't in this game "
                                                         f"({pack_file(name)} is missing), so its ground can't be "
@@ -951,8 +1041,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 except KeyError:
                     return None
 
-            def depth_of(n=name, a=arc):
-                """The map's MaxDepthForSimulationDepthMap, from its mapwaterconstante in the unit-data pack."""
+            def depth_of(n=sources.get(name.lower(), name), a=arc):
+                """The map's MaxDepthForSimulationDepthMap, from its mapwaterconstante in the unit-data pack (a new
+                map's is the shipped map's)."""
                 from .ndf import Ndf
                 from .water import max_depth
 
@@ -1028,7 +1119,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if descs is None and (wanted or objects_here):
                 descs = descriptors(arc)
             by_hand = [o for o in objects_here if o.type in descs and descs[o.type].bridge] if descs else []
-            map_path = find_pack(game, pack_file(name)) if wanted or by_hand else None
+            map_path = find_map(name) if wanted or by_hand else None
             if map_path is None:
                 continue  # (a missing map is said with the road network and the scenery below)
             ids = list(dict.fromkeys(road_ids + (object_ids if by_hand else [])))
@@ -1150,7 +1241,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         for name, (map_roads, ids) in road_edits.items():
             decks = bridge_spans.get(name, []) + bridge_decks.get(name, [])
             pieces = [q for line in cut([r.points for r in map_roads if r.paint], decks) for q in road_pieces(line)]
-            if pieces and find_pack(game, pack_file(name)) is not None:  # (a missing map is said with the roads)
+            if pieces and find_map(name) is not None:  # (a missing map is said with the roads)
                 every, who = with_pieces.setdefault(name, ([], []))
                 every.extend(pieces)
                 who.extend(i for i in ids if i not in who)
@@ -1160,7 +1251,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             who.extend(i for i in ids if i not in who)
         solid: dict = {}  # map pack name -> (nav.Block for each placed building, the mods' ids)
         for name, (objects, ids) in with_pieces.items():
-            map_path = find_pack(game, pack_file(name))
+            map_path = find_map(name)
             if map_path is None:
                 result.findings.append(Finding("error", f"{', '.join(ids)}: the map {name} isn't in this game "
                                                         f"({pack_file(name)} is missing), so nothing can be placed "
@@ -1228,7 +1319,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             from .bridges import cut
             decks = bridge_spans.get(name, []) + bridge_decks.get(name, [])
             lines = cut([r.points for r in map_roads if r.paint], decks)  # not on a bridge's deck
-            map_path = find_pack(game, pack_file(name)) if lines else None
+            map_path = find_map(name) if lines else None
             if map_path is None:
                 continue  # (a missing map is said with the road network below)
             entry = next((e for e in map_packs if e[0] == map_path), None)
@@ -1273,7 +1364,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             every.extend(walls)                               # buildings last, so units always go around them
             who.extend(i for i in ids if i not in who)
         players = scenario_edits(result.order, mods, "players")
-        if moves or paints or blocks or new_roads or bridge_spans or players:
+        if moves or paints or blocks or new_roads or bridge_spans or players or data_new:
             from .bridges import BridgeError, apply_spans
             from .cover import CoverError, apply_paints
             from .nav import NavError, apply_blocks, closing
@@ -1284,7 +1375,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 result.findings.append(Finding("error", f"{SCENARIO_PACK} isn't in this game, so no starting point or "
                                                         f"spawn can be moved, and no cover painted"))
             else:
-                data_arc = open_pack(data_path)
+                data_arc = Grown(data_base, data_new) if data_new else open_pack(data_path)  # (a new map's files)
                 changed_members: dict = {}
 
                 def read_data(member, a=data_arc):
@@ -1332,7 +1423,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         continue
                     unset = [m for m in map_moves if getattr(m, "z", 0.0) is None and (
                         not isinstance(m, Move) or m.kind in ("StartingPoint", "Spawn"))]
-                    map_path = find_pack(game, pack_file(name)) if unset else None
+                    map_path = find_map(name) if unset else None
                     if map_path is not None:  # a new or moved starting point or spawn sits at the ground's height,
                         # as every shipped one does (the game puts a spawned unit at the height it's given)
                         from .tms import Tms
@@ -1388,7 +1479,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                             f"{', '.join(ids)}: {name}: the open at ({b.x:.0f}, {b.y:.0f}) opened nothing: units "
                             f"could already go there, or it is too small (an open needs a radius of 5 m or more) or "
                             f"out of reach of the ground they use")))
-                    for b, (wx, wy) in _wet_opens(open_pack, game, name, map_blocks, map_packs):
+                    for b, (wx, wy) in _wet_opens(open_pack, game, name, map_blocks, map_packs, find_map):
                         result.findings.append(Finding("warning", (
                             f"{', '.join(ids)}: {name}: the open at ({b.x:.0f}, {b.y:.0f}) takes in water (at "
                             f"({wx:.0f}, {wy:.0f})): units there stand on the ground under it, on the riverbed or "
@@ -1456,8 +1547,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     where = member.split("\\")[-2]
                     for note in notes:
                         say(f"  {where}: {note}")
-                if changed_members:
+                if changed_members or data_new:
                     data_packs.append((data_path, data_arc, changed_members))
+        for path, pack in new_packs.items():  # a new map's pack is written even when no mod edits its files
+            if not any(e[0] == path for e in map_packs):
+                map_packs.append((path, pack, {}))
         late = [f for f in result.findings[reported:] if f.level == "warning" and id(f) not in said]
         for line in report_lines(late, show_all=show_all):  # the maps' warnings (a drained river's was never shown)
             say(line)
@@ -1467,16 +1561,23 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say("Nothing was written.")
             return result
         rmod_packs = run.changed_packs() if run else {}
+        for path, a, changed in [(pack_path, arc, result.changed)] + data_packs:  # the members new maps add
+            if getattr(a, "added", None) and hasattr(a, "added_with"):
+                result.added[path.name] = a.added_with(changed)
         if map_packs or rmod_packs or data_packs:
             gameplay = {}
             for p, a in rmod_packs.items():
                 where = f"Maps/PC/{p.name}/" if p.parent.parent.name.lower() == "maps" else ""
                 gameplay.update({where + m: d for m, d in {**a.changed, **a.added}.items()})
             gameplay.update(result.changed)
-            for map_path, _a, changed_members in map_packs:
+            gameplay.update(result.added.get(pack_path.name, {}))
+            for map_path, a, changed_members in map_packs:
                 gameplay.update({f"Maps/PC/{map_path.name}/{m}": d for m, d in changed_members.items()})
+                if map_path in new_packs:  # a new map: which pack it copies, and its id
+                    gameplay[f"Maps/PC/{map_path.name}"] = a.source.encode() + a.pack_id
             for data_path, _a, changed_members in data_packs:
                 gameplay.update({f"{data_path.name}/{m}": d for m, d in changed_members.items()})
+                gameplay.update({f"{data_path.name}/{m}": d for m, d in result.added.get(data_path.name, {}).items()})
             result.fingerprint = fingerprint(build_id, gameplay)
         for p, a in rmod_packs.items():
             say(f"changed by .rmod mods: {p.name} ({len(a.changed)} file(s) changed, {len(a.added)} added)")
@@ -1492,13 +1593,22 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         if result.new_classes:
             say(f"unit list: {len(result.new_classes)} class(es) added to {pyscript.UNIT_LIST} in {text_path.name} ("
                 + ", ".join(result.new_classes) + ")")
-        for map_path, _a, changed_members in map_packs:
-            say(f"changed: {map_path.name} ({len(changed_members)} file(s): "
-                + ", ".join(m.rsplit(chr(92), 1)[-1] for m in changed_members) + ")")
+        for map_path, a, changed_members in map_packs:
+            files = ", ".join(m.rsplit(chr(92), 1)[-1] for m in changed_members)
+            if map_path in new_packs:
+                say(f"new: {map_path.name}, a copy of {a.source}"
+                    + (f" ({len(changed_members)} file(s) changed: {files})" if changed_members else ""))
+            else:
+                say(f"changed: {map_path.name} ({len(changed_members)} file(s): {files})")
         zz_win_changed = {**result.text_changed, **result.script_changed}
         for data_path, _a, changed_members in data_packs:
-            say(f"changed: {data_path.name} ({len(changed_members)} file(s): "
-                + ", ".join(m.rsplit(chr(92), 1)[-1] for m in changed_members) + ")")
+            new_ones = {m.lower() for m in result.added.get(data_path.name, {})}
+            shipped = [m for m in changed_members if m.replace("/", "\\").lower() not in new_ones]  # (new: "added")
+            if shipped:
+                say(f"changed: {data_path.name} ({len(shipped)} file(s): "
+                    + ", ".join(m.rsplit(chr(92), 1)[-1] for m in shipped) + ")")
+        for name, members in result.added.items():
+            say(f"added: {name} ({len(members)} file(s): " + ", ".join(sorted(members, key=str.lower)) + ")")
         rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, zz_win_changed)] + map_packs + data_packs
         listed = {Path(path).resolve() for path, _a, _c in rebuilt if path}
         rebuilt += [(p, a, {}) for p, a in rmod_packs.items() if p not in listed]
@@ -1526,11 +1636,12 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 say(f"wrote {target}")
         if instance is not None:
             from .instance import build_instance
-            replace = {}
+            replace, add = {}, {}
             for path, a, changed in rebuilt:
                 rel = str(path.resolve().relative_to(Path(game).resolve()))
-                replace[rel] = (lambda f, a=a, changed=changed: a.write_to(f, changed))
-            copied = build_instance(str(game), str(instance), replace=replace)
+                # a new map's pack isn't in the game: the copy gets it as a file of its own
+                (replace if path.exists() else add)[rel] = (lambda f, a=a, changed=changed: a.write_to(f, changed))
+            copied = build_instance(str(game), str(instance), replace=replace, add=add)
             say(f"modded copy ready: {instance}  {copied}")
             locked = copied.get("read-only packs", 0)
             if copied.get("full copies", 0) > locked:

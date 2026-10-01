@@ -24,6 +24,7 @@ my-mod/
     scenery.toml                buildings, props and trees placed
     scenario.toml               starting points and spawns moved, units added
     cover.toml, movement.toml   cover and movement written by hand
+    map.toml                    how many players; or, for a new map, the map it copies and its name
 ```
 
 ## The map folder's name is the map's pack name, not its title
@@ -31,6 +32,24 @@ my-mod/
 Players know a map by its title (**Blitz**); the game's files use its pack name (**SuperCrossRoads4**). A map folder
 must use the pack name: `maps/SuperCrossRoads4/`, not `maps/Blitz/`. Every map's pair is in [[Map names|Map-Names]],
 and the Studio's map list shows both: the title first, the pack name after the dot.
+
+## A new map
+
+A mod can add a map of its own to BATTLES: a copy of a shipped map, under a name of its own, that the mod's other
+files then reshape. Its folder's name is the new map's pack name (letters, digits and `_`), and its `map.toml` says
+which map it copies and what the menus call it:
+
+```toml
+copy_of = "SuperCrossRoads4"   # the shipped map it starts from (its pack name: Blitz)
+
+[name]
+us = "Blitz Twin"              # English, used where a language is left out
+fr = "Blitz jumeau"
+```
+
+`maps/BlitzTwin/terrain.toml` and the rest then edit the copy, and Blitz stays as it was. Any map BATTLES lists can be
+copied; campaign and Operation maps can't. Two players need the same mod to play it together, like any mod. Not
+tried in the game yet; the Studio can't open a new map in its map view yet (the file is written by hand for now).
 
 ## Common mistakes
 

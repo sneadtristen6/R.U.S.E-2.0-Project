@@ -329,9 +329,12 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
   named.
 - **8 players:** a map's count is its menu entry (`TMultiMapInfo`) and a starting point per player; mods set both
   (`maps/<map>/map.toml`, `[[start]]`). D-Day as a 4v4 is built; the lobby check is next.
+- **New maps in the menus:** a mod copies any BATTLES map under a name and pack of its own (`maps/<New>/map.toml`,
+  `copy_of`), listed in BATTLES beside it in the ten languages; the mod's other map files then edit the copy. Built;
+  the in-game test (TESTS.md T15, Blitz Twin) is next.
 - **Next** (PLAN.md §10): new roads drawn up close; units from another nation that work (a captured Tiger for the
   US); the map maker the Cities: Skylines way: an Erase tool in the Studio, forest tracks for infantry only, ruse
-  areas, ground painting, finer terrain; then new maps in the game's menus and join codes.
+  areas, ground painting, finer terrain; then new maps in the Studio ("New map…") and join codes.
 - Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19).
 
 The order is in [PLAN.md §10 "Now"](docs/PLAN.md#10-now); the latest decisions are in PLAN.md §6.

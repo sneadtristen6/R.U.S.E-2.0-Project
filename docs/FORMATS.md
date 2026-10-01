@@ -12,7 +12,7 @@ Game build examined: Steam re-release, Steam build 24670294, data revision **190
 | NDF binary (`.ndfbin .gladndfbin .truendfbin`) | Glad packs, ZZ_Win, DataMap_Win | 1,982 | ✅ R (TOPO ❔) | P0 |
 | Localisation (`.dic`, `TRA\0`) | ZZ_Win | 1,232 (+31 `DICS`/`DICV`) | ✅ layout | P0 |
 | Python scripts (`.xyz`) | `.ipk` in ZZ_Win, IA_Common | 327 | ✅ R | P2 |
-| Map registration (`mapinfo.cpp`, `clustermap.cpp`) | ZZ_GladPatchable | 86 maps | ✅ R | P1 |
+| Map registration (`mapinfo.cpp`, `clustermap.cpp`) | ZZ_GladPatchable | 86 maps | ✅ R; W: a new map, a copy of a BATTLES map (`rusemod.newmap`, all 31 entries; in-game test T15 waiting) | P1 |
 | Map support files (`save.boobspc`, `output.sdb`) | Maps\PC | per map | 🟡 checksums known | P1 |
 | Scenario (`.scenario`) | DataMap_Win | 102 | ✅ R (zones and design items; `rusemod.scenario`, all 102) | P1 |
 | AI map grids (`mapinfo.win`) | DataMap_Win | 34 | 🟡 buffer 0: the road network, read and written byte-identical on all 33 (`rusemod.roadnet`, `tools/verify_roadnet.py`: points on the road curves, links with a u16 word (the game works bits 1-15, the distance / 20, out again when it loads the map and keeps only bit 0 from the file, a flag set on most links where vehicles can go), per-point link lists, a k-d tree over the links, never more than 24 levels deep: the game walks it with a fixed stack of 32 entries, as it does the graphs' indexes); buffers 1-2: the infantry and vehicle navigation graphs, read and written byte-identical (`rusemod.nav`, `tools/verify_nav.py`; every shipped one is one connected piece, and a crossing's last two u16 are road network links; their local maps understood, and new ones written for new bridges: "Movement graphs" in §6); buffer 4: the cover grid, written (`rusemod.cover`, from LittleGroove's `sdb.py`) | P1 |
@@ -360,6 +360,28 @@ Map names and paths all come from data. **Adding a map looks data-only.**
 - `effetmap.xyz` in IA_Common
 
 Map packs also hold models (`.spk`), textures, AI grids and sound banks.
+
+**A new map** (built: `rusemod.newmap`, MOD_FORMAT §8; in-game test T15 waiting). How a shipped map's files name
+each other, which is what a copy under a new name changes (read from the data, 2026-10-01):
+- Its map-list entry (`TMapLoadInfo`, a top object: TOPO lists exactly the 86) loads its scenario's cluster through
+  `ClusterLoads` → `TClusterWithNDFLoadedSubCluster` → `TNDFTransaction.BaseName`
+  (`Patchable\Scenario\<map>\<folder>\ClusterMap`, compiled as
+  `genglad\patchable\scenario\<map>\<folder>\clustermap.cpp.gladndfbin`).
+- That cluster names the scenario twice (`ScenarioPath` and `TScenarioLoader.FileName`:
+  `DataDir:\Test\Map\<map>\<file>.scenario`, which is `test\map\<map>\<file>.scenario` in DataMap_Win.dat) and loads
+  the map's cluster (`Patchable\map\<map>\ClusterMap`). Its other files (camera paths and bluff zones in `MapIA`,
+  dialogue, the in-mission texts) a copy shares with the shipped map.
+- The map's cluster mounts the pack (`TClusterMountMapDataPack.DataPack`, `MapDat:\DataMap<Name>_v09.dat`: the pack is
+  found by that name alone, C3; `DatasMapDirectory` and `MapDirectory` stay as shipped) and loads the map's constants
+  (`Patchable\map\<map>\MapConstante`), whose `TCurrentMapInfo.MapPath` names `DataDir:\datasmap\<map>`, the folder
+  of `datasmap\<map>\mapinfo.win` (with `TMapInfoGeneratorInfo.MapInfoPath` `MapInfo.IA`).
+- The BATTLES entry (`TMultiMapInfo`) has the map-list entry's GUID, is reached only through a `TMultiPack`'s
+  `MultiList` (never a top object), and has its menu name as a text key in `flash_txt.dic` (the shipped 30 are
+  `M_D_01`-`M_D_30`, their `TrackingId`s `MP01`-`MP30`).
+- No member of a map pack, no scenario and no grid holds the map's name, and a pack's header id is named nowhere in
+  ZZ_GladPatchableWin, DataMap_Win or IA_Common: a copy works under a new name, and gets a new id.
+- All 31 BATTLES entries of the shipped game copy this way (a dry run of the build, 2026-10-01); the maps BATTLES
+  doesn't list (the campaign's, the Operations', the test maps) are refused.
 
 | File | What we know |
 |---|---|

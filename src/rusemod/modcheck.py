@@ -38,7 +38,7 @@ def check_mod_folder(folder: Path, game: Path | None = None) -> list[dict]:
 def folder_problems(folder: Path, game: Path | None = None) -> list[dict]:
     """Map files where the build won't look: loose in maps/ (they go in maps/<pack>/), or in a folder that isn't a
     map's pack name, often the map's title (maps/Blitz for SuperCrossRoads4): "rename_to" is the pack it most
-    likely means."""
+    likely means. A new map's folder (map.toml copy_of) is its own pack name."""
     maps = Path(folder) / "maps"
     if not maps.is_dir():
         return []
@@ -54,7 +54,7 @@ def folder_problems(folder: Path, game: Path | None = None) -> list[dict]:
         return problems
     packs = {m["pack"] for m in known}
     for d in sorted((p for p in maps.iterdir() if p.is_dir()), key=lambda p: p.name.lower()):
-        if d.name in packs or not any(d.glob("*.toml")):
+        if d.name in packs or not any(d.glob("*.toml")) or _new_map(d):
             continue
         guess = pack_for(d.name, known)
         if guess and guess.lower() == d.name.lower():
@@ -67,3 +67,13 @@ def folder_problems(folder: Path, game: Path | None = None) -> list[dict]:
                          "problem": f"maps/{d.name}: the build only reads folders named after a map's pack, and "
                                     f"{why}."})
     return problems
+
+
+def _new_map(folder: Path) -> bool:
+    """Whether a mod's map folder is a new map of its own (its map.toml says copy_of): its name is the new pack's."""
+    import tomllib
+    f = folder / "map.toml"
+    try:
+        return f.is_file() and "copy_of" in tomllib.loads(f.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        return False  # the file check says what's wrong with it

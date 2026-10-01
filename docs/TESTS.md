@@ -274,6 +274,44 @@ road east of Toulaville; a top-down map of the test spots goes with it.
 3. **A 10x house** beside the HQ. **Passed:** it stands on the ground.
 4. **A lone stone bridge** placed by hand. **Passed:** units cross on the deck.
 
+## T15. A new map in the menus: Blitz Twin (PLAN §13)
+
+A mod can now make a new map: a copy of a shipped one under its own name and pack, listed in BATTLES beside it, which
+the mod's other map files then edit (MOD_FORMAT §8, "A new map"). The test mod `D:\ruse-test-mods\newmap-agent`
+copies **Blitz** as **Blitz Twin** (`maps/BlitzTwin/map.toml`: `copy_of = "SuperCrossRoads4"`, its name in six
+languages) and gives only the copy a big hill (`terrain.toml`, in the copy's own pack) and a spot no ground unit can
+enter (`movement.toml`, in the copy's own grid), so the game shows which files it loaded.
+
+The copy: `D:\RUSE-Instances\newmap-agent-check` on the owner's PC (built 2026-10-01); anywhere:
+`py -3 -m rusemod build D:\ruse-test-mods\newmap-agent --instance D:\RUSE-Instances\newmap-agent-check`. The build
+says `new map: BlitzTwin` and `new: DataMapBlitzTwin_v09.dat, a copy of DataMapSuperCrossroads4_v09.dat`.
+`py -3 tools\verify_newmap.py D:\RUSE-Instances\newmap-agent-check BlitzTwin SuperCrossRoads4` reads the copy back:
+46 checks, 0 failed (2026-10-01).
+
+Start `RUSE.exe` inside `D:\RUSE-Instances\newmap-agent-check` (Steam running).
+1. **BATTLES**, the map list: at the end of the 2-player maps (in the data's order: after **Behind Enemy Lines**,
+   before **Tripartite**), a map called **Blitz Twin** (in French *Blitz jumeau*, in German *Blitz-Zwilling*),
+   2 players, with Blitz's picture.
+   - **Pass:** it's listed with that name.
+   - **Fail:** it isn't there, its name is blank or a code (`M_D_31`), or BATTLES freezes or the game crashes when it
+     opens. Note which.
+2. Pick **Blitz Twin**, 1v1 against one AI, and start.
+   - **Pass:** it loads and plays like Blitz.
+   - **Fail:** a crash while loading (at what point of the loading screen) or as the match starts.
+3. **The copy's own pack:** find the HQ in the **south-east** (team 1's starting point; if you start in the
+   north-west, scroll to the other one). **1.4 km south of it**, toward the map's southern edge, a **big round hill**
+   (about 120 m high, 700 m across) where Blitz has none. It's there to be seen (units don't go there on Blitz either).
+   - **Fail:** no hill (the game loaded Blitz's own pack), or ground that looks torn.
+4. **The copy's own grid:** **700 m south of that HQ**, between it and the hill, a circle 300 m across that no ground
+   unit can enter (nothing marks it on the ground). Order a tank, then an infantry squad, to its middle.
+   - **Pass:** they stop at its edge (as in the blocked pit on Blitz, 2026-09-30).
+   - **Fail:** they reach the middle (the game read Blitz's grid, not the copy's), or the game crashes on the order.
+5. Back in **BATTLES**, play the shipped **Blitz** once: **no hill**, and a tank drives into that spot (the shipped map
+   is untouched).
+6. **Tell us:** the lobby's map name and the picture shown, and whether loading took as long as Blitz's.
+- **Later, once this passes:** the same copy on two PCs in one multiplayer game (the map's ids come from its name, so
+  both builds match); then a new map's own menu picture.
+
 ## T11. Launcher 0.2.9
 
 - **Pass:** the launcher offers 0.2.9 when it opens; **Update** installs it and it starts again; **Play** works.

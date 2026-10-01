@@ -1,27 +1,31 @@
-"""New maps: a shipped map copied under a new name, listed in BATTLES as a map of its own (PLAN §13, level 2).
+"""New maps: a shipped map copied under a name of its own, listed in BATTLES beside it (PLAN §13, level 2).
 
 A mod makes one with `maps/<NewName>/map.toml` (MOD_FORMAT §8):
 
-    clone_of = "M04_Cotentin"                    # the shipped map it starts from (its pack name)
-    name = "Omaha Ridge"                         # what the menus call it, or a table: [name] us = ... fr = ...
-    entry = "(6) Cotentin (3v3)"                 # which of the shipped map's BATTLES entries, when it has several
+    copy_of = "SuperCrossRoads4"   # the shipped map it starts from, by its pack name (this one is Blitz)
+    name = "Blitz at Dusk"         # what the menus call it; or a table, [name] us = "...", fr = "...", ...
+    entry = "(2) Blitz"            # optional: which of the shipped map's BATTLES entries, when it has several
+    players = 4                    # optional: as on any map (rusemod.players), for the copy
 
-The build then adds the new map to the modded copy (FORMATS.md §6 "A map's files, and a new one"):
-- its own pack, `Maps\\PC\\DataMap<NewName>_v09.dat`: the shipped map's, with a pack id of its own;
-- in ZZ_GladPatchableWin.dat: the map's ClusterMap (which mounts that pack and names the map's data folder), the
-  scenario's ClusterMap and MapIA (which name its scenario, camera paths and bluff zones), each copied under the
-  new name and pointed at the new files; a map-list entry (TMapLoadInfo, a top object, as every entry is) and a
-  BATTLES entry (TMultiMapInfo, in the same menu pack as the shipped map, after the maps of its size) tied to it by
-  a GUID of their own;
-- in DataMap_Win.dat: the scenario, its camera paths and bluff zones, and the map's grid (`mapinfo.win`);
-- in ZZ_Win.dat: the map's environment and diversity textures and its menu pictures, and its name in the menus'
-  dictionary (`flash_txt.dic`) in all ten languages.
-Everything else (the scenery's models, sounds, lighting, the in-mission dialogue) stays the shipped map's: those
-files are only read, and two maps never load at once.
+The folder's name is the new map's pack name (BlitzAtDusk: Maps\\PC\\DataMapBlitzAtDusk_v09.dat), and the mod's other
+files in that folder (terrain.toml, scenery.toml, scenario.toml, cover.toml, movement.toml, roads.toml) edit the copy
+like any map, while the shipped map stays as it was.
 
-Nothing here is random: the ids come from the new map's name, so every PC builds the same files (a multiplayer
-game needs both sides to have the same map list). Edits a mod makes to `maps/<NewName>/` then apply to the copy as
-to any map, and the shipped map stays as it was.
+What the build adds (FORMATS §6 "A new map"), each file a copy of the shipped map's pointed at the copy:
+- `Maps\\PC\\DataMap<New>_v09.dat`: the map pack, with an id of its own;
+- in ZZ_GladPatchableWin.dat: the map's cluster (`genglad\\patchable\\map\\<new>\\clustermap`, which mounts that
+  pack) and its constants (`mapconstante`, whose TCurrentMapInfo names the folder of the map's grid), the scenario's
+  cluster (`genglad\\patchable\\scenario\\<new>\\<folder>\\clustermap`, which names the scenario and the map's
+  cluster), a map-list entry (TMapLoadInfo in mapinfo.cpp, a top object like every other) and a BATTLES entry
+  (TMultiMapInfo in globals.cpp, in the menu pack that lists the shipped map, after the maps of its size), the two
+  tied by a GUID of their own;
+- in DataMap_Win.dat: the scenario (`test\\map\\<new>\\`) and the grid (`datasmap\\<new>\\mapinfo.win`);
+- in ZZ_Win.dat: its name in the menus' dictionary (`flash_txt.dic`, a key from M_D_31 on), in the ten languages.
+Everything else (the scenery's models, the sounds, lighting, camera paths and bluff zones, the menu picture, the
+in-mission texts) stays the shipped map's: those files are only read, and two maps never load at once.
+
+Nothing is random: the ids come from the new map's name, so every PC builds the same files (a multiplayer game needs
+both sides to have the same map list).
 """
 from __future__ import annotations
 
@@ -32,6 +36,7 @@ from dataclasses import dataclass, field
 
 from . import loc
 from .dic import Dic, name_to_key
+from .edat import Entry
 from .ndf import Ndf, Value, local_ref, sub_values
 from .players import GLOBALS, MAPINFO, entries
 
@@ -41,7 +46,7 @@ NAME_LONGEST = 60          # characters of a map's name in the menus
 MENU_TEXTS = "flash_txt"   # the menus' dictionary: the shipped maps' names are M_D_01 .. M_D_30 there
 KEY_STEM, KEY_FIRST = "M_D_", 31
 TRACK_STEM, TRACK_FIRST = "MP", 31    # the shipped BATTLES maps are MP01 .. MP30
-LADDER = ("DispoLadder1v1", "DispoLadder2v2")   # ranked matchmaking: the shipped map's, not a copy's
+LADDER = ("DispoLadder1v1", "DispoLadder2v2")   # ranked matchmaking: the shipped map's place, not a copy's
 DROPPED = LADDER + ("RewardId",)
 
 
@@ -51,25 +56,25 @@ class NewMapError(ValueError):
 
 @dataclass
 class NewMap:
-    clone_of: str                 # the shipped map's pack name
+    copy_of: str                  # the shipped map's pack name
     names: dict                   # language folder (loc.LANGS) -> the map's name in the menus; "us" always there
     entry: str | None = None      # which of the shipped map's BATTLES entries, by its map-list name
 
 
 # --- map.toml -------------------------------------------------------------------------------------------------------
 def parse(data: dict, where: str = "map.toml", folder: str = "") -> list[NewMap]:
-    """A map.toml's new-map settings: [NewMap] when it says clone_of, else [] (and `name` alone is a mistake)."""
-    if "clone_of" not in data:
+    """A map.toml's new-map settings: [NewMap] when it says copy_of, else [] (and `name` alone is a mistake)."""
+    if "copy_of" not in data:
         if "name" in data:
-            raise NewMapError(f"{where}: name is for a new map; add clone_of = \"<the shipped map's pack name>\" "
-                              f"(a shipped map's name in the menus can't change here)")
+            raise NewMapError(f"{where}: name is for a new map; add copy_of = \"<the shipped map's pack name>\" (a "
+                              f"shipped map's name in the menus can't change here)")
         return []
-    src = data["clone_of"]
+    src = data["copy_of"]
     if not isinstance(src, str) or not re.match(r"^[A-Za-z0-9_]+$", src):
-        raise NewMapError(f"{where}: clone_of must be a shipped map's pack name, like \"M04_Cotentin\" (D-Day) or "
-                          f"\"TwoIslands\"")
+        raise NewMapError(f"{where}: copy_of must be a shipped map's pack name, like \"SuperCrossRoads4\" (Blitz) or "
+                          f"\"M04_Cotentin\" (D-Day)")
     if folder and src.lower() == folder.lower():
-        raise NewMapError(f"{where}: a map can't be a copy of itself; give the new map's folder another name")
+        raise NewMapError(f"{where}: a map can't be a copy of itself; give the new map's folder a name of its own")
     raw = data.get("name", folder)
     if isinstance(raw, str):
         names = {"us": raw.strip()}
@@ -101,11 +106,31 @@ def parse(data: dict, where: str = "map.toml", folder: str = "") -> list[NewMap]
     return [NewMap(src, names, entry)]
 
 
+def map_toml(spec: NewMap, players: int | None = None, header: str = "") -> str:
+    """A new map's map.toml (the Studio writes it)."""
+    lines = [f"# {ln}" for ln in header.splitlines()] + ([""] if header else [])
+    lines.append(f'copy_of = "{spec.copy_of}"')
+    if spec.entry:
+        lines.append(f'entry = "{_toml_text(spec.entry)}"')
+    if players is not None:
+        lines.append(f"players = {players}")
+    if set(spec.names) == {"us"}:
+        lines.append(f'name = "{_toml_text(spec.names["us"])}"')
+    else:
+        lines += ["", "[name]"] + [f'{lang} = "{_toml_text(spec.names[lang])}"' for lang in loc.LANGS
+                                   if lang in spec.names]
+    return "\n".join(lines) + "\n"
+
+
+def _toml_text(text: str) -> str:
+    return text.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def check_name(new: str) -> None:
     """Refuse a new map's folder name the game's files can't carry."""
     if not NAME.match(new):
         raise NewMapError(f"maps/{new}: a new map's folder name is its pack name: a letter, then up to 39 letters, "
-                          f"digits and _ (like OmahaRidge)")
+                          f"digits and _ (like BlitzAtDusk)")
     if new.lower().startswith("flat_"):
         raise NewMapError(f"maps/{new}: names starting flat_ belong to the game's test maps; pick another")
 
@@ -122,35 +147,20 @@ def guid_for(new: str, what: str) -> bytes:
 # --- the files a copy gets ---------------------------------------------------------------------------------------------
 @dataclass
 class Clone:
-    new: str
-    source: str                                     # the shipped map's folder name, as its entry spells it
-    glad: dict = field(default_factory=dict)        # ZZ_GladPatchableWin.dat: member -> bytes (added, and the map
-    data: dict = field(default_factory=dict)        #   list and menus changed); DataMap_Win.dat: added members
-    zz: dict = field(default_factory=dict)          # ZZ_Win.dat: added members
-    texts: dict = field(default_factory=dict)       # ZZ_Win.dat: changed dictionaries
+    new: str                                        # the new map's pack name
+    source: str                                     # the shipped map it copies (copy_of)
+    map_folder: str = ""                            # the shipped map's folder in genglad\patchable\map\
+    pack_from: str = ""                             # the shipped map pack copied, e.g. DataMapSuperCrossroads4_v09.dat
     pack_id: bytes = b""                            # the new pack's id (its header)
+    glad: dict = field(default_factory=dict)        # ZZ_GladPatchableWin.dat: new members
+    glad_changed: dict = field(default_factory=dict)  # ZZ_GladPatchableWin.dat: the map list and menus, changed
+    data: dict = field(default_factory=dict)        # DataMap_Win.dat: new members
+    texts: dict = field(default_factory=dict)       # ZZ_Win.dat: the menus' dictionaries, changed
     scenario: str = ""                              # the scenario file (lower case) the new entry loads
     key: str = ""                                   # the name's text key, e.g. M_D_31
-    entry_name: str = ""                            # the new map-list name, e.g. "(6) Omaha Ridge (3v3)"
+    entry_name: str = ""                            # the new map-list name, e.g. "(2) Blitz at Dusk"
+    guid: bytes = b""                               # ties the map-list entry to its BATTLES entry
     notes: list = field(default_factory=list)
-
-
-class Files:
-    """One pack as the build has it so far: read(member) -> bytes or None (any case), names(prefix) -> [members]."""
-
-    def __init__(self, members: dict, read_base=None, base_names=()):
-        self._mine = {k.lower(): v for k, v in members.items()}
-        self._read_base, self._base = read_base, [n for n in base_names]
-
-    def read(self, member: str):
-        key = member.lower()
-        if key in self._mine:
-            return self._mine[key]
-        return self._read_base(member) if self._read_base else None
-
-    def names(self, prefix: str) -> list:
-        p = prefix.lower()
-        return sorted({n for n in list(self._base) + list(self._mine) if n.lower().startswith(p)}, key=str.lower)
 
 
 def _props(nd: Ndf, o) -> dict:
@@ -173,13 +183,6 @@ def _rewrite(nd: Ndf, v: Value, ref, text) -> Value:
         s = _text(nd, v)
         t = text(s)
         return v if t == s else Value(v.tc, struct.pack("<I", _string(nd, t)))
-    if v.tc == 0x08:
-        s = bytes(v.payload[4:]).decode("utf-16-le")
-        t = text(s)
-        if t == s:
-            return v
-        enc = t.encode("utf-16-le")
-        return Value(0x08, struct.pack("<I", len(enc)) + enc)
     if v.tc == 0x09:
         i = local_ref(v)
         if i is None:
@@ -223,6 +226,13 @@ def _set(nd: Ndf, o, name: str, value: Value | None) -> None:
         o.props.append((nd.add_prop(name, o.cls) if pi is None else pi, value))
 
 
+def _set_text(nd: Ndf, o, name: str, text: str) -> None:
+    """Property `name` of `o` (a string or path, as it is) set to `text`, a string of its own: others sharing the old
+    one keep it."""
+    old = _props(nd, o)[name]
+    _set(nd, o, name, Value(old.tc, struct.pack("<I", _string(nd, text))))
+
+
 def _swap_strings(nd: Ndf, swap) -> int:
     """Rename strings across a whole file (one we copy, so all its users follow): swap(s) -> new text or None. Wide
     strings in the objects too. Returns how many changed."""
@@ -244,48 +254,64 @@ def _swap_strings(nd: Ndf, swap) -> int:
     return n
 
 
+def _renamer(*patterns):
+    """swap(s) for _swap_strings: each pattern's group 2 (a folder name) becomes `new`, the rest kept as written."""
+    def into(new: str):
+        def swap(s: str) -> str | None:
+            for p in patterns:
+                q = p.match(s)
+                if q:
+                    return q.group(1) + new + q.group(3)
+            return None
+        return swap
+    return into
+
+
 def _member(nd_path: str) -> str:
     """'Patchable\\Scenario\\X\\Y\\ClusterMap' -> the compiled file in ZZ_GladPatchableWin.dat."""
     return "genglad" + BS + nd_path.replace("/", BS).lower() + ".cpp.gladndfbin"
 
 
-def _datadir(path: str) -> str | None:
-    """'DataDir:\\Test\\Map\\X/LevelDesign.scenario' -> 'test\\map\\x\\leveldesign.scenario' (a member of a data pack)."""
-    m = re.match(r"^DataDir:[\\/](.+)$", path, re.I)
-    return m.group(1).replace("/", BS).lower() if m else None
+def _listed(g: Ndf, gi: int) -> bool:
+    """Whether menu entry `gi` is in a menu pack's list (what BATTLES shows)."""
+    return any(v.tc == 0x11 and any(local_ref(x) == gi for x in sub_values(v)) for o in g.objects for _pi, v in o.props)
 
 
-def _under(folder: str):
-    """A pattern for a path under the map folder `folder`: 'Test\\Map\\<folder>' then a separator."""
-    return re.compile(r"^(DataDir:[\\/]Test[\\/]Map[\\/])" + re.escape(folder) + r"([\\/].+)$", re.I)
+def _cluster_base(m: Ndf, load: dict) -> str | None:
+    """The scenario cluster a map-list entry loads (its NDF transaction's BaseName)."""
+    for v in sub_values(load["ClusterLoads"])[1::2] if "ClusterLoads" in load else []:
+        c = local_ref(v)
+        cp = _props(m, m.objects[c]) if c is not None else {}
+        tr = local_ref(cp["NdfTransaction"]) if "NdfTransaction" in cp else None
+        base = _text(m, _props(m, m.objects[tr]).get("BaseName")) if tr is not None else None
+        if base:
+            return base
+    return None
 
 
-def make(new: str, spec: NewMap, glad: Files, data: Files, zz: Files) -> Clone:
-    """The files that add the new map `new`, a copy of `spec.clone_of`, given the three packs as the build has them
-    (ZZ_GladPatchableWin.dat, DataMap_Win.dat, ZZ_Win.dat). Raises NewMapError with what to change."""
+def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
+    """The files that add the new map `new`, a copy of `spec.copy_of`. `read_glad`, `read_data` and `read_zz` give a
+    member of ZZ_GladPatchableWin.dat, DataMap_Win.dat and ZZ_Win.dat as the build has it so far (any case), or None.
+    Raises NewMapError with what to change."""
+    from .terrain import pack_file
     check_name(new)
-    src = spec.clone_of
-    g_raw, m_raw = glad.read(GLOBALS), glad.read(MAPINFO)
+    src = spec.copy_of
+    g_raw, m_raw = read_glad(GLOBALS), read_glad(MAPINFO)
     if g_raw is None or m_raw is None:
         raise NewMapError("the game's map list or menus aren't in ZZ_GladPatchableWin.dat, so no map can be added")
     g, m = Ndf(g_raw), Ndf(m_raw)
-    low = new.lower()
-    for o in m.objects:
-        if m.classes[o.cls] == "TMapLoadInfo":
-            p = _props(m, o)
-            if any((_text(m, p.get(k)) or "").lower() == low for k in ("RootDatapackName", "Path")):
-                raise NewMapError(f"maps/{new}: the game already has a map called {new}; give the new map another "
-                                  f"folder name")
-    found = entries(m, g, src)
+    roots = {(_text(m, _props(m, o).get(k)) or "").lower() for o in m.objects if m.classes[o.cls] == "TMapLoadInfo"
+             for k in ("RootDatapackName", "Path")}
+    if new.lower() in roots:
+        raise NewMapError(f"maps/{new}: the game already has a map called {new}; give the new map another folder "
+                          f"name")
+    found = [f for f in entries(m, g, src) if _listed(g, f[1])]
     if not found:
-        known = any(m.classes[o.cls] == "TMapLoadInfo" and any(
-            (_text(m, _props(m, o).get(k)) or "").lower() == src.lower() for k in ("RootDatapackName", "Path"))
-            for o in m.objects)
-        if known:
-            raise NewMapError(f"maps/{new}: {src} isn't played in BATTLES (it has no skirmish entry), so it can't "
-                              f"be copied as a skirmish map yet; start from a map BATTLES lists")
-        raise NewMapError(f"maps/{new}: clone_of = {src!r} isn't a map of this game (it takes the map's pack name, "
-                          f"like M04_Cotentin for D-Day)")
+        if src.lower() in roots:
+            raise NewMapError(f"maps/{new}: {src} isn't played in BATTLES (it has no skirmish entry), so it can't be "
+                              f"copied as a skirmish map yet; start from a map BATTLES lists")
+        raise NewMapError(f"maps/{new}: copy_of = {src!r} isn't a map of this game (it takes the map's pack name, like "
+                          f"SuperCrossRoads4 for Blitz)")
     if spec.entry:
         chosen = [f for f in found if f[2] == spec.entry]
         if not chosen:
@@ -298,166 +324,131 @@ def make(new: str, spec: NewMap, glad: Files, data: Files, zz: Files) -> Clone:
                           f"map.toml (entry = \"...\")")
     mi, gi, list_name = found[0]
     load = _props(m, m.objects[mi])
-    folder = _text(m, load.get("Path")) or _text(m, load.get("RootDatapackName"))
-    out = Clone(new, folder)
-    out.pack_id = guid_for(new, "pack")
-    guid = guid_for(new, "entry")
+    out = Clone(new, src, pack_id=guid_for(new, "pack"), guid=guid_for(new, "entry"))
     used = {bytes(v.payload) for nd in (m, g) for o in nd.objects for pi, v in o.props
-            if nd.prop_name(pi) in ("GUID", "PackGUID") and v.tc == 0x1A}
-    if guid in used:
+            if nd.prop_name(pi) == "GUID" and v.tc == 0x1A}
+    if out.guid in used:
         raise NewMapError(f"maps/{new}: the new map's id is already taken; give it another folder name")
+    low = new.lower()
 
-    def must(member: str, what: str, pack: Files) -> bytes:
-        raw = pack.read(member)
+    def must(read, member: str, what: str) -> bytes:
+        raw = read(member)
         if raw is None:
             raise NewMapError(f"maps/{new}: {src}'s {what} ({member}) is missing, so it can't be copied")
         return raw
 
-    def adding(pack: dict, files: Files, member: str, raw: bytes) -> None:
-        if files.read(member) is not None:
+    def adding(pack: dict, read, member: str, raw: bytes) -> None:
+        if read(member) is not None:
             raise NewMapError(f"maps/{new}: the game already has {member}; give the new map another folder name")
         pack[member] = raw
 
-    # 1. the scenario's cluster: what the entry loads
-    base = None
-    for v in sub_values(load["ClusterLoads"])[1::2] if "ClusterLoads" in load else []:
-        c = local_ref(v)
-        tr = local_ref(_props(m, m.objects[c])["NdfTransaction"]) if c is not None else None
-        base = _text(m, _props(m, m.objects[tr]).get("BaseName")) if tr is not None else None
-        if base:
-            break
-    if not base:
-        raise NewMapError(f"maps/{new}: {list_name!r} names no scenario cluster, so it can't be copied")
-    fold = re.compile(r"^(Patchable[\\/]Scenario[\\/])" + re.escape(folder) + r"([\\/][^\\/]+[\\/]ClusterMap)$", re.I)
-    if not fold.match(base):
-        raise NewMapError(f"maps/{new}: {list_name!r} loads {base}, which isn't laid out like a map's scenario; it "
-                          f"can't be copied yet")
-    new_base = fold.sub(lambda q: q.group(1) + new + q.group(2), base)
-    cluster = Ndf(must(_member(base), "scenario cluster", glad))
-    scen_pat = _under(folder)
-    map_cluster = mapia = None
-    scenario = None
-    for s in cluster.strings:
-        if scen_pat.match(s) and s.lower().endswith(".scenario"):
-            scenario = s.replace("/", BS).rsplit(BS, 1)[-1].lower()
-        q = re.match(r"^Patchable[\\/]map[\\/]" + re.escape(folder) + r"[\\/]ClusterMap$", s, re.I)
-        if q:
-            map_cluster = s
-        q = re.match(r"^Patchable[\\/]Scenario[\\/]" + re.escape(folder) + r"[\\/][^\\/]+[\\/]MapIA$", s, re.I)
-        if q:
-            mapia = s
-    if scenario is None or map_cluster is None:
-        raise NewMapError(f"maps/{new}: {src}'s scenario cluster doesn't name its scenario and map the way the "
+    # 1. the scenario's cluster: it names the scenario and the map's cluster
+    base = _cluster_base(m, load)
+    q = re.match(r"^Patchable[\\/]Scenario[\\/]([^\\/]+)[\\/]([^\\/]+)[\\/]ClusterMap$", base or "", re.I)
+    if not q:
+        raise NewMapError(f"maps/{new}: {list_name!r} loads {base or 'no scenario cluster'}, which isn't laid out like "
+                          f"a map's scenario; it can't be copied yet")
+    folder, sub = q.group(1), q.group(2)
+    cluster = Ndf(must(read_glad, _member(base), "scenario cluster"))
+    scen_at = re.compile(r"^(DataDir:[\\/]Test[\\/]Map[\\/])([^\\/]+)([\\/].+\.scenario)$", re.I)
+    map_at = re.compile(r"^Patchable[\\/]map[\\/]([^\\/]+)[\\/]ClusterMap$", re.I)
+    scen = {(scen_at.match(s).group(2).lower(), scen_at.match(s).group(3)[1:].replace("/", BS).lower())
+            for s in cluster.strings if scen_at.match(s)}
+    maps = {map_at.match(s).group(1).lower(): map_at.match(s).group(1) for s in cluster.strings if map_at.match(s)}
+    if len(scen) != 1 or len(maps) != 1:
+        raise NewMapError(f"maps/{new}: {src}'s scenario cluster doesn't name one scenario and one map the way the "
                           f"game's maps do, so it can't be copied")
-    out.scenario = scenario
-    src_dir, new_dir = "test" + BS + "map" + BS + folder.lower() + BS, "test" + BS + "map" + BS + low + BS
-    adding(out.data, data, new_dir + scenario, must(src_dir + scenario, "scenario", data))
-
-    def into_new(s: str, pattern) -> str | None:
-        q = pattern.match(s)
-        return q.group(1) + new + q.group(2) if q else None
-    map_pat = re.compile(r"^(Patchable[\\/]map[\\/]|map[\\/])" + re.escape(folder) + r"([\\/]ClusterMap(\.ndfbin)?)$",
-                         re.I)
-    ia_pat = re.compile(r"^(Patchable[\\/]Scenario[\\/]|Scenario[\\/])" + re.escape(folder)
-                        + r"([\\/][^\\/]+[\\/]MapIA(\.ndfbin)?)$", re.I)
-    clu_pat = re.compile(r"^(Patchable[\\/]Scenario[\\/]|map[\\/])" + re.escape(folder)
-                         + r"([\\/][^\\/]+[\\/]ClusterMap(\.ndfbin)?)$", re.I)
-
-    # 2. the scenario's MapIA: its camera paths and bluff zones, copied with it
-    if mapia is not None:
-        ia = Ndf(must(_member(mapia), "scenario's MapIA", glad))
-        copied = {}
-
-        def ia_swap(s: str) -> str | None:
-            q = scen_pat.match(s)
-            if not q:
-                return None
-            rel = q.group(2).replace("/", BS).lstrip(BS).lower()
-            raw = data.read(src_dir + rel)
-            if raw is None:
-                return None  # not shipped: left pointing at the shipped map's
-            copied[new_dir + rel] = raw
-            return q.group(1) + new + q.group(2)
-        _swap_strings(ia, ia_swap)
-        for member, raw in sorted(copied.items()):
-            adding(out.data, data, member, raw)
-        adding(out.glad, glad, _member(into_new(mapia, ia_pat)), ia.to_member(compress=bool(ia.flags & 0x80)))
-    n = _swap_strings(cluster, lambda s: (into_new(s, scen_pat) if s.lower().endswith(".scenario") else None)
-                      or into_new(s, map_pat) or (into_new(s, ia_pat) if mapia else None))
+    (scen_folder, out.scenario), = scen
+    out.map_folder = next(iter(maps.values()))
+    mf = re.escape(out.map_folder)
+    n = _swap_strings(cluster, _renamer(
+        re.compile(r"^(DataDir:[\\/]Test[\\/]Map[\\/])(" + re.escape(scen_folder) + r")([\\/].+\.scenario)$", re.I),
+        re.compile(r"^(Patchable[\\/]map[\\/])(" + mf + r")([\\/]ClusterMap)$", re.I),
+        re.compile(r"^(map[\\/])(" + mf + r")([\\/]ClusterMap\.ndfbin)$", re.I))(new))
     if n < 2:
         raise NewMapError(f"maps/{new}: {src}'s scenario cluster couldn't be pointed at the new map")
-    adding(out.glad, glad, _member(new_base), cluster.to_member(compress=bool(cluster.flags & 0x80)))
+    new_base = "Patchable" + BS + "Scenario" + BS + new + BS + sub + BS + "ClusterMap"
+    adding(out.glad, read_glad, _member(new_base), cluster.to_member(compress=bool(cluster.flags & 0x80)))
+    scen_dir = "test" + BS + "map" + BS
+    adding(out.data, read_data, scen_dir + low + BS + out.scenario,
+           must(read_data, scen_dir + scen_folder + BS + out.scenario, "scenario"))
 
-    # 3. the map's cluster: it mounts the new pack and names the new data folder
-    mc = Ndf(must(_member(map_cluster), "map cluster", glad))
-    mounts = [(_props(mc, o), o) for o in mc.objects if mc.classes[o.cls] == "TClusterMountMapDataPack"]
-    if len(mounts) != 1:
-        raise NewMapError(f"maps/{new}: {src}'s map cluster doesn't mount one pack, so it can't be copied")
-    mp, mo = mounts[0]
-    pack_txt, datas_txt = _text(mc, mp.get("DataPack")), _text(mc, mp.get("DatasMapDirectory"))
-    if not pack_txt or not datas_txt or not re.match(r"^MapDat:[\\/]DataMap.+_v09\.dat$", pack_txt, re.I):
-        raise NewMapError(f"maps/{new}: {src}'s map cluster doesn't name its pack the way the game's maps do")
-    datas_dir = re.split(r"[\\/]", datas_txt)[-1]
-    _set(mc, mo, "DataPack", Value(mp["DataPack"].tc, struct.pack("<I", _string(mc, f"MapDat:{BS}DataMap{new}_v09.dat"))))
-    _set(mc, mo, "DatasMapDirectory", Value(mp["DatasMapDirectory"].tc,
-                                            struct.pack("<I", _string(mc, datas_txt[:-len(datas_dir)] + new))))
-    adding(out.glad, glad, _member(into_new(map_cluster, map_pat)), mc.to_member(compress=bool(mc.flags & 0x80)))
-    win = "datasmap" + BS + datas_dir.lower() + BS + "mapinfo.win"
-    adding(out.data, data, "datasmap" + BS + low + BS + "mapinfo.win", must(win, "grid (mapinfo.win)", data))
-    gen = "gen" + BS + "datasmap" + BS + datas_dir.lower() + BS
-    for member in zz.names(gen):
-        adding(out.zz, zz, "gen" + BS + "datasmap" + BS + low + BS + member[len(gen):].lower(), zz.read(member))
+    # 2. the map's cluster: it mounts the new pack, and loads the new constants
+    map_member = _member("Patchable" + BS + "map" + BS + out.map_folder + BS + "ClusterMap")
+    mc = Ndf(must(read_glad, map_member, "map cluster"))
+    mounts = [o for o in mc.objects if mc.classes[o.cls] == "TClusterMountMapDataPack"]
+    pack_txt = _text(mc, _props(mc, mounts[0]).get("DataPack")) if len(mounts) == 1 else None
+    q = re.match(r"^MapDat:[\\/](DataMap[A-Za-z0-9_]+_v09\.dat)$", pack_txt or "", re.I)
+    if not q:
+        raise NewMapError(f"maps/{new}: {src}'s map cluster doesn't mount one map pack the way the game's maps do, "
+                          f"so it can't be copied")
+    out.pack_from = q.group(1)
+    _set_text(mc, mounts[0], "DataPack", f"MapDat:{BS}DataMap{new}_v09.dat")
+    n = _swap_strings(mc, _renamer(
+        re.compile(r"^(Patchable[\\/]map[\\/])(" + mf + r")([\\/]MapConstante)$", re.I),
+        re.compile(r"^(map[\\/])(" + mf + r")([\\/]MapConstante\.ndfbin)$", re.I))(new))
+    if n < 1:
+        raise NewMapError(f"maps/{new}: {src}'s map cluster doesn't load its constants the way the game's maps do, "
+                          f"so it can't be copied")
+    adding(out.glad, read_glad, _member("Patchable" + BS + "map" + BS + new + BS + "ClusterMap"),
+           mc.to_member(compress=bool(mc.flags & 0x80)))
 
-    # 4. the map list: a new entry, a top object like every other
-    pictures = {}
+    # 3. the map's constants: the folder of its grid (mapinfo.win) is the new map's
+    mk = Ndf(must(read_glad, _member("Patchable" + BS + "map" + BS + out.map_folder + BS + "MapConstante"),
+                  "constants (MapConstante)"))
+    infos = [o for o in mk.objects if mk.classes[o.cls] == "TCurrentMapInfo"]
+    grid = _text(mk, _props(mk, infos[0]).get("MapPath")) if len(infos) == 1 else None
+    q = re.match(r"^DataDir:[\\/]datasmap[\\/]([^\\/]+)$", grid or "", re.I)
+    if not q:
+        raise NewMapError(f"maps/{new}: {src}'s constants don't name the folder of its grid the way the game's maps "
+                          f"do, so it can't be copied")
+    _set_text(mk, infos[0], "MapPath", f"DataDir:{BS}datasmap{BS}{new}")
+    adding(out.glad, read_glad, _member("Patchable" + BS + "map" + BS + new + BS + "MapConstante"),
+           mk.to_member(compress=bool(mk.flags & 0x80)))
+    adding(out.data, read_data, "datasmap" + BS + low + BS + "mapinfo.win",
+           must(read_data, "datasmap" + BS + q.group(1).lower() + BS + "mapinfo.win", "grid (mapinfo.win)"))
 
-    def entry_text(s: str) -> str:
-        q = scen_pat.match(s)
-        if q and s.lower().endswith(".png"):
-            picture = "gen" + BS + (_datadir(s) or "")[:-len(".png")] + ".tgv"
-            raw = zz.read(picture)
-            if raw is None:
-                return s  # no picture shipped there: the copy shows the shipped map's
-            pictures["gen" + BS + new_dir + picture[len("gen" + BS + src_dir):]] = raw
-            return q.group(1) + new + q.group(2)
-        return into_new(s, clu_pat) or into_new(s, scen_pat) or s
-    j = _copy(m, mi, {}, entry_text)
-    for member, raw in sorted(pictures.items()):
-        adding(out.zz, zz, member, raw)
+    # 4. the map list: a new entry, a top object like every other, loading the new scenario cluster
+    swap = _renamer(re.compile(r"^(Patchable[\\/]Scenario[\\/])(" + re.escape(folder) + r")([\\/]" + re.escape(sub)
+                               + r"[\\/]ClusterMap)$", re.I),
+                    re.compile(r"^(map[\\/])(" + re.escape(folder) + r")([\\/]" + re.escape(sub)
+                               + r"[\\/]ClusterMap\.ndfbin)$", re.I))(new)
+    j = _copy(m, mi, {}, lambda s: swap(s) or s)
     o = m.objects[j]
     names = {_text(m, _props(m, x).get("Name")) for x in m.objects if m.classes[x.cls] == "TMapLoadInfo"}
     out.entry_name = _list_name(list_name, spec.names["us"], new, names)
     for prop, text in (("Name", out.entry_name), ("Path", new), ("RootDatapackName", new)):
         if prop in load:
-            _set(m, o, prop, Value(load[prop].tc, struct.pack("<I", _string(m, text))))
-    _set(m, o, "GUID", Value(0x1A, guid))
+            _set_text(m, o, prop, text)
+    _set(m, o, "GUID", Value(0x1A, out.guid))
     m.set_topo(list(m.topo) + [j])
 
     # 5. BATTLES: its own entry, in the menu pack that lists the shipped map, after the maps of its size
     gs = _props(g, g.objects[gi])
-    out.key = _free_key(zz)
+    out.key = _free_key(read_zz)
     tracks = {(_text(g, _props(g, x).get("TrackingId")) or "") for x in g.objects}
-    n = TRACK_FIRST
-    while f"{TRACK_STEM}{n:02d}" in tracks:
-        n += 1
+    t = TRACK_FIRST
+    while f"{TRACK_STEM}{t:02d}" in tracks:
+        t += 1
     k = g.add_object(g.objects[gi].cls, [(pi, v) for pi, v in g.objects[gi].props if g.prop_name(pi) not in DROPPED])
-    _set(g, g.objects[k], "GUID", Value(0x1A, guid))
+    _set(g, g.objects[k], "GUID", Value(0x1A, out.guid))
     _set(g, g.objects[k], "Description", Value(0x1D, struct.pack("<Q", name_to_key(out.key))))
     if "TrackingId" in gs:
-        _set(g, g.objects[k], "TrackingId", Value(gs["TrackingId"].tc,
-                                                  struct.pack("<I", _string(g, f"{TRACK_STEM}{n:02d}"))))
+        _set_text(g, g.objects[k], "TrackingId", f"{TRACK_STEM}{t:02d}")
     left = _props(g, g.objects[k])
     if not any(p.startswith("DispoMulti") and v.tc in (0x00, 0x02) and v.scalar() for p, v in left.items()):
-        raise NewMapError(f"maps/{new}: {list_name!r} is only offered in ranked games, which a copy can't join; "
-                          f"pick another entry")
+        raise NewMapError(f"maps/{new}: {list_name!r} is only offered in ranked games, which a copy can't join; pick "
+                          f"another entry")
     if any(p in gs for p in LADDER):
         out.notes.append(f"{new} isn't offered in ranked games (the shipped map's ladder place stays its own)")
     _place(g, gi, k)
+    out.glad_changed = {MAPINFO: m.to_member(compress=bool(m.flags & 0x80)),
+                        GLOBALS: g.to_member(compress=bool(g.flags & 0x80))}
 
-    # 6. its name in the menus, in every language
+    # 6. its name in the menus, in every language (the others fall back to English)
     for lang in loc.LANGS + ("dev",):
         member = loc.member(MENU_TEXTS, lang)
-        raw = zz.read(member)
+        raw = read_zz(member)
         if raw is None:
             continue
         dic = Dic(raw)
@@ -466,11 +457,9 @@ def make(new: str, spec: NewMap, glad: Files, data: Files, zz: Files) -> Clone:
     if not out.texts:
         raise NewMapError(f"maps/{new}: the menus' texts ({MENU_TEXTS}.dic) aren't in ZZ_Win.dat, so the new map "
                           f"would have no name")
-    out.glad[MAPINFO] = m.to_member(compress=bool(m.flags & 0x80))
-    out.glad[GLOBALS] = g.to_member(compress=bool(g.flags & 0x80))
-    out.notes.insert(0, f"{new}: a copy of {list_name!r} ({src}), listed in BATTLES as {out.entry_name!r}, its "
-                        f"name {out.key} in {len(out.texts)} dictionaries; {len(out.glad) - 2 + len(out.data) + len(out.zz)} "
-                        f"file(s) copied under its name, and its own pack")
+    out.notes.insert(0, f"{new}: a copy of {list_name!r} ({src}), listed in BATTLES as {spec.names['us']!r} (text "
+                        f"{out.key} in {len(out.texts)} dictionaries; map list {out.entry_name!r}, scenario "
+                        f"{out.scenario}), its pack {pack_file(new)} copied from {out.pack_from}")
     return out
 
 
@@ -491,11 +480,11 @@ def _list_name(source_name: str, display: str, new: str, taken: set) -> str:
     raise NewMapError(f"maps/{new}: the map list already has an entry called like the new map; give it another name")
 
 
-def _free_key(zz: Files) -> str:
+def _free_key(read_zz) -> str:
     """The first map-name key (M_D_31, M_D_32, ...) no language's menu dictionary uses yet."""
     used = set()
     for lang in loc.LANGS + ("dev",):
-        raw = zz.read(loc.member(MENU_TEXTS, lang))
+        raw = read_zz(loc.member(MENU_TEXTS, lang))
         if raw is not None:
             used |= {e.key for e in Dic(raw).entries}
     n = KEY_FIRST
@@ -507,8 +496,9 @@ def _free_key(zz: Files) -> str:
 def _place(g: Ndf, source: int, new: int) -> None:
     """Put menu entry `new` in the menu pack listing `source`, after the last entry of its size group (CategoryId):
     the menus show a pack's maps in runs of one size."""
-    cat = lambda i: (_props(g, g.objects[i]).get("CategoryId").scalar()  # noqa: E731
-                     if "CategoryId" in _props(g, g.objects[i]) else None)
+    def cat(i):
+        p = _props(g, g.objects[i])
+        return p["CategoryId"].scalar() if "CategoryId" in p else None
     for o in g.objects:
         for k, (pi, v) in enumerate(o.props):
             if v.tc != 0x11:
@@ -518,8 +508,115 @@ def _place(g: Ndf, source: int, new: int) -> None:
             if source not in refs:
                 continue
             at = max(n for n, r in enumerate(refs) if r is not None and cat(r) == cat(new)) + 1
-            ref = Value(0x09, struct.pack("<III", 0xBBBBBBBB, new, g.objects[new].cls))
-            items.insert(at, ref)
+            items.insert(at, Value(0x09, struct.pack("<III", 0xBBBBBBBB, new, g.objects[new].cls)))
             o.props[k] = (pi, Value(0x11, struct.pack("<I", len(items)) + b"".join(x.encode() for x in items)))
             return
     raise NewMapError("the shipped map's BATTLES entry isn't in a menu pack, so the new map can't be listed")
+
+
+# --- the packs, as the build writes them -------------------------------------------------------------------------------
+class Grown:
+    """A pack with new members on top (a new map's files): reads see them like the pack's own members; writing adds
+    them, and a change to one of them changes what is added. The pack under it (an Edat, or a pack .rmod mods
+    changed) is only read."""
+
+    def __init__(self, base, members: dict):
+        self.base = base
+        self.added: dict[str, bytes] = {}
+        self._new: dict[str, Entry] = {}
+        for path, data in members.items():
+            self.add(path, data)
+
+    def __getattr__(self, name):
+        return getattr(self.base, name)
+
+    def add(self, path: str, data: bytes) -> None:
+        path = path.replace("/", BS)
+        if self.entry(path) is not None:
+            raise ValueError(f"can't add {path}: the pack already has it")
+        self.added[path] = bytes(data)
+        self._new[path.lower()] = Entry(path, 0, len(data), 0, -1 - len(self._new))
+
+    @property
+    def entries(self) -> list:
+        return list(self.base.entries) + list(self._new.values())
+
+    @property
+    def is_changed(self) -> bool:
+        return bool(self.added) or getattr(self.base, "is_changed", False)
+
+    def entry(self, path: str):
+        return self.base.entry(path) or self._new.get(path.replace("/", BS).lower())
+
+    def find(self, suffix: str):
+        e = self.entry(suffix)
+        if e is not None:
+            return e
+        try:
+            return self.base.find(suffix)
+        except KeyError:
+            low = suffix.replace("/", BS).lower()
+            e = next((x for k, x in self._new.items() if k.endswith(low)), None)
+            if e is None:
+                raise
+            return e
+
+    def read(self, entry) -> bytes:
+        return self.added[entry.path] if entry.dict_pos < 0 else self.base.read(entry)
+
+    def added_with(self, replace=None) -> dict:
+        """The members this pack adds, with the changes in `replace` (member -> new bytes) that are theirs."""
+        added = dict(self.added)
+        for key, blob in (replace or {}).items():
+            e = self._new.get(key.replace("/", BS).lower())
+            if e is not None:
+                added[e.path] = blob
+        return added
+
+    def iter_chunks(self, replace=None, add=None):
+        rest = {k: v for k, v in (replace or {}).items() if k.replace("/", BS).lower() not in self._new}
+        return self.base.iter_chunks(rest, {**self.added_with(replace), **(add or {})})
+
+    def to_bytes(self, replace=None, add=None) -> bytes:
+        return b"".join(self.iter_chunks(replace, add))
+
+    def write_to(self, out, replace=None, add=None) -> int:
+        n = 0
+        for chunk in self.iter_chunks(replace, add):
+            out.write(chunk)
+            n += len(chunk)
+        return n
+
+
+class NewPack:
+    """A new map's pack: the shipped map's (as the build has it, .rmod changes included), written under the new name
+    with an id of its own in its header (bytes 8-23, a GUID per map pack: FORMATS §6)."""
+
+    is_changed = True   # always written: the game has no such file
+
+    def __init__(self, base, pack_id: bytes, source: str = ""):
+        self.base, self.pack_id, self.source = base, bytes(pack_id), source   # source: the shipped pack's file name
+
+    def __getattr__(self, name):
+        return getattr(self.base, name)
+
+    @property
+    def checksum(self) -> bytes:
+        return self.pack_id
+
+    def iter_chunks(self, replace=None, add=None):
+        first = True
+        for chunk in self.base.iter_chunks(replace, add):
+            if first:
+                chunk, first = bytes(chunk[:8]) + self.pack_id + bytes(chunk[24:]), False
+            yield chunk
+
+    def to_bytes(self, replace=None, add=None) -> bytes:
+        return b"".join(self.iter_chunks(replace, add))
+
+    def write_to(self, out, replace=None, add=None) -> int:
+        n = 0
+        for chunk in self.iter_chunks(replace, add):
+            out.write(chunk)
+            n += len(chunk)
+        return n

@@ -187,7 +187,8 @@ def _sweep(trash: str, src: str) -> None:
 
 
 def build_instance(src: str, dst: str, replace: dict | None = None,
-                   rename: dict[str, str] | None = None, appid: str = STEAM_APPID) -> dict[str, int]:
+                   rename: dict[str, str] | None = None, appid: str = STEAM_APPID,
+                   add: dict | None = None) -> dict[str, int]:
     """Build an instance of the game folder `src` at `dst`. Returns counts of linked/copied/written files ("full
     copies" of packs that couldn't be linked, "read-only packs" among them; "old copy left" when the previous copy
     couldn't be removed yet: the next build removes it).
@@ -195,12 +196,17 @@ def build_instance(src: str, dst: str, replace: dict | None = None,
     replace: relative path -> new content: bytes, or a function that writes it to an open file (for multi-GB packs,
              e.g. `lambda f: arc.write_to(f, changed)`), written as an independent file.
     rename:  relative path -> new relative path (the file appears only under the new name; content untouched).
+    add:     relative path -> content (as in `replace`) of a file the game folder hasn't got (a new map's pack).
     """
     src, dst = os.path.abspath(src), os.path.abspath(dst)
     if _norm(dst) == _norm(src) or _norm(dst).startswith(_norm(src) + os.sep):
         raise ValueError("refusing to build an instance inside the game folder")
     replace = {_norm(k): v for k, v in (replace or {}).items()}
     rename = {_norm(k): v for k, v in (rename or {}).items()}
+    add = dict(add or {})
+    for rel in add:
+        if os.path.lexists(os.path.join(src, rel)) or _norm(rel) in replace:
+            raise ValueError(f"can't add {rel}: the game folder already has it")
     staging, old = dst + ".partial", dst + ".old"
     refuse_if_running(dst)  # before the long build: a running game is said at once
     _sweep(os.path.join(os.path.dirname(dst), TRASH), src)  # what earlier builds couldn't remove yet
@@ -245,6 +251,12 @@ def build_instance(src: str, dst: str, replace: dict | None = None,
         missing = set(replace) - seen
         if missing:
             raise FileNotFoundError(f"files to replace not found in the game folder: {sorted(missing)}")
+        for rel, content in add.items():
+            out = os.path.join(staging, rel)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out, "wb") as f:
+                content(f) if callable(content) else f.write(content)
+            counts["written"] += 1
         with open(os.path.join(staging, "steam_appid.txt"), "w") as f:
             f.write(appid)
     except BaseException:

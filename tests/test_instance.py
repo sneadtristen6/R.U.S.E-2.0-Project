@@ -60,6 +60,16 @@ class InstanceTest(unittest.TestCase):
         self.assertTrue(os.path.samefile(os.path.join(self.dst, "Maps", "PC", "Map2.dat"),
                                          os.path.join(self.game, "Maps", "PC", "Map1.dat")))
 
+    def test_add_writes_a_file_the_game_hasnt_got(self):  # a new map's pack
+        new = os.path.join("Maps", "PC", "DataMapNew_v09.dat")
+        counts = build_instance(self.game, self.dst, add={new: lambda f: f.write(b"NEW MAP")})
+        with open(os.path.join(self.dst, new), "rb") as f:
+            self.assertEqual(f.read(), b"NEW MAP")
+        self.assertEqual(counts["written"], 1)
+        self.assertFalse(os.path.exists(os.path.join(self.game, new)))
+        with self.assertRaisesRegex(ValueError, "already has it"):
+            build_instance(self.game, self.dst, add={os.path.join("Maps", "PC", "Map1.dat"): b"x"})
+
     def test_refuses_inside_game_folder(self):
         with self.assertRaises(ValueError):
             build_instance(self.game, os.path.join(self.game, "inst"))
