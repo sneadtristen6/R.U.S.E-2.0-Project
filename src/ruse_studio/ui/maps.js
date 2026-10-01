@@ -10,8 +10,11 @@ const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "
   stats: null, groundTex: {}, edit: null, size: 0,  // size: the map's longer side in scene units (the keys' speed)
   // brush: the tool picked, its size and strength per brush (slider values), the strokes on this map (as saved),
   // the size of each group of strokes made this session (for Undo; a Forest stroke's: { n, objects: its trees }), the
-  // drag being painted, and the mod saved into
-  brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null, rampStart: null },
+  // drag being painted, and the mod saved into. The Erase brush's own: its circles on this map (the scenery file's
+  // [[erase]] tables), how many each drag made this session (for its Undo), what new circles take, and what all of
+  // them take when the mod is built (StudioApi.scenery_erased; "counting" while that's worked out)
+  brush: { on: false, name: "hill", settings: {}, strokes: [], groups: [], painting: null, mod: null, rampStart: null,
+    erase: [], eraseGroups: [], eraseWhat: { vegetation: true, prop: true, building: false }, takes: null, takesAsk: 0 },
   // scenery: which groups are shown, the map's scenery (StudioApi.map_scenery) and its drawn shapes per group
   scenery: { show: { building: true, prop: true, vegetation: true }, data: null, meshes: {}, models: {} },
   // placing: on or not, the group and type picked, the next object's turn and size, what the mod places on this map
@@ -44,10 +47,14 @@ const BRUSHES = {
   open_infantry: ["open", "infantry", 1, false, 3, 0],
   open_vehicles: ["open", "vehicles", 1, false, 3, 0],
   forest: ["forest", "flat", 1, false, 3, 0],  // trees (as Place, Area scatters them) and cover over them: cover strokes
+  erase: ["erase", "flat", 1, false, 3, 0],  // the map's own trees and props taken away: scenery.toml [[erase]] circles
 };
 const WATER = new Set(["water", "drain"]);
+// finer sizes than the ground brushes' (share of 1%)
 const SIZE_UNIT = { cover: 0.25, uncover: 0.25, town: 0.1, block: 0.25, block_infantry: 0.25, block_vehicles: 0.25,
-  open: 0.25, open_infantry: 0.25, open_vehicles: 0.25, forest: 0.25 };  // finer sizes than the ground brushes' (share of 1%)
+  open: 0.25, open_infantry: 0.25, open_vehicles: 0.25, forest: 0.25, erase: 0.25 };
+const ERASE_DEFAULT = ["vegetation", "prop"];  // what a circle takes unless it says (rusemod.scenery.ERASE_DEFAULT)
+const ERASE_MAX = 200000;  // map units a circle's radius may reach (rusemod.scenery.ERASE_MAX)
 
 // A brush's radius in map units: its Size slider as a share of the map's width.
 function brushRadius(name) {
@@ -434,6 +441,7 @@ function reapply() {
     o.batch = true;
   }
   for (const s of mv.brush.strokes) applyStroke(ed, s);
+  for (const a of mv.brush.erase) eraseDab(a);
   for (const o of OVERLAYS) {
     o.batch = false;
     overlayDraw(o, 0, o.size - 1, 0, o.size - 1);
@@ -451,17 +459,24 @@ function reapply() {
 //   = closed to vehicles, so red is closed to every unit (water, cliffs, off the map), yellow to vehicles only (woods),
 //   purple to infantry only. The block brushes close ground; the build takes it out of the graphs (rusemod.nav). The
 //   open brushes open it again; the build adds it to the graphs where they have none (nav.Graph.open_ground).
-//   Proven in the game: units plan around a blocked pit (2026-09-30). ---
+//   Proven in the game: units plan around a blocked pit (2026-09-30).
+// erased, the Erase brush's circles (the scenery file's [[erase]] tables), in red while it's picked: what's in them
+//   goes when the mod is built (tinted red, tintScenery). A circle that takes trees also opens its ground to every
+//   unit and takes its cover away, after the mod's strokes, as the build does (rusemod.build.cleared_woods).
+//   Proven in the game: tanks drive into a cleared wood and infantry there are seen (2026-10-01). ---
 const cover = { kinds: ["cover", "town", "forest"], colors: [null, [60, 210, 90, 125]] };
 const moves = { kinds: ["block", "open"], colors: [null, [170, 90, 220, 120], [235, 200, 40, 115], [220, 50, 40, 120]] };
-const OVERLAYS = [cover, moves];
+const erased = { kinds: ["erase"], colors: [null, [235, 70, 45, 120]] };
+const OVERLAYS = [cover, moves, erased];
+const ERASE_CELLS = 1024;  // the erased overlay's cells across the map (about 12 m each on the biggest maps)
 for (const o of OVERLAYS) {
   Object.assign(o, { base: null, cells: null, size: 0, box: null, canvas: null, ctx: null, img: null, tex: null,
     mesh: null, show: false, batch: false });
 }
 // what a brush does to an overlay's cells: [overlay, bits it sets, bits it clears]
 const PAINTS = { cover: [cover, 1, 0], uncover: [cover, 0, 1], block: [moves, 3, 0], block_infantry: [moves, 1, 0],
-  block_vehicles: [moves, 2, 0], open: [moves, 0, 3], open_infantry: [moves, 0, 1], open_vehicles: [moves, 0, 2] };
+  block_vehicles: [moves, 2, 0], open: [moves, 0, 3], open_infantry: [moves, 0, 1], open_vehicles: [moves, 0, 2],
+  erase: [erased, 1, 0] };
 
 function overlayShown(o) {
   return o.show || (mv.brush.on && o.kinds.includes(BRUSHES[mv.brush.name][0]));
@@ -502,8 +517,38 @@ function startOverlay(o, base, res) {
   overlayMesh(o);
   o.batch = true;
   for (const s of mv.brush.strokes) if (PAINTS[s.brush] && PAINTS[s.brush][0] === o) overlayDab(s);
+  for (const a of mv.brush.erase) eraseDab(a, o);  // after the strokes, as the build clears woods
   o.batch = false;
   overlayDraw(o, 0, o.size - 1, 0, o.size - 1);
+}
+
+// The erased overlay of the map shown: a grid over the map's own box, empty until the circles are painted on it.
+function startErased() {
+  const [x0, y0, , x1, y1] = mv.edit.bounds, n = ERASE_CELLS;
+  startOverlay(erased, new Uint8Array(n * n), { size: n, box: [x0, y0, x1 - x0, y1 - y0] });
+}
+
+// Whether an Erase circle takes trees: then the build opens its ground and takes its cover away too.
+function clearsWood(a) {
+  return (a.what || ERASE_DEFAULT).includes("vegetation");
+}
+
+// One Erase circle on the overlays (only `only`, when given): red on the erased one; a wood cleared on the others.
+function eraseDab(a, only) {
+  for (const brush of clearsWood(a) ? ["erase", "open", "uncover"] : ["erase"]) {
+    if (!only || PAINTS[brush][0] === only) overlayDab({ brush, x: a.x, y: a.y, radius: a.radius });
+  }
+}
+
+// The Erase circles changed (loaded, taken back, not saved): every overlay again from the map's own cells, then the
+// strokes, then the circles (reapply's order, without touching the ground), and the objects they take tinted again.
+function refreshErased() {
+  const live = OVERLAYS.filter((o) => o.cells);
+  for (const o of live) { o.cells.set(o.base); o.batch = true; }
+  for (const s of mv.brush.strokes) if (PAINTS[s.brush]) overlayDab(s);
+  for (const a of mv.brush.erase) eraseDab(a);
+  for (const o of live) { o.batch = false; overlayDraw(o, 0, o.size - 1, 0, o.size - 1); }
+  tintScenery();
 }
 
 function dropOverlay(o) {
@@ -883,6 +928,54 @@ function placeScenery() {
     mesh.computeBoundingSphere();
   }
   drawPlaced();
+  tintScenery();
+}
+
+// The map's own objects the Erase circles take, tinted red; the rest as they are. An object goes when its place is in
+// a circle that takes its group (never a bridge) or names its type (rusemod.scenery.erase_plan). Only the objects
+// drawn are tinted (every building, a sample of props and trees): the brush's note counts all of them.
+const ERASED_TINT = [1.6, 0.35, 0.25];
+function erasedTest() {
+  const areas = mv.brush.erase, C = 20000, cells = new Map();
+  if (!areas.length) return null;
+  for (const a of areas) {
+    for (let cx = Math.floor((a.x - a.radius) / C); cx <= Math.floor((a.x + a.radius) / C); cx++) {
+      for (let cy = Math.floor((a.y - a.radius) / C); cy <= Math.floor((a.y + a.radius) / C); cy++) {
+        const key = `${cx},${cy}`;
+        (cells.get(key) || cells.set(key, []).get(key)).push(a);
+      }
+    }
+  }
+  // t: the object's type in the view ([short name, group, category, model, models, bridge])
+  const takes = (a, group, t) => ((a.what || ERASE_DEFAULT).includes(group) && !(t && t[5]))
+    || Boolean(t && a.types && a.types.some((n) => n.slice(n.indexOf("/") + 1) === t[0]));
+  return (group, t, x, y) => (cells.get(`${Math.floor(x / C)},${Math.floor(y / C)}`) || [])
+    .some((a) => (x - a.x) ** 2 + (y - a.y) ** 2 <= a.radius * a.radius && takes(a, group, t));
+}
+
+function tintScenery() {
+  const gl = mv.gl, d = mv.scenery.data;
+  if (!gl || !d) return;
+  const test = erasedTest(), c = new gl.THREE.Color();
+  for (const mesh of Object.values(mv.scenery.meshes).concat(Object.values(mv.scenery.models || {}).flat())) {
+    if (!test && !mesh.instanceColor) continue;  // never tinted: nothing to put back
+    const { group, flat, rows } = mesh.userData, n = rows ? rows.length : flat.length / 5, fresh = !mesh.instanceColor;
+    for (let j = 0; j < n; j++) {
+      const k = rows ? rows[j] : j;
+      if (test && test(group, d.types[flat[5 * k]], flat[5 * k + 1], flat[5 * k + 2])) c.setRGB(...ERASED_TINT);
+      else c.setRGB(1, 1, 1);
+      mesh.setColorAt(j, c);
+    }
+    if (!mesh.instanceColor) continue;
+    mesh.instanceColor.needsUpdate = true;
+    if (fresh) mesh.material.needsUpdate = true;  // its shader takes the colours from now on
+  }
+  gl.draw();
+}
+
+let tintFrame = 0;
+function tintSoon() {  // once a frame at most, while a drag adds circles
+  if (!tintFrame) tintFrame = requestAnimationFrame(() => { tintFrame = 0; tintScenery(); });
 }
 
 function clearScenery() {
@@ -1522,6 +1615,11 @@ async function loadPlaced(pack, ask) {
   mv.place.groups = [];
   mv.place.lineStart = null;
   mv.place.mod = res.mod;
+  mv.brush.erase = res.erase || [];  // the Erase brush's circles: the same file's [[erase]] tables
+  mv.brush.eraseGroups = [];
+  refreshErased();
+  showCount();
+  countTakes(pack);
   placeNote("");
   drawPlaced();
   renderPlace();
@@ -1713,6 +1811,9 @@ async function show(pack, keepCamera) {
   mv.edit = made.edit;
   mv.size = made.size;
   mv.brush.painting = null;
+  Object.assign(mv.brush, { erase: [], eraseGroups: [], takes: null });  // this map's come with its objects (loadPlaced)
+  mv.brush.takesAsk++;
+  startErased();
   cancelRamp();
   if (!keepCamera) {
     const [cx, cy, cz] = made.center, d = made.size;
@@ -1755,7 +1856,7 @@ const DOCK = [
   ["cover", ["cover", "uncover", "town", "forest"]],
   ["movement", ["block", "block_infantry", "block_vehicles", "open", "open_infantry", "open_vehicles"]],
   ["roads", null], ["bridges", null],
-  ["building", null], ["prop", null], ["vegetation", null],
+  ["building", null], ["prop", null], ["vegetation", null], ["erase", ["erase"]],
   ["scenario", null], ["check", null],
 ];
 // the scenario kind open (no tool picked yet); "Check this map" open; the last brush of each kind
@@ -1797,6 +1898,7 @@ const ICONS = {
   open_infantry: "M12 3a2 2 0 1 0 0 4a2 2 0 1 0 0-4z M12 8v7 M8 11h8 M9 21l3-6 3 6",
   open_vehicles: "M3 16h18v4H3z M7 16v-4h8v4 M15 13h6",
   forest: "M7 3l-4 7h3l-3 5h8l-3-5h3z M7 15v5 M17 6l-4 7h3l-3 5h8l-3-5h3z M17 18v3",
+  erase: "M4 15l9-9 7 7-6 6H8z M9 10l7 7 M3 21h18",
   move: "M12 3v18 M3 12h18 M9 6l3-3 3 3 M9 18l3 3 3-3 M6 9l-3 3 3 3 M18 9l3 3-3 3",
   spawn: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8v8 M8 12h8",
   start: "M6 21V3 M6 4h11l-3 4 3 4H6",
@@ -1829,7 +1931,8 @@ function brushKind(name) {
 function kindName(kind) {
   const w = mv.words;
   return { terrain: w.dock_terrain, water: w.brush_water, cover: w.brush_cover, movement: w.dock_movement, roads: w.dock_roads,
-    bridges: w.dock_bridges, check: w.dock_check, scenario: w.scen_show }[kind] || w[`scenery_${kind}`] || kind;
+    bridges: w.dock_bridges, check: w.dock_check, scenario: w.scen_show, erase: w.brush_erase }[kind]
+    || w[`scenery_${kind}`] || kind;
 }
 
 // The kind open: the brush's, the place kind's, or the scenario's; null while just looking around.
@@ -2508,9 +2611,14 @@ function brushNote(text, kind) {
   note.className = "small" + (kind === "error" ? " error-text" : "");
 }
 
+// The Erase brush is picked: Undo, Start over and the count then work on its circles, not on the strokes.
+function erasing() {
+  return BRUSHES[mv.brush.name][0] === "erase";
+}
+
 function showCount() {
-  const w = mv.words, n = mv.brush.strokes.length;
-  $("brush-count").textContent = n ? fill(w.brush_count, { n: n.toLocaleString() }) : "";
+  const w = mv.words, n = (erasing() ? mv.brush.erase : mv.brush.strokes).length;
+  $("brush-count").textContent = n ? fill(erasing() ? w.erase_count : w.brush_count, { n: n.toLocaleString() }) : "";
   $("brush-undo").disabled = !n || !mv.brush.mod;
   $("brush-clear").disabled = !n || !mv.brush.mod;
   if (!n) $("brush-sure").classList.add("hidden");
@@ -2527,7 +2635,50 @@ async function loadStrokes(pack, ask) {
   reapply();
   showCount();
   renderBrushes();
-  brushNote(res.mod ? (res.strokes.length ? mv.words.brush_note : "") : mv.words.no_mod);
+  if (mv.brush.on && erasing()) showTakes();
+  else brushNote(res.mod ? (res.strokes.length ? mv.words.brush_note : "") : mv.words.no_mod);
+}
+
+// The size slider's name; the Erase brush's says how wide its circle is.
+function sizeLabel() {
+  const w = mv.words;
+  $("brush-size-label").textContent = erasing() && mv.edit
+    ? fill(w.erase_size, { m: Math.round(2 * brushRadius(mv.brush.name) / METRE).toLocaleString() }) : w.brush_size;
+}
+
+// What the circles take when the mod is built, counted by the Studio the way the build erases
+// (StudioApi.scenery_erased), again after each change; the last count asked for is the one said.
+async function countTakes(pack) {
+  const b = mv.brush, ask = ++b.takesAsk;
+  b.takes = b.erase.length ? "counting" : null;
+  showTakes();
+  if (!b.takes) return;
+  try {
+    const res = await mv.api.scenery_erased(pack);
+    if (ask !== b.takesAsk || pack !== mv.current) return;
+    b.takes = res;
+  } catch (err) {
+    if (ask !== b.takesAsk || pack !== mv.current) return;
+    b.takes = { failed: (err && err.message) || String(err) };
+  }
+  showTakes();
+}
+
+// The count, in the brush's note while the Erase brush is picked: "Trees 1,234 · Props 56", or why the build would
+// refuse the circles (a map's scenery holds 16 MB at most, and erasing copies the blocks it changes).
+const TAKES_ORDER = ["vegetation", "prop", "building", "decal", "bridge", "other"];
+function showTakes() {
+  const w = mv.words, b = mv.brush, t = b.takes;
+  if (!b.on || !erasing()) return;
+  if (!b.mod) { brushNote(w.no_mod, "error"); return; }
+  if (!t) { brushNote(""); return; }
+  if (t === "counting") { brushNote(w.erase_counting); return; }
+  if (t.failed) { brushNote(t.failed, "error"); return; }
+  if (t.error) { brushNote(fill(w.erase_refused, { why: t.error }), "error"); return; }
+  const label = { vegetation: w.scenery_vegetation, prop: w.scenery_prop, building: w.scenery_building,
+    decal: w.scenery_decal, bridge: w.dock_bridges, other: w.group_other };
+  const list = TAKES_ORDER.filter((g) => t.takes[g]).map((g) => `${label[g]} ${t.takes[g].toLocaleString()}`).join(" · ");
+  brushNote(list ? fill(w.erase_takes, { list }) : w.erase_takes_none);
 }
 
 function renderBrushes() {
@@ -2542,23 +2693,38 @@ function renderBrushes() {
     tile.addEventListener("click", () => pickBrush(name));
     return tile;
   }));
-  const set = settingsOf(b.name);
+  const set = settingsOf(b.name), erase = erasing();
   $("brush-size").value = set.size;
   $("brush-strength").value = set.strength;
-  $("brush-strength-row").classList.toggle("hidden", ["cover", "town", "block", "open", "forest"].includes(BRUSHES[b.name][0]));
+  $("brush-strength-row").classList.toggle("hidden",
+    ["cover", "town", "block", "open", "forest", "erase"].includes(BRUSHES[b.name][0]));
+  $("brush-erase").classList.toggle("hidden", !erase);  // what the Erase brush's new circles take
+  if (erase) {
+    $("brush-erase-what").replaceChildren(...["vegetation", "prop", "building"].map((g) => chipOf(w[`scenery_${g}`],
+      w.tip_erase_what, b.eraseWhat[g], () => { b.eraseWhat[g] = !b.eraseWhat[g]; renderBrushes(); })));
+    $("brush-erase-trees").textContent = w.erase_trees_note;
+    $("brush-erase-trees").classList.toggle("hidden", !b.eraseWhat.vegetation);
+    $("brush-erase-warn").textContent = w.erase_buildings_warn;
+    $("brush-erase-warn").classList.toggle("hidden", !b.eraseWhat.building);
+  }
+  $("brush-undo").title = erase ? w.tip_erase_undo : w.tip_brush_undo;
+  $("brush-clear").title = erase ? w.tip_erase_clear : w.tip_brush_clear;
+  sizeLabel();
   showOverlays();
   $("map-help").textContent = b.on ? w.brush_help : w.map_help;
   showCount();
 }
 
 function pickBrush(name) {
-  const b = mv.brush;
-  if (b.name !== name) cancelRamp();
+  const b = mv.brush, wasErasing = erasing();
+  if (b.name !== name) { cancelRamp(); $("brush-sure").classList.add("hidden"); }  // its question was for the other
   b.name = name;
   dock.last[brushKind(name)] = name;
   setBrushMode(true);
   if (!b.mod) brushNote(mv.words.no_mod, "error");
   else if (name === "ramp") brushNote(mv.words.ramp_help);
+  else if (erasing()) showTakes();
+  else if (wasErasing) brushNote("");
 }
 
 // A ramp half made (its start clicked) is dropped: another brush, another map or mod, Look around, Esc.
@@ -2592,6 +2758,7 @@ function pointerMode() {
   gl.controls.mouseButtons = busy ? { LEFT: null, MIDDLE: M.ROTATE, RIGHT: M.PAN }
                                   : { LEFT: M.ROTATE, MIDDLE: M.ROTATE, RIGHT: M.PAN };
   if (!mv.brush.on && gl.ring) { gl.ring.visible = false; gl.draw(); }
+  if (gl.ring) gl.ring.material.color.setHex(mv.brush.on && erasing() ? 0xe0533d : 0xc8a64b);  // Erase's ring in red
   if (busy) $("scenery-hover").textContent = "";
   gl.renderer.domElement.style.cursor = busy ? "crosshair" : "";
 }
@@ -2644,6 +2811,16 @@ function showRing(p) {
 }
 
 function dab(group, x, y) {
+  if (group.erase) {  // an Erase drag: a circle taking what's picked, shown on the overlays and on what it takes
+    const r = Math.min(ERASE_MAX, Math.max(1, Math.round(brushRadius(mv.brush.name))));
+    const a = { x: Math.round(x), y: Math.round(y), radius: r, what: group.what };
+    group.erase.push(a);
+    group.last = [x, y];
+    mv.brush.erase.push(a);
+    eraseDab(a);
+    tintSoon();
+    return;
+  }
   const s = newStroke(x, y, group.level, group.end);
   group.strokes.push(s);
   group.last = [x, y];
@@ -2676,7 +2853,7 @@ function forestOf(radius) {
 function paintTo(p) {
   const g = mv.brush.painting;
   if (!g || g.stamp || !g.last) return;
-  const x = p.x / SCALE, y = p.z / SCALE, spacing = g.strokes[0].radius / 3;
+  const x = p.x / SCALE, y = p.z / SCALE, spacing = g.erase ? g.erase[0].radius / 2 : g.strokes[0].radius / 3;
   let [lx, ly] = g.last;
   let dist = Math.hypot(x - lx, y - ly);
   while (dist >= spacing) {
@@ -2690,6 +2867,7 @@ function paintTo(p) {
 async function finishStroke() {
   const g = mv.brush.painting;
   mv.brush.painting = null;
+  if (g && g.erase) { finishErase(g); return; }
   if (!g || !g.strokes.length) return;
   redraw(false, true);
   placeScenery();
@@ -2711,6 +2889,8 @@ async function finishStroke() {
     } else {
       mv.brush.groups.push(g.strokes.length);
     }
+    // cover or movement painted where an Erase circle clears a wood: the build clears it after, so the view does too
+    if (g.strokes.some((s) => PAINTS[s.brush]) && mv.brush.erase.some(clearsWood)) refreshErased();
     showCount();
     brushNote(g.objects ? fill(mv.words.forest_done, { n: trees.length.toLocaleString() }) : mv.words.brush_note);
   } catch (err) {
@@ -2724,9 +2904,61 @@ async function finishStroke() {
   }
 }
 
+// An Erase drag's circles, saved after the others in the mod's scenery file (StudioApi.scenery_erase), its objects
+// kept; not saved, they leave the view again.
+async function finishErase(g) {
+  const b = mv.brush, pack = mv.current;
+  if (!g.erase.length) return;
+  try {
+    await mv.api.scenery_erase(pack, g.erase);
+    if (pack !== mv.current) return;
+    b.eraseGroups.push(g.erase.length);
+    showCount();
+    countTakes(pack);
+  } catch (err) {
+    if (pack !== mv.current) return;
+    const gone = new Set(g.erase);
+    b.erase = b.erase.filter((a) => !gone.has(a));
+    refreshErased();
+    showCount();
+    brushNote((err && err.message) || String(err), "error");
+  }
+}
+
+// Undo under the Erase brush: the last drag's circles (one circle, for those saved before this session).
+async function undoErase() {
+  const b = mv.brush, pack = mv.current;
+  if (!b.mod || !b.erase.length || b.painting) return;
+  const n = b.eraseGroups.length ? b.eraseGroups.pop() : 1;
+  try {
+    const res = await mv.api.scenery_erase_undo(pack, n);
+    if (pack !== mv.current) return;
+    b.erase.splice(b.erase.length - res.removed, res.removed);
+    refreshErased();
+    showCount();
+    countTakes(pack);
+  } catch (err) { brushNote((err && err.message) || String(err), "error"); }
+}
+
+// "Start over" under the Erase brush: every circle on this map goes; the map keeps all its own scenery.
+async function clearErase() {
+  const b = mv.brush, pack = mv.current;
+  if (!b.mod || !b.erase.length || b.painting) return;
+  try {
+    await mv.api.scenery_erase_undo(pack, b.erase.length);
+    if (pack !== mv.current) return;
+    b.erase = [];
+    b.eraseGroups = [];
+    refreshErased();
+    showCount();
+    countTakes(pack);
+  } catch (err) { brushNote((err && err.message) || String(err), "error"); }
+}
+
 // Undo takes back the last stroke or drag; a Forest stroke's trees go with its cover.
 async function undoStroke() {
   const b = mv.brush, pack = mv.current;
+  if (erasing()) { undoErase(); return; }
   if (!b.mod || !b.strokes.length || b.painting) return;
   const last = b.groups.length ? b.groups.pop() : 1, n = typeof last === "number" ? last : last.n;
   try {
@@ -2748,6 +2980,7 @@ async function undoStroke() {
 async function clearStrokes() {
   const b = mv.brush, pack = mv.current;
   $("brush-sure").classList.add("hidden");
+  if (erasing()) { clearErase(); return; }
   if (!b.mod || !b.strokes.length || b.painting) return;
   try {
     await mv.api.terrain_undo(pack, b.strokes.length);
@@ -2808,6 +3041,14 @@ function watchPointer() {
       mv.brush.painting = ramp;
       dab(ramp, start.x, start.y);
       finishStroke();
+      return;
+    }
+    if (kind === "erase") {  // circles along the drag, each taking what's picked (trees and props to start with)
+      const what = ["vegetation", "prop", "building"].filter((g) => mv.brush.eraseWhat[g]);
+      if (!what.length) { brushNote(mv.words.erase_none, "error"); return; }
+      mv.brush.painting = { strokes: [], erase: [], what, last: null, stamp: false };
+      dab(mv.brush.painting, x, y);
+      canvas.setPointerCapture(ev.pointerId);
       return;
     }
     const group = { strokes: [], last: null, level, stamp, start: mv.brush.strokes.length };
@@ -3412,7 +3653,7 @@ function wire() {
       if (mv.gl) mv.gl.draw();
     });
   }
-  $("brush-size").addEventListener("input", (e) => { settingsOf(mv.brush.name).size = Number(e.target.value); });
+  $("brush-size").addEventListener("input", (e) => { settingsOf(mv.brush.name).size = Number(e.target.value); sizeLabel(); });
   $("brush-strength").addEventListener("input", (e) => { settingsOf(mv.brush.name).strength = Number(e.target.value); });
   $("brush-look").addEventListener("click", () => lookAround());
   $("place-undo").addEventListener("click", () => undoPlace());
@@ -3440,7 +3681,8 @@ function wire() {
   $("check-run").addEventListener("click", () => runCheck());
   $("maps-fold").addEventListener("click", () => { foldMaps(!mv.folded); saveView(); });
   $("brush-clear").addEventListener("click", () => {
-    $("brush-sure-text").textContent = fill(mv.words.really_clear, { n: mv.brush.strokes.length.toLocaleString() });
+    const w = mv.words, n = (erasing() ? mv.brush.erase : mv.brush.strokes).length.toLocaleString();
+    $("brush-sure-text").textContent = fill(erasing() ? w.erase_really_clear : w.really_clear, { n });
     $("brush-sure").classList.remove("hidden");
     $("brush-clear-yes").focus();
   });

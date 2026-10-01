@@ -381,6 +381,7 @@
   const edits = new Map();  // `${mod}|${address}|${prop}|${how}|${via}` -> value, like the mod's src/studio.rndf
   const terrains = new Map();  // `${mod}|${map pack}` -> strokes, like the mod's maps/<pack>/terrain.toml
   const placed = new Map();    // `${mod}|${map pack}` -> placed objects, like the mod's maps/<pack>/scenery.toml
+  const erased = new Map();    // `${mod}|${map pack}` -> its circles to erase, the same file's [[erase]] tables
   const editKey = (address, prop, how, via) => `${current}|${address}|${prop}|${how || ""}|${how === "own" ? via : ""}`;
   if (current) edits.set(editKey(E + "M4_Sherman", "ProductionTime"), 1);  // a cheap, fast Sherman, as in the owner's test
   const mine = () => newUnits.filter((n) => n.mod === current);
@@ -712,6 +713,10 @@
   Object.assign(words.sc, {"share_mod": "分享你的模组…", "share_title": "分享你的模组", "share_lead": "做了模组？把它加入列表，成为贡献者。", "share_step_export": "将其导出为 .rusemod（模组菜单中的“导出模组…”）。其大小和 SHA-256 会显示在这里。", "share_step_pr": "上传 .rusemod（用 GitHub Release 最简单），然后向 {repo} 提交一个拉取请求，把它的条目加入 index.toml，并填上导出时显示的大小和 SHA-256。", "share_step_post": "或者在 Discussions 中发布，我们会替你把它加入列表。", "share_file": "文件：{file}（{size} 字节）", "share_sha": "SHA-256：{sha}", "share_entry": "它在 index.toml 中的条目（在 download 中填入文件链接）：", "share_copy": "复制条目", "share_copied": "已复制：请粘贴到 index.toml 中。", "share_open": "在 GitHub 上打开模组列表", "share_discussions": "打开 Discussions"});
   // the Bridges dock and "Check this map" (words.toml dock_bridges, bridges_*, check_*, mc_*)
   Object.assign(words.us, {"dock_bridges": "Bridges", "tip_dock_bridges": "The map's own bridge kinds: place one by hand, and see where new roads cross water (in gold).", "bridges_help": "Pick a kind, set its length and turn, then click the ground where the bridge's middle goes. Both ends should rest on dry bank.", "bridges_kind_info": "{n} on the map · {least} to {most} m", "bridges_roads_kind": "new roads' bridges", "bridges_no_floor": "not placed on this map: no floor to copy, so the build refuses it", "bridges_length": "Length {m} m", "tip_bridges_length": "How long the deck is, bank to bank: the map's own bridges are stretched from 0.9 to 2 times their model's length.", "tip_bridges_turn": "Which way the bridge runs, in degrees (- and = keys too).", "tip_bridges_undo": "Take the last bridge placed by hand off the map.", "bridges_count": "{n} placed by hand", "bridges_crossings": "{n} water crossing(s) on the new roads, in gold: the build puts a bridge of the new roads' kind on each.", "bridges_none": "{n} water crossing(s), but this map has no bridge kind of its own: no bridge can go there, and units can't cross", "bridges_none_map": "This map has no bridge kind of its own: no bridge can go on it, and units can't cross water on a new road.", "bridges_loading": "Reading the map's bridges…", "dock_check": "Check", "tip_dock_check": "Find what would go wrong on this map with your mod, before the game starts.", "check_run": "Check this map", "tip_check_run": "Builds your mod's changes to this map as Test in game would, in a folder removed afterwards, and lists what would go wrong: ground cut off, roads or bridges units can't use, road ends not joined, buildings on roads.", "check_running": "Checking: building your mod on this map (a minute or so)…", "check_found": "{n} thing(s) to look at. Click one with a place to see it on the map.", "check_stale": "Checked before your last change: check again to be sure.", "mc_ok": "Nothing found that would go wrong on this map.", "mc_build_failed": "The map couldn't be built, so it wasn't checked: {why}", "mc_cut_off": "Ground around ({x}, {y}), {metres} m across, is cut off for {units}: they can't reach it from the rest of the map, and an order onto it crashes the game.", "mc_road_closed": "Road {road}: {metres} m around ({x}, {y}) is ground {units} can't use.", "mc_bridge_closed": "The crossing at ({x}, {y}) is closed to {units}: they can't get from one bank to the other.", "mc_road_unjoined": "Road {road} ends at ({x}, {y}) without joining the road network. Supply trucks use the road network.", "mc_object_on_road": "{name} stands on road {road} at ({x}, {y}).", "mc_objects_more": "{n} more objects stand on the new roads.", "mc_units_infantry": "infantry", "mc_units_vehicles": "vehicles"});
+  // the Erase brush (words.toml brush_erase, erase_*)
+  Object.assign(words.us, {"brush_erase": "Erase", "tip_dock_erase": "Take the map's own trees and props away (buildings too, if you pick them).", "tip_brush_erase": "Drag over the map's own trees and props: the red circles are saved in the mod, and what they cover (tinted red) goes when the mod is built. Undo takes back the last drag.", "tip_erase_what": "What the circles take away. Each circle keeps what was picked when it was painted.", "erase_trees_note": "Where trees go, the ground opens to every unit and loses its forest cover (proven in the game).", "erase_buildings_warn": "Buildings are only taken out of sight: the map's movement still has them, so units still go around where they stood.", "erase_none": "Pick at least one of trees, props and buildings.", "erase_size": "Size {m} m", "erase_count": "Circles on this map: {n}", "erase_really_clear": "Remove all {n} circles on this map? The map then keeps everything they would take.", "tip_erase_undo": "Take back the last circles painted (Ctrl+Z).", "tip_erase_clear": "Remove every circle this mod has on this map: the map keeps all its own scenery.", "erase_counting": "Counting what the circles take…", "erase_takes": "When the mod is built, the circles take: {list}", "erase_takes_none": "The circles cover nothing they may take.", "erase_refused": "The build would refuse these circles: {why}", "scenery_decal": "Ground marks"});
+  Object.assign(words.fr, {"brush_erase": "Effacer", "tip_dock_erase": "Retirer les arbres et objets de la carte (les bâtiments aussi, si vous les choisissez).", "tip_brush_erase": "Glissez sur les arbres et objets de la carte : les cercles rouges sont enregistrés dans le mod, et ce qu'ils couvrent (teinté de rouge) disparaît à la construction du mod. Annuler reprend le dernier glissement.", "tip_erase_what": "Ce que les cercles retirent. Chaque cercle garde ce qui était choisi quand il a été peint.", "erase_trees_note": "Là où les arbres disparaissent, le sol s'ouvre à toutes les unités et perd son couvert forestier (vérifié en jeu).", "erase_buildings_warn": "Les bâtiments ne sont que retirés de la vue : le déplacement de la carte les garde, donc les unités contournent toujours leur emplacement.", "erase_none": "Choisissez au moins arbres, objets ou bâtiments.", "erase_size": "Taille {m} m", "erase_count": "Cercles sur cette carte : {n}", "erase_really_clear": "Supprimer les {n} cercles de cette carte ? La carte garde alors tout ce qu'ils auraient retiré.", "tip_erase_undo": "Reprendre les derniers cercles peints (Ctrl+Z).", "tip_erase_clear": "Supprimer tous les cercles de ce mod sur cette carte : la carte garde tout son décor.", "erase_counting": "Calcul de ce que retirent les cercles…", "erase_takes": "À la construction du mod, les cercles retirent : {list}", "erase_takes_none": "Les cercles ne couvrent rien qu'ils puissent retirer.", "erase_refused": "La construction refuserait ces cercles : {why}", "scenery_decal": "Marques au sol"});
+  Object.assign(words.sc, {"brush_erase": "移除", "tip_dock_erase": "移除地图自带的树木和道具（如果选中，也包括建筑）。", "tip_brush_erase": "在地图自带的树木和道具上拖动：红色圆圈保存在模组中，圆圈覆盖的内容（显示为红色）会在构建模组时消失。撤销可取消最后一次拖动。", "tip_erase_what": "圆圈要移除的内容。每个圆圈保留绘制时所选的内容。", "erase_trees_note": "树木消失的地方，地面对所有单位开放，并失去森林掩护（已在游戏中验证）。", "erase_buildings_warn": "建筑只是看不见了：地图的移动数据仍包含它们，所以单位仍会绕开它们原来的位置。", "erase_none": "请至少选择树木、道具或建筑中的一项。", "erase_size": "大小 {m} 米", "erase_count": "此地图上的圆圈：{n}", "erase_really_clear": "删除此地图上的全部 {n} 个圆圈？它们原本要移除的内容都会保留在地图上。", "tip_erase_undo": "撤销最后绘制的圆圈（Ctrl+Z）。", "tip_erase_clear": "删除此模组在此地图上的所有圆圈：地图保留其全部景物。", "erase_counting": "正在统计圆圈移除的内容…", "erase_takes": "构建模组时，圆圈将移除：{list}", "erase_takes_none": "圆圈没有覆盖任何可移除的内容。", "erase_refused": "构建会拒绝这些圆圈：{why}", "scenery_decal": "地面痕迹"});
   const exported = { path: "C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod", file: "sherman-test-0.1.0.rusemod",
     size: 2711, size_text: "3 KB", sha256: "5d1c0f4b0e7f7c3ad8b0a4f6f1f0a0e8c4b2d6e1f3a5c7e9b1d3f5a7c9e1b3d5",
     entry: ["[[mod]]", 'id = "sherman-test"', 'name = "sherman-test"', 'version = "0.1.0"', 'description = "Made in the RUSE Studio."',
@@ -976,7 +981,33 @@
         throw new Error(`There's no fix called '${action}'.`);
       },
       map_scenery: async (pack) => fakeScenery(pack),
-      scenery: async (pack) => ({ objects: current ? (placed.get(`${current}|${pack}`) || []) : [], saved: null, mod: current }),
+      scenery: async (pack) => ({ objects: current ? (placed.get(`${current}|${pack}`) || []) : [],
+        erase: current ? (erased.get(`${current}|${pack}`) || []) : [], saved: null, mod: current }),
+      scenery_erase: async (pack, areas) => {  // the same file's [[erase]] tables
+        if (!current) throw new Error("Pick or make a mod first: what you place is saved in it.");
+        const key = `${current}|${pack}`;
+        const list = (erased.get(key) || []).concat(areas.map((a) => ({ what: ["vegetation", "prop"], types: [], ...a })));
+        erased.set(key, list);
+        return { count: list.length, saved: `${current}/maps/${pack}/scenery.toml` };
+      },
+      scenery_erase_undo: async (pack, count = 1) => {
+        const key = `${current}|${pack}`, list = erased.get(key) || [], n = Math.min(count, list.length);
+        erased.set(key, list.slice(0, list.length - n));
+        return { count: list.length - n, removed: n, saved: null };
+      },
+      scenery_erased: async (pack) => {  // the made-up village's objects in the circles (the real count reads them all)
+        const list = (current && erased.get(`${current}|${pack}`)) || [], d = fakeScenery(pack), takes = {};
+        for (const [group, flat] of Object.entries(d.items)) {
+          for (let k = 0; k < flat.length; k += 5) {
+            const x = flat[k + 1], y = flat[k + 2];
+            if (list.some((a) => a.what.includes(group) && (x - a.x) ** 2 + (y - a.y) ** 2 <= a.radius ** 2)) {
+              takes[group] = (takes[group] || 0) + 1;
+            }
+          }
+        }
+        await new Promise((r) => setTimeout(r, 300));  // the real count takes a second or two
+        return { count: list.length, takes, error: "" };
+      },
       scenery_add: async (pack, objects) => {
         if (!current) throw new Error("Pick or make a mod first: what you place is saved in it.");
         const key = `${current}|${pack}`, list = (placed.get(key) || []).concat(objects);

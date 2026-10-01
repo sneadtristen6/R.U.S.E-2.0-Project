@@ -117,6 +117,12 @@
                 <input id="brush-size" type="range" min="1" max="15" step="1" value="6"></label>
               <label id="brush-strength-row" class="brush-slider small"><span id="brush-strength-label"></span>
                 <input id="brush-strength" type="range" min="1" max="100" step="1" value="50"></label>
+              <!-- the Erase brush: what its new circles take, and what that does in the game (maps.js renderBrushes) -->
+              <div id="brush-erase" class="tray-erase hidden">
+                <div id="brush-erase-what" class="chips" role="group"></div>
+                <div id="brush-erase-trees" class="muted small"></div>
+                <div id="brush-erase-warn" class="small error-text"></div>
+              </div>
               <div class="map-controls">
                 <button id="brush-undo" type="button" class="ghost" disabled></button>
                 <button id="brush-clear" type="button" class="ghost danger" disabled></button>

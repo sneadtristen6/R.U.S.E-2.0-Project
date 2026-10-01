@@ -382,6 +382,11 @@ types = ["TypeWarrior/Pont_Normandie"]  # and these types, whatever they are (th
   decals only when `what` names them, bridges only when `types` does.
 - **Buildings and bridges are drawn only**: the map's movement still has them, so where an erased building stood stays
   closed to units, and an erased bridge's deck stays open over the water. The build says so as a warning.
+- **A circle that takes trees clears a wood**: the build also opens its ground to every unit and takes the forest
+  cover away there, after the mod's own movement and cover edits (`rusemod.build.cleared_woods`; proven in the game
+  2026-10-01: tanks drive in, infantry there are seen).
+- The Studio's **Erase** tool (Maps view) paints these circles along a drag: trees and props, buildings too when
+  picked. It tints red what they take, and counts it the way the build erases (`rusemod.scenery.erase_count`).
 - Erase areas are applied before the mod's own objects are added, so objects placed inside a circle stay.
 - Most of a map's trees are in blocks it places many times, so the build copies each such block for the erased spot
   (`rusemod.scenery.erase_objects`; a 200 m circle in a wood adds about 300 KB). A map's scenery holds at most

@@ -467,7 +467,7 @@ SHOW = {"building": None, "prop": 20000, "vegetation": 40000}  # what the Studio
 
 def view(map_arc, unit_arc, descs: dict[str, Descriptor] | None = None, budget: dict | None = None) -> dict:
     """A map's scenery for the Studio's map view (JSON-ready): {"types": [[short name, group, category, model,
-    [every model]]],
+    [every model], whether it's a bridge]],
     "groups": {group: {"shown": n, "total": n}}, "items": {group: [type, x, y, turn, size, ...] flat}} with every
     building and a sample of props and trees (`budget`, default SHOW). Positions are map units; the game sets
     objects on the ground itself."""
@@ -489,7 +489,7 @@ def view(map_arc, unit_arc, descs: dict[str, Descriptor] | None = None, budget: 
             if s not in index:
                 index[s] = len(types)
                 d = descs[sc.names[s]]
-                types.append([d.name.split("/", 1)[-1], d.group, d.category, d.model or "", list(d.models)])
+                types.append([d.name.split("/", 1)[-1], d.group, d.category, d.model or "", list(d.models), d.bridge])
             flat += [index[s], round(x), round(y), round(turn, 3), round(size, 2)]
         items[g] = flat
     per_type = sc.types()
@@ -1055,6 +1055,16 @@ def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
                      + (f": the scenery grew by {grew:,} bytes" if grew >= 0 else
                         f": the scenery shrank by {-grew:,} bytes"))
     return hashlib.md5(body).digest() + body, notes + said, by_group
+
+
+def erase_count(data: bytes, areas: list[EraseArea], descs: dict[str, Descriptor]) -> dict[str, int]:
+    """What `areas` take off the map whose scenery file is `data`, per group as erase_objects counts them, worked out
+    the way the build erases (so an erase too big for the map raises SceneryEditError, as the build refuses it). The
+    Studio's Erase tool says it while circles are painted; nothing is written."""
+    names = Scenery(data).names
+    kinds = {i: descs[n].group for i, n in enumerate(names) if n in descs}
+    bridges = {i for i, n in enumerate(names) if n in descs and descs[n].bridge}
+    return erase_objects(data, areas, kinds, bridges)[2]
 
 
 def parse_erase(rows: list, where: str = "scenery.toml") -> list[EraseArea]:
