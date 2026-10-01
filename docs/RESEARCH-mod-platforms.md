@@ -2,7 +2,7 @@
 
 The owner asked: "see what you can find on the code that CurseForge has on how it made its platform, and others like
 it, like ModDB, Nexus". This is what's public, and what each idea would mean here. Ideas only: none of their code is
-copied (Vortex is GPL-3.0 and Thunderstore AGPL-3.0; this project is MIT).
+copied (Vortex is GPL-3.0 and Thunderstore AGPL-3.0; this project was MIT then, GPL-3.0 since 2026-09-30).
 
 ## What's public
 

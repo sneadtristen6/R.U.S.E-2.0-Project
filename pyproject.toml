@@ -10,7 +10,7 @@ name = "rusemod"
 version = "0.0.1"
 description = "Read and write R.U.S.E. game data: the engine of the R.U.S.E. mod platform, and its two apps."
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { text = "GPL-3.0-only" }
 
 [project.optional-dependencies]
 apps = ["pywebview"]  # the apps' windows

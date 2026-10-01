@@ -7,7 +7,7 @@
 [![Launcher release](https://img.shields.io/github/v/release/sneadtristen6/R.U.S.E-2.0-Project?filter=launcher-v*&label=launcher)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)
 [![Studio release](https://img.shields.io/github/v/release/sneadtristen6/R.U.S.E-2.0-Project?filter=studio-v*&include_prereleases&label=studio)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio)
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
 [![Download RUSE Launcher](https://img.shields.io/badge/Download-RUSE%20Launcher-b8913a?style=for-the-badge)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)
 &nbsp;&nbsp;
@@ -436,8 +436,10 @@ py -3 -m unittest discover -s tests
 
 ## License
 
-MIT for this project's own code ([LICENSE](LICENSE)). [`src/ruse_mod_engine`](src/ruse_mod_engine/) is
-LittleGroove's RUSE-Mod-Manager engine, used as it is (see Credits); `src/ruse_mod_engine/python251` carries
+GNU General Public License, version 3 ([LICENSE](LICENSE), GPL-3.0): copyright (C) 2026 sneadtristen6 and the
+RUSE Mod Platform contributors. The apps ship [`src/ruse_mod_engine`](src/ruse_mod_engine/), LittleGroove's
+RUSE-Mod-Manager engine (GPLv3), used as it is (see Credits), and its license needs the whole program under
+GPL-3.0 (it was MIT until 2026-09-30). `src/ruse_mod_engine/python251` carries
 Python's license ([its LICENSE.txt](src/ruse_mod_engine/python251/LICENSE.txt)). This is an independent, fan-made
 tool, not affiliated with or endorsed by Eugen Systems. R.U.S.E. and its game data belong to their owners; this
 project ships no game files and works only on a copy of a game you own.

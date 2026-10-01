@@ -262,7 +262,7 @@ accepting `.rmod` (it becomes a mod folder in the library, marked with its build
 **Goal:** players keep the mods they already have.
 
 **Build:**
-1. Our own `.rmod` reader (MIT; never copy RUSE-Mod-Manager's code; the format as documented in MOD_FORMAT §13 and
+1. Our own `.rmod` reader (written before the switch to GPL-3.0, so it copied none of RUSE-Mod-Manager's code; the format as documented in MOD_FORMAT §13 and
    docs/LITTLEGROOVE_STUDY.md) that turns an `.rmod` into a package of ours (Task C), with `mod.toml` marking the
    game build it was made for (the `compat` branch). If the documents don't pin the format down, write what's
    missing into MOD_FORMAT §14 and stop.

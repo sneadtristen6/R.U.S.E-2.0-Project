@@ -43,7 +43,7 @@ def nuitka_command(app: str, icon: Path, out: Path) -> list[str]:
             "--include-package-data=rusemod", "--include-package-data=ruse_mod_engine",
             f"--windows-icon-from-ico={icon}", "--company-name=RUSE Mod Platform",
             f"--product-name={a['name']}", f"--file-version={v}", f"--product-version={v}",
-            f"--file-description={a['description']}", "--copyright=MIT License", f"--report={out / 'report.xml'}",
+            f"--file-description={a['description']}", "--copyright=GPL-3.0 (C) 2026 sneadtristen6 and the RUSE Mod Platform contributors", f"--report={out / 'report.xml'}",
             str(ROOT / "installers" / f"{app}.py")]
 
 

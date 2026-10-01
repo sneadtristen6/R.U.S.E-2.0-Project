@@ -19,7 +19,8 @@ uncertain items are marked. Decisions that follow from this are reflected in [PL
 Source: https://github.com/LittleGroove/RUSE-Mod-Manager. The terrain codec's comment credits the reverse-engineering
 to **ProLution (RUSE Modding Database)** and says the *format knowledge* is CC0. ⚠ Uncertain: not independently confirmed.
 
-**License consequence:** GPLv3 code can't be copied into an MIT project. We can read it and re-implement from the
+**License consequence** (2026-09-28; since 2026-09-30 this project is GPL-3.0 itself, see the reuse rule below):
+GPLv3 code can't be copied into an MIT project. We can read it and re-implement from the
 format knowledge, or change our license, or ask the authors (see decision below).
 
 **Other sources**
@@ -97,6 +98,8 @@ Stack sources:
 
 Who already solved pieces of what we build next, what we take from them, and whether their code can be reused.
 **Reuse rule:** MIT code can be reused with credit; GPL and CC BY-SA code is read for ideas only, never copied.
+**Since 2026-09-30 (GPL-3.0):** MIT, BSD, Apache-2.0 and GPL-3.0 code can be reused with credit, under GPL-3.0;
+GPL-2.0-only and anything unlicensed are still read for ideas only.
 
 | Our next step | Who did it | License | What we take |
 |---|---|---|---|
