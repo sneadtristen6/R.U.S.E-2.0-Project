@@ -1163,25 +1163,30 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             self._write_scenario_edits(pack, moves, spawns)
         return self.map_scenarios(pack)
 
-    def scenario_spawn(self, pack: str, file: str, unit: str, x: float, y: float, camp: int | None = 1,
+    def scenario_spawn(self, pack: str, file: str, unit: str, x: float, y: float, camp: int | None = scenario.NEUTRAL,
                        rotation: float = 0.0) -> dict:
         """Spawn a unit or building (`unit`: its address, as the unit list gives it) when scenario `file` starts, at
-        x, y, for side `camp`. Returns the map's scenarios as the mod leaves them."""
+        x, y, for side `camp` (-1: neutral, the only side a skirmish game spawns). Returns the map's scenarios as
+        the mod leaves them."""
         return self.scenario_spawn_many(pack, file, unit, [[x, y]], camp, rotation)
 
     SPAWN_MOST = 50  # units one click may add (a formation)
 
-    def scenario_spawn_many(self, pack: str, file: str, unit: str, points: list, camp: int | None = 1,
+    def scenario_spawn_many(self, pack: str, file: str, unit: str, points: list, camp: int | None = scenario.NEUTRAL,
                             rotation: float = 0.0) -> dict:
         """Spawn `unit` at each [x, y] of `points` (a formation, up to SPAWN_MOST) when scenario `file` starts, for
-        side `camp`, all turned `rotation` radians; saved in one go. Returns the map's scenarios."""
+        side `camp` (-1: neutral; a skirmish scenario takes only that), all turned `rotation` radians; saved in one
+        go. Returns the map's scenarios."""
         try:
             where = [(float(x), float(y)) for x, y in points]
         except (TypeError, ValueError):
             raise StudioError("the places to spawn at must be pairs of numbers") from None
         if not 1 <= len(where) <= self.SPAWN_MOST or not all(map(math.isfinite, (v for p in where for v in p))):
             raise StudioError(f"a spawn takes 1 to {self.SPAWN_MOST} places, each two finite numbers")
-        self._base_scenario(pack, file)
+        camp = scenario.NEUTRAL if camp is None else int(camp)
+        if self._base_scenario(pack, file)["kind"] == "skirmish" and camp != scenario.NEUTRAL:
+            raise StudioError(f"{file} is a skirmish map's scenario: a skirmish game spawns only neutral items, so a "
+                              f"unit for side {camp} would never appear. Pick Neutral, or an Operation's scenario.")
         ix = self._open()
         try:
             try:
@@ -1195,8 +1200,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             raise StudioError(f"{_tail(unit)} has no class name for the game's scripts, so it can't be spawned")
         with self._saving:
             moves, spawns = self._read_scenario_edits(pack)
-            spawns += [scenario.Spawn(file, name, x, y, None if camp is None else int(camp), float(rotation))
-                       for x, y in where]
+            spawns += [scenario.Spawn(file, name, x, y, camp, float(rotation)) for x, y in where]
             self._write_scenario_edits(pack, moves, spawns)
         return self.map_scenarios(pack)
 
@@ -1285,12 +1289,12 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                "missing": [], "most": pl.PLAYERS_MOST}
         target = next((e for e in found if setting and (setting.entry is None or e["name"] == setting.entry)), None)
         if setting and target and target["file"]:
-            places = {}
+            sizes: dict = {}  # starting points per team: the game seats a team on them whatever their places
             s = next((x for x in self.map_scenarios(pack)["scenarios"] if x["file"].lower() == target["file"]), None)
             for it in (s["items"] if s else []):
                 if it["kind"] == "StartingPoint" and it.get("alliance") is not None:
-                    places.setdefault(int(it["alliance"]), set()).add(int(it.get("place") or 1))
-            out["missing"] = [list(pair) for pair in pl.seats(places, target["layouts"], setting.count)]
+                    sizes[int(it["alliance"])] = sizes.get(int(it["alliance"]), 0) + 1
+            out["missing"] = [list(pair) for pair in pl.seats(sizes, target["layouts"], setting.count)]
         return out
 
     def _read_players(self, pack: str):

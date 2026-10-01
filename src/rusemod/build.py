@@ -589,6 +589,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say("Nothing was written.")
             return result
         from .terrain import pack_file
+
+        def warn(message: str) -> None:
+            """A warning found while the maps are built (after the report above): kept and said at once."""
+            result.findings.append(Finding("warning", message))
+            say(f"warning: {message}")
         map_packs = []  # (path, open pack, {member: new bytes})
         for name, (strokes, ids) in terrain_edits(result.order, mods).items():
             map_path = find_pack(game, pack_file(name))
@@ -884,11 +889,49 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         return changed_members.get(member) or bytes(a.read(a.find(member)))
                     except KeyError:
                         return None
+
+                def read_glad(member, a=arc):
+                    """A ZZ_GladPatchableWin.dat member as the build has it so far (any case), or None."""
+                    key = member.lower()
+                    mine = next((d for m, d in result.changed.items() if m.lower() == key), None)
+                    if mine is not None:
+                        return mine
+                    e = a.entry(member)
+                    return bytes(a.read(e)) if e is not None else None
+                classes: list = []  # [the unit list's class names, or None when it can't be read], read once
+                shipped: list = []  # [every class path the shipped spawns use], read once when needed
+
+                def registered_classes():
+                    if not classes:
+                        zz_path = text_path or find_pack(game, loc.PACK)  # (ZZ_Win.dat: the mods may not need it)
+                        zz = text_arc if text_arc is not None else open_pack(zz_path) if zz_path else None
+                        found = pyscript.find_unit_list(zz) if zz is not None else None
+                        try:
+                            ul = pyscript.unit_list(pyscript.read_xyz(found[3]).payload) if found else None
+                        except pyscript.ScriptError:
+                            ul = None
+                        classes.append(None if ul is None else
+                                       {n for n, c in ul.classes.items() if c.registered} | set(result.new_classes))
+                    return classes[0]
+
+                def shipped_paths():
+                    if not shipped:
+                        from .scenario import shipped_class_paths
+                        shipped.append(shipped_class_paths(data_arc))
+                    return shipped[0]
                 for name, (map_moves, ids) in moves.items():
-                    from .scenario import Start
-                    unset = [m for m in map_moves if isinstance(m, Start) and m.z is None]
+                    from .players import skirmish_files
+                    from .scenario import Move, Spawn, spawn_class_problems
+                    new_spawns = [m for m in map_moves if isinstance(m, Spawn)]
+                    wrong = spawn_class_problems(name, new_spawns, registered_classes(), shipped_paths) if new_spawns else []
+                    if wrong:  # a class the game can't find makes loading the map fail
+                        result.findings += [Finding("error", f"{', '.join(ids)}: {w}") for w in wrong]
+                        continue
+                    unset = [m for m in map_moves if getattr(m, "z", 0.0) is None and (
+                        not isinstance(m, Move) or m.kind in ("StartingPoint", "Spawn"))]
                     map_path = find_pack(game, pack_file(name)) if unset else None
-                    if map_path is not None:  # a new starting point sits at the ground's height, as the shipped ones
+                    if map_path is not None:  # a new or moved starting point or spawn sits at the ground's height,
+                        # as every shipped one does (the game puts a spawned unit at the height it's given)
                         from .tms import Tms
                         entry = next((e for e in map_packs if e[0] == map_path), None)
                         map_arc = entry[1] if entry else open_pack(map_path)
@@ -900,7 +943,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         except (KeyError, ValueError, struct.error, zlib.error):
                             pass  # without the ground, a start takes its teammate's height
                     try:
-                        new, notes = apply_moves(read_data, name, map_moves)
+                        new, notes = apply_moves(read_data, name, map_moves, skirmish_files(read_glad, name),
+                                                 warn=lambda msg, ids=ids: warn(f"{', '.join(ids)}: {msg}"))
                     except (ScenarioError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
@@ -950,26 +994,25 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     say(f"roads: {name}, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
+                for name, (map_moves, ids) in moves.items():  # the mods' starting points on the final ground
+                    from .scenario import start_ground_problems
+                    wrong, far = start_ground_problems(read_data, name, map_moves)
+                    result.findings += [Finding("error", f"{', '.join(ids)}: {w}") for w in wrong]
+                    for w in far:
+                        warn(f"{', '.join(ids)}: {w}")
                 for name, (settings, ids) in players.items():  # how many players: after the mods' starting points
                     from .players import PlayersError, apply_players
                     from .scenario import Scenario, folder_of
 
-                    def read_glad(member, a=arc):
-                        key = member.lower()
-                        mine = next((d for m, d in result.changed.items() if m.lower() == key), None)
-                        if mine is not None:
-                            return mine
-                        e = a.entry(member)
-                        return bytes(a.read(e)) if e is not None else None
-
                     def places(file, n=name):
                         raw = read_data(folder_of(n) + file)
                         try:
-                            return Scenario.read(raw).places() if raw else None
+                            return Scenario.read(raw).team_sizes() if raw else None
                         except (ScenarioError, ValueError, struct.error):
                             return None
                     try:
-                        new, notes = apply_players(read_glad, name, settings[-1], places)  # the last mod's count
+                        new, notes = apply_players(read_glad, name, settings[-1], places,  # the last mod's count
+                                                   warn=lambda msg, ids=ids: warn(f"{', '.join(ids)}: map.toml: {msg}"))
                     except (PlayersError, ValueError, KeyError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue

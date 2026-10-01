@@ -901,7 +901,7 @@ const ALLIANCE = [0x3f7fe0, 0xe0503f, 0x49b85a, 0xe0c33f, 0xa35ee0, 0x3fc8d8];
 // tool: "move" or "spawn" (or null); selected: the item being moved; units: what can be spawned (StudioApi.units);
 // kind, type: the Spawn tool's first two dropdowns (the third is the unit, by nation)
 const scen = { data: null, pick: 0, show: true, group: null, tool: null, selected: null, units: null, kind: "ground",
-  type: null, camp: "1", count: 1, formation: "line", gap: {}, team: 1, players: null };
+  type: null, camp: "-1", count: 1, formation: "line", gap: {}, team: 1, players: null };
 const SPAWN_KINDS = ["buildings", "ground", "infantry", "air"];
 // Several at once: how many one click adds, in which shape, how far apart (metres, per kind to start with). The shape
 // faces up the screen (away from the camera), its middle on the click; each unit is turned that way too.
@@ -1124,7 +1124,8 @@ function drawScenario() {
       const m = new THREE.Mesh(new THREE.OctahedronGeometry(pillar * (it.mine ? 0.16 : 0.12)), new THREE.MeshLambertMaterial({ color: colour }));
       m.position.copy(at(it.x, it.y, pillar * 0.15));
       m.userData.label = `${mv.words.scen_spawn}${it.name ? " · " + it.name : ""}${it.what ? " · " + it.what : ""}`
-        + (it.camp !== undefined && it.camp !== null ? ` · ${fill(mv.words.scen_side_n, { n: it.camp })}` : "")
+        + (it.camp === -1 || (it.mine && it.camp === null) ? ` · ${mv.words.scen_side_neutral}`
+          : it.camp !== undefined && it.camp !== null ? ` · ${fill(mv.words.scen_side_n, { n: it.camp })}` : "")
         + (it.mine ? ` · ${mv.words.scen_mine}` : it.moved ? ` · ${mv.words.scen_moved}` : "");
       m.userData.item = it.item;
       group.add(m);
@@ -1223,8 +1224,12 @@ function renderScenTools() {
         textContent: u.name + (u.name !== u.base_name && mv.lang !== "base" ? ` (${u.base_name.replace(/^Descriptor_[A-Za-z]+_/, "")})` : "") })))));
     if (keep && [...unit.options].some((o) => o.value === keep)) unit.value = keep;
     unit.title = w.tip_scen_unit;
-    camp.replaceChildren(...["", "1", "2", "3", "4", "5", "6", "7"].map((n) => chipOf(n ? fill(w.scen_side_n, { n }) : w.scen_side_none,
-      w.tip_scen_camp, scen.camp === n, () => { scen.camp = n; renderScenTools(); })));
+    // a skirmish game spawns only neutral items (camp -1): a unit for a player's side would never appear there
+    const skirmish = !!s && s.kind === "skirmish";
+    if (skirmish) scen.camp = "-1";
+    camp.replaceChildren(...(skirmish ? ["-1"] : ["-1", "1", "2", "3", "4", "5", "6", "7", "8"]).map((n) =>
+      chipOf(n === "-1" ? w.scen_side_neutral : fill(w.scen_side_n, { n }), skirmish ? w.tip_scen_camp_skirmish : w.tip_scen_camp,
+        scen.camp === n, () => { scen.camp = n; renderScenTools(); })));
     $("scen-count").replaceChildren(el("span", { className: "muted small", textContent: w.scen_count }),
       ...SPAWN_COUNTS.map((n) => chipOf(String(n), w.tip_scen_count, scen.count === n, () => { scen.count = n; renderScenTools(); })));
     $("scen-formation").replaceChildren(...FORMATIONS.map((f) => {

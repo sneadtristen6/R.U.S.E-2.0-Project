@@ -191,6 +191,31 @@ class Starts(unittest.TestCase):
         self.assertEqual(back.places(), {1: {1, 2}, 2: {1}})
         self.assertEqual(back.items[1].position, (9000.0, 8000.0, 70.0))  # the others stay
 
+    def test_a_moved_start_takes_its_camera_along(self):
+        """The game opens a skirmish looking from the start's PositionCamera when it has one, so a moved start's
+        camera moves by the same offset (a start shaped like Chess's, which carry one each); z is the given height."""
+        from rusemod.scenario import Move, apply_moves, folder_of
+        s = Scenario.read(two_teams())
+        s.move(0, 1000.0 + 5000.0, 2000.0 + 5000.0, z=77.0)
+        back = Scenario.read(s.to_bytes())
+        it = back.items[0]
+        self.assertEqual(it.position, (6000.0, 7000.0, 77.0))
+        self.assertEqual(struct.unpack("<3f", bytes.fromhex(it.values["PositionCamera"])), (6100.0, 7600.0, 900.0))
+        self.assertEqual(struct.unpack("<3f", bytes.fromhex(back.items[1].values["PositionCamera"])),
+                         (8900.0, 7400.0, 900.0))  # the other start's stays
+        member = folder_of("Blitz") + "leveldesign.scenario"
+        new, notes = apply_moves({member: two_teams()}.get, "Blitz",
+                                 [Move("leveldesign.scenario", 1, "StartingPoint", 100.0, 200.0, z=5.0)])
+        it = Scenario.read(new[member]).items[1]
+        self.assertEqual(it.position, (100.0, 200.0, 5.0))
+        self.assertEqual(struct.unpack("<3f", bytes.fromhex(it.values["PositionCamera"])), (0.0, -400.0, 900.0))
+        self.assertTrue(any("warm-up camera flight (Warmup_J4)" in n for n in notes), notes)
+
+    def test_a_start_without_a_camera_of_its_own(self):
+        s = Scenario.read(scenario())  # its start has no PositionCamera: the game looks at the start itself
+        s.move(0, 10.0, 20.0)
+        self.assertNotIn("PositionCamera", Scenario.read(s.to_bytes()).items[0].values)
+
     def test_a_team_with_no_start_yet_and_refusals(self):
         s = Scenario.read(two_teams())
         n = s.add_start(8500.0, 7000.0, 3, rotation=0.25)  # copies the nearest: team 2's, keeps its height
@@ -225,6 +250,119 @@ class Starts(unittest.TestCase):
                                   Start("leveldesign.scenario", 2, 8000.0, 7000.0)])
         self.assertEqual(Scenario.read(new[member]).places(), {1: {1, 2}, 2: {1, 2}})
         self.assertIn("2 starting point(s) added", notes[0])
+
+
+class Spawns(unittest.TestCase):
+    """New spawns as the game takes them: a skirmish game spawns only neutral items (camp -1), a spawn without a
+    Camp reads as camp 0, a depot slab starts with ChampInteger trucks, and every shipped spawn has the ground's z."""
+    MEMBER = "test\\map\\blitz\\leveldesign.scenario"
+
+    def apply(self, spawns, skirmish=(), warned=None):
+        from rusemod.scenario import apply_moves
+        new, _notes = apply_moves({self.MEMBER: scenario()}.get, "Blitz", spawns, skirmish,
+                                  warned.append if warned is not None else None)
+        return Scenario.read(new[self.MEMBER]).items[-1]
+
+    def test_a_skirmish_scenario_takes_only_neutral_spawns(self):
+        from rusemod.scenario import Spawn
+        with self.assertRaisesRegex(ScenarioError, "scenario.toml: the spawn of Unit_M4_Sherman .* is for camp 1, but "
+                                                   "leveldesign.scenario is a skirmish map's scenario.*camp = -1"):
+            self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0, camp=1)], {"leveldesign.scenario"})
+        it = self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0, camp=-1)], {"leveldesign.scenario"})
+        self.assertEqual(it.values["Camp"], -1)
+        it = self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0)], {"leveldesign.scenario"})
+        self.assertEqual(it.values["Camp"], -1)  # no camp given: written neutral, never left out (camp 0)
+
+    def test_a_camp_the_scenario_never_spawns_for_warns(self):
+        from rusemod.scenario import Spawn
+        warned = []
+        self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0, camp=3)], warned=warned)
+        self.assertEqual(len(warned), 1)
+        self.assertIn("camp 3, which none of the scenario's own spawns use (theirs: 0)", warned[0])
+        warned.clear()
+        self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0, camp=-1)], warned=warned)
+        self.assertEqual(warned, [])
+
+    def test_a_depot_takes_the_shipped_class_path_and_trucks(self):
+        from rusemod.scenario import DEPOT, Spawn
+        it = self.apply([Spawn("leveldesign.scenario", "DalleBatimentDepot", 5.0, 6.0)])
+        self.assertEqual(it.values, {"PythonClassName": DEPOT, "ChampInteger": 25, "Camp": -1})
+        it = self.apply([Spawn("leveldesign.scenario", "DalleBatimentDepot", 5.0, 6.0, trucks=40)])
+        self.assertEqual(it.values["ChampInteger"], 40)
+        it = self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0)])
+        self.assertNotIn("ChampInteger", it.values)
+
+    def test_the_height(self):
+        from rusemod.scenario import Spawn
+        self.assertEqual(self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0, z=33.0)]).position,
+                         (5.0, 6.0, 33.0))
+        # no ground given: the nearest design item's height (the start at 1000, 2000 is at 50), never 0 under a hill
+        self.assertEqual(self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 900.0, 2100.0)]).position[2],
+                         50.0)
+
+    def test_classes_the_game_can_find(self):
+        from rusemod.scenario import Spawn, spawn_class_problems
+        shipped = {"front.parametres.generated_data.ParamsUnites.Unit_LCVP"}
+        spawns = [Spawn("a.scenario", w, 1.0, 2.0) for w in (
+            "Unit_M4_Sherman", "DalleBatimentDepot", "parametres.Classes.Unit_M4_Sherman", "Unit_Ghost",
+            "front.parametres.generated_data.ParamsUnites.Unit_LCVP", "front.parametres.generated_data.ParamsUnites.Unit_X")]
+        wrong = spawn_class_problems("Blitz", spawns, {"Unit_M4_Sherman"}, lambda: shipped)
+        self.assertEqual(len(wrong), 2, wrong)
+        self.assertIn("the spawn of Unit_Ghost in a.scenario: the game's unit list has no class Unit_Ghost", wrong[0])
+        self.assertIn("ParamsUnites.Unit_X isn't a class path any shipped spawn uses", wrong[1])
+        # the unit list can't be read: its classes aren't checked, the other paths still are
+        self.assertEqual(len(spawn_class_problems("Blitz", spawns, None, lambda: shipped)), 1)
+
+    def test_the_mod_file(self):
+        import tomllib
+        from rusemod.scenario import Spawn, parse_spawns, spawns_toml
+        spawns = [Spawn("a.scenario", "DalleBatimentDepot", 1.0, 2.0, -1, 0.5, 30), Spawn("a.scenario", "Unit_X", 3.0, 4.0, 2)]
+        self.assertEqual(parse_spawns(tomllib.loads(spawns_toml(spawns))["spawn"]), spawns)
+        for bad, why in (({"camp": 0}, "camp is -1"), ({"camp": True}, "whole numbers"),
+                         ({"trucks": 5}, "only for a supply depot"),
+                         ({"what": "DalleBatimentDepot", "trucks": -1}, "0 to 1000"),
+                         ({"x": float("inf")}, "finite")):
+            with self.subTest(bad=bad), self.assertRaisesRegex(ScenarioError, why):
+                parse_spawns([{"file": "a.scenario", "what": "Unit_X", "x": 1, "y": 2, **bad}])
+
+
+def mapinfo(road_y=2000.0) -> bytes:
+    """A made-up mapinfo.win: test_nav's row of three ground circles along y 2000 (x 2000 to 10000) for infantry and
+    vehicles, and one road along y `road_y` from x 0 to 12000."""
+    from rusemod import nav
+    from rusemod.roadnet import RoadNet, build_tree
+    from test_nav import row
+    net = RoadNet([(0.0, road_y), (12000.0, road_y)], [])
+    net.links = [(0, 1, net._cost(0, 1))]
+    net.tree = build_tree(net.points, net.links)
+    head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 16000.0, 16000.0)
+    return nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+        net.to_bytes(), row().to_bytes(), row().to_bytes(), b"cover")) + b"tail", {})
+
+
+class StartGround(unittest.TestCase):
+    """A starting point where vehicles can't stand gets its HQ wherever the game finds room, possibly far away: a new
+    or moved one is checked on the map's final movement and roads."""
+
+    def test_on_the_ground_off_it_and_far_from_a_road(self):
+        from rusemod.cover import member
+        from rusemod.scenario import Move, Start, start_ground_problems
+        read = {member("Blitz"): mapinfo()}.get
+        ok = [Start("a.scenario", 1, 2000.0, 2000.0), Move("a.scenario", 0, "StartingPoint", 7000.0, 2500.0)]
+        self.assertEqual(start_ground_problems(read, "Blitz", ok), ([], []))
+        errors, warnings = start_ground_problems(read, "Blitz", [Start("a.scenario", 2, 50000.0, 9000.0),
+                                                                 Move("a.scenario", 3, "StartingPoint", 2000.0, 7000.0)])
+        self.assertEqual((len(errors), warnings), (2, []))
+        self.assertIn("Blitz: scenario.toml: the new starting point for team 2 at (50000, 9000) in a.scenario is where "
+                      "vehicles can't go", errors[0])
+        self.assertIn("the starting point moved (item 3)", errors[1])
+        far = {member("Blitz"): mapinfo(road_y=40000.0)}.get
+        errors, warnings = start_ground_problems(far, "Blitz", ok)
+        self.assertEqual((errors, len(warnings)), ([], 2))
+        self.assertIn("38,000 map units from the nearest road", warnings[0])
+        # a spawn, a label, or a map without its mapinfo.win: nothing to check
+        self.assertEqual(start_ground_problems(read, "Blitz", [Move("a.scenario", 1, "LabelVille", 9e9, 9e9)]), ([], []))
+        self.assertEqual(start_ground_problems({}.get, "Blitz", ok), ([], []))
 
 
 class Kinds(unittest.TestCase):

@@ -106,6 +106,25 @@ class Seats(unittest.TestCase):
         self.assertEqual(seats(SIX, [3], 8), [])  # 8 players can't make 3 even teams: the game won't offer it
         self.assertEqual(seats(SIX, [2, 0], 8), [(1, 4), (2, 4), (5, 1), (6, 1), (7, 1), (8, 1)])
 
+    def test_a_team_seats_as_many_as_it_has_starting_points(self):
+        """The game takes a team's starting points lowest place first, whatever the places are: shipped maps seat
+        every player with places 3 and 4 for team 2 ('(4) Beta'), places left out ('(4) Face a face 2v2 01') or two
+        starts at one place; only the count per team matters (made-up teams shaped like those)."""
+        from rusemod.scenario import Item, Scenario
+
+        def start(team, place=None):
+            return Item("StartingPoint", (0.0, 0.0, 0.0), 0.0,
+                        {"AllianceNum": team, **({"AlliancePriority": place} if place is not None else {})})
+        for shape, players, layouts in (([(1, 1), (1, 2), (2, 3), (2, 4)], 4, [2]),       # Beta's team 2
+                                        ([(1, None), (1, None), (2, None), (2, None)], 4, [2]),  # no places
+                                        ([(1, 1), (1, 1), (2, 2), (2, 2), (3, 1), (3, 1), (4, 1), (4, 1)], 8, [4]),
+                                        ([(t, 1) for t in range(1, 9)], 8, [0])):
+            s = Scenario(4, [], [start(t, p) for t, p in shape])
+            self.assertEqual(seats(s.team_sizes(), layouts, players), [], shape)
+        s = Scenario(4, [], [start(1, 1), start(1, 1), start(2, 1)])
+        self.assertEqual(seats(s.team_sizes(), [2], 4), [(2, 2)])  # team 2's second start is missing
+        self.assertEqual(seats({1: 2, 2: 2}, [2], 4), [])  # counts or collections
+
     def test_the_name_follows(self):
         self.assertEqual(renamed("(6) Cotentin (3v3)", 8, True), "(8) Cotentin (4v4)")
         self.assertEqual(renamed("(4) Robert (2vs2)", 8, True), "(8) Robert (4vs4)")
@@ -128,11 +147,37 @@ class Applying(unittest.TestCase):
         g, m = Ndf(new[GLOBALS]), Ndf(new[MAPINFO])
         (mi, gi, name), = entries(m, g, "M04_cotentin")
         p = {g.prop_name(pi): v.scalar() for pi, v in g.objects[gi].props if v.tc in (0x00, 0x02)}
-        self.assertEqual((p["NbPlayers"], p["CategoryId"], p["GameType"]), (8, 3, 4))
+        self.assertEqual((p["NbPlayers"], p["CategoryId"], p["GameType"]), (8, 3, 3))  # no 4v4 type: untested
         self.assertEqual(name, "(8) Cotentin (4v4)")
         self.assertIn("6 -> 8 players", notes[0])
+        self.assertIn("its game type stays 3", notes[0])
         other = {g.prop_name(pi): v.scalar() for pi, v in g.objects[1].props if v.tc in (0x00, 0x02)}
         self.assertEqual(other["NbPlayers"], 2)  # the other map's entry is left alone
+
+    def test_the_scenarios_skirmish_games_load(self):
+        from rusemod.players import skirmish_files
+        self.assertEqual(skirmish_files(reader(glad()), "M04_cotentin"), {"leveldesign_3v3_v01.scenario"})
+        self.assertEqual(skirmish_files(reader(glad()), "Elsewhere"), set())
+        self.assertEqual(skirmish_files(reader({}), "M04_cotentin"), set())  # no map list: none known
+
+    def test_up_to_3v3_the_game_type_follows(self):
+        new, _notes = apply_players(reader(glad()), "M04_cotentin", Players(4), lambda f: {1: 2, 2: 2})
+        g = Ndf(new[GLOBALS])
+        p = {g.prop_name(pi): v.scalar() for pi, v in g.objects[0].props if v.tc in (0x00, 0x02)}
+        self.assertEqual(p["GameType"], 2)
+
+    def test_three_teams_and_a_count_that_isnt_a_multiple_of_3_warns(self):
+        files = glad()
+        g = Ndf(files[GLOBALS])
+        g.objects[0].props.append((g.add_prop("DispoMulti3Teams", 0), g.objects[0].props[-1][1]))
+        files[GLOBALS] = g.to_member(compress=bool(g.flags & 0x80))
+        said = []
+        apply_players(reader(files), "M04_cotentin", Players(8), lambda f: {t: 4 for t in (1, 2, 3)}, said.append)
+        self.assertEqual(len(said), 1)
+        self.assertIn("8 players can't make three even teams", said[0])
+        said.clear()
+        apply_players(reader(files), "M04_cotentin", Players(6), lambda f: {t: 3 for t in (1, 2, 3)}, said.append)
+        self.assertEqual(said, [])
 
     def test_two_players_drop_the_size_group(self):
         new, _notes = apply_players(reader(glad()), "M04_cotentin", Players(2), lambda f: SIX)

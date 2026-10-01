@@ -426,6 +426,23 @@ class ScenarioMoves(unittest.TestCase):
         self.assertEqual(new.values, {"Camp": 1, "PythonClassName": "front.parametres.Classes.Unit_M4_Sherman"})
         self.assertEqual(s.items[0].position[:2], (1500.0, 2500.0))
 
+    def test_a_start_where_vehicles_cant_go_is_refused(self):
+        """Checked on the map's movement as the build leaves it (test_scenario.mapinfo: ground along y 2000)."""
+        from test_scenario import mapinfo, scenario
+        (self.game / "Data" / "PC" / "190852" / "DataMap_Win.dat").write_bytes(make_edat([
+            ("dir", "test/map/blitz/".replace("/", "\\"), [("file", "leveldesign.scenario", scenario())]),
+            ("dir", "datasmap/blitz/".replace("/", "\\"), [("file", "mapinfo.win", mapinfo())])]))
+        sea = self.mod("sea", '[[start]]\nfile = "leveldesign.scenario"\nteam = 1\nx = 2000.0\ny = 9000.0\n')
+        lines = []
+        result = build_and_write(self.game, [load_mod(sea)], instance=self.root / "copy", say=lines.append)
+        self.assertEqual(len(result.errors), 1, lines)
+        self.assertIn("sea: Blitz: scenario.toml: the new starting point for team 1 at (2000, 9000) in "
+                      "leveldesign.scenario is where vehicles can't go", result.errors[0].message)
+        self.assertFalse((self.root / "copy").exists())
+        land = self.mod("land", '[[start]]\nfile = "leveldesign.scenario"\nteam = 1\nx = 2000.0\ny = 2000.0\n')
+        result = build_and_write(self.game, [load_mod(land)], instance=self.root / "copy", say=lines.append)
+        self.assertEqual(result.errors, [], lines)
+
     def test_a_move_for_another_version_of_the_map_is_refused(self):
         folder = self.mod("wrong", '[[move]]\nfile = "leveldesign.scenario"\nitem = 1\nkind = "StartingPoint"\n'
                                    'x = 1.0\ny = 2.0\n')
@@ -436,3 +453,89 @@ class ScenarioMoves(unittest.TestCase):
         bad = self.mod("bad", '[[move]]\nfile = "../x.scenario"\nitem = 0\nkind = "StartingPoint"\nx = 1\ny = 2\n')
         with self.assertRaises(BuildError):
             load_mod(bad)
+
+
+class SpawnClasses(unittest.TestCase):
+    """A spawn whose class the game can't find makes the map fail to load: one under parametres.Classes must be in
+    the game's Python unit list (made up here: Tank_A and Building_B), any other path one a shipped spawn uses."""
+
+    def build(self, what):
+        from test_pyscript import ZZ_WIN
+        from test_scenario import scenario
+        from rusemod import loc
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            game = root / "steamapps" / "common" / "R.U.S.E"
+            rev = game / "Data" / "PC" / "190852"
+            rev.mkdir(parents=True)
+            (game / "RUSE.exe").write_bytes(b"MZ")
+            (rev / "ZZ_GladPatchableWin.dat").write_bytes(PACK)
+            (rev / loc.PACK).write_bytes(ZZ_WIN)
+            (rev / "DataMap_Win.dat").write_bytes(
+                make_edat([("dir", "test/map/blitz/".replace("/", "\\"), [("file", "leveldesign.scenario", scenario())])]))
+            (root / "steamapps" / "appmanifest_21970.acf").write_text('"AppState" { "buildid" "24687178" }')
+            folder = write_mod(root / "mods", "spawner", {})
+            (folder / "maps" / "Blitz").mkdir(parents=True)
+            (folder / "maps" / "Blitz" / "scenario.toml").write_text(
+                f'[[spawn]]\nfile = "leveldesign.scenario"\nwhat = "{what}"\nx = 1.0\ny = 2.0\n', encoding="utf-8")
+            lines = []
+            return build_and_write(game, [load_mod(folder)], say=lines.append), lines
+
+    def test_a_listed_class_builds_and_a_made_up_one_is_refused(self):
+        for what in ("Tank_A", "front.parametres.Classes.Building_B", "DalleBatimentDepot"):
+            with self.subTest(what=what):
+                result, lines = self.build(what)
+                self.assertEqual(result.errors, [], lines)
+        for what, why in (("Unit_Made_Up", "spawner: Blitz: scenario.toml: the spawn of Unit_Made_Up in "
+                                           "leveldesign.scenario: the game's unit list has no class Unit_Made_Up"),
+                          ("Unit_M4_Sherman", "the game's unit list has no class Unit_M4_Sherman"),
+                          ("front.somewhere.Unit_X", "front.somewhere.Unit_X isn't a class path any shipped spawn uses")):
+            with self.subTest(what=what):
+                result, lines = self.build(what)
+                self.assertEqual(len(result.errors), 1, lines)
+                self.assertIn(why, result.errors[0].message)
+                self.assertIn("Nothing was written.", lines)
+
+
+class ScenarioOnTheGround(unittest.TestCase):
+    """Spawned units and moved starting points stand at the ground's height there, as every shipped one does
+    (6,380 spawns, none at z 0): read from the map's highdef.tms, on a made-up map with hills."""
+
+    def test_spawns_and_moved_starts_take_the_grounds_height(self):
+        from test_scenario import scenario
+        from test_terrain_edit import make_map_pack
+        from rusemod.scenario import DEPOT, Scenario
+        from rusemod.terrain_edit import FILES
+        from rusemod.tms import Tms
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            game = root / "steamapps" / "common" / "R.U.S.E"
+            rev = game / "Data" / "PC" / "190852"
+            rev.mkdir(parents=True)
+            (game / "Maps" / "PC").mkdir(parents=True)
+            (game / "RUSE.exe").write_bytes(b"MZ")
+            (rev / "ZZ_GladPatchableWin.dat").write_bytes(PACK)
+            (rev / "DataMap_Win.dat").write_bytes(
+                make_edat([("dir", "test/map/test/".replace("/", "\\"), [("file", "leveldesign.scenario", scenario())])]))
+            map_pack = make_map_pack()
+            (game / "Maps" / "PC" / "DataMapTest_v09.dat").write_bytes(map_pack)
+            (root / "steamapps" / "appmanifest_21970.acf").write_text('"AppState" { "buildid" "24687178" }')
+            folder = write_mod(root / "mods", "ground", {})
+            (folder / "maps" / "Test").mkdir(parents=True)
+            (folder / "maps" / "Test" / "scenario.toml").write_text(
+                '[[move]]\nfile = "leveldesign.scenario"\nitem = 0\nkind = "StartingPoint"\nx = 1400.0\ny = 1600.0\n\n'
+                '[[spawn]]\nfile = "leveldesign.scenario"\nwhat = "Unit_M4_Sherman"\nx = 1500.0\ny = 1500.0\n\n'
+                '[[spawn]]\nfile = "leveldesign.scenario"\nwhat = "DalleBatimentDepot"\nx = 1700.0\ny = 1300.0\n',
+                encoding="utf-8")
+            lines = []
+            result = build_and_write(game, [load_mod(folder)], instance=root / "copy", say=lines.append)
+            self.assertEqual(result.errors, [], lines)
+            arc = Edat((root / "copy" / "Data" / "PC" / "190852" / "DataMap_Win.dat").read_bytes())
+            s = Scenario.read(bytes(arc.read(arc.find("test/map/test/leveldesign.scenario".replace("/", "\\")))))
+            ground = Tms(bytes(Edat(map_pack).read(Edat(map_pack).find(FILES["highdef"]))))
+            start, tank, depot = s.items[0], s.items[-2], s.items[-1]
+            for it in (start, tank, depot):
+                self.assertAlmostEqual(it.position[2], ground.height_at(*it.position[:2]), places=3)
+            self.assertNotEqual(tank.position[2], 0.0)
+            self.assertEqual(tank.values["Camp"], -1)  # no camp given: neutral
+            self.assertEqual(depot.values, {"PythonClassName": DEPOT, "ChampInteger": 25, "Camp": -1})

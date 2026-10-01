@@ -35,6 +35,7 @@ the checksum made again.
 from __future__ import annotations
 
 import hashlib
+import math
 import struct
 from dataclasses import dataclass, field
 
@@ -42,6 +43,7 @@ from .ndf import Ndf, local_ref
 
 MAGIC = b"SCENARIO\r\n"
 AREA = b"AREA"
+NEUTRAL = -1   # the camp of neutral items (the shipped depots); the only camp a skirmish game spawns
 
 
 class ScenarioError(ValueError):
@@ -185,27 +187,41 @@ class Scenario:
 
     def move(self, item: int, x: float, y: float, z: float | None = None, rotation: float | None = None) -> None:
         """Put design item number `item` (in `items`) at x, y (and z; else it keeps its height), turned to `rotation`
-        radians when given (only items that have a Rotation can turn)."""
+        radians when given (only items that have a Rotation can turn). A starting point's opening camera
+        (PositionCamera, when it has one: the game opens a skirmish looking from there) moves by the same offset, as
+        add_start does; its warm-up camera flight (WarmupCamPath, a path in the map's camera file) can't move."""
         it = self.items[item]
         o = self.ndf.objects[it.obj]
         props = {self.ndf.prop_name(pi): v for pi, v in o.props}
+        if rotation is not None and "Rotation" not in props:
+            raise ScenarioError(f"design item {item} ({it.kind}) has no rotation to change")
         pos = props["Position"]
+        dx, dy = x - it.position[0], y - it.position[1]
         z = it.position[2] if z is None else z
         pos.payload = struct.pack("<3f", x, y, z) + pos.payload[12:]
         it.position = struct.unpack("<3f", pos.payload[:12])
         if rotation is not None:
-            if "Rotation" not in props:
-                raise ScenarioError(f"design item {item} ({it.kind}) has no rotation to change")
             props["Rotation"].payload = struct.pack("<f", rotation)
             it.rotation = struct.unpack("<f", props["Rotation"].payload)[0]
+        addon = local_ref(props["AddOn"]) if "AddOn" in props else None
+        if it.kind == "StartingPoint" and addon is not None:
+            for _pi, v in self.ndf.objects[addon].props:
+                if self.ndf.prop_name(_pi) == "PositionCamera" and len(v.payload) >= 12:
+                    cx, cy, cz = struct.unpack_from("<3f", v.payload)
+                    if cx or cy:  # (0, 0): no camera of its own, the game looks at the start itself
+                        v.payload = struct.pack("<3f", cx + dx, cy + dy, cz) + bytes(v.payload[12:])
+                        it.values["PositionCamera"] = _plain(self.ndf, v)
         self.changed = True
 
-    def add_spawn(self, x: float, y: float, what: str, camp: int | None = None, rotation: float = 0.0,
-                  z: float = 0.0, name: str | None = None) -> int:
-        """A new design item that spawns `what` at x, y (world units) when the scenario starts, for side `camp`
-        (None: no side, like the shipped depots' -1 is written as it's given), turned `rotation` radians. `what` is
-        the game's Python class path of a unit or building (front.parametres.Classes.Unit_M4_Sherman), as the shipped
-        spawns name theirs. Returns the new item's number in `items`."""
+    def add_spawn(self, x: float, y: float, what: str, camp: int | None = NEUTRAL, rotation: float = 0.0,
+                  z: float = 0.0, name: str | None = None, trucks: int | None = None) -> int:
+        """A new design item that spawns `what` at x, y, z (world units; z the ground's height, as every shipped
+        spawn has it) when the scenario starts, for side `camp` (None: neutral, -1, as the shipped depots: the game
+        reads a spawn without a Camp as camp 0, which no game plays), turned `rotation` radians. `what` is the game's
+        Python class path of a unit or building (front.parametres.Classes.Unit_M4_Sherman), as the shipped spawns
+        name theirs. `trucks`: a depot's trucks (ChampInteger), written when given. Returns the new item's number in
+        `items`."""
+        camp = NEUTRAL if camp is None else camp
         from .ndf import Value
         nd = self.ndf
         if nd is None:
@@ -227,8 +243,9 @@ class Scenario:
         item_cls = nd.class_index("TGameDesignItem")
         spawn_cls = nd.class_index("TGameDesignAddOn_Spawn")
         addon_props = [(prop("PythonClassName", spawn_cls), Value(0x07, struct.pack("<I", string(what))))]
-        if camp is not None:
-            addon_props.insert(0, (prop("Camp", spawn_cls), Value(0x02, struct.pack("<i", int(camp)))))
+        if trucks is not None:  # the shipped depots' order: PythonClassName, ChampInteger, Camp
+            addon_props.append((prop("ChampInteger", spawn_cls), Value(0x02, struct.pack("<i", int(trucks)))))
+        addon_props.append((prop("Camp", spawn_cls), Value(0x02, struct.pack("<i", int(camp)))))
         if name:
             addon_props.insert(0, (prop("Name", spawn_cls), Value(0x07, struct.pack("<I", string(name)))))
         addon = nd.add_object(spawn_cls, addon_props)
@@ -255,6 +272,16 @@ class Scenario:
         for it in self.items:
             if it.kind == "StartingPoint" and isinstance(it.values.get("AllianceNum"), int):
                 out.setdefault(it.values["AllianceNum"], set()).add(int(it.values.get("AlliancePriority") or 1))
+        return out
+
+    def team_sizes(self) -> dict[int, int]:
+        """How many players each team can seat: {team (AllianceNum): its starting points}. The game seats a team's
+        players on its starting points in order of place (lowest first), whatever the places are, so a team seats
+        as many players as it has starting points (rusemod.players.seats)."""
+        out: dict[int, int] = {}
+        for it in self.items:
+            if it.kind == "StartingPoint" and isinstance(it.values.get("AllianceNum"), int):
+                out[it.values["AllianceNum"]] = out.get(it.values["AllianceNum"], 0) + 1
         return out
 
     def add_start(self, x: float, y: float, team: int, place: int | None = None,
@@ -530,6 +557,7 @@ class Move:
     x: float
     y: float
     rotation: float | None = None
+    z: float | None = None   # the ground's height there: the build fills it for starting points and spawns
 
 
 def parse_moves(items, where: str = "scenario.toml") -> list[Move]:
@@ -572,22 +600,68 @@ def moves_toml(moves: list[Move], header: str = "") -> str:
 
 
 CLASS_PATH = "front.parametres.Classes."  # where the shipped spawns name most units and buildings
+DEPOT = "front.batiment_depot.DalleBatimentDepot"  # a supply depot's slab: the shipped spawns name it this way (1,625)
+SHIPPED_PATHS = {"DalleBatimentDepot": DEPOT}       # class names the game finds elsewhere than CLASS_PATH
+DEPOT_TRUCKS = 25   # the trucks a depot slab starts with (ChampInteger): what most shipped depots have (800 of them)
 
 
 @dataclass
 class Spawn:
     """A unit or building spawned when scenario `file` starts: `what` (a class name, Unit_M4_Sherman, or the full
-    class path the shipped spawns use), for side `camp` (None: no side), at x, y, turned `rotation` radians."""
+    class path the shipped spawns use), for side `camp` (None: neutral, -1), at x, y, turned `rotation` radians.
+    `trucks`: a depot's trucks (None: DEPOT_TRUCKS)."""
     file: str
     what: str
     x: float
     y: float
     camp: int | None = None
     rotation: float = 0.0
+    trucks: int | None = None
+    z: float | None = None   # the ground's height there: the build fills it from the map (the shipped ones match it)
 
     @property
     def class_path(self) -> str:
-        return self.what if "." in self.what else CLASS_PATH + self.what
+        return self.what if "." in self.what else SHIPPED_PATHS.get(self.what, CLASS_PATH + self.what)
+
+
+def spawn_class_problems(map_pack: str, spawns: list[Spawn], registered, shipped_paths) -> list[str]:
+    """Why the game couldn't find a spawn's class when the map loads (which makes loading it fail): one message per
+    spawn whose class path ends in parametres.Classes.X when X isn't a class of the game's Python unit list
+    (`registered`: its class names, the mods' new ones included; None when the list can't be read, and then these
+    aren't checked), or whose other class path no shipped spawn uses (`shipped_paths()`: every shipped spawn's)."""
+    out, shipped = [], None
+    for s in spawns:
+        path = s.class_path
+        module, _dot, name = path.rpartition(".")
+        at = f"{map_pack}: scenario.toml: the spawn of {s.what} in {s.file}"
+        if module == "parametres.Classes" or module.endswith(".parametres.Classes"):
+            if registered is not None and name not in registered:
+                out.append(f"{at}: the game's unit list has no class {name}, so the map would fail to load. Use the "
+                           f"class name (ClassNameForDebug) of a unit the list has; a new unit gets one when it's a "
+                           f"copy of a listed unit")
+            continue
+        if path in SHIPPED_PATHS.values():  # (the depot slab's: 1,625 shipped spawns use it)
+            continue
+        if shipped is None:
+            shipped = shipped_paths()
+        if path not in shipped:
+            out.append(f"{at}: {path} isn't a class path any shipped spawn uses, so the game may not find it and "
+                       f"the map would fail to load. Use the unit's class name alone (what = \"Unit_...\"), or a path "
+                       f"a shipped scenario uses")
+    return out
+
+
+def shipped_class_paths(arc) -> set[str]:
+    """Every class path the shipped spawns use, from an open DataMap_Win.dat (all its scenarios)."""
+    out = set()
+    for e in arc.entries:
+        if e.path.lower().endswith(".scenario"):
+            try:
+                s = Scenario.read(bytes(arc.read(e)))
+            except (ScenarioError, ValueError, struct.error):
+                continue
+            out |= {str(it.values.get("PythonClassName")) for it in s.items if it.kind == "Spawn"}
+    return out
 
 
 def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
@@ -596,7 +670,7 @@ def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
         at = f"{where}: spawn {n}"
         if not isinstance(m, dict):
             raise ScenarioError(f"{at} isn't a table")
-        extra = sorted(set(m) - {"file", "what", "x", "y", "camp", "rotation"})
+        extra = sorted(set(m) - {"file", "what", "x", "y", "camp", "rotation", "trucks"})
         if extra:
             raise ScenarioError(f"{at}: unknown key {extra[0]!r}")
         for k in ("file", "what", "x", "y"):
@@ -608,12 +682,24 @@ def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
         if not what or not all(c.isalnum() or c in "._" for c in what):
             raise ScenarioError(f"{at}: what must be a unit's or building's class name, like Unit_M4_Sherman")
         try:
+            if any(isinstance(m.get(k), bool) for k in ("camp", "trucks")):
+                raise TypeError
             x, y = float(m["x"]), float(m["y"])
             camp = int(m["camp"]) if "camp" in m else None
             rot = float(m.get("rotation", 0.0))
+            trucks = int(m["trucks"]) if "trucks" in m else None
         except (TypeError, ValueError):
-            raise ScenarioError(f"{at}: x, y and rotation are numbers, camp a whole number") from None
-        out.append(Spawn(f, what, x, y, camp, rot))
+            raise ScenarioError(f"{at}: x, y and rotation are numbers; camp and trucks whole numbers") from None
+        if not all(math.isfinite(v) for v in (x, y, rot)):
+            raise ScenarioError(f"{at}: x, y and rotation must be finite numbers")
+        if camp is not None and not (camp == NEUTRAL or 1 <= camp <= 16):
+            raise ScenarioError(f"{at}: camp is -1 (neutral, like the shipped depots) or a side from 1 up")
+        if trucks is not None:
+            if Spawn(f, what, x, y).class_path != DEPOT:
+                raise ScenarioError(f"{at}: trucks is only for a supply depot (what = \"DalleBatimentDepot\")")
+            if not 0 <= trucks <= 1000:
+                raise ScenarioError(f"{at}: trucks goes from 0 to 1000 (the shipped depots have 15 to 72)")
+        out.append(Spawn(f, what, x, y, camp, rot, trucks))
     return out
 
 
@@ -625,6 +711,8 @@ def spawns_toml(spawns: list[Spawn]) -> str:
             lines.append(f"camp = {s.camp}")
         if s.rotation:
             lines.append(f"rotation = {s.rotation!r}")
+        if s.trucks is not None:
+            lines.append(f"trucks = {s.trucks}")
         lines.append("")
     return "\n".join(lines)
 
@@ -684,14 +772,72 @@ def starts_toml(starts: list[Start]) -> str:
     return "\n".join(lines)
 
 
-def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], list[str]]:
+ROAD_NEAR = 30000.0   # map units: 95% of the shipped starting points are this close to a road (the furthest 1,440,000)
+
+
+def start_ground_problems(read, map_pack: str, moves: list) -> tuple[list[str], list[str]]:
+    """(errors, warnings) for the mod's new and moved starting points on the map's movement and road network as the
+    build leaves them (`read(member)`: DataMap_Win.dat's files after every map edit). The game builds a player's HQ
+    at his starting point, or wherever it finds room near it (up to far away) when vehicles can't stand there, so a
+    start on water, a cliff or a block is an error; one far from any road is a warning (the HQ's trucks need one).
+    A map whose mapinfo.win can't be read isn't checked."""
+    from .cover import member
+    from .nav import Graph
+    from .roadnet import RoadNet
+    starts = [m for m in moves if isinstance(m, Start) or (isinstance(m, Move) and m.kind == "StartingPoint")]
+    win = read(member(map_pack)) if starts else None
+    if win is None:
+        return [], []
+    try:
+        from ruse_mod_engine import sdb
+        bufs = sdb.split_mapinfo(win)[1]
+        vehicles = Graph.read(bufs[2])
+    except (ValueError, IndexError, TypeError, struct.error):
+        return [], []
+    try:
+        net = RoadNet.read(bufs[0])
+        roads = [(net.points[a][:2], net.points[b][:2]) for a, b, _cost in net.links]
+    except (ValueError, IndexError, struct.error):
+        roads = []
+    errors, warnings = [], []
+    for m in starts:
+        what = (f"the new starting point for team {m.team}" if isinstance(m, Start) else
+                f"the starting point moved (item {m.item})")
+        at = f"{map_pack}: scenario.toml: {what} at ({m.x:.0f}, {m.y:.0f}) in {m.file}"
+        if not vehicles.walkable(m.x, m.y):
+            errors.append(f"{at} is where vehicles can't go (water, a cliff, a block or off the map): the game would "
+                          f"build that player's HQ wherever it finds room, possibly far away. Put it on open ground")
+            continue
+        if roads:
+            far = min(_to_segment(m.x, m.y, a, b) for a, b in roads)
+            if far > ROAD_NEAR:
+                warnings.append(f"{at} is {far:,.0f} map units from the nearest road; the shipped starting points are "
+                                f"within about {ROAD_NEAR:,.0f}, and the HQ's supply trucks drive on roads. Move it "
+                                f"nearer a road, or add one (roads.toml)")
+    return errors, warnings
+
+
+def _to_segment(x: float, y: float, a, b) -> float:
+    (ax, ay), (bx, by) = a, b
+    vx, vy = bx - ax, by - ay
+    n = vx * vx + vy * vy
+    t = 0.0 if n == 0 else max(0.0, min(1.0, ((x - ax) * vx + (y - ay) * vy) / n))
+    return math.hypot(x - ax - t * vx, y - ay - t * vy)
+
+
+def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None) -> tuple[dict[str, bytes], list[str]]:
     """Apply a mod's scenario edits (in order: Move and Spawn) to a map's scenarios. `read(member)` gives a
-    DataMap_Win.dat member's bytes, or None. Returns ({member: new bytes}, report lines). A move whose file or item
-    isn't there, or whose item is another kind (the file isn't the one the mod was made for), raises ScenarioError;
-    so does a spawn in a scenario that isn't there."""
+    DataMap_Win.dat member's bytes, or None. `skirmish`: the map's scenarios (file names, lower case) that its
+    skirmish and online entries load (rusemod.players.skirmish_files). Returns ({member: new bytes}, report lines).
+    A move whose file or item isn't there, or whose item is another kind (the file isn't the one the mod was made
+    for), raises ScenarioError; so does a spawn in a scenario that isn't there, and a spawn for a player's camp in a
+    skirmish scenario (a skirmish game spawns only neutral items: the game leaves the others out without a word).
+    `warn(message)` is told of a spawn for a camp the scenario's own spawns never use (an Operation spawns only the
+    camps it plays)."""
     folder = folder_of(map_pack)
     files: dict[str, Scenario] = {}
-    notes = []
+    camps: dict[str, set] = {}   # member (lower case) -> the camps its shipped spawns use (no Camp reads as 0)
+    notes, later = [], []
     for m in moves:
         member = folder + m.file
         if member.lower() not in files:
@@ -699,9 +845,28 @@ def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], lis
             if raw is None:
                 raise ScenarioError(f"{map_pack}: it has no scenario {m.file}")
             files[member.lower()] = (member, Scenario.read(raw))
+            camps[member.lower()] = {it.values.get("Camp", 0) for it in files[member.lower()][1].items
+                                     if it.kind == "Spawn"}
         member, s = files[member.lower()]
         if isinstance(m, Spawn):
-            s.add_spawn(m.x, m.y, m.class_path, camp=m.camp, rotation=m.rotation)
+            camp = NEUTRAL if m.camp is None else m.camp
+            at = f"{map_pack}: scenario.toml: the spawn of {m.what} at ({m.x:.0f}, {m.y:.0f}) in {m.file}"
+            if m.file.lower() in skirmish and camp != NEUTRAL:
+                raise ScenarioError(f"{at} is for camp {camp}, but {m.file} is a skirmish map's scenario, and a "
+                                    f"skirmish game spawns only neutral items: the game would leave it out without a "
+                                    f"word. Set camp = -1 (or leave camp out), or spawn it in an Operation's scenario")
+            if camp != NEUTRAL and camp not in camps[member.lower()] and warn is not None:
+                used = ", ".join(str(c) for c in sorted(camps[member.lower()])) or "none"
+                warn(f"{at} is for camp {camp}, which none of the scenario's own spawns use (theirs: {used}); the game "
+                     f"spawns items only for the camps the scenario plays, so it may never appear. Check it in the "
+                     f"game, or use one of those camps")
+            trucks = (DEPOT_TRUCKS if m.trucks is None else m.trucks) if m.class_path == DEPOT else m.trucks
+            z = m.z
+            if z is None:  # no ground to read: the height of the nearest design item, never 0 under a hill
+                near = min(s.items, key=lambda it: (it.position[0] - m.x) ** 2 + (it.position[1] - m.y) ** 2,
+                           default=None)
+                z = near.position[2] if near is not None else 0.0
+            s.add_spawn(m.x, m.y, m.class_path, camp=camp, rotation=m.rotation, z=z, trucks=trucks)
             continue
         if isinstance(m, Start):
             s.add_start(m.x, m.y, m.team, m.place, m.rotation, m.z)
@@ -711,7 +876,11 @@ def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], lis
         if s.items[m.item].kind != m.kind:
             raise ScenarioError(f"{map_pack}: {m.file} item {m.item} is a {s.items[m.item].kind or 'plain item'}, "
                                 f"not a {m.kind}: the mod was made for another version of this map")
-        s.move(m.item, m.x, m.y, rotation=m.rotation)  # an item without a rotation can't be turned: move() says so
+        s.move(m.item, m.x, m.y, m.z, rotation=m.rotation)  # an item without a rotation can't be turned: move() says so
+        path = s.items[m.item].values.get("WarmupCamPath") if m.kind == "StartingPoint" else None
+        if path:
+            later.append(f"{map_pack}: {m.file}: the starting point moved (item {m.item}) keeps its warm-up camera "
+                         f"flight ({path}), which still ends over its old place; its opening camera moved with it")
     for member, s in files.values():
         mine = [m for m in moves if (folder + m.file).lower() == member.lower()]
         moved, spawned = sum(1 for m in mine if isinstance(m, Move)), sum(1 for m in mine if isinstance(m, Spawn))
@@ -719,4 +888,4 @@ def apply_moves(read, map_pack: str, moves: list) -> tuple[dict[str, bytes], lis
         notes.append(f"{map_pack}: {member.rsplit(chr(92), 1)[-1]}: " + ", ".join(
             p for p in (f"{moved} item(s) moved" if moved else "", f"{started} starting point(s) added" if started else "",
                         f"{spawned} spawn(s) added" if spawned else "") if p))
-    return {member: s.to_bytes() for member, s in files.values()}, notes
+    return {member: s.to_bytes() for member, s in files.values()}, notes + later
