@@ -659,10 +659,22 @@
       triangles: await packed(new Uint32Array(tri)), water: await packed(new Uint32Array(wtri)), picture: "" };
   }
 
+  // Share your mod (words.toml share_*): the steps onto the supported-mods list, and an export's file
+  Object.assign(words.us, {"share_mod": "Share your mod…", "share_title": "Share your mod", "share_lead": "Made a mod? Add it to the list and become a contributor.", "share_step_export": "Export it as a .rusemod (Export mod… in the mod menu). Its size and SHA-256 show here.", "share_step_pr": "Upload the .rusemod (a GitHub Release is easiest), then open a pull request to {repo} that adds its entry to index.toml, with the size and SHA-256 the export shows.", "share_step_post": "Or post it in the Discussions, and it's added to the list for you.", "share_file": "File: {file} ({size} bytes)", "share_sha": "SHA-256: {sha}", "share_entry": "Its entry for index.toml (put the file's link in download):", "share_copy": "Copy the entry", "share_copied": "Copied: paste it into index.toml.", "share_open": "Open the mod list on GitHub", "share_discussions": "Open the Discussions"});
+  Object.assign(words.fr, {"share_mod": "Partager votre mod…", "share_title": "Partagez votre mod", "share_lead": "Vous avez fait un mod ? Ajoutez-le à la liste et devenez contributeur.", "share_step_export": "Exportez-le en .rusemod (Exporter le mod… dans le menu du mod). Sa taille et son SHA-256 s'affichent ici.", "share_step_pr": "Mettez le .rusemod en ligne (une GitHub Release est le plus simple), puis ouvrez une pull request sur {repo} qui ajoute son entrée à index.toml, avec la taille et le SHA-256 qu'affiche l'export.", "share_step_post": "Ou publiez-le dans les Discussions, et il sera ajouté à la liste pour vous.", "share_file": "Fichier : {file} ({size} octets)", "share_sha": "SHA-256 : {sha}", "share_entry": "Son entrée pour index.toml (mettez le lien du fichier dans download) :", "share_copy": "Copier l'entrée", "share_copied": "Copié : collez-la dans index.toml.", "share_open": "Ouvrir la liste des mods sur GitHub", "share_discussions": "Ouvrir les Discussions"});
+  Object.assign(words.sc, {"share_mod": "分享你的模组…", "share_title": "分享你的模组", "share_lead": "做了模组？把它加入列表，成为贡献者。", "share_step_export": "将其导出为 .rusemod（模组菜单中的“导出模组…”）。其大小和 SHA-256 会显示在这里。", "share_step_pr": "上传 .rusemod（用 GitHub Release 最简单），然后向 {repo} 提交一个拉取请求，把它的条目加入 index.toml，并填上导出时显示的大小和 SHA-256。", "share_step_post": "或者在 Discussions 中发布，我们会替你把它加入列表。", "share_file": "文件：{file}（{size} 字节）", "share_sha": "SHA-256：{sha}", "share_entry": "它在 index.toml 中的条目（在 download 中填入文件链接）：", "share_copy": "复制条目", "share_copied": "已复制：请粘贴到 index.toml 中。", "share_open": "在 GitHub 上打开模组列表", "share_discussions": "打开 Discussions"});
+  const exported = { path: "C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod", file: "sherman-test-0.1.0.rusemod",
+    size: 2711, size_text: "3 KB", sha256: "5d1c0f4b0e7f7c3ad8b0a4f6f1f0a0e8c4b2d6e1f3a5c7e9b1d3f5a7c9e1b3d5",
+    entry: ["[[mod]]", 'id = "sherman-test"', 'name = "sherman-test"', 'version = "0.1.0"', 'description = "Made in the RUSE Studio."',
+      'download = ""  # the https:// link to the .rusemod once it is uploaded (a GitHub Release)', "size = 2711",
+      'sha256 = "5d1c0f4b0e7f7c3ad8b0a4f6f1f0a0e8c4b2d6e1f3a5c7e9b1d3f5a7c9e1b3d5"', 'game_build = "24687178"',
+      'fingerprint = "K7Q2-M9XD"', 'tags = []  # e.g. ["gameplay"]; a cheat or a test tool: ["cheat"]'].join("\n") + "\n" };
   const jobs = {
     index: [["  ZZ_Win.dat"], "The game index is ready."],
     export: [["Building the mod on the game, to record the game build and the fingerprint…", "  fingerprint: K7Q2-M9XD",
-      "Saved as C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod"], "Saved as C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod"],
+      "Saved as C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod", "Size: 2711 bytes",
+      "SHA-256: 5d1c0f4b0e7f7c3ad8b0a4f6f1f0a0e8c4b2d6e1f3a5c7e9b1d3f5a7c9e1b3d5"],
+      "Saved as C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod"],
     test: [["Building the modded copy of R.U.S.E. for sherman-test in D:\\RUSE-Instances\\studio-sherman-test…",
       "  1 change in 1 file", "  modded copy ready: 41 files linked, 1 replaced", "Starting R.U.S.E. from the modded copy…"],
       "R.U.S.E. is starting."],
@@ -888,7 +900,9 @@
         : mode === "testfails" && id === "test"  // a test stopped by a leftover copy, as a player's was
         ? { state: "failed", message: "[WinError 5] Access is denied: 'D:\\RUSE-Instances\\studio-sherman-test.old'",
           lines: jobs.test[0].slice(0, 1), count: 1 }
-        : { state: "done", message: jobs[id][1], lines: jobs[id][0], count: jobs[id][0].length },
+        : { state: "done", message: jobs[id][1], lines: jobs[id][0], count: jobs[id][0].length,
+            ...(id === "export" ? { result: exported } : {}) },  // the file for "Share your mod"
+      share_info: async () => ({ repo: "sneadtristen6/Ruse-Mods", page: "https://github.com/sneadtristen6/Ruse-Mods" }),
       maps: async () => ({ maps: fakeMaps }),
       map_view: async (pack, lod) => fakeGround(pack, lod || "lowdef"),
       map_ground: async () => ({ url: null }),

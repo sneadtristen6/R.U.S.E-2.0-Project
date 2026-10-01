@@ -262,6 +262,16 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .doc-row.fail .doc-mark { color: var(--error); }
 .doctor .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
+/* Share your mod (app.js openShare): how an exported mod gets onto the supported-mods list */
+.share-steps { margin: 12px 0 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.45; }
+.share-file { display: grid; gap: 4px; margin-top: 12px; padding: 10px 12px; background: var(--panel-hi);
+              border-radius: var(--radius); font-size: 13px; overflow-wrap: anywhere; }
+.share-file code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12px; }
+.share-file textarea { width: 100%; box-sizing: border-box; min-height: 9em; resize: vertical; background: var(--panel);
+                       color: var(--text); border: 1px solid var(--line); border-radius: var(--radius);
+                       font: 12px Consolas, "Cascadia Mono", monospace; }
+.share-file .actions { justify-content: flex-start; margin-top: 4px; }
+
 /* a newer release, offered in the header (rusemod/update.py) */
 .update-bar { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-size: 13px;
               background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41); }

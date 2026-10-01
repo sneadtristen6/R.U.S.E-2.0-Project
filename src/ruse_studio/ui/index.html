@@ -268,6 +268,27 @@
     </div>
   </dialog>
 
+  <!-- Share your mod (app.js openShare): the steps onto the supported-mods list (MOD_FORMAT §15), and after an export
+       the file's size, SHA-256 and its index.toml entry -->
+  <dialog id="share" class="doctor" aria-labelledby="share-title">
+    <h2 id="share-title"></h2>
+    <p id="share-lead" class="muted small"></p>
+    <ol class="share-steps"><li id="share-step-export"></li><li id="share-step-pr"></li><li id="share-step-post"></li></ol>
+    <div id="share-file" class="share-file hidden">
+      <span id="share-file-name"></span>
+      <code id="share-sha"></code>
+      <span id="share-entry-label" class="muted"></span>
+      <textarea id="share-entry" rows="9" readonly spellcheck="false"></textarea>
+      <div class="actions"><button id="share-copy" type="button" class="small"></button>
+        <span id="share-note" class="small"></span></div>
+    </div>
+    <div class="actions">
+      <button id="share-open" type="button" class="small primary"></button>
+      <button id="share-discussions" type="button" class="small"></button>
+      <button id="share-close" type="button" class="small ghost"></button>
+    </div>
+  </dialog>
+
   <footer id="status" class="status" role="status"></footer>
 
   <section id="no-index" class="no-index hidden">

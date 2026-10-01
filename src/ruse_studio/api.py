@@ -12,6 +12,7 @@ Studio writes into the game's own folder, and only when the modder asks for a re
 from __future__ import annotations
 
 import base64
+import hashlib
 import functools
 import json
 import math
@@ -25,7 +26,7 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from rusemod import doctor, identity, package, scenario, scenery, schema
+from rusemod import doctor, identity, mod_index, package, scenario, scenery, schema
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, CommunityCalls, private_paths_out
@@ -2057,10 +2058,29 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             with self._saving:
                 path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint)
             say(f"Saved as {path}")
+            job.result = self._share_view(path)
+            say(f"Size: {job.result['size']} bytes")
+            say(f"SHA-256: {job.result['sha256']}")
 
         job = Job()
+        job.result = None  # the exported file's size, SHA-256 and list entry, for "Share your mod"
         self._jobs[job.id] = job
         return job.start(work, f"Saved as {target}", plain=(BuildError, RndfError, OSError, package.PackageError))
+
+    # --- Share your mod: how an exported mod gets onto the supported-mods list (MOD_FORMAT §15) ---
+    @staticmethod
+    def _share_view(path) -> dict:
+        """An exported file as the list needs it: where it is, its size and SHA-256, and its `[[mod]]` entry for
+        the list's index.toml, ready to paste."""
+        path = Path(path)
+        data = path.read_bytes()
+        size, sha256 = len(data), hashlib.sha256(data).hexdigest()
+        return {"path": str(path), "file": path.name, "size": size, "size_text": mod_index.size_text(size),
+                "sha256": sha256, "entry": mod_index.entry_text(package.check(path), size, sha256)}
+
+    def share_info(self) -> dict:
+        """What "Share your mod" shows besides an export's own file: the list's repository and its page."""
+        return {"repo": mod_index.REPO, "page": mod_index.PAGE}
 
     # --- building the index from the Studio ---
     def build_index(self) -> dict:
