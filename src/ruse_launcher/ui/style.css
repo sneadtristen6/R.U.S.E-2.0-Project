@@ -1,15 +1,17 @@
 :root {
-  --bg: #15181b;
-  --panel: #1d2226;
-  --panel-hi: #252b30;
-  --line: #333b41;
-  --text: #e9e4d4;
-  --muted: #9aa3a8;
-  --accent: #c8a64b;      /* brass */
-  --accent-dark: #8f7530;
-  --good: #7fb069;
-  --bad: #e07a5f;
-  --warn: #e0b85f;
+  /* R.U.S.E.'s own look (the owner, 2026-10-01: blue on light blue, with whites): deep navy, steel blue, light blue */
+  --bg: #0a1628;
+  --panel: #10233d;
+  --panel-hi: #17304f;
+  --line: #24446b;
+  --text: #f3f7fc;
+  --muted: #9db3cf;
+  --accent: #5cb8ff;      /* light blue */
+  --accent-dark: #1f6fc4; /* the game's blue */
+  --accent-ink: #06203d;  /* text on light blue */
+  --good: #6fd38f;
+  --bad: #ff7d6e;
+  --warn: #ffcf5c;
   --radius: 8px;
   color-scheme: dark;
 }
@@ -43,11 +45,12 @@ button:disabled { cursor: default; opacity: 0.45; }
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 14px 22px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--line);
+  padding: 10px 22px;
+  background: linear-gradient(180deg, #17406f, #0f2a4b);
+  border-bottom: 2px solid var(--accent-dark);
 }
-.brand { font-weight: 700; letter-spacing: 0.06em; font-size: 18px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 0.06em; font-size: 18px; }
+.brand img { width: 34px; height: 34px; flex: none; border-radius: 8px; }
 .brand span { color: var(--accent); font-weight: 600; }
 .status {
   margin-left: auto;
@@ -135,13 +138,15 @@ button:disabled { cursor: default; opacity: 0.45; }
   min-width: 260px;
   padding: 18px 40px;
   border: 0;
-  background: linear-gradient(180deg, var(--accent), var(--accent-dark));
-  color: #15181b;
+  background: linear-gradient(180deg, #4aa8f5, var(--accent-dark));
+  color: #fff;
+  border: 1px solid var(--accent);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   font-size: 22px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 22px rgba(31, 111, 196, 0.45);
 }
 .play:hover:not(:disabled) { filter: brightness(1.08); }
 
@@ -155,7 +160,7 @@ button:disabled { cursor: default; opacity: 0.45; }
   overflow: auto;
   margin: 8px 0 0;
   padding: 10px 12px;
-  background: #0f1113;
+  background: #071120;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   font: 12px/1.45 Consolas, "Cascadia Mono", monospace;
@@ -357,3 +362,19 @@ button:disabled { cursor: default; opacity: 0.45; }
 .doc textarea { width: 100%; margin-top: 10px; padding: 10px 12px; background: var(--panel-hi); color: inherit;
                 border: 1px solid var(--line); border-radius: var(--radius); font: 12px/1.4 Consolas, monospace; resize: vertical; }
 .doc .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+/* the sidebar's two tabs: the mod sets, or the library, each with the whole height */
+.side-tabs { display: flex; gap: 4px; padding: 10px 12px 0; border-bottom: 1px solid var(--line); }
+.side-tabs button { flex: 1; padding: 8px 6px; background: transparent; border: 0; border-bottom: 3px solid transparent;
+                    border-radius: var(--radius) var(--radius) 0 0; color: var(--muted); font-weight: 600; font-size: 13px;
+                    letter-spacing: 0.04em; text-transform: uppercase; }
+.side-tabs button:hover { color: var(--text); background: var(--panel-hi); }
+.side-tabs button[aria-pressed="true"] { color: var(--text); border-bottom-color: var(--accent); background: var(--panel); }
+.side-tabs .count { margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--accent-dark); color: #fff;
+                    font-size: 11px; letter-spacing: 0; }
+.side.tabbed .sets h2, .side.tabbed .library h2 { display: none; }
+.side.tabbed.show-sets .library, .side.tabbed.show-library .sets { display: none; }
+.side.tabbed .sets { max-height: none; flex: 1 1 0; border: 0; }
+.side.tabbed .sets .set-list { flex: 1 1 auto; align-content: start; margin-bottom: 12px; }
+.side.tabbed .library { border-top: 0; }
+.side.tabbed .library-head { display: none; }

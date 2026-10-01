@@ -28,7 +28,8 @@ button:disabled { cursor: default; opacity: 0.5; }
 
 .top { display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: var(--panel);
        border-bottom: 1px solid var(--line); }
-.brand { font-weight: 700; letter-spacing: 0.06em; font-size: 17px; }
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 700; letter-spacing: 0.06em; font-size: 17px; }
+.brand img { width: 30px; height: 30px; flex: none; border-radius: 7px; }
 .brand span { color: var(--accent); }
 .lang, .pick-mod { display: flex; align-items: center; gap: 8px; color: var(--muted); }
 .lang { margin-left: auto; }

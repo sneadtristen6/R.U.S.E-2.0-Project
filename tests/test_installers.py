@@ -50,6 +50,29 @@ class Icons(unittest.TestCase):
             self.assertEqual(pixels[16][16][:3], icons.GOLD)  # the Play triangle / the pencil crosses the middle
             self.assertEqual(pixels[0][16][:3], icons.EDGE)  # the gold edge along the top
 
+    def test_the_owners_artwork_is_the_icon(self):
+        """installers/art: each app's .ico (every size Windows asks for, PNG pictures, square) and its 256 px PNG,
+        which make() hands to the build."""
+        for app in ("launcher", "studio"):
+            data, preview = icons.make(app)
+            self.assertEqual(data, (icons.ART / f"{app}.ico").read_bytes())
+            self.assertEqual(preview[:8], b"\x89PNG\r\n\x1a\n")
+            reserved, kind, count = struct.unpack_from("<HHH", data)
+            self.assertEqual((reserved, kind), (0, 1))
+            sizes = []
+            for i in range(count):
+                w, h, _c, _r, _planes, _bits, length, at = struct.unpack_from("<BBBBHHII", data, 6 + 16 * i)
+                self.assertEqual(w, h)
+                self.assertEqual(data[at:at + 8], b"\x89PNG\r\n\x1a\n")
+                self.assertEqual(struct.unpack(">II", data[at + 16:at + 24]), (w or 256, h or 256))
+                sizes.append(w or 256)
+            self.assertEqual(sorted(sizes), [16, 24, 32, 48, 64, 128, 256])
+        ui = Path(ruse_launcher.__file__).parent / "ui"
+        self.assertIn('src="logo.png"', (ui / "index.html").read_text(encoding="utf-8"))
+        self.assertEqual((ui / "logo.png").read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
+        studio_ui = Path(ruse_studio.__file__).parent / "ui"
+        self.assertIn('src="logo.png"', (studio_ui / "index.html").read_text(encoding="utf-8"))
+
     def test_ico_file(self):
         small = icons.bitmap(icons.draw("studio", 16))
         big = icons.png(icons.draw("studio", 24))

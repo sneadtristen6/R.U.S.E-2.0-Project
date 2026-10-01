@@ -8,7 +8,7 @@
 </head>
 <body>
   <header class="top">
-    <div class="brand">RUSE <span>Launcher</span></div>
+    <div class="brand"><img src="logo.png" alt="" width="34" height="34">RUSE <span>Launcher</span></div>
     <div id="status" class="status" role="status"></div>
     <button id="choose" class="small hidden" type="button"></button>
     <button id="settings-open" class="small ghost" type="button"></button>
@@ -18,7 +18,11 @@
     <button id="update-info" class="small ghost" type="button"></button></div>
 
   <main class="layout">
-    <aside class="side">
+    <aside id="side" class="side tabbed show-sets">
+      <div class="side-tabs" role="group">
+        <button id="side-sets" type="button" aria-pressed="true"></button>
+        <button id="side-library" type="button" aria-pressed="false"></button>
+      </div>
       <section class="sets" aria-labelledby="sets-title">
         <h2 id="sets-title"></h2>
         <ul id="set-list" class="set-list"></ul>
