@@ -739,8 +739,14 @@ class AmmoAndFlags(WithMod):
 
     def test_flags_are_a_list_of_any_length(self):
         flags = self.api.flags("us")["flags"]
-        self.assertEqual([(f["flag"], f["count"], f["examples"], f["meaning"]) for f in flags],
-                         [(4, 1, ["Panzer IV"], None), (10, 1, ["Panzer IV"], None)])
+        self.assertEqual([f["flag"] for f in flags], list(range(105)))  # every flag, the ones no unit carries too
+        self.assertEqual([(f["flag"], f["count"], f["examples"]) for f in flags if f["count"] or f["examples"]],
+                         [(4, 1, ["Panzer IV"]), (10, 1, ["Panzer IV"])])
+        # each flag says what it does, from what we and DomesticNukes have tried in the game (rusemod.schema.flag)
+        self.assertEqual([f["meaning"] for f in flags], [schema.flag(n) for n in range(105)])
+        self.assertIn("Building", flags[4]["meaning"])
+        self.assertIn("in a unit's flags it does nothing", flags[91]["meaning"])  # state the game sets while it runs
+        self.assertIn("sans effet", self.api.flags("fr")["flags"][91]["meaning"])  # in the language picked
         self.assertTrue(schema.flag(72).startswith("Sees through obstacles"))
         folder = Path(self.api.new_mod("Flags")["current"])
         row = self.rows(PANZER_IV)["InitialFlagSet"]
@@ -796,7 +802,8 @@ class Terrain(WithMod):
         self.assertEqual((view["mod"], view["saved"]), (str(folder), str(file)))
         self.assertEqual([s["brush"] for s in view["strokes"]], ["hill", "plateau", "smooth"])
         self.assertEqual(view["strokes"][0], {"brush": "hill", "x": 500.0, "y": 600.0, "radius": 120.0, "height": 30.0,
-                                              "level": 0.0, "weight": 1.0, "x2": 0.0, "y2": 0.0, "level2": 0.0})
+                                              "level": 0.0, "weight": 1.0, "x2": 0.0, "y2": 0.0, "level2": 0.0,
+                                              "square": False})
         self.assertEqual(self.api.terrain("SuperCrossroads4")["strokes"], [])  # another map has its own
         # Undo takes the last strokes off; the file goes when none is left, and its empty folders with it
         self.assertEqual(self.api.terrain_undo("TwoIslands", 2), {"count": 1, "removed": 2, "saved": str(file)})
@@ -1053,6 +1060,89 @@ class Troubleshooter(WithMod):
             found = no_game.troubleshoot()["findings"]
         self.assertEqual([f["key"] for f in found], ["game", "steam", "running"])  # no place for copies yet
         self.assertEqual((found[0]["level"], found[0]["fix"]), ("fail", "choose_game"))
+
+
+class CleanBackup(unittest.TestCase):
+    """The clean game backup in the Studio's Settings (what it does is rusemod.backup's: tests/test_backup.py), on a
+    made-up game of its own: a restore writes into it."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.game = root / "steamapps" / "common" / "R.U.S.E"
+        (self.game / "Data").mkdir(parents=True)
+        (self.game / "RUSE.exe").write_bytes(b"MZ")
+        (self.game / "Data" / "lang.ini").write_text("en-US", encoding="utf-8")
+        (root / "steamapps" / "appmanifest_21970.acf").write_text('"AppState" { "buildid" "24687178" }')
+        self.urls = []
+        starter = Starter(open_url=self.urls.append, start_game=lambda exe: None, steam_running=lambda: True,
+                          wait=lambda s: None)
+        self.api = StudioApi(game_dir=self.game, home=root / "home", starter=starter, instances=root / "copies",
+                             backups=root / "backups")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def wait(self, job_id):
+        end = time.time() + 10
+        while time.time() < end:
+            j = self.api.job(job_id)
+            if j["state"] != "running":
+                return j
+            time.sleep(0.02)
+        raise AssertionError("the job didn't finish")
+
+    def test_make_check_and_restore(self):
+        self.assertEqual((self.api.backup_status()["current"], self.api.backup_status()["build"]), (None, "24687178"))
+        made = self.wait(self.api.backup_make()["job"])
+        self.assertEqual((made["state"], made["result"]["files"]), ("done", 2), made)
+        self.assertTrue(self.api.backup_status()["current"]["matches"])
+        (self.game / "Data" / "lang.ini").unlink()
+        found = self.wait(self.api.backup_check()["job"])["result"]
+        self.assertEqual((found["changed"], found["missing"], found["added"]), ([], ["Data/lang.ini"], []))
+        with mock.patch("rusemod.winfiles.processes", return_value=[]):
+            done = self.wait(self.api.backup_restore()["job"])
+        self.assertEqual((done["state"], done["result"]["restored"]), ("done", 1), done)
+        self.assertEqual((self.game / "Data" / "lang.ini").read_text(encoding="utf-8"), "en-US")
+        self.assertEqual(self.api.steam_verify(), {"opened": "steam://validate/21970"})
+        self.assertEqual(self.urls, ["steam://validate/21970"])  # through the Studio's own way of opening links
+
+    def test_a_test_and_a_restore_wait_for_each_other(self):
+        from rusemod.backup import BackupError
+        from rusemod.webui import Job
+        self.wait(self.api.backup_make()["job"])
+        self.api.new_mod("Waiting")
+        testing = Job()  # a Test in game building its copy from the game's files
+        self.api._jobs[testing.id] = testing
+        self.api._test_job = testing.id
+        with self.assertRaisesRegex(BackupError, "A test is being built"):
+            self.api.backup_restore()
+        testing.state = "done"
+        restoring = Job()
+        restoring.kind = "restore"
+        self.api._jobs[restoring.id] = restoring
+        self.api._backup_job = restoring.id
+        with self.assertRaisesRegex(StudioError, "being restored"):
+            self.api.test_in_game()
+        with self.assertRaisesRegex(BackupError, "busy"):
+            self.api.backup_check()
+
+    def test_the_launcher_at_work_on_the_game_is_waited_for(self):
+        from rusemod import backup
+        folder = Path(self.tmp.name) / "backups"
+        self.assertEqual(self.wait(self.api.backup_make()["job"])["state"], "done")
+        self.api.new_mod("Waiting")
+        with backup._busy(folder, "restore"):  # the Launcher restoring the game's files: a Test in game waits
+            j = self.wait(self.api.test_in_game()["job"])
+        self.assertEqual((j["state"], j["message"]), ("failed", "The game's files are being restored: wait for it to "
+                                                                "finish."))
+        self.assertFalse((Path(self.tmp.name) / "copies").exists())  # nothing was built
+        with backup.reading(folder):  # the Launcher building a Play's copy: a restore waits
+            with mock.patch("rusemod.winfiles.processes", return_value=[]):
+                j = self.wait(self.api.backup_restore()["job"])
+        self.assertEqual(j["state"], "failed")
+        self.assertIn("A modded copy of the game is being built", j["message"])
+        self.assertEqual([p.name for p in folder.iterdir()], ["24687178"])  # nothing left behind
 
 
 class Labels(unittest.TestCase):

@@ -7,7 +7,8 @@ drew these as zones in their editor (forest, obstacle), not from the trees, so a
 cover only once cover is painted over it. On Blitz, the trees' cells are 0x08 twice as often as the map's, and two
 thirds of the buildings stand on 0x04 cells.
 
-A mod paints circles in maps/<map>/cover.toml (MOD_FORMAT §8), in order, each setting or clearing one layer:
+A mod paints circles (or squares) in maps/<map>/cover.toml (MOD_FORMAT §8), in order, each setting or clearing one
+layer:
 
     [[paint]]
     x = 500000.0      # map units, like a scenario's positions
@@ -15,9 +16,11 @@ A mod paints circles in maps/<map>/cover.toml (MOD_FORMAT §8), in order, each s
     radius = 20000.0
     layer = "cover"   # or "blocked"
     erase = false     # true clears it (a wood's cover taken away)
+    square = false    # true: a square along the map's axes, `radius` (map units) from its middle to each side (the
+                      # owner asked for a square brush, 2026-09-30; its edges follow the grid's rows and columns)
 
-A cell is painted when its centre is in the circle. The tree is edited in place: leaves the circles don't touch keep
-their bytes and place, so painting nothing gives the same file back."""
+A cell is painted when its centre is in the circle (or square). The tree is edited in place: leaves the paints don't
+touch keep their bytes and place, so painting nothing gives the same file back."""
 from __future__ import annotations
 
 import struct
@@ -41,6 +44,7 @@ class Paint:
     radius: float
     layer: str = "cover"
     erase: bool = False
+    square: bool = False
 
 
 def member(pack: str) -> str:
@@ -54,7 +58,7 @@ def parse_paints(items, where: str = "cover.toml") -> list[Paint]:
         at = f"{where}: paint {n}"
         if not isinstance(p, dict):
             raise CoverError(f"{at} isn't a table")
-        extra = sorted(set(p) - {"x", "y", "radius", "layer", "erase"})
+        extra = sorted(set(p) - {"x", "y", "radius", "layer", "erase", "square"})
         if extra:
             raise CoverError(f"{at}: unknown key {extra[0]!r}")
         for k in ("x", "y", "radius"):
@@ -70,7 +74,10 @@ def parse_paints(items, where: str = "cover.toml") -> list[Paint]:
         erase = p.get("erase", False)
         if not isinstance(erase, bool):
             raise CoverError(f"{at}: erase must be true or false")
-        out.append(Paint(float(p["x"]), float(p["y"]), float(p["radius"]), layer, erase))
+        square = p.get("square", False)
+        if not isinstance(square, bool):
+            raise CoverError(f"{at}: square must be true or false")
+        out.append(Paint(float(p["x"]), float(p["y"]), float(p["radius"]), layer, erase, square))
     return out
 
 
@@ -80,6 +87,8 @@ def paints_toml(paints: list[Paint], header: str = "") -> str:
         lines += ["[[paint]]", f"x = {p.x!r}", f"y = {p.y!r}", f"radius = {p.radius!r}", f'layer = "{p.layer}"']
         if p.erase:
             lines.append("erase = true")
+        if p.square:
+            lines.append("square = true")
         lines.append("")
     return "\n".join(lines)
 
@@ -156,10 +165,12 @@ def paint(win: bytes, paints: list[Paint]) -> bytes:
     nodes, ns = tree["nodes"], tree["node_start"]
     for p in paints:
         bit = LAYERS[p.layer]
-        # which cells: their centres in the circle, in cell units
+        # which cells: their centres in the circle (or square), in cell units
         cx, cy, rx, ry = (p.x - x0) / cw - 0.5, (p.y - y0) / ch - 0.5, p.radius / cw, p.radius / ch
 
-        def inside(x, y):  # a cell's centre, as an ellipse in cells (square cells make it a circle)
+        def inside(x, y, square=p.square):  # a cell's centre, as an ellipse in cells (square cells make it a
+            if square:                      # circle), or the box along the axes; both are convex, as state needs
+                return abs(x - cx) <= rx and abs(y - cy) <= ry
             return ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1.0
 
         def state(x, y, s):
@@ -212,8 +223,8 @@ def apply_paints(read, pack: str, paints: list[Paint]) -> tuple[dict, list[str]]
     win = read(name)
     if win is None:
         raise CoverError(f"{pack} has no {name} in {PACK}, so its cover can't be painted")
-    counts = {}
+    counts = {}  # (what, shape): how many
     for p in paints:
-        key = ("cleared " if p.erase else "") + p.layer
+        key = (("cleared " if p.erase else "") + p.layer, "square(s)" if p.square else "circle(s)")
         counts[key] = counts.get(key, 0) + 1
-    return {name: paint(win, paints)}, [", ".join(f"{k}: {n} circle(s)" for k, n in counts.items())]
+    return {name: paint(win, paints)}, [", ".join(f"{what}: {n} {shape}" for (what, shape), n in counts.items())]

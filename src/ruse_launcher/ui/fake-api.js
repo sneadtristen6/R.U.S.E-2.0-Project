@@ -1,5 +1,6 @@
 // A made-up LauncherApi, for working on the screens in a normal browser: open index.html?fake
-// (?fake=notfound shows the "game not found" state, ?fake=empty a launcher with no mods yet). Only English, French
+// (?fake=notfound shows the "game not found" state, ?fake=empty a launcher with no mods yet; ?fake=backup,
+// ?fake=oldbackup, ?fake=nospace and ?fake=running the clean game backup's states, in Settings). Only English, French
 // and Chinese words are included here; the real launcher has all ten languages. It does nothing in the real window.
 "use strict";
 
@@ -90,6 +91,10 @@
       for_build: "适用于游戏版本 {build}", more_info: "关于此模组的更多信息", refresh_list: "刷新",
       browse_help: "来自社区列表的模组。安装后进入你的库；然后在模组组合中勾选它。" },
   };
+  // the clean game backup's words (words.toml backup_*, set_backup_*)
+  Object.assign(words.us, { set_backup_title: "Clean game backup", set_backup_help: "RUSE Launcher and RUSE Studio never change the game's own folder, but other mod managers and hand edits can. Make a backup while the game is clean, right after Steam installs or verifies it. Check game files then shows what has changed since, and Restore clean files puts the game's files back.", backup_none: "No backup yet. It takes {need} GB; {free} GB is free on {drive}.", backup_have: "Backup of build {build}, made {date} ({size} GB): {path}", backup_other: "The backup is of build {build} (made {date}), but Steam has updated the game since (build {now}), so it can't be used. Verify with Steam, then make a new backup.", backup_make: "Make backup", backup_make_again: "Make backup again", backup_replace_ask: "This replaces the backup made {date}. Do it only if the game is clean now (use Verify with Steam first). Replace it?", backup_replace_yes: "Replace", backup_check: "Check game files", backup_deep: "Compare every byte (slower)", backup_restore: "Restore clean files", backup_restore_ask: "{n} file(s) will be copied back from the backup, and {m} file(s) that aren't the game's will be moved into a folder in {path}. Nothing is deleted. Restore?", backup_restore_yes: "Restore", backup_verify: "Verify with Steam", backup_verify_tip: "Steam's own repair: it checks every file and downloads the ones that changed. No backup needed.", backup_verify_opened: "Steam is checking the game's files and downloads any that changed; Steam shows how far it is.", backup_making: "Making the backup… {pct}", backup_checking: "Checking the game's files… {pct}", backup_restoring: "Restoring the game's files… {pct}", backup_made: "Backup made: {files} files, {size} GB.", backup_clean: "The game's files match the backup: nothing has changed.", backup_differs: "{n} file(s) differ from the backup:", backup_changed: "Changed ({n})", backup_missing: "Missing ({n})", backup_added: "Not the game's ({n})", backup_more: "…and {n} more", backup_nothing: "Nothing to restore: the game's files match the backup.", backup_restored: "Done: {n} file(s) restored.", backup_set_aside: "{m} file(s) that weren't the game's are now in {path}.", backup_kept: "The {k} changed file(s) that were replaced are kept in {path}." });
+  Object.assign(words.fr, { set_backup_title: "Sauvegarde propre du jeu", set_backup_help: "RUSE Launcher et RUSE Studio ne modifient jamais le dossier du jeu, mais d'autres gestionnaires de mods et des modifications à la main peuvent le faire. Faites une sauvegarde pendant que le jeu est propre, juste après que Steam l'a installé ou vérifié. « Vérifier les fichiers du jeu » montre ensuite ce qui a changé depuis, et « Restaurer les fichiers propres » remet les fichiers du jeu en place.", backup_none: "Pas encore de sauvegarde. Elle demande {need} Go ; {free} Go sont libres sur {drive}.", backup_have: "Sauvegarde de la version {build}, faite le {date} ({size} Go) : {path}", backup_other: "La sauvegarde est de la version {build} (faite le {date}), mais Steam a mis le jeu à jour depuis (version {now}) : elle ne peut pas servir. Vérifiez avec Steam, puis faites une nouvelle sauvegarde.", backup_make: "Faire une sauvegarde", backup_make_again: "Refaire la sauvegarde", backup_replace_ask: "Ceci remplace la sauvegarde faite le {date}. Ne le faites que si le jeu est propre maintenant (utilisez d'abord « Vérifier avec Steam »). La remplacer ?", backup_replace_yes: "Remplacer", backup_check: "Vérifier les fichiers du jeu", backup_deep: "Comparer chaque octet (plus lent)", backup_restore: "Restaurer les fichiers propres", backup_restore_ask: "{n} fichier(s) seront recopiés depuis la sauvegarde, et {m} fichier(s) qui ne sont pas ceux du jeu seront déplacés dans un dossier de {path}. Rien n'est supprimé. Restaurer ?", backup_restore_yes: "Restaurer", backup_verify: "Vérifier avec Steam", backup_verify_tip: "La réparation de Steam : il vérifie chaque fichier et retélécharge ceux qui ont changé. Aucune sauvegarde nécessaire.", backup_verify_opened: "Steam vérifie les fichiers du jeu et retélécharge ceux qui ont changé ; Steam affiche sa progression.", backup_making: "Sauvegarde en cours… {pct}", backup_checking: "Vérification des fichiers du jeu… {pct}", backup_restoring: "Restauration des fichiers du jeu… {pct}", backup_made: "Sauvegarde faite : {files} fichiers, {size} Go.", backup_clean: "Les fichiers du jeu correspondent à la sauvegarde : rien n'a changé.", backup_differs: "{n} fichier(s) diffèrent de la sauvegarde :", backup_changed: "Modifiés ({n})", backup_missing: "Manquants ({n})", backup_added: "Pas du jeu ({n})", backup_more: "…et {n} de plus", backup_nothing: "Rien à restaurer : les fichiers du jeu correspondent à la sauvegarde.", backup_restored: "Terminé : {n} fichier(s) restauré(s).", backup_set_aside: "{m} fichier(s) qui n'étaient pas ceux du jeu sont maintenant dans {path}.", backup_kept: "Les {k} fichier(s) modifié(s) qui ont été remplacés sont conservés dans {path}." });
+  Object.assign(words.sc, { set_backup_title: "游戏的干净备份", set_backup_help: "RUSE Launcher 和 RUSE Studio 从不修改游戏本身的文件夹，但其他模组管理器和手动修改可能会。请在游戏干净时（Steam 刚安装或验证完之后）创建备份。之后，“检查游戏文件”会显示自那以后改变了什么，“恢复干净文件”会把游戏文件还原。", backup_none: "还没有备份。需要 {need} GB；{drive} 上有 {free} GB 可用。", backup_have: "版本 {build} 的备份，创建于 {date}（{size} GB）：{path}", backup_other: "备份来自版本 {build}（创建于 {date}），但 Steam 之后更新了游戏（版本 {now}），因此无法使用。请先通过 Steam 验证，然后创建新的备份。", backup_make: "创建备份", backup_make_again: "重新创建备份", backup_replace_ask: "这将替换创建于 {date} 的备份。只有在游戏现在是干净的时候才这样做（请先使用“通过 Steam 验证”）。要替换吗？", backup_replace_yes: "替换", backup_check: "检查游戏文件", backup_deep: "逐字节比较（较慢）", backup_restore: "恢复干净文件", backup_restore_ask: "将从备份复制回 {n} 个文件，并把 {m} 个不属于游戏的文件移到 {path} 中的一个文件夹。不会删除任何东西。要恢复吗？", backup_restore_yes: "恢复", backup_verify: "通过 Steam 验证", backup_verify_tip: "Steam 自带的修复：检查每个文件并重新下载有变化的文件。不需要备份。", backup_verify_opened: "Steam 正在检查游戏文件，并重新下载有变化的文件；进度显示在 Steam 中。", backup_making: "正在创建备份… {pct}", backup_checking: "正在检查游戏文件… {pct}", backup_restoring: "正在恢复游戏文件… {pct}", backup_made: "备份已创建：{files} 个文件，{size} GB。", backup_clean: "游戏文件与备份一致：没有任何变化。", backup_differs: "与备份不同的文件：{n} 个", backup_changed: "已更改（{n}）", backup_missing: "缺失（{n}）", backup_added: "不属于游戏（{n}）", backup_more: "…还有 {n} 个", backup_nothing: "无需恢复：游戏文件与备份一致。", backup_restored: "完成：已恢复 {n} 个文件。", backup_set_aside: "{m} 个不属于游戏的文件现在位于 {path}。", backup_kept: "被替换的 {k} 个已更改文件保存在 {path}。" });
   const build = "24687178";
   // Sample data for the preview only: mods that exist in the repo's mods/ folder, nobody's name on them.
   let library = mode === "empty" ? [] : [
@@ -232,6 +237,38 @@
     const data = Object.entries(f.data).map(([k, v]) => `${k}=${v}`).join(", ");
     return `[${f.level}] ${f.key}: ${f.say}` + (data ? ` (${data})` : "");
   })).join("\n");
+  // the clean game backup (rusemod.backup): none at first (?fake=backup: one already made, with the game's files
+  // changed since; ?fake=oldbackup: one of an older build; ?fake=nospace: no room for one; ?fake=running: a restore
+  // refused while R.U.S.E. runs). Its jobs run like the real ones: progress lines, then a result
+  const BACKUPS = "D:\\RUSE-Backup";
+  const backupOf = (b, date) => ({ path: `${BACKUPS}\\${b}`, build: b, made: date.replace(" ", "T") + ":00", date,
+    files: 61, size: 5690000000, size_gb: 5.3, matches: b === build });
+  const changedSince = mode === "backup" || mode === "running";  // another mod manager changed files since the backup
+  let backups = changedSince ? [backupOf(build, "2026-09-28 18:05")]
+    : mode === "oldbackup" ? [backupOf("24087620", "2026-08-02 11:40")] : [];
+  let gameClean = !changedSince;
+  const backupStatus = () => mode === "notfound" ? { found: false, backups: [], current: null, busy: "" }
+    : { found: true, build, folder: BACKUPS, drive: "D:", backups: backups.slice(), current: backups.find((b) => b.matches) || null,
+        need_gb: 5.4, free_gb: mode === "nospace" ? 2.1 : 182.4, enough: mode !== "nospace", busy: "" };
+  const gameDiffers = () => gameClean ? { changed: [], missing: [], added: [] } : {
+    changed: ["Data/PC/190852/ZZ_GladPatchableWin.dat", "Data/PC/190852/ZZ_Win.dat"], missing: ["Data/lang.ini"],
+    added: ["Data/PC/190852/ZZ_GladPatchableWin.dat.bak", "Mods/load_order.txt"] };
+  const backupJobs = {};
+  const steps = (prefix) => [0, 12, 25, 37, 50, 62, 75, 87, 100].map((p) => `${prefix}${p}%`);
+  const backupJob = (lines, message, result, then) => {
+    const id = `backup-${Object.keys(backupJobs).length + 1}`;
+    backupJobs[id] = { step: 0, lines, message, result, then };
+    return { job: id };
+  };
+  const backupJobView = (id, since) => {
+    const j = backupJobs[id];
+    j.step = Math.min(j.step + 1, j.lines.length);
+    const done = j.step >= j.lines.length;
+    if (done && j.then) { j.then(); j.then = null; }
+    const state = done ? (j.result ? "done" : "failed") : "running";
+    return { id, state, message: done ? j.message : "", lines: j.lines.slice(since, j.step), count: j.step,
+      ...(state === "done" ? { result: j.result } : {}) };
+  };
   let playing = null;
   window.pywebview = {
     api: {
@@ -359,7 +396,27 @@
         return { job: "install" };
       },
       open_link: async (url) => ({ opened: url }),
-      job: async (_job, since) => {
+      backup_status: async () => backupStatus(),
+      backup_make: async (replace) => {
+        if (backups.some((b) => b.matches) && !replace) throw new Error("There's already a backup of this build.");
+        if (mode === "nospace") {
+          return backupJob(["0%"], "There isn't enough free space on D:\\ for the backup: it needs 5.4 GB, and 2.1 GB is free. Free some space, then try again.", null);
+        }
+        return backupJob(steps(""), "The backup is made.", { path: `${BACKUPS}\\${build}`, build, files: 61, size: 5690000000, size_gb: 5.3 },
+          () => { backups = [backupOf(build, "2026-09-30 22:15")].concat(backups.filter((b) => !b.matches)); gameClean = true; });
+      },
+      backup_check: async (deep) => backupJob(steps(""), "The game's files are checked.",
+        { build_matches: true, build, backup_build: build, ...gameDiffers(), files: 61, hashed: deep ? 61 : 2 }),
+      backup_restore: async () => {
+        if (mode === "running") return backupJob(steps("check "), "R.U.S.E. is running: RUSE.exe (process 4312). Close the game, then restore.", null);
+        const d = gameDiffers();
+        return backupJob(steps("check ").concat(steps("")), "The game's files are restored.",
+          { restored: d.changed.length + d.missing.length, set_aside: d.added.length, kept: d.changed.length, left: [], build,
+            set_aside_to: d.added.length + d.changed.length ? `${BACKUPS}\\set-aside-2026-09-30-221503` : null }, () => { gameClean = true; });
+      },
+      steam_verify: async () => ({ opened: "steam://validate/21970" }),
+      job: async (job, since) => {
+        if (backupJobs[job]) return backupJobView(job, since);
         playing.step = Math.min(playing.step + 2, playing.lines.length);
         const done = playing.step >= playing.lines.length;
         if (done && playing.then) { playing.then(); playing.then = null; }

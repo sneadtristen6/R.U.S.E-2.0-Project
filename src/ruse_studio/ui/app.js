@@ -101,6 +101,7 @@ async function setLanguage(lang) {
   if ($("pick")) $("pick").textContent = w.pick_unit;  // gone once a unit is shown
   renderMods();
   renderChips();
+  if (state.view === "settings") renderSettings();  // the language is picked there: its own words change at once
   if ($("no-index").classList.contains("hidden")) {
     await refreshList();
     if (state.page) await showUnit(state.page.address, state.page.via);
@@ -430,7 +431,8 @@ function row(u, r, mode) {
 }
 
 // A unit's flags (InitialFlagSet): a set of numbers of any length. Shown as chips with a cross to take one out, and
-// an "Add" picker listing every flag the game's units carry (what it does, when known, and who has it).
+// an "Add" picker listing every flag, 0-104 (what it does, and who has it: the ones no unit carries say they do
+// nothing in a unit's flags).
 const FLAG_LISTS = new Set(["InitialFlagSet"]);
 let knownFlags = null;  // from api.flags(), once per language
 
@@ -480,7 +482,7 @@ function flagRow(u, r, mode, th) {
       for (const f of knownFlags || []) {
         if (current.includes(f.flag)) continue;
         pick.append(el("option", { value: String(f.flag), textContent: `${f.flag}` + (f.meaning ? ` · ${f.meaning}` : "") +
-          ` (${fill(w.flag_count, { n: f.count })})` }));
+          (f.count ? ` (${fill(w.flag_count, { n: f.count })})` : "") }));  // no unit has it: it says it does nothing
       }
       pick.append(el("option", { value: "?", textContent: w.flag_add_number }));
       pick.addEventListener("change", () => {
@@ -812,9 +814,11 @@ async function testInGame() {
   const log = $("test-log");
   log.textContent = "";
   $("test-panel").classList.remove("hidden");
+  if (state.view === "settings") renderBackup();  // a restore waits for the test's copy
   const finish = (ok, message) => {
     button.dataset.running = "0";
     button.disabled = !state.mod;
+    if (state.view === "settings") renderBackup();
     if (message) say(message, ok ? "ok" : "error");
     if (!ok) offerTroubleshoot();
   };
@@ -1002,7 +1006,7 @@ function showView(view) {
   $("tab-units").setAttribute("aria-selected", String(view === "units"));
   $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
   $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
-  if (view === "settings") { renderSettings(); return; }
+  if (view === "settings") { renderSettings(); loadBackup(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
   if (window.MapView) open();
@@ -1019,6 +1023,7 @@ const SETTINGS = [
     $("set-game-path").textContent = g.message || (g.path ? fill(w.set_game_path, { path: g.path }) : w.set_game_none);
     $("set-game-change").textContent = w.set_game_change;
   } },
+  { id: "backup", render() { renderBackup(); } },  // loaded each time Settings opens (loadBackup)
   { id: "updates", async render() {
     const w = state.words, u = state.update || {};
     if (!state.version) state.version = (await api().game_folder()).version;
@@ -1041,8 +1046,177 @@ const SETTINGS = [
 async function chooseGame() {
   const g = await api().choose_game_folder();
   renderSettings();
+  loadBackup();  // another game folder: its own backups
   if (g.message) $("set-game-path").textContent = g.message;
   return g;
+}
+
+// --- the clean game backup (rusemod.backup through api.backup_*): made while the game is clean, then a check of the
+// game's files against it, and a restore of what other mod managers or hand edits changed. The only way the Studio
+// writes into the game's own folder, and only after the modder says yes. Its jobs' lines are their progress ("37%";
+// a restore checks first: "check 37%"), and a finished job brings what it found or did as its "result" ---
+const BACKUP_LIST = 40;  // file names shown per kind (changed, missing, added); the rest are counted
+
+function backupState() {
+  return state.backup || (state.backup = { status: null, busy: "", phase: "", pct: "", found: null, note: "", ok: false,
+    asking: false });
+}
+
+function errorText(err) {
+  return (err && err.message) || String(err);
+}
+
+async function loadBackup() {
+  const b = backupState();
+  try { b.status = await api().backup_status(); } catch (err) { Object.assign(b, { note: errorText(err), ok: false }); }
+  if (state.view === "settings") renderBackup();
+}
+
+function renderBackup() {
+  const w = state.words, b = backupState(), s = b.status;
+  let line = "";
+  if (s && !s.found) line = w.set_game_none;
+  else if (s && s.current) line = fill(w.backup_have, { build: s.current.build || "?", date: s.current.date, size: s.current.size_gb, path: s.current.path });
+  else if (s && s.backups.length) line = fill(w.backup_other, { build: s.backups[0].build || "?", date: s.backups[0].date, now: s.build || "?" });
+  else if (s) line = fill(w.backup_none, { need: s.need_gb, free: s.free_gb === null ? "?" : s.free_gb, drive: s.drive });
+  $("backup-status").textContent = line;
+  $("backup-status").className = "small " + (s && s.current ? "ok-text" : s && s.found && !s.enough ? "error-text" : "muted");
+  const found = Boolean(s && s.found), ready = found && !b.busy && !b.asking, current = Boolean(s && s.current);
+  const testing = $("test").dataset.running === "1";  // a Test in game builds its copy from the game's files
+  $("backup-make").textContent = current ? w.backup_make_again : w.backup_make;
+  $("backup-check").textContent = w.backup_check;
+  $("backup-restore").textContent = w.backup_restore;
+  $("backup-verify").textContent = w.backup_verify;
+  $("backup-verify").title = w.backup_verify_tip;
+  $("backup-deep-label").textContent = w.backup_deep;
+  $("backup-make").disabled = !ready;
+  $("backup-check").disabled = !ready || !current;
+  $("backup-restore").disabled = !ready || !current || testing;
+  $("backup-verify").disabled = !found || b.busy === "restore";
+  $("backup-deep").disabled = Boolean(b.busy);
+  const progress = { make: w.backup_making, check: w.backup_checking, restore: w.backup_restoring }[b.phase || b.busy];
+  const note = $("backup-note");
+  note.textContent = b.busy ? fill(progress, { pct: b.pct }) : b.note;
+  note.className = "small " + (b.busy ? "muted" : b.ok ? "ok-text" : "error-text");
+  renderBackupFiles(b.found);
+}
+
+function renderBackupFiles(found) {
+  const w = state.words, holder = $("backup-files");
+  holder.replaceChildren();
+  if (!found) return;
+  for (const [word, list] of [[w.backup_changed, found.changed], [w.backup_missing, found.missing], [w.backup_added, found.added]]) {
+    if (!list.length) continue;
+    const items = list.slice(0, BACKUP_LIST).map((f) => el("li", { textContent: f }));
+    if (list.length > BACKUP_LIST) items.push(el("li", { className: "muted", textContent: fill(w.backup_more, { n: list.length - BACKUP_LIST }) }));
+    const box = el("details", {}, el("summary", { textContent: fill(word, { n: list.length }) }), el("ul", {}, ...items));
+    box.open = list.length <= 10;
+    holder.append(box);
+  }
+}
+
+// a question before something that changes files (making the backup again, a restore): Yes runs `onYes`
+function askBackup(question, yesText, onYes) {
+  const w = state.words, b = backupState();
+  const yes = el("button", { type: "button", className: "ghost danger", textContent: yesText });
+  const no = el("button", { type: "button", className: "ghost", textContent: w.cancel });
+  const close = () => { b.asking = false; $("backup-ask").replaceChildren(); renderBackup(); };
+  yes.addEventListener("click", () => { close(); onYes(); });
+  no.addEventListener("click", close);
+  b.asking = true;
+  $("backup-ask").replaceChildren(el("div", { className: "sure" }, el("span", { className: "small", textContent: question }), yes, no));
+  renderBackup();
+  yes.focus();
+}
+
+// Runs one backup job and follows it; resolves with its result, or null when it failed (its message is the note)
+async function runBackup(kind, call) {
+  const b = backupState();
+  Object.assign(b, { busy: kind, phase: "", pct: "", note: "", ok: false });
+  renderBackup();
+  let job;
+  try { ({ job } = await call()); } catch (err) {
+    Object.assign(b, { busy: "", note: errorText(err), ok: false });
+    renderBackup();
+    return null;
+  }
+  return new Promise((done) => {
+    let seen = 0;
+    const tick = async () => {
+      let j;
+      try { j = await api().job(job, seen); } catch (err) {
+        Object.assign(b, { busy: "", note: errorText(err), ok: false });
+        renderBackup();
+        done(null);
+        return;
+      }
+      seen = j.count;
+      const last = j.lines[j.lines.length - 1];
+      if (last) Object.assign(b, { phase: last.startsWith("check ") ? "check" : kind, pct: last.replace(/^check /, "") });
+      if (j.state === "running") { renderBackup(); setTimeout(tick, 400); return; }
+      Object.assign(b, { busy: "", phase: "" });
+      if (j.state !== "done") Object.assign(b, { note: j.message, ok: false });
+      renderBackup();
+      done(j.state === "done" ? j.result || {} : null);
+    };
+    tick();
+  });
+}
+
+async function makeBackup() {
+  const w = state.words, s = backupState().status;
+  const go = async (replace) => {
+    const res = await runBackup("make", () => api().backup_make(replace));
+    if (res) Object.assign(backupState(), { found: null, note: fill(w.backup_made, { files: res.files, size: res.size_gb }), ok: true });
+    await loadBackup();
+  };
+  if (s && s.current) askBackup(fill(w.backup_replace_ask, { date: s.current.date }), w.backup_replace_yes, () => go(true));
+  else go(false);
+}
+
+async function checkBackup() {
+  const w = state.words, b = backupState();
+  b.found = null;
+  const res = await runBackup("check", () => api().backup_check($("backup-deep").checked));
+  if (res) {
+    const n = res.changed.length + res.missing.length + res.added.length;
+    Object.assign(b, { found: res, note: n ? fill(w.backup_differs, { n }) : w.backup_clean, ok: !n });
+  }
+  renderBackup();
+  return res;
+}
+
+// Restore: the game is checked first, and the modder sees what will change before saying yes
+async function restoreBackup() {
+  const w = state.words, b = backupState();
+  const found = await checkBackup();
+  if (!found) return;
+  const n = found.changed.length + found.missing.length, m = found.added.length;
+  if (!n && !m) {
+    Object.assign(b, { note: w.backup_nothing, ok: true });
+    renderBackup();
+    return;
+  }
+  askBackup(fill(w.backup_restore_ask, { n, m, path: b.status.folder }), w.backup_restore_yes, async () => {
+    const res = await runBackup("restore", () => api().backup_restore($("backup-deep").checked));
+    if (res) {
+      const said = [fill(w.backup_restored, { n: res.restored })];
+      if (res.set_aside) said.push(fill(w.backup_set_aside, { m: res.set_aside, path: res.set_aside_to }));
+      if (res.kept) said.push(fill(w.backup_kept, { k: res.kept, path: res.set_aside_to }));  // nothing is deleted
+      if (res.left.length) said.push(fill(w.doc_fix_left, { left: res.left.join("; ") }));
+      Object.assign(b, { found: null, note: said.join(" "), ok: !res.left.length });
+    }
+    await loadBackup();
+  });
+}
+
+async function verifyWithSteam() {
+  const b = backupState();
+  try {
+    await api().steam_verify();
+    Object.assign(b, { note: state.words.backup_verify_opened, ok: true });
+  } catch (err) { Object.assign(b, { note: errorText(err), ok: false }); }
+  renderBackup();
 }
 
 function renderSettings() {
@@ -1119,6 +1293,10 @@ async function start() {
   $("tab-maps").addEventListener("click", () => showView("maps"));
   $("tab-settings").addEventListener("click", () => showView("settings"));
   $("set-game-change").addEventListener("click", () => chooseGame().catch(problem));
+  $("backup-make").addEventListener("click", makeBackup);
+  $("backup-check").addEventListener("click", checkBackup);
+  $("backup-restore").addEventListener("click", restoreBackup);
+  $("backup-verify").addEventListener("click", verifyWithSteam);
   $("help-wiki").addEventListener("click", () => api().open_help("wiki").catch(problem));
   $("help-discussions").addEventListener("click", () => api().open_help("discussions").catch(problem));
   $("help-report").addEventListener("click", () => api().report_problem("").catch(problem));

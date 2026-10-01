@@ -535,7 +535,8 @@ function overlayMesh(o) {
 }
 
 // One brush circle on the cells whose centres are inside it (rusemod.cover.paint's rule; rusemod.nav closes the
-// graphs' circles that reach into it).
+// graphs' circles that reach into it). A cover stroke with square = true (written by hand in terrain.toml, MOD_FORMAT
+// §8) is a square along the map's axes, `radius` from its middle to each side, as the build paints it.
 function overlayDab(s) {
   const [o, on, off] = PAINTS[s.brush];
   if (!o.cells) return;
@@ -548,7 +549,8 @@ function overlayDab(s) {
     const dy = by + (r + 0.5) * ch - s.y;
     for (let c = c0; c <= c1; c++) {
       const dx = bx + (c + 0.5) * cw - s.x, i = r * n + c;
-      if (dx * dx + dy * dy <= rr) o.cells[i] = (o.cells[i] & ~off) | on;
+      const inside = s.square ? Math.abs(dx) <= s.radius && Math.abs(dy) <= s.radius : dx * dx + dy * dy <= rr;
+      if (inside) o.cells[i] = (o.cells[i] & ~off) | on;
     }
   }
   if (!o.batch) overlayDraw(o, r0, r1, c0, c1);

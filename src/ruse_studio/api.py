@@ -6,7 +6,8 @@ open). Every change is saved at once in that mod's `src/studio.rndf` (edits.py).
 game has, kept in the same file with their names in `text/studio.baseunite.csv`; the game index doesn't know them,
 so their pages are the copied unit's pages, with the copy's own changes on top. Test in game builds the mod into its
 own modded copy and starts the game, with the platform's engine (rusemod.play), so the Studio doesn't need the
-launcher.
+launcher. Settings has the clean game backup, as the launcher does (rusemod.backup.BackupCalls): the only way the
+Studio writes into the game's own folder, and only when the modder asks for a restore.
 """
 from __future__ import annotations
 
@@ -25,6 +26,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 from rusemod import doctor, identity, package, scenario, scenery, schema
+from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, CommunityCalls, private_paths_out
 from rusemod.update import UpdateCalls
@@ -193,18 +195,20 @@ def words(lang: str = schema.BASE) -> dict:
     return {key: texts.get(lang) or texts["us"] for key, texts in _words().items()}
 
 
-class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
+class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
 
     def __init__(self, index_path=None, game_dir=None, find=find_game, home=None, starter=None, instances=None,
-                 pick_save=None):
+                 pick_save=None, backups=None):
         self._index_path = Path(index_path) if index_path else None
         self._game_dir = Path(game_dir) if game_dir else None
         self._find = find
         self._home = Path(home) if home else default_home()
         self._starter = starter or Starter()
         self._instances = Path(instances) if instances else None
+        self._backups = Path(backups) if backups else None  # the clean game backup (rusemod.backup): RUSE-Backup
+        # on the game's drive
         self._jobs: dict[str, Job] = {}
         self._units: list | None = None  # every unit and building, read once per index
         self._ammo: list | None = None   # every ammunition, the same
@@ -404,16 +408,20 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
         return [schema.nation(n, lang) for n in found]
 
     def flags(self, lang: str = schema.BASE) -> dict:
-        """Every flag number the game's units carry in their flag lists (InitialFlagSet), with what is known about
-        it (rusemod/labels.toml [flags]), how many units have it and a few of them by name."""
+        """Every unit flag, by number: each one the game's units carry in their flag lists (InitialFlagSet) and each
+        one rusemod/labels.toml [flags] explains (0-104; the ones no unit carries are state the game sets while it
+        runs, which do nothing in a unit's flags), with what it does, how many units have it and a few of them by
+        name."""
         ix = self._open()
         try:
-            rows = ix.flag_sets()
-            names = self._names(ix, sorted({e for r in rows for e in r["examples"]}), lang)
+            rows = {r["flag"]: r for r in ix.flag_sets()}
+            names = self._names(ix, sorted({e for r in rows.values() for e in r["examples"]}), lang)
         finally:
             ix.close()
-        return {"flags": [{"flag": r["flag"], "count": r["count"], "examples": [names[e] for e in r["examples"]],
-                           "meaning": schema.flag(r["flag"], lang)} for r in rows]}
+        none = {"count": 0, "examples": []}
+        return {"flags": [{"flag": n, "count": rows.get(n, none)["count"],
+                           "examples": [names[e] for e in rows.get(n, none)["examples"]], "meaning": schema.flag(n, lang)}
+                          for n in sorted(set(rows) | set(schema.flag_numbers()))]}
 
     def weapons(self, address: str, lang: str = schema.BASE) -> dict:
         """A unit's mounted weapons and what each fires: [{address, name, ammo: {address, name}, edited}], plus
@@ -1886,6 +1894,8 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
             raise StudioError("Pick or make a mod first.")
         if self._building():  # one build at a time: two raced for the same copy
             raise StudioError("A test is already being built: wait for it to finish.")
+        if self._restoring():  # a copy built now would take half-restored files (rusemod.backup)
+            raise StudioError("The game's files are being restored: wait for it to finish.")
 
         game = self._game()
         copies = self._copies(game)
@@ -1904,7 +1914,8 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
         self._jobs[job.id] = job
         self._test_job = job.id
         where = "; ".join(look) if look else "your unit changes show in every game mode"
-        return job.start(work, f"R.U.S.E. is starting from {instance}. To see your changes: {where}.",
+        return job.start(self._reading_game(game, work),  # a restore, in either app, waits for the build
+                         f"R.U.S.E. is starting from {instance}. To see your changes: {where}.",
                          plain=(BuildError, RndfError, OSError))
 
     def _where_to_look(self, folder: Path) -> list[str]:
@@ -1969,6 +1980,19 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
         if action == "clear_leftovers" and self._building():  # the copy being built looks like a leftover
             raise StudioError("A test is being built: wait for it to finish.")
         return doctor.fix(action, game, copies)
+
+    # --- the clean game backup (rusemod.backup.BackupCalls: backup_status, backup_make, backup_check, backup_restore,
+    # steam_verify), in Settings; its hooks ---
+    def _backup_game(self) -> Path | None:
+        game = self._game()
+        return game if game is not None and game.is_dir() else None
+
+    def _backup_open_url(self, url: str) -> None:
+        self._starter.open_url(url)
+
+    def _building_copy(self) -> str:
+        """A Test in game building its copy reads the game's files: a restore waits for it."""
+        return "A test is being built: wait for it to finish, then try again." if self._building() else ""
 
     # --- a mod as one file (MOD_FORMAT §2, rusemod.package) ---
     def mod_info(self) -> dict:
@@ -2050,4 +2074,4 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
         return job.start(work, "The game index is ready.")
 
     def job(self, job_id: str, since: int = 0) -> dict:
-        return job_view(self._jobs, job_id, since)
+        return self._with_result(job_view(self._jobs, job_id, since))  # a backup job's result too

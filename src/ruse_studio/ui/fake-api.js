@@ -1,6 +1,7 @@
 // A made-up StudioApi, for working on the screens in a normal browser: open index.html?fake
 // (?fake=noindex shows the "no index yet" state, ?fake=nomod the Studio before any mod is picked, ?fake=notfound no
-// game found, ?fake=testfails a Test in game that fails, with its Troubleshoot link). Only English, French
+// game found, ?fake=testfails a Test in game that fails, with its Troubleshoot link; ?fake=backup, ?fake=oldbackup,
+// ?fake=nospace and ?fake=running the clean game backup's states, in Settings). Only English, French
 // and Chinese words are included here; the real Studio has all ten languages. It does nothing in the real Studio window.
 "use strict";
 
@@ -262,6 +263,10 @@
   Object.assign(words.us, { doc_button: "Troubleshoot", doc_title: "Troubleshooter", doc_intro: "What can stop a test or Play, checked in one go.", doc_checking: "Checking…", doc_again: "Check again", doc_copy: "Copy report", doc_copied: "Report copied: paste it into your bug report or on Discord.", doc_close: "Close", doc_fix_close_game: "Close R.U.S.E.", doc_fix_clear_leftovers: "Clear them", doc_fix_choose_game: "Choose folder…", doc_fixed: "Done ({done}).", doc_fix_left: "Not everything could be done: {left}", doc_game_ok: "R.U.S.E. found: {path}", doc_game_missing: "R.U.S.E. wasn't found. Choose its folder (the one with RUSE.exe).", doc_steam_ok: "Steam is running.", doc_steam_off: "Steam isn't running. It's started for you when you play.", doc_running_none: "No R.U.S.E. left running.", doc_running_copy: "R.U.S.E. is still running from a modded copy: {names}. Close it before the next test or Play.", doc_running_game: "R.U.S.E. is running (the Steam game): {names}. Close it before testing mods.", doc_drive_ok: "Modded copies go to {path} ({fs}).", doc_drive_other: "Modded copies go to {path}, on a {fs} drive: each copy is a full copy, and Windows may refuse to delete one while R.U.S.E. runs. An NTFS drive is best.", doc_space_ok: "{gb} GB free for modded copies.", doc_space_low: "Only {gb} GB free where modded copies go: a copy may need {need} GB.", doc_left_none: "No leftover copies.", doc_left: "Leftover copies: {names}. They only take up space; you can clear them now.", doc_left_held: "Leftover copies: {names}, held by {held}. Close that program, then clear them.", doc_readonly: "{n} of the game's files are marked read-only. That's fine: modded copies never keep the mark.", doc_write_ok: "The app can write where modded copies go.", doc_write_fail: "The app can't write to {path} ({why}). Modded copies always go there, on the game's drive: check that folder's permissions, or whether an antivirus blocks it.", doc_troubleshoot_link: "Troubleshoot" });
   Object.assign(words.fr, { doc_button: "Dépannage", doc_title: "Dépannage", doc_intro: "Ce qui peut bloquer un test ou « Jouer », vérifié en une fois.", doc_checking: "Vérification…", doc_again: "Vérifier à nouveau", doc_copy: "Copier le rapport", doc_copied: "Rapport copié : collez-le dans votre rapport de bug ou sur Discord.", doc_close: "Fermer", doc_fix_close_game: "Fermer R.U.S.E.", doc_fix_clear_leftovers: "Les supprimer", doc_fix_choose_game: "Choisir le dossier…", doc_fixed: "Fait ({done}).", doc_fix_left: "Tout n'a pas pu être fait : {left}", doc_game_ok: "R.U.S.E. trouvé : {path}", doc_game_missing: "R.U.S.E. est introuvable. Choisissez son dossier (celui qui contient RUSE.exe).", doc_steam_ok: "Steam est lancé.", doc_steam_off: "Steam n'est pas lancé. Il est démarré pour vous quand vous jouez.", doc_running_none: "Aucun R.U.S.E. resté ouvert.", doc_running_copy: "R.U.S.E. tourne encore depuis une copie avec mods : {names}. Fermez-le avant le prochain test ou « Jouer ».", doc_running_game: "R.U.S.E. est lancé (le jeu Steam) : {names}. Fermez-le avant de tester des mods.", doc_drive_ok: "Les copies avec mods vont dans {path} ({fs}).", doc_drive_other: "Les copies avec mods vont dans {path}, sur un disque {fs} : chaque copie est complète, et Windows peut refuser d'en supprimer une pendant que R.U.S.E. tourne. Un disque NTFS est préférable.", doc_space_ok: "{gb} Go libres pour les copies avec mods.", doc_space_low: "Seulement {gb} Go libres là où vont les copies avec mods : une copie peut demander {need} Go.", doc_left_none: "Aucune copie restante.", doc_left: "Copies restantes : {names}. Elles ne font qu'occuper de la place ; vous pouvez les supprimer dès maintenant.", doc_left_held: "Copies restantes : {names}, bloquées par {held}. Fermez ce programme, puis supprimez-les.", doc_readonly: "{n} fichiers du jeu sont en lecture seule. Ce n'est pas un problème : les copies avec mods ne gardent jamais cet attribut.", doc_write_ok: "L'application peut écrire là où vont les copies avec mods.", doc_write_fail: "L'application ne peut pas écrire dans {path} ({why}). Les copies avec les mods vont toujours là, sur le disque du jeu : vérifiez les autorisations de ce dossier, ou si un antivirus le bloque.", doc_troubleshoot_link: "Dépannage" });
   Object.assign(words.sc, { doc_button: "故障排查", doc_title: "故障排查", doc_intro: "一次检查所有可能阻止测试或“开始游戏”的问题。", doc_checking: "正在检查…", doc_again: "重新检查", doc_copy: "复制报告", doc_copied: "报告已复制：请粘贴到你的错误报告或 Discord 中。", doc_close: "关闭", doc_fix_close_game: "关闭 R.U.S.E.", doc_fix_clear_leftovers: "清除", doc_fix_choose_game: "选择文件夹…", doc_fixed: "已完成（{done}）。", doc_fix_left: "部分操作未能完成：{left}", doc_game_ok: "已找到 R.U.S.E.：{path}", doc_game_missing: "未找到 R.U.S.E.。请选择其文件夹（包含 RUSE.exe 的那个）。", doc_steam_ok: "Steam 正在运行。", doc_steam_off: "Steam 未运行。开始游戏时会自动为你启动。", doc_running_none: "没有仍在运行的 R.U.S.E.。", doc_running_copy: "R.U.S.E. 仍在从模组版副本运行：{names}。请在下次测试或“开始游戏”前关闭它。", doc_running_game: "R.U.S.E.（Steam 游戏）正在运行：{names}。测试模组前请先关闭它。", doc_drive_ok: "模组版副本保存在 {path}（{fs}）。", doc_drive_other: "模组版副本保存在 {fs} 驱动器上的 {path}：每份都是完整副本，且 R.U.S.E. 运行时 Windows 可能拒绝删除它。最好使用 NTFS 驱动器。", doc_space_ok: "模组版副本可用空间：{gb} GB。", doc_space_low: "模组版副本所在位置仅剩 {gb} GB 可用空间：一份副本可能需要 {need} GB。", doc_left_none: "没有残留的副本。", doc_left: "残留的副本：{names}。它们只占用空间；你可以现在就清除。", doc_left_held: "残留的副本：{names}，被 {held} 占用。请关闭该程序，然后清除它们。", doc_readonly: "游戏有 {n} 个文件被标记为只读。这没有问题：模组版副本不会保留此标记。", doc_write_ok: "应用可以写入模组版副本所在的位置。", doc_write_fail: "应用无法写入 {path}（{why}）。模组版副本总是放在那里，即游戏所在的驱动器：请检查该文件夹的权限，或是否被杀毒软件拦截。", doc_troubleshoot_link: "故障排查" });
+  // the clean game backup's words (words.toml backup_*, set_backup_*)
+  Object.assign(words.us, { set_backup_title: "Clean game backup", set_backup_help: "RUSE Launcher and RUSE Studio never change the game's own folder, but other mod managers and hand edits can. Make a backup while the game is clean, right after Steam installs or verifies it. Check game files then shows what has changed since, and Restore clean files puts the game's files back.", backup_none: "No backup yet. It takes {need} GB; {free} GB is free on {drive}.", backup_have: "Backup of build {build}, made {date} ({size} GB): {path}", backup_other: "The backup is of build {build} (made {date}), but Steam has updated the game since (build {now}), so it can't be used. Verify with Steam, then make a new backup.", backup_make: "Make backup", backup_make_again: "Make backup again", backup_replace_ask: "This replaces the backup made {date}. Do it only if the game is clean now (use Verify with Steam first). Replace it?", backup_replace_yes: "Replace", backup_check: "Check game files", backup_deep: "Compare every byte (slower)", backup_restore: "Restore clean files", backup_restore_ask: "{n} file(s) will be copied back from the backup, and {m} file(s) that aren't the game's will be moved into a folder in {path}. Nothing is deleted. Restore?", backup_restore_yes: "Restore", backup_verify: "Verify with Steam", backup_verify_tip: "Steam's own repair: it checks every file and downloads the ones that changed. No backup needed.", backup_verify_opened: "Steam is checking the game's files and downloads any that changed; Steam shows how far it is.", backup_making: "Making the backup… {pct}", backup_checking: "Checking the game's files… {pct}", backup_restoring: "Restoring the game's files… {pct}", backup_made: "Backup made: {files} files, {size} GB.", backup_clean: "The game's files match the backup: nothing has changed.", backup_differs: "{n} file(s) differ from the backup:", backup_changed: "Changed ({n})", backup_missing: "Missing ({n})", backup_added: "Not the game's ({n})", backup_more: "…and {n} more", backup_nothing: "Nothing to restore: the game's files match the backup.", backup_restored: "Done: {n} file(s) restored.", backup_set_aside: "{m} file(s) that weren't the game's are now in {path}.", backup_kept: "The {k} changed file(s) that were replaced are kept in {path}." });
+  Object.assign(words.fr, { set_backup_title: "Sauvegarde propre du jeu", set_backup_help: "RUSE Launcher et RUSE Studio ne modifient jamais le dossier du jeu, mais d'autres gestionnaires de mods et des modifications à la main peuvent le faire. Faites une sauvegarde pendant que le jeu est propre, juste après que Steam l'a installé ou vérifié. « Vérifier les fichiers du jeu » montre ensuite ce qui a changé depuis, et « Restaurer les fichiers propres » remet les fichiers du jeu en place.", backup_none: "Pas encore de sauvegarde. Elle demande {need} Go ; {free} Go sont libres sur {drive}.", backup_have: "Sauvegarde de la version {build}, faite le {date} ({size} Go) : {path}", backup_other: "La sauvegarde est de la version {build} (faite le {date}), mais Steam a mis le jeu à jour depuis (version {now}) : elle ne peut pas servir. Vérifiez avec Steam, puis faites une nouvelle sauvegarde.", backup_make: "Faire une sauvegarde", backup_make_again: "Refaire la sauvegarde", backup_replace_ask: "Ceci remplace la sauvegarde faite le {date}. Ne le faites que si le jeu est propre maintenant (utilisez d'abord « Vérifier avec Steam »). La remplacer ?", backup_replace_yes: "Remplacer", backup_check: "Vérifier les fichiers du jeu", backup_deep: "Comparer chaque octet (plus lent)", backup_restore: "Restaurer les fichiers propres", backup_restore_ask: "{n} fichier(s) seront recopiés depuis la sauvegarde, et {m} fichier(s) qui ne sont pas ceux du jeu seront déplacés dans un dossier de {path}. Rien n'est supprimé. Restaurer ?", backup_restore_yes: "Restaurer", backup_verify: "Vérifier avec Steam", backup_verify_tip: "La réparation de Steam : il vérifie chaque fichier et retélécharge ceux qui ont changé. Aucune sauvegarde nécessaire.", backup_verify_opened: "Steam vérifie les fichiers du jeu et retélécharge ceux qui ont changé ; Steam affiche sa progression.", backup_making: "Sauvegarde en cours… {pct}", backup_checking: "Vérification des fichiers du jeu… {pct}", backup_restoring: "Restauration des fichiers du jeu… {pct}", backup_made: "Sauvegarde faite : {files} fichiers, {size} Go.", backup_clean: "Les fichiers du jeu correspondent à la sauvegarde : rien n'a changé.", backup_differs: "{n} fichier(s) diffèrent de la sauvegarde :", backup_changed: "Modifiés ({n})", backup_missing: "Manquants ({n})", backup_added: "Pas du jeu ({n})", backup_more: "…et {n} de plus", backup_nothing: "Rien à restaurer : les fichiers du jeu correspondent à la sauvegarde.", backup_restored: "Terminé : {n} fichier(s) restauré(s).", backup_set_aside: "{m} fichier(s) qui n'étaient pas ceux du jeu sont maintenant dans {path}.", backup_kept: "Les {k} fichier(s) modifié(s) qui ont été remplacés sont conservés dans {path}." });
+  Object.assign(words.sc, { set_backup_title: "游戏的干净备份", set_backup_help: "RUSE Launcher 和 RUSE Studio 从不修改游戏本身的文件夹，但其他模组管理器和手动修改可能会。请在游戏干净时（Steam 刚安装或验证完之后）创建备份。之后，“检查游戏文件”会显示自那以后改变了什么，“恢复干净文件”会把游戏文件还原。", backup_none: "还没有备份。需要 {need} GB；{drive} 上有 {free} GB 可用。", backup_have: "版本 {build} 的备份，创建于 {date}（{size} GB）：{path}", backup_other: "备份来自版本 {build}（创建于 {date}），但 Steam 之后更新了游戏（版本 {now}），因此无法使用。请先通过 Steam 验证，然后创建新的备份。", backup_make: "创建备份", backup_make_again: "重新创建备份", backup_replace_ask: "这将替换创建于 {date} 的备份。只有在游戏现在是干净的时候才这样做（请先使用“通过 Steam 验证”）。要替换吗？", backup_replace_yes: "替换", backup_check: "检查游戏文件", backup_deep: "逐字节比较（较慢）", backup_restore: "恢复干净文件", backup_restore_ask: "将从备份复制回 {n} 个文件，并把 {m} 个不属于游戏的文件移到 {path} 中的一个文件夹。不会删除任何东西。要恢复吗？", backup_restore_yes: "恢复", backup_verify: "通过 Steam 验证", backup_verify_tip: "Steam 自带的修复：检查每个文件并重新下载有变化的文件。不需要备份。", backup_verify_opened: "Steam 正在检查游戏文件，并重新下载有变化的文件；进度显示在 Steam 中。", backup_making: "正在创建备份… {pct}", backup_checking: "正在检查游戏文件… {pct}", backup_restoring: "正在恢复游戏文件… {pct}", backup_made: "备份已创建：{files} 个文件，{size} GB。", backup_clean: "游戏文件与备份一致：没有任何变化。", backup_differs: "与备份不同的文件：{n} 个", backup_changed: "已更改（{n}）", backup_missing: "缺失（{n}）", backup_added: "不属于游戏（{n}）", backup_more: "…还有 {n} 个", backup_nothing: "无需恢复：游戏文件与备份一致。", backup_restored: "完成：已恢复 {n} 个文件。", backup_set_aside: "{m} 个不属于游戏的文件现在位于 {path}。", backup_kept: "被替换的 {k} 个已更改文件保存在 {path}。" });
   const nations = {
     base: ["EU", "Allemagne", "RU", "France", "Italie", "URSS", "Japon"],
     us: ["USA", "Germany", "UK", "France", "Italy", "USSR", "Japan"],
@@ -335,7 +340,7 @@
   const BLAST = E + "M4_Sherman:Weapon.Blast";  // a part three units share
   const BLAST_OWNERS = ["M4_Sherman", "M3A1_Stuart", "Type97_ChiHa"];
 
-  // ammunition: what a weapon fires; each unit has one mounted weapon here, and every ground unit two flags
+  // ammunition: what a weapon fires; each unit has one mounted weapon here, and every ground unit its flags
   const A = "$/GFX/Everything/Ammo_";
   const ammo = [
     { id: "75mm_M3", ammoId: 1001, names: { us: "AP shell · Medium cal.", fr: "Obus AP · Moyen cal.", sc: "穿甲弹 · 中口径" },
@@ -351,14 +356,45 @@
   const ammoName = (a, lang) => lang === "base" ? "Ammo_" + a.id : (a.names[lang] || a.names.us);
   const nationsOf = (a, lang) => [...new Set(a.users.map((id) => units.find((x) => x.id === id).nation))].sort()
     .map((n) => (nations[lang] || nations.us)[n]);
-  const flags = { M4_Sherman: [4, 10, 41], M3A1_Stuart: [4, 10], Panzer_IV_G: [4, 10, 72], Type97_ChiHa: [4, 10] };
+  const flags = { M4_Sherman: [10, 11, 21, 22, 55], M3A1_Stuart: [10, 11, 21, 22, 55], Panzer_IV_G: [10, 11, 21, 22, 55],
+    Type97_ChiHa: [10, 11, 21, 22, 55] };
+  // a few of the 105 (StudioApi.flags gives them all, rusemod/labels.toml [flags]): 91, which no unit carries, says it
+  // does nothing in a unit's flags, and 62 warns of the crash
   const knownFlags = [
-    { flag: 4, count: 302, meaning: null, examples: ["M4 Sherman", "M3A1 Stuart", "Panzer IV"] },
-    { flag: 10, count: 908, meaning: null, examples: ["M4 Sherman", "Infantry", "P-40 Warhawk"] },
-    { flag: 41, count: 876, meaning: null, examples: ["M4 Sherman"] },
-    { flag: 72, count: 126, meaning: { us: "Sees through obstacles (no line-of-sight check; aircraft have it)",
-      fr: "Voit à travers les obstacles (pas de test de ligne de vue ; les avions l'ont)", sc: "无视障碍物（不做视线检查；飞机默认具有）" },
-      examples: ["Panzer IV", "P-40 Warhawk"] },
+    { flag: 1, count: 54, examples: ["M7 Priest", "Wespe", "Type 4 Ha-To"], meaning: {
+      us: "Artillery: fires indirectly at what others spot; works on any unit, tested (artillerie)",
+      fr: "Artillerie : tir indirect sur ce que d'autres repèrent ; marche sur toute unité, testé (artillerie)",
+      sc: "炮兵：对友军发现的目标进行间接射击；对任何单位都有效，已实测 (artillerie)" } },
+    { flag: 10, count: 454, examples: ["M4 Sherman", "Infantry", "P-40 Warhawk"], meaning: {
+      us: "Can take damage, so it can be picked as something to shoot (blessable)",
+      fr: "Peut subir des dégâts, donc être choisi comme cible (blessable)", sc: "可受伤害，因此可被选为射击目标 (blessable)" } },
+    { flag: 11, count: 155, examples: ["M4 Sherman", "M3A1 Stuart", "Panzer IV"], meaning: {
+      us: "Can't enter woods; take 11, 21 and 55 off together to let a vehicle in, tested (blocage_foret)",
+      fr: "N'entre pas en forêt ; retirer 11, 21 et 55 ensemble pour y faire entrer un véhicule, testé (blocage_foret)",
+      sc: "不能进入树林；同时去掉 11、21 和 55 可让车辆进入，已实测 (blocage_foret)" } },
+    { flag: 21, count: 262, examples: ["M4 Sherman", "Infantry", "Panzer IV"], meaning: {
+      us: "Fighting unit: counted in end-of-game statistics; see 11 for woods (combattant)",
+      fr: "Unité de combat : comptée dans les statistiques de fin de partie ; voir 11 pour les forêts (combattant)",
+      sc: "作战单位：计入战后统计；树林相关见 11 (combattant)" } },
+    { flag: 22, count: 407, examples: ["M4 Sherman", "Infantry", "P-40 Warhawk"], meaning: {
+      us: "Takes the player's orders; scripts take it off to lock a unit (controlable)",
+      fr: "Obéit aux ordres du joueur ; les scripts le retirent pour bloquer une unité (controlable)",
+      sc: "接受玩家命令；脚本去掉它来锁定单位 (controlable)" } },
+    { flag: 55, count: 55, examples: ["M4 Sherman", "M3A1 Stuart", "Panzer IV"], meaning: {
+      us: "Tank; see 11 for letting a vehicle into woods (tank)", fr: "Char ; voir 11 pour faire entrer un véhicule en forêt (tank)",
+      sc: "坦克；让车辆进入树林见 11 (tank)" } },
+    { flag: 62, count: 18, examples: ["GMC truck", "GMC construction truck"], meaning: {
+      us: "Truck; WARNING: crashes the game at match start on anything but a truck (truck)",
+      fr: "Camion ; ATTENTION : fait planter le jeu en début de partie sur tout ce qui n'est pas un camion (truck)",
+      sc: "卡车；警告：加在卡车以外的单位上，游戏会在对局开始时崩溃 (truck)" } },
+    { flag: 72, count: 63, examples: ["P-40 Warhawk", "Spitfire"], meaning: {
+      us: "Sees through obstacles: terrain and scenery; aircraft have it, untried on ground units (vision_no_obstacle)",
+      fr: "Voit à travers les obstacles : relief et décor ; les avions l'ont, jamais essayé sur les unités au sol (vision_no_obstacle)",
+      sc: "无视障碍物：地形和场景物体不挡视线；飞机具有，地面单位尚未测试 (vision_no_obstacle)" } },
+    { flag: 91, count: 0, examples: [], meaning: {
+      us: "Camouflaged, by the ruse card: the game sets it while playing; in a unit's flags it does nothing, tested (is_camoufle)",
+      fr: "Camouflé, par la carte de ruse : le jeu le pose en cours de partie ; dans les drapeaux d'une unité, sans effet, testé (is_camoufle)",
+      sc: "伪装，来自计谋卡：游戏在对局中设置；放在单位的标志位里无效，已实测 (is_camoufle)" } },
   ];
   // what a unit or building is for, as StudioApi.group_of says
   const GROUPS = ["hq", "money", "factory", "fort", "fake", "barracks", "armor", "antitank", "artillery", "prototype",
@@ -658,8 +694,60 @@
     return { findings, report: ["RUSE Studio 0.6.3, Windows 10.0.26200"].concat(lines).join("\n") };
   }
 
+  // the clean game backup (rusemod.backup): none at first (?fake=backup: one already made, with the game's files
+  // changed since; ?fake=oldbackup: one of an older build; ?fake=nospace: no room for one; ?fake=running: a restore
+  // refused while R.U.S.E. runs). Its jobs run like the real ones: progress lines, then a result
+  const BUILD = "24687178", BACKUPS = "D:\\RUSE-Backup";
+  const backupOf = (b, date) => ({ path: `${BACKUPS}\\${b}`, build: b, made: date.replace(" ", "T") + ":00", date,
+    files: 61, size: 5690000000, size_gb: 5.3, matches: b === BUILD });
+  const changedSince = mode === "backup" || mode === "running";  // another mod manager changed files since the backup
+  let backups = changedSince ? [backupOf(BUILD, "2026-09-28 18:05")]
+    : mode === "oldbackup" ? [backupOf("24087620", "2026-08-02 11:40")] : [];
+  let gameClean = !changedSince;
+  const backupStatus = () => !fakeGame ? { found: false, backups: [], current: null, busy: "" }
+    : { found: true, build: BUILD, folder: BACKUPS, drive: "D:", backups: backups.slice(), current: backups.find((b) => b.matches) || null,
+        need_gb: 5.4, free_gb: mode === "nospace" ? 2.1 : 182.4, enough: mode !== "nospace", busy: "" };
+  const gameDiffers = () => gameClean ? { changed: [], missing: [], added: [] } : {
+    changed: ["Data/PC/190852/ZZ_GladPatchableWin.dat", "Data/PC/190852/ZZ_Win.dat"], missing: ["Data/lang.ini"],
+    added: ["Data/PC/190852/ZZ_GladPatchableWin.dat.bak", "Mods/load_order.txt"] };
+  const backupJobs = {};
+  const steps = (prefix) => [0, 12, 25, 37, 50, 62, 75, 87, 100].map((p) => `${prefix}${p}%`);
+  const backupJob = (lines, message, result, then) => {
+    const id = `backup-${Object.keys(backupJobs).length + 1}`;
+    backupJobs[id] = { step: 0, lines, message, result, then };
+    return { job: id };
+  };
+  const backupJobView = (id, since) => {
+    const j = backupJobs[id];
+    j.step = Math.min(j.step + 1, j.lines.length);
+    const done = j.step >= j.lines.length;
+    if (done && j.then) { j.then(); j.then = null; }
+    const state = done ? (j.result ? "done" : "failed") : "running";
+    return { id, state, message: done ? j.message : "", lines: j.lines.slice(since, j.step), count: j.step,
+      ...(state === "done" ? { result: j.result } : {}) };
+  };
+
   window.pywebview = {
     api: {
+      backup_status: async () => backupStatus(),
+      backup_make: async (replace) => {
+        if (backups.some((b) => b.matches) && !replace) throw new Error("There's already a backup of this build.");
+        if (mode === "nospace") {
+          return backupJob(["0%"], "There isn't enough free space on D:\\ for the backup: it needs 5.4 GB, and 2.1 GB is free. Free some space, then try again.", null);
+        }
+        return backupJob(steps(""), "The backup is made.", { path: `${BACKUPS}\\${BUILD}`, build: BUILD, files: 61, size: 5690000000, size_gb: 5.3 },
+          () => { backups = [backupOf(BUILD, "2026-09-30 22:15")].concat(backups.filter((b) => !b.matches)); gameClean = true; });
+      },
+      backup_check: async (deep) => backupJob(steps(""), "The game's files are checked.",
+        { build_matches: true, build: BUILD, backup_build: BUILD, ...gameDiffers(), files: 61, hashed: deep ? 61 : 2 }),
+      backup_restore: async () => {
+        if (mode === "running") return backupJob(steps("check "), "R.U.S.E. is running: RUSE.exe (process 4312). Close the game, then restore.", null);
+        const d = gameDiffers();
+        return backupJob(steps("check ").concat(steps("")), "The game's files are restored.",
+          { restored: d.changed.length + d.missing.length, set_aside: d.added.length, kept: d.changed.length, left: [], build: BUILD,
+            set_aside_to: d.added.length + d.changed.length ? `${BACKUPS}\\set-aside-2026-09-30-221503` : null }, () => { gameClean = true; });
+      },
+      steam_verify: async () => ({ opened: "steam://validate/21970" }),
       languages: async () => [{ code: "base", name: null }, { code: "us", name: "English" }, { code: "fr", name: "Français" },
         { code: "ger", name: "Deutsch" }, { code: "ita", name: "Italiano" }, { code: "spa", name: "Español" },
         { code: "pol", name: "Polski" }, { code: "ru", name: "Русский" }, { code: "cz", name: "Čeština" },
@@ -796,7 +884,8 @@
         description: "Made in the RUSE Studio.", builds: [], data_revision: "", fingerprint: "" }),
       export_mod: async () => ({ job: "export" }),
       build_index: async () => ({ job: "index" }),
-      job: async (id) => mode === "testfails" && id === "test"  // a test stopped by a leftover copy, as a player's was
+      job: async (id, since) => backupJobs[id] ? backupJobView(id, since || 0)
+        : mode === "testfails" && id === "test"  // a test stopped by a leftover copy, as a player's was
         ? { state: "failed", message: "[WinError 5] Access is denied: 'D:\\RUSE-Instances\\studio-sherman-test.old'",
           lines: jobs.test[0].slice(0, 1), count: 1 }
         : { state: "done", message: jobs[id][1], lines: jobs[id][0], count: jobs[id][0].length },

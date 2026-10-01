@@ -17,6 +17,9 @@ Players never touch a file (Launcher 0.2):
   Every call that changes something returns the fresh lists, so the screen never waits for a restart.
 - Before Play, `set_check` says which of a set's mods don't go together (rusemod.rmod.clashes): hard clashes disable
   Play (the build would refuse them anyway), soft ones are shown as the later mod winning.
+- Settings has the **clean game backup** (rusemod.backup.BackupCalls): a copy of the game folder made while it's clean,
+  a check of the game against it, and a restore of what other mod managers or hand edits changed. It's the only way
+  the launcher writes into the game's own folder, and only when the player asks.
 """
 from __future__ import annotations
 
@@ -32,6 +35,7 @@ from pathlib import Path
 
 from rusemod import doctor, mod_index
 from rusemod import play as game_start, schema
+from rusemod.backup import BackupCalls
 from rusemod.community import APP_NAMES, CommunityCalls
 from rusemod.update import UpdateCalls
 from rusemod.build import BuildError
@@ -87,19 +91,22 @@ def pc_language() -> str:
     return locale.getlocale()[0] or os.environ.get("LANG", "") or "en"
 
 
-class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls):
+class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
     """The launcher's back end. The arguments replace the real world in tests: the game folder, the launcher's own
-    folder, where modded copies go, how links, the game and Steam get started, and the window's dialogs."""
+    folder, where modded copies and the game's backups go, how links, the game and Steam get started, and the
+    window's dialogs."""
 
     UPDATE_APP, UPDATE_VERSION = "launcher", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "launcher"  # rusemod.home: the language, kept in settings.json
 
     def __init__(self, game_dir=None, home=None, instances=None, open_url=game_start.open_url,
                  start_game=game_start.start_game, steam_running=game_start.steam_running, find=find_game,
-                 wait=time.sleep, pick_folder=None, pick_file=None, ui_language=pc_language, index_url=None):
+                 wait=time.sleep, pick_folder=None, pick_file=None, ui_language=pc_language, index_url=None,
+                 backups=None):
         self._game_dir = Path(game_dir) if game_dir else None
         self._home = Path(home) if home else default_home()
         self._instances = Path(instances) if instances else None
+        self._backups = Path(backups) if backups else None  # rusemod.backup: RUSE-Backup on the game's drive
         self._open_url, self._find = open_url, find
         self._starter = Starter(open_url, start_game, steam_running, wait)
         self._pick_folder = pick_folder  # set by the window: a "choose folder" dialog; returns a path or None
@@ -184,6 +191,19 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls):
         if instances is None:
             raise LauncherError("We couldn't find R.U.S.E. Choose its folder first.")
         return doctor.fix(action, game, instances)
+
+    # --- the clean game backup (rusemod.backup.BackupCalls: backup_status, backup_make, backup_check, backup_restore,
+    # steam_verify); its hooks ---
+    def _backup_game(self) -> Path | None:
+        game, _found = self._game()
+        return game if game is not None and game.is_dir() else None
+
+    def _backup_open_url(self, url: str) -> None:
+        self._open_url(url)
+
+    def _building_copy(self) -> str:
+        """A Play building its copy reads the game's files: a restore waits for it."""
+        return "R.U.S.E. is being started: wait for it to finish, then try again." if self._starting() else ""
 
     # --- the mod library ---
     def library(self) -> list[dict]:
@@ -524,14 +544,16 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls):
         self._jobs[job.id] = job
         if busy:  # one at a time: two would race for the same copy
             job.state, job.message = "failed", "R.U.S.E. is already being started: wait for it to finish."
+        elif self._restoring():  # a copy built now would take half-restored files
+            job.state, job.message = "failed", "The game's files are being restored: wait for it to finish."
         elif chosen is None:
             job.state, job.message = "failed", f"There's no mod set called {set_id!r}."
         elif chosen.get("error"):
             job.state, job.message = "failed", f"The mod set {chosen['name']} has a mistake: {chosen['error']}."
         else:
             self._play_job = job.id
-            job.start(lambda say: self._play(chosen, say), "R.U.S.E. is starting.",
-                      plain=(BuildError, RndfError, OSError))
+            work = self._reading_game(self._backup_game(), lambda say: self._play(chosen, say))  # a restore waits
+            job.start(work, "R.U.S.E. is starting.", plain=(BuildError, RndfError, OSError))
         return {"job": job.id}
 
     def _starting(self) -> bool:
@@ -540,7 +562,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls):
         return busy is not None and busy.state == "running"
 
     def job(self, job_id: str, since: int = 0) -> dict:
-        return job_view(self._jobs, job_id, since)
+        return self._with_result(job_view(self._jobs, job_id, since))  # a backup job's result too
 
     def _play(self, chosen: dict, say) -> None:
         if chosen["id"] == VANILLA:

@@ -90,6 +90,22 @@
           <h2 id="set-game-title"></h2><p id="set-game-path" class="small"></p>
           <div class="actions"><button id="set-game-change" type="button" class="small"></button></div>
         </section>
+        <!-- the clean game backup (rusemod.backup, app.js renderBackup): the only way the launcher writes into the
+             game's own folder, and only when the player asks for a restore -->
+        <section class="setting" id="set-backup">
+          <h2 id="set-backup-title"></h2><p id="set-backup-help" class="muted"></p>
+          <p id="backup-status"></p>
+          <div class="actions">
+            <button id="backup-make" type="button" class="small"></button>
+            <button id="backup-check" type="button" class="small"></button>
+            <button id="backup-restore" type="button" class="small"></button>
+            <button id="backup-verify" type="button" class="small ghost"></button>
+          </div>
+          <label class="check-row"><input id="backup-deep" type="checkbox"> <span id="backup-deep-label"></span></label>
+          <div id="backup-ask"></div>
+          <p id="backup-note" class="message" role="status"></p>
+          <div id="backup-files" class="backup-files"></div>
+        </section>
         <section class="setting" id="set-updates">
           <h2 id="set-updates-title"></h2><p id="set-updates-text" class="small"></p>
           <div class="actions"><button id="set-updates-check" type="button" class="small"></button></div>

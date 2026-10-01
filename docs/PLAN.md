@@ -460,7 +460,7 @@ volunteer from the R.U.S.E. community: with a join code, joining takes them a co
 | 5 | Mod identity | Engine export paths + owner paths + selectors | stable across updates, human-readable | indices (.rmod `index_map`) |
 | 6 | Source format | NDF-style text + CSV + standard asset formats | familiar to Eugen modders (WARNO/SD2 use text NDF); git-friendly | JSON / YAML |
 | 7 | Determinism | Fingerprint over canonical content, bundled runtime, fixed ordering | lockstep multiplayer | hashes of raw bytes only |
-| 8 | License | **MIT (decided 2026-09-28)** for our own code. LittleGroove's RUSE-Mod-Manager engine is used as it is for .rmod mods (decision 26) | maximum reuse by community tools and Eugen; independence | GPLv3 (rejected) |
+| 8 | License | **GPL-3.0 (owner, 2026-09-30, night; MIT before).** LittleGroove's RUSE-Mod-Manager engine is GPLv3 and the apps ship it (decision 26), so the whole program is GPL-3.0. GPL-3.0, MIT, BSD and Apache-2.0 code can be reused with credit | the apps can ship the engine every community mod needs | MIT (until 2026-09-30) |
 | 9 | Packaging & install | Nuitka + Inno Setup, built by GitHub Actions: one installer per app (decision 22). **Built 2026-09-29** (`installers/`): each app becomes a program folder (not Nuitka's onefile: it's installed anyway, starts faster, and antivirus programs trust it more), checks itself, and is wrapped by Inno Setup; per-user install, no admin rights. Unsigned until the first public release, so Windows' SmartScreen warns once | faster start and fewer antivirus false positives than PyInstaller | PyInstaller, Briefcase |
 | 10 | Updates | **Built 2026-09-29 (owner: "auto update for apps"):** each app asks GitHub Releases for its newer release on start (`rusemod.update`); Update downloads the installer, checks its SHA-256 against both GitHub's value and the release notes' before running it, installs silently for this user and starts the app again. From the repo it says to `git pull` | no framework needed on top of the installers we have; nothing runs unchecked | Velopack, tufup; manual downloads |
 | 11 | Modpack / lockfile | Modrinth `.mrpack` shape (`files[]` with path, hashes, download mirrors, size; `dependencies`) | proven, tiny packs, host-anywhere | our own format |
@@ -563,13 +563,13 @@ and results are in [LOG.md](LOG.md) §1.
 | WebGL unstable in the embedded webview | 3D map/model viewer blocked | prototype a three.js scene in pywebview early (cheap spike) |
 | Antivirus / SmartScreen distrust of the installer | players scared off (**seen 2026-09-28:** Chrome called the first test build "dangerous"; the file was verified clean) | Nuitka; players download GitHub Releases, not test builds (`release.yml`); in-app updates so a browser only sees the first download; false-alarm reports per release; winget / Microsoft Store later; signing at first public release (installers/README.md "Browser warnings") |
 | Publishing Eugen-owned content (RUSE-Mod-Manager reset its public history "for Eugen Systems compliance") | takedown | `.gitignore` blocks game files; never commit extracted assets or decoded game scripts; check before each push |
-| Reinventing formats others already decoded | wasted credits | study RUSE-Mod-Manager's approach first ([LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)); write our own (MIT, never copy) |
+| Reinventing formats others already decoded | wasted credits | study RUSE-Mod-Manager's approach first ([LITTLEGROOVE_STUDY.md](LITTLEGROOVE_STUDY.md)); write our own, or since the switch to GPL-3.0 reuse GPL-3.0 code with credit |
 
 ## 9. Open decisions
 
 1. Working name. Ideas: *RUSE Reforged*, *OpenRUSE*, *RUSE Forever* (a nod to FAF).
-2. ~~License~~ **Decided: MIT.** We study RUSE-Mod-Manager's approach (terrain, `TGU1`, scenarios, AI layers,
-   capture zones) as reference and write our own, better version. Never copy its code.
+2. ~~License~~ **Decided: GPL-3.0** (owner, 2026-09-30, night; MIT from 2026-09-28): the apps ship LittleGroove's
+   GPLv3 engine (decision 26). Our own readers were written before the switch and copy none of his code.
 3. ~~GitHub account/org and repo, project folder, git~~ **Done:** github.com/sneadtristen6/R.U.S.E-2.0-Project.
 4. ~~UI stack~~ **Decided (owner, 2026-09-28): web-style** (ADR 2). The launcher v0.1 is built that way.
 5. Outreach timing. Recommended: LittleGroove now (align on `.rmod` import/export), Eugen after the M2 demo.
@@ -587,8 +587,8 @@ one is shorter. Rules:
 - **Cheap and certain first.** Work the engine already does (new units, mod sets) ships before work that needs
   reverse engineering. The uncertain part of the terrain editor (the `.kdt` codecs) waits for DomesticNukes'
   published research and our exchange; we crack it ourselves only if that falls through.
-- **Ask before any agent or workflow** (owner, 2026-09-30, evening: "dont run agents on side unless u ask for
-  now"; this replaces the 2026-09-29 go-ahead). Replies stay short.
+- **Agents: up to four at once** (owner, 2026-09-30, night: "open up to 4 agents"; that evening it was "ask
+  first"). Replies stay short.
 - **No heredocs:** a hook (`~/.claude/hooks/no_heredoc.py`, on since 2026-09-30) refuses them in the shell; scripts
   and commit messages go in files (`git commit -F <file>`). A mistake that repeats gets a guard like this one, not
   another rule.
@@ -599,60 +599,70 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Next session (written 2026-09-30, night): start here.**
+**Next session (written 2026-09-30, after midnight): start here.** The owner's priority: **finish the Studio**.
 
-Out: **Studio 0.7.4 and Launcher 0.2.9** (commit `ec57169`, the shared repo synced): test copies work when the game's
-files are marked read-only (a player's "[WinError 5] Access is denied" on every Test in game; `tests/test_instance.py`
-ReadOnlyGame is the guard), one bridge per river crossing stretched bank to bank, a road over one of the map's own
-bridges replaces it, and a road's length while it's drawn. **In the game (owner, 17:15): the new bridges look right**
-(one straight piece per crossing, the painted roads meeting them). Units on them: not tried yet.
+Out: **Studio 0.7.6 and Launcher 0.2.11** (`a605cf3`): the same as 0.7.5 and 0.2.10, which never built because after
+the repo's rename every workflow skipped itself (they now check the repo's number, `d0a03d2`). Players' old
+Launchers get the update (checked). The license is now **GPL-3.0** (decision 8, `d2d1c2e`). Committed, not released:
+the troubleshooter in both apps and the map check's backend (`f14e634`).
+
+Being built (agents; uncommitted until reviewed):
+- the clean-game backup and restore in both apps (built; its review found 5 bugs to fix first: a restore can write
+  outside the game folder through a junction or a damaged file list, two apps making one backup at once, a file
+  changed while it's copied, a leftover temporary file);
+- every unit flag explained in the Studio's flag picker (DomesticNukes' handoff), and a build error for flags 62 and
+  63 on a unit that isn't a truck;
+- the Studio's Bridges kind, roads' water crossings and the map check's screen (next steps 2 and 3);
+- the square cover brush (next step 4).
 
 *Testing plan* (steps and commands in [TESTS.md](TESTS.md); one game start each):
 
 | Test | Who | Decides | State |
 |---|---|---|---|
 | **T8 Bridges:** units (a tank, then infantry) and a supply route cross the new D-Day bridges | owner, `D:\RUSE-Instances\bridges` | bridges done, or what to fix | **passed 2026-10-01, 04:27**: tanks, infantry and a supply truck cross on the decks, the men at the deck's height (the floor's aprons, `934d414`); open: new roads' close-up texture |
-| **T9 A road over an old bridge:** the old one gone, units cross on the new one, nothing on the water where it stood | owner | the replace rule | its copy is built next session |
-| **T10 Read-only game folder:** Test in game after updating, and is his folder read-only? | the player who reported it | the fix | waiting for him |
-| **T11 Launcher 0.2.9:** the update is offered, Play works | owner | — | — |
+| **T9 A road over an old bridge:** the old one gone, units cross on the new one | owner | the replace rule | after T8 (the new deck goes into the old bridge's local map; the old floor and its aprons go) |
+| **T10 Read-only game folder:** Test in game after updating | the player who reported it | the fix | waiting for him |
+| **T11 Launcher 0.2.11:** the update is offered, Play works | owner | — | — |
 
-*Next steps* (one goal per session):
-1. **Units under the new bridges** (T8, owner 17:18: a unit crossed along the deck's line, but on the riverbed under
-   it). **Built 2026-09-30, night:** `rusemod.floors` gives every new bridge (a road's or placed by hand) the floor of a
-   shipped bridge of its kind, on its own banks, and takes a sunk one's away. **In the game (18:19): tanks drive on
-   the deck.** Then: the deck's opened ground narrowed (a tank stepped off the side), and new roads get the game's
-   road stickers (a painted road vanished up close: the stickers draw roads near the camera). The D-Day copy is
-   rebuilt; T8 again. **That build crashed the game (18:43):** the narrowed decks reached no ground units use (islands;
-   every shipped movement graph is one piece, and an order onto ground a unit can't reach crashes the game). Now each
-   deck gets an approach along the road until it joins the ground units use (at most 62 m; a deck that can't is left
-   closed, with a note), and a movement graph is never written in more than one piece. Found on the way: most shipped
-   bridges have a local graph whose small circles line the deck (the "walls"), and a crossing's last two words are
-   road network links, so cutting road links renumbers them (`nav.Graph.renumber_roads`). Handoff with the details:
-   the private repo's `notes/handoff-for-domesticnukes-2026-09-30-evening.md`. Found: the decks units stand on are in the map pack's own **`output\occlusioninfo_objectsonly.kdt`** (the
-   same `TStreamedMeshKdTree` as the ground; D-Day: 556 triangles, 690 points, one subtree, in clusters exactly at
-   its 21 bridges). The gameplay ground (`occlusioninfo_terrainonly.kdt`) dips into the river under shipped bridges
-   just like the visible ground, and the movement circles there are ordinary. So: write each new bridge's deck into
-   `objectsonly.kdt` (the model's floor, turned, stretched, sunk as placed), and take a sunk old bridge's deck out;
-   `rusemod.kdt` has the codecs. Check first: the first look put the decks' z about 7,500 above the ground (the
-   file's own z scale?). Then rebuild the D-Day copy; T8 again. Also build the T9 copy (a road across one of D-Day's
-   own bridges) for the owner.
-2. **Studio: a Bridges kind in the bar**, placed like buildings (the map's own bridge kinds, the palette rows whose
-   category ends `/Ponts`, taken out of Buildings; a Length slider = `stretch`; coded as bridges: never solid, the
-   deck opened), and the road tool drawing its water crossings in gold and saying when the map has no bridge kind.
-   Studio 0.7.6.
-3. **Road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
-   tanks, I like that"). In the game a new road into the woods stayed closed to tanks while infantry used it: the
-   woods are closed to vehicles and a road doesn't open them. Make it a choice per road in the road tool: a
-   **forest track**, infantry only (as now; best left out of the supply network so trucks don't route into it), or
-   a **road** that opens the woods to vehicles along it (the vehicle graph's closed ground opened along the line,
-   as a bridge's deck is). Which one a new road is by default: the owner's call.
-4. **A4 Remove scenery** (an Erase brush): trees along the new roads; the old-bridge rule could then remove instead
-   of sink.
-5. Then the roadmap below: **A5 Ruse areas**, A6 ground painting.
+*Next steps* (in order):
+1. **Bridges: the floor's aprons (built 2026-10-01; T8 decides).** Where a unit is comes from the movement graph, how
+   high it stands from the floor under it, and nothing ties the two; an infantry squad is five men on an arc 2,828
+   wide, each on the floor under his own feet. The game's metal bridges have aprons beside the deck 12,000 to 17,000
+   wide (its infantry "float" there); ours had the deck's band alone, so the men beside it stood on the riverbed. A
+   new bridge's floor now reaches 3,200 either side over water (`floors.apron`); its movement stays a chain of
+   circles 640 wide in the main graph (no owner circle, no local map: tried, and it can't move a man).
+   [LESSONS.md](LESSONS.md) has why this took six rounds.
+   **Then, the owner's ask (2026-10-01): the game's rules, checked by the build.** Go through what the game does
+   with every file the build writes, list what our program doesn't account for yet (known: the AI's tactical
+   grid in `mapinfo.win` isn't redone when movement changes; a replaced bridge keeps its old road crossings; what a
+   destroyed bridge does to its floor), and make each rule a check in the build with a test, so a build that would
+   break in the game is refused before it's written.
+2. **Studio: Bridges in the dock** (the map's own bridge kinds, a Length slider), the road tool drawing its water
+   crossings in gold, and a note when a map has no bridge kind.
+3. **The map check in the Studio:** "Check this map" builds the mod's changes to the map and lists what would go
+   wrong: ground cut off, roads or bridges units can't use, road ends not joined, buildings on roads.
+4. **A square cover brush** (owner, 2026-09-30): cover files and strokes take `square = true` (done, MOD_FORMAT
+   §8); the cover tools get round or square.
+5. **Release** Studio 0.7.7 and Launcher 0.2.12: the troubleshooter, the clean-game backup, the flags and the above.
+6. Then: **road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
+   tanks"): a forest track (infantry only, out of the supply network) or a road that opens the woods to vehicles
+   along it; which is the default is the owner's call. **A4 Remove scenery** (an Erase brush: trees along new roads;
+   the old-bridge rule could then remove instead of sink). Measured 2026-09-30: only 0.2-0.3% of a map's trees
+   (D-Day 11.6 million, Blitz 3.9 million) sit in blocks placed once, the only ones `bury_objects` can sink one by one;
+   the rest are in blocks the map places many times. So erasing needs a block copied for the erased spot (copy on
+   write, down from the top block) or whole placed patches sunk; which one is the first decision of A4. **A5 Ruse areas**, A6 ground painting.
 
 *Planned (owner, 2026-09-30):* **A10**, at least 8 players on a map (D-Day first), past 8 tried later.
 
 *Open, the owner's to decide* (ideas, not decisions): "two tabs open" in the map builder; bridges for chokepoint maps.
+
+*After the Studio is done* (owner, 2026-09-30, night: "we need to finish studio"): DomesticNukes' split of the parts
+of R.U.S.E. nobody has worked on yet (the private repo's `notes/open-tasks-split-domesticnukes-2026-09-30.md`). Ours:
+unit animations and skeletons (`skeleton_*.spk`); explosion and bomb effects (the FX bank); the menu screens that
+aren't mapped yet and how menus animate; what `div_map.tgv_pc` is for; what reads `mapinfo.win`'s marker records;
+how supply trucks cross water (probably the road network); how many AI personalities the lobby offers. His side
+takes the data-side ones (sky reflections, cut nations and units, capturable vehicles, Eugen's AI test map, AI
+production, Korsun's unused operations, flags 31 and 60).
 
 **Order** (sessions are estimates for the shorter sessions):
 
@@ -772,6 +782,7 @@ ends with one in-game test (batched, one game start) and a release. Sessions are
 | C4 | **Join codes** in the launcher, and the 2-PC test | a second player | 1-2 |
 | C5 | Trust: code signing, a first public release on ModDB and Nexus; outreach (LittleGroove, Eugen) | C1-C4 | 1 + owner |
 | C6 | **Self-checks, like a mod manager's** (owner: "a lot of self-checks built into this, like CurseForge has"). Done: files read back before saving, the mod check (every file as the build reads it, Set aside, map folders named by title renamed; `rusemod.modcheck`, shared), run by the launcher too when a mod is added (after 0.2.7). Next: a mod file recognized by its SHA-256 against the index whatever its name or folder, duplicate mod ids, a mod made on another game build, a zip nested two folders deep. How CurseForge, Nexus, ModDB and Thunderstore do it: `docs/RESEARCH-mod-platforms.md` | — | 1 |
+| C7 | **Clean game backup** (owner, 2026-09-30: "backup restore clean version of game in studio or launcher ... that way files stay clean"). Our apps never change the game's folder, but other mod managers and hand edits do, and every modded copy then carries their changes. **Built 2026-09-30** (`rusemod.backup`, Settings in both apps): Make backup (a full copy of the game folder, never hard links, with a manifest of sizes, dates and SHA-256, in `RUSE-Backup\<build>` on the game's drive; one per build, made in `.partial` and renamed when complete, free space checked first), Check game files (changed, missing, added; fast by size and date, or every byte), Restore clean files (asks first, listing what changes; copies the files back, moves added ones into `RUSE-Backup\set-aside-<date>`, never deletes; refused while R.U.S.E. runs, while a Play or a Test in game builds, and when Steam has updated the game since), and Verify with Steam (`steam://validate/21970`). The only place either app writes into the game's own folder. Check on the PC: make a backup, change a file by hand, Check, Restore, then Play | — | built, not released |
 
 *Phase D: the content tools* (M4, M5, M7, M9-M11)
 | # | Step | Needs | Sessions |

@@ -224,6 +224,8 @@ class Engine:
         self.trail = defaultdict(list)
         self._gen = 0                      # bumped whenever objects appear, disappear or parts are shared
         self._index_gen, self._by_class, self._all = -1, {}, []
+        from .unitflags import truck_flags  # the truck-only flags units carry before any mod (_truck_flags)
+        self._had_truck_flags = {n: f for n, o in self.game.objects.items() if (f := truck_flags(o))}
 
     def run(self, mods) -> Result:
         """`mods`: [(ModInfo, [Op])] already in load order (resolve.load_order)."""
@@ -683,7 +685,7 @@ class Engine:
             if isinstance(v, Ref) and v.target in self.deleted and v.target not in self.game.objects:
                 raise PatchError(f"{op.at()} refers to {v.target}, which {self.deleted[v.target].at()} deleted")
 
-    # --- the end: round numbers once, check references ---
+    # --- the end: round numbers once, check references and the truck flags ---
     def _finish(self) -> None:
         for name, obj in self.game.objects.items():
             for v in _walk_obj(obj):
@@ -700,6 +702,31 @@ class Engine:
             from .identity import clashes
             for name, message in clashes(self.game, new):
                 self._find("warning", message, self.created[name])
+        self._truck_flags(new)
+
+    def _truck_flags(self, new: list) -> None:
+        """Flags 62 and 63 on a unit that isn't a truck crash the game (rusemod.unitflags): an error for each, on every
+        unit a mod made or whose flags a mod changed, unless the unit carried that flag before the mods. It names the
+        last operation that put the flag there, whether it changed the whole list or one item of it, else the last one
+        that changed the unit's flags, else the one that made the unit."""
+        from .unitflags import PROP, TRUCK_ONLY, crashes, numbers
+        blame = {name: self.created[name] for name in new}
+        steps = defaultdict(list)  # unit -> [(puts a truck flag in, when it ran, step, op)], every path to its flags
+        for (owner, path), done in self.trail.items():
+            if path.split("[", 1)[0] != PROP or owner not in self.game.objects:
+                continue
+            # the order the unit's operations ran in; a new unit's own ones (its body) ran first, when it was made
+            when = {id(op): i for i, op in enumerate(self.obj_log.get(owner, []))}
+            for k, (op, value) in enumerate(done):
+                given = op.value if op.kind in ("set", "append", "insert") else value if op.kind in ("mul", "add") \
+                    else None  # `add` turns an item into another number: what it made
+                steps[owner].append((bool(numbers(given) & set(TRUCK_ONLY)), when.get(id(op), -1), k, op))
+        for owner, found in steps.items():
+            blame[owner] = max(found, key=lambda s: s[:3])[3]
+        for name in sorted(blame):
+            had = set() if name in self.created else self._had_truck_flags.get(name, set())
+            for why in crashes(self.game.objects[name], had):
+                self._find("error", f"{blame[name].at()}: {name}: {why}", blame[name])
 
 
 def _round(v: Num) -> Decimal:

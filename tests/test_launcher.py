@@ -15,6 +15,7 @@ from test_build import PACK, price, write_mod
 from ruse_launcher import __version__, app
 from ruse_launcher.api import MOD_FILES, LauncherApi, LauncherError, _words, language_code, words
 from rusemod import doctor, package, schema
+from rusemod.backup import BackupError
 from rusemod.play import STEAM_OPEN, STEAM_PLAY, keep_order
 from rusemod.resolve import ModInfo
 from rusemod.webui import serve
@@ -576,6 +577,101 @@ class Troubleshooter(Base):
             api.troubleshoot_fix("clear_leftovers")
         with self.assertRaisesRegex(LauncherError, "Choose its folder"):
             self.api(game_dir=None, find=lambda: None).troubleshoot_fix("clear_leftovers")
+
+
+class CleanBackup(Base):
+    """The clean game backup in Settings, as the window asks for it (what it does is rusemod.backup's:
+    tests/test_backup.py)."""
+
+    def api(self, **kw):
+        return super().api(**({"backups": Path(self.tmp.name) / "backups"} | kw))
+
+    def test_make_check_and_restore(self):
+        api = self.api()
+        s = api.backup_status()
+        self.assertEqual((s["found"], s["build"], s["backups"], s["current"], s["busy"], s["enough"]),
+                         (True, "24687178", [], None, "", True))
+        self.assertEqual((s["folder"], s["drive"]), (str(Path(self.tmp.name) / "backups"), self.game.drive or "/"))
+        self.assertGreater(s["free_gb"], 0)
+        j = wait_for(api, api.backup_make()["job"])
+        self.assertEqual((j["state"], j["result"]["build"], j["result"]["files"], j["lines"][-1]),
+                         ("done", "24687178", 2, "100%"), j)
+        current = api.backup_status()["current"]
+        self.assertEqual((current["build"], current["files"], current["matches"], len(current["date"])),
+                         ("24687178", 2, True, 16))
+        j = wait_for(api, api.backup_make()["job"])  # one there already: made again only when asked
+        self.assertEqual(j["state"], "failed")
+        self.assertIn("already a backup of this build", j["message"])
+        self.assertNotIn("result", j)
+        self.assertEqual(wait_for(api, api.backup_make(True)["job"])["state"], "done")
+        pack = self.game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat"
+        pack.write_bytes(b"changed by another mod manager")
+        (self.game / "extra.txt").write_text("not the game's", encoding="utf-8")
+        found = wait_for(api, api.backup_check()["job"])["result"]
+        self.assertEqual((found["changed"], found["missing"], found["added"]),
+                         (["Data/PC/190852/ZZ_GladPatchableWin.dat"], [], ["extra.txt"]))
+        with mock.patch("rusemod.winfiles.processes", return_value=[(4312, str(self.game / "RUSE.exe"))]):
+            j = wait_for(api, api.backup_restore()["job"])
+        self.assertEqual(j["state"], "failed")
+        self.assertIn("RUSE.exe (process 4312). Close the game", j["message"])
+        with mock.patch("rusemod.winfiles.processes", return_value=[]):
+            j = wait_for(api, api.backup_restore()["job"])
+        self.assertEqual((j["state"], j["result"]["restored"], j["result"]["set_aside"], j["result"]["left"]),
+                         ("done", 1, 1, []), j)
+        self.assertEqual(pack.read_bytes(), PACK)
+        self.assertTrue(Path(j["result"]["set_aside_to"], "extra.txt").is_file())
+        clean = wait_for(api, api.backup_check(True)["job"])["result"]
+        self.assertEqual((clean["changed"], clean["missing"], clean["added"], clean["hashed"]), ([], [], [], 2))
+        self.assertEqual(api.steam_verify(), {"opened": "steam://validate/21970"})
+        self.assertEqual(self.urls, ["steam://validate/21970"])
+
+    def test_what_is_refused(self):
+        from rusemod.webui import Job
+        api = self.api()
+        for call in (api.backup_check, api.backup_restore):
+            with self.subTest(call=call.__name__), self.assertRaisesRegex(BackupError, "no backup of the game yet"):
+                call()
+        playing = Job()  # a Play building its copy from the game's files: a restore waits for it
+        api._jobs[playing.id] = playing
+        api._play_job = playing.id
+        with self.assertRaisesRegex(BackupError, "being started"):
+            api.backup_restore()
+        playing.state = "done"
+        restoring = Job()  # and a Play waits for a restore
+        restoring.kind = "restore"
+        api._jobs[restoring.id] = restoring
+        api._backup_job = restoring.id
+        self.assertEqual(api.job(api.play("vanilla")["job"])["message"],
+                         "The game's files are being restored: wait for it to finish.")
+        self.assertEqual(self.urls, [])
+        self.assertEqual(api.backup_status()["busy"], "restore")
+        with self.assertRaisesRegex(BackupError, "busy"):  # one backup job at a time
+            api.backup_make()
+        restoring.state = "done"
+        none = self.api(game_dir=None, find=lambda: None)
+        self.assertEqual(none.backup_status(), {"found": False, "backups": [], "current": None, "busy": ""})
+        with self.assertRaisesRegex(BackupError, "couldn't find R.U.S.E."):
+            none.backup_make()
+
+    def test_the_studio_at_work_on_the_game_is_waited_for(self):
+        from rusemod import backup
+        api, folder = self.api(), Path(self.tmp.name) / "backups"
+        self.assertEqual(wait_for(api, api.backup_make()["job"])["state"], "done")
+        with backup._busy(folder, "restore"):  # the Studio restoring the game's files: a Play waits
+            j = wait_for(api, api.play("vanilla")["job"])
+        self.assertEqual((j["state"], j["message"]), ("failed", "The game's files are being restored: wait for it to "
+                                                                "finish."))
+        self.assertEqual(self.urls, [])
+        with backup.reading(folder):  # the Studio building a Test in game: a restore waits
+            with mock.patch("rusemod.winfiles.processes", return_value=[]):
+                j = wait_for(api, api.backup_restore()["job"])
+        self.assertEqual(j["state"], "failed")
+        self.assertIn("A modded copy of the game is being built", j["message"])
+        with backup._busy(folder, "make"):  # the Studio making a backup: one at a time
+            j = wait_for(api, api.backup_make(True)["job"])
+        self.assertIn("the other app (the Launcher or the Studio) is making a backup", j["message"])
+        self.assertEqual(wait_for(api, api.play("vanilla")["job"])["state"], "done")  # nothing held any more
+        self.assertEqual([p.name for p in folder.iterdir()], ["24687178"])  # and nothing left behind
 
 
 class Words(unittest.TestCase):

@@ -217,6 +217,17 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .setting h2 { margin: 0; font-size: 15px; }
 .setting p { margin: 0; }
 .setting .lang select { min-width: 220px; }
+/* the clean game backup (app.js renderBackup): its buttons, the question before a restore, and what a check found */
+.setting .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.setting p:empty { display: none; }
+.setting .sure { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; background: var(--panel-hi);
+                 border-left: 3px solid var(--error); border-radius: 0 var(--radius) var(--radius) 0; }
+.setting .check-row input { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); }
+.backup-files { display: grid; gap: 6px; }
+.backup-files:empty { display: none; }
+.backup-files details { padding: 6px 10px; background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--radius); }
+.backup-files summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+.backup-files ul { margin: 6px 0 0; padding-left: 20px; font: 12px/1.5 Consolas, "Cascadia Mono", monospace; overflow-wrap: anywhere; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .keys-panel { margin-top: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); display: grid; gap: 8px; }
 .keys-rows { display: grid; grid-template-columns: auto max-content; gap: 6px 12px; align-items: center; }

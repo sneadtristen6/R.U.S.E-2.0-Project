@@ -303,8 +303,8 @@ level  = 23500.0     # water: the water surface (world z); the ground under it f
 | `ramp` | an even slope from `level` at (`x`, `y`) to `level2` at (`x2`, `y2`); `radius` is half its width | flat across the middle half of the width, then an S-curve back to the old ground at the sides and beyond the ends |
 | `water` | the water surface to `level`: wherever the ground is lower, it floods (a lake); the ground doesn't move | the whole circle; end it on higher ground so the shore follows the ground |
 | `drain` | the water surface back to the map's base level: lakes and rivers inside dry up | the whole circle |
-| `cover` | cover (units there are hidden, as in a wood; proven in the game): the build paints the circle on the map's cover grid, as a `cover.toml` circle after the mod's own; the ground doesn't move | the cells whose centres are inside |
-| `uncover` | the same, taking cover away | the cells whose centres are inside |
+| `cover` | cover (units there are hidden, as in a wood; proven in the game): the build paints the circle on the map's cover grid, as a `cover.toml` circle after the mod's own; the ground doesn't move. `square = true` paints a square along the map's axes instead, `radius` from its middle to each side | the cells whose centres are inside |
+| `uncover` | the same, taking cover away (also `square = true`) | the cells whose centres are inside |
 
 - **Water.** Water brushes run after the height brushes. They change the water surface of the two drawn meshes and
   the map's three water textures, never the ground or the `.kdt` files (units are kept out of water by the map's
@@ -433,7 +433,7 @@ entry = "(6) Cotentin (3v3)"  # optional: which of the map's entries, when it ha
 Where units hide is baked into each map: a grid in `datasmap\<map>\mapinfo.win` (`DataMap_Win.dat`; its fourth
 buffer, an SDB quadtree, FORMATS §2). A cell's byte holds layers; the game asks two (LittleGroove's notes): 0x08,
 "in forest" (units there are hidden, and ambush), and 0x04, blocked. Eugen drew them as zones, not from the trees:
-a town or a wood a mod adds gives cover only where cover is painted. A mod paints circles, in order:
+a town or a wood a mod adds gives cover only where cover is painted. A mod paints circles (or squares), in order:
 
 ```toml
 [[paint]]
@@ -442,8 +442,12 @@ y = 881645.0
 radius = 20000.0    # a cell is painted when its centre is inside (Blitz: 1,024 cells a side, 1,280 units each)
 layer = "cover"     # or "blocked"
 erase = true        # optional: clears the layer instead (a wood's cover taken away)
+square = true       # optional: a square along the map's axes, `radius` (map units) from its middle to each side;
+                    # its edges follow the grid's rows and columns
 ```
 
+- `square` is written by hand for now, here or on a `cover` / `uncover` stroke in terrain.toml: the Studio's cover
+  brushes paint circles (its map view draws a square stroke of terrain.toml as a square).
 - `rusemod.cover` edits the tree in place: leaves no circle touches keep their bytes, a leaf a circle's edge
   crosses becomes a node of four, and both checksums are made again. Checked on all 34 shipped grids: exactly the
   cells in the circles change.

@@ -57,6 +57,11 @@ def flag(n, lang: str = BASE) -> str | None:
     return texts.get(lang) or texts.get("us")
 
 
+def flag_numbers() -> list[int]:
+    """Every unit flag number labels.toml explains (0-104), in order."""
+    return sorted(int(n) for n in _data().get("flags", {}))
+
+
 def nation(n, lang: str = BASE) -> str:
     table = _data()["nations"]
     names = table.get(lang) or table[BASE]

@@ -23,9 +23,10 @@ order, each to the ground the ones before it left.
             ground below it floods, a lake (the ground is unchanged)
   drain     puts the water surface inside its circle back to the        -
             map's base level: lakes and rivers there dry up
-  cover     paints cover in its circle: units there are hidden, as in a   -
-            wood (the map's cover grid, rusemod.cover; proven in the game)
-  uncover   takes the cover in its circle away                           -
+  cover     paints cover in its circle: units there are hidden, as in a   square (true: a square along the
+            wood (the map's cover grid, rusemod.cover; proven in the game) map's axes, radius from its middle to
+                                                                         each side, in map units)
+  uncover   takes the cover in its circle away                           square
   block     takes the ground in its circle away from every unit: they    -
             plan around it (the map's navigation graphs, rusemod.nav)
   block_infantry, block_vehicles   the same, for infantry or vehicles only
@@ -128,6 +129,7 @@ class Stroke:
     x2: float = 0.0       # ramp: where it ends
     y2: float = 0.0
     level2: float = 0.0   # ramp: the height at its end
+    square: bool = False  # cover, uncover: a square along the map's axes, `radius` from its middle to each side
 
     @property
     def kind(self) -> Brush:
@@ -149,6 +151,8 @@ class Stroke:
         if self.brush == "ramp":
             return self.along(x, y)[1] < self.radius * self.radius
         dx, dy = x - self.x, y - self.y
+        if self.square:
+            return abs(dx) < self.radius and abs(dy) < self.radius
         return dx * dx + dy * dy < self.radius * self.radius
 
     def box(self) -> tuple[float, float, float, float]:
@@ -236,6 +240,12 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
             values["weight"] = 0.5
         if brush == "ramp" and (values["x"], values["y"]) == (values["x2"], values["y2"]):
             raise BrushError(f"{at}: the ramp's start and end are the same point")
+        if "square" in item:
+            if not isinstance(item["square"], bool):
+                raise BrushError(f"{at}: square must be true or false")
+            if item["square"] and BRUSHES[brush].kind != "cover":
+                raise BrushError(f"{at}: only the cover brushes can be square, not {brush}")
+            values["square"] = item["square"]
         out.append(Stroke(brush, **values))
     return out
 
@@ -261,6 +271,8 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
                       f"level2 = {_num_text(s.level2)}"]
         if kind in ("level", "smooth", "ramp"):
             lines.append(f"weight = {_num_text(s.weight)}")
+        if s.square:
+            lines.append("square = true")
     return "\n".join(lines).lstrip("\n") + "\n"
 
 

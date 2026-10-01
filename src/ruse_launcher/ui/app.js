@@ -151,6 +151,7 @@ const SETTINGS = [
     text($("set-game-path"), s.found ? fill(w.set_game_path, { path: s.game_dir || "" }) : (s.message || w.set_game_none));
     text($("set-game-change"), w.set_game_change);
   } },
+  { id: "backup", render() { renderBackup(); } },  // loaded when Settings opens (loadBackup)
   { id: "updates", render() {
     const w = state.words, u = state.update || {};
     text($("set-updates-text"), u.checking ? w.set_updates_checking : u.available ? fill(w.update_out, { app: APP_NAME, version: u.version })
@@ -158,6 +159,175 @@ const SETTINGS = [
     text($("set-updates-check"), w.set_updates_check);
   } },
 ];
+
+// --- the clean game backup (rusemod.backup through api.backup_*): made while the game is clean, then a check of the
+// game's files against it, and a restore of what other mod managers or hand edits changed. The only way the launcher
+// writes into the game's own folder, and only after the player says yes. Its jobs' lines are their progress ("37%";
+// a restore checks first: "check 37%"), and a finished job brings what it found or did as its "result" ---
+const BACKUP_LIST = 40;  // file names shown per kind (changed, missing, added); the rest are counted
+
+function backupState() {
+  return state.backup || (state.backup = { status: null, busy: "", phase: "", pct: "", found: null, note: "", noteKind: "",
+    asking: false });
+}
+
+function errorText(err) {
+  return (err && err.message) || String(err);
+}
+
+async function loadBackup() {
+  const b = backupState();
+  try { b.status = await api().backup_status(); } catch (err) { Object.assign(b, { note: errorText(err), noteKind: "bad" }); }
+  if (state.settings) renderBackup();
+}
+
+function renderBackup() {
+  const w = state.words, b = backupState(), s = b.status;
+  text($("set-backup-help"), w.set_backup_help);
+  let line = "";
+  if (s && !s.found) line = w.set_game_none;
+  else if (s && s.current) line = fill(w.backup_have, { build: s.current.build || "?", date: s.current.date, size: s.current.size_gb, path: s.current.path });
+  else if (s && s.backups.length) line = fill(w.backup_other, { build: s.backups[0].build || "?", date: s.backups[0].date, now: s.build || "?" });
+  else if (s) line = fill(w.backup_none, { need: s.need_gb, free: s.free_gb === null ? "?" : s.free_gb, drive: s.drive });
+  text($("backup-status"), line);
+  $("backup-status").className = s && s.current ? "good" : s && s.found && !s.enough ? "bad" : "muted";
+  const found = Boolean(s && s.found), ready = found && !b.busy && !b.asking, current = Boolean(s && s.current);
+  text($("backup-make"), current ? w.backup_make_again : w.backup_make);
+  text($("backup-check"), w.backup_check);
+  text($("backup-restore"), w.backup_restore);
+  text($("backup-verify"), w.backup_verify);
+  $("backup-verify").title = w.backup_verify_tip;
+  text($("backup-deep-label"), w.backup_deep);
+  $("backup-make").disabled = !ready;
+  $("backup-check").disabled = !ready || !current;
+  $("backup-restore").disabled = !ready || !current || state.playing;  // a Play's copy is built from the game's files
+  $("backup-verify").disabled = !found || b.busy === "restore";
+  $("backup-deep").disabled = Boolean(b.busy);
+  const progress = { make: w.backup_making, check: w.backup_checking, restore: w.backup_restoring }[b.phase || b.busy];
+  const note = $("backup-note");
+  text(note, b.busy ? fill(progress, { pct: b.pct }) : b.note);
+  note.className = "message" + (!b.busy && b.noteKind ? " " + b.noteKind : "");
+  note.classList.toggle("hidden", !note.textContent);
+  renderBackupFiles(b.found);
+}
+
+function renderBackupFiles(found) {
+  const w = state.words, holder = $("backup-files");
+  holder.replaceChildren();
+  if (!found) return;
+  for (const [word, list] of [[w.backup_changed, found.changed], [w.backup_missing, found.missing], [w.backup_added, found.added]]) {
+    if (!list.length) continue;
+    const items = list.slice(0, BACKUP_LIST).map((f) => el("li", { textContent: f }));
+    if (list.length > BACKUP_LIST) items.push(el("li", { className: "muted", textContent: fill(w.backup_more, { n: list.length - BACKUP_LIST }) }));
+    const box = el("details", {}, el("summary", { textContent: fill(word, { n: list.length }) }), el("ul", {}, ...items));
+    box.open = list.length <= 10;
+    holder.append(box);
+  }
+}
+
+// a question before something that changes files (making the backup again, a restore): Yes runs `onYes`
+function askBackup(question, yesText, onYes) {
+  const w = state.words, b = backupState();
+  const yes = el("button", { type: "button", className: "small danger", textContent: yesText });
+  const no = el("button", { type: "button", className: "small ghost", textContent: w.cancel });
+  const close = () => { b.asking = false; $("backup-ask").replaceChildren(); renderBackup(); };
+  yes.addEventListener("click", () => { close(); onYes(); });
+  no.addEventListener("click", close);
+  b.asking = true;
+  $("backup-ask").replaceChildren(el("div", { className: "confirm" }, el("span", { textContent: question }), yes, no));
+  renderBackup();
+  yes.focus();
+}
+
+// Runs one backup job and follows it; resolves with its result, or null when it failed (its message is the note)
+async function runBackup(kind, call) {
+  const b = backupState();
+  Object.assign(b, { busy: kind, phase: "", pct: "", note: "", noteKind: "" });
+  renderBackup();
+  let job;
+  try { ({ job } = await call()); } catch (err) {
+    Object.assign(b, { busy: "", note: errorText(err), noteKind: "bad" });
+    renderBackup();
+    return null;
+  }
+  return new Promise((done) => {
+    let seen = 0;
+    const tick = async () => {
+      let j;
+      try { j = await api().job(job, seen); } catch (err) {
+        Object.assign(b, { busy: "", note: errorText(err), noteKind: "bad" });
+        renderBackup();
+        done(null);
+        return;
+      }
+      seen = j.count;
+      const last = j.lines[j.lines.length - 1];
+      if (last) Object.assign(b, { phase: last.startsWith("check ") ? "check" : kind, pct: last.replace(/^check /, "") });
+      if (j.state === "running") { if (state.settings) renderBackup(); setTimeout(tick, 400); return; }
+      Object.assign(b, { busy: "", phase: "" });
+      if (j.state !== "done") Object.assign(b, { note: j.message, noteKind: "bad" });
+      render();  // Play waits for a restore: on again
+      done(j.state === "done" ? j.result || {} : null);
+    };
+    tick();
+  });
+}
+
+async function makeBackup() {
+  const w = state.words, s = backupState().status;
+  const go = async (replace) => {
+    const res = await runBackup("make", () => api().backup_make(replace));
+    if (res) Object.assign(backupState(), { found: null, note: fill(w.backup_made, { files: res.files, size: res.size_gb }), noteKind: "good" });
+    await loadBackup();
+  };
+  if (s && s.current) askBackup(fill(w.backup_replace_ask, { date: s.current.date }), w.backup_replace_yes, () => go(true));
+  else go(false);
+}
+
+async function checkBackup() {
+  const w = state.words, b = backupState();
+  b.found = null;
+  const res = await runBackup("check", () => api().backup_check($("backup-deep").checked));
+  if (res) {
+    const n = res.changed.length + res.missing.length + res.added.length;
+    Object.assign(b, { found: res, note: n ? fill(w.backup_differs, { n }) : w.backup_clean, noteKind: n ? "bad" : "good" });
+  }
+  renderBackup();
+  return res;
+}
+
+// Restore: the game is checked first, and the player sees what will change before saying yes
+async function restoreBackup() {
+  const w = state.words, b = backupState();
+  const found = await checkBackup();
+  if (!found) return;
+  const n = found.changed.length + found.missing.length, m = found.added.length;
+  if (!n && !m) {
+    Object.assign(b, { note: w.backup_nothing, noteKind: "good" });
+    renderBackup();
+    return;
+  }
+  askBackup(fill(w.backup_restore_ask, { n, m, path: b.status.folder }), w.backup_restore_yes, async () => {
+    const res = await runBackup("restore", () => api().backup_restore($("backup-deep").checked));
+    if (res) {
+      const said = [fill(w.backup_restored, { n: res.restored })];
+      if (res.set_aside) said.push(fill(w.backup_set_aside, { m: res.set_aside, path: res.set_aside_to }));
+      if (res.kept) said.push(fill(w.backup_kept, { k: res.kept, path: res.set_aside_to }));  // nothing is deleted
+      if (res.left.length) said.push(fill(w.doc_fix_left, { left: res.left.join("; ") }));
+      Object.assign(b, { found: null, note: said.join(" "), noteKind: res.left.length ? "bad" : "good" });
+    }
+    await loadBackup();
+  });
+}
+
+async function verifyWithSteam() {
+  const b = backupState();
+  try {
+    await api().steam_verify();
+    Object.assign(b, { note: state.words.backup_verify_opened, noteKind: "good" });
+  } catch (err) { Object.assign(b, { note: errorText(err), noteKind: "bad" }); }
+  renderBackup();
+}
 
 function renderSettings() {
   const w = state.words;
@@ -297,7 +467,8 @@ function renderActive() {
       setMessage(fill(w.best_order_done, { name: set.name }), "good");
     } catch (e) { problem(e); }
   } : null);
-  play.disabled = state.playing || Boolean(set.error) || Boolean(check && check.hard.length);
+  play.disabled = state.playing || Boolean(set.error) || Boolean(check && check.hard.length)
+    || backupState().busy === "restore";  // a copy built now would take half-restored files
 }
 
 // --- mods that don't go together (rusemod.rmod.clashes): asked for whenever a set is shown or its mods change ---
@@ -849,11 +1020,15 @@ async function start() {
   state.lang = (await loadLang()) || await api().default_language();
   if (!state.languages.some((l) => l.code === state.lang)) state.lang = "us";
   $("lang").addEventListener("change", (e) => setLanguage(e.target.value).catch(problem));
-  $("settings-open").addEventListener("click", () => { state.settings = true; render(); });
+  $("settings-open").addEventListener("click", () => { state.settings = true; render(); loadBackup(); });
+  $("backup-make").addEventListener("click", makeBackup);
+  $("backup-check").addEventListener("click", checkBackup);
+  $("backup-restore").addEventListener("click", restoreBackup);
+  $("backup-verify").addEventListener("click", verifyWithSteam);
   $("settings-back").addEventListener("click", () => { state.settings = false; render(); });
   $("set-game-change").addEventListener("click", async () => {
     try { renderStatus(await api().choose_game_folder()); await refresh(); } catch (err) { problem(err); }
-    if (state.settings) renderSettings();
+    if (state.settings) { renderSettings(); loadBackup(); }  // another game folder: its own backups
   });
   $("set-updates-check").addEventListener("click", async () => {
     state.update = { checking: true };
@@ -891,6 +1066,7 @@ async function start() {
   });
   window.addEventListener("focus", () => {
     if (!state.playing && !state.editing && !state.browse && !state.importing) refresh();  // changed while away
+    if (state.settings && !backupState().busy) loadBackup();  // a backup made or removed in the other app
   });
   watchDrops();
   $("update-now").addEventListener("click", installUpdate);

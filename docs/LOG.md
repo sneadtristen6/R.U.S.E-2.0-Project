@@ -834,6 +834,34 @@ Code's safety check refuses even when the owner says go; so the same release wen
 Launcher 0.2.11 (new tags, nothing forced), and every link to the old repo name now uses the new one.
 **Rule:** a release tag that didn't build is never moved: the next version number goes out instead.
 
+### 2026-09-30, night: a clean game backup in both apps
+
+The owner: "backup restore clean version of game in studio or launcher ... that way files stay clean". Our apps never
+change the game's folder (they build modded copies), but other mod managers and hand edits do, and every copy built
+from a changed game carries their changes. `rusemod.backup` (Settings, "Clean game backup", in the Launcher and the
+Studio, one shared mixin `BackupCalls`):
+- **Make backup:** a full copy of every file of the game folder (never hard links: a link shares the game file's
+  content and would change with it) in `RUSE-Backup\<Steam build>` on the game's drive, with `manifest.json` (build,
+  date, every folder, and each file's size, date and SHA-256). Made in `<build>.partial` and renamed when complete, so a
+  half-made one is never listed or used; the free space is checked first and the refusal says how much is needed.
+  One per build; making it again asks first (the game may not be clean any more: Verify with Steam first).
+- **Check game files:** changed, missing and added files. Fast by default (size and date; only a file whose date
+  differs is hashed, so a touched file isn't "changed"); "Compare every byte" hashes everything.
+- **Restore clean files:** checks, lists what will change, asks; then copies the changed and missing files back (each
+  written next to its target, checked against the manifest's SHA-256, then swapped in; a read-only file keeps its mark;
+  a damaged backup copy is left out and named), and moves added files into `RUSE-Backup\set-aside-<date>`. Nothing is
+  deleted. Refused while R.U.S.E. runs from the game folder **or from a modded copy** (a copy's packs are hard links to
+  the game's own files), while a Play or a Test in game is building, and when Steam has updated the game since the
+  backup (another build). A Play or a Test waits for a restore.
+- **Verify with Steam:** `steam://validate/21970`, Steam's own repair, no backup needed.
+
+It's the only place either app writes into the game's own folder. Two changes from the first design: the set-aside
+folder sits beside the backups, not inside one (making a backup again would have taken a player's set-aside files
+with the old one), and the manifest lists folders too, so a restore puts back the install's empty `EmptySteamDepot`
+and never removes a folder the game has. Checked read-only on this PC's install (61 files, 5.3 GB, build 24670294):
+a fast check takes 0.01 s, a subset's deep check finds a planted checksum change; nothing was written. No real backup
+was made (tests only), and the previews (`index.html?fake=backup`, `oldbackup`, `nospace`, `running`) show every state.
+
 ### 2026-09-30, late: a local map for every new bridge (units keep to the deck)
 
 The owner's screenshots: units stepped off a new bridge's side, went down the bank and walked under the deck. The
@@ -857,8 +885,11 @@ fall in the owner (a road that turns back, or runs along the bank). Its index is
 (median split, x first, leaves of up to 4). The approaches to ground units use stay in the main graph, now never with
 any of their disc over water (16 points on the rim and 8 inside tested, not the middle only). A deck whose middle is
 in an old owner (a road over a bridge of the map's) goes into that owner's local map instead: its circles over the
-water near the new deck go, the deck's come in, and closing the old deck no longer empties the owner. A deck with no
-room for an owner is left closed, with a note. Before anything is written: the graph in no more pieces, every new
+water near the new deck go (with what only they held to the rest: Korsun and Square have rows of small circles beside
+their decks), the deck's come in, and closing the old deck no longer empties the owner. An old deck of plain main
+circles (3 of D-Day's bridges) goes from the main graph the same way, its land circles at the ends kept in the new
+local map shrunk off the water, unless that leaves ground units can't reach. A deck with no room for an owner is left
+closed, with a note. Before anything is written: the graph in no more pieces, every new
 local map one piece, every point where a new link meets an owner on its local map's ground, each owner holding its
 deck and no other circle's middle, every place along each deck ground units can stand on (`Graph.walkable`, the
 game's rule: the circle the index finds, then its local map's), and the graph read back as written.
@@ -875,13 +906,16 @@ The same in both graphs. Each owner has radius 6,720 (52 m across) and a local m
 deck, the rest copies of the approaches), one piece, both of its links' meeting points on its ground; both graphs one
 piece, the 44 old local maps byte-identical, every old circle found by the index where it was (6,499 and 7,292), and
 the graph read back as written. The map check finds what it found before. The probe on two of D-Day's own bridges of
-the same kind: water walkable only within about 1,300 and 1,200 of their decks (their local circles are wider than ours),
-none farther; with their local maps ignored, all of it would be. A road over those two bridges: they go into their own
-owners' local maps (gates 8 of 8 and 7 of 7 still on ground, one piece, the new deck walkable end to end; water more
-than 663 off the deck: 428 and 231 samples before, from the old decks' circles, none now). Their old local crossings
-over the old deck go with its circles (15 to 4, 12 to 2). Not tried in the game yet: whether it takes a graph with more
-local maps than it shipped with. The test: units across both bridges and back, an order onto the water beside a deck,
-an order onto bank ground inside an owner.
+the same kind: water walkable only within about 1,300 and 1,200 of their decks (their local circles are wider than
+ours), none farther; with their local maps ignored, all of it would be. A road over those two bridges: they go into
+their own owners' local maps (gates 8 of 8 and 7 of 7 still on ground, one piece, the new deck walkable end to end;
+water more than 663 off the deck: 428 and 231 samples before, from the old decks' circles, none now); their old local
+crossings over the old deck go with its circles (15 to 4, 12 to 2). A road over every bridge of 7 maps (91, D-Day,
+M07_Allemagne, Dolly, Valley, Korsun, Mireille, Square), both graphs: 85 go into their old owner, 3 get an owner of
+their own (D-Day's plain-circle decks), 3 stay closed (Mireille's deck 11 runs past its owner's edge; D-Day's 19 and
+20 lie in an owner with no ground near them), no error, and no water anywhere units can stand on that they couldn't
+before. Not tried in the game yet: whether it takes a graph with more local maps than it shipped with. The test: units
+across both bridges and back, an order onto the water beside a deck, an order onto bank ground inside an owner.
 
 **Bridge ends and the map's buildings (2026-10-01, the owner's 23:05 test of the local maps).** Three of the four new
 bridges' decks held units; but at one, "end of bridge hits buildings": its road runs straight through a farm, and the

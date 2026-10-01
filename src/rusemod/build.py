@@ -201,7 +201,8 @@ def _cover_brushes(info) -> None:
         cover = [s for s in strokes if s.kind.kind == "cover"]
         if not cover:
             continue
-        info.cover.setdefault(pack, []).extend(Paint(s.x, s.y, s.radius, "cover", s.kind.sign < 0) for s in cover)
+        info.cover.setdefault(pack, []).extend(Paint(s.x, s.y, s.radius, "cover", s.kind.sign < 0, s.square)
+                                               for s in cover)
         rest = [s for s in strokes if s.kind.kind != "cover"]
         if rest:
             info.terrain[pack] = rest
