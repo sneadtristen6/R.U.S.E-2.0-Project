@@ -22,13 +22,16 @@ The apps are new to Windows' reputation check. Click **More info**, then **Run a
 
 ## "[WinError 5] Access is denied" when testing or playing
 
-Windows refused to remove a copy of the game the app made (in `RUSE-Instances`).
+Windows refused to remove a copy of the game the app made (in `RUSE-Instances`). Also: "An old modded copy at
+`...\RUSE-Instances\<name>.old` can't be removed", on every second **Test in game** or **Play**.
 
-- **R.U.S.E. still running from an earlier test?** Close it, then try again: a running game keeps its copy in use.
-- **Your game's files marked read-only** (a disc install, a restored backup)? RUSE Studio 0.7.4 and Launcher 0.2.9
-  handle that by themselves: update (the apps offer it when they open). With an older version, delete the folder
-  the message names (`...\RUSE-Instances\<name>.partial` or `.old`; Windows asks about read-only files: say yes;
-  only the copy goes, never the game), then try again.
+- **Update first** (the apps offer it when they open): from RUSE Studio 0.7.5 and Launcher 0.2.10, a copy Windows
+  won't delete never stops a test: it's moved into `RUSE-Instances\.trash` and removed there once nothing holds it.
+- **R.U.S.E. still running from an earlier test?** The app says so, with the program's name: close the game (check
+  the Details tab of Task Manager for `RUSE.exe`), then try again.
+- **With an older version:** delete the folder the message names (`...\RUSE-Instances\<name>.partial` or `.old`;
+  Windows asks about read-only files: say yes; only the copy goes, never the game), then try again. If Windows
+  refuses, restart Windows first.
 - Still there? [[Report it|Report-a-Bug]] with the whole message.
 
 ## The app can't find R.U.S.E.

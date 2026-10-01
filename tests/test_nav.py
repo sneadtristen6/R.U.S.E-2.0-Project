@@ -33,6 +33,27 @@ class Graphs(unittest.TestCase):
         self.assertEqual(back.at(2500.0, 2000.0), [0])
         self.assertEqual(back.at(3000.0, 2000.0), [0, 1])  # where they meet
 
+    def test_crossings_follow_the_road_links_numbered_again(self):
+        g = row()
+        g.subs = [row()]
+        self.assertEqual(struct.unpack_from("<2H", g.crossings, 24), (7, 0))  # the road links it runs on
+        self.assertEqual(g.renumber_roads({7: 3, 0: 1, 5: 2}), 0)
+        for gg in (g, g.subs[0]):
+            self.assertEqual(struct.unpack_from("<2H", gg.crossings, 24), (3, 1))
+            self.assertEqual(struct.unpack_from("<4H", gg.crossings, 20)[:2], (0, 1))  # its graph links untouched
+        self.assertEqual(g.renumber_roads({9: 4}), 0)  # numbers it doesn't name stay as they are
+        self.assertEqual(struct.unpack_from("<2H", g.crossings, 24), (3, 1))
+        self.assertEqual(g.renumber_roads({3: 0, 1: None}), 2)  # its road link 1 went: the crossing goes, here and below
+        self.assertEqual((g.crossings, [c[4] for c in g.circles]), (b"", [0, 0, 0, 0]))
+        self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
+
+    def test_parts_and_the_index_walk(self):
+        g = row()
+        self.assertEqual(g.parts(), [3])
+        self.assertEqual((g.find(2000.0, 2000.0), g.find(10500.0, 2000.0), g.find(50000.0, 0.0)), (0, 2, None))
+        g.links = g.links[:1]  # B-C unlinked: C is a piece of its own
+        self.assertEqual(g.parts(), [2, 1])
+
     def test_mistakes(self):
         data = graph().to_bytes()
         with self.assertRaisesRegex(nav.NavError, "too short"):
@@ -77,6 +98,10 @@ class Blocking(unittest.TestCase):
         self.assertEqual(g.links, [(1, 2, 9000.0, 2000.0)])
         self.assertEqual(struct.unpack_from("<2H", g.crossings, 20) if g.crossings else None, None)
         self.assertEqual(g.points, row().points)  # the index isn't touched
+        g = row()
+        g.block([(9700.0, 2000.0, 400.0)])  # C goes; B shrinks to 2240, off A-B's meeting point, still overlapping A
+        self.assertEqual(g.links, [(0, 1, 4980.0, 2000.0)])  # the gate moves to where they still meet: A and B stay one
+        self.assertEqual(g.parts(), [2])
 
     def test_the_ground_given_up_is_filled_back(self):
         """A big circle with a small block at its edge: it shrinks a lot, and new circles fill what it gave up,

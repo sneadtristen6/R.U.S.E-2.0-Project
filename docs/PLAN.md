@@ -622,7 +622,13 @@ bridges replaces it, and a road's length while it's drawn. **In the game (owner,
    shipped bridge of its kind, on its own banks, and takes a sunk one's away. **In the game (18:19): tanks drive on
    the deck.** Then: the deck's opened ground narrowed (a tank stepped off the side), and new roads get the game's
    road stickers (a painted road vanished up close: the stickers draw roads near the camera). The D-Day copy is
-   rebuilt; T8 again. Found: the decks units stand on are in the map pack's own **`output\occlusioninfo_objectsonly.kdt`** (the
+   rebuilt; T8 again. **That build crashed the game (18:43):** the narrowed decks reached no ground units use (islands;
+   every shipped movement graph is one piece, and an order onto ground a unit can't reach crashes the game). Now each
+   deck gets an approach along the road until it joins the ground units use (at most 62 m; a deck that can't is left
+   closed, with a note), and a movement graph is never written in more than one piece. Found on the way: most shipped
+   bridges have a local graph whose small circles line the deck (the "walls"), and a crossing's last two words are
+   road network links, so cutting road links renumbers them (`nav.Graph.renumber_roads`). Handoff with the details:
+   the private repo's `notes/handoff-for-domesticnukes-2026-09-30-evening.md`. Found: the decks units stand on are in the map pack's own **`output\occlusioninfo_objectsonly.kdt`** (the
    same `TStreamedMeshKdTree` as the ground; D-Day: 556 triangles, 690 points, one subtree, in clusters exactly at
    its 21 bridges). The gameplay ground (`occlusioninfo_terrainonly.kdt`) dips into the river under shipped bridges
    just like the visible ground, and the movement circles there are ordinary. So: write each new bridge's deck into

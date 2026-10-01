@@ -119,6 +119,15 @@ The two new bridges stand where the new roads cross the river, between Briquevil
      onto its banks, 47 units above them). **Passed (owner, 18:19): tanks drive on the deck.** One tank was down in
      the water beside a bridge: the ground opened along a deck was 2,560 each side of its line, the deck about 1,200.
      Now 1,280 (the smallest circle any shipped map uses). Again: does every unit stay on the deck?
+   - **Rebuilt with 1,280 (owner, 18:43): the game crashed** on a move order (the empty-route crash, as with the first
+     movement builds). A tank also went under a deck, and buildings on the road blocked tanks near a bridge. Found:
+     the new decks' circles reached no ground units use, so each deck was an island; and every shipped movement graph
+     is one piece, so the game never expects that. Even the 18:19 build had a dead-end deck, and one that was an
+     island for infantry. **Rebuilt (2026-09-30, evening):** a deck that doesn't reach the ground units use gets an
+     approach along the road until it does (D-Day: the longest 33 m for infantry, 37 m for vehicles, one through the
+     farmyard west of the first bridge); a deck that can't be joined within 62 m is left closed, with a note; and the
+     build refuses to write a movement graph that isn't one piece. Again: order a tank, then infantry, across each
+     bridge and back; any crash?
    - **The roads up close:** a painted road vanished near the camera (owner, 18:18): up close the game draws a road
      with its road stickers (`Route` pieces), not the painted ground. The new roads now get them. Zoom in on a new
      road: does it stay?

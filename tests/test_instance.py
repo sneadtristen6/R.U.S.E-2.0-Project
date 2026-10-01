@@ -129,7 +129,8 @@ class ReadOnlyGame(unittest.TestCase):
         self.dst = os.path.join(self.tmp.name, "inst")
 
     def tearDown(self):
-        for folder in (self.game, self.dst, self.dst + ".partial", self.dst + ".old"):
+        for folder in (self.game, self.dst, self.dst + ".partial", self.dst + ".old",
+                       os.path.join(self.tmp.name, ".trash")):
             for path in _files(folder):
                 os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
         self.tmp.cleanup()
@@ -175,6 +176,64 @@ class ReadOnlyGame(unittest.TestCase):
         finally:
             held.close()
         build_instance(self.game, self.dst)  # the game closed: it goes through
+
+    def test_an_old_copys_link_to_a_replaced_read_only_pack(self):
+        # a player's report, 2026-09-30, on 0.7.4: every second Test in game failed on the old copy's
+        # ZZ_GladPatchableWin.dat ("Access is denied"). An older version had linked the read-only pack; the game's file
+        # was replaced since (another mod manager), so the link's other name isn't the game's file any more
+        pack = os.path.join(self.game, "Data", "PC", "1", "A.dat")
+        old = self.dst + ".old"
+        os.makedirs(os.path.join(old, "Data", "PC", "1"))
+        os.link(pack, os.path.join(old, "Data", "PC", "1", "A.dat"))
+        os.rename(pack, pack + ".orig")
+        _write(pack, b"archive A, put back")
+        os.chmod(pack, stat.S_IREAD)
+        for _ in range(2):  # the second press is the one that failed
+            build_instance(self.game, self.dst)
+        self.assertFalse(os.path.exists(old) or os.path.exists(os.path.join(self.tmp.name, ".trash")))
+        self.assertTrue(_read_only(pack + ".orig"))  # its other name keeps its mark and its content
+        with open(pack + ".orig", "rb") as f:
+            self.assertEqual(f.read(), b"archive A")
+        os.chmod(pack + ".orig", stat.S_IREAD | stat.S_IWRITE)
+
+    @unittest.skipUnless(os.name == "nt", "Windows won't delete a running program's own file")
+    def test_a_leftover_windows_wont_delete_is_moved_aside(self):
+        import subprocess
+        old = self.dst + ".old"
+        os.makedirs(old)
+        ping = os.path.join(old, "PING.EXE")
+        shutil.copy2(os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "System32", "PING.EXE"), ping)
+        running = subprocess.Popen([ping, "-n", "30", "127.0.0.1"], cwd=self.tmp.name, stdout=subprocess.DEVNULL,
+                                   creationflags=subprocess.CREATE_NO_WINDOW)
+        try:
+            build_instance(self.game, self.dst)  # not refused: the old copy goes into the trash, running or not
+            self.assertFalse(os.path.exists(old))
+            self.assertTrue(os.path.exists(os.path.join(self.tmp.name, ".trash", "inst.old", "PING.EXE")))
+        finally:
+            running.kill()
+            running.wait()
+        build_instance(self.game, self.dst)  # nothing runs from it now: the trash is emptied
+        self.assertFalse(os.path.exists(os.path.join(self.tmp.name, ".trash")))
+
+    @unittest.skipUnless(os.name == "nt", "names the program through Windows")
+    def test_a_game_still_running_from_the_copy_is_named(self):
+        import subprocess
+        from rusemod.instance import GameRunning
+        build_instance(self.game, self.dst)
+        ping = os.path.join(self.dst, "PING.EXE")
+        shutil.copy2(os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "System32", "PING.EXE"), ping)
+        running = subprocess.Popen([ping, "-n", "30", "127.0.0.1"], cwd=self.tmp.name, stdout=subprocess.DEVNULL,
+                                   creationflags=subprocess.CREATE_NO_WINDOW)
+        try:
+            with self.assertRaisesRegex(GameRunning, r"still running from the modded copy.*PING\.EXE \(process "
+                                                     r"\d+\)\. Close the game") as got:
+                build_instance(self.game, self.dst)
+            self.assertEqual([pid for pid, _exe in got.exception.running], [running.pid])
+            self.assertFalse(os.path.exists(self.dst + ".partial"))  # refused before building anything
+        finally:
+            running.kill()
+            running.wait()
+        build_instance(self.game, self.dst)
 
     @unittest.skipUnless(os.name == "nt", "only Windows refuses to delete a file that's open")
     def test_a_stuck_leftover_is_said_plainly(self):

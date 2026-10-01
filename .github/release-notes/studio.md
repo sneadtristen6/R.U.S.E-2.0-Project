@@ -1,6 +1,16 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.7.5:** a second Test in game works, and bridges units can always reach.
+- **Fixed:** every second *Test in game* could fail with "An old modded copy ... can't be removed ... (Access is
+  denied)". A copy Windows won't delete (a file an older version linked to a replaced game file, a program still
+  holding it) no longer stops a test: it's moved aside into `RUSE-Instances\.trash` and removed once nothing holds
+  it. If R.U.S.E. is still running from the test copy, you're told, with the program's name. Pressing *Test in game*
+  twice starts one test, not two.
+- **Fixed:** a road's new bridge could crash the game when units were ordered onto it: its deck reached no ground
+  units use. Each end of a bridge now joins the ground along the road (up to 62 m of approach); a bridge that can't
+  be joined stays closed to units, with a note, and the build never writes ground units can't reach.
+
 **0.7.4:** Test in game works when your game's files are marked read-only.
 - **Fixed:** *Test in game* failed every time with "[WinError 5] Access is denied" when R.U.S.E.'s files are marked
   read-only (a disc install, a restored backup): the test copy kept the mark, so a copy left half-built could never

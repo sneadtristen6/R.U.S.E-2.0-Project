@@ -490,13 +490,17 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls):
     def play(self, set_id: str) -> dict:
         """Start playing a mod set in the background. Returns {'job': id}; follow it with job(id)."""
         chosen = next((s for s in self._read_sets() if s["id"] == set_id), None)
+        busy = self._jobs.get(getattr(self, "_play_job", None))
         job = Job()
         self._jobs[job.id] = job
-        if chosen is None:
+        if busy is not None and busy.state == "running":  # one at a time: two would race for the same copy
+            job.state, job.message = "failed", "R.U.S.E. is already being started: wait for it to finish."
+        elif chosen is None:
             job.state, job.message = "failed", f"There's no mod set called {set_id!r}."
         elif chosen.get("error"):
             job.state, job.message = "failed", f"The mod set {chosen['name']} has a mistake: {chosen['error']}."
         else:
+            self._play_job = job.id
             job.start(lambda say: self._play(chosen, say), "R.U.S.E. is starting.",
                       plain=(BuildError, RndfError, OSError))
         return {"job": job.id}

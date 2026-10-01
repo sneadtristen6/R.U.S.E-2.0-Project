@@ -112,6 +112,13 @@ class Launcher(Base):
         self.assertTrue(any("modded copy ready" in line for line in j["lines"]))
         later = api.job(j["id"], since=j["count"])
         self.assertEqual(later["lines"], [])  # `since` skips the lines already shown
+        from rusemod.webui import Job
+        busy = Job()  # a start still going: another waits for it (two raced for the same copy)
+        api._jobs[busy.id] = busy
+        api._play_job = busy.id
+        self.assertIn("already being started", api.job(api.play("half")["job"])["message"])
+        busy.state = "done"
+        self.assertEqual(wait_for(api, api.play("half")["job"])["state"], "done")
 
     def test_steam_is_started_first_when_it_isnt_running(self):
         mod = write_mod(self.tmp.name, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})

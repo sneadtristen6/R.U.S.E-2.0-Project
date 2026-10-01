@@ -284,6 +284,7 @@ class Plan:
     kept: list = field(default_factory=list)      # decks of old bridges that stay and serve a road (not painted)
     gone: list = field(default_factory=list)      # decks of the old bridges sunk: their floors go too (floors.py)
     kind: str | None = None                       # the map's bridge kind the new ones are
+    water: object = None                          # the map's water (Water), for the decks' approaches
 
 
 def plan(mesh: bytes, lines, sc, descs: dict, length_of=None, game=None, sample: float = SAMPLE, bank: float = BANK,
@@ -301,7 +302,7 @@ def plan(mesh: bytes, lines, sc, descs: dict, length_of=None, game=None, sample:
                 seen_lengths[kind] = model_length(game, descs, kind)
             return seen_lengths[kind]
     out = Plan()
-    water = Water(Tms(mesh))
+    water = out.water = Water(Tms(mesh))
     found = [span for line in lines for span in crossings(water, line, sample, bank, least)]
     spans = [s for s in found if not _covered(s, existing)]
     if len(spans) < len(found):
@@ -369,32 +370,68 @@ def _closing(water: Water, old: tuple, new_decks: list) -> list[tuple]:
     return out
 
 
-def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = ()) -> tuple[dict, list[str]]:
+def _end_name(dx: float, dy: float) -> str:
+    """The compass end of a deck its outward direction (dx, dy) points to (map x grows east, y south)."""
+    return ("east" if dx > 0 else "west") if abs(dx) >= abs(dy) else ("south" if dy > 0 else "north")
+
+
+def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = (), roads=(), blocks=(),
+                water=None) -> tuple[dict, list[str]]:
     """({member: new mapinfo.win}, notes) for one map: both movement graphs closed in `closed` (circles x, y, r: where
-    old bridges stood over water) and then opened along `spans` (the new bridges' decks), and the road network's
-    links through `closed` taken away; `read(member)` gives a DataMap_Win.dat file's bytes or None (the build's
-    chain)."""
+    old bridges stood over water) and then opened along `spans` (the new bridges' decks), each deck joined to the
+    ground units already use along `roads` (the mod's road lines; nav.Graph.open), never through the mod's `blocks`
+    (nav.Block), `closed` or water (`water(x, y)`: Water.at), and the road network's links through `closed` taken
+    away; `read(member)` gives a DataMap_Win.dat file's bytes or None (the build's chain). Raises BridgeError rather
+    than write a graph, or one of its local graphs, in more pieces than it was."""
     from ruse_mod_engine import sdb
     from .cover import PACK, member
-    from .nav import Graph, replace_buffers
+    from .nav import APPROACH, METRE, UNITS, Graph, replace_buffers
     from .roadnet import RoadNet
     name = member(pack)
     win = read(name)
     if win is None:
         raise BridgeError(f"{pack} has no {name} in {PACK}, so no bridge can open its movement")
     bufs = sdb.split_mapinfo(win)[1]
-    new, notes = {}, []
+    new, notes, number, road_note = {}, [], {}, None
+    if closed:  # first, so the graphs' crossings can follow the road links' new numbers
+        net = RoadNet.read(bufs[0])
+        gone = net.cut(list(closed), number)
+        new[0] = net.to_bytes()
+        road_note = f"road network: {gone} link(s) taken off the old bridges"
+        if not gone:
+            number = {}
     for k, what in ((1, "infantry"), (2, "vehicles")):
         g = Graph.read(bufs[k])
+        pieces = [len(s.parts()) for s in [g] + g.subs]
         if closed:
             c = g.block(list(closed), refill=False)
             notes.append(f"{what}: {c['emptied']} circle(s) taken and {c['shrunk']} shrunk where old bridges stood")
-        c = g.open(spans, OPEN) if spans else {"added": 0, "linked": 0}
+        if number:
+            g.renumber_roads(number)  # a crossing names road links by number (the road through its circle)
+        zones = [(b.x, b.y, b.radius) for b in blocks if k in UNITS[b.units]] + list(closed)
+
+        def avoid(x, y, r, zones=zones):
+            return (water is not None and water(x, y)) or any(math.hypot(x - zx, y - zy) < zr + r
+                                                               for zx, zy, zr in zones)
+        nothing = {"added": 0, "linked": 0, "approach": 0, "closed": []}
+        c = g.open(spans, OPEN, roads, avoid=avoid) if spans else nothing
+        if any(len(s.parts()) > n for s, n in zip([g] + g.subs, pieces)):  # e.g. an old bridge, the only way across
+            raise BridgeError(f"{what}: taking the old bridges away would cut ground off from the rest of the map "
+                              f"(or of a bridge's own local movement), and the game crashes when a unit is ordered "
+                              f"onto ground it can't reach")
         new[k] = g.to_bytes()
-        notes.append(f"{what}: {c['added']} circle(s) and {c['linked']} link(s) added along {len(spans)} bridge(s)")
-    if closed:
-        net = RoadNet.read(bufs[0])
-        gone = net.cut(list(closed))
-        new[0] = net.to_bytes()
-        notes.append(f"road network: {gone} link(s) taken off the old bridges")
+        opened = len(spans) - len(c["closed"])
+        line = f"{what}: {c['added']} circle(s) and {c['linked']} link(s) added along {opened} bridge(s)"
+        if c["approach"]:
+            line += (f", {c['approach']} of them on the approaches to them (the longest "
+                     f"{round(c['longest'] / METRE)} m along the road)")
+        notes.append(line)
+        for si, ends in c["closed"]:
+            x0, y0, x1, y1 = spans[si]
+            where = " and ".join(_end_name(*((x0 - x1, y0 - y1) if e == 0 else (x1 - x0, y1 - y0))) for e in ends)
+            notes.append(f"{what} can't use the bridge at ({(x0 + x1) / 2:.0f}, {(y0 + y1) / 2:.0f}): past its {where} "
+                         f"end, no ground they already use lies within {round(APPROACH / METRE)} m along the road, so "
+                         f"it's left closed to them (ground they can't reach from the rest crashes the game)")
+    if road_note:
+        notes.append(road_note)
     return {name: replace_buffers(win, new)}, notes

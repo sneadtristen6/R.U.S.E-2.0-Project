@@ -120,8 +120,15 @@ class Cutting(unittest.TestCase):
         self.assertEqual(net.cut([(0.0, 0.0, 10.0)]), 0)  # nothing there: untouched
         net = ring()
         (ax, ay), (bx, by) = net.points[0], net.points[1]
-        gone = net.cut([((ax + bx) / 2, (ay + by) / 2, 500.0)])
+        before = list(net.links)
+        number = {}
+        gone = net.cut([((ax + bx) / 2, (ay + by) / 2, 500.0)], number)
         self.assertEqual((gone, len(net.points)), (1, 24))  # a link's middle: both its points still serve others
+        went = [i for i, new in number.items() if new is None]
+        self.assertEqual(len(went), 1)  # the movement graphs' crossings follow these numbers (nav.renumber_roads)
+        self.assertEqual(sorted(n for n in number.values() if n is not None), list(range(len(net.links))))
+        self.assertEqual(len(number), len(before))
+        self.assertTrue(all(net.links[new][:2] == before[old][:2] for old, new in number.items() if new is not None))
 
 
 class ModRoads(unittest.TestCase):

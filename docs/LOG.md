@@ -794,3 +794,32 @@ is the far view. New roads now get sticker pieces the shipped way (about 16 m, s
 count and the map's two constant words), added with the placed objects (`scenery.RoadPiece`). On the way:
 `div_map.tgv_pc` decoded (DXT5, the whole map about 5 m a pixel); roads are only a faint lift there, so it isn't the
 close-up road (a painter for it is kept, unused).
+
+**The narrowed bridges crashed the game (owner, 18:43), and why.** The move-order crash again (an empty route). On the
+copy the owner played, every circle along the two new decks was cut off from the rest of both movement graphs: with
+circles of 1,280, no deck reached the ground units use (its nearest edge 1,060 to 7,444 past a deck's end). Every
+shipped movement graph turns out to be **one piece** (66 of 66 main graphs on 33 maps, and all their sub-graphs), so
+the game never expects ground it can't reach. The 18:19 build (circles of 2,560) had been lucky: one deck a dead end,
+the other an island for infantry, and only tanks were tried. The owner's "buildings on the road blocked the tanks near
+the bridge" is the same thing from the land side: past the first bridge's west end the road runs 7,400 units through a
+farmyard no circle ever covered. Now `Graph.open` joins each end of a deck to the graph's main part, with an approach
+along the road (circles every 960, until one overlaps the ground units use; at most 62 m), leaves closed a deck it
+can't join, and refuses to write a graph that isn't one piece; `Graph.find` walks the index as the lookup does
+(it finds all 6,499 and 7,292 of D-Day's shipped circle centres, and every point along the new decks). Also found:
+most shipped bridges have a local graph whose small circles (320 to 1,280) line the deck, the walls that keep units
+on it; and a crossing is the road through a circle, its last two u16 road network links (7,862 of 7,862 on 4 maps),
+so `RoadNet.cut` now renumbers them in both graphs (`Graph.renumber_roads`). Details and the probes: the handoff for
+DomesticNukes in the private repo.
+
+**A player's every-second-Test failure on 0.7.4, found and fixed** ("An old modded copy at
+`E:\RUSE-Instances\studio-cascade-test-2.old` can't be removed: Windows refused ...ZZ_GladPatchableWin.dat (Access is
+denied)"). The first press moved the old copy aside and couldn't delete it (silently); every press after it stopped
+on it. Checked on this PC, case by case: a folder rename is stopped by any open file inside it, or a process's
+current folder; a delete is refused for a read-only file, a running program's own file, and a file mapped into memory
+where the volume deletes the old way; a rename still works in those three. The code path that gives the player's
+exact text with no game running: a read-only hard link left by 0.7.3 whose game file was replaced since (another mod
+manager): the 0.7.4 cleanup only cleared the mark on a link that was still the game's file. Now (`rusemod.instance`,
+`rusemod.winfiles`): such files go by a POSIX delete that ignores the mark (only that name goes, the other keeps its
+mark); a leftover Windows won't delete is moved into `RUSE-Instances\.trash` and removed on a later build; a game still
+running from the copy is refused before building, by name; the Studio's Test button can't start two builds at once
+(a double click did), and neither can the Launcher's Play.

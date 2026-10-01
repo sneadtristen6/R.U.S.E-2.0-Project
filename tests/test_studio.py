@@ -386,6 +386,18 @@ class Editing(WithMod):
         pack = Edat((copy / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes())
         self.assertEqual(Ndf(pack.read(pack.find("everything.cpp.gladndfbin"))).objects[0].get(1).scalar(), 15)
         self.assertEqual(self.api.job("nope")["state"], "failed")
+        from rusemod.webui import Job
+        busy = Job()  # a build still going: a second press (a double click) waits for it
+        self.api._jobs[busy.id] = busy
+        self.api._test_job = busy.id
+        with self.assertRaisesRegex(StudioError, "already being built"):
+            self.api.test_in_game()
+        busy.state = "done"
+        again = self.api.test_in_game()["job"]
+        end = time.time() + 20
+        while self.api.job(again)["state"] == "running" and time.time() < end:
+            time.sleep(0.02)
+        self.assertEqual(self.api.job(again)["state"], "done")
 
     def test_export_mod_makes_one_file_with_the_build_and_fingerprint(self):
         with self.assertRaises(StudioError):

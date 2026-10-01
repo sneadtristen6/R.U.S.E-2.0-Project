@@ -10,6 +10,9 @@ circle through the meeting points. Circle centres sit on a 320-unit grid and rad
   none sharing a circle with it) each cover one town-sized patch (1 km or 200 m) finely, and their circles keep
   off the buildings: 3% of the building spots in their areas are inside them, against 52% of random spots and 64%
   of trees. So buildings are obstacles only where a local graph is; a building placed in open ground is not.
+  Most bridges have a local graph too (D-Day: 16 of its 21), whose circles of radius 320 to 1,280 line the deck and
+  reach no more than about 1,600 off its line, so units keep to it; the main graph passes over with one big circle.
+  A few bridges have a chain of main-graph circles along the deck instead (D-Day: 3), reaching onto the land.
 - **Buffer 1 is for infantry, buffer 2 for vehicles:** buffer 1 covers 79% of the woods' cells, buffer 2 14%
   (open ground: 85% and 83%). Vehicles can't enter woods.
 
@@ -21,22 +24,32 @@ circle through the meeting points. Circle centres sit on a 320-unit grid and rad
                  where its crossings start. The last record is (0, 0, 0, the lists' total, the crossings' total)
     links        links × 12 bytes: u16 circle a < circle b, f32 x, y (a point where they meet); sorted by b
     lists        u16 link numbers: each circle's links, the circles one after another (every link twice)
-    crossings    crossings × 28 bytes: a trip through a circle, from one link's meeting point to another's: two
-                 points (f32 x, y each), its length, the two link numbers, a word; route costs
+    crossings    crossings × 28 bytes: the road through a circle: f32 x, y where it comes in and x, y where it leaves
+                 (points on road links r0 and r1), f32 its length along the road, u16 the two links (gates) it goes
+                 between, u16 r0, r1: road network links (buffer 0; 7,862 of 7,862 checked on 4 maps, 2026-09-30),
+                 so a road link renumbered must be renumbered here too (Graph.renumber_roads)
     points       a spatial index of the circles, up to the first sub-graph: branch records (u16 1, u16 how far
                  to skip, f32 x, y: a split point) and leaf records (u16 count, then that many circle numbers);
                  not written by us yet
     sub-graphs   the same layout again, without sub-graphs of their own (22 on Blitz)
 
+Every shipped graph is one connected piece (66 of 66 main graphs on 33 maps, and all their sub-graphs): the game
+never expects ground it can't reach from the rest, and an order onto such ground crashes it (seen in the game,
+2026-09-30). Changes here keep a graph in one piece (Graph.parts).
+
 `Graph.read(data).to_bytes() == data` on every shipped map (tools/verify_nav.py)."""
 from __future__ import annotations
 
+import math
 import struct
 from dataclasses import dataclass, field
 
 HEADER = 84
 STEP = 320.0         # circle centres and radii are on this grid
 MIN_RADIUS = 1280.0  # the smallest circle on any shipped map
+METRE = 260.0        # map units in a metre
+APPROACH = 16000.0   # how far past a new deck's end its approach may run along the road to reach ground units already
+                     # use (about 62 m; the shipped bridges' chains of circles reach up to 10,800 past their decks)
 
 
 class NavError(ValueError):
@@ -96,8 +109,9 @@ class Graph:
 
         A circle whose middle is in a zone, or that would be smaller than MIN_RADIUS once it keeps clear of every
         zone, is emptied (radius 0, no links); one that reaches into a zone shrinks to keep clear (its radius a
-        multiple of STEP). A link goes when one of its circles is emptied or its meeting point is no longer inside
-        both circles, or lies in a zone; the crossings that use it go too. With `refill`, the ground those circles
+        multiple of STEP). A link whose meeting point is no longer inside both circles, or lies in a zone, moves to
+        where the two still meet by STEP or more outside the zones; it goes when they don't, or one of them is
+        emptied. The crossings that use a link that moved or went go too. With `refill`, the ground those circles
         gave up outside the zones gets new circles (the largest first, centres on the STEP grid), linked to every
         circle they overlap by STEP or more, and to each other; the shrunk circles are linked again where they still
         overlap. New circles are numbered after the old ones and listed in the index as one more tree (a leaf), so
@@ -141,8 +155,14 @@ class Graph:
             cx, cy, cr = allc[c]
             return cr > 0 and (px - cx) ** 2 + (py - cy) ** 2 <= cr * cr + 1.0
 
-        kept = [(i, lk) for i, lk in enumerate(self.links) if holds(lk[0], lk[2], lk[3]) and holds(lk[1], lk[2], lk[3])
-                and not in_zone(lk[2], lk[3])]
+        kept = []
+        for i, (a, b, px, py) in enumerate(self.links):
+            if holds(a, px, py) and holds(b, px, py) and not in_zone(px, py):
+                kept.append((i, (a, b, px, py)))
+            elif allc[a][2] > 0 and allc[b][2] > 0:  # both still there: the gate moves to where they still meet,
+                point = _meeting(allc[a], allc[b])  # outside the zones (else a shrunk circle could cut ground off);
+                if point is not None and not in_zone(*point):  # a new link: the roads through it went with the old
+                    kept.append((None, (a, b) + point))
         counts["links"] += len(self.links) - len(kept)
         new_links = []
         if refill:  # new links: new circles to everything they overlap; shrunk circles to each other again
@@ -199,31 +219,66 @@ class Graph:
         self.circles, self.links, self.lists, self.crossings = circles, links, lists, b"".join(kept_cross)
         return len(cross) - len(kept_cross)
 
-    def open(self, spans: list[tuple[float, float, float, float]], radius: float = 2560.0) -> dict:
+    def open(self, spans: list[tuple[float, float, float, float]], radius: float = 2560.0, roads=(),
+             reach: float = APPROACH, avoid=None) -> dict:
         """Give units ground along `spans` (x0, y0, x1, y1: a bridge's deck) where there was none (water): circles
-        `radius` wide every `radius` along each span, linked to each other and to every circle they overlap by STEP
-        or more (the banks), and listed in the index under the nearest bank circle, whose branches widen to reach
-        them (the game's index keeps the exact reach of each half on the branch's axis; see _index_add). The local
-        town graphs are left as they are. Returns what was added."""
-        counts = {"added": 0, "linked": 0}
+        `radius` wide every `radius` along each span. A deck must reach ground units already use at both ends: the
+        shipped graphs are each one piece, and the game crashes when a unit is ordered onto ground its own can't reach
+        (an empty route, seen in the game 2026-09-30 with decks that joined nothing). So where half a deck doesn't
+        overlap a live circle by STEP or more (a third of the deck at each end: the middle is over water), an
+        approach goes on from that end: circles every 3/4 `radius` along the nearest of `roads` (lines of map points;
+        the way that leads off the deck, then straight on past the road's end; straight on along the deck without
+        one), until one does, at most `reach` map units out, and never where `avoid(x, y, radius)` says (blocked
+        ground, water). A deck that can't be joined at both ends is left closed. Every new circle is linked to each circle it overlaps by STEP or more and listed in the index
+        under the nearest old circle, whose branches widen to reach it (the game's index keeps the exact reach of each
+        half on the branch's axis; see _index_add). The local town graphs are left as they are.
+
+        Returns {"added", "linked", "approach": the circles on approaches, "longest": the longest approach (map
+        units), "closed": [(span index, [the ends that couldn't be joined: 0 its start, 1 its end])]}."""
+        counts = {"added": 0, "linked": 0, "approach": 0, "longest": 0.0, "closed": []}
         n = len(self.circles) - 1
         old = [c[:3] for c in self.circles[:-1]]
-        live = [i for i, c in enumerate(old) if c[2] > 0]
-        new, boxes = [], {}
-        for x0, y0, x1, y1 in spans:
+        ground = _Buckets(old)  # (the live ones: a circle of radius 0 is in no bucket)
+
+        def joined(c) -> bool:
+            return any(_meeting(c, old[d]) is not None for d in ground.near(*c))
+
+        new, parts_before = [], len(self._labels()[1])
+        for si, (x0, y0, x1, y1) in enumerate(spans):
             length = ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+            if length <= 0:
+                continue
             steps = max(1, int(-(-length // radius)))
-            bank = min(live, key=lambda i: (old[i][0] - x0) ** 2 + (old[i][1] - y0) ** 2) if live else None
-            for k in range(steps + 1):
-                t = k / steps
-                new.append((x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, float(radius), bank))
-            if bank is not None:
-                bx0, by0, bx1, by1 = boxes.get(bank, (x0, y0, x0, y0))
-                boxes[bank] = (min(bx0, x0, x1) - radius, min(by0, y0, y1) - radius,
-                               max(bx1, x0, x1) + radius, max(by1, y0, y1) + radius)
+            deck = [(x0 + (x1 - x0) * k / steps, y0 + (y1 - y0) * k / steps, float(radius)) for k in range(steps + 1)]
+            third = max(1, len(deck) // 3)
+            ends = ((deck[:third], (x0, y0), (x0 - x1, y0 - y1), (x1, y1)),
+                    (deck[-third:], (x1, y1), (x1 - x0, y1 - y0), (x0, y0)))
+            approaches, failed, longest = [], [], 0.0
+            for which, (part, at, out, other) in enumerate(ends):
+                if any(joined(c) for c in part):
+                    continue
+                chain, reached = [], False
+                for walked, (px, py) in _walk_out(at, out, roads, radius * 0.75, reach, away=other):
+                    if avoid is not None and avoid(px, py, float(radius)):
+                        break
+                    chain.append((px, py, float(radius)))
+                    if joined(chain[-1]):
+                        reached = True
+                        longest = max(longest, walked)
+                        break
+                if reached:
+                    approaches.append(chain)
+                else:
+                    failed.append(which)
+            if failed:
+                counts["closed"].append((si, failed))
+                continue
+            counts["longest"] = max(counts["longest"], longest)
+            new += deck + [c for chain in approaches for c in chain]
+            counts["approach"] += sum(len(chain) for chain in approaches)
         if not new:
             return counts
-        allc = old + [c[:3] for c in new]
+        allc = old + new
         counts["added"] = len(new)
         near = _Buckets(allc)
         linked = {(a, b) for a, b, _x, _y in self.links}
@@ -242,16 +297,100 @@ class Graph:
                 new_links.append((None, (a, b) + point))
         counts["linked"] = len(new_links)
         self._finish(allc, list(enumerate(self.links)), new_links, n)
+        # the index: each new circle in the leaf of the old circle nearest it, that circle's branches widened to reach
+        live = [i for i, c in enumerate(old) if c[2] > 0]
+        where = _Buckets([old[i] for i in live])
         into: dict[int, list[int]] = {}
-        for j, (_x, _y, _r, bank) in enumerate(new):
-            into.setdefault(bank if bank is not None else -1, []).append(n + j)
+        boxes: dict[int, tuple] = {}
+        for j, (x, y, r) in enumerate(new):
+            ids = list(where.near(x, y, r + 20480.0)) or range(len(live))
+            bank = live[min(ids, key=lambda k: ((old[live[k]][0] - x) ** 2 + (old[live[k]][1] - y) ** 2) ** 0.5
+                            - old[live[k]][2])] if live else -1
+            into.setdefault(bank, []).append(n + j)
+            bx0, by0, bx1, by1 = boxes.get(bank, (x, y, x, y))
+            boxes[bank] = (min(bx0, x - r), min(by0, y - r), max(bx1, x + r), max(by1, y + r))
         self.points = _index_add(self.points, into, boxes)
+        if len(self._labels()[1]) > parts_before:  # a guard: never write ground units can't reach
+            raise NavError("opening the bridges would leave ground units can't reach, which crashes the game")
         return counts
+
+    def renumber_roads(self, number: dict[int, int]) -> int:
+        """Point every crossing, here and in the sub-graphs, at the road network's links as numbered again (`number`:
+        old link -> new, or None for a link that went: its crossings go too; a number it doesn't name stays as it
+        is). A crossing's last two u16 are road network links (buffer 0): its two points lie on them (7,862 of 7,862
+        crossings on 4 maps, 2026-09-30). Returns how many crossings went."""
+        gone = 0
+        for g in [self] + self.subs:
+            recs, starts = [], []
+            for c in range(len(g.circles) - 1):
+                starts.append(len(recs))
+                for k in range(g.circles[c][4], g.circles[c + 1][4]):
+                    rec = g.crossings[28 * k:28 * k + 28]
+                    r0, r1 = (number.get(r, r) for r in struct.unpack_from("<2H", rec, 24))
+                    if r0 is None or r1 is None:
+                        gone += 1
+                    else:
+                        recs.append(rec[:24] + struct.pack("<2H", r0, r1))
+            starts.append(len(recs))
+            g.circles = [c[:4] + (s,) for c, s in zip(g.circles, starts)]
+            g.crossings = b"".join(recs)
+        return gone
+
+    def parts(self) -> list[int]:
+        """How many live circles each connected part of the graph has, the largest first. Every shipped graph is one
+        part (66 of 66 main graphs and all their sub-graphs, 2026-09-30): the game never expects ground it can't
+        reach."""
+        return sorted(self._labels()[1].values(), reverse=True)
+
+    def _labels(self) -> tuple[list[int], dict[int, int]]:
+        """Each circle's part (a circle number standing for it), and how many live circles each part has."""
+        n = len(self.circles) - 1
+        up = list(range(n))
+
+        def root(a):
+            while up[a] != a:
+                up[a] = up[up[a]]
+                a = up[a]
+            return a
+        for a, b, _x, _y in self.links:
+            ra, rb = root(a), root(b)
+            if ra != rb:
+                up[ra] = rb
+        lab = [root(i) for i in range(n)]
+        sizes: dict[int, int] = {}
+        for i in range(n):
+            if self.circles[i][2] > 0:
+                sizes[lab[i]] = sizes.get(lab[i], 0) + 1
+        return lab, sizes
 
     # --- reading it ---
     def links_of(self, circle: int) -> list[int]:
         """The link numbers of one circle."""
         return self.lists[self.circles[circle][3]:self.circles[circle + 1][3]]
+
+    def find(self, x: float, y: float) -> int | None:
+        """The circle holding (x, y) as the index finds it: down the tree, x and y by turns, into each half whose edge
+        takes the point in (both where the edges overlap), and the first circle of a leaf that holds it. A circle the
+        index can't reach this way is ground no order can be given onto."""
+        cached = getattr(self, "_tree", None)
+        if cached is None or cached[0] is not self.points:
+            cached = self._tree = (self.points, _tree_read(self.points))
+        todo = [(cached[1], 0)]
+        while todo:
+            node, axis = todo.pop()
+            if node[0] == "leaf":
+                for c in node[1]:
+                    cx, cy, r = self.circles[c][:3]
+                    if r > 0 and (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
+                        return c
+                continue
+            far, near = struct.unpack("<2f", node[2])
+            p = (x, y)[axis]
+            if p >= near:
+                todo.append((node[4], 1 - axis))
+            if p <= far:
+                todo.append((node[3], 1 - axis))
+        return None
 
     def at(self, x: float, y: float) -> list[int]:
         """The circles that hold the point (x, y)."""
@@ -355,7 +494,10 @@ class _Buckets:
                 for j in range(int((y - r) // s), int((y + r) // s) + 1)]
 
     def around(self, c):
-        x, y, r = self.circles[c]
+        return self.near(*self.circles[c])
+
+    def near(self, x, y, r):
+        """The circles that may overlap a circle at (x, y) of radius r."""
         seen = set()
         for key in self._keys(x, y, r):
             for d in self.cells.get(key, ()):
@@ -373,6 +515,70 @@ def _meeting(p, q) -> tuple[float, float] | None:
         return None
     t = (d - br + ar) / 2 / d
     return (ax + (bx - ax) * t, ay + (by - ay) * t)
+
+
+def _nearest_on(line, p) -> tuple[float, int, float] | None:
+    """(distance, segment, how far along it 0..1) of the point of the polyline `line` nearest `p`."""
+    best = None
+    for i in range(len(line) - 1):
+        (ax, ay), (bx, by) = line[i], line[i + 1]
+        dx, dy = bx - ax, by - ay
+        n = dx * dx + dy * dy
+        t = max(0.0, min(1.0, ((p[0] - ax) * dx + (p[1] - ay) * dy) / n)) if n else 0.0
+        d = math.hypot(p[0] - ax - t * dx, p[1] - ay - t * dy)
+        if best is None or d < best[0]:
+            best = (d, i, t)
+    return best
+
+
+def _arc(line, i: int, t: float) -> float:
+    """How far along the polyline `line` the point at segment i, t lies."""
+    return sum(math.dist(line[j], line[j + 1]) for j in range(i)) + t * math.dist(line[i], line[i + 1])
+
+
+def _walk_out(at, out, roads, step: float, reach: float, away=None):
+    """(how far, (x, y)) every `step` map units from `at`, up to `reach`: along the road line nearest `at` (within
+    2,560), the way that leads off the deck (away from `away`, the deck's other end, along the road; else along
+    `out`), then straight on past the road's end; straight along `out` when no road is that near."""
+    ox, oy = out
+    norm = math.hypot(ox, oy) or 1.0
+    ox, oy = ox / norm, oy / norm
+    best = None
+    for line in roads:
+        got = _nearest_on(line, at)
+        if got is not None and got[0] <= 2560.0 and (best is None or got[0] < best[0]):
+            best = got + (line,)
+    path = [tuple(at)]
+    if best is not None:
+        _d, i, t, line = best
+        (ax, ay), (bx, by) = line[i], line[i + 1]
+        forward = None
+        other = _nearest_on(line, away) if away is not None else None
+        if other is not None and other[0] <= 2560.0:  # the road runs over the deck: off it is away from its other end
+            here, there = _arc(line, i, t), _arc(line, other[1], other[2])
+            if here != there:
+                forward = here > there
+        if forward is None:
+            forward = (bx - ax) * ox + (by - ay) * oy >= 0
+        path.append((ax + (bx - ax) * t, ay + (by - ay) * t))
+        path += [tuple(p) for p in (line[i + 1:] if forward else reversed(line[:i + 1]))]
+    dx, dy = ox, oy
+    for (ax, ay), (bx, by) in zip(reversed(path[:-1]), reversed(path[1:])):  # on in the road's last direction
+        seg = math.hypot(bx - ax, by - ay)
+        if seg > 0:
+            dx, dy = (bx - ax) / seg, (by - ay) / seg
+            break
+    path.append((path[-1][0] + dx * reach, path[-1][1] + dy * reach))
+    walked, target = 0.0, step
+    for (ax, ay), (bx, by) in zip(path, path[1:]):
+        seg = math.hypot(bx - ax, by - ay)
+        while seg > 0 and target <= walked + seg:
+            if target > reach:
+                return
+            t = (target - walked) / seg
+            yield target, (ax + (bx - ax) * t, ay + (by - ay) * t)
+            target += step
+        walked += seg
 
 
 def _fill(sources, zones, now) -> list[tuple[float, float, float]]:

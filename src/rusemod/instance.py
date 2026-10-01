@@ -13,6 +13,12 @@ Layout of an instance:
   - `steam_appid.txt` lets RUSE.exe start from the copy with Steam running.
 The instance is built in `<dst>.partial` and only then swapped in, so a half-built instance never looks usable and the
 last working one stays until the new one is complete.
+
+A leftover (the old copy, or one left half-built) never blocks a build: what can't be removed is moved into the trash
+folder next to the copies (`RUSE-Instances\\.trash`) and removed there once nothing holds it (a player's report,
+2026-09-30: every second Test in game failed on an old copy Windows wouldn't delete). A file Windows won't delete can
+still be moved: marked read-only, mapped into memory by a program, a running program's own file. Only an open file,
+or R.U.S.E. still running from the copy, stops the move, and that is said with the program's name.
 """
 from __future__ import annotations
 
@@ -21,11 +27,37 @@ import shutil
 import stat
 import sys
 
+from . import winfiles
+
 STEAM_APPID = "21970"
+TRASH = ".trash"  # next to the copies: leftovers waiting to be removed
 
 
 class InstanceError(OSError):
     """A modded copy that can't be built, replaced or removed, said for the player."""
+
+
+class GameRunning(InstanceError):
+    """R.U.S.E. (or its crash reporter) is still running from the modded copy that's about to be rebuilt."""
+
+    def __init__(self, message: str, running: list[tuple[int, str]]):
+        super().__init__(message)
+        self.running = running
+
+
+def game_running(dst: str) -> list[tuple[int, str]]:
+    """[(process id, program file)] of what runs from the copy `dst` (its old and half-built ones only go to the
+    trash, running or not)."""
+    return winfiles.running_from(dst) if os.path.isdir(dst) else []
+
+
+def refuse_if_running(dst: str) -> None:
+    """Raise GameRunning when R.U.S.E. still runs from the copy `dst`: it can't be rebuilt under a running game."""
+    running = game_running(dst)
+    if running:
+        names = ", ".join(f"{os.path.basename(exe)} (process {pid})" for pid, exe in running)
+        raise GameRunning(f"R.U.S.E. is still running from the modded copy at {dst}: {names}. Close the game, then try "
+                          f"again.", running)
 
 
 def _norm(rel: str) -> str:
@@ -45,14 +77,21 @@ def _copy(src_f: str, out: str) -> None:
 
 
 def _remove_tree(path: str, src: str) -> None:
-    """Remove an instance folder (an old one, or one left half-built). Windows refuses to delete anything marked
-    read-only: the instance's own files get the mark cleared; a hard link that shares a read-only game file (made
-    before copies dropped the mark) gets it cleared just long enough to drop the link, then put back on the game's
-    file, so the install ends as it was. Anything else, a file in use above all (the game running from the copy), is
-    raised."""
+    """Remove an instance folder (an old one, or one left half-built). Windows refuses to delete a file marked
+    read-only, or one a program keeps mapped into memory on a volume that deletes the old way: those go by a POSIX
+    delete that ignores the mark (only that name goes: a hard link's other names keep theirs, the game's file among
+    them). Without it (an older Windows), the copy's own files get the mark cleared, and a hard link that shares a
+    read-only game file gets it cleared just long enough to drop the link, then put back on the game's file, so the
+    install ends as it was. Anything else, a file in use above all (the game running from the copy), is raised."""
     def retry(func, p, exc):
         if not isinstance(exc, PermissionError) or func not in (os.unlink, os.remove, os.rmdir):
             raise exc
+        if func is not os.rmdir:
+            try:
+                winfiles.posix_delete(p)
+                return
+            except OSError:
+                pass
         try:
             st = os.lstat(p)
         except OSError:
@@ -83,17 +122,61 @@ def _remove_tree(path: str, src: str) -> None:
         shutil.rmtree(path, onerror=lambda func, p, info: retry(func, p, info[1]))
 
 
-def _clear(path: str, src: str, what: str) -> None:
-    """Remove `path` if it's there, or say plainly why it can't be."""
+def _who(path: str | None) -> str:
+    """' (in use by RUSE.exe, process 1234)' for the programs holding `path`, or ''."""
+    held = winfiles.holders(path) if path else []
+    if not held:
+        return ""
+    names = ", ".join(f"{os.path.basename(exe) if exe else 'a program'}, process {pid}" for pid, exe in held)
+    return f" (in use by {names})"
+
+
+def _free(path: str) -> str:
+    """`path`, or `path-2`, `path-3`... whichever isn't taken."""
+    out, n = path, 1
+    while os.path.lexists(out):
+        n += 1
+        out = f"{path}-{n}"
+    return out
+
+
+def _set_aside(path: str, src: str, what: str) -> str | None:
+    """Get `path` (an old copy, or one left half-built) out of the way: removed, or when Windows won't let a file in it
+    go, moved into the trash folder next to it, to be removed once nothing holds it (_sweep). Returns None when it's
+    gone, else where it went. Raises InstanceError, naming what holds it, when even the move is refused."""
     if not os.path.lexists(path):
-        return
+        return None
     try:
         _remove_tree(path, src)
+        return None
     except OSError as exc:
-        where = exc.filename or path
-        raise InstanceError(f"{what} at {path} can't be removed: Windows refused {where} ({exc.strerror or exc}). "
-                            f"If R.U.S.E. is running from it, close the game and try again; otherwise delete that "
-                            f"folder by hand, then try again.") from exc
+        refused = exc
+    target = _free(os.path.join(os.path.dirname(path), TRASH, os.path.basename(path)))
+    try:
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        os.replace(path, target)
+        return target
+    except OSError as exc:
+        where = refused.filename or path
+        raise InstanceError(f"{what} at {path} can't be removed or moved aside: Windows refused {where} "
+                            f"({refused.strerror or refused}){_who(refused.filename)}. If R.U.S.E. is running from "
+                            f"it, close the game and try again; otherwise restart Windows, or delete that folder by "
+                            f"hand, then try again.") from exc
+
+
+def _sweep(trash: str, src: str) -> None:
+    """Remove what the trash folder holds, as far as Windows lets it; the rest waits for the next time."""
+    if not os.path.isdir(trash):
+        return
+    for name in os.listdir(trash):
+        try:
+            _remove_tree(os.path.join(trash, name), src)
+        except OSError:
+            pass
+    try:
+        os.rmdir(trash)
+    except OSError:
+        pass
 
 
 def build_instance(src: str, dst: str, replace: dict | None = None,
@@ -112,8 +195,10 @@ def build_instance(src: str, dst: str, replace: dict | None = None,
     replace = {_norm(k): v for k, v in (replace or {}).items()}
     rename = {_norm(k): v for k, v in (rename or {}).items()}
     staging, old = dst + ".partial", dst + ".old"
-    _clear(staging, src, "A modded copy left half-built")  # a build that stopped halfway
-    _clear(old, src, "An old modded copy")  # before the long build, so a stuck one is said at once
+    refuse_if_running(dst)  # before the long build: a running game is said at once
+    _sweep(os.path.join(os.path.dirname(dst), TRASH), src)  # what earlier builds couldn't remove yet
+    _set_aside(staging, src, "A modded copy left half-built")  # a build that stopped halfway
+    _set_aside(old, src, "An old modded copy")
 
     counts = {"linked": 0, "copied": 0, "written": 0}
     seen = set()
@@ -169,12 +254,13 @@ def build_instance(src: str, dst: str, replace: dict | None = None,
                 _remove_tree(staging, src)
             except OSError:
                 pass
-            raise InstanceError(f"The modded copy at {dst} is in use, so it can't be replaced ({exc.strerror or exc}). "
-                                f"If R.U.S.E. is running from it, close the game and try again.") from exc
+            raise InstanceError(f"The modded copy at {dst} is in use, so it can't be replaced ({exc.strerror or exc})"
+                                f"{_who(exc.filename)}. If R.U.S.E. is running from it, close the game and try "
+                                f"again.") from exc
     os.replace(staging, dst)
     try:
-        if os.path.lexists(old):
-            _remove_tree(old, src)
-    except OSError:
-        counts["old copy left"] = 1  # the new copy is ready; the next build removes the old one, or says why not
+        if _set_aside(old, src, "An old modded copy"):
+            counts["old copy left"] = 1  # moved into the trash: the next build removes it
+    except InstanceError:
+        counts["old copy left"] = 1  # the new copy is ready; the next build moves the old one, or says why not
     return counts

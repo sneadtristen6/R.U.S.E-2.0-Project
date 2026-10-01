@@ -1884,6 +1884,9 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
         folder = self._mod_dir()
         if folder is None:
             raise StudioError("Pick or make a mod first.")
+        busy = self._jobs.get(getattr(self, "_test_job", None))
+        if busy is not None and busy.state == "running":  # one build at a time: two raced for the same copy
+            raise StudioError("A test is already being built: wait for it to finish.")
 
         game = self._game()
         instance = (self._instances or instances_dir(game)) / f"studio-{folder.name}" if game is not None else None
@@ -1899,6 +1902,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls):
 
         job = Job()
         self._jobs[job.id] = job
+        self._test_job = job.id
         where = "; ".join(look) if look else "your unit changes show in every game mode"
         return job.start(work, f"R.U.S.E. is starting from {instance}. To see your changes: {where}.",
                          plain=(BuildError, RndfError, OSError))

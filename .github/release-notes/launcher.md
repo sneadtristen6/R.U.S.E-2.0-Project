@@ -1,6 +1,10 @@
 **RUSE Launcher 0.2, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.2.10:** **Play** works every time: a modded copy Windows won't delete (a file an older version linked, a
+program still holding it) is moved aside into `RUSE-Instances\.trash` instead of stopping the game, and a game still
+running from the copy is named. Mods with new bridges never make ground units can't reach (it crashed the game).
+
 **0.2.9:** **Play** works when your game's files are marked read-only: it failed with "[WinError 5] Access is
 denied" once a modded copy was left half-built. If the game is still running from the modded copy, you're told to
 close it instead of getting a Windows error. Mods with new roads build their painted roads and bridges.

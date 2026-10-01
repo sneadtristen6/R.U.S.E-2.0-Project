@@ -797,10 +797,16 @@ async function follow(jobId, log, done) {
 }
 
 async function testInGame() {
-  if (!await checkMod()) { say(state.words.check_stop, "error"); return; }
   const button = $("test");
+  if (button.dataset.running === "1") return;  // one build at a time: a double click started two (2026-09-30)
   button.disabled = true;
   button.dataset.running = "1";
+  if (!await checkMod()) {
+    button.dataset.running = "0";
+    button.disabled = !state.mod;
+    say(state.words.check_stop, "error");
+    return;
+  }
   const log = $("test-log");
   log.textContent = "";
   $("test-panel").classList.remove("hidden");

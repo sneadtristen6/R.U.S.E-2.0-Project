@@ -638,6 +638,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         bridge_hide: dict = {}    # map pack name -> [(block index, item offset)]: old bridges to sink
         bridge_closed: dict = {}  # map pack name -> [(x, y, r)]: where they stood over water
         bridge_decks: dict = {}   # map pack name -> every deck a new road runs over (the painter leaves them)
+        bridge_roads: dict = {}   # map pack name -> the mods' road lines: a deck's approaches follow them (nav.Graph.open)
+        bridge_water: dict = {}   # map pack name -> where its water is (Water.at): no approach over it
         placed = scenery_edits(result.order, mods)
         road_edits = scenario_edits(result.order, mods, "roads")
         from .bridges import BridgeError, model_length, placed_spans, plan
@@ -717,6 +719,14 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 bridge_objects[name] = (objects, road_ids)
             if spans:
                 bridge_spans[name] = spans
+                bridge_roads[name] = [r.points for r in map_roads]
+                if wanted:
+                    bridge_water[name] = made.water.at
+                else:  # bridges placed by hand only
+                    from .bridges import Water
+                    from .tms import Tms
+                    ground = read_map("output\\highdef.tms")
+                    bridge_water[name] = Water(Tms(ground)).at if ground is not None else None
             if notes:
                 say(f"bridges: {name}, from {', '.join(ids)}")
                 for note in notes:
@@ -882,7 +892,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {note}")
                 for name, spans in bridge_spans.items():  # the bridges' decks opened to units, after the blocks
                     try:
-                        new, notes = apply_spans(read_data, name, spans, bridge_closed.get(name, []))
+                        new, notes = apply_spans(read_data, name, spans, bridge_closed.get(name, []), bridge_roads.get(name, []),
+                                                 blocks.get(name, ([], []))[0], bridge_water.get(name))
                     except (BridgeError, NavError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{name}: the bridges' movement can't be opened ({exc})"))
                         continue

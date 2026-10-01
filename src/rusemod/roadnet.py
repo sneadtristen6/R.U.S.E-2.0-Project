@@ -104,10 +104,12 @@ class RoadNet:
         self.tree = build_tree(self.points, self.links)
         return {"points": len(pts), "links": len(new_links), "joined": sum(e is not None for e in ends)}
 
-    def cut(self, zones: list[tuple[float, float, float]]) -> int:
+    def cut(self, zones: list[tuple[float, float, float]], renumbered: dict | None = None) -> int:
         """Take away the links that pass through `zones` (circles x, y, r: where a bridge that's gone stood) and the
-        points only they used; the other points are numbered again in their order, and the index is built again.
-        Returns how many links went."""
+        points only they used; the other points and links are numbered again in their order, and the index is built
+        again. `renumbered`, when given, is filled with {old link number: new, or None for a link that went}: the
+        movement graphs' crossings name road links by number (nav.Graph.renumber_roads). Returns how many links
+        went."""
         def through(link) -> bool:
             (ax, ay), (bx, by) = self.points[link[0]], self.points[link[1]]
             dx, dy = bx - ax, by - ay
@@ -118,6 +120,10 @@ class RoadNet:
                     return True
             return False
         goes = [through(link) for link in self.links]
+        if renumbered is not None:
+            renumbered.clear()
+            renumbered.update({old: new for new, old in enumerate(i for i, g in enumerate(goes) if not g)})
+            renumbered.update({i: None for i, g in enumerate(goes) if g})
         if not any(goes):
             return 0
         kept = [link for link, g in zip(self.links, goes) if not g]

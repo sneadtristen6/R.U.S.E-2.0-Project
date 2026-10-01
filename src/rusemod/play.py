@@ -69,6 +69,8 @@ class Starter:
         themselves say otherwise (MOD_FORMAT §10.6). A problem raises BuildError (or RndfError, OSError) with a
         message for the player, and nothing starts; so do .rmod mods that can't go together (the build refuses them
         before building anything, naming every clash: rusemod.rmod.clashes)."""
+        from .instance import refuse_if_running
+        refuse_if_running(str(instance))  # before anything is built: a game still running from the copy is said at once
         mods = [load_mod(Path(m)) for m in mod_folders]
         keep_order(mods)
         say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")
