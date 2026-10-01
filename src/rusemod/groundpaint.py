@@ -57,10 +57,26 @@ def _dims(store: Tmst, tile) -> tuple[int, int]:
     return _blocks(store, tile)[1:]
 
 
-def _tile_rect(store: Tmst, tile, bounds) -> tuple[float, float, float, float]:
+TILE_CELL = 327680.0  # map units a close tile store's cell is across: on 26 maps the ground mesh ends exactly on
+                      # that grid; on 6 (Alpha, Beta, DiplomatieTriangulaire, Gam_Ostfriesland, Gamma, Robert) it ends
+                      # 1,920 short of it, and the tiles keep the grid (the map's own roads line up with it there)
+
+
+def _cells(store: Tmst, bounds) -> tuple[float, float]:
+    """The map units a cell of `store`'s grid is across, x and y: the bounds over the grid, put on the game's grid
+    (TILE_CELL for the close store, twice it for the far one) when within 1% of it, as on every shipped map."""
     x0, y0, x1, y1 = bounds
+    out = []
+    for span, n in ((x1 - x0, store.grid_w), (y1 - y0, store.grid_h)):
+        cell, k = span / n, round(span / n / TILE_CELL)
+        out.append(k * TILE_CELL if k >= 1 and abs(cell - k * TILE_CELL) <= 0.01 * k * TILE_CELL else cell)
+    return tuple(out)
+
+
+def _tile_rect(store: Tmst, tile, bounds) -> tuple[float, float, float, float]:
+    x0, y0, _x1, _y1 = bounds
     ax0, ay0, ax1, ay1 = store.area(tile)
-    cw, ch = (x1 - x0) / store.grid_w, (y1 - y0) / store.grid_h
+    cw, ch = _cells(store, bounds)
     return x0 + ax0 * cw, y0 + ay0 * ch, x0 + ax1 * cw, y0 + ay1 * ch
 
 
@@ -83,9 +99,10 @@ def road_colour(store: Tmst, bounds, pieces: list[tuple], most: int = 40) -> tup
         return (150, 140, 120)
     step = max(1, len(pieces) // most)
     picks = [pieces[i] for i in range(0, len(pieces), step)][:most]
-    x0, y0, x1, y1 = bounds
+    x0, y0, _x1, _y1 = bounds
     side = 1 << (store.depth - 1)
-    tw, th = (x1 - x0) / (store.grid_w * side), (y1 - y0) / (store.grid_h * side)
+    cw, ch = _cells(store, bounds)
+    tw, th = cw / side, ch / side
     by_tile: dict = {}
     for p in picks:
         t = 0.5  # the Bézier's middle

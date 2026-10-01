@@ -32,6 +32,7 @@ their outline), and cutting the mesh finer.
 from __future__ import annotations
 
 import math
+import struct
 from dataclasses import dataclass, field
 
 from . import kdt_edit
@@ -274,6 +275,35 @@ def _area_of(stroke: Stroke) -> tuple[float, float, float]:
     return stroke.x, stroke.y, stroke.radius
 
 
+def _near_bridge_floors(read, strokes: list[Stroke], name: str) -> list[str]:
+    """A note for each height stroke that reaches the floor of one of the map's bridges (the objects-only ground,
+    rusemod.floors): a unit stands on the higher of the ground and that floor, and the floor keeps its height, so
+    lowering the ground there leaves the floor's end in the air (men step down at its edge), and raising it over the
+    deck buries it (units walk over the bank through the bridge)."""
+    from . import floors
+    try:
+        raw = read(floors.MEMBER)
+    except KeyError:  # (a pack without it)
+        raw = None
+    if raw is None or not strokes:
+        return []
+    try:
+        tris = floors.triangles(Kdt(raw))
+    except (ValueError, IndexError, struct.error):
+        return []
+    points = [(sum(p[0] for p in t) / 3, sum(p[1] for p in t) / 3) for t in tris]
+    out = []
+    for n, s in enumerate(strokes, start=1):
+        x, y, r = _area_of(s)
+        hit = next(((px, py) for px, py in points if (px - x) ** 2 + (py - y) ** 2 <= r * r), None)
+        if hit:
+            out.append(f"{name}: stroke {n} ({s.brush} at {s.x:g}, {s.y:g}) reaches a bridge's floor at "
+                       f"({hit[0]:.0f}, {hit[1]:.0f}), which keeps its height: units there stand on the floor's old "
+                       f"level (lower ground leaves its end in the air, higher ground buries it); shape the banks "
+                       f"clear of the bridge's ends")
+    return out
+
+
 def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=None) -> tuple[dict[str, bytes], list[str]]:
     """Apply `strokes`, in order, to a map pack's ground. `read(member path)` gives a member's bytes, or None when
     the pack hasn't got it. Height brushes come first, then the water brushes (rusemod.water); then the map's water
@@ -310,6 +340,7 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
             grid = HeightGrid(ref.height_grid(cols), b[0], b[1], b[3], b[4])
 
     area = _area(meshes, trees)
+    notes += _near_bridge_floors(read, strokes, name)
     # the gameplay ground leads; without it, every file is moved by the strokes themselves
     painted = [points["ground"]] if "ground" in points else list(points.values())
     for n, stroke in enumerate(strokes, start=1):
@@ -337,12 +368,12 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
 
     changed: dict[str, bytes] = {}
     counts = []
-    held_top = held_bottom = 0
+    held: dict[str, tuple[int, int]] = {}  # file -> points held at the top, at the bottom of its own height range
     moved_mesh = {}
     for key in ("highdef", "lowdef"):
         if key in meshes:
             moved, top, bottom = _commit_mesh(meshes[key], points[key])
-            held_top, held_bottom = held_top + top, held_bottom + bottom
+            held[LABELS[key]] = (top, bottom)
             counts.append(f"{LABELS[key]} {moved}")
             moved_mesh[key] = moved
     water_notes = apply_water(meshes, water_strokes)
@@ -367,16 +398,22 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
     for key in ("ground", "camera"):
         if key in trees:
             moved, top, bottom, by_sub = _commit_tree(trees[key], points[key], normal_at)
-            held_top, held_bottom = held_top + top, held_bottom + bottom
+            held[LABELS[key]] = (top, bottom)
             counts.append(f"{LABELS[key]} {moved}")
             if moved:
                 fitted.append(f"{name}: {LABELS[key]}: {_refit(trees[key], by_sub)}")
                 changed[FILES[key]] = trees[key].to_bytes()
     notes.insert(0, f"{name}: {len(strokes) + len(water_strokes)} stroke(s); points moved: " + ", ".join(counts))
     notes[1:1] = water_notes + fitted
-    if held_top:
-        notes.append(f"{name}: {held_top} point(s) reached the top of the map's height range and stop there "
-                     f"(raising the ground above the map's highest point comes later)")
-    if held_bottom:
-        notes.append(f"{name}: {held_bottom} point(s) reached the bottom of the map's height range and stop there")
+    # each file stops heights at its own range, and the ranges differ (Alpha's far mesh tops out 218 under its
+    # close-up mesh; Beta's camera floor goes down to -303, its ground to -2,452): say which files held, since the
+    # others went on (a far mesh flat-topped under a peak, a camera floor over a pit)
+    for side, k in (("top", 0), ("bottom", 1)):
+        which = {label: v[k] for label, v in held.items() if v[k]}
+        if which:
+            what = ", ".join(f"{label} {n}" for label, n in which.items())
+            others = [label for label in held if label not in which]
+            notes.append(f"{name}: point(s) reached the {side} of a file's height range and stop there ({what})"
+                         + (f", while the {' and the '.join(others)} went on: keep the stroke within the map's "
+                            f"heights" if others else " (going past the map's heights comes later)"))
     return changed, notes

@@ -182,6 +182,20 @@ class Together(unittest.TestCase):
         d2 = (x - 1500.0) ** 2 + (y - 1500.0) ** 2
         return 400.0 * (1 - d2 / 360000.0) ** 2 if d2 < 360000.0 else 0.0
 
+    def test_a_stroke_at_a_bridges_floor_is_said(self):
+        """A unit stands on the higher of the ground and a bridge's floor, and the floor keeps its height: a stroke
+        that reaches a bridge's floor gets a note (lower ground leaves the floor's end in the air)."""
+        from rusemod import floors
+        from rusemod.floors import Deck, rebuild
+        from test_floors import strip
+        from test_kdt import make_valid_kdt
+        files = dict(self.files)
+        files[floors.MEMBER] = rebuild(Kdt(make_valid_kdt()), strip(Deck.of(1300.0, 1500.0, 1700.0, 1500.0), 0.0, 0.0))
+        _changed, notes = edit_map(reader(files), [self.hill], "Test")
+        self.assertTrue(any("stroke 1 (hill at 1500, 1500) reaches a bridge's floor" in n for n in notes), notes)
+        _changed, notes = edit_map(reader(files), [Stroke("hill", 2600.0, 2600.0, 200.0, height=400.0)], "Test")
+        self.assertFalse(any("bridge's floor" in n for n in notes), notes)
+
     def test_a_hill_raises_all_four_files_together(self):
         changed, notes = edit_map(reader(self.files), [self.hill], "Test")
         self.assertEqual(set(changed), set(FILES.values()))
@@ -306,7 +320,9 @@ class Together(unittest.TestCase):
         changed, notes = edit_map(reader(self.files), [Stroke("hill", 1500.0, 1500.0, 600.0, height=1e6)])
         hd = Tms(changed[FILES["highdef"]])
         self.assertEqual(max(p[2] for c in hd.cells for p in c.positions()), Q_MAX)
-        self.assertTrue(any("reached the top of the map's height range" in n for n in notes), notes)
+        held = [n for n in notes if "reached the top of a file's height range" in n]
+        self.assertEqual(len(held), 1, notes)
+        self.assertIn("close-up mesh", held[0])  # which files held, by name
 
     def test_moved_ground_points_take_the_meshs_normals(self):
         changed, _ = edit_map(reader(self.files), [self.hill])

@@ -35,6 +35,19 @@ def near(a, b, tol=24):
     return all(abs(x - y) <= tol for x, y in zip(a, b))
 
 
+class TheTilesGrid(unittest.TestCase):
+    def test_tiles_keep_the_games_grid_where_the_ground_ends_short_of_it(self):
+        """On 6 maps (Alpha, Beta, ...) the ground mesh ends at 1,964,160 while the tiles' grid is 6 cells of
+        327,680: the paint goes by the grid (the map's own roads line up with it), not by the mesh's bounds."""
+        from types import SimpleNamespace
+        from rusemod.groundpaint import TILE_CELL, _cells
+        close, far = SimpleNamespace(grid_w=6, grid_h=6), SimpleNamespace(grid_w=3, grid_h=3)
+        self.assertEqual(_cells(close, (0.0, 0.0, 1964160.0, 1964160.0)), (TILE_CELL, TILE_CELL))
+        self.assertEqual(_cells(far, (0.0, 0.0, 1964160.0, 1964160.0)), (2 * TILE_CELL, 2 * TILE_CELL))
+        self.assertEqual(_cells(close, (0.0, 0.0, 6 * TILE_CELL, 6 * TILE_CELL)), (TILE_CELL, TILE_CELL))
+        self.assertEqual(_cells(close, (0.0, 0.0, 6000.0, 3000.0)), (1000.0, 500.0))  # not near the grid: the bounds
+
+
 class Painting(unittest.TestCase):
     def test_a_line_on_every_level_it_crosses(self):
         s = store()

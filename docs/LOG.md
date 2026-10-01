@@ -1070,3 +1070,16 @@ objects (buildings, bridges, trees):
   detail) and variation (turned by an angle the Studio doesn't show); it takes neither now.
 - Not changed: a block made the other way (`_add_block`) could be drawn twice in a cell that wholly holds it; no
   shipped map uses that way (all 32 list blocks for far view), and the game's own blocks have the same layout.
+
+**The ground audit's last fixes (2026-10-01).**
+- **Painted roads on 6 maps.** On Alpha, Beta, DiplomatieTriangulaire, Gam_Ostfriesland, Gamma and Robert the
+  ground mesh ends 1,920 short of the paint tiles' grid (6 cells of 327,680; the other 26 maps end exactly on it),
+  and the painter spread the tiles over the mesh's bounds, so a painted road drifted up to 7 m off its stickers near
+  the far edge. The tiles now keep the grid (the maps' own roads line up with it).
+- **A stroke at a bridge's floor** gets a note: a unit stands on the higher of the ground and the floor, and the
+  floor keeps its height (lowered ground leaves its end in the air, raised ground buries it).
+- **Heights past a file's range:** the files' ranges differ (Alpha's far mesh tops out 218 under its close-up mesh),
+  so the note now names the files that stopped and the ones that went on.
+- Already there: a stroke that moves no ground point is named. Wrecks no longer count as bridges (the Dutch-bridge
+  fix). Not done: an old bridge's baked strip in `staticmeshes.spkpc` may stay over the water when the bridge is
+  replaced (plausible); T9 looks for it in the game.
