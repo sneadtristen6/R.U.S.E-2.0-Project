@@ -1058,6 +1058,31 @@ Both go to §11 (RUSE 2.0 design notes) when they're taken up; until then this i
 3. **A map from scratch** (a heightmap, any size): everything in 2, plus building the meshes, trees of the `.kdt`
    and texture tiles from nothing (M8). Only after 2 works.
 
+**A blank canvas (research, 2026-10-01, night; the owner: "I want to make a new map", a blank one, and "like Cities:
+Skylines, you start with that little notch... if that's how you have to do a map, that's fine").** Read from the game:
+- **Sizes:** every map is a grid of cells of 327,680 map units (1.28 km): highdef 4×2 (Hurtgen) to 12×8 (D-Day), lowdef
+  half as many cells of twice the size. Blitz is 4×4 (5.1 km). A map's settings name its size in a handful of values:
+  `TTerrainGeometryLoader.NbCaseX/Y` (both loaders), `TWaterOnGPU.NbHighDefCaseX/Y` and `TCurrentMapInfo.NbCaseX/Y`
+  (twice the cells), `MapSizeX/Y` and `AreaMaxX/Y` (map units), camera ranges; everything else in the 13 settings
+  files is the theatre's look (lighting, water shading, sky, ambient sound).
+- **Every pack holds the same 55 members** (ground meshes, texture pyramids, three `.kdt` trees, scenery, road model,
+  sight layer, water-simulation pictures, sky cube, two overview PNGs); the map's other files are `mapinfo.win` (road
+  network, two movement graphs, cover grid, AI grid), its scenarios (starting points, the **sectors**: Blitz's skirmish
+  has 9 zone polygons), each scenario's bluff-zone `.kdt` (one subtree, 94 triangles on Blitz), camera paths, the
+  minimaps and the theatre's packs in ZZ_Win.dat.
+- **The plan, the owner's "starting tile":** blank canvases at the sizes the game ships (4×4 first), each made from a
+  shipped map of that size and wiped: ground flat (the edits we do), water taken out (the mesh's under-water list
+  rebuilt: to build), one ground texture (plain tiles, proven), an empty scenery file (to build), no roads (an empty
+  network and road model: to build; does a map with no roads play?), movement graphs made fresh, open everywhere (to
+  build from the graph writer), blank cover, AI and sight grids (formats known), sectors drawn new with their bluff
+  tree (a tool to build; the tree writer exists for one subtree), starting points (the tool exists), registration
+  (`rusemod.newmap`). The theatre's look (sky, light, sound, HQ models) comes with the starting map.
+- **Any size** (e.g. 5×3) needs more from nothing: the ground mesh (its skirt and patch tables), the pyramids, the
+  ground `.kdt` in many subtrees with a main tree over them, and every grid at the new size. Only if a size the game
+  doesn't ship is wanted.
+- **In-game unknowns** (one copy): a map with no roads at all (supply trucks), fresh movement graphs, new sectors
+  (ruses apply there), a two-PC game.
+
 **The Studio, for level 2:** "New map…" → pick the map to start from (its theatre: the trees, buildings and ground
 textures available) and a name → a blank copy (flattened) opens in the map view → brushes, water, scenery,
 scenario → "Test in game" plays it as a skirmish → Export shares it as one `.rusemod`, which carries the new pack.

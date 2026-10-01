@@ -7,7 +7,7 @@
 
 1. **Maps** tab, pick the map on the left (the **«** button folds the list away for more room).
 2. Look around: drag to turn, right-drag to move, the wheel to zoom (keys: [[Map view keys|Map-View-Keys]]).
-3. In the bar along the bottom, click **Ground**. Its tools open above the bar.
+3. In the bar along the bottom, click **Ground & water**. Its tools open above the bar, the **Ground** tab first.
 
 ## The tools
 
@@ -26,7 +26,7 @@
 
 ## Water
 
-Click **Water** in the bar:
+Click the **Water** tab (in **Ground & water**):
 
 - **Water** floods the ground below a level: the height where you start dragging, plus Strength. Drag it along a
   valley for a river, or into a dip for a lake.

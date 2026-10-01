@@ -9,7 +9,8 @@ Tick **Roads** at the top of the map: the map's own roads show in gold, on the g
 
 ## Draw a new road
 
-1. In the bar along the bottom, click **Roads**. The map's roads show in gold, your new ones in blue.
+1. In the bar along the bottom, click **Roads & bridges** (its **Roads** tab opens). The map's roads show in
+   gold, your new ones in blue.
 2. Pick a tool:
 
 | Tool | How |

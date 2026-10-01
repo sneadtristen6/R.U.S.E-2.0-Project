@@ -6,9 +6,9 @@
 
 <img src="docs/images/bridge-infantry-at-deck-height.jpg" alt="R.U.S.E. in game: two infantry squads and a supply truck crossing a new bridge, every man standing at the deck's height" width="800">
 
-[![Download RUSE Launcher](https://img.shields.io/badge/Download-RUSE%20Launcher-b8913a?style=for-the-badge)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)
+[![Download RUSE Launcher](https://img.shields.io/badge/Download-RUSE%20Launcher-1f6fc4?style=for-the-badge)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)
 &nbsp;&nbsp;
-[![Download RUSE Studio](https://img.shields.io/badge/Download-RUSE%20Studio-b8913a?style=for-the-badge)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio)
+[![Download RUSE Studio](https://img.shields.io/badge/Download-RUSE%20Studio-1f6fc4?style=for-the-badge)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio)
 
 <sub>Windows. Needs R.U.S.E. on Steam. Never touches your Steam install.</sub>
 
@@ -129,6 +129,8 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
   back game files another mod manager changed (Launcher 0.3.0, Studio 0.8.0).
 - Get new versions without downloading by hand: the launcher offers them, checks the file and installs it (from
   0.2.0 on).
+- **Mod sets** and the **Mod library** in two tabs, each with the window's whole height: the whole library in reach,
+  with a search and a count (Launcher 0.4.0).
 
 **Modders, with RUSE Studio**
 
@@ -150,13 +152,15 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - **Say where units can go:** the map view shows it (red: no unit, yellow: infantry only), the Block brushes close
   ground to every unit, to infantry or to vehicles, and placed buildings stop units (Solid). Proven in the game
   (2026-09-30, Studio 0.7.0).
-- The map tools sit in a bar along the bottom, Cities: Skylines style, in R.U.S.E.'s own HUD look (Studio 0.7.0).
+- The map tools sit in a bar along the bottom, Cities: Skylines style (Studio 0.7.0), grouped since 0.9.0: Ground &
+  water, Cover & movement, Roads & bridges, Buildings, Props & trees, Erase, Scenario and Check, a tab for each tool
+  in a group.
 - **Draw roads**, Cities: Skylines style (straight, curved, freeform; ends snap onto roads; their length shown as
   you draw): supply routes use them, they're painted on the ground, and a road over water gets a bridge units drive
   across, all in the game (2026-09-30, Studio 0.7.2 to 0.7.6). Tanks, infantry and supply trucks cross a new
   bridge on its deck, and infantry follow new roads (2026-10-01, Studio 0.8.0).
-- **Clear woods and props** (`[[erase]]` in scenery.toml): units drive into a cleared wood and infantry there are no
-  longer hidden; a **Bridges dock** places a bridge by hand; **Check this map** lists what would go wrong before you
+- **Clear woods and props** with the **Erase** tool (Studio 0.9.0; `[[erase]]` in scenery.toml): units drive into a
+  cleared wood and infantry there are no longer hidden; a **Bridges dock** places a bridge by hand; **Check this map** lists what would go wrong before you
   test; Open and Forest brushes (2026-10-01, Studio 0.8.0).
 - **More players on a map, up to 8:** a Players count and an Add starting point tool (D-Day as a 4v4; built, the
   in-game check is next).
@@ -275,7 +279,7 @@ run, **Artifacts** (needs a GitHub login; the files expire after 90 days). More 
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.3.0) &middot; **Studio** for modders, a preview (latest: 0.8.0) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.0) &middot; **Studio** for modders, a preview (latest: 0.9.0) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -291,6 +295,10 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
 
 <details>
 <summary><b>Current stage (2026-10-01)</b></summary>
+
+- **Studio 0.9.0 and Launcher 0.4.0** (2026-10-01): both apps in R.U.S.E.'s blues with new logos (a fighter in the
+  clouds for the launcher, the war-room table for the Studio), the launcher's sidebar in two tabs, the Studio's map
+  tools grouped, and its Erase tool.
 
 - **Studio 0.8.0 and Launcher 0.3.0** (2026-10-01): the audit of every file the build writes against what the game
   does with it (a mod that would break in the game is refused, with why), units following new roads, woods and props

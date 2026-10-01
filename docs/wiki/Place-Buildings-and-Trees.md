@@ -5,7 +5,7 @@
 
 ## Place
 
-1. In the bar, click **Buildings**, **Props** or **Trees**.
+1. In the bar, click **Buildings**, or **Props & trees** and then its **Props** or **Trees** tab.
 2. Pick a type from the list (type in the search box to narrow it). The list holds this map's own types: the game
    only takes a type a map already uses.
 3. Choose how a click places:
@@ -29,5 +29,17 @@ Placed buildings don't hide units by themselves: open **Cover**, pick **Town** a
 ## Undo
 
 **Undo** (or **Ctrl+Z**) takes back the last object, or the whole area or line.
+
+## Erase the map's own trees and props
+
+1. In the bar, click **Erase** (Studio 0.9.0).
+2. Pick what it takes: **trees**, **props**, **buildings** (any mix). Each circle keeps what was picked when you
+   painted it.
+3. Drag over the map: red circles mark what goes, and what they cover is tinted red. **Size** sets the circles;
+   the tray counts what they'll take when the mod is built.
+
+Where trees go, the ground opens to every unit and loses its forest cover (proven in the game: tanks drive into a
+cleared wood, infantry there aren't hidden). Buildings are only taken out of sight for now: units still go around
+where they stood. **Undo** (**Ctrl+Z**) takes back the last drag, **Start over** removes every circle on the map.
 
 **Next:** [[Edit a scenario|Edit-a-Scenario]]
