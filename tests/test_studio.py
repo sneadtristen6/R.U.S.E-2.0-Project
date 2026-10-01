@@ -1214,6 +1214,42 @@ class CleanBackup(unittest.TestCase):
         self.assertEqual(self.api.steam_verify(), {"opened": "steam://validate/21970"})
         self.assertEqual(self.urls, ["steam://validate/21970"])  # through the Studio's own way of opening links
 
+    def test_the_installers_ask_makes_it_on_the_first_start(self):
+        """The installer's task "Keep a clean copy of my game's files" leaves `make-backup` in the platform folder:
+        the window makes the backup on its next start (backup_requested), and the mark goes once one is made."""
+        from rusemod.backup import REQUESTED
+        self.assertEqual(self.api.backup_requested(), {"make": False})  # nothing asked
+        mark = Path(self.tmp.name) / "home" / REQUESTED
+        mark.parent.mkdir(parents=True, exist_ok=True)
+        mark.write_text("Asked for in the installer.", encoding="utf-8")
+        self.assertEqual(self.api.backup_requested(), {"make": True})
+        self.assertTrue(mark.is_file())  # kept until the backup exists
+        made = self.wait(self.api.backup_make()["job"])
+        self.assertEqual(made["state"], "done", made)
+        self.assertFalse(mark.exists())
+        self.assertEqual(self.api.backup_requested(), {"make": False})
+        mark.write_text("Asked again by the other app's installer.", encoding="utf-8")
+        self.assertEqual(self.api.backup_requested(), {"make": False})  # the build has its backup already
+        self.assertFalse(mark.exists())
+
+    def test_the_installer_offers_it_with_why(self):
+        """Beside the desktop icon, in every installer language, with why under the list; asked only when the player
+        saw the question (never on an app's own silent update)."""
+        script = (Path(__file__).parents[1] / "installers" / "installer.iss").read_text(encoding="utf-8-sig")
+        self.assertIn('Name: "gamebackup"; Description: "{cm:BackupTask}"; GroupDescription: "{cm:BackupGroup}"', script)
+        languages = re.findall(r'^Name: "(\w+)"; MessagesFile:', script, re.M)
+        self.assertEqual(len(languages), 9)
+        for lang in languages:
+            for key in ("BackupGroup", "BackupTask", "BackupWhy"):
+                self.assertRegex(script, rf"(?m)^{lang}\.{key}=\S")
+        self.assertIn("CustomMessage('BackupWhy')", script)
+        self.assertIn("(not WizardSilent) and WizardIsTaskSelected('gamebackup')", script)
+        from rusemod import home
+        from rusemod.backup import REQUESTED
+        self.assertIn("ExpandConstant('{localappdata}\\RUSE Mod Platform')", script)  # the apps' own folder
+        self.assertIn('/ "RUSE Mod Platform"', Path(home.__file__).read_text(encoding="utf-8"))
+        self.assertIn(f"\\{REQUESTED}'", script)
+
     def test_a_test_and_a_restore_wait_for_each_other(self):
         from rusemod.backup import BackupError
         from rusemod.webui import Job
@@ -1250,6 +1286,24 @@ class CleanBackup(unittest.TestCase):
         self.assertEqual(j["state"], "failed")
         self.assertIn("A modded copy of the game is being built", j["message"])
         self.assertEqual([p.name for p in folder.iterdir()], ["24687178"])  # nothing left behind
+
+
+class ZonesOnTheGround(unittest.TestCase):
+    def test_a_zone_follows_hills_and_pits(self):
+        """A scenario's zones are drawn as triangles split to about a ground cell and a half, each corner on the
+        ground: drawn from the outline alone, a zone was a flat sheet a hill painted inside it poked through (the
+        owner's D-Day hill, 2026-10-01). The split itself was checked in the Studio's page: every edge under the
+        step, the area and the outline kept."""
+        maps = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "maps.js").read_text(encoding="utf-8")
+        draw = maps[maps.index("function drawScenario()"):]
+        draw = draw[:draw.index("\n}\n")]
+        self.assertIn("const step = 1.5 * Math.max(grid.sx, grid.sy);", draw)
+        self.assertIn("drapeZone(z.points, z.triangles, step)", draw)
+        self.assertIn("g.setIndex(tris);", draw)
+        self.assertNotIn("g.setIndex(z.triangles)", draw)
+        drape = maps[maps.index("function drapeZone("):]
+        drape = drape[:drape.index("\n}\n")]
+        self.assertIn("mid.get(key)", drape)  # an edge's middle made once: no cracks between two triangles
 
 
 class Labels(unittest.TestCase):

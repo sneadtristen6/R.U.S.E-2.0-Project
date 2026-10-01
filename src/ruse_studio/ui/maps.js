@@ -1186,6 +1186,32 @@ function mapLabel(text, colour, size) {
   return sprite;
 }
 
+// A zone's triangles split until no edge is longer than `step`, each new corner a point the caller sets on the
+// ground. Drawn from its outline alone, a zone was a flat sheet between its corners: a hill painted inside it poked
+// through the sheet, and corners on its slope tilted the sheet like a tent (the owner's D-Day hill, 2026-10-01).
+// Returns {xy: the points (x, y pairs: the outline's first, then the new ones), tris: their triangles}.
+function drapeZone(points, triangles, step) {
+  const xy = Array.from(points), tris = [], mid = new Map();
+  const half = (a, b) => {  // an edge's middle, made once, so the two triangles along it share it
+    const key = a < b ? `${a},${b}` : `${b},${a}`;
+    let m = mid.get(key);
+    if (m === undefined) {
+      m = xy.length / 2;
+      xy.push((xy[2 * a] + xy[2 * b]) / 2, (xy[2 * a + 1] + xy[2 * b + 1]) / 2);
+      mid.set(key, m);
+    }
+    return m;
+  };
+  const long = (a, b) => Math.hypot(xy[2 * a] - xy[2 * b], xy[2 * a + 1] - xy[2 * b + 1]) > step;
+  const split = (a, b, c, depth) => {
+    if (depth >= 8 || !(long(a, b) || long(b, c) || long(c, a))) { tris.push(a, b, c); return; }
+    const ab = half(a, b), bc = half(b, c), ca = half(c, a);
+    split(a, ab, ca, depth + 1); split(ab, b, bc, depth + 1); split(ca, bc, c, depth + 1); split(ab, bc, ca, depth + 1);
+  };
+  for (let i = 0; i + 2 < triangles.length; i += 3) split(triangles[i], triangles[i + 1], triangles[i + 2], 0);
+  return { xy, tris };
+}
+
 // Everything the picked scenario puts on the map, on the ground as it is now (strokes too).
 function drawScenario() {
   clearScenario();
@@ -1193,15 +1219,16 @@ function drawScenario() {
   if (!gl || !mv.edit || !s) { if (gl) gl.draw(); return; }
   const { THREE } = gl, grid = makeGrid(mv.edit), group = new THREE.Group(), size = mv.size || 1000;
   const lift = size * 0.0015, at = (x, y, up = 0) => new THREE.Vector3(x * SCALE, groundAt(grid, x, y) * SCALE + lift + up, y * SCALE);
+  const step = 1.5 * Math.max(grid.sx, grid.sy);  // about a ground cell and a half: the zone follows hills and pits
   s.zones.forEach((z, k) => {  // a zone: its own triangles, see-through, in a colour of its own
-    const n = z.points.length / 2, pos = new Float32Array(n * 3);
+    const { xy, tris } = drapeZone(z.points, z.triangles, step), n = xy.length / 2, pos = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
-      const v = at(z.points[2 * i], z.points[2 * i + 1]);
+      const v = at(xy[2 * i], xy[2 * i + 1]);
       pos[3 * i] = v.x; pos[3 * i + 1] = v.y; pos[3 * i + 2] = v.z;
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    g.setIndex(z.triangles);
+    g.setIndex(tris);
     const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL((k * 0.137) % 1, 0.7, 0.55),
       transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
     mesh.userData.label = `${mv.words.scen_zone} ${k + 1} · ${z.name}`;

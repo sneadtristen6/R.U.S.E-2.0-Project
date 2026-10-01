@@ -1166,7 +1166,20 @@ async function start() {
   await setLanguage(state.lang);
   await refresh();
   checkUpdate();
+  await firstBackup();
   openWelcome();  // the first run: "Choose your mods"
+}
+
+// The installer's "Keep a clean copy of my game's files" (rusemod.backup.BackupCalls.backup_requested): made on this
+// start, in Settings, where its help says why; the first run's "Choose your mods" opens over it as it runs
+async function firstBackup() {
+  let ask;
+  try { ask = await api().backup_requested(); } catch { return; }  // an older back end
+  if (!ask || !ask.make) return;
+  state.settings = true;
+  render();
+  await loadBackup();
+  makeBackup();
 }
 
 // --- a newer release (rusemod/update.py): offered in the header; Update downloads it, checks it and installs it,

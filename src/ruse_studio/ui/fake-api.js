@@ -1,7 +1,8 @@
 // A made-up StudioApi, for working on the screens in a normal browser: open index.html?fake
 // (?fake=noindex shows the "no index yet" state, ?fake=nomod the Studio before any mod is picked, ?fake=notfound no
 // game found, ?fake=testfails a Test in game that fails, with its Troubleshoot link; ?fake=backup, ?fake=oldbackup,
-// ?fake=nospace and ?fake=running the clean game backup's states, in Settings). Only English, French
+// ?fake=nospace and ?fake=running the clean game backup's states, in Settings; ?fake=firstbackup the installer's
+// "Keep a clean copy" ask, made on the first start). Only English, French
 // and Chinese words are included here; the real Studio has all ten languages. It does nothing in the real Studio window.
 "use strict";
 
@@ -797,6 +798,7 @@
   window.pywebview = {
     api: {
       backup_status: async () => backupStatus(),
+      backup_requested: async () => ({ make: mode === "firstbackup" && !backups.some((b) => b.matches) }),  // the installer asked
       backup_make: async (replace) => {
         if (backups.some((b) => b.matches) && !replace) throw new Error("There's already a backup of this build.");
         if (mode === "nospace") {

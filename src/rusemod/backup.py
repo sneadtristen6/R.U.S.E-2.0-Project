@@ -69,6 +69,7 @@ NAME_SURROGATE = 0x20000000     # a reparse tag's bit for a point that names ano
 NOT_SAME_DEVICE = 17            # Windows' error for a move to another drive
 DEVICE = re.compile(r"(con|prn|aux|nul|com\d|lpt\d)(\..*)?", re.IGNORECASE)  # names Windows keeps for devices
 SHA256 = re.compile(r"[0-9a-f]{64}")
+REQUESTED = "make-backup"       # in the platform folder (rusemod.home): the installer's "Keep a clean copy" task
 
 
 class BackupError(OSError):
@@ -855,9 +856,9 @@ def _percent(say, prefix: str = ""):
 
 class BackupCalls:
     """The window API's clean-backup calls, for both apps (a mixin beside rusemod.update.UpdateCalls: the API has
-    `_jobs` and `_backups`, where backups go (None: RUSE-Backup on the game's drive), and gives `_backup_game()` (the
-    game folder, or None), `_backup_open_url(url)` and `_building_copy()`: what is building a modded copy from the game
-    right now (a Play, a Test in game), said as a sentence, or "").
+    `_jobs`, `_home` (the platform folder) and `_backups`, where backups go (None: RUSE-Backup on the game's drive),
+    and gives `_backup_game()` (the game folder, or None), `_backup_open_url(url)` and `_building_copy()`: what is
+    building a modded copy from the game right now (a Play, a Test in game), said as a sentence, or "").
 
     Making, checking and restoring run as jobs (one at a time; across the two apps, rusemod.backup._busy); a job's
     lines are its progress ("37%"; a restore's check comes first, as "check 37%"), and what it found or did is the
@@ -949,8 +950,28 @@ class BackupCalls:
 
         def work(say):
             made = make(game, dest, _percent(say), replace=bool(replace))
+            self._backup_asked().unlink(missing_ok=True)  # the installer's ask, done
             return made | {"size_gb": gb(made["size"])}
         return self._backup_start("make", work, "The backup is made.")
+
+    def _backup_asked(self) -> Path:
+        return Path(self._home) / REQUESTED
+
+    def backup_requested(self) -> dict:
+        """{"make": True} when the installer's task "Keep a clean copy of my game's files" was ticked (it leaves
+        `make-backup` in the platform folder), the game is found and its build has no backup yet: the window then
+        makes it on this start. The mark stays until a backup of the build exists (made now, or already there), so
+        a start without the game asks again once it's found."""
+        mark = self._backup_asked()
+        if not mark.is_file():
+            return {"make": False}
+        game = self._backup_game()
+        if game is None:
+            return {"make": False}
+        if (backup_path(self._backup_folder(game), build_of(game)) / MANIFEST).is_file():
+            mark.unlink(missing_ok=True)
+            return {"make": False}
+        return {"make": not self._backup_busy()}
 
     def backup_check(self, deep: bool = False) -> dict:
         """Check the game's files against its backup, in the background (`deep`: every byte). Returns {'job': id}; the
