@@ -1,5 +1,10 @@
-**RUSE Launcher 0.3, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
+**RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
+
+**0.4.0:** a new look: R.U.S.E.'s blues instead of black and gold, and a new logo: a fighter climbing through the
+clouds. The sidebar has two tabs, **Mod sets** and **Mod library**, each with the whole height, so your whole library
+can be reached (half of it was hidden behind the scrollbar), with a search and a count. The installer offers a
+**clean game backup** beside the desktop shortcut, and says why.
 
 **0.3.0:** **Supported mods:** the launcher shows our mod list
 ([sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods)); tick the ones you want and they're

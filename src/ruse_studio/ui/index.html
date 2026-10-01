@@ -104,12 +104,15 @@
         <div id="map-help" class="muted small"></div>
         <div id="map-keys" class="muted small map-keys"></div>
       </div>
-      <!-- the tools along the bottom, by kind (maps.js DOCK), as Cities: Skylines does it: a bar of kinds, and above
-           it the picked kind's tray. Brush strokes are saved in the current mod's maps/<map>/terrain.toml, placed
+      <!-- the tools along the bottom, by kind (maps.js DOCK, DOCK_GROUPS), as Cities: Skylines does it: a bar of kinds
+           (those that go together on one tile), and above it the picked kind's tray. Brush strokes are saved in the current mod's maps/<map>/terrain.toml, placed
            objects in scenery.toml, scenario edits in scenario.toml. -->
       <div id="map-dock" class="map-dock hidden">
         <div id="dock-tray" class="dock-tray hidden">
-          <div class="tray-head"><span id="tray-title" class="tray-title"></span> <span id="tray-tip" class="muted small"></span></div>
+          <!-- a tile for two kinds (maps.js DOCK_GROUPS) shows a tab for each beside its name -->
+          <div class="tray-head"><span id="tray-title" class="tray-title"></span>
+            <div id="tray-tabs" class="tray-tabs" role="tablist"></div>
+            <span id="tray-tip" class="muted small"></span></div>
           <div id="tray-brush" class="tray-body hidden">
             <div id="brush-list" class="tool-tiles" role="group"></div>
             <div class="tray-side">

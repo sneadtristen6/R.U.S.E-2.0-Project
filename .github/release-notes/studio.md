@@ -1,6 +1,18 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.0:** a new look, a shorter toolbar, and the Erase tool.
+- **A new look:** R.U.S.E.'s blues instead of black and gold, and a new logo: the war-room table.
+- **The map editor's toolbar is shorter.** Tools that go together share one tile, with a tab for each: Ground &
+  water, Cover & movement, Roads & bridges, Buildings, Props & trees, then Erase, Scenario and Check. A tile opens at
+  the tab you used last.
+- **Erase tool:** drag over the map's own trees and props (buildings too, if you pick them) and they're gone when the
+  mod is built. The red circles are saved in the mod, what they cover is tinted red, and the tray counts what they'll
+  take. Where trees go, the ground opens to every unit and loses its forest cover. Erasing a map's own buildings,
+  roads, shrubs and rocks properly comes next.
+- **The installer offers a clean game backup** beside the desktop shortcut, and says why: with it, the troubleshooter
+  can put back anything another mod manager changed.
+
 **0.8.0:** the map editor grows up: new brushes and docks, bridges units really cross, woods you can clear, and a
 build that checks the game's rules so what you make works the first time. Plus a troubleshooter and a clean game
 backup.

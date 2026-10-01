@@ -604,11 +604,13 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Now (updated 2026-10-01, evening): start here.** The owner's order (2026-10-01): **the road fix, its test, the
-audit, the release, then the players' suggestions.** All done up to the release: **Studio 0.8.0 and Launcher 0.3.0
-are out** (2026-10-01, after the owner's in-game tests, TESTS.md batches 1-3). Next (steps 5-9 below): new roads
-drawn up close, then units from another nation that work, then the community's Total War research fix, the Erase
-tool and new maps in the menus.
+**Now (updated 2026-10-01, night): start here.** **Studio 0.9.0 and Launcher 0.4.0 are built on the branch `next`,
+waiting for the owner's in-game test (TESTS.md batch 4) before anything is pushed** (owner: "test before upload to
+github"). In them: both apps in R.U.S.E.'s blues with the owner's artwork as logos; the launcher's sidebar in two tabs
+(the whole library reachable); the Studio's toolbar in groups (Ground & water, Cover & movement, Roads & bridges,
+Buildings, Props & trees, Erase, Scenario, Check); the Erase tool; and, if batch 4 passes, new roads drawn up close
+(the map's road model, step 5), units from another nation (step 6) and new maps in BATTLES (step 8). After the
+release: steps 14-17 below, the owner's next asks.
 
 Out in 0.8.0 / 0.3.0: the troubleshooter and the clean-game backup in both apps; every unit flag explained; square
 cover; the road fix and all the audit's fixes (LOG.md, 2026-10-01); units following new roads; the mod list at
@@ -647,7 +649,12 @@ don't hide in; placed objects on the ground at any size; cover painted in place 
 the test spots beside the player's HQ with a top-down map):
 4. **Test batches** (done 2026-10-01, TESTS.md batches 1-3): what failed was fixed and checked again. T9 (a road over
    an old bridge) and T14 (D-Day for 8 players: the lobby) ride along in the next batch.
-5. **New roads drawn up close (T12), first.** The release's one known issue, and the owner's most repeated report.
+5. **New roads drawn up close (T12), first. Built 2026-10-01 (night), in-game test in batch 4.** Up close the game
+   doesn't draw the scenery's road pieces at all: it draws the map's **road model** (`output\staticmeshes.spkpc`,
+   model `road`, FORMATS.md), made from them by the map's tools. `rusemod.roadstrips` adds a new road to it as
+   strips in the map's own look (all 28 maps that have one rebuild byte for byte). The history below is why the
+   earlier fixes changed nothing.
+   The release's one known issue, and the owner's most repeated report.
    The build already marks the new blocks and the path to them as holding road pieces, and a simulation of the game's
    walk reaches every piece, yet the game still drops a new road near the camera. Steps:
    1. find what the close view asks of a road piece beyond the scenery tree (how the game draws it, first);
@@ -657,7 +664,9 @@ the test spots beside the player's HQ with a top-down map):
    4. a guard test that simulates the close-up road pass after every build, then one test batch.
    Asked DomesticNukes too (his scenery notes; the shared repo's issue #11).
 6. **Units from another nation that work** (owner, 2026-10-01: "have a tiger on the USA ... a special scenario where
-   you captured a tiger"). Making the game load that nation's models in every match crashed it in T13 (a German Ju 87
+   you captured a tiger"). **Built 2026-10-01 (night), in-game test in batch 4** (`rusemod.unitpacks`: the unit's
+   models copied into its new nation's skirmish packs; spawned units' into the common ones; checked on every unit of
+   every nation). Making the game load that nation's models in every match crashed it in T13 (a German Ju 87
    copy for the US crashed the game when its gunner was set up: its model wasn't ready for it), so the build refuses
    these units for now (`build.FORCE_LOAD`). Next: an `.spk` writer, then copy the unit's models (mesh, skeleton,
    animations, proxies) into the new nation's own skirmish packs, so its matches load them with their own units; test
@@ -666,8 +675,9 @@ the test spots beside the player's HQ with a top-down map):
    in Total War mode, research the next era's units yourself instead of getting them free. If it works with our build,
    it goes on the mod list (sneadtristen6/Ruse-Mods); nothing of it goes into the apps unless it brings code we need.
    Downloading it waits for the owner's go.
-8. **The Studio's Erase tool and new maps in the game's menus** (branches `feat/eraseui` and `feat/newmap`, started by
-   agents; resumed with the owner's "go agents").
+8. **The Studio's Erase tool and new maps in the game's menus:** both merged into `next` (2026-10-01, night). A new
+   map is a copy of a shipped one under its own name and pack (`maps/<NewName>/map.toml`, `copy_of`), listed in
+   BATTLES; its in-game test (T15) is in batch 4. Still to do: a menu picture of its own, and opening it in the Studio.
 9. **Small ones, when a session has room:** the town-names mod (names readable from any height, §14) on the mod list;
    the players' wishlist done in 0.8.0 (Open and Forest brushes, Bridges dock, Check this map) needs nothing more.
 10. **A4 Remove scenery:** the build's side is out in 0.8.0 (`[[erase]]` circles, copy on write; a cleared wood is
@@ -684,6 +694,17 @@ the test spots beside the player's HQ with a top-down map):
    (re-meshing): the smallest ground brush is 1% of the map's width (cover and block go four times finer), and below
    one cell of the gameplay ground a brush does nothing, so **smaller brushes** and finer ground up close come
    with A7.
+
+*After 0.9.0 / 0.4.0* (the owner, 2026-10-01, night: "after this update and these bugs are fixed"; in this order):
+14. **What it takes to make a new map**, not only a copy of a shipped one: what a map pack must hold for the game to
+    load it, what we can already write, what we can't yet, and the first small new map.
+15. **Units on that map that aren't just triangles:** the Studio's map view draws starting units and spawns as their
+    real 3D models.
+16. **3D unit models in the Units section, for every type of model** (ground, air, infantry, buildings), not only the
+    ones shown today.
+17. **Erase grows** (the owner: "that's the future of that tool", why it has its own tile): the map's own buildings
+    (opened to units, not only out of sight), roads (painted ground, the road model, the supply network), shrubs and
+    rocks, each its own pick.
 
 *Planned (owner, 2026-09-30):* **A10**, at least 8 players on a map (D-Day first), past 8 tried later.
 

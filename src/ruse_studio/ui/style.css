@@ -1,15 +1,20 @@
 :root {
-  --bg: #15181b;
-  --panel: #1d2226;
-  --panel-hi: #252b30;
-  --line: #333b41;
-  --text: #e9e4d4;
-  --muted: #9aa3a8;
-  --accent: #c8a64b;
-  --accent-dark: #8f7530;
-  --shared: #6fa3c7;
-  --ok: #93c47d;
-  --error: #e8836f;
+  /* R.U.S.E.'s own look, as the launcher's (the owner, 2026-10-01: blue on light blue, with whites): deep navy,
+     steel blue, light blue */
+  --bg: #0a1628;
+  --panel: #10233d;
+  --panel-hi: #17304f;
+  --line: #24446b;
+  --text: #f3f7fc;
+  --muted: #9db3cf;
+  --accent: #5cb8ff;      /* light blue */
+  --accent-dark: #1f6fc4; /* the game's blue */
+  --accent-ink: #06203d;  /* text on light blue */
+  --shared: #8fd6c8;
+  --ok: #6fd38f;
+  --error: #ff7d6e;
+  --hud: rgba(8, 22, 42, 0.86);   /* the map's panels over the ground */
+  --hud-line: #3d6a9e;
   --radius: 8px;
   color-scheme: dark;
 }
@@ -26,8 +31,8 @@ button:disabled { cursor: default; opacity: 0.5; }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
 
-.top { display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: var(--panel);
-       border-bottom: 1px solid var(--line); }
+.top { display: flex; align-items: center; gap: 16px; padding: 10px 20px; background: linear-gradient(180deg, #17406f, #0f2a4b);
+       border-bottom: 2px solid var(--accent-dark); }
 .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; letter-spacing: 0.06em; font-size: 17px; }
 .brand img { width: 30px; height: 30px; flex: none; border-radius: 7px; }
 .brand span { color: var(--accent); }
@@ -81,8 +86,9 @@ button:disabled { cursor: default; opacity: 0.5; }
 .choice label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .choice input { accent-color: var(--shared); }
 .meta { color: var(--muted); margin-bottom: 14px; }
-.primary { padding: 9px 18px; border: 0; background: linear-gradient(180deg, var(--accent), var(--accent-dark));
-           color: #15181b; font-weight: 700; }
+.primary { padding: 9px 18px; border: 1px solid var(--accent); background: linear-gradient(180deg, #4aa8f5, var(--accent-dark));
+           color: #fff; font-weight: 700; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+.primary:hover:not(:disabled) { filter: brightness(1.08); }
 .note { margin-left: 8px; color: var(--muted); font-size: 12px; }
 
 .group { margin-top: 22px; }
@@ -133,7 +139,7 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .new-unit .actions button { padding: 6px 14px; font-size: 14px; }
 .unit-list button.edited .name { color: var(--accent); }
 
-.test-panel { position: relative; border-top: 1px solid var(--line); background: #0f1113; }
+.test-panel { position: relative; border-top: 1px solid var(--line); background: #071120; }
 .test-panel pre { margin: 0; max-height: 180px; overflow: auto; padding: 10px 20px; font-size: 12px; }
 .test-panel button { position: absolute; top: 8px; right: 16px; background: var(--panel); }
 .status { min-height: 28px; padding: 5px 20px; border-top: 1px solid var(--line); background: var(--panel); color: var(--muted);
@@ -143,7 +149,7 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 
 .no-index { position: fixed; inset: 60px 0 0 0; display: flex; flex-direction: column; align-items: center;
             justify-content: center; gap: 14px; background: var(--bg); }
-.no-index pre { max-width: 760px; max-height: 240px; overflow: auto; padding: 10px; background: #0f1113;
+.no-index pre { max-width: 760px; max-height: 240px; overflow: auto; padding: 10px; background: #071120;
                 border: 1px solid var(--line); border-radius: var(--radius); font-size: 12px; }
 
 /* --- the tabs, and the Maps view (maps.js) --- */
@@ -153,8 +159,8 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .map-stage { position: relative; min-height: 0; overflow: hidden; }
 .map-canvas { position: absolute; inset: 0; }
 /* how long the road being drawn is, beside the pointer (Cities: Skylines style), in the map HUD's game look */
-.road-length { position: absolute; pointer-events: none; padding: 2px 8px; background: rgba(0, 0, 0, 0.74);
-               border: 1px solid #7d7d7d; border-radius: 2px; font-size: 12px; white-space: nowrap; }
+.road-length { position: absolute; pointer-events: none; padding: 2px 8px; background: var(--hud);
+               border: 1px solid var(--hud-line); border-radius: 2px; font-size: 12px; white-space: nowrap; }
 .road-length b { color: var(--accent); font-weight: 600; }
 .map-canvas canvas { display: block; }
 .map-pick { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 24px;
@@ -166,66 +172,74 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .map-code { color: var(--muted); font-weight: normal; }
 .map-controls { display: flex; align-items: center; gap: 12px; }
 .map-controls label { display: flex; align-items: center; gap: 6px; }
-/* the map's panels in the game's own HUD look (its res2d/interface textures: objectives_panel_cadre, hint_unit_info,
-   and the in-game money box and player bar): translucent black, a thin grey frame, square corners; gunmetal bands on
-   the buttons; the player's blue for what's picked, the money's gold for a tray's name */
-.map-hud { background: rgba(0, 0, 0, 0.74); border-color: #7d7d7d; border-radius: 2px; }
+/* the map's panels in R.U.S.E.'s blues (the owner, 2026-10-01; before: the game's black HUD with gold): translucent
+   navy, a thin steel-blue frame, square corners; steel-blue bands on the buttons, the game's bright blue for what's
+   picked, white for a tray's name */
+.map-hud { background: var(--hud); border-color: var(--hud-line); border-radius: 2px; }
 .map-dock { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex;
             flex-direction: column; align-items: center; gap: 6px; width: min(1000px, calc(100% - 20px));
             font-family: Bahnschrift, "Segoe UI", sans-serif; pointer-events: none; }
 .map-dock > * { pointer-events: auto; }
-.dock-bar { display: flex; align-items: stretch; gap: 3px; max-width: 100%; padding: 4px; background: rgba(0, 0, 0, 0.8);
-            border: 1px solid #7d7d7d; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); }
+.dock-bar { display: flex; align-items: stretch; gap: 3px; max-width: 100%; padding: 4px; background: var(--hud);
+            border: 1px solid var(--hud-line); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); }
 /* the kinds take a second row when the map is too narrow for one (a small window, the longer languages) */
 .dock-kinds { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; min-width: 0; }
-.dock-gap { width: 1px; margin: 4px 5px; background: #555; }
+.dock-gap { width: 1px; margin: 4px 5px; background: var(--hud-line); }
 .dock-tile, .tool-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-            min-width: 70px; padding: 6px 8px 5px; color: #e8e8e8; border: 1px solid #000; border-radius: 0;
-            background: linear-gradient(90deg, rgba(0, 0, 0, 0.35), rgba(255, 255, 255, 0.05)),
-                        linear-gradient(180deg, #1b1b1b 0 30%, #363636 30% 64%, #202020 64%);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); cursor: pointer; }
-.dock-tile { min-width: 60px; padding-left: 5px; padding-right: 5px; }
+            min-width: 70px; padding: 6px 8px 5px; color: #e8f0fa; border: 1px solid #06101f; border-radius: 0;
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.25), rgba(255, 255, 255, 0.04)),
+                        linear-gradient(180deg, #16304f 0 30%, #21446d 30% 64%, #17324f 64%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1); cursor: pointer; }
+.dock-tile { min-width: 76px; padding-left: 7px; padding-right: 7px; }
 .dock-tile span, .tool-tile span { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
 .dock-tile svg, .tool-tile svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.6;
             stroke-linecap: round; stroke-linejoin: round; }
-.dock-tile:hover, .tool-tile:hover { border-color: #9a9a9a; color: #fff; }
-.dock-tile[aria-pressed="true"], .tool-tile[aria-pressed="true"] { color: #fff; border-color: #7d9be6;
-            background: linear-gradient(180deg, #3563c9 0, #2549a8 55%, #1b3683 100%);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 8px rgba(53, 99, 201, 0.55); }
+.dock-tile:hover, .tool-tile:hover { border-color: #7fb4e6; color: #fff; }
+.dock-tile[aria-pressed="true"], .tool-tile[aria-pressed="true"] { color: #fff; border-color: #9fd2ff;
+            background: linear-gradient(180deg, #4aa8f5 0, #2a85d8 55%, #1f6fc4 100%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 8px rgba(74, 168, 245, 0.55); }
 .tool-tile:disabled { opacity: 0.45; cursor: default; }
-.dock-tray { align-self: stretch; padding: 8px 12px 10px; background: rgba(0, 0, 0, 0.8); border: 1px solid #7d7d7d;
+.dock-tray { align-self: stretch; padding: 8px 12px 10px; background: var(--hud); border: 1px solid var(--hud-line);
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); max-height: 44vh; overflow-y: auto; }
-.tray-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; padding-bottom: 6px;
-            border-bottom: 1px solid #3a3a3a; }
-.tray-title { color: #f2c12e; font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.tray-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 8px; padding-bottom: 6px;
+            border-bottom: 1px solid var(--line); }
+.tray-title { color: #fff; font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+/* a two-kind tile's tabs (maps.js DOCK_GROUPS): the open one in the game's blue */
+.tray-tabs { display: flex; gap: 2px; }
+.tray-tabs:empty { display: none; }
+.tray-tab { padding: 3px 12px; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: #cfe0f3;
+            background: var(--panel); border: 1px solid #2d527d; border-radius: 0; }
+.tray-tab:hover { border-color: #7fb4e6; color: #fff; }
+.tray-tab[aria-selected="true"] { color: #fff; border-color: #9fd2ff; background: linear-gradient(180deg, #4aa8f5, var(--accent-dark)); }
 .tray-body { display: grid; grid-template-columns: 1fr 290px; gap: 16px; align-items: start; }
 .tray-main, .tray-side { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 .tool-tiles { display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start; }
 .tool-tile { min-width: 84px; }
-.dock-tray .chip { border-radius: 0; background: #1d1d1d; border-color: #444; }
-.dock-tray .chip[aria-pressed="true"] { background: #2549a8; border-color: #7d9be6; color: #fff; }
+.dock-tray .chip { border-radius: 0; background: var(--panel); border-color: #2d527d; }
+.dock-tray .chip[aria-pressed="true"] { background: var(--accent-dark); border-color: #9fd2ff; color: #fff; }
 .dock-tray .ghost { padding: 3px 10px; font-size: 12px; border-radius: 0; }
 .dock-tray .sure { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.dock-tray .place-search, .dock-tray .place-list { border-radius: 0; background: #111; border-color: #444; }
-.dock-tray .place-list option:checked { background: #2549a8; color: #fff; }
+.dock-tray .place-search, .dock-tray .place-list { border-radius: 0; background: var(--bg); border-color: #2d527d; }
+.dock-tray .place-list option:checked { background: var(--accent-dark); color: #fff; }
 .check-row { display: flex; align-items: center; gap: 6px; }
-/* the Bridges tray: the map's own bridge kinds as gunmetal rows, the one picked in the player's blue */
+/* the Bridges tray: the map's own bridge kinds as steel-blue rows, the one picked in the game's blue */
 .kind-list { display: flex; flex-direction: column; gap: 3px; max-height: 150px; overflow-y: auto; }
 .kind-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; padding: 5px 9px; text-align: left;
-            color: #e8e8e8; border: 1px solid #000; border-radius: 0; cursor: pointer;
-            background: linear-gradient(180deg, #1b1b1b 0 30%, #2e2e2e 30% 64%, #202020 64%); }
-.kind-row:hover { border-color: #9a9a9a; color: #fff; }
-.kind-row[aria-pressed="true"] { border-color: #7d9be6; background: linear-gradient(180deg, #3563c9 0, #2549a8 55%, #1b3683 100%); }
+            color: #e8f0fa; border: 1px solid #06101f; border-radius: 0; cursor: pointer;
+            background: linear-gradient(180deg, #16304f 0 30%, #1e3f66 30% 64%, #17324f 64%); }
+.kind-row:hover { border-color: #7fb4e6; color: #fff; }
+.kind-row[aria-pressed="true"] { border-color: #9fd2ff; background: linear-gradient(180deg, #4aa8f5 0, #2a85d8 55%, #1f6fc4 100%); }
 .kind-row:disabled { opacity: 0.5; cursor: default; }
-.kind-row .tag { color: #f2c12e; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.kind-row .tag { color: var(--accent); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.kind-row[aria-pressed="true"] .tag { color: #fff; }
 /* "Check this map": the button on the left, the findings list on the right; a finding with a place is clickable */
 #tray-check.tray-body { grid-template-columns: 230px 1fr; }
 .finding-list { display: flex; flex-direction: column; gap: 2px; max-height: 190px; overflow-y: auto; }
 .finding { display: flex; align-items: baseline; gap: 8px; padding: 4px 8px; text-align: left; font-size: 12px;
-           color: #e8e8e8; background: #161616; border: 1px solid #2a2a2a; border-radius: 0; }
+           color: #e8f0fa; background: #0d1d33; border: 1px solid var(--line); border-radius: 0; }
 button.finding { cursor: pointer; }
-button.finding:hover { border-color: #9a9a9a; color: #fff; }
-.finding[aria-current="true"] { border-color: #7d9be6; }
+button.finding:hover { border-color: #7fb4e6; color: #fff; }
+.finding[aria-current="true"] { border-color: #9fd2ff; }
 .finding-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #888; transform: translateY(-1px); }
 .level-fail .finding-dot { background: #e0533d; }
 .level-warn .finding-dot { background: #f2c12e; }
@@ -233,7 +247,7 @@ button.finding:hover { border-color: #9a9a9a; color: #fff; }
 .brush-list .chip { padding: 4px 11px; font-size: 13px; }
 .tray-erase { display: flex; flex-direction: column; gap: 5px; }
 .brush-slider { display: grid; grid-template-columns: 1fr 2fr; align-items: center; gap: 8px; color: var(--muted); }
-.brush-slider input { width: 100%; margin: 0; accent-color: #3563c9; }
+.brush-slider input { width: 100%; margin: 0; accent-color: #4aa8f5; }
 .map-keys { line-height: 1.35; }
 .settings-view { overflow: auto; padding: 24px; }
 .settings { max-width: 760px; margin: 0 auto; display: grid; gap: 16px; }
@@ -331,16 +345,16 @@ tr.edited .flag { border-color: var(--accent); }
 #maps-view.folded .browser > :not(.browser-head), #maps-view.folded .map-kind { display: none; }
 .small-tile { min-width: 64px; padding: 4px 6px 3px; }
 .small-tile svg { width: 22px; height: 22px; }
-.scen-where { color: #f2c12e; }
+.scen-where { color: var(--accent); }
 
 /* panels the modder arranges (maps.js makePanels): a grip to drag, a button to fold */
 .panel-grip { display: flex; align-items: center; gap: 4px; pointer-events: auto; }
 .map-hud > .panel-grip { position: absolute; top: 4px; right: 6px; }
 .map-hud { padding-right: 52px; }
-.map-dock > .panel-grip { align-self: flex-start; padding: 2px 4px; background: rgba(0, 0, 0, 0.8); border: 1px solid #7d7d7d; }
-.grip { cursor: grab; padding: 0 4px; color: #b9c0c4; user-select: none; font-size: 15px; line-height: 1; }
+.map-dock > .panel-grip { align-self: flex-start; padding: 2px 4px; background: var(--hud); border: 1px solid var(--hud-line); }
+.grip { cursor: grab; padding: 0 4px; color: var(--muted); user-select: none; font-size: 15px; line-height: 1; }
 .grip:active { cursor: grabbing; }
-.panel-fold { padding: 0 6px; background: none; border: 1px solid transparent; color: #b9c0c4; font-size: 12px; cursor: pointer; }
+.panel-fold { padding: 0 6px; background: none; border: 1px solid transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
 .panel-fold:hover, .grip:hover { color: #fff; }
 .map-hud.folded > :not(.panel-grip):not(.map-title) { display: none; }
 .map-dock.folded .dock-tray { display: none; }

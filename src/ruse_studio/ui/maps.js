@@ -1859,8 +1859,21 @@ const DOCK = [
   ["building", null], ["prop", null], ["vegetation", null], ["erase", ["erase"]],
   ["scenario", null], ["check", null],
 ];
-// the scenario kind open (no tool picked yet); "Check this map" open; the last brush of each kind
-const dock = { scenario: false, check: false, last: {} };
+// The bar's tiles: kinds that go together share one (the owner, 2026-10-01: the bar was too long), its tray showing a
+// tab per kind. [group, its kinds, its icon]; Erase keeps its own, as it will take more than trees and props.
+const DOCK_GROUPS = [
+  ["ground", ["terrain", "water"], "terrain"],
+  ["zones", ["cover", "movement"], "cover"],
+  ["ways", ["roads", "bridges"], "roads"],
+  ["building", ["building"], "building"],
+  ["nature", ["prop", "vegetation"], "vegetation"],
+  ["erase", ["erase"], "erase"],
+  ["scenario", ["scenario"], "scenario"],
+  ["check", ["check"], "check"],
+];
+// the scenario kind open (no tool picked yet); "Check this map" open; the last brush of each kind; the last kind
+// open in each group
+const dock = { scenario: false, check: false, last: {}, lastIn: {} };
 
 // 24-unit line drawings, one per kind and tool (stroked, see .dock-tile svg)
 const ICONS = {
@@ -1971,24 +1984,51 @@ function openKind(kind) {
   setPlaceMode(true);
 }
 
+function groupOf(kind) {
+  return (DOCK_GROUPS.find(([, kinds]) => kinds.includes(kind)) || [null])[0];
+}
+
+function groupName(group) {
+  const [, kinds] = DOCK_GROUPS.find(([g]) => g === group);
+  return kinds.length === 1 ? kindName(kinds[0]) : mv.words[`dock_group_${group}`] || kinds.map(kindName).join(" & ");
+}
+
+// A tile opens its group at the kind last used there; the open group's tile again closes it.
+function openGroup(group) {
+  const [, kinds] = DOCK_GROUPS.find(([g]) => g === group);
+  if (kinds.includes(dockKind())) { lookAround(); return; }
+  openKind(dock.lastIn[group] || kinds[0]);
+}
+
 // The bar's tiles, again when the words change.
 function renderDockBar() {
   const w = mv.words;
   iconTile($("brush-look"), "look", w.brush_look).title = w.tip_look;
-  $("dock-kinds").replaceChildren(...DOCK.map(([kind]) => {
-    const tile = iconTile(el("button", { type: "button", className: "dock-tile", title: w[`tip_dock_${kind}`] || "" }),
-      kind, kindName(kind));
-    tile.dataset.kind = kind;
-    tile.addEventListener("click", () => openKind(kind));
+  $("dock-kinds").replaceChildren(...DOCK_GROUPS.map(([group, kinds, icon]) => {
+    const tip = kinds.length === 1 ? w[`tip_dock_${kinds[0]}`] : w[`tip_dock_group_${group}`];
+    const tile = iconTile(el("button", { type: "button", className: "dock-tile", title: tip || "" }), icon,
+      groupName(group));
+    tile.dataset.group = group;
+    tile.addEventListener("click", () => openGroup(group));
     return tile;
   }));
   renderDock();
 }
 
 function renderDock() {
-  const w = mv.words, kind = dockKind();
+  const w = mv.words, kind = dockKind(), group = groupOf(kind);
+  if (group) dock.lastIn[group] = kind;
   $("brush-look").setAttribute("aria-pressed", String(!kind));
-  for (const tile of $("dock-kinds").children) tile.setAttribute("aria-pressed", String(tile.dataset.kind === kind));
+  for (const tile of $("dock-kinds").children) tile.setAttribute("aria-pressed", String(tile.dataset.group === group));
+  // a group of two kinds: a tab for each, above the open one's tools
+  const kinds = group ? DOCK_GROUPS.find(([g]) => g === group)[1] : [];
+  $("tray-tabs").replaceChildren(...(kinds.length > 1 ? kinds.map((k) => {
+    const tab = el("button", { type: "button", className: "tray-tab", textContent: kindName(k), title: w[`tip_dock_${k}`] || "" });
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", String(k === kind));
+    tab.addEventListener("click", () => { if (k !== dockKind()) openKind(k); });
+    return tab;
+  }) : []));
   $("dock-tray").classList.toggle("hidden", !kind);
   $("tray-brush").classList.toggle("hidden", !(kind && (DOCK.find(([k]) => k === kind) || [])[1]));
   $("tray-place").classList.toggle("hidden", !PLACEABLE.includes(kind));
@@ -1996,7 +2036,7 @@ function renderDock() {
   $("tray-roads").classList.toggle("hidden", kind !== "roads");
   $("tray-bridges").classList.toggle("hidden", kind !== "bridges");
   $("tray-check").classList.toggle("hidden", kind !== "check");
-  $("tray-title").textContent = kind ? kindName(kind) : "";
+  $("tray-title").textContent = kind ? groupName(group) : "";
   $("tray-tip").textContent = kind ? w[`tip_dock_${kind}`] || "" : "";
 }
 

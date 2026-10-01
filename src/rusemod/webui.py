@@ -95,7 +95,7 @@ def open_window(title: str, folder: Path, page: str, api, width=1180, height=760
         return 3
     server, base = serve(folder, extra)
     window = webview.create_window(title, f"{base}/{page}", js_api=api, width=width, height=height,
-                                   min_size=(900, 600), background_color="#15181b")
+                                   min_size=(900, 600), background_color="#0a1628")  # the apps' navy, before the page draws
     api._window = window
     if setup is not None:
         setup(window)
