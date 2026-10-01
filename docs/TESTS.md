@@ -244,6 +244,24 @@ opens facing west.
    them for a kilometre. **Pass:** it drives along the road, not across the fields beside it.
 5. Money: the build menu's **Dev** tab gives +500 a click.
 
+**Result (owner, 2026-10-01):** units walked the dried bed; the cleared spot (hedgerow trees among fields) wasn't
+recognisable; tanks didn't keep to the new roads (see batch 3). The owner's old 10x upper-storey houses in the mod
+floated 47 m up: our bug (a model starting above its base point), fixed in the build (`5c5a34f`).
+
+## Batch 3 for Studio 0.8.0: a clean test mod, everything beside the HQ (2026-10-01)
+
+`D:\RUSE-Instances\batch3` from `D:\ruse-test-mods\batch3` (made by a script: none of the owner's old edits), with
+town names shown from any height (`D:\ruse-test-mods\townnames`) and the Dev Toolkit. The HQ is moved onto the main
+road east of Toulaville; a top-down map of the test spots goes with it.
+1. **Infantry on a new "^" road** to a water tower 700 m north. **Passed:** infantry find the fastest way to the road
+   and take it. Tanks don't: US tanks have no road bonus in the game's data (the Sherman and the Lee have no
+   `SpeedBonusOnRoad`; infantry +83%, the Greyhound +16%), so they take the shortest way, on the map's own roads too.
+2. **A hole cleared in a dense wood** (4,135 trees) with a water tower in it. **Failed:** tanks couldn't drive in: the
+   map's movement still kept vehicles off the old wood. Fixed (`eac6fd0`): a cleared wood is opened to every unit and
+   loses its forest cover. To check again.
+3. **A 10x house** beside the HQ. **Passed:** it stands on the ground.
+4. **A lone stone bridge** placed by hand. **Passed:** units cross on the deck.
+
 ## T11. Launcher 0.2.9
 
 - **Pass:** the launcher offers 0.2.9 when it opens; **Update** installs it and it starts again; **Play** works.
