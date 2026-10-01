@@ -35,6 +35,52 @@ Defense.
 **Your Steam install is never changed.** Mods are built into a separate modded copy of the game (hard links to the
 game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 
+## Milestone: new bridges units really cross (2026-10-01)
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/bridge-tank-and-squad.jpg" alt="R.U.S.E. in game on D-Day: a tank and an infantry squad crossing a new bridge the build placed where a road drawn in the Studio meets the river" width="400"><br>
+      <sub>A road drawn in the Studio meets the river, the build puts the map's own kind of bridge across it, and units
+      take it: a tank and a squad on the deck (D-Day, in the game).</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/bridge-infantry-at-deck-height.jpg" alt="R.U.S.E. in game: two infantry squads and a supply truck crossing a new bridge, every man standing at the deck's height" width="400"><br>
+      <sub>Two squads and a supply truck crossing. Every man stands at the deck's height, the ones by the rails too:
+      the part that took all night.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/bridge-two-crossings.jpg" alt="R.U.S.E. in game on D-Day: two new bridges over the same river, units crossing both" width="400"><br>
+      <sub>Two new bridges on the same river, units on both, joined to the roads the map's own units use.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/bridge-tank-column.jpg" alt="R.U.S.E. in game on D-Day: a column of tanks crossing a new bridge" width="400"><br>
+      <sub>A tank column on its way over.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/bridge-before-in-the-river.jpg" alt="R.U.S.E. in game: the same new bridges a few hours earlier, a tank and squads standing in the river under the decks" width="400"><br>
+      <sub>The same bridges a few hours earlier: a tank and squads in the river under the decks.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <b>One night, twelve hours, six rounds</b> of building a bridge and testing it in the game. Five rounds changed
+      where units may <i>walk</i>. What settled it was working out how the game places a unit: its position comes
+      from the map's movement circles, its height from the floor under it, and nothing ties the two. An infantry
+      squad is five men spread 11 m wide, each standing on whatever floor is under his own feet. The game's metal
+      bridges carry invisible floor 47 to 66 m out over the river beside the deck; ours had the deck alone, so the
+      men beside it stood on the riverbed. New bridges now get floor 12 m out each side, over water only, in the
+      deck's own plane.<br><br>
+      On the way: decks joined to the roads units already use, never through a farmyard; a mod's buildings no longer
+      open the water beside the map's own bridges; the floor file keeps the game's own rules (men stopped lying
+      sideways). The full story and the checks that came out of it: <a href="docs/LESSONS.md">docs/LESSONS.md</a>.
+      The movement-map reading is shared with DomesticNukes and his Claude.
+    </td>
+  </tr>
+</table>
+
 ## What you can do
 
 **Players, with RUSE Launcher**
@@ -72,8 +118,8 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - The map tools sit in a bar along the bottom, Cities: Skylines style, in R.U.S.E.'s own HUD look (Studio 0.7.0).
 - **Draw roads**, Cities: Skylines style (straight, curved, freeform; ends snap onto roads; their length shown as
   you draw): supply routes use them, they're painted on the ground, and a road over water gets a bridge units drive
-  across, all in the game (2026-09-30, Studio 0.7.2 to 0.7.6; keeping units from stepping off a new bridge's side
-  is being fixed).
+  across, all in the game (2026-09-30, Studio 0.7.2 to 0.7.6). Tanks, infantry and supply trucks cross a new
+  bridge on its deck (2026-10-01; coming in the next Studio).
 - **More players on a map, up to 8:** a Players count and an Add starting point tool (D-Day as a 4v4; built, the
   in-game check is next).
 - **Add units in formations:** 1 to 10 at once, in a line, column, wedge, box or circle (Studio 0.7.1).
@@ -190,7 +236,8 @@ Early, and moving fast. **Proven in the game:** value and text mods, new names i
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
 (Dev Toolkit and 10x Artillery Price in one modded copy), and on 2026-09-30: terrain brushes (hills, pits, level
 ground that units drive on and take orders on), a moved starting point, painted cover that hides infantry, placed
-buildings (at up to 8× their size), and both apps updating themselves. **Not yet checked in the game:** a new unit
+buildings (at up to 8× their size), and both apps updating themselves; on 2026-10-01, roads with new bridges
+that tanks, infantry and supply trucks cross. **Not yet checked in the game:** a new unit
 made in the Studio's window, mod sets made in the launcher's window, a mod exported as one file, sharing a load
 order, units a skirmish spawns, and Browse mods. The tests, step by step for anyone with the game:
 [docs/TESTS.md](docs/TESTS.md).
@@ -219,8 +266,9 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
   piece stretched bank to bank, with a floor copied from a shipped bridge of its kind (`occlusioninfo_objectsonly.kdt`,
   what units stand on): units cross on the deck. Each deck is joined to the ground units already use along the
   road, and the build never writes ground units can't reach (that crashed the game: every shipped movement graph
-  is one piece). Next: units can still step off a new deck's side; the game's own bridges have a local graph of
-  small circles lining the deck, and new bridges will get one too.
+  is one piece). **Units cross in the game, infantry at the deck's height** (2026-10-01): a new bridge's floor
+  reaches out over the water beside the deck, as the game's metal bridges' does (an infantry squad's men each stand
+  on the floor under their own feet); see the milestone above and [docs/LESSONS.md](docs/LESSONS.md).
 - **Test in game / Play always rebuild** (Studio 0.7.6, Launcher 0.2.11): a modded copy Windows won't delete is
   moved aside into `RUSE-Instances\.trash` instead of stopping the game, and a game still running from the copy is
   named.

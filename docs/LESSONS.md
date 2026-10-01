@@ -70,7 +70,7 @@ Written as checks, not resolutions.
    walk. It does not say where they are. Write down which question a measurement answers before using it to argue with
    what someone saw.
 
-## Round 6: the cause, found by reading the game instead of guessing at it
+## Round 6: the cause, found by measuring the game's own bridges instead of guessing
 
 The owner's two sentences were the whole diagnosis: "they are in water, not like vanilla" and "vanilla ruse they
 float". Five rounds had changed where units may *walk*. The fault was in what they *stand on*.
@@ -88,16 +88,15 @@ float". Five rounds had changed where units may *walk*. The fault was in what th
 - The game's own stone bridges have no apron, and its infantry stand in the river beside those too.
 
 So rounds 1 to 3 narrowed something that was already narrower than the game's own, and round 3's local map could
-never have helped: a local map is only consulted when a route is planned, and to veto a swerve. It cannot move a man.
-The fix is in `rusemod.floors` (`apron`): a new bridge's floor reaches 3,200 either side of its line, over water only.
+never have helped: it changes where a squad may go, not where its men stand. The fix is in `rusemod.floors` (`apron`): a new bridge's floor reaches 3,200 either side of its line, over water only.
 
 **6. The measurement that would have found it on the first night was never made.** We measured where units may walk
 five times. We never measured, for one unit standing where the owner's screenshot showed it, *what it was standing on*
 in our build and in the game's, until round 6. That comparison takes a minute and shows +750 against -2,000.
 
 **7. When the same fix fails three times, the model is wrong, not the fix.** Rounds 1, 2 and 3 were the same idea
-(narrow the movement) at three levels of effort. After the second failure the next step should have been reading how
-the game places a unit, which is what round 6 did, not a third and more elaborate narrowing.
+(narrow the movement) at three levels of effort. After the second failure the next step should have been working
+out how the game places a unit, which is what round 6 did, not a third and more elaborate narrowing.
 
 **8. One conversation ran in two windows.** For part of the night the desktop app and VS Code were both open on this
 conversation, each with agents editing the same folder. Work was redone and reviews went stale under their reviewers.

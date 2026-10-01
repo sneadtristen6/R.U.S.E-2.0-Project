@@ -970,3 +970,8 @@ floor triangles and 690 points unchanged, every triangle found by the file's tre
 what it was. 889 triangles (333 new). What the game should show: a squad on a new bridge as on one of the map's own
 metal bridges, the men beside the deck upright at its height over the water. [LESSONS.md](LESSONS.md) has why this
 took six rounds.
+
+**T8 passed in the game (owner, 2026-10-01, 04:27).** On the rebuilt D-Day copy: tanks, infantry squads and a supply
+truck cross the four new bridges on their decks, every man upright at the deck's height, the ones by the rails too
+("FINALLY WE CAN MOVE ON"). Screenshots in `docs/images/bridge-*.jpg` and the README. Still open from the same test:
+new roads' close-up texture (the road stickers).

@@ -611,7 +611,7 @@ bridges replaces it, and a road's length while it's drawn. **In the game (owner,
 
 | Test | Who | Decides | State |
 |---|---|---|---|
-| **T8 Bridges:** units (a tank, then infantry) and a supply route cross the new D-Day bridges; the glow if it returns; the spawned units' side and facing (A8) | owner, `D:\RUSE-Instances\bridges` | bridges done, or what to fix | the look passed; **units go under** (owner, 17:18): step 1 below |
+| **T8 Bridges:** units (a tank, then infantry) and a supply route cross the new D-Day bridges | owner, `D:\RUSE-Instances\bridges` | bridges done, or what to fix | **passed 2026-10-01, 04:27**: tanks, infantry and a supply truck cross on the decks, the men at the deck's height (the floor's aprons, `934d414`); open: new roads' close-up texture |
 | **T9 A road over an old bridge:** the old one gone, units cross on the new one, nothing on the water where it stood | owner | the replace rule | its copy is built next session |
 | **T10 Read-only game folder:** Test in game after updating, and is his folder read-only? | the player who reported it | the fix | waiting for him |
 | **T11 Launcher 0.2.9:** the update is offered, Play works | owner | — | — |
