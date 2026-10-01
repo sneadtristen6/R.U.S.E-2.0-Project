@@ -13,8 +13,10 @@ permissions:
 
 jobs:
   release:
-    # the shared private repo mirrors main and the tags: it doesn't build or test (its Actions minutes are limited)
-    if: github.repository == 'sneadtristen6/Ruse-Mod-Platform'
+    # the shared private repo mirrors main and the tags: it doesn't build or test (its Actions minutes are limited).
+    # The public repo by its number, which a rename keeps: a check by name skipped every run after the rename
+    # to R.U.S.E-2.0-Project (tests/test_installers.py WorkflowGuards)
+    if: github.repository_id == '1393317090'
     runs-on: windows-latest
     timeout-minutes: 60
     steps:

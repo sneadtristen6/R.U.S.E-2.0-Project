@@ -8,8 +8,10 @@ on:
 
 jobs:
   test:
-    # the shared private repo mirrors main and the tags: it doesn't build or test (its Actions minutes are limited)
-    if: github.repository == 'sneadtristen6/Ruse-Mod-Platform'
+    # the shared private repo mirrors main and the tags: it doesn't build or test (its Actions minutes are limited).
+    # The public repo by its number, which a rename keeps: a check by name skipped every run after the rename
+    # to R.U.S.E-2.0-Project (tests/test_installers.py WorkflowGuards)
+    if: github.repository_id == '1393317090'
     strategy:
       fail-fast: false
       matrix:
@@ -21,7 +23,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Nothing private in the public repo (tools/check_public.py)
-        if: github.repository == 'sneadtristen6/Ruse-Mod-Platform'
+        if: github.repository_id == '1393317090'
         run: python tools/check_public.py
       - name: Run tests
         env:

@@ -19,7 +19,8 @@ concurrency:
 
 jobs:
   sync:
-    if: github.repository == 'sneadtristen6/Ruse-Mod-Platform'
+    # the public repo by its number, which a rename keeps (tests/test_installers.py WorkflowGuards)
+    if: github.repository_id == '1393317090'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

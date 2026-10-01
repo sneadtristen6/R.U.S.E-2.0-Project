@@ -64,6 +64,19 @@ class Icons(unittest.TestCase):
         self.assertEqual(len(small), 40 + 16 * 16 * 4 + 16 * 4)
 
 
+class WorkflowGuards(unittest.TestCase):
+    def test_jobs_run_on_the_public_repo_by_its_number(self):
+        # the shared private repo mirrors .github/ too, so every job checks which repo it's on: by the public repo's
+        # number, which a rename keeps. A check by name ('sneadtristen6/Ruse-Mod-Platform') skipped every test, build
+        # and release after the repo became R.U.S.E-2.0-Project, and nothing failed to say so (studio-v0.7.5).
+        for path in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+            text = path.read_text(encoding="utf-8")
+            self.assertNotRegex(text, r"github\.repository\s*==", path.name)
+            jobs = len(re.findall(r"^\s+runs-on:", text, re.M))
+            guards = len(re.findall(r"^\s+if: github\.repository_id == '1393317090'$", text, re.M))
+            self.assertGreaterEqual(guards, jobs, path.name)
+
+
 class BuildCommands(unittest.TestCase):
     def test_versions_come_from_the_apps(self):
         self.assertEqual(build_app.version("launcher"), ruse_launcher.__version__)
