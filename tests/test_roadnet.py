@@ -134,6 +134,28 @@ class Cutting(unittest.TestCase):
 class ModRoads(unittest.TestCase):
     """maps/<map>/roads.toml in a mod: read, written, and built into the modded copy's road network."""
 
+    def test_a_road_that_joins_nothing_is_refused(self):
+        """Every shipped road network is one piece, and the game's road search runs over it alone: a road whose ends
+        join no road would leave supply routes to it failing, so the build refuses it, naming it."""
+        from rusemod import nav
+        from rusemod.cover import member
+        from rusemod.roadnet import Road, apply_roads
+        head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 16000.0, 16000.0)
+        net = ring()
+        self.assertEqual([len(p) for p in net.parts()], [24])
+        win = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+            net.to_bytes(), b"infantry", b"vehicles", b"cover")) + b"tail", {})
+        read = {member("Blitz"): win}.get
+        east, west = net.points[0], net.points[12]
+        across = Road([(east[0] + 3000, east[1]), (west[0] - 3000, west[1])])
+        far = Road([(0.0, 0.0), (50000.0, 0.0)])
+        new, _notes = apply_roads(read, "Blitz", [across])  # joined at both ends: fine
+        self.assertIn(member("Blitz"), new)
+        with self.assertRaisesRegex(RoadNetError, r"road 2 \(its ends joined no road within 77 m\) would be cut off"):
+            apply_roads(read, "Blitz", [across, far])
+        new, _notes = apply_roads(read, "Blitz", [far, Road([(50000.0, 0.0), (east[0] + 3000, east[1])])])
+        self.assertIn(member("Blitz"), new)  # a later road joins it to the rest: one piece again
+
     def test_the_file(self):
         from rusemod.roadnet import Road, parse_roads, roads_toml
         import tomllib

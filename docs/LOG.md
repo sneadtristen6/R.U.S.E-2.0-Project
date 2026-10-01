@@ -1042,3 +1042,8 @@ shipped files first:
   from the live circles when it's written (numbers kept: local maps hang on them). On the T8 copy: 1 such circle in
   the infantry index and 147 in the vehicles' (3 graphs) before, none after; every live circle still found at its
   middle, each graph one piece.
+- **A road that joins nothing is refused.** All 34 shipped road networks are one piece, and the game's road search
+  runs over that network alone, so supply routes between two pieces fail. The T8 copy's network came out in two: the
+  test mod's road 2 (69 points) joined no road within its join distance (77 m). The build now refuses a road network
+  in more than one piece, naming the road (draw its end onto a road, or give it a larger `join`). The owner's `test`
+  mod needs its road 2 joined before it builds again.

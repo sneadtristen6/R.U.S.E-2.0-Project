@@ -139,6 +139,23 @@ class RoadNet:
         self.tree = build_tree(self.points, self.links)
         return sum(goes)
 
+    def parts(self) -> list[set[int]]:
+        """The network's connected pieces (sets of point numbers), the largest first. Every shipped one is one piece
+        (33 of 33 maps): the game's road search runs over this network alone, so a route between two pieces fails."""
+        up = list(range(len(self.points)))
+
+        def root(a):
+            while up[a] != a:
+                up[a] = up[up[a]]
+                a = up[a]
+            return a
+        for a, b, _cost in self.links:
+            up[root(a)] = root(b)
+        pieces: dict[int, set[int]] = {}
+        for i in range(len(self.points)):
+            pieces.setdefault(root(i), set()).add(i)
+        return sorted(pieces.values(), key=lambda p: (-len(p), min(p)))
+
     def _cost(self, a: int, b: int) -> int:
         return min(0xFFFF, round(math.dist(self.points[a], self.points[b]) / 10))
 
@@ -219,7 +236,8 @@ def roads_toml(roads: list[Road], header: str = "") -> str:
 
 def apply_roads(read, pack: str, roads: list[Road]) -> tuple[dict, list[str]]:
     """({member: new mapinfo.win}, notes) for one map: its road network with `roads` added; `read(member)` gives a
-    DataMap_Win.dat file's bytes or None (the build's chain, so earlier edits to the same file stay)."""
+    DataMap_Win.dat file's bytes or None (the build's chain, so earlier edits to the same file stay). The network
+    must come out in one piece, as every shipped one is (RoadNet.parts): a road that joins no other is refused."""
     from ruse_mod_engine import sdb
     from .cover import PACK, member
     from .nav import replace_buffers
@@ -228,10 +246,21 @@ def apply_roads(read, pack: str, roads: list[Road]) -> tuple[dict, list[str]]:
     if win is None:
         raise RoadNetError(f"{pack} has no {name} in {PACK}, so no road can be added")
     net = RoadNet.read(sdb.split_mapinfo(win)[1][0])
-    notes = []
+    notes, spans = [], []
     for n, r in enumerate(roads, start=1):
+        first = len(net.points)
         got = net.add_road(r.points, r.join)
+        spans.append((n, range(first, len(net.points)), r.join))
         notes.append(f"road {n}: {got['points']} point(s), {got['links']} link(s), joined at {got['joined']} end(s)")
+    pieces = net.parts()
+    if len(pieces) > 1:
+        main = pieces[0]
+        alone = [(n, join) for n, span, join in spans if any(p not in main for p in span)]
+        what = (", ".join(f"road {n} (its ends joined no road within {join / 260:.0f} m)" for n, join in alone)
+                if alone else f"the map's roads (in {len(pieces)} pieces after the old bridges' roads were cut)")
+        raise RoadNetError(f"{pack}: {what} would be cut off from the rest of the map's roads; every road network the "
+                           f"game ships is one piece, and supply routes between two pieces fail. Draw each end onto a "
+                           f"road, or give the road a larger join")
     return {name: replace_buffers(win, {0: net.to_bytes()})}, notes
 
 
