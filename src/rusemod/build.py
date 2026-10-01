@@ -909,6 +909,13 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     for note in notes:
                         say(f"  {note}")
                 for name, (map_paints, ids) in paints.items():
+                    from .cover import unpaired_blocked
+                    for p in unpaired_blocked(map_paints, blocks.get(name, ([], []))[0]):
+                        result.findings.append(Finding("warning", (
+                            f"{', '.join(ids)}: {name}: cover.toml paints the blocked layer at ({p.x:.0f}, {p.y:.0f}) "
+                            f"with no movement.toml block there. The blocked layer only tells the AI where it can't "
+                            f"see or build; units still walk on it. To keep units off, add a [[block]] with the same "
+                            f"x, y and radius to movement.toml")))
                     try:
                         new, notes = apply_paints(read_data, name, map_paints)
                     except (CoverError, ValueError, struct.error) as exc:

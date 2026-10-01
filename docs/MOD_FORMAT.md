@@ -432,8 +432,9 @@ entry = "(6) Cotentin (3v3)"  # optional: which of the map's entries, when it ha
 
 Where units hide is baked into each map: a grid in `datasmap\<map>\mapinfo.win` (`DataMap_Win.dat`; its fourth
 buffer, an SDB quadtree, FORMATS §2). A cell's byte holds layers; the game asks two (LittleGroove's notes): 0x08,
-"in forest" (units there are hidden, and ambush), and 0x04, blocked. Eugen drew them as zones, not from the trees:
-a town or a wood a mod adds gives cover only where cover is painted. A mod paints circles (or squares), in order:
+"in forest" (units there are hidden, and ambush), and 0x04, **"AI: blocked"**. Eugen drew them as zones, not from
+the trees: a town or a wood a mod adds gives cover only where cover is painted. A mod paints circles (or squares), in
+order:
 
 ```toml
 [[paint]]
@@ -446,6 +447,10 @@ square = true       # optional: a square along the map's axes, `radius` (map uni
                     # its edges follow the grid's rows and columns
 ```
 
+- **`blocked` doesn't stop units.** It is what the AI asks about ground (its sight lines, where it builds and
+  defends, and the AI grid's clearance); units move by the movement graphs alone, and walk on shipped "blocked" cells
+  too (from 3% of them on SuperCrossroads4 to half on Ardennes). To keep units off, add a `movement.toml` block with
+  the same x, y and radius: the build warns about a blocked paint with no block holding its middle.
 - `square` is written by hand for now, here or on a `cover` / `uncover` stroke in terrain.toml: the Studio's cover
   brushes paint circles (its map view draws a square stroke of terrain.toml as a square).
 - `rusemod.cover` edits the tree in place: leaves no circle touches keep their bytes, a leaf a circle's edge

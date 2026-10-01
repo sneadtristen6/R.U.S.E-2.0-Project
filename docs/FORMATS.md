@@ -202,7 +202,8 @@ requirement, and the engine doesn't check member bytes against anything we chang
     (IA_Common.dat; the campaign's red-zone blockers are `DescriptorBloqueZoneForRuseAndOrder` calls there),
     scenarios `test\map\<map>\leveldesign*.scenario` (DataMap_Win.dat), unit cards
     `gen\ww2\res2d\texanimationuniticone\<nation>\<unit>.tgv` (ZZ_Win.dat). Per-map terrain bit layers live in
-    `datasmap\<map>\mapinfo.win` (DataMap_Win.dat; 2048² cells; bit 4 = blocked, bit 8 = forest, per the mods).
+    `datasmap\<map>\mapinfo.win` (DataMap_Win.dat; 2048² cells; 0x04 = "AI: blocked" (what the AI asks; units move by the movement graphs alone
+    and walk on it), 0x08 = forest, per the mods).
   - Ships: `Unit_Battleship`, `Unit_Heavy_Cruiser` and `Unit_Destroyer` boot, render, take orders and fire when made
     buildable; the battleship's model has no chassis bone, so it never moves visibly. The skirmish mesh packs
     `Pack\GFXDescriptor\MeshSkirmish_<nation>.spk` have `…WitBoat_…` variants (`ia/cluster.cpp`).
