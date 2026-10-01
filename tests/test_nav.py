@@ -79,6 +79,26 @@ def row():
 
 
 class Blocking(unittest.TestCase):
+    def test_ground_a_block_cuts_off_goes_too(self):
+        # the owner's D-Day mod (2026-09-30): block brushes cut a town's local map into five pieces, and the build
+        # wrote it; ground units can't reach crashes the game when they're ordered onto it
+        g = row()
+        g.block([(7000.0, 2000.0, 400.0)], refill=False)  # B emptied: A and C are each on their own
+        self.assertEqual(g.parts(), [1, 1])
+        self.assertEqual(g.drop_cut_off(), 1)
+        self.assertEqual((g.parts(), [c[2] > 0 for c in g.circles[:-1]].count(True)), ([1], 1))
+        self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
+        g = town()
+        g.subs[0].block([(5000.0, 22400.0, 300.0)], refill=False)  # the middle one goes: the town's map in two
+        self.assertEqual(g.subs[0].parts(), [1, 1])
+        self.assertEqual(nav._drop_cut_off(g), 1)
+        self.assertEqual((g.subs[0].parts(), g.parts()), ([1], [6]))
+        g = town()
+        g.subs[0].block([(5000.0, 22400.0, 3000.0)], refill=False)  # no ground left in the town: no route through
+        self.assertEqual(nav._drop_cut_off(g), 1)  # the owner goes, and nothing else is cut off
+        self.assertEqual((g.circles[0][2], g.parts()), (0.0, [5]))
+        self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
+
     def test_a_circle_emptied_and_one_shrunk(self):
         g = row()
         counts = g.block([(10800.0, 2000.0, 400.0)])  # C's middle is 800 away: C keeps 400 clear, too small

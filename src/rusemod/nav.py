@@ -596,6 +596,25 @@ class Graph:
             g.crossings = b"".join(recs)
         return gone
 
+    def _empty(self, gone: set[int]) -> None:
+        """Empty the circles `gone` as a block empties one: radius 0, their links and those links' crossings out."""
+        n = len(self.circles) - 1
+        allc = [(c[0], c[1], 0.0 if i in gone else c[2]) for i, c in enumerate(self.circles[:-1])]
+        kept = [(i, lk) for i, lk in enumerate(self.links) if lk[0] not in gone and lk[1] not in gone]
+        self._finish(allc, kept, [], n)
+
+    def drop_cut_off(self) -> int:
+        """Empty every live circle outside the graph's largest part: ground a block cut off from the rest is ground no
+        unit can reach, and the game crashes when a unit is ordered onto it (seen in the game, 2026-09-30); an order
+        there now goes to the nearest ground units can reach. Returns how many circles went."""
+        lab, sizes = self._labels()
+        if len(sizes) <= 1:
+            return 0
+        main = max(sizes, key=lambda part: (sizes[part], -part))
+        gone = {i for i, c in enumerate(self.circles[:-1]) if c[2] > 0 and lab[i] != main}
+        self._empty(gone)
+        return len(gone)
+
     def parts(self) -> list[int]:
         """How many live circles each connected part of the graph has, the largest first. Every shipped graph is one
         part (66 of 66 main graphs and all their sub-graphs, 2026-09-30): the game never expects ground it can't
@@ -739,11 +758,27 @@ def apply_blocks(read, pack: str, blocks: list[Block]) -> tuple[dict, list[str]]
             continue
         g = Graph.read(bufs[k])
         c = g.block(zones)
-        new[k] = g.to_bytes()
         notes.append(f"{what}: {len(zones)} block(s); {c['emptied']} circle(s) emptied, {c['shrunk']} shrunk, "
                      f"{c['links']} link(s) and {c['crossings']} crossing(s) taken out; {c['added']} circle(s) and "
                      f"{c['linked']} link(s) added to fill the ground back")
+        cut = _drop_cut_off(g)
+        if cut:
+            notes.append(f"{what}: {cut} circle(s) the blocks cut off from the rest taken out too (no unit could "
+                         f"reach them, and an order onto them crashes the game)")
+        new[k] = g.to_bytes()
     return {name: replace_buffers(win, new)}, notes
+
+
+def _drop_cut_off(g: Graph) -> int:
+    """After blocks: every local map, and then the main graph, kept in one piece (as every shipped graph is). A local
+    map's cut-off pieces go first; an owner whose local map has no ground left goes too (no route could pass it);
+    then the main graph's cut-off pieces. Returns how many circles went."""
+    cut = sum(s.drop_cut_off() for s in g.subs)
+    dead = {k for k, s in enumerate(g.subs) if g.circles[k][2] > 0 and not s.parts()}
+    if dead:
+        g._empty(dead)
+        cut += len(dead)
+    return cut + g.drop_cut_off()
 
 
 # --- filling ground back after a block ------------------------------------------------------------------------------
