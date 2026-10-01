@@ -114,6 +114,19 @@ class Checks(unittest.TestCase):
         with self.assertRaises(LibraryError):
             Library(self.dir / "library").add(program)
 
+    def test_a_community_mod_packs_with_its_rmod(self):
+        """Packed for the mod list or a friend, a library mod made from a .rmod carries the .rmod: without it the
+        package held only its manifest, and installed nothing."""
+        from rusemod.package import check, files_of, pack
+        path = self.write("Test_Mod_V1.rmod", rmod_json({"genglad/readme.txt": b"new"}))
+        Library(self.dir / "library").add(path)
+        folder = self.dir / "library" / "test-map-mod-1"
+        self.assertIn(folder / "Test_Mod_V1.rmod", files_of(folder))
+        packed = pack(folder, self.dir)
+        info = check(packed)  # read the way a build would, from the package alone
+        self.assertIn("Test_Mod_V1.rmod", info["files"])
+        self.assertEqual(info["id"], "test-map-mod-1")
+
 
 class Builds(unittest.TestCase):
     def setUp(self):

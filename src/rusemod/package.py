@@ -122,10 +122,18 @@ def update_manifest(folder, mod: dict | None = None, game: dict | None = None) -
 
 # --- pack ---
 def files_of(folder) -> list[Path]:
-    """The files of a mod folder that go into its package: mod.toml and the other loose files of §2, and everything
-    under src/, text/, files/ and maps/ (never caches, hidden files or build output)."""
+    """The files of a mod folder that go into its package: mod.toml and the other loose files of §2, the .rmod a
+    community mod's mod.toml names ([rmod] file: the mod itself), and everything under src/, text/, files/ and maps/
+    (never caches, hidden files or build output)."""
     folder = Path(folder)
     out = [folder / f for f in TOP_FILES if (folder / f).is_file()]
+    try:
+        named = tomllib.loads((folder / MANIFEST).read_text(encoding="utf-8")).get("rmod", {}).get("file")
+    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError, AttributeError):
+        named = None
+    if isinstance(named, str) and named == Path(named).name and named.lower().endswith(".rmod") \
+            and (folder / named).is_file():
+        out.append(folder / named)
     for sub in FOLDERS:
         if (folder / sub).is_dir():
             for root, dirs, names in os.walk(folder / sub):
