@@ -30,8 +30,17 @@ circle through the meeting points. Circle centres sit on a 320-unit grid and rad
                  so a road link renumbered must be renumbered here too (Graph.renumber_roads)
     points       a spatial index of the circles, up to the first sub-graph: branch records (u16 1, u16 how far
                  to skip, f32 x, y: a split point) and leaf records (u16 count, then that many circle numbers);
-                 not written by us yet
+                 see _tree_read
     sub-graphs   the same layout again, without sub-graphs of their own (22 on Blitz)
+
+**Local maps (the sub-graphs).** Sub-graph k belongs to main circle k, for every k below the header's count: nothing
+else ties them, so the owners are always the first circles (the largest first on every shipped graph, then the rest
+largest first). Inside an owner, units can stand only where its local map has a circle, a route is searched again
+inside the local map between the points where it comes in and goes out (a search that fails there fails the whole
+route), and an order into the owner is moved to the nearest circle of its local map. So a local map is one piece and
+has a circle at every point where a main link meets its owner (11,830 of 12,007 shipped ones do), and no other main
+circle's middle lies inside an owner (none on any shipped map). A local map shares its main graph's box, has no local
+maps of its own, and its header after the counts is zeros, like the main graph's.
 
 Every shipped graph is one connected piece (66 of 66 main graphs on 33 maps, and all their sub-graphs): the game
 never expects ground it can't reach from the rest, and an order onto such ground crashes it (seen in the game,
@@ -50,6 +59,11 @@ MIN_RADIUS = 1280.0  # the smallest circle on any shipped map
 METRE = 260.0        # map units in a metre
 APPROACH = 16000.0   # how far past a new deck's end its approach may run along the road to reach ground units already
                      # use (about 62 m; the shipped bridges' chains of circles reach up to 10,800 past their decks)
+LOCAL_RADIUS = 640.0   # a new deck's circles in its local map: units keep within this of the deck's line, inside the
+                       # floor they stand on (663 either side on the bridge kinds the build places; the shipped decks'
+                       # local circles are mostly 640)
+LOCAL_SPACING = 640.0  # between them along the deck (a link needs an overlap of STEP: at most 960 apart for 640)
+LEAF = 4               # the most circles in a leaf of an index built here (the shipped ones hold 1 to 7)
 
 
 class NavError(ValueError):
@@ -103,9 +117,11 @@ class Graph:
         return head + struct.pack(f"<{len(offsets)}I", *offsets) + b"".join(body)
 
     # --- changing it ---
-    def block(self, zones: list[tuple[float, float, float]], refill: bool = True) -> dict:
+    def block(self, zones: list[tuple[float, float, float]], refill: bool = True, keep_owners: bool = False) -> dict:
         """Take the ground inside `zones` (circles: x, y, radius) away, here and in the local graphs: units plan
-        around it (proven in the game, 2026-09-30).
+        around it (proven in the game, 2026-09-30). With `keep_owners`, the circles that own a local map stay as they
+        are: their ground is taken away in the local map only (an old bridge's deck, whose owner then takes the new
+        one: Graph.open).
 
         A circle whose middle is in a zone, or that would be smaller than MIN_RADIUS once it keeps clear of every
         zone, is emptied (radius 0, no links); one that reaches into a zone shrinks to keep clear (its radius a
@@ -118,19 +134,19 @@ class Graph:
         the old numbers and the old trees stay. Returns what changed."""
         counts = {"emptied": 0, "shrunk": 0, "links": 0, "crossings": 0, "added": 0, "linked": 0}
         if zones:
-            self._block(zones, refill, counts)
+            self._block(zones, refill, counts, len(self.subs) if keep_owners else 0)
         for s in self.subs:
             for k, v in s.block(zones, refill).items():
                 counts[k] += v
         return counts
 
-    def _block(self, zones, refill, counts) -> None:
+    def _block(self, zones, refill, counts, keep: int = 0) -> None:
         n = len(self.circles) - 1
         old = [c[:3] for c in self.circles[:-1]]
         radius = []
-        for x, y, r in old:
+        for i, (x, y, r) in enumerate(old):
             clear = min(((x - zx) ** 2 + (y - zy) ** 2) ** 0.5 - zr for zx, zy, zr in zones)
-            if clear >= r:
+            if clear >= r or i < keep:
                 radius.append(r)
                 continue
             new = (clear // STEP) * STEP if clear > 0 else 0.0
@@ -189,9 +205,13 @@ class Graph:
                 into.setdefault(changed[source], []).append(n + j)
             self.points = _index_add(self.points, into)
 
-    def _finish(self, allc, kept, new_links, n: int) -> int:
+    def _finish(self, allc, kept, new_links, n: int, old_of=None) -> int:
         """The graph's circles, links, lists and crossings written again from `allc` (every circle, the first `n`
-        old), `kept` ((old number, link) pairs) and `new_links` ((None, link)); returns how many crossings went."""
+        old), `kept` ((old number, link) pairs) and `new_links` ((None, link)); returns how many crossings went.
+        `old_of` gives each circle of `allc` its old number (None for a new one) when the old ones were numbered
+        again (new owners put in among them: Graph.open); without it, circle c < n is old circle c."""
+        if old_of is None:
+            old_of = list(range(n)) + [None] * (len(allc) - n)
         # every shipped graph lists its links by their second circle: kept ones are already in that order, new ones
         # go after the kept ones of the same second circle (a stable sort)
         ordered = sorted(kept + new_links, key=lambda pair: pair[1][1])
@@ -206,8 +226,8 @@ class Graph:
         for c in range(len(allc)):
             start, cstart = len(lists), len(kept_cross)
             lists += mine[c]
-            if c < n:
-                c0, c1 = self.circles[c][4], self.circles[c + 1][4]
+            if old_of[c] is not None:
+                c0, c1 = self.circles[old_of[c]][4], self.circles[old_of[c] + 1][4]
                 for rec in cross[c0:c1]:
                     la, lb = struct.unpack_from("<2H", rec, 20)
                     if la in number and lb in number:
@@ -220,99 +240,339 @@ class Graph:
         return len(cross) - len(kept_cross)
 
     def open(self, spans: list[tuple[float, float, float, float]], radius: float = 2560.0, roads=(),
-             reach: float = APPROACH, avoid=None) -> dict:
-        """Give units ground along `spans` (x0, y0, x1, y1: a bridge's deck) where there was none (water): circles
-        `radius` wide every `radius` along each span. A deck must reach ground units already use at both ends: the
-        shipped graphs are each one piece, and the game crashes when a unit is ordered onto ground its own can't reach
-        (an empty route, seen in the game 2026-09-30 with decks that joined nothing). So where half a deck doesn't
-        overlap a live circle by STEP or more (a third of the deck at each end: the middle is over water), an
-        approach goes on from that end: circles every 3/4 `radius` along the nearest of `roads` (lines of map points;
-        the way that leads off the deck, then straight on past the road's end; straight on along the deck without
-        one), until one does, at most `reach` map units out, and never where `avoid(x, y, radius)` says (blocked
-        ground, water). A deck that can't be joined at both ends is left closed. Every new circle is linked to each circle it overlaps by STEP or more and listed in the index
-        under the nearest old circle, whose branches widen to reach it (the game's index keeps the exact reach of each
-        half on the branch's axis; see _index_add). The local town graphs are left as they are.
+             reach: float = APPROACH, avoid=None, water=None) -> dict:
+        """Give units a way over `spans` (x0, y0, x1, y1: bridges' decks) where there was none (water), the way the
+        game's own bridges have one: one big circle over the crossing, its owner, and in the owner's local map small
+        circles along the deck (LOCAL_RADIUS, at most LOCAL_SPACING apart, end to end) with a copy of every main circle
+        the owner overlaps. Inside the owner units stand only on those, so they keep to the deck and the water beside
+        it stays closed (plain main circles along a deck let units cut across their whole width: off its sides and
+        under it, seen in the game, 2026-09-30); the copies keep the banks inside the owner as they were, and hold
+        every point where the owner's links meet the ground around.
 
-        Returns {"added", "linked", "approach": the circles on approaches, "longest": the longest approach (map
-        units), "closed": [(span index, [the ends that couldn't be joined: 0 its start, 1 its end])]}."""
-        counts = {"added": 0, "linked": 0, "approach": 0, "longest": 0.0, "closed": []}
-        n = len(self.circles) - 1
-        old = [c[:3] for c in self.circles[:-1]]
-        ground = _Buckets(old)  # (the live ones: a circle of radius 0 is in no bucket)
+        A deck must reach ground units already use at both ends: the shipped graphs are each one piece, and the game
+        crashes when a unit is ordered onto ground its own can't reach (an empty route, seen in the game 2026-09-30).
+        So where a deck's end third doesn't overlap a live main circle by STEP or more, an approach goes on from that
+        end in the main graph: circles `radius` wide every 3/4 `radius` along the nearest of `roads` (lines of map
+        points; the way that leads off the deck, then straight on past the road's end; straight on along the deck
+        without one), until one does, at most `reach` map units out; never where `avoid(x, y, radius)` says (blocked
+        ground), with any of its disc over `water(x, y)`, with its middle in an owner or overlapping a new one.
 
-        def joined(c) -> bool:
-            return any(_meeting(c, old[d]) is not None for d in ground.near(*c))
+        The owner is centred at the deck's middle (on the STEP grid), as small as holds the whole deck and links to
+        the ground at both ends (with no copy apart from the deck, when a size allows it), and never so big that
+        another main circle's middle is inside it or it overlaps another owner (no shipped graph has either). It takes
+        the circle number after the old owners (the game finds local map k as circle k's): every circle after it
+        moves up one, in the links, lists, crossings and index; its local map goes after theirs, with an index of
+        its own (_tree_build); it is linked to the main circles whose copies are in its local map, and listed in the
+        main index under the nearest old circle (_index_add). An old deck of main circles under the new one (a bridge
+        of the map's that has no owner: their middles over the water, reaching within 2 LOCAL_RADIUS of the new deck's
+        line) goes when the new one opens, and so do the circles linked to it whose middles would be in any owner over
+        the new deck (its ends), kept in the new local map shrunk off the water (_dry_part); unless that would leave
+        ground units can't reach, when the old deck stays and the new one stays closed. A deck whose middle is in an
+        old owner (a replaced bridge of the map's, a
+        town by a river) goes into that owner's local map instead (_into_local). A deck that can't be joined at both
+        ends, or has no room for an owner, is left closed.
 
-        new, parts_before = [], len(self._labels()[1])
+        Checked before returning (NavError): the graph in no more pieces than before; every new local map one
+        piece; every point where a new link meets an owner inside a circle of its local map; each new owner holding
+        its whole deck and no other circle's middle, and no new circle's middle in an owner; every place along each
+        opened deck ground units can stand on (walkable); the graph read back as written.
+
+        Returns {"added": main circles added (owners and approaches), "linked": main links added, "approach": circles
+        on approaches, "longest": the longest approach (map units), "owners": [(span index, circle number, radius,
+        circles in its local map)], "inside": [(span index, the old owner's number)], "left_out": copies left out of
+        a local map (apart from its deck), "under": an old deck's main circles taken away, "closed": [(span index, [the
+        ends that couldn't be joined: 0 its start, 1 its end])], "crowded": [span index: no room for an owner, or an
+        old owner it can't go into]}."""
+        counts = {"added": 0, "linked": 0, "approach": 0, "longest": 0.0, "owners": [], "inside": [], "left_out": 0,
+                  "under": 0, "closed": [], "crowded": []}
+        n, nx = len(self.circles) - 1, len(self.subs)
+        allc = [c[:3] for c in self.circles[:-1]]  # the main circles: the old ones, then the approaches
+        ground = _Buckets(allc)  # (allc grows with it)
+        parts_before = len(self._labels()[1])
+        owned = []  # the new owners: {"span", "circle", "local": its local map's circles, "linked": main circles}
+        decks = []  # (span index, the deck's circles), for the last check
+
+        def in_owner(x, y, r) -> bool:
+            """Whether a circle has its middle in an old owner, or overlaps a new one."""
+            return any(allc[k][2] > 0 and math.hypot(x - allc[k][0], y - allc[k][1]) < allc[k][2] for k in range(nx)) \
+                or any(math.hypot(x - o["circle"][0], y - o["circle"][1]) < o["circle"][2] + r for o in owned)
+
+        def meets(c, d):
+            """Where circle c meets main circle d, for a link (an old owner only where its local map has ground)."""
+            if allc[d][2] <= 0:
+                return None
+            point = _meeting(c, allc[d])
+            if point is None or (d < nx and self.subs[d].find(*point) is None):
+                return None
+            return point
+        near_of = [set() for _ in range(n)]  # the old circles each old circle is linked to
+        for a, b, _x, _y in self.links:
+            near_of[a].add(b)
+            near_of[b].add(a)
+
+        def pieces_with(got) -> int:
+            """How many pieces the main graph would be in with `got` (an owner and its approaches) and those before
+            it: the old links between live circles, every approach circle linked to all it meets, every owner to the
+            circles its local map has copies of."""
+            every = allc + got["main"]
+            up = list(range(len(every) + len(owned) + 1))
+
+            def root(a):
+                while up[a] != a:
+                    up[a] = up[up[a]]
+                    a = up[a]
+                return a
+            for a, b, _x, _y in self.links:
+                if every[a][2] > 0 and every[b][2] > 0:
+                    up[root(a)] = root(b)
+            for c in range(n, len(every)):
+                for d in list(ground.near(*every[c])) + list(range(len(allc), len(every))):
+                    if d != c and every[d][2] > 0 and _meeting(every[c], every[d]) is not None \
+                            and (d >= len(allc) or meets(every[c], d) is not None):
+                        up[root(c)] = root(d)
+            for j, o in enumerate(owned + [got]):
+                for i in o["linked"]:
+                    up[root(len(every) + j)] = root(i)
+            return len({root(i) for i in range(len(up)) if i >= len(every) or every[i][2] > 0})
+
         for si, (x0, y0, x1, y1) in enumerate(spans):
-            length = ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+            length = math.hypot(x1 - x0, y1 - y0)
             if length <= 0:
                 continue
-            steps = max(1, int(-(-length // radius)))
-            deck = [(x0 + (x1 - x0) * k / steps, y0 + (y1 - y0) * k / steps, float(radius)) for k in range(steps + 1)]
+            steps = max(1, math.ceil(length / LOCAL_SPACING))
+            deck = [(float(round(x0 + (x1 - x0) * k / steps)), float(round(y0 + (y1 - y0) * k / steps)), LOCAL_RADIUS)
+                    for k in range(steps + 1)]
+            mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+            host = next((k for k in range(nx) if allc[k][2] > 0
+                         and math.hypot(mx - allc[k][0], my - allc[k][1]) < allc[k][2]), None)
+            if host is not None:
+                got = self._into_local(host, (x0, y0, x1, y1), deck, roads, reach, avoid, water)
+                if got is None:
+                    counts["crowded"].append(si)
+                    continue
+                counts["inside"].append((si, host))
+                counts["approach"] += got[0]
+                counts["longest"] = max(counts["longest"], got[1])
+                decks.append((si, deck))
+                continue
+            # an old deck of main circles under the new one (a bridge of the map's without an owner) goes: those over
+            # the water, and those of its ends whose middles would be in any owner over the new deck, kept (shrunk off
+            # the water) in the new local map
+            under = {i: allc[i] for i in _under(allc, (x0, y0, x1, y1), water) if nx <= i < n}
+            cx, cy, low = _owner_middle((x0, y0, x1, y1))
+            ends_of = {j: allc[j] for i in under for j in near_of[i] if j not in under and allc[j][2] > 0
+                       and math.hypot(allc[j][0] - cx, allc[j][1] - cy) < low}
+            kept_ends = [c for c in (_dry_part(water, *c) for c in ends_of.values()) if c is not None]
+            gone = {**under, **ends_of}
+            for i in gone:
+                allc[i] = allc[i][:2] + (0.0,)
             third = max(1, len(deck) // 3)
             ends = ((deck[:third], (x0, y0), (x0 - x1, y0 - y1), (x1, y1)),
                     (deck[-third:], (x1, y1), (x1 - x0, y1 - y0), (x0, y0)))
-            approaches, failed, longest = [], [], 0.0
+            chains, anchors, failed, longest = [], [], [], 0.0  # anchors: each end's ground, by main circle number
             for which, (part, at, out, other) in enumerate(ends):
-                if any(joined(c) for c in part):
+                here = sorted({d for c in part for d in ground.near(*c) if d >= nx and meets(c, d) is not None})
+                if here:
+                    chains.append([])
+                    anchors.append(here)
                     continue
-                chain, reached = [], False
+                chain, met = [], []
                 for walked, (px, py) in _walk_out(at, out, roads, radius * 0.75, reach, away=other):
-                    if avoid is not None and avoid(px, py, float(radius)):
+                    if (avoid is not None and avoid(px, py, float(radius))) or _wet(water, px, py, radius) \
+                            or in_owner(px, py, radius):
                         break
                     chain.append((px, py, float(radius)))
-                    if joined(chain[-1]):
-                        reached = True
+                    met = [d for d in ground.near(*chain[-1]) if meets(chain[-1], d) is not None]
+                    if met:
                         longest = max(longest, walked)
                         break
-                if reached:
-                    approaches.append(chain)
+                if met:
+                    chains.append(chain)
+                    anchors.append(met)
                 else:
                     failed.append(which)
-            if failed:
-                counts["closed"].append((si, failed))
+            got = None if failed else self._owner_for((x0, y0, x1, y1), deck, allc, nx, anchors, chains,
+                                                      [o["circle"] for o in owned], kept_ends)
+            if got is not None and gone and pieces_with(got) > parts_before:
+                got = None  # the old deck was the only way to some ground: it stays, and the new one stays closed
+            if got is None:
+                counts["closed" if failed else "crowded"].append((si, failed) if failed else si)
+                for i, c in gone.items():  # (the old deck stays)
+                    allc[i] = c
                 continue
+            for c in got["main"]:  # the approaches' circles outside the owner (those in it are in its local map)
+                ground.add(c)
+            counts["under"] += len(gone)
+            counts["approach"] += sum(len(chain) for chain in chains)
             counts["longest"] = max(counts["longest"], longest)
-            new += deck + [c for chain in approaches for c in chain]
-            counts["approach"] += sum(len(chain) for chain in approaches)
-        if not new:
+            counts["left_out"] += got["left_out"]
+            owned.append(dict(got, span=si))
+            decks.append((si, deck))
+        if not decks:
             return counts
-        allc = old + new
-        counts["added"] = len(new)
+        added, m = len(allc) - n, len(owned)
+        if added or m:
+            owned.sort(key=lambda o: -o["circle"][2])  # owners largest first, as on every shipped graph
+
+            def num(i):  # a main circle's number once the new owners are in, after the old ones
+                return i if i < nx else i + m
+            circles = allc[:nx] + [o["circle"] for o in owned] + allc[nx:]
+            old_of = list(range(nx)) + [None] * m + [i if i < n else None for i in range(nx, len(allc))]
+            kept = [(i, (num(a), num(b), x, y)) for i, (a, b, x, y) in enumerate(self.links)
+                    if allc[a][2] > 0 and allc[b][2] > 0]  # (an old deck's under a new one go)
+            linked = {lk[:2] for _i, lk in kept}
+            new_links = []
+            for c in range(n, len(allc)):  # the approaches: to every main circle they meet
+                for d in ground.around(c):
+                    point = meets(allc[c], d) if d != c else None
+                    pair = (num(min(c, d)), num(max(c, d)))
+                    if point is None or pair in linked:
+                        continue
+                    linked.add(pair)
+                    new_links.append((None, pair + point))
+            for j, o in enumerate(owned):  # each owner: to the main circles its local map has copies of
+                new_links += [(None, (nx + j, num(i)) + _meeting(o["circle"], allc[i])) for i in o["linked"]]
+            counts["added"], counts["linked"] = added + m, len(new_links)
+            self._finish(circles, kept, new_links, n, old_of)
+            fresh = [(nx + j, o["circle"]) for j, o in enumerate(owned)] + [(num(i), allc[i]) for i in range(n, len(allc))]
+            self.points = _index_more(_index_renumber(self.points, num), allc[:n], fresh, num)
+            self.subs = self.subs + [_local_graph(self.box, o["local"]) for o in owned]
+            counts["owners"] = [(o["span"], nx + j, o["circle"][2], len(o["local"])) for j, o in enumerate(owned)]
+        self._check_opened(spans, parts_before, nx, m, n + m, decks, [(k, si) for si, k, _r, _c in counts["owners"]])
+        return counts
+
+    def _owner_for(self, span, deck, every, nx: int, anchors, chains, owners, extra=()) -> dict | None:
+        """The owner circle for a deck (its circles `deck`, along `span`): centred at the deck's middle on the STEP
+        grid; its radius on the STEP grid, from the least that holds the deck up to the most that leaves the middle of
+        every main circle (`every`: (x, y, r), the first `nx` old owners) outside and other owners (old, and `owners`:
+        the new ones) apart. The first radius whose local map (_try_owner; `anchors` and `chains`: each end's ground
+        and approach; `extra`: circles for it alone) links to the ground at both ends with no copy apart from the
+        deck, else the first that links to both ends at all. {"circle", "local", "linked", "left_out", "main"}, or
+        None when no radius does."""
+        cx, cy, low = _owner_middle(span)
+        high = math.inf
+        for i, (x, y, r) in enumerate(every):
+            if r <= 0:
+                continue
+            d = math.hypot(x - cx, y - cy)
+            high = min(high, (math.ceil(d / STEP) - 1) * STEP)  # its middle outside the owner
+            if i < nx:
+                high = min(high, math.floor((d - r) / STEP) * STEP)  # an old owner: apart
+        for x, y, r in owners:
+            high = min(high, math.floor((math.hypot(x - cx, y - cy) - r) / STEP) * STEP)
+        high = min(high, low + 64 * STEP)  # (a bigger one never reaches more ground units use)
+        if high < low:
+            return None
+        near = [(i, c) for i, c in enumerate(every) if i >= nx and c[2] > 0 and math.hypot(c[0] - cx, c[1] - cy) < high + c[2]]
+        best = None
+        for size in range(int(low), int(high) + 1, int(STEP)):
+            got = _try_owner((cx, cy, float(size)), deck, near, anchors, chains, len(every), extra)
+            if got is not None and not got["left_out"]:
+                return got
+            best = best or got
+        return best
+
+    def _into_local(self, k: int, span, deck, roads, reach: float, avoid, water) -> tuple[int, float] | None:
+        """Put a deck (its circles `deck`, along `span`) into the local map of old owner k, which holds the deck's
+        middle (a replaced bridge of the map's, whose old deck over water the build closed; a town by a river): the
+        map's circles centred over water that come within 2 LOCAL_RADIUS of the deck's line go (an old deck there),
+        the deck's circles come in, each end joined to the map's ground where its end third doesn't reach it by an
+        approach of LOCAL_RADIUS circles every LOCAL_SPACING along the road, inside the owner, never over water or
+        where `avoid` says. New circles are linked to every circle they overlap by STEP or more and listed in the
+        map's index under the nearest old one. Returns (approach circles, the longest approach), or None, leaving the
+        map as it was, when the deck isn't all inside the owner, an end can't be joined, or the map would come out in
+        more pieces or with a point where a main link meets the owner no longer on its ground."""
+        ox, oy, orad = self.circles[k][:3]
+        x0, y0, x1, y1 = span
+        if max(math.hypot(x0 - ox, y0 - oy), math.hypot(x1 - ox, y1 - oy)) > orad:
+            return None
+        local = self.subs[k]
+        gates = [(gx, gy) for a, b, gx, gy in self.links if k in (a, b) and local.find(gx, gy) is not None]
+        pieces = len(local._labels()[1])
+        lc = [c[:3] for c in local.circles[:-1]]
+        m0 = len(lc)
+        for i in _under(lc, span, water):  # an old deck under the new one
+            lc[i] = lc[i][:2] + (0.0,)
+        ground = _Buckets(list(lc))
+
+        def joins(c) -> bool:
+            return any(_meeting(c, lc[d]) is not None for d in ground.near(*c))
+        third = max(1, len(deck) // 3)
+        ends = ((deck[:third], (x0, y0), (x0 - x1, y0 - y1), (x1, y1)),
+                (deck[-third:], (x1, y1), (x1 - x0, y1 - y0), (x0, y0)))
+        new, longest = list(deck), 0.0
+        for part, at, out, other in ends:
+            if any(joins(c) for c in part):
+                continue
+            chain, reached = [], False
+            for walked, (px, py) in _walk_out(at, out, roads, LOCAL_SPACING, reach, away=other):
+                if math.hypot(px - ox, py - oy) >= orad or (avoid is not None and avoid(px, py, LOCAL_RADIUS)) \
+                        or _wet(water, px, py, LOCAL_RADIUS):
+                    break
+                chain.append((px, py, LOCAL_RADIUS))
+                if joins(chain[-1]):
+                    reached = True
+                    longest = max(longest, walked)
+                    break
+            if not reached:
+                return None
+            new += chain
+        allc = lc + new
+        trial = Graph(local.box, list(local.circles), list(local.links), list(local.lists), local.crossings,
+                      local.points, [], local.head_rest)
+        kept = [(i, lk) for i, lk in enumerate(local.links) if allc[lk[0]][2] > 0 and allc[lk[1]][2] > 0]
         near = _Buckets(allc)
-        linked = {(a, b) for a, b, _x, _y in self.links}
+        linked = {lk[:2] for _i, lk in kept}
         new_links = []
-        for c in range(n, n + len(new)):
+        for c in range(m0, len(allc)):
             for d in near.around(c):
-                if d == c or allc[d][2] <= 0:
+                pair = (min(c, d), max(c, d))
+                point = _meeting(allc[pair[0]], allc[pair[1]]) if d != c and allc[d][2] > 0 else None
+                if point is None or pair in linked:
                     continue
-                a, b = min(c, d), max(c, d)
-                if (a, b) in linked:
-                    continue
-                point = _meeting(allc[a], allc[b])
-                if point is None:
-                    continue
-                linked.add((a, b))
-                new_links.append((None, (a, b) + point))
-        counts["linked"] = len(new_links)
-        self._finish(allc, list(enumerate(self.links)), new_links, n)
-        # the index: each new circle in the leaf of the old circle nearest it, that circle's branches widened to reach
-        live = [i for i, c in enumerate(old) if c[2] > 0]
-        where = _Buckets([old[i] for i in live])
-        into: dict[int, list[int]] = {}
-        boxes: dict[int, tuple] = {}
-        for j, (x, y, r) in enumerate(new):
-            ids = list(where.near(x, y, r + 20480.0)) or range(len(live))
-            bank = live[min(ids, key=lambda k: ((old[live[k]][0] - x) ** 2 + (old[live[k]][1] - y) ** 2) ** 0.5
-                            - old[live[k]][2])] if live else -1
-            into.setdefault(bank, []).append(n + j)
-            bx0, by0, bx1, by1 = boxes.get(bank, (x, y, x, y))
-            boxes[bank] = (min(bx0, x - r), min(by0, y - r), max(bx1, x + r), max(by1, y + r))
-        self.points = _index_add(self.points, into, boxes)
+                linked.add(pair)
+                new_links.append((None, pair + point))
+        trial._finish(allc, kept, new_links, m0)
+        trial.points = _index_more(local.points, lc, [(m0 + j, c) for j, c in enumerate(new)])
+        if len(trial._labels()[1]) > pieces or any(trial.find(gx, gy) is None for gx, gy in gates):
+            return None
+        self.subs[k] = trial
+        return len(new) - len(deck), longest
+
+    def _check_opened(self, spans, parts_before: int, nx: int, m: int, fresh: int, decks, owners) -> None:
+        """Graph.open's checks on the graph it made: new owners nx..nx+m-1 (`owners`: (circle number, span index)),
+        new approach circles from `fresh` on, `decks` the opened decks' circles by span index."""
         if len(self._labels()[1]) > parts_before:  # a guard: never write ground units can't reach
             raise NavError("opening the bridges would leave ground units can't reach, which crashes the game")
-        return counts
+        circles = self.circles[:-1]
+        for k in range(nx, nx + m):
+            ox, oy, orad = circles[k][:3]
+            if len(self.subs[k].parts()) != 1:
+                raise NavError(f"the local movement of the bridge at ({ox:.0f}, {oy:.0f}) would be in pieces, which "
+                               f"crashes the game when a route goes through it")
+            if any(i != k and r > 0 and math.hypot(x - ox, y - oy) < orad for i, (x, y, r, _l, _c) in enumerate(circles)):
+                raise NavError(f"the circle over the bridge at ({ox:.0f}, {oy:.0f}) would hold another's middle")
+        for i, (x, y, r, _l, _c) in enumerate(circles[fresh:], start=fresh):
+            if any(r > 0 and math.hypot(x - ox, y - oy) < orad for ox, oy, orad, _l, _c in circles[:nx + m]):
+                raise NavError(f"a new circle at ({x:.0f}, {y:.0f}) would have its middle in a bridge's or a town's "
+                               f"local movement")
+        for a, b, gx, gy in self.links:  # the owner is always a (owners are the first circles)
+            if a < nx + m and (a >= nx or b >= fresh) and self.subs[a].find(gx, gy) is None:
+                raise NavError(f"units would come into the local movement at ({gx:.0f}, {gy:.0f}) where it has no "
+                               f"ground, and a route through it fails")
+        for si, deck in decks:
+            x0, y0, x1, y1 = spans[si]
+            if not all(self.walkable(x, y) for x, y, _r in deck):
+                raise NavError(f"units couldn't stand all along the bridge at ({(x0 + x1) / 2:.0f}, "
+                               f"{(y0 + y1) / 2:.0f})")
+        for k, si in owners:
+            ox, oy, orad = circles[k][:3]
+            x0, y0, x1, y1 = spans[si]
+            if max(math.hypot(x0 - ox, y0 - oy), math.hypot(x1 - ox, y1 - oy)) > orad:
+                raise NavError(f"the circle over the bridge at ({ox:.0f}, {oy:.0f}) wouldn't hold its whole deck")
+        data = self.to_bytes()
+        if Graph.read(data).to_bytes() != data:
+            raise NavError("the movement graph wouldn't read back as it was written")
 
     def renumber_roads(self, number: dict[int, int]) -> int:
         """Point every crossing, here and in the sub-graphs, at the road network's links as numbered again (`number`:
@@ -391,6 +651,15 @@ class Graph:
             if p <= far:
                 todo.append((node[3], 1 - axis))
         return None
+
+    def walkable(self, x: float, y: float) -> bool:
+        """Whether units can stand at (x, y), as the game decides it: there is ground where the index finds a circle
+        holding the point (find), and when that circle owns a local map, only where the local map's own index finds
+        one of its circles there too."""
+        c = self.find(x, y)
+        if c is None:
+            return False
+        return c >= len(self.subs) or self.subs[c].find(x, y) is not None
 
     def at(self, x: float, y: float) -> list[int]:
         """The circles that hold the point (x, y)."""
@@ -493,6 +762,15 @@ class _Buckets:
         return [(i, j) for i in range(int((x - r) // s), int((x + r) // s) + 1)
                 for j in range(int((y - r) // s), int((y + r) // s) + 1)]
 
+    def add(self, circle) -> int:
+        """One more circle, put at the end of the list the buckets were made with; returns its number."""
+        self.circles.append(circle)
+        i = len(self.circles) - 1
+        if circle[2] > 0:
+            for key in self._keys(*circle):
+                self.cells.setdefault(key, []).append(i)
+        return i
+
     def around(self, c):
         return self.near(*self.circles[c])
 
@@ -515,6 +793,51 @@ def _meeting(p, q) -> tuple[float, float] | None:
         return None
     t = (d - br + ar) / 2 / d
     return (ax + (bx - ax) * t, ay + (by - ay) * t)
+
+
+def _seg_dist(x: float, y: float, span) -> float:
+    """How far (x, y) is from the segment `span` (x0, y0, x1, y1)."""
+    x0, y0, x1, y1 = span
+    dx, dy = x1 - x0, y1 - y0
+    n = dx * dx + dy * dy
+    t = max(0.0, min(1.0, ((x - x0) * dx + (y - y0) * dy) / n)) if n else 0.0
+    return math.hypot(x - x0 - t * dx, y - y0 - t * dy)
+
+
+def _owner_middle(span) -> tuple[float, float, float]:
+    """Where a deck's owner circle goes (x, y, and its least radius): the deck's middle on the STEP grid, and the
+    least radius on the grid that holds the whole deck."""
+    x0, y0, x1, y1 = span
+    cx, cy = round((x0 + x1) / 2 / STEP) * STEP, round((y0 + y1) / 2 / STEP) * STEP
+    low = math.ceil(max(math.hypot(x0 - cx, y0 - cy), math.hypot(x1 - cx, y1 - cy)) / STEP) * STEP
+    return float(cx), float(cy), float(low)
+
+
+def _dry_part(water, x: float, y: float, r: float) -> tuple[float, float, float] | None:
+    """The circle shrunk by STEP at a time until none of it is over water (_wet), or None when less than STEP is
+    left."""
+    while r >= STEP and _wet(water, x, y, r):
+        r -= STEP
+    return (x, y, float(r)) if r >= STEP else None
+
+
+def _under(circles, span, water) -> list[int]:
+    """The circles (x, y, r) of an old deck under a new one along `span`: their middles over `water(x, y)` (none
+    without it), reaching within 2 LOCAL_RADIUS of the new deck's line."""
+    if water is None:
+        return []
+    return [i for i, (x, y, r) in enumerate(circles) if r > 0 and _seg_dist(x, y, span) < r + 2 * LOCAL_RADIUS
+            and water(x, y)]
+
+
+def _wet(water, x: float, y: float, r: float) -> bool:
+    """Whether a circle reaches over water (`water(x, y)`, or None for none): its middle, 16 points on its rim and 8
+    halfway out are tested, not its middle alone."""
+    if water is None:
+        return False
+    points = [(x, y)] + [(x + r * math.cos(math.pi * k / 8), y + r * math.sin(math.pi * k / 8)) for k in range(16)] \
+        + [(x + r / 2 * math.cos(math.pi * (k + 0.5) / 4), y + r / 2 * math.sin(math.pi * (k + 0.5) / 4)) for k in range(8)]
+    return any(water(px, py) for px, py in points)
 
 
 def _nearest_on(line, p) -> tuple[float, int, float] | None:
@@ -613,6 +936,75 @@ def _fill(sources, zones, now) -> list[tuple[float, float, float]]:
     return out
 
 
+# --- local maps for new bridges (Graph.open) ----------------------------------------------------------------------------
+def _piece(circles, start: int = 0) -> set[int]:
+    """The circles (x, y, r) reached from circle `start` through ones overlapping by STEP or more (links)."""
+    near = _Buckets(list(circles))
+    seen, todo = {start}, [start]
+    while todo:
+        c = todo.pop()
+        for d in near.around(c):
+            if d not in seen and _meeting(circles[c], circles[d]) is not None:
+                seen.add(d)
+                todo.append(d)
+    return seen
+
+
+def _try_owner(owner, deck, near, anchors, chains, first: int, extra=()) -> dict | None:
+    """The local map an owner circle (x, y, r) would have over a deck (its circles `deck`): the deck; the approaches'
+    circles (`chains`: each end's, from the deck out) whose middles are in the owner, and the circles `extra`, there
+    only; and a copy of every main circle the owner overlaps (`near`: (number, circle) of the old ones that may; the
+    approaches' circles past the owner, which go into the main graph numbered from `first`), but for those the deck's
+    piece doesn't reach.
+    {"circle": owner, "local": its circles, "linked": the main circles the owner links to (those it overlaps by STEP
+    or more whose copies are kept), "left_out": copies left out, "main": the approaches' circles for the main graph},
+    or None when it links to no ground at one end (`anchors`: the main circles each end's deck or approach meets, or
+    the approach's own circles past the owner), or an approach comes back into it."""
+    cx, cy, size = owner
+    inner, tails, ends = list(extra), [], []
+    for e, chain in enumerate(chains):
+        inside = [math.hypot(c[0] - cx, c[1] - cy) < size for c in chain]
+        k = inside.index(False) if False in inside else len(chain)
+        if any(inside[k:]):
+            return None
+        inner += chain[:k]
+        tail = [(first + len(tails) + j, c) for j, c in enumerate(chain[k:])]
+        tails += tail
+        ends.append(set(anchors[e]) | {i for i, _c in tail})
+    over = [(i, c) for i, c in near + tails if math.hypot(c[0] - cx, c[1] - cy) < size + c[2]]
+    piece = _piece(list(deck) + inner + [c for _i, c in over])
+    kept = [(i, c) for k, (i, c) in enumerate(over, start=len(deck) + len(inner)) if k in piece]
+    linked = [i for i, c in kept if _meeting(owner, c) is not None]
+    if not all(end & set(linked) for end in ends):
+        return None
+    return {"circle": owner, "local": list(deck) + inner + [c for _i, c in kept], "linked": linked,
+            "left_out": len(over) - len(kept), "main": [c for _i, c in tails]}
+
+
+def _local_graph(box, circles) -> Graph:
+    """A local map of `circles` (x, y, r), the largest first: every two that overlap by STEP or more linked where
+    they meet (listed by their second circle, as the game's files), no crossings, an index of its own (_tree_build),
+    the main graph's `box` and a header of zeros after the counts (as every shipped local map)."""
+    circles = sorted(circles, key=lambda c: -c[2])
+    near = _Buckets(list(circles))
+    links = []
+    for b in range(len(circles)):
+        for a in sorted(d for d in near.around(b) if d < b):
+            point = _meeting(circles[a], circles[b])
+            if point is not None:
+                links.append((a, b) + point)
+    mine = [[] for _ in circles]
+    for k, (a, b, _x, _y) in enumerate(links):
+        mine[a].append(k)
+        mine[b].append(k)
+    recs, lists = [], []
+    for c, (x, y, r) in enumerate(circles):
+        recs.append((x, y, r, len(lists), 0))
+        lists += mine[c]
+    recs.append((0.0, 0.0, 0.0, len(lists), 0))
+    return Graph(tuple(box), recs, links, lists, b"", _tree_write(_tree_build(circles)), [], bytes(HEADER - 20))
+
+
 # --- the spatial index (a graph's `points`) ---------------------------------------------------------------------------
 # One bounding-interval tree, its root at the start (checked on all 1,307 shipped graphs: walked from the root it
 # reaches every circle exactly once, and written back with the rules below it gives the same bytes).
@@ -679,9 +1071,9 @@ def _index_add(points: bytes, into: dict[int, list[int]], boxes: dict | None = N
         if lb or rb:
             far, near = struct.unpack("<2f", node[2])
             for b in lb:
-                far = max(far, b[2 + axis])
+                far = max(far, _f32(b[2 + axis], up=True))
             for b in rb:
-                near = min(near, b[axis])
+                near = min(near, _f32(b[axis], up=False))
             node[2] = struct.pack("<2f", far, near)
         return lb + rb
 
@@ -690,6 +1082,68 @@ def _index_add(points: bytes, into: dict[int, list[int]], boxes: dict | None = N
     if rest:
         first[0][1] += rest
     return _tree_write(tree)
+
+
+def _index_more(points: bytes, old, new, number=lambda i: i) -> bytes:
+    """The index with the circles `new` ((number, (x, y, r))) added, each in the leaf of the live circle of `old`
+    ((x, y, r) by their numbers when the index was made; `number` gives a leaf's number for one) nearest it, the
+    branches on the way widened to reach it (_index_add)."""
+    live = [i for i, c in enumerate(old) if c[2] > 0]
+    where = _Buckets([old[i] for i in live])
+    into: dict[int, list[int]] = {}
+    boxes: dict[int, tuple] = {}
+    for j, (x, y, r) in new:
+        ids = list(where.near(x, y, r + 20480.0)) or range(len(live))
+        bank = number(live[min(ids, key=lambda k: ((old[live[k]][0] - x) ** 2 + (old[live[k]][1] - y) ** 2) ** 0.5
+                                - old[live[k]][2])]) if live else -1
+        into.setdefault(bank, []).append(j)
+        bx0, by0, bx1, by1 = boxes.get(bank, (x, y, x, y))
+        boxes[bank] = (min(bx0, x - r), min(by0, y - r), max(bx1, x + r), max(by1, y + r))
+    return _index_add(points, into, boxes)
+
+
+def _index_renumber(points: bytes, number) -> bytes:
+    """The index with every circle in its leaves numbered again (`number(old)` gives the new number)."""
+    tree = _tree_read(points)
+    todo = [tree]
+    while todo:
+        node = todo.pop()
+        if node[0] == "leaf":
+            node[1] = [number(i) for i in node[1]]
+        else:
+            todo += [node[3], node[4]]
+    return _tree_write(tree)
+
+
+def _tree_build(circles, ids=None, depth: int = 0):
+    """An index of `circles` (x, y, r), as the game's are made: split at the median of the circles' middles, on x
+    and y by turns from x, each edge exactly its half's reach (on all 1,307 shipped graphs; rounded outward to f32),
+    leaves of at most LEAF circles. DomesticNukes' Open Map builds whole indexes this way and the game takes them."""
+    if ids is None:
+        ids = [i for i, c in enumerate(circles) if c[2] > 0]
+    if len(ids) <= LEAF:
+        return ["leaf", list(ids)]
+    axis = depth % 2
+    ids = sorted(ids, key=lambda i: (circles[i][axis], i))
+    left, right = ids[:len(ids) // 2], ids[len(ids) // 2:]
+    far = _f32(max(circles[i][axis] + circles[i][2] for i in left), up=True)
+    near = _f32(min(circles[i][axis] - circles[i][2] for i in right), up=False)
+    return ["branch", 1, struct.pack("<2f", far, near), _tree_build(circles, left, depth + 1),
+            _tree_build(circles, right, depth + 1)]
+
+
+def _f32(v: float, up: bool) -> float:
+    """`v` as the nearest f32 on its side: no smaller when `up`, no larger otherwise (an index edge then never
+    stops short of a circle's reach)."""
+    f = struct.unpack("<f", struct.pack("<f", v))[0]
+    if f == v or (f > v) == up:
+        return f
+    bits = struct.unpack("<I", struct.pack("<f", f))[0]
+    if f == 0:
+        bits = 1 if up else 0x80000001
+    else:
+        bits += 1 if (f > 0) == up else -1
+    return struct.unpack("<f", struct.pack("<I", bits))[0]
 
 
 # --- placed buildings units can't go through ---------------------------------------------------------------------

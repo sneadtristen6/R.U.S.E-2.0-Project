@@ -191,10 +191,14 @@ class Crossings(unittest.TestCase):
         bufs = sdb.split_mapinfo(new[member("Blitz")])[1]
         self.assertEqual(bufs[0], net.to_bytes())  # no old bridge: the road network is left alone
         graph = navmod.Graph.read(bufs[2])
-        self.assertEqual(len(graph.circles) - 1, 2 + 5)  # 4,400 of deck, a circle every 1,280 at most
-        self.assertEqual({c[2] for c in graph.circles[2:-1]}, {1280.0})  # as narrow as a deck: units keep to it
-        self.assertEqual(graph.parts(), [7])
-        self.assertTrue(notes[0].startswith("infantry: 5 circle(s) and "), notes)
+        self.assertEqual(len(graph.circles) - 1, 1 + 2)  # an owner over the crossing, at circle 0, and the banks
+        self.assertEqual(len(graph.subs), 1)  # its local map: 4,400 of deck, a circle every 640 at most, and the banks
+        self.assertEqual(sorted({c[2] for c in graph.subs[0].circles[:-1]}), [640.0, 6400.0])
+        self.assertEqual((graph.parts(), graph.subs[0].parts()), ([3], [10]))
+        self.assertTrue(graph.walkable(13800.0, 2000.0) and not graph.walkable(13800.0, 2700.0))  # units keep to it
+        self.assertEqual(notes[0], "infantry: 1 bridge(s) opened, units kept to the deck: 1 with local movement of "
+                                   "its own (a circle 22 m across over the crossing, 10 circle(s) in its local "
+                                   "movement)")
         # a deck whose far end reaches no ground units use would be cut off (the game crashes on an order onto it)
         new, notes = apply_spans(read, "Blitz", [(26000.0, 2000.0, 60000.0, 2000.0)])  # E's land, then nothing
         bufs = sdb.split_mapinfo(new[member("Blitz")])[1]
@@ -231,50 +235,104 @@ class LocalMovement(unittest.TestCase):
         new, _notes = apply_spans(read, "Blitz", [(11600.0, 2000.0, 16000.0, 2000.0)])  # nothing closed: fine
         self.assertIn(member("Blitz"), new)
 
+    def test_a_replaced_bridges_owner_takes_the_new_deck(self):
+        # a road over a bridge of the map's: its deck over the water is closed (the old bridge sunk), but its owner
+        # circle stays and its local movement takes the new deck: units cross the old way, kept to the new deck
+        from test_nav import bridged, river
+        from rusemod.cover import member
+        net = RoadNet([(0.0, 2000.0), (6000.0, 2000.0)], [(0, 1, 600)])
+        net.tree = build_tree(net.points, net.links)
+        head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 16000.0, 16000.0)
+        win = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+            net.to_bytes(), bridged().to_bytes(), bridged().to_bytes(), b"cover")) + b"tail", {})
+        read = {member("Blitz"): win}.get
+        new, notes = apply_spans(read, "Blitz", [(10200.0, 2600.0, 17000.0, 2600.0)], [(13000.0, 2000.0, 1600.0)],
+                                 water=river)
+        g = nav.Graph.read(sdb_buffers(new[member("Blitz")])[2])
+        self.assertEqual(g.circles, bridged().circles)  # the owner stays (its middle is in the closed ground)
+        self.assertEqual((g.parts(), g.subs[0].parts()), ([3], [14]))  # its local map: the banks and the new deck
+        self.assertTrue(all(g.walkable(float(x), 2600.0) for x in range(11500, 15600, 100)))
+        self.assertFalse(any(g.walkable(float(x), y) for x in range(11500, 15600, 100) for y in (1300.0, 1800.0, 3400.0)))
+        self.assertIn("vehicles: 1 bridge(s) opened, units kept to the deck: 1 in the local movement already there "
+                      "(an old bridge's or a town's)", notes)
+
+    def test_a_deck_with_no_room_for_local_movement_stays_closed(self):
+        from rusemod.cover import member
+        g = banks()
+        g.circles = g.circles[:-1] + [(13760.0, 4480.0, 1280.0, 2, 0), (0.0, 0.0, 0.0, 2, 0)]  # 2,560 off its middle
+        head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 16000.0, 16000.0)
+        win = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+            b"roads", g.to_bytes(), g.to_bytes(), b"cover")) + b"tail", {})
+        new, notes = apply_spans({member("Blitz"): win}.get, "Blitz", [(11600.0, 2000.0, 16000.0, 2000.0)])
+        self.assertEqual(sdb_buffers(new[member("Blitz")])[2], g.to_bytes())
+        self.assertIn("vehicles can't use the bridge at (13800, 2000): other ground lies too close to it for the local "
+                      "movement that keeps units on a deck, so it's left closed to them (without it they step off its "
+                      "sides)", notes)
+
+
+def sdb_buffers(win):
+    from ruse_mod_engine import sdb
+    return sdb.split_mapinfo(win)[1]
+
 
 class Opening(unittest.TestCase):
+    """A deck opened to units (Graph.open): an owner circle over it at circle number NX (0 here: these graphs have no
+    local maps), its local map the deck's circles and copies of the banks it overlaps, approaches in the main graph."""
+
     def test_a_deck_joined_to_both_banks(self):
         g = banks()
         counts = g.open([(11600.0, 2000.0, 16000.0, 2000.0)], radius=1280.0)  # from W's edge to E's
-        self.assertEqual((counts["added"], counts["approach"], counts["closed"]), (5, 0, []))
-        self.assertEqual([round(c[0]) for c in g.circles[2:-1]], [11600, 12700, 13800, 14900, 16000])
-        self.assertEqual(g.links[0], (0, 1, 13500.0, 20000.0))  # the old one first
+        self.assertEqual((counts["added"], counts["approach"], counts["closed"], counts["owners"]),
+                         (1, 0, [], [(0, 0, 2880.0, 10)]))
+        self.assertEqual(g.circles[0][:3], (13760.0, 1920.0, 2880.0))  # the owner, the deck's middle on the grid
+        self.assertEqual([c[:3] for c in g.circles[1:-1]], [c[:3] for c in banks().circles[:-1]])  # W, E: 1 and 2
+        local = g.subs[0]
+        self.assertEqual([round(c[0]) for c in local.circles[2:-1]], [11600, 12229, 12857, 13486, 14114, 14743,
+                                                                       15371, 16000])
+        self.assertEqual(local.circles[:2], [(5000.0, 2000.0, 6400.0, 0, 0), (22000.0, 2000.0, 6400.0, 1, 0)])
+        self.assertEqual(g.links[1], (1, 2, 13500.0, 20000.0))  # the old one, its circles numbered again
         pairs = {(a, b) for a, b, _x, _y in g.links}
-        self.assertTrue((0, 2) in pairs and (1, 6) in pairs, pairs)  # each end to its bank
-        self.assertEqual(g.parts(), [7])  # one piece: the deck joins both banks
+        self.assertEqual(pairs, {(0, 1), (0, 2), (1, 2)})  # the owner to each bank
+        self.assertEqual((g.parts(), local.parts()), ([3], [10]))  # one piece each: the deck joins both banks
         self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
-        self.assertTrue(all(g.find(x, 2000.0) is not None for x in range(11000, 16700, 100)))  # the index finds it all
+        self.assertTrue(all(g.walkable(x, 2000.0) for x in range(11000, 16700, 100)))  # all the way over
+        self.assertFalse(any(g.walkable(x, y) for x in range(11500, 15600, 100) for y in (1300.0, 2700.0)))
         self.assertEqual(sorted(i for leaf in (nav._tree_read(g.points)[3], nav._tree_read(g.points)[4])
-                                for i in leaf[1]), list(range(7)))
+                                for i in leaf[1]), list(range(3)))
 
     def test_the_index_must_widen_to_find_a_deck(self):
         g = banks()
         g.open([(11600.0, 2000.0, 16000.0, 2000.0)], radius=1280.0)
-        self.assertIn(g.find(13800.0, 2000.0), (3, 4, 5))  # the deck's middle: any of the new circles holding it
-        stale = dataclasses.replace(g, points=nav._index_add(banks().points, {0: [2, 3, 4], 1: [5, 6]}))
+        self.assertEqual(g.find(13800.0, 2000.0), 0)  # the deck's middle: in the owner
+        listed = nav._index_add(nav._index_renumber(banks().points, lambda i: i + 1), {2: [0]})
+        stale = dataclasses.replace(g, points=listed)
         self.assertIsNone(stale.find(13800.0, 2000.0))  # listed, but the walk never goes between the old edges
-        self.assertEqual(stale.find(5000.0, 2000.0), 0)
+        self.assertEqual(stale.find(5000.0, 2000.0), 1)
 
     def test_approaches_along_the_road(self):
         g = banks()
         counts = g.open([(12400.0, 2000.0, 14600.0, 2000.0)], radius=800.0, roads=[[(0.0, 2000.0), (30000.0, 2000.0)]])
         self.assertEqual((counts["approach"], counts["longest"], counts["closed"]), (2, 600.0, []))
-        self.assertEqual(sorted(round(c[0]) for c in g.circles[2:-1]), [11800, 12400, 13133, 13867, 14600, 15200])
+        self.assertEqual(sorted(round(c[0]) for c in g.circles[3:-1]), [11800, 15200])  # in the main graph
+        # the owner: the least that holds the deck and overlaps both approaches by STEP (1,280 meets the east one by
+        # 318), their middles outside it
+        self.assertEqual(g.circles[0][2], 1600.0)
         self.assertEqual(g.parts(), [len(g.circles) - 1])
-        self.assertTrue(all(g.find(x, 2000.0) is not None for x in range(11000, 16700, 100)))
+        self.assertTrue(all(g.walkable(x, 2000.0) for x in range(11000, 16700, 100)))
 
     def test_a_deck_that_cant_reach_ground_stays_closed(self):
         g = banks()
         counts = g.open([(26000.0, 2000.0, 60000.0, 2000.0), (80000.0, 2000.0, 90000.0, 2000.0)], radius=1280.0)
-        self.assertEqual(counts, {"added": 0, "linked": 0, "approach": 0, "longest": 0.0,
-                                  "closed": [(0, [1]), (1, [0, 1])]})
+        self.assertEqual(counts, {"added": 0, "linked": 0, "approach": 0, "longest": 0.0, "owners": [], "inside": [],
+                                  "left_out": 0, "under": 0, "closed": [(0, [1]), (1, [0, 1])], "crowded": []})
         self.assertEqual(g.to_bytes(), banks().to_bytes())  # nothing written: an island would crash the game
 
     def test_each_end_joins_on_its_own_side(self):
         g = banks()  # the deck's far end reaches E; its near end stops short of W: that end gets its own approach
         counts = g.open([(13000.0, 2000.0, 16800.0, 2000.0)], radius=1280.0)
         self.assertEqual((counts["approach"], counts["closed"]), (1, []))
-        self.assertIn((0, 6), {(a, b) for a, b, _x, _y in g.links})  # the approach circle, to W
+        self.assertIn((1, 3), {(a, b) for a, b, _x, _y in g.links})  # the approach circle, to W
+        self.assertIn((0, 3), {(a, b) for a, b, _x, _y in g.links})  # and to the owner
 
     def test_a_hairpin_road_leads_off_the_deck_not_back_over_it(self):
         g = nav.Graph(box=(0, 0, 32000.0), circles=[(-6000.0, 200.0, 6400.0, 0, 0), (5500.0, 7000.0, 3200.0, 1, 0),
@@ -283,12 +341,13 @@ class Opening(unittest.TestCase):
                       points=nav._tree_write(["leaf", [0, 1]]), head_rest=bytes(nav.HEADER - 20))
         road = [(-3000.0, 0.0), (10300.0, 0.0), (7300.0, 4000.0)]  # under the deck, then back north-west past its end
         counts = g.open([(0.0, 200.0, 10000.0, 200.0)], radius=1280.0, roads=[road])
-        self.assertEqual(counts["closed"], [])
-        new = g.circles[2:-1]
-        approach = new[9:]  # after the deck's nine circles
+        self.assertEqual((counts["closed"], counts["crowded"]), ([], []))
+        # the road comes back into the owner: those approach circles are in its local map only
+        approach = [c for c in g.subs[0].circles[:-1] if c[2] == 1280.0]
         self.assertTrue(approach)
         self.assertFalse([c for c in approach if c[0] < 9000 and abs(c[1] - 200) < 1000])  # not back over the deck
-        self.assertTrue(any(1 in (a, b) and max(a, b) >= 2 for a, b, _x, _y in g.links))  # E reached
+        self.assertIn((0, 2), {(a, b) for a, b, _x, _y in g.links})  # E reached, through the owner
+        self.assertEqual(g.subs[0].parts(), [len(g.subs[0].circles) - 1])
 
     def test_an_approach_keeps_out_of_blocked_ground(self):
         g = banks()

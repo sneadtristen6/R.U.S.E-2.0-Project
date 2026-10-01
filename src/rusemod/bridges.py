@@ -6,9 +6,9 @@ only takes a scenery type the map already uses; 24 of the 32 maps ship one, the 
 bridge, centred on the water and stretched along its length so both ends rest on the banks, as every shipped bridge
 does (the game sets a "TangeantFloor" bridge on the ground under its ends: one with an end over the river tips into
 it), sunk to its kind's usual height, walk-through so units can drive on it. The movement graphs are opened along the
-deck (rusemod.nav Graph.open), it gets a floor units stand on (a shipped bridge's, rusemod.floors: without one they
-walk the riverbed under it), the road network already runs across (rusemod.roadnet), and the ground painter leaves
-the deck unpainted.
+deck the way the shipped bridges' are, with local movement of its own that keeps units on it (rusemod.nav Graph.open),
+it gets a floor units stand on (a shipped bridge's, rusemod.floors: without one they walk the riverbed under it), the
+road network already runs across (rusemod.roadnet), and the ground painter leaves the deck unpainted.
 
 A crossing where the map already has a bridge gets the new one in its place (owner, 2026-09-30: "if a road goes over
 an existing bridge, delete the old and replace it with the new one"): the old one is sunk out of sight
@@ -29,9 +29,10 @@ BANK = 2000.0        # map units of bank past the water each end of a bridge rea
 SAMPLE = 800.0       # map units between the places a road is tested for water
 LEAST = 1500.0       # a run of water shorter than this is a puddle: no bridge
 DECK = 2560.0        # a deck's width, give or take (the shipped bridges' circles are 2,240-3,520)
-OPEN = 1280.0        # the movement circles along a new deck: the smallest the shipped graphs use (nav.MIN_RADIUS),
-                     # about the deck's half-width, so units keep to it (2,560 let a tank step off the side into the
-                     # river, seen in the game 2026-09-30)
+OPEN = 1280.0        # the movement circles on a new deck's approaches, in the main graph: the smallest the shipped
+                     # main graphs use (nav.MIN_RADIUS). The deck itself gets local movement of its own, circles of
+                     # nav.LOCAL_RADIUS that keep units on it (main circles along it let them step off its sides: 2,560
+                     # and 1,280 both did, seen in the game 2026-09-30)
 FALLBACK_LENGTH = 8000.0  # a bridge model's length when its model can't be measured (about 30 m)
 STRETCH = (0.9, 2.0)  # how far a bridge is stretched along its length to fit (the shipped ones: 0.91 to 1.91)
 CLOSE = 1600.0       # the radius of the ground closed along an old bridge's deck, every CLOSE / 2 over water
@@ -375,17 +376,54 @@ def _end_name(dx: float, dy: float) -> str:
     return ("east" if dx > 0 else "west") if abs(dx) >= abs(dy) else ("south" if dy > 0 else "north")
 
 
+def _opened_notes(what: str, spans: list[tuple], c: dict) -> list[str]:
+    """The build's notes on one movement graph opened along `spans` (`c`: what nav.Graph.open returned)."""
+    from .nav import APPROACH, METRE
+    out = []
+    owners, inside = c["owners"], c["inside"]
+    if owners or inside:
+        how = []
+        if owners:
+            how.append(f"{len(owners)} with local movement of its own (a circle "
+                       f"{', '.join(str(round(2 * r / METRE)) for _si, _k, r, _n in owners)} m across over the "
+                       f"crossing, {sum(n for _si, _k, _r, n in owners)} circle(s) in its local movement)")
+        if inside:
+            how.append(f"{len(inside)} in the local movement already there (an old bridge's or a town's)")
+        line = f"{what}: {len(owners) + len(inside)} bridge(s) opened, units kept to the deck: " + "; ".join(how)
+        if c["approach"]:
+            line += (f"; {c['approach']} circle(s) on the approaches to them (the longest "
+                     f"{round(c['longest'] / METRE)} m along the road)")
+        if c["under"]:
+            line += f"; {c['under']} circle(s) of old decks under them taken away"
+        if c["left_out"]:
+            line += f"; {c['left_out']} patch(es) of ground beside them out of reach, left out of it"
+        out.append(line)
+    for si, ends in c["closed"]:
+        x0, y0, x1, y1 = spans[si]
+        where = " and ".join(_end_name(*((x0 - x1, y0 - y1) if e == 0 else (x1 - x0, y1 - y0))) for e in ends)
+        out.append(f"{what} can't use the bridge at ({(x0 + x1) / 2:.0f}, {(y0 + y1) / 2:.0f}): past its {where} "
+                   f"end, no ground they already use lies within {round(APPROACH / METRE)} m along the road, so "
+                   f"it's left closed to them (ground they can't reach from the rest crashes the game)")
+    for si in c["crowded"]:
+        x0, y0, x1, y1 = spans[si]
+        out.append(f"{what} can't use the bridge at ({(x0 + x1) / 2:.0f}, {(y0 + y1) / 2:.0f}): other ground lies too "
+                   f"close to it for the local movement that keeps units on a deck, so it's left closed to them "
+                   f"(without it they step off its sides)")
+    return out
+
+
 def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = (), roads=(), blocks=(),
                 water=None) -> tuple[dict, list[str]]:
     """({member: new mapinfo.win}, notes) for one map: both movement graphs closed in `closed` (circles x, y, r: where
-    old bridges stood over water) and then opened along `spans` (the new bridges' decks), each deck joined to the
-    ground units already use along `roads` (the mod's road lines; nav.Graph.open), never through the mod's `blocks`
-    (nav.Block), `closed` or water (`water(x, y)`: Water.at), and the road network's links through `closed` taken
-    away; `read(member)` gives a DataMap_Win.dat file's bytes or None (the build's chain). Raises BridgeError rather
-    than write a graph, or one of its local graphs, in more pieces than it was."""
+    old bridges stood over water; an old bridge's owner circle stays, its local movement loses the old deck and
+    takes the new one) and then opened along `spans` (the new bridges' decks: each in local movement of its own that
+    keeps units on it, joined to the ground units already use along `roads`, the mod's road lines; nav.Graph.open),
+    never through the mod's `blocks` (nav.Block), `closed` or water (`water(x, y)`: Water.at), and the road network's
+    links through `closed` taken away; `read(member)` gives a DataMap_Win.dat file's bytes or None (the build's
+    chain). Raises BridgeError rather than write a graph, or one of its local graphs, in more pieces than it was."""
     from ruse_mod_engine import sdb
     from .cover import PACK, member
-    from .nav import APPROACH, METRE, UNITS, Graph, replace_buffers
+    from .nav import UNITS, Graph, replace_buffers
     from .roadnet import RoadNet
     name = member(pack)
     win = read(name)
@@ -403,35 +441,23 @@ def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = (), r
     for k, what in ((1, "infantry"), (2, "vehicles")):
         g = Graph.read(bufs[k])
         pieces = [len(s.parts()) for s in [g] + g.subs]
-        if closed:
-            c = g.block(list(closed), refill=False)
+        if closed:  # (an old bridge's owner stays: its local movement takes the new deck)
+            c = g.block(list(closed), refill=False, keep_owners=True)
             notes.append(f"{what}: {c['emptied']} circle(s) taken and {c['shrunk']} shrunk where old bridges stood")
         if number:
             g.renumber_roads(number)  # a crossing names road links by number (the road through its circle)
         zones = [(b.x, b.y, b.radius) for b in blocks if k in UNITS[b.units]] + list(closed)
 
         def avoid(x, y, r, zones=zones):
-            return (water is not None and water(x, y)) or any(math.hypot(x - zx, y - zy) < zr + r
-                                                               for zx, zy, zr in zones)
-        nothing = {"added": 0, "linked": 0, "approach": 0, "closed": []}
-        c = g.open(spans, OPEN, roads, avoid=avoid) if spans else nothing
+            return any(math.hypot(x - zx, y - zy) < zr + r for zx, zy, zr in zones)
+        c = g.open(spans, OPEN, roads, avoid=avoid, water=water) if spans else None
         if any(len(s.parts()) > n for s, n in zip([g] + g.subs, pieces)):  # e.g. an old bridge, the only way across
             raise BridgeError(f"{what}: taking the old bridges away would cut ground off from the rest of the map "
                               f"(or of a bridge's own local movement), and the game crashes when a unit is ordered "
                               f"onto ground it can't reach")
         new[k] = g.to_bytes()
-        opened = len(spans) - len(c["closed"])
-        line = f"{what}: {c['added']} circle(s) and {c['linked']} link(s) added along {opened} bridge(s)"
-        if c["approach"]:
-            line += (f", {c['approach']} of them on the approaches to them (the longest "
-                     f"{round(c['longest'] / METRE)} m along the road)")
-        notes.append(line)
-        for si, ends in c["closed"]:
-            x0, y0, x1, y1 = spans[si]
-            where = " and ".join(_end_name(*((x0 - x1, y0 - y1) if e == 0 else (x1 - x0, y1 - y0))) for e in ends)
-            notes.append(f"{what} can't use the bridge at ({(x0 + x1) / 2:.0f}, {(y0 + y1) / 2:.0f}): past its {where} "
-                         f"end, no ground they already use lies within {round(APPROACH / METRE)} m along the road, so "
-                         f"it's left closed to them (ground they can't reach from the rest crashes the game)")
+        if c is not None:
+            notes += _opened_notes(what, spans, c)
     if road_note:
         notes.append(road_note)
     return {name: replace_buffers(win, new)}, notes

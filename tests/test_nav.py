@@ -164,6 +164,235 @@ class Blocking(unittest.TestCase):
                 nav.parse_blocks([bad])
 
 
+def made(circles, pairs, subs=(), points=None, crossings=()):
+    """A graph of `circles` (x, y, r) linked in `pairs` where they meet (listed by their second circle), with local
+    maps `subs` and `crossings` ((circle, gate link, gate link, road link, road link), a record each), its index one
+    leaf unless `points` is given."""
+    links = [(a, b) + nav._meeting(circles[a], circles[b]) for a, b in sorted(pairs, key=lambda p: (p[1], p[0]))]
+    mine = [[] for _ in circles]
+    for k, (a, b, _x, _y) in enumerate(links):
+        mine[a].append(k)
+        mine[b].append(k)
+    recs, lists, cross = [], [], []
+    for c, (x, y, r) in enumerate(circles):
+        recs.append((x, y, r, len(lists), len(cross)))
+        lists += mine[c]
+        cross += [struct.pack("<5f4H", x, y, x + 1, y + 1, 1.0, g0, g1, r0, r1) for cc, g0, g1, r0, r1 in crossings
+                  if cc == c]
+    recs.append((0.0, 0.0, 0.0, len(lists), len(cross)))
+    return nav.Graph(box=(0, 0, 65536.0), circles=recs, links=links, lists=lists, crossings=b"".join(cross),
+                     points=points or nav._tree_write(["leaf", list(range(len(circles)))]), subs=list(subs),
+                     head_rest=bytes(nav.HEADER - 20))
+
+
+LAND = [(5000.0, 2000.0, 6400.0), (5000.0, 14000.0, 6400.0), (13500.0, 18000.0, 6400.0), (22000.0, 14000.0, 6400.0),
+        (22000.0, 2000.0, 6400.0)]
+DECK = (9000.0, 2000.0, 18000.0, 2000.0)  # over the river of town(), bank to bank
+
+
+def town():
+    """Two banks along y 2000, W (circle 1, x up to 11,400) and E (circle 5, x from 15,600), the river between (no
+    circle over it), joined the long way round north of it; a town at the top, circle 0, whose local map (three
+    circles) holds the point where it meets the land; a crossing in circles 2 and 3. Its index: x splits the town,
+    W and the circle north of W from the rest."""
+    local = made([(5000.0, 20800.0, 1280.0), (5000.0, 22400.0, 1280.0), (5000.0, 24000.0, 1280.0)], [(0, 1), (1, 2)])
+    tree = ["branch", 1, struct.pack("<2f", 11400.0, 7100.0), ["leaf", [0, 1, 2]], ["leaf", [3, 4, 5]]]
+    return made([(5000.0, 26000.0, 6400.0)] + LAND, [(0, 2), (1, 2), (2, 3), (3, 4), (4, 5)], [local],
+                nav._tree_write(tree), [(2, 0, 1, 7, 8), (3, 2, 3, 8, 9)])
+
+
+def river(x, y):
+    return 11400.0 < x < 15600.0 and -40000.0 < y < 40000.0
+
+
+class Owners(unittest.TestCase):
+    """A new bridge's own local map (Graph.open): an owner circle over the deck, put in at circle number NX."""
+
+    def test_every_old_number_follows_the_owner_in(self):
+        old, g = town(), town()
+        counts = g.open([DECK], 1280.0, water=river)
+        self.assertEqual(counts["owners"], [(0, 1, 4800.0, 18)])  # circle 1, after the town; 16 deck circles, 2 copies
+        self.assertEqual((counts["added"], counts["linked"], counts["closed"], counts["crowded"]), (1, 2, [], []))
+
+        def num(i):
+            return i if i < 1 else i + 1
+        self.assertEqual(g.circles[1][:3], (13440.0, 1920.0, 4800.0))  # the deck's middle on the grid
+        self.assertEqual([c[:3] for c in g.circles[:1] + g.circles[2:-1]], [c[:3] for c in old.circles[:-1]])
+        pairs = {(a, b): (x, y) for a, b, x, y in g.links}
+        for a, b, x, y in old.links:  # every old link, between the same circles, where it was
+            self.assertEqual(pairs[(num(a), num(b))], (x, y))
+        self.assertEqual(set(pairs) - {(num(a), num(b)) for a, b, _x, _y in old.links}, {(1, 2), (1, 6)})  # to W, E
+        self.assertEqual([b for _a, b, _x, _y in g.links], sorted(b for _a, b, _x, _y in g.links))
+        for i in range(len(old.circles) - 1):  # each circle's list: links to the same circles, and the owner's
+            before = {num(a + b - i) for a, b, _x, _y in (old.links[k] for k in old.links_of(i))}
+            after = {a + b - num(i) for a, b, _x, _y in (g.links[k] for k in g.links_of(num(i)))}
+            self.assertLessEqual(before, after)
+            self.assertEqual(after - before, {1} if num(i) in (2, 6) else set())
+        for i in range(len(old.circles) - 1):  # the crossings: the same records, their gates the same circles' links
+            mine = [old.crossings[28 * k:28 * k + 28] for k in range(old.circles[i][4], old.circles[i + 1][4])]
+            now = [g.crossings[28 * k:28 * k + 28] for k in range(g.circles[num(i)][4], g.circles[num(i) + 1][4])]
+            self.assertEqual([r[:20] + r[24:] for r in mine], [r[:20] + r[24:] for r in now])
+            for r, s in zip(mine, now):
+                was = [old.links[k][:2] for k in struct.unpack_from("<2H", r, 20)]
+                self.assertEqual([g.links[k][:2] for k in struct.unpack_from("<2H", s, 20)],
+                                 [(num(a), num(b)) for a, b in was])
+        self.assertEqual(len(g.crossings), len(old.crossings))
+        for x, y, _r, _l, _c in old.circles[:-1]:  # the index finds every old circle as before, numbered again
+            self.assertEqual(g.find(x, y), num(old.find(x, y)))
+        leaves, todo = [], [nav._tree_read(g.points)]
+        while todo:
+            node = todo.pop()
+            if node[0] == "leaf":
+                leaves += node[1]
+            else:
+                todo += [node[3], node[4]]
+        self.assertEqual(sorted(leaves), list(range(7)))
+        self.assertEqual(g.find(13500.0, 2000.0), 1)  # the deck: the owner (its edges widened to reach it)
+
+    def test_the_header_offsets_and_the_new_local_map(self):
+        old, g = town(), town()
+        g.open([DECK], 1280.0, water=river)
+        data = g.to_bytes()
+        self.assertEqual(struct.unpack_from("<4H", data, 12), (7, 7, 2, 2))  # circles, links, crossings, local maps
+        offsets = struct.unpack_from("<7I", data, nav.HEADER)  # five sections and one per local map
+        self.assertEqual(offsets[0], nav.HEADER + 4 * 7)
+        self.assertEqual(data[offsets[5]:offsets[6]], old.subs[0].to_bytes())  # the town's, as it was
+        local = data[offsets[6]:]
+        self.assertEqual(local, g.subs[1].to_bytes())  # the bridge's, after it
+        self.assertEqual((struct.unpack_from("<H", local, 18)[0], local[20:nav.HEADER]), (0, bytes(nav.HEADER - 20)))
+        self.assertEqual(local[:12], data[:12])  # the main graph's box
+        back = nav.Graph.read(data)
+        self.assertEqual(back.to_bytes(), data)
+        sub = back.subs[1]
+        self.assertEqual(sub.parts(), [18])  # one piece
+        self.assertEqual(sorted({c[2] for c in sub.circles[:-1]}), [640.0, 6400.0])  # the deck, and copies of W and E
+        for a, b, x, y in back.links:  # where the owner meets W and E: on ground of its local map
+            if 1 in (a, b):
+                self.assertIsNotNone(sub.find(x, y))
+        self.assertEqual(sub.crossings, b"")
+
+    def test_the_river_beside_the_deck_stays_closed(self):
+        old, g = town(), town()
+        g.open([DECK], 1280.0, water=river)
+        for x in range(11500, 15600, 100):
+            self.assertTrue(g.walkable(float(x), 2000.0))  # all along the deck
+            for dy in (700.0, 1000.0, 1280.0, 2000.0, 4000.0):  # beside it: water, as before
+                for y in (2000.0 - dy, 2000.0 + dy):
+                    self.assertFalse(g.walkable(float(x), y), (x, y))
+                    self.assertFalse(old.walkable(float(x), y))
+        for x, y in ((3000.0, 2000.0), (9000.0, 6000.0), (20000.0, -2000.0), (5000.0, 21000.0)):  # the land as before
+            self.assertTrue(g.walkable(x, y) and old.walkable(x, y))
+        self.assertFalse(g.walkable(5000.0, 30000.0) or old.walkable(5000.0, 30000.0))  # the town: off its local map
+        plain = town()  # main circles along the deck (before 2026-09-30, evening): the water beside it was ground
+        plain.circles = plain.circles[:-1] + [(13500.0, 2000.0, 1280.0, 10, 2), (0.0, 0.0, 0.0, 10, 2)]
+        plain.points = nav._tree_write(["leaf", list(range(7))])
+        self.assertTrue(plain.walkable(13500.0, 2900.0))
+
+    def test_a_deck_with_no_room_for_an_owner_stays_closed(self):
+        g = town()
+        islet = (13500.0, 5120.0, 1280.0)  # a circle's middle 3,200 from the deck's: no owner can hold the deck alone
+        g.circles = g.circles[:-1] + [islet + (10, 2), (0.0, 0.0, 0.0, 10, 2)]
+        before = g.to_bytes()
+        counts = g.open([DECK], 1280.0, water=river)
+        self.assertEqual((counts["crowded"], counts["owners"], counts["added"]), ([0], [], 0))
+        self.assertEqual(g.to_bytes(), before)
+
+    def test_an_old_deck_of_main_circles_goes_under_the_new_one(self):
+        # a bridge of the map's with no owner, its deck plain main circles over the river (three on D-Day): they'd be
+        # in the new owner, so they go when it opens; without the water they're land, and the new deck has no room
+        chained = [(12000.0, 2000.0, 1600.0), (13500.0, 2000.0, 1600.0), (15000.0, 2000.0, 1600.0)]
+        pairs = [(0, 2), (1, 2), (2, 3), (3, 4), (4, 5), (1, 6), (6, 7), (7, 8), (5, 8)]
+        g = made([(5000.0, 26000.0, 6400.0)] + LAND + chained, pairs, town().subs)
+        counts = g.open([DECK], 1280.0, water=river)
+        self.assertEqual((counts["under"], counts["owners"], counts["crowded"]), (3, [(0, 1, 4800.0, 18)], []))
+        self.assertEqual([c[2] for c in g.circles[7:10]], [0.0, 0.0, 0.0])  # (numbered one up: the owner is 1)
+        self.assertFalse([lk for lk in g.links if {lk[0], lk[1]} & {7, 8, 9}])
+        self.assertEqual(g.parts(), [7])
+        self.assertTrue(g.walkable(13500.0, 2000.0) and not g.walkable(13500.0, 3000.0))
+        g = made([(5000.0, 26000.0, 6400.0)] + LAND + chained, pairs, town().subs)
+        self.assertEqual(g.open([DECK], 1280.0)["crowded"], [0])
+
+    def test_a_deck_in_an_old_owner_goes_into_its_local_map(self):
+        g, old = bridged(), bridged()
+        counts = g.open([(10200.0, 2000.0, 17000.0, 2000.0)], 1280.0, water=river)
+        self.assertEqual((counts["inside"], counts["owners"], counts["added"]), ([(0, 0)], [], 0))
+        self.assertEqual(g.circles, old.circles)  # the main graph as it was: the owner takes the deck
+        self.assertEqual(g.links, old.links)
+        sub = g.subs[0]
+        self.assertEqual(sub.parts(), [14])  # the banks and the new deck's 12 circles: one piece
+        self.assertEqual([c[2] for c in sub.circles[1:5]], [0.0] * 4)  # the old deck, over the water, gone
+        for a, b, x, y in g.links:
+            self.assertIsNotNone(sub.find(x, y))  # where the owner meets W and E: still on its ground
+        for x in range(11500, 15600, 100):
+            self.assertTrue(g.walkable(float(x), 2000.0))
+            self.assertFalse(g.walkable(float(x), 2700.0) or g.walkable(float(x), 1300.0))
+            self.assertTrue(old.walkable(float(x), 2700.0))  # (the old deck's circles reached it)
+        self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
+        g = bridged()  # a deck that leaves the owner: it can't go in, and there's no room for one of its own
+        counts = g.open([(10200.0, 2000.0, 24000.0, 2000.0)], 1280.0, water=river)
+        self.assertEqual((counts["inside"], counts["crowded"]), ([], [0]))
+        self.assertEqual(g.to_bytes(), bridged().to_bytes())
+
+    def test_an_old_bridges_owner_stays_when_its_deck_is_closed(self):
+        g = bridged()
+        g.block([(13000.0, 2000.0, 1600.0)], refill=False, keep_owners=True)
+        self.assertEqual(g.circles[0][2], 8000.0)  # its middle is in the zone, but it owns a local map: it stays
+        self.assertEqual(g.subs[0].parts(), [1, 1])  # its local map lost the deck: the banks apart
+        g = bridged()
+        g.block([(13000.0, 2000.0, 1600.0)], refill=False)
+        self.assertEqual(g.circles[0][2], 0.0)
+
+
+def bridged():
+    """Two banks along y 2000, W (circle 1) and E (circle 2), and the river between (x 11,400 to 15,600), crossed by
+    a bridge of the map's: its owner (circle 0, radius 8,000) links W and E, and its local map has a bank circle at
+    each end, holding the points where it meets them, and an old deck between, four circles of 1,280 over the water."""
+    deck = [(9600.0, 2000.0, 1600.0)] + [(11800.0 + 1100.0 * k, 2000.0, 1280.0) for k in range(4)] \
+        + [(17600.0, 2000.0, 1600.0)]
+    local = made(deck, [(i, i + 1) for i in range(len(deck) - 1)])
+    return made([(13800.0, 2000.0, 8000.0), (5000.0, 2000.0, 6400.0), (22000.0, 2000.0, 6400.0)], [(0, 1), (0, 2)],
+                [local])
+
+
+class Index(unittest.TestCase):
+    def test_an_index_built_as_the_games_are(self):
+        import random
+        rnd = random.Random(7)
+        circles = [(rnd.uniform(0, 50000), rnd.uniform(0, 50000), rnd.choice((640.0, 1280.0, 3200.0))) for _ in range(57)]
+        tree = nav._tree_build(circles)
+        seen = []
+
+        def walk(node, depth):  # each edge exactly its half's reach (up to f32), leaves of at most 4
+            if node[0] == "leaf":
+                self.assertLessEqual(len(node[1]), nav.LEAF)
+                seen.extend(node[1])
+                return node[1]
+            left, right = walk(node[3], depth + 1), walk(node[4], depth + 1)
+            self.assertLessEqual(abs(len(left) - len(right)), 1)  # split at the median
+            axis = depth % 2
+            far, near = struct.unpack("<2f", node[2])
+            self.assertGreaterEqual(far, max(circles[i][axis] + circles[i][2] for i in left))
+            self.assertLess(far - max(circles[i][axis] + circles[i][2] for i in left), 0.01)
+            self.assertLessEqual(near, min(circles[i][axis] - circles[i][2] for i in right))
+            self.assertLessEqual(max(circles[i][axis] for i in left), min(circles[i][axis] for i in right))
+            return left + right
+        walk(tree, 0)
+        self.assertEqual(sorted(seen), list(range(57)))
+        g = nav._local_graph((0, 0, 65536.0), circles)
+        for x, y, r, _l, _c in g.circles[:-1]:  # every circle found through it, right to its rim
+            self.assertIsNotNone(g.find(x, y))
+            self.assertIsNotNone(g.find(x + r * 0.999, y))
+        self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
+        self.assertEqual(nav._f32(1578973.3, up=True), 1578973.375)
+        self.assertEqual(nav._f32(1578973.3, up=False), 1578973.25)
+        self.assertEqual(nav._f32(11400.0, up=True), 11400.0)
+
+    def test_a_circle_near_water_is_tested_all_over(self):
+        self.assertFalse(nav._wet(river, 9000.0, 2000.0, 1280.0))
+        self.assertTrue(nav._wet(river, 10500.0, 2000.0, 1280.0))  # its middle is dry, its rim isn't
+        self.assertFalse(nav._wet(None, 13000.0, 2000.0, 1280.0))
+
+
 class Built(unittest.TestCase):
     """maps/<map>/movement.toml in a mod, built into the modded copy's DataMap_Win.dat."""
 

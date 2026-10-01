@@ -15,7 +15,7 @@ Game build examined: Steam re-release, Steam build 24670294, data revision **190
 | Map registration (`mapinfo.cpp`, `clustermap.cpp`) | ZZ_GladPatchable | 86 maps | ✅ R | P1 |
 | Map support files (`save.boobspc`, `output.sdb`) | Maps\PC | per map | 🟡 checksums known | P1 |
 | Scenario (`.scenario`) | DataMap_Win | 102 | ✅ R (zones and design items; `rusemod.scenario`, all 102) | P1 |
-| AI map grids (`mapinfo.win`) | DataMap_Win | 34 | 🟡 buffer 0: the road network, read and written byte-identical on all 33 (`rusemod.roadnet`, `tools/verify_roadnet.py`: points on the road curves, links with cost = distance / 10, per-point link lists, a k-d tree over the links); buffers 1-2: the infantry and vehicle navigation graphs, read and written byte-identical (`rusemod.nav`, `tools/verify_nav.py`; every shipped one is one connected piece, and a crossing's last two u16 are road network links); buffer 4: the cover grid, written (`rusemod.cover`, from LittleGroove's `sdb.py`) | P1 |
+| AI map grids (`mapinfo.win`) | DataMap_Win | 34 | 🟡 buffer 0: the road network, read and written byte-identical on all 33 (`rusemod.roadnet`, `tools/verify_roadnet.py`: points on the road curves, links with cost = distance / 10, per-point link lists, a k-d tree over the links); buffers 1-2: the infantry and vehicle navigation graphs, read and written byte-identical (`rusemod.nav`, `tools/verify_nav.py`; every shipped one is one connected piece, and a crossing's last two u16 are road network links; their local maps understood, and new ones written for new bridges: "Movement graphs" in §6); buffer 4: the cover grid, written (`rusemod.cover`, from LittleGroove's `sdb.py`) | P1 |
 | Terrain mesh (`.tms`) | Maps\PC | 64 (hi + low per map) | ✅ R W RT (not yet tried in-game) | P1 |
 | Terrain tiles (`.tmst_pc` + `.tmst_chunk_pc`) | Maps\PC | 64 sets, 29,254 tiles | ✅ container R W RT; plain tiles (ZIPO) work in-game; TGU1 body 🟡 (reading only) | P1 |
 | Textures (`.tgv`, `.tgv_pc`) | ZZ_Win, Maps\PC | 3,831 + maps | 🟡 header | P1 |
@@ -467,6 +467,52 @@ its 21 bridges; each floor runs from end to end 5 to 60 units above the ground a
 six bound clips and one leaf. A new bridge without a floor is drawn, but units walk the riverbed under it (seen in
 the game, 2026-09-30). `rusemod.floors` rebuilds the file as one subtree (its own k-d tree, every triangle found from
 its middle; D-Day's rebuilt keeps every shipped point exactly).
+
+#### Movement graphs (`mapinfo.win` buffers 1 and 2; 2026-09-30; code `rusemod.nav`; check `tools/verify_nav.py`)
+
+Where units can go: buffer 1 for infantry, buffer 2 for vehicles, each a graph of overlapping circles of ground,
+linked where two meet. Every shipped graph reads and writes back byte for byte (66 graphs on 33 maps). Little-endian:
+
+| part | layout |
+|---|---|
+| header | 84 bytes: u32 x0, u32 y0 (0, 0), f32 the map's side; u16 circles, links, crossings, **NX** (local maps); then 64 zero bytes (all 66 main graphs and all 1,241 local maps: the game fills them in while it runs) |
+| offsets | u32 × (5 + NX), from the graph's start: circles, links, lists, crossings, index, then **one per local map**. A local map added or taken away changes the table's length, and so every offset after it |
+| circles | (circles + 1) × 16 bytes: f32 x, y, radius; u16 where its links start in the lists; u16 where its crossings start. The last record closes both lists. Centres are on a 320 grid and radii multiples of 320 almost everywhere (98% of local circles) |
+| links | 12 bytes each: u16 circle a < b, f32 x, y (the meeting point, inside both); sorted by b |
+| lists | u16 link numbers, each circle's in turn (every link twice) |
+| crossings | 28 bytes each: the road through a circle (f32 in x, y, out x, y, length; u16 the two links it goes between; u16 two road network links of buffer 0) |
+| index | a bounding-interval tree over the circles: branch (u16 tag, u16 jump, f32 the left half's far edge and the right half's near edge on the branch's axis, x and y by turns from x) or leaf (u16 byte length, u16 circle numbers). On all 1,307 shipped graphs each edge is exactly its half's reach, the circles are split by their centres on the axis, and leaves hold 1 to 7 circles |
+| local maps | the same layout again, with NX 0, the main graph's box and zero header bytes |
+
+**Local maps.** Local map k belongs to main circle k, for every k below NX, and nothing else ties them (no table,
+flag or order): the owners are the first NX circles (largest first on every shipped graph, the other circles largest
+first after them). D-Day has 44 per graph, Blitz 22. In the game, inside an owner circle:
+
+- units stand only where its local map has a circle (a town's keeps them off its buildings, a bridge's on its deck);
+- a route through the owner is searched again inside its local map, between where it comes in and where it leaves;
+  if that search fails, the whole route fails, so a local map is one piece, and has a circle at the points where the
+  main links meet its owner (11,830 of 12,007 shipped ones do; the others are only near one);
+- an order into the owner goes to the nearest circle of its local map, kept inside the owner.
+
+No other main circle's middle lies inside an owner on any shipped map; owners themselves rarely overlap (14 pairs in
+66 graphs). Most bridges have one (215 of the 223 shipped bridges on 24 maps; D-Day: 16 of 21): an owner of 8,000 to
+22,080 (median 18,240) over the crossing, and local circles along the deck, mostly of radius 640 (also 320, 960,
+1,280), about 870 apart, with circles fanning out over the banks to the owner's edge; the water beside the deck is
+left without circles, so it isn't ground. A local map's circles all have their middles inside its owner or another
+main circle. How the game uses local maps was worked out by DomesticNukes and his Claude, and checked by us.
+
+**New bridges** (`Graph.open`, 2026-09-30) get one the same way: an owner over the deck (centred at its middle; as
+small as holds the deck and meets the ground at both ends by 320 or more; no other circle's middle inside it, no other
+owner overlapped), put in at circle number NX: every later circle's number goes up one in the links, lists, crossings
+(their links' numbers, as the links stay sorted) and the index (the owner listed beside the nearest old circle, the
+branches on the way widened to reach it); NX goes up one, the offset table gets one more entry, and the new local map
+goes after the old ones. Its circles: the deck (radius 640, at most 640 apart, end to end, within the 663 either side
+our bridge kinds' floors give), copies of the main circles the owner overlaps (so the banks inside it stay ground just
+as before, and every point where the owner's links meet them is on its ground) and the approach circles that fall in
+the owner; its own index is built as the shipped ones are (median split, x first, leaves of up to 4). A deck whose
+middle is in an old owner (a replaced bridge of the map's) goes into that owner's local map instead: its circles over
+the water near the new deck go, the deck's come in. Not tried in the game yet: a graph with more local maps than it
+shipped with.
 
 #### Gameplay ground (`.kdt`; 2026-09-29; code `rusemod.kdt`; check `tools/verify_kdt.py`)
 

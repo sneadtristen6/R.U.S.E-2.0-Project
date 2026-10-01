@@ -140,7 +140,8 @@ class Bridges(unittest.TestCase):
     def test_a_deck_the_index_can_t_find(self):
         g = river()
         g.open([DECK], 1280.0)
-        g.points = nav._tree_write(["leaf", [0, 1, 2, 3, 4]])  # the deck's circles left out of the index
+        self.assertTrue(crossable(g, DECK))
+        g.points = nav._tree_write(["leaf", [1, 2, 3, 4, 5]])  # the circle over the deck (its owner, 0) left out
         self.assertFalse(crossable(g, DECK))
 
 

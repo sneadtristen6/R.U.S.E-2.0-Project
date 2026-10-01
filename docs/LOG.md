@@ -833,3 +833,52 @@ WorkflowGuards fails on a check by name. Moving the two pushed tags to the fix n
 Code's safety check refuses even when the owner says go; so the same release went out as Studio 0.7.6 and
 Launcher 0.2.11 (new tags, nothing forced), and every link to the old repo name now uses the new one.
 **Rule:** a release tag that didn't build is never moved: the next version number goes out instead.
+
+### 2026-09-30, late: a local map for every new bridge (units keep to the deck)
+
+The owner's screenshots: units stepped off a new bridge's side, went down the bank and walked under the deck. The
+deck was a chain of plain main-graph circles of radius 1,280, and the game straightens a route anywhere inside the
+circles it runs through: 1,280 either side of the deck's line, against a floor of 663. The game's own bridges have a
+**local map** instead (FORMATS §6, "Movement graphs"): one big owner circle over the crossing, and inside it units
+stand only on the local map's small circles along the deck. Local map k belongs to main circle k for k below the
+header's count NX, and nothing else ties them (worked out by DomesticNukes and his Claude, and checked by us); nobody
+had added one before.
+
+`Graph.open` now gives each new deck (a road's bridge or one placed by hand) the same: an owner centred at the deck's
+middle, as small as holds the deck and meets the ground at both ends by 320 or more, never so big that another
+circle's middle is inside it or it overlaps another owner (no shipped map has either). It's put in at circle number
+NX, so every later circle moves up one: links (kept sorted by their second circle), lists, crossings (their links'
+numbers) and the index (renumbered, the owner listed by the nearest old circle, the branches widened to reach it) all
+follow; NX goes up one, the offset table gets one more entry, the local map goes last. The local map: the deck's
+circles (radius 640, at most 640 apart, on the deck's line), a copy of every main circle the owner overlaps (the banks
+inside it stay ground exactly as before, and every point where the owner's links meet them is on its ground: the
+copies are our shortcut, DomesticNukes' recipe fans new circles over the banks), and approach circles whose middles
+fall in the owner (a road that turns back, or runs along the bank). Its index is built as the shipped ones are
+(median split, x first, leaves of up to 4). The approaches to ground units use stay in the main graph, now never with
+any of their disc over water (16 points on the rim and 8 inside tested, not the middle only). A deck whose middle is
+in an old owner (a road over a bridge of the map's) goes into that owner's local map instead: its circles over the
+water near the new deck go, the deck's come in, and closing the old deck no longer empties the owner. A deck with no
+room for an owner is left closed, with a note. Before anything is written: the graph in no more pieces, every new
+local map one piece, every point where a new link meets an owner on its local map's ground, each owner holding its
+deck and no other circle's middle, every place along each deck ground units can stand on (`Graph.walkable`, the
+game's rule: the circle the index finds, then its local map's), and the graph read back as written.
+
+The owner's D-Day test (two new bridges), built into a temporary folder and probed: water within 4,000 of each deck's
+line and 4,000 past its ends, sampled every 100, walkable by the game's rule:
+
+| deck | water samples | shipped map | before (circles of 1,280) | now |
+|---|---|---|---|---|
+| (1578973, 1315630), 12,802 long | 7,906 | 0 | 2,247; 1,063 more than 663 off the deck (up to 1,200) | 1,133; none more than 600 off |
+| (1561274, 1325836), 12,783 long | 6,698 | 0 | 2,049; 957 more than 663 off (up to 1,200) | 1,039; none more than 600 off |
+
+The same in both graphs. Each owner has radius 6,720 (52 m across) and a local map of 24 and 23 circles (21 on each
+deck, the rest copies of the approaches), one piece, both of its links' meeting points on its ground; both graphs one
+piece, the 44 old local maps byte-identical, every old circle found by the index where it was (6,499 and 7,292), and
+the graph read back as written. The map check finds what it found before. The probe on two of D-Day's own bridges of
+the same kind: water walkable only within about 1,300 and 1,200 of their decks (their local circles are wider than ours),
+none farther; with their local maps ignored, all of it would be. A road over those two bridges: they go into their own
+owners' local maps (gates 8 of 8 and 7 of 7 still on ground, one piece, the new deck walkable end to end; water more
+than 663 off the deck: 428 and 231 samples before, from the old decks' circles, none now). Their old local crossings
+over the old deck go with its circles (15 to 4, 12 to 2). Not tried in the game yet: whether it takes a graph with more
+local maps than it shipped with. The test: units across both bridges and back, an order onto the water beside a deck,
+an order onto bank ground inside an owner.
