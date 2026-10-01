@@ -882,3 +882,16 @@ than 663 off the deck: 428 and 231 samples before, from the old decks' circles, 
 over the old deck go with its circles (15 to 4, 12 to 2). Not tried in the game yet: whether it takes a graph with more
 local maps than it shipped with. The test: units across both bridges and back, an order onto the water beside a deck,
 an order onto bank ground inside an owner.
+
+**Bridge ends and the map's buildings (2026-10-01, the owner's 23:05 test of the local maps).** Three of the four new
+bridges' decks held units; but at one, "end of bridge hits buildings": its road runs straight through a farm, and the
+deck's approach (the chain of circles that joins a deck to ground units already use) had covered the farmyard, which the
+map's own movement leaves out, so units were sent through the buildings. Now the build reads the map's buildings along
+the roads near each new deck (`mapcheck.map_objects`, buildings only: rocks and jetties on a bank don't count) and an
+approach never reaches within 480 of one that the graph keeps units off (`bridges.apply_spans` obstacles, `HOLE`);
+where a full circle of 1,280 won't fit, one of 960 or 640 squeezes past (3/4 spacing keeps circles of half the radius
+overlapping by 320, so they still link). A deck whose road meets water, a town's ground or ground closed to units
+before reaching ground units use is left closed, and the note now says what it met and where ("23 m past its west end
+the road meets ground closed to units ... at (x, y): move the road clear of it"). On the owner's test: three bridges
+open with clean approaches (11 m at most), the fourth closed at the farm, whose stable stands 3.5 m off the road. The
+retest and the rule the owner asked for ("the road can't be built into buildings, it shows red like Cities") are next.

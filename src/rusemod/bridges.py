@@ -36,6 +36,7 @@ OPEN = 1280.0        # the movement circles on a new deck's approaches, in the m
 FALLBACK_LENGTH = 8000.0  # a bridge model's length when its model can't be measured (about 30 m)
 STRETCH = (0.9, 2.0)  # how far a bridge is stretched along its length to fit (the shipped ones: 0.91 to 1.91)
 CLOSE = 1600.0       # the radius of the ground closed along an old bridge's deck, every CLOSE / 2 over water
+HOLE = 480.0         # how far from a building's or prop's middle (in a hole of the map's movement) new ground stays
 
 
 class BridgeError(ValueError):
@@ -225,6 +226,40 @@ def placed_spans(objects, descs: dict, length_of) -> list[tuple]:
     return out
 
 
+def _segment_gap(x: float, y: float, ax: float, ay: float, bx: float, by: float) -> float:
+    dx, dy = bx - ax, by - ay
+    n = dx * dx + dy * dy
+    t = 0.0 if n == 0 else max(0.0, min(1.0, ((x - ax) * dx + (y - ay) * dy) / n))
+    return math.hypot(x - ax - t * dx, y - ay - t * dy)
+
+
+class _Points:
+    """Points by place, each standing for a disc of `margin` (a building or prop the map's movement leaves a hole
+    for): whether a circle reaches one."""
+
+    def __init__(self, points, margin: float, size: float = 4096.0):
+        self.margin, self.size, self.cells = margin, size, {}
+        for x, y in points:
+            self.cells.setdefault((int(x // size), int(y // size)), []).append((x, y))
+
+    def within(self, x: float, y: float, r: float) -> bool:
+        reach = r + self.margin
+        s = self.size
+        for i in range(int((x - reach) // s), int((x + reach) // s) + 1):
+            for j in range(int((y - reach) // s), int((y + reach) // s) + 1):
+                if any(math.hypot(px - x, py - y) < reach for px, py in self.cells.get((i, j), ())):
+                    return True
+        return False
+
+
+def near_ends(lines, decks, along: float = 16000.0) -> list[list[tuple]]:
+    """The straight pieces of the roads' `lines` that come within `along` of a deck's end (`decks`: (x0, y0, x1, y1)),
+    each as a two-point line: where a deck's approach may run (nav.APPROACH), to look for what stands there."""
+    ends = [p for x0, y0, x1, y1 in decks for p in ((x0, y0), (x1, y1))]
+    return [[a, b] for line in lines for a, b in zip(line, line[1:])
+            if ends and min(_segment_gap(ex, ey, *a, *b) for ex, ey in ends) <= along]
+
+
 @dataclass
 class Shipped:
     """A bridge the map ships: its kind, its deck, how far it's sunk, and where it's stored (block index, item
@@ -401,9 +436,17 @@ def _opened_notes(what: str, spans: list[tuple], c: dict) -> list[str]:
     for si, ends in c["closed"]:
         x0, y0, x1, y1 = spans[si]
         where = " and ".join(_end_name(*((x0 - x1, y0 - y1) if e == 0 else (x1 - x0, y1 - y0))) for e in ends)
+        met = []
+        for e in ends:
+            stop = c.get("stopped", {}).get((si, e))
+            if stop is not None:
+                px, py, walked, why = stop
+                name = _end_name(*((x0 - x1, y0 - y1) if e == 0 else (x1 - x0, y1 - y0)))
+                met.append(f"{round(walked / METRE)} m past its {name} end the road meets {why}, at ({px:.0f}, {py:.0f})")
         out.append(f"{what} can't use the bridge at ({(x0 + x1) / 2:.0f}, {(y0 + y1) / 2:.0f}): past its {where} "
-                   f"end, no ground they already use lies within {round(APPROACH / METRE)} m along the road, so "
-                   f"it's left closed to them (ground they can't reach from the rest crashes the game)")
+                   f"end, no ground they already use lies within {round(APPROACH / METRE)} m along the road"
+                   + (f" ({'; '.join(met)}: move the road clear of it)" if met else "")
+                   + ", so it's left closed to them (ground they can't reach from the rest crashes the game)")
     for si in c["crowded"]:
         x0, y0, x1, y1 = spans[si]
         out.append(f"{what} can't use the bridge at ({(x0 + x1) / 2:.0f}, {(y0 + y1) / 2:.0f}): other ground lies too "
@@ -413,14 +456,17 @@ def _opened_notes(what: str, spans: list[tuple], c: dict) -> list[str]:
 
 
 def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = (), roads=(), blocks=(),
-                water=None) -> tuple[dict, list[str]]:
+                water=None, obstacles=()) -> tuple[dict, list[str]]:
     """({member: new mapinfo.win}, notes) for one map: both movement graphs closed in `closed` (circles x, y, r: where
     old bridges stood over water; an old bridge's owner circle stays, its local movement loses the old deck and
     takes the new one) and then opened along `spans` (the new bridges' decks: each in local movement of its own that
     keeps units on it, joined to the ground units already use along `roads`, the mod's road lines; nav.Graph.open),
-    never through the mod's `blocks` (nav.Block), `closed` or water (`water(x, y)`: Water.at), and the road network's
-    links through `closed` taken away; `read(member)` gives a DataMap_Win.dat file's bytes or None (the build's
-    chain). Raises BridgeError rather than write a graph, or one of its local graphs, in more pieces than it was."""
+    never through the mod's `blocks` (nav.Block), `closed`, water (`water(x, y)`: Water.at) or the holes the map's
+    movement leaves for its buildings and props (`obstacles`: their (x, y); one counts for a graph where that graph
+    keeps units off its middle: the owner's D-Day test, 2026-09-30, had an approach through a farm), and the road
+    network's links through `closed` taken away; `read(member)` gives a DataMap_Win.dat file's bytes or None (the
+    build's chain). Raises BridgeError rather than write a graph, or one of its local graphs, in more pieces than it
+    was."""
     from ruse_mod_engine import sdb
     from .cover import PACK, member
     from .nav import UNITS, Graph, replace_buffers
@@ -447,9 +493,10 @@ def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = (), r
         if number:
             g.renumber_roads(number)  # a crossing names road links by number (the road through its circle)
         zones = [(b.x, b.y, b.radius) for b in blocks if k in UNITS[b.units]] + list(closed)
+        holes = _Points([(x, y) for x, y in obstacles if not g.walkable(x, y)], HOLE)
 
-        def avoid(x, y, r, zones=zones):
-            return any(math.hypot(x - zx, y - zy) < zr + r for zx, zy, zr in zones)
+        def avoid(x, y, r, zones=zones, holes=holes):
+            return any(math.hypot(x - zx, y - zy) < zr + r for zx, zy, zr in zones) or holes.within(x, y, r)
         c = g.open(spans, OPEN, roads, avoid=avoid, water=water) if spans else None
         if any(len(s.parts()) > n for s, n in zip([g] + g.subs, pieces)):  # e.g. an old bridge, the only way across
             raise BridgeError(f"{what}: taking the old bridges away would cut ground off from the rest of the map "

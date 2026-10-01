@@ -263,6 +263,7 @@ def _meant(game: Path, name: str) -> str:
     return f" (the mod's folder maps/{name} should be maps/{guess}: it takes the map's pack name, not its title)"
 
 
+
 @dataclass
 class BuildResult:
     order: list = field(default_factory=list)       # mod ids in load order
@@ -636,6 +637,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         bridge_spans: dict = {}   # map pack name -> [(x0, y0, x1, y1)]
         bridge_objects: dict = {}  # map pack name -> (the bridge objects, the mods' ids)
         bridge_hide: dict = {}    # map pack name -> [(block index, item offset)]: old bridges to sink
+        bridge_obstacles: dict = {}  # map pack name -> [(x, y)]: the map's buildings and props by the decks' roads
         bridge_closed: dict = {}  # map pack name -> [(x, y, r)]: where they stood over water
         bridge_decks: dict = {}   # map pack name -> every deck a new road runs over (the painter leaves them)
         bridge_roads: dict = {}   # map pack name -> the mods' road lines: a deck's approaches follow them (nav.Graph.open)
@@ -693,6 +695,21 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     bridge_closed[name] = made.closed
                 if made.kept:
                     bridge_decks[name] = list(made.kept)
+            if spans:  # the map's buildings and props by the new decks' roads: the decks' approaches never cover the
+                # holes the map's movement leaves for them (rusemod.bridges.near_ends; the owner's D-Day test, 2026-09-30:
+                # an approach through a farm, "end of bridge hits buildings causing pathing issue")
+                from .bridges import OPEN, near_ends
+                from .mapcheck import map_objects
+                try:
+                    sc_way = read_map(SCENERY)
+                    pieces = near_ends([r.points for r in map_roads], spans)
+                    if sc_way is not None and pieces:
+                        bridge_obstacles[name] = [(x, y) for _t, x, y, group in
+                                                  map_objects(Scenery(sc_way), descs, pieces, reach=2 * OPEN)
+                                                  if group == "building"]  # (props: rocks and jetties at the water)
+                except (SceneryError, ValueError, KeyError, struct.error, zlib.error) as exc:
+                    notes.append(f"the map's buildings by the new bridges couldn't be read ({exc}): their approaches "
+                                 f"may run through them")
             if objects or by_hand or gone:  # the floors units stand on (rusemod.floors): new bridges get their kind's
                 from . import floors
                 from .bridges import deck as deck_of, shipped_bridges
@@ -893,7 +910,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 for name, spans in bridge_spans.items():  # the bridges' decks opened to units, after the blocks
                     try:
                         new, notes = apply_spans(read_data, name, spans, bridge_closed.get(name, []), bridge_roads.get(name, []),
-                                                 blocks.get(name, ([], []))[0], bridge_water.get(name))
+                                                 blocks.get(name, ([], []))[0], bridge_water.get(name),
+                                                 bridge_obstacles.get(name, []))
                     except (BridgeError, NavError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{name}: the bridges' movement can't be opened ({exc})"))
                         continue

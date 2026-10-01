@@ -324,7 +324,8 @@ class Opening(unittest.TestCase):
         g = banks()
         counts = g.open([(26000.0, 2000.0, 60000.0, 2000.0), (80000.0, 2000.0, 90000.0, 2000.0)], radius=1280.0)
         self.assertEqual(counts, {"added": 0, "linked": 0, "approach": 0, "longest": 0.0, "owners": [], "inside": [],
-                                  "left_out": 0, "under": 0, "closed": [(0, [1]), (1, [0, 1])], "crowded": []})
+                                  "left_out": 0, "under": 0, "closed": [(0, [1]), (1, [0, 1])], "crowded": [],
+                                  "stopped": {}})
         self.assertEqual(g.to_bytes(), banks().to_bytes())  # nothing written: an island would crash the game
 
     def test_each_end_joins_on_its_own_side(self):
@@ -354,6 +355,17 @@ class Opening(unittest.TestCase):
         counts = g.open([(13300.0, 2000.0, 15000.0, 2000.0)], radius=1280.0, roads=[[(0.0, 2000.0), (30000.0, 2000.0)]],
                         avoid=lambda x, y, r: ((x - 10900) ** 2 + (y - 2000) ** 2) ** 0.5 < 2000 + r)
         self.assertEqual((counts["added"], counts["closed"]), (0, [(0, [0])]))  # its west approach would cross the block
+        x, y, walked, why = counts["stopped"][(0, 0)]  # and the build can say where the road meets it
+        self.assertTrue(x < 13300 and walked > 0 and why.startswith("ground closed to units"))
+
+    def test_an_approach_squeezes_past_a_building_with_smaller_circles(self):
+        g = banks()  # a building's hole beside the road, 1,200 off its line: a full circle would reach it (480 clear)
+        counts = g.open([(13300.0, 2000.0, 15000.0, 2000.0)], radius=1280.0, roads=[[(0.0, 2000.0), (30000.0, 2000.0)]],
+                        avoid=lambda x, y, r: ((x - 11500) ** 2 + (y - 3200) ** 2) ** 0.5 < 480 + r)
+        self.assertEqual((counts["closed"], counts["crowded"]), ([], []))
+        self.assertIn(640.0, {c[2] for c in g.circles[:-1]})  # smaller circles went in where the full one wouldn't fit
+        self.assertEqual(g.parts(), [len(g.circles) - 1])
+        self.assertFalse(g.walkable(11500.0, 3200.0))  # the building's middle stays off limits
 
     def test_the_longest_approach_is_of_a_bridge_opened(self):
         g = banks()

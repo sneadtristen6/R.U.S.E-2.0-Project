@@ -511,8 +511,12 @@ our bridge kinds' floors give), copies of the main circles the owner overlaps (s
 as before, and every point where the owner's links meet them is on its ground) and the approach circles that fall in
 the owner; its own index is built as the shipped ones are (median split, x first, leaves of up to 4). A deck whose
 middle is in an old owner (a replaced bridge of the map's) goes into that owner's local map instead: its circles over
-the water near the new deck go, the deck's come in. Not tried in the game yet: a graph with more local maps than it
-shipped with.
+the water near the new deck go (with whatever only they held to the rest: some maps have a row of small circles beside
+a deck), the deck's come in. An old deck of plain main circles (3 of D-Day's bridges) goes from the main graph the same
+way before the new owner goes in. Tried on every bridge of 7 maps (91) with a road over it, both graphs: 88 open (85
+in their old owner, 3 with an owner of their own), none with water units can stand on that they couldn't before; 3
+stay closed (a deck past its owner's edge; two bridges with no ground of their owner anywhere near). Not tried in the
+game yet: a graph with more local maps than it shipped with.
 
 #### Gameplay ground (`.kdt`; 2026-09-29; code `rusemod.kdt`; check `tools/verify_kdt.py`)
 

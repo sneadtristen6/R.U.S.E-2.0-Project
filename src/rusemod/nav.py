@@ -254,8 +254,9 @@ class Graph:
         So where a deck's end third doesn't overlap a live main circle by STEP or more, an approach goes on from that
         end in the main graph: circles `radius` wide every 3/4 `radius` along the nearest of `roads` (lines of map
         points; the way that leads off the deck, then straight on past the road's end; straight on along the deck
-        without one), until one does, at most `reach` map units out; never where `avoid(x, y, radius)` says (blocked
-        ground), with any of its disc over `water(x, y)`, with its middle in an owner or overlapping a new one.
+        without one), until one does, at most `reach` map units out; never where `avoid(x, y, r)` says (blocked
+        ground, the holes the map leaves for its buildings), with any of its disc over `water(x, y)`, with its middle
+        in an owner or overlapping a new one: where a circle of `radius` would, one of 3/4 or 1/2 of it may go.
 
         The owner is centred at the deck's middle (on the STEP grid), as small as holds the whole deck and links to
         the ground at both ends (with no copy apart from the deck, when a size allows it), and never so big that
@@ -282,9 +283,11 @@ class Graph:
         circles in its local map)], "inside": [(span index, the old owner's number)], "left_out": copies left out of
         a local map (apart from its deck), "under": an old deck's main circles taken away, "closed": [(span index, [the
         ends that couldn't be joined: 0 its start, 1 its end])], "crowded": [span index: no room for an owner, or an
-        old owner it can't go into]}."""
+        old owner it can't go into], "stopped": {(span index, end): (x, y, how far along the road, what the road
+        meets there: "water", "ground closed to units", "a town's or bridge's own ground") where an approach
+        had to stop}."""
         counts = {"added": 0, "linked": 0, "approach": 0, "longest": 0.0, "owners": [], "inside": [], "left_out": 0,
-                  "under": 0, "closed": [], "crowded": []}
+                  "under": 0, "closed": [], "crowded": [], "stopped": {}}
         n, nx = len(self.circles) - 1, len(self.subs)
         allc = [c[:3] for c in self.circles[:-1]]  # the main circles: the old ones, then the approaches
         ground = _Buckets(allc)  # (allc grows with it)
@@ -360,7 +363,7 @@ class Graph:
             # the water) in the new local map
             under = {i: allc[i] for i in _under(allc, (x0, y0, x1, y1), water) if nx <= i < n}
             cx, cy, low = _owner_middle((x0, y0, x1, y1))
-            ends_of = {j: allc[j] for i in under for j in near_of[i] if j not in under and allc[j][2] > 0
+            ends_of = {j: allc[j] for i in under for j in near_of[i] if j >= nx and j not in under and allc[j][2] > 0
                        and math.hypot(allc[j][0] - cx, allc[j][1] - cy) < low}
             kept_ends = [c for c in (_dry_part(water, *c) for c in ends_of.values()) if c is not None]
             gone = {**under, **ends_of}
@@ -378,10 +381,19 @@ class Graph:
                     continue
                 chain, met = [], []
                 for walked, (px, py) in _walk_out(at, out, roads, radius * 0.75, reach, away=other):
-                    if (avoid is not None and avoid(px, py, float(radius))) or _wet(water, px, py, radius) \
-                            or in_owner(px, py, radius):
+                    # the biggest circle that fits there: a smaller one squeezes past a building or the water's edge
+                    # (spaced 3/4 of `radius`, circles of half of it still overlap by STEP and link)
+                    r = next((float(rr) for rr in (radius, radius * 0.75, radius / 2)
+                              if not ((avoid is not None and avoid(px, py, float(rr))) or _wet(water, px, py, rr)
+                                      or in_owner(px, py, rr))), None)
+                    if r is None:
+                        small = radius / 2
+                        why = "water" if _wet(water, px, py, small) else \
+                            "a town's or bridge's own ground" if in_owner(px, py, small) else \
+                            "ground closed to units (a building the map keeps them off, or ground a mod blocked)"
+                        counts["stopped"][(si, which)] = (px, py, walked, why)
                         break
-                    chain.append((px, py, float(radius)))
+                    chain.append((px, py, r))
                     met = [d for d in ground.near(*chain[-1]) if meets(chain[-1], d) is not None]
                     if met:
                         longest = max(longest, walked)
@@ -434,7 +446,8 @@ class Graph:
                 new_links += [(None, (nx + j, num(i)) + _meeting(o["circle"], allc[i])) for i in o["linked"]]
             counts["added"], counts["linked"] = added + m, len(new_links)
             self._finish(circles, kept, new_links, n, old_of)
-            fresh = [(nx + j, o["circle"]) for j, o in enumerate(owned)] + [(num(i), allc[i]) for i in range(n, len(allc))]
+            fresh = [(nx + j, o["circle"]) for j, o in enumerate(owned)] \
+                + [(num(i), allc[i]) for i in range(n, len(allc))]
             self.points = _index_more(_index_renumber(self.points, num), allc[:n], fresh, num)
             self.subs = self.subs + [_local_graph(self.box, o["local"]) for o in owned]
             counts["owners"] = [(o["span"], nx + j, o["circle"][2], len(o["local"])) for j, o in enumerate(owned)]
@@ -463,7 +476,8 @@ class Graph:
         high = min(high, low + 64 * STEP)  # (a bigger one never reaches more ground units use)
         if high < low:
             return None
-        near = [(i, c) for i, c in enumerate(every) if i >= nx and c[2] > 0 and math.hypot(c[0] - cx, c[1] - cy) < high + c[2]]
+        near = [(i, c) for i, c in enumerate(every)
+                if i >= nx and c[2] > 0 and math.hypot(c[0] - cx, c[1] - cy) < high + c[2]]
         best = None
         for size in range(int(low), int(high) + 1, int(STEP)):
             got = _try_owner((cx, cy, float(size)), deck, near, anchors, chains, len(every), extra)
@@ -478,8 +492,10 @@ class Graph:
         map's circles centred over water that come within 2 LOCAL_RADIUS of the deck's line go (an old deck there),
         the deck's circles come in, each end joined to the map's ground where its end third doesn't reach it by an
         approach of LOCAL_RADIUS circles every LOCAL_SPACING along the road, inside the owner, never over water or
-        where `avoid` says. New circles are linked to every circle they overlap by STEP or more and listed in the
-        map's index under the nearest old one. Returns (approach circles, the longest approach), or None, leaving the
+        where `avoid` says; circles the new deck's ground doesn't reach go too (held to the rest by the old deck
+        alone: a row of small circles beside it, on some maps). New circles are linked to every circle they overlap
+        by STEP or more and listed in the map's index under the nearest old one. Returns (approach circles, the
+        longest approach), or None, leaving the
         map as it was, when the deck isn't all inside the owner, an end can't be joined, or the map would come out in
         more pieces or with a point where a main link meets the owner no longer on its ground."""
         ox, oy, orad = self.circles[k][:3]
@@ -532,6 +548,11 @@ class Graph:
                     continue
                 linked.add(pair)
                 new_links.append((None, pair + point))
+        piece = _reached([lk for _i, lk in kept + new_links], m0)  # the ground the new deck reaches: what the old
+        for i in range(m0):  # deck alone held to it goes with it (a row of small circles beside it, on some maps)
+            if allc[i][2] > 0 and i not in piece:
+                allc[i] = allc[i][:2] + (0.0,)
+        kept = [(i, lk) for i, lk in kept if lk[0] in piece and lk[1] in piece]
         trial._finish(allc, kept, new_links, m0)
         trial.points = _index_more(local.points, lc, [(m0 + j, c) for j, c in enumerate(new)])
         if len(trial._labels()[1]) > pieces or any(trial.find(gx, gy) is None for gx, gy in gates):
@@ -972,6 +993,21 @@ def _fill(sources, zones, now) -> list[tuple[float, float, float]]:
 
 
 # --- local maps for new bridges (Graph.open) ----------------------------------------------------------------------------
+def _reached(links, start: int) -> set[int]:
+    """The circles reached from circle `start` through `links` ((a, b, x, y))."""
+    near: dict[int, list[int]] = {}
+    for a, b, _x, _y in links:
+        near.setdefault(a, []).append(b)
+        near.setdefault(b, []).append(a)
+    seen, todo = {start}, [start]
+    while todo:
+        for d in near.get(todo.pop(), ()):
+            if d not in seen:
+                seen.add(d)
+                todo.append(d)
+    return seen
+
+
 def _piece(circles, start: int = 0) -> set[int]:
     """The circles (x, y, r) reached from circle `start` through ones overlapping by STEP or more (links)."""
     near = _Buckets(list(circles))

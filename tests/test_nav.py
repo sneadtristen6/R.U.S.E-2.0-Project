@@ -353,6 +353,18 @@ class Owners(unittest.TestCase):
         self.assertEqual((counts["inside"], counts["crowded"]), ([], [0]))
         self.assertEqual(g.to_bytes(), bridged().to_bytes())
 
+    def test_what_only_the_old_deck_held_goes_with_it(self):
+        # some maps have small circles beside a bridge's deck, linked to the deck alone: with the old deck gone they'd
+        # be a piece apart (an order there crashes the game), so they go too
+        g = bridged()
+        side = (11300.0, 3200.0, 640.0)  # on the bank, linked only to the old deck's first circle
+        circles = [c[:3] for c in g.subs[0].circles[:-1]] + [side]
+        g.subs[0] = made(circles, [(i, i + 1) for i in range(5)] + [(1, 6)])
+        counts = g.open([(10200.0, 2000.0, 17000.0, 2000.0)], 1280.0, water=river)
+        self.assertEqual(counts["inside"], [(0, 0)])
+        self.assertEqual(g.subs[0].circles[6][2], 0.0)
+        self.assertEqual(g.subs[0].parts(), [14])
+
     def test_an_old_bridges_owner_stays_when_its_deck_is_closed(self):
         g = bridged()
         g.block([(13000.0, 2000.0, 1600.0)], refill=False, keep_owners=True)
