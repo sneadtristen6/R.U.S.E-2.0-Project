@@ -36,6 +36,7 @@ class ModInfo:
     movement: dict = field(default_factory=dict)             # map pack name -> [nav.Block] (§8)
     roads: dict = field(default_factory=dict)                # map pack name -> [roadnet.Road] (§8)
     players: dict = field(default_factory=dict)              # map pack name -> [players.Players] (§8, map.toml)
+    new_maps: dict = field(default_factory=dict)             # new map's pack name -> [newmap.NewMap] (§8, map.toml)
 
 
 # --- versions ---

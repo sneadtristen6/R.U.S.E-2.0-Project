@@ -233,19 +233,57 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
 ## 8. Maps
 
 ```
-maps/R2_Iwo/
-  map.toml        # display name, players, modes, base map to clone (v1), minimap icons
-  scenario.rndf   # start positions, depots, buildings, zones, objectives (semantic, not binary)
-  layers/*.png    # AI concealment / movement-blocking layers
-  terrain/        # later (M8): heightmap.png, texture layers, scenery.json
+maps/<map pack>/
+  map.toml        # how many players; for a new map, the shipped map it copies and its name
+  terrain.toml    # brush strokes on the ground
+  scenery.toml    # objects placed, and areas cleared
+  scenario.toml   # starting points, spawns and names moved or added
+  cover.toml      # where units hide, and the AI's blocked ground
+  movement.toml   # ground units can't use, or can again
+  roads.toml      # new roads
 ```
 
-- **v1 (M6):** a map is a clone of an existing map (`base = "TwoIslands"`) plus changes.
-- The builder then:
-  - creates the new `TMapLoadInfo`, its GUID and cluster files
-  - creates the map pack
-  - creates the DataMap_Win and IA_Common entries
-- Terrain from scratch comes later (M8).
+A map's files live in a folder named after its pack (`TwoIslands` for `Maps\PC\DataMapTwoIslands_v09.dat`,
+`SuperCrossRoads4` for Blitz); a mod holds only the files it needs. A mod can also make a **new map**, a copy of a
+shipped one under a name of its own, which its other files then edit like any map (below). Terrain from scratch comes
+later (M8).
+
+### A new map: `maps/<NewName>/map.toml` with `copy_of` (built: `rusemod.newmap`; PLAN §13, level 2)
+
+```toml
+copy_of = "SuperCrossRoads4"   # the shipped map it starts from, by its pack name (this one is Blitz)
+entry = "(2) Blitz"            # optional: which of its BATTLES entries, when it has several (the map list's name)
+players = 4                    # optional: as on any map (below), for the copy
+
+[name]                         # what the menus call it, or one name for every language: name = "Blitz Twin"
+us = "Blitz Twin"              # English, which the languages left out fall back to
+fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es pl cs ja zh work too)
+```
+
+- The folder's name is the new map's pack name: a letter, then up to 39 letters, digits and `_` (`BlitzTwin`:
+  `Maps\PC\DataMapBlitzTwin_v09.dat`). The mod's other files in that folder (`terrain.toml`, `scenery.toml`,
+  `scenario.toml`, `cover.toml`, `movement.toml`, `roads.toml`) edit the copy; the shipped map stays as it was.
+- The build adds (FORMATS §6, "A new map"), each file a copy of the shipped map's pointed at the copy:
+  - the map pack, with an id of its own in its header;
+  - in `ZZ_GladPatchableWin.dat`: the map's cluster (which mounts the new pack), its constants (which name the folder
+    of its grid), the scenario's cluster (which names the new scenario and map cluster), a map-list entry
+    (`TMapLoadInfo`) and a BATTLES entry (`TMultiMapInfo`, in the menu pack that lists the shipped map, after the maps
+    of its size), tied by a GUID of their own;
+  - in `DataMap_Win.dat`: the scenario (`test\map\<new>\`) and the grid (`datasmap\<new>\mapinfo.win`);
+  - in `ZZ_Win.dat`: its name under a new text key (`M_D_31`, then `M_D_32`, ...) in every language's menu texts.
+- Everything else is the shipped map's, only read: its models, sounds, lighting, camera paths, menu picture and
+  in-mission texts. The copy plays the shipped entry's scenario (Blitz: `leveldesign_normal.scenario`), so its
+  `scenario.toml` names that file.
+- The ids come from the name, so every PC that builds the mod gets the same files: a multiplayer game needs the mod on
+  both PCs, like any mod. The copy isn't offered in ranked games (the shipped map's ladder place stays its own).
+- Refused, with the reason: `copy_of` a map the game hasn't got, or one BATTLES doesn't list (campaign and Operation
+  maps); a name the game's map list already has, or one starting `flat_` (the game's test maps); a map with several
+  BATTLES entries and no `entry`; two mods making maps of one name; `name` without `copy_of` (a shipped map's menu name
+  isn't changed here).
+- `tools/verify_newmap.py <modded copy> <new map> <copy_of>` reads a built copy back and checks every registration and
+  file of the new map, and that nothing else of the game changed.
+- The Studio's map view doesn't open a new map yet (it shows the game's own maps); build it with `ruse build` or the
+  Studio's Test in game. Not tried in the game yet (`TESTS.md` T15).
 
 ### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`; PLAN §7 MT, T2–T3)
 

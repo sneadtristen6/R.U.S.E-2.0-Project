@@ -1027,7 +1027,10 @@ Both go to §11 (RUSE 2.0 design notes) when they're taken up; until then this i
    (`DataMap<New>_v09.dat`; new maps can ship their own pack, C3), register it, then reshape everything with the
    Studio: Start over and Level to flatten, brushes to sculpt (proven in-game 2026-09-30), water, scenery, the
    scenario. Missing pieces, in order: (a) cloning a pack and registering a new map (with its name in all ten
-   languages and a menu picture); (b) drawing zones (the sectors players capture); (c) ground painting (sand, grass,
+   languages and a menu picture): **built in the mod format and the build, 2026-10-01** (`maps/<New>/map.toml`
+   `copy_of`, `rusemod.newmap`; every other map file edits the copy; all 31 BATTLES entries copy; in-game test T15
+   waiting); left: its own menu picture, and the Studio's "New map…" and map view for it; (b) drawing zones (the
+   sectors players capture); (c) ground painting (sand, grass,
    rock); (d) the movement graphs and AI grid in `mapinfo.win` following the new ground where it becomes
    impassable (hills are fine today: units drove up one; cliffs, new lakes and blocked valleys aren't); (e) the sight
    layer (`output.sdb`: forests and towns hiding units).
@@ -1041,7 +1044,7 @@ Players get it through the launcher like any mod.
 
 **Unknowns to check first (one game start each):** a copied pack under a new name loads as its own map; the menus
 show a new skirmish entry (LittleGroove proved it for Operations); a map with its own GUID works in multiplayer
-between two PCs with the mod.
+between two PCs with the mod. The first two are T15 (`D:\RUSE-Instances\newmap-agent-check`, Blitz Twin).
 
 **The map tools, the way Cities: Skylines does them** (owner, 2026-09-30): click to lay things out, see them at
 once, the game's rules follow. What the data says, and the order:
