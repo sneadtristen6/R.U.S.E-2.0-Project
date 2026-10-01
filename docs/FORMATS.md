@@ -215,8 +215,12 @@ requirement, and the engine doesn't check member bytes against anything we chang
     (IA_Common.dat; the campaign's red-zone blockers are `DescriptorBloqueZoneForRuseAndOrder` calls there),
     scenarios `test\map\<map>\leveldesign*.scenario` (DataMap_Win.dat), unit cards
     `gen\ww2\res2d\texanimationuniticone\<nation>\<unit>.tgv` (ZZ_Win.dat). Per-map terrain bit layers live in
-    `datasmap\<map>\mapinfo.win` (DataMap_Win.dat; 2048² cells; 0x04 = "AI: blocked" (what the AI asks; units move by the movement graphs alone
-    and walk on it), 0x08 = forest, per the mods).
+    `datasmap\<map>\mapinfo.win` (DataMap_Win.dat; 1024² to 4096² cells; 0x04 = "AI: blocked" (what the AI asks; units move by the movement graphs alone
+    and walk on it), 0x08 = forest, per the mods). The grid is a square of square cells, its header holding its two
+    corners (x0, y0, x1, y1): the map itself on a square map, and on the 8 maps that aren't (`hurtgen`,
+    `m02_tunisie`, `m04_cotentin` = D-Day, `m05_hollande`, `m06_ardennes`, `m07_allemagne`, `mireille`, `testia`) a
+    square as wide as the long side with the map in its middle, so it starts off the map (D-Day: y from -655360 to 3276800 on a map 2621440 tall). Seen in the
+    game, 2026-10-01: cover cleared with the header read as a corner and a size left D-Day infantry hidden.
   - Ships: `Unit_Battleship`, `Unit_Heavy_Cruiser` and `Unit_Destroyer` boot, render, take orders and fire when made
     buildable; the battleship's model has no chassis bone, so it never moves visibly. The skirmish mesh packs
     `Pack\GFXDescriptor\MeshSkirmish_<nation>.spk` have `…WitBoat_…` variants (`ia/cluster.cpp`).

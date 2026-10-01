@@ -568,3 +568,40 @@ class ScenarioOnTheGround(unittest.TestCase):
             self.assertNotEqual(tank.position[2], 0.0)
             self.assertEqual(tank.values["Camp"], -1)  # no camp given: neutral
             self.assertEqual(depot.values, {"PythonClassName": DEPOT, "ChampInteger": 25, "Camp": -1})
+
+
+class PlacedObjectsStandOnTheGround(unittest.TestCase):
+    """A model that starts above its base point (an upper storey) is lowered so its lowest point sits on the ground,
+    by that much times its size: the owner's 10x TownHouseC_Haut floated about 47 m up (2026-10-01)."""
+
+    def test_lowered_by_the_model_s_gap_times_its_size(self):
+        from types import SimpleNamespace
+        from rusemod.build import grounded
+        from rusemod.scenery import NewObject
+        descs = {"T/Haut": SimpleNamespace(bridge=False), "T/Flat": SimpleNamespace(bridge=False),
+                 "T/Pont": SimpleNamespace(bridge=True)}
+        low = {"T/Haut": 1211.0, "T/Flat": 3.0, "T/Pont": 900.0}.get
+        objs = [NewObject("T/Haut", 1.0, 2.0, size=10.0), NewObject("T/Haut", 3.0, 4.0, lift=-5.0),
+                NewObject("T/Flat", 5.0, 6.0, size=4.0), NewObject("T/Pont", 7.0, 8.0, lift=-400.0),
+                NewObject("T/Unknown", 9.0, 9.0)]
+        out, moved = grounded(objs, descs, low)
+        self.assertEqual(moved, 2)
+        self.assertEqual([o.lift for o in out], [-12110.0, -1216.0, 0.0, -400.0, 0.0])
+        self.assertEqual([(o.x, o.y, o.size) for o in out], [(o.x, o.y, o.size) for o in objs])
+
+
+class ClearedWoods(unittest.TestCase):
+    """Erasing trees opens the ground to every unit and takes its forest cover away; erasing props alone doesn't (a
+    D-Day test: tanks couldn't drive into a cleared wood)."""
+
+    def test_trees_gone_open_the_ground_and_take_the_cover(self):
+        from rusemod.build import cleared_woods
+        from rusemod.scenery import EraseArea
+        erasing = {"Map": ([EraseArea(1.0, 2.0, 300.0), EraseArea(5.0, 6.0, 50.0, what=("prop",))], ["m"]),
+                   "Other": ([EraseArea(7.0, 8.0, 10.0, what=("prop",))], ["m"])}
+        opens, uncover = cleared_woods(erasing)
+        self.assertEqual(list(opens), ["Map"])
+        [b] = opens["Map"][0]
+        self.assertEqual((b.x, b.y, b.radius, b.open), (1.0, 2.0, 300.0, True))
+        [p] = uncover["Map"][0]
+        self.assertEqual((p.x, p.y, p.radius, p.layer, p.erase), (1.0, 2.0, 300.0, "cover", True))

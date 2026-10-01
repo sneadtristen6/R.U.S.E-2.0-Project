@@ -371,7 +371,27 @@ def forced(game, top="$/Cluster"):
             if v.obj.cls == "TClusterLoadSelectifResource"]
 
 
-class Models(unittest.TestCase):
+class ForceLoadOn:
+    """Tests of the force-load (build.FORCE_LOAD), off since T13 crashed, kept and tested until it's understood."""
+
+    def setUp(self):
+        import rusemod.build as b
+        self.addCleanup(setattr, b, "FORCE_LOAD", b.FORCE_LOAD)
+        b.FORCE_LOAD = True
+
+
+class ForceLoadOff(unittest.TestCase):
+    def test_a_unit_for_another_nation_and_its_spawn_are_refused(self):
+        r = Models.check(self, clone(("Nationalite", num(1)), source="$/Sherman"), maps=LoadedEverywhere.MAPS)
+        self.assertEqual(len(r.errors), 1)
+        self.assertIn("crashed it (T13", r.errors[0].message)
+        self.assertEqual(forced(r.game), [None] * 3)  # nothing forced
+        s = SpawnedUnits.check(self, "Unit_Panzer", maps=LoadedEverywhere.MAPS)
+        self.assertEqual(len(s.errors), 1)
+        self.assertIn("would crash as the match starts", s.errors[0].message)
+
+
+class Models(ForceLoadOn, unittest.TestCase):
     def check(self, *ops, packs=PACKS, maps=None):
         """The models check on `army()` with the cluster maps `maps` ({name: Obj}, none by default): the findings,
         and the game as the build would write it."""
@@ -443,7 +463,7 @@ class Models(unittest.TestCase):
         self.assertFalse(needs_zz_win([(mod, [Op("set", "$/Panzer", "SeuilMort", num(1))])]))
 
 
-class LoadedEverywhere(unittest.TestCase):
+class LoadedEverywhere(ForceLoadOn, unittest.TestCase):
     """A unit whose models only another nation's matches load: that nation's packs load in every skirmish (the bit of
     its Nationalite in every cluster map loader's ForceLoadBitFieldIfSkirmish), and the old refusal is a note."""
     MAPS = {"$/Cluster": cluster_map(), "$/Cluster_2": cluster_map()}
@@ -561,7 +581,7 @@ UNIT_PACK = make_edat([("dir", "genglad\\patchable\\", [
     ("dir", "scenario\\alpha\\scenario\\", [("file", "clustermap.cpp.gladndfbin", CLUSTER)])])])
 
 
-class TheBuildLoadsThem(unittest.TestCase):
+class TheBuildLoadsThem(ForceLoadOn, unittest.TestCase):
     def build(self, text, pack=UNIT_PACK):
         with tempfile.TemporaryDirectory() as d:
             mod = Path(d, "moved.rndf")
@@ -596,7 +616,7 @@ class TheBuildLoadsThem(unittest.TestCase):
         self.assertEqual(result.changed, {})
 
 
-class SpawnedUnits(unittest.TestCase):
+class SpawnedUnits(ForceLoadOn, unittest.TestCase):
     """A unit a mod's scenario spawns: the nation whose pack has its models loads in every skirmish, or the spawn is
     refused (Japanese units spawned on D-Day with no Japanese player crashed the game as the match started)."""
 

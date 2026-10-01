@@ -604,32 +604,35 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Now (updated 2026-10-01, afternoon): start here.** The owner's order (2026-10-01): **the road fix, its test, the
-audit, the release, then the players' suggestions.** The road fix and the audit are done; the release is next.
+**Now (updated 2026-10-01, evening): start here.** The owner's order (2026-10-01): **the road fix, its test, the
+audit, the release, then the players' suggestions.** All done up to the release: **Studio 0.8.0 and Launcher 0.3.0
+are out** (2026-10-01, after the owner's in-game tests, TESTS.md batches 1-3). Next (steps 5-9 below): new roads
+drawn up close, then units from another nation that work, then the community's Total War research fix, the Erase
+tool and new maps in the menus.
 
-Out: **Studio 0.7.6 and Launcher 0.2.11** (`a605cf3`). Committed, not released: the troubleshooter in both apps and
-the map check's backend (`f14e634`); the bridges' floor aprons, T8 passed (`934d414`); the clean-game backup and
-restore in both apps, every unit flag explained with a build error for flags 62 and 63 on a unit that isn't a truck,
-and square cover brushes (`28bee64`); the new README (`a1880d5`); the road fix and all the audit's fixes (LOG.md,
-2026-10-01); the mod list at [sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods), which the
-launcher reads (75 mods, cheats kept apart).
+Out in 0.8.0 / 0.3.0: the troubleshooter and the clean-game backup in both apps; every unit flag explained; square
+cover; the road fix and all the audit's fixes (LOG.md, 2026-10-01); units following new roads; the mod list at
+[sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods) (the launcher's Supported mods); the Studio's
+Open and Forest brushes, Bridges dock and Check this map; erase areas (`[[erase]]`) with cleared woods units use and
+don't hide in; placed objects on the ground at any size; cover painted in place on the 8 maps that aren't square.
 
 *Testing plan* (steps and commands in [TESTS.md](TESTS.md); one game start each):
 
 | Test | Who | Decides | State |
 |---|---|---|---|
 | **T8 Bridges:** units (a tank, then infantry) and a supply route cross the new D-Day bridges | owner, `D:\RUSE-Instances\bridges` | bridges done, or what to fix | **passed 2026-10-01, 04:27**: tanks, infantry and a supply truck cross on the decks, the men at the deck's height (the floor's aprons, `934d414`) |
-| **T12 New roads up close:** a new road's texture still shows with the camera close to the ground | owner, `D:\RUSE-Instances\bridges` | the road fix (step 1) | **ready** (copy rebuilt 2026-10-01 with the fix) |
+| **T12 New roads up close:** a new road's texture still shows with the camera close to the ground | owner, `D:\RUSE-Instances\bridges` | the road fix (step 1) | **FAILED** (owner, 2026-10-01, every batch: a new road still disappears near the camera; open, a known issue of 0.8.0) |
 | **T9 A road over an old bridge:** the old one gone, units cross on the new one | owner | the replace rule | after T8 (the new deck goes into the old bridge's local map; the old floor and its aprons go) |
 | **T10 Read-only game folder:** Test in game after updating | the player who reported it | the fix | waiting for him |
 | **T11 Launcher 0.2.11:** the update is offered, Play works | owner | — | — |
 | **T13 A unit from another nation's factory:** it shows and fights in a skirmish with no player of its own nation | owner | the force-load fix | when the fix is merged |
 
 *Next steps* (in order):
-1. **New roads up close (built 2026-10-01; T12 decides).** A new road's texture showed from afar but not up close
-   (T8). The build now marks its new scenery blocks as holding road pieces, as the map's own road blocks are, and
-   gives each road piece what the map's own pieces have (LOG.md). Test T12. The owner's Studio `test` mod has a road
-   that joins no other road; since the audit such a mod is refused until the road is joined.
+1. **New roads up close: STILL BROKEN (T12 failed in every batch, 2026-10-01; the owner has said so many times).** A
+   new road's texture shows from afar but disappears near the camera. The fix of the morning (new scenery blocks
+   marked as holding road pieces, each piece given what the map's own pieces have; LOG.md) didn't change that in
+   the game. Open, listed as a known issue of 0.8.0; the next session on roads starts from the game's own road
+   pieces up close (exe first). Never call it working before T12 passes.
 2. **The audit (done 2026-10-01).** All five areas (map info, ground, scenery, units, scenario) were checked against
    what the game does with every file the build writes, and each rule became a check in the build with a test (LOG.md
    has every fix). Being finished on branches, merged before the release:
@@ -638,31 +641,46 @@ launcher reads (75 mods, cheats kept apart).
    - the launcher's **Supported mods** (the mod list with tick boxes, cheats unticked and apart, a "Choose your mods"
      step on first run) and the Studio's **Share your mod** screen (how to add a mod to the list and become a
      contributor) (`feat/modlist`).
-3. **Release** Studio 0.7.7 and Launcher 0.2.12: the troubleshooter, the clean-game backup, the flags, square
-   brushes, the road fix, the audit's fixes, the mod list. Run by the owner before tagging.
+3. **Release** (done 2026-10-01): Studio 0.8.0 and Launcher 0.3.0, the owner's numbers and his go after batch 3.
 
-*After the release* (in order; cheap and certain first, one game start per test batch):
-4. **One test batch** in one modded copy: T12 (roads up close), T13 (another nation's unit), T9 (a road over an old
-   bridge). What fails is fixed before anything new.
-5. **The players' suggestions, the cheap ones** (a player's wishlist, 2026-10-01; the owner: "include all in plan"):
-   - **An unblock brush:** the reverse of the Block brushes, opening ground the map blocks. Units stand on whatever
-     ground is there, so unblocking a river puts them on the riverbed (the Studio says so).
-   - **A forest brush:** trees (Place, Area already paints them) and cover in one stroke.
-   - The Studio's **Bridges dock** (the map's own bridge kinds, a Length slider, roads' water crossings in gold, a note
-     when a map has no bridge kind) and the **map check's screen** ("Check this map" lists what would go wrong:
-     ground cut off, roads or bridges units can't use, road ends not joined, buildings on roads). Both backends exist.
-   Then a release.
-6. **A4 Remove scenery** (an Erase brush: trees along new roads; the old-bridge rule could then remove instead of
-   sink). Measured 2026-09-30: only 0.2-0.3% of a map's trees (D-Day 11.6 million, Blitz 3.9 million) sit in blocks
+*After the release* (planned 2026-10-01, evening; in order, cheap and certain first, one game start per test batch,
+the test spots beside the player's HQ with a top-down map):
+4. **Test batches** (done 2026-10-01, TESTS.md batches 1-3): what failed was fixed and checked again. T9 (a road over
+   an old bridge) and T14 (D-Day for 8 players: the lobby) ride along in the next batch.
+5. **New roads drawn up close (T12), first.** The release's one known issue, and the owner's most repeated report.
+   The build already marks the new blocks and the path to them as holding road pieces, and a simulation of the game's
+   walk reaches every piece, yet the game still drops a new road near the camera. Steps:
+   1. find what the close view asks of a road piece beyond the scenery tree (how the game draws it, first);
+   2. a probe copy: one of the map's own road pieces copied into a new block exactly as it is, beside a new road. If
+      the copy draws up close, our pieces' own data is the cause; if it doesn't, the new block is;
+   3. what the game's own road blocks always have and ours don't (the far list, the trailing word, the boxes);
+   4. a guard test that simulates the close-up road pass after every build, then one test batch.
+   Asked DomesticNukes too (his scenery notes; the shared repo's issue #11).
+6. **Units from another nation that work** (owner, 2026-10-01: "have a tiger on the USA ... a special scenario where
+   you captured a tiger"). Making the game load that nation's models in every match crashed it in T13 (a German Ju 87
+   copy for the US crashed the game when its gunner was set up: its model wasn't ready for it), so the build refuses
+   these units for now (`build.FORCE_LOAD`). Next: an `.spk` writer, then copy the unit's models (mesh, skeleton,
+   animations, proxies) into the new nation's own skirmish packs, so its matches load them with their own units; test
+   with a plane (the Ju 87 for the US) and a tank (a Tiger for the US). DomesticNukes' `.spk` notes asked for (#11).
+7. **A community mod to look at:** Rastapopoulos' "Total War research fix" (ModDB, 2026-09-30; he offered it to us):
+   in Total War mode, research the next era's units yourself instead of getting them free. If it works with our build,
+   it goes on the mod list (sneadtristen6/Ruse-Mods); nothing of it goes into the apps unless it brings code we need.
+   Downloading it waits for the owner's go.
+8. **The Studio's Erase tool and new maps in the game's menus** (branches `feat/eraseui` and `feat/newmap`, started by
+   agents; resumed with the owner's "go agents").
+9. **Small ones, when a session has room:** the town-names mod (names readable from any height, §14) on the mod list;
+   the players' wishlist done in 0.8.0 (Open and Forest brushes, Bridges dock, Check this map) needs nothing more.
+10. **A4 Remove scenery:** the build's side is out in 0.8.0 (`[[erase]]` circles, copy on write; a cleared wood is
+   opened to units and loses its cover); the Studio's Erase tool is on the branch `feat/eraseui`. Measured 2026-09-30: only 0.2-0.3% of a map's trees (D-Day 11.6 million, Blitz 3.9 million) sit in blocks
    placed once, the only ones `bury_objects` can sink one by one; the rest are in blocks the map places many times.
    So erasing needs a block copied for the erased spot (copy on write, down from the top block) or whole placed
    patches sunk; which one is the first decision of A4. The same work builds the top block's tree again, which also
    reaches new objects in open ground far from the map's scenery (the audit's one open scenery case, LOG.md).
-7. **A city template** (the wishlist): save a group of buildings, roads and cover, and stamp it on a map. Needs A4.
-8. **Road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
+11. **A city template** (the wishlist): save a group of buildings, roads and cover, and stamp it on a map. Needs A4.
+12. **Road kinds** (owner, 2026-09-30: "make a rule in editor where some roads can be in forests and not allow
    tanks"): a forest track (infantry only, out of the supply network) or a road that opens the woods to vehicles
    along it; which is the default is the owner's call.
-9. **A5 Ruse areas, A6 ground painting** (the forest-floor texture for the forest brush), **A7 finer ground**
+13. **A5 Ruse areas, A6 ground painting** (the forest-floor texture for the forest brush), **A7 finer ground**
    (re-meshing): the smallest ground brush is 1% of the map's width (cover and block go four times finer), and below
    one cell of the gameplay ground a brush does nothing, so **smaller brushes** and finer ground up close come
    with A7.
@@ -775,12 +793,12 @@ ends with one in-game test (batched, one game start) and a release. Sessions are
 | A2 | **Movement: passed in the game (2026-09-30).** `mapinfo.win` buffers 1-2 are the infantry and vehicle navigation graphs (circles units plan through, linked where they meet, with a spatial index; water and off-map ground uncovered), read and written byte-identical (`rusemod.nav`). Mods block ground (`maps/<map>/movement.toml`), the freed ground is filled back with new circles, and every placed building is solid: on Blitz units go around a blocked pit and between placed towers, and a building placed in the game on edited ground works. The Studio side ships in 0.7.0 (Block brushes, a Solid toggle on placed buildings, the Where units go view), with the tools moved to a Cities: Skylines-style bar along the bottom in the game's HUD look | — | done |
 | A3 | **Roads, Cities: Skylines style:** draw the map's roads in the view (done 2026-09-30: the Roads box, the scenery's road pieces decoded as Béziers); the road network (buffer 0) decoded, written back byte-identical on all 33 maps, and `RoadNet.add_road` (points along the curve, joined to the nearest road, index rebuilt; not tried in the game yet). Found: the roads a player sees are painted into the ground's texture tiles, the scenery's pieces lie on them, so a visible new road also needs ground painting (A6). **Proven in the game (2026-09-30): supply routes follow a network-only road** (the depot's route preview took the new shortcut). Still to test: vehicles' speed on it, and whether pieces draw anything; a road tool (click points, a curve follows, ends snap to roads) that writes the scenery's road pieces and the road network, and clears the trees along it (needs A4). Test: a new road, drawn? faster? | A2, A4 | 2-3 |
 | A4 | **Remove scenery:** take out the map's own trees, props and buildings (an Erase brush; roads and towns use it) | — | 1 |
-| A5 | **Ruse areas** (owner, 2026-09-30: "editing ruse areas for new maps and existing, along with how many per"): the areas ruses are played on, the scenario's `AREA` records (reader done): draw, move, reshape, add, remove and name them, on the shipped maps and on new maps (B1-B2). **How many ruses an area takes:** two, and no data value holds it (found 2026-09-30, §11), so the public apps can't change it; it's on RUSE 2.0's private list (program-side), unless a data value turns up. Test: a new area shows on the ruse map and takes a ruse | — | 1-2 |
+| A5 | **Ruse areas** (owner, 2026-09-30: "editing ruse areas for new maps and existing, along with how many per"): the areas ruses are played on, the scenario's `AREA` records (reader done): draw, move, reshape, add, remove and name them, on the shipped maps and on new maps (B1-B2). **How many ruses an area takes:** two, and no data value holds it (found 2026-09-30, §11), so the public apps can't change it; it's on RUSE 2.0's private list, unless a data value turns up. Test: a new area shows on the ruse map and takes a ruse | — | 1-2 |
 | A6 | **Ground painting:** grass, sand, rock, road texture with a brush (plain tiles work in-game) | — | 1-2 |
 | A7 | **Re-meshing:** finer ground only where brushes need it (adaptive, so no lag: far mesh and gameplay ground stay coarse); a warning when a brush is steeper than the mesh can show | DomesticNukes' index-buffer notes | 2-3 |
 | A8 | Spawn checks: which camp is the player in a skirmish, and does a skirmish honour unit spawns; formations (Studio 0.7.1): do the units face the way the formation does | — | 0 (one test) |
 | A9 | *Idea (owner, 2026-09-30):* units drawn as their real 3D models in the map view (a tank as a tank, infantry as soldiers) instead of markers, like the buildings already are | — | 1-2 |
-| A10 | **More players on a map, at least 8** (owner, 2026-09-30: "add at least limit to 8; if it can go higher, try later on, just plan for it"). A map's player count is data: `NbPlayers` in its `TMultiMapInfo` (`misc/globals.cpp`; the 30 online maps use 2, 3, 4, 6 or 8, and MP23-MP24 are 8 already), its size group `CategoryId` (seen: 1 for 3-4 players, 2 for 6, 3 for 8), its team layouts (`DispoMulti2Teams` / `3Teams` / `FFA`), and a starting point per player in its scenario (D-Day's 3v3 has six); the "(6)" in its name is only text. So: raise a shipped map (D-Day first) to 8, and let new maps (B1) pick theirs: the Studio gets **Add starting point** (it moves them now; each has an alliance, a camera and a warm-up path), and the build sets the count, the group, the layouts and the name in ten languages. Test: 8 slots in the lobby, and an 8-player game starts with every player on their own starting point. **Built 2026-09-30:** `maps/<map>/map.toml` (`players`), `[[start]]` in scenario.toml (a teammate's point copied, at the ground's height), `rusemod.players` (the count, group, 4v4 game type and name set; a count the scenario can't seat refused), the Studio's **Add starting point** tool and **Players** row; the D-Day copy `D:\RUSE-Instances\eight` is ready (TESTS.md T14). **Past 8: later.** Probably the program's own limit; if so it's RUSE 2.0's (private), if a data value holds it, both apps | — | 1-2 |
+| A10 | **More players on a map, at least 8** (owner, 2026-09-30: "add at least limit to 8; if it can go higher, try later on, just plan for it"). A map's player count is data: `NbPlayers` in its `TMultiMapInfo` (`misc/globals.cpp`; the 30 online maps use 2, 3, 4, 6 or 8, and MP23-MP24 are 8 already), its size group `CategoryId` (seen: 1 for 3-4 players, 2 for 6, 3 for 8), its team layouts (`DispoMulti2Teams` / `3Teams` / `FFA`), and a starting point per player in its scenario (D-Day's 3v3 has six); the "(6)" in its name is only text. So: raise a shipped map (D-Day first) to 8, and let new maps (B1) pick theirs: the Studio gets **Add starting point** (it moves them now; each has an alliance, a camera and a warm-up path), and the build sets the count, the group, the layouts and the name in ten languages. Test: 8 slots in the lobby, and an 8-player game starts with every player on their own starting point. **Built 2026-09-30:** `maps/<map>/map.toml` (`players`), `[[start]]` in scenario.toml (a teammate's point copied, at the ground's height), `rusemod.players` (the count, group, 4v4 game type and name set; a count the scenario can't seat refused), the Studio's **Add starting point** tool and **Players** row; the D-Day copy `D:\RUSE-Instances\eight` is ready (TESTS.md T14). **Past 8: later.** If no data value holds the limit, it's RUSE 2.0's (private); if one does, both apps | — | 1-2 |
 
 *Phase B: new maps* (M6, M8)
 | # | Step | Needs | Sessions |
@@ -915,8 +933,8 @@ flamethrower, the Italian L6/40 Lanciafiamme), with a short range.
 - **Tunnel Warfare:** your infantry in the sector's towns stays hidden after it fires (the tunnel villages of
   northern China). Needs balancing: it may be too strong.
 
-Whether new ruses are possible at all depends on whether ruses are data or program (check 1). Some rules are
-known to be program-side already (the two ruses a sector takes, 2026-09-30: no data value holds it); those go on
+Whether new ruses are possible at all depends on whether ruses are in the game's data (check 1). Some rules
+are known not to be in the data (the two ruses a sector takes, 2026-09-30: no data value holds it); those go on
 RUSE 2.0's private list, to be handled together later, never through the public apps.
 
 **Pacific forts (draft):**
@@ -942,7 +960,7 @@ Historically from October 1944 (Leyte Gulf), mostly against ships, which fits Pa
 recorded by Mandarin speakers (volunteers or paid). Until then China borrows an existing voice set.
 
 **Checks before designing numbers** (PC, read-only, with `ruse dump` / `ruse names`):
-1. Are ruses data (one object per ruse) or program? (new ruses)
+1. Are ruses in the data (one object per ruse)? (new ruses)
 2. What does the UK's forward warning post detect, and does artillery already reveal itself when it fires? (the
    Listening Post)
 3. Can a plane be set to be lost when it attacks? (kamikaze; otherwise it needs the add-on, M10)
@@ -1062,3 +1080,7 @@ not decisions or an order: the map editor comes first.** Map ideas are in §12, 
      yet. A few parts aren't in the data at all (the two ruse slots on a sector's panel), out of a data mod's reach.
    First step when taken up: one study session (which archive and tiles make which screen, which script builds which
    part of the HUD), written up as what can be reskinned, what can be changed safely, and what can't.
+2. **Town names you can read from far away (2026-10-01).** A mod that makes the map's town names big and visible
+   from high up, so a town is an easy landmark ("the river 750 m south-east of Toulaville") without zooming in. The
+   names are the scenarios' town labels (`LabelVille`); how far away they show and how big is to be found (likely the
+   labels' display settings in the data). Handy for every test copy too.
