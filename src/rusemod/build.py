@@ -994,6 +994,12 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     say(f"roads: {name}, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
+                for name, (map_moves, ids) in moves.items():  # the mods' starting points on the final ground
+                    from .scenario import start_ground_problems
+                    wrong, far = start_ground_problems(read_data, name, map_moves)
+                    result.findings += [Finding("error", f"{', '.join(ids)}: {w}") for w in wrong]
+                    for w in far:
+                        warn(f"{', '.join(ids)}: {w}")
                 for name, (settings, ids) in players.items():  # how many players: after the mods' starting points
                     from .players import PlayersError, apply_players
                     from .scenario import Scenario, folder_of

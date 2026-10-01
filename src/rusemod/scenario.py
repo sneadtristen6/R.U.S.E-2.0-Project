@@ -772,6 +772,59 @@ def starts_toml(starts: list[Start]) -> str:
     return "\n".join(lines)
 
 
+ROAD_NEAR = 30000.0   # map units: 95% of the shipped starting points are this close to a road (the furthest 1,440,000)
+
+
+def start_ground_problems(read, map_pack: str, moves: list) -> tuple[list[str], list[str]]:
+    """(errors, warnings) for the mod's new and moved starting points on the map's movement and road network as the
+    build leaves them (`read(member)`: DataMap_Win.dat's files after every map edit). The game builds a player's HQ
+    at his starting point, or wherever it finds room near it (up to far away) when vehicles can't stand there, so a
+    start on water, a cliff or a block is an error; one far from any road is a warning (the HQ's trucks need one).
+    A map whose mapinfo.win can't be read isn't checked."""
+    from .cover import member
+    from .nav import Graph
+    from .roadnet import RoadNet
+    starts = [m for m in moves if isinstance(m, Start) or (isinstance(m, Move) and m.kind == "StartingPoint")]
+    win = read(member(map_pack)) if starts else None
+    if win is None:
+        return [], []
+    try:
+        from ruse_mod_engine import sdb
+        bufs = sdb.split_mapinfo(win)[1]
+        vehicles = Graph.read(bufs[2])
+    except (ValueError, IndexError, TypeError, struct.error):
+        return [], []
+    try:
+        net = RoadNet.read(bufs[0])
+        roads = [(net.points[a][:2], net.points[b][:2]) for a, b, _cost in net.links]
+    except (ValueError, IndexError, struct.error):
+        roads = []
+    errors, warnings = [], []
+    for m in starts:
+        what = (f"the new starting point for team {m.team}" if isinstance(m, Start) else
+                f"the starting point moved (item {m.item})")
+        at = f"{map_pack}: scenario.toml: {what} at ({m.x:.0f}, {m.y:.0f}) in {m.file}"
+        if not vehicles.walkable(m.x, m.y):
+            errors.append(f"{at} is where vehicles can't go (water, a cliff, a block or off the map): the game would "
+                          f"build that player's HQ wherever it finds room, possibly far away. Put it on open ground")
+            continue
+        if roads:
+            far = min(_to_segment(m.x, m.y, a, b) for a, b in roads)
+            if far > ROAD_NEAR:
+                warnings.append(f"{at} is {far:,.0f} map units from the nearest road; the shipped starting points are "
+                                f"within about {ROAD_NEAR:,.0f}, and the HQ's supply trucks drive on roads. Move it "
+                                f"nearer a road, or add one (roads.toml)")
+    return errors, warnings
+
+
+def _to_segment(x: float, y: float, a, b) -> float:
+    (ax, ay), (bx, by) = a, b
+    vx, vy = bx - ax, by - ay
+    n = vx * vx + vy * vy
+    t = 0.0 if n == 0 else max(0.0, min(1.0, ((x - ax) * vx + (y - ay) * vy) / n))
+    return math.hypot(x - ax - t * vx, y - ay - t * vy)
+
+
 def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None) -> tuple[dict[str, bytes], list[str]]:
     """Apply a mod's scenario edits (in order: Move and Spawn) to a map's scenarios. `read(member)` gives a
     DataMap_Win.dat member's bytes, or None. `skirmish`: the map's scenarios (file names, lower case) that its

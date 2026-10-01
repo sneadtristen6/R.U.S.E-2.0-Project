@@ -426,6 +426,10 @@ rotation = 1.2        # radians, optional: as its teammate when left out
 - The build copies a starting point of the same team (the one with the highest place; else the nearest of any
   team): its camera moved by the same offset, its warm-up camera path, its angles. It stands at the ground's height
   there, read from the map (every shipped starting point matches its ground).
+- New and moved starting points are checked on the map's movement and roads as the build leaves them (after its
+  blocks, bridges and roads): one where vehicles can't go (water, a cliff, a block, off the map) is refused, since the
+  game would build that player's HQ wherever it finds room, possibly far away; one more than about 30,000 map units
+  from a road gets a warning (the shipped ones are within that, and the HQ's trucks need a road).
 
 ### How many players: `maps/<map pack>/map.toml`
 

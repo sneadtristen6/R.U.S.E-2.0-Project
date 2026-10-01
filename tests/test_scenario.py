@@ -326,6 +326,45 @@ class Spawns(unittest.TestCase):
                 parse_spawns([{"file": "a.scenario", "what": "Unit_X", "x": 1, "y": 2, **bad}])
 
 
+def mapinfo(road_y=2000.0) -> bytes:
+    """A made-up mapinfo.win: test_nav's row of three ground circles along y 2000 (x 2000 to 10000) for infantry and
+    vehicles, and one road along y `road_y` from x 0 to 12000."""
+    from rusemod import nav
+    from rusemod.roadnet import RoadNet, build_tree
+    from test_nav import row
+    net = RoadNet([(0.0, road_y), (12000.0, road_y)], [])
+    net.links = [(0, 1, net._cost(0, 1))]
+    net.tree = build_tree(net.points, net.links)
+    head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 16000.0, 16000.0)
+    return nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+        net.to_bytes(), row().to_bytes(), row().to_bytes(), b"cover")) + b"tail", {})
+
+
+class StartGround(unittest.TestCase):
+    """A starting point where vehicles can't stand gets its HQ wherever the game finds room, possibly far away: a new
+    or moved one is checked on the map's final movement and roads."""
+
+    def test_on_the_ground_off_it_and_far_from_a_road(self):
+        from rusemod.cover import member
+        from rusemod.scenario import Move, Start, start_ground_problems
+        read = {member("Blitz"): mapinfo()}.get
+        ok = [Start("a.scenario", 1, 2000.0, 2000.0), Move("a.scenario", 0, "StartingPoint", 7000.0, 2500.0)]
+        self.assertEqual(start_ground_problems(read, "Blitz", ok), ([], []))
+        errors, warnings = start_ground_problems(read, "Blitz", [Start("a.scenario", 2, 50000.0, 9000.0),
+                                                                 Move("a.scenario", 3, "StartingPoint", 2000.0, 7000.0)])
+        self.assertEqual((len(errors), warnings), (2, []))
+        self.assertIn("Blitz: scenario.toml: the new starting point for team 2 at (50000, 9000) in a.scenario is where "
+                      "vehicles can't go", errors[0])
+        self.assertIn("the starting point moved (item 3)", errors[1])
+        far = {member("Blitz"): mapinfo(road_y=40000.0)}.get
+        errors, warnings = start_ground_problems(far, "Blitz", ok)
+        self.assertEqual((errors, len(warnings)), ([], 2))
+        self.assertIn("38,000 map units from the nearest road", warnings[0])
+        # a spawn, a label, or a map without its mapinfo.win: nothing to check
+        self.assertEqual(start_ground_problems(read, "Blitz", [Move("a.scenario", 1, "LabelVille", 9e9, 9e9)]), ([], []))
+        self.assertEqual(start_ground_problems({}.get, "Blitz", ok), ([], []))
+
+
 class Kinds(unittest.TestCase):
     """What each scenario is, from the game's map list and menus: a map-list entry loads a scenario through its
     cluster (ClusterLoads -> TNDFTransaction.BaseName -> that ClusterMap's ScenarioPath); the menus list the entry as

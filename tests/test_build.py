@@ -426,6 +426,23 @@ class ScenarioMoves(unittest.TestCase):
         self.assertEqual(new.values, {"Camp": 1, "PythonClassName": "front.parametres.Classes.Unit_M4_Sherman"})
         self.assertEqual(s.items[0].position[:2], (1500.0, 2500.0))
 
+    def test_a_start_where_vehicles_cant_go_is_refused(self):
+        """Checked on the map's movement as the build leaves it (test_scenario.mapinfo: ground along y 2000)."""
+        from test_scenario import mapinfo, scenario
+        (self.game / "Data" / "PC" / "190852" / "DataMap_Win.dat").write_bytes(make_edat([
+            ("dir", "test/map/blitz/".replace("/", "\\"), [("file", "leveldesign.scenario", scenario())]),
+            ("dir", "datasmap/blitz/".replace("/", "\\"), [("file", "mapinfo.win", mapinfo())])]))
+        sea = self.mod("sea", '[[start]]\nfile = "leveldesign.scenario"\nteam = 1\nx = 2000.0\ny = 9000.0\n')
+        lines = []
+        result = build_and_write(self.game, [load_mod(sea)], instance=self.root / "copy", say=lines.append)
+        self.assertEqual(len(result.errors), 1, lines)
+        self.assertIn("sea: Blitz: scenario.toml: the new starting point for team 1 at (2000, 9000) in "
+                      "leveldesign.scenario is where vehicles can't go", result.errors[0].message)
+        self.assertFalse((self.root / "copy").exists())
+        land = self.mod("land", '[[start]]\nfile = "leveldesign.scenario"\nteam = 1\nx = 2000.0\ny = 2000.0\n')
+        result = build_and_write(self.game, [load_mod(land)], instance=self.root / "copy", say=lines.append)
+        self.assertEqual(result.errors, [], lines)
+
     def test_a_move_for_another_version_of_the_map_is_refused(self):
         folder = self.mod("wrong", '[[move]]\nfile = "leveldesign.scenario"\nitem = 1\nkind = "StartingPoint"\n'
                                    'x = 1.0\ny = 2.0\n')
