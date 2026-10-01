@@ -397,6 +397,10 @@ trucks = 25                   # a supply depot (what = "DalleBatimentDepot") onl
 - The build adds a design item (`TGameDesignItem` + `TGameDesignAddOn_Spawn`) to the scenario's list; moves are
   applied first, so their item numbers stay the shipped ones. It stands at the ground's height there (every shipped
   spawn does), and a depot gets its trucks (`ChampInteger`; the game gives a depot without it none).
+- `what` must be a class the game finds, or the map fails to load: a class name (or a `...parametres.Classes.X`
+  path) must be a class of the game's Python unit list (a mod's new unit gets one when it's a copy of a listed unit),
+  and any other full path must be one a shipped spawn uses. A depot is `what = "DalleBatimentDepot"` (written as the
+  shipped depots' `front.batiment_depot.DalleBatimentDepot`). Anything else is refused.
 - **A skirmish game spawns only neutral items** (camp -1): a spawn for a player's side in a scenario that a
   skirmish or online entry loads is refused, since the game would leave it out without a word. A spawn left without
   a camp is written as -1 (the game reads no camp as camp 0, which no game plays).

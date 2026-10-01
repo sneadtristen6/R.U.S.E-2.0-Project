@@ -898,9 +898,35 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         return mine
                     e = a.entry(member)
                     return bytes(a.read(e)) if e is not None else None
+                classes: list = []  # [the unit list's class names, or None when it can't be read], read once
+                shipped: list = []  # [every class path the shipped spawns use], read once when needed
+
+                def registered_classes():
+                    if not classes:
+                        zz_path = text_path or find_pack(game, loc.PACK)  # (ZZ_Win.dat: the mods may not need it)
+                        zz = text_arc if text_arc is not None else open_pack(zz_path) if zz_path else None
+                        found = pyscript.find_unit_list(zz) if zz is not None else None
+                        try:
+                            ul = pyscript.unit_list(pyscript.read_xyz(found[3]).payload) if found else None
+                        except pyscript.ScriptError:
+                            ul = None
+                        classes.append(None if ul is None else
+                                       {n for n, c in ul.classes.items() if c.registered} | set(result.new_classes))
+                    return classes[0]
+
+                def shipped_paths():
+                    if not shipped:
+                        from .scenario import shipped_class_paths
+                        shipped.append(shipped_class_paths(data_arc))
+                    return shipped[0]
                 for name, (map_moves, ids) in moves.items():
                     from .players import skirmish_files
-                    from .scenario import Move
+                    from .scenario import Move, Spawn, spawn_class_problems
+                    new_spawns = [m for m in map_moves if isinstance(m, Spawn)]
+                    wrong = spawn_class_problems(name, new_spawns, registered_classes(), shipped_paths) if new_spawns else []
+                    if wrong:  # a class the game can't find makes loading the map fail
+                        result.findings += [Finding("error", f"{', '.join(ids)}: {w}") for w in wrong]
+                        continue
                     unset = [m for m in map_moves if getattr(m, "z", 0.0) is None and (
                         not isinstance(m, Move) or m.kind in ("StartingPoint", "Spawn"))]
                     map_path = find_pack(game, pack_file(name)) if unset else None

@@ -438,6 +438,48 @@ class ScenarioMoves(unittest.TestCase):
             load_mod(bad)
 
 
+class SpawnClasses(unittest.TestCase):
+    """A spawn whose class the game can't find makes the map fail to load: one under parametres.Classes must be in
+    the game's Python unit list (made up here: Tank_A and Building_B), any other path one a shipped spawn uses."""
+
+    def build(self, what):
+        from test_pyscript import ZZ_WIN
+        from test_scenario import scenario
+        from rusemod import loc
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            game = root / "steamapps" / "common" / "R.U.S.E"
+            rev = game / "Data" / "PC" / "190852"
+            rev.mkdir(parents=True)
+            (game / "RUSE.exe").write_bytes(b"MZ")
+            (rev / "ZZ_GladPatchableWin.dat").write_bytes(PACK)
+            (rev / loc.PACK).write_bytes(ZZ_WIN)
+            (rev / "DataMap_Win.dat").write_bytes(
+                make_edat([("dir", "test/map/blitz/".replace("/", "\\"), [("file", "leveldesign.scenario", scenario())])]))
+            (root / "steamapps" / "appmanifest_21970.acf").write_text('"AppState" { "buildid" "24687178" }')
+            folder = write_mod(root / "mods", "spawner", {})
+            (folder / "maps" / "Blitz").mkdir(parents=True)
+            (folder / "maps" / "Blitz" / "scenario.toml").write_text(
+                f'[[spawn]]\nfile = "leveldesign.scenario"\nwhat = "{what}"\nx = 1.0\ny = 2.0\n', encoding="utf-8")
+            lines = []
+            return build_and_write(game, [load_mod(folder)], say=lines.append), lines
+
+    def test_a_listed_class_builds_and_a_made_up_one_is_refused(self):
+        for what in ("Tank_A", "front.parametres.Classes.Building_B", "DalleBatimentDepot"):
+            with self.subTest(what=what):
+                result, lines = self.build(what)
+                self.assertEqual(result.errors, [], lines)
+        for what, why in (("Unit_Made_Up", "spawner: Blitz: scenario.toml: the spawn of Unit_Made_Up in "
+                                           "leveldesign.scenario: the game's unit list has no class Unit_Made_Up"),
+                          ("Unit_M4_Sherman", "the game's unit list has no class Unit_M4_Sherman"),
+                          ("front.somewhere.Unit_X", "front.somewhere.Unit_X isn't a class path any shipped spawn uses")):
+            with self.subTest(what=what):
+                result, lines = self.build(what)
+                self.assertEqual(len(result.errors), 1, lines)
+                self.assertIn(why, result.errors[0].message)
+                self.assertIn("Nothing was written.", lines)
+
+
 class ScenarioOnTheGround(unittest.TestCase):
     """Spawned units and moved starting points stand at the ground's height there, as every shipped one does
     (6,380 spawns, none at z 0): read from the map's highdef.tms, on a made-up map with hills."""

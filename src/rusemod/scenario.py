@@ -624,6 +624,46 @@ class Spawn:
         return self.what if "." in self.what else SHIPPED_PATHS.get(self.what, CLASS_PATH + self.what)
 
 
+def spawn_class_problems(map_pack: str, spawns: list[Spawn], registered, shipped_paths) -> list[str]:
+    """Why the game couldn't find a spawn's class when the map loads (which makes loading it fail): one message per
+    spawn whose class path ends in parametres.Classes.X when X isn't a class of the game's Python unit list
+    (`registered`: its class names, the mods' new ones included; None when the list can't be read, and then these
+    aren't checked), or whose other class path no shipped spawn uses (`shipped_paths()`: every shipped spawn's)."""
+    out, shipped = [], None
+    for s in spawns:
+        path = s.class_path
+        module, _dot, name = path.rpartition(".")
+        at = f"{map_pack}: scenario.toml: the spawn of {s.what} in {s.file}"
+        if module == "parametres.Classes" or module.endswith(".parametres.Classes"):
+            if registered is not None and name not in registered:
+                out.append(f"{at}: the game's unit list has no class {name}, so the map would fail to load. Use the "
+                           f"class name (ClassNameForDebug) of a unit the list has; a new unit gets one when it's a "
+                           f"copy of a listed unit")
+            continue
+        if path in SHIPPED_PATHS.values():  # (the depot slab's: 1,625 shipped spawns use it)
+            continue
+        if shipped is None:
+            shipped = shipped_paths()
+        if path not in shipped:
+            out.append(f"{at}: {path} isn't a class path any shipped spawn uses, so the game may not find it and "
+                       f"the map would fail to load. Use the unit's class name alone (what = \"Unit_...\"), or a path "
+                       f"a shipped scenario uses")
+    return out
+
+
+def shipped_class_paths(arc) -> set[str]:
+    """Every class path the shipped spawns use, from an open DataMap_Win.dat (all its scenarios)."""
+    out = set()
+    for e in arc.entries:
+        if e.path.lower().endswith(".scenario"):
+            try:
+                s = Scenario.read(bytes(arc.read(e)))
+            except (ScenarioError, ValueError, struct.error):
+                continue
+            out |= {str(it.values.get("PythonClassName")) for it in s.items if it.kind == "Spawn"}
+    return out
+
+
 def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
     out = []
     for n, m in enumerate(items or [], start=1):

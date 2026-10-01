@@ -300,6 +300,19 @@ class Spawns(unittest.TestCase):
         self.assertEqual(self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 900.0, 2100.0)]).position[2],
                          50.0)
 
+    def test_classes_the_game_can_find(self):
+        from rusemod.scenario import Spawn, spawn_class_problems
+        shipped = {"front.parametres.generated_data.ParamsUnites.Unit_LCVP"}
+        spawns = [Spawn("a.scenario", w, 1.0, 2.0) for w in (
+            "Unit_M4_Sherman", "DalleBatimentDepot", "parametres.Classes.Unit_M4_Sherman", "Unit_Ghost",
+            "front.parametres.generated_data.ParamsUnites.Unit_LCVP", "front.parametres.generated_data.ParamsUnites.Unit_X")]
+        wrong = spawn_class_problems("Blitz", spawns, {"Unit_M4_Sherman"}, lambda: shipped)
+        self.assertEqual(len(wrong), 2, wrong)
+        self.assertIn("the spawn of Unit_Ghost in a.scenario: the game's unit list has no class Unit_Ghost", wrong[0])
+        self.assertIn("ParamsUnites.Unit_X isn't a class path any shipped spawn uses", wrong[1])
+        # the unit list can't be read: its classes aren't checked, the other paths still are
+        self.assertEqual(len(spawn_class_problems("Blitz", spawns, None, lambda: shipped)), 1)
+
     def test_the_mod_file(self):
         import tomllib
         from rusemod.scenario import Spawn, parse_spawns, spawns_toml
