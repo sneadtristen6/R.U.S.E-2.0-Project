@@ -340,9 +340,11 @@ def skirmish_models(zz_win: Edat) -> dict | None:
 
 
 def unit_models(base, run, zz_win, result: BuildResult) -> None:
-    """An error for each new unit, or unit moved to another nation or given other models, whose models are only in
-    another nation's skirmish mesh pack: the game loads a nation's unit models only in matches where a player has
-    that nation (unitcheck). What the game's own units already have is fine."""
+    """New units, and units moved to another nation or given other models, whose models are only in another nation's
+    skirmish mesh pack: the game loads a nation's unit models only in matches where a player has that nation, or that
+    the cluster maps' loaders force (unitcheck). So that such a unit shows in every match, that nation's packs are set
+    to load in every skirmish (unitcheck.load_everywhere, on `run.game`), with a note; a unit the cluster maps can't
+    do that for (the unit data has none) is refused. What the game's own units already have is fine."""
     moved = {owner for owner, path in run.trail if owner in run.game.objects and _moves_path(path)}
     names = sorted(n for n in set(run.created) | moved if n in run.game.objects and unitcheck.is_unit(run.game.objects[n]))
     names = [n for n in names if unitcheck.model_files(run.game.objects[n], run.game)]
@@ -354,6 +356,8 @@ def unit_models(base, run, zz_win, result: BuildResult) -> None:
                                                "units' models load for their nation wasn't checked"))
         return
     allowed = unitcheck.allowed_models(base)
+    wanted = []  # (unit, its op, its missing models, the nations whose packs it needs)
+    chosen: set = set()
     for name in names:
         obj = run.game.objects[name]
         missing = unitcheck.missing_models(obj, run.game, packs, allowed)
@@ -361,13 +365,43 @@ def unit_models(base, run, zz_win, result: BuildResult) -> None:
             continue
         op = run.created.get(name) or next((done[-1][0] for (owner, path), done in sorted(run.trail.items())
                                             if owner == name and done and _moves_path(path)), None)
-        model, where = next(iter(missing.items()))
+        source = base.objects.get(op.source) if op is not None and op.kind == "clone" else None
+        home = unitcheck.nation_of(source) if source is not None else None
+        need = []
+        for where in missing.values():  # one nation per model: one already loaded, else the source's, else the first
+            have = [unitcheck.NATIONS.index(w) for w in where]
+            pick = next((i for i in have if i in chosen or i in need), home if home in have else have[0])
+            if pick not in need:
+                need.append(pick)
+        chosen.update(need)
+        wanted.append((name, op, missing, need))
+    if not wanted:
+        return
+    loaded = unitcheck.load_everywhere(run.game, chosen)
+    for nation, (count, maps) in sorted(loaded.items()):
+        if count:
+            result.findings.append(Finding("note", f"{unitcheck.NATIONS[nation]}'s unit models and animations now load "
+                                                   f"in every skirmish, beside those of the nations playing, for the "
+                                                   f"units of other nations that use them ({count} loaders in {maps} "
+                                                   f"cluster maps; matches take a little more memory and loading time)"))
+    for name, op, missing, need in wanted:
+        obj = run.game.objects[name]
         n = unitcheck.nation_of(obj)
         nation = unitcheck.NATIONS[n]
+        model, where = next(iter(missing.items()))
         more = f" (and {len(missing) - 1} more)" if len(missing) > 1 else ""
-        result.findings.append(Finding("error", f"{op.at() + ': ' if op else ''}{name} is in {nation}'s army "
-                                                f"(Nationalite {n}), but its model {model}{more} is in the mesh pack of "
-                                                f"{' and '.join(where)}'s units only: the game loads a nation's unit "
+        at = f"{op.at()}: " if op else ""
+        packs_of = " and ".join(unitcheck.NATIONS[i] for i in need)
+        if all(loaded[i][0] for i in need):
+            result.findings.append(Finding("note", f"{at}{name} is in {nation}'s army (Nationalite {n}), but its model "
+                                                   f"{model}{more} is in the mesh pack of {' and '.join(where)}'s units: "
+                                                   f"{packs_of}'s unit models now load in every skirmish, so it shows "
+                                                   f"in matches where no player has {packs_of} too", op))
+            continue
+        result.findings.append(Finding("error", f"{at}{name} is in {nation}'s army (Nationalite {n}), but its model "
+                                                f"{model}{more} is in the mesh pack of {' and '.join(where)}'s units "
+                                                f"only, and the unit data has no cluster maps that could load "
+                                                f"{packs_of}'s models in every match: the game loads a nation's unit "
                                                 f"models only in matches where a player has that nation, so in other "
                                                 f"matches this unit has no model, or crashes the game. Copy one of "
                                                 f"{nation}'s units instead, or leave it in {where[0]}'s army", op))
@@ -491,7 +525,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
         return result
     notes: list = []
     try:
-        changed = save(base, run.game, loaded, run.created, notes)
+        changed = save(base, run.game, loaded, run.created, notes, new_props={(unitcheck.LOADER, unitcheck.FORCE)})
     except ModelError as exc:
         result.findings.append(Finding("error", str(exc)))
         return result
