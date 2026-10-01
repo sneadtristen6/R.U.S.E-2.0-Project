@@ -28,6 +28,15 @@ class Guard(unittest.TestCase):
                        "docs/c.md": b"offset 0x40D and FUN_x are fine"})
         self.assertEqual(sorted(f.split(":")[0] for f in found), ["docs/b.md", "docs/notes.md"])
 
+    def test_words_about_the_program_s_insides_are_refused(self):
+        found = check({"docs/a.md": b"the limit is program-side", "docs/b.md": b"the nation list is in the program",
+                       "src/x.toml": b"# RUSE.exe's own table", "docs/c.md": b"RUSE.exe reads the file first",
+                       "docs/d.md": b"a 10-player copy tells whether the program caps it",
+                       "docs/fine.md": b"Start RUSE.exe inside the copy; the program's name is shown",
+                       "LICENSE": b"the source code in the Program"})
+        self.assertEqual(sorted(f.split(":")[0] for f in found), ["docs/a.md", "docs/b.md", "docs/c.md", "docs/d.md",
+                                                                 "src/x.toml"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -233,5 +233,34 @@ class AiGrid(unittest.TestCase):
         self.assertTrue(notes and "clearance on" in notes[0])
 
 
+class DriedBeds(unittest.TestCase):
+    """A river the terrain edits dried (raised ground) is opened to units: the build's zones over its samples (a D-Day
+    test: tanks couldn't cross a dried stretch of river)."""
+
+    def test_zones_big_enough_for_a_circle_and_off_the_water_left(self):
+        from rusemod.build import BED_RADII, _bed_circles
+        bed = [(x, y) for x in range(0, 20480, 640) for y in range(0, 5120, 640)]  # 80 m long, 20 m wide
+        zones = _bed_circles(bed)
+        self.assertTrue(zones and all(r >= nav.MIN_RADIUS for _x, _y, r in zones))
+        held = [p for p in bed if any((p[0] - x) ** 2 + (p[1] - y) ** 2 <= r * r for x, y, r in zones)]
+        self.assertEqual(len(held), len(bed))
+
+        def wet(x, y):  # the river goes on past x = 20480
+            return x > 20480
+        near_water = _bed_circles(bed, wet)
+        self.assertTrue(all(x + r <= 20480 for x, _y, r in near_water))
+        self.assertTrue(all(r in BED_RADII for _x, _y, r in near_water))
+        self.assertEqual(_bed_circles([(0.0, 0.0)], lambda x, y: True), [])  # all water around: nothing to open
+
+    def test_opened_on_a_graph(self):
+        from rusemod.build import _bed_circles
+        g = made([(0.0, 0.0, 12800.0)], [])  # a field, the dried bed beside it
+        bed = [(x, y) for x in range(12800, 28160, 640) for y in range(-2560, 3200, 640)]
+        counts = g.open_ground(_bed_circles(bed))
+        self.assertGreater(counts["added"], 0)
+        self.assertTrue(g.walkable(20480.0, 0.0))
+        self.assertEqual(len(g.parts()), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

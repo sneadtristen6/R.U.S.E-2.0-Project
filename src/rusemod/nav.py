@@ -1947,48 +1947,31 @@ def solid_blocks(game, objects) -> tuple[list[Block], list[str]]:
     """Blocks for the buildings a mod places (rusemod.scenery.NewObject, unless `solid` is false): one per
     building, as far as its model reaches from its middle (across the ground), times its size. Units then go around
     them. Returns (blocks, notes)."""
-    wanted = [o for o in objects if o.solid]
-    if not wanted:
-        return [], []
-    found, notes = building_reach(game, wanted)
-    if notes:
-        return [], [notes[0] + ": placed buildings stay walk-through"]
-    out = [Block(o.x, o.y, r, "all") for o, r in found]
-    return out, [f"{len(out)} placed building(s) made solid"] if out else []
-
-
-def building_reach(game, objects, descs: dict | None = None) -> tuple[list[tuple], list[str]]:
-    """(object, how far its model reaches from its middle across the ground, times its size) for each building among
-    `objects` (rusemod.scenery.NewObject; never a bridge); FOOTPRINT when its model can't be found. Returns (them,
-    notes)."""
     from pathlib import Path
     from .build import find_pack
     from .edat import Edat
     from .scenery import descriptors
-    if not objects:
+    wanted = [o for o in objects if o.solid]
+    if not wanted:
         return [], []
-    if descs is None:
-        unit_path = find_pack(Path(game), "ZZ_GladPatchableWin.dat")
-        if unit_path is None:
-            return [], ["ZZ_GladPatchableWin.dat isn't in the game"]
-        with Edat.open(str(unit_path)) as arc:
-            descs = descriptors(arc)
+    unit_path = find_pack(Path(game), "ZZ_GladPatchableWin.dat")
+    if unit_path is None:
+        return [], ["ZZ_GladPatchableWin.dat isn't in the game: placed buildings stay walk-through"]
+    with Edat.open(str(unit_path)) as arc:
+        descs = descriptors(arc)
     reach: dict[str, float] = {}
     lib = None
     out = []
-    for o in objects:
+    for o in wanted:
         d = descs.get(o.type)
         if d is None or d.group != "building" or d.bridge:  # a bridge opens ground instead (rusemod.bridges)
             continue
         if o.type not in reach:
             if lib is None:
                 from .models import Library
-                try:
-                    lib = Library(Path(game))
-                except FileNotFoundError:  # no models to measure: every building gets FOOTPRINT
-                    lib = False
+                lib = Library(Path(game))
             far = 0.0
-            for model in (d.models or ([d.model] if d.model else [])) if lib else ():
+            for model in (d.models or ([d.model] if d.model else [])):
                 name = lib.find(model)
                 if name is None:
                     continue
@@ -1997,7 +1980,7 @@ def building_reach(game, objects, descs: dict | None = None) -> tuple[list[tuple
                     for k in range(0, len(pos) - 2, 3):
                         far = max(far, (pos[k] * pos[k] + pos[k + 1] * pos[k + 1]) ** 0.5)
             reach[o.type] = far or FOOTPRINT
-        out.append((o, reach[o.type] * o.size))
-    if lib:
+        out.append(Block(o.x, o.y, reach[o.type] * o.size, "all"))
+    if lib is not None:
         lib.close()
-    return out, []
+    return out, [f"{len(out)} placed building(s) made solid"] if out else []

@@ -161,10 +161,11 @@ def cmd_build(args) -> int:
         raise UserError(str(exc)) from None
     pack = str(_find_pack(args.pack, args))
     game = _game_dir(args)
+    from .instance import InstanceError
     try:
         result = build_and_write(game, mods, pack=pack, out=Path(args.out) if args.out else None,
                                  instance=Path(args.instance) if args.instance else None, show_all=args.all)
-    except BuildError as exc:
+    except (BuildError, InstanceError) as exc:  # (a game still running from the copy is said plainly, not dumped)
         raise UserError(str(exc)) from None
     return 2 if result.errors else 0
 

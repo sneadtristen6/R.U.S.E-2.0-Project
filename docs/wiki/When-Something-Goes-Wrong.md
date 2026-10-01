@@ -2,6 +2,22 @@
 
 Find what you see, and follow the fix.
 
+## Try Troubleshoot first
+
+**Troubleshoot** checks in one go what can stop a test or **Play**: the game found, Steam running, R.U.S.E. left
+running from a modded copy, the drive and its free space, leftover copies, read-only files, and whether the app can
+write where copies go. Each problem it can fix has a button; the rest say what to do.
+
+- In RUSE Studio: beside **Test in game**, and in **Settings > Help**. In RUSE Launcher: the bottom bar, and on every
+  problem message (Studio 0.8.0, Launcher 0.3.0).
+- **Copy report** gives a text to paste in a [[bug report|Report-a-Bug]] (your Windows user name is left out).
+
+## The game itself seems changed (by another mod manager or a hand edit)
+
+**Settings > Clean game backup** keeps a clean copy of the game's files, checks them against it, and puts back what
+changed. Files that aren't the game's are moved aside, never deleted. Or **Verify with Steam** lets Steam repair the
+game. This is the only place the apps write into your game folder, and only when you ask.
+
 ## A red bar under the Studio's header
 
 That's the **mod check**. The Studio reads every file of your mod the way the game build will, when you pick the mod
@@ -28,7 +44,8 @@ Windows refused to remove a copy of the game the app made (in `RUSE-Instances`).
 - **Update first** (the apps offer it when they open): from RUSE Studio 0.7.6 and Launcher 0.2.11, a copy Windows
   won't delete never stops a test: it's moved into `RUSE-Instances\.trash` and removed there once nothing holds it.
 - **R.U.S.E. still running from an earlier test?** The app says so, with the program's name: close the game (check
-  the Details tab of Task Manager for `RUSE.exe`), then try again.
+  the Details tab of Task Manager for `RUSE.exe`), then try again. **Troubleshoot** finds a game still running from
+  a copy and leftover copies, and removes them for you.
 - **With an older version:** delete the folder the message names (`...\RUSE-Instances\<name>.partial` or `.old`;
   Windows asks about read-only files: say yes; only the copy goes, never the game), then try again. If Windows
   refuses, restart Windows first.

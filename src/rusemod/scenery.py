@@ -523,10 +523,6 @@ class SceneryEditError(ValueError):
     pass
 
 
-class SceneryFull(SceneryEditError):
-    """The map's scenery would hold more than the 16 MB of blocks a map can (DATA_LIMIT)."""
-
-
 @dataclass(frozen=True)
 class NewObject:
     type: str            # a scenery type the map already uses, e.g. TypeWarrior/MairieNormande
@@ -823,57 +819,12 @@ DATA_LIMIT = 0xFFFFFC  # a reference holds a block's offset in 24 bits (4-byte s
 @dataclass(frozen=True)
 class EraseArea:
     """A circle whose scenery the build takes off the map: the groups in `what` (never a bridge) and the types named
-    in `types` (any kind, bridges too). Road pieces and level-design markers stay. With `x2`, `y2` it's a strip
-    instead: everything within `radius` of the line from (x, y) to (x2, y2) (the build's clearing along a new road)."""
+    in `types` (any kind, bridges too). Road pieces and level-design markers stay."""
     x: float
     y: float
     radius: float
     what: tuple = ERASE_DEFAULT
     types: tuple = ()
-    x2: float | None = None
-    y2: float | None = None
-
-    def dist2(self, px: float, py: float) -> float:
-        """The square of the distance from (px, py) to the circle's middle, or to the strip's line."""
-        if self.x2 is None:
-            return (px - self.x) ** 2 + (py - self.y) ** 2
-        dx, dy = self.x2 - self.x, self.y2 - self.y
-        n = dx * dx + dy * dy
-        t = 0.0 if n == 0 else max(0.0, min(1.0, ((px - self.x) * dx + (py - self.y) * dy) / n))
-        return (px - self.x - t * dx) ** 2 + (py - self.y - t * dy) ** 2
-
-    def meets(self, x0: float, y0: float, x1: float, y1: float) -> bool:
-        """Whether the area reaches into the box (x0, y0)-(x1, y1)."""
-        r = self.radius
-        if self.x2 is None:
-            return max(x0 - self.x, 0.0, self.x - x1) ** 2 + max(y0 - self.y, 0.0, self.y - y1) ** 2 <= r * r
-        if (min(self.x, self.x2) - r > x1 or max(self.x, self.x2) + r < x0
-                or min(self.y, self.y2) - r > y1 or max(self.y, self.y2) + r < y0):
-            return False
-        if _segment_meets_box(self.x, self.y, self.x2, self.y2, x0, y0, x1, y1):
-            return True
-        r2 = r * r
-        return (any(self.dist2(cx, cy) <= r2 for cx, cy in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)))
-                or any(max(x0 - px, 0.0, px - x1) ** 2 + max(y0 - py, 0.0, py - y1) ** 2 <= r2
-                       for px, py in ((self.x, self.y), (self.x2, self.y2))))
-
-
-def _segment_meets_box(ax, ay, bx, by, x0, y0, x1, y1) -> bool:
-    """Whether the segment from (ax, ay) to (bx, by) touches the box (Liang-Barsky clipping)."""
-    t0, t1, dx, dy = 0.0, 1.0, bx - ax, by - ay
-    for p, q in ((-dx, ax - x0), (dx, x1 - ax), (-dy, ay - y0), (dy, y1 - ay)):
-        if p == 0:
-            if q < 0:
-                return False
-        else:
-            t = q / p
-            if p < 0:
-                t0 = max(t0, t)
-            else:
-                t1 = min(t1, t)
-            if t0 > t1:
-                return False
-    return True
 
 
 @dataclass
@@ -917,26 +868,22 @@ def _meeting(box: tuple, m: tuple, areas: list) -> list:
         xs.append(m[0] * x + m[1] * y + m[3])
         ys.append(m[4] * x + m[5] * y + m[7])
     x0, y0, x1, y1 = min(xs), min(ys), max(xs), max(ys)
-    return [t for t in areas if t[1].meets(x0, y0, x1, y1)]
+    return [(a, ok) for a, ok in areas
+            if max(x0 - a.x, 0.0, a.x - x1) ** 2 + max(y0 - a.y, 0.0, a.y - y1) ** 2 <= a.radius ** 2]
 
 
-def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridges=frozenset(),
-               tally: dict | None = None) -> _Cut | None:
+def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridges=frozenset()) -> _Cut | None:
     """What erasing `areas` takes out, placement by placement from the top block down, or None for nothing. An object
     goes when its place lies in an area that may remove its kind: its group (`kinds`: name index -> group) is in the
-    area's `what` and it isn't a bridge (`bridges`: name indexes), or its name is in the area's `types`. `tally`, when
-    given, gets {area's index in `areas`: objects it erased} (an object in several areas counts for the first)."""
+    area's `what` and it isn't a bridge (`bridges`: name indexes), or its name is in the area's `types`."""
     roots = sc.roots()
     if roots != [0]:
         raise SceneryError("the scenery file's blocks aren't in the order this writer knows")
-    triples, sets = [], {}
-    for k, a in enumerate(areas):
-        key = (a.what, a.types)
-        if key not in sets:  # (a road's strips share one)
-            named = set(a.types)
-            sets[key] = {s for s, n in enumerate(sc.names[:len(sc.flags)])
-                         if n in named or (kinds.get(s) in a.what and s not in bridges)}
-        triples.append((k, a, sets[key]))
+    pairs = []
+    for a in areas:
+        named = set(a.types)
+        pairs.append((a, {s for s, n in enumerate(sc.names[:len(sc.flags)])
+                          if n in named or (kinds.get(s) in a.what and s not in bridges)}))
     boxes = _object_boxes(sc)
 
     def visit(bi: int, m: tuple, near: list) -> _Cut | None:
@@ -948,12 +895,9 @@ def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridg
                 local = it.matrix()
                 x = m[0] * local[3] + m[1] * local[7] + m[2] * local[11] + m[3]
                 y = m[4] * local[3] + m[5] * local[7] + m[6] * local[11] + m[7]
-                k = next((k for k, a, ok in near if it.symbol in ok and a.dist2(x, y) <= a.radius ** 2), None)
-                if k is not None:
+                if any(it.symbol in ok and (x - a.x) ** 2 + (y - a.y) ** 2 <= a.radius ** 2 for a, ok in near):
                     removed.add(it.at)
                     gone[it.symbol] = gone.get(it.symbol, 0) + 1
-                    if tally is not None:
-                        tally[k] = tally.get(k, 0) + 1
             elif it.kind == "child":
                 j = sc._by_offset[it.child_offset]
                 if boxes[j] is None:
@@ -974,7 +918,7 @@ def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridg
         if not removed and not changes:
             return None
         return _Cut(bi, removed, changes, gone, len(removed) == len(b.items) and bi != 0)
-    return visit(0, IDENTITY, triples)
+    return visit(0, IDENTITY, pairs)
 
 
 def _rebuilt(b: Block, removed: set) -> tuple[bytes, dict[int, int]]:
@@ -1005,7 +949,7 @@ def _rebuilt(b: Block, removed: set) -> tuple[bytes, dict[int, int]]:
 
 
 def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
-                  bridges=frozenset(), tally: dict | None = None) -> tuple[bytes, list[str], dict[str, int]]:
+                  bridges=frozenset()) -> tuple[bytes, list[str], dict[str, int]]:
     """The scenery file with the objects in `areas` taken out (erase_plan says which). Most of a map's trees are in
     blocks it places many times (a wood's patch, repeated across the map), so a placement that loses objects gets a
     copy of its block of its own, without them (copy on write): the reference that placed it points to the copy, the
@@ -1014,13 +958,13 @@ def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
     block nothing places any more goes. Every copy goes right before the block it copies, so references still point
     forward. The trees' boxes, the road marks and the grids stay as they are (a cell or box that holds less is still
     right). Returns (new file, notes, objects erased per group: `kinds`' groups, "bridge" for `bridges`, "other" for
-    a name with no group). `tally`: as erase_plan's."""
+    a name with no group)."""
     if not areas:
         return bytes(data), [], {}
     sc = Scenery(data)
     unknown = sorted({t for a in areas for t in a.types} - set(sc.names[:len(sc.flags)]))
     said = [f"{', '.join(unknown)}: not on this map, so the erase areas take none of it"] if unknown else []
-    cut = erase_plan(sc, areas, kinds, bridges, tally)
+    cut = erase_plan(sc, areas, kinds, bridges)
     if cut is None:
         return bytes(data), [f"the erase area(s) cover nothing they may remove: {len(areas)} area(s), no change"] + said, {}
     weight, _where = sc.placings()
@@ -1070,7 +1014,7 @@ def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
         offset_of[k] = pos
         pos += len(raws[k])
     if pos > DATA_LIMIT:
-        raise SceneryFull(f"erasing there copies too many of the map's shared blocks: its scenery would grow to "
+        raise SceneryEditError(f"erasing there copies too many of the map's shared blocks: its scenery would grow to "
                                f"{pos:,} bytes, past the {DATA_LIMIT:,} a map can hold. Erase smaller areas")
     parts = []
     for k in kept:
@@ -1143,50 +1087,6 @@ def parse_erase(rows: list, where: str = "scenery.toml") -> list[EraseArea]:
         out.append(EraseArea(x, y, r, tuple(what), tuple(types)))
     return out
 
-
-# --- clearing for what a mod builds: its new roads, buildings and bridges (the build's own erase areas) ---
-# On the shipped maps the trees nearest a road stand about 1,500 map units from its line: of the trees within 4,000
-# of a road's line, the nearest 5% are 1,520 away on D-Day, 1,660 Hurtgen, 1,690 Ardennes, 1,450 Holland, 1,590
-# Italy, 1,510 Germany (Tunisia's palms line its roads: 400); its props 1,400 to 1,600. A new road's strip is that
-# wide each side: the road's own half-width (900, rusemod.groundpaint.ROAD_WIDTH) and 600 of margin.
-CLEAR_HALF = 1500.0
-CLEAR_MARGIN = 600.0     # past a new building's reach (its model, times its size)
-BRIDGE_END_CLEAR = 2560.0  # around each end of a new bridge's deck (a deck's width, rusemod.bridges.DECK)
-
-
-def _simplified(line, tol: float) -> list[tuple[float, float]]:
-    """The line's points with those within `tol` of the straight line between their neighbours left out
-    (Douglas-Peucker): a road drawn freehand has hundreds of points; its strips stay as close as `tol`."""
-    pts = [(float(p[0]), float(p[1])) for p in line]
-    if len(pts) <= 2:
-        return pts
-    keep = {0, len(pts) - 1}
-    todo = [(0, len(pts) - 1)]
-    while todo:
-        i, j = todo.pop()
-        probe = EraseArea(pts[i][0], pts[i][1], 1.0, x2=pts[j][0], y2=pts[j][1])
-        far, at = -1.0, None
-        for k in range(i + 1, j):
-            d = probe.dist2(*pts[k])
-            if d > far:
-                far, at = d, k
-        if at is not None and far > tol * tol:
-            keep.add(at)
-            todo += [(i, at), (at, j)]
-    return [pts[k] for k in sorted(keep)]
-
-
-def road_clearing(line, half: float = CLEAR_HALF) -> list[EraseArea]:
-    """The strips that clear a new road's trees and props: `half` each side of its line, one per stretch."""
-    pts = _simplified(line, half / 10)
-    if len(pts) == 1:
-        return [EraseArea(pts[0][0], pts[0][1], half)]
-    return [EraseArea(ax, ay, half, x2=bx, y2=by) for (ax, ay), (bx, by) in zip(pts, pts[1:])]
-
-
-def bridge_end_clearing(spans, radius: float = BRIDGE_END_CLEAR) -> list[EraseArea]:
-    """A circle at each end of each new bridge's deck ((x0, y0, x1, y1) per bridge)."""
-    return [EraseArea(x, y, radius) for x0, y0, x1, y1 in spans for x, y in ((x0, y0), (x1, y1))]
 
 def _far_children(sc: Scenery) -> list[Item]:
     """The top block's references to blocks that it lists for far view (its first node's count of entries)."""
@@ -1468,7 +1368,7 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
     shift = len(probe)
     moved_to = carrier.child_offset + shift
     if (sc.fields[3] + shift) & ~0xFFFFFC:
-        raise SceneryFull("the map's scenery is too full for a new block to be referenced: place fewer objects or erase less")
+        raise SceneryEditError("the map's scenery is too big for a new block to be referenced")
     # the old block, placed where it was (no transform: the reference to the new block keeps the old one's)
     first = struct.pack("<I", (carrier.word & 0xFF000000) | moved_to | T_IDENTITY)
     new = _new_block([first] + items, (min(xs), min(ys), max(xs), max(ys)))
@@ -1572,7 +1472,7 @@ def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]
         raise SceneryEditError("the scenery file's tables aren't in the order this writer knows")
     offset = data_len  # the new block goes after every other block: all references stay forward
     if offset & ~0xFFFFFC:
-        raise SceneryFull("the map's scenery is too full for a new block to be referenced: place fewer objects or erase less")
+        raise SceneryEditError("the map's scenery is too big for a new block to be referenced")
     ref = (offset & 0xFFFFFC) | (carrier.word & 0x0C000000) | carrier.tform
     patched = bytearray(data[data_off:data_off + data_len])
     at = block.offset + block.items_start + carrier.at

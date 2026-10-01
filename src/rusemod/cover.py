@@ -10,6 +10,12 @@ Eugen's designers drew these as zones in their editor (forest, obstacle), not fr
 made in a mod gives cover only once cover is painted over it. On Blitz, the trees' cells are 0x08 twice as often as the map's, and two
 thirds of the buildings stand on 0x04 cells.
 
+The grid is a square of square cells, stored as its two corners (x0, y0, x1, y1). On a square map it is the map,
+(0, 0, W, W). On the 8 shipped maps that aren't square it is as wide as the map's long side and reaches past the
+short one, the map in its middle: D-Day's is (0, -655360, 3932160, 3276800) on a map 2621440 tall. (Read as a
+corner and a size, a paint there landed up to a kilometre off: a wood cleared on D-Day kept hiding infantry in the
+game, 2026-10-01.)
+
 A mod paints circles (or squares) in maps/<map>/cover.toml (MOD_FORMAT §8), in order, each setting or clearing one
 layer:
 
@@ -101,13 +107,16 @@ def _tree(win: bytes):
     if not parts:
         raise CoverError("not a mapinfo.win")
     tree = sdb.parse(parts[1][3])
-    x0, y0, width, height = struct.unpack_from("<4f", tree["prefix"], 0)
-    return tree, (x0, y0, width, height)
+    x0, y0, x1, y1 = struct.unpack_from("<4f", tree["prefix"], 0)  # the grid's two corners
+    if not (x1 > x0 and y1 > y0):
+        raise CoverError(f"the cover grid's corners are ({x0:g}, {y0:g}) and ({x1:g}, {y1:g}): not a box")
+    return tree, (x0, y0, x1 - x0, y1 - y0)
 
 
 def grid(win: bytes) -> dict:
     """The map's grid, for showing it: {"size": R, "box": (x0, y0, width, height) in map units, "cells": R*R
-    bytes}, row by row from the box's corner (a row is one y, going down the map: y grows south)."""
+    bytes}, row by row from the box's corner (a row is one y, going down the map: y grows south). The box can reach
+    past the map (a map that isn't square: see above)."""
     tree, box = _tree(win)
     r = sdb.tree_grid_R(tree)
     return {"size": r, "box": box, "cells": _cells(tree, r)}

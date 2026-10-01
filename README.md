@@ -74,6 +74,18 @@ Twelve hours, six rounds of testing. [The full story](docs/LESSONS.md)
       <sub>Roads drawn in the Studio, bridges over water.</sub>
     </td>
   </tr>
+  <tr>
+    <td width="33%" valign="top">
+      <img src="docs/images/cleared-wood-infantry-not-hidden.jpg" alt="R.U.S.E. in game on D-Day: a round hole cleared in a dense wood by a mod, an infantry squad standing in it, not hidden" width="260"><br>
+      <sub>A wood cleared by a mod. Tanks drive in, infantry aren't hidden there.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. in game on D-Day: infantry and a tank walking along a river bed a mod drained" width="260"><br>
+      <sub>A river drained by a mod. Units walk its bed.</sub>
+    </td>
+    <td width="33%" valign="top">
+    </td>
+  </tr>
 </table>
 
 | For players | For modders |
@@ -83,6 +95,8 @@ Twelve hours, six rounds of testing. [The full story](docs/LESSONS.md)
 | Run community mods as they are | Shape the ground with brushes |
 | Share a load order with a friend | Draw roads with bridges over water |
 | New versions install themselves | Place buildings, cover, and starting points |
+| Tick mods from our supported list | Clear the map's own woods and props |
+| Troubleshoot finds what stops Play, and fixes it | Check a map before you test it |
 
 <details>
 <summary><b>Everything the apps can do</b></summary>
@@ -109,7 +123,10 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - Make and reorder mod sets in the window.
 - Share a mod set's load order with a friend, or import one. It's the same text RUSE-Mod-Manager copies and reads,
   so load orders go both ways.
-- Browse the community's mods and install them. *Coming* (the list isn't published yet).
+- **Supported mods:** tick mods from our list and they're downloaded and checked; cheat mods are kept apart and
+  never ticked for you (Launcher 0.3.0).
+- **Troubleshoot** checks in one go what can stop **Play** and fixes what it can, and a **clean game backup** puts
+  back game files another mod manager changed (Launcher 0.3.0, Studio 0.8.0).
 - Get new versions without downloading by hand: the launcher offers them, checks the file and installs it (from
   0.2.0 on).
 
@@ -137,7 +154,10 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - **Draw roads**, Cities: Skylines style (straight, curved, freeform; ends snap onto roads; their length shown as
   you draw): supply routes use them, they're painted on the ground, and a road over water gets a bridge units drive
   across, all in the game (2026-09-30, Studio 0.7.2 to 0.7.6). Tanks, infantry and supply trucks cross a new
-  bridge on its deck (2026-10-01; coming in the next Studio).
+  bridge on its deck, and infantry follow new roads (2026-10-01, Studio 0.8.0).
+- **Clear woods and props** (`[[erase]]` in scenery.toml): units drive into a cleared wood and infantry there are no
+  longer hidden; a **Bridges dock** places a bridge by hand; **Check this map** lists what would go wrong before you
+  test; Open and Forest brushes (2026-10-01, Studio 0.8.0).
 - **More players on a map, up to 8:** a Players count and an Add starting point tool (D-Day as a 4v4; built, the
   in-game check is next).
 - **Add units in formations:** 1 to 10 at once, in a line, column, wedge, box or circle (Studio 0.7.1).
@@ -148,8 +168,6 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - Units, buildings and ammunition sorted by type (factories, money, forts, decoys; AP, HE, anti-aircraft...).
 - A Settings tab (language, keys, game folder, updates), kept through updates. The Studio offers its own new
   versions.
-
-*Coming* means merged and in the test builds, not in a release yet.
 
 Modders who write mods by hand can also use the `ruse` command-line tool, from the source (see
 [For contributors](#for-contributors) below).
@@ -257,20 +275,29 @@ run, **Artifacts** (needs a GitHub login; the files expire after 90 days). More 
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.2.11) &middot; **Studio** for modders, a preview (latest: 0.7.6) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.3.0) &middot; **Studio** for modders, a preview (latest: 0.8.0) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
 (Dev Toolkit and 10x Artillery Price in one modded copy), and on 2026-09-30: terrain brushes (hills, pits, level
 ground that units drive on and take orders on), a moved starting point, painted cover that hides infantry, placed
 buildings (at up to 8× their size), and both apps updating themselves; on 2026-10-01, roads with new bridges
-that tanks, infantry and supply trucks cross. **Not yet checked in the game:** a new unit
+that tanks, infantry and supply trucks cross, infantry following new roads, a bridge placed by hand, a building at
+10× standing on the ground, a dried riverbed units walk, and a cleared wood tanks drive into and infantry no longer
+hide in. **Not yet checked in the game:** a new unit
 made in the Studio's window, mod sets made in the launcher's window, a mod exported as one file, sharing a load
 order, units a skirmish spawns, and Browse mods. The tests, step by step for anyone with the game:
 [docs/TESTS.md](docs/TESTS.md).
 
 <details>
-<summary><b>Current stage (2026-09-30)</b></summary>
+<summary><b>Current stage (2026-10-01)</b></summary>
+
+- **Studio 0.8.0 and Launcher 0.3.0** (2026-10-01): the audit of every file the build writes against what the game
+  does with it (a mod that would break in the game is refused, with why), units following new roads, woods and props
+  cleared by a mod (`[[erase]]`), placed objects on the ground at any size, cover painted in place on the 8 maps that
+  aren't square, the Bridges dock, Check this map, Open and Forest brushes, Troubleshoot and a clean game backup in
+  both apps, and the Supported mods list in the launcher. Tested in the game in three batches
+  ([docs/TESTS.md](docs/TESTS.md)). Known issue: new roads aren't drawn up close yet.
 
 - **Map making works in the game** (Blitz, 2026-09-30): the Studio's terrain brushes (the recipe is DomesticNukes
   and his Claude's), a moved starting point, painted cover (`maps/<map>/cover.toml`, or the Studio's Cover, Uncover
@@ -288,7 +315,8 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
   engine (PLAN.md decision 26); all 75 on hand apply with 0 errors.
 - **Roads and bridges in the game** (D-Day, 2026-09-30): a new road is a road to supply trucks (the network,
   `mapinfo.win`'s first part) and painted into the ground's picture (seen from afar); laying the game's road stickers
-  along it too (the Route pieces, what draws a road up close) is built, and its in-game check is next. Where it
+  along it too (the Route pieces, what draws a road up close) is built, but **doesn't work yet: up close a new road
+  disappears** (TESTS.md T12, failed in the game; being worked on). Where it
   crosses water it gets the map's own bridge, one
   piece stretched bank to bank, with a floor copied from a shipped bridge of its kind (`occlusioninfo_objectsonly.kdt`,
   what units stand on): units cross on the deck. Each deck is joined to the ground units already use along the
@@ -301,9 +329,9 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
   named.
 - **8 players:** a map's count is its menu entry (`TMultiMapInfo`) and a starting point per player; mods set both
   (`maps/<map>/map.toml`, `[[start]]`). D-Day as a 4v4 is built; the lobby check is next.
-- **Next, the map maker the Cities: Skylines way** (PLAN.md §10, "Roadmap from here"): forest tracks for infantry
-  only, removing scenery, ruse areas, ground painting, finer terrain; then new maps in the game's menus, Browse mods
-  and join codes.
+- **Next** (PLAN.md §10): new roads drawn up close; units from another nation that work (a captured Tiger for the
+  US); the map maker the Cities: Skylines way: an Erase tool in the Studio, forest tracks for infantry only, ruse
+  areas, ground painting, finer terrain; then new maps in the game's menus and join codes.
 - Decided: RUSE 2.0 gets a real 8th nation, China (PLAN.md §6, decision 19).
 
 The order is in [PLAN.md §10 "Now"](docs/PLAN.md#10-now); the latest decisions are in PLAN.md §6.
@@ -427,22 +455,23 @@ The two apps run on the engine, separate from each other (neither needs the othe
 desktop windows built like web pages; once: `py -3 -m pip install pywebview`. Their screens also open in a normal
 browser with made-up data: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_studio/ui/index.html?fake`.
 
-- **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/), released 0.2.11), for players: it finds the game,
+- **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/), released 0.3.0), for players: it finds the game,
   lists your mod sets and has a big Play button that builds the set's modded copy and starts the game (Vanilla
-  starts through Steam). `py -3 -m ruse_launcher`. **Merged, not released yet: players never touch a file.** A
+  starts through Steam). `py -3 -m ruse_launcher`. **Players never touch a file.** A
   mod library ("Add a mod file…" for a `.rusemod` from the Studio, a `.rmod` or a `.zip`, or drop a mod file or
   folder on the window; each mod is checked first), mod sets made on screen (new, edit and reorder, rename,
   duplicate, delete), Share and "Import a load order…" for a mod set (RUSE-Mod-Manager's own text, so load orders
   go both ways; [`src/rusemod/loadorder.py`](src/rusemod/loadorder.py)), a three-step guide on Vanilla ("Playing
-  with mods, in three steps"), and the launcher in the PC's own language (any of the game's ten). **Also merged:
-  "Browse mods"**, a list of the community's mods from a GitHub repository (MOD_FORMAT §15), with Install: the file
-  is checked against the list before it goes into the library; offline, the last copy of the list.
-- **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), released 0.7.6), for modders: browse every unit and
+  with mods, in three steps"), and the launcher in the PC's own language (any of the game's ten). **Supported
+  mods** (0.3.0): our list of mods (a GitHub repository, MOD_FORMAT §15) with tick boxes, several installed at once,
+  each file checked against the list before it goes into the library, cheat mods kept apart; offline, the last
+  copy of the list.
+- **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), released 0.8.0), for modders: browse every unit and
   building, see a unit's values, parts and what uses it, and pick a language: the game's own names by default, or
   any of the game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is
   saved in the mod's `src/studio.rndf` (with Undo); a part several units share changes for one of them or all.
   "Test in game" builds the mod and starts the game. **Maps** (released in 0.4): every map the game lists, in 3D
-  with its real ground mesh and ground textures (decoded once per map and kept). **Merged, not released yet:**
+  with its real ground mesh and ground textures (decoded once per map and kept). **Also:**
   - **"Export mod…"** turns the mod into one file, `<id>-<version>.rusemod`, with the game build and the mod's
     fingerprint inside, for the launcher's "Add a mod file…" (the loop from modder to player, TASKS C).
   - **New unit…** on a unit's page makes a copy with its own name (one name, shown in all ten languages), price and

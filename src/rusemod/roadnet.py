@@ -212,7 +212,6 @@ class Road:
     join: float = 20000.0               # how near an end must be to a road to join it (map units; about 77 m)
     paint: bool = True                  # painted on the ground's picture (rusemod.groundpaint), so it shows
     bridges: bool = True                # a bridge where it crosses water (rusemod.bridges), so units can cross
-    clear: bool = True                  # the map's trees and props along it taken away (rusemod.scenery.road_clearing)
 
 
 def parse_roads(items, where: str = "roads.toml") -> list[Road]:
@@ -221,7 +220,7 @@ def parse_roads(items, where: str = "roads.toml") -> list[Road]:
         at = f"{where}: road {n}"
         if not isinstance(r, dict):
             raise RoadNetError(f"{at} isn't a table")
-        extra = sorted(set(r) - {"points", "join", "paint", "bridges", "clear"})
+        extra = sorted(set(r) - {"points", "join", "paint", "bridges"})
         if extra:
             raise RoadNetError(f"{at}: unknown key {extra[0]!r}")
         pts = r.get("points")
@@ -236,9 +235,9 @@ def parse_roads(items, where: str = "roads.toml") -> list[Road]:
         join = r.get("join", 20000.0)
         if isinstance(join, bool) or not isinstance(join, (int, float)) or not 0 <= join <= 200000:
             raise RoadNetError(f"{at}: join must be a number from 0 to 200000")
-        flags = [r.get("paint", True), r.get("bridges", True), r.get("clear", True)]
+        flags = [r.get("paint", True), r.get("bridges", True)]
         if not all(isinstance(f, bool) for f in flags):
-            raise RoadNetError(f"{at}: paint, bridges and clear must be true or false")
+            raise RoadNetError(f"{at}: paint and bridges must be true or false")
         out.append(Road(line, float(join), *flags))
     return out
 
@@ -248,7 +247,7 @@ def roads_toml(roads: list[Road], header: str = "") -> str:
     for r in roads:
         pts = ", ".join(f"[{x!r}, {y!r}]" for x, y in r.points)
         lines += (["[[road]]", f"points = [{pts}]", f"join = {r.join!r}"] + ([] if r.paint else ["paint = false"])
-                  + ([] if r.bridges else ["bridges = false"]) + ([] if r.clear else ["clear = false"]) + [""])
+                  + ([] if r.bridges else ["bridges = false"]) + [""])
     return "\n".join(lines)
 
 

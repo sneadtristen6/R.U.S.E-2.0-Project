@@ -213,48 +213,6 @@ def _erase_areas(info) -> None:
             del info.scenery[pack]
 
 
-def _clearings(game: Path, road_edits: dict, placed: dict, spans: dict, descs=None) -> dict:
-    """Where the build clears the map's trees and props for what the mods build: {map pack name: ([(where, erase
-    areas)], the mods' ids)}: a strip along each new road (roads.toml, unless clear = false), a circle under each
-    building placed (its model's reach and a margin) and around each end of each new bridge (MOD_FORMAT §8)."""
-    from .nav import building_reach
-    from .scenery import CLEAR_MARGIN, EraseArea, NewObject, bridge_end_clearing, road_clearing
-    from .terrain import pack_file
-    out: dict = {}
-    for name in sorted(set(road_edits) | set(placed) | set(spans), key=str.lower):
-        if find_pack(game, pack_file(name)) is None:
-            continue  # (a missing map is said with the roads and the scenery)
-        jobs, ids = [], []
-        roads, road_ids = road_edits.get(name, ([], []))
-        for n, r in enumerate(roads, start=1):
-            if r.clear:
-                x, y = r.points[0]
-                jobs.append((f"along road {n} (from ({x:.0f}, {y:.0f}))", road_clearing(r.points)))
-                ids += road_ids
-        objects, object_ids = placed.get(name, ([], []))
-        buildings, _notes = building_reach(game, [o for o in objects if isinstance(o, NewObject)], descs)
-        if buildings:
-            jobs.append((f"under the {len(buildings)} new building(s)",
-                         [EraseArea(o.x, o.y, r + CLEAR_MARGIN) for o, r in buildings]))
-            ids += object_ids
-        if spans.get(name):
-            jobs.append((f"at the ends of the {len(spans[name])} new bridge(s)", bridge_end_clearing(spans[name])))
-            ids += road_ids + object_ids
-        if jobs:
-            out[name] = (jobs, list(dict.fromkeys(ids)))
-    return out
-
-
-def _cleared_notes(jobs: list, tally: dict, first: int) -> list[str]:
-    """How many of the map's objects each clearing took (`tally`: erase_objects', its areas from index `first`)."""
-    notes, k = [], first
-    for where, areas in jobs:
-        n = sum(tally.get(i, 0) for i in range(k, k + len(areas)))
-        k += len(areas)
-        notes.append(f"{n:,} of the map's trees and props cleared {where}")
-    return notes
-
-
 def _cover_brushes(info) -> None:
     """The Studio's cover and uncover brushes live in terrain.toml with the others, but paint the map's cover grid,
     not the ground: they move to `info.cover` (after the mod's own cover.toml circles), and a map whose strokes are
@@ -296,6 +254,97 @@ def _block_brushes(info) -> None:
             info.terrain[pack] = rest
         else:
             del info.terrain[pack]
+
+
+BED_RADII = (3840.0, 2560.0, 1920.0, 1280.0)  # down to nav.MIN_RADIUS: a new movement circle fits in one of these
+
+
+def cleared_woods(erasing: dict) -> tuple[dict, dict]:
+    """For each map's erase areas that take trees ({map: (areas, ids)}): (opens of that ground to every unit, the
+    forest cover taken away there), each {map: (list, ids)}. With its trees gone the ground is no wood any more, but
+    the map's movement still keeps vehicles off it and its cover still hides infantry there (a D-Day test,
+    2026-10-01: tanks couldn't drive into a cleared wood). Erasing only props leaves both."""
+    from .cover import Paint
+    from .nav import Block
+    opens, uncover = {}, {}
+    for name, (areas, ids) in erasing.items():
+        woods = [a for a in areas if "vegetation" in a.what]
+        if woods:
+            opens[name] = ([Block(a.x, a.y, a.radius, "all", True) for a in woods], list(ids))
+            uncover[name] = ([Paint(a.x, a.y, a.radius, "cover", True) for a in woods], list(ids))
+    return opens, uncover
+
+
+GROUND_GAP = 64.0  # map units (a quarter metre): a model starting higher than this above its base point is lowered
+
+
+def grounded(objects: list, descs: dict, lowest_of) -> tuple[list, int]:
+    """(the placed objects, each standing on the ground; how many were lowered). The game puts an object's base point
+    on the ground and scales its model from there, so a model that starts above its base point floats by that much
+    times its size: an upper storey meant to sit on its ground floor (TownHouseC_Haut starts 4.7 m up) placed alone,
+    or any such piece made bigger (the owner's 10x houses floated about 47 m up, 2026-10-01). Such an object is sunk
+    (its `lift`) so its lowest point sits on the ground. `lowest_of(type)` gives the model's lowest point in map
+    units (None when unknown). Bridges keep their own sink, and road pieces aren't objects."""
+    from dataclasses import replace
+    from .scenery import NewObject
+    out, moved = [], 0
+    for o in objects:
+        d = descs.get(o.type) if isinstance(o, NewObject) else None
+        low = lowest_of(o.type) if d is not None and not d.bridge else None
+        if low is not None and low > GROUND_GAP:
+            out.append(replace(o, lift=o.lift - low * o.size))
+            moved += 1
+        else:
+            out.append(o)
+    return out, moved
+
+
+class _LowestPoints:
+    """lowest_of(type) for grounded(): the lowest point of the type's first model the game has (map units), kept per
+    type; the game's model packs are opened when first asked, and closed by close()."""
+
+    def __init__(self, game: Path, descs: dict):
+        self.game, self.descs, self.found, self.lib = Path(game), descs, {}, None
+
+    def __call__(self, type_name: str):
+        if type_name not in self.found:
+            self.found[type_name] = None
+            d = self.descs.get(type_name)
+            if d is not None:
+                if self.lib is None:
+                    from .models import Library
+                    self.lib = Library(self.game)
+                for model in (d.models or ([d.model] if d.model else [])):
+                    name = self.lib.find(model)
+                    zs = [z for part, _tex in self.lib.parts(name) for z in part.positions[2::3]] if name else []
+                    if zs:
+                        self.found[type_name] = min(zs)
+                        break
+        return self.found[type_name]
+
+    def close(self) -> None:
+        if self.lib is not None:
+            self.lib.close()
+            self.lib = None
+
+
+def _bed_circles(drained: list[tuple[float, float]], wet=None) -> list[tuple[float, float, float]]:
+    """Open zones (x, y, r) over a dried bed's samples (nav.water_blocks), for Graph.open_ground, which puts each new
+    circle inside one zone and none smaller than nav.MIN_RADIUS: so each zone is one of BED_RADII, centred on a sample
+    no zone holds yet, the largest whose middle and rim (8 points) aren't under water now (`wet(x, y)`; the ends of a
+    bed meet the water left). A bed too narrow for the smallest stays closed."""
+    zones: list[tuple[float, float, float]] = []
+
+    def dry(x, y, r) -> bool:
+        return wet is None or not any(wet(x + r * c, y + r * s) for c, s in
+                                      ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (.7, .7), (.7, -.7), (-.7, .7), (-.7, -.7)))
+    for x, y in sorted(drained):
+        if any((x - zx) ** 2 + (y - zy) ** 2 < (zr * 0.7) ** 2 for zx, zy, zr in zones):
+            continue
+        r = next((r for r in BED_RADII if dry(x, y, r)), None)
+        if r is not None:
+            zones.append((x, y, r))
+    return zones
 
 
 def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs) -> list:
@@ -433,6 +482,11 @@ def skirmish_models(zz_win: Edat) -> dict | None:
     return unitcheck.pack_models(names) if names else None
 
 
+FORCE_LOAD = False  # set a nation's force-load bit in the cluster maps (unitcheck.load_everywhere): off since the game
+# crashed with it (T13, 2026-10-01: a German Ju 87 copy for the US crashed the game when it was built; the same plane
+# type of the US's own didn't), so such units and spawns are refused, as before
+
+
 def unit_models(base, run, zz_win, result: BuildResult) -> None:
     """New units, and units moved to another nation or given other models, whose models are only in another nation's
     skirmish mesh pack: the game loads a nation's unit models only in matches where a player has that nation, or that
@@ -471,7 +525,7 @@ def unit_models(base, run, zz_win, result: BuildResult) -> None:
         wanted.append((name, op, missing, need))
     if not wanted:
         return
-    loaded = unitcheck.load_everywhere(run.game, chosen)
+    loaded = unitcheck.load_everywhere(run.game, chosen) if FORCE_LOAD else {i: (0, 0) for i in chosen}
     for nation, (count, maps) in sorted(loaded.items()):
         if count:
             result.findings.append(Finding("note", f"{unitcheck.NATIONS[nation]}'s unit models and animations now load "
@@ -492,13 +546,16 @@ def unit_models(base, run, zz_win, result: BuildResult) -> None:
                                                    f"{packs_of}'s unit models now load in every skirmish, so it shows "
                                                    f"in matches where no player has {packs_of} too", op))
             continue
+        why = ("the unit data has no cluster maps that could load " if FORCE_LOAD else
+               "having the game load another nation's models in every match crashed it (T13: a German Ju 87 copy "
+               "for the US crashed the game as it was built), so the build can't load ")
         result.findings.append(Finding("error", f"{at}{name} is in {nation}'s army (Nationalite {n}), but its model "
                                                 f"{model}{more} is in the mesh pack of {' and '.join(where)}'s units "
-                                                f"only, and the unit data has no cluster maps that could load "
-                                                f"{packs_of}'s models in every match: the game loads a nation's unit "
-                                                f"models only in matches where a player has that nation, so in other "
-                                                f"matches this unit has no model, or crashes the game. Copy one of "
-                                                f"{nation}'s units instead, or leave it in {where[0]}'s army", op))
+                                                f"only, and {why}{packs_of}'s models in every match: the game loads a "
+                                                f"nation's unit models only in matches where a player has that nation, "
+                                                f"so in other matches this unit has no model, or crashes the game. "
+                                                f"Copy one of {nation}'s units instead, or leave it in {where[0]}'s "
+                                                f"army", op))
 
 
 def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult) -> None:
@@ -533,7 +590,7 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult)
                 need.setdefault(pick, {}).setdefault(name.rsplit("/", 1)[-1], ids)
     if not need:
         return
-    loaded = unitcheck.load_everywhere(run.game, set(need))
+    loaded = unitcheck.load_everywhere(run.game, set(need)) if FORCE_LOAD else {}
     for nation, units in sorted(need.items()):
         which = ", ".join(sorted(units))
         ids = ", ".join(sorted({i for v in units.values() for i in v}))
@@ -544,11 +601,13 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult)
                                                    f"skirmish loads only when a player has {country}: they now load "
                                                    f"in every skirmish ({count} loaders in {maps} cluster maps)"))
         else:
+            why = ("the unit data has no cluster maps that could load them in every match" if FORCE_LOAD else
+                   "having the game load another nation's models in every match crashed it (T13)")
             result.findings.append(Finding("error", f"{ids}: the spawned {which} use {country}'s unit models, which a "
-                                                    f"skirmish loads only when a player has {country}, and the unit "
-                                                    f"data has no cluster maps that could load them in every match: "
-                                                    f"the game would crash as the match starts. Spawn units whose "
-                                                    f"models every match has, or leave these out"))
+                                                    f"skirmish loads only when a player has {country}, and {why}: "
+                                                    f"the game would crash as the match starts (a D-Day test with "
+                                                    f"Japanese units spawned and no Japanese player did). Spawn units "
+                                                    f"whose models every match has, or leave these out"))
 
 
 def fill_loc(game, keys: dict) -> list[str]:
@@ -838,13 +897,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say("Nothing was written.")
             return result
         from .terrain import pack_file
+        reported, said = len(result.findings), set()  # the findings the report above showed; the later ones said
 
         def warn(message: str) -> None:
             """A warning found while the maps are built (after the report above): kept and said at once."""
             result.findings.append(Finding("warning", message))
+            said.add(id(result.findings[-1]))
             say(f"warning: {message}")
         map_packs = []  # (path, open pack, {member: new bytes})
         flooded: dict = {}  # map pack name -> (nav.Block over each new water, the mods' ids)
+        beds: dict = {}     # map pack name -> (nav.Block opens over each dried bed, the mods' ids)
         for name, (strokes, ids) in terrain_edits(result.order, mods).items():
             map_path = find_pack(game, pack_file(name))
             if map_path is None:
@@ -888,8 +950,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 from .nav import Block, water_blocks
                 from .tms import Tms
                 try:
-                    zones, drained = water_blocks(Water(Tms(before)).at, Water(Tms(changed_members[GROUND["highdef"]])).at,
-                                                  [_area_of(s) for s in strokes])
+                    now_at = Water(Tms(changed_members[GROUND["highdef"]])).at
+                    zones, drained = water_blocks(Water(Tms(before)).at, now_at, [_area_of(s) for s in strokes])
                 except (ValueError, struct.error, zlib.error) as exc:
                     result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: where the terrain edits put "
                                                             f"water can't be worked out ({exc}), so units could walk "
@@ -898,13 +960,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 if zones:
                     flooded[name] = ([Block(x, y, r, "all") for x, y, r in zones], ids)
                     say(f"  {name}: {len(zones)} block(s) over the new water, so units keep out of it")
-                if len(drained) >= 3:
+                if drained:  # a dried bed: the map's movement has no ground there, so it's opened to units
+                    beds[name] = ([Block(x, y, r, "all", True) for x, y, r in _bed_circles(drained, now_at)], ids)
                     mx, my = (sum(p[k] for p in drained) / len(drained) for k in (0, 1))
-                    result.findings.append(Finding("warning", (
-                        f"{', '.join(ids)}: {name}: the terrain edits drain water around ({mx:.0f}, {my:.0f}), but "
-                        f"the dried ground stays closed to units: the map's movement has no ground where the water "
-                        f"was. Paint it with the Open brush to let units on it, leave the water there, or expect "
-                        f"units to go around")))
+                    say(f"  {name}: water drained around ({mx:.0f}, {my:.0f}): its bed opened to units "
+                        f"({len(beds[name][0])} circle(s))")
             if changed_members:
                 map_packs.append((map_path, map_arc, changed_members))
                 result.terrain_changed[map_path.name] = changed_members
@@ -1069,12 +1129,6 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         for name, (_areas, ids) in erasing.items():
             every, who = with_pieces.setdefault(name, ([], []))
             who.extend(i for i in ids if i not in who)
-        # the map's trees and props cleared where the mods build: along each new road (unless clear = false), under
-        # each building placed and at each new bridge's ends (rusemod.scenery.road_clearing): [(what, its areas)]
-        clearing = _clearings(game, road_edits, with_pieces, bridge_spans, descs)
-        for name, (_jobs, ids) in clearing.items():
-            every, who = with_pieces.setdefault(name, ([], []))
-            who.extend(i for i in ids if i not in who)
         solid: dict = {}  # map pack name -> (nav.Block for each placed building, the mods' ids)
         for name, (objects, ids) in with_pieces.items():
             map_path = find_pack(game, pack_file(name))
@@ -1086,36 +1140,35 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             entry = next((e for e in map_packs if e[0] == map_path), None)
             map_arc = entry[1] if entry else open_pack(map_path)
             changed_members = entry[2] if entry else {}
-            from .scenery import (MEMBER, SceneryEditError, SceneryError, SceneryFull, add_objects, bury_objects,
+            from .scenery import (MEMBER, SceneryEditError, SceneryError, add_objects, bury_objects,
                                   erase_objects)
             areas, erase_ids = erasing.get(name, ([], []))
-            jobs = clearing.get(name, ([], []))[0]
-            cleared = [a for _what, job in jobs for a in job]
             try:
                 member = map_arc.find(MEMBER).path
                 raw = changed_members.get(member) or bytes(map_arc.read(map_arc.find(MEMBER)))
                 raw, sunk = bury_objects(raw, bridge_hide.get(name, []))  # before the new blocks move them
-                erased_notes, erased, tally = [], {}, {}
-                if areas or cleared:  # the map's own scenery out first: the new objects then stay whatever it covers
+                erased_notes, erased = [], {}
+                if areas:  # the map's own scenery out first: the new objects then stay whatever the areas cover
                     if descs is None:
                         descs = descriptors(arc)
                     names = Scenery(raw).names
                     kinds = {i: descs[n].group for i, n in enumerate(names) if n in descs}
                     bridges = {i for i, n in enumerate(names) if n in descs and descs[n].bridge}
-                    raw, erased_notes, erased = erase_objects(raw, list(areas) + cleared, kinds, bridges, tally)
-                    erased_notes = ([n for n in erased_notes  # (the clearing's own counts said below)
-                                     if areas or not (n.startswith("the erase area") or " erased in " in n)]
-                                    + _cleared_notes(jobs, tally, len(areas)))
+                    raw, erased_notes, erased = erase_objects(raw, areas, kinds, bridges)
+                if descs is None:
+                    descs = descriptors(arc)
+                lowest = _LowestPoints(game, descs)
+                try:
+                    objects, lowered = grounded(objects, descs, lowest)
+                finally:
+                    lowest.close()
                 changed_members[member], notes = add_objects(raw, objects)
-                notes = sunk + erased_notes + notes
+                notes = sunk + erased_notes + notes + ([f"{lowered} placed object(s) lowered to stand on the ground "
+                                                        f"(their models start above their base point: an upper "
+                                                        f"storey, say)"] if lowered else [])
             except KeyError:
                 result.findings.append(Finding("error", f"{map_path.name} has no scenery file, so nothing can be "
                                                         f"placed on {name}"))
-                continue
-            except SceneryFull as exc:
-                result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: {exc}" + (
-                    ". The clearing along the new roads, under the new buildings and at the new bridges' ends counts "
-                    "too: set clear = false on roads.toml roads that run through open ground" if cleared else "")))
                 continue
             except (SceneryError, SceneryEditError) as exc:
                 result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: {exc}"))
@@ -1179,9 +1232,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         moves, paints = scenario_edits(result.order, mods), scenario_edits(result.order, mods, "cover")
         blocks = scenario_edits(result.order, mods, "movement")
         new_roads = scenario_edits(result.order, mods, "roads")
-        for name, (walls, ids) in list(solid.items()) + list(flooded.items()):  # placed buildings units go around,
-            every, who = blocks.setdefault(name, ([], []))                    # and new water, after the mods' blocks
-            every.extend(walls)
+        from .scenario import PACK as MOVEMENT_PACK  # (the movement and cover grids live in the scenarios' pack)
+        cleared, uncover = cleared_woods(erasing) if find_pack(game, MOVEMENT_PACK) is not None else ({}, {})
+        for name, (more, ids) in uncover.items():
+            every, who = paints.setdefault(name, ([], []))
+            every.extend(more)
+            who.extend(i for i in ids if i not in who)
+        for name, (walls, ids) in (list(cleared.items()) + list(beds.items()) + list(flooded.items())
+                                   + list(solid.items())):  # after the mods' own blocks and opens: cleared woods and
+            every, who = blocks.setdefault(name, ([], []))    # dried beds opened, new water closed, and placed
+            every.extend(walls)                               # buildings last, so units always go around them
             who.extend(i for i in ids if i not in who)
         players = scenario_edits(result.order, mods, "players")
         if moves or paints or blocks or new_roads or bridge_spans or players:
@@ -1369,6 +1429,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {where}: {note}")
                 if changed_members:
                     data_packs.append((data_path, data_arc, changed_members))
+        late = [f for f in result.findings[reported:] if f.level == "warning" and id(f) not in said]
+        for line in report_lines(late, show_all=show_all):  # the maps' warnings (a drained river's was never shown)
+            say(line)
         if result.errors:
             for line in report_lines([f for f in result.findings if f.level == "error"], show_all=show_all):
                 say(line)

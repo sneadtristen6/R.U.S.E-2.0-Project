@@ -704,150 +704,8 @@ class Erasing(unittest.TestCase):
                 scenery.parse_erase([row])
 
 
-class Clearing(unittest.TestCase):
-    """The build's own erase areas: a strip along each new road, a circle under each new building and at each new
-    bridge's ends."""
-
-    def test_a_strip(self):
-        a = scenery.EraseArea(0.0, 0.0, 10.0, x2=100.0, y2=0.0)
-        self.assertEqual(a.dist2(50.0, 6.0), 36.0)
-        self.assertEqual(a.dist2(-3.0, 4.0), 25.0)  # past an end: from that end
-        self.assertEqual(a.dist2(103.0, -4.0), 25.0)
-        for box, meets in (((50, 5, 60, 8), True), ((50, 20, 60, 30), False), ((108, 0, 120, 2), True),
-                           ((-30, -30, -20, -20), False), ((105, 9, 120, 20), False), ((-5, -50, 5, 50), True)):
-            self.assertEqual(a.meets(*box), meets, box)
-        across = scenery.EraseArea(-100.0, 0.0, 1.0, x2=100.0, y2=0.0)
-        self.assertTrue(across.meets(-5, -5, 5, 5))  # the line runs through the box, both ends outside
-        circle = scenery.EraseArea(0.0, 0.0, 10.0)
-        self.assertEqual(circle.dist2(3.0, 4.0), 25.0)
-        self.assertTrue(circle.meets(7, 7, 20, 20))
-        self.assertFalse(circle.meets(8, 8, 20, 20))
-
-    def test_a_roads_strips(self):
-        freehand = [(float(x), 0.0) for x in range(0, 10001, 100)] + [(10000.0, 5000.0)]
-        strips = scenery.road_clearing(freehand)
-        self.assertEqual([(s.x, s.y, s.x2, s.y2) for s in strips], [(0.0, 0.0, 10000.0, 0.0),
-                                                                   (10000.0, 0.0, 10000.0, 5000.0)])
-        self.assertEqual({(s.radius, s.what) for s in strips}, {(scenery.CLEAR_HALF, ("vegetation", "prop"))})
-        wobble = [(0.0, 0.0), (5000.0, 100.0), (10000.0, 0.0)]  # within a tenth of the strip: one strip
-        self.assertEqual(len(scenery.road_clearing(wobble)), 1)
-        ends = scenery.bridge_end_clearing([(0.0, 0.0, 3000.0, 0.0)])
-        self.assertEqual(ends, [scenery.EraseArea(0.0, 0.0, scenery.BRIDGE_END_CLEAR),
-                                scenery.EraseArea(3000.0, 0.0, scenery.BRIDGE_END_CLEAR)])
-
-    def test_strips_take_the_trees_along_them(self):
-        raw = forest()
-        # along the east wood's south patch, its three oaks (10000..10200, 0); nothing of the north one 1000 away
-        strip = scenery.EraseArea(9900.0, 0.0, 50.0, x2=10300.0, y2=0.0)
-        tally = {}
-        new, _notes, by = scenery.erase_objects(raw, [strip], E_KINDS, {2}, tally)
-        Erasing.check(self, raw, new)
-        self.assertEqual(spots(raw) - spots(new), Counter({(1, x, 0.0): 1 for x in (10000.0, 10100.0, 10200.0)}))
-        self.assertEqual((by, tally), ({"vegetation": 3}, {0: 3}))
-        # an oak in two areas counts for the first; an area that takes nothing isn't tallied
-        areas = [scenery.EraseArea(0.0, 0.0, 150.0), scenery.EraseArea(-50.0, 0.0, 10.0, x2=250.0, y2=0.0),
-                 scenery.EraseArea(5000.0, 5000.0, 10.0)]
-        tally = {}
-        _new, _notes, by = scenery.erase_objects(raw, areas, E_KINDS, {2}, tally)
-        self.assertEqual((by, tally), ({"vegetation": 3}, {0: 2, 1: 1}))
-        # a strip past the town hall and the bridge takes neither
-        new, _notes, by = scenery.erase_objects(raw, [scenery.EraseArea(4000.0, 4000.0, 3000.0, x2=7000.0, y2=7000.0)],
-                                                E_KINDS, {2})
-        self.assertEqual((new, by), (raw, {}))
-
-
-def clearing_game(root: Path, net_points):
-    """A made-up game for a build: the village map (its scenery) and its road network (a line through
-    `net_points`) in DataMap_Win.dat, the scenery descriptors."""
-    from rusemod import nav
-    from rusemod.cover import member
-    from rusemod.roadnet import RoadNet, build_tree
-    game = root / "R.U.S.E"
-    rev = game / "Data" / "PC" / "190852"
-    rev.mkdir(parents=True)
-    (game / "Maps" / "PC").mkdir(parents=True)
-    (rev / "ZZ_GladPatchableWin.dat").write_bytes(unit_pack_raw())
-    net = RoadNet(list(net_points), [])
-    net.links = [(i, i + 1, net._cost(i, i + 1)) for i in range(len(net_points) - 1)]
-    net.tree = build_tree(net.points, net.links)
-    head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 16000.0, 16000.0)
-    win = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
-        net.to_bytes(), b"infantry", b"vehicles", b"cover")) + b"tail", {})
-    folder, name = member("Test").rsplit("\\", 1)
-    (rev / "DataMap_Win.dat").write_bytes(make_edat([("dir", folder + "\\", [("file", name, win)])]))
-    shipped = make_edat([("dir", "output\\", [("file", "save.boobspc", village())])])
-    (game / "Maps" / "PC" / "DataMapTest_v09.dat").write_bytes(shipped)
-    return game, shipped
-
-
 class Building(unittest.TestCase):
     """A mod's maps/<map>/scenery.toml, built into the map's pack (MOD_FORMAT §8)."""
-
-    def test_new_roads_and_buildings_clear_their_trees(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            # the village's oaks: (5000, 0), (5100, 0), (5000, 9000), (5100, 9000); its hall at (1000, 2000)
-            game, shipped = clearing_game(root, [(0.0, -3000.0), (5000.0, -3000.0), (10000.0, -3000.0)])
-            mod = root / "mod"
-            (mod / "maps" / "Test").mkdir(parents=True)
-            (mod / "mod.toml").write_text('[mod]\nid = "lane"\nversion = "1.0.0"\n', encoding="utf-8")
-            roads = (mod / "maps" / "Test" / "roads.toml")
-            roads.write_text(  # road 1 runs by the south oaks (1,000 off); road 2 by the north ones, clear = false
-                "[[road]]\npoints = [[0.0, -3000.0], [5050.0, 1000.0], [10000.0, -3000.0]]\npaint = false\n"
-                "bridges = false\n\n[[road]]\npoints = [[10000.0, -3000.0], [5050.0, 8000.0]]\npaint = false\n"
-                "bridges = false\nclear = false\n", encoding="utf-8")
-            lines = []
-            result = build_and_write(game, [load_mod(mod)], out=root / "out", say=lines.append)
-            self.assertEqual(result.errors, [], lines)
-            self.assertIn("  2 of the map's trees and props cleared along road 1 (from (0, -3000))", lines)
-            self.assertFalse([ln for ln in lines if "road 2" in ln and "cleared" in ln], lines)
-            self.assertFalse([ln for ln in lines if " erased in " in ln], lines)  # (the clearing says its own)
-            arc = Edat((root / "out" / "DataMapTest_v09.dat").read_bytes())
-            new = bytes(arc.read(arc.find(scenery.MEMBER)))
-            self.assertEqual(spots(village()) - spots(new), Counter({(1, 5000.0, 0.0): 1, (1, 5100.0, 0.0): 1}))
-            self.assertEqual((game / "Maps" / "PC" / "DataMapTest_v09.dat").read_bytes(), shipped)
-            # a building placed by the north oaks clears them (its reach, FOOTPRINT here: no models, and the margin)
-            (mod / "maps" / "Test" / "scenery.toml").write_text(
-                '[[object]]\ntype = "TypeWarrior/MairieNormande"\nx = 5000\ny = 8500\nsolid = false\n', encoding="utf-8")
-            roads.write_text(roads.read_text(encoding="utf-8").replace("paint = false\nbridges = false\n\n", "paint = false\nbridges = false\nclear = false\n\n", 1),
-                             encoding="utf-8")
-            lines = []
-            result = build_and_write(game, [load_mod(mod)], out=root / "out2", say=lines.append)
-            self.assertEqual(result.errors, [], lines)
-            self.assertIn("  2 of the map's trees and props cleared under the 1 new building(s)", lines)
-            arc = Edat((root / "out2" / "DataMapTest_v09.dat").read_bytes())
-            new = bytes(arc.read(arc.find(scenery.MEMBER)))
-            self.assertEqual(spots(village()) - spots(new), Counter({(1, 5000.0, 9000.0): 1, (1, 5100.0, 9000.0): 1}))
-            # past the 16 MB a map's scenery holds: refused, saying the clearing counts
-            old = scenery.DATA_LIMIT
-            scenery.DATA_LIMIT = 10
-            try:
-                result = build_and_write(game, [load_mod(mod)], out=root / "out3", say=lines.append)
-            finally:
-                scenery.DATA_LIMIT = old
-            self.assertIn("set clear = false on roads.toml roads", result.errors[0].message)
-
-    def test_what_each_map_clears(self):
-        from rusemod.build import _clearings, _cleared_notes
-        from rusemod.roadnet import Road
-        with tempfile.TemporaryDirectory() as tmp:
-            game, _shipped = clearing_game(Path(tmp), [(0.0, 0.0), (1.0, 0.0)])
-            roads = {"Test": ([Road([(0.0, 0.0), (100.0, 0.0)]), Road([(0.0, 0.0), (0.0, 100.0)], clear=False)], ["a"]),
-                     "Elsewhere": ([Road([(0.0, 0.0), (100.0, 0.0)])], ["a"])}  # a map not in the game: said elsewhere
-            placed = {"Test": ([NewObject("TypeWarrior/MairieNormande", 50.0, 60.0, size=2.0),
-                                NewObject("TypeWarrior/Chene_02", 1.0, 2.0)], ["b"])}
-            got = _clearings(game, roads, placed, {"Test": [(0.0, 0.0, 3000.0, 0.0)]})
-            self.assertEqual(list(got), ["Test"])
-            jobs, ids = got["Test"]
-            self.assertEqual(ids, ["a", "b"])
-            self.assertEqual([w for w, _a in jobs], ["along road 1 (from (0, 0))", "under the 1 new building(s)",
-                                                    "at the ends of the 1 new bridge(s)"])
-            from rusemod.nav import FOOTPRINT
-            self.assertEqual(jobs[1][1], [scenery.EraseArea(50.0, 60.0, 2 * FOOTPRINT + scenery.CLEAR_MARGIN)])
-            self.assertEqual(len(jobs[2][1]), 2)
-            self.assertEqual(_cleared_notes(jobs, {0: 4, 1: 1, 3: 2}, 0)[1:],
-                             ["1 of the map's trees and props cleared under the 1 new building(s)",
-                              "2 of the map's trees and props cleared at the ends of the 1 new bridge(s)"])
 
     def test_erase_areas_go_into_the_map(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1002,16 +860,16 @@ class Studio(unittest.TestCase):
             info, _ops = load_mod(folder)
             self.assertEqual(info.erase["Test"], [scenery.EraseArea(5000.0, 0.0, 50.0), scenery.EraseArea(5100.0, 0.0, 50.0)])
             self.assertEqual(info.scenery["Test"], [NewObject("TypeWarrior/Chene_02", 50.0, 60.0)])
+            # the placed tree's Undo keeps the circles; built, the map's trees under them go
+            api.scenery_undo("Test", 1)
             lines = []
-            result = build_and_write(game, [(info, _ops)], out=Path(tmp) / "out", say=lines.append)
+            result = build_and_write(game, [load_mod(folder)], out=Path(tmp) / "out", say=lines.append)
             self.assertEqual(result.errors, [], lines)
             arc = Edat((Path(tmp) / "out" / "DataMapTest_v09.dat").read_bytes())
             new = bytes(arc.read(arc.find(scenery.MEMBER)))
             self.assertEqual(spots(village()) - spots(new), Counter({(1, 5000.0, 0.0): 1, (1, 5100.0, 0.0): 1}))
-            # undo past the circles: the file keeps its objects; with none of either it goes
-            self.assertEqual(api.scenery_erase_undo("Test", 9), {"count": 0, "removed": 2,
-                                                                 "saved": str(folder / "maps" / "Test" / "scenery.toml")})
-            api.scenery_undo("Test", 1)
+            # undo past the circles: with neither objects nor circles the file goes
+            self.assertEqual(api.scenery_erase_undo("Test", 9), {"count": 0, "removed": 2, "saved": None})
             self.assertFalse((folder / "maps").exists())
 
 

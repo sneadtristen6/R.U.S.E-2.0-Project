@@ -1128,3 +1128,17 @@ merged; suite 859 OK).**
   for the player, and a first run with an empty library opens "Choose your mods" (works offline from the saved list).
   The Studio's export shows the file's size and SHA-256 and opens "Share your mod": how to add it to the list and
   become a contributor.
+
+**Studio 0.8.0 and Launcher 0.3.0 released (2026-10-01, evening; the owner's numbers and his go after batch 3).**
+- **In-game tests behind them** (TESTS.md batches 1-3, one modded copy each, the test spots beside the owner's HQ):
+  infantry follow new roads; a bridge placed by hand carries units on its deck; a building at 10× stands on the
+  ground (it floated: a model starting above its base point, `5c5a34f`); a dried riverbed is walked; a wood cleared
+  with `[[erase]]` lets tanks in (`eac6fd0`) and, after the cover fix below, no longer hides infantry. Failed and
+  refused for now: a unit given to another nation's factory, and spawns of another nation's units (both crashed the
+  game). **Still failing: T12, new roads up close** (a known issue in the notes).
+- **Cover on maps that aren't square (`fdc9c6a`).** A map's cover grid is a square of square cells stored as its two
+  corners; on the 8 maps that aren't square it reaches past the short side. `rusemod.cover` read it as a corner and a
+  size, so on D-Day the cleared wood's uncover landed 1.3 km south of the hole and its infantry stayed hidden. Square
+  maps (Blitz, where painted cover was proven) gave the same bytes before and after.
+- Two working rules from the day: test copies only for what could break the game, with the test spots beside the
+  player's HQ and a top-down map; and a release note claims only what passed in the game.

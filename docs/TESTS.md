@@ -150,6 +150,10 @@ The copy: `D:\RUSE-Instances\bridges` (rebuilt 2026-10-01 from the Studio mod `t
 2. Pan along each new road up close, then onto one of the map's own roads near them: both stay drawn.
 3. While there: the bridges as in T8 (one tank and one squad across), to see nothing went back.
 
+**Result: FAILED, again and again** (owner, 2026-10-01, in batches 1-3 and his screenshots: "roads visible up close
+is not working, I told you that many times"). With the fix of the morning (`34c1ab4`) a new road still disappears
+near the camera. **Open: a new road isn't drawn up close.** Never write that it is until this test passes.
+
 ## T9. A road over one of the map's own bridges (Studio 0.7.4)
 
 The owner's rule: the old bridge goes and the new road's bridge takes its place. The copy is built first (next
@@ -179,7 +183,7 @@ team 2): `py -3 -m rusemod build <the mod's folder> --instance D:\RUSE-Instances
 - **Pass:** the game starts with 8 players, each on their own starting point (the new ones: team 1's north-west of
   its others, team 2's east of its others, on open fields).
 - **Fail:** what the lobby shows, or where it stops. If the lobby shows 8 but the game refuses, try with 7.
-- **Then, if it passes:** past 8 (a 10-player copy, 5v5) tells whether the program caps it.
+- **Then, if it passes:** past 8 (a 10-player copy, 5v5) tells whether the game caps it.
 
 ## T13. A unit given to another nation (Studio 0.7.7)
 
@@ -204,6 +208,71 @@ the build now has its models' nation load in every skirmish. Untested in the gam
 5. Then one more skirmish **with** a German player (US against Germany): the Stuka US and the German Stukas both
    look and fly normally.
 6. **Also tell us:** does the match take noticeably longer to load than an unmodded one?
+
+## Batch 1 for Studio 0.8.0: T12, T13 and units on new roads in one game (2026-10-01)
+
+The copy: `D:\RUSE-Instances\batch1`, built from a copy of the owner's Studio mod `test` (`D:\ruse-test-mods\batch1`)
+with two changes the build now asks for: its spawns made neutral (a skirmish spawns only neutral items) and its road 2
+left out (it joins no other road); plus T13's Stuka US. Start `RUSE.exe` inside the copy's folder, Steam running.
+
+**One skirmish: BATTLES > D-Day, as the US against a UK or USSR AI (no German player).**
+1. **T12, roads up close:** zoom right down onto a new road (between Briqueville and Les Pieux), away from the
+   bridges. **Pass:** its texture stays as the camera comes close; pan along it onto one of the map's own roads, both
+   stay drawn.
+2. **Units on new roads:** order a tank, then an infantry squad, from one end of a new road to the other. **Pass:**
+   they drive along the road, not across the fields beside it, and never through a building.
+3. **T8 again:** one tank and one squad across a new bridge, on the deck.
+4. **T13:** build an airfield, then the **Stuka US** in the US air factory. **Pass:** it's drawn (not invisible),
+   takes off, dive-bombs a target and comes back.
+5. **Tell us:** did the match take noticeably longer to load than usual?
+
+Optional second game (T13 step 5): the US against Germany; the Stuka US and the German Stukas both look normal.
+**Result (owner, 2026-10-01):** the copy crashed at match start (57 Japanese units spawned, no Japanese player: their
+models never load; the build now refuses such spawns), then, rebuilt without them, when the Stuka US was built (its
+gunner's model wasn't ready: units given to another nation are refused for now). US planes flew fine. A dried stretch
+of river stopped tanks (dried beds are opened to units now).
+
+## Batch 2 for Studio 0.8.0: only what could break the game, next to the player's HQ (2026-10-01)
+
+The copy `D:\RUSE-Instances\batch2`, from `D:\ruse-test-mods\batch2` (batch 1's mod without the Stuka, plus the
+Dev Toolkit for money and the US's ground units 3 times as fast; the AI gets neither). **BATTLES > D-Day, as the US
+against one AI of another nation.** The US HQ is moved beside the river 750 m south-east of Toulaville; the camera
+opens facing west.
+1. **The dried river** (to the right of the HQ, 250 m north): send a tank and a squad across the dry bed. **Pass:** they
+   cross it.
+2. **The lone bridge** (straight ahead, 300 m west: a stone bridge with no road onto it): send a tank and a squad
+   across. **Pass:** they cross on the deck, not in the water.
+3. **The cleared wood** (ahead-right, 350 m north-west, past the dried river): a round clearing 100 m across in the
+   wood. **Pass:** no trees in it at any zoom, the wood around it unchanged.
+4. **The new roads** (ahead-left, 600 m south-west of the HQ, where two new roads meet): send a tank along one of
+   them for a kilometre. **Pass:** it drives along the road, not across the fields beside it.
+5. Money: the build menu's **Dev** tab gives +500 a click.
+
+**Result (owner, 2026-10-01):** units walked the dried bed; the cleared spot (hedgerow trees among fields) wasn't
+recognisable; tanks didn't keep to the new roads (see batch 3). The owner's old 10x upper-storey houses in the mod
+floated 47 m up: our bug (a model starting above its base point), fixed in the build (`5c5a34f`).
+
+## Batch 3 for Studio 0.8.0: a clean test mod, everything beside the HQ (2026-10-01)
+
+`D:\RUSE-Instances\batch3` from `D:\ruse-test-mods\batch3` (made by a script: none of the owner's old edits), with
+town names shown from any height (`D:\ruse-test-mods\townnames`) and the Dev Toolkit. The HQ is moved onto the main
+road east of Toulaville; a top-down map of the test spots goes with it.
+1. **Infantry on a new "^" road** to a water tower 700 m north. **Passed:** infantry find the fastest way to the road
+   and take it. Tanks don't: US tanks have no road bonus in the game's data (the Sherman and the Lee have no
+   `SpeedBonusOnRoad`; infantry +83%, the Greyhound +16%), so they take the shortest way, on the map's own roads too.
+2. **A hole cleared in a dense wood** (4,135 trees) with a water tower in it. **Failed:** tanks couldn't drive in: the
+   map's movement still kept vehicles off the old wood. Fixed (`eac6fd0`): a cleared wood is opened to every unit and
+   loses its forest cover.
+   - **Checked again** (`batch3b`): a tank drives in. **Passed.** Infantry in the hole still showed the purple
+     "hidden" glow. **Failed:** the hole's cover was never cleared. D-Day isn't square, and the cover grid of such a
+     map is a square reaching past its short side, stored as two corners; the build read it as a corner and a size,
+     so the paint landed 1.3 km south of the hole (8 shipped maps are like this; on the square ones, Blitz among
+     them, cover was always painted in place). Fixed in `rusemod.cover`: in `batch3c` the hole's 946 cover cells
+     are clear and the wood around it keeps its own.
+   - **Checked again** (`D:\RUSE-Instances\batch3c`): infantry sent into the hole with the water tower. **Passed**
+     (owner, 2026-10-01, 15:46: "works great"): the squad in the hole looks as it does in the open, a tank beside it.
+3. **A 10x house** beside the HQ. **Passed:** it stands on the ground.
+4. **A lone stone bridge** placed by hand. **Passed:** units cross on the deck.
 
 ## T11. Launcher 0.2.9
 
