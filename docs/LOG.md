@@ -895,3 +895,17 @@ before reaching ground units use is left closed, and the note now says what it m
 the road meets ground closed to units ... at (x, y): move the road clear of it"). On the owner's test: three bridges
 open with clean approaches (11 m at most), the fourth closed at the farm, whose stable stands 3.5 m off the road. The
 retest and the rule the owner asked for ("the road can't be built into buildings, it shows red like Cities") are next.
+
+**A new bridge's deck is narrower than its floor (2026-10-01, after the owner's third in-game test).** With the local
+maps of the night before, units still stood in the river beside a deck. The movement file itself was right (its
+owners, offset table and local maps read back as the game's own do, and by the game's rule no water was walkable), so
+either the game does not honour a local map we added, or it leaves a route inside the owner circle; either way the
+owner circle is 26 m of ground over the river that only the local map keeps units off. So new bridges no longer get
+one. `Graph.open_narrow`: a deck is a chain of circles 640 wide (`DECK_RADIUS`) on its line, in the main graph, with
+no owner and no local map. 640 is less than the 663 of the bridge floors units stand on, so every place the build
+opens is over the deck: there is no ground beside it to be on, whatever the game does with routes. A deck whose
+middle lies in an owner the map already has (a town, a bridge of the map's) still goes into that owner's local map,
+which is the game's own arrangement and needs no new owner. Checked on the owner's D-Day test, all four bridges, both
+graphs: every point along each deck walkable end to end, and not one walkable point more than 663 off a deck's line
+that the shipped map did not already have (82 and 93 by two decks' ends, the same count as the map's own). The
+local-map code stays for a map whose bridge needs it and for the record.

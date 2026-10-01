@@ -59,6 +59,8 @@ MIN_RADIUS = 1280.0  # the smallest circle on any shipped map
 METRE = 260.0        # map units in a metre
 APPROACH = 16000.0   # how far past a new deck's end its approach may run along the road to reach ground units already
                      # use (about 62 m; the shipped bridges' chains of circles reach up to 10,800 past their decks)
+DECK_RADIUS = 640.0    # a new deck's circles in the main graph: narrower than
+                       # the bridge floors units stand on (663), so a unit can never be off the deck
 LOCAL_RADIUS = 640.0   # a new deck's circles in its local map: units keep within this of the deck's line, inside the
                        # floor they stand on (663 either side on the bridge kinds the build places; the shipped decks'
                        # local circles are mostly 640)
@@ -452,6 +454,120 @@ class Graph:
             self.subs = self.subs + [_local_graph(self.box, o["local"]) for o in owned]
             counts["owners"] = [(o["span"], nx + j, o["circle"][2], len(o["local"])) for j, o in enumerate(owned)]
         self._check_opened(spans, parts_before, nx, m, n + m, decks, [(k, si) for si, k, _r, _c in counts["owners"]])
+        return counts
+
+    def open_narrow(self, spans: list[tuple[float, float, float, float]], radius: float = DECK_RADIUS, roads=(),
+                    reach: float = APPROACH, avoid=None, water=None) -> dict:
+        """Give units ground along `spans` (x0, y0, x1, y1: a bridge's deck) where there was none: a chain of circles
+        `radius` wide every `radius` along the deck, in the main graph, with no owner circle and no local map.
+
+        `radius` is smaller than the bridge floor's half width (DECK_RADIUS 640, the floors are 663), so every point
+        a unit may stand on is over the deck it stands on. That is the whole of it: the game may straighten a route
+        anywhere inside the circles it runs through, and here they are no wider than the deck. The owner's tests of
+        the owner-circle design (2026-09-30 and 2026-10-01) put units in the river beside a deck, which this cannot
+        do: there is no ground off the deck to be on.
+
+        A deck must reach ground units already use at both ends, or the game crashes when a unit is ordered onto it
+        (an empty route). Where a deck's end third doesn't overlap a live circle by STEP or more, an approach goes on
+        from that end along the nearest of `roads`, circles every 3/4 `radius` (a smaller one where a full one won't
+        fit), at most `reach` out, never where `avoid(x, y, r)` says or with any of its disc over `water(x, y)`. A
+        deck that can't be joined at both ends is left closed. Returns Graph.open's counts."""
+        counts = {"added": 0, "linked": 0, "approach": 0, "longest": 0.0, "owners": [], "inside": [], "left_out": 0,
+                  "under": 0, "closed": [], "crowded": [], "stopped": {}}
+        n = len(self.circles) - 1
+        old = [c[:3] for c in self.circles[:-1]]
+        ground = _Buckets(old)
+
+        def joined(c) -> bool:
+            return any(_meeting(c, old[d]) is not None for d in ground.near(*c))
+
+        new, parts_before = [], len(self._labels()[1])
+        nx = len(self.subs)
+        for si, (x0, y0, x1, y1) in enumerate(spans):
+            length = math.hypot(x1 - x0, y1 - y0)
+            if length <= 0:
+                continue
+            steps = max(1, int(-(-length // radius)))
+            deck = [(x0 + (x1 - x0) * k / steps, y0 + (y1 - y0) * k / steps, float(radius)) for k in range(steps + 1)]
+            mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+            host = next((k for k in range(nx) if old[k][2] > 0
+                         and math.hypot(mx - old[k][0], my - old[k][1]) < old[k][2]), None)
+            if host is not None:  # inside an owner (a town, a bridge of the map's): its local map decides there, so
+                got = self._into_local(host, (x0, y0, x1, y1), deck, roads, reach, avoid, water)  # the deck goes in it
+                if got is None:
+                    counts["crowded"].append(si)
+                    continue
+                counts["inside"].append((si, host))
+                counts["approach"] += got[0]
+                counts["longest"] = max(counts["longest"], got[1])
+                continue
+            third = max(1, len(deck) // 3)
+            ends = ((deck[:third], (x0, y0), (x0 - x1, y0 - y1), (x1, y1)),
+                    (deck[-third:], (x1, y1), (x1 - x0, y1 - y0), (x0, y0)))
+            approaches, failed, longest = [], [], 0.0
+            for which, (part, at, out, other) in enumerate(ends):
+                if any(joined(c) for c in part):
+                    continue
+                chain, reached = [], False
+                for walked, (px, py) in _walk_out(at, out, roads, radius * 0.75, reach, away=other):
+                    r = next((float(rr) for rr in (radius, radius * 0.75, radius / 2)
+                              if not ((avoid is not None and avoid(px, py, float(rr))) or _wet(water, px, py, rr))),
+                             None)
+                    if r is None:
+                        why = "water" if _wet(water, px, py, radius / 2) else \
+                            "ground closed to units (a building the map keeps them off, or ground a mod blocked)"
+                        counts["stopped"][(si, which)] = (px, py, walked, why)
+                        break
+                    chain.append((px, py, r))
+                    if joined(chain[-1]):
+                        reached = True
+                        longest = max(longest, walked)
+                        break
+                if reached:
+                    approaches.append(chain)
+                else:
+                    failed.append(which)
+            if failed:
+                counts["closed"].append((si, failed))
+                continue
+            counts["longest"] = max(counts["longest"], longest)
+            new += deck + [c for chain in approaches for c in chain]
+            counts["approach"] += sum(len(chain) for chain in approaches)
+        if not new:
+            return counts
+        allc = old + new
+        counts["added"] = len(new)
+        near = _Buckets(allc)
+        linked = {(a, b) for a, b, _x, _y in self.links}
+        new_links = []
+        for c in range(n, n + len(new)):
+            for d in near.around(c):
+                if d == c or allc[d][2] <= 0:
+                    continue
+                a, b = min(c, d), max(c, d)
+                if (a, b) in linked:
+                    continue
+                point = _meeting(allc[a], allc[b])
+                if point is None:
+                    continue
+                linked.add((a, b))
+                new_links.append((None, (a, b) + point))
+        counts["linked"] = len(new_links)
+        self._finish(allc, list(enumerate(self.links)), new_links, n)
+        live = [i for i, c in enumerate(old) if c[2] > 0]  # the index: each new circle under the nearest old one
+        where = _Buckets([old[i] for i in live])
+        into: dict[int, list[int]] = {}
+        boxes: dict[int, tuple] = {}
+        for j, (x, y, r) in enumerate(new):
+            ids = list(where.near(x, y, r + 20480.0)) or range(len(live))
+            bank = live[min(ids, key=lambda k: math.hypot(old[live[k]][0] - x, old[live[k]][1] - y)
+                            - old[live[k]][2])] if live else -1
+            into.setdefault(bank, []).append(n + j)
+            bx0, by0, bx1, by1 = boxes.get(bank, (x, y, x, y))
+            boxes[bank] = (min(bx0, x - r), min(by0, y - r), max(bx1, x + r), max(by1, y + r))
+        self.points = _index_add(self.points, into, boxes)
+        if len(self._labels()[1]) > parts_before:  # a guard: never write ground units can't reach
+            raise NavError("opening the bridges would leave ground units can't reach, which crashes the game")
         return counts
 
     def _owner_for(self, span, deck, every, nx: int, anchors, chains, owners, extra=()) -> dict | None:

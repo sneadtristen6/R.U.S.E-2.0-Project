@@ -191,14 +191,16 @@ class Crossings(unittest.TestCase):
         bufs = sdb.split_mapinfo(new[member("Blitz")])[1]
         self.assertEqual(bufs[0], net.to_bytes())  # no old bridge: the road network is left alone
         graph = navmod.Graph.read(bufs[2])
-        self.assertEqual(len(graph.circles) - 1, 1 + 2)  # an owner over the crossing, at circle 0, and the banks
-        self.assertEqual(len(graph.subs), 1)  # its local map: 4,400 of deck, a circle every 640 at most, and the banks
-        self.assertEqual(sorted({c[2] for c in graph.subs[0].circles[:-1]}), [640.0, 6400.0])
-        self.assertEqual((graph.parts(), graph.subs[0].parts()), ([3], [10]))
-        self.assertTrue(graph.walkable(13800.0, 2000.0) and not graph.walkable(13800.0, 2700.0))  # units keep to it
-        self.assertEqual(notes[0], "infantry: 1 bridge(s) opened, units kept to the deck: 1 with local movement of "
-                                   "its own (a circle 22 m across over the crossing, 10 circle(s) in its local "
-                                   "movement)")
+        # the deck is a chain of circles narrower than the bridge floor, in the main graph: 4,400 of deck every 640,
+        # and the two banks. No owner circle over the crossing, so no ground beside the deck to step onto
+        self.assertEqual((len(graph.circles) - 1, len(graph.subs)), (8 + 2, 0))
+        self.assertEqual(sorted({c[2] for c in graph.circles[:-1]}), [640.0, 6400.0])
+        self.assertEqual(graph.parts(), [10])
+        self.assertTrue(graph.walkable(13800.0, 2000.0))
+        for across in (2700.0, 3300.0):  # 700 and 1,300 off the deck's line: the river, as before the mod
+            self.assertFalse(graph.walkable(13800.0, across))
+        self.assertEqual(notes[0], "infantry: 1 bridge(s) opened, units kept to the deck (8 circle(s) 5 m wide along "
+                                   "it, narrower than the floor they stand on)")
         # a deck whose far end reaches no ground units use would be cut off (the game crashes on an order onto it)
         new, notes = apply_spans(read, "Blitz", [(26000.0, 2000.0, 60000.0, 2000.0)])  # E's land, then nothing
         bufs = sdb.split_mapinfo(new[member("Blitz")])[1]
@@ -256,18 +258,22 @@ class LocalMovement(unittest.TestCase):
         self.assertIn("vehicles: 1 bridge(s) opened, units kept to the deck: 1 in the local movement already there "
                       "(an old bridge's or a town's)", notes)
 
-    def test_a_deck_with_no_room_for_local_movement_stays_closed(self):
+    def test_a_new_deck_opens_no_ground_beside_itself(self):
+        # the whole of what keeps units on a new bridge: every place the build opens is over the deck they stand on
+        # (the owner's in-game tests, 2026-09-30 and 2026-10-01: wider circles put units in the river beside it)
         from rusemod.cover import member
         g = banks()
-        g.circles = g.circles[:-1] + [(13760.0, 4480.0, 1280.0, 2, 0), (0.0, 0.0, 0.0, 2, 0)]  # 2,560 off its middle
         head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 16000.0, 16000.0)
         win = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
             b"roads", g.to_bytes(), g.to_bytes(), b"cover")) + b"tail", {})
-        new, notes = apply_spans({member("Blitz"): win}.get, "Blitz", [(11600.0, 2000.0, 16000.0, 2000.0)])
-        self.assertEqual(sdb_buffers(new[member("Blitz")])[2], g.to_bytes())
-        self.assertIn("vehicles can't use the bridge at (13800, 2000): other ground lies too close to it for the local "
-                      "movement that keeps units on a deck, so it's left closed to them (without it they step off its "
-                      "sides)", notes)
+        span = (11600.0, 2000.0, 16000.0, 2000.0)
+        new, _notes = apply_spans({member("Blitz"): win}.get, "Blitz", [span])
+        after, before = nav.Graph.read(sdb_buffers(new[member("Blitz")])[2]), banks()
+        for x in range(11600, 16100, 100):
+            self.assertTrue(after.walkable(float(x), 2000.0), x)  # along the deck, end to end
+            for across in (2000.0 + 663.0 + 100, 2000.0 - 663.0 - 100, 4000.0, 300.0):
+                opened = after.walkable(float(x), across) and not before.walkable(float(x), across)
+                self.assertFalse(opened, (x, across))  # past the floor's width: nothing the map didn't already have
 
 
 def sdb_buffers(win):

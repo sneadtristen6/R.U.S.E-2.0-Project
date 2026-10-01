@@ -413,9 +413,17 @@ def _end_name(dx: float, dy: float) -> str:
 
 def _opened_notes(what: str, spans: list[tuple], c: dict) -> list[str]:
     """The build's notes on one movement graph opened along `spans` (`c`: what nav.Graph.open returned)."""
-    from .nav import APPROACH, METRE
+    from .nav import APPROACH, DECK_RADIUS, METRE
     out = []
     owners, inside = c["owners"], c["inside"]
+    opened = len(spans) - len(c["closed"]) - len(c["crowded"])
+    if not owners and not inside and c["added"] and opened > 0:  # the deck as narrow main circles (open_narrow)
+        line = (f"{what}: {opened} bridge(s) opened, units kept to the deck ({c['added']} circle(s) "
+                f"{round(2 * DECK_RADIUS / METRE)} m wide along it, narrower than the floor they stand on)")
+        if c["approach"]:
+            line += (f"; {c['approach']} circle(s) on the approaches to them (the longest "
+                     f"{round(c['longest'] / METRE)} m along the road)")
+        out.append(line)
     if owners or inside:
         how = []
         if owners:
@@ -469,7 +477,7 @@ def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = (), r
     was."""
     from ruse_mod_engine import sdb
     from .cover import PACK, member
-    from .nav import UNITS, Graph, replace_buffers
+    from .nav import DECK_RADIUS as DECK, UNITS, Graph, replace_buffers
     from .roadnet import RoadNet
     name = member(pack)
     win = read(name)
@@ -497,7 +505,7 @@ def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = (), r
 
         def avoid(x, y, r, zones=zones, holes=holes):
             return any(math.hypot(x - zx, y - zy) < zr + r for zx, zy, zr in zones) or holes.within(x, y, r)
-        c = g.open(spans, OPEN, roads, avoid=avoid, water=water) if spans else None
+        c = g.open_narrow(spans, DECK, roads, avoid=avoid, water=water) if spans else None
         if any(len(s.parts()) > n for s, n in zip([g] + g.subs, pieces)):  # e.g. an old bridge, the only way across
             raise BridgeError(f"{what}: taking the old bridges away would cut ground off from the rest of the map "
                               f"(or of a bridge's own local movement), and the game crashes when a unit is ordered "
