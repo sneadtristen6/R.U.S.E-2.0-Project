@@ -604,32 +604,34 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Now (updated 2026-10-01, afternoon): start here.** The owner's order (2026-10-01): **the road fix, its test, the
-audit, the release, then the players' suggestions.** The road fix and the audit are done; the release is next.
+**Now (updated 2026-10-01, evening): start here.** The owner's order (2026-10-01): **the road fix, its test, the
+audit, the release, then the players' suggestions.** All done up to the release: **Studio 0.8.0 and Launcher 0.3.0
+are out** (2026-10-01, after the owner's in-game tests, TESTS.md batches 1-3). Next: units from another nation that
+work (step 5 below).
 
-Out: **Studio 0.7.6 and Launcher 0.2.11** (`a605cf3`). Committed, not released: the troubleshooter in both apps and
-the map check's backend (`f14e634`); the bridges' floor aprons, T8 passed (`934d414`); the clean-game backup and
-restore in both apps, every unit flag explained with a build error for flags 62 and 63 on a unit that isn't a truck,
-and square cover brushes (`28bee64`); the new README (`a1880d5`); the road fix and all the audit's fixes (LOG.md,
-2026-10-01); the mod list at [sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods), which the
-launcher reads (75 mods, cheats kept apart).
+Out in 0.8.0 / 0.3.0: the troubleshooter and the clean-game backup in both apps; every unit flag explained; square
+cover; the road fix and all the audit's fixes (LOG.md, 2026-10-01); units following new roads; the mod list at
+[sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods) (the launcher's Supported mods); the Studio's
+Open and Forest brushes, Bridges dock and Check this map; erase areas (`[[erase]]`) with cleared woods units use and
+don't hide in; placed objects on the ground at any size; cover painted in place on the 8 maps that aren't square.
 
 *Testing plan* (steps and commands in [TESTS.md](TESTS.md); one game start each):
 
 | Test | Who | Decides | State |
 |---|---|---|---|
 | **T8 Bridges:** units (a tank, then infantry) and a supply route cross the new D-Day bridges | owner, `D:\RUSE-Instances\bridges` | bridges done, or what to fix | **passed 2026-10-01, 04:27**: tanks, infantry and a supply truck cross on the decks, the men at the deck's height (the floor's aprons, `934d414`) |
-| **T12 New roads up close:** a new road's texture still shows with the camera close to the ground | owner, `D:\RUSE-Instances\bridges` | the road fix (step 1) | **ready** (copy rebuilt 2026-10-01 with the fix) |
+| **T12 New roads up close:** a new road's texture still shows with the camera close to the ground | owner, `D:\RUSE-Instances\bridges` | the road fix (step 1) | **FAILED** (owner, 2026-10-01, every batch: a new road still disappears near the camera; open, a known issue of 0.8.0) |
 | **T9 A road over an old bridge:** the old one gone, units cross on the new one | owner | the replace rule | after T8 (the new deck goes into the old bridge's local map; the old floor and its aprons go) |
 | **T10 Read-only game folder:** Test in game after updating | the player who reported it | the fix | waiting for him |
 | **T11 Launcher 0.2.11:** the update is offered, Play works | owner | — | — |
 | **T13 A unit from another nation's factory:** it shows and fights in a skirmish with no player of its own nation | owner | the force-load fix | when the fix is merged |
 
 *Next steps* (in order):
-1. **New roads up close (built 2026-10-01; T12 decides).** A new road's texture showed from afar but not up close
-   (T8). The build now marks its new scenery blocks as holding road pieces, as the map's own road blocks are, and
-   gives each road piece what the map's own pieces have (LOG.md). Test T12. The owner's Studio `test` mod has a road
-   that joins no other road; since the audit such a mod is refused until the road is joined.
+1. **New roads up close: STILL BROKEN (T12 failed in every batch, 2026-10-01; the owner has said so many times).** A
+   new road's texture shows from afar but disappears near the camera. The fix of the morning (new scenery blocks
+   marked as holding road pieces, each piece given what the map's own pieces have; LOG.md) didn't change that in
+   the game. Open, listed as a known issue of 0.8.0; the next session on roads starts from the game's own road
+   pieces up close (exe first). Never call it working before T12 passes.
 2. **The audit (done 2026-10-01).** All five areas (map info, ground, scenery, units, scenario) were checked against
    what the game does with every file the build writes, and each rule became a check in the build with a test (LOG.md
    has every fix). Being finished on branches, merged before the release:
@@ -638,27 +640,20 @@ launcher reads (75 mods, cheats kept apart).
    - the launcher's **Supported mods** (the mod list with tick boxes, cheats unticked and apart, a "Choose your mods"
      step on first run) and the Studio's **Share your mod** screen (how to add a mod to the list and become a
      contributor) (`feat/modlist`).
-3. **Release** Studio 0.7.7 and Launcher 0.2.12: the troubleshooter, the clean-game backup, the flags, square
-   brushes, the road fix, the audit's fixes, the mod list. Run by the owner before tagging.
+3. **Release** (done 2026-10-01): Studio 0.8.0 and Launcher 0.3.0, the owner's numbers and his go after batch 3.
 
 *After the release* (in order; cheap and certain first, one game start per test batch):
-4. **One test batch** in one modded copy: T12 (roads up close), T13 (another nation's unit), T9 (a road over an old
-   bridge). What fails is fixed before anything new.
+4. **Test batches** (done 2026-10-01, TESTS.md batches 1-3): what failed was fixed and checked again. T9 (a road over
+   an old bridge) is still to run.
 5. **Units from another nation that work** (owner, 2026-10-01: "have a tiger on the USA ... a special scenario where
    you captured a tiger"). Making the game load that nation's models in every match crashed it in T13 (a German Ju 87
    copy for the US crashed the game when its gunner was set up: its model wasn't ready for it), so the build refuses
    these units for now (`build.FORCE_LOAD`). Next: copy the unit's models into the new nation's own skirmish packs, so
    its matches load them with their own units; test with a plane and a tank (a Tiger for the US).
-6. **The players' suggestions, the cheap ones** (a player's wishlist, 2026-10-01; the owner: "include all in plan"):
-   - **An unblock brush:** the reverse of the Block brushes, opening ground the map blocks. Units stand on whatever
-     ground is there, so unblocking a river puts them on the riverbed (the Studio says so).
-   - **A forest brush:** trees (Place, Area already paints them) and cover in one stroke.
-   - The Studio's **Bridges dock** (the map's own bridge kinds, a Length slider, roads' water crossings in gold, a note
-     when a map has no bridge kind) and the **map check's screen** ("Check this map" lists what would go wrong:
-     ground cut off, roads or bridges units can't use, road ends not joined, buildings on roads). Both backends exist.
-   Then a release.
-7. **A4 Remove scenery** (an Erase brush: trees along new roads; the old-bridge rule could then remove instead of
-   sink). Measured 2026-09-30: only 0.2-0.3% of a map's trees (D-Day 11.6 million, Blitz 3.9 million) sit in blocks
+6. **The players' suggestions, the cheap ones** (done in 0.8.0): the Open brushes (unblock), the Forest brush, the
+   Bridges dock and Check this map.
+7. **A4 Remove scenery:** the build's side is out in 0.8.0 (`[[erase]]` circles, copy on write; a cleared wood is
+   opened to units and loses its cover); the Studio's Erase tool is on the branch `feat/eraseui`. Measured 2026-09-30: only 0.2-0.3% of a map's trees (D-Day 11.6 million, Blitz 3.9 million) sit in blocks
    placed once, the only ones `bury_objects` can sink one by one; the rest are in blocks the map places many times.
    So erasing needs a block copied for the erased spot (copy on write, down from the top block) or whole placed
    patches sunk; which one is the first decision of A4. The same work builds the top block's tree again, which also

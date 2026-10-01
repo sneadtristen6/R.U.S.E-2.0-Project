@@ -1,6 +1,63 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.8.0:** the map editor grows up: new brushes and docks, bridges units really cross, woods you can clear, and a
+build that checks the game's rules so what you make works the first time. Plus a troubleshooter and a clean game
+backup.
+- **New in the map editor:**
+  - **Open brushes** (Movement): the reverse of Block. Give units ground the map keeps them off (all units, infantry
+    or vehicles). Opening water is allowed and warned: units stand on the riverbed there.
+  - **Forest brush** (Cover): trees and cover in one stroke; Undo takes both away.
+  - **Bridges dock:** the map's own bridge kinds, and a bridge placed by hand at the length and turn you choose; new
+    roads' water crossings drawn in gold.
+  - **Check this map:** lists what would go wrong before you test (ground cut off, roads or bridges units can't use,
+    road ends not joined, buildings on roads), and clicking one shows where.
+  - Drained or raised-dry riverbeds are opened to units by the build.
+- **Clear the map's own trees and props:** `[[erase]]` circles in a mod's `scenery.toml` (written by hand for now;
+  an Erase tool in the Studio is on the way). Tanks drive into a cleared wood, and infantry there are no longer
+  hidden.
+- **Placed objects stand on the ground at any size.** A building scaled up 10× floated in the air; it now sits on
+  the ground like the map's own.
+- **Fixed: cover on the maps that aren't square** (D-Day, Frontline, Djebel, Medjez, Handshake over the Elbe, and the
+  Tunisia, Holland and Ardennes campaign maps). Cover painted or cleared there (the Cover, Uncover, Town and Forest
+  brushes, `cover.toml`) landed up to a kilometre from where it was drawn, and the map view showed it in that wrong
+  place too. Both are right now: if you painted cover on one of these maps, look at it again in the map view. Square
+  maps (Blitz and most others) were always right.
+- **Bridges work in the game.** A road you draw over water gets the map's own kind of bridge (the Dutch maps' too),
+  and tanks, infantry and supply trucks cross it on the deck, infantry at the deck's height. Bridge ends join the
+  roads units already use and keep clear of the map's buildings; a bridge that can't be joined stays closed, and the
+  build's note says what the road met and where.
+- **The build checks the game's rules.** Every file a mod changes was checked against what the game does with it, and
+  a mod that would break in the game is refused with a note saying why, before anything is written:
+  - roads: units now follow new roads, not only supply trucks, and a new road that joins no other road is refused
+    (the road network must stay in one piece);
+  - placed buildings and blocks: units can't drive through them any more; new buildings, bridges and trees show at
+    every distance;
+  - terrain: new water is closed to units, the AI's map follows your woods, blocks, bridges and water, and a stroke
+    that can't change the ground (or reaches a bridge's floor) says so;
+  - units: a wrong salvo, ID, nation or menu list is refused, unit flags are checked, and every flag is explained in
+    the flag picker (flags 62 and 63, which crash the game on a unit that isn't a truck, are an error); a unit put
+    in another nation's factory is refused for now (it crashed the game when built; making it work is next);
+  - scenario: spawns are neutral by default, a spawn of a unit whose models the match may not load is refused (it
+    crashed the game at the start), a start where vehicles can't go is refused, a moved start takes its camera
+    along, and seats are counted per team.
+- **The build's report** shows every warning (some were lost), and a rebuild takes the old test copy away first, so
+  an old copy can't be started by mistake.
+- **Square cover:** `square = true` on a `cover.toml` paint, or on a Cover or Uncover stroke in `terrain.toml`,
+  paints a square along the map's axes (written by hand for now; the map view draws it as a square).
+- **Troubleshoot** (beside *Test in game*, and in Settings > Help): checks in one go what can stop a test (the game
+  found, Steam, a game left running from a modded copy, the drive and its free space, leftover copies, read-only
+  files, whether the app can write where copies go), with a button for each fix it can make, and a report to paste in
+  a bug report, your Windows user name left out.
+- **Clean game backup** (Settings): keep a clean copy of your game's files, check them against it, and put back
+  anything another mod manager or a hand edit changed. Files that aren't the game's are moved aside, never deleted.
+  Or let Steam repair the game (*Verify with Steam*). This is the only place the Studio ever writes into your game
+  folder, and only when you ask.
+- **Share your mod:** made a mod? After the export, the Studio shows its size and SHA-256 and how to add it to the
+  mod list on GitHub and become a contributor.
+- **Known issue: new roads aren't drawn up close yet.** They're painted on the ground and show from afar, and units
+  use them, but with the camera near the ground a new road disappears. Being worked on.
+
 **0.7.6:** a second Test in game works, and bridges units can always reach.
 - **Fixed:** every second *Test in game* could fail with "An old modded copy ... can't be removed ... (Access is
   denied)". A copy Windows won't delete (a file an older version linked to a replaced game file, a program still

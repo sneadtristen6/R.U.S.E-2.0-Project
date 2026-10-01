@@ -28,7 +28,9 @@ New roads are saved in your mod at once (`maps/<map>/roads.toml`).
 ## What a new road does in the game
 
 - **Supply routes use it** (proven: a supply depot's route took a new shortcut through open fields).
-- **It's painted on the ground** in the map's own road colour, so players see it (proven in the game).
+- **It's painted on the ground** in the map's own road colour, so players see it (proven in the game). **Not yet up
+  close:** with the camera near the ground a new road disappears (a known issue, being worked on).
+- **Infantry follow it** to get somewhere faster (proven in the game, Studio 0.8.0).
 - **Over water it gets a bridge**: the map's own kind (24 of the 32 maps have one), one piece stretched from bank to
   bank the way the game's own bridges are, and units can drive across. A road over one of the map's own bridges gets
   the new bridge in its place. On a map with no bridge kind, the build says so and the water stays closed. (Bridges

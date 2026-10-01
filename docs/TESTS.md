@@ -150,6 +150,10 @@ The copy: `D:\RUSE-Instances\bridges` (rebuilt 2026-10-01 from the Studio mod `t
 2. Pan along each new road up close, then onto one of the map's own roads near them: both stay drawn.
 3. While there: the bridges as in T8 (one tank and one squad across), to see nothing went back.
 
+**Result: FAILED, again and again** (owner, 2026-10-01, in batches 1-3 and his screenshots: "roads visible up close
+is not working, I told you that many times"). With the fix of the morning (`34c1ab4`) a new road still disappears
+near the camera. **Open: a new road isn't drawn up close.** Never write that it is until this test passes.
+
 ## T9. A road over one of the map's own bridges (Studio 0.7.4)
 
 The owner's rule: the old bridge goes and the new road's bridge takes its place. The copy is built first (next
@@ -265,8 +269,8 @@ road east of Toulaville; a top-down map of the test spots goes with it.
      so the paint landed 1.3 km south of the hole (8 shipped maps are like this; on the square ones, Blitz among
      them, cover was always painted in place). Fixed in `rusemod.cover`: in `batch3c` the hole's 946 cover cells
      are clear and the wood around it keeps its own.
-   - **To check** (`D:\RUSE-Instances\batch3c`): send infantry into the hole with the water tower. **Pass:** no
-     purple glow inside the hole; in the wood around it they are hidden as before.
+   - **Checked again** (`D:\RUSE-Instances\batch3c`): infantry sent into the hole with the water tower. **Passed**
+     (owner, 2026-10-01, 15:46: "works great"): the squad in the hole looks as it does in the open, a tank beside it.
 3. **A 10x house** beside the HQ. **Passed:** it stands on the ground.
 4. **A lone stone bridge** placed by hand. **Passed:** units cross on the deck.
 

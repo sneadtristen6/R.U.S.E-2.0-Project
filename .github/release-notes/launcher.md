@@ -1,5 +1,15 @@
-**RUSE Launcher 0.2, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
+**RUSE Launcher 0.3, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
+
+**0.3.0:** **Supported mods:** the launcher shows our mod list
+([sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods)); tick the ones you want and they're
+downloaded and checked. On first run you choose your mods; cheat mods are kept apart and never ticked for you. A
+**Troubleshoot** button (bottom bar, and on every problem message) checks in one go what can stop **Play** and fixes
+what it can, with a report to paste in a bug report. A **clean game backup** in Settings keeps a clean copy of your
+game's files and puts back anything another mod manager changed (or let Steam repair it). Mods made with the new
+Studio work as made: tanks and infantry cross new bridges on the deck, infantry follow new roads, cleared woods are open
+to units, placed buildings stand on the ground at any size, and cover lands where it was painted on D-Day and the
+other maps that aren't square. Known issue: new roads aren't drawn up close yet (they show from afar).
 
 **0.2.11:** **Play** works every time: a modded copy Windows won't delete (a file an older version linked, a
 program still holding it) is moved aside into `RUSE-Instances\.trash` instead of stopping the game, and a game still

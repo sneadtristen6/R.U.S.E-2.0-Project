@@ -582,7 +582,8 @@ join = 20000.0       # an end this near a road joins it (a junction); else it's 
   yet.
 - `paint = true` (the default) paints it into the ground's texture tiles in the map's own road colour (proven in the
   game: seen from afar) and lays the map's own road stickers along it (`Route` pieces, about 16 m each: what draws a
-  road up close; not tried in the game yet); `bridges = true` (the default) puts the map's own bridge kind where it
+  road up close; **not working yet**: in the game a new road still disappears near the camera, TESTS.md T12);
+  `bridges = true` (the default) puts the map's own bridge kind where it
   crosses water, one piece stretched
   bank to bank (rusemod.bridges), with a floor units stand on: the floor of a shipped bridge of its kind, carried
   onto the new banks, in the map's `occlusioninfo_objectsonly.kdt` (rusemod.floors). A bridge placed by hand in
@@ -984,7 +985,7 @@ LittleGroove's own engine (`src/ruse_mod_engine`, PLAN.md decision 26). The form
 ## 15. The mod index (Supported mods)
 
 Built: `src/rusemod/mod_index.py`, the launcher's "Supported mods" tab (TASKS.md D, 2026-09-29; called "Browse
-mods" until Launcher 0.2.12, which added ticking several mods, the cheats' group and the first run's "Choose your
+mods" until Launcher 0.3.0, which added ticking several mods, the cheats' group and the first run's "Choose your
 mods"). No server of ours: a
 small public git repository is the index, GitHub serves its file, and GitHub Releases hold the packages.
 
