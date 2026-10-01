@@ -256,6 +256,28 @@ def _block_brushes(info) -> None:
             del info.terrain[pack]
 
 
+BED_RADII = (3840.0, 2560.0, 1920.0, 1280.0)  # down to nav.MIN_RADIUS: a new movement circle fits in one of these
+
+
+def _bed_circles(drained: list[tuple[float, float]], wet=None) -> list[tuple[float, float, float]]:
+    """Open zones (x, y, r) over a dried bed's samples (nav.water_blocks), for Graph.open_ground, which puts each new
+    circle inside one zone and none smaller than nav.MIN_RADIUS: so each zone is one of BED_RADII, centred on a sample
+    no zone holds yet, the largest whose middle and rim (8 points) aren't under water now (`wet(x, y)`; the ends of a
+    bed meet the water left). A bed too narrow for the smallest stays closed."""
+    zones: list[tuple[float, float, float]] = []
+
+    def dry(x, y, r) -> bool:
+        return wet is None or not any(wet(x + r * c, y + r * s) for c, s in
+                                      ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (.7, .7), (.7, -.7), (-.7, .7), (-.7, -.7)))
+    for x, y in sorted(drained):
+        if any((x - zx) ** 2 + (y - zy) ** 2 < (zr * 0.7) ** 2 for zx, zy, zr in zones):
+            continue
+        r = next((r for r in BED_RADII if dry(x, y, r)), None)
+        if r is not None:
+            zones.append((x, y, r))
+    return zones
+
+
 def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs) -> list:
     """nav.wet_opens for a map's opens, on its ground as the terrain edits left it (map_packs: (pack path, archive,
     changed members); `open_pack(path)` opens a map pack); none when the map has no opens or its ground can't be
@@ -796,13 +818,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say("Nothing was written.")
             return result
         from .terrain import pack_file
+        reported, said = len(result.findings), set()  # the findings the report above showed; the later ones said
 
         def warn(message: str) -> None:
             """A warning found while the maps are built (after the report above): kept and said at once."""
             result.findings.append(Finding("warning", message))
+            said.add(id(result.findings[-1]))
             say(f"warning: {message}")
         map_packs = []  # (path, open pack, {member: new bytes})
         flooded: dict = {}  # map pack name -> (nav.Block over each new water, the mods' ids)
+        beds: dict = {}     # map pack name -> (nav.Block opens over each dried bed, the mods' ids)
         for name, (strokes, ids) in terrain_edits(result.order, mods).items():
             map_path = find_pack(game, pack_file(name))
             if map_path is None:
@@ -846,8 +871,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 from .nav import Block, water_blocks
                 from .tms import Tms
                 try:
-                    zones, drained = water_blocks(Water(Tms(before)).at, Water(Tms(changed_members[GROUND["highdef"]])).at,
-                                                  [_area_of(s) for s in strokes])
+                    now_at = Water(Tms(changed_members[GROUND["highdef"]])).at
+                    zones, drained = water_blocks(Water(Tms(before)).at, now_at, [_area_of(s) for s in strokes])
                 except (ValueError, struct.error, zlib.error) as exc:
                     result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: where the terrain edits put "
                                                             f"water can't be worked out ({exc}), so units could walk "
@@ -856,13 +881,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 if zones:
                     flooded[name] = ([Block(x, y, r, "all") for x, y, r in zones], ids)
                     say(f"  {name}: {len(zones)} block(s) over the new water, so units keep out of it")
-                if len(drained) >= 3:
+                if drained:  # a dried bed: the map's movement has no ground there, so it's opened to units
+                    beds[name] = ([Block(x, y, r, "all", True) for x, y, r in _bed_circles(drained, now_at)], ids)
                     mx, my = (sum(p[k] for p in drained) / len(drained) for k in (0, 1))
-                    result.findings.append(Finding("warning", (
-                        f"{', '.join(ids)}: {name}: the terrain edits drain water around ({mx:.0f}, {my:.0f}), but "
-                        f"the dried ground stays closed to units: the map's movement has no ground where the water "
-                        f"was. Paint it with the Open brush to let units on it, leave the water there, or expect "
-                        f"units to go around")))
+                    say(f"  {name}: water drained around ({mx:.0f}, {my:.0f}): its bed opened to units "
+                        f"({len(beds[name][0])} circle(s))")
             if changed_members:
                 map_packs.append((map_path, map_arc, changed_members))
                 result.terrain_changed[map_path.name] = changed_members
@@ -1121,9 +1144,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         moves, paints = scenario_edits(result.order, mods), scenario_edits(result.order, mods, "cover")
         blocks = scenario_edits(result.order, mods, "movement")
         new_roads = scenario_edits(result.order, mods, "roads")
-        for name, (walls, ids) in list(solid.items()) + list(flooded.items()):  # placed buildings units go around,
-            every, who = blocks.setdefault(name, ([], []))                    # and new water, after the mods' blocks
-            every.extend(walls)
+        for name, (walls, ids) in list(solid.items()) + list(flooded.items()) + list(beds.items()):  # placed buildings
+            every, who = blocks.setdefault(name, ([], []))  # units go around, new water, and dried beds opened, after
+            every.extend(walls)                              # the mods' own blocks and opens
             who.extend(i for i in ids if i not in who)
         players = scenario_edits(result.order, mods, "players")
         if moves or paints or blocks or new_roads or bridge_spans or players:
@@ -1311,6 +1334,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {where}: {note}")
                 if changed_members:
                     data_packs.append((data_path, data_arc, changed_members))
+        late = [f for f in result.findings[reported:] if f.level == "warning" and id(f) not in said]
+        for line in report_lines(late, show_all=show_all):  # the maps' warnings (a drained river's was never shown)
+            say(line)
         if result.errors:
             for line in report_lines([f for f in result.findings if f.level == "error"], show_all=show_all):
                 say(line)

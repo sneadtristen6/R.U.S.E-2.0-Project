@@ -205,6 +205,25 @@ the build now has its models' nation load in every skirmish. Untested in the gam
    look and fly normally.
 6. **Also tell us:** does the match take noticeably longer to load than an unmodded one?
 
+## Batch 1 for Studio 0.8.0: T12, T13 and units on new roads in one game (2026-10-01)
+
+The copy: `D:\RUSE-Instances\batch1`, built from a copy of the owner's Studio mod `test` (`D:\ruse-test-mods\batch1`)
+with two changes the build now asks for: its spawns made neutral (a skirmish spawns only neutral items) and its road 2
+left out (it joins no other road); plus T13's Stuka US. Start `RUSE.exe` inside the copy's folder, Steam running.
+
+**One skirmish: BATTLES > D-Day, as the US against a UK or USSR AI (no German player).**
+1. **T12, roads up close:** zoom right down onto a new road (between Briqueville and Les Pieux), away from the
+   bridges. **Pass:** its texture stays as the camera comes close; pan along it onto one of the map's own roads, both
+   stay drawn.
+2. **Units on new roads:** order a tank, then an infantry squad, from one end of a new road to the other. **Pass:**
+   they drive along the road, not across the fields beside it, and never through a building.
+3. **T8 again:** one tank and one squad across a new bridge, on the deck.
+4. **T13:** build an airfield, then the **Stuka US** in the US air factory. **Pass:** it's drawn (not invisible),
+   takes off, dive-bombs a target and comes back.
+5. **Tell us:** did the match take noticeably longer to load than usual?
+
+Optional second game (T13 step 5): the US against Germany; the Stuka US and the German Stukas both look normal.
+
 ## T11. Launcher 0.2.9
 
 - **Pass:** the launcher offers 0.2.9 when it opens; **Update** installs it and it starts again; **Play** works.
