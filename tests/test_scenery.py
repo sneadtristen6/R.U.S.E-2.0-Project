@@ -258,6 +258,7 @@ class Descriptors(unittest.TestCase):
         self.assertEqual(v["groups"], {"building": {"shown": 1, "total": 1}, "vegetation": {"shown": 4, "total": 4}})
         hall = v["items"]["building"]
         self.assertEqual(v["types"][hall[0]][:2], ["MairieNormande", "building"])
+        self.assertIs(v["types"][hall[0]][5], False)  # not a bridge: the Erase brush tints it with the buildings
         self.assertEqual(hall[1:3], [1000, 2000])
         self.assertEqual(scenery.MEMBER, "output\\save.boobspc")
 
@@ -683,6 +684,28 @@ class Erasing(unittest.TestCase):
         finally:
             scenery.DATA_LIMIT = old
 
+    def test_what_the_studio_says_circles_take(self):
+        """erase_count, for the Studio's Erase tool: what the circles take, counted as the build erases (groups from
+        the scenery types, a bridge only by name), and an erase the build would refuse refused the same way."""
+        raw = forest()
+        descs = {n: scenery.Descriptor(n, "TSceneryDescriptorMultiState", "", g, None, "")
+                 for n, g in zip(E_NAMES, ("building", "vegetation", "building"))}
+        self.assertTrue(descs["TypeWarrior/Pont_Normandie"].bridge)
+        around = (5500.0, 5500.0, 1000.0)  # the hall and the bridge
+        areas = [scenery.EraseArea(0.0, 0.0, 150.0), scenery.EraseArea(*around, ("building",))]
+        self.assertEqual(scenery.erase_count(raw, areas, descs), {"vegetation": 2, "building": 1})
+        named = scenery.EraseArea(*around, (), ("TypeWarrior/Pont_Normandie",))
+        self.assertEqual(scenery.erase_count(raw, [named], descs), {"bridge": 1})
+        self.assertEqual(scenery.erase_count(raw, [scenery.EraseArea(*around)], descs), {})
+        self.assertEqual(scenery.erase_count(raw, [], descs), {})
+        old = scenery.DATA_LIMIT
+        scenery.DATA_LIMIT = 10
+        try:
+            with self.assertRaisesRegex(SceneryEditError, "copies too many of the map's shared blocks"):
+                scenery.erase_count(raw, areas, descs)
+        finally:
+            scenery.DATA_LIMIT = old
+
     def test_the_mod_file(self):
         areas = scenery.parse_erase([{"x": 1, "y": 2, "radius": 300},
                                      {"x": 3, "y": 4, "radius": 5, "what": ["building"],
@@ -829,9 +852,10 @@ class Studio(unittest.TestCase):
                                                     NewObject("TypeWarrior/MairieNormande", 70.0, 80.0)])
             self.assertEqual(api.scenery_undo("Test", 1, [dict(tree, x=99)])["removed"], 0)  # not there: nothing
 
-    def test_the_remove_brush(self):
-        """The Remove brush's circles: written as the scenery file's [[erase]] tables (the objects kept), taken back
-        by Undo, and built: the map's trees under them go."""
+    def test_the_erase_tool(self):
+        """The map view's Erase brush: its circles saved as the scenery file's [[erase]] tables (the file's objects
+        kept, and the objects' own edits keeping the circles), what they take counted the way the build erases,
+        taken back by Undo, and built: the map's trees under them go."""
         from ruse_studio.api import StudioApi, StudioError
         with tempfile.TemporaryDirectory() as tmp:
             game = Path(tmp) / "R.U.S.E"
@@ -841,26 +865,55 @@ class Studio(unittest.TestCase):
             (game / "Maps" / "PC" / "DataMapTest_v09.dat").write_bytes(
                 make_edat([("dir", "output\\", [("file", "save.boobspc", village())])]))
             api = StudioApi(game_dir=game, home=Path(tmp, "home"), index_path=Path(tmp, "none.sqlite"))
-            with self.assertRaises(StudioError):
-                api.scenery_erase("Test", [{"x": 5000, "y": 0, "radius": 50}])  # no mod yet
+            nothing = {"count": 0, "takes": {}, "error": ""}
+            self.assertEqual(api.scenery_erased("Test"), nothing)  # no mod: nothing to count
+            with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+                api.scenery_erase("Test", [{"x": 5000, "y": 0, "radius": 50}])
             folder = Path(api.new_mod("Clearing")["current"])
+            path = folder / "maps" / "Test" / "scenery.toml"
+            self.assertEqual(api.scenery_erased("Test"), nothing)
             api.scenery_add("Test", [{"type": "TypeWarrior/Chene_02", "x": 50, "y": 60}])
+            # a drag's circles taking trees and props (the default: left unsaid in the file), then one taking buildings
+            # too; the village: its hall at (1000, 2000), oaks at (5000, 0), (5100, 0), (5000, 9000), (5100, 9000)
             res = api.scenery_erase("Test", [{"x": 5000, "y": 0, "radius": 50, "what": ["vegetation", "prop"]},
                                              {"x": 5100, "y": 0, "radius": 50}])
-            self.assertEqual((res["count"], res["buildings"]), (2, False))
-            res = api.scenery_erase("Test", [{"x": 1000, "y": 2000, "radius": 10, "what": ["building"]}])
-            self.assertEqual((res["count"], res["buildings"]), (3, True))
+            self.assertEqual(res, {"count": 2, "saved": str(path)})
+            api.scenery_erase("Test", [{"x": 1000, "y": 2000, "radius": 10, "what": ["vegetation", "prop", "building"]}])
+            lines = path.read_text(encoding="utf-8").splitlines()
+            self.assertEqual((lines.count("[[erase]]"), lines.count("[[object]]")), (3, 1))
+            self.assertEqual([ln for ln in lines if ln.startswith("what")], ['what = ["vegetation", "prop", "building"]'])
+            self.assertIn("[[erase]]", lines[0])  # the header says what they are
             got = api.scenery("Test")
-            self.assertEqual(len(got["objects"]), 1)
+            self.assertEqual([o["type"] for o in got["objects"]], ["TypeWarrior/Chene_02"])
             self.assertEqual(got["erase"][0], {"x": 5000.0, "y": 0.0, "radius": 50.0, "what": ["vegetation", "prop"],
                                                "types": []})
-            with self.assertRaisesRegex(StudioError, "isn't something it can erase"):
-                api.scenery_erase("Test", [{"x": 1, "y": 2, "radius": 3, "what": ["water"]}])
-            self.assertEqual(api.scenery_erase_undo("Test", 1)["count"], 2)  # the building's circle back
+            self.assertEqual(api.scenery_erased("Test"), {"count": 3, "takes": {"vegetation": 2, "building": 1},
+                                                          "error": ""})
+            # placing and taking back objects keeps the circles; wrong circles are refused, nothing saved
+            api.scenery_undo("Test", 1)
+            api.scenery_add("Test", [{"type": "TypeWarrior/Chene_02", "x": 50, "y": 60}])
+            for bad, why in (([{"x": 1, "y": 2, "radius": 3, "what": ["water"]}], "isn't something it can erase"),
+                             ([{"x": 1, "y": 2}], "has no radius"), ([{"x": 1, "y": 2, "radius": 0}], "above 0"),
+                             ([], "a list of tables"), ("x", "a list of tables"), ([3], "a list of tables")):
+                with self.assertRaisesRegex(StudioError, why):
+                    api.scenery_erase("Test", bad)
+            self.assertEqual(len(api.scenery("Test")["erase"]), 3)
+            # Undo: the last circles, the file's objects kept
+            self.assertEqual(api.scenery_erase_undo("Test", 1), {"count": 2, "removed": 1, "saved": str(path)})
             info, _ops = load_mod(folder)
-            self.assertEqual(info.erase["Test"], [scenery.EraseArea(5000.0, 0.0, 50.0), scenery.EraseArea(5100.0, 0.0, 50.0)])
+            self.assertEqual(info.erase["Test"], [scenery.EraseArea(5000.0, 0.0, 50.0),
+                                                  scenery.EraseArea(5100.0, 0.0, 50.0)])
             self.assertEqual(info.scenery["Test"], [NewObject("TypeWarrior/Chene_02", 50.0, 60.0)])
-            # the placed tree's Undo keeps the circles; built, the map's trees under them go
+            self.assertEqual(api.scenery_erased("Test")["takes"], {"vegetation": 2})
+            # an erase the build would refuse is said, not raised
+            old = scenery.DATA_LIMIT
+            scenery.DATA_LIMIT = 10
+            try:
+                res = api.scenery_erased("Test")
+            finally:
+                scenery.DATA_LIMIT = old
+            self.assertIn("copies too many of the map's shared blocks", res["error"])
+            # built (the placed oak taken back first): the oaks under the circles go
             api.scenery_undo("Test", 1)
             lines = []
             result = build_and_write(game, [load_mod(folder)], out=Path(tmp) / "out", say=lines.append)
@@ -868,9 +921,43 @@ class Studio(unittest.TestCase):
             arc = Edat((Path(tmp) / "out" / "DataMapTest_v09.dat").read_bytes())
             new = bytes(arc.read(arc.find(scenery.MEMBER)))
             self.assertEqual(spots(village()) - spots(new), Counter({(1, 5000.0, 0.0): 1, (1, 5100.0, 0.0): 1}))
-            # undo past the circles: with neither objects nor circles the file goes
+            # a map that isn't in the game: its circles are saved, but can't be counted
+            api.scenery_erase("Nowhere", [{"x": 1, "y": 2, "radius": 3}])
+            with self.assertRaisesRegex(StudioError, "DataMapNowhere_v09.dat isn't in the game folder"):
+                api.scenery_erased("Nowhere")
+            # Undo past the circles: with neither objects nor circles the file goes
             self.assertEqual(api.scenery_erase_undo("Test", 9), {"count": 0, "removed": 2, "saved": None})
-            self.assertFalse((folder / "maps").exists())
+            self.assertFalse((folder / "maps" / "Test").exists())
+            self.assertEqual(api.scenery_erase_undo("Test"), {"count": 0, "removed": 0, "saved": None})
+            self.assertEqual(api.scenery_erased("Test"), nothing)
+
+    def test_the_map_view_erases_as_the_build_does(self):
+        """The map view draws the Erase brush's circles by the build's own rules (maps.js): the default and the
+        largest circle are rusemod.scenery's, a drag lists what it takes in the file's order (so the default stays
+        unsaid), and a circle taking trees opens its ground to every unit and takes its cover, after the strokes, as
+        rusemod.build.cleared_woods does."""
+        import json
+        from rusemod.build import cleared_woods
+        from rusemod.cover import Paint
+        from rusemod.nav import Block
+        maps = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "maps.js").read_text(encoding="utf-8")
+        self.assertIn(f"const ERASE_DEFAULT = {json.dumps(list(scenery.ERASE_DEFAULT))};", maps)
+        self.assertIn(f"const ERASE_MAX = {scenery.ERASE_MAX:.0f};", maps)
+        picked = ["vegetation", "prop", "building"]
+        self.assertIn(f"const what = {json.dumps(picked)}.filter(", maps)
+        self.assertEqual(picked[:2], list(scenery.ERASE_DEFAULT))
+        self.assertLessEqual(set(picked), set(scenery.ERASE_GROUPS))
+        self.assertIn('return (a.what || ERASE_DEFAULT).includes("vegetation");', maps)
+        self.assertIn('clearsWood(a) ? ["erase", "open", "uncover"] : ["erase"]', maps)
+        self.assertIn("open: [moves, 0, 3]", maps)       # open to every unit
+        self.assertIn("uncover: [cover, 0, 1]", maps)    # cover taken away
+        reapply = maps[maps.index("function reapply()"):]
+        reapply = reapply[:reapply.index("\n}\n")]
+        self.assertLess(reapply.index("applyStroke(ed, s)"), reapply.index("eraseDab(a)"))
+        woods = scenery.EraseArea(1.0, 2.0, 3.0)
+        opens, uncover = cleared_woods({"M": ([woods, scenery.EraseArea(4.0, 5.0, 6.0, ("prop",))], ["m"])})
+        self.assertEqual(opens, {"M": ([Block(1.0, 2.0, 3.0, "all", True)], ["m"])})
+        self.assertEqual(uncover, {"M": ([Paint(1.0, 2.0, 3.0, "cover", True)], ["m"])})
 
 
 if __name__ == "__main__":

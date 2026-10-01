@@ -835,11 +835,8 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             if key in self._sceneries:
                 return self._sceneries[key]
         with Edat.open(str(unit_path)) as unit_arc, Edat.open(str(map_path)) as map_arc:
-            dkey = (str(unit_path), unit_path.stat().st_mtime)
-            if self._descriptors[0] != dkey:
-                self._descriptors = (dkey, scenery.descriptors(unit_arc))
             try:
-                out = scenery.view(map_arc, unit_arc, self._descriptors[1])
+                out = scenery.view(map_arc, unit_arc, self._scenery_types(unit_path, unit_arc))
             except (KeyError, scenery.SceneryError) as exc:
                 raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
         with self._grounds_lock:
@@ -847,6 +844,13 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             while len(self._sceneries) > 3:
                 self._sceneries.pop(next(iter(self._sceneries)))
         return out
+
+    def _scenery_types(self, unit_path: Path, unit_arc) -> dict:
+        """The game's scenery types (rusemod.scenery.descriptors), read once per ZZ_GladPatchableWin.dat."""
+        dkey = (str(unit_path), unit_path.stat().st_mtime)
+        if self._descriptors[0] != dkey:
+            self._descriptors = (dkey, scenery.descriptors(unit_arc))
+        return self._descriptors[1]
 
     def map_roads(self, pack: str) -> dict:
         """A map's roads for the 3D view (rusemod.scenery Scenery.roads): {"pieces": [x0, y0, x1, y1, x2, y2, x3, y3,
@@ -1333,8 +1337,8 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         return self.map_players(pack)
 
     # --- placing objects on a map: maps/<pack>/scenery.toml in the current mod (MOD_FORMAT §8, rusemod.scenery) ---
-    SCENERY_HEADER = ("The objects this mod adds to this map, in order (docs/MOD_FORMAT.md §8).\nMade in the RUSE "
-                      "Studio, which rewrites this file.")
+    SCENERY_HEADER = ("The objects this mod adds to this map, in order, and the circles where it takes the map's own "
+                      "away ([[erase]]; docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio, which rewrites this file.")
 
     def _scenery_file(self, pack: str) -> Path:
         folder = self._mod_dir()
@@ -1375,8 +1379,8 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                 break
 
     def scenery(self, pack: str) -> dict:
-        """The objects the current mod places on a map: {"objects": [{type, x, y, turn, size}], "erase": its erase
-        areas [{x, y, radius, what, types}], "saved": the file or None, "mod": the mod or None}."""
+        """The objects the current mod places on a map and its circles to erase: {"objects": [{type, x, y, turn,
+        size}], "erase": [{x, y, radius, what, types}], "saved": the file or None, "mod": the mod or None}."""
         folder = self._mod_dir()
         if folder is None:
             return {"objects": [], "erase": [], "saved": None, "mod": None}
@@ -1388,30 +1392,67 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                 "saved": str(path) if objects or erase else None, "mod": str(folder)}
 
     def scenery_erase(self, pack: str, areas: list) -> dict:
-        """Add erase areas (dicts: x, y, radius, and what: the groups it takes, default trees and props) after the ones
-        already there: the map's own scenery in those circles is taken off when the mod is built. Returns {"count":
-        erase areas on the map now, "buildings": whether any takes buildings (the map's movement still has them, so
-        units go around where they stood), "saved": the file}."""
+        """The Erase tool's circles (dicts: x, y, radius, and what: the groups it takes, default trees and props),
+        saved after the ones already there as the scenery file's [[erase]] tables, its objects kept: the map's own
+        scenery in them is taken off when the mod is built. Returns {"count": circles on the map now, "saved": the
+        file}."""
         path = self._scenery_file(pack)
+        if not isinstance(areas, list) or not areas or not all(isinstance(a, dict) for a in areas):
+            raise StudioError("the circles to erase must be a list of tables (x, y, radius)")
         try:
-            new = scenery.parse_erase(list(areas or []), "the erase areas")
-        except (scenery.SceneryEditError, TypeError, AttributeError) as exc:
+            new = scenery.parse_erase(areas, "the circles to erase")
+        except scenery.SceneryEditError as exc:
             raise StudioError(str(exc)) from None
         with self._saving:
             every = self._read_objects(path, "erase") + new
             self._write_objects(path, self._read_objects(path), every)
-        return {"count": len(every), "buildings": any("building" in a.what for a in every), "saved": str(path)}
+        return {"count": len(every), "saved": str(path)}
 
     def scenery_erase_undo(self, pack: str, count: int = 1) -> dict:
-        """Take the last `count` erase areas off the map. Returns {"count": left, "removed": how many went, "saved":
-        the file or None}."""
+        """Take the last `count` circles to erase off the map (the file's objects stay). Returns {"count": left,
+        "removed": how many went, "saved": the file or None}."""
         path = self._scenery_file(pack)
         with self._saving:
             every = self._read_objects(path, "erase")
             n = max(0, min(int(count), len(every)))
             left = every[:len(every) - n]
-            self._write_objects(path, self._read_objects(path), left)
+            if n:
+                self._write_objects(path, self._read_objects(path), left)
         return {"count": len(left), "removed": n, "saved": str(path) if path.is_file() else None}
+
+    def scenery_erased(self, pack: str) -> dict:
+        """What the current mod's circles to erase take off a map when the mod is built, worked out the way the build
+        erases (rusemod.scenery.erase_count): {"count": circles, "takes": {group: objects}, "error": why the build
+        would refuse them (the map's scenery would grow too big), or ""}. A second or two on the biggest maps."""
+        none = {"count": 0, "takes": {}, "error": ""}
+        if self._mod_dir() is None:
+            return none
+        path = self._scenery_file(pack)
+        with self._saving:
+            areas = self._read_objects(path, "erase")
+        if not areas:
+            return none
+        game = self._game()
+        if game is None:
+            raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
+        map_path, unit_path = find_pack(game, pack_file(pack)), find_pack(game, "ZZ_GladPatchableWin.dat")
+        if map_path is None or unit_path is None:
+            raise StudioError(f"{pack_file(pack) if map_path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game "
+                              f"folder.")
+        with Edat.open(str(unit_path)) as unit_arc, Edat.open(str(map_path)) as map_arc:
+            descs = self._scenery_types(unit_path, unit_arc)
+            try:
+                raw = bytes(map_arc.read(map_arc.find(scenery.MEMBER)))
+            except KeyError:
+                raise StudioError(f"{map_path.name} has no scenery file.") from None
+        out = {"count": len(areas), "takes": {}, "error": ""}
+        try:
+            out["takes"] = scenery.erase_count(raw, areas, descs)
+        except (scenery.SceneryError, struct.error) as exc:
+            raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
+        except scenery.SceneryEditError as exc:
+            out["error"] = str(exc)
+        return out
 
     def scenery_add(self, pack: str, objects: list) -> dict:
         """Place objects (dicts with the scenery file's keys) after the ones already there, in the current mod. Only
