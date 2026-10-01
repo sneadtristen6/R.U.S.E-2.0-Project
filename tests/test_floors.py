@@ -5,8 +5,8 @@ import math
 import unittest
 
 from test_kdt import make_valid_kdt
-from rusemod import floors
-from rusemod.floors import Deck, build_tree, carry, floors_for, found_at, rebuild, triangles
+from rusemod import floors, nav
+from rusemod.floors import WIDEN, Deck, build_tree, carry, floors_for, found_at, rebuild, triangles
 from rusemod.kdt import Kdt
 
 
@@ -49,7 +49,13 @@ class Decks(unittest.TestCase):
         self.assertAlmostEqual(new.local(start[0], start[1])[0], -1.0)
         self.assertAlmostEqual(start[2], 2050.0)   # the start bank's ground, and the floor's own 50 above it
         self.assertAlmostEqual(end[2], 2650.0)
-        self.assertTrue(all(abs(new.local(p[0], p[1])[1]) <= 1200.0 + 1e-6 for p in pts))  # as wide as before
+        # wider than the one it came from (WIDEN): the movement on a new deck reaches 640 either side of its line,
+        # and a unit at that edge with no floor under it drops to the riverbed (the game, 2026-10-01)
+        across = [abs(new.local(p[0], p[1])[1]) for p in pts]
+        self.assertAlmostEqual(max(across), 1200.0 * WIDEN)
+        self.assertGreater(max(across), nav.DECK_RADIUS * 1.25)
+        plain = carry(floor, SHIPPED, (FLAT, FLAT), new, (2000.0, 2600.0), widen=1.0)
+        self.assertAlmostEqual(max(abs(new.local(p[0], p[1])[1]) for t in plain for p in t), 1200.0)
 
 
 class Rebuilding(unittest.TestCase):

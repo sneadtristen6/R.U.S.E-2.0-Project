@@ -909,3 +909,12 @@ which is the game's own arrangement and needs no new owner. Checked on the owner
 graphs: every point along each deck walkable end to end, and not one walkable point more than 663 off a deck's line
 that the shipped map did not already have (82 and 93 by two decks' ends, the same count as the map's own). The
 local-map code stays for a map whose bridge needs it and for the record.
+
+**A new bridge's floor is made wider than the deck's movement (2026-10-01).** With the narrow decks, units were still
+at the water under a bridge in the game. The floor a unit stands on reached about 660 either side of a deck's line
+(the width of the shipped floor it is copied from), and the movement on the deck reaches 640: a unit at the band's
+edge, or nudged over it by another unit, found no floor and dropped to the riverbed, which is what standing "under the
+bridge" looked like. A new bridge's floor is now carried 1.5 times as wide (`floors.WIDEN`, about 950 either side),
+so every place a unit can stand has floor under it with about 1.2 m to spare. The floor isn't drawn, so a wider one
+only means a unit at the deck's edge still stands at the deck's height. On the owner's D-Day test: the floor covers
+the whole span out to 900 either side, flat to 0.01 m, and the movement still reaches only 640.

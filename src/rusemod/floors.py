@@ -23,6 +23,11 @@ from . import kdt as K
 MEMBER = "output\\occlusioninfo_objectsonly.kdt"
 LEAF_MOST = 8          # triangles in a leaf before it's split (the shipped leaves list 2 to 7)
 ACROSS = 2500.0        # map units either side of a deck's line its floor reaches (the decks are ~2,400 wide)
+WIDEN = 1.5            # how much wider than the shipped bridge's a new bridge's floor is made (its floors reach about
+                       # 660 either side of the line, the movement on a new deck 640: a unit at the band's edge, or
+                       # nudged past it by another, found no floor and dropped to the riverbed, which is what "under
+                       # the bridge" looked like in the game, 2026-10-01). The floor isn't drawn: a wider one only
+                       # means a unit near the deck's edge still stands at the deck's height.
 
 
 class FloorError(ValueError):
@@ -78,10 +83,10 @@ def on_deck(tri, deck: Deck, reach: float = 1.2) -> bool:
 
 
 def carry(floor: list, src: Deck, src_ground: tuple[float, float], dst: Deck,
-          dst_ground: tuple[float, float]) -> list[tuple]:
+          dst_ground: tuple[float, float], widen: float = WIDEN) -> list[tuple]:
     """`floor` (triangles on deck `src`, whose ends' ground is `src_ground`) put on deck `dst` (ends' ground
-    `dst_ground`): each point keeps how far along and across it is, and its height above the line between the
-    ends' ground."""
+    `dst_ground`): each point keeps how far along and across it is (`widen` times as far across: WIDEN), and its
+    height above the line between the ends' ground."""
     def base(g, t):
         return g[0] + (g[1] - g[0]) * (t + 1) / 2
     out = []
@@ -89,7 +94,7 @@ def carry(floor: list, src: Deck, src_ground: tuple[float, float], dst: Deck,
         pts = []
         for x, y, z in tri:
             t, s = src.local(x, y)
-            wx, wy = dst.world(t, s)
+            wx, wy = dst.world(t, s * widen)
             pts.append((wx, wy, base(dst_ground, t) + z - base(src_ground, t)))
         out.append(tuple(pts))
     return out
