@@ -636,6 +636,15 @@ his Claude; checked here on all 32 maps.
   far view (the reference points to the new block, which places the old one where it was and the new objects;
   inserted right after the top block, every later reference moved by its size) show in the game, at every zoom.
   Placed buildings are only drawn: units walk through them (movement lives in the map's movement data).
+- **The three grids** (header fields 14-19 their cells across and down, 20-25 each one's offset and size): far,
+  middle and close, cells 81,920, 20,480 and 5,120 map units across, records of 4, 5 and 3 bytes, column after
+  column (`x * down + y`). The game draws a level only in the cells whose record says they hold something: the close
+  grid's third byte from 1 to 0xFE, the others' not 0xFF and not all zero (the third byte counts the cell's objects,
+  about one per 64). On all 32 shipped maps no placed object lies in a cell its level skips; a new object's cells
+  are marked (`scenery._grids_hold`), and one outside the grids is refused.
+- **An object item's word:** bits 26-27 its detail tier (an item above the player's scenery detail isn't drawn: a
+  new object takes tier 0), bits 28-29 a variation the game turns the object by, from its own coordinates (a new
+  object takes none, so it stands as placed).
 - **Header table at field 12** ("layer boundaries", 4-8 u32s): not block starts on most maps; left as they are when
   a block is inserted, and the game ran fine.
 

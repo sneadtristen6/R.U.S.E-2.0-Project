@@ -124,11 +124,13 @@ def make_scenery(blocks, names):
     names2_off = opt_off
     layers_off = names2_off + 4
     grid_off = layers_off
+    # the three grids (far, middle, close: cells 81,920, 20,480 and 5,120 across, records of 4, 5 and 3 bytes) over
+    # 40,960 x 40,960, every cell empty
     fields = [tab_off, len(blocks) + 1, data_off, len(data), flags_off, len(flags), names_off, len(name_blob),
-              opt_off, 0, names2_off, 4, layers_off, 0, 1, 1, 1, 1, 1, 1, grid_off, 4, grid_off + 4, 4,
-              grid_off + 8, 4]
+              opt_off, 0, names2_off, 4, layers_off, 0, 1, 1, 2, 2, 8, 8, grid_off, 4, grid_off + 4, 20,
+              grid_off + 24, 192]
     body = (b"0.6\0" + struct.pack("<26I", *fields) + struct.pack(f"<{len(blocks) + 1}I", *offsets, len(data)) + data
-            + name_blob + flags + struct.pack("<I", 0) + bytes(12))
+            + name_blob + flags + struct.pack("<I", 0) + bytes(4 + 20 + 192))
     return hashlib.md5(body).digest() + body
 
 
@@ -269,8 +271,8 @@ class Adding(unittest.TestCase):
     def test_new_objects_land_where_asked_and_nothing_else_moves(self):
         data = village()
         new, notes = add_objects(data, [NewObject("TypeWarrior/MairieNormande", 7000.0, 8000.0, 90.0, 1.5),
-                                        NewObject("TypeWarrior/Chene_02", -500.0, 300.0, 0.0, 4.0)])
-        self.assertEqual(spots(new) - spots(data), Counter({(0, 7000.0, 8000.0): 1, (1, -500.0, 300.0): 1}))
+                                        NewObject("TypeWarrior/Chene_02", 500.0, 300.0, 0.0, 4.0)])
+        self.assertEqual(spots(new) - spots(data), Counter({(0, 7000.0, 8000.0): 1, (1, 500.0, 300.0): 1}))
         self.assertEqual(spots(data) - spots(new), Counter())
         s = Scenery(new)
         last = s.blocks[-1]
@@ -432,6 +434,45 @@ class RoadStickers(unittest.TestCase):
         wood = s._by_offset[s.blocks[refs[south_ref.at]].items[0].child_offset]
         self.assertEqual(road_pass(s), mine | {(wood, at) for _b, at in own})
         self.assertEqual(len(notes), 2)
+
+    def test_a_new_object_is_drawn_at_every_distance(self):
+        """The game walks a cell of the scenery's grids only when its record says it holds something, finds a
+        block's items through the top block's leaf boxes, and turns an object by its word's variation bits and drops
+        it at low detail by its tier bits. A new object: its cells marked at all three levels, its carrier the
+        reference whose far and full boxes hold it, and no tier or variation copied from the map's own items."""
+        data = two_woods()
+        new, notes = add_objects(data, [NewObject("TypeWarrior/Chene_02", 3000.0, 9000.0)])  # by the north wood
+        s = Scenery(new)
+        top = s.blocks[0]
+        north = next(it for it in top.items if it.kind == "child" and round(it.matrix()[7]) == 8000)
+        wrapper = s.blocks[s._by_offset[north.child_offset]]
+        self.assertIn(1, [it.symbol for it in wrapper.items if it.kind == "object"])  # on the north reference
+        for level, (size, rec) in enumerate(zip(scenery.GRID_CELL, scenery.GRID_RECORD)):
+            w, h = s.grid_dims[2 * level], s.grid_dims[2 * level + 1]
+            at = s.grids[level][0] + (int(3000 // size) * h + int(9000 // size)) * rec
+            self.assertTrue(scenery._cell_walked(new[at:at + rec], level), level)
+            self.assertFalse(scenery._cell_walked(data[at:at + rec], level), level)  # empty before
+        self.assertIn("cell(s) of the scenery's grids marked", notes[-1])
+        oak = next(it for it in wrapper.items if it.kind == "object")
+        self.assertEqual((oak.word >> 26) & 0xF, 0)  # tier 0, no variation, whatever the map's own oaks carry
+        with self.assertRaisesRegex(SceneryEditError, "outside the map's scenery grid"):
+            add_objects(data, [NewObject("TypeWarrior/Chene_02", 50000.0, 9000.0)])
+        _new, notes = add_objects(data, [NewObject("TypeWarrior/Chene_02", 3000.0, 5000.0)])  # between the boxes:
+        self.assertNotIn("no box", " ".join(notes))  # its cell meets the south one, so the game walks it there
+        _new, notes = add_objects(data, [NewObject("TypeWarrior/Chene_02", 30000.0, 30000.0)])  # out in the open
+        self.assertIn("lie in no box of the map's draw tree", notes[-1])
+        self.assertIn("(30000, 30000)", notes[-1])
+
+    def test_the_maps_own_tier_and_turn_bits_are_not_copied(self):
+        wood = block([struct.pack("<I4h4f", 0x80000000 | 0x34000000 | 1 << 4, *[round(1 / SCALE16), 0, 0,
+                                                                                  round(1 / SCALE16)], 0.0, 0.0, 0.0, 1.0)])
+        root_len = len(block([moved(0, 0, 0)], far=True))
+        data = make_scenery([block([moved(root_len, 1000.0, 1000.0)], far=True), wood], NAMES)
+        self.assertEqual((Scenery(data).blocks[1].items[0].word >> 26) & 0xF, 0xD)  # tier 1, variation 3
+        new, _notes = add_objects(data, [NewObject("TypeWarrior/Chene_02", 1200.0, 1100.0)])
+        mine = [it for b in Scenery(new).blocks for it in b.items
+                if it.kind == "object" and it.symbol == 1 and it.tform != scenery.T_IDENTITY]
+        self.assertTrue(any(((it.word >> 26) & 0xF) == 0 for it in mine), [hex(it.word) for it in mine])
 
     def test_a_map_without_stickers_gets_none(self):
         raw = make_scenery([block([compact(0, 100.0, 100.0)])], NAMES)

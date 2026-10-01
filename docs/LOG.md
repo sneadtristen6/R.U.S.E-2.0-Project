@@ -1053,3 +1053,20 @@ shipped files first:
   crossings stayed, and a building placed on a town's road had units driving through it (the audit: 15 of 15 such
   blocks left one). After blocks, every crossing whose road (the shortest road path between its two road links)
   runs through a block goes; the road stays for supply trucks. Measured on SuperCrossroads4 and D-Day: none left.
+
+**The scenery audit's fixes (2026-10-01).** All 5 audit areas are done (reports in the private notes). For placed
+objects (buildings, bridges, trees):
+- **The grids.** The scenery's three grids say which cells hold something at each distance, and the game draws
+  nothing at that distance in a cell that holds nothing; the build left the grids alone, so a new object in such a
+  cell was missing there (on the T8 copy, 2 of the 4 new bridges' cells were empty up close). A new object's cells
+  are now marked at all three distances, and an object outside the grids is refused.
+- **Carriers.** A new object goes in a block hung on a reference of the top block; the game finds it only through
+  that reference's leaf boxes, while walking the object's own cell. The carrier is now one whose leaf boxes meet
+  the object's cells (far and close), as road pieces' are; one in open ground far from any of the map's scenery
+  (no leaf box near) gets a note naming it. In a simulation of 30 objects 50 to 300 m from the map's own: missing
+  at some distance, Edge 9 before, 4 after (all 4 named); SuperCrossroads4 6, then 4. Reaching those needs the
+  top block's tree built again (later).
+- **No tier, no variation.** A new object copied its kind's first shipped item's tier (missing at the lowest
+  detail) and variation (turned by an angle the Studio doesn't show); it takes neither now.
+- Not changed: a block made the other way (`_add_block`) could be drawn twice in a cell that wholly holds it; no
+  shipped map uses that way (all 32 list blocks for far view), and the game's own blocks have the same layout.

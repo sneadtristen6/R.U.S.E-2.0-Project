@@ -489,6 +489,9 @@ PLACEABLE = ("building", "prop", "vegetation")  # what the Studio offers to plac
 FILLER = 0xCAFE5A1E   # every block's items start with this word, which the game never reads
 BLOCK_TAIL = bytes.fromhex("000bb00bb00bb00b")  # bytes 0x18-0x1f of a long block header, as the shipped blocks have
 ALL_TIERS = 0x1F      # a block's LOD mask: drawn close, middle and far (a superset only costs culling)
+WORD_KEEP = 0x40000000  # what a new object copies of its type's first shipped item word: bit 30, not the detail
+                        # tier (bits 26-27: a tier above 0 is missing at the lowest scenery detail) nor the variation
+                        # (bits 28-29: the game turns the object by a pseudo-random angle the Studio doesn't show)
 ROAD_TIER = 0x20      # a tree node's road mark, above the LOD mask (bit 25 of its word): the game draws Route pieces
 ROAD_BIT = ROAD_TIER << 20  # up close only through nodes that carry it (every Route piece of the shipped maps does)
 MARGIN = 5000.0       # added to a new block's box around its objects' positions (map units, times their size)
@@ -707,10 +710,11 @@ def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]
     objects are drawn wherever and from however far that block is. The new block goes right after the top block (a
     reference must point forward), so every later reference moves by its size. A map whose top block lists no block
     for far view gets the first way DomesticNukes proved in the game (_add_block: an object near them becomes the
-    reference). The grids are left alone. Types must be ones the map already uses (in its name table). `objects` may
-    hold RoadPiece too (a new road's stickers, in the map's own Route style; a map without one gets none): they go in
-    blocks of their own, each on the reference whose box in the top block's tree holds them (_road_carriers), and
-    the tree's nodes down to it get the road mark. Returns (new file, notes)."""
+    reference). Each object goes on the reference whose boxes in the top block's tree hold it (_carriers), and the
+    grids' cells under the new objects are marked as holding something (_grids_hold). Types must be ones the map
+    already uses (in its name table). `objects` may hold RoadPiece too (a new road's stickers, in the map's own Route
+    style; a map without one gets none): they go in blocks of their own, each on the reference whose box holds them,
+    and the tree's nodes down to it get the road mark. Returns (new file, notes)."""
     if not objects:
         return bytes(data), []
     notes = []
@@ -719,21 +723,32 @@ def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]
     if pieces and _road_style(Scenery(data)) is None:
         pieces = []
         notes.append("this map has no road stickers to copy: its new roads show from afar only")
-    for group in _groups(objects):
-        sc = Scenery(data)
-        far = _far_children(sc)
-        data, more = _wrap(sc, data, group, far) if far else _add_block(data, group)
-        notes += more
-    if pieces and _far_children(Scenery(data)):
-        for at, group in _road_carriers(Scenery(data), pieces):
+    outside: list = []
+    for things, roads in ((objects, False), (pieces, True)):
+        if not things:
+            continue
+        if not _far_children(Scenery(data)):  # (no shipped map: all 32 list blocks for far view)
+            for group in _groups(things):
+                data, more = _add_block(data, group)
+                notes += more
+            continue
+        groups, lost = _carriers(Scenery(data), things, roads)
+        outside += lost
+        for at, group in groups:
             sc = Scenery(data)  # the top block's items and tree stay where they are: `at` still names the carrier
-            far = _far_children(sc)
-            data, more = _wrap(sc, data, group, far, next(it for it in far if it.at == at))
+            data, more = _wrap(sc, data, group, _far_children(sc),
+                               next(it for it in sc.blocks[0].items if it.at == at))
             notes += more
-    elif pieces:
-        for group in _groups(pieces):
-            data, more = _add_block(data, group)
-            notes += more
+    if objects:
+        data, cells = _grids_hold(data, [(o.x, o.y) for o in objects])
+        if cells:
+            notes.append(f"{cells} cell(s) of the scenery's grids marked as holding something, so the game draws "
+                         f"the new objects there")
+    if outside:
+        where = ", ".join(f"({p.x:.0f}, {p.y:.0f})" for p in outside[:5]) + (", ..." if len(outside) > 5 else "")
+        notes.append(f"{len(outside)} new object(s) or road piece(s) lie in no box of the map's draw tree, too far "
+                     f"from the map's own scenery: they went with the nearest block and may not show at every "
+                     f"distance (move them nearer a village, a farm or a wood): {where}")
     return data, notes
 
 
@@ -895,40 +910,113 @@ def _mark_for_roads(sc: Scenery, blob: bytearray, bi: int, at: int) -> None:
         todo += parents.get(i, [])
 
 
-def _road_carriers(sc: Scenery, pieces: list[RoadPiece]) -> list[tuple[int, list[RoadPiece]]]:
-    """New road pieces per carrier, as (the top block's reference's `at`, its pieces): the far-listed reference
-    whose leaf box in the top block's tree holds a piece's middle (the game finds a block's items through these
-    boxes: on D-Day 416 of the 431 shipped road middles lie in their leaf's box, while one carrier for a whole road
-    left up to 1.8 km of it outside). The fewest carriers win, then one whose path already has the road mark; a
-    piece in no such box goes with the nearest carrier. The boxes are never widened: a node's bounds are shares of
-    its parent's, so widening one moves every node below it."""
+@dataclass
+class _Carrier:
+    at: int                 # the reference's offset among the top block's items
+    far: list               # its leaf boxes in the far-view list (map coordinates: the top block is placed as is)
+    full: list              # and in the list of every item
+    marked: bool = False    # its path to the full list's leaf already has the road mark
+
+
+def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tuple[int, list]], list]:
+    """New things per carrier, as [(the top block's reference's `at`, its things)], and the things in no carrier's
+    boxes. The game finds a block's items only through the leaf boxes of the top block's tree, and draws an object
+    only while it walks the cell its origin lies in, so a thing has to lie in its carrier's leaf box (on D-Day 416
+    of the 431 shipped road middles do; one carrier for a whole road left up to 1.8 km of it outside, and on Edge
+    3 in 10 new objects 300 m off a village). Road pieces (drawn up close through the full list) go on a far-listed
+    reference whose full-list box holds their middle, one whose path has the road mark first. Objects go on a
+    far-listed reference whose far and full boxes both hold them (drawn at every distance), else on any reference
+    whose full-list box does (drawn from middle distance in). The fewest carriers win; what lies in no box goes with
+    the nearest far-listed block. The boxes are never widened: a node's bounds are shares of its parent's, so
+    widening one moves every node below it."""
     top, far = sc.blocks[0], _far_children(sc)
     nodes = _tree(top)
     boxes = _leaf_boxes(top)
-    by_at = {it.at: it for it in far}
-    cands = []  # (box, at, path already marked)
-    for e in range(nodes[0][1], len(top.entries)):
-        a = top.entries[e]
-        if a in by_at and e in boxes:
-            cands.append((boxes[e], a, all(nodes[k][0] & ROAD_BIT for k in _path(nodes, e))))
+    split = nodes[0][1]
+    far_at = {it.at for it in far}
+    children = {it.at for it in top.items if it.kind == "child"}
+    cands: dict[int, _Carrier] = {}
+    for e, a in enumerate(top.entries):
+        if a not in children or e not in boxes:
+            continue
+        c = cands.setdefault(a, _Carrier(a, [], [], True))
+        if e < split:
+            c.far.append(boxes[e])
+        else:
+            c.full.append(boxes[e])
+            c.marked = c.marked and all(nodes[k][0] & ROAD_BIT for k in _path(nodes, e))
 
-    def holds(box, p):
-        return box[0] <= p.x <= box[2] and box[1] <= p.y <= box[3]
-    out: dict[int, list[RoadPiece]] = {}
-    left = list(pieces)
-    while left and cands:
-        box, a, _marked = max(cands, key=lambda c: (sum(holds(c[0], p) for p in left), c[2]))
-        got = [p for p in left if holds(box, p)]
-        if not got:
-            break
-        out.setdefault(a, []).extend(got)
-        left = [p for p in left if not holds(box, p)]
-    for p in left:  # outside every carrier's box: the nearest block, as new objects get
+    def inside(bs, p):
+        return any(b[0] <= p.x <= b[2] and b[1] <= p.y <= b[3] for b in bs)
+
+    def meets(bs, p, size):  # a box meets the grid cell (of `size`) that p lies in: the game walks that leaf there
+        x0, y0 = math.floor(p.x / size) * size, math.floor(p.y / size) * size
+        return any(b[0] <= x0 + size and x0 <= b[2] and b[1] <= y0 + size and y0 <= b[3] for b in bs)
+    close, far_cell = GRID_CELL[2], GRID_CELL[0]
+    if roads:
+        rounds = [(lambda c, p: c.at in far_at and inside(c.full, p), lambda c: c.marked)]
+    else:
+        rounds = [(lambda c, p: c.at in far_at and meets(c.full, p, close) and meets(c.far, p, far_cell),
+                   lambda c: True),
+                  (lambda c, p: meets(c.full, p, close), lambda c: c.at in far_at)]
+    out: dict[int, list] = {}
+    left = list(things)
+    for holds, better in rounds:
+        pool = [c for c in cands.values() if c.full]
+        while left and pool:
+            best = max(pool, key=lambda c: (sum(holds(c, p) for p in left), better(c)))
+            got = [p for p in left if holds(best, p)]
+            if not got:
+                break
+            out.setdefault(best.at, []).extend(got)
+            left = [p for p in left if not holds(best, p)]
+    for p in left:  # in no carrier's box: the nearest far-listed block
         def gap(it):
             x0, y0, x1, y1 = _world_box(sc, it)
             return math.hypot(max(x0 - p.x, 0.0, p.x - x1), max(y0 - p.y, 0.0, p.y - y1)), (x1 - x0) * (y1 - y0)
         out.setdefault(min(far, key=gap).at, []).append(p)
-    return list(out.items())
+    return list(out.items()), left
+
+
+# The scenery's three grids, one record per cell: the game walks a cell at a level of detail only when its record
+# says it holds something (checked on all 32 shipped maps: no placed object lies in a cell its level skips).
+GRID_CELL = (81920.0, 20480.0, 5120.0)   # far, middle, close: map units a cell is across
+GRID_RECORD = (4, 5, 3)                  # bytes a cell's record has; its third byte counts the cell's objects (/64)
+
+
+def _cell_walked(rec: bytes, level: int) -> bool:
+    if level == 2:
+        return 1 <= rec[2] <= 0xFE
+    if rec[2] == 0xFF:
+        return False
+    return any(rec[2:4]) if level == 0 else any(rec[2:5])
+
+
+def _grids_hold(data: bytes, points: list[tuple[float, float]]) -> tuple[bytes, int]:
+    """The scenery file with every cell that holds one of `points` (new objects' places) marked as holding something
+    at all three levels of detail, so the game walks it (an empty cell is skipped: a new object there would be
+    missing at that distance, as 2 of D-Day's 4 new bridges were up close). Returns (file, cells marked). Raises
+    SceneryEditError for a point outside a grid: the game never walks there."""
+    sc = Scenery(data)
+    out = bytearray(data)
+    marked = set()
+    for x, y in points:
+        for level in range(3):
+            w, h = sc.grid_dims[2 * level], sc.grid_dims[2 * level + 1]
+            cx, cy = math.floor(x / GRID_CELL[level]), math.floor(y / GRID_CELL[level])
+            if not (0 <= cx < w and 0 <= cy < h):
+                raise SceneryEditError(f"({x:.0f}, {y:.0f}) is outside the map's scenery grid ({w} x {h} cells of "
+                                       f"{GRID_CELL[level]:.0f}), where the game draws nothing")
+            at = sc.grids[level][0] + (cx * h + cy) * GRID_RECORD[level]
+            if at + GRID_RECORD[level] > sc.grids[level][0] + sc.grids[level][1]:
+                raise SceneryError("the scenery file's grid is shorter than its size says")
+            if not _cell_walked(out[at:at + GRID_RECORD[level]], level):
+                out[at + 2] = 1
+                marked.add((level, cx, cy))
+    if not marked:
+        return bytes(data), 0
+    out[:16] = hashlib.md5(bytes(out[16:])).digest()
+    return bytes(out), len(marked)
 
 
 def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
@@ -940,7 +1028,7 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
     for b in sc.blocks:
         for it in b.items:
             if it.kind == "object":
-                words.setdefault(it.symbol, it.word & 0x7C000000)
+                words.setdefault(it.symbol, it.word & WORD_KEEP)
     cx, cy = sum(o.x for o in objects) / len(objects), sum(o.y for o in objects) / len(objects)
 
     def score(it):  # how far the group's middle is from the block's box (0 inside), then the smaller box
@@ -1041,7 +1129,7 @@ def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]
     for b in sc.blocks:
         for it in b.items:
             if it.kind == "object":
-                words.setdefault(it.symbol, it.word & 0x7C000000)
+                words.setdefault(it.symbol, it.word & WORD_KEEP)
     block, carrier, frame = _carrier(sc, (sum(o.x for o in objects) / len(objects), sum(o.y for o in objects) / len(objects)))
     # the reference's own "no change" transform: exact, except a compact one (a scale of 32766.99/32767); new
     # objects are placed through it, and the carried object gets its inverse, so nothing moves
