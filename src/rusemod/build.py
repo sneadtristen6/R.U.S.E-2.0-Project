@@ -589,6 +589,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say("Nothing was written.")
             return result
         from .terrain import pack_file
+
+        def warn(message: str) -> None:
+            """A warning found while the maps are built (after the report above): kept and said at once."""
+            result.findings.append(Finding("warning", message))
+            say(f"warning: {message}")
         map_packs = []  # (path, open pack, {member: new bytes})
         for name, (strokes, ids) in terrain_edits(result.order, mods).items():
             map_path = find_pack(game, pack_file(name))
@@ -965,11 +970,12 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     def places(file, n=name):
                         raw = read_data(folder_of(n) + file)
                         try:
-                            return Scenario.read(raw).places() if raw else None
+                            return Scenario.read(raw).team_sizes() if raw else None
                         except (ScenarioError, ValueError, struct.error):
                             return None
                     try:
-                        new, notes = apply_players(read_glad, name, settings[-1], places)  # the last mod's count
+                        new, notes = apply_players(read_glad, name, settings[-1], places,  # the last mod's count
+                                                   warn=lambda msg, ids=ids: warn(f"{', '.join(ids)}: map.toml: {msg}"))
                     except (PlayersError, ValueError, KeyError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue

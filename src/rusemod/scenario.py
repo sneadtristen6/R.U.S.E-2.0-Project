@@ -257,6 +257,16 @@ class Scenario:
                 out.setdefault(it.values["AllianceNum"], set()).add(int(it.values.get("AlliancePriority") or 1))
         return out
 
+    def team_sizes(self) -> dict[int, int]:
+        """How many players each team can seat: {team (AllianceNum): its starting points}. The game seats a team's
+        players on its starting points in order of place (lowest first), whatever the places are, so a team seats
+        as many players as it has starting points (rusemod.players.seats)."""
+        out: dict[int, int] = {}
+        for it in self.items:
+            if it.kind == "StartingPoint" and isinstance(it.values.get("AllianceNum"), int):
+                out[it.values["AllianceNum"]] = out.get(it.values["AllianceNum"], 0) + 1
+        return out
+
     def add_start(self, x: float, y: float, team: int, place: int | None = None,
                   rotation: float | None = None, z: float | None = None) -> int:
         """A new starting point at x, y (and height z: the ground's, as every shipped one has it) for `team`

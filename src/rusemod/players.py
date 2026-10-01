@@ -4,13 +4,16 @@ A map played online and in BATTLES has an entry in the menus (`TMultiMapInfo` in
 globals.cpp`), tied by GUID to its `TMapLoadInfo` in the map list (`genglad\\patchable\\mapinfo.cpp`, whose `Name`
 starts with the count: "(6) Cotentin (3v3)"). The entry holds `NbPlayers`, a size group `CategoryId` (the shipped
 maps: none for 2 players, 1 for 3-4, 2 for 6, 3 for 8), the layouts it offers (`DispoMulti2Teams`, `3Teams`,
-`4Teams`, `FFA`) and, for a two-team map, `GameType` (1 for 1v1, 2 for 2v2, 3 for 3v3; 4 for 4v4 is inferred: no
-shipped map is 4v4, the 8-player ones are FFA or 2v2v2v2).
+`4Teams`, `FFA`) and, for a two-team map, `GameType` (1 for 1v1, 2 for 2v2, 3 for 3v3). No shipped map is 4v4 (the
+8-player ones are FFA or 2v2v2v2), so where the menus would list a GameType 4 is unknown: past 3 it's left as the
+map has it until that is tried in the game.
 
-Where each player starts is the scenario's: a starting point per team and place (`AllianceNum`,
-`AlliancePriority`). A two-team 8-player game needs places 1-4 in teams 1 and 2; free-for-all needs place 1 in teams
-1-8. A mod adds the missing ones in scenario.toml ([[start]], rusemod.scenario.Start). The build refuses a count the
-scenario can't seat, naming the starting points that are missing.
+Where each player starts is the scenario's: a starting point per player in his team (`AllianceNum`). The game takes
+a team's starting points in order of `AlliancePriority` (lowest first; the values themselves don't matter, and an
+absent one counts as well: '(4) Beta' has team 2 at 3 and 4), so a team of N players needs N starting points. A
+two-team 8-player game needs 4 in teams 1 and 2; free-for-all needs 1 in each of teams 1-8. A mod adds the missing
+ones in scenario.toml ([[start]], rusemod.scenario.Start). The build refuses a count the scenario can't seat, naming
+the starting points that are missing (team t, place k: the team's k-th).
 
 The owner's plan (PLAN A10, 2026-09-30): at least 8 players; past 8 is tried later (the game's own limit may be in
 the program).
@@ -126,18 +129,23 @@ def scenario_of(mapinfo: Ndf, obj: int, read_glad) -> str | None:
     return None
 
 
-def seats(counts: dict[int, set[int]], layouts: list[int], players: int) -> list[tuple[int, int]]:
-    """What's missing for `players` in each offered layout (2, 3, 4 teams; 0 = free-for-all), given the scenario's
-    starting points {team: {places}}: [(team, place), ...] in order (empty: every player has a place)."""
+def seats(counts: dict, layouts: list[int], players: int) -> list[tuple[int, int]]:
+    """What's missing for `players` in each offered layout (2, 3, 4 teams; 0 = free-for-all), given how many starting
+    points the scenario has per team ({team: count}, or {team: a collection of them}): [(team, k), ...] in order, the
+    team's k-th starting point missing (empty: every player has one). The game seats a team's players on its starting
+    points whatever their places (AlliancePriority) say, so only the count matters."""
+    def have(t):
+        v = counts.get(t, 0)
+        return int(v) if isinstance(v, int) else len(v)
     missing = set()
     for teams in layouts:
         if teams == 0:
-            need = {(t, 1) for t in range(1, players + 1)}
+            need = {t: 1 for t in range(1, players + 1)}
         elif players % teams:
-            continue  # this layout can't take this many players evenly: the game won't offer it
+            continue  # this layout can't take this many players evenly: it isn't offered (apply_players warns)
         else:
-            need = {(t, p) for t in range(1, teams + 1) for p in range(1, players // teams + 1)}
-        missing |= {(t, p) for t, p in need if p not in counts.get(t, set())}
+            need = {t: players // teams for t in range(1, teams + 1)}
+        missing |= {(t, k) for t, n in need.items() for k in range(have(t) + 1, n + 1)}
     return sorted(missing)
 
 
@@ -166,11 +174,12 @@ def renamed(name: str, players: int, two_teams: bool) -> str:
     return out
 
 
-def apply_players(read_glad, pack: str, setting: Players, starting_points) -> tuple[dict, list[str]]:
+def apply_players(read_glad, pack: str, setting: Players, starting_points, warn=None) -> tuple[dict, list[str]]:
     """({member: new bytes} for ZZ_GladPatchableWin.dat, notes): the map's entry set to `setting.count` players.
     `read_glad(member)` gives a member's bytes (as the build has it so far); `starting_points(scenario file)` gives
-    that scenario's starting points as {team: {places}} (after the mods' own starts), or None when it can't be read.
-    Raises PlayersError when the map has no online entry, or the scenario can't seat that many."""
+    how many starting points that scenario has per team, {team: count} (after the mods' own starts), or None when it
+    can't be read. `warn(message)` is told what builds but may not work as meant. Raises PlayersError when the map
+    has no online entry, or the scenario can't seat that many."""
     g_raw, m_raw = read_glad(GLOBALS), read_glad(MAPINFO)
     if g_raw is None or m_raw is None:
         raise PlayersError("the game's map list or menus aren't in ZZ_GladPatchableWin.dat")
@@ -201,11 +210,19 @@ def apply_players(read_glad, pack: str, setting: Players, starting_points) -> tu
         raise PlayersError(f"{pack}: {setting.count} players need a starting point for each; {scenario_file} has none "
                            f"for {where}. Add them (scenario.toml [[start]], or the Studio's Add starting point)")
     before = p["NbPlayers"].scalar() if "NbPlayers" in p else None
+    if 3 in layouts and setting.count % 3 and warn is not None:
+        warn(f"{pack}: {name!r} offers three teams, but {setting.count} players can't make three even teams: that "
+             f"layout may not be offered, or may give teams of different sizes (untested). Use a multiple of 3, or "
+             f"leave it if the other layouts are the ones meant")
     two_teams = layouts == [2] or (2 in layouts and 0 not in layouts and "GameType" in p)
     _set_int(g, multi, "NbPlayers", setting.count)
     _set_int(g, multi, "CategoryId", GROUP[setting.count])
+    kept = ""
     if "GameType" in p and two_teams:
-        _set_int(g, multi, "GameType", setting.count // 2)  # 4v4 = 4: inferred, see the docstring
+        if setting.count // 2 <= 3:
+            _set_int(g, multi, "GameType", setting.count // 2)
+        else:  # no shipped map is 4v4: where the menus list a GameType 4 is untested, so it stays as it was
+            kept = f"; its game type stays {p['GameType'].scalar()} (a 4v4 type is untested)"
     mp = _props(m, m.objects[mi])
     new_name = renamed(name, setting.count, two_teams)
     if new_name != name and "Name" in mp:
@@ -220,4 +237,4 @@ def apply_players(read_glad, pack: str, setting: Players, starting_points) -> tu
                     m.objects[mi].props[k] = (pi, Value(v.tc, struct.pack("<I", i)))
     out = {GLOBALS: g.to_member(compress=bool(g.flags & 0x80)), MAPINFO: m.to_member(compress=bool(m.flags & 0x80))}
     return out, [f"{name!r}: {before} -> {setting.count} players, named {new_name!r}; every player has a starting "
-                 f"point in {scenario_file}"]
+                 f"point in {scenario_file}{kept}"]

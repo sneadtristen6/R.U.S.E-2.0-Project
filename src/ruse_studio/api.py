@@ -1285,12 +1285,12 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                "missing": [], "most": pl.PLAYERS_MOST}
         target = next((e for e in found if setting and (setting.entry is None or e["name"] == setting.entry)), None)
         if setting and target and target["file"]:
-            places = {}
+            sizes: dict = {}  # starting points per team: the game seats a team on them whatever their places
             s = next((x for x in self.map_scenarios(pack)["scenarios"] if x["file"].lower() == target["file"]), None)
             for it in (s["items"] if s else []):
                 if it["kind"] == "StartingPoint" and it.get("alliance") is not None:
-                    places.setdefault(int(it["alliance"]), set()).add(int(it.get("place") or 1))
-            out["missing"] = [list(pair) for pair in pl.seats(places, target["layouts"], setting.count)]
+                    sizes[int(it["alliance"])] = sizes.get(int(it["alliance"]), 0) + 1
+            out["missing"] = [list(pair) for pair in pl.seats(sizes, target["layouts"], setting.count)]
         return out
 
     def _read_players(self, pack: str):

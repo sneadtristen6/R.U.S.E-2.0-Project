@@ -394,9 +394,10 @@ rotation = 0.5                # radians, optional
   applied first, so their item numbers stay the shipped ones.
 - Which `camp` is which player in a skirmish isn't known yet (an in-game check).
 
-A mod adds starting points, one table each: a player starts at the point of their team (the game's `AllianceNum`) and
-their place in it (`AlliancePriority`). A two-team 8-player game needs places 1-4 in teams 1 and 2; free-for-all,
-place 1 in teams 1-8 (see `map.toml` below):
+A mod adds starting points, one table each: a player starts at a point of their team (the game's `AllianceNum`); the
+game hands a team's points out in order of their place (`AlliancePriority`, lowest first), whatever the numbers are,
+so a team of N players needs N points. A two-team 8-player game needs 4 in teams 1 and 2; free-for-all, 1 in each
+of teams 1-8 (see `map.toml` below):
 
 ```toml
 [[start]]
@@ -422,10 +423,13 @@ entry = "(6) Cotentin (3v3)"  # optional: which of the map's entries, when it ha
 - A map played online and in BATTLES has an entry in the menus (`TMultiMapInfo` in `misc\globals.cpp`, tied by GUID
   to its `TMapLoadInfo` in `mapinfo.cpp`). The build sets its `NbPlayers`, its size group `CategoryId` (the shipped
   maps: none for 2 players, 1 for 3-4, 2 for 6, 3 for 8), a two-team map's `GameType` (1v1 = 1, 2v2 = 2, 3v3 = 3;
-  4v4 = 4 is inferred: no shipped map is 4v4), and the name's count ("(6) Cotentin (3v3)" becomes "(8) Cotentin
-  (4v4)"), in `ZZ_GladPatchableWin.dat`.
+  past 3v3 it stays as the map has it: no shipped map is 4v4, so where the menus would list a type 4 is untested),
+  and the name's count ("(6) Cotentin (3v3)" becomes "(8) Cotentin (4v4)"), in `ZZ_GladPatchableWin.dat`.
 - It refuses a count the entry's scenario can't seat, naming each starting point that's missing (`[[start]]` above,
-  or the Studio's Add starting point).
+  or the Studio's Add starting point). It counts a team's points, not their place numbers: every shipped entry seats
+  its own count this way.
+- A map that offers three teams with a count that isn't a multiple of 3 gets a warning: whether that layout is still
+  offered, or gives uneven teams, is untested.
 - Not tried in the game yet (`TESTS.md` T12).
 
 ### Cover and blocked ground: `maps/<map pack>/cover.toml`
