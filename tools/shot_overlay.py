@@ -140,6 +140,9 @@ def main(argv=None) -> int:
     ap.add_argument("--game", type=Path, help="the game folder (found through Steam by default)")
     ap.add_argument("--out", type=Path, default=Path.cwd() / "shot-overlays")
     ap.add_argument("--flip", action="store_true", help="mirror left and right (if the lines come out mirrored)")
+    ap.add_argument("--mark", nargs=4, action="append", metavar=("X", "Y", "RADIUS", "LABEL"),
+                    help="a test spot to point out: a red ring on the ground and a big label (repeat for more); a "
+                         "spot off the picture gets its label at the edge, toward it")
     a = ap.parse_args(argv)
 
     ini_path = a.shot.with_suffix(".ini")
@@ -214,6 +217,24 @@ def main(argv=None) -> int:
                     parts.append(f'<polyline {attrs} points="' + " ".join(f"{x:.1f},{y:.1f}" for x, y in run) + '"/>')
                     drawn += 1
                 run = []
+    for mx, my, mr, label in a.mark or []:  # the test spots, last so they sit on top
+        mx, my, mr = float(mx), float(my), float(mr)
+        ring = [cam.project(mx + mr * math.cos(t), my + mr * math.sin(t), gz(mx + mr * math.cos(t),
+                                                                              my + mr * math.sin(t)))
+                for t in [i * math.pi / 24 for i in range(49)]]
+        ring = [q for q in ring if q is not None]
+        if len(ring) > 1:
+            parts.append('<polyline stroke="red" stroke-width="5" fill="none" points="'
+                         + " ".join(f"{x:.1f},{y:.1f}" for x, y in ring) + '"/>')
+        c = cam.project(mx, my, gz(mx, my))
+        if c is None:  # behind the camera: say so at the bottom
+            c, label = (w / 2, h - 30), f"{label} (behind you)"
+        x, y = min(max(c[0], 160), w - 160), min(max(c[1], 60), h - 20)
+        if (x, y) != c:
+            label = f"{label} (that way)"
+        label = label.replace("&", "&amp;").replace("<", "&lt;")
+        parts.append(f'<text x="{x:.0f}" y="{y - 16:.0f}" font-size="38" font-family="Arial" font-weight="bold" '
+                     f'fill="yellow" stroke="black" stroke-width="2.5" text-anchor="middle">{label}</text>')
     parts.append("</svg>")
     svg = a.out / (a.shot.stem + ".svg")
     svg.write_text("\n".join(parts), encoding="utf-8")

@@ -223,6 +223,26 @@ left out (it joins no other road); plus T13's Stuka US. Start `RUSE.exe` inside 
 5. **Tell us:** did the match take noticeably longer to load than usual?
 
 Optional second game (T13 step 5): the US against Germany; the Stuka US and the German Stukas both look normal.
+**Result (owner, 2026-10-01):** the copy crashed at match start (57 Japanese units spawned, no Japanese player: their
+models never load; the build now refuses such spawns), then, rebuilt without them, when the Stuka US was built (its
+gunner's model wasn't ready: units given to another nation are refused for now). US planes flew fine. A dried stretch
+of river stopped tanks (dried beds are opened to units now).
+
+## Batch 2 for Studio 0.8.0: only what could break the game, next to the player's HQ (2026-10-01)
+
+The copy `D:\RUSE-Instances\batch2`, from `D:\ruse-test-mods\batch2` (batch 1's mod without the Stuka, plus the
+Dev Toolkit for money and the US's ground units 3 times as fast; the AI gets neither). **BATTLES > D-Day, as the US
+against one AI of another nation.** The US HQ is moved beside the river 750 m south-east of Toulaville; the camera
+opens facing west.
+1. **The dried river** (to the right of the HQ, 250 m north): send a tank and a squad across the dry bed. **Pass:** they
+   cross it.
+2. **The lone bridge** (straight ahead, 300 m west: a stone bridge with no road onto it): send a tank and a squad
+   across. **Pass:** they cross on the deck, not in the water.
+3. **The cleared wood** (ahead-right, 350 m north-west, past the dried river): a round clearing 100 m across in the
+   wood. **Pass:** no trees in it at any zoom, the wood around it unchanged.
+4. **The new roads** (ahead-left, 600 m south-west of the HQ, where two new roads meet): send a tank along one of
+   them for a kilometre. **Pass:** it drives along the road, not across the fields beside it.
+5. Money: the build menu's **Dev** tab gives +500 a click.
 
 ## T11. Launcher 0.2.9
 

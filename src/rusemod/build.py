@@ -259,6 +259,59 @@ def _block_brushes(info) -> None:
 BED_RADII = (3840.0, 2560.0, 1920.0, 1280.0)  # down to nav.MIN_RADIUS: a new movement circle fits in one of these
 
 
+GROUND_GAP = 64.0  # map units (a quarter metre): a model starting higher than this above its base point is lowered
+
+
+def grounded(objects: list, descs: dict, lowest_of) -> tuple[list, int]:
+    """(the placed objects, each standing on the ground; how many were lowered). The game puts an object's base point
+    on the ground and scales its model from there, so a model that starts above its base point floats by that much
+    times its size: an upper storey meant to sit on its ground floor (TownHouseC_Haut starts 4.7 m up) placed alone,
+    or any such piece made bigger (the owner's 10x houses floated about 47 m up, 2026-10-01). Such an object is sunk
+    (its `lift`) so its lowest point sits on the ground. `lowest_of(type)` gives the model's lowest point in map
+    units (None when unknown). Bridges keep their own sink, and road pieces aren't objects."""
+    from dataclasses import replace
+    from .scenery import NewObject
+    out, moved = [], 0
+    for o in objects:
+        d = descs.get(o.type) if isinstance(o, NewObject) else None
+        low = lowest_of(o.type) if d is not None and not d.bridge else None
+        if low is not None and low > GROUND_GAP:
+            out.append(replace(o, lift=o.lift - low * o.size))
+            moved += 1
+        else:
+            out.append(o)
+    return out, moved
+
+
+class _LowestPoints:
+    """lowest_of(type) for grounded(): the lowest point of the type's first model the game has (map units), kept per
+    type; the game's model packs are opened when first asked, and closed by close()."""
+
+    def __init__(self, game: Path, descs: dict):
+        self.game, self.descs, self.found, self.lib = Path(game), descs, {}, None
+
+    def __call__(self, type_name: str):
+        if type_name not in self.found:
+            self.found[type_name] = None
+            d = self.descs.get(type_name)
+            if d is not None:
+                if self.lib is None:
+                    from .models import Library
+                    self.lib = Library(self.game)
+                for model in (d.models or ([d.model] if d.model else [])):
+                    name = self.lib.find(model)
+                    zs = [z for part, _tex in self.lib.parts(name) for z in part.positions[2::3]] if name else []
+                    if zs:
+                        self.found[type_name] = min(zs)
+                        break
+        return self.found[type_name]
+
+    def close(self) -> None:
+        if self.lib is not None:
+            self.lib.close()
+            self.lib = None
+
+
 def _bed_circles(drained: list[tuple[float, float]], wet=None) -> list[tuple[float, float, float]]:
     """Open zones (x, y, r) over a dried bed's samples (nav.water_blocks), for Graph.open_ground, which puts each new
     circle inside one zone and none smaller than nav.MIN_RADIUS: so each zone is one of BED_RADII, centred on a sample
@@ -1086,8 +1139,17 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     kinds = {i: descs[n].group for i, n in enumerate(names) if n in descs}
                     bridges = {i for i, n in enumerate(names) if n in descs and descs[n].bridge}
                     raw, erased_notes, erased = erase_objects(raw, areas, kinds, bridges)
+                if descs is None:
+                    descs = descriptors(arc)
+                lowest = _LowestPoints(game, descs)
+                try:
+                    objects, lowered = grounded(objects, descs, lowest)
+                finally:
+                    lowest.close()
                 changed_members[member], notes = add_objects(raw, objects)
-                notes = sunk + erased_notes + notes
+                notes = sunk + erased_notes + notes + ([f"{lowered} placed object(s) lowered to stand on the ground "
+                                                        f"(their models start above their base point: an upper "
+                                                        f"storey, say)"] if lowered else [])
             except KeyError:
                 result.findings.append(Finding("error", f"{map_path.name} has no scenery file, so nothing can be "
                                                         f"placed on {name}"))
