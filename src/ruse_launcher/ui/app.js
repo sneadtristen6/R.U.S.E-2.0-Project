@@ -7,7 +7,8 @@
 const $ = (id) => document.getElementById(id);
 const state = { lang: "us", words: {}, languages: [], status: null, sets: [], library: [], active: "vanilla",
   playing: false, editing: null,   // editing: { id (null for a new set), name, mods: [entries in order] }
-  browse: null,                    // browse: the mod index on screen { mods, source, as_of, message, search, busy }
+  browse: null,                    // browse: the mod index on screen { mods, source, as_of, message, search, ticked, … }
+  welcome: null,                   // welcome: the first run's "Choose your mods", the same shape as browse
   importing: null,                 // importing: a pasted load order { text, check (what the launcher found), name }
   doctor: null };                  // doctor: the troubleshooter's dialog { busy, findings, report, note, noteKind }
 
@@ -136,7 +137,9 @@ function render() {
   renderSets();
   renderLibrary();
   $("settings-view").classList.add("hidden");
-  if (state.settings) renderSettings();
+  $("welcome-view").classList.add("hidden");
+  if (state.welcome) renderWelcome();
+  else if (state.settings) renderSettings();
   else if (state.browse) renderBrowse(); else if (state.importing) renderImport(); else if (state.editing) renderEditor();
   else renderActive();
   if (state.doctor) renderDoctor();  // its words, and its fixes on or off as Play starts and ends
@@ -730,12 +733,19 @@ function renderEditor() {
   if (!ed.id && !ed.name) name.focus();
 }
 
-// --- Browse mods: the mod index (MOD_FORMAT §15), installs checked against it ---
+// --- Supported mods: the mod index (MOD_FORMAT §15). Tick the mods, then one Install downloads them one after
+// another, each checked against the list. A mod tagged "cheat" is in its own group, "Cheats and test tools
+// (optional)", never ticked for the player: only ticked mods are downloaded. ---
+function emptyList() {
+  return { mods: [], source: "", as_of: "", message: "", search: "", page: "", ticked: new Set(), installing: false,
+    note: "", noteKind: "" };
+}
+
 async function openBrowse(fresh) {
   state.settings = false;
   state.editing = null;
   state.importing = null;
-  state.browse = state.browse || { mods: [], source: "", as_of: "", message: "", search: "", busy: {} };
+  state.browse = state.browse || emptyList();
   state.browse.loading = true;
   render();
   try {
@@ -745,10 +755,69 @@ async function openBrowse(fresh) {
   render();
 }
 
-function browseMessage(message, kind) {
-  const node = $("browse-message");
-  text(node, message);
-  node.className = "message" + (kind ? " " + kind : "");
+// what the list says about itself: the copy from before (offline), no list at all, or nothing matching
+function listNote(node, view, offlineExtra) {
+  const w = state.words;
+  if (view.loading && !view.mods.length) text(node, w.loading_list);
+  else if (view.source === "cache") text(node, fill(w.offline_note, { date: view.as_of }));
+  else if (view.source === "none") {  // the launcher's message is a whole sentence already ("The mod list couldn't…")
+    text(node, (/^(The|No) /.test(view.message || "") ? view.message : fill(w.list_failed, { why: view.message }))
+      + (offlineExtra ? " " + offlineExtra : ""));
+  }
+  else if (!view.loading && !view.mods.length) text(node, w.list_empty);
+  else text(node, "");
+  node.classList.toggle("hidden", !node.textContent);
+}
+
+// the mods with their tick boxes: the supported ones, then the cheats and test tools under their own heading
+function renderPickList(holder, view) {
+  const w = state.words;
+  const card = (mod) => {
+    const meta = [mod.version ? fill(w.version_v, { v: mod.version }) : "", mod.author ? fill(w.by, { authors: mod.author }) : "",
+      mod.size_text, mod.game_build ? fill(w.for_build, { build: mod.game_build }) : ""].filter(Boolean).join(" · ");
+    const have = mod.state === "installed";
+    const ticked = !have && view.ticked.has(mod.id);
+    const box = el("input", { type: "checkbox", checked: have || ticked,  // one in the library: ticked, greyed out
+      disabled: have || view.installing || state.playing });
+    box.setAttribute("aria-label", mod.name);
+    const li = el("li", { className: "mod-card browse-card tickable" + (ticked ? " ticked" : "") }, box,
+      el("span", { className: "name", textContent: mod.name }),
+      el("span", { className: "state", textContent: have ? w.installed
+        : mod.state === "update" ? fill(w.update_to, { v: mod.version }) : "" }),
+      el("span", { className: "meta", textContent: meta }));
+    if (mod.description) li.append(el("span", { className: "desc", textContent: mod.description }));
+    if (mod.tags && mod.tags.length) li.append(el("span", { className: "tags", textContent: mod.tags.join(" · ") }));
+    if (mod.homepage) {
+      const link = el("button", { type: "button", className: "link", textContent: w.more_info });
+      link.addEventListener("click", (e) => { e.stopPropagation(); api().open_link(mod.homepage).catch(problem); });
+      li.append(link);
+    }
+    const toggle = (on) => {
+      if (on) view.ticked.add(mod.id); else view.ticked.delete(mod.id);
+      render();
+    };
+    box.addEventListener("change", () => toggle(box.checked));
+    li.addEventListener("click", (e) => { if (e.target === li || (e.target.tagName === "SPAN")) { if (!box.disabled) toggle(!box.checked); } });
+    return li;
+  };
+  const main = view.mods.filter((m) => !m.cheat), cheats = view.mods.filter((m) => m.cheat);
+  const parts = [el("ul", { className: "browse-list" }, ...main.map(card))];
+  if (cheats.length) {
+    parts.push(el("h2", { className: "browse-group", textContent: w.cheats_group }),
+      el("p", { className: "muted", textContent: w.cheats_help }),
+      el("ul", { className: "browse-list" }, ...cheats.map(card)));
+  }
+  holder.replaceChildren(...parts);
+}
+
+// the ticked mods that are still to install (one installed meanwhile is left out)
+function toInstall(view) {
+  return view.mods.filter((m) => view.ticked.has(m.id) && m.state !== "installed").map((m) => m.id);
+}
+
+function listMessage(node, view) {
+  text(node, view.note);
+  node.className = "message" + (view.noteKind ? " " + view.noteKind : "");
 }
 
 function renderBrowse() {
@@ -759,34 +828,13 @@ function renderBrowse() {
   $("import-view").classList.add("hidden");
   $("browse-view").classList.remove("hidden");
   if ($("browse-search").value !== b.search) $("browse-search").value = b.search;
-  const note = $("browse-note");
-  if (b.source === "cache") text(note, fill(w.offline_note, { date: b.as_of }));
-  else if (b.source === "none") text(note, fill(w.list_failed, { why: b.message }));
-  else if (!b.loading && !b.mods.length) text(note, w.list_empty);
-  else text(note, "");
-  note.classList.toggle("hidden", !note.textContent);
-  $("browse-list").replaceChildren(...b.mods.map((mod) => {
-    const meta = [mod.version ? fill(w.version_v, { v: mod.version }) : "", mod.author ? fill(w.by, { authors: mod.author }) : "",
-      mod.size_text, mod.game_build ? fill(w.for_build, { build: mod.game_build }) : ""].filter(Boolean).join(" · ");
-    const li = el("li", { className: "mod-card browse-card" },
-      el("span", { className: "name", textContent: mod.name }),
-      el("span", { className: "meta", textContent: meta }));
-    if (mod.description) li.append(el("span", { className: "desc", textContent: mod.description }));
-    if (mod.tags && mod.tags.length) li.append(el("span", { className: "tags", textContent: mod.tags.join(" · ") }));
-    if (mod.homepage) {
-      const link = el("button", { type: "button", className: "link", textContent: w.more_info });
-      link.addEventListener("click", () => api().open_link(mod.homepage).catch(problem));
-      li.append(link);
-    }
-    const busy = Boolean(b.busy[mod.id]);
-    const label = busy ? w.installing : mod.state === "installed" ? w.installed
-      : mod.state === "update" ? fill(w.update_to, { v: mod.version }) : w.install;
-    const button = el("button", { type: "button", className: "small", textContent: label,
-      disabled: busy || mod.state === "installed" || state.playing });
-    button.addEventListener("click", () => installFromIndex(mod));
-    li.append(button);
-    return li;
-  }));
+  text($("browse-page"), w.see_list);
+  listNote($("browse-note"), b);
+  renderPickList($("browse-list"), b);
+  const n = toInstall(b).length;
+  text($("browse-install"), b.installing ? w.installing : fill(w.install_ticked, { n }));
+  $("browse-install").disabled = !n || b.installing || state.playing;
+  listMessage($("browse-message"), b);
 }
 
 function followJob(job, onEnd) {
@@ -801,25 +849,64 @@ function followJob(job, onEnd) {
   tick();
 }
 
-async function installFromIndex(mod) {
-  const b = state.browse;
-  b.busy[mod.id] = true;
-  browseMessage(fill(state.words.installing, {}), "");
-  renderBrowse();
+// Install the ticked mods of a list (the Supported mods tab's, or the first run's): one job, each mod checked
+async function installTicked(view, onEnd) {
+  const ids = toInstall(view);
+  if (!ids.length) return;
+  Object.assign(view, { installing: true, note: state.words.installing, noteKind: "" });
+  render();
   let job;
-  try { ({ job } = await api().install_from_index(mod.id)); }
-  catch (err) { delete b.busy[mod.id]; browseMessage(err.message, "bad"); renderBrowse(); return; }
+  try { ({ job } = await api().install_mods(ids)); }
+  catch (err) { Object.assign(view, { installing: false, note: err.message, noteKind: "bad" }); render(); return; }
   followJob(job, async (j) => {
-    if (j.state === "done") {
-      try {
-        useLists({ sets: await api().mod_sets(), library: await api().library() });
-        if (state.browse) Object.assign(state.browse, await api().browse(b.search, false));
-      } catch (err) { problem(err); }
-    }
-    delete b.busy[mod.id];
-    browseMessage(j.message, j.state === "done" ? "good" : "bad");
-    render();
+    try {
+      useLists({ sets: await api().mod_sets(), library: await api().library() });  // some may be in even if one failed
+      Object.assign(view, await api().browse(view.search || "", false));
+    } catch (err) { problem(err); }
+    for (const m of view.mods) if (m.state === "installed") view.ticked.delete(m.id);
+    Object.assign(view, { installing: false, note: j.message, noteKind: j.state === "done" ? "good" : "bad" });
+    if (onEnd) onEnd(j); else render();
   });
+}
+
+// --- the first run: "Choose your mods" while the library is empty and the player hasn't chosen yet. Everything in
+// the list is ticked except the cheats and test tools; offline it's the copy from before, or only Skip ---
+async function openWelcome() {
+  let show = false;
+  try { show = (await api().first_run()).show; } catch { return; }  // an older launcher: no first run
+  if (!show) return;
+  state.welcome = Object.assign(emptyList(), { loading: true });
+  render();
+  try {
+    Object.assign(state.welcome, await api().browse("", false), { loading: false });
+  } catch (err) { Object.assign(state.welcome, { loading: false, source: "none", message: (err && err.message) || String(err) }); }
+  state.welcome.ticked = new Set(state.welcome.mods.filter((m) => !m.cheat && m.state !== "installed").map((m) => m.id));
+  render();
+}
+
+async function closeWelcome(message, kind) {
+  try { await api().first_run_done(); } catch { /* shown again next time: harmless */ }
+  state.welcome = null;
+  render();
+  if (message) setMessage(message, kind);
+}
+
+function renderWelcome() {
+  const w = state.words, v = state.welcome;
+  for (const id of ["set-view", "editor", "import-view", "browse-view", "settings-view"]) $(id).classList.add("hidden");
+  $("welcome-view").classList.remove("hidden");
+  text($("welcome-title"), w.welcome_title);
+  text($("welcome-help"), v.source === "none" ? "" : w.welcome_help);  // no list: only why, and Skip
+  text($("welcome-page"), w.see_list);
+  listNote($("welcome-note"), v, w.welcome_offline);
+  renderPickList($("welcome-list"), v);
+  const n = toInstall(v).length;
+  text($("welcome-install"), v.installing ? w.installing : fill(w.install_ticked, { n }));
+  $("welcome-install").disabled = !n || v.installing || v.loading;
+  $("welcome-install").classList.toggle("hidden", v.source === "none");
+  text($("welcome-skip"), w.welcome_skip);
+  $("welcome-skip").disabled = Boolean(v.installing);
+  listMessage($("welcome-message"), v);
 }
 
 // --- the mod library ---
@@ -1045,7 +1132,12 @@ async function start() {
   $("share-copy").addEventListener("click", copyShared);
   $("share-close").addEventListener("click", () => $("share-box").classList.add("hidden"));
   $("add-mod").addEventListener("click", addModFile);
-  $("browse").addEventListener("click", () => openBrowse(true));
+  $("browse").addEventListener("click", () => { state.welcome = null; openBrowse(true); });
+  $("browse-install").addEventListener("click", () => state.browse && installTicked(state.browse));
+  for (const id of ["browse-page", "welcome-page"]) $(id).addEventListener("click", () => api().open_help("mods").catch(problem));
+  $("welcome-install").addEventListener("click", () => state.welcome && installTicked(state.welcome,
+    (j) => closeWelcome(j.message, j.state === "done" ? "good" : "bad")));
+  $("welcome-skip").addEventListener("click", () => closeWelcome());
   $("doc-open").addEventListener("click", openDoctor);
   $("doc-again").addEventListener("click", () => checkDoctor());
   $("doc-copy").addEventListener("click", copyDoctorReport);
@@ -1065,7 +1157,7 @@ async function start() {
     try { renderStatus(await api().choose_game_folder()); await refresh(); } catch (err) { problem(err); }
   });
   window.addEventListener("focus", () => {
-    if (!state.playing && !state.editing && !state.browse && !state.importing) refresh();  // changed while away
+    if (!state.playing && !state.editing && !state.browse && !state.importing && !state.welcome) refresh();  // changed while away
     if (state.settings && !backupState().busy) loadBackup();  // a backup made or removed in the other app
   });
   watchDrops();
@@ -1074,6 +1166,7 @@ async function start() {
   await setLanguage(state.lang);
   await refresh();
   checkUpdate();
+  openWelcome();  // the first run: "Choose your mods"
 }
 
 // --- a newer release (rusemod/update.py): offered in the header; Update downloads it, checks it and installs it,

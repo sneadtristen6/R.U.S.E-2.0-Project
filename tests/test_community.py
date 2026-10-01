@@ -66,6 +66,11 @@ class Calls(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no help page called 'nope'"):
             app.open_help("nope")
 
+    def test_the_supported_mods_list_page(self):  # "See the list on GitHub" and the Studio's "Share your mod"
+        app = self.App()
+        self.assertEqual(app.open_help("mods"), {"opened": "https://github.com/sneadtristen6/Ruse-Mods"})
+        app._update_open_url.assert_called_once_with("https://github.com/sneadtristen6/Ruse-Mods")
+
 
 if __name__ == "__main__":
     unittest.main()

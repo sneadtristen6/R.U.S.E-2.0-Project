@@ -12,7 +12,7 @@ const state = { lang: "base", kind: "all", nation: -1, search: "", group: "all",
   lastEdit: null };  // the last value changed this session, for Ctrl+Z: { address, prop, mode, via, label }
 const KINDS = ["all", "ground", "infantry", "air", "buildings", "ammo"];  // ammo: what weapons fire (its own list)
 const WHOLE = new Set(["int8", "int16", "uint16", "int32", "uint32", "int64"]);
-const NEW = "\u0001new", OPEN = "\u0001open", EXPORT = "\u0001export";  // the mod menu's actions (never a folder path)
+const NEW = "\u0001new", OPEN = "\u0001open", EXPORT = "\u0001export", SHARE = "\u0001share";  // the mod menu's actions (never a folder path)
 
 function api() { return window.pywebview.api; }
 
@@ -116,12 +116,14 @@ function renderMods() {
   for (const m of state.mods) options.push(el("option", { value: m.path, textContent: m.name, title: m.path,
     selected: m.path === state.mod }));
   options.push(el("option", { value: NEW, textContent: w.new_mod }), el("option", { value: OPEN, textContent: w.open_folder }),
-    el("option", { value: EXPORT, textContent: w.export_mod, disabled: !state.mod }));
+    el("option", { value: EXPORT, textContent: w.export_mod, disabled: !state.mod }),
+    el("option", { value: SHARE, textContent: w.share_mod }));
   $("mod").replaceChildren(...options);
   $("test").disabled = !state.mod || $("test").dataset.running === "1";
 }
 
 function useMods(res) {
+  if (res.current !== state.mod) state.exported = null;  // "Share your mod" shows the file of the mod being edited
   state.mods = res.mods;
   state.mod = res.current;
   renderMods();
@@ -197,6 +199,7 @@ async function pickMod(e) {
       return;
     }
     if (value === EXPORT) { await openExport(); return; }
+    if (value === SHARE) { await openShare(state.exported); return; }
     useMods(value === OPEN ? await api().open_mod_folder() : await api().choose_mod(value));
     await modChanged();
   } catch (err) { problem(err); }
@@ -236,8 +239,43 @@ async function exportMod(e) {
     const log = $("test-log");
     log.textContent = "";
     $("test-panel").classList.remove("hidden");
-    follow(job, log, (ok, message) => { if (message) say(message, ok ? "ok" : "error"); });
+    follow(job, log, (ok, message, j) => {
+      if (message) say(message, ok ? "ok" : "error");
+      if (ok && j && j.result) { state.exported = j.result; openShare(j.result); }  // its size and SHA-256 for the list
+    });
   } catch (err) { problem(err); }
+}
+
+// --- Share your mod: how an exported mod gets onto the supported-mods list (MOD_FORMAT §15). After an export it shows
+// the file's size, SHA-256 and its index.toml entry; the buttons open the list's page and the Discussions ---
+async function openShare(file) {
+  const w = state.words;
+  let info = { repo: "sneadtristen6/Ruse-Mods" };
+  try { info = await api().share_info(); } catch { /* an older Studio: the list's usual name */ }
+  $("share-title").textContent = w.share_title;
+  $("share-lead").textContent = w.share_lead;
+  $("share-step-export").textContent = w.share_step_export;
+  $("share-step-pr").textContent = fillText(w.share_step_pr, { repo: info.repo });
+  $("share-step-post").textContent = w.share_step_post;
+  $("share-file").classList.toggle("hidden", !file);
+  if (file) {
+    $("share-file-name").textContent = fillText(w.share_file, { file: file.file, size: file.size });
+    $("share-sha").textContent = fillText(w.share_sha, { sha: file.sha256 });
+    $("share-entry-label").textContent = w.share_entry;
+    $("share-entry").value = file.entry;
+  }
+  $("share-copy").textContent = w.share_copy;
+  $("share-note").textContent = "";
+  $("share-open").textContent = w.share_open;
+  $("share-discussions").textContent = w.share_discussions;
+  $("share-close").textContent = w.close;
+  if (!$("share").open) $("share").showModal();
+}
+
+async function copyShareEntry() {
+  const area = $("share-entry");
+  try { await navigator.clipboard.writeText(area.value); } catch { area.focus(); area.select(); return; }  // selected: Ctrl+C
+  $("share-note").textContent = state.words.share_copied;
 }
 
 async function refreshMarks() {
@@ -795,7 +833,7 @@ async function follow(jobId, log, done) {
     if (j.state === "running") { setTimeout(tick, 500); return; }
     log.textContent += j.message + "\n";
     log.scrollTop = log.scrollHeight;
-    done(j.state === "done", j.message);
+    done(j.state === "done", j.message, j);
   };
   tick();
 }
@@ -1322,6 +1360,10 @@ async function start() {
   $("new-mod-cancel").addEventListener("click", () => $("new-mod").classList.add("hidden"));
   $("export-mod").addEventListener("submit", exportMod);
   $("export-cancel").addEventListener("click", () => $("export-mod").classList.add("hidden"));
+  $("share-open").addEventListener("click", () => api().open_help("mods").catch(problem));
+  $("share-discussions").addEventListener("click", () => api().open_help("discussions").catch(problem));
+  $("share-copy").addEventListener("click", copyShareEntry);
+  $("share-close").addEventListener("click", () => $("share").close());
   $("test").addEventListener("click", testInGame);
   $("test-log-close").addEventListener("click", () => $("test-panel").classList.add("hidden"));
   let timer = null;

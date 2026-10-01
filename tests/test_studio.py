@@ -1,4 +1,5 @@
 """The Studio app's back end (ruse_studio.api) and the display names (rusemod.schema), on a made-up game."""
+import hashlib
 import os
 import re
 import struct
@@ -17,7 +18,7 @@ from rusemod.brush import parse_strokes
 from rusemod.build import build_pack, load_mod
 from rusemod.dic import name_to_key
 from rusemod.index import build_index
-from rusemod import package
+from rusemod import mod_index, package
 from rusemod.community import private_paths_out
 from rusemod.play import Starter
 from ruse_studio import __version__
@@ -436,6 +437,19 @@ class Editing(WithMod):
                          ("tank-test", "1.2.0", ["Tristen"], "Tanks are tougher.", ["24687178"], "190852"))
         self.assertRegex(info["fingerprint"], r"^[0-9A-Z]{4}-[0-9A-Z]{4}$")
         self.assertIn("src/studio.rndf", info["files"])
+        # "Share your mod": the file's size and SHA-256 for the supported-mods list, and its index.toml entry
+        data = (dest / "tank-test-1.2.0.rusemod").read_bytes()
+        shared = j["result"]
+        self.assertEqual((shared["file"], shared["size"], shared["sha256"]),
+                         ("tank-test-1.2.0.rusemod", len(data), hashlib.sha256(data).hexdigest()))
+        self.assertIn(f"Size: {len(data)} bytes", j["lines"])
+        self.assertIn(f"SHA-256: {shared['sha256']}", j["lines"])
+        listed, problems = mod_index.parse("format = 1\n" + shared["entry"].replace('download = ""', 'download = "https://x/t"'))
+        self.assertEqual(problems, [])
+        self.assertEqual((listed[0]["id"], listed[0]["version"], listed[0]["size"], listed[0]["sha256"], listed[0]["author"],
+                          listed[0]["game_build"], listed[0]["fingerprint"]),
+                         ("tank-test", "1.2.0", len(data), shared["sha256"], "Tristen", "24687178", info["fingerprint"]))
+        self.assertEqual(api.share_info(), {"repo": "sneadtristen6/Ruse-Mods", "page": "https://github.com/sneadtristen6/Ruse-Mods"})
         again = api.mod_info()  # the folder's manifest keeps them for next time
         self.assertEqual((again["version"], again["author"], again["fingerprint"]), ("1.2.0", "Tristen", info["fingerprint"]))
         j = export("1.2.1")  # blank author and description: the old ones stay

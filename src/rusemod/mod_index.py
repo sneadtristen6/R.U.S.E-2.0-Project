@@ -17,11 +17,14 @@ from pathlib import Path
 
 from .resolve import parse_version
 
-DEFAULT_URL = "https://raw.githubusercontent.com/sneadtristen6/Ruse-Mods/main/index.toml"
+REPO = "sneadtristen6/Ruse-Mods"
+PAGE = f"https://github.com/{REPO}"  # the list's page: "See the list on GitHub", and where a modder adds a mod
+DEFAULT_URL = f"https://raw.githubusercontent.com/{REPO}/main/index.toml"
 TIMEOUT = 10          # seconds for the index and for a download to start answering
 FORMAT = 1
 INDEX_LIMIT = 5_000_000  # bytes: an index is a few KB per mod
 FIELDS = ("id", "version", "download", "size", "sha256")  # an entry needs these; name and the rest are optional
+CHEAT_TAG = "cheat"   # a mod tagged so is a cheat or a test tool: shown in its own group, never ticked by default
 _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 _HEADERS = {"User-Agent": "RUSE-Mod-Platform"}
@@ -81,15 +84,55 @@ def _check(e, seen: set) -> str | None:
         return "the size isn't a number of bytes"
     if not _SHA.match(str(e["sha256"]).lower()):
         return "the sha256 isn't 64 hex characters"
+    tags = e.get("tags", [])
+    if not isinstance(tags, str) and not (isinstance(tags, list) and all(isinstance(t, str) for t in tags)):
+        return 'the tags aren\'t a list of words, like ["cheat"]'
     return None
 
 
+def _tags(e: dict) -> list[str]:
+    tags = e.get("tags", [])
+    return [tags.strip()] if isinstance(tags, str) else [t.strip() for t in tags]  # tags = "cheat" is one tag
+
+
+def is_cheat(tags) -> bool:
+    """Whether a mod with these tags is a cheat or a test tool (the tag "cheat", in any case)."""
+    return any(str(t).strip().lower() == CHEAT_TAG for t in tags or [])
+
+
 def _entry(e: dict) -> dict:
+    tags = _tags(e)
     return {"id": str(e["id"]), "name": str(e.get("name") or e["id"]), "version": str(e["version"]),
             "author": str(e.get("author", "")), "description": str(e.get("description", "")),
             "homepage": str(e.get("homepage", "")), "download": str(e["download"]), "size": int(e["size"]),
             "sha256": str(e["sha256"]).lower(), "game_build": str(e.get("game_build", "")),
-            "fingerprint": str(e.get("fingerprint", "")), "tags": [str(t) for t in e.get("tags", [])]}
+            "fingerprint": str(e.get("fingerprint", "")), "tags": tags, "cheat": is_cheat(tags)}
+
+
+def entry_text(info: dict, size: int, sha256: str, download: str = "") -> str:
+    """The `[[mod]]` entry for a package, ready to paste into the list's index.toml: `info` is the package's
+    manifest (rusemod.package.check), `size` and `sha256` the file's. Without a `download` link (the file isn't
+    uploaded yet) the line is left empty with a note, so an entry nobody finished is skipped by the launcher
+    instead of pointing at nothing."""
+    def s(value) -> str:
+        return json.dumps(str(value), ensure_ascii=False)
+    authors = info.get("authors") or ([info["author"]] if info.get("author") else [])
+    builds = info.get("builds") or []
+    lines = ["[[mod]]", f"id = {s(info['id'])}", f"name = {s(info.get('name') or info['id'])}",
+             f"version = {s(info['version'])}"]
+    if authors:
+        lines.append(f"author = {s(', '.join(authors))}")
+    if info.get("description"):
+        lines.append(f"description = {s(info['description'])}")
+    lines.append(f"download = {s(download)}" if download
+                 else 'download = ""  # the https:// link to the .rusemod once it is uploaded (a GitHub Release)')
+    lines += [f"size = {int(size)}", f"sha256 = {s(sha256.lower())}"]
+    if builds:
+        lines.append(f"game_build = {s(builds[-1])}")
+    if info.get("fingerprint"):
+        lines.append(f"fingerprint = {s(info['fingerprint'])}")
+    lines.append("tags = []  # e.g. [\"gameplay\"]; a cheat or a test tool: [\"cheat\"]")
+    return "\n".join(lines) + "\n"
 
 
 # --- getting it, and keeping a copy ---
@@ -169,6 +212,8 @@ def download(entry: dict, into, timeout: float = TIMEOUT) -> Path:
                 f.write(chunk)
     except (OSError, ValueError) as exc:
         part.unlink(missing_ok=True)
+        if isinstance(exc, urllib.error.HTTPError):
+            exc.close()  # the server's answer, read: nothing left open
         raise ModIndexError(f"{entry['name']} couldn't be downloaded ({plain(exc, timeout)}).") from None
     if got != entry["size"] or digest.hexdigest() != entry["sha256"]:
         part.unlink(missing_ok=True)

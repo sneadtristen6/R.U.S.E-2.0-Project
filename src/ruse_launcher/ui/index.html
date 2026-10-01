@@ -120,10 +120,24 @@
             <button id="browse-back" class="small ghost" type="button"></button>
           </div>
         </div>
-        <p id="browse-help" class="muted"></p>
+        <p class="muted"><span id="browse-help"></span> <button id="browse-page" class="link" type="button"></button></p>
         <p id="browse-note" class="muted note hidden"></p>
-        <ul id="browse-list" class="browse-list"></ul>
+        <!-- the supported mods with tick boxes, then the cheats and test tools (tag "cheat") in their own group -->
+        <div id="browse-list"></div>
+        <div class="actions"><button id="browse-install" class="small" type="button" disabled></button></div>
         <p id="browse-message" class="message"></p>
+      </div>
+      <!-- the first run (no library yet): "Choose your mods", everything ticked but the cheats; Install or Skip -->
+      <div id="welcome-view" class="browse hidden">
+        <h1 id="welcome-title"></h1>
+        <p class="muted"><span id="welcome-help"></span> <button id="welcome-page" class="link" type="button"></button></p>
+        <p id="welcome-note" class="muted note hidden"></p>
+        <div id="welcome-list"></div>
+        <div class="actions">
+          <button id="welcome-install" class="small" type="button" disabled></button>
+          <button id="welcome-skip" class="small ghost" type="button"></button>
+        </div>
+        <p id="welcome-message" class="message"></p>
       </div>
     </section>
   </main>

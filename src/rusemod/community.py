@@ -12,9 +12,12 @@ import re
 from pathlib import Path
 from urllib.parse import urlencode
 
+from .mod_index import PAGE as MOD_LIST_PAGE
+
 REPO_URL = "https://github.com/sneadtristen6/R.U.S.E-2.0-Project"
 LINKS = {"wiki": f"{REPO_URL}/wiki", "discussions": f"{REPO_URL}/discussions",
-         "help": f"{REPO_URL}/discussions/categories/help"}
+         "help": f"{REPO_URL}/discussions/categories/help",
+         "mods": MOD_LIST_PAGE}  # the supported-mods list (MOD_FORMAT §15): see it, or add a mod to it
 BUG_CATEGORY = "bug-reports"      # the category's slug: .github/DISCUSSION_TEMPLATE/bug-reports.yml is its form
 APP_NAMES = {"studio": "RUSE Studio", "launcher": "RUSE Launcher"}  # as the form's "Which app?" lists them
 MESSAGE_MOST = 1500               # characters of a message that go into the link (a long URL gets refused)
@@ -55,7 +58,8 @@ class CommunityCalls:
         return dict(LINKS)
 
     def open_help(self, what: str) -> dict:
-        """Open the wiki ("wiki"), Discussions ("discussions") or its Help category ("help") in the browser."""
+        """Open the wiki ("wiki"), Discussions ("discussions"), its Help category ("help") or the supported-mods
+        list's page ("mods") in the browser."""
         if what not in LINKS:
             raise ValueError(f"There's no help page called {what!r}")
         return self._community_open(LINKS[what])

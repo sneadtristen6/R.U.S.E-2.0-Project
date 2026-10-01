@@ -444,8 +444,8 @@ class Clashing(Base):
         self.assertEqual(chosen["mods"], ["navy", "static"])
         self.assertIsNone(api.set_check("ships")["best"])  # already the best order: no button
 
-class Browse(Base):
-    """Browse mods: the mod index on a local web server, installs checked against it, the copy kept for offline."""
+class ListServer(Base):
+    """The mod index on a local web server, listing one mod (econ-half)."""
 
     def setUp(self):
         super().setUp()
@@ -472,6 +472,10 @@ class Browse(Base):
 
     def browser(self, **kw):
         return self.api(index_url=f"{self.base}/index.toml", **kw)
+
+
+class Browse(ListServer):
+    """Supported mods: the mod index on a local web server, installs checked against it, the copy kept for offline."""
 
     def test_the_list_its_states_and_search(self):
         api = self.browser()
@@ -533,6 +537,103 @@ class Browse(Base):
         res = self.browser(home=Path(self.tmp.name, "other-home")).browse()
         self.assertEqual((res["source"], res["mods"]), ("none", []))
         self.assertIn("couldn't be loaded", res["message"])
+
+
+class SupportedMods(ListServer):
+    """The Supported mods tab and the first run's "Choose your mods": several mods ticked and installed in one go,
+    the cheats and test tools (tag "cheat") in their own group and downloaded only when ticked."""
+
+    def setUp(self):
+        super().setUp()
+        self.files = {"econ-half": self.file}
+        for mod_id, name in (("cheap-units", "Cheap units"), ("big-airfields", "Big airfields")):
+            folder = write_mod(Path(self.tmp.name, "src"), mod_id, HALF, extra=f'name = "{name}"\n')
+            self.files[mod_id] = package.pack(folder, self.www)
+        self.write_list()
+
+    def entry(self, mod_id, name, tags, sha=None):
+        data = self.files[mod_id].read_bytes()
+        return ('\n[[mod]]\nid = "%s"\nname = "%s"\nversion = "1.0.0"\ndownload = "%s/%s"\nsize = %d\nsha256 = "%s"\n'
+                'tags = %s\n' % (mod_id, name, self.base, self.files[mod_id].name, len(data),
+                                 sha or hashlib.sha256(data).hexdigest(), json.dumps(tags)))
+
+    def write_list(self, broken=""):
+        """econ-half (from Browse), then a cheat listed before an ordinary mod: the list puts the cheat last."""
+        self.write_index("1.0.0", extra=self.entry("cheap-units", "Cheap units", ["Cheat", "testing"], sha=broken or None)
+                         + self.entry("big-airfields", "Big airfields", ["air"]))
+
+    def downloaded(self):
+        """The packages the launcher fetched from the server so far."""
+        return [line for line in self.server.log if line.endswith(".rusemod")]
+
+    def serve_logged(self):
+        log = []
+        handler = self.server.RequestHandlerClass.func  # this server's own handler class (webui.serve)
+        handler.log_request = lambda this, code="-", size="-": log.append(this.path)  # every file asked for
+        self.server.log = log
+
+    def test_the_list_says_which_are_cheats_and_where_it_lives(self):
+        res = self.browser().browse()
+        self.assertEqual([(m["id"], m["cheat"]) for m in res["mods"]],
+                         [("econ-half", False), ("big-airfields", False), ("cheap-units", True)])
+        self.assertEqual(res["page"], "https://github.com/sneadtristen6/Ruse-Mods")
+
+    def test_several_ticked_mods_install_in_one_go_and_a_cheat_only_when_ticked(self):
+        self.serve_logged()
+        api = self.browser()
+        j = wait_for(api, api.install_mods(["econ-half", "big-airfields"])["job"])
+        self.assertEqual((j["state"], j["message"]), ("done", "The 2 mods are in the library."), j)
+        self.assertIn("(2/2) Big airfields", j["lines"])
+        self.assertEqual(sorted(m["id"] for m in api.library()), ["big-airfields", "econ-half"])
+        self.assertEqual(self.downloaded(), ["/" + self.files["econ-half"].name, "/" + self.files["big-airfields"].name])
+        states = {m["id"]: m["state"] for m in api.browse()["mods"]}
+        self.assertEqual(states, {"econ-half": "installed", "big-airfields": "installed", "cheap-units": "new"})
+        j = wait_for(api, api.install_mods(["cheap-units"])["job"])  # ticked: now it comes
+        self.assertEqual((j["state"], j["message"]), ("done", "Cheap units is in the library."), j)
+        self.assertIn("/" + self.files["cheap-units"].name, self.downloaded())
+        with self.assertRaisesRegex(LauncherError, "no mod called 'nope'"):
+            api.install_mods(["econ-half", "nope"])
+        for nothing in ([], "econ-half", [3]):
+            with self.assertRaisesRegex(LauncherError, "Tick the mods to install"):
+                api.install_mods(nothing)
+
+    def test_one_that_fails_doesnt_stop_the_others(self):
+        self.write_list(broken="0" * 64)  # the cheat's file no longer matches the list
+        api = self.browser()
+        j = wait_for(api, api.install_mods(["cheap-units", "big-airfields"])["job"])
+        self.assertEqual(j["state"], "failed", j)
+        self.assertTrue(j["message"].startswith("1 of 2 mods were installed. Not installed: Cheap units (The file for "
+                                                "Cheap units isn't the one the mod list promises"), j["message"])
+        self.assertEqual([m["id"] for m in api.library()], ["big-airfields"])
+
+    def test_one_install_at_a_time(self):
+        api = self.browser()
+        api.browse()
+        with mock.patch.object(api, "_install_one", side_effect=lambda entry, say: time.sleep(0.5)):
+            first = api.install_mods(["econ-half"])["job"]
+            with self.assertRaisesRegex(LauncherError, "Mods are being installed"):
+                api.install_from_index("big-airfields")
+            self.assertEqual(wait_for(api, first)["state"], "done")
+        self.assertEqual(wait_for(api, api.install_from_index("big-airfields")["job"])["state"], "done")
+
+    def test_the_first_run_until_the_player_chooses_or_skips(self):
+        api = self.browser()
+        self.assertEqual(api.first_run(), {"show": True})  # no library yet
+        self.assertEqual(api.first_run_done(), {"show": False})
+        self.assertEqual(api.first_run(), {"show": False})
+        self.assertEqual(self.browser().first_run(), {"show": False})  # kept in settings.json for the next start
+        again = self.browser(home=Path(self.tmp.name, "home-2"))
+        wait_for(again, again.install_mods(["econ-half"])["job"])
+        self.assertEqual(again.first_run(), {"show": False})  # a library already: nothing to choose at the start
+
+    def test_the_first_run_offline_shows_the_saved_copy_or_nothing(self):
+        self.assertEqual(len(self.browser().browse()["mods"]), 3)  # a copy kept from an earlier start
+        self.server.shutdown()
+        self.server.server_close()
+        res = self.browser().browse()
+        self.assertEqual((res["source"], [m["cheat"] for m in res["mods"]]), ("cache", [False, False, True]))
+        none = self.browser(home=Path(self.tmp.name, "fresh")).browse()  # no copy at all: only Skip
+        self.assertEqual((none["source"], none["mods"]), ("none", []))
 
 
 class Troubleshooter(Base):
