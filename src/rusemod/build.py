@@ -144,8 +144,9 @@ def _map_readers() -> dict:
                           ScenarioError),
         "cover.toml": (("paint",), "a cover file holds [[paint]] tables",
                        lambda d, rel: parse_paints(d.get("paint", []), rel), CoverError),
-        "movement.toml": (("block",), "a movement file holds [[block]] tables",
-                          lambda d, rel: parse_blocks(d.get("block", []), rel), NavError),
+        "movement.toml": (("block", "open"), "a movement file holds [[block]] and [[open]] tables",
+                          lambda d, rel: (parse_blocks(d.get("block", []), rel)
+                                          + parse_blocks(d.get("open", []), rel, "open")), NavError),
         "roads.toml": (("road",), "a roads file holds [[road]] tables",
                        lambda d, rel: parse_roads(d.get("road", []), rel), RoadNetError),
         "map.toml": (("players", "entry"), "a map file holds players = N (and entry = the map-list name)",
@@ -218,19 +219,45 @@ def read_movement(folder: Path) -> dict:
 
 
 def _block_brushes(info) -> None:
-    """The Studio's block brushes (terrain.toml) take ground away from units: they move to `info.movement` (after
-    the mod's own movement.toml blocks), like the cover brushes to the cover grid."""
+    """The Studio's block and open brushes (terrain.toml) take ground away from units or give it to them: they move
+    to `info.movement` in their order (after the mod's own movement.toml blocks and opens), like the cover brushes to
+    the cover grid."""
     from .nav import Block
+    moving = ("block", "open")
     for pack, strokes in list(info.terrain.items()):
-        blocks = [s for s in strokes if s.kind.kind == "block"]
+        blocks = [s for s in strokes if s.kind.kind in moving]
         if not blocks:
             continue
-        info.movement.setdefault(pack, []).extend(Block(s.x, s.y, s.radius, s.kind.shape) for s in blocks)
-        rest = [s for s in strokes if s.kind.kind != "block"]
+        info.movement.setdefault(pack, []).extend(Block(s.x, s.y, s.radius, s.kind.shape, s.kind.kind == "open")
+                                                  for s in blocks)
+        rest = [s for s in strokes if s.kind.kind not in moving]
         if rest:
             info.terrain[pack] = rest
         else:
             del info.terrain[pack]
+
+
+def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs) -> list:
+    """nav.wet_opens for a map's opens, on its ground as the terrain edits left it (map_packs: (pack path, archive,
+    changed members); `open_pack(path)` opens a map pack); none when the map has no opens or its ground can't be
+    read."""
+    from .bridges import Water
+    from .nav import wet_opens
+    from .terrain import pack_file
+    from .tms import Tms
+    if not any(b.open for b in blocks):
+        return []
+    map_path = find_pack(game, pack_file(name))
+    if map_path is None:
+        return []
+    entry = next((e for e in map_packs if e[0] == map_path), None)
+    try:
+        map_arc = entry[1] if entry else open_pack(map_path)
+        e = map_arc.find("output\\highdef.tms")
+        ground = (entry[2].get(e.path) if entry else None) or bytes(map_arc.read(e))
+        return wet_opens(blocks, Water(Tms(ground)).at)
+    except (KeyError, ValueError, struct.error, zlib.error):
+        return []
 
 
 def read_cover(folder: Path) -> dict:
@@ -752,8 +779,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     result.findings.append(Finding("warning", (
                         f"{', '.join(ids)}: {name}: the terrain edits drain water around ({mx:.0f}, {my:.0f}), but "
                         f"the dried ground stays closed to units: the map's movement has no ground where the water "
-                        f"was, and the build doesn't open it yet. Leave the water there, or expect units to go "
-                        f"around")))
+                        f"was. Paint it with the Open brush to let units on it, leave the water there, or expect "
+                        f"units to go around")))
             if changed_members:
                 map_packs.append((map_path, map_arc, changed_members))
                 result.terrain_changed[map_path.name] = changed_members
@@ -996,7 +1023,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         if moves or paints or blocks or new_roads or bridge_spans or players:
             from .bridges import BridgeError, apply_spans
             from .cover import CoverError, apply_paints
-            from .nav import NavError, apply_blocks
+            from .nav import NavError, apply_blocks, closing
             from .roadnet import RoadNetError, apply_roads
             from .scenario import PACK as SCENARIO_PACK, ScenarioError, apply_moves
             data_path = find_pack(game, SCENARIO_PACK)
@@ -1077,7 +1104,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {note}")
                 for name, (map_paints, ids) in paints.items():
                     from .cover import unpaired_blocked
-                    for p in unpaired_blocked(map_paints, blocks.get(name, ([], []))[0]):
+                    for p in unpaired_blocked(map_paints, closing(blocks.get(name, ([], []))[0])):
                         result.findings.append(Finding("warning", (
                             f"{', '.join(ids)}: {name}: cover.toml paints the blocked layer at ({p.x:.0f}, {p.y:.0f}) "
                             f"with no movement.toml block there. The blocked layer only tells the AI where it can't "
@@ -1093,8 +1120,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     for note in notes:
                         say(f"  {note}")
                 for name, (map_blocks, ids) in blocks.items():
+                    idle: list = []
                     try:
-                        new, notes = apply_blocks(read_data, name, map_blocks)
+                        new, notes = apply_blocks(read_data, name, map_blocks, idle)
                     except (NavError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
@@ -1102,10 +1130,20 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     say(f"movement: {name}, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
+                    for b in idle:
+                        result.findings.append(Finding("note", (
+                            f"{', '.join(ids)}: {name}: the open at ({b.x:.0f}, {b.y:.0f}) opened nothing: units "
+                            f"could already go there, or it is too small (an open needs a radius of 5 m or more) or "
+                            f"out of reach of the ground they use")))
+                    for b, (wx, wy) in _wet_opens(open_pack, game, name, map_blocks, map_packs):
+                        result.findings.append(Finding("warning", (
+                            f"{', '.join(ids)}: {name}: the open at ({b.x:.0f}, {b.y:.0f}) takes in water (at "
+                            f"({wx:.0f}, {wy:.0f})): units there stand on the ground under it, on the riverbed or "
+                            f"the lake's floor. Leave the open off the water unless that is what you want")))
                 for name, spans in bridge_spans.items():  # the bridges' decks opened to units, after the blocks
                     try:
                         new, notes = apply_spans(read_data, name, spans, bridge_closed.get(name, []), bridge_roads.get(name, []),
-                                                 blocks.get(name, ([], []))[0], bridge_water.get(name),
+                                                 closing(blocks.get(name, ([], []))[0]), bridge_water.get(name),
                                                  bridge_obstacles.get(name, []))
                     except (BridgeError, NavError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{name}: the bridges' movement can't be opened ({exc})"))
@@ -1116,7 +1154,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {note}")
                 for name, (map_roads, ids) in new_roads.items():  # the road network (buffer 0), after movement
                     try:
-                        new, notes = apply_roads(read_data, name, map_roads, blocks.get(name, ([], []))[0])
+                        new, notes = apply_roads(read_data, name, map_roads, closing(blocks.get(name, ([], []))[0]))
                     except (RoadNetError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue

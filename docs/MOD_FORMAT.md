@@ -305,13 +305,20 @@ level  = 23500.0     # water: the water surface (world z); the ground under it f
 | `drain` | the water surface back to the map's base level: lakes and rivers inside dry up | the whole circle |
 | `cover` | cover (units there are hidden, as in a wood; proven in the game): the build paints the circle on the map's cover grid, as a `cover.toml` circle after the mod's own; the ground doesn't move. `square = true` paints a square along the map's axes instead, `radius` from its middle to each side | the cells whose centres are inside |
 | `uncover` | the same, taking cover away (also `square = true`) | the cells whose centres are inside |
+| `block`, `block_infantry`, `block_vehicles` | ground units can't use (all of them, infantry or vehicles): a `movement.toml` block after the mod's own; the ground doesn't move | the circle |
+| `open`, `open_infantry`, `open_vehicles` | ground units can use where the map has none (the reverse of block): a `movement.toml` open after the mod's own; the ground doesn't move | the circle, in circles of 5 m or more (towns: 1.2 m) |
+
+Block and open strokes apply in their order, so where two meet the later one wins. The Studio's **Forest** brush
+isn't a brush of its own in the file: one drag writes the trees it scatters to `scenery.toml` (as Place, Area would)
+and `cover` strokes over the same circles here; its Undo takes back both.
 
 - **Water.** Water brushes run after the height brushes. They change the water surface of the two drawn meshes and
   the map's three water textures, never the ground or the `.kdt` files. Units are kept out of water by the map's
   movement graphs (ground under water is never walkable on a shipped map), so the build blocks every new water (a
   water stroke's, or ground a height brush lowered under the water) in both graphs, as `movement.toml` blocks would
   (`rusemod.nav.water_blocks`: circles over it, sampled every 640 map units or more, reaching about half a step past
-  the shore at most). Drained ground stays closed to units, as it was under the water: the build warns. What is
+  the shore at most). Drained ground stays closed to units, as it was under the water: the build warns; an `open`
+  stroke over it opens it. What is
   written follows the rules every shipped map keeps (the water triangles, the per-cell patch bounds, the far mesh's
   water about 150 lower, the textures' depth, tiles and cell flags; `rusemod.water`). A height brush near water
   also keeps the water triangles and textures in step.
@@ -504,6 +511,29 @@ units = "all"        # or "infantry" or "vehicles"
 - **Placed buildings are solid:** every building in the mod's `scenery.toml` becomes a block as wide as its model
   reaches, times its size (`rusemod.nav.solid_blocks`); `solid = false` on an object leaves it walk-through.
 - Proven in the game (Blitz, 2026-09-30): units can't enter a blocked pit.
+
+A mod gives ground back the same way (the reverse of a block; the Studio's Open brushes):
+
+```toml
+[[open]]
+x = 871088.0
+y = 881645.0
+radius = 26000.0
+units = "vehicles"   # or "all" or "infantry": a wood vehicles couldn't drive into
+```
+
+- Ground a map closes has no circle over it at all (FORMATS §6, movement graphs), so opening it adds circles where the graph has
+  none: on the 320 grid, the largest first, each inside the open, linked to the circles it overlaps, grown out from
+  the ground units already use (`rusemod.nav.Graph.open_ground`). The main graph's circles are 1,280 or more (5 m);
+  inside a town's or a bridge's own movement (its local map), which decides there, the open adds circles of 320 or
+  more to that map instead. Ground no unit could reach (an island the open doesn't join to the rest) stays closed,
+  so the graphs stay in one piece; the old circles keep their numbers, links and road crossings.
+- A file's blocks apply before its opens; the Studio's strokes after both, in their order. Where a block and an open
+  meet, the later one wins. Bridges, new roads and the cover check keep clear of blocks only.
+- **Water:** an open over water is allowed, with a warning naming the spot: units stand on whatever ground is
+  there, so an opened river puts them on the riverbed. Buildings in an opened town are walked through.
+- An open that opens nothing (the ground was open already, it is smaller than 5 m, or it touches no ground units
+  use) gets a note. The AI's grid follows the vehicles' movement (`rusemod.aigrid`).
 
 ### New roads: `maps/<map pack>/roads.toml`
 
