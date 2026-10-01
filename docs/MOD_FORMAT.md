@@ -500,6 +500,13 @@ join = 20000.0       # an end this near a road joins it (a junction); else it's 
 - The line gets points about 2,300 map units apart, linked in a chain; each end is linked to the nearest road point
   within `join`. The network's index is built again the game's way (x then y, at the middle of the links).
 - Proven in the game (Blitz, 2026-09-30): **supply routes follow it** (a depot's route took a new shortcut road).
+- Units plan along a road only through the movement's *crossings* (FORMATS.md, the movement graphs): a stretch of
+  road through a circle, from one of its gates to another. The build makes them for the new road in both the
+  infantry and the vehicles' movement, the way the shipped maps have theirs (D-Day's own made again: 92% and 95% the
+  same, `tools/verify_crossings.py`), never through a `movement.toml` block or a solid building of that movement's
+  units, nor across a town's buildings. A road that gets none in a movement (all of it in one circle, or through
+  woods vehicles can't enter) is said in the build's notes: units go across country there. Not tried in the game
+  yet.
 - `paint = true` (the default) paints it into the ground's texture tiles in the map's own road colour (proven in the
   game: seen from afar) and lays the map's own road stickers along it (`Route` pieces, about 16 m each: what draws a
   road up close; not tried in the game yet); `bridges = true` (the default) puts the map's own bridge kind where it
