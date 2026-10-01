@@ -596,6 +596,45 @@ class TheBuildLoadsThem(unittest.TestCase):
         self.assertEqual(result.changed, {})
 
 
+class SpawnedUnits(unittest.TestCase):
+    """A unit a mod's scenario spawns: the nation whose pack has its models loads in every skirmish, or the spawn is
+    refused (Japanese units spawned on D-Day with no Japanese player crashed the game as the match started)."""
+
+    def check(self, *whats, maps=None):
+        from rusemod.build import spawn_models
+        from rusemod.scenario import Spawn
+        base = army()
+        for name in ("$/Panzer", "$/Jeep", "$/Sherman"):
+            base.objects[name].props["ClassNameForDebug"] = Text("string", "Unit_" + name[2:])
+        base.objects.update(maps or {})
+        mod = ModInfo("spawner")
+        mod.scenario = {"Alpha": [Spawn("s.scenario", w, 1.0, 2.0) for w in whats]}
+        result = BuildResult(order=["spawner"])
+        r = run(base=base)
+        spawn_models(r, zz_win(), [(mod, [])], result.order, result)
+        result.game = r.game
+        return result
+
+    def test_a_spawned_german_tank_loads_germany_s_models(self):
+        r = self.check("Unit_Panzer", "Unit_Panzer", maps=LoadedEverywhere.MAPS)
+        self.assertEqual(r.errors, [])
+        self.assertEqual([f.message for f in r.findings], [
+            "spawner: the spawned Panzer use Germany's unit models, which a skirmish loads only when a player has "
+            "Germany: they now load in every skirmish (6 loaders in 2 cluster maps)"])
+        self.assertEqual(forced(r.game), [num(2, "uint32")] * 3)
+
+    def test_common_models_and_unknown_classes_need_nothing(self):
+        r = self.check("Unit_Jeep", "Unit_Nobody", maps=LoadedEverywhere.MAPS)
+        self.assertEqual(r.findings, [])
+        self.assertEqual(forced(r.game), [None] * 3)
+
+    def test_without_cluster_maps_the_spawn_is_refused(self):
+        r = self.check("Unit_Sherman")
+        self.assertEqual(len(r.errors), 1)
+        self.assertIn("the spawned Sherman use US's unit models", r.errors[0].message)
+        self.assertIn("would crash as the match starts", r.errors[0].message)
+
+
 class Rules(unittest.TestCase):
     def test_the_kinds_of_unit(self):
         self.assertTrue(unitcheck.is_unit(Obj("TBatimentDescriptor")))

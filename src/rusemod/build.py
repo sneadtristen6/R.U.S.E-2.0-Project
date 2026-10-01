@@ -315,6 +315,12 @@ def needs_zz_win(mods: list) -> bool:
                                                 for _, ops in mods for op in ops)
 
 
+def _spawns(mods: list) -> bool:
+    """Whether a mod spawns units on a map (their models must load: spawn_models)."""
+    from .scenario import Spawn
+    return any(isinstance(x, Spawn) for m, _ in mods for moves in getattr(m, "scenario", {}).values() for x in moves)
+
+
 def _moves_path(path: str) -> bool:
     """Whether a property path changes a unit's nation or its models."""
     root = (path or "").split(".", 1)[0].split("[", 1)[0]
@@ -405,6 +411,56 @@ def unit_models(base, run, zz_win, result: BuildResult) -> None:
                                                 f"models only in matches where a player has that nation, so in other "
                                                 f"matches this unit has no model, or crashes the game. Copy one of "
                                                 f"{nation}'s units instead, or leave it in {where[0]}'s army", op))
+
+
+def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult) -> None:
+    """Units a mod's scenarios spawn. A skirmish loads a nation's unit models only when a player has that nation, or
+    when the cluster maps' loaders force it (unitcheck); a spawned unit whose models aren't loaded crashes the game as
+    the match starts (a D-Day test with Japanese units spawned and no Japanese player, 2026-10-01). So the nations
+    whose packs hold a spawned unit's models are set to load in every skirmish, as for units given to another nation;
+    a spawn the cluster maps can't do that for is refused."""
+    from .scenario import Spawn
+    spawns = [(m, ids) for moves, ids in scenario_edits(order, mods).values() for m in moves if isinstance(m, Spawn)]
+    packs = skirmish_models(zz_win) if spawns and zz_win is not None else None
+    if packs is None:
+        return
+    by_class = {}
+    for name, obj in run.game.objects.items():
+        cls = getattr(obj.props.get("ClassNameForDebug"), "value", None) if unitcheck.is_unit(obj) else None
+        if cls:
+            by_class.setdefault(cls, name)
+    need: dict[int, dict[str, list[str]]] = {}  # nation -> {spawned class: the mods spawning it}
+    for s, ids in spawns:
+        name = by_class.get(s.class_path.rpartition(".")[2])
+        if name is None:
+            continue
+        obj = run.game.objects[name]
+        home = unitcheck.nation_of(obj)
+        for model in sorted(unitcheck.model_files(obj, run.game)):
+            if model in packs["common"]:
+                continue
+            where = [i for i, tag in enumerate(unitcheck.PACK_TAGS) if model in packs[tag]]
+            if where:
+                pick = next((i for i in where if i in need), home if home in where else where[0])
+                need.setdefault(pick, {}).setdefault(name.rsplit("/", 1)[-1], ids)
+    if not need:
+        return
+    loaded = unitcheck.load_everywhere(run.game, set(need))
+    for nation, units in sorted(need.items()):
+        which = ", ".join(sorted(units))
+        ids = ", ".join(sorted({i for v in units.values() for i in v}))
+        country = unitcheck.NATIONS[nation]
+        count, maps = loaded.get(nation, (0, 0))
+        if count:
+            result.findings.append(Finding("note", f"{ids}: the spawned {which} use {country}'s unit models, which a "
+                                                   f"skirmish loads only when a player has {country}: they now load "
+                                                   f"in every skirmish ({count} loaders in {maps} cluster maps)"))
+        else:
+            result.findings.append(Finding("error", f"{ids}: the spawned {which} use {country}'s unit models, which a "
+                                                    f"skirmish loads only when a player has {country}, and the unit "
+                                                    f"data has no cluster maps that could load them in every match: "
+                                                    f"the game would crash as the match starts. Spawn units whose "
+                                                    f"models every match has, or leave these out"))
 
 
 def fill_loc(game, keys: dict) -> list[str]:
@@ -502,6 +558,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     if run.errors:
         return result
     unit_models(base, run, text_arc, result)
+    spawn_models(run, text_arc, mods, result.order, result)
     if result.errors:
         return result
     text_mods = [(m.id, m.text_prefix, m.texts) for m in order if m.texts]
@@ -655,6 +712,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         if text_path is None:
             raise BuildError(f"These mods add texts or new units, which need {loc.PACK}, but {game} doesn't have "
                              f"it.")
+    elif _spawns(mods):  # spawned units' models are checked against its packs when it's there (spawn_models)
+        text_path = find_pack(game, loc.PACK)
     build_id = build_of(game) or "0"  # the fingerprint includes the game build
     with ExitStack() as stack:
         run = None
