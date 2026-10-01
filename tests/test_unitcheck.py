@@ -1,12 +1,13 @@
 """What the game needs of a unit beyond its data's types (rusemod.unitcheck, rusemod.unitflags.problems): the build's
 errors and warnings for ids, nations, price and menu lists, flags and salvos. Made-up units, no game files needed."""
+import struct
 import tempfile
 import unittest
 from pathlib import Path
 
 from fixtures import make_edat, make_ndf, val
 from rusemod import Edat
-from rusemod.build import build_pack, load_mod
+from rusemod.build import BuildResult, build_pack, load_mod, needs_zz_win, skirmish_models, unit_models
 from rusemod.patch import Engine, Game, Inline, ListV, Obj, Op, Ref, Text, num, nums
 from rusemod.resolve import ModInfo
 from rusemod import unitcheck
@@ -249,7 +250,6 @@ class Salvos(unittest.TestCase):
 
 # --- the build stops ---
 def flag_list(values):
-    import struct
     return val(0x11, struct.pack("<I", len(values)) + b"".join(val(0x03, struct.pack("<I", v)) for v in values))
 
 
@@ -272,6 +272,141 @@ class TheBuild(unittest.TestCase):
         result = self.build("patch $/Stuart ( InitialFlagSet += [uint32(2)] )\n")
         self.assertEqual(result.errors, [])
         self.assertTrue(result.changed)
+
+
+# --- models: a nation's unit models load only in matches where a player has that nation ---
+def name_table(folder, models) -> bytes:
+    """A mesh pack's name table: u32 10, 6 bytes, then one folder holding the models."""
+    files = b""
+    for k, name in enumerate(models):
+        node = struct.pack("<II6fIHH", 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0xCDCD) + name.encode() + b"\0"
+        node += bytes(len(node) % 2)
+        if k < len(models) - 1:
+            node = struct.pack("<II", 0, len(node)) + node[8:]
+        files += node
+    f = folder.encode() + b"\0"
+    head = 8 + len(f) + (8 + len(f)) % 2
+    return struct.pack("<I", 10) + bytes(6) + struct.pack("<II", head, 0) + f + bytes(head - 8 - len(f)) + files
+
+
+def mesh_pack(models) -> bytes:
+    """A mesh pack that only names its models (one empty mesh): enough for its name table to be read."""
+    names = name_table("ww2\\res3d\\units\\", models)
+    body = names + bytes(-len(names) % 4)
+    fo = 0xC4 + len(body)
+    body += struct.pack("<I", 256)
+    mo = 0xC4 + len(body)
+    body += struct.pack("<HH", 0, 0)
+    head = bytearray(0xC4)
+    head[0:8] = b"MESHPCPC"
+    struct.pack_into("<I", head, 8, 4)
+    for i, sec in enumerate([(0xC4, len(names), 1), (fo, 4, 0), (mo, 0, 0), (mo, 0, 0), (mo, 0, 0), (mo, 4, 1),
+                             (mo, 0, 0), (mo, 0, 0)]):
+        struct.pack_into("<III", head, 0x34 + 12 * i, *sec)
+    struct.pack_into("<III", head, 0x9C, mo, 0, 0)
+    return bytes(head) + body
+
+
+SHERMAN_MODEL = "us\\tank\\us_shermanlod0.ase2ndfbin"
+PANZER_MODEL = "ger\\tank\\ger_panzerivlod0.ase2ndfbin"
+JEEP_MODEL = "common\\jeeplod0.ase2ndfbin"
+LONG_TOM_MODEL = "us\\canon\\us_long_tomlod0.ase2ndfbin"
+BOAT_MODEL = "us\\boat\\us_lcvplod0.ase2ndfbin"
+PACKS = {"us": [SHERMAN_MODEL, LONG_TOM_MODEL], "ger": [PANZER_MODEL], "common": [JEEP_MODEL],
+         "witboat_us": [BOAT_MODEL]}
+
+
+def zz_win(packs=PACKS):
+    files = [("file", f"meshskirmish{'' if tag.startswith('witboat') else '_'}{tag}.spk", mesh_pack(models))
+             for tag, models in packs.items()] or [("file", "other.txt", b"x")]
+    return Edat(make_edat([("dir", "gen_5\\pack\\gfxdescriptor\\", files)]))
+
+
+def army():
+    """Units whose model's mesh is an unnamed object, as in the game: a US Sherman, a German Panzer IV, a US jeep
+    (its model in the common pack), a French atomic cannon on the US Long Tom's model (as the game's own are) and a US
+    landing craft (its model in the US boats' pack)."""
+    objects = {}
+
+    def unit(name, did, nation, model):
+        mesh = f"everything#{did}"
+        objects[mesh] = Obj("TResourceMultiMaterialMesh", {"FileName": Text("path", "WW2\\Res3D\\Units\\" + model)})
+        gfx = Inline(Obj("TGfxDescriptorModeleWithAnimation", {"MeshDescriptor": Ref(mesh)}))
+        props = {"DescriptorId": num(did, "uint32"), "GfxDescriptor": gfx}
+        if nation:
+            props["Nationalite"] = num(nation)
+        objects[name] = Obj("TUniteAuSolDescriptor", props)
+    unit("$/Sherman", 1, 0, SHERMAN_MODEL.upper())
+    unit("$/Panzer", 2, 1, PANZER_MODEL)
+    unit("$/Jeep", 3, 0, JEEP_MODEL)
+    unit("$/Canon_atomique_FR", 4, 3, LONG_TOM_MODEL)
+    unit("$/LCVP", 5, 0, BOAT_MODEL)
+    return Game(objects=objects)
+
+
+class Models(unittest.TestCase):
+    def check(self, *ops, packs=PACKS):
+        base = army()
+        result = BuildResult()
+        unit_models(base, run(*ops, base=base), zz_win(packs) if packs is not None else None, result)
+        return result
+
+    def test_a_unit_given_to_a_nation_whose_matches_don_t_load_its_model(self):
+        r = self.check(clone(("Nationalite", num(1)), source="$/Sherman"))
+        self.assertEqual([f.message for f in r.errors], [
+            f"m (m.rndf:1): {NEW} is in Germany's army (Nationalite 1), but its model ww2\\res3d\\units\\"
+            f"{SHERMAN_MODEL} is in the mesh pack of US's units only: the game loads a nation's unit models only in "
+            f"matches where a player has that nation, so in other matches this unit has no model, or crashes the "
+            f"game. Copy one of Germany's units instead, or leave it in US's army"])
+
+    def test_a_game_unit_moved(self):
+        r = self.check(Op("set", "$/Panzer", "Nationalite", num(0), line=4))
+        self.assertEqual(len(r.errors), 1)
+        self.assertTrue(r.errors[0].message.startswith("m (m.rndf:4): $/Panzer is in US's army (Nationalite 0)"))
+        r = self.check(Op("delprop", "$/Panzer", "Nationalite"))  # not written = 0, the US
+        self.assertIn("$/Panzer is in US's army", r.errors[0].message)
+
+    def test_a_unit_given_another_nation_s_model(self):
+        r = self.check(Op("set", "$/Sherman", "GfxDescriptor.MeshDescriptor", Ref("everything#2")))
+        self.assertIn(f"$/Sherman is in US's army (Nationalite 0), but its model ww2\\res3d\\units\\{PANZER_MODEL}",
+                      r.errors[0].message)
+
+    def test_what_loads(self):
+        r = self.check(clone(source="$/Sherman"), Op("clone", "$/Jeep_GER", source="$/Jeep",
+                                                    body=[Op("set", path="Nationalite", value=num(1))]),
+                       Op("clone", "$/Canon_2", source="$/Canon_atomique_FR"), Op("clone", "$/LCVP_2", source="$/LCVP"),
+                       Op("set", "$/Panzer", "Nationalite", num(1)))
+        self.assertEqual(r.findings, [])
+        # the jeep's model is in the common pack, the landing craft's in the US boats' one: loaded for the US
+        g, packs = army(), skirmish_models(zz_win())
+        for name in ("$/Jeep", "$/LCVP"):
+            self.assertEqual(unitcheck.missing_models(g.objects[name], g, packs), {}, name)
+        g.objects["$/LCVP"].props["Nationalite"] = num(2)
+        self.assertEqual(unitcheck.missing_models(g.objects["$/LCVP"], g, packs),
+                         {f"ww2\\res3d\\units\\{BOAT_MODEL}": ["US"]})
+
+    def test_the_game_s_own_odd_ones_only_where_the_game_has_them(self):
+        # the French atomic cannon has the Long Tom's model, loaded with the US units: the game's own, so fine in
+        # France; in Germany it's new
+        r = self.check(Op("clone", "$/Canon_GER", source="$/Canon_atomique_FR",
+                          body=[Op("set", path="Nationalite", value=num(1))]))
+        self.assertIn("$/Canon_GER is in Germany's army", r.errors[0].message)
+
+    def test_without_the_packs(self):
+        r = self.check(clone(("Nationalite", num(1)), source="$/Sherman"), packs={})
+        self.assertEqual([(f.level, f.message.split(",")[0]) for f in r.findings],
+                         [("note", "ZZ_Win.dat has no skirmish mesh packs")])
+        r = self.check(clone(("Nationalite", num(1)), source="$/Sherman"), packs=None)
+        self.assertEqual(r.findings, [])
+        r = self.check(Op("set", "$/Sherman", "SeuilMort", num(1)), packs={})  # nothing moved: nothing to say
+        self.assertEqual(r.findings, [])
+
+    def test_moving_a_unit_needs_zz_win(self):
+        mod = ModInfo("m")
+        self.assertTrue(needs_zz_win([(mod, [Op("set", "$/Panzer", "Nationalite", num(0))])]))
+        self.assertTrue(needs_zz_win([(mod, [Op("set", "$/Panzer", "GfxDescriptor.MeshDescriptor", Ref(None))])]))
+        self.assertTrue(needs_zz_win([(mod, [Op("set", path="Nationalite", value=num(1), every="TUniteAuSolDescriptor")])]))
+        self.assertFalse(needs_zz_win([(mod, [Op("set", "$/Panzer", "SeuilMort", num(1))])]))
 
 
 class Rules(unittest.TestCase):

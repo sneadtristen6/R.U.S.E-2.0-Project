@@ -235,6 +235,16 @@ with them rewritten too (C4), so which one it reads, if any, is unknown. `ruse b
 - The enum: **0 US, 1 GER, 2 UK, 3 FR, 4 ITA, 5 USSR, 6 JAP.** The game keeps its units in exactly seven
   per-nation lists, fixed in the game itself, not in its data: a unit with any other `Nationalite` corrupts the game
   as it loads, so `ruse build` refuses it. An 8th nation can't be added there through data.
+- A nation's unit models are loaded only in a skirmish where a player has that nation:
+  `TClusterLoadSelectifResource.SkirmishPacks` are the seven `MeshSkirmish_<nation>.spk` packs (ZZ_Win.dat,
+  `gen_5\pack\gfxdescriptor\`; `us ger uk fr ita urss japan`, plus `MeshSkirmishWitBoat_US`), loaded beside
+  `MeshSkirmish_Common` for the nations in the match and those set in `ForceLoadBitFieldNationalite` (4 cluster
+  objects set 2, Germany). A unit's models are the `.ase2ndfbin` files its `Gfx…` parts name (the mesh is an unnamed
+  object they refer to). Every shipped buildable unit has its models in its own nation's pack or the common one,
+  except the six non-US atomic cannons, which use the US Long Tom's. Moved to another nation, a buildable unit
+  misses its model in every case (1,362 unit × nation pairs), so `ruse build` refuses a new or moved unit whose
+  models are only in another nation's pack (what the game's own units already have is allowed). Setting the source
+  nation's bit in `ForceLoadBitFieldNationalite`, or copying the models into the target nation's pack, would lift it.
 - Several structures have exactly 7 slots: `SubClusterNationaliteList` (every map), flag-icon lists, per-nation
   mesh packs, and the bit field `BitFieldNationaliteIfNotSkirmish` (values 0x3F, 0x403F…; bit 14 unexplained).
 - **Conclusion (medium confidence):** rosters are data-only. Whether an 8th nation can be added through data alone

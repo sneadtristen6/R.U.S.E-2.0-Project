@@ -20,7 +20,7 @@ from contextlib import ExitStack
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import loc, pyscript
+from . import loc, pyscript, unitcheck
 from .brush import BrushError, parse_strokes
 from .edat import Edat
 from .lock import fingerprint, fingerprint_text
@@ -28,6 +28,7 @@ from .model import ModelError, game_path, load, save
 from .patch import Engine, Finding, Text, _walk_obj
 from .resolve import ModInfo, ResolveError, load_order
 from .rndf import parse
+from .spk import Spk, SpkError
 from .steam import build_of, data_revisions
 from .terrain_edit import edit_map
 
@@ -308,8 +309,68 @@ def load_pack(arc: Edat) -> PackModel:
 
 def needs_zz_win(mods: list) -> bool:
     """Whether building `mods` [(ModInfo, ops)] needs ZZ_Win.dat: some mod adds texts, or new objects (a new unit
-    needs a class in the Python unit list, which lives there)."""
-    return any(m.texts for m, _ in mods) or any(op.kind in ("create", "clone") for _, ops in mods for op in ops)
+    needs a class in the Python unit list, which lives there), or moves a unit to another nation or model (the
+    skirmish mesh packs there say whether its models are loaded for it: unit_models)."""
+    return any(m.texts for m, _ in mods) or any(op.kind in ("create", "clone") or _moves(op)
+                                                for _, ops in mods for op in ops)
+
+
+def _moves_path(path: str) -> bool:
+    """Whether a property path changes a unit's nation or its models."""
+    root = (path or "").split(".", 1)[0].split("[", 1)[0]
+    return root == unitcheck.NATION or root.startswith("Gfx")
+
+
+def _moves(op) -> bool:
+    return _moves_path(op.path) or any(_moves(b) for b in op.body)
+
+
+def skirmish_models(zz_win: Edat) -> dict | None:
+    """The models each nation's skirmish matches load (unitcheck.pack_models), from the skirmish mesh packs in
+    ZZ_Win.dat; None when it has none."""
+    names = {}
+    for e in zz_win.entries:
+        p = e.path.lower()
+        if p.startswith(unitcheck.PACK_DIR) and p.endswith(".spk") and p.rsplit("\\", 1)[-1].startswith("meshskirmish"):
+            try:
+                names[p.rsplit("\\", 1)[-1][:-4]] = set(Spk(bytes(zz_win.read(e))).items)
+            except SpkError:
+                continue
+    return unitcheck.pack_models(names) if names else None
+
+
+def unit_models(base, run, zz_win, result: BuildResult) -> None:
+    """An error for each new unit, or unit moved to another nation or given other models, whose models are only in
+    another nation's skirmish mesh pack: the game loads a nation's unit models only in matches where a player has
+    that nation (unitcheck). What the game's own units already have is fine."""
+    moved = {owner for owner, path in run.trail if owner in run.game.objects and _moves_path(path)}
+    names = sorted(n for n in set(run.created) | moved if n in run.game.objects and unitcheck.is_unit(run.game.objects[n]))
+    names = [n for n in names if unitcheck.model_files(run.game.objects[n], run.game)]
+    if not names or zz_win is None:
+        return
+    packs = skirmish_models(zz_win)
+    if packs is None:
+        result.findings.append(Finding("note", "ZZ_Win.dat has no skirmish mesh packs, so whether the new or moved "
+                                               "units' models load for their nation wasn't checked"))
+        return
+    allowed = unitcheck.allowed_models(base)
+    for name in names:
+        obj = run.game.objects[name]
+        missing = unitcheck.missing_models(obj, run.game, packs, allowed)
+        if not missing:
+            continue
+        op = run.created.get(name) or next((done[-1][0] for (owner, path), done in sorted(run.trail.items())
+                                            if owner == name and done and _moves_path(path)), None)
+        model, where = next(iter(missing.items()))
+        n = unitcheck.nation_of(obj)
+        nation = unitcheck.NATIONS[n]
+        more = f" (and {len(missing) - 1} more)" if len(missing) > 1 else ""
+        result.findings.append(Finding("error", f"{op.at() + ': ' if op else ''}{name} is in {nation}'s army "
+                                                f"(Nationalite {n}), but its model {model}{more} is in the mesh pack of "
+                                                f"{' and '.join(where)}'s units only: the game loads a nation's unit "
+                                                f"models only in matches where a player has that nation, so in other "
+                                                f"matches this unit has no model, or crashes the game. Copy one of "
+                                                f"{nation}'s units instead, or leave it in {where[0]}'s army", op))
 
 
 def fill_loc(game, keys: dict) -> list[str]:
@@ -405,6 +466,9 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
         result.findings.insert(0, Finding("note", f"left {len(shadows)} debug-info copies as shipped "
                                                   f"({', '.join(p.rsplit(chr(92), 1)[-1] for p in shadows)})"))
     if run.errors:
+        return result
+    unit_models(base, run, text_arc, result)
+    if result.errors:
         return result
     text_mods = [(m.id, m.text_prefix, m.texts) for m in order if m.texts]
     text_plan, read, entries = None, None, {}

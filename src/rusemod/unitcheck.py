@@ -19,7 +19,7 @@ data already had is left alone); build.build_pack asks for the models, which nee
 """
 from __future__ import annotations
 
-from .patch import Inline, ListV, Num, Ref, Text, _parts, _parts_in
+from .patch import Inline, ListV, Num, Ref, Text, _parts, _walk_value
 from . import unitflags
 
 # every kind of unit the game registers by DescriptorId (the classes whose objects carry one)
@@ -32,6 +32,7 @@ ID = "DescriptorId"
 NATION = "Nationalite"
 WEAPON_CLASS = "TWeaponDescriptor"
 MODEL = ".ase2ndfbin"
+PACK_DIR = "gen_5\\pack\\gfxdescriptor\\"  # the skirmish mesh packs, in ZZ_Win.dat
 
 
 def is_unit(obj) -> bool:
@@ -142,17 +143,20 @@ def salvo_problems(game) -> list[tuple[str, str, frozenset, str]]:
 
 
 # --- models ---
-def model_files(obj) -> set[str]:
+def model_files(obj, game) -> set[str]:
     """The model files (.ase2ndfbin) a unit's own Gfx parts name, lower case with backslashes, as mesh packs list
-    them."""
-    out = set()
-    for prop, v in obj.props.items():
-        if not prop.startswith("Gfx"):
-            continue
-        for _path, part in _parts_in(v, prop):
-            for x in part.props.values():
-                if isinstance(x, Text) and x.value.lower().endswith(MODEL):
-                    out.add(x.value.lower().replace("/", "\\"))
+    them. Its parts are what it holds and the unnamed objects they refer to (a model's mesh is one), not named
+    objects other units use too."""
+    out, seen = set(), set()
+    todo = [v for prop, v in obj.props.items() if prop.startswith("Gfx")]
+    while todo:
+        for x in _walk_value(todo.pop()):
+            if isinstance(x, Text) and x.value.lower().endswith(MODEL):
+                out.add(x.value.lower().replace("/", "\\"))
+            elif isinstance(x, Ref) and x.target and not x.target.startswith("$") and x.target not in seen \
+                    and x.target in game.objects:
+                seen.add(x.target)
+                todo += list(game.objects[x.target].props.values())
     return out
 
 
@@ -169,7 +173,13 @@ def pack_models(names: dict) -> dict[str, frozenset]:
     return out
 
 
-def missing_models(obj, packs: dict, allowed=frozenset()) -> dict[str, list[str]]:
+def allowed_models(game) -> set[tuple[str, int]]:
+    """(model, Nationalite) of every unit of the game: what the game's own units already have works as it does for
+    them (Canon_atomique_FR, French, uses the US Long Tom's model)."""
+    return {(m, nation_of(o)) for o in game.objects.values() if is_unit(o) for m in model_files(o, game)}
+
+
+def missing_models(obj, game, packs: dict, allowed=frozenset()) -> dict[str, list[str]]:
     """The models of a unit that aren't loaded for its nation: {model: [the nations whose packs have it]}. Models in
     no skirmish pack, and (model, nation) pairs in `allowed` (the game's own units already have them), don't count."""
     n = nation_of(obj)
@@ -177,7 +187,7 @@ def missing_models(obj, packs: dict, allowed=frozenset()) -> dict[str, list[str]
         return {}
     have = packs[PACK_TAGS[n]] | packs["common"]
     out = {}
-    for model in sorted(model_files(obj)):
+    for model in sorted(model_files(obj, game)):
         if model in have or (model, n) in allowed:
             continue
         where = [NATIONS[i] for i, tag in enumerate(PACK_TAGS) if model in packs[tag]]
