@@ -102,6 +102,9 @@ class Loading(unittest.TestCase):
                         "genglad/patchable/scenario/b/scenario_2v2/clustermap.cpp.gladndfbin": two})
         self.assertEqual(game.notes, [])
         self.assertIn("genglad/patchable/scenario/b/scenario_2v2/clustermap.cpp.gladndfbin#0", game.objects)
+        game, _ = load({"genglad/patchable/map/a/mapterrain.cpp.gladndfbin": one,
+                        "genglad/patchable/map/b/mapterrain.cpp.gladndfbin": two})
+        self.assertEqual(game.notes, [])
 
 
 class WritingBack(unittest.TestCase):

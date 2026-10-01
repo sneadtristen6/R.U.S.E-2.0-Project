@@ -207,8 +207,9 @@ def load(files: dict[str, bytes]) -> tuple[Game, dict[str, NdfFile]]:
 
 
 def _per_scenario(a: str, b: str) -> bool:
-    """Two scenarios' own copies of one file (clustermap, mapia...), which name the same objects by design."""
-    return "/scenario/" in a and "/scenario/" in b and a.rsplit("/", 1)[-1] == b.rsplit("/", 1)[-1]
+    """Two maps' or scenarios' own copies of one file (clustermap, mapterrain...), naming the same objects by design."""
+    return any(f"/{d}/" in a and f"/{d}/" in b for d in ("scenario", "map")) \
+        and a.rsplit("/", 1)[-1] == b.rsplit("/", 1)[-1]
 
 
 def _by_origin(game: Game) -> dict[tuple, Obj]:
