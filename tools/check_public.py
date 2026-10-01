@@ -25,8 +25,15 @@ GAME_FILES = {".dat", ".ndfbin", ".gladndfbin", ".dic", ".tgv", ".tgv_pc", ".spk
               ".boobspc", ".kdt", ".tms", ".tmst", ".tmst_pc", ".tmst_chunk_pc", ".scenario", ".ess", ".win", ".sdb",
               ".rmod", ".ase2ndfbin", ".exe", ".dll", ".pdb", ".idb", ".i64", ".gzf"}
 PROGRAM = re.compile(r"\bFUN_[0-9A-Fa-f]{6,}\b|\b0x14[0-9A-Fa-f]{7}\b|\bsub_14[0-9A-Fa-f]{7}\b")
-# where the words may appear on purpose: this check itself, and code that must refuse such files
-ALLOWED = {"tools/check_public.py", "tests/test_check_public.py"}
+# words that say what the game's program does or holds (the owner: "NO do not mention exe in public"): public text
+# says what the game does with its data, never what's inside RUSE.exe
+WORDING = re.compile(r"RUSE\.exe'?s\b|RUSE\.exe (?:does|reads|checks|holds|keeps|decides|loads|has|uses|calls)\b|"
+                     r"program-side|\b(?:in|inside) the (?:game's )?program\b|"
+                     r"\bthe (?:game's )?program (?:does|reads|checks|holds|keeps|decides|loads|calls|caps)\b|"
+                     r"exe internals|disassembl|\bRTTI\b|\bvtables?\b", re.I)
+# where the words may appear on purpose: this check itself, and code that must refuse such files; the GPL's text
+ALLOWED = {"tools/check_public.py", "tests/test_check_public.py", "tools/check_commit_msg.py"}
+WORDING_ALLOWED = {"LICENSE"}
 TEXT_LIMIT = 4_000_000
 
 
@@ -53,9 +60,16 @@ def problems(paths: list[str], read=lambda p: (ROOT / p).read_bytes()) -> list[s
             continue
         if len(data) > TEXT_LIMIT or b"\0" in data[:8192]:
             continue
-        m = PROGRAM.search(data.decode("utf-8", "replace"))
+        text = data.decode("utf-8", "replace")
+        m = PROGRAM.search(text)
         if m:
             out.append(f"{p}: names a place in the game's program ({m.group(0)}); program details stay private")
+            continue
+        m = WORDING.search(text) if p not in WORDING_ALLOWED else None
+        if m:
+            line = text.count("\n", 0, m.start()) + 1
+            out.append(f"{p}:{line}: says what the game's program does or holds ({m.group(0)!r}); public text says "
+                       f"what the game does with its data")
     return out
 
 

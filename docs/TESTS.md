@@ -179,7 +179,7 @@ team 2): `py -3 -m rusemod build <the mod's folder> --instance D:\RUSE-Instances
 - **Pass:** the game starts with 8 players, each on their own starting point (the new ones: team 1's north-west of
   its others, team 2's east of its others, on open fields).
 - **Fail:** what the lobby shows, or where it stops. If the lobby shows 8 but the game refuses, try with 7.
-- **Then, if it passes:** past 8 (a 10-player copy, 5v5) tells whether the program caps it.
+- **Then, if it passes:** past 8 (a 10-player copy, 5v5) tells whether the game caps it.
 
 ## T13. A unit given to another nation (Studio 0.7.7)
 
