@@ -344,20 +344,54 @@ def army():
     return Game(objects=objects)
 
 
+PACK_KINDS = ("Proxy", "Mesh", "Animation")
+NATION_TAGS = ("US", "GER", "UK", "FR", "ITA", "URSS", "JAP")
+
+
+def loader(kind, nations=NATION_TAGS, force=None):
+    """A cluster map's loader of one kind of per-nation skirmish pack, as in the game (SkirmishPacks in Nationalite
+    order)."""
+    props = {"SkirmishPacks": ListV([Ref(f"$/IA/Cluster/Pack{kind}Skirmish_{n}") for n in nations]),
+             "SkirmishCommon": Ref(f"$/IA/Cluster/Pack{kind}Skirmish_Common")}
+    if force is not None:
+        props["ForceLoadBitFieldIfSkirmish"] = num(force, "uint32")
+    return Inline(Obj("TClusterLoadSelectifResource", props))
+
+
+def cluster_map(*parts):
+    """A scenario's cluster map: its sub-clusters, the per-nation pack loaders among them (all three by default)."""
+    parts = parts or tuple(loader(k) for k in PACK_KINDS)
+    return Obj("TClusterInitialisationWithSubClusters",
+               {"SubClusterList": ListV([Inline(Obj("TClusterInitialisationExecute", {}))] + list(parts))})
+
+
+def forced(game, top="$/Cluster"):
+    """Each loader of a cluster map: its ForceLoadBitFieldIfSkirmish (None when not set)."""
+    return [v.obj.props.get("ForceLoadBitFieldIfSkirmish") for v in game.objects[top].props["SubClusterList"].items
+            if v.obj.cls == "TClusterLoadSelectifResource"]
+
+
 class Models(unittest.TestCase):
-    def check(self, *ops, packs=PACKS):
+    def check(self, *ops, packs=PACKS, maps=None):
+        """The models check on `army()` with the cluster maps `maps` ({name: Obj}, none by default): the findings,
+        and the game as the build would write it."""
         base = army()
+        base.objects.update(maps or {})
         result = BuildResult()
-        unit_models(base, run(*ops, base=base), zz_win(packs) if packs is not None else None, result)
+        r = run(*ops, base=base)
+        unit_models(base, r, zz_win(packs) if packs is not None else None, result)
+        result.game = r.game
         return result
 
     def test_a_unit_given_to_a_nation_whose_matches_don_t_load_its_model(self):
+        # no cluster maps to load US units' models in every match: refused
         r = self.check(clone(("Nationalite", num(1)), source="$/Sherman"))
         self.assertEqual([f.message for f in r.errors], [
             f"m (m.rndf:1): {NEW} is in Germany's army (Nationalite 1), but its model ww2\\res3d\\units\\"
-            f"{SHERMAN_MODEL} is in the mesh pack of US's units only: the game loads a nation's unit models only in "
-            f"matches where a player has that nation, so in other matches this unit has no model, or crashes the "
-            f"game. Copy one of Germany's units instead, or leave it in US's army"])
+            f"{SHERMAN_MODEL} is in the mesh pack of US's units only, and the unit data has no cluster maps that "
+            f"could load US's models in every match: the game loads a nation's unit models only in matches where a "
+            f"player has that nation, so in other matches this unit has no model, or crashes the game. Copy one of "
+            f"Germany's units instead, or leave it in US's army"])
 
     def test_a_game_unit_moved(self):
         r = self.check(Op("set", "$/Panzer", "Nationalite", num(0), line=4))
@@ -407,6 +441,159 @@ class Models(unittest.TestCase):
         self.assertTrue(needs_zz_win([(mod, [Op("set", "$/Panzer", "GfxDescriptor.MeshDescriptor", Ref(None))])]))
         self.assertTrue(needs_zz_win([(mod, [Op("set", path="Nationalite", value=num(1), every="TUniteAuSolDescriptor")])]))
         self.assertFalse(needs_zz_win([(mod, [Op("set", "$/Panzer", "SeuilMort", num(1))])]))
+
+
+class LoadedEverywhere(unittest.TestCase):
+    """A unit whose models only another nation's matches load: that nation's packs load in every skirmish (the bit of
+    its Nationalite in every cluster map loader's ForceLoadBitFieldIfSkirmish), and the old refusal is a note."""
+    MAPS = {"$/Cluster": cluster_map(), "$/Cluster_2": cluster_map()}
+    check = Models.check
+
+    def test_the_us_sherman_for_germany(self):
+        r = self.check(clone(("Nationalite", num(1)), source="$/Sherman"), maps=self.MAPS)
+        self.assertEqual(r.errors, [])
+        self.assertEqual([f.message for f in r.findings], [
+            "US's unit models and animations now load in every skirmish, beside those of the nations playing, for the "
+            "units of other nations that use them (6 loaders in 2 cluster maps; matches take a little more memory "
+            "and loading time)",
+            f"m (m.rndf:1): {NEW} is in Germany's army (Nationalite 1), but its model ww2\\res3d\\units\\"
+            f"{SHERMAN_MODEL} is in the mesh pack of US's units: US's unit models now load in every skirmish, so it "
+            f"shows in matches where no player has US too"])
+        self.assertEqual([f.level for f in r.findings], ["note", "note"])
+        for top in self.MAPS:  # US is Nationalite 0: bit 0, in the proxies', meshes' and animations' loaders
+            self.assertEqual(forced(r.game, top), [num(1, "uint32")] * 3)
+
+    def test_the_bit_is_the_nation_s(self):
+        r = self.check(Op("set", "$/Panzer", "Nationalite", num(6)), maps=self.MAPS)  # German models for Japan
+        self.assertEqual(forced(r.game), [num(2, "uint32")] * 3)
+        self.assertIn("Germany's unit models now load in every skirmish", r.findings[1].message)
+        r = self.check(clone(("Nationalite", num(4)), source="$/Sherman"), Op("set", "$/Panzer", "Nationalite", num(0)),
+                       maps=self.MAPS)
+        self.assertEqual(forced(r.game), [num(3, "uint32")] * 3)  # US and Germany
+        self.assertEqual([f.level for f in r.findings], ["note"] * 4)
+
+    def test_bits_already_set_are_kept(self):
+        maps = {"$/Cluster": cluster_map(loader("Proxy", force=1 << 5), loader("Mesh", force=1), loader("Animation"))}
+        r = self.check(clone(("Nationalite", num(2)), source="$/Sherman"), maps=maps)
+        self.assertEqual(forced(r.game), [num(1 << 5 | 1, "uint32"), num(1, "uint32"), num(1, "uint32")])
+        self.assertIn("(3 loaders in 1 cluster maps", r.findings[0].message)
+
+    def test_only_what_needs_it(self):
+        # a copy that stays in its nation, the game's own odd ones, and a unit moved without its model: no bit
+        r = self.check(clone(source="$/Sherman"), Op("clone", "$/Canon_2", source="$/Canon_atomique_FR"),
+                       Op("set", "$/Jeep", "Nationalite", num(5)), maps=self.MAPS)
+        self.assertEqual(r.findings, [])
+        self.assertEqual(forced(r.game), [None] * 3)
+        self.assertEqual(forced(r.game, "$/Cluster_2"), [None] * 3)
+
+    def test_one_nation_per_model(self):
+        # a model in two nations' packs: the copy's own source nation's is loaded, or one already loaded for another
+        packs = dict(PACKS, uk=[SHERMAN_MODEL])
+        r = self.check(clone(("Nationalite", num(1)), source="$/Sherman"), packs=packs, maps=self.MAPS)
+        self.assertEqual(forced(r.game), [num(1, "uint32")] * 3)
+        self.assertIn("is in the mesh pack of US and UK's units: US's unit models now load", r.findings[1].message)
+        r = self.check(Op("set", "$/Sherman", "Nationalite", num(1)), packs=dict(PACKS, uk=[SHERMAN_MODEL, PANZER_MODEL]),
+                       maps=self.MAPS)
+        self.assertEqual(forced(r.game), [num(1, "uint32")] * 3)  # (a game unit moved: the first nation)
+        r = self.check(Op("set", "$/Sherman", "Nationalite", num(1)), Op("set", "$/Panzer", "Nationalite", num(0)),
+                       packs=dict(PACKS, uk=[SHERMAN_MODEL, PANZER_MODEL]), maps=self.MAPS)
+        self.assertEqual(forced(r.game), [num(3, "uint32")] * 3)  # Germany for the Panzer, then US for the Sherman
+
+    def test_a_loader_without_the_nation_s_pack(self):
+        # a loader whose SkirmishPacks stops before the nation is left alone; with none that has it, refused
+        maps = {"$/Cluster": cluster_map(loader("Mesh", nations=("US", "GER")), loader("Animation"))}
+        r = self.check(Op("set", "$/Sherman", "Nationalite", num(6)), Op("set", "$/Panzer", "Nationalite", num(6)),
+                       maps=maps)
+        self.assertEqual(forced(r.game), [num(3, "uint32"), num(3, "uint32")])
+        short = {"$/Cluster": cluster_map(loader("Mesh", nations=("US",)))}
+        r = self.check(Op("set", "$/Panzer", "Nationalite", num(0)), maps=short)
+        self.assertEqual(len(r.errors), 1)
+        self.assertIn("the unit data has no cluster maps that could load Germany's models", r.errors[0].message)
+        r = self.check(Op("set", "$/Sherman", "Nationalite", num(1)), maps=short)  # US's pack is there: fine
+        self.assertEqual([f.level for f in r.findings], ["note", "note"])
+
+    def test_the_loaders(self):
+        g = Game(objects={"$/Cluster": cluster_map(), "$/Other": Obj("TClusterLoadSelectifResource", {}),
+                          "$/Tank": unit("TUniteAuSolDescriptor", 1, [10])})
+        self.assertEqual([(top, path) for top, path, _ in unitcheck.loaders(g)],
+                         [("$/Cluster", f"SubClusterList[{i}]") for i in (1, 2, 3)])  # (no SkirmishPacks: not one)
+        self.assertEqual(unitcheck.load_everywhere(g, {1, 3}), {1: (3, 1), 3: (3, 1)})
+        self.assertEqual(forced(g), [num(10, "uint32")] * 3)
+        self.assertEqual(unitcheck.load_everywhere(Game(objects={}), [0]), {0: (0, 0)})
+
+
+# --- the build writes the loaders' bits into the cluster map files ---
+def ref(index, cls):
+    return val(0x09, struct.pack("<III", 0xBBBBBBBB, index, cls))
+
+
+NO_PACK = val(0x09, struct.pack("<III", 0xBBBBBBBB, 0xFFFFFFFF, 0xFFFFFFFF))
+
+
+def path_text(index):
+    return val(0x1C, struct.pack("<I", index))
+
+
+def packs_list(n=7):
+    return val(0x11, struct.pack("<I", n) + NO_PACK * n)
+
+
+# a German tank whose model's mesh is an unnamed object
+ARMY = make_ndf(objects=[(0, [(0, val(0x03, struct.pack("<I", 2))), (1, val(0x02, struct.pack("<i", 1))),
+                              (2, ref(1, 1))]),
+                         (1, [(3, ref(2, 2))]),
+                         (2, [(4, path_text(0))])],
+                classes=["TUniteAuSolDescriptor", "TGfxDescriptorModeleWithAnimation", "TResourceMultiMaterialMesh"],
+                props=[("DescriptorId", 0), ("Nationalite", 0), ("GfxDescriptor", 0), ("MeshDescriptor", 1),
+                       ("FileName", 2)],
+                strings=["WW2\\Res3D\\Units\\" + PANZER_MODEL], exports={0: "Panzer"}, compress=True)
+# a cluster map whose three loaders set no ForceLoadBitFieldIfSkirmish (as every shipped one)
+CLUSTER = make_ndf(objects=[(0, [(0, val(0x11, struct.pack("<I", 3) + ref(1, 1) + ref(2, 1) + ref(3, 1)))]),
+                            (1, [(1, packs_list()), (2, NO_PACK)]),
+                            (1, [(1, packs_list()), (2, NO_PACK)]),
+                            (1, [(1, packs_list()), (2, NO_PACK), (3, val(0x00, b"\x01"))])],
+                   classes=["TClusterInitialisationWithSubClusters", "TClusterLoadSelectifResource"],
+                   props=[("SubClusterList", 0), ("SkirmishPacks", 1), ("SkirmishCommon", 1),
+                          ("DoNotLoadRessource", 1)])
+CLUSTER_MAP = "genglad\\patchable\\scenario\\alpha\\scenario\\clustermap.cpp.gladndfbin"
+UNIT_PACK = make_edat([("dir", "genglad\\patchable\\", [
+    ("dir", "gfx\\", [("file", "everything.cpp.gladndfbin", ARMY)]),
+    ("dir", "scenario\\alpha\\scenario\\", [("file", "clustermap.cpp.gladndfbin", CLUSTER)])])])
+
+
+class TheBuildLoadsThem(unittest.TestCase):
+    def build(self, text, pack=UNIT_PACK):
+        with tempfile.TemporaryDirectory() as d:
+            mod = Path(d, "moved.rndf")
+            mod.write_text(text, encoding="utf-8")
+            return build_pack(Edat(pack), [load_mod(mod)], text_arc=zz_win())
+
+    def test_a_german_tank_for_the_us(self):
+        result = self.build("export Panzer_US is clone $/Panzer ( Nationalite = 0 )\n")
+        self.assertEqual(result.errors, [])
+        self.assertIn("Germany's unit models and animations now load in every skirmish", "\n".join(
+            f.message for f in result.findings))
+        self.assertIn(CLUSTER_MAP, result.changed)
+        from rusemod.model import load
+        g, _ = load({CLUSTER_MAP: result.changed[CLUSTER_MAP]})
+        self.assertEqual([part.props.get("ForceLoadBitFieldIfSkirmish") for _t, _p, part in unitcheck.loaders(g)],
+                         [num(2, "uint32")] * 3)
+        # the rest of each loader as it was
+        self.assertEqual([sorted(part.props) for _t, _p, part in unitcheck.loaders(g)],
+                         [["ForceLoadBitFieldIfSkirmish", "SkirmishCommon", "SkirmishPacks"]] * 2
+                         + [["DoNotLoadRessource", "ForceLoadBitFieldIfSkirmish", "SkirmishCommon", "SkirmishPacks"]])
+
+    def test_nothing_moved_leaves_the_cluster_maps(self):
+        result = self.build("export Panzer_2 is clone $/Panzer ( DescriptorId = 3 )\n")
+        self.assertEqual(result.errors, [])
+        self.assertNotIn(CLUSTER_MAP, result.changed)
+
+    def test_without_cluster_maps_it_s_refused(self):
+        alone = make_edat([("dir", "genglad\\patchable\\gfx\\", [("file", "everything.cpp.gladndfbin", ARMY)])])
+        result = self.build("patch $/Panzer ( Nationalite = 0 )\n", pack=alone)
+        self.assertEqual(len(result.errors), 1)
+        self.assertIn("no cluster maps", result.errors[0].message)
+        self.assertEqual(result.changed, {})
 
 
 class Rules(unittest.TestCase):

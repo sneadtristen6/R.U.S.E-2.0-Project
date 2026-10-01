@@ -11,13 +11,17 @@
   salvos            a weapon's mounted weapons with a SalveNumber other than -1 need 0 to 4, and the weapon's
                     Salves[SalveNumber] above 0; otherwise the game stops at load with a "Quit game ?" box.
   models            a nation's unit models are loaded only in a match where a player has that nation (its skirmish
-                    mesh pack, MeshSkirmish_<nation>.spk, beside the common one): a unit whose model is only in
-                    another nation's pack has no model, or crashes the game, in every other match.
+                    mesh pack, MeshSkirmish_<nation>.spk, beside the common one), or one the cluster maps' loaders
+                    force (load_everywhere): a unit whose model is only in another nation's pack would have no model,
+                    or crash the game, in every other match, so the build has that nation's packs load in every
+                    skirmish.
 
 patch.Engine asks for the first five at the end of every run and reports what the mods made wrong (what the game's
 data already had is left alone); build.build_pack asks for the models, which need ZZ_Win.dat.
 """
 from __future__ import annotations
+
+from decimal import Decimal
 
 from .patch import Inline, ListV, Num, Ref, Text, _parts, _walk_value
 from . import unitflags
@@ -193,4 +197,46 @@ def missing_models(obj, game, packs: dict, allowed=frozenset()) -> dict[str, lis
         where = [NATIONS[i] for i, tag in enumerate(PACK_TAGS) if model in packs[tag]]
         if where:
             out[model] = where
+    return out
+
+
+# --- having another nation's models load in every match ---
+# Each cluster map (genglad\patchable\scenario\<map>\<scenario>\clustermap, 85 in the game) has three loaders of
+# per-nation skirmish packs: proxies, meshes and animations. In a skirmish a loader loads SkirmishPacks[i] when a player
+# has nation i, or when bit i of its ForceLoadBitFieldIfSkirmish is set (no shipped loader sets it); in other games it
+# loads its NotSkirmishPacks, every nation's. Bit i is Nationalite i: SkirmishPacks lists US, GER, UK, FR, ITA, URSS,
+# JAP. (ForceLoadBitFieldNationalite, set to 2 on four objects of one scenario, is another class's: the sub-clusters a
+# map starts, not packs.)
+LOADER = "TClusterLoadSelectifResource"
+FORCE = "ForceLoadBitFieldIfSkirmish"
+
+
+def loaders(game) -> list[tuple[str, str, object]]:
+    """Every loader of per-nation skirmish packs in the cluster maps: [(top-level object, path to it, the loader)]."""
+    out = []
+    for top in sorted(game.objects):
+        for path, part in _parts(game.objects[top]):
+            if part.cls == LOADER and isinstance(part.props.get("SkirmishPacks"), ListV):
+                out.append((top, path, part))
+    return out
+
+
+def load_everywhere(game, nations) -> dict[int, tuple[int, int]]:
+    """Have the skirmish packs of `nations` (Nationalite numbers) load in every skirmish, beside the match's own: their
+    bits set in every loader that has a pack for them. {nation: (loaders that now load it, cluster maps they're in)};
+    a nation no loader has a pack for gets (0, 0)."""
+    out = {}
+    for n in sorted(set(nations)):
+        count, maps = 0, set()
+        for top, _path, part in loaders(game):
+            if n >= len(part.props["SkirmishPacks"].items):
+                continue
+            old = part.props.get(FORCE)
+            bits = int(old.value) if isinstance(old, Num) else 0
+            if not bits >> n & 1:
+                part.props[FORCE] = Num("uint32", Decimal(bits | 1 << n))
+            count += 1
+            origin = game.objects[top].origin
+            maps.add(origin[0] if origin else top)
+        out[n] = (count, len(maps))
     return out

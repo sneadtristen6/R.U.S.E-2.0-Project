@@ -239,9 +239,11 @@ def _home_file(name: str, op, base: Game, loaded: dict[str, NdfFile], home: dict
 
 
 def save(base: Game, result: Game, loaded: dict[str, NdfFile], created: dict | None = None,
-         notes: list | None = None) -> dict[str, bytes]:
+         notes: list | None = None, new_props=frozenset()) -> dict[str, bytes]:
     """New bytes for every file whose content changed (game path -> NDF member bytes). `created` is the engine's
-    Result.created (where clones came from); `notes` collects what the build report should mention."""
+    Result.created (where clones came from); `notes` collects what the build report should mention. `new_props`:
+    (class, property) pairs that a file may get a PROP entry for when no object of that class in it sets the property
+    yet (properties the game's classes have but its data never writes, set by the build itself)."""
     created = created or {}
     notes = notes if notes is not None else []
     before, after = _by_origin(base), _by_origin(result)
@@ -314,7 +316,8 @@ def save(base: Game, result: Game, loaded: dict[str, NdfFile], created: dict | N
                     pi, old = original[name]
                     props.append((pi, old if a.props.get(name) == value else nf.encode(value, where)))
                 else:  # newly set property: the entry objects of this class use
-                    props.append((nf.prop_index(nobj.cls, name, where), nf.encode(value, where)))
+                    props.append((nf.prop_index(nobj.cls, name, where,
+                                                may_add=(b.cls, name) in new_props), nf.encode(value, where)))
             nobj.props = props
             touched.add(path)
 

@@ -181,6 +181,30 @@ team 2): `py -3 -m rusemod build <the mod's folder> --instance D:\RUSE-Instances
 - **Fail:** what the lobby shows, or where it stops. If the lobby shows 8 but the game refuses, try with 7.
 - **Then, if it passes:** past 8 (a 10-player copy, 5v5) tells whether the program caps it.
 
+## T13. A unit given to another nation (Studio 0.7.7)
+
+A nation's unit models only load in a match where a player has that nation. So for a unit given to another nation,
+the build now has its models' nation load in every skirmish. Untested in the game until now.
+1. In the Studio, make a mod (or pick a test one), open the German **Ju 87** (`Descriptor_Avion_Junkers_87`) and
+   click **New unit…**. Name it "Stuka US", set price 5, and put it in **another nation's factory**: the US air
+   factory.
+2. Click **Test in game**. The build's report has two notes: `Germany's unit models and animations now load in every
+   skirmish ... (255 loaders in 85 cluster maps ...)`, and one saying the Stuka US uses Germany's models. There are no
+   errors.
+   - Without the Studio: a mod whose `src/stuka.rndf` holds
+     `export Descriptor_Avion_Stuka_US is clone $/GFX/Everything/Descriptor_Avion_Junkers_87 ( Nationalite = 0 )`
+     (every nation's aircraft are factory 9), built with
+     `py -3 -m rusemod build <the mod's folder> --instance D:\RUSE-Instances\nations`.
+3. Play a skirmish as the **US** against an AI of any nation **but Germany** (UK or USSR), on any map.
+4. Build an airfield, then the Stuka US.
+   - **Pass:** it's in the US air factory, it's drawn (a Stuka, not invisible), it takes off, flies to an order,
+     dive-bombs a target and comes back, with its sounds. The match plays on normally.
+   - **Fail:** an invisible plane, a plane with no animation (frozen propeller, no dive), a crash when it's built or
+     first seen, or the match failing to load. Note which, and the build's notes.
+5. Then one more skirmish **with** a German player (US against Germany): the Stuka US and the German Stukas both
+   look and fly normally.
+6. **Also tell us:** does the match take noticeably longer to load than an unmodded one?
+
 ## T11. Launcher 0.2.9
 
 - **Pass:** the launcher offers 0.2.9 when it opens; **Update** installs it and it starts again; **Play** works.
