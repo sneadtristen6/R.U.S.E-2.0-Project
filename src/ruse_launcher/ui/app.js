@@ -82,6 +82,7 @@ async function setLanguage(lang) {
   text($("sets-title"), w.mod_sets);
   text($("new-set"), w.new_set);
   text($("library-title"), w.library);
+  sideTabs();
   text($("add-mod"), w.add_mod);
   text($("drop-hint"), w.drop_hint);
   text($("library-empty"), w.library_empty);
@@ -923,8 +924,23 @@ function buildNote(mod) {
 // a row opens on a click to its description, the builds it was made for and Remove. The search box narrows it.
 const libraryOpen = new Set();  // the ids of the rows opened
 
+// The sidebar shows the mod sets or the library, each with the whole height; the Library tab counts the mods
+function sideTabs(show) {
+  const side = $("side"), w = state.words;
+  if (show) state.side = show;
+  const library = state.side === "library";
+  side.classList.toggle("show-library", library);
+  side.classList.toggle("show-sets", !library);
+  $("side-sets").setAttribute("aria-pressed", String(!library));
+  $("side-library").setAttribute("aria-pressed", String(library));
+  text($("side-sets"), w.mod_sets);
+  $("side-library").replaceChildren(document.createTextNode(w.library),
+    ...(state.library.length ? [el("span", { className: "count", textContent: String(state.library.length) })] : []));
+}
+
 function renderLibrary() {
   const w = state.words, all = state.library;
+  sideTabs();
   const q = ($("library-search").value || "").trim().toLowerCase();
   const shown = q ? all.filter((m) => `${m.name} ${m.description || ""} ${m.author || ""}`.toLowerCase().includes(q)) : all;
   $("library-empty").classList.toggle("hidden", all.length > 0 && shown.length > 0);
@@ -1172,6 +1188,8 @@ async function start() {
   $("browse-back").addEventListener("click", () => { state.browse = null; render(); });
   let searching = null;
   $("library-search").addEventListener("input", renderLibrary);
+  $("side-sets").addEventListener("click", () => sideTabs("sets"));
+  $("side-library").addEventListener("click", () => sideTabs("library"));
   $("browse-search").addEventListener("input", (e) => {
     if (!state.browse) return;
     state.browse.search = e.target.value;

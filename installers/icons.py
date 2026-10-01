@@ -1,7 +1,10 @@
-"""Draw the two apps' icons as Windows .ico files, with nothing but the standard library (no image files in the repo).
+"""The two apps' icons as Windows .ico files.
 
-RUSE Launcher: a gold Play triangle. RUSE Studio: a gold pencil. Both on the apps' dark tile with a gold edge.
-Each .ico holds 16, 24, 32, 48 and 64 px pictures (classic bitmaps) and a 256 px one (PNG), like Windows' own.
+Since 2026-10-01 they are the owner's artwork, in installers/art: RUSE Launcher a bare-metal WWII fighter climbing
+through blue clouds, RUSE Studio the war-room table (the map, its units and plans, a hand drawing a zone). Each
+<app>.ico holds 16 to 256 px pictures (PNG; the 16, 24 and 32 px ones zoomed in on the subject so it reads that small)
+and <app>.png is the 256 px one. Without them (an older checkout), the icons are drawn here with nothing but the
+standard library: a gold Play triangle and a gold pencil on a dark tile.
 
   py -3 installers/icons.py OUT_DIR        writes OUT_DIR/launcher.ico, OUT_DIR/studio.ico (and .png previews)
 """
@@ -112,8 +115,13 @@ def ico(pictures: list[tuple[int, bytes]]) -> bytes:
     return out + b"".join(data for _size, data in pictures)
 
 
+ART = Path(__file__).resolve().parent / "art"  # the owner's artwork (2026-10-01): <app>.ico (16-256 px) and <app>.png
+
+
 def make(app: str) -> tuple[bytes, bytes]:
-    """(the .ico file, a 256 px PNG preview)."""
+    """(the .ico file, a 256 px PNG preview): the app's artwork when installers/art has it, else drawn here."""
+    if (ART / f"{app}.ico").is_file() and (ART / f"{app}.png").is_file():
+        return (ART / f"{app}.ico").read_bytes(), (ART / f"{app}.png").read_bytes()
     pictures, preview = [], b""
     for size in SIZES:
         rows = draw(app, size, samples=4 if size >= 64 else 8)
