@@ -279,9 +279,9 @@ road east of Toulaville; a top-down map of the test spots goes with it.
 ## Batch 4: roads up close, units from another nation, Blitz Twin (2026-10-01)
 
 `D:\RUSE-Instances\batch4` from `D:\ruse-test-mods\batch4` (batch 3's clean mod plus `src/nations.rndf`: the German
-Ju 87 and Tiger copied for the US), with Blitz Twin (`D:\ruse-test-mods\newmap-agent`), the town names and the Dev
-Toolkit; built from branch `batch4` (the Erase tool, new maps, roads up close, the launcher's new look and the unit
-packs, merged). No spawned units in it. The build: 0 errors, 1 warning (the Dev Toolkit's scripts). The HQ is where
+Ju 87 and Tiger copied for the US), with Blitz Twin (`D:\ruse-test-mods\newmap-agent`), the town names and a cheat
+mod; built from branch `batch4` (the Erase tool, new maps, roads up close, the launcher's new look and the unit
+packs, merged). No spawned units in it. The build: 0 errors, 1 warning (the cheat mod's scripts). The HQ is where
 batch 3 had it, on the main road east of Toulaville; a top-down map of the spots goes with it. Start `RUSE.exe` inside
 the copy's folder, Steam running.
 
@@ -323,7 +323,7 @@ higher up it's whole. The factories weren't tried.
 ## Batch 6: roads up close three ways side by side, and the factories in order (2026-10-01)
 
 `D:\RUSE-Instances\batch6` from `D:\ruse-test-mods\batch6` (batch 4's mod plus three short test roads), with the town
-names and the Dev Toolkit; built from branch `roads-filed`: 0 errors, 1 warning (the Dev Toolkit's scripts). The HQ
+names and a cheat mod; built from branch `roads-filed`: 0 errors, 1 warning (the cheat mod's scripts). The HQ
 is where batch 3 had it. A top-down picture of the spots goes with it (north up). Start `RUSE.exe` inside the copy's
 folder, Steam running. **BATTLES > D-Day, as the US against one UK or USSR AI.** Do the roads first: a crash in step 2
 ends the game.
