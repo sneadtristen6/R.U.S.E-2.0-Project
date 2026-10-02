@@ -63,8 +63,8 @@ def problems(obj) -> list[tuple[str, str, str]]:
                                      f"for exactly seven nations' units, and another number corrupts it as it loads"))
     if _int(obj.props.get(ID)) == 0:
         # rule: unit-id-zero
-        out.append(("error", ID, f"{ID} 0 isn't an id: the game leaves the unit out of its nation's list and can't "
-                                 f"build it; give it a number no other unit has"))
+        out.append(("error", ID, f"{ID} 0 isn't an id: the game skips the unit in its unit lists, and ordering it "
+                                 f"causes an error in the match; give it a number no other unit has"))
     for prop, what in (("ProductionPrice", "the game makes the unit free at the battle dates it has no price for"),
                        ("ShowInMenu", "the game hides the unit at the battle dates it has no item for, and reads a "
                                       "list of 1 or 2 items past its end")):
@@ -98,9 +98,9 @@ def id_clashes(game, names) -> dict[str, str]:
         v = _int(obj.props.get(ID)) if obj is not None and is_unit(obj) else None
         others = [n for n in by_id.get(v, []) if n != name] if v else []
         if others:
-            out[name] = (f"{ID} {v} is also {others[0]}'s: the game keeps one unit per id, so this one is left out of "
-                         f"its nation's list and orders for it build {others[0]}; give it a number no other unit has "
-                         f"(a copy gets one by itself when it doesn't set {ID})")
+            out[name] = (f"{ID} {v} is also {others[0]}'s: the game keeps one unit per id, so it skips this one, and "
+                         f"orders for it build {others[0]}; give it a number no other unit has (a copy gets one by "
+                         f"itself when it doesn't set {ID})")
     return out
 
 

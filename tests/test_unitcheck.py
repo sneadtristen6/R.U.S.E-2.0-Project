@@ -89,9 +89,9 @@ class Ids(unittest.TestCase):
     def test_another_unit_s_id_even_of_another_kind(self):
         r = run(clone(("DescriptorId", num(1200, "uint32"))))
         self.assertEqual(said(r), [f"m (m.rndf:1): {NEW}: DescriptorId 1200 is also {PLANE}'s: the game keeps one "
-                                   f"unit per id, so this one is left out of its nation's list and orders for it build "
-                                   f"{PLANE}; give it a number no other unit has (a copy gets one by itself when it "
-                                   f"doesn't set DescriptorId)"])
+                                   f"unit per id, so it skips this one, and orders for it build {PLANE}; give it a "
+                                   f"number no other unit has (a copy gets one by itself when it doesn't set "
+                                   f"DescriptorId)"])
 
     def test_zero(self):
         r = run(clone(("DescriptorId", num(0, "uint32"))))

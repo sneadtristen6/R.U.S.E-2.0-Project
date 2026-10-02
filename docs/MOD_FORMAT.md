@@ -508,7 +508,7 @@ rotation = 1.2        # radians, optional: as its teammate when left out
 ### How many players: `maps/<map pack>/map.toml`
 
 ```toml
-players = 8                   # 2 to 8 (the most any shipped map takes; past 8 is tried later, PLAN A10)
+players = 8                   # 2 to 8 (the game's lobby has 8 seats: a map set to 10 still seats 8, tried 2026-10-02)
 entry = "(6) Cotentin (3v3)"  # optional: which of the map's entries, when it has several (the map list's name)
 ```
 
@@ -522,7 +522,12 @@ entry = "(6) Cotentin (3v3)"  # optional: which of the map's entries, when it ha
   its own count this way.
 - A map that offers three teams with a count that isn't a multiple of 3 gets a warning: whether that layout is still
   offered, or gives uneven teams, is untested.
-- Not tried in the game yet (`TESTS.md` T12).
+- Tried in the game on 2026-10-02 (rule test B, Strategists set to 10): the lobby showed "Number of players 10", so
+  the count reaches the menus; the lobby still had 8 seats and the match loaded with 8. A count from 2 to 8 on a map
+  that had fewer isn't tried yet (`TESTS.md` T12). The menus show the map's English name ("Strategists"), not the
+  map-list name, so the "(10)" in that name wasn't seen.
+- A team with fewer starting points than players (rule test A): the team's first lobby slot takes the point and the
+  next player starts with no HQ and no units, without a message; the build refuses it for that reason.
 
 ### Cover and blocked ground: `maps/<map pack>/cover.toml`
 

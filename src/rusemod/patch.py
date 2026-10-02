@@ -743,8 +743,9 @@ class Engine:
             found += [(name, prop, level, why) for level, prop, why in uc.problems(obj) if why not in had]
             if uc.ID not in obj.props and (made.kind == "create" if made else self._had_ids.get(name) is not None):
                 # rule: unit-id-zero
-                found.append((name, uc.ID, "error", f"it has no {uc.ID}, so the game leaves it out of its nation's "
-                                                    f"list and can't build it; give it a number no other unit has"))
+                found.append((name, uc.ID, "error", f"it has no {uc.ID}, so the game skips it in its unit lists, and "
+                                                    f"ordering it causes an error in the match; give it a number no "
+                                                    f"other unit has"))
         now = uc.ids(self.game)
         moved = [n for n in units if n in self.created or now.get(n) != self._had_ids.get(n)]
         # rule: unit-id-clash
