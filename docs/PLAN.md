@@ -709,6 +709,23 @@ the test spots beside the player's HQ with a top-down map):
 
 *Planned (owner, 2026-09-30):* **A10**, at least 8 players on a map (D-Day first), past 8 tried later.
 
+*Written down for later, not scheduled (owner, 2026-10-02: "look into how the ui would fit 10"):* **A10b, a lobby
+for 10 players.** Tried in the game (rule test B): a map set to 10 shows "Number of players 10" in the lobby, but the
+lobby has 8 seats and the match starts with 8, no crash. What's known and what isn't:
+- The lobby is a screen file (the outgame `.gfx`). Its seat layouts are 2 teams of 2, 2 teams of 4, and one grid of
+  4 rows x 2 columns (8 seats, used for free-for-all); the end-game score screen also holds at most 8 players. So
+  more seats means a changed lobby screen and a changed end-game screen, not only map data.
+- The game fills the seats and sends each player's team, slot, colour and nation to the screen; the screen only
+  shows them and sends back clicks ("add AI to team t, slot s"). Whether the game itself accepts a 9th and 10th
+  seat, and gives them a colour, a team and a starting point, is **not known**: the screen stops at 8 before that can
+  be seen.
+- What the work would be: (1) a 10-seat layout in the lobby screen (5 rows x 2, or 2 teams of 5); (2) the end-game
+  screen's 8 rows to 10; (3) a test copy that seats 10 (AIs) and starts the match; (4) only if that works, the build
+  and the Studio allow up to 10 (`players.PLAYERS_MOST`), and Strategists or D-Day get starting points for teams 9
+  and 10. Colours past 8 and the AI's limits are unknown until (3).
+- Changing the game's screen files is outside "data only"; this belongs with the RUSE 2.0 side (§11) unless it can
+  be done as a mod file.
+
 *Asked for 1.0 (owner, 2026-10-01):* a R.U.S.E. 2.0 image when the game starts. Waits for the owner's artwork.
 
 *The owner's ideas for later:* §12 (maps), §14 (the rest, e.g. game UI mods), §11 (RUSE 2.0's game).
