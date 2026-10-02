@@ -11,7 +11,7 @@
   if (mode === null) return;
   const prefs = {};  // what the real app keeps in settings.json (rusemod.home.PrefsCalls)
   const words = {
-    us: { update_out: "{app} {version} is out.", update_now: "Update", whats_new: "What's new", update_progress: "Downloading the update… {pct}", update_installing: "Installing: {app} closes and opens again by itself.", update_repo: "(This copy runs from the repo: update it with git pull.)", update_failed: "The update didn't work: {why}",
+    us: { update_out: "{app} {version} is out.", update_now: "Update", whats_new: "What's new", release_page: "Release page", changes_before: "In your version ({version})", changes_now: "In {version}", changes_none: "The release notes list no changes: open the release page for them.", update_progress: "Downloading the update… {pct}", update_installing: "Installing: {app} closes and opens again by itself.", update_repo: "(This copy runs from the repo: update it with git pull.)", update_failed: "The update didn't work: {why}",
       language: "Language", game_names: "Code names", search: "Search", all: "All", ground: "Ground",
       infantry: "Infantry", air: "Air", buildings: "Buildings", units: "{n} units", parts: "Parts", uses: "Uses",
       own_part: "its own", shared_part: "shared with other units", used_by: "Used by", copy_address: "Copy address",
@@ -968,10 +968,15 @@
       map_view: async (pack, lod) => fakeGround(pack, lod || "lowdef"),
       map_ground: async () => ({ url: null }),
       map_models: async () => ({}),  // no game models in the preview: the shapes stay  // the made-up island has only its colours
+      app_version: async () => ({ app: "Studio", version: "0.8.1" }),
       update_check: async () => mode === "update"
-        ? { available: true, version: "9.9.9", installed: true, size: 60000000,
+        ? { available: true, version: "9.9.9", current: "0.8.1", installed: true, size: 60000000,
+            changes: [
+              { version: "9.9.9", before: "A unit given to another nation crashed the game when built.",
+                now: "It's built, fights and can be selected in any match." },
+              { version: "9.9.9", before: "", now: "Transparency sliders for the map's layers." }],
             page: "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases" }
-        : { available: false, version: "0.6.3" },
+        : { available: false, version: "0.8.1", current: "0.8.1" },
       update_install: async () => { throw new Error("The preview can't install updates."); },
       update_page: async () => ({ opened: "" }),
       help_links: async () => ({ wiki: "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki" }),

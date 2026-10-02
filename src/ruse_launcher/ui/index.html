@@ -8,7 +8,8 @@
 </head>
 <body>
   <header class="top">
-    <div class="brand"><img src="logo.png" alt="" width="34" height="34">RUSE <span>Launcher</span></div>
+    <div class="brand"><img src="logo.png" alt="" width="34" height="34">RUSE <span>Launcher</span>
+      <small id="app-version" class="app-version"></small></div>
     <div id="status" class="status" role="status"></div>
     <button id="choose" class="small hidden" type="button"></button>
     <button id="settings-open" class="small ghost" type="button"></button>
@@ -16,6 +17,8 @@
   <div id="update-bar" class="update-bar hidden" role="status"><span id="update-text"></span>
     <button id="update-now" class="small" type="button"></button>
     <button id="update-info" class="small ghost" type="button"></button></div>
+  <!-- what changes from the running version to the new one (rusemod.update.changes_since), opened from the bar -->
+  <div id="update-changes" class="update-changes hidden"></div>
 
   <main class="layout">
     <aside id="side" class="side tabbed show-sets">

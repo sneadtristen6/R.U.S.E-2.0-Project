@@ -101,6 +101,50 @@ class Downloading(unittest.TestCase):
         self.assertIn("/relaunch=1", args)
 
 
+NOTES = """**RUSE Studio, a preview.** Intro.
+
+**0.9.0:** a later one.
+| Before | Now |
+|---|---|
+| Roads vanished up close. | They're drawn up close. |
+
+**0.8.1:** units from any nation.
+| Before | Now |
+| --- | --- |
+| A unit from another nation crashed the game. | It works in any match. |
+| No transparency. | Sliders for the layers. |
+
+**0.8.0:** the map editor grows up.
+- **New brushes**
+- **Check this map**
+
+**0.7.6:** older.
+"""
+
+
+class Changes(unittest.TestCase):
+    def test_before_and_after_since_the_running_version(self):
+        rows = update.changes_since(NOTES, "0.7.6", "0.8.1")
+        self.assertEqual([(r["version"], r["before"], r["now"]) for r in rows], [
+            ("0.8.1", "A unit from another nation crashed the game.", "It works in any match."),
+            ("0.8.1", "No transparency.", "Sliders for the layers."),
+            ("0.8.0", "", "**New brushes**"),
+            ("0.8.0", "", "**Check this map**")])
+
+    def test_only_the_versions_between(self):
+        self.assertEqual([r["version"] for r in update.changes_since(NOTES, "0.8.1", "0.9.0")], ["0.9.0"])
+        self.assertEqual(update.changes_since(NOTES, "0.9.0", "0.9.0"), [])
+        self.assertEqual(update.changes_since("", "0.1.0", "0.2.0"), [])
+
+    def test_the_check_says_both_versions(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = App(d)
+            self.assertEqual(app.app_version(), {"app": "Launcher", "version": "0.1.0"})
+            u = app.update_check()
+            self.assertEqual((u["current"], u["version"]), ("0.1.0", "0.2.0"))
+            self.assertIsInstance(u["changes"], list)
+
+
 class App(UpdateCalls):
     UPDATE_APP, UPDATE_VERSION = "launcher", "0.1.0"
 
@@ -141,7 +185,7 @@ class Calls(unittest.TestCase):
             self.assertEqual(App(d).update_check()["available"], True)
             quiet = App(d)
             quiet._update_fetch = lambda url: [release("launcher-v0.1.0")]
-            self.assertEqual(quiet.update_check(), {"available": False, "version": "0.1.0"})
+            self.assertEqual(quiet.update_check(), {"available": False, "version": "0.1.0", "current": "0.1.0"})
 
 
 if __name__ == "__main__":

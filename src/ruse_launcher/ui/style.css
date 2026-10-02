@@ -297,6 +297,17 @@ button:disabled { cursor: default; opacity: 0.45; }
 .update-bar { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-size: 13px;
               background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41); }
 .update-bar.hidden { display: none; }
+/* what changes: the running version beside the new one, a row per change */
+.update-changes { padding: 8px 20px 12px; background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41);
+                  font-size: 13px; max-height: 40vh; overflow: auto; }
+.update-changes.hidden { display: none; }
+.update-changes table { border-collapse: collapse; width: 100%; max-width: 1100px; }
+.update-changes th, .update-changes td { text-align: left; vertical-align: top; padding: 5px 10px;
+                                         border-bottom: 1px solid var(--line, #333b41); }
+.update-changes th { color: var(--accent); font-weight: 600; }
+.update-changes td.ver { color: var(--muted, #9aa7b2); white-space: nowrap; width: 1%; }
+.update-changes td.before { color: var(--muted, #9aa7b2); width: 40%; }
+.app-version { font-weight: 400; font-size: 12px; letter-spacing: 0; color: var(--muted, #9aa7b2); margin-left: 2px; }
 
 /* mods that don't go together (rusemod.rmod.clashes): red when the set can't be played, yellow when a later mod
    overwrites an earlier one */

@@ -45,6 +45,37 @@ class Release:
     url: str             # its download address
     size: int
     sha256: str          # the checked-against hash (lowercase hex)
+    changes: list = None  # before and after, per version newer than the running one (changes_since)
+
+
+ROW = re.compile(r"^\s*\|(.+?)\|(.+?)\|\s*$")
+
+
+def changes_since(body: str, current: str, newest: str) -> list[dict]:
+    """What changes between the running version and `newest`, from a release's notes (`body`, every version's notes,
+    newest first: `**0.8.1:** ...`): for each version after `current` up to `newest`, the rows of its before/after
+    table (`| Before | Now |`), or, with no table, its bullets as "now" with nothing before. [{version, before, now}],
+    newest first."""
+    parts = re.split(r"^\*\*(\d+\.\d+\.\d+):\*\*", body or "", flags=re.M)
+    out = []
+    for version, text in zip(parts[1::2], parts[2::2]):
+        if not version_tuple(current) < version_tuple(version) <= version_tuple(newest):
+            continue
+        rows = []
+        for line in text.splitlines():
+            m = ROW.match(line)
+            if not m:
+                continue
+            before, now = m.group(1).strip(), m.group(2).strip()
+            if set(before) <= set("-: ") or before.lower() == "before":
+                continue  # the header and its rule
+            rows.append({"version": version, "before": before, "now": now})
+        if not rows:
+            first = text.strip().splitlines()[0].strip() if text.strip() else ""
+            bullets = [ln.strip()[2:] for ln in text.splitlines() if ln.startswith("- ")]
+            rows = [{"version": version, "before": "", "now": b} for b in (bullets or [first]) if b]
+        out += rows
+    return out
 
 
 def version_tuple(v: str) -> tuple:
@@ -141,7 +172,7 @@ def latest(app: str, current: str, fetch=_get_json, fetch_text=_get_text) -> Rel
         raise UpdateError(f"{APPS[app]} {version} can't be checked (its SHA-256 is missing or differs between GitHub "
                           f"and the release notes), so it isn't installed.")
     return Release(app, version, rel["tag_name"], str(rel.get("html_url", "")), name, url, int(asset.get("size", 0)),
-                   hashes.pop())
+                   hashes.pop(), changes_since(str(rel.get("body") or ""), current, version))
 
 
 def _open(url: str):
@@ -206,18 +237,23 @@ class UpdateCalls:
     _update_installed = staticmethod(installed_app)
     _update_found: Release | None = None
 
+    def app_version(self) -> dict:
+        """This app and the version running, shown beside its name."""
+        return {"app": APPS.get(self.UPDATE_APP, ""), "version": self.UPDATE_VERSION}
+
     def update_check(self) -> dict:
-        """Is there a newer release of this app? {"available", "version", "page", "size", "installed" (False when
-        running from the repo), "error"}. Asked once per start."""
+        """Is there a newer release of this app? {"available", "version", "current" (the running one), "changes"
+        (before and after, per version since the running one: changes_since), "page", "size", "installed" (False
+        when running from the repo), "error"}. Asked once per start."""
         try:
             rel = latest(self.UPDATE_APP, self.UPDATE_VERSION, fetch=self._update_fetch, fetch_text=self._update_fetch_text)
         except UpdateError as exc:
-            return {"available": False, "error": str(exc)}
+            return {"available": False, "error": str(exc), "current": self.UPDATE_VERSION}
         self._update_found = rel
         if rel is None:
-            return {"available": False, "version": self.UPDATE_VERSION}
-        return {"available": True, "version": rel.version, "page": rel.page, "size": rel.size,
-                "installed": bool(self._update_installed())}
+            return {"available": False, "version": self.UPDATE_VERSION, "current": self.UPDATE_VERSION}
+        return {"available": True, "version": rel.version, "current": self.UPDATE_VERSION, "changes": rel.changes or [],
+                "page": rel.page, "size": rel.size, "installed": bool(self._update_installed())}
 
     def update_page(self) -> dict:
         """Open the newer release's page (what's new) in the browser."""

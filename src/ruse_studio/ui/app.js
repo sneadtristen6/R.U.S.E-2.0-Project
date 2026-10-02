@@ -1280,6 +1280,7 @@ window.openSettings = (id) => {
 const APP_NAME = "RUSE Studio";
 
 async function checkUpdate() {
+  try { $("app-version").textContent = `v${(await api().app_version()).version}`; } catch { /* an older back end */ }
   try { state.update = await api().update_check(); } catch { state.update = null; }
   renderUpdate();
 }
@@ -1294,6 +1295,25 @@ function renderUpdate() {
   $("update-now").disabled = Boolean(state.updating);
   $("update-info").textContent = w.whats_new;
   bar.classList.remove("hidden");
+  renderChanges();
+}
+
+// What changes: the running version beside the new one, a row per change (rusemod.update.changes_since), and the
+// release page under it
+function renderChanges() {
+  const u = state.update, w = state.words, box = $("update-changes");
+  if (!u || !u.available || !state.showChanges) { box.classList.add("hidden"); return; }
+  const rows = u.changes || [];
+  const page = el("button", { type: "button", className: "small ghost", textContent: w.release_page });
+  page.addEventListener("click", () => api().update_page().catch(() => {}));
+  box.replaceChildren(rows.length ? el("table", {},
+    el("thead", {}, el("tr", {}, el("th", { textContent: "" }),
+      el("th", { textContent: fill(w.changes_before, { version: u.current || "" }) }),
+      el("th", { textContent: fill(w.changes_now, { version: u.version }) }))),
+    el("tbody", {}, ...rows.map((r) => el("tr", {}, el("td", { className: "ver", textContent: r.version }),
+      el("td", { className: "before", textContent: r.before || "\u2014" }), el("td", { textContent: r.now })))))
+    : el("p", { textContent: w.changes_none }), page);
+  box.classList.remove("hidden");
 }
 
 async function installUpdate() {
@@ -1383,7 +1403,7 @@ async function start() {
     await showNoIndex(status);
   }
   $("update-now").addEventListener("click", installUpdate);
-  $("update-info").addEventListener("click", () => api().update_page().catch(() => {}));
+  $("update-info").addEventListener("click", () => { state.showChanges = !state.showChanges; renderChanges(); });
   await setLanguage(state.lang);
   checkUpdate();
   firstBackup(status.ready).catch(problem);
