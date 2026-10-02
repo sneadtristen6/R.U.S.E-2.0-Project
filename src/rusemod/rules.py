@@ -7,7 +7,8 @@ Each rule's `basis` is how we know it, strongest first:
   community       another modder's report, not checked by us
   generalization  "every shipped file does X, so the game needs X": a pattern, NOT proof
   unrecorded      nobody wrote down where it came from: an assumption
-Only "game" counts as tested. The others are the list to check (docs/UNTESTED.md, and the GitHub issue made from it).
+Only "game" counts as tested. The others are the list to check (GitHub issue 15). A "studied" rule's evidence says what
+the study showed and what it left open; "partly" means part of the rule rests on it and the rest is still unknown.
 
 tests/test_rules.py is the guard: every refusal in the code whose words are about the game names its rule here
 (`# rule: <id>` on its line or the one before) or says why it isn't one (`# not a game rule: <why>`); every rule has
@@ -46,52 +47,72 @@ RULES: dict[str, Rule] = {
         "community", "DomesticNukes: flag 62 on a Stuart crashed the game (his test); ProLution: the same for 63"),
     "skirmish-neutral-spawns": Rule(
         "A BATTLES (skirmish) scenario places only neutral spawns; a team's would not appear.",
-        "generalization", "every spawn in the shipped BATTLES scenarios is neutral (camp -1)"),
+        "studied", "the game's BATTLES script starts every map with no team list, so only neutral spawns are placed "
+                   "(2026-10-02); every shipped BATTLES spawn is neutral too"),
     "road-network-one-piece": Rule(
         "A new road must join the map's road network; supply routes between two pieces fail.",
-        "generalization", "every shipped map's road network is one piece"),
+        "generalization", "every shipped map's road network is one piece; how trucks route between two pieces "
+                          "wasn't found in the study (2026-10-02): an in-game test, after roads"),
     "weapon-salvo": Rule(
         "A weapon's salvo number must be one the weapon defines, or the game stops with a 'Quit game?' box.",
-        "unrecorded", "added in the 2026-10-01 build audit; no test or study written down"),
+        "studied", "the game checks each mounted weapon's salvo number as units load and shows that box when the "
+                   "salvo isn't defined (2026-10-01 audit, checked again 2026-10-02)"),
     "unit-nation-range": Rule(
         "Nationalite is 0 to 6; another number corrupts the units as the game loads them.",
-        "unrecorded", "added in the 2026-10-01 build audit; no test or study written down"),
+        "studied", "the game keeps exactly 7 per-nation unit lists and uses Nationalite to pick one without a range "
+                   "check (2026-10-01 audit, checked again 2026-10-02); what breaks after that isn't known"),
     "unit-id-zero": Rule(
         "A unit with DescriptorId 0 (or none) is left out of its nation's list.",
-        "unrecorded", "added in the 2026-10-01 build audit; no test or study written down"),
+        "studied", "partly: the game skips id 0 when it lists units by id and by nation (the nation list feeds the "
+                   "in-game encyclopedia), and an order for such a unit reaches the game's scripts with no unit, an "
+                   "error (2026-10-02); what the player sees then isn't known"),
     "unit-id-clash": Rule(
         "Two units with one DescriptorId: orders for one build the other.",
-        "unrecorded", "added in the 2026-10-01 build audit; no test or study written down"),
+        "studied", "the game keeps the first unit with an id and skips the next without a word; production orders "
+                   "name the unit by id (2026-10-01 audit, checked again 2026-10-02)"),
     "unit-five-dates": Rule(
         "ProductionPrice and ShowInMenu have 5 items, one per battle date; fewer makes the unit free or hidden.",
-        "generalization", "every shipped unit has 5 items in both lists"),
+        "studied", "partly: the game's scripts make a missing price 0 and a missing menu item hidden, with the length "
+                   "checked (2026-10-02); a read past the list's end reported by the 2026-10-01 audit isn't checked "
+                   "again; every shipped unit has 5 items in both"),
     "flag-59": Rule(
         "Flag 59 (paratroop drop) crashes the game on a unit that isn't an aircraft, or on one with nothing to drop.",
-        "generalization", "the 10 shipped units with flag 59 are aircraft with a UniteTransportee"),
+        "studied", "the game's interface reads a flag-59 unit as an aircraft and reads what it drops without checking "
+                   "either (2026-10-02); which click reaches it isn't known; the 10 shipped units with flag 59 are "
+                   "aircraft with a UniteTransportee"),
     "start-ground": Rule(
-        "A starting point must stand where vehicles can go.",
-        "generalization", "every shipped starting point stands on ground vehicles use"),
+        "A starting point must stand where vehicles can go, or the game builds that player's HQ wherever it finds room.",
+        "studied", "partly: the game's script builds the first HQ where the placer says, without asking whether it "
+                   "found room at the point (2026-10-02); how far away it lands isn't seen yet; every shipped starting "
+                   "point stands on ground vehicles use"),
     "seats-per-team": Rule(
-        "Each player needs a starting point of their team, or the game can't seat them.",
-        "unrecorded", "added with the player counts (2026-10-01); no test or study written down"),
+        "Each player needs a starting point of their team, or that player starts with no HQ and no units.",
+        "studied", "partly: the game's scripts seat a player with no point left in the team but give them no first "
+                   "HQ, units or camera (2026-10-02); what follows (defeat? a crash?) is in-game test A"),
     "players-most": Rule(
         "A map takes at most 8 players.",
-        "generalization", "the lobby screen we read (outgame .gfx) has layouts for at most 8 seats"),
+        "generalization", "the lobby screen we read (outgame .gfx) has layouts for at most 8 seats; no limit found in "
+                          "the game's scripts (2026-10-02): in-game test B"),
     "spawn-class": Rule(
         "A spawn's class must be one the game's own spawns use, or loading the map fails.",
-        "unrecorded", "added in the 2026-10-01 build audit; no test or study written down"),
+        "studied", "partly: a class name the game's unit list doesn't have raises an error while the map loads "
+                   "(2026-10-02); our second check (other class paths must be ones shipped spawns use) is stricter than "
+                   "the game, which takes any path that exists"),
     "delete-unit-class": Rule(
         "Deleting a unit the game's Python unit list names makes the game fail to load units.",
-        "unrecorded", "added with the unit list (decision 23); no test written down"),
+        "studied", "every class in the game's unit list looks its unit up by name as the list loads, and a missing "
+                   "one raises an error, so the whole list fails (2026-10-02)"),
     "newmap-names": Rule(
         "A new map's name must not be one the game has, nor start with flat_ (the test maps).",
         "generalization", "the shipped map names; flat_ maps are the game's test maps"),
     "scenery-md5": Rule(
         "The game refuses a scenery file whose MD5 is wrong.",
-        "community", "LittleGroove's rule for .scenario files; checked by us only that the shipped files match it"),
+        "studied", "the game checks a map's scenery file against the 16 bytes at its start and stops with a "
+                   "'Quit game?' box when they differ (2026-10-02); LittleGroove's rule, and the shipped files match it"),
     "scenery-grid": Rule(
         "The game draws nothing placed outside a map's scenery grid.",
-        "unrecorded", "no test or study written down"),
+        "studied", "up close, the game draws only the grid's cells that hold objects, and none outside it (2026-10-01 "
+                   "audit, checked again 2026-10-02); the far tiers rest on the audit alone"),
 }
 
 
