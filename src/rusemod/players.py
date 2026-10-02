@@ -15,8 +15,9 @@ two-team 8-player game needs 4 in teams 1 and 2; free-for-all needs 1 in each of
 ones in scenario.toml ([[start]], rusemod.scenario.Start). The build refuses a count the scenario can't seat, naming
 the starting points that are missing (team t, place k: the team's k-th).
 
-The owner's plan (PLAN A10, 2026-09-30): at least 8 players; past 8 is tried later (the game's own limit may be in
-the program).
+The owner's plan (PLAN A10, 2026-09-30): at least 8 players. Past 8 was tried in the game (2026-10-02, rule test B):
+a map set to 10 says "Number of players 10" in the lobby, but the lobby has 8 seats and the match loads with 8. More
+would need a new lobby screen.
 """
 from __future__ import annotations
 
@@ -26,7 +27,7 @@ from dataclasses import dataclass
 
 from .ndf import Ndf, Value
 
-PLAYERS_MOST = 8          # the most any shipped map takes; past it is PLAN A10's later step
+PLAYERS_MOST = 8          # the lobby's seats (rule test B, 2026-10-02); past it needs a new lobby screen
 GLOBALS = "genglad\\patchable\\misc\\globals.cpp.gladndfbin"
 MAPINFO = "genglad\\patchable\\mapinfo.cpp.gladndfbin"
 GROUP = {2: None, 3: 1, 4: 1, 5: 2, 6: 2, 7: 3, 8: 3}   # CategoryId by player count, as the shipped maps have it
@@ -53,8 +54,8 @@ def parse_map(data: dict, where: str = "map.toml") -> list[Players]:
     n = data["players"]
     if isinstance(n, bool) or not isinstance(n, int) or not 2 <= n <= PLAYERS_MOST:
         # rule: players-most
-        raise PlayersError(f"{where}: players must be a whole number from 2 to {PLAYERS_MOST} (past {PLAYERS_MOST} "
-                           f"isn't possible yet)")
+        raise PlayersError(f"{where}: players must be a whole number from 2 to {PLAYERS_MOST}: the game's lobby shows "
+                           f"at most {PLAYERS_MOST} seats (seen in the game)")
     entry = data.get("entry")
     if entry is not None and (not isinstance(entry, str) or not entry.strip()):
         raise PlayersError(f"{where}: entry must be the map-list name of one of the map's entries, like "
@@ -226,8 +227,9 @@ def apply_players(read_glad, pack: str, setting: Players, starting_points, warn=
     if missing:
         where = ", ".join(f"team {t}, place {q}" for t, q in missing)
         # rule: seats-per-team
-        raise PlayersError(f"{pack}: {setting.count} players need a starting point for each; {scenario_file} has none "
-                           f"for {where}. Add them (scenario.toml [[start]], or the Studio's Add starting point)")
+        raise PlayersError(f"{pack}: {setting.count} players need a starting point for each (seen in the game: a "
+                           f"player without one starts with no HQ and no units); {scenario_file} has none for {where}. "
+                           f"Add them (scenario.toml [[start]], or the Studio's Add starting point)")
     before = p["NbPlayers"].scalar() if "NbPlayers" in p else None
     if 3 in layouts and setting.count % 3 and warn is not None:
         warn(f"{pack}: {name!r} offers three teams, but {setting.count} players can't make three even teams: that "
