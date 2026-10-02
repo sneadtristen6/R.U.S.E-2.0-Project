@@ -130,7 +130,7 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - Get new versions without downloading by hand: the launcher offers them, checks the file and installs it (from
   0.2.0 on).
 - **Mod sets** and the **Mod library** in two tabs, each with the window's whole height: the whole library in reach,
-  with a search and a count (Launcher 0.4.0).
+  with a search and a count (Launcher 0.3.1).
 
 **Modders, with RUSE Studio**
 
@@ -138,7 +138,8 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - Change a unit's numbers in your own mod, with Undo, then **Test in game**.
 - See every map in 3D with its real ground, listed by the name players know (in any of the ten languages) next to
   its code name, with the game's own 3D models of its buildings and trees.
-- Make new units, and give a weapon another unit's ammo (its muzzle flash and sound come with it).
+- Make new units, and give a weapon another unit's ammo (its muzzle flash and sound come with it). A new unit can go
+  in any nation's build menu: a German Tiger or a Japanese Zero for the US works in any match (2026-10-02, Studio 0.8.1).
 - Shape a map's ground with brushes (hills, craters, ramps, level, lakes) that **work in the game**: units drive on
   it and take orders there (checked on Blitz, 2026-09-30).
 - **Make towns and woods units hide in:** the map view shows where units hide (in green), and the Cover, Uncover and
@@ -152,14 +153,14 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - **Say where units can go:** the map view shows it (red: no unit, yellow: infantry only), the Block brushes close
   ground to every unit, to infantry or to vehicles, and placed buildings stop units (Solid). Proven in the game
   (2026-09-30, Studio 0.7.0).
-- The map tools sit in a bar along the bottom, Cities: Skylines style (Studio 0.7.0), grouped since 0.9.0: Ground &
+- The map tools sit in a bar along the bottom, Cities: Skylines style (Studio 0.7.0), grouped since 0.8.1: Ground &
   water, Cover & movement, Roads & bridges, Buildings, Props & trees, Erase, Scenario and Check, a tab for each tool
   in a group.
 - **Draw roads**, Cities: Skylines style (straight, curved, freeform; ends snap onto roads; their length shown as
   you draw): supply routes use them, they're painted on the ground, and a road over water gets a bridge units drive
   across, all in the game (2026-09-30, Studio 0.7.2 to 0.7.6). Tanks, infantry and supply trucks cross a new
   bridge on its deck, and infantry follow new roads (2026-10-01, Studio 0.8.0).
-- **Clear woods and props** with the **Erase** tool (Studio 0.9.0; `[[erase]]` in scenery.toml): units drive into a
+- **Clear woods and props** with the **Erase** tool (Studio 0.8.1; `[[erase]]` in scenery.toml): units drive into a
   cleared wood and infantry there are no longer hidden; a **Bridges dock** places a bridge by hand; **Check this map** lists what would go wrong before you
   test; Open and Forest brushes (2026-10-01, Studio 0.8.0).
 - **More players on a map, up to 8:** a Players count and an Add starting point tool (D-Day as a 4v4; built, the
@@ -279,7 +280,7 @@ run, **Artifacts** (needs a GitHub login; the files expire after 90 days). More 
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.0) &middot; **Studio** for modders, a preview (latest: 0.9.0) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.3.1) &middot; **Studio** for modders, a preview (latest: 0.8.1) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -296,7 +297,8 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
 <details>
 <summary><b>Current stage (2026-10-01)</b></summary>
 
-- **Studio 0.9.0 and Launcher 0.4.0** (2026-10-01): both apps in R.U.S.E.'s blues with new logos (a fighter in the
+- **Studio 0.8.1 and Launcher 0.3.1** (2026-10-02): units from another nation work (a German Tiger and Ju 87
+  and a Japanese Zero and Chi-Ha for the US, built, fighting and selectable with no German or Japanese player). Both apps in R.U.S.E.'s blues with new logos (a fighter in the
   clouds for the launcher, the war-room table for the Studio), the launcher's sidebar in two tabs, the Studio's map
   tools grouped, and its Erase tool.
 

@@ -604,9 +604,10 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Now (updated 2026-10-01, night): start here.** **Studio 0.9.0 and Launcher 0.4.0 are built on the branch `next`,
-waiting for the owner's in-game test (TESTS.md batch 4) before anything is pushed** (owner: "test before upload to
-github"). In them: both apps in R.U.S.E.'s blues with the owner's artwork as logos; the launcher's sidebar in two tabs
+**Now (updated 2026-10-02): start here.** **Studio 0.8.1 and Launcher 0.3.1** (smaller releases, the owner: "lets not
+go .9 yet smaller releases"), from the branch `allnations`. Units from another nation work (tested in the game
+2026-10-02: a German Tiger and Ju 87 and a Japanese Zero and Chi-Ha for the US, with no German or Japanese player).
+Roads up close are still open. In them: both apps in R.U.S.E.'s blues with the owner's artwork as logos; the launcher's sidebar in two tabs
 (the whole library reachable); the Studio's toolbar in groups (Ground & water, Cover & movement, Roads & bridges,
 Buildings, Props & trees, Erase, Scenario, Check); the Erase tool; and, if batch 4 passes, new roads drawn up close
 (the map's road model, step 5), units from another nation (step 6) and new maps in BATTLES (step 8). After the

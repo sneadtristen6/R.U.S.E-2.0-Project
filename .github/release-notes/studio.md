@@ -1,7 +1,12 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
-**0.9.0:** a new look, a shorter toolbar, and the Erase tool.
+**0.8.1:** units from any nation, a new look, a shorter toolbar, and the Erase tool.
+- **Units from another nation work.** A new unit can go in any nation's build menu, whatever army its model comes
+  from: a German Tiger or Ju 87 for the US, a Japanese Zero or Chi-Ha too. It's built, fights, shows its picture on
+  its card and its marker, and can be selected on the ground and in the air, even in a match where nobody plays the
+  nation it came from (tested in the game, 2026-10-02). The build has that nation's models load in every match; a
+  match takes a little more memory and loading time.
 - **A new look:** R.U.S.E.'s blues instead of black and gold, and a new logo: the war-room table.
 - **The map editor's toolbar is shorter.** Tools that go together share one tile, with a tab for each: Ground &
   water, Cover & movement, Roads & bridges, Buildings, Props & trees, then Erase, Scenario and Check. A tile opens at

@@ -32,7 +32,7 @@ Placed buildings don't hide units by themselves: open **Cover**, pick **Town** a
 
 ## Erase the map's own trees and props
 
-1. In the bar, click **Erase** (Studio 0.9.0).
+1. In the bar, click **Erase** (Studio 0.8.1).
 2. Pick what it takes: **trees**, **props**, **buildings** (any mix). Each circle keeps what was picked when you
    painted it.
 3. Drag over the map: red circles mark what goes, and what they cover is tinted red. **Size** sets the circles;
