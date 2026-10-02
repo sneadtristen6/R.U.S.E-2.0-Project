@@ -1449,6 +1449,13 @@ function drawStartCamera(it, group, colour, at) {
   cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(look[0], look[2], look[1]));  // its tip
   cone.userData.label = label + " · " + (mv.words.scen_cam_rest || "the match opens looking from here");
   group.add(cone);
+  // a wider, unseen grip round it: the Move tool drags the camera round its HQ by it (LittleGroove's camera ring)
+  const grip = new THREE.Mesh(new THREE.SphereGeometry(size * 0.018, 12, 8),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  grip.position.copy(cone.position);
+  grip.userData.camOf = it.item;
+  grip.userData.label = cone.userData.label + (mv.words.scen_cam_drag_tip ? " · " + mv.words.scen_cam_drag_tip : "");
+  group.add(grip);
   // where it looks, and the part of the map in view: each corner of the screen's ray down to the start's height
   const ground = at(it.x, it.y).y / SCALE;  // the ground's height at the HQ (map units, as the camera's)
   const hitAt = (d) => {
@@ -1518,7 +1525,12 @@ function drawScenario() {
         + (it.mine ? ` · ${mv.words.scen_mine}` : "");
       m.userData.item = it.item;
       group.add(m);
-      if (it.cam) drawStartCamera(it, group, colour, at);
+      if (it.cam) {
+        const own = new THREE.Group();
+        own.userData = { camItem: it.item, colour, at };
+        drawStartCamera(it, own, colour, at);
+        group.add(own);
+      }
     } else if (it.kind === "Spawn") {  // an icon where a unit or building appears: what it is, its side, its country
       const m = spawnIcon(it, 0.055, scen.selected === it.item);  // a share of the view's height: readable at any zoom
       m.position.copy(at(it.x, it.y, 0));
@@ -1701,11 +1713,16 @@ function renderScenTools() {
   if (!mv.brush.mod && scen.tool) { scenNote(w.no_mod, "error"); return; }
   if (scen.tool === "move") {
     const it = s && scen.selected !== null ? s.items[scen.selected] : null;
-    if (!it) { scenNote(w.scen_pick_item); return; }
+    if (!it) { scenNote(w.scen_pick_item + (w.scen_cam_drag ? " " + w.scen_cam_drag : "")); return; }
     const parts = [fill(w.scen_pick_place, { what: it.kind === "StartingPoint"
       ? fill(w.scen_start_place, { n: it.alliance || "?", p: it.place || 1 }) : w.scen_spawn })];
     const n = $("scen-note");
     scenNote(parts[0]);
+    if (it.kind === "StartingPoint" && it.cam && it.camera) {  // its camera turned: say how far, and offer it back
+      const back = el("button", { type: "button", className: "link", textContent: w.scen_cam_back || "Camera back" });
+      back.addEventListener("click", () => saveCamTurn(s, it, 0));
+      n.append(" ", fill(w.scen_cam_turned || "Camera turned {deg}°", { deg: Math.round(degOf(it.camera)) }), " ", back);
+    }
     if (it.mine || it.moved) {
       const b = el("button", { type: "button", className: "link", textContent: it.mine ? w.scen_remove : w.scen_put_back });
       b.addEventListener("click", () => it.mine
@@ -1738,6 +1755,24 @@ function scenPointerDown(ev) {
   if (!scen.tool || ev.button !== 0 || !gl.ground || !mv.edit || !s) return;
   ev.preventDefault();
   if (!mv.brush.mod) { scenNote(mv.words.no_mod, "error"); return; }
+  if (scen.tool === "move") {  // a start's camera grabbed: it goes round its HQ while the button's down
+    const rect = gl.renderer.domElement.getBoundingClientRect();
+    gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
+    gl.raycaster.setFromCamera(gl.ndc, gl.camera);
+    const grips = scen.group ? scen.group.children.flatMap((o) => o.isGroup ? o.children : []).filter((o) => o.userData.camOf !== undefined) : [];
+    const grab = gl.raycaster.intersectObjects(grips, false)[0];
+    if (grab) {
+      const it = s.items.find((x) => x.item === grab.object.userData.camOf);
+      if (it && it.cam) {
+        const rest = it.cam.path[it.cam.path.length - 1];
+        scen.camDrag = { it, cam: it.cam, from: Math.atan2(rest[1] - it.y, rest[0] - it.x), turn: 0 };
+        scen.selected = it.item;
+        gl.renderer.domElement.setPointerCapture(ev.pointerId);
+        renderScenTools();
+        return;
+      }
+    }
+  }
   if (scen.tool === "move" && scen.selected === null) {  // first click: which item
     const rect = gl.renderer.domElement.getBoundingClientRect();
     gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
@@ -1752,6 +1787,47 @@ function scenPointerDown(ev) {
   const p = hitGround(ev);
   if (!p) return;
   scenPlaceAt(s, p.x / SCALE, p.z / SCALE);
+}
+
+// A start's warm-up camera turned `a` radians about the start, as the build turns it (scenario.CamPaths.turn): the
+// path goes round on its ring and the look turns as much, so it frames the HQ as before, from another side.
+function turnedCam(cam, x, y, a) {
+  const c = Math.cos(a), sn = Math.sin(a);
+  return { ...cam, path: cam.path.map(([px, py, pz]) => [x + (px - x) * c - (py - y) * sn, y + (px - x) * sn + (py - y) * c, pz]),
+    look: cam.look && [cam.look[0] * c - cam.look[1] * sn, cam.look[0] * sn + cam.look[1] * c, cam.look[2]] };
+}
+
+// Dragging a camera: it follows the pointer's angle round its HQ (its distance and height stay); only its own
+// drawing is redone each frame.
+function camDragMove(ev) {
+  const d = scen.camDrag, p = d && hitGround(ev);
+  if (!p) return;
+  d.turn = Math.atan2(p.z / SCALE - d.it.y, p.x / SCALE - d.it.x) - d.from;
+  const own = scen.group && scen.group.children.find((o) => o.isGroup && o.userData.camItem === d.it.item);
+  if (!own) return;
+  own.clear();
+  drawStartCamera({ ...d.it, cam: turnedCam(d.cam, d.it.x, d.it.y, d.turn) }, own, own.userData.colour, own.userData.at);
+  scenNote(fill(mv.words.scen_cam_turned || "Camera turned {deg}°", { deg: Math.round(degOf((d.it.camera || 0) + d.turn)) }));
+  mv.gl.draw();
+}
+
+// -180..180 degrees
+function degOf(a) {
+  return ((a * 180 / Math.PI) % 360 + 540) % 360 - 180;
+}
+
+// Let go: the turn is saved (the start's whole turn, from where the game has its camera).
+function camDragEnd() {
+  const d = scen.camDrag, s = ((scen.data || {}).scenarios || [])[scen.pick];
+  scen.camDrag = null;
+  if (!d || !s || Math.abs(d.turn) < 1e-3) { renderScenTools(); return; }
+  saveCamTurn(s, d.it, (d.it.camera || 0) + d.turn);
+}
+
+function saveCamTurn(s, it, turn) {
+  const keep = it.item;
+  scenEdit(() => it.mine && it.start !== undefined ? mv.api.scenario_turn_start_camera(mv.current, it.start, turn)
+    : mv.api.scenario_turn_camera(mv.current, s.file, it.item, turn)).then(() => { scen.selected = keep; drawScenario(); renderScenTools(); });
 }
 
 // The scenario tools' click on the ground at (cx, cy): move, add a starting point, or spawn (Stick to roads applied)
@@ -3442,6 +3518,13 @@ function watchPointer() {
     canvas.addEventListener(type, () => { if (mv.brush.painting) finishStroke(); });
   }
   canvas.addEventListener("pointerdown", scenPointerDown);
+  let camMove = null, camFrame = 0;
+  canvas.addEventListener("pointermove", (ev) => {
+    if (!scen.camDrag) return;
+    camMove = ev;
+    if (!camFrame) camFrame = requestAnimationFrame(() => { camFrame = 0; if (scen.camDrag && camMove) camDragMove(camMove); });
+  });
+  for (const type of ["pointerup", "pointercancel"]) canvas.addEventListener(type, () => { if (scen.camDrag) camDragEnd(); });
   canvas.addEventListener("pointerdown", roadPointerDown);
   canvas.addEventListener("pointerdown", (ev) => {
     if (!bridge.on || ev.button !== 0 || !gl.ground || !mv.edit) return;

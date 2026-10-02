@@ -1025,6 +1025,26 @@ class ScenarioEdits(WithMod):
         with self.assertRaisesRegex(StudioError, "no scenario"):
             self.api.scenario_move("Blitz", "other.scenario", 0, 0.0, 0.0)
 
+    def test_a_start_camera_turned(self):
+        """The camera ring: the turn is kept with the start's move (a start not moved gets one where it stands)."""
+        start = self.items(self.api.map_scenarios("Blitz"))[0]
+        turned = self.items(self.api.scenario_turn_camera("Blitz", "leveldesign.scenario", 0, 1.25))[0]
+        self.assertEqual((turned["x"], turned["y"], turned["moved"], turned["camera"]), (start["x"], start["y"], False, 1.25))
+        moved = self.items(self.api.scenario_move("Blitz", "leveldesign.scenario", 0, 111.0, 222.0))[0]
+        self.assertEqual((moved["moved"], moved["camera"]), (True, 1.25))  # a move keeps the turn
+        data = tomllib.loads(self.file.read_text(encoding="utf-8"))
+        self.assertEqual([(m["x"], m["y"], m["camera"]) for m in data["move"]], [(111.0, 222.0, 1.25)])
+        self.api.scenario_put_back("Blitz", "leveldesign.scenario", 0)
+        self.api.scenario_turn_camera("Blitz", "leveldesign.scenario", 0, 0.5)
+        self.api.scenario_turn_camera("Blitz", "leveldesign.scenario", 0, 0.0)  # turned back, never moved: nothing kept
+        self.assertFalse(self.file.exists())
+        with self.assertRaisesRegex(StudioError, "no starting point 9"):
+            self.api.scenario_turn_camera("Blitz", "leveldesign.scenario", 9, 1.0)
+        new = self.api.scenario_add_start("Blitz", "leveldesign.scenario", 1, 500.0, 600.0)
+        n = next(it for it in self.items(new) if it.get("mine"))["start"]
+        mine = next(it for it in self.items(self.api.scenario_turn_start_camera("Blitz", n, -2.0)) if it.get("mine"))
+        self.assertEqual(mine["camera"], -2.0)
+
     def test_spawn_move_and_remove(self):
         before = len(self.items(self.api.map_scenarios("Blitz")))
         with self.assertRaisesRegex(StudioError, "no class name"):  # the made-up game's units have none

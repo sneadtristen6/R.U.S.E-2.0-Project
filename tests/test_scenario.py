@@ -267,6 +267,34 @@ class Starts(unittest.TestCase):
         self.assertEqual(paths["Warmup_J1"]["path"][1], [1600.0, 2000.0, 900.0])
         self.assertEqual(paths["Warmup_J1_mod1"]["path"][1], [2500.0, 2000.0, 900.0])  # moved by +900, 0
 
+    def test_the_warm_up_camera_turned_round_its_start(self):
+        """LittleGroove's camera ring: the path goes round the start (radius and height kept), its looks turn as much."""
+        import math
+        import tomllib
+        from rusemod.scenario import Move, Start, apply_moves, campath_member, campaths as read_paths, folder_of
+        from rusemod.scenario import moves_toml, parse_moves, parse_starts, starts_toml
+        member, cam = folder_of("Blitz") + "leveldesign.scenario", campath_member("Blitz", "leveldesign.scenario")
+        files = {member: two_teams(), cam: campaths()}
+        turn = Move("leveldesign.scenario", 1, "StartingPoint", 9000.0, 8000.0, camera=math.pi / 2)  # where it stands
+        new, notes = apply_moves(files.get, "Blitz", [turn])
+        paths = read_paths(new[cam])
+        self.assertEqual(paths["Warmup_J4"]["path"], [[9000.0, 4000.0, 3000.0], [9000.0, 8400.0, 900.0]])
+        self.assertEqual(paths["Warmup_J4"]["looks"], [[0.0, -1.0, 0.0], [0.0, -1.0, 0.0]])
+        self.assertEqual(paths["Warmup_J1"]["path"][1], [1600.0, 2000.0, 900.0])  # the other start's stays
+        self.assertTrue(any("turned 90 degrees" in n for n in notes), notes)
+        self.assertFalse(any("takes its warm-up camera" in n for n in notes), notes)  # not moved
+        # a new start's copy turns about the new start
+        new, _ = apply_moves(files.get, "Blitz", [Start("leveldesign.scenario", 1, 3000.0, 2000.0, camera=math.pi)])
+        self.assertEqual(read_paths(new[cam])["Warmup_J1_mod1"]["path"], [[-1000.0, 2000.0, 3000.0], [2400.0, 2000.0, 900.0]])
+        # kept in the mod file; only a starting point has a camera
+        self.assertEqual(parse_moves(tomllib.loads(moves_toml([turn]))["move"]), [turn])
+        st = Start("leveldesign.scenario", 1, 3000.0, 2000.0, camera=-0.5)
+        self.assertEqual(parse_starts(tomllib.loads(starts_toml([st]))["start"]), [st])
+        with self.assertRaisesRegex(ScenarioError, "only a starting point has a camera"):
+            parse_moves([{"file": "a.scenario", "item": 3, "kind": "Spawn", "x": 1, "y": 2, "camera": 1.0}])
+        with self.assertRaisesRegex(ScenarioError, "numbers"):
+            parse_starts([{"file": "a.scenario", "team": 1, "x": 1, "y": 2, "camera": "left"}])
+
     def test_a_start_without_a_camera_of_its_own(self):
         s = Scenario.read(scenario())  # its start has no PositionCamera: the game looks at the start itself
         s.move(0, 10.0, 20.0)

@@ -443,6 +443,7 @@ kind = "StartingPoint"                 # what it must be: StartingPoint, Spawn, 
 x = 458772.0                           # map units: x grows east, y grows south
 y = 655380.0
 rotation = 0.95                        # radians, optional: only items that have a turn
+camera = 1.57                          # radians, optional, a starting point only: its warm-up camera turned round it
 ```
 
 - The build writes the changed scenario files into `DataMap_Win.dat` in the modded copy; everything else in them
@@ -450,9 +451,14 @@ rotation = 0.95                        # radians, optional: only items that have
 - `kind` guards against a file that isn't the one the mod was made for: a move whose item is another kind is refused
   with the reason, and nothing is built.
 - Moves apply in load order; two mods moving one item: the later wins.
-- A moved starting point takes its opening camera (`PositionCamera`, when it has one) along by the same offset, and
-  a moved starting point or spawn stands at the ground's height there. Its warm-up camera flight (`WarmupCamPath`, a
-  path in the map's camera file) can't move: it still ends over the old place, and the build says so.
+- A moved starting point takes its opening camera along by the same offset: `PositionCamera` when it has one, and
+  its warm-up camera path (`WarmupCamPath`, a path in `test\map\<map>\campath\campaths_<scenario>.ndfbin`; the match
+  opens where it ends, LittleGroove's RUSE-Mod-Manager found). A path another start shares is copied first, so the
+  other start's stays. A moved starting point or spawn stands at the ground's height there.
+- `camera` turns a starting point's warm-up camera path round it (LittleGroove's camera ring): every keyframe goes
+  round on its circle, keeping its distance and height, and its look turns as much, so the match opens framing the
+  start as before, from another side. A turn of a start that isn't moved is a move to where it stands. Not yet seen
+  in the game.
 
 A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
 Operations spawn theirs this way; skirmish maps spawn only their supply depots):
@@ -495,10 +501,12 @@ x = 2710720.0
 y = 1774720.0
 place = 4             # optional: the team's next place when left out
 rotation = 1.2        # radians, optional: as its teammate when left out
+camera = -0.5         # radians, optional: its warm-up camera turned round it, as a move's
 ```
 
 - The build copies a starting point of the same team (the one with the highest place; else the nearest of any
-  team): its camera moved by the same offset, its warm-up camera path, its angles. It stands at the ground's height
+  team): its camera moved by the same offset, a copy of its warm-up camera path moved as far (then turned by
+  `camera`), its angles. It stands at the ground's height
   there, read from the map (every shipped starting point matches its ground).
 - New and moved starting points are checked on the map's movement and roads as the build leaves them (after its
   blocks, bridges and roads): one where no ground unit can stand (water, a cliff, a block for every unit, off the

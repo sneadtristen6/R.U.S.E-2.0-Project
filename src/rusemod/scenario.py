@@ -607,6 +607,26 @@ class CamPaths:
         self.changed = self.changed or bool(pos and (dx or dy))
         return len(pos)
 
+    def turn(self, name: str, x: float, y: float, angle: float) -> int:
+        """Turn path `name` `angle` radians about (x, y), the start it opens on: its keyframes go round on their ring
+        and their look directions turn as much, so the camera frames the start as before, from another side
+        (LittleGroove's camera ring). Returns how many keys turned."""
+        pos, dirs = self.keys(name)
+        if not angle:
+            return 0
+        ca, sa = math.cos(angle), math.sin(angle)
+        for k in pos:
+            c = self._coord(k)
+            px, py, pz = struct.unpack_from("<3f", c.payload)
+            rx, ry = px - x, py - y
+            c.payload = struct.pack("<3f", x + rx * ca - ry * sa, y + rx * sa + ry * ca, pz) + bytes(c.payload[12:])
+        for k in dirs:
+            c = self._coord(k)
+            dx, dy, dz = struct.unpack_from("<3f", c.payload)
+            c.payload = struct.pack("<3f", dx * ca - dy * sa, dx * sa + dy * ca, dz) + bytes(c.payload[12:])
+        self.changed = self.changed or bool(pos)
+        return len(pos)
+
     def copy(self, name: str, new_name: str) -> bool:
         """A new path `new_name`, a copy of `name` with keyframes of its own (so moving one leaves the other)."""
         from .ndf import Value
@@ -680,7 +700,8 @@ KINDS_MOVABLE = ("StartingPoint", "Spawn", "LabelVille", "LabelMontagne", "Circu
 class Move:
     """One design item put somewhere else: in scenario `file` of the map, item number `item` (its place in the file's
     item list, as rusemod.scenario reads it), which must be a `kind` there, to x, y (world units), turned to
-    `rotation` radians when given."""
+    `rotation` radians when given. A starting point's `camera`: its warm-up camera path turned that many radians about
+    it (LittleGroove's camera ring), so the match opens looking at it from another side."""
     file: str
     item: int
     kind: str
@@ -688,6 +709,7 @@ class Move:
     y: float
     rotation: float | None = None
     z: float | None = None   # the ground's height there: the build fills it for starting points and spawns
+    camera: float | None = None
 
 
 def parse_moves(items, where: str = "scenario.toml") -> list[Move]:
@@ -696,7 +718,7 @@ def parse_moves(items, where: str = "scenario.toml") -> list[Move]:
         at = f"{where}: move {n}"
         if not isinstance(m, dict):
             raise ScenarioError(f"{at} isn't a table")
-        extra = sorted(set(m) - {"file", "item", "kind", "x", "y", "rotation"})
+        extra = sorted(set(m) - {"file", "item", "kind", "x", "y", "rotation", "camera"})
         if extra:
             raise ScenarioError(f"{at}: unknown key {extra[0]!r}")
         for k in ("file", "item", "kind", "x", "y"):
@@ -711,12 +733,27 @@ def parse_moves(items, where: str = "scenario.toml") -> list[Move]:
             item = int(m["item"])
             x, y = float(m["x"]), float(m["y"])
             rot = float(m["rotation"]) if "rotation" in m else None
+            cam = _camera_turn(m)
         except (TypeError, ValueError):
-            raise ScenarioError(f"{at}: item is a whole number; x, y and rotation are numbers") from None
+            raise ScenarioError(f"{at}: item is a whole number; x, y, rotation and camera are numbers") from None
         if item < 0:
             raise ScenarioError(f"{at}: item can't be negative")
-        out.append(Move(f, item, str(m["kind"]), x, y, rot))
+        if cam is not None and m["kind"] != "StartingPoint":
+            raise ScenarioError(f"{at}: only a starting point has a camera to turn")
+        out.append(Move(f, item, str(m["kind"]), x, y, rot, camera=cam))
     return out
+
+
+def _camera_turn(m: dict) -> float | None:
+    """A table's `camera` turn (radians), None when it has none; ValueError when it isn't a finite number."""
+    if "camera" not in m:
+        return None
+    if isinstance(m["camera"], bool):
+        raise TypeError
+    turn = float(m["camera"])
+    if not math.isfinite(turn):
+        raise ValueError
+    return turn
 
 
 def moves_toml(moves: list[Move], header: str = "") -> str:
@@ -725,6 +762,8 @@ def moves_toml(moves: list[Move], header: str = "") -> str:
         lines += ["[[move]]", f'file = "{m.file}"', f"item = {m.item}", f'kind = "{m.kind}"', f"x = {m.x!r}", f"y = {m.y!r}"]
         if m.rotation is not None:
             lines.append(f"rotation = {m.rotation!r}")
+        if m.camera is not None:
+            lines.append(f"camera = {m.camera!r}")
         lines.append("")
     return "\n".join(lines)
 
@@ -851,7 +890,8 @@ def spawns_toml(spawns: list[Spawn]) -> str:
 class Start:
     """A new starting point in scenario `file`: where a player of `team` (the game's AllianceNum) starts, at `place`
     in the team (AlliancePriority; None: the team's next), at x, y, turned `rotation` radians (None: as its
-    teammate). More players on a map need one per player (rusemod.players, PLAN A10)."""
+    teammate), its warm-up camera turned `camera` radians about it (as Move's). More players on a map need one per
+    player (rusemod.players, PLAN A10)."""
     file: str
     team: int
     x: float
@@ -859,6 +899,7 @@ class Start:
     place: int | None = None
     rotation: float | None = None
     z: float | None = None   # the ground's height there: the build fills it from the map (the shipped ones match it)
+    camera: float | None = None
 
 
 def parse_starts(items, where: str = "scenario.toml") -> list[Start]:
@@ -867,7 +908,7 @@ def parse_starts(items, where: str = "scenario.toml") -> list[Start]:
         at = f"{where}: start {n}"
         if not isinstance(m, dict):
             raise ScenarioError(f"{at} isn't a table")
-        extra = sorted(set(m) - {"file", "team", "x", "y", "place", "rotation"})
+        extra = sorted(set(m) - {"file", "team", "x", "y", "place", "rotation", "camera"})
         if extra:
             raise ScenarioError(f"{at}: unknown key {extra[0]!r}")
         for k in ("file", "team", "x", "y"):
@@ -882,11 +923,12 @@ def parse_starts(items, where: str = "scenario.toml") -> list[Start]:
             team, x, y = int(m["team"]), float(m["x"]), float(m["y"])
             place = int(m["place"]) if "place" in m else None
             rot = float(m["rotation"]) if "rotation" in m else None
+            cam = _camera_turn(m)
         except (TypeError, ValueError):
-            raise ScenarioError(f"{at}: team and place are whole numbers; x, y and rotation are numbers") from None
+            raise ScenarioError(f"{at}: team and place are whole numbers; x, y, rotation and camera are numbers") from None
         if not 1 <= team <= 8 or (place is not None and not 1 <= place <= 8):
             raise ScenarioError(f"{at}: team and place go from 1 to 8")
-        out.append(Start(f, team, x, y, place, rot))
+        out.append(Start(f, team, x, y, place, rot, camera=cam))
     return out
 
 
@@ -898,6 +940,8 @@ def starts_toml(starts: list[Start]) -> str:
             lines.append(f"place = {s.place}")
         if s.rotation is not None:
             lines.append(f"rotation = {s.rotation!r}")
+        if s.camera is not None:
+            lines.append(f"camera = {s.camera!r}")
         lines.append("")
     return "\n".join(lines)
 
@@ -1036,6 +1080,8 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None) -> tup
             if name:
                 mx, my = s.last_model
                 cam.shift(name, m.x - mx, m.y - my)
+                if m.camera:
+                    cam.turn(name, m.x, m.y, m.camera)
             continue
         if m.item >= len(s.items):
             raise ScenarioError(f"{map_pack}: {m.file} has {len(s.items)} design items, not {m.item + 1}")
@@ -1049,8 +1095,13 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None) -> tup
             name = own_path(cam, s, m.item, "move")
             if name:
                 cam.shift(name, m.x - ox, m.y - oy)
-                later.append(f"{map_pack}: {m.file}: the starting point moved (item {m.item}) takes its warm-up camera "
-                             f"({name}) along: the match opens looking at it from where it looked before")
+                if (m.x, m.y) != (ox, oy):
+                    later.append(f"{map_pack}: {m.file}: the starting point moved (item {m.item}) takes its warm-up "
+                                 f"camera ({name}) along: the match opens looking at it from where it looked before")
+                if m.camera:
+                    cam.turn(name, m.x, m.y, m.camera)
+                    later.append(f"{map_pack}: {m.file}: starting point {m.item}'s warm-up camera ({name}) turned "
+                                 f"{math.degrees(m.camera):.0f} degrees about it")
     for member, s in files.values():
         mine = [m for m in moves if (folder + m.file).lower() == member.lower()]
         moved, spawned = sum(1 for m in mine if isinstance(m, Move)), sum(1 for m in mine if isinstance(m, Spawn))

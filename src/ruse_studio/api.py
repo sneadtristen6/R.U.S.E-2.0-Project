@@ -100,6 +100,18 @@ def _shifted_cam(cam: dict, dx: float, dy: float) -> dict:
     return {**cam, "path": [[x + dx, y + dy, z] for x, y, z in cam["path"]]}
 
 
+def _turned_cam(cam: dict, x: float, y: float, angle: float) -> dict:
+    """A start's warm-up camera path turned `angle` radians about (x, y), as the build turns it (CamPaths.turn)."""
+    if not angle:
+        return cam
+    ca, sa = math.cos(angle), math.sin(angle)
+    path = [[x + (px - x) * ca - (py - y) * sa, y + (px - x) * sa + (py - y) * ca, pz] for px, py, pz in cam["path"]]
+    look = cam.get("look")
+    if look:
+        look = [look[0] * ca - look[1] * sa, look[0] * sa + look[1] * ca, look[2]]
+    return {**cam, "path": path, "look": look}
+
+
 def _shot_name(effect: str | None) -> str:
     """$/GFX/Everything/FX_Tir_ObusAP_Moyen -> ObusAP Moyen."""
     name = _tail(effect or "")
@@ -1083,8 +1095,10 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                 if m.file.lower() == s["file"].lower() and m.item < len(s["items"]):
                     it = s["items"][m.item]
                     if it.get("cam"):  # the build carries a start's warm-up camera path by the same offset
-                        it["cam"] = _shifted_cam(it["cam"], m.x - it["x"], m.y - it["y"])
-                    it.update(x=m.x, y=m.y, moved=True)
+                        it["cam"] = _turned_cam(_shifted_cam(it["cam"], m.x - it["x"], m.y - it["y"]), m.x, m.y,
+                                                m.camera or 0.0)
+                    it.update(x=m.x, y=m.y, moved=(m.x, m.y) != (it["x"], it["y"]) or it.get("moved", False),
+                              camera=m.camera or 0.0)
             places: dict = {}
             shipped = [it for it in s["items"] if it["kind"] == "StartingPoint"]
             for it in shipped:
@@ -1103,7 +1117,9 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                              min(shipped, key=lambda it: (it["x"] - st.x) ** 2 + (it["y"] - st.y) ** 2) if shipped
                              else None)
                     if model is not None and model.get("cam"):
-                        new["cam"] = _shifted_cam(model["cam"], st.x - model["x"], st.y - model["y"])
+                        new["cam"] = _turned_cam(_shifted_cam(model["cam"], st.x - model["x"], st.y - model["y"]),
+                                                 st.x, st.y, st.camera or 0.0)
+                    new["camera"] = st.camera or 0.0
                     s["items"].append(new)
             for n, sp in enumerate(spawns):
                 if sp.file.lower() == s["file"].lower():
@@ -1242,9 +1258,45 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             raise StudioError(f"a {kind or 'plain item'} can't be moved")
         with self._saving:
             moves, spawns = self._read_scenario_edits(pack)
-            moves = [m for m in moves if not (m.file.lower() == file.lower() and m.item == int(item))]
-            moves.append(scenario.Move(file, int(item), kind, float(x), float(y)))
+            old = next((m for m in moves if m.file.lower() == file.lower() and m.item == int(item)), None)
+            moves = [m for m in moves if m is not old]
+            moves.append(scenario.Move(file, int(item), kind, float(x), float(y),
+                                       camera=old.camera if old is not None else None))
             self._write_scenario_edits(pack, moves, spawns)
+        return self.map_scenarios(pack)
+
+    def scenario_turn_camera(self, pack: str, file: str, item: int, turn: float) -> dict:
+        """Turn the warm-up camera of starting point `item` of scenario `file` `turn` radians about it (from where the
+        game has it; 0 puts it back), LittleGroove's camera ring. Kept with the start's move in the mod (a start
+        not moved gets a move to where it stands)."""
+        base = self._base_scenario(pack, file)
+        if not 0 <= int(item) < len(base["items"]) or base["items"][int(item)]["kind"] != "StartingPoint":
+            raise StudioError(f"{file} has no starting point {item}")
+        if not math.isfinite(float(turn)):
+            raise StudioError("the camera's turn must be a number")
+        it = base["items"][int(item)]
+        turn = math.remainder(float(turn), math.tau) or None
+        with self._saving:
+            moves, spawns = self._read_scenario_edits(pack)
+            old = next((m for m in moves if m.file.lower() == file.lower() and m.item == int(item)), None)
+            moves = [m for m in moves if m is not old]
+            if old is None:
+                old = scenario.Move(file, int(item), "StartingPoint", float(it["x"]), float(it["y"]))
+            if turn is not None or (old.x, old.y) != (it["x"], it["y"]):
+                moves.append(replace(old, camera=turn))
+            self._write_scenario_edits(pack, moves, spawns)
+        return self.map_scenarios(pack)
+
+    def scenario_turn_start_camera(self, pack: str, number: int, turn: float) -> dict:
+        """Turn the warm-up camera of the current mod's new starting point number `number` `turn` radians about it."""
+        if not math.isfinite(float(turn)):
+            raise StudioError("the camera's turn must be a number")
+        with self._saving:
+            moves, starts, spawns = self._read_scenario_all(pack)
+            if not 0 <= int(number) < len(starts):
+                raise StudioError("that starting point isn't in the mod any more")
+            starts[int(number)] = replace(starts[int(number)], camera=math.remainder(float(turn), math.tau) or None)
+            self._write_scenario_edits(pack, moves, spawns, starts)
         return self.map_scenarios(pack)
 
     def scenario_put_back(self, pack: str, file: str, item: int) -> dict:
