@@ -315,6 +315,18 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .update-bar { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-size: 13px;
               background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41); }
 .update-bar.hidden { display: none; }
+/* the map's colour legend and see-through layers (maps.js renderLegend, renderLayers) */
+.map-legend { display: grid; gap: 3px; margin: 6px 0; }
+.map-legend.hidden { display: none; }
+.map-legend .legend-title { color: var(--muted, #9aa7b2); }
+.map-legend .legend-row { display: flex; align-items: center; gap: 7px; }
+.map-legend .swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; border: 1px solid rgba(0, 0, 0, 0.4); }
+.map-layers { margin: 6px 0; }
+.map-layers summary { cursor: pointer; color: var(--accent); }
+.layer-rows { display: grid; gap: 2px; margin-top: 4px; }
+.layer-row { display: grid; grid-template-columns: 9em 1fr 3.5em; align-items: center; gap: 8px; }
+.layer-row input[type=range] { width: 100%; }
+
 /* what changes: the running version beside the new one, a row per change */
 .update-changes { padding: 8px 20px 12px; background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41);
                   font-size: 13px; max-height: 40vh; overflow: auto; }

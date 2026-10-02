@@ -82,6 +82,7 @@ BRUSHES = {
     "water": Brush("water", "flat"),
     "drain": Brush("drain", "flat"),
     "cover": Brush("cover", "flat"),
+    "town": Brush("cover", "flat"),  # the Studio's Town tool: cover around a town's buildings (its own colour there)
     "uncover": Brush("cover", "flat", -1),
     "block": Brush("block", "all"),
     "block_infantry": Brush("block", "infantry"),

@@ -95,6 +95,12 @@
           <label class="small"><input id="scenery-vegetation" type="checkbox" checked> <span id="scenery-vegetation-label"></span></label>
         </div>
         <div id="scenery-stats" class="muted small"></div>
+        <!-- what the colours on the ground mean (maps.js renderLegend), and a see-through slider per layer -->
+        <div id="map-legend" class="map-legend small hidden"></div>
+        <details id="map-layers" class="map-layers small">
+          <summary id="map-layers-label"></summary>
+          <div id="map-layers-rows" class="layer-rows"></div>
+        </details>
         <!-- the map's scenarios (maps.js, StudioApi.map_scenarios): zones, starting points, spawns, names -->
         <div class="map-controls">
           <label class="small"><input id="scen-show" type="checkbox" checked> <span id="scen-show-label"></span></label>

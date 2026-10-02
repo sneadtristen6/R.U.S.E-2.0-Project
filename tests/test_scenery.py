@@ -1003,7 +1003,7 @@ class Studio(unittest.TestCase):
         self.assertIn('return (a.what || ERASE_DEFAULT).includes("vegetation");', maps)
         self.assertIn('clearsWood(a) ? ["erase", "open", "uncover"] : ["erase"]', maps)
         self.assertIn("open: [moves, 0, 3]", maps)       # open to every unit
-        self.assertIn("uncover: [cover, 0, 1]", maps)    # cover taken away
+        self.assertIn("uncover: [cover, 0, 7]", maps)    # cover taken away (the map's own, the Town tool's, painted)
         reapply = maps[maps.index("function reapply()"):]
         reapply = reapply[:reapply.index("\n}\n")]
         self.assertLess(reapply.index("applyStroke(ed, s)"), reapply.index("eraseDab(a)"))

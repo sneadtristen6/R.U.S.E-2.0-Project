@@ -165,7 +165,7 @@ async function scene3d() {
   const sun = new THREE.DirectionalLight(0xfff1dc, 2.0);
   sun.position.set(-0.6, 1.0, -0.35);         // from the north-west, high: slopes read clearly
   scene.add(sun);
-  const draw = () => renderer.render(scene, camera);
+  const draw = () => { fadeLayers(); renderer.render(scene, camera); };
   controls.addEventListener("change", draw);
   new ResizeObserver(() => {
     const w = host.clientWidth, h = host.clientHeight;
@@ -464,9 +464,15 @@ function reapply() {
 //   goes when the mod is built (tinted red, tintScenery). A circle that takes trees also opens its ground to every
 //   unit and takes its cover away, after the mod's strokes, as the build does (rusemod.build.cleared_woods).
 //   Proven in the game: tanks drive into a cleared wood and infantry there are seen (2026-10-01). ---
-const cover = { kinds: ["cover", "town", "forest"], colors: [null, [60, 210, 90, 125]] };
-const moves = { kinds: ["block", "open"], colors: [null, [170, 90, 220, 120], [235, 200, 40, 115], [220, 50, 40, 120]] };
-const erased = { kinds: ["erase"], colors: [null, [235, 70, 45, 120]] };
+// cover's cells: bit 1 the map's own, bit 2 the Town tool's, bit 4 painted (Cover brush, Forest); one colour each
+// (COVER_COLOURS, the legend's too), the Town tool's over a painted one over the map's own
+const COVER_COLOURS = { own: [60, 210, 90, 125], painted: [170, 240, 70, 150], town: [240, 150, 50, 160] };
+const MOVE_COLOURS = { none: [220, 50, 40, 120], infantry: [235, 200, 40, 115], vehicles: [170, 90, 220, 120] };
+const ERASE_COLOUR = [235, 70, 45, 120];
+const cover = { kinds: ["cover", "town", "forest"], colors: [null, COVER_COLOURS.own, COVER_COLOURS.town, COVER_COLOURS.town,
+  COVER_COLOURS.painted, COVER_COLOURS.painted, COVER_COLOURS.town, COVER_COLOURS.town] };
+const moves = { kinds: ["block", "open"], colors: [null, MOVE_COLOURS.vehicles, MOVE_COLOURS.infantry, MOVE_COLOURS.none] };
+const erased = { kinds: ["erase"], colors: [null, ERASE_COLOUR] };
 const OVERLAYS = [cover, moves, erased];
 const ERASE_CELLS = 1024;  // the erased overlay's cells across the map (about 12 m each on the biggest maps)
 for (const o of OVERLAYS) {
@@ -474,7 +480,7 @@ for (const o of OVERLAYS) {
     mesh: null, show: false, batch: false });
 }
 // what a brush does to an overlay's cells: [overlay, bits it sets, bits it clears]
-const PAINTS = { cover: [cover, 1, 0], uncover: [cover, 0, 1], block: [moves, 3, 0], block_infantry: [moves, 1, 0],
+const PAINTS = { cover: [cover, 4, 0], town: [cover, 2, 0], uncover: [cover, 0, 7], block: [moves, 3, 0], block_infantry: [moves, 1, 0],
   block_vehicles: [moves, 2, 0], open: [moves, 0, 3], open_infantry: [moves, 0, 1], open_vehicles: [moves, 0, 2],
   erase: [erased, 1, 0] };
 
@@ -484,7 +490,90 @@ function overlayShown(o) {
 
 function showOverlays() {
   for (const o of OVERLAYS) if (o.mesh) o.mesh.visible = overlayShown(o);
+  renderLegend();
   if (mv.gl) mv.gl.draw();
+}
+
+// What each colour on the ground means, for the overlays shown (the Cover box, Where units go, a brush of theirs)
+function renderLegend() {
+  const w = mv.words, box = $("map-legend");
+  if (!box || !w.legend_title) return;
+  const rgb = (c) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+  const rows = [];
+  if (overlayShown(cover)) {
+    rows.push([COVER_COLOURS.own, w.legend_cover_own], [COVER_COLOURS.painted, w.legend_cover_painted],
+      [COVER_COLOURS.town, w.legend_cover_town]);
+  }
+  if (overlayShown(moves)) {
+    rows.push([MOVE_COLOURS.none, w.legend_move_none], [MOVE_COLOURS.infantry, w.legend_move_infantry],
+      [MOVE_COLOURS.vehicles, w.legend_move_vehicles]);
+  }
+  if (overlayShown(erased)) rows.push([ERASE_COLOUR, w.legend_erase]);
+  box.replaceChildren(...(rows.length ? [el("div", { className: "legend-title", textContent: w.legend_title })] : []),
+    ...rows.map(([c, text]) => el("div", { className: "legend-row" },
+      el("span", { className: "swatch", style: `background: ${rgb(c)}` }), el("span", { textContent: text }))));
+  box.classList.toggle("hidden", !rows.length);
+}
+
+// --- see-through layers: a slider per layer, 0 to 100 %, times each part's own opacity; kept in this window ---
+const LAYERS = ["water", "cover", "moves", "roads", "building", "prop", "vegetation", "scenario"];
+const alpha = Object.fromEntries(LAYERS.map((k) => [k, 1]));
+try { Object.assign(alpha, JSON.parse(localStorage.getItem("studio.alpha") || "{}")); } catch { /* not kept: fine */ }
+
+function layerObjects(k) {
+  switch (k) {
+    case "water": return [mv.gl && mv.gl.water];
+    case "cover": return [cover.mesh];
+    case "moves": return [moves.mesh, erased.mesh];
+    case "roads": return [roads.line, road.mesh, road.preview];
+    case "scenario": return [scen.group];
+    default: return [mv.scenery.meshes[k], ...((mv.scenery.models || {})[k] || [])];
+  }
+}
+
+function fade(obj, a) {
+  if (!obj) return;
+  obj.traverse((o) => {
+    for (const m of o.material ? [].concat(o.material) : []) {
+      const u = m.userData;
+      if (u.alpha === a) continue;
+      if (u.baseOpacity === undefined) Object.assign(u, { baseOpacity: m.opacity, baseTransparent: m.transparent,
+        baseDepthWrite: m.depthWrite });
+      m.opacity = u.baseOpacity * a;
+      m.transparent = u.baseTransparent || a < 1;
+      m.depthWrite = a < 1 ? false : u.baseDepthWrite;
+      m.needsUpdate = true;
+      u.alpha = a;
+    }
+  });
+}
+
+// Before every frame, once a slider has moved (new parts, a redrawn road say, take their layer's value too)
+function fadeLayers() {
+  if (!LAYERS.some((k) => alpha[k] !== 1) && !mv.faded) return;
+  mv.faded = true;
+  for (const k of LAYERS) for (const o of layerObjects(k)) fade(o, alpha[k]);
+}
+
+function renderLayers() {
+  const w = mv.words, rows = $("map-layers-rows");
+  if (!rows) return;
+  $("map-layers-label").textContent = w.layers_title;
+  const name = { water: w.water, cover: w.cover_show, moves: w.move_show, roads: w.roads_show,
+    building: w.scenery_building, prop: w.scenery_prop, vegetation: w.scenery_vegetation, scenario: w.scen_show };
+  rows.replaceChildren(...LAYERS.map((k) => {
+    const value = el("span", { className: "muted", textContent: `${Math.round(alpha[k] * 100)} %` });
+    const range = el("input", { type: "range", min: "0", max: "100", step: "5", value: String(Math.round(alpha[k] * 100)),
+      title: w.tip_layer_alpha });
+    range.setAttribute("aria-label", name[k] || k);
+    range.addEventListener("input", () => {
+      alpha[k] = Number(range.value) / 100;
+      value.textContent = `${range.value} %`;
+      try { localStorage.setItem("studio.alpha", JSON.stringify(alpha)); } catch { /* not kept: fine */ }
+      if (mv.gl) mv.gl.draw();
+    });
+    return el("label", { className: "layer-row" }, el("span", { textContent: name[k] || k }), range, value);
+  }));
 }
 
 // n*n bits in base64 (cell i at byte i >> 3, bit i & 7): `value` goes into each cell whose bit is set.
@@ -715,7 +804,7 @@ function townStrokes(x, y) {
       if (!town.has(j) && (px - qx) ** 2 + (py - qy) ** 2 <= link * link) { town.add(j); queue.push(j); }
     });
   }
-  return [...town].map((i) => ({ brush: "cover", x: Math.round(pts[i][0]), y: Math.round(pts[i][1]), radius: r }));
+  return [...town].map((i) => ({ brush: "town", x: Math.round(pts[i][0]), y: Math.round(pts[i][1]), radius: r }));
 }
 
 function forget(mesh) {
@@ -3263,6 +3352,8 @@ function showTitle() {
 
 function renderWords() {
   const w = mv.words;
+  renderLayers();
+  renderLegend();
   $("map-detail").textContent = mv.lod === "highdef" ? w.detail_high : w.detail_low;
   $("map-detail").title = w.tip_detail;
   $("map-water-label").textContent = w.water;
