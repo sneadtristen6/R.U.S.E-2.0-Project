@@ -154,6 +154,22 @@ The copy: `D:\RUSE-Instances\bridges` (rebuilt 2026-10-01 from the Studio mod `t
 is not working, I told you that many times"). With the fix of the morning (`34c1ab4`) a new road still disappears
 near the camera. **Open: a new road isn't drawn up close.** Never write that it is until this test passes.
 
+**The record of every road probe** (2026-10-02, owner; only what was seen in the game counts):
+- Batches 1-3: new roads painted into the ground's tiles show from afar, vanish near the camera.
+- Batch 4: the new road added to the map's road model (staticmeshes `road`): still vanishes up close.
+- Batch 5: batch 4 plus the close-up map (`div_map`) marked like the map's own roads: still vanishes up close,
+  piece by piece, nearest the camera first.
+- Batch 6: four roads whose road pieces are stored different ways, one of them (C) a copy of the map's own road
+  pieces: the result isn't recorded (ask the owner).
+- Batch 11: the `Route` strip's colour (mode 128, in the map's terrain settings) set to red: roads came out **blue
+  from high up**; the map's own close-up road (textured asphalt, a dashed centre line) unchanged.
+- Batch 12: the road model's vertices (staticmeshes `road`) lifted and recoloured red: the result isn't recorded
+  (a note first credited batch 11's blue to it: wrong). **No batch ever showed a red road.**
+- What draws the close-up road: **not known**. File checks (tests/test_roadstrips.py, the road walk in
+  tests/test_scenery.py) only show what we write; they are not results. Next (owner's go, 2026-10-02): probes changed
+  one thing at a time at a fixed camera (each screenshot's `.ini` holds the camera and the frame's draw counts), the
+  ground detail setting swept at one spot, then a frame capture of the close-up road.
+
 ## T9. A road over one of the map's own bridges (Studio 0.7.4)
 
 The owner's rule: the old bridge goes and the new road's bridge takes its place. The copy is built first (next

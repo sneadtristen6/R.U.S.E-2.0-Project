@@ -4,12 +4,12 @@ draws (proven with plain tiles, 2026-09-29); only the 4x4 blocks the paint touch
 their bytes. First use: the roads a mod draws, painted in the colour of the map's own roads, so a new road shows
 where supply trucks already drive it (the roads a player sees from afar are painted into these tiles, 2026-09-30).
 
-Up close the ground isn't the tiles alone: the game's ground shaders blend detail textures (grass, dirt) over them,
-weighted by the map's close-up map (`output\\div_map.tgv_pc`, the "texture diversity", one DXT5 picture over the whole
-grid of cells). Every map marks its own roads there (alpha higher, red lower than the ground beside: all 31 maps with
-roads), which keeps a road's colour showing near the camera; a new road without that mark is covered by the grass
-detail up close and shows only from a little higher (T12, every batch until 2026-10-01). paint_detail gives a new road
-the map's own mark.
+The map's close-up map (`output\\div_map.tgv_pc`, the "texture diversity", one DXT5 picture over the whole grid of
+cells) marks every map's own roads (alpha higher, red lower than the ground beside: all 31 maps with roads), and
+paint_detail gives a new road the same mark. A first idea was that this mark keeps a road showing near the camera; the
+game says otherwise (batch 5, 2026-10-01: with the mark, the new road still vanished up close). What the mark does in
+the game, and what draws the close-up road, isn't known yet (TESTS.md T12). The checks here are on the files' bytes
+only (tests/test_groundpaint.py), never proof of what the game shows.
 """
 from __future__ import annotations
 

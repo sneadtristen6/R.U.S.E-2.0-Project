@@ -50,9 +50,10 @@ def block(items, far=False, mask=0x1F, box=(0.0, 0.0, 1.0, 1.0)):
 
 
 def road_pass(s):
-    """(block, item offset) of every road piece the game's close-up road pass reaches, walked the way the game walks
-    a scenery file: a block is entered only when its root has the road mark (bit 25), a block seen from far starts
-    at its root's right side, and inside it a node is entered only with the mark."""
+    """(block, item offset) of every road piece the game's road pass would reach, walked as the game's code was read
+    to walk a scenery file: a block is entered only when its root has the road mark (bit 25), a block seen from far
+    starts at its root's right side, and inside it a node is entered only with the mark. A model of the walk, not of
+    the screen: a piece it reaches isn't proven drawn (TESTS.md T12)."""
     reached, todo = set(), [0]
     while todo:
         b = s.blocks[todo.pop()]
@@ -352,8 +353,8 @@ class Adding(unittest.TestCase):
 
 
 class RoadStickers(unittest.TestCase):
-    """A new road's stickers (the game's Route pieces: what draws a road up close), cut like the shipped ones and
-    added with the objects in the map's own style."""
+    """A new road's stickers (the game's Route pieces), cut like the shipped ones and added with the objects in the
+    map's own style. What the game draws from them isn't known (TESTS.md T12)."""
 
     def test_a_line_cut_into_pieces(self):
         pieces = scenery.road_pieces([(0.0, 0.0), (10000.0, 0.0), (10000.0, 7000.0)])
@@ -385,7 +386,7 @@ class RoadStickers(unittest.TestCase):
                       and (round(struct.unpack_from("<f", it.data)[0]), round(struct.unpack_from("<f", it.data, 4)[0]))
                       in {(1000, 2500), (5000, 2500)}}
         self.assertEqual(len(new_pieces), 2)
-        self.assertLessEqual(new_pieces, road_pass(after))  # drawn up close: the road mark from the map's top down
+        self.assertLessEqual(new_pieces, road_pass(after))  # the road pass would reach them (the walk, not the screen)
 
     def test_a_new_block_lists_road_pieces_for_close_view_only(self):
         piece = scenery.road_pieces([(0.0, 0.0), (4000.0, 0.0)])[0]

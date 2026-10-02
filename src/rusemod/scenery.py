@@ -512,8 +512,9 @@ ALL_TIERS = 0x1F      # a block's LOD mask: drawn close, middle and far (a super
 WORD_KEEP = 0x40000000  # what a new object copies of its type's first shipped item word: bit 30, not the detail
                         # tier (bits 26-27: a tier above 0 is missing at the lowest scenery detail) nor the variation
                         # (bits 28-29: the game turns the object by a pseudo-random angle the Studio doesn't show)
-ROAD_TIER = 0x20      # a tree node's road mark, above the LOD mask (bit 25 of its word): the game draws Route pieces
-ROAD_BIT = ROAD_TIER << 20  # up close only through nodes that carry it (every Route piece of the shipped maps does)
+ROAD_TIER = 0x20      # a tree node's road mark, above the LOD mask (bit 25 of its word): the game's road pass walks
+ROAD_BIT = ROAD_TIER << 20  # Route pieces only through nodes that carry it (every Route piece of the shipped maps does);
+#                             what that pass draws on screen isn't known (TESTS.md T12)
 MARGIN = 5000.0       # added to a new block's box around its objects' positions (map units, times their size)
 GROUP = 40000.0       # objects further apart than this (400 m) go in separate new blocks, each hung on an object near
                       # them: the game draws a block when the object it hangs on is in view (owner's test, 2026-09-30:
@@ -550,10 +551,11 @@ ROAD_PIECE = 4000.0   # map units a new road's sticker pieces run (the shipped o
 
 @dataclass(frozen=True)
 class RoadPiece:
-    """One piece of a road sticker (the game's `Route` items, a STICKERS type). The game doesn't draw these itself:
-    the map's road model (rusemod.roadstrips) is made from them and shows the road up close, the painted ground from
-    afar; a new road gets both, and these pieces to match the map's own. A cubic from (x0, y0) to (x1, y1), each
-    end's handle an offset from it (the shipped pieces' are a tenth of the piece, along it)."""
+    """One piece of a road sticker (the game's `Route` items, a STICKERS type). The map's road model
+    (rusemod.roadstrips) is built from them; a new road gets these pieces, to match the map's own, and the model's
+    strips. What the game draws from them, and what draws the close-up road, isn't known (TESTS.md T12): only the
+    painted ground is seen showing a new road, from afar. A cubic from (x0, y0) to (x1, y1), each end's handle an
+    offset from it (the shipped pieces' are a tenth of the piece, along it)."""
     x0: float
     y0: float
     hx0: float
@@ -695,7 +697,8 @@ def _is_road(item: bytes) -> bool:
 def _new_block(items: list[bytes], box: tuple) -> bytes:
     """A block of `items` in `box`, with a two-leaf tree: the far-view list (every item but road pieces, which the
     shipped maps never list for far view: 0 of 10,505), then every item. The root and the full list's node carry the
-    road mark, so road pieces in it, or in a block it places, are drawn up close (a superset only costs culling)."""
+    road mark, so the game's road pass reaches road pieces in it, or in a block it places (a superset only costs
+    culling); whether that shows them on screen isn't known (T12)."""
     offsets, far, pos = [], [], 4
     for it in items:
         offsets.append(pos)
@@ -1237,7 +1240,7 @@ def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tupl
     boxes. The game finds a block's items only through the leaf boxes of the top block's tree, and draws an object
     only while it walks the cell its origin lies in, so a thing has to lie in its carrier's leaf box (on D-Day 416
     of the 431 shipped road middles do; one carrier for a whole road left up to 1.8 km of it outside, and on Edge
-    3 in 10 new objects 300 m off a village). Road pieces (drawn up close through the full list) go on a far-listed
+    3 in 10 new objects 300 m off a village). Road pieces (walked by the road pass through the full list) go on a far-listed
     reference whose full-list box holds their middle, one whose path has the road mark first. Objects go on a
     far-listed reference whose far and full boxes both hold them (drawn at every distance), else on any reference
     whose full-list box does (drawn from middle distance in). The fewest carriers win; what lies in no box goes with
@@ -1533,7 +1536,8 @@ def _cell_walked(rec: bytes, level: int) -> bool:
 def _grids_hold(data: bytes, points: list[tuple[float, float]]) -> tuple[bytes, int]:
     """The scenery file with every cell that holds one of `points` (new objects' places) marked as holding something
     at all three levels of detail, so the game walks it (an empty cell is skipped: a new object there would be
-    missing at that distance, as 2 of D-Day's 4 new bridges were up close). Returns (file, cells marked). Raises
+    skipped at that distance: in a built D-Day, 2 of 4 new bridges lay in such cells, found in the file, not seen in
+    the game). Returns (file, cells marked). Raises
     SceneryEditError for a point outside a grid: the game never walks there."""
     sc = Scenery(data)
     out = bytearray(data)
@@ -1587,7 +1591,7 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
     for o in objects:
         if isinstance(o, RoadPiece):
             if style is None:
-                raise SceneryEditError("this map has no road stickers to copy, so a new road can't be drawn up close")
+                raise SceneryEditError("this map has no road stickers to copy, so a new road can't get road pieces")
             body, px, py = _road_item(o, to_local, style, roads)
             items.append(body)
             xs += px
@@ -1685,7 +1689,7 @@ def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]
     for o in objects:
         if isinstance(o, RoadPiece):
             if style is None:
-                raise SceneryEditError("this map has no road stickers to copy, so a new road can't be drawn up close")
+                raise SceneryEditError("this map has no road stickers to copy, so a new road can't get road pieces")
             body, px, py = _road_item(o, to_local, style, roads)
             items.append(body)
             xs += px

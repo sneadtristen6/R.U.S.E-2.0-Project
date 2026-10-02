@@ -1,6 +1,7 @@
-"""The roads the game draws up close (rusemod.roadstrips): the road model of a map pack's static meshes, on a made-up
-pack laid out as the shipped ones are (two models, a bridge and the road; the road's parts by case; `~` filler after
-the materials), and the build's step that draws a new road both ways (build.draw_new_roads, the T12 guard)."""
+"""The road model of a map pack's static meshes (rusemod.roadstrips), on a made-up pack laid out as the shipped ones
+are (two models, a bridge and the road; the road's parts by case; `~` filler after the materials), and the build's
+step that writes a new road into every road file (build.draw_new_roads). These check the files' bytes and layout only:
+what the game shows from them is only known from the game (TESTS.md T12: up close, a new road still vanishes)."""
 import hashlib
 import math
 import struct
@@ -161,7 +162,7 @@ class Adding(unittest.TestCase):
                          sorted({1, 3} | {number[(0, 0)], number[(1, 0)], number[(1, 1)]}))
         model = Spk(self.new).items["road"]
         self.assertEqual(model.box[3:5], (100000.0, 100000.0))  # grown to hold the new road
-        self.assertIn("close-up strips: ", self.notes[0])
+        self.assertIn("road model: ", self.notes[0])
 
     def test_the_old_strips_keep_their_vertices(self):
         old = road_vertices(self.raw)
@@ -222,13 +223,12 @@ class Adding(unittest.TestCase):
         self.assertTrue(all(p[3] == 1.0 for p in runs[0]))  # straight on: no widening
 
 
-class NewRoadsAreDrawnBothWays(unittest.TestCase):
-    """The T12 guard: a new road vanished up close in every test batch (only painted into the ground's tiles, which
-    the game's ground covers with detail textures near the camera wherever the map's close-up map doesn't mark a
-    road). The build's road step must paint it, mark it in the close-up map the way the map's own roads are, and add
-    every piece to the map's road model."""
+class NewRoadsAreWrittenEveryWay(unittest.TestCase):
+    """The build's road step writes a new road into every file the map's own roads are in: the ground's tiles, the
+    close-up map's mark and the road model. That the files hold it is all this checks; up close the game still drops
+    it (TESTS.md T12), so none of these is proof of what is drawn."""
 
-    def test_a_new_road_is_drawn_up_close_not_only_painted(self):
+    def test_a_new_road_goes_into_the_tiles_the_close_up_map_and_the_road_model(self):
         from test_groundpaint import div_map, store
         from test_scenery import village
         from rusemod.build import draw_new_roads
@@ -241,14 +241,27 @@ class NewRoadsAreDrawnBothWays(unittest.TestCase):
         line = [(100.0, 500.0), (1900.0, 500.0)]
         members, notes = draw_new_roads(files.get, lambda m: "map\\" + m, [line])
         self.assertIn("map\\" + MEMBER, members)  # the road model
-        self.assertIn("map\\" + DETAIL, members)  # up close: the close-up map marks it
-        self.assertIn("map\\output\\highdef.tmst_chunk_pc", members)  # from afar
+        self.assertIn("map\\" + DETAIL, members)  # the close-up map marks it (batch 5: no change seen up close)
+        self.assertIn("map\\output\\highdef.tmst_chunk_pc", members)  # the tiles (seen in the game from afar)
         self.assertTrue(any(n.startswith("close-up map: ") for n in notes))
         drawn = {(round(v[0]), round(v[1])) for v in road_vertices(members["map\\" + MEMBER])}
         for p in road_pieces(line):
             self.assertIn((round(p.x0), round(p.y0)), drawn)
             self.assertIn((round(p.x1), round(p.y1)), drawn)
-        self.assertTrue(any(n.startswith("close-up strips: ") for n in notes))
+        self.assertTrue(any(n.startswith("road model: ") for n in notes))
+
+    def test_a_map_with_only_the_v02_model_gets_the_road_there(self):
+        """Alpha, Gam_Ostfriesland, Gamma and Robert keep their road model in staticmeshes_v02.spkpc (the same layout,
+        every shipped one read back byte for byte, 2026-10-02): it was skipped as "no road model"."""
+        v02 = roadstrips.MEMBERS[1]
+        files = {"output\\highdef.tms": make_tms(2, 1), v02: static_pack()}
+        members, notes = draw_roads(files.get, lambda m: "map\\" + m, [[(100.0, 500.0), (1900.0, 500.0)]])
+        self.assertEqual(list(members), ["map\\" + v02])
+        self.assertTrue(notes[0].startswith("road model: "))
+        both = {**files, MEMBER: static_pack()}  # Beta has both; which the game loads isn't known: both get it
+        members, notes = draw_roads(both.get, lambda m: "map\\" + m, [[(100.0, 500.0), (1900.0, 500.0)]])
+        self.assertEqual(sorted(members), sorted(["map\\" + MEMBER, "map\\" + v02]))
+        self.assertTrue(all(n.startswith(("staticmeshes.spkpc: ", "staticmeshes_v02.spkpc: ")) for n in notes))
 
     def test_a_map_without_a_road_model_says_so(self):
         members, notes = draw_roads({}.get, str, [[(0.0, 0.0), (1.0, 1.0)]])

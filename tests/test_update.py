@@ -106,7 +106,7 @@ NOTES = """**RUSE Studio, a preview.** Intro.
 **0.9.0:** a later one.
 | Before | Now |
 |---|---|
-| Roads vanished up close. | They're drawn up close. |
+| No height slider. | A slider for the zones' height. |
 
 **0.8.1:** units from any nation.
 | Before | Now |
