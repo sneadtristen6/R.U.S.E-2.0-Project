@@ -279,7 +279,7 @@ run, **Artifacts** (needs a GitHub login; the files expire after 90 days). More 
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
-(Dev Toolkit and 10x Artillery Price in one modded copy), and on 2026-09-30: terrain brushes (hills, pits, level
+(two community mods in one modded copy), and on 2026-09-30: terrain brushes (hills, pits, level
 ground that units drive on and take orders on), a moved starting point, painted cover that hides infantry, placed
 buildings (at up to 8× their size), and both apps updating themselves; on 2026-10-01, roads with new bridges
 that tanks, infantry and supply trucks cross, infantry following new roads, a bridge placed by hand, a building at
