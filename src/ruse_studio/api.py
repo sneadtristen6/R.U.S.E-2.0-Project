@@ -983,7 +983,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         with self._grounds_lock:
             cached = self._sceneries.get(key)
         if cached is not None:
-            return self._with_scenario_edits(pack, cached) if edited else cached
+            return self._with_units(self._with_scenario_edits(pack, cached)) if edited else cached
         with Edat.open(str(path)) as arc:
             found = scenario.of_map(arc, pack)
         with Edat.open(str(glad_path)) as glad:
@@ -1000,10 +1000,39 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                 it["item"] = k
             out_list.append({"file": f, "kind": kind, "entries": entries, **view})
         out_list.sort(key=lambda s: (scenario.KINDS.index(s["kind"]), (s["entries"][0]["name"] if s["entries"] else s["file"]).lower()))
-        out = {"scenarios": out_list}
+        out = self._with_units({"scenarios": out_list})
         with self._grounds_lock:
             self._sceneries[key] = out
-        return self._with_scenario_edits(pack, out) if edited else out
+        return self._with_units(self._with_scenario_edits(pack, out)) if edited else out
+
+    def _with_units(self, view: dict) -> dict:
+        """Each spawn told what it is, for the map view's icons and labels: "unit_kind" (ground, infantry, air,
+        buildings), "nation" (Nationalite) and "unit" (its address), from its Python class name (`what`: the units'
+        ClassNameForDebug). A class the game data hasn't got (a new unit of a mod) stays without them."""
+        if getattr(self, "_by_class", None) is None:
+            by_class = {}
+            try:
+                ix = self._open()
+            except (StudioError, OSError):
+                return view
+            try:
+                marks = ",".join("?" * len(ALL_CLASSES))
+                rows = ix.db.execute(f"""SELECT o.address, o.class, v.text FROM value v JOIN object o ON o.id = v.object
+                                         WHERE v.path = 'ClassNameForDebug' AND o.class IN ({marks}) AND o.shadow = 0
+                                         AND o.export IS NOT NULL""", list(ALL_CLASSES)).fetchall()
+                nations = {u["address"]: u["nation"] for u in self._all_units(ix)}
+            finally:
+                ix.close()
+            for address, cls, name in rows:
+                if name:
+                    by_class.setdefault(name, {"unit": address, "unit_kind": KIND_OF.get(cls, ""),
+                                               "nation": nations.get(address, 0)})
+            self._by_class = by_class
+        for s in view.get("scenarios", []):
+            for it in s.get("items", []):
+                if it.get("kind") == "Spawn" and it.get("what") in self._by_class:
+                    it.update(self._by_class[it["what"]])
+        return view
 
     def _with_scenario_edits(self, pack: str, base: dict) -> dict:
         """The map's scenarios as the current mod leaves them (a copy; the cached ones stay the game's)."""

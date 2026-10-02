@@ -509,9 +509,14 @@ function renderLegend() {
       [MOVE_COLOURS.vehicles, w.legend_move_vehicles]);
   }
   if (overlayShown(erased)) rows.push([ERASE_COLOUR, w.legend_erase]);
+  if (scen.show && scen.group) {  // the scenario: starting points (pillars), spawns (icons), their sides' colours
+    const hexRgb = (h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255];
+    rows.push([hexRgb(ALLIANCE[0]), w.legend_start], [null, w.legend_spawn_icons], [hexRgb(NEUTRAL_COLOUR), w.legend_neutral]);
+  }
   box.replaceChildren(...(rows.length ? [el("div", { className: "legend-title", textContent: w.legend_title })] : []),
     ...rows.map(([c, text]) => el("div", { className: "legend-row" },
-      el("span", { className: "swatch", style: `background: ${rgb(c)}` }), el("span", { textContent: text }))));
+      c ? el("span", { className: "swatch", style: `background: ${rgb(c)}` }) : el("span", { className: "swatch none" }),
+      el("span", { textContent: text }))));
   box.classList.toggle("hidden", !rows.length);
 }
 
@@ -1275,6 +1280,62 @@ function mapLabel(text, colour, size) {
   return sprite;
 }
 
+// A spawn's icon, always facing the camera: what it is (a house for a building, a tank, a soldier, a plane; a dot when
+// the game data doesn't say), on a badge in its side's colour (grey: neutral), and its country's letters under it.
+const NATION_CODES = ["US", "GER", "UK", "FR", "ITA", "USSR", "JAP"];
+const SPAWN_GLYPH = {
+  buildings: "M3 11l9-7 9 7 M5 10v10h14V10 M10 20v-6h4v6",
+  ground: "M3 15h18v4H3z M6 15v-4h9v4 M15 12h6",
+  infantry: "M12 3a2 2 0 1 0 0 4a2 2 0 1 0 0-4z M12 8v7 M8 11h8 M9 21l3-6 3 6",
+  air: "M12 2v20 M3 11l9-3 9 3 M8 20l4-2 4 2",
+  "": "M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z",
+};
+const NEUTRAL_COLOUR = 0x9aa7b2;
+
+function sideColour(camp) {
+  return camp === undefined || camp === null || camp < 1 ? NEUTRAL_COLOUR : ALLIANCE[(camp - 1) % ALLIANCE.length];
+}
+
+function spawnIcon(it, size, selected) {
+  const { THREE } = mv.gl, c = document.createElement("canvas"), g = c.getContext("2d");
+  c.width = 96; c.height = 120;
+  const hex = "#" + sideColour(it.camp).toString(16).padStart(6, "0");
+  g.fillStyle = hex;
+  g.strokeStyle = selected ? "#ffd34d" : it.mine ? "#e8c14f" : "rgba(0,0,0,0.8)";
+  g.lineWidth = selected || it.mine ? 8 : 4;
+  g.beginPath();
+  g.roundRect(6, 6, 84, 84, 16);
+  g.fill();
+  g.stroke();
+  g.save();
+  g.translate(16, 16);
+  g.scale(64 / 24, 64 / 24);
+  g.strokeStyle = "#ffffff";
+  g.lineWidth = 2.2;
+  g.lineCap = g.lineJoin = "round";
+  g.stroke(new Path2D(SPAWN_GLYPH[it.unit_kind || ""] || SPAWN_GLYPH[""]));
+  g.restore();
+  const code = it.nation !== undefined ? NATION_CODES[it.nation] || "" : "";
+  if (code) {
+    g.font = "700 26px system-ui, sans-serif";
+    g.textAlign = "center";
+    g.textBaseline = "alphabetic";
+    g.lineWidth = 6;
+    g.strokeStyle = "rgba(0,0,0,0.85)";
+    g.strokeText(code, 48, 116);
+    g.fillStyle = "#ffffff";
+    g.fillText(code, 48, 116);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true,
+    sizeAttenuation: false }));  // the same size on screen however far the camera is
+  sprite.scale.set(size * 0.8, size, 1);
+  sprite.center.set(0.5, 0);  // standing on its spot
+  sprite.renderOrder = 11;
+  return sprite;
+}
+
 // A zone's triangles split until no edge is longer than `step`, each new corner a point the caller sets on the
 // ground. Drawn from its outline alone, a zone was a flat sheet between its corners: a hill painted inside it poked
 // through the sheet, and corners on its slope tilted the sheet like a tent (the owner's D-Day hill, 2026-10-01).
@@ -1330,16 +1391,19 @@ function drawScenario() {
       const m = new THREE.Mesh(new THREE.CylinderGeometry(pillar * 0.08, pillar * 0.08, pillar, 12),
         new THREE.MeshLambertMaterial({ color: scen.selected === it.item ? 0xffffff : colour }));
       m.position.copy(at(it.x, it.y, pillar / 2));
-      m.userData.label = fill(mv.words.scen_start_place, { n: it.alliance || "?", p: it.place || 1 })
+      m.userData.label = (mv.words.scen_start_what ? mv.words.scen_start_what + " · " : "")
+        + fill(mv.words.scen_start_place, { n: it.alliance || "?", p: it.place || 1 })
         + (it.name ? ` · ${it.name}` : "") + (it.moved ? ` · ${mv.words.scen_moved}` : "")
         + (it.mine ? ` · ${mv.words.scen_mine}` : "");
       m.userData.item = it.item;
       group.add(m);
-    } else if (it.kind === "Spawn") {  // a small diamond where reinforcements arrive
-      const colour = scen.selected === it.item ? 0xffd34d : it.mine ? PLACED_COLOUR : 0xf0f0f0;
-      const m = new THREE.Mesh(new THREE.OctahedronGeometry(pillar * (it.mine ? 0.16 : 0.12)), new THREE.MeshLambertMaterial({ color: colour }));
-      m.position.copy(at(it.x, it.y, pillar * 0.15));
-      m.userData.label = `${mv.words.scen_spawn}${it.name ? " · " + it.name : ""}${it.what ? " · " + it.what : ""}`
+    } else if (it.kind === "Spawn") {  // an icon where a unit or building appears: what it is, its side, its country
+      const m = spawnIcon(it, 0.055, scen.selected === it.item);  // a share of the view's height: readable at any zoom
+      m.position.copy(at(it.x, it.y, 0));
+      const kindWord = mv.words["scen_kind_word_" + (it.unit_kind || "")] || "";
+      const nation = it.nation !== undefined ? (mv.nationNames || [])[it.nation] || NATION_CODES[it.nation] : "";
+      m.userData.label = `${mv.words.scen_spawn}${kindWord ? " · " + kindWord : ""}${it.name ? " · " + it.name : ""}`
+        + `${it.what ? " · " + it.what : ""}${nation ? " · " + nation : ""}`
         + (it.camp === -1 || (it.mine && it.camp === null) ? ` · ${mv.words.scen_side_neutral}`
           : it.camp !== undefined && it.camp !== null ? ` · ${fill(mv.words.scen_side_n, { n: it.camp })}` : "")
         + (it.mine ? ` · ${mv.words.scen_mine}` : it.moved ? ` · ${mv.words.scen_moved}` : "");
@@ -1370,6 +1434,7 @@ function drawScenario() {
   group.visible = scen.show;
   scen.group = group;
   gl.scene.add(group);
+  renderLegend();
   gl.draw();
 }
 
@@ -3763,6 +3828,7 @@ function wire() {
   $("scen-show").addEventListener("change", (e) => {
     scen.show = e.target.checked;
     if (scen.group) { scen.group.visible = scen.show; mv.gl.draw(); }
+    renderLegend();
   });
   $("scen-pick").addEventListener("change", (e) => {
     scen.pick = Number(e.target.value) || 0;
@@ -3845,6 +3911,7 @@ window.MapView = {
     wire();
     loadKeptKeys();
     renderWords();
+    try { mv.nationNames = await api.nations(mv.lang); } catch { mv.nationNames = []; }  // the spawns' countries
     if (!mv.maps.length) {
       try {
         try {
@@ -3863,7 +3930,10 @@ window.MapView = {
   },
   setWords(words, lang) {
     mv.words = words;
-    if ((lang || "base") !== mv.lang) scen.units = null;  // the Add unit tool's names: loaded again in the new language
+    if ((lang || "base") !== mv.lang) {
+      scen.units = null;  // the Add unit tool's names: loaded again in the new language
+      if (mv.api) mv.api.nations(lang || "base").then((n) => { mv.nationNames = n; }).catch(() => {});
+    }
     mv.lang = lang || "base";
     renderWords();
     renderScenTools();

@@ -321,6 +321,7 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .map-legend .legend-title { color: var(--muted, #9aa7b2); }
 .map-legend .legend-row { display: flex; align-items: center; gap: 7px; }
 .map-legend .swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; border: 1px solid rgba(0, 0, 0, 0.4); }
+.map-legend .swatch.none { background: none; border: none; }
 .map-layers { margin: 6px 0; }
 .map-layers summary { cursor: pointer; color: var(--accent); }
 .layer-rows { display: grid; gap: 2px; margin-top: 4px; }
