@@ -524,6 +524,12 @@ function renderLegend() {
 const LAYERS = ["water", "cover", "moves", "roads", "building", "prop", "vegetation", "scenario"];
 const alpha = Object.fromEntries(LAYERS.map((k) => [k, 1]));
 try { Object.assign(alpha, JSON.parse(localStorage.getItem("studio.alpha") || "{}")); } catch { /* not kept: fine */ }
+// How high the scenario's zones (sectors) float over the ground, 0 to 1 of ZONE_LIFT_MOST of the map's size (the owner,
+// 2026-10-02: hills and trees poked through them; raised by default, and a slider to set it)
+const ZONE_LIFT_MOST = 0.06;
+let zoneLift = 0.25;
+try { const kept = Number(localStorage.getItem("studio.zonelift")); if (localStorage.getItem("studio.zonelift") !== null && kept >= 0 && kept <= 1) zoneLift = kept; } catch { /* not kept: fine */ }
+const liftZones = () => { if (scen.zones) scen.zones.position.y = (mv.size || 1000) * ZONE_LIFT_MOST * zoneLift; };
 
 function layerObjects(k) {
   switch (k) {
@@ -579,7 +585,24 @@ function renderLayers() {
       if (mv.gl) mv.gl.draw();
     });
     return el("label", { className: "layer-row" }, el("span", { textContent: name[k] || k }), range, value);
-  }));
+  }), zoneLiftRow());
+}
+
+// The zones' height over the ground (liftZones): a slider under the see-through ones
+function zoneLiftRow() {
+  const w = mv.words, value = el("span", { className: "muted", textContent: `${Math.round(zoneLift * 100)} %` });
+  const range = el("input", { type: "range", min: "0", max: "100", step: "5", value: String(Math.round(zoneLift * 100)),
+    title: w.tip_zone_lift || "" });
+  range.setAttribute("aria-label", w.zone_lift || "Zones' height");
+  range.addEventListener("input", () => {
+    zoneLift = Number(range.value) / 100;
+    value.textContent = `${range.value} %`;
+    try { localStorage.setItem("studio.zonelift", String(zoneLift)); } catch { /* not kept: fine */ }
+    liftZones();
+    if (mv.gl) mv.gl.draw();
+  });
+  return el("label", { className: "layer-row", title: w.tip_zone_lift || "" }, el("span", { textContent: w.zone_lift || "Zones' height" }),
+    range, value);
 }
 
 // n*n bits in base64 (cell i at byte i >> 3, bit i & 7): `value` goes into each cell whose bit is set.
@@ -1371,6 +1394,9 @@ function drawScenario() {
   const { THREE } = gl, grid = makeGrid(mv.edit), group = new THREE.Group(), size = mv.size || 1000;
   const lift = size * 0.0015, at = (x, y, up = 0) => new THREE.Vector3(x * SCALE, groundAt(grid, x, y) * SCALE + lift + up, y * SCALE);
   const step = 1.5 * Math.max(grid.sx, grid.sy);  // about a ground cell and a half: the zone follows hills and pits
+  const zones = new THREE.Group();  // the zones together, raised over the ground by the slider (liftZones)
+  group.add(zones);
+  scen.zones = zones;
   s.zones.forEach((z, k) => {  // a zone: its own triangles, see-through, in a colour of its own
     const { xy, tris } = drapeZone(z.points, z.triangles, step), n = xy.length / 2, pos = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
@@ -1383,8 +1409,9 @@ function drawScenario() {
     const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL((k * 0.137) % 1, 0.7, 0.55),
       transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
     mesh.userData.label = `${mv.words.scen_zone} ${k + 1} · ${z.name}`;
-    group.add(mesh);
+    zones.add(mesh);
   });
+  liftZones();
   const pillar = size * 0.03;
   for (const it of s.items) {
     if (it.kind === "StartingPoint") {  // a tall pillar in the alliance's colour
@@ -1418,14 +1445,14 @@ function drawScenario() {
       }
       const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x7fe0f0 }));
       line.userData.label = it.name;
-      group.add(line);
+      zones.add(line);
     } else if (it.kind === "RectangleZone" && it.width && it.height) {
       const c = Math.cos(it.turn), sn = Math.sin(it.turn), hw = it.width / 2, hh = it.height / 2;
       const pts = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh], [-hw, -hh]].map(([dx, dy]) =>
         at(it.x + dx * c - dy * sn, it.y + dx * sn + dy * c));
       const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x7fe0f0 }));
       line.userData.label = it.name;
-      group.add(line);
+      zones.add(line);
     } else if ((it.kind === "LabelVille" || it.kind === "LabelMontagne") && (it.text || it.name)) {
       const sprite = mapLabel(it.text || it.name, it.kind === "LabelVille" ? "#ffffff" : "#e8d9a8", size * 0.012);
       sprite.position.copy(at(it.x, it.y, pillar * 0.4));
@@ -1604,7 +1631,8 @@ function scenarioAt(ev) {
   const rect = gl.renderer.domElement.getBoundingClientRect();
   gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
   gl.raycaster.setFromCamera(gl.ndc, gl.camera);
-  const shown = scen.group.children.filter((o) => o.isMesh && o.userData.label);
+  const shown = [...scen.group.children, ...(scen.zones ? scen.zones.children : [])]  // the zones: their own group
+    .filter((o) => o.isMesh && o.userData.label);
   const hits = gl.raycaster.intersectObjects(shown, false);
   const solid = hits.find((h) => h.object.geometry.type !== "BufferGeometry");  // a pillar or a diamond before a zone
   return ((solid || hits[0]) || { object: { userData: {} } }).object.userData.label || "";

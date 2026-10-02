@@ -6855,6 +6855,30 @@ cz = "Průhlednost vrstev"
 jpn = "レイヤーの透明度"
 sc = "图层透明度"
 
+[zone_lift]
+us = "Zones' height"
+fr = "Hauteur des zones"
+ger = "Höhe der Zonen"
+ita = "Altezza delle zone"
+spa = "Altura de las zonas"
+pol = "Wysokość stref"
+ru = "Высота зон"
+cz = "Výška zón"
+jpn = "ゾーンの高さ"
+sc = "区域高度"
+
+[tip_zone_lift]
+us = "How high the scenario's zones (sectors) float over the ground, so hills and trees don't poke through them. 0 % lies on the ground."
+fr = "À quelle hauteur les zones (secteurs) du scénario flottent au-dessus du sol, pour que collines et arbres ne les traversent pas. 0 % : posées au sol."
+ger = "Wie hoch die Zonen (Sektoren) des Szenarios über dem Boden schweben, damit Hügel und Bäume nicht durchstechen. 0 % liegt auf dem Boden."
+ita = "Quanto in alto le zone (settori) dello scenario fluttuano sul terreno, così colline e alberi non le attraversano. 0 % poggia sul terreno."
+spa = "A qué altura flotan las zonas (sectores) del escenario sobre el suelo, para que colinas y árboles no las atraviesen. 0 % queda sobre el suelo."
+pol = "Jak wysoko strefy (sektory) scenariusza unoszą się nad ziemią, żeby wzgórza i drzewa ich nie przebijały. 0 % leży na ziemi."
+ru = "Насколько высоко зоны (секторы) сценария парят над землёй, чтобы холмы и деревья не протыкали их. 0 % — на земле."
+cz = "Jak vysoko zóny (sektory) scénáře plují nad zemí, aby jimi neprorážely kopce a stromy. 0 % leží na zemi."
+jpn = "シナリオのゾーン（セクター）を地面からどれだけ浮かせるか。丘や木が突き抜けないようにします。0 % は地面に沿います。"
+sc = "剧本的区域（扇区）浮在地面上方的高度，避免山丘和树木穿出。0 % 贴在地面上。"
+
 [tip_layer_alpha]
 us = "How much of this layer shows: 0 % hides it, 100 % is as usual."
 fr = "Ce qu'on voit de ce calque : 0 % le cache, 100 % comme d'habitude."

@@ -285,6 +285,10 @@
   Object.assign(words.us, {"test_fix_neutral_all": "Make all {n} team spawns here neutral", "tip_test_fix_neutral_all": "The test stops at the first team spawn, so this fixes every one in this map setup at once: each unit stays, made neutral (camp -1).", "test_fix_remove_all": "Remove all {n} team spawns here", "tip_test_fix_remove_all": "Takes every team spawn of this map setup out of the map's scenario.toml in your mod; neutral spawns stay."});
   Object.assign(words.fr, {"test_fix_neutral_all": "Rendre neutres les {n} apparitions d'équipe ici", "tip_test_fix_neutral_all": "Le test s'arrête à la première apparition d'équipe : ceci les corrige toutes dans cette configuration de carte, chaque unité reste, mais neutre (camp -1).", "test_fix_remove_all": "Retirer les {n} apparitions d'équipe ici", "tip_test_fix_remove_all": "Retire toutes les apparitions d'équipe de cette configuration du scenario.toml de la carte dans votre mod ; les neutres restent."});
   Object.assign(words.sc, {"test_fix_neutral_all": "将这里全部 {n} 个队伍出生单位设为中立", "tip_test_fix_neutral_all": "测试会在第一个队伍出生单位处停止，所以这会一次修正此地图设置中的全部：每个单位保留并设为中立（阵营 -1）。", "test_fix_remove_all": "删除这里全部 {n} 个队伍出生单位", "tip_test_fix_remove_all": "从你的模组中该地图的 scenario.toml 里删除此设置的全部队伍出生单位；中立的保留。"});
+  // the zones' height over the ground (words.toml zone_lift, tip_zone_lift)
+  Object.assign(words.us, {"zone_lift": "Zones' height", "tip_zone_lift": "How high the scenario's zones (sectors) float over the ground, so hills and trees don't poke through them. 0 % lies on the ground."});
+  Object.assign(words.fr, {"zone_lift": "Hauteur des zones", "tip_zone_lift": "À quelle hauteur les zones (secteurs) du scénario flottent au-dessus du sol, pour que collines et arbres ne les traversent pas. 0 % : posées au sol."});
+  Object.assign(words.sc, {"zone_lift": "区域高度", "tip_zone_lift": "剧本的区域（扇区）浮在地面上方的高度，避免山丘和树木穿出。0 % 贴在地面上。"});
   const nations = {
     base: ["EU", "Allemagne", "RU", "France", "Italie", "URSS", "Japon"],
     us: ["USA", "Germany", "UK", "France", "Italy", "USSR", "Japan"],
