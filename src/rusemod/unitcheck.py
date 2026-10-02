@@ -58,9 +58,11 @@ def problems(obj) -> list[tuple[str, str, str]]:
     n = _int(obj.props.get(NATION))
     if n is not None and not 0 <= n < len(NATIONS):
         names = ", ".join(f"{i} {name}" for i, name in enumerate(NATIONS))
+        # rule: unit-nation-range
         out.append(("error", NATION, f"{NATION} {n} isn't a nation: it must be 0 to 6 ({names}); the game has room "
                                      f"for exactly seven nations' units, and another number corrupts it as it loads"))
     if _int(obj.props.get(ID)) == 0:
+        # rule: unit-id-zero
         out.append(("error", ID, f"{ID} 0 isn't an id: the game leaves the unit out of its nation's list and can't "
                                  f"build it; give it a number no other unit has"))
     for prop, what in (("ProductionPrice", "the game makes the unit free at the battle dates it has no price for"),
@@ -70,8 +72,10 @@ def problems(obj) -> list[tuple[str, str, str]]:
         if v is None:
             continue
         if not isinstance(v, ListV):
+            # rule: unit-five-dates
             out.append(("error", prop, f"{prop} isn't a list; it needs {DATES} items, one per battle date"))
         elif len(v.items) != DATES:
+            # rule: unit-five-dates
             out.append(("error", prop, f"{prop} has {len(v.items)} item(s); it needs {DATES}, one per battle date "
                                        f"({what})"))
     return out + unitflags.problems(obj)

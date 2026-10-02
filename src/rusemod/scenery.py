@@ -109,6 +109,7 @@ class Scenery:
         if len(data) < 124:
             raise SceneryError("not a scenery file: too short")
         if hashlib.md5(data[16:]).digest() != data[:16]:
+            # rule: scenery-md5
             raise SceneryError("the scenery file's MD5 is wrong (the game would refuse it)")
         version, *f = _HEAD.unpack_from(data, 16)
         if version != VERSION:
@@ -1542,6 +1543,7 @@ def _grids_hold(data: bytes, points: list[tuple[float, float]]) -> tuple[bytes, 
             w, h = sc.grid_dims[2 * level], sc.grid_dims[2 * level + 1]
             cx, cy = math.floor(x / GRID_CELL[level]), math.floor(y / GRID_CELL[level])
             if not (0 <= cx < w and 0 <= cy < h):
+                # rule: scenery-grid
                 raise SceneryEditError(f"({x:.0f}, {y:.0f}) is outside the map's scenery grid ({w} x {h} cells of "
                                        f"{GRID_CELL[level]:.0f}), where the game draws nothing")
             at = sc.grids[level][0] + (cx * h + cy) * GRID_RECORD[level]

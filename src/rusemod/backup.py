@@ -217,6 +217,7 @@ def read_manifest(backup: Path) -> dict:
         raise BackupError(f"{backup} isn't a complete backup ({MANIFEST}: {exc}).") from None
     damage = _damage(data)
     if damage:
+        # not a game rule: about our backup, not the game's behaviour
         raise BackupError(f"The backup at {backup} is damaged ({MANIFEST}: {damage}), so it can't be used. Make a new "
                           f"backup while the game is clean (Verify with Steam first).")
     return data
@@ -382,6 +383,7 @@ def _busy(folder: Path, what: str):
         os.ftruncate(fd, 0)  # a leftover's words (elsewhere than Windows, the file can be an old one)
         os.write(fd, json.dumps({"what": what, "pid": os.getpid()}).encode("utf-8"))
         if what == "restore" and _readers(folder):
+            # not a game rule: something else is busy (the game, the other app, a restore)
             raise BackupError("A modded copy of the game is being built from its files (a Play, or a Test in game): "
                               "wait for it to finish, then try again.")
         yield
@@ -420,6 +422,7 @@ def reading(folder: Path | None):
             fd = None
     try:
         if folder is not None and folder.is_dir() and _restore_running(folder):
+            # not a game rule: something else is busy (the game, the other app, a restore)
             raise BackupError("The game's files are being restored: wait for it to finish.")
         yield
     finally:
@@ -482,6 +485,7 @@ def _copy_steady(rel: str, full: str, out: Path, count: _Count) -> tuple[os.stat
                 after = os.fstat(f.fileno())
             last = os.lstat(full)
         except FileNotFoundError:
+            # not a game rule: about our backup, not the game's behaviour
             raise BackupError(f"{rel} went away while the backup was being made (a program is changing the game's "
                               f"files: Steam?). Make the backup again once it has finished.") from None
         if n == before.st_size and _same(before, after) and _same(first, last) and _same(first, before, False):
@@ -506,6 +510,7 @@ def _existing(dest: Path, replace: bool) -> None:
         raise BackupError(f"There's a folder at {dest} that isn't a backup: move or rename it, then try "
                           f"again.") from None
     if not replace:
+        # not a game rule: about our backup, not the game's behaviour
         raise BackupError(f"There's already a backup of this build at {dest} (made {made}). Make it again only if "
                           f"the game is clean now: Verify with Steam first.")
 
@@ -522,6 +527,7 @@ def make(game: Path, dest: Path | None = None, progress=None, replace: bool = Fa
     dest = Path(os.path.abspath(dest)) if dest else backup_path(backups_dir(game), build)
     staging, old = Path(f"{dest}.partial"), Path(f"{dest}.old")
     if winfiles.inside(str(dest), str(game)) or any(winfiles.inside(str(game), str(p)) for p in (dest, staging, old)):
+        # not a game rule: about our backup, not the game's behaviour
         raise BackupError("A backup can't go inside the game folder, nor the game folder inside a backup.")
     _existing(dest, replace)
     found, folders = _scan(game)
@@ -734,6 +740,7 @@ def _put_back(src: Path, target: Path, sha: str, count: _Count, aside: Path) -> 
         with os.fdopen(fd, "wb") as g, open(src, "rb") as f:
             got, _n = _pipe(f, g, count)
         if got != sha:
+            # not a game rule: about our backup, not the game's behaviour
             raise BackupError("the backup's copy is damaged (it doesn't match its checksum)")
         when = os.stat(src)
         os.utime(temp, ns=(when.st_atime_ns, when.st_mtime_ns))
@@ -778,6 +785,7 @@ def restore(game: Path, backup: Path, deep: bool = False, progress=None, checkin
     if not _is_game(game):
         raise BackupError(f"{game} isn't the R.U.S.E folder (there's no RUSE.exe in it).")
     if winfiles.inside(str(backup), str(game)) or winfiles.inside(str(game), str(backup)):
+        # not a game rule: about our backup, not the game's behaviour
         raise BackupError("A backup inside the game folder (or a game folder inside a backup) can't be restored from: "
                           "move the backup out of the game folder, then try again.")
     read_manifest(backup)
@@ -786,9 +794,11 @@ def restore(game: Path, backup: Path, deep: bool = False, progress=None, checkin
         held = running(game, processes)
         if held:
             names = ", ".join(f"{os.path.basename(exe)} (process {pid})" for pid, exe in held)
+            # not a game rule: something else is busy (the game, the other app, a restore)
             raise BackupError(f"R.U.S.E. is running: {names}. Close the game, then restore.")
         build = build_of(game)
         if manifest.get("build") != build:
+            # not a game rule: about our backup, not the game's behaviour
             raise BackupError(f"Steam has updated R.U.S.E. since this backup was made (the backup is build "
                               f"{manifest.get('build') or '?'}, the game is build {build or '?'}), so its files would "
                               f"put back the old version. Use Verify with Steam to repair the game, then make a new "
@@ -799,6 +809,7 @@ def restore(game: Path, backup: Path, deep: bool = False, progress=None, checkin
         need = sum(int(files[rel][0]) for rel in todo)
         free = free_space(game)
         if need and free < need + ROOM:
+            # not a game rule: the disk is full
             raise BackupError(f"There isn't enough free space on {game.anchor} to restore the game's files: it needs "
                               f"{gb(need + ROOM)} GB, and {gb(free)} GB is free. Free some space, then try again.")
         stamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
@@ -893,6 +904,7 @@ class BackupCalls:
     def _the_game(self) -> Path:
         game = self._backup_game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise BackupError("We couldn't find R.U.S.E. Choose its folder first.")
         return game
 
@@ -904,6 +916,7 @@ class BackupCalls:
             return mine
         found = list_backups(folder)
         if not found:
+            # not a game rule: about our backup, not the game's behaviour
             raise BackupError("There's no backup of the game yet: make one first, while the game is clean.")
         return Path(found[0]["path"])
 
@@ -931,6 +944,7 @@ class BackupCalls:
     def _backup_start(self, kind: str, work, done: str) -> dict:
         from .webui import Job
         if self._backup_busy():
+            # not a game rule: something else is busy (the game, the other app, a restore)
             raise BackupError("The game backup is busy: wait for it to finish, then try again.")
         job = Job()
         job.kind, job.result = kind, None

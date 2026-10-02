@@ -63,6 +63,7 @@ class RoadNet:
         net = cls([(x, y) for _, x, y in raw], [tuple(link) for link in links],
                   _tree_read(data[o4:], 0) if o4 < len(data) else ["leaf", []])
         if [w for w, _, _ in raw] != net._words() or data[o3:o4] != net._lists_bytes():
+            # not a game rule: a damaged or unexpected file
             raise RoadNetError("the road network's point lists don't match its links")
         return net
 
@@ -285,6 +286,7 @@ def apply_roads(read, pack: str, roads: list[Road], blocks=()) -> tuple[dict, li
         alone = [(n, join) for n, span, join in spans if any(p not in main for p in span)]
         what = (", ".join(f"road {n} (its ends joined no road within {join / 260:.0f} m)" for n, join in alone)
                 if alone else f"the map's roads (in {len(pieces)} pieces after the old bridges' roads were cut)")
+        # rule: road-network-one-piece
         raise RoadNetError(f"{pack}: {what} would be cut off from the rest of the map's roads; every road network the "
                            f"game ships is one piece, and supply routes between two pieces fail. Draw each end onto a "
                            f"road, or give the road a larger join")

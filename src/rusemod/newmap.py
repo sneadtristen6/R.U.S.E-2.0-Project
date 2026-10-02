@@ -132,6 +132,7 @@ def check_name(new: str) -> None:
         raise NewMapError(f"maps/{new}: a new map's folder name is its pack name: a letter, then up to 39 letters, "
                           f"digits and _ (like BlitzAtDusk)")
     if new.lower().startswith("flat_"):
+        # rule: newmap-names
         raise NewMapError(f"maps/{new}: names starting flat_ belong to the game's test maps; pick another")
 
 
@@ -298,18 +299,22 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
     src = spec.copy_of
     g_raw, m_raw = read_glad(GLOBALS), read_glad(MAPINFO)
     if g_raw is None or m_raw is None:
+        # not a game rule: the game or one of its files isn't found
         raise NewMapError("the game's map list or menus aren't in ZZ_GladPatchableWin.dat, so no map can be added")
     g, m = Ndf(g_raw), Ndf(m_raw)
     roots = {(_text(m, _props(m, o).get(k)) or "").lower() for o in m.objects if m.classes[o.cls] == "TMapLoadInfo"
              for k in ("RootDatapackName", "Path")}
     if new.lower() in roots:
+        # rule: newmap-names
         raise NewMapError(f"maps/{new}: the game already has a map called {new}; give the new map another folder "
                           f"name")
     found = [f for f in entries(m, g, src) if _listed(g, f[1])]
     if not found:
         if src.lower() in roots:
+            # not a game rule: our map copier needs the game's own map files as they are
             raise NewMapError(f"maps/{new}: {src} isn't played in BATTLES (it has no skirmish entry), so it can't be "
                               f"copied as a skirmish map yet; start from a map BATTLES lists")
+        # not a game rule: the game or one of its files isn't found
         raise NewMapError(f"maps/{new}: copy_of = {src!r} isn't a map of this game (it takes the map's pack name, like "
                           f"SuperCrossRoads4 for Blitz)")
     if spec.entry:
@@ -339,6 +344,7 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
 
     def adding(pack: dict, read, member: str, raw: bytes) -> None:
         if read(member) is not None:
+            # rule: newmap-names
             raise NewMapError(f"maps/{new}: the game already has {member}; give the new map another folder name")
         pack[member] = raw
 
@@ -356,6 +362,7 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
             for s in cluster.strings if scen_at.match(s)}
     maps = {map_at.match(s).group(1).lower(): map_at.match(s).group(1) for s in cluster.strings if map_at.match(s)}
     if len(scen) != 1 or len(maps) != 1:
+        # not a game rule: our map copier needs the game's own map files as they are
         raise NewMapError(f"maps/{new}: {src}'s scenario cluster doesn't name one scenario and one map the way the "
                           f"game's maps do, so it can't be copied")
     (scen_folder, out.scenario), = scen
@@ -380,6 +387,7 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
     pack_txt = _text(mc, _props(mc, mounts[0]).get("DataPack")) if len(mounts) == 1 else None
     q = re.match(r"^MapDat:[\\/](DataMap[A-Za-z0-9_]+_v09\.dat)$", pack_txt or "", re.I)
     if not q:
+        # not a game rule: our map copier needs the game's own map files as they are
         raise NewMapError(f"maps/{new}: {src}'s map cluster doesn't mount one map pack the way the game's maps do, "
                           f"so it can't be copied")
     out.pack_from = q.group(1)
@@ -388,6 +396,7 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
         re.compile(r"^(Patchable[\\/]map[\\/])(" + mf + r")([\\/]MapConstante)$", re.I),
         re.compile(r"^(map[\\/])(" + mf + r")([\\/]MapConstante\.ndfbin)$", re.I))(new))
     if n < 1:
+        # not a game rule: our map copier needs the game's own map files as they are
         raise NewMapError(f"maps/{new}: {src}'s map cluster doesn't load its constants the way the game's maps do, "
                           f"so it can't be copied")
     adding(out.glad, read_glad, _member("Patchable" + BS + "map" + BS + new + BS + "ClusterMap"),
@@ -400,6 +409,7 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
     grid = _text(mk, _props(mk, infos[0]).get("MapPath")) if len(infos) == 1 else None
     q = re.match(r"^DataDir:[\\/]datasmap[\\/]([^\\/]+)$", grid or "", re.I)
     if not q:
+        # not a game rule: our map copier needs the game's own map files as they are
         raise NewMapError(f"maps/{new}: {src}'s constants don't name the folder of its grid the way the game's maps "
                           f"do, so it can't be copied")
     _set_text(mk, infos[0], "MapPath", f"DataDir:{BS}datasmap{BS}{new}")

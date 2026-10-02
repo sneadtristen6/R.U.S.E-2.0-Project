@@ -581,6 +581,7 @@ def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = (), r
             return any(math.hypot(x - zx, y - zy) < zr + r for zx, zy, zr in zones) or holes.within(x, y, r)
         c = g.open_narrow(spans, DECK, roads, avoid=avoid, water=water) if spans else None
         if any(len(s.parts()) > n for s, n in zip([g] + g.subs, pieces)):  # e.g. an old bridge, the only way across
+            # rule: ground-reach
             raise BridgeError(f"{what}: taking the old bridges away would cut ground off from the rest of the map "
                               f"(or of a bridge's own local movement), and the game crashes when a unit is ordered "
                               f"onto ground it can't reach")

@@ -265,6 +265,7 @@ class Engine:
             if op.every:
                 found = self._objects_of(op.every, op.filter)
                 if not found:
+                    # not a game rule: the game or one of its files isn't found
                     raise PatchError(f"{op.at()} patches every {_what(op.every, op.filter)}, but none exists in this "
                                      f"game build (after a game update, this needs a rebase)")
                 for name, prefix, _obj in found:
@@ -369,6 +370,7 @@ class Engine:
             if path in self.game.files:
                 raise PatchError(f"{op.at()} adds {op.target}, which already exists")
         elif path not in self.game.files:
+            # not a game rule: how a mod names what it patches
             raise PatchError(f"{op.at()} replaces {op.target}, which isn't a game file")
         prev = self.file_log.get(path)
         if prev and prev.mod != op.mod:
@@ -497,6 +499,7 @@ class Engine:
             if o is not None and _matches(o, field_.strip(), want.strip()):
                 hits.append(k)
         if len(hits) != 1:
+            # not a game rule: how a mod names what it patches
             raise PatchError(f"{op.at()}: [{sel}] matches {len(hits)} items of {owner}:{prop}, it must match exactly one")
         return hits[0]
 
@@ -529,10 +532,12 @@ class Engine:
         found = self._objects_of(cls, filter_)
         what = _what(cls, filter_)
         if not found:
+            # not a game rule: the game or one of its files isn't found
             raise PatchError(f"{op.at()} {verb} {what}, which doesn't exist in this game build (after a game update, "
                              f"this needs a rebase)")
         if len(found) > 1:
             names = ", ".join(f"{n}:{p}" if p else n for n, p, _ in found[:4])
+            # not a game rule: how a mod names what it patches
             raise PatchError(f"{op.at()}: {what} matches {len(found)} objects ({names}{', …' if len(found) > 4 else ''}); "
                              f"it must match exactly one")
         name, prefix, _ = found[0]
@@ -583,6 +588,7 @@ class Engine:
     def _share(self, op: Op, part: Obj, holder, key) -> str:
         """Give a part its own name so something else can refer to it too (it stays where it is in its file)."""
         if part.origin is None:
+            # not a game rule: how a mod names what it patches
             raise PatchError(f"{op.at()}: can't refer to a {part.cls} part that a mod made; refer to a part of a game "
                              f"object, or make it a named object of its own")
         name = f"{part.origin[0]}#{part.origin[1]}"
@@ -736,10 +742,12 @@ class Engine:
                 else set()
             found += [(name, prop, level, why) for level, prop, why in uc.problems(obj) if why not in had]
             if uc.ID not in obj.props and (made.kind == "create" if made else self._had_ids.get(name) is not None):
+                # rule: unit-id-zero
                 found.append((name, uc.ID, "error", f"it has no {uc.ID}, so the game leaves it out of its nation's "
                                                     f"list and can't build it; give it a number no other unit has"))
         now = uc.ids(self.game)
         moved = [n for n in units if n in self.created or now.get(n) != self._had_ids.get(n)]
+        # rule: unit-id-clash
         found += [(name, uc.ID, "error", why) for name, why in uc.id_clashes(self.game, moved).items()]
         for name, prop, level, why in found:
             op = self._blame(lambda o, p, n=name, r=prop: o == n and _root(p) == r) or self.created.get(name) \
@@ -753,6 +761,7 @@ class Engine:
             op = self._blame(lambda o, p, t=top, r=root, s=named: (o == t and r in (None, _root(p))) or o in s) \
                 or self.created.get(top)
             where = f"{top}:{path}" if path else top
+            # rule: weapon-salvo
             self._find("error", f"{op.at()}: {where}: {why}" if op else f"{where}: {why}", op)
 
     def _truck_flags(self, new: list) -> None:
@@ -777,6 +786,7 @@ class Engine:
         for name in sorted(blame):
             had = set() if name in self.created else self._had_truck_flags.get(name, set())
             for why in crashes(self.game.objects[name], had):
+                # rule: truck-flags
                 self._find("error", f"{blame[name].at()}: {name}: {why}", blame[name])
 
 

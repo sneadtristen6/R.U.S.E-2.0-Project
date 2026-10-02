@@ -56,6 +56,7 @@ def refuse_if_running(dst: str) -> None:
     running = game_running(dst)
     if running:
         names = ", ".join(f"{os.path.basename(exe)} (process {pid})" for pid, exe in running)
+        # not a game rule: something else is busy (the game, the other app, a restore)
         raise GameRunning(f"R.U.S.E. is still running from the modded copy at {dst}: {names}. Close the game, then try "
                           f"again.", running)
 
@@ -158,6 +159,7 @@ def _set_aside(path: str, src: str, what: str) -> str | None:
         return target
     except OSError as exc:
         where = refused.filename or path
+        # not a game rule: something else is busy (the game, the other app, a restore)
         raise InstanceError(f"{what} at {path} can't be removed or moved aside: Windows refused {where} "
                             f"({refused.strerror or refused}){_who(refused.filename)}. If R.U.S.E. is running from "
                             f"it, close the game and try again; otherwise restart Windows, or delete that folder by "
@@ -200,12 +202,14 @@ def build_instance(src: str, dst: str, replace: dict | None = None,
     """
     src, dst = os.path.abspath(src), os.path.abspath(dst)
     if _norm(dst) == _norm(src) or _norm(dst).startswith(_norm(src) + os.sep):
+        # not a game rule: we never write into the game folder
         raise ValueError("refusing to build an instance inside the game folder")
     replace = {_norm(k): v for k, v in (replace or {}).items()}
     rename = {_norm(k): v for k, v in (rename or {}).items()}
     add = dict(add or {})
     for rel in add:
         if os.path.lexists(os.path.join(src, rel)) or _norm(rel) in replace:
+            # not a game rule: we never write into the game folder
             raise ValueError(f"can't add {rel}: the game folder already has it")
     staging, old = dst + ".partial", dst + ".old"
     refuse_if_running(dst)  # before the long build: a running game is said at once
@@ -250,6 +254,7 @@ def build_instance(src: str, dst: str, replace: dict | None = None,
                     counts["copied"] += 1
         missing = set(replace) - seen
         if missing:
+            # not a game rule: we never write into the game folder
             raise FileNotFoundError(f"files to replace not found in the game folder: {sorted(missing)}")
         for rel, content in add.items():
             out = os.path.join(staging, rel)
@@ -273,6 +278,7 @@ def build_instance(src: str, dst: str, replace: dict | None = None,
                 _remove_tree(staging, src)
             except OSError:
                 pass
+            # not a game rule: something else is busy (the game, the other app, a restore)
             raise InstanceError(f"The modded copy at {dst} is in use, so it can't be replaced ({exc.strerror or exc})"
                                 f"{_who(exc.filename)}. If R.U.S.E. is running from it, close the game and try "
                                 f"again.") from exc

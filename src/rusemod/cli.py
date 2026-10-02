@@ -42,6 +42,7 @@ def _game_dir(args) -> Path:
         return Path(os.environ["RUSE_GAME"])
     found = find_game()
     if not found:
+        # not a game rule: the game or one of its files isn't found
         raise UserError("Couldn't find R.U.S.E. through Steam. Pass the game folder with --game.")
     return found["game_dir"]
 
@@ -139,6 +140,7 @@ def cmd_extract(args) -> int:
         protected.append(_game_dir(args).resolve())
     for game in protected:
         if out == game or game in out.parents:
+            # not a game rule: we never write into the game folder
             raise UserError(f"Refusing to write into the game folder ({game}). Pick another --out folder.")
     want = args.filter.lower()
     n = 0

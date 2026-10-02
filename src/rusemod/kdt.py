@@ -499,6 +499,7 @@ class Kdt:
             raise ValueError("Storage is not a blob")
         ln = struct.unpack_from("<I", storage.payload)[0]
         if len(storage.payload) != 4 + ln:
+            # not a game rule: a damaged or unexpected file
             raise ValueError("Storage length does not match")
         self.subtrees: list[Subtree] = []
         self.main_node = b""
@@ -558,6 +559,7 @@ class Kdt:
             tree, pos = read_chunk(blob, pos)
             p.append(tree)
         if list(struct.unpack_from(f"<{count}I", blob, csib)) != starts:
+            # not a game rule: a damaged or unexpected file
             raise ValueError("subtree index table does not match the chunks")
         if pos != len(blob):
             raise ValueError(f"{len(blob) - pos} bytes after the last subtree")
@@ -572,6 +574,7 @@ class Kdt:
         """Check that the u32 table at `pos` (which the property says is at `want`) holds `starts`."""
         self._expect(pos, want, f"{what} table")
         if list(struct.unpack_from(f"<{len(starts)}I", blob, pos)) != starts:
+            # not a game rule: a damaged or unexpected file
             raise ValueError(f"{what} table does not match the chunks")
         return pos + 4 * len(starts)
 

@@ -99,6 +99,7 @@ class Graph:
             raise NavError("the graph's offsets don't fit it")
         c0, l0, s0, x0_, p0 = offsets[:5]
         if l0 - c0 != 16 * (n_circles + 1) or s0 - l0 != 12 * n_links or p0 - x0_ != 28 * n_cross:
+            # not a game rule: a damaged or unexpected file
             raise NavError("the graph's sections don't match its counts")
         circles = [struct.unpack_from("<3f2H", data, c0 + 16 * i) for i in range(n_circles + 1)]
         links = [struct.unpack_from("<2H2f", data, l0 + 12 * i) for i in range(n_links)]
@@ -579,6 +580,7 @@ class Graph:
             boxes[bank] = (min(bx0, x - r), min(by0, y - r), max(bx1, x + r), max(by1, y + r))
         self.points = _index_add(self.points, into, boxes)
         if len(self._labels()[1]) > parts_before:  # a guard: never write ground units can't reach
+            # rule: ground-reach
             raise NavError("opening the bridges would leave ground units can't reach, which crashes the game")
         return counts
 
@@ -665,6 +667,7 @@ class Graph:
         self._finish(allc, list(enumerate(self.links)), [(None, lk) for lk in links], n)
         self.points = _index_more(self.points, old, [(n + j, c) for j, c in enumerate(new)])
         if len(self._labels()[1]) > parts_before:  # a guard: never write ground units can't reach
+            # rule: ground-reach
             raise NavError("opening ground would leave ground units can't reach, which crashes the game")
         return new, len(links), len(rest)
 
@@ -778,11 +781,13 @@ class Graph:
         """Graph.open's checks on the graph it made: new owners nx..nx+m-1 (`owners`: (circle number, span index)),
         new approach circles from `fresh` on, `decks` the opened decks' circles by span index."""
         if len(self._labels()[1]) > parts_before:  # a guard: never write ground units can't reach
+            # rule: ground-reach
             raise NavError("opening the bridges would leave ground units can't reach, which crashes the game")
         circles = self.circles[:-1]
         for k in range(nx, nx + m):
             ox, oy, orad = circles[k][:3]
             if len(self.subs[k].parts()) != 1:
+                # rule: ground-reach
                 raise NavError(f"the local movement of the bridge at ({ox:.0f}, {oy:.0f}) would be in pieces, which "
                                f"crashes the game when a route goes through it")
             if any(i != k and r > 0 and math.hypot(x - ox, y - oy) < orad for i, (x, y, r, _l, _c) in enumerate(circles)):

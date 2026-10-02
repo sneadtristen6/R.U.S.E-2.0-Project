@@ -44,6 +44,7 @@ class Tmst:
         if self.version != 3:
             raise ValueError(f"unsupported TMST version {self.version}")
         if file_size != len(index) or chunk_size != len(chunk):
+            # not a game rule: a damaged or unexpected file
             raise ValueError(f"size fields {file_size}/{chunk_size} do not match {len(index)}/{len(chunk)}")
         count = table_size // 8
         if count != 1 + self.grid_w * self.grid_h * sum(4 ** k for k in range(self.depth)):

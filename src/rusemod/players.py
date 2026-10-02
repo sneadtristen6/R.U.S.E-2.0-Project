@@ -47,10 +47,12 @@ def parse_map(data: dict, where: str = "map.toml") -> list[Players]:
     """A map.toml's settings: [Players] when it sets `players`, else []."""
     if "players" not in data:
         if "entry" in data:
+            # not a game rule: the game or one of its files isn't found
             raise PlayersError(f"{where}: entry names which of the map's entries gets players = N; players is missing")
         return []
     n = data["players"]
     if isinstance(n, bool) or not isinstance(n, int) or not 2 <= n <= PLAYERS_MOST:
+        # rule: players-most
         raise PlayersError(f"{where}: players must be a whole number from 2 to {PLAYERS_MOST} (past {PLAYERS_MOST} "
                            f"isn't possible yet)")
     entry = data.get("entry")
@@ -196,10 +198,12 @@ def apply_players(read_glad, pack: str, setting: Players, starting_points, warn=
     has no online entry, or the scenario can't seat that many."""
     g_raw, m_raw = read_glad(GLOBALS), read_glad(MAPINFO)
     if g_raw is None or m_raw is None:
+        # not a game rule: the game or one of its files isn't found
         raise PlayersError("the game's map list or menus aren't in ZZ_GladPatchableWin.dat")
     g, m = Ndf(g_raw), Ndf(m_raw)
     found = entries(m, g, pack)
     if not found:
+        # not a game rule: what our writer supports, or a file it can't read or write
         raise PlayersError(f"{pack} isn't played online or in BATTLES (it has no multiplayer entry), so its player "
                            f"count can't change")
     if setting.entry:
@@ -221,6 +225,7 @@ def apply_players(read_glad, pack: str, setting: Players, starting_points, warn=
     missing = seats(places, layouts, setting.count)
     if missing:
         where = ", ".join(f"team {t}, place {q}" for t, q in missing)
+        # rule: seats-per-team
         raise PlayersError(f"{pack}: {setting.count} players need a starting point for each; {scenario_file} has none "
                            f"for {where}. Add them (scenario.toml [[start]], or the Studio's Add starting point)")
     before = p["NbPlayers"].scalar() if "NbPlayers" in p else None

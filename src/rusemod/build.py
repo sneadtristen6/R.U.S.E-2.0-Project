@@ -613,6 +613,7 @@ def unit_models(base, run, zz_win, result: BuildResult, into=None) -> None:
                 given, why = None, [f"the packs can't be read ({exc})"]
             if why:
                 more_why = f" (and {len(why) - 1} more)" if len(why) > 1 else ""
+                # rule: nation-models
                 result.findings.append(Finding("error", f"{at}{name} is in {nation}'s army (Nationalite {n}), but its "
                                                         f"model {model}{more} is in the mesh pack of "
                                                         f"{' and '.join(where)}'s units only, and it can't be copied "
@@ -652,6 +653,7 @@ def unit_models(base, run, zz_win, result: BuildResult, into=None) -> None:
                                                    f"{packs_of}'s unit models now load in every skirmish, so it shows "
                                                    f"in matches where no player has {packs_of} too", op))
             continue
+        # rule: nation-models
         result.findings.append(Finding("error", f"{at}{name} is in {nation}'s army (Nationalite {n}), but its model "
                                                 f"{model}{more} is in the mesh pack of {' and '.join(where)}'s units "
                                                 f"only, and the unit data has no cluster maps that could load "
@@ -717,6 +719,7 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult,
                     getattr(gave, k).extend(x for x in getattr(given, k) if x not in getattr(gave, k))
             if why:
                 more = f" (and {len(why) - 1} more)" if len(why) > 1 else ""
+                # rule: spawn-models
                 result.findings.append(Finding("error", f"{ids}: the spawned {which} use {country}'s unit models, "
                                                         f"which a skirmish loads only when a player has {country}, and "
                                                         f"they can't be copied into the packs every skirmish loads: "
@@ -745,6 +748,7 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult,
                                                    f"in every skirmish ({count} loaders in {maps} cluster maps)"))
         else:
             why = "the unit data has no cluster maps that could load them in every match"
+            # rule: spawn-models
             result.findings.append(Finding("error", f"{ids}: the spawned {which} use {country}'s unit models, which a "
                                                     f"skirmish loads only when a player has {country}, and {why}: "
                                                     f"the game would crash as the match starts (a D-Day test with "
@@ -790,10 +794,12 @@ def unit_classes(base, run, zz_win, result: BuildResult) -> None:
         xyz = pyscript.read_xyz(raw)
         ul = pyscript.unit_list(xyz.payload)
     except pyscript.ScriptError as exc:
+        # not a game rule: what our writer supports, or a file it can't read or write
         result.findings.append(Finding("error", f"the game's Python unit list can't be read: {exc}"))
         return
     for path in ul.by_path:
         if path in base.objects and path not in run.game.objects:
+            # rule: delete-unit-class
             result.findings.append(Finding("error", f"{path} is deleted, but it has a class in the game's Python unit "
                                                     f"list; deleting such units isn't supported yet (the game would "
                                                     f"fail to load its units)"))
@@ -855,6 +861,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
         try:
             result.model_changed = into.output()
         except (unitpacks.PackError, ValueError, struct.error) as exc:
+            # not a game rule: what our writer supports, or a file it can't read or write
             result.findings.append(Finding("error", f"the skirmish unit packs can't be written: {exc}"))
             return result
     text_mods = [(m.id, m.text_prefix, m.texts) for m in order if m.texts]
@@ -1108,6 +1115,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             from .scenario import PACK as DATA_PACK
             data_path = find_pack(game, DATA_PACK)
             if data_path is None:
+                # not a game rule: the game or one of its files isn't found
                 result.findings.append(Finding("error", f"{DATA_PACK} isn't in this game, so no map can be added (the "
                                                         f"maps' scenarios and grids live there)"))
                 making = {}
@@ -1135,6 +1143,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     continue
                 source = find_pack(game, clone.pack_from)
                 if source is None:
+                    # not a game rule: the game or one of its files isn't found
                     result.findings.append(Finding("error", f"{mod_id}: maps/{name}: {clone.pack_from}, the pack of "
                                                             f"{spec.copy_of}, isn't in this game, so it can't be copied"))
                     continue
@@ -1168,6 +1177,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         for name, (strokes, ids) in terrain_edits(result.order, mods).items():
             map_path = find_map(name)
             if map_path is None:
+                # not a game rule: the game or one of its files isn't found
                 result.findings.append(Finding("error", f"{', '.join(ids)}: the map {name} isn't in this game "
                                                         f"({pack_file(name)} is missing), so its ground can't be "
                                                         f"changed{_meant(game, name)}"))
@@ -1391,6 +1401,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         for name, (objects, ids) in with_pieces.items():
             map_path = find_map(name)
             if map_path is None:
+                # not a game rule: the game or one of its files isn't found
                 result.findings.append(Finding("error", f"{', '.join(ids)}: the map {name} isn't in this game "
                                                         f"({pack_file(name)} is missing), so nothing can be placed "
                                                         f"on it{_meant(game, name)}"))
@@ -1515,6 +1526,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             from .scenario import PACK as SCENARIO_PACK, ScenarioError, apply_moves
             data_path = find_pack(game, SCENARIO_PACK)
             if data_path is None:
+                # not a game rule: the game or one of its files isn't found
                 result.findings.append(Finding("error", f"{SCENARIO_PACK} isn't in this game, so no starting point or "
                                                         f"spawn can be moved, and no cover painted"))
             else:
@@ -1561,6 +1573,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     from .scenario import Move, Spawn, spawn_class_problems
                     new_spawns = [m for m in map_moves if isinstance(m, Spawn)]
                     wrong = spawn_class_problems(name, new_spawns, registered_classes(), shipped_paths) if new_spawns else []
+                    # rule: spawn-class
                     if wrong:  # a class the game can't find makes loading the map fail
                         result.findings += [Finding("error", f"{', '.join(ids)}: {w}") for w in wrong]
                         continue
@@ -1651,6 +1664,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {note}")
                 for name, (map_moves, ids) in moves.items():  # the mods' starting points on the final ground
                     from .scenario import start_ground_problems
+                    # rule: start-ground
                     wrong, far = start_ground_problems(read_data, name, map_moves)
                     result.findings += [Finding("error", f"{', '.join(ids)}: {w}") for w in wrong]
                     for w in far:

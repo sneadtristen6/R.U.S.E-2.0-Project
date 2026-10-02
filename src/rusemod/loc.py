@@ -134,6 +134,7 @@ def plan(mods, game_keys: dict) -> TextPlan:
                 except ValueError as exc:
                     raise TextError(f"{r.at()}: {exc}") from None
                 if k not in game_keys.get(r.dictionary, set()):
+                    # not a game rule: our text keys
                     raise TextError(f"{r.at()}: {r.key} isn't a text in the game's {r.dictionary}.dic")
                 prev = result.changes.get(r.dictionary, {}).get(k)
                 if prev and prev[0].mod != r.mod:
@@ -147,9 +148,11 @@ def plan(mods, game_keys: dict) -> TextPlan:
             game_key = r.game_key or assigned[id(r)]
             k = name_to_key(game_key)
             if k in game_keys.get(r.dictionary, set()):
+                # not a game rule: our text keys
                 raise TextError(f"{r.at()}: the game key {game_key} is already a text in the game's "
                                 f"{r.dictionary}.dic; pick another game_key or text_prefix")
             if (r.dictionary, k) in taken:
+                # not a game rule: our text keys
                 raise TextError(f"{r.at()}: the game key {game_key} is already used by {taken[(r.dictionary, k)].at()}")
             taken[(r.dictionary, k)] = r
             result.keys[r.key] = game_key
@@ -180,6 +183,7 @@ def apply(text_plan: TextPlan, read) -> tuple[dict, list[str]]:
             if data != raw:
                 changed[path] = data
         if len(missing) == len(LANGS) + 1:
+            # not a game rule: our text keys
             raise TextError(f"the game has no dictionary called {dictionary}.dic (text/{dictionary}.csv)")
         if missing:
             notes.append(f"{dictionary}.dic isn't in the {', '.join(missing)} folder(s); those languages don't get "

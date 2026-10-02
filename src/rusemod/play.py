@@ -88,6 +88,7 @@ class Starter:
         lock.parent.mkdir(parents=True, exist_ok=True)
         fd = _claim(lock)
         if fd is None:
+            # not a game rule: something else is busy (the game, the other app, a restore)
             raise BuildError("The other app (the Launcher or the Studio) is building the modded game right now: wait "
                              "for it to finish, then try again.")
         try:
