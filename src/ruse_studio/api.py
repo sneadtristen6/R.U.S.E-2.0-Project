@@ -2205,10 +2205,137 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         job = Job()
         self._jobs[job.id] = job
         self._test_job = job.id
+        self._test_folders = folders  # where a failed test's mistakes are looked for (test_problems)
         where = "; ".join(look) if look else "your unit changes show in every game mode"
         return job.start(self._reading_game(game, work),  # a restore, in either app, waits for the build
                          f"R.U.S.E. is starting from {instance}. To see your changes: {where}.",
                          plain=(BuildError, RndfError, OSError))
+
+    # --- a failed test's mistakes, each with its fix (owner, 2026-10-02: an old mistake in a mod blocked every test,
+    # buried in the log, and the Studio offered no way out) ---
+    _SPAWN_MISTAKE = re.compile(r"(?P<pack>[A-Za-z0-9_]+): scenario\.toml: the spawn of (?P<what>\S+) at "
+                                r"\((?P<x>-?\d+), (?P<y>-?\d+)\) in (?P<file>\S+?\.scenario) is for camp")
+    _ROAD_MISTAKE = re.compile(r"(?P<pack>[A-Za-z0-9_]+): (?P<roads>road \d+ \(.*?\)(?:, road \d+ \(.*?\))*) would "
+                               r"be cut off")
+
+    def test_problems(self) -> dict:
+        """The last Test in game's mistakes, when its build stopped on them: {"problems": [{"text": the build's words,
+        "mod": the mod folder it's in or "", "fixes": [{"kind": "spawn_neutral" | "spawn_remove" | "road_remove",
+        "path": the file, "pack", and what finds the item again}]}]}. A mistake the Studio can't fix here has no
+        fixes (its words say what to change)."""
+        job = self._jobs.get(getattr(self, "_test_job", None))
+        if job is None or not job.errors:
+            return {"problems": []}
+        folders = [Path(f) for f in getattr(self, "_test_folders", [])]
+        by_id = {}
+        for f in folders:
+            try:
+                by_id[load_mod(f).id] = f
+            except Exception:  # noqa: BLE001 - a folder that can't be read just gets no fix
+                continue
+        order = [by_id[i] for i in job.order if i in by_id] or folders
+        return {"problems": [self._problem(text, folders, order) for text in job.errors]}
+
+    def _problem(self, text: str, folders: list, order: list) -> dict:
+        fixes, mod = [], ""
+        m = self._SPAWN_MISTAKE.search(text)
+        if m:
+            for folder in folders:
+                path = folder / "maps" / m["pack"] / "scenario.toml"
+                for s in self._spawns_in(path):
+                    if s.what == m["what"] and s.file.lower() == m["file"].lower() and \
+                            f"{s.x:.0f}" == m["x"] and f"{s.y:.0f}" == m["y"]:
+                        who = {"path": str(path), "pack": m["pack"], "what": s.what, "file": s.file,
+                               "x": s.x, "y": s.y}
+                        fixes = [who | {"kind": "spawn_neutral"}, who | {"kind": "spawn_remove"}]
+                        # the build stops at the first one: every team spawn of this setup at once, or one test per
+                        # spawn (the owner's old mod had 57 on D-Day)
+                        team = sum(1 for t in self._spawns_in(path) if t.file.lower() == s.file.lower()
+                                   and t.camp not in (None, scenario.NEUTRAL))
+                        if team > 1:
+                            every = {"path": str(path), "pack": m["pack"], "file": s.file, "count": team}
+                            fixes += [every | {"kind": "spawns_neutral_all"}, every | {"kind": "spawns_remove_all"}]
+                        mod = folder.name
+                        break
+                if fixes:
+                    break
+        m = self._ROAD_MISTAKE.search(text)
+        if m:
+            wanted = [int(n) for n in re.findall(r"road (\d+) \(", m["roads"])]
+            seen = 0  # the build numbers the map's new roads across the mods, in load order
+            for folder in order:
+                path = folder / "maps" / m["pack"] / "roads.toml"
+                try:
+                    roads = self._read_roads(path)
+                except StudioError:
+                    continue
+                for k, r in enumerate(roads):
+                    if seen + k + 1 in wanted:
+                        fixes.append({"kind": "road_remove", "path": str(path), "pack": m["pack"], "road": seen + k + 1,
+                                      "points": [list(p) for p in r.points]})
+                        mod = mod or folder.name
+                seen += len(roads)
+        return {"text": text, "mod": mod, "fixes": fixes}
+
+    @staticmethod
+    def _spawns_in(path: Path) -> list:
+        if not path.is_file():
+            return []
+        try:
+            return scenario.parse_spawns(tomllib.loads(path.read_text(encoding="utf-8")).get("spawn", []), str(path))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, scenario.ScenarioError):
+            return []
+
+    def test_fix(self, fix: dict) -> dict:
+        """Apply one of test_problems' fixes to the file it names (only a file of the last test's mods): a spawn made
+        neutral or taken out, a road taken out. The item is found again by what it is, not by its number, so two fixes
+        in one file never hit the wrong one. Returns {"done": what was changed}."""
+        path = Path(str(fix.get("path", "")))
+        mine = [Path(f).resolve() for f in getattr(self, "_test_folders", [])]
+        if not any(path.resolve().is_relative_to(f / "maps") for f in mine):
+            raise StudioError("That file isn't part of the last test's mods.")
+        kind = fix.get("kind")
+        with self._saving:
+            if kind in ("spawn_neutral", "spawn_remove", "spawns_neutral_all", "spawns_remove_all"):
+                data = tomllib.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+                moves = scenario.parse_moves(data.get("move", []), str(path))
+                starts = scenario.parse_starts(data.get("start", []), str(path))
+                spawns = scenario.parse_spawns(data.get("spawn", []), str(path))
+                if kind.endswith("_all"):  # every team spawn of that setup
+                    hit = [i for i, s in enumerate(spawns) if s.file.lower() == str(fix.get("file", "")).lower()
+                           and s.camp not in (None, scenario.NEUTRAL)]
+                else:
+                    hit = [i for i, s in enumerate(spawns) if s.what == fix.get("what") and s.file == fix.get("file")
+                           and s.x == fix.get("x") and s.y == fix.get("y")][:1]
+                if not hit:
+                    raise StudioError("That spawn isn't in the mod any more.")
+                if kind in ("spawn_neutral", "spawns_neutral_all"):
+                    for k in hit:
+                        spawns[k] = replace(spawns[k], camp=scenario.NEUTRAL)
+                else:
+                    spawns = [s for i, s in enumerate(spawns) if i not in hit]
+                if moves or starts or spawns:
+                    text = (scenario.moves_toml(moves, self.SCENARIO_HEADER) + "\n" + scenario.starts_toml(starts)
+                            + "\n" + scenario.spawns_toml(spawns))
+                    _save_checked(path, text, lambda d: (scenario.parse_moves(d.get("move", []), str(path)),
+                                                         scenario.parse_starts(d.get("start", []), str(path)),
+                                                         scenario.parse_spawns(d.get("spawn", []), str(path))))
+                else:
+                    path.unlink()
+                done = (f"{len(hit)} team spawn(s) in {fix.get('file')}" if kind.endswith("_all") else fix.get("what")) \
+                    + (": made neutral" if "neutral" in kind else ": taken out")
+            elif kind == "road_remove":
+                roads = self._read_roads(path)
+                want = [list(p) for p in fix.get("points", [])]
+                k = next((i for i, r in enumerate(roads) if [list(p) for p in r.points] == want), None)
+                if k is None:
+                    raise StudioError("That road isn't in the mod any more.")
+                del roads[k]
+                self._write_roads(path, roads)
+                done = f"road {fix.get('road')}: taken out"
+            else:
+                raise StudioError(f"unknown fix {kind!r}")
+        return {"done": done}
 
     def _where_to_look(self, folder: Path) -> list[str]:
         """What to open in the game to see each map the mod changes: the scenario setups it spawns units in or moves
