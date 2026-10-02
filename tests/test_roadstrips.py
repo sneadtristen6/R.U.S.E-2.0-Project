@@ -223,21 +223,27 @@ class Adding(unittest.TestCase):
 
 
 class NewRoadsAreDrawnBothWays(unittest.TestCase):
-    """The T12 guard: a new road vanished up close in every test batch because it was only painted into the ground's
-    tiles (seen from afar) and put in the scenery as stickers, which the game doesn't draw; the map's roads near the
-    camera are its road model. The build's road step must add every new piece to that model, and paint it too."""
+    """The T12 guard: a new road vanished up close in every test batch (only painted into the ground's tiles, which
+    the game's ground covers with detail textures near the camera wherever the map's close-up map doesn't mark a
+    road). The build's road step must paint it, mark it in the close-up map the way the map's own roads are, and add
+    every piece to the map's road model."""
 
     def test_a_new_road_is_drawn_up_close_not_only_painted(self):
-        from test_groundpaint import store
+        from test_groundpaint import div_map, store
+        from test_scenery import village
         from rusemod.build import draw_new_roads
-        from rusemod.scenery import road_pieces
+        from rusemod.groundpaint import DETAIL
+        from rusemod.scenery import MEMBER as SCENERY, road_pieces
         s = store()  # tiles over 2 x 1 cells of 1,000
         files = {"output\\highdef.tms": make_tms(2, 1), "output\\highdef.tmst_pc": s.index,
-                 "output\\highdef.tmst_chunk_pc": s.chunk, MEMBER: static_pack()}
+                 "output\\highdef.tmst_chunk_pc": s.chunk, MEMBER: static_pack(),
+                 DETAIL: div_map(road_row=set(range(32))), SCENERY: village()}  # (a map with a road to take after)
         line = [(100.0, 500.0), (1900.0, 500.0)]
         members, notes = draw_new_roads(files.get, lambda m: "map\\" + m, [line])
-        self.assertIn("map\\" + MEMBER, members)  # up close
+        self.assertIn("map\\" + MEMBER, members)  # the road model
+        self.assertIn("map\\" + DETAIL, members)  # up close: the close-up map marks it
         self.assertIn("map\\output\\highdef.tmst_chunk_pc", members)  # from afar
+        self.assertTrue(any(n.startswith("close-up map: ") for n in notes))
         drawn = {(round(v[0]), round(v[1])) for v in road_vertices(members["map\\" + MEMBER])}
         for p in road_pieces(line):
             self.assertIn((round(p.x0), round(p.y0)), drawn)

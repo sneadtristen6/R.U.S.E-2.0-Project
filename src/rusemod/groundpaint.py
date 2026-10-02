@@ -2,8 +2,14 @@
 of 512x512 DXT1 tiles over the map's cells. A painted tile is written back as a plain ZIPO DXT1 tile, which the game
 draws (proven with plain tiles, 2026-09-29); only the 4x4 blocks the paint touches are encoded again, the rest keep
 their bytes. First use: the roads a mod draws, painted in the colour of the map's own roads, so a new road shows
-where supply trucks already drive it (the roads a player sees from afar are painted into these tiles, 2026-09-30;
-near the camera only the map's road model shows one: rusemod.roadstrips).
+where supply trucks already drive it (the roads a player sees from afar are painted into these tiles, 2026-09-30).
+
+Up close the ground isn't the tiles alone: the game's ground shaders blend detail textures (grass, dirt) over them,
+weighted by the map's close-up map (`output\\div_map.tgv_pc`, the "texture diversity", one DXT5 picture over the whole
+grid of cells). Every map marks its own roads there (alpha higher, red lower than the ground beside: all 31 maps with
+roads), which keeps a road's colour showing near the camera; a new road without that mark is covered by the grass
+detail up close and shows only from a little higher (T12, every batch until 2026-10-01). paint_detail gives a new road
+the map's own mark.
 """
 from __future__ import annotations
 
@@ -28,6 +34,19 @@ def map_bounds(mesh: bytes) -> tuple[float, float, float, float]:
     if not (x1 > x0 and y1 > y0):
         raise PaintError("the map's ground bounds can't be read")
     return x0, y0, x1, y1
+
+
+def grid_bounds(mesh: bytes) -> tuple[float, float, float, float]:
+    """(x0, y0, x1, y1) of the ground's whole grid of cells (its corner, then its cells across and down times their
+    size, from a .tms header): what the close-up map covers, stretched over it (checked on all 32 maps: a round
+    pixel size on every one, and on Tunisie and Ardennes, whose pictures aren't square, the map's own roads line up
+    only this way). On 6 maps the mesh's bounds end 1,920 short of the grid."""
+    x0, y0, _x1, _y1 = map_bounds(mesh)
+    gw, gh = struct.unpack_from("<2I", mesh, 0x10)
+    cw, ch = struct.unpack_from("<2f", mesh, 0x1C)
+    if not (gw and gh and cw > 0 and ch > 0):
+        raise PaintError("the map's ground grid can't be read")
+    return x0, y0, x0 + gw * cw, y0 + gh * ch
 
 
 def _blocks(store: Tmst, tile) -> tuple[bytearray, int, int]:
@@ -209,11 +228,13 @@ def _tgv_with_payload(raw: bytes, payload: bytes) -> bytes:
 
 def paint_detail(raw: bytes, bounds, lines: list[list[tuple[float, float]]], pieces: list[tuple],
                  width: float = ROAD_WIDTH) -> tuple[bytes, list[str]]:
-    """`lines` painted into the close-up map (`output\\div_map.tgv_pc`, the whole map in one DXT5 picture about 5 m
-    a pixel): what the game draws near the camera, where the tile pyramid's paint doesn't show (seen in the game,
-    2026-09-30: a painted road vanished up close). The map's own roads are there as a colour and a higher alpha;
-    new roads get the median of both along the map's road pieces. Returns (the new record, notes), or (b"", notes)
-    when there's nothing to paint."""
+    """`lines` marked in the close-up map (`output\\div_map.tgv_pc`, one DXT5 picture stretched over `bounds`, the
+    ground's whole grid: grid_bounds): the weights by which the ground shaders blend their detail textures over the
+    tiles near the camera (its channels are data, not colours: blue is 24 on every map). The map's own roads are
+    marked there (alpha higher, red lower than the ground beside), which keeps their colour from the tiles showing up
+    close; new roads get the median of all four channels along the map's road pieces, `width` wide (the map's own
+    run 2 to 3 pixels wide: DETAIL_WIDER). Returns (the new record, notes), or (b"", notes) when there's nothing to
+    paint."""
     tex = Tgv(raw)
     payload = tex.payload(0)
     if not tex.format.upper().startswith("DXT5") or payload[:4] != b"ZIPO":
@@ -305,6 +326,5 @@ def paint_roads(read, path_of, lines: list[list[tuple[float, float]]], pieces: l
         notes.append(f"{lod}: {len(tiles)} tile(s) painted")
     if colour is not None:
         notes.insert(0, f"road colour {colour}")
-    # not the close-up map (paint_detail): the map's own roads are only a faint lift there (alpha +7 to +20 over the
-    # ground beside them), not what shows a road up close; the map's road model does that (rusemod.roadstrips)
+    # the close-up map (paint_detail) is drawn by build.draw_new_roads, which also keeps its copy in ZZ_Win.dat
     return out, notes

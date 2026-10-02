@@ -441,6 +441,7 @@ class BuildResult:
     text_changed: dict = field(default_factory=dict)  # member path in the text pack (ZZ_Win.dat) -> new bytes
     script_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (the script pack) -> new bytes
     model_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (a skirmish unit pack) -> new bytes
+    close_up_maps: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (a map's close-up map copy) -> bytes
     new_classes: list = field(default_factory=list)  # class names added to the game's Python unit list
     terrain_changed: dict = field(default_factory=dict)  # map pack file name -> {member path: new bytes}
     new_maps: dict = field(default_factory=dict)    # new map's pack name -> newmap.Clone (what it adds)
@@ -929,18 +930,40 @@ def scenario_edits(order: list[str], mods: list, what: str = "scenario") -> dict
 
 
 def draw_new_roads(read_map, path_of, lines: list) -> tuple[dict, list[str]]:
-    """({member: new bytes}, notes): new roads (map points, in order) drawn the two ways the game shows a map's own:
-    painted into the ground's tiles, which show from afar (rusemod.groundpaint), and added to the map's road model,
-    the only thing that shows a road near the camera (rusemod.roadstrips; without it a new road vanished up close in
-    every test, T12). `read_map(member)` gives the map pack's member as the build has it so far (a reshaped ground
-    counts) or None, `path_of(member)` its full path."""
-    from .groundpaint import paint_roads
+    """({member: new bytes}, notes): new roads (map points, in order) drawn every way the game shows a map's own:
+    painted into the ground's tiles (rusemod.groundpaint.paint_roads), marked in the map's close-up map the way its
+    own roads are (paint_detail: up close the ground's detail textures cover the tiles wherever that map doesn't
+    mark a road; without it a new road vanished near the camera in every test, T12), and added to the map's road
+    model (rusemod.roadstrips). `read_map(member)` gives the map pack's member as the build has it so far (a
+    reshaped ground counts) or None, `path_of(member)` its full path."""
+    from .groundpaint import DETAIL, DETAIL_WIDER, ROAD_WIDTH, grid_bounds, paint_detail, paint_roads
     from .roadstrips import draw_roads
     from .scenery import MEMBER as SCENERY, Scenery
     raw = read_map(SCENERY)
-    painted, notes = paint_roads(read_map, path_of, lines, Scenery(raw).roads() if raw else [])
+    pieces = Scenery(raw).roads() if raw else []
+    painted, notes = paint_roads(read_map, path_of, lines, pieces)
+    detail, mesh = read_map(DETAIL), read_map("output\\highdef.tms")
+    if detail is not None and mesh is not None:
+        marked, more = paint_detail(detail, grid_bounds(mesh), lines, pieces, ROAD_WIDTH * DETAIL_WIDER)
+        notes += more
+        if marked:
+            painted[path_of(DETAIL)] = marked
     strips, more = draw_roads(read_map, path_of, lines)
     return {**painted, **strips}, notes + more
+
+
+def close_up_copy(text_arc, map_name: str, shipped: bytes, marked: bytes) -> tuple[str, bytes] | None:
+    """(its path in ZZ_Win.dat, the new bytes) for the copy of a map's close-up map kept there
+    (gen\\datasmap\\<map>\\mapdiversite\\div_map.tgv, the same bytes as the pack's on every shipped map), when it is
+    the pack's shipped one: kept the same as the pack's new one. None when there's no such copy (a new map) or it
+    differs (a mod changed one of them: left as it is)."""
+    if text_arc is None:
+        return None
+    try:
+        e = text_arc.find(f"gen\\datasmap\\{map_name.lower()}\\mapdiversite\\div_map.tgv")
+    except KeyError:
+        return None
+    return (e.path, marked) if bytes(text_arc.read(e)) == shipped else None
 
 
 def find_pack(game: Path, name: str) -> Path | None:
@@ -1447,6 +1470,12 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say(f"roads painted and drawn up close: {name}, from {', '.join(ids)}")
             for note in notes:
                 say(f"  {note}")
+            from .groundpaint import DETAIL
+            marked = next((v for k, v in painted.items() if k.lower().endswith(DETAIL)), None)
+            copy = close_up_copy(text_arc, name, bytes(map_arc.read(map_arc.find(DETAIL))), marked) if marked else None
+            if copy:
+                result.close_up_maps[copy[0]] = copy[1]
+                say(f"  close-up map: its copy in {text_path.name} kept the same")
             if entry is None and painted:
                 map_packs.append((map_path, map_arc, changed_members))
             if painted:
@@ -1706,7 +1735,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     + (f" ({len(changed_members)} file(s) changed: {files})" if changed_members else ""))
             else:
                 say(f"changed: {map_path.name} ({len(changed_members)} file(s): {files})")
-        zz_win_changed = {**result.text_changed, **result.script_changed, **result.model_changed}
+        zz_win_changed = {**result.text_changed, **result.script_changed, **result.model_changed,
+                          **result.close_up_maps}
         for data_path, _a, changed_members in data_packs:
             new_ones = {m.lower() for m in result.added.get(data_path.name, {})}
             shipped = [m for m in changed_members if m.replace("/", "\\").lower() not in new_ones]  # (new: "added")

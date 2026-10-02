@@ -310,6 +310,12 @@ the copy's folder, Steam running.
    - **Fail:** a crash as the match starts (as batch 1's Japanese spawns did), or Tigers that aren't drawn.
 - **Tell us:** did D-Day take noticeably longer to load than in batch 3?
 
+**Result (owner, 2026-10-01, evening): FAILED twice.** (1) T12: the new road still draws only from higher up and
+disappears as the camera comes down, as in every batch before; adding it to the map's road model changed nothing in
+the game. (2) The game crashed as soon as the US tank factory was placed (playing the US). The build had rewritten the US's skirmish unit packs for the Tiger US and Stuka US, and
+every one of the 71 US models in them had been given another number. Both are being worked out from how the game
+itself does it before any new copy.
+
 ## T15. A new map in the menus: Blitz Twin (PLAN §13)
 
 A mod can now make a new map: a copy of a shipped one under its own name and pack, listed in BATTLES beside it, which

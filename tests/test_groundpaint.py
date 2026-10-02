@@ -78,5 +78,76 @@ class Painting(unittest.TestCase):
             paint_roads({}.get, str, [[(0.0, 0.0), (1.0, 1.0)]], [])
 
 
+GROUND_MARK = ((165, 138, 24), 96)   # a close-up map's ground: its channels are data (blue 24 on every map)
+ROAD_MARK = ((140, 130, 24), 128)    # where the map has a road: red lower, alpha higher
+
+
+def div_map(w=64, h=32, road_row=None):
+    """A made-up close-up map over BOUNDS (DXT5, ZIPO like the game's): the ground's mark everywhere, the road's on
+    the pixel rows `road_row` (a set) when given."""
+    from rusemod.tmst import make_tgv, zipo_pack
+    blocks = bytearray()
+    for by in range(h // 4):
+        for _bx in range(w // 4):
+            rows = [ROAD_MARK if road_row and by * 4 + r in road_row else GROUND_MARK for r in range(4)]
+            blocks += dxt.encode_dxt5_block([rows[i // 4][0] for i in range(16)], [rows[i // 4][1] for i in range(16)])
+    return make_tgv(w, h, "DXT5_LIN", [zipo_pack(bytes(blocks))])
+
+
+def mark(raw, x, y, bounds=BOUNDS):
+    from rusemod.tmst import Tgv, zipo_unpack
+    tex = Tgv(raw)
+    blocks = zipo_unpack(tex.payload(0))
+    i = int((x - bounds[0]) / (bounds[2] - bounds[0]) * tex.width)
+    j = int((y - bounds[1]) / (bounds[3] - bounds[1]) * tex.height)
+    k = (j // 4) * (tex.width // 4) + i // 4
+    rgb, alpha = dxt.dxt5_block(blocks[16 * k:16 * k + 16])
+    return rgb[(j % 4) * 4 + i % 4], alpha[(j % 4) * 4 + i % 4]
+
+
+class CloseUpMap(unittest.TestCase):
+    """Up close the game's ground shaders cover the tiles with detail textures except where the close-up map marks a
+    road (every map marks its own: T12 failed in every batch while new roads had no mark)."""
+
+    def test_its_place_is_the_whole_grid(self):
+        from rusemod.groundpaint import grid_bounds
+        mesh = bytearray(0x368)
+        struct.pack_into("<2I", mesh, 0x10, 6, 6)
+        struct.pack_into("<2f", mesh, 0x1C, 327680.0, 327680.0)
+        struct.pack_into("<6f", mesh, 0x23C, 0.0, 0.0, 0.0, 1964160.0, 1964160.0, 50.0)  # Alpha: the mesh ends short
+        self.assertEqual(grid_bounds(bytes(mesh)), (0.0, 0.0, 1966080.0, 1966080.0))
+        self.assertEqual(map_bounds(bytes(mesh)), (0.0, 0.0, 1964160.0, 1964160.0))
+
+    def test_a_new_road_gets_the_maps_own_road_mark(self):
+        from rusemod.groundpaint import paint_detail
+        raw = div_map(road_row={4, 5})  # the map's road along y = 140 .. 170
+        road = (100.0, 156.0, 400.0, 156.0, 700.0, 156.0, 1000.0, 156.0)  # a road piece lying on it
+        new, notes = paint_detail(raw, BOUNDS, [[(200.0, 700.0), (1800.0, 700.0)]], [road], 60.0)
+        self.assertTrue(new)
+        self.assertIn("close-up map:", notes[0])
+        rgb, a = mark(new, 1000.0, 700.0)  # on the new road: the road's mark
+        self.assertTrue(near(rgb, ROAD_MARK[0], 8) and abs(a - ROAD_MARK[1]) <= 6, (rgb, a))
+        rgb, a = mark(new, 1000.0, 900.0)  # 200 units off it: the ground as it was
+        self.assertTrue(near(rgb, GROUND_MARK[0], 8) and abs(a - GROUND_MARK[1]) <= 6, (rgb, a))
+        self.assertEqual(paint_detail(raw, BOUNDS, [], [road])[0], b"")
+
+    def test_the_copy_in_zz_win_follows_the_pack_only_when_it_was_the_same(self):
+        from rusemod.build import close_up_copy
+        from types import SimpleNamespace
+        shipped, marked = div_map(), div_map(road_row={8})
+        path = "gen\\datasmap\\m04_cotentin\\mapdiversite\\div_map.tgv"
+
+        def arc(held):
+            def find(suffix):
+                if path.endswith(suffix.lower()):
+                    return SimpleNamespace(path=path)
+                raise KeyError(suffix)
+            return SimpleNamespace(find=find, read=lambda e: held)
+        self.assertEqual(close_up_copy(arc(shipped), "M04_Cotentin", shipped, marked), (path, marked))
+        self.assertIsNone(close_up_copy(arc(b"a mod's own"), "M04_Cotentin", shipped, marked))
+        self.assertIsNone(close_up_copy(arc(shipped), "BlitzTwin", shipped, marked))  # a new map has no copy there
+        self.assertIsNone(close_up_copy(None, "M04_Cotentin", shipped, marked))
+
+
 if __name__ == "__main__":
     unittest.main()
