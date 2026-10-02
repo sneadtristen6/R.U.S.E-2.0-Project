@@ -2525,3 +2525,27 @@ ru = "В примечаниях к выпуску нет списка измен
 cz = "Poznámky k vydání neuvádějí žádné změny: otevřete stránku vydání."
 jpn = "リリースノートに変更点がありません。リリースページを開いてください。"
 sc = "发布说明中没有列出更改：请打开发布页面。"
+
+[kind_map]
+us = "MAP"
+fr = "CARTE"
+ger = "KARTE"
+ita = "MAPPA"
+spa = "MAPA"
+pol = "MAPA"
+ru = "КАРТА"
+cz = "MAPA"
+jpn = "マップ"
+sc = "地图"
+
+[tip_kind_map]
+us = "A map made in the RUSE Studio: tick it in a mod set to play on it."
+fr = "Une carte faite dans le RUSE Studio : cochez-la dans un ensemble de mods pour y jouer."
+ger = "Eine im RUSE Studio erstellte Karte: in einem Mod-Set ankreuzen, um darauf zu spielen."
+ita = "Una mappa creata nel RUSE Studio: spuntala in un set di mod per giocarci."
+spa = "Un mapa hecho en el RUSE Studio: márcalo en un conjunto de mods para jugar en él."
+pol = "Mapa zrobiona w RUSE Studio: zaznacz ją w zestawie modów, aby na niej grać."
+ru = "Карта, сделанная в RUSE Studio: отметьте её в наборе модов, чтобы на ней играть."
+cz = "Mapa vytvořená v RUSE Studiu: zaškrtněte ji v sadě módů a hrajte na ní."
+jpn = "RUSE Studio で作ったマップ：MODセットでチェックすると、そのマップで遊べます。"
+sc = "在 RUSE Studio 中制作的地图：在模组组合中勾选它即可在其上游戏。"

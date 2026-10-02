@@ -1101,7 +1101,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                        "buildings it spawns (docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio, which rewrites this file.")
 
     def _scenario_file(self, pack: str) -> Path:
-        folder = self._mod_dir()
+        folder = self._map_dir()
         if folder is None:
             raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
         if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
@@ -1115,7 +1115,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
 
     def _read_scenario_all(self, pack: str) -> tuple[list, list, list]:
         """(moves, new starting points, spawns) the current mod makes on this map's scenarios; none without a mod."""
-        if self._mod_dir() is None:
+        if self._map_dir() is None:
             return [], [], []
         path = self._scenario_file(pack)
         if not path.is_file():
@@ -1310,7 +1310,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
 
     def _read_players(self, pack: str):
         from rusemod import players as pl
-        if self._mod_dir() is None:
+        if self._map_dir() is None:
             return None
         path = self._map_file(pack)
         if not path.is_file():
@@ -1341,7 +1341,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                       "away ([[erase]]; docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio, which rewrites this file.")
 
     def _scenery_file(self, pack: str) -> Path:
-        folder = self._mod_dir()
+        folder = self._map_dir()
         if folder is None:
             raise StudioError("Pick or make a mod first: what you place is saved in it.")
         if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
@@ -1381,7 +1381,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
     def scenery(self, pack: str) -> dict:
         """The objects the current mod places on a map and its circles to erase: {"objects": [{type, x, y, turn,
         size}], "erase": [{x, y, radius, what, types}], "saved": the file or None, "mod": the mod or None}."""
-        folder = self._mod_dir()
+        folder = self._map_dir()
         if folder is None:
             return {"objects": [], "erase": [], "saved": None, "mod": None}
         path = self._scenery_file(pack)
@@ -1425,7 +1425,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         erases (rusemod.scenery.erase_count): {"count": circles, "takes": {group: objects}, "error": why the build
         would refuse them (the map's scenery would grow too big), or ""}. A second or two on the biggest maps."""
         none = {"count": 0, "takes": {}, "error": ""}
-        if self._mod_dir() is None:
+        if self._map_dir() is None:
             return none
         path = self._scenery_file(pack)
         with self._saving:
@@ -1504,7 +1504,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
     ROAD_POINTS_MOST = 5000   # points in one road's line
 
     def _roads_file(self, pack: str) -> Path:
-        folder = self._mod_dir()
+        folder = self._map_dir()
         if folder is None:
             raise StudioError("Pick or make a mod first: new roads are saved in it.")
         if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
@@ -1541,7 +1541,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         map units, "crossings": [[x0, y0, x1, y1], ...] where it crosses water (a bridge goes there when the map has a
         bridge kind)}], "bridge": the map's bridge kind or None, "saved": the file or None, "mod": the mod or None
         when none is picked}."""
-        folder = self._mod_dir()
+        folder = self._map_dir()
         if folder is None:
             return {"roads": [], "bridge": None, "saved": None, "mod": None}
         path = self._roads_file(pack)
@@ -1595,7 +1595,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         map if there is one; follow it with job(id). Its result, once done: {"pack", "findings"} (mapcheck's findings,
         their "say" a word in words.toml filled with their "data"; one "ok" finding when nothing was found)."""
         from rusemod import mapcheck
-        folder = self._mod_dir()
+        folder = self._map_dir()
         if folder is None:
             raise StudioError("Pick or make a mod first: the check builds it.")
         if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
@@ -1720,7 +1720,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                       "§8).\nMade in the RUSE Studio, which rewrites this file.")
 
     def _terrain_file(self, pack: str) -> Path:
-        folder = self._mod_dir()
+        folder = self._map_dir()
         if folder is None:
             raise StudioError("Pick or make a mod first: the shaped ground is saved in it.")
         if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
@@ -1755,7 +1755,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         """The strokes the current mod makes on a map's ground, for the Maps view to draw on the game's own:
         {"strokes": [{brush, x, y, radius, height, level, weight}], "saved": the file or None, "mod": the mod or
         None when none is picked}."""
-        folder = self._mod_dir()
+        folder = self._map_dir()
         if folder is None:
             return {"strokes": [], "saved": None, "mod": None}
         path = self._terrain_file(pack)
@@ -1842,9 +1842,16 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         self._home.mkdir(parents=True, exist_ok=True)
         (self._home / "studio.json").write_text(json.dumps(settings, indent=2), encoding="utf-8")
 
-    def _mod_dir(self) -> Path | None:
-        path = self._settings().get("mod")
+    def _mod_dir(self, kind: str = "mod") -> Path | None:
+        """The folder being edited: the mod (`kind` "mod", the Units tab's) or the map (`kind` "map", the Maps
+        tab's). Mods and maps are kept apart (the owner, 2026-10-02); a Studio from before kept both in the mod, so
+        until a map is picked, the Maps tab goes on with the mod's maps."""
+        settings = self._settings()
+        path = settings.get(kind) or (settings.get("mod") if kind == "map" else None)
         return Path(path) if path and Path(path, "mod.toml").is_file() else None
+
+    def _map_dir(self) -> Path | None:
+        return self._mod_dir("map")
 
     def _edits(self) -> ModEdits | None:
         folder = self._mod_dir()
@@ -1853,48 +1860,66 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         with self._saving:
             return ModEdits(folder)
 
-    def mods(self) -> dict:
-        """The mods the Studio knows: the ones made here, and folders opened before. Plus the one being edited."""
+    KINDS = {"mod": ("mods", "recent"), "map": ("maps", "recent_maps")}  # kind: (its folder in the platform's, its list)
+
+    def _kind(self, kind: str) -> str:
+        if kind not in self.KINDS:
+            raise StudioError(f"{kind!r} is neither a mod nor a map")
+        return kind
+
+    def mods(self, kind: str = "mod") -> dict:
+        """The mods (`kind` "mod") or maps ("map") the Studio knows: the ones made here, and folders opened before,
+        plus the one being edited. A map is a mod folder too (MOD_FORMAT §8: its maps/ files); the maps list also
+        shows the mods made before mods and maps were apart that hold maps."""
+        kind = self._kind(kind)
+        folder_name, recent_key = self.KINDS[kind]
         found = {}
-        mods_dir = self._home / "mods"
-        for f in sorted(mods_dir.iterdir()) if mods_dir.is_dir() else []:
-            if (f / "mod.toml").is_file():
-                found[str(f)] = f.name
-        for path in self._settings().get("recent", []):
+        for root in [self._home / folder_name] + ([self._home / "mods"] if kind == "map" else []):
+            for f in sorted(root.iterdir()) if root.is_dir() else []:
+                if (f / "mod.toml").is_file() and (kind == "mod" or root.name == "maps" or (f / "maps").is_dir()):
+                    found.setdefault(str(f), f.name)
+        for path in self._settings().get(recent_key, []):
             if Path(path, "mod.toml").is_file():
                 found.setdefault(path, Path(path).name)
-        current = self._mod_dir()
-        return {"mods": [{"path": p, "name": n} for p, n in found.items()],
+        current = self._mod_dir(kind)
+        if current is not None:
+            found.setdefault(str(current), current.name)
+        return {"mods": [{"path": p, "name": n} for p, n in found.items()], "kind": kind,
                 "current": str(current) if current else None}
 
-    def new_mod(self, name: str) -> dict:
-        """Make a new, empty mod in the platform folder and start editing it."""
+    def new_mod(self, name: str, kind: str = "mod") -> dict:
+        """Make a new, empty mod (or map: `kind` "map") in the platform folder and start editing it."""
+        kind = self._kind(kind)
         name = name.strip()
-        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "my-mod"
-        folder, n = self._home / "mods" / slug, 2
+        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or ("my-map" if kind == "map" else "my-mod")
+        base = self._home / self.KINDS[kind][0]
+        folder, n = base / slug, 2
         while folder.exists():
-            folder, n = self._home / "mods" / f"{slug}-{n}", n + 1
-        (folder / "src").mkdir(parents=True)
+            folder, n = base / f"{slug}-{n}", n + 1
+        (folder / ("maps" if kind == "map" else "src")).mkdir(parents=True)
+        made = "A map made in the RUSE Studio." if kind == "map" else "Made in the RUSE Studio."
         (folder / "mod.toml").write_text(
             f'[mod]\nid          = "{folder.name}"\nname        = {json.dumps(name or folder.name)}\n'
-            f'version     = "0.1.0"\ndescription = "Made in the RUSE Studio."\n', encoding="utf-8")
-        return self.choose_mod(str(folder))
+            f'version     = "0.1.0"\ndescription = "{made}"\n', encoding="utf-8")
+        return self.choose_mod(str(folder), kind)
 
-    def choose_mod(self, path: str) -> dict:
+    def choose_mod(self, path: str, kind: str = "mod") -> dict:
+        kind = self._kind(kind)
         if not Path(path, "mod.toml").is_file():
             raise StudioError(f"{path} isn't a mod folder (it has no mod.toml)")
         settings = self._settings()
-        settings["mod"] = str(path)
-        recent = [p for p in settings.get("recent", []) if p != str(path)]
-        settings["recent"] = [str(path)] + recent[:9]
+        settings[kind] = str(path)
+        recent_key = self.KINDS[kind][1]
+        recent = [p for p in settings.get(recent_key, []) if p != str(path)]
+        settings[recent_key] = [str(path)] + recent[:9]
         self._save_settings(settings)
-        return self.mods()
+        return self.mods(kind)
 
-    def open_mod_folder(self) -> dict:
+    def open_mod_folder(self, kind: str = "mod") -> dict:
         if self._window is None:
-            return self.mods()
+            return self.mods(kind)
         chosen = pick_folder(self._window)
-        return self.choose_mod(chosen) if chosen else self.mods()
+        return self.choose_mod(chosen, kind) if chosen else self.mods(kind)
 
     # --- the Settings tab ---
     def game_folder(self) -> dict:
@@ -2091,9 +2116,12 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         """Build the current mod into the PC's one modded copy (`RUSE-Instances\\Modded game`, the Launcher's too:
         rusemod.play.shared_copy) and start the game from it, in the background. Returns {'job': id}; follow it with
         job(id)."""
-        folder = self._mod_dir()
-        if folder is None:
-            raise StudioError("Pick or make a mod first.")
+        # the mod and the map being edited, together (one folder when they're the same, as before mods and maps were
+        # apart): the units of the one on the ground of the other
+        folders = list(dict.fromkeys(f for f in (self._mod_dir(), self._map_dir()) if f is not None))
+        if not folders:
+            raise StudioError("Pick or make a mod or a map first.")
+        folder = folders[-1]
         if self._building():  # one build at a time: two raced for the same copy
             raise StudioError("A test is already being built: wait for it to finish.")
         if self._restoring():  # a copy built now would take half-restored files (rusemod.backup)
@@ -2103,11 +2131,12 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         copies = self._copies(game)
         instance = copies / SHARED if copies is not None else None
         look = self._where_to_look(folder) if game is not None else []
+        name = " + ".join(f.name for f in folders)
 
         def work(say):
             if game is None:
                 raise BuildError("We couldn't find R.U.S.E.")
-            self._starter.modded(game, [folder], instance, folder.name, say)
+            self._starter.modded(game, folders, instance, name, say)
             say(f"Built in {instance}. To see your changes in the game:")
             for line in look or ["Your unit changes show in every game mode."]:
                 say(f"  {line}")
@@ -2197,34 +2226,41 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         return "A test is being built: wait for it to finish, then try again." if self._building() else ""
 
     # --- a mod as one file (MOD_FORMAT §2, rusemod.package) ---
-    def mod_info(self) -> dict:
-        """The current mod's manifest, for the export form: id, name, version, authors, description, the game build
-        it was last exported on and its fingerprint."""
-        folder = self._mod_dir()
+    def mod_info(self, kind: str = "mod") -> dict:
+        """The current mod's (or map's: `kind` "map") manifest, for the export form: id, name, version, authors,
+        description, the game build it was last exported on and its fingerprint."""
+        folder = self._mod_dir(self._kind(kind))
         if folder is None:
-            raise StudioError("Pick or make a mod first.")
+            raise StudioError("Pick or make a map first." if kind == "map" else "Pick or make a mod first.")
         try:
             return package.info_of(folder)
         except package.PackageError as exc:
             raise StudioError(str(exc)) from None
 
-    def export_mod(self, version: str, author: str = "", description: str = "") -> dict:
-        """Turn the current mod into one file, `<id>-<version>.rusemod`, where the modder chooses (the window's "save
-        as" dialog). The version, author and description go into the mod's mod.toml first, so the next export starts
+    def export_mod(self, version: str, author: str = "", description: str = "", kind: str = "mod",
+                   choose: bool = False) -> dict:
+        """Turn the current mod (or map: `kind` "map") into one file, `<id>-<version>.rusemod`, and put it straight
+        where it's used (the owner, 2026-10-02): the file in the platform's `exports` folder, and the mod in the
+        Launcher's library, ready for a mod set. `choose`: the window's "save as" dialog picks the file's place
+        instead. The version, author and description go into the mod's mod.toml first, so the next export starts
         from them (blank author or description: the old ones stay). The mod is built on the game to record the game
         build and its fingerprint (MOD_FORMAT §12) in the package; without the game it's packed without them, and
         the report says so. Returns {'job': id}, or {'job': None} when the modder cancels the dialog."""
-        folder = self._mod_dir()
+        kind = self._kind(kind)
+        folder = self._mod_dir(kind)
         if folder is None:
-            raise StudioError("Pick or make a mod first.")
+            raise StudioError("Pick or make a map first." if kind == "map" else "Pick or make a mod first.")
         version = (version or "").strip()
         if not re.fullmatch(r"\d+\.\d+\.\d+", version):
             raise StudioError("The version should be three numbers, like 1.0.0.")
-        suggested = package.file_name(self.mod_info() | {"version": version})
+        suggested = package.file_name(self.mod_info(kind) | {"version": version})
         if self._pick_save is not None:
             target = self._pick_save(suggested)
-        else:
+        elif choose:
             target = pick_save(self._window, suggested, PACKAGE_FILES) if self._window is not None else None
+        else:
+            (self._home / "exports").mkdir(parents=True, exist_ok=True)
+            target = self._home / "exports" / suggested
         if not target:
             return {"job": None}
         target = Path(target)
@@ -2258,6 +2294,14 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             job.result = self._share_view(path)
             say(f"Size: {job.result['size']} bytes")
             say(f"SHA-256: {job.result['sha256']}")
+            from rusemod.library import Library, LibraryError
+            try:
+                info, replaced = Library(self._home / "library").add(path)
+                say(f"In the Launcher's mod library as {info['name']} {info.get('version', '')}"
+                    f"{' (the older version replaced)' if replaced else ''}: tick it in a mod set and press Play.")
+                job.result["library"] = info.get("id")
+            except LibraryError as exc:
+                say(f"Not added to the Launcher's library: {exc}")
 
         job = Job()
         job.result = None  # the exported file's size, SHA-256 and list entry, for "Share your mod"

@@ -108,21 +108,36 @@ async function setLanguage(lang) {
   }
 }
 
-// --- the mod being edited ---
+// --- the mod (Units tab) and the map (Maps tab) being edited: kept apart, each its own menu (StudioApi.mods(kind)) ---
+const PICKER = { mod: "mod", map: "map-project" };
+
 function renderMods() {
   const w = state.words;
-  const options = [];
-  if (!state.mod) options.push(el("option", { value: "", textContent: w.no_mod, disabled: true, selected: true }));
-  for (const m of state.mods) options.push(el("option", { value: m.path, textContent: m.name, title: m.path,
-    selected: m.path === state.mod }));
-  options.push(el("option", { value: NEW, textContent: w.new_mod }), el("option", { value: OPEN, textContent: w.open_folder }),
-    el("option", { value: EXPORT, textContent: w.export_mod, disabled: !state.mod }),
-    el("option", { value: SHARE, textContent: w.share_mod }));
-  $("mod").replaceChildren(...options);
-  $("test").disabled = !state.mod || $("test").dataset.running === "1";
+  for (const kind of ["mod", "map"]) {
+    const current = kind === "mod" ? state.mod : state.map, list = kind === "mod" ? state.mods : state.maps || [];
+    const options = [];
+    if (!current) options.push(el("option", { value: "", textContent: kind === "mod" ? w.no_mod : w.no_map, disabled: true, selected: true }));
+    for (const m of list) options.push(el("option", { value: m.path, textContent: m.name, title: m.path,
+      selected: m.path === current }));
+    options.push(el("option", { value: NEW, textContent: kind === "mod" ? w.new_mod : w.new_map }),
+      el("option", { value: OPEN, textContent: w.open_folder }),
+      el("option", { value: EXPORT, textContent: kind === "mod" ? w.export_mod : w.export_map, disabled: !current }),
+      el("option", { value: SHARE, textContent: w.share_mod }));
+    $(PICKER[kind]).replaceChildren(...options);
+  }
+  $("mod").title = w.tip_pick_mod || "";
+  $("map-project").title = w.tip_pick_map || "";
+  $("map-project-label").textContent = w.map_project || "Map";
+  $("test").disabled = !(state.mod || state.map) || $("test").dataset.running === "1";
 }
 
 function useMods(res) {
+  if ((res.kind || "mod") === "map") {
+    state.maps = res.mods;
+    state.map = res.current;
+    renderMods();
+    return;
+  }
   if (res.current !== state.mod) state.exported = null;  // "Share your mod" shows the file of the mod being edited
   state.mods = res.mods;
   state.mod = res.current;
@@ -189,38 +204,44 @@ async function modChanged() {
   if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // a map's strokes are the mod's
 }
 
-async function pickMod(e) {
+async function pickMod(e, kind = "mod") {
   const value = e.target.value;
   renderMods();  // the menu shows the mod being edited until something else is picked
   try {
     if (value === NEW) {
+      state.newKind = kind;
+      $("new-mod-name").placeholder = kind === "map" ? state.words.map_name : state.words.mod_name;
       $("new-mod").classList.remove("hidden");
       $("new-mod-name").focus();
       return;
     }
-    if (value === EXPORT) { await openExport(); return; }
+    if (value === EXPORT) { await openExport(kind); return; }
     if (value === SHARE) { await openShare(state.exported); return; }
-    useMods(value === OPEN ? await api().open_mod_folder() : await api().choose_mod(value));
-    await modChanged();
+    useMods(value === OPEN ? await api().open_mod_folder(kind) : await api().choose_mod(value, kind));
+    if (kind === "map") { if (window.MapView && window.MapView.modChanged) window.MapView.modChanged(); }
+    else await modChanged();
   } catch (err) { problem(err); }
 }
 
 async function createMod(e) {
   e.preventDefault();
-  const name = $("new-mod-name").value.trim();
+  const name = $("new-mod-name").value.trim(), kind = state.newKind || "mod";
   if (!name) return;
   try {
-    useMods(await api().new_mod(name));
+    useMods(await api().new_mod(name, kind));
     $("new-mod").classList.add("hidden");
     $("new-mod-name").value = "";
-    say(`${state.words.mod}: ${state.mod}`, "ok");
-    await modChanged();
+    say(`${kind === "map" ? state.words.map_project : state.words.mod}: ${kind === "map" ? state.map : state.mod}`, "ok");
+    if (kind === "map") { if (window.MapView && window.MapView.modChanged) window.MapView.modChanged(); }
+    else await modChanged();
   } catch (err) { problem(err); }
 }
 
-// --- the mod as one file (Export mod…): version, author and description, then the window's "save as" dialog
-async function openExport() {
-  const info = await api().mod_info();
+// --- the mod (or map) as one file (Export…): version, author and description; it goes straight into the Launcher's
+// library and the platform's exports folder (StudioApi.export_mod)
+async function openExport(kind = "mod") {
+  state.exportKind = kind;
+  const info = await api().mod_info(kind);
   $("export-version").value = info.version || "0.1.0";
   $("export-author").value = info.author || "";
   $("export-description").value = info.description || "";
@@ -233,7 +254,8 @@ async function exportMod(e) {
   const version = $("export-version").value.trim();
   if (!version) return;
   try {
-    const { job } = await api().export_mod(version, $("export-author").value.trim(), $("export-description").value.trim());
+    const { job } = await api().export_mod(version, $("export-author").value.trim(), $("export-description").value.trim(),
+      state.exportKind || "mod");
     if (!job) return;  // the dialog was cancelled
     $("export-mod").classList.add("hidden");
     const log = $("test-log");
@@ -1044,6 +1066,8 @@ function showView(view) {
   $("tab-units").setAttribute("aria-selected", String(view === "units"));
   $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
   $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
+  $("pick-mod").classList.toggle("hidden", view === "maps");  // the Units tab edits a mod, the Maps tab a map
+  $("pick-map").classList.toggle("hidden", view !== "maps");
   if (view === "settings") { renderSettings(); loadBackup(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
@@ -1375,7 +1399,8 @@ async function start() {
   state.lang = await loadLang();
   if (!state.languages.some((l) => l.code === state.lang)) state.lang = "base";
   $("lang").addEventListener("change", (e) => setLanguage(e.target.value));
-  $("mod").addEventListener("change", pickMod);
+  $("mod").addEventListener("change", (e) => pickMod(e, "mod"));
+  $("map-project").addEventListener("change", (e) => pickMod(e, "map"));
   $("new-mod").addEventListener("submit", createMod);
   $("new-mod-cancel").addEventListener("click", () => $("new-mod").classList.add("hidden"));
   $("export-mod").addEventListener("submit", exportMod);
@@ -1397,6 +1422,11 @@ async function start() {
   const res = await api().mods();
   state.mods = res.mods;
   state.mod = res.current;
+  try {
+    const maps = await api().mods("map");
+    state.maps = maps.mods;
+    state.map = maps.current;
+  } catch { state.maps = []; state.map = null; }  // an older back end: one mod for both
   const status = await api().status();
   if (!status.ready) {
     state.words = await api().strings(state.lang);

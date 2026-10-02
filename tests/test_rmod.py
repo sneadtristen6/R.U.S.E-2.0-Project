@@ -11,7 +11,7 @@ from fixtures import make_edat
 from rusemod import rmod
 from rusemod.build import BuildError, build_and_write, load_mod
 from rusemod.edat import Edat
-from ruse_launcher.library import Library, LibraryError
+from rusemod.library import Library, LibraryError
 
 TREE = [
     ("dir", "genglad\\", [

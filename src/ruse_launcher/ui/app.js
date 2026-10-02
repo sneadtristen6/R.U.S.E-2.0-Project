@@ -954,7 +954,8 @@ function renderLibrary() {
       mod.used_in ? (mod.used_in === 1 ? w.used_in_one : fill(w.used_in, { n: mod.used_in })) : ""].filter(Boolean).join(" · ");
     const open = libraryOpen.has(mod.id);
     const sum = el("button", { type: "button", className: "lib-sum", title: mod.description || mod.name },
-      el("span", { className: "name", textContent: mod.name }),
+      el("span", { className: "name", textContent: mod.name },
+        ...(mod.kind === "map" ? [el("span", { className: "kind-badge", textContent: w.kind_map, title: w.tip_kind_map })] : [])),
       el("span", { className: "meta", textContent: meta }));
     sum.setAttribute("aria-expanded", String(open));
     const li = el("li", { className: "mod-card lib-row" + (open ? " open" : "") + (mod.error ? " bad" : "") }, sum);

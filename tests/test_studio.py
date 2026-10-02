@@ -226,16 +226,40 @@ class WithMod(unittest.TestCase):
         return {r["prop"]: r for g in self.api.unit(address)["groups"] for r in g["rows"]}
 
 
+class ModsAndMaps(WithMod):
+    """Mods (the Units tab) and maps (the Maps tab) are kept apart: each its own list, folder and current one."""
+
+    def test_apart(self):
+        self.api.new_mod("Tank Test")
+        mod = self.home / "mods" / "tank-test"
+        maps = self.api.new_mod("D-Day Big", kind="map")
+        made = self.home / "maps" / "d-day-big"
+        self.assertEqual(maps, {"mods": [{"path": str(made), "name": "d-day-big"}], "kind": "map", "current": str(made)})
+        self.assertTrue((made / "maps").is_dir())
+        self.assertEqual(self.api.mods()["current"], str(mod))  # the mod stays the Units tab's
+        self.assertEqual(self.api._map_dir(), made)
+        with self.assertRaises(StudioError):
+            self.api.mods("sound")
+
+    def test_a_mod_from_before_keeps_its_maps(self):
+        self.api.new_mod("Old")  # before mods and maps were apart: one mod, its maps inside
+        old = self.home / "mods" / "old"
+        (old / "maps" / "SuperCrossRoads4").mkdir(parents=True)
+        self.assertEqual(self.api._map_dir(), old)  # no map picked yet: the mod's maps go on
+        self.assertEqual([m["path"] for m in self.api.mods("map")["mods"]], [str(old)])
+
+
 class Editing(WithMod):
     """Changing a unit's numbers in place: saved in the mod's src/studio.rndf, read back, built into the game data."""
 
     def test_changes_are_saved_in_the_mod_and_read_back(self):
-        self.assertEqual(self.api.mods(), {"mods": [], "current": None})
+        self.assertEqual(self.api.mods(), {"mods": [], "kind": "mod", "current": None})
         with self.assertRaises(StudioError):
             self.api.edit(M4, "SeuilMort", 15)  # no mod to save it in yet
         mods = self.api.new_mod("Tank Test")
         folder = self.home / "mods" / "tank-test"
-        self.assertEqual(mods, {"mods": [{"path": str(folder), "name": "tank-test"}], "current": str(folder)})
+        self.assertEqual(mods, {"mods": [{"path": str(folder), "name": "tank-test"}], "kind": "mod",
+                                "current": str(folder)})
         self.assertIn('name        = "Tank Test"', (folder / "mod.toml").read_text(encoding="utf-8"))
 
         self.assertEqual(self.api.edit(M4, "SeuilMort", 15)["value"], 15)
@@ -436,6 +460,9 @@ class Editing(WithMod):
         self.assertEqual((info["id"], info["version"], info["authors"], info["description"], info["builds"], info["data_revision"]),
                          ("tank-test", "1.2.0", ["Tristen"], "Tanks are tougher.", ["24687178"], "190852"))
         self.assertRegex(info["fingerprint"], r"^[0-9A-Z]{4}-[0-9A-Z]{4}$")
+        # straight into the Launcher's library, ready for a mod set (the two apps share the platform folder)
+        self.assertTrue((self.home / "library" / "tank-test" / "mod.toml").is_file())
+        self.assertTrue(any("In the Launcher's mod library as" in line for line in j["lines"]), j["lines"])
         self.assertIn("src/studio.rndf", info["files"])
         # "Share your mod": the file's size and SHA-256 for the supported-mods list, and its index.toml entry
         data = (dest / "tank-test-1.2.0.rusemod").read_bytes()

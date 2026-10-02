@@ -21,8 +21,12 @@
       <button id="tab-maps" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-settings" type="button" role="tab" aria-selected="false"></button>
     </div>
-    <label class="pick-mod"><span id="mod-label">Mod</span>
+    <label id="pick-mod" class="pick-mod"><span id="mod-label">Mod</span>
       <select id="mod"></select>
+    </label>
+    <!-- the Maps tab's own: maps are kept apart from mods (app.js renderMods, StudioApi.mods(kind="map")) -->
+    <label id="pick-map" class="pick-mod hidden"><span id="map-project-label">Map</span>
+      <select id="map-project"></select>
     </label>
     <button id="test" type="button" class="primary" disabled></button>
     <button id="troubleshoot" type="button" class="ghost"></button>

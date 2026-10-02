@@ -297,6 +297,10 @@ button:disabled { cursor: default; opacity: 0.45; }
 .update-bar { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-size: 13px;
               background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41); }
 .update-bar.hidden { display: none; }
+/* a map in the library (api._kind_of): a small label beside its name */
+.kind-badge { margin-left: 8px; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;
+              letter-spacing: 0.04em; background: var(--accent, #3f8fe0); color: #0b1626; vertical-align: middle; }
+
 /* what changes: the running version beside the new one, a row per change */
 .update-changes { padding: 8px 20px 12px; background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41);
                   font-size: 13px; max-height: 40vh; overflow: auto; }

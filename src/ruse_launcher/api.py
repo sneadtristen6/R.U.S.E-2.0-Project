@@ -49,7 +49,7 @@ from rusemod.rndf import RndfError
 from rusemod.steam import build_of, find_game
 from rusemod.webui import Job, job_view
 
-from .library import MANIFEST, Library, LibraryError, read_info
+from rusemod.library import MANIFEST, Library, LibraryError, read_info
 from . import __version__
 
 _SET_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -89,6 +89,16 @@ def pc_language() -> str:
         import ctypes
         return locale.windows_locale.get(ctypes.windll.kernel32.GetUserDefaultUILanguage(), "en")
     return locale.getlocale()[0] or os.environ.get("LANG", "") or "en"
+
+
+def _kind_of(path) -> str:
+    """"map" for a mod that only changes maps (a map from the Studio's Maps tab: maps/ files, no unit changes or
+    texts), else "mod": the library shows maps apart from mods."""
+    folder = Path(path or "")
+    if not (folder / "maps").is_dir():
+        return "mod"
+    has_more = any(folder.glob("src/*.rndf")) or any(folder.glob("text/*.csv")) or any(folder.glob("*.rmod"))
+    return "mod" if has_more else "map"
 
 
 class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
@@ -213,7 +223,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         for s in self._read_sets():
             for entry in s["mods"]:
                 used[entry] = used.get(entry, 0) + 1
-        return [m | {"used_in": used.get(m["id"], 0)} for m in self._library.mods()]
+        return [m | {"used_in": used.get(m["id"], 0), "kind": _kind_of(m.get("path"))} for m in self._library.mods()]
 
     def _lists(self, **extra) -> dict:
         return {"library": self.library(), "sets": self.mod_sets(), **extra}

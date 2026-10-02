@@ -19,7 +19,7 @@
       pick_unit: "Pick a unit on the left.", mod: "Mod", new_mod: "New mod…", open_folder: "Open a mod folder…",
       export_mod: "Export mod…", version: "Version", author: "Author", description: "Description", export: "Export",
       export_help: "One file to share: the mod folder packed. The version, author and description are kept in the mod.",
-      mod_name: "Name of the new mod", create: "Create", cancel: "Cancel", close: "Close",
+      mod_name: "Name of the new mod", map_project: "Map", no_map: "Pick or make a map to save map changes in.", new_map: "New map…", export_map: "Export map…", map_name: "Name of the new map", tip_pick_mod: "The mod your unit changes are saved in. Maps have their own list on the Maps tab.", tip_pick_map: "The map your map changes are saved in (ground, roads, buildings, scenario). Test in game plays it with your mod's units.", create: "Create", cancel: "Cancel", close: "Close",
       no_mod: "Pick or make a mod to save changes in.", test_in_game: "Test in game", was: "was {v}", reset: "Undo",
       saved: "Saved in {file}", users_warning: "Changing this changes it for every unit that uses it ({n}).",
       shared_by: "Shared by {n}: {names}", change_for: "Change it for", only_unit: "only {name} (it gets its own copy)",
@@ -378,6 +378,9 @@
     return out;
   }
   let current = mode === "nomod" ? null : mods[0].path;
+const maps = [{ path: home + "maps/d-day-big", name: "d-day-big" }];  // the Maps tab's own list (preview only)
+let currentMap = mode === "nomod" ? null : maps[0].path;
+const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap });
   const edits = new Map();  // `${mod}|${address}|${prop}|${how}|${via}` -> value, like the mod's src/studio.rndf
   const terrains = new Map();  // `${mod}|${map pack}` -> strokes, like the mod's maps/<pack>/terrain.toml
   const placed = new Map();    // `${mod}|${map pack}` -> placed objects, like the mod's maps/<pack>/scenery.toml
@@ -917,14 +920,20 @@
         return { deleted: address, source: gone.source, saved: current + "/src/studio.rndf" };
       },
       unit: async (address, lang, via) => unit(address, lang, via),
-      mods: async () => modsView(),
-      new_mod: async (name) => {
+      mods: async (kind) => kind === "map" ? mapsView() : modsView(),
+      new_mod: async (name, kind) => {
+        if (kind === "map") {
+          const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-map";
+          maps.push({ path: home + "maps/" + slug, name: slug });
+          currentMap = home + "maps/" + slug;
+          return mapsView();
+        }
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-mod";
         mods.push({ path: home + slug, name: slug });
         current = home + slug;
         return modsView();
       },
-      choose_mod: async (path) => { current = path; return modsView(); },
+      choose_mod: async (path, kind) => kind === "map" ? (currentMap = path, mapsView()) : (current = path, modsView()),
       open_mod_folder: async () => {
         const path = "D:/Mods/another-mod";
         if (!mods.some((m) => m.path === path)) mods.push({ path, name: "another-mod" });
