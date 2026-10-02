@@ -560,9 +560,63 @@ py -3 -m unittest discover -s tests
 
 ## Credits
 
-- **LittleGroove**: RUSE-Mod-Manager and its `.rmod` format. His engine is in
-  [`src/ruse_mod_engine`](src/ruse_mod_engine/), used as it is, and applies `.rmod` mods in our builds.
-- **DomesticNukes and his Claude**: the notes on the map ground (`.kdt`) and scenery files that our readers follow.
+RUSE Mod Platform is made by sneadtristen6. Other modders' work is built into it, and this is what each of them
+gave. The source files named below say so in their own notes too.
+
+### ProLution: the RUSE Modding Database
+
+ProLution wrote most of the community's original notes on modding R.U.S.E., collected in the RUSE Modding Database.
+Everyone after him started from them, RUSE-Mod-Manager and this project included:
+
+- **Terrain textures**: the TGU1 codec of the ground tiles, which he reverse-engineered and released as CC0, and the
+  tiles' native 512 px size. LittleGroove's engine carries a port of his reference codec
+  (`src/ruse_mod_engine/terrain_codec.py`).
+- **Unit flags**: flag 63 on anything but a construction truck crashes the game
+  ([`unitflags.py`](src/rusemod/unitflags.py)).
+- **Units from another nation**: his crash tests are why Japan's unit packs are left as shipped when every match
+  loads the other nations' packs (LOG.md, 2026-10-02).
+
+### LittleGroove: RUSE-Mod-Manager
+
+His engine runs inside both apps, unchanged ([`src/ruse_mod_engine`](src/ruse_mod_engine/), GPLv3; it is why this
+project is GPL-3.0):
+
+- **Community mods**: the `.rmod` format is his, and his engine (`mod_format`, `applier`, `edata`) is what applies
+  every `.rmod` mod in our builds, as it is, and moves a mod made for another game build with his version maps
+  ([`rmod.py`](src/rusemod/rmod.py)).
+- **The cover and movement layers** of every map (`mapinfo.win`'s cover grid): read and written with his `sdb`
+  module by our cover painting, AI grid, bridges, roads, movement, map check, scenario tools and the Studio's map
+  view ([`cover.py`](src/rusemod/cover.py), [`aigrid.py`](src/rusemod/aigrid.py), [`nav.py`](src/rusemod/nav.py),
+  [`roadnet.py`](src/rusemod/roadnet.py)...). The meaning of the cover layers (in forest, AI blocked) is from his
+  notes.
+- **Formats he worked out first**: the `.scenario` checksum rule ([`scenario.py`](src/rusemod/scenario.py)), adding
+  files to a game pack ([`edat.py`](src/rusemod/edat.py)), the load-order text players share
+  ([`loadorder.py`](src/rusemod/loadorder.py)), and the bundled Python 2.5.1 the game's scripts need
+  (`src/ruse_mod_engine/python251`).
+- What RUSE-Mod-Manager had already decoded set where this project started (our study of it:
+  [LITTLEGROOVE_STUDY.md](docs/LITTLEGROOVE_STUDY.md), [RESEARCH.md](docs/RESEARCH.md)).
+
+### DomesticNukes and his Claude: map, model and AI research
+
+Much of what the Studio can do to a map rests on their reverse engineering. Our readers and writers follow their
+notes and were checked against every shipped file:
+
+- **Map ground** (`.kdt`): the index buffer, triangle-list and tree encodings, and the recipe for reshaping the ground
+  and keeping its trees true, proven in the game first on Blitz ([`kdt.py`](src/rusemod/kdt.py),
+  [`kdt_edit.py`](src/rusemod/kdt_edit.py), [`terrain_edit.py`](src/rusemod/terrain_edit.py)).
+- **Scenery** (`save.boobspc`, every tree, building and road piece of a map): its layout, and moving, scaling and
+  adding objects, proven in the game ([`scenery.py`](src/rusemod/scenery.py)).
+- **3D models** (`.spk`): the mesh-pack layout and vertex formats behind the Studio's 3D models
+  ([`spk.py`](src/rusemod/spk.py), [`models.py`](src/rusemod/models.py)).
+- **Movement**: how the game uses the local walk maps (what keeps units on a bridge), and building whole movement
+  indexes ([`nav.py`](src/rusemod/nav.py), FORMATS.md §6).
+- **The AI's terrain grid**: its rules, and the generator that rebuilds it after a map changes
+  ([`aigrid.py`](src/rusemod/aigrid.py)).
+- **Unit flags**: what every flag does, including the two that crash the game on anything but a truck
+  ([`unitflags.py`](src/rusemod/unitflags.py)).
+- **Water brushes**: lakes and drained lakes, by the shipped maps' water rules (pull request #11).
+- **Mod sets**: the 75-mod trial that shaped how the launcher handles mods that clash
+  ([`rmod.py`](src/rusemod/rmod.py)), and the first in-game test reports.
 
 ## License
 
