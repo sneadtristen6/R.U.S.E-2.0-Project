@@ -44,7 +44,9 @@ RULES: dict[str, Rule] = {
         "game", "T13 (crash when built, 2026-10-01); working in batches 9e and 10 (2026-10-02)"),
     "truck-flags": Rule(
         "Flags 62 (truck) and 63 (construction truck) on a unit that isn't a truck crash the game at match start.",
-        "community", "DomesticNukes: flag 62 on a Stuart crashed the game (his test); ProLution: the same for 63"),
+        "game", "62: rule test C (2026-10-02): flag 62 on the US Stuart stopped the game as the match started; the "
+                "game's script puts every unit with flag 62 in the truck list as it builds the tech tree, and that "
+                "step failed (DomesticNukes saw the same). 63: ProLution's report, not tested by us"),
     "skirmish-neutral-spawns": Rule(
         "A BATTLES (skirmish) scenario places only neutral spawns; a team's would not appear.",
         "studied", "the game's BATTLES script starts every map with no team list, so only neutral spawns are placed "
@@ -87,12 +89,14 @@ RULES: dict[str, Rule] = {
                    "point stands on ground vehicles use"),
     "seats-per-team": Rule(
         "Each player needs a starting point of their team, or that player starts with no HQ and no units.",
-        "studied", "partly: the game's scripts seat a player with no point left in the team but give them no first "
-                   "HQ, units or camera (2026-10-02); what follows (defeat? a crash?) is in-game test A"),
+        "game", "rule test A (2026-10-02, Twilight of the Gods with team 2 one point short): the team's first slot got "
+                "the base and the second started with nothing; no crash, no message, not defeated at once. The "
+                "game's scripts do the same (no point left: no first HQ, units or camera)"),
     "players-most": Rule(
-        "A map takes at most 8 players.",
-        "generalization", "the lobby screen we read (outgame .gfx) has layouts for at most 8 seats; no limit found in "
-                          "the game's scripts (2026-10-02): in-game test B"),
+        "A map takes at most 8 players: the lobby shows at most 8 seats.",
+        "game", "rule test B (2026-10-02, Strategists set to 10): the lobby says 'Number of players 10' but shows 8 "
+                "seats, and the match loads with 8, no crash. More than 8 would need a new lobby screen; no limit "
+                "was found in the game's scripts"),
     "spawn-class": Rule(
         "A spawn's class must be one the game's own spawns use, or loading the map fails.",
         "studied", "partly: a class name the game's unit list doesn't have raises an error while the map loads "
