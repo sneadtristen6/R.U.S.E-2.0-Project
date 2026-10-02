@@ -734,6 +734,15 @@ lobby has 8 seats and the match starts with 8, no crash. What's known and what i
 - Changing the game's screen files is outside "data only"; this belongs with the RUSE 2.0 side (§11) unless it can
   be done as a mod file.
 
+*Written down for later, not scheduled (owner, 2026-10-02: "log those features for later"):* **LittleGroove's map
+editor tools the Studio doesn't have yet.** His RUSE-Mod-Manager map editor (GPL-3.0) gave 0.8.3 its road snapping,
+the opening camera and the camera ring. Still to bring over, from going through his editor's tools:
+- Remove the map's own scenario items (the Studio removes only the spawns and starts a mod adds): a new mod entry.
+- A placed item's details: a depot's trucks, its side, its turn.
+- Reshape sectors (zones) by dragging their corners (his sector and capture-zone mesh editing).
+- An icon size slider, and toggles for country flags and side numbers on the icons.
+- Which game modes a map offers (1v1, 2v2, free-for-all), and making a new scenario.
+
 *Asked for 1.0 (owner, 2026-10-01):* a R.U.S.E. 2.0 image when the game starts. Waits for the owner's artwork.
 
 *The owner's ideas for later:* §12 (maps), §14 (the rest, e.g. game UI mods), §11 (RUSE 2.0's game).
