@@ -800,7 +800,34 @@ number below the material count, every position inside its model's box.
   min + uv × size.
 - **Scenery descriptors**: a tree is a `TSceneryDescriptorComposite` of two models, its leaves and its trunk
   (`DescriptorComposition`), so `rusemod.scenery` gives every descriptor all its models.
-- Not read yet: skeleton packs, mirrored vertices (no shipped pack uses them), writing models (PLAN M7).
+- Not read yet: skeleton packs, mirrored vertices (no shipped pack uses them).
+
+### Mesh packs (`.spk`, `.spkpc`): ✅ written (`src/rusemod/spk_edit.py`)
+
+From **DomesticNukes and his Claude** (2026-10-02), checked with `tools/verify_spk_write.py`: all 115 packs the
+game ships (the 82 in `ZZ_Win.dat` and the 33 maps' `output\staticmeshes*.spkpc`) rebuild byte for byte, and the
+German skirmish pack's 74 models copied into the US one read back exactly as they were.
+
+- **The header hash** (0x10): MD5 of the file's first 16 bytes followed by bytes 0x20-0x2F. The game checks it when
+  it opens a pack (true of every shipped pack), so a writer must recompute it.
+- **0x20**: (u32 0, u32 start of the buffer data), **0x28**: (start of the buffer data, its size), **0x30**: the
+  model count; the game checks both pairs end inside the file. **0xB0**: skeleton records (offset, size, count),
+  **0xBC**: their data (offset, size): used by the maps' HQ-and-sky packs and the skeleton packs. The header is
+  0xC4 bytes.
+- **Layout**: sections in the order names, formats, materials, the two extra ones (filled only in the static-mesh
+  packs), meshes, draw calls, skeleton records and data, index-buffer table, vertex-buffer table, index data, vertex
+  data, the file ending there. A section that isn't empty starts on 4 bytes (the gap filled with 0x7E); an empty one
+  sits where the last ended. Each buffer in the data starts on 4 bytes (0x7E between).
+- **Names**: the trie's entries are padded to an even length with zeros. The pack's order is folder by folder
+  (`us_buildings_1\` before `us_buildings_10\`), which a new name follows.
+- **Materials**: object 0 is a `TEugBListPBaseClass` listing the `TMeshMaterial` objects; a draw call's material
+  number is the position in that list. Materials share small parameter objects (`TEugBFloat`...), so copying one
+  copies what it points at.
+- **Copying a model** between packs (`Pack.copy_model`): its draw calls, buffers (bytes kept as they are,
+  compressed or not), vertex formats (matched by name) and materials. 11 map packs (`flat_*hqandsky.spk`) have no
+  models at all, only materials.
+- Not done yet: skeletons (models with a skeleton record), the animation and proxy packs a unit needs, encoding
+  compressed vertex buffers (new geometry is stored as is, like most scenery).
 - `.apk` (nested EDAT), `.baf` (`0f000000`), `.ppk` (`PRXY` or nested EDAT), `.gpk` (UI, likely Scaleform GFx).
 - Scenery sets are European/African only: africa, allemagne, ardennes, europe, france, givre, hollande, italie. There is no tropical set.
 
