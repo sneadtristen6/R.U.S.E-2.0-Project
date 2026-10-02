@@ -52,6 +52,12 @@ function say(text, kind) {
     report.addEventListener("click", () => api().report_problem(text).catch(() => {}));
     bar.append(" ", report);
   }
+  if (text) {  // every message can be closed (owner, 2026-10-02: a failed test's message stayed with no way out)
+    const close = el("button", { type: "button", className: "status-close", textContent: "×",
+      title: w.tip_status_close || "", ariaLabel: w.close || "Close" });
+    close.addEventListener("click", () => say(""));
+    bar.append(close);
+  }
 }
 
 function problem(err) {
@@ -87,10 +93,11 @@ async function setLanguage(lang) {
   $("export-cancel").textContent = w.cancel;
   $("export-help").textContent = w.export_help;
   $("test-log-close").textContent = w.close;
+  $("test-log-copy").textContent = w.doc_copy;
   // tooltips: one sentence on every control, from words.toml (tip_*)
   const tips = { "tab-units": "tip_tab_units", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", lang: "tip_lang",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
-    "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close",
+    "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close", "test-log-copy": "tip_copy_log",
     "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
     "backup-make": "tip_backup_make", "backup-check": "tip_backup_check", "backup-restore": "tip_backup_restore",
     "backup-deep": "tip_backup_deep", "set-updates-check": "tip_updates_check" };
@@ -875,19 +882,72 @@ async function testInGame() {
   }
   const log = $("test-log");
   log.textContent = "";
+  $("test-problems").replaceChildren();
+  $("test-problems").classList.add("hidden");
   $("test-panel").classList.remove("hidden");
   if (state.view === "settings") renderBackup();  // a restore waits for the test's copy
-  const finish = (ok, message) => {
+  const finish = (ok, message, j) => {
     button.dataset.running = "0";
     button.disabled = !state.mod;
     if (state.view === "settings") renderBackup();
     if (message) say(message, ok ? "ok" : "error");
-    if (!ok) offerTroubleshoot();
+    // mistakes in the mods: each one listed with its fix, not the troubleshooter (it can't fix a mod)
+    if (!ok && j && j.errors && j.errors.length) showTestProblems();
+    else if (!ok) offerTroubleshoot();
   };
   try {
     const { job } = await api().test_in_game();
     follow(job, log, finish);
   } catch (err) { problem(err); finish(false); }
+}
+
+// A test the build stopped: its mistakes at the top of the log, each with what fixes it (StudioApi.test_problems and
+// test_fix: a team spawn on a BATTLES map made neutral or taken out, a road that joins nothing taken out)
+async function showTestProblems() {
+  const w = state.words, box = $("test-problems");
+  let res;
+  try { res = await api().test_problems(); } catch (err) { problem(err); return; }
+  const list = res.problems || [];
+  if (!list.length) { offerTroubleshoot(); return; }
+  const labels = { spawn_neutral: [w.test_fix_neutral, w.tip_test_fix_neutral],
+    spawn_remove: [w.test_fix_remove_spawn, w.tip_test_fix_remove_spawn],
+    road_remove: [w.test_fix_remove_road, w.tip_test_fix_remove_road] };
+  box.replaceChildren(el("p", { className: "test-problems-title", textContent: fillText(w.test_problems_title, { n: list.length }) }),
+    ...list.map((p) => {
+      const row = el("div", { className: "check-row" }, el("span", { textContent: p.text }));
+      if (p.mod) row.append(el("span", { className: "muted small", textContent: fillText(w.test_in_mod, { mod: p.mod }) }));
+      if (!p.fixes.length) row.append(el("span", { className: "muted small", textContent: w.test_no_fix }));
+      for (const fix of p.fixes) {
+        const [label, tip] = labels[fix.kind] || [fix.kind, ""];
+        const b = el("button", { type: "button", className: "small", textContent: fillText(label, { n: fix.road }), title: tip || "" });
+        b.addEventListener("click", async () => {
+          for (const other of row.querySelectorAll("button")) other.disabled = true;  // one fix per mistake
+          try {
+            const done = await api().test_fix(fix);
+            row.classList.add("fixed");
+            say(fillText(w.test_fixed, { done: done.done }), "ok");
+            if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // the map shows the change
+          } catch (err) { problem(err); for (const other of row.querySelectorAll("button")) other.disabled = false; }
+        });
+        row.append(b);
+      }
+      return row;
+    }));
+  box.classList.remove("hidden");
+}
+
+// The test's log and its message, for a bug report or Discord
+async function copyTestLog() {
+  const text = $("test-log").textContent + ($("status").firstChild ? "\n" + $("status").firstChild.textContent : "");
+  try { await navigator.clipboard.writeText(text); } catch {
+    const box = el("textarea", { value: text, readOnly: true, className: "sr-only" });
+    document.body.append(box);
+    box.select();
+    const copied = document.execCommand("copy");
+    box.remove();
+    if (!copied) { say(state.words.test_copy_failed, "error"); return; }
+  }
+  say(state.words.doc_copied, "ok");
 }
 
 // --- the troubleshooter (StudioApi.troubleshoot, rusemod.doctor): what can stop a test, checked in one go, each
@@ -901,7 +961,8 @@ function offerTroubleshoot() {
   const w = state.words;
   const link = el("button", { type: "button", className: "link", textContent: w.doc_troubleshoot_link, title: w.doc_intro });
   link.addEventListener("click", openDoctor);
-  $("status").append(" ", link);
+  const close = $("status").querySelector(".status-close");  // the × stays last
+  if (close) close.before(" ", link); else $("status").append(" ", link);
 }
 
 function openDoctor() {
@@ -1413,6 +1474,7 @@ async function start() {
   $("share-close").addEventListener("click", () => $("share").close());
   $("test").addEventListener("click", testInGame);
   $("test-log-close").addEventListener("click", () => $("test-panel").classList.add("hidden"));
+  $("test-log-copy").addEventListener("click", copyTestLog);
   let timer = null;
   $("unit-group").addEventListener("change", (e) => { state.group = e.target.value; refreshList(); });
   $("search").addEventListener("input", (e) => {

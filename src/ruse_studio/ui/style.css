@@ -141,9 +141,21 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 
 .test-panel { position: relative; border-top: 1px solid var(--line); background: #071120; }
 .test-panel pre { margin: 0; max-height: 180px; overflow: auto; padding: 10px 20px; font-size: 12px; }
-.test-panel button { position: absolute; top: 8px; right: 16px; background: var(--panel); }
-.status { min-height: 28px; padding: 5px 20px; border-top: 1px solid var(--line); background: var(--panel); color: var(--muted);
-          font-size: 12px; overflow-wrap: anywhere; }
+.test-actions { position: absolute; top: 8px; right: 16px; display: flex; gap: 8px; }
+.test-actions button { background: var(--panel); }
+/* a test the build stopped: its mistakes over the log, each with its fix (app.js showTestProblems) */
+.test-problems { display: flex; flex-direction: column; gap: 6px; padding: 10px 220px 10px 20px; font-size: 13px;
+                 border-bottom: 1px solid var(--line); background: var(--panel); }
+.test-problems.hidden { display: none; }
+.test-problems-title { margin: 0; color: var(--error, #e8836f); font-weight: 600; }
+.test-problems .check-row { flex-wrap: wrap; }
+.test-problems .check-row > span:first-child { flex: 1 1 420px; }
+.test-problems .check-row.fixed > span:first-child { text-decoration: line-through; color: var(--muted); }
+.status { display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 5px 20px; border-top: 1px solid var(--line);
+          background: var(--panel); color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.status-close { margin-left: auto; padding: 0 8px; background: none; border: none; color: var(--muted); font-size: 16px;
+                line-height: 1; cursor: pointer; }
+.status-close:hover { color: var(--text, #fff); }
 .status.ok { color: var(--ok); }
 .status.error { color: var(--error); }
 

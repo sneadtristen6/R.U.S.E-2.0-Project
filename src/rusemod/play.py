@@ -97,7 +97,10 @@ class Starter:
         finally:
             _release(lock, fd)
         if result.errors:
-            raise BuildError("These mods have errors (listed above). Nothing was changed.")
+            exc = BuildError("These mods have errors (listed above). Nothing was changed.")
+            # what the apps show one by one, each with its fix when there is one (ruse_studio test_problems)
+            exc.errors, exc.order = [f.message for f in result.errors], list(result.order)
+            raise exc
         exe = next((p for p in instance.iterdir() if p.name.lower() == "ruse.exe"), None) if instance.is_dir() else None
         if exe is None:
             raise BuildError(f"The modded copy at {instance} has no RUSE.exe.")

@@ -258,8 +258,13 @@
   </main>
 
   <section id="test-panel" class="test-panel hidden">
+    <!-- a test the build stopped: its mistakes, each with its fix (app.js showTestProblems) -->
+    <div id="test-problems" class="test-problems hidden" role="alert"></div>
     <pre id="test-log"></pre>
-    <button id="test-log-close" type="button" class="ghost"></button>
+    <div class="test-actions">
+      <button id="test-log-copy" type="button" class="ghost"></button>
+      <button id="test-log-close" type="button" class="ghost"></button>
+    </div>
   </section>
   <!-- Settings (app.js SETTINGS: one section per setting, so a new one is one more entry) -->
   <main id="settings-view" class="settings-view hidden">

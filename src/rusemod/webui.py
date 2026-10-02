@@ -49,13 +49,16 @@ class Job:
     def __init__(self):
         self.id = uuid.uuid4().hex[:8]
         self.state, self.lines, self.message = "running", [], ""
+        self.errors: list[str] = []  # a failed build's errors, one per mistake in the mods (play.Starter.modded)
+        self.order: list[str] = []   # that build's load order (mod ids)
 
     def say(self, line: str) -> None:
         self.lines.append(line)
 
     def view(self, since: int = 0) -> dict:
-        return {"id": self.id, "state": self.state, "message": self.message, "lines": self.lines[since:],
-                "count": len(self.lines)}
+        out = {"id": self.id, "state": self.state, "message": self.message, "lines": self.lines[since:],
+               "count": len(self.lines)}
+        return out | {"errors": self.errors} if self.errors else out
 
     def start(self, work, done: str, plain=(OSError,)) -> dict:
         """Run `work(say)` in the background. The job ends "done" with the message `done`, or "failed" with the
@@ -66,6 +69,8 @@ class Job:
                 work(self.say)
                 self.state, self.message = "done", done
             except plain as exc:
+                # the errors first: a screen that sees "failed" sees them too
+                self.errors, self.order = list(getattr(exc, "errors", [])), list(getattr(exc, "order", []))
                 self.state, self.message = "failed", str(exc)
             except Exception as exc:
                 self.state, self.message = "failed", f"Something went wrong: {type(exc).__name__}: {exc}"
