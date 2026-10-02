@@ -220,8 +220,8 @@ Modders who write mods by hand can also use the `ruse` command-line tool, from t
   <tr>
     <td width="50%" valign="top">
       <img src="docs/images/movement-building-on-hill.jpg" alt="R.U.S.E. in game on Blitz: a building being placed by the player on the edited hill" width="380"><br>
-      <sub>Building on the edited ground in the game works too. Four crashes on the way were read from the game's
-      crash dumps and fixed the same evening (docs/LOG.md).</sub>
+      <sub>Building on the edited ground in the game works too. Four crashes on the way were found from the game's
+      crash reports and fixed the same evening (docs/LOG.md).</sub>
     </td>
     <td width="50%" valign="top">
       <img src="docs/images/bridge-tanks-ingame.jpg" alt="R.U.S.E. in game on D-Day: tanks driving across a new bridge, on its deck" width="380"><br>

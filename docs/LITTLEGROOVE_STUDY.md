@@ -43,7 +43,7 @@ stops*. **Since 2026-09-29 his engine is part of the platform** (`src/ruse_mod_e
 - **Scripts:**
   - small edits re-marshal byte-identically
   - new code compiles through a bundled real Python 2.5.1
-  - decompiling uses uncompyle6/xdis
+  - script editing goes through his own script tools
 - **Text:** `.dic` editing plus "where is this text used" tracing across NDF and scripts.
 - **Multiplayer:** "SAFE" mods are baked into the app, so everyone's files match. New pairings need an app update; there are no join codes.
 - **Self-update:** downloads the new exe from GitHub Releases and swaps it in, with no hash or signature check.

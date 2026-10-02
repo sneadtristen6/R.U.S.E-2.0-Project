@@ -3,7 +3,7 @@
 Three focused web studies: reusable code, beginner-friendly launchers, tech stack. Sources are linked;
 uncertain items are marked. Decisions that follow from this are reflected in [PLAN.md](PLAN.md).
 
-## 1. Reusable code: most of the map formats are already reverse-engineered
+## 1. Reusable code: most of the map formats are already decoded
 
 **LittleGroove/RUSE-Mod-Manager** (GPLv3) already decodes most map formats. Its `source/ruse_mod_engine/` has:
 
@@ -16,8 +16,8 @@ uncertain items are marked. Decisions that follow from this are reflected in [PL
 | `terrain_mesh.py`, `terrain_relief.py`, `terrain_tiles.py` | terrain geometry and tiles | M8 |
 | `xyz_compile.py` + `python251/` | compiles Python 2.5 by running a **real CPython 2.5.1** in a subprocess (PSF license) | M9 compile route |
 
-Source: https://github.com/LittleGroove/RUSE-Mod-Manager. The terrain codec's comment credits the reverse-engineering
-to **ProLution (RUSE Modding Database)** and says the *format knowledge* is CC0. ⚠ Uncertain: not independently confirmed.
+Source: https://github.com/LittleGroove/RUSE-Mod-Manager. The terrain codec's comment credits the format knowledge
+to **ProLution (RUSE Modding Database)** and says it is CC0. ⚠ Uncertain: not independently confirmed.
 
 **License consequence** (2026-09-28; since 2026-09-30 this project is GPL-3.0 itself, see the reuse rule below):
 GPLv3 code can't be copied into an MIT project. We can read it and re-implement from the
@@ -30,7 +30,7 @@ format knowledge, or change our license, or ask the authors (see decision below)
 - **kilivan4iK/moddingSuite** (MIT, C#): useful to cross-check NDF decoding. https://github.com/kilivan4iK/moddingSuite
 - Text-NDF parsers for WARNO (Ulibos/ndf-parse, WarnoModEditor, warnoMod): low value, since we already solved the binary format.
 - No public Wargame terrain/heightmap editor exists.
-- **Python 2.5 tooling:** uncompyle6 decompiles 2.5 (GPLv3, fine as an external dev tool); xdis / xasm (GPLv2) are reference only.
+- **Python 2.5 tooling:** the game's own Python version (2.5.1) reads and compiles its scripts.
   Compiling: bundle real CPython 2.5.1 (PSF), same as LittleGroove.
 
 ## 2. Beginner-friendly launchers: what to copy
@@ -57,7 +57,7 @@ format knowledge, or change our license, or ask the authors (see decision below)
 - **Safety:**
   - Neither Modrinth nor Thunderstore signs or sandboxes mods; both rely on scanning, review and reputation.
     A malicious Modrinth update slipped through in 2024.
-  - Our specific risk is script mods (Python bytecode), so any mod containing scripts gets manual review.
+  - Our specific risk is script mods (compiled Python scripts), so any mod containing scripts gets manual review.
 
 ## 3. Tech stack
 
@@ -85,7 +85,7 @@ Stack sources:
 
 ## 4. What this changes (efficiency)
 
-1. **Don't reverse-engineer map formats from scratch.** Before each map reader, read LittleGroove's module as
+1. **Don't decode map formats from scratch.** Before each map reader, read LittleGroove's module as
    reference. This cuts M6/M8 effort sharply and makes terrain painting (TGU1) realistic.
 2. **License decision needed before map work** (see PLAN open decisions): ask LittleGroove/ProLution for
    permission to reuse under MIT, or switch our license to GPLv3 to reuse their code directly.

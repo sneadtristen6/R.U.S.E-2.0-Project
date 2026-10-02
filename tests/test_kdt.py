@@ -419,7 +419,7 @@ class Indices(unittest.TestCase):
 
 
 class Trees(unittest.TestCase):
-    """The subtree k-d tree: pre-order opcodes, values relative to the nearest ancestor on the same axis."""
+    """The subtree k-d tree: pre-order node codes, values relative to the nearest ancestor on the same axis."""
 
     def test_hand_made_tree(self):
         root = decode_tree(bytes((0x40, 25, 0x81, 0x81)))

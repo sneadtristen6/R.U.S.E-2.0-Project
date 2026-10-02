@@ -458,7 +458,7 @@ volunteer from the R.U.S.E. community: with a join code, joining takes them a co
 
 | ADR | Decision | Choice | Why | Alternatives |
 |---|---|---|---|---|
-| 1 | Core language | Python 3.11+ with type hints | runs inside Blender; same language as community tools; fastest for reverse engineering; AI-friendly | C#/.NET, Rust |
+| 1 | Core language | Python 3.11+ with type hints | runs inside Blender; same language as community tools; fastest for reading file formats; AI-friendly | C#/.NET, Rust |
 | 2 | UI stack | Web UI (TypeScript, three.js for 3D) in a desktop window (pywebview), served by the local service. **Confirmed by the owner 2026-09-28.** v0.1 uses plain JavaScript with no build step, and pywebview's bridge instead of a separate service; TypeScript once the screens grow | best 3D and UI ecosystem; one UI codebase for Launcher and Studio; runs on Linux/Deck | Qt / PySide6 |
 | 3 | Runtime extender | **On hold (2026-09-29):** data files only; nothing changes or loads into the game's program | the owner's rule: program work stays in the private repo (Eugen has never said the program can't be edited); keeps public mods safe to share | a program add-on |
 | 4 | Deployment | Modded instances via hard links | never touch the Steam install; mod sets side by side | in-place swap with backups (fallback) |
@@ -502,7 +502,7 @@ Estimates are in sessions like today's. Every milestone ends with something usab
 | **M6 Maps I** | map cloning, scenario editor, capture-zone compiler, AI layers, island maps on existing terrain | a new map listed and playable in multiplayer | 4–6 (was 5–8: formats now understood) | medium |
 | **M7 Models** | SPK → glTF, Blender bridge, glTF → SPK (static, then skinned/animated). A first for R.U.S.E. | a new vehicle model in-game | 6–12 | high |
 | **M8 Terrain / new maps** | builds on MT: terrain textures, heightmap import, maps from scratch, scenery, movement and AI data (`mapinfo.win`), tropical scenery set | a new island map built from a heightmap | 6–12 (was 8–15+) | high |
-| **M9 Scripting** | `.xyz` decompile, compile via a real CPython 2.5.1 (known route), mission/mode scripting | a new game mode (e.g. Island Defense) | 3–6 (was 4–8) | medium |
+| **M9 Scripting** | `.xyz` scripts read and compiled with a real CPython 2.5.1 (known route), mission/mode scripting | a new game mode (e.g. Island Defense) | 3–6 (was 4–8) | medium |
 | **M10 China (8th nation)** | **China stays** (owner, 2026-09-29). Step 1 (done): `tools/nation_scan.py` counts every per-nation structure in the data. Step 2: a modded copy with an 8th entry wherever the data has 7: does the game offer an 8th nation? RUSE 2.0 itself is developed privately (decision 19) | China can be picked in a skirmish, with its own flag and units | unknown | high |
 | **M11 Sound** | `.ess` codec, WAV import | a replaced sound plays in-game | 4–10 | high |
 
@@ -558,7 +558,7 @@ and results are in [LOG.md](LOG.md) §1.
 | Terrain edits break the game (crash, refused orders) | no terrain editor | follow the rules proven in-game (the meshes change together, moved parts relocated, bounds widened); each step checked in-game on one map before the Studio offers it |
 | SPK model format complexity | no new models | export first; static meshes before skinned ones |
 | Terrain can't be written | no new maps / islands | reading is solved elsewhere, writing is not: M1.5 tests re-encoding early; M8 sized by the result |
-| Python 2.5 toolchain | no new scripts | route known: compile with a real CPython 2.5.1 (a download, so your OK first); uncompyle6 to decompile |
+| Python 2.5 toolchain | no new scripts | route known: compile with a real CPython 2.5.1 (a download, so your OK first), and read them with it |
 | Game updates | mods and tools break | per-build registry, rebase, CI on fixtures |
 | Non-determinism across PCs, or mismatched mods (the game doesn't detect desyncs) | ruined matches | join codes are the only guard: the launcher refuses a mismatch before joining; canonical fingerprints, bundled runtime, 2-PC tests |
 | Community split | low adoption | `.rmod` import/export; talk to LittleGroove and Prolution; publish everywhere |
@@ -589,8 +589,8 @@ and results are in [LOG.md](LOG.md) §1.
 one is shorter. Rules:
 - **One goal per session**, and it ends with something usable: a release, a passed in-game check, or a decision
   written down. Anything found on the way goes into [LOG.md](LOG.md), not into the session.
-- **Cheap and certain first.** Work the engine already does (new units, mod sets) ships before work that needs
-  reverse engineering. The uncertain part of the terrain editor (the `.kdt` codecs) waits for DomesticNukes'
+- **Cheap and certain first.** Work the engine already does (new units, mod sets) ships before work on
+  file layouts nobody has decoded yet. The uncertain part of the terrain editor (the `.kdt` codecs) waits for DomesticNukes'
   published research and our exchange; we crack it ourselves only if that falls through.
 - **Agents: only with the owner's "go agents" for that launch** (2026-10-01, after a night that spent far too many
   tokens; a hook enforces it). Replies stay short.
@@ -727,7 +727,7 @@ production, Korsun's unused operations, flags 31 and 60).
 
 | # | Step | Ships | Sessions | Needs |
 |---|---|---|---|---|
-| 1 | **Ask DomesticNukes** for the three `.kdt` encodings (index buffer, triangle lists, subtree opcodes), format notes only; ours (framing, vertices, the normal word) go into FORMATS.md with the agreed credit | a message; FORMATS §6 (**done 2026-09-29**) | 0 (owner) | — |
+| 1 | **Ask DomesticNukes** for the three `.kdt` encodings (index buffer, triangle lists, subtree node codes), format notes only; ours (framing, vertices, the normal word) go into FORMATS.md with the agreed credit | a message; FORMATS §6 (**done 2026-09-29**) | 0 (owner) | — |
 | 2 | **Units in the Studio:** "New unit" from a unit's page (copy, name in all languages, price, menu and nation), on the engine that already does it (C6d, C7) (**done 2026-09-29**, pull request #1; the owner's in-game test and the 0.5.0 release follow) | Studio 0.5 | 1–2 | — |
 | 3 | **Launcher v0.2:** mod sets made in the window (new, edit, rename, duplicate, delete), "Add a mod file…", drag-and-drop; players never see a file (**released as Launcher 0.2.0 on 2026-09-29**, the owner's call before T7, with ".rmod" files, sharing and importing a load order, and self-update; T7 still checks it) | Launcher 0.2, first public alpha | 2 | — |
 | 4 | **Terrain editor** T1–T4 (§7 MT): `.kdt` read and written losslessly, height edits that keep the ground, the camera floor and both meshes in step, brushes in the Maps view, "Test in game" (**T2–T4 code done 2026-09-29**, branches `cloud/terrain-brushes` and `cloud/studio-brushes`: brushes, all four files in step, terrain edits in mods and in the build, and the brushes in the Studio's Maps view; the in-game hill check is next) | Studio 0.6 | 4–6 with the notes; +2–4 without | step 1 |

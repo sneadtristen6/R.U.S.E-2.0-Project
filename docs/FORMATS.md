@@ -327,7 +327,7 @@ Other magics: `DICS` (18) and `DICV` (13) in `genvideos\…` (probably subtitles
 - **Adding a class without a Python 2.5 compiler** (probe C6d, `D:\RUSE-Instances\c6-named`): the module's code
   object gets 2 new constants (the class name and a class body copied from the source unit's, with the new
   descriptor path), 1 new name, and 14 instructions before its final `LOAD_CONST None; RETURN_VALUE` (the class
-  statement and the `base_class` line, the same opcodes the file already uses). New strings are written plain
+  statement and the `base_class` line, the same instructions the file already uses). New strings are written plain
   (marshal `s`), never interned (`t`), so the shared-string references (`R`) later in the file keep their numbering.
   Safety rules for this (PLAN decision 23) apply to every such edit.
 - **Built (2026-09-29): `rusemod.pyscript`** reads Python 2.5 marshal data and `.xyz` files and adds classes from
