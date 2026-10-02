@@ -186,9 +186,11 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         if action not in ("close_game", "clear_leftovers"):
             raise LauncherError(f"There's no fix called {action!r}.")
         if self._starting():  # the copy being built looks like a leftover, the game it starts like one left running
+            # not a game rule: something else is busy (the game, the other app, a restore)
             raise LauncherError("R.U.S.E. is being started: wait for it to finish, then try again.")
         game, instances = self._doctor_places()
         if instances is None:
+            # not a game rule: the game or one of its files isn't found
             raise LauncherError("We couldn't find R.U.S.E. Choose its folder first.")
         return doctor.fix(action, game, instances)
 
@@ -481,6 +483,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         copy's folder) stays."""
         chosen = self._set(set_id)
         if set_id == VANILLA:
+            # not a game rule: the Launcher's own Vanilla set
             raise LauncherError("Vanilla is the game as Steam installed it; it can't be changed. Make a new mod set.")
         name = (name or "").strip() or chosen["name"]
         mods = self._check_mods(mods) if mods is not None else chosen["mods"]
@@ -500,6 +503,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
     def delete_set(self, set_id: str) -> dict:
         chosen = self._set(set_id)
         if set_id == VANILLA:
+            # not a game rule: the Launcher's own Vanilla set
             raise LauncherError("Vanilla can't be deleted: it's the game itself.")
         Path(chosen["file"]).unlink()
         return self._lists(set=VANILLA)
@@ -571,6 +575,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         ones found in another version, and whether it was made for the other game layout."""
         shared = parse_order(text)
         if not shared.entries:
+            # not a game rule: a text the player pasted
             raise LauncherError("There's no load order in that text. A shared load order starts with a line like "
                                 "“=== R.U.S.E. Load Order ===”: copy the whole block.")
         m = match_order(shared, self._library.mods())
@@ -629,6 +634,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             return
         game, _found = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise BuildError("We couldn't find R.U.S.E. Choose its folder first.")
         instance = (self._instances or instances_dir(game)) / chosen["id"]
         self._starter.modded(game, chosen["folders"], instance, chosen["name"], say)

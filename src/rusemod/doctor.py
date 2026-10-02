@@ -194,6 +194,7 @@ def fix(action: str, game: Path | None, instances: Path) -> dict:
     if action not in ("close_game", "clear_leftovers"):
         raise ValueError(f"no fix called {action!r}")
     if instances is None:
+        # not a game rule: the game or one of its files isn't found
         raise ValueError("no folder for modded copies yet: the game wasn't found")
     if action == "close_game":
         running = [(pid, exe) for pid, exe in winfiles.processes() if winfiles.inside(exe, str(instances))]

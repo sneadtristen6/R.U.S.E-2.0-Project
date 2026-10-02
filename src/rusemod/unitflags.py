@@ -63,10 +63,12 @@ def problems(obj) -> list[tuple[str, str, str]]:
     flags, out = numbers(obj.props.get(PROP)), []
     aircraft = obj.cls == AIRCRAFT_CLASS
     if 59 in flags and not aircraft:
+        # rule: flag-59
         out.append(("error", PROP, f"flag 59 (transport_parachutiste) on a unit that isn't an aircraft crashes R.U.S.E. "
                                    f"when the game looks for the paratroopers it drops; take it off (only aircraft, "
                                    f"{AIRCRAFT_CLASS} units with a {DROPS}, can carry it)"))
     elif 59 in flags and not (isinstance(obj.props.get(DROPS), Ref) and obj.props[DROPS].target):
+        # rule: flag-59
         out.append(("error", DROPS, f"flag 59 (transport_parachutiste) on an aircraft with no {DROPS} crashes R.U.S.E. "
                                     f"when the game looks for the paratroopers it drops; set {DROPS} to the unit it "
                                     f"drops, or take the flag off"))

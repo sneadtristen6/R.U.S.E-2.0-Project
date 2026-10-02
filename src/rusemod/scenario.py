@@ -852,6 +852,7 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None) -> tup
             camp = NEUTRAL if m.camp is None else m.camp
             at = f"{map_pack}: scenario.toml: the spawn of {m.what} at ({m.x:.0f}, {m.y:.0f}) in {m.file}"
             if m.file.lower() in skirmish and camp != NEUTRAL:
+                # rule: skirmish-neutral-spawns
                 raise ScenarioError(f"{at} is for camp {camp}, but {m.file} is a skirmish map's scenario, and a "
                                     f"skirmish game spawns only neutral items: the game would leave it out without a "
                                     f"word. Set camp = -1 (or leave camp out), or spawn it in an Operation's scenario")

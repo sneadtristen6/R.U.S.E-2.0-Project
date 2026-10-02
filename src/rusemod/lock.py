@@ -101,6 +101,7 @@ def encode_join_code(build_id, fp: bytes, mods) -> str:
 def decode_join_code(code: str) -> JoinCode:
     text = "".join(code.split()).upper()
     if not (text[:4] == "RUSE" and text[4:5] in ("1", "L", "I") and text[5:6] == ":"):
+        # not a game rule: a text the player pasted
         raise CodeError("That isn't a R.U.S.E. join code (they start with RUSE1:).")
     body = text[len(PREFIX):].replace("-", "")
     if any(c not in _B32_READ for c in body):

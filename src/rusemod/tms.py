@@ -224,6 +224,7 @@ def decode_parents(raw: bytes, count: int) -> list[int]:
             par[i] = i - 1
             q += 1
     if q != len(raw):
+        # not a game rule: a damaged or unexpected file
         raise ValueError("predictor stream length does not match the vertex count")
     return par
 
@@ -342,6 +343,7 @@ class VertexBuffer:
         else:
             raise ValueError(f"unsupported vertex element kind {kind}")
         if len(vals) != 4 * n:
+            # not a game rule: a damaged or unexpected file
             raise ValueError("element stream length does not match the vertex count")
         if e.mode != 2:
             acc = list(vals)

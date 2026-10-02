@@ -245,6 +245,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
     def _open(self) -> Index:
         path = self._path()
         if path is None:
+            # not a game rule: the game or one of its files isn't found
             raise FileNotFoundError("We couldn't find R.U.S.E., so there's no game index to open.")
         return Index(path)
 
@@ -491,6 +492,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             try:
                 o = ix.show(real_weapon)
             except KeyError:
+                # not a game rule: the game or one of its files isn't found
                 raise StudioError(f"There's no weapon at {weapon} in this game build.") from None
             if o["class"] != WEAPON:
                 raise StudioError(f"{weapon} isn't a weapon (it's a {o['class']})")
@@ -543,6 +545,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             try:
                 o = ix.show(source)
             except KeyError:
+                # not a game rule: the game or one of its files isn't found
                 raise StudioError(f"{source} isn't in this game build") from None
             if not o["export"] or o["class"] != AMMO:
                 raise StudioError(f"{source} isn't an ammunition, so it can't be copied here")
@@ -691,6 +694,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             try:
                 o = ix.show(real)
             except KeyError:
+                # not a game rule: the game or one of its files isn't found
                 raise StudioError(f"There's nothing at {address} in this game build.") from None
             share = None
             if o["shared"] and not o["export"]:
@@ -797,6 +801,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         the names the game lists them by (rusemod.terrain)."""
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         return {"maps": [m for m in map_list(game) if m["found"]]}
 
@@ -807,6 +812,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             raise StudioError(f"No detail level called {lod!r}")
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         key = (str(game), pack, lod)
         with self._grounds_lock:
@@ -825,9 +831,11 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         trees, each with its type (name, group, the game editor's category, its model). About a second per map."""
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         map_path, unit_path = find_pack(game, pack_file(pack)), find_pack(game, "ZZ_GladPatchableWin.dat")
         if map_path is None or unit_path is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError(f"{pack_file(pack) if map_path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game "
                               f"folder.")
         key = (str(map_path), map_path.stat().st_mtime)
@@ -857,9 +865,11 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         ...]}, each road piece a cubic Bézier's four points, in map units."""
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         map_path = find_pack(game, pack_file(pack))
         if map_path is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError(f"{pack_file(pack)} isn't in the game folder.")
         key = ("roads", str(map_path), map_path.stat().st_mtime)
         with self._grounds_lock:
@@ -885,9 +895,11 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         from rusemod import cover
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         path = find_pack(game, cover.PACK)
         if path is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError(f"{cover.PACK} isn't in the game folder.")
         key = ("cover", str(path), path.stat().st_mtime, pack.lower())
         with self._grounds_lock:
@@ -917,9 +929,11 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         from ruse_mod_engine import sdb
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         path = find_pack(game, cover.PACK)
         if path is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError(f"{cover.PACK} isn't in the game folder.")
         key = ("movement", str(path), path.stat().st_mtime, pack.lower())
         with self._grounds_lock:
@@ -974,10 +988,12 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         from rusemod.terrain import menu_texts
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         path = find_pack(game, scenario.PACK)
         glad_path = find_pack(game, "ZZ_GladPatchableWin.dat")
         if path is None or glad_path is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError(f"{scenario.PACK if path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game folder.")
         key = ("scenarios", str(path), path.stat().st_mtime, pack.lower())
         with self._grounds_lock:
@@ -1045,9 +1061,11 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         the cache: {"url": "cache/ground/..."} when it's there, else {"job": id}; ask again when the job is done."""
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         path = find_pack(game, pack_file(pack))
         if path is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError(f"{pack_file(pack)} isn't in the game folder.")
         st = path.stat()
         name = f"{pack}-{st.st_size}-{int(st.st_mtime)}.png"  # a new game build makes a new picture
@@ -1072,6 +1090,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         from rusemod import models
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         types = self.map_scenery(pack)["types"]
         zz = find_pack(game, "ZZ_Win.dat")
@@ -1196,6 +1215,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             raise StudioError(f"a spawn takes 1 to {self.SPAWN_MOST} places, each two finite numbers")
         camp = scenario.NEUTRAL if camp is None else int(camp)
         if self._base_scenario(pack, file)["kind"] == "skirmish" and camp != scenario.NEUTRAL:
+            # rule: skirmish-neutral-spawns
             raise StudioError(f"{file} is a skirmish map's scenario: a skirmish game spawns only neutral items, so a "
                               f"unit for side {camp} would never appear. Pick Neutral, or an Operation's scenario.")
         ix = self._open()
@@ -1208,6 +1228,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         finally:
             ix.close()
         if not name:
+            # not a game rule: a spawn needs a class name to be written
             raise StudioError(f"{_tail(unit)} has no class name for the game's scripts, so it can't be spawned")
         with self._saving:
             moves, spawns = self._read_scenario_edits(pack)
@@ -1283,6 +1304,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         game = self._game()
         glad_path = find_pack(game, "ZZ_GladPatchableWin.dat") if game is not None else None
         if glad_path is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("ZZ_GladPatchableWin.dat isn't in the game folder.")
         with Edat.open(str(glad_path)) as glad:
             def read(member):
@@ -1434,9 +1456,11 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             return none
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         map_path, unit_path = find_pack(game, pack_file(pack)), find_pack(game, "ZZ_GladPatchableWin.dat")
         if map_path is None or unit_path is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError(f"{pack_file(pack) if map_path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game "
                               f"folder.")
         with Edat.open(str(unit_path)) as unit_arc, Edat.open(str(map_path)) as map_arc:
@@ -1602,8 +1626,10 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             raise StudioError(f"{pack!r} isn't a map's pack name")
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there's no map to check.")
         if self._restoring():  # the build would take half-restored files (rusemod.backup)
+            # not a game rule: something else is busy (the game, the other app, a restore)
             raise StudioError("The game's files are being restored: wait for it to finish.")
         with self._grounds_lock:
             running = self._check_jobs.get(pack)
@@ -1626,9 +1652,11 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         from rusemod.bridges import kinds, model_length
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         map_path, unit_path = find_pack(game, pack_file(pack)), find_pack(game, "ZZ_GladPatchableWin.dat")
         if map_path is None or unit_path is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError(f"{pack_file(pack) if map_path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game "
                               f"folder.")
         key = ("bridges", str(map_path), map_path.stat().st_mtime)
@@ -2024,6 +2052,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             try:
                 o = ix.show(source)
             except KeyError:
+                # not a game rule: the game or one of its files isn't found
                 raise StudioError(f"{source} isn't in this game build") from None
             if not o["export"] or o["class"] not in KIND_OF:
                 raise StudioError(f"{source} isn't a unit or building, so it can't be copied here")
@@ -2063,6 +2092,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             values["ProductionPrice"] = [p] * len(prices["numbers"]) if prices["list"] else p
         if nation >= 0 or factory >= 0:
             if (nation, factory) not in menus:
+                # not a game rule: the build menus the game has
                 raise StudioError(f"No build menu for nation {nation} and factory {factory}: pick one of the menus "
                                   f"the game has")
             own_nation = next((int(n) for path, n, _t in o["values"] if path == "Nationalite" and n is not None), 0)
@@ -2096,6 +2126,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         if self._building():  # one build at a time: two raced for the same copy
             raise StudioError("A test is already being built: wait for it to finish.")
         if self._restoring():  # a copy built now would take half-restored files (rusemod.backup)
+            # not a game rule: something else is busy (the game, the other app, a restore)
             raise StudioError("The game's files are being restored: wait for it to finish.")
 
         game = self._game()
@@ -2105,6 +2136,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
 
         def work(say):
             if game is None:
+                # not a game rule: the game or one of its files isn't found
                 raise BuildError("We couldn't find R.U.S.E.")
             self._starter.modded(game, [folder], instance, folder.name, say)
             say(f"Built in {instance}. To see your changes in the game:")
@@ -2177,6 +2209,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         game = self._game()
         copies = self._copies(game)
         if copies is None:
+            # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no modded copies yet.")
         if action == "clear_leftovers" and self._building():  # the copy being built looks like a leftover
             raise StudioError("A test is being built: wait for it to finish.")
