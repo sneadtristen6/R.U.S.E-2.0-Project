@@ -568,7 +568,7 @@ gave. The source files named below say so in their own notes too.
 ProLution wrote most of the community's original notes on modding R.U.S.E., collected in the RUSE Modding Database.
 Everyone after him started from them, RUSE-Mod-Manager and this project included:
 
-- **Terrain textures**: the TGU1 codec of the ground tiles, which he reverse-engineered and released as CC0, and the
+- **Terrain textures**: the TGU1 codec of the ground tiles, which he worked out and released as CC0, and the
   tiles' native 512 px size. LittleGroove's engine carries a port of his reference codec
   (`src/ruse_mod_engine/terrain_codec.py`).
 - **Unit flags**: flag 63 on anything but a construction truck crashes the game
@@ -598,7 +598,7 @@ project is GPL-3.0):
 
 ### DomesticNukes and his Claude: map, model and AI research
 
-Much of what the Studio can do to a map rests on their reverse engineering. Our readers and writers follow their
+Much of what the Studio can do to a map rests on their research. Our readers and writers follow their
 notes and were checked against every shipped file:
 
 - **Map ground** (`.kdt`): the index buffer, triangle-list and tree encodings, and the recipe for reshaping the ground
