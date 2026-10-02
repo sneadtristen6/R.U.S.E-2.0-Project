@@ -706,6 +706,12 @@ the test spots beside the player's HQ with a top-down map):
 17. **Erase grows** (the owner: "that's the future of that tool", why it has its own tile): the map's own buildings
     (opened to units, not only out of sight), roads (painted ground, the road model, the supply network), shrubs and
     rocks, each its own pick.
+    - **Removing the map's own roads** (owner, 2026-10-02: "you should be able to remove existing roads, and that's
+      something we still don't know how to do"). A road shows in several places, and only some are known: the supply
+      network (we write it), the road model drawn from high up (we write it), the painted ground; the textured road
+      with its dashed line seen up close comes from somewhere not found yet (the same open question that put new
+      roads on hold). So it waits for that answer; then each place gets its "take out", and a test copy shows the
+      road gone from far and near, and trucks no longer using it.
 
 *Planned (owner, 2026-09-30):* **A10**, at least 8 players on a map (D-Day first), past 8 tried later.
 
