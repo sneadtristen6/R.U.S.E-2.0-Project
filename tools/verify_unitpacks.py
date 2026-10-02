@@ -1,6 +1,7 @@
 r"""Verify the unit-pack writer (rusemod.unitpacks) against the game's own packs (READ-ONLY on the game).
 
-  A. every mesh and skeleton pack (.spk) and texture stand-in pack (.ppk) in ZZ_Win.dat writes back byte for byte;
+  A. every mesh and skeleton pack (.spk) and texture stand-in pack (.ppk) in ZZ_Win.dat writes back byte for byte,
+     and every draw call names its own mesh (first field) and ends 0xCDCD, in the game's packs and in every changed one;
   B. every animation pack (.apk) and every archive's dictionary (Data\PC\<rev>\*.dat) is rebuilt byte for byte by the
      same trie writer (the animation packs whole, by archive_with);
   C. every unit's models are given to every other nation's skirmish packs and to the common ones (one set of packs
@@ -28,6 +29,16 @@ DEFAULT_GAME = r"D:\Steam\steamapps\common\R.U.S.E"
 QUICK = ("$/GFX/Everything/Descriptor_Avion_Junkers_87", "$/GFX/Everything/Descriptor_Unit_Panzer_VI_Tigre")
 
 
+def draw_rule(pack) -> list[str]:
+    """The game's own rule for draw calls: the first field is the call's own mesh number, the last 0xCDCD."""
+    bad = []
+    for m, (first, count) in enumerate(pack.meshes):
+        for d in range(first, first + count):
+            if pack.draws[d][0] != m or pack.draws[d][5] != 0xCDCD:
+                bad.append(f"draw {d} of mesh {m}: {pack.draws[d][0]}, {pack.draws[d][5]:#x}")
+    return bad
+
+
 def round_trips(zz: Edat, game: str) -> list[str]:
     bad, n = [], {"spk": 0, "ppk": 0, "apk": 0, "dat": 0}
     for e in zz.entries:
@@ -37,7 +48,9 @@ def round_trips(zz: Edat, game: str) -> list[str]:
         raw = bytes(zz.read(e))
         try:
             if raw[:8] == unitpacks.MESH_MAGIC:
-                out, kind = unitpacks.MeshPack.read(raw).to_bytes(), "spk"
+                pack = unitpacks.MeshPack.read(raw)
+                out, kind = pack.to_bytes(), "spk"
+                bad += [f"{e.path}: {w}" for w in draw_rule(pack)[:3]]
             elif raw[:8] == unitpacks.PROXY_MAGIC:
                 out, kind = unitpacks.ProxyPack.read(raw).to_bytes(), "ppk"
             elif raw[:4] == b"edat" and p.endswith(".apk"):
@@ -78,6 +91,7 @@ def check_changed(zz: Edat, out: dict, where: dict) -> list[str]:
             a, b = unitpacks.MeshPack.read(old), unitpacks.MeshPack.read(new)
             if b.to_bytes() != new:
                 bad.append(f"{short}: doesn't read back")
+            bad += [f"{short}: {w}" for w in draw_rule(b)[:3]]
             if a.meshes:
                 sa, sb = Spk(old), Spk(new)
                 bad += [f"{short}: {n} changed" for n in sa.items if _parts(sa, n) != _parts(sb, n)]

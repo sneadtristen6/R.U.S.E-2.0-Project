@@ -72,7 +72,7 @@ def mesh_pack(models: dict, textures) -> MeshPack:
             ibs.append(n)
             pack.ibs.append(Buffer(struct.pack(f"<{n}H", *TRIANGLES[n]), 2 * n, n, 1, 0))
         pack.vbs.append(Buffer(quad(x, bones), len(quad(x, bones)), 4, 0 if bones else 1, 0))
-        pack.draws.append((0, mat, ibs.index(n), k, 0xFFFF, 0xCDCD))
+        pack.draws.append((k, mat, ibs.index(n), k, 0xFFFF, 0xCDCD))  # first field: its own mesh's number
         pack.meshes.append((k, 1))
         pack.items[name] = [struct.pack("<6fI", x, 0, 0, x + 10, 10, 0, 1), k, 0xCDCD]
     return pack
@@ -210,6 +210,9 @@ class Meshes(unittest.TestCase):
         pack = MeshPack.read(raw)
         self.assertEqual([pack.items[n][1] for n in (TANK_DEAD, TANK, SHERMAN)], [0, 1, 2])
         self.assertEqual(pack.meshes, [(0, 1), (1, 1), (2, 1)])
+        # as in every shipped pack, each draw call's first field is its own mesh's number, the last 0xCDCD
+        self.assertEqual([d[0] for d in pack.draws], [0, 1, 2])
+        self.assertEqual({d[5] for d in pack.draws}, {0xCDCD})
         self.assertEqual((len(pack.ibs), len(pack.vbs), len(pack.formats), pack.material_count), (2, 3, 2, 2))
         with self.assertRaises(PackError):
             pack.add(self.ger, TANK)

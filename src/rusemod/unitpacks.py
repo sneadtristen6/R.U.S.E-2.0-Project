@@ -346,6 +346,8 @@ class MeshPack:
             else:
                 first, count = old_meshes[item[1]]
                 calls = old_draws[first:first + count]
+            # A draw call's first field is its own mesh's number, in every shipped pack (1,529 of 1,529 draws).
+            calls = [(len(self.meshes), *c[1:]) for c in calls]
             item[1] = len(self.meshes)
             self.meshes.append((len(self.draws), len(calls)))
             self.draws += calls
