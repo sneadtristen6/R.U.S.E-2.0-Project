@@ -1,6 +1,24 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.8.2:** a test stopped by a mistake in your mod tells you which and fixes it, mods and maps apart, clearer map
+colours and spawns, and one game copy for the whole PC.
+
+| Before | Now |
+|---|---|
+| A test stopped by a mistake in your mod buried the reason in the log and pointed to Troubleshoot, which can't fix a mod. | Each mistake is listed over the log with a button that fixes it: a team spawn on a BATTLES map made neutral or taken out (every one at once too), a road that joins nothing taken out. Troubleshoot shows only for other failures. |
+| The message at the bottom couldn't be closed. | Every message has a × to close it. |
+| The test log couldn't be copied. | **Copy report** copies the log and the message, for a bug report or Discord. |
+| Mods and maps shared one menu. | Mods and maps each have their own menu, and Export puts the file straight into the Launcher's library. |
+| Every spawn on the map looked the same. | Each spawn is a building, tank, soldier or plane icon in its side's colour, with its country. |
+| The map's colours weren't explained. | A colour legend for cover, where units go and Erase; the Town tool's cover has its own colour; a see-through slider for each layer. |
+| Hills and trees poked through a scenario's zones. | Zones float over the ground, and a **Zones' height** slider sets how high. |
+| Every test kept its own copy of the game. | One modded copy for the whole PC, shared with the Launcher. |
+| The version wasn't shown, and What's new was a list. | The version is beside the name, and What's new opens a before/after table like this one. |
+| Few tooltips. | Tooltips on the main controls, written for players new to modding. |
+| New roads on Twilight of the Gods, Alpha, Ostfriesland and Robert missed the map's road model. | They get it too. |
+| The build said new roads were "drawn up close". | It says they show from afar; up close they don't show yet (still a known issue). |
+
 **0.8.1:** units from any nation, a new look, a shorter toolbar, and the Erase tool.
 - **Units from another nation work.** A new unit can go in any nation's build menu, whatever army its model comes
   from: a German Tiger or Ju 87 for the US, a Japanese Zero or Chi-Ha too. It's built, fights, shows its picture on

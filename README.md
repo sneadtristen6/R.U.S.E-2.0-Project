@@ -280,7 +280,7 @@ run, **Artifacts** (needs a GitHub login; the files expire after 90 days). More 
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.3.1) &middot; **Studio** for modders, a preview (latest: 0.8.1) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.3.2) &middot; **Studio** for modders, a preview (latest: 0.8.2) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -297,6 +297,10 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
 <details>
 <summary><b>Current stage (2026-10-01)</b></summary>
 
+- **Studio 0.8.2 and Launcher 0.3.2** (2026-10-02): a test stopped by a mistake in a mod lists each one with a fix
+  (tested in the game: an old mod's 57 team spawns and a road that joined nothing, fixed in two clicks, then the game
+  loaded); mods and maps apart; spawn icons, a colour legend, see-through layers and a zones' height slider; one game
+  copy for the whole PC; the version and a before/after What's new in both apps.
 - **Studio 0.8.1 and Launcher 0.3.1** (2026-10-02): units from another nation work (a German Tiger and Ju 87
   and a Japanese Zero and Chi-Ha for the US, built, fighting and selectable with no German or Japanese player). Both apps in R.U.S.E.'s blues with new logos (a fighter in the
   clouds for the launcher, the war-room table for the Studio), the launcher's sidebar in two tabs, the Studio's map

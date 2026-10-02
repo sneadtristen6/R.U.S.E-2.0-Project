@@ -1,6 +1,16 @@
 **RUSE Launcher 0.3, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.3.2:** one game copy for the whole PC, the version shown, and a clearer library.
+
+| Before | Now |
+|---|---|
+| Each mod set built its own copy of the game. | One modded copy for the whole PC, shared with the Studio. |
+| The version wasn't shown, and What's new was a list. | The version is beside the name, and What's new opens a before/after table like this one. |
+| Maps and mods looked the same in the library. | A map has a MAP badge. |
+| Few tooltips. | Tooltips on the main controls. |
+| Mods with new roads on Twilight of the Gods, Alpha, Ostfriesland and Robert missed the map's road model. | They get it too. |
+
 **0.3.1:** mods with units from another nation (a German Tiger for the US, say) work, even in a match where nobody
 plays that nation (tested in the game, 2026-10-02). And a new look: R.U.S.E.'s blues instead of black and gold, and a new logo: a fighter climbing through the
 clouds. The sidebar has two tabs, **Mod sets** and **Mod library**, each with the whole height, so your whole library
