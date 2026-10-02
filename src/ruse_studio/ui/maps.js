@@ -564,6 +564,7 @@ function renderLayers() {
   const w = mv.words, rows = $("map-layers-rows");
   if (!rows) return;
   $("map-layers-label").textContent = w.layers_title;
+  $("map-layers-label").title = w.tip_layers || "";
   const name = { water: w.water, cover: w.cover_show, moves: w.move_show, roads: w.roads_show,
     building: w.scenery_building, prop: w.scenery_prop, vegetation: w.scenery_vegetation, scenario: w.scen_show };
   rows.replaceChildren(...LAYERS.map((k) => {
@@ -3562,12 +3563,12 @@ function renderKeys() {
   const rows = el("div", { className: "keys-rows" });
   for (const action of Object.keys(KEY_DEFAULTS)) {
     const key = el("button", { type: "button", className: "key" + (keys.arming === action ? " arming" : ""),
-      textContent: keys.arming === action ? w.keys_press : keyName(codeOf(action)) });
+      textContent: keys.arming === action ? w.keys_press : keyName(codeOf(action)), title: w.tip_key_button });
     key.setAttribute("aria-label", w["key_" + action]);
     key.addEventListener("click", () => { keys.arming = keys.arming === action ? null : action; renderKeys(); });
     rows.append(el("span", { className: "small", textContent: w["key_" + action] }), key);
   }
-  const reset = el("button", { type: "button", className: "small ghost", textContent: w.keys_reset });
+  const reset = el("button", { type: "button", className: "small ghost", textContent: w.keys_reset, title: w.tip_keys_defaults });
   reset.addEventListener("click", () => { keys.map = { ...KEY_DEFAULTS }; keys.arming = null; saveKeys(); rebuildKeys(); renderKeys(); });
   panel.append(el("div", { className: "muted small", textContent: w.keys_fixed }), rows, el("div", { className: "actions" }, reset));
 }

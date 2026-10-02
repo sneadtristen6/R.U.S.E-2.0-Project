@@ -100,6 +100,13 @@ async function setLanguage(lang) {
   text($("report"), w.report_problem);
   $("report").title = w.tip_report_problem;
   $("join").title = w.coming_soon;
+  // tooltips: one plain sentence on the controls a new player meets (words.toml tip_*)
+  const tips = { "settings-open": "tip_settings_open", "side-sets": "tip_side_sets", "side-library": "tip_side_library",
+    "new-set": "tip_new_set", "import-set": "tip_import_set", play: "tip_play", browse: "tip_browse", "doc-open": "tip_doc_open",
+    "add-mod": "tip_add_mod", "settings-back": "tip_settings_back", lang: "tip_lang", "set-game-change": "tip_game_change",
+    "backup-make": "tip_backup_make", "backup-check": "tip_backup_check", "backup-restore": "tip_backup_restore",
+    "backup-deep": "tip_backup_deep", "set-updates-check": "tip_updates_check" };
+  for (const [id, key] of Object.entries(tips)) if ($(id)) $(id).title = w[key] || "";
   text($("browse-title"), w.browse);
   $("browse-search").placeholder = w.search_mods;
   text($("browse-refresh"), w.refresh_list);
@@ -379,7 +386,7 @@ function modCount(set) {
 // --- the list of mod sets ---
 function renderSets() {
   $("set-list").replaceChildren(...state.sets.map((set) => {
-    const card = el("button", { type: "button", className: "set-card" },
+    const card = el("button", { type: "button", className: "set-card", title: state.words.tip_set_card || "" },
       el("span", { className: "name", textContent: setName(set) }),
       el("span", { className: set.error ? "warn" : "meta", textContent: modCount(set) }));
     card.setAttribute("aria-pressed", String(set.id === state.active));

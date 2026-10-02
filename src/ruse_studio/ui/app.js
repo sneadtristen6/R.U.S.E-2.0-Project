@@ -91,7 +91,9 @@ async function setLanguage(lang) {
   const tips = { "tab-units": "tip_tab_units", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", lang: "tip_lang",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close",
-    "build-index": "tip_build_index", search: "tip_search" };
+    "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
+    "backup-make": "tip_backup_make", "backup-check": "tip_backup_check", "backup-restore": "tip_backup_restore",
+    "backup-deep": "tip_backup_deep", "set-updates-check": "tip_updates_check" };
   for (const [id, key] of Object.entries(tips)) $(id).title = w[key] || "";
   $("lang").replaceChildren(...state.languages.map((l) =>
     el("option", { value: l.code, textContent: l.code === "base" ? w.game_names : l.name, selected: l.code === lang })));
@@ -591,7 +593,7 @@ function weaponsGroup(u) {
           (c.nations.length ? ` (${c.nations.join(", ")})` : ""),
           selected: c.address === wp.ammo.address }));
       }
-      const open = el("button", { type: "button", className: "link", textContent: w.open_ammo });
+      const open = el("button", { type: "button", className: "link", textContent: w.open_ammo, title: w.tip_open_ammo });
       open.addEventListener("click", () => showUnit(pick.value));
       const was = el("div", { className: "was" });
       // the muzzle flash and sound this weapon plays (they follow the ammo: api.set_ammo)
