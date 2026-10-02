@@ -1,10 +1,11 @@
-"""The roads the game draws up close: the road model of a map pack's static meshes (`output\\staticmeshes.spkpc`, a
-mesh pack like FORMATS.md §8, model `road`). The map's terrain settings (`mapterrain` in ZZ_GladPatchableWin.dat) name
-it on every map: a static mesh `Road`, mode 128 (the strip of the `Route` road pieces: width 400, colour dcdcdc64),
-from `DatasMap:\\Output\\StaticMeshes`. The ground's painted tiles show a road from afar; near the camera only this
-model does, so a road missing from it vanishes up close (T12, failed in every test batch until 2026-10-01). The
-scenery's `Route` pieces (rusemod.scenery.RoadPiece) are what the map's tools built the model from: the game doesn't
-draw them itself.
+"""The roads the game draws from high up: the road model of a map pack's static meshes (`output\\staticmeshes.spkpc`,
+a mesh pack like FORMATS.md §8, model `road`). The map's terrain settings (`mapterrain` in ZZ_GladPatchableWin.dat)
+name it on every map: a static mesh `Road`, mode 128 (the strip of the `Route` road pieces: width 400, colour
+dcdcdc64, stored B, G, R, A), from `DatasMap:\\Output\\StaticMeshes`. Proven in the game (2026-10-02, batch 12: every
+vertex coloured and lifted): it is the road line seen from high up, the map's own and the new roads added here both;
+up close the map's own textured road (grey, a dashed centre line) didn't change, so the close-up road is drawn by
+something else, not found yet (T12, on hold). The scenery's `Route` pieces (rusemod.scenery.RoadPiece) are what the
+map's tools built the model from.
 
 The model is one draw call over the whole map, cut into parts by cases of CASE map units, one part per case:
 
