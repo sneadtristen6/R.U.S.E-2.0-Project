@@ -1431,14 +1431,17 @@ def _with_blocks(sc: Scenery, data: bytes, raws: dict[int, bytes]) -> bytes:
 
 def _homes(sc: Scenery) -> list[tuple]:
     """Where a road piece can be filed: every full-list leaf of every block the map places once, as (block index,
-    (node, side), its box on the map, its way down already has the road mark, its area). A leaf whose way down has a
-    node with neither a LOD mask nor the road mark is left out (marking it would leave that node the road pass only)."""
+    (node, side), its bounds on the map, its way down already has the road mark, its area on the map, its box in the
+    block's own coordinates, the map-to-block transform). A leaf whose way down has a node with neither a LOD mask nor
+    the road mark is left out (marking it would leave that node the road pass only)."""
     _weight, where = sc.placings()
     out = []
     for b in sc.blocks:
         m = where[b.index]
         if m is None or not b.nodes:
             continue
+        to_local = _inverse(m)
+        scale = abs(m[0] * m[5] - m[1] * m[4])
         nodes = _tree(b)
         for leaf in _leaves(nodes, len(b.entries), b.bbox):
             words = [nodes[k][0] for k, _d in leaf.path]
@@ -1449,8 +1452,19 @@ def _homes(sc: Scenery) -> list[tuple]:
             xs = [m[0] * x + m[1] * y + m[3] for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1))]
             ys = [m[4] * x + m[5] * y + m[7] for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1))]
             out.append((b.index, (leaf.node, leaf.side), (min(xs), min(ys), max(xs), max(ys)), marked,
-                        (max(xs) - min(xs)) * (max(ys) - min(ys))))
+                        (x1 - x0) * (y1 - y0) * scale, leaf.box, to_local))
     return out
+
+
+def _holds(home: tuple, x: float, y: float) -> bool:
+    """Whether a _homes leaf holds the map point (x, y): within its bounds on the map, then within its own box (a
+    turned block's leaf covers less than its bounds)."""
+    bx0, by0, bx1, by1 = home[2]
+    if not (bx0 <= x <= bx1 and by0 <= y <= by1):
+        return False
+    m, (x0, y0, x1, y1) = home[6], home[5]
+    lx, ly = m[0] * x + m[1] * y + m[3], m[4] * x + m[5] * y + m[7]
+    return x0 <= lx <= x1 and y0 <= ly <= y1
 
 
 def file_roads(data: bytes, pieces: list[RoadPiece]) -> tuple[bytes, list[RoadPiece], list[str]]:
@@ -1470,12 +1484,12 @@ def file_roads(data: bytes, pieces: list[RoadPiece]) -> tuple[bytes, list[RoadPi
     filed: dict[int, list] = {}
     left = []
     for p in pieces:
-        hold = [h for h in homes if h[2][0] <= p.x <= h[2][2] and h[2][1] <= p.y <= h[2][3]]
+        hold = [h for h in homes if _holds(h, p.x, p.y)]
         if not hold:
             left.append(p)
             continue
-        bi, key, _box, _marked, _area = min(hold, key=lambda h: (not h[3], h[4]))
-        filed.setdefault(bi, []).append((key, p))
+        home = min(hold, key=lambda h: (not h[3], h[4]))
+        filed.setdefault(home[0], []).append((home[1], p))
     if not filed:
         return bytes(data), left, []
     _weight, where = sc.placings()

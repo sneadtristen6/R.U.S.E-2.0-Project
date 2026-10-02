@@ -463,6 +463,20 @@ class RoadStickers(unittest.TestCase):
         self.assertEqual(road_pass(s), {(1, it.at) for it in pieces})
         self.assertIn("block 1 (1)", notes[0])
 
+    def test_a_turned_blocks_leaf_holds_only_its_own_box(self):
+        """A wood placed once, turned 45 degrees: a piece inside its box's bounds on the map but outside the turned
+        box itself isn't filed in it (it goes in the top block's leaf, which does hold it)."""
+        wood = block([compact(1, 0.0, 0.0), road((10.0, 20.0), (5.0, 0.0), (40.0, 20.0), (-5.0, 0.0))],
+                     box=(-5000.0, -5000.0, 5000.0, 5000.0))
+        top_box = (0.0, 0.0, 40960.0, 40960.0)
+        c = round(math.cos(math.pi / 4) / SCALE16)
+        ref = struct.pack("<I4h4f", 0, c, -c, c, c, 20000.0, 20000.0, 0.0, 1.0)  # a child, its offset set below
+        root_len = len(block([ref], box=top_box))
+        ref = struct.pack("<I", root_len) + ref[4:]
+        data = make_scenery([block([ref], box=top_box), wood], NAMES)
+        _new, notes = add_objects(data, scenery.road_pieces([(25000.0, 26000.0), (27000.0, 26000.0)]))
+        self.assertIn("the top block (1)", notes[0])
+
     def test_a_split_moves_when_its_left_side_or_all_of_it_comes_after(self):
         """The root splits 4 entries into two nodes of two leaves each: an entry added to the first node's right leaf
         moves the root's split (its left side holds it) and the second node's (it comes after); one added to the
