@@ -237,7 +237,7 @@ of river stopped tanks (dried beds are opened to units now).
 ## Batch 2 for Studio 0.8.0: only what could break the game, next to the player's HQ (2026-10-01)
 
 The copy `D:\RUSE-Instances\batch2`, from `D:\ruse-test-mods\batch2` (batch 1's mod without the Stuka, plus the
-Dev Toolkit for money and the US's ground units 3 times as fast; the AI gets neither). **BATTLES > D-Day, as the US
+a cheat mod for money and the US's ground units 3 times as fast; the AI gets neither). **BATTLES > D-Day, as the US
 against one AI of another nation.** The US HQ is moved beside the river 750 m south-east of Toulaville; the camera
 opens facing west.
 1. **The dried river** (to the right of the HQ, 250 m north): send a tank and a squad across the dry bed. **Pass:** they
@@ -257,7 +257,7 @@ floated 47 m up: our bug (a model starting above its base point), fixed in the b
 ## Batch 3 for Studio 0.8.0: a clean test mod, everything beside the HQ (2026-10-01)
 
 `D:\RUSE-Instances\batch3` from `D:\ruse-test-mods\batch3` (made by a script: none of the owner's old edits), with
-town names shown from any height (`D:\ruse-test-mods\townnames`) and the Dev Toolkit. The HQ is moved onto the main
+town names shown from any height (`D:\ruse-test-mods\townnames`) and a cheat mod. The HQ is moved onto the main
 road east of Toulaville; a top-down map of the test spots goes with it.
 1. **Infantry on a new "^" road** to a water tower 700 m north. **Passed:** infantry find the fastest way to the road
    and take it. Tanks don't: US tanks have no road bonus in the game's data (the Sherman and the Lee have no
