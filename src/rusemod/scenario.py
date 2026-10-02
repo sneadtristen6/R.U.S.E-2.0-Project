@@ -39,7 +39,7 @@ import math
 import struct
 from dataclasses import dataclass, field
 
-from .ndf import Ndf, local_ref
+from .ndf import Ndf, local_ref, sub_values
 
 MAGIC = b"SCENARIO\r\n"
 AREA = b"AREA"
@@ -303,6 +303,7 @@ class Scenario:
             raise ScenarioError(f"team {team} already has a starting point at place {place}")
         model = (max(mine, key=lambda it: int(it.values.get("AlliancePriority") or 1)) if mine else
                  min(starts, key=lambda it: (it.position[0] - x) ** 2 + (it.position[1] - y) ** 2))
+        self.last_model = (model.position[0], model.position[1])  # where the start it copies stands (its camera's)
         lists = [o for o in nd.objects if nd.classes[o.cls] == "TGameDesignItemList"]
         if len(lists) != 1:
             raise ScenarioError("this scenario's design items aren't in one list")
@@ -352,6 +353,22 @@ class Scenario:
         self.items = _items(nd)
         self.changed = True
         return next(i for i, it in enumerate(self.items) if it.obj == item)
+
+    def set_warmup(self, item: int, name: str) -> bool:
+        """Point starting point `item` at warm-up camera path `name` (its WarmupCamPath). False when it has none."""
+        it = self.items[item]
+        props = {self.ndf.prop_name(pi): v for pi, v in self.ndf.objects[it.obj].props}
+        addon = local_ref(props["AddOn"]) if "AddOn" in props else None
+        if addon is None:
+            return False
+        for pi, v in self.ndf.objects[addon].props:
+            if self.ndf.prop_name(pi) == "WarmupCamPath" and v.tc in (0x07, 0x1C):
+                at = self.ndf.string_index(name)
+                v.payload = struct.pack("<I", self.ndf.add_string(name) if at is None else at) + bytes(v.payload[4:])
+                it.values["WarmupCamPath"] = name
+                self.changed = True
+                return True
+        return False
 
     def to_bytes(self) -> bytes:
         zones = struct.pack("<I", len(self.zones)) + b"".join(_zone_bytes(z) for z in self.zones)
@@ -512,6 +529,118 @@ def of_map(arc, map_pack: str) -> dict[str, "Scenario"]:
     return dict(sorted(out.items()))
 
 
+def campath_member(map_pack: str, scenario_file: str) -> str:
+    """Where a scenario's warm-up camera paths are: `test\\map\\<map>\\campath\\campaths_<scenario>.ndfbin` in
+    DataMap_Win.dat (LittleGroove's RUSE-Mod-Manager map editor reads them there)."""
+    stem = scenario_file.rsplit(".", 1)[0]
+    return folder_of(map_pack) + "campath\\campaths_" + stem + ".ndfbin"
+
+
+def campaths(raw: bytes) -> dict:
+    """A campaths file's camera paths: {name: {"path": [[x, y, z], ...] (each keyframe's position, in order),
+    "looks": [[dx, dy, dz], ...] (each keyframe's look direction)}}. A starting point's WarmupCamPath names its path;
+    the last keyframe is where the camera rests when the match opens (LittleGroove: "the REAL start camera;
+    PositionCamera is inert"). On D-Day the 3v3 starts' paths rest 2 to 3 km from their HQ, looking at it."""
+    nd = Ndf(raw)
+
+    def props(o):
+        return {nd.prop_name(pi): v for pi, v in o.props}
+    out = {}
+    for o in nd.objects:
+        if nd.classes[o.cls] != "TCameraPath":
+            continue
+        p = props(o)
+        name = _text(nd, p["Name"]) if "Name" in p else None
+        if not name:
+            continue
+        got = {}
+        for key, field in (("PositionKeyVector", "path"), ("DirectionKeyVector", "looks")):
+            pts = []
+            for v in sub_values(p[key]) if key in p else []:
+                r = local_ref(v)
+                c = props(nd.objects[r]).get("Coord") if r is not None else None
+                if c is not None and len(c.payload) >= 12:
+                    pts.append([round(x, 3) for x in struct.unpack("<3f", c.payload[:12])])
+            got[field] = pts
+        out[name] = got
+    return out
+
+
+class CamPaths:
+    """A scenario's warm-up camera paths (campath_member), to carry a starting point's opening camera when the start
+    moves, or give a new start its own: TCameraPath objects (Name, PositionKeyVector, DirectionKeyVector), each key a
+    TCameraPathKey with its Coord. The game finds a path by its name (a start's WarmupCamPath; the file has no index).
+    Written back only when something changed: same content, the compressed bytes re-made (as the scenario files')."""
+
+    def __init__(self, raw: bytes):
+        self.raw, self.nd, self.changed = raw, Ndf(raw), False
+
+    def _props(self, i: int) -> dict:
+        return {self.nd.prop_name(pi): v for pi, v in self.nd.objects[i].props}
+
+    def _path(self, name: str) -> int | None:
+        for i, o in enumerate(self.nd.objects):
+            if self.nd.classes[o.cls] == "TCameraPath" and _text(self.nd, self._props(i).get("Name")) == name:
+                return i
+        return None
+
+    def keys(self, name: str) -> tuple[list[int], list[int]]:
+        """(position keys, direction keys) of path `name`, as object numbers; ([], []) when there's no such path."""
+        i = self._path(name)
+        if i is None:
+            return [], []
+        p = self._props(i)
+        refs = lambda k: [r for v in sub_values(p[k]) if (r := local_ref(v)) is not None] if k in p else []  # noqa: E731
+        return refs("PositionKeyVector"), refs("DirectionKeyVector")
+
+    def _coord(self, i: int):
+        return self._props(i).get("Coord")
+
+    def shift(self, name: str, dx: float, dy: float) -> int:
+        """Move path `name`'s keyframes by (dx, dy) on the map; their look directions stay (the same view of the
+        same, moved start). Returns how many keys moved."""
+        pos, _dirs = self.keys(name)
+        for k in pos:
+            c = self._coord(k)
+            x, y, z = struct.unpack_from("<3f", c.payload)
+            c.payload = struct.pack("<3f", x + dx, y + dy, z) + bytes(c.payload[12:])
+        self.changed = self.changed or bool(pos and (dx or dy))
+        return len(pos)
+
+    def copy(self, name: str, new_name: str) -> bool:
+        """A new path `new_name`, a copy of `name` with keyframes of its own (so moving one leaves the other)."""
+        from .ndf import Value
+        i = self._path(name)
+        if i is None:
+            return False
+        nd, o = self.nd, self.nd.objects[i]
+
+        def clone(k):
+            src = nd.objects[k]
+            return nd.add_object(src.cls, [(pi, Value(v.tc, bytes(v.payload))) for pi, v in src.props])
+        pos, dirs = self.keys(name)
+        props = []
+        for pi, v in o.props:
+            key = nd.prop_name(pi)
+            if key in ("PositionKeyVector", "DirectionKeyVector"):
+                made = [clone(k) for k in (pos if key[0] == "P" else dirs)]
+                cls = nd.objects[made[0]].cls if made else 0
+                payload = struct.pack("<I", len(made)) + b"".join(
+                    Value(0x09, struct.pack("<III", 0xBBBBBBBB, m, cls)).encode() for m in made)
+                props.append((pi, Value(v.tc, payload)))
+            elif key == "Name":
+                at = nd.string_index(new_name)
+                props.append((pi, Value(v.tc, struct.pack("<I", nd.add_string(new_name) if at is None else at))))
+            else:
+                props.append((pi, Value(v.tc, bytes(v.payload))))
+        nd.add_object(o.cls, props)
+        self.changed = True
+        return True
+
+    def to_bytes(self) -> bytes:
+        return self.nd.to_member(compress=bool(self.nd.flags & 0x80)) if self.changed else self.raw
+
+
 def view(s: "Scenario") -> dict:
     """A scenario for the map view: zones as their triangles (x, y pairs, flat) and the design items that have a place
     on the map (starting points, spawns, circle and rectangle zones, labels, waypoints), in world units."""
@@ -528,6 +657,7 @@ def view(s: "Scenario") -> dict:
         if it.kind == "StartingPoint":
             entry["alliance"] = v.get("AllianceNum")
             entry["place"] = v.get("AlliancePriority") or 1
+            entry["warmup"] = v.get("WarmupCamPath") if isinstance(v.get("WarmupCamPath"), str) else None
         elif it.kind == "Spawn":
             entry["camp"] = v.get("Camp")
             entry["what"] = str(v.get("PythonClassName", "") or "").rsplit(".", 1)[-1]
@@ -840,7 +970,33 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None) -> tup
     folder = folder_of(map_pack)
     files: dict[str, Scenario] = {}
     camps: dict[str, set] = {}   # member (lower case) -> the camps its shipped spawns use (no Camp reads as 0)
+    cams: dict[str, tuple] = {}  # scenario file (lower case) -> (its campaths member, CamPaths), read when needed
     notes, later = [], []
+
+    def cam_of(file: str):
+        if file.lower() not in cams:
+            member = campath_member(map_pack, file)
+            raw = read(member)
+            cams[file.lower()] = (member, CamPaths(raw) if raw is not None else None)
+        return cams[file.lower()][1]
+
+    def own_path(cam, s, item, why):
+        """Give starting point `item` a warm-up camera path of its own (a copy of the one it names), when another
+        start uses the same one or it's a new start: the name of the path it now has, or None."""
+        name = s.items[item].values.get("WarmupCamPath")
+        if not (cam and isinstance(name, str) and name):
+            return None
+        users = sum(1 for it in s.items if it.kind == "StartingPoint" and it.values.get("WarmupCamPath") == name)
+        if users <= 1 and why != "new":
+            return name
+        k = 1
+        while cam._path(f"{name}_mod{k}") is not None:
+            k += 1
+        if not cam.copy(name, f"{name}_mod{k}"):
+            return None
+        s.set_warmup(item, f"{name}_mod{k}")
+        return f"{name}_mod{k}"
+
     for m in moves:
         member = folder + m.file
         if member.lower() not in files:
@@ -873,18 +1029,28 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None) -> tup
             s.add_spawn(m.x, m.y, m.class_path, camp=camp, rotation=m.rotation, z=z, trucks=trucks)
             continue
         if isinstance(m, Start):
-            s.add_start(m.x, m.y, m.team, m.place, m.rotation, m.z)
+            item = s.add_start(m.x, m.y, m.team, m.place, m.rotation, m.z)
+            # its opening camera: a copy of the warm-up path of the start it copies, moved by the same offset
+            cam = cam_of(m.file)
+            name = own_path(cam, s, item, "new")
+            if name:
+                mx, my = s.last_model
+                cam.shift(name, m.x - mx, m.y - my)
             continue
         if m.item >= len(s.items):
             raise ScenarioError(f"{map_pack}: {m.file} has {len(s.items)} design items, not {m.item + 1}")
         if s.items[m.item].kind != m.kind:
             raise ScenarioError(f"{map_pack}: {m.file} item {m.item} is a {s.items[m.item].kind or 'plain item'}, "
                                 f"not a {m.kind}: the mod was made for another version of this map")
+        ox, oy = s.items[m.item].position[:2]
         s.move(m.item, m.x, m.y, m.z, rotation=m.rotation)  # an item without a rotation can't be turned: move() says so
-        path = s.items[m.item].values.get("WarmupCamPath") if m.kind == "StartingPoint" else None
-        if path:
-            later.append(f"{map_pack}: {m.file}: the starting point moved (item {m.item}) keeps its warm-up camera "
-                         f"flight ({path}), which still ends over its old place; its opening camera moved with it")
+        if m.kind == "StartingPoint":  # its warm-up camera comes along (a shared path is copied first)
+            cam = cam_of(m.file)
+            name = own_path(cam, s, m.item, "move")
+            if name:
+                cam.shift(name, m.x - ox, m.y - oy)
+                later.append(f"{map_pack}: {m.file}: the starting point moved (item {m.item}) takes its warm-up camera "
+                             f"({name}) along: the match opens looking at it from where it looked before")
     for member, s in files.values():
         mine = [m for m in moves if (folder + m.file).lower() == member.lower()]
         moved, spawned = sum(1 for m in mine if isinstance(m, Move)), sum(1 for m in mine if isinstance(m, Spawn))
@@ -892,4 +1058,6 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None) -> tup
         notes.append(f"{map_pack}: {member.rsplit(chr(92), 1)[-1]}: " + ", ".join(
             p for p in (f"{moved} item(s) moved" if moved else "", f"{started} starting point(s) added" if started else "",
                         f"{spawned} spawn(s) added" if spawned else "") if p))
-    return {member: s.to_bytes() for member, s in files.values()}, notes + later
+    out = {member: s.to_bytes() for member, s in files.values()}
+    out.update({member: cam.to_bytes() for member, cam in cams.values() if cam is not None and cam.changed})
+    return out, notes + later

@@ -86,12 +86,18 @@ def group_of(kind: str, address: str, factory: int | None) -> str:
         return next((g for g, parts in BUILDING_GROUPS if any(p in name for p in parts)), "factory")
     return FACTORY_GROUPS.get(factory, "other")
 NATIONS = 7
+DEPOT_SLAB = "DalleBatimentDepot"  # a map's supply depot spot, as the Spawn tool offers it (rusemod.scenario.DEPOT)
 _PREFIX = re.compile(r"^(Descriptor_[A-Za-z]+_)")  # Descriptor_Unit_M4_Sherman -> a copy is Descriptor_Unit_<Name>
 PACKAGE_FILES = ("RUSE mods (*.rusemod)",)  # the "save as" dialog's filter for Export mod…
 
 
 def _tail(address: str) -> str:
     return address.rsplit("/", 1)[-1]
+
+
+def _shifted_cam(cam: dict, dx: float, dy: float) -> dict:
+    """A start's warm-up camera path moved by (dx, dy) on the map, its look directions as they were."""
+    return {**cam, "path": [[x + dx, y + dy, z] for x, y, z in cam["path"]]}
 
 
 def _shot_name(effect: str | None) -> str:
@@ -1002,6 +1008,12 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             return self._with_units(self._with_scenario_edits(pack, cached)) if edited else cached
         with Edat.open(str(path)) as arc:
             found = scenario.of_map(arc, pack)
+            paths = {}  # each scenario's warm-up camera paths: a starting point's opening camera (scenario.campaths)
+            for f in found:
+                try:
+                    paths[f] = scenario.campaths(bytes(arc.read(arc.find(scenario.campath_member(pack, f)))))
+                except (KeyError, ValueError, struct.error):
+                    paths[f] = {}
         with Edat.open(str(glad_path)) as glad:
             kinds = scenario.kinds_of(glad, pack)
         texts = menu_texts(game, {e["key"] for es in kinds.values() for e in es if e["key"] is not None})
@@ -1014,6 +1026,9 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             view = scenario.view(s)
             for k, it in enumerate(view["items"]):
                 it["item"] = k
+                cam = paths.get(f, {}).get(it.get("warmup") or "")
+                if it["kind"] == "StartingPoint" and cam and cam.get("path"):
+                    it["cam"] = {"path": cam["path"], "look": (cam.get("looks") or [None])[-1]}  # rests at the last key
             out_list.append({"file": f, "kind": kind, "entries": entries, **view})
         out_list.sort(key=lambda s: (scenario.KINDS.index(s["kind"]), (s["entries"][0]["name"] if s["entries"] else s["file"]).lower()))
         out = self._with_units({"scenarios": out_list})
@@ -1023,8 +1038,9 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
 
     def _with_units(self, view: dict) -> dict:
         """Each spawn told what it is, for the map view's icons and labels: "unit_kind" (ground, infantry, air,
-        buildings), "nation" (Nationalite) and "unit" (its address), from its Python class name (`what`: the units'
-        ClassNameForDebug). A class the game data hasn't got (a new unit of a mod) stays without them."""
+        buildings), "group" (what it's for: group_of), "nation" (Nationalite) and "unit" (its address), from its
+        Python class name (`what`: the units' ClassNameForDebug). A class the game data hasn't got (a new unit of a
+        mod) stays without them; a supply depot's slab (DalleBatimentDepot) is told it's a depot."""
         if getattr(self, "_by_class", None) is None:
             by_class = {}
             try:
@@ -1036,18 +1052,23 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                 rows = ix.db.execute(f"""SELECT o.address, o.class, v.text FROM value v JOIN object o ON o.id = v.object
                                          WHERE v.path = 'ClassNameForDebug' AND o.class IN ({marks}) AND o.shadow = 0
                                          AND o.export IS NOT NULL""", list(ALL_CLASSES)).fetchall()
-                nations = {u["address"]: u["nation"] for u in self._all_units(ix)}
+                units = {u["address"]: u for u in self._all_units(ix)}
             finally:
                 ix.close()
             for address, cls, name in rows:
                 if name:
-                    by_class.setdefault(name, {"unit": address, "unit_kind": KIND_OF.get(cls, ""),
-                                               "nation": nations.get(address, 0)})
+                    u = units.get(address, {})
+                    kind = KIND_OF.get(cls, "")
+                    by_class.setdefault(name, {"unit": address, "unit_kind": kind, "nation": u.get("nation", 0),
+                                               # what it's for (HQ, depot, factory, armor, airfield...): its icon
+                                               "group": group_of(kind, address, u.get("factory")) if kind else ""})
             self._by_class = by_class
         for s in view.get("scenarios", []):
             for it in s.get("items", []):
                 if it.get("kind") == "Spawn" and it.get("what") in self._by_class:
                     it.update(self._by_class[it["what"]])
+                elif it.get("kind") == "Spawn" and it.get("what") == "DalleBatimentDepot":
+                    it.update(unit_kind="buildings", group="depot")  # the map's supply depot slabs (not a unit class)
         return view
 
     def _with_scenario_edits(self, pack: str, base: dict) -> dict:
@@ -1060,18 +1081,30 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             s = {**s, "items": [dict(it) for it in s["items"]]}
             for m in moves:
                 if m.file.lower() == s["file"].lower() and m.item < len(s["items"]):
-                    s["items"][m.item].update(x=m.x, y=m.y, moved=True)
+                    it = s["items"][m.item]
+                    if it.get("cam"):  # the build carries a start's warm-up camera path by the same offset
+                        it["cam"] = _shifted_cam(it["cam"], m.x - it["x"], m.y - it["y"])
+                    it.update(x=m.x, y=m.y, moved=True)
             places: dict = {}
-            for it in s["items"]:
-                if it["kind"] == "StartingPoint" and it.get("alliance") is not None:
+            shipped = [it for it in s["items"] if it["kind"] == "StartingPoint"]
+            for it in shipped:
+                if it.get("alliance") is not None:
                     places.setdefault(it["alliance"], set()).add(it.get("place") or 1)
             for n, st in enumerate(starts):
                 if st.file.lower() == s["file"].lower():
                     place = st.place or max(places.get(st.team, {0}), default=0) + 1
                     places.setdefault(st.team, set()).add(place)
-                    s["items"].append({"kind": "StartingPoint", "x": st.x, "y": st.y, "turn": st.rotation or 0.0,
-                                       "name": "", "alliance": st.team, "place": place, "mine": True, "start": n,
-                                       "item": len(s["items"])})
+                    new = {"kind": "StartingPoint", "x": st.x, "y": st.y, "turn": st.rotation or 0.0, "name": "",
+                           "alliance": st.team, "place": place, "mine": True, "start": n, "item": len(s["items"])}
+                    # its camera as the build makes it: a copy of the warm-up path of the start it copies (a
+                    # teammate's, the highest place; else the nearest start's), moved by the same offset
+                    mine = [it for it in shipped if it.get("alliance") == st.team]
+                    model = (max(mine, key=lambda it: it.get("place") or 1) if mine else
+                             min(shipped, key=lambda it: (it["x"] - st.x) ** 2 + (it["y"] - st.y) ** 2) if shipped
+                             else None)
+                    if model is not None and model.get("cam"):
+                        new["cam"] = _shifted_cam(model["cam"], st.x - model["x"], st.y - model["y"])
+                    s["items"].append(new)
             for n, sp in enumerate(spawns):
                 if sp.file.lower() == s["file"].lower():
                     s["items"].append({"kind": "Spawn", "x": sp.x, "y": sp.y, "turn": sp.rotation, "name": "",
@@ -1247,15 +1280,18 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             # rule: skirmish-neutral-spawns
             raise StudioError(f"{file} is a skirmish map's scenario: a skirmish game spawns only neutral items, so a "
                               f"unit for side {camp} would never appear. Pick Neutral, or an Operation's scenario.")
-        ix = self._open()
-        try:
+        if unit == DEPOT_SLAB:  # a map's supply depot spot: not a unit of the list, written as the shipped ones are
+            name = DEPOT_SLAB
+        else:
+            ix = self._open()
             try:
-                o = ix.show(unit)
-            except KeyError:
-                raise StudioError(f"There's no unit at {unit}.") from None
-            name = next((t for p, _n, t in o["values"] if p == "ClassNameForDebug" and t), None)
-        finally:
-            ix.close()
+                try:
+                    o = ix.show(unit)
+                except KeyError:
+                    raise StudioError(f"There's no unit at {unit}.") from None
+                name = next((t for p, _n, t in o["values"] if p == "ClassNameForDebug" and t), None)
+            finally:
+                ix.close()
         if not name:
             # not a game rule: a spawn needs a class name to be written
             raise StudioError(f"{_tail(unit)} has no class name for the game's scripts, so it can't be spawned")
@@ -1606,6 +1642,48 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                            "crossings": [list(map(round, c)) for c in crossings(water, r.points)] if water and r.bridges else []}
                           for r in roads],
                 "bridge": kind, "saved": str(path) if roads else None, "mod": str(folder)}
+
+    def map_road_graph(self, pack: str) -> dict:
+        """The roads a depot or a starting point sticks to (the map view's Stick to roads): {"nodes": [[x, y], ...],
+        "edges": [[a, b], ...]}: the map's road network (mapinfo.win's first buffer, the one supply routes use), and the
+        current mod's new roads as more edges. The offsets a depot and an HQ keep from these lines are LittleGroove's,
+        measured on every shipped scenario (RUSE-Mod-Manager map_editor.py _ROAD_SNAP_OFFSET: depot 11,696 over 1,554
+        placements, HQ 13,580 over 353)."""
+        from ruse_mod_engine import sdb
+        from rusemod.cover import member
+        from rusemod.roadnet import RoadNet
+        game = self._game()
+        path = find_pack(game, scenario.PACK) if game is not None else None
+        if path is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError(f"{scenario.PACK} isn't in the game folder.")
+        key = ("roadgraph", str(path), path.stat().st_mtime, pack.lower())
+        with self._grounds_lock:
+            cached = self._sceneries.get(key)
+        if cached is None:
+            with Edat.open(str(path)) as arc:
+                try:
+                    raw = bytes(arc.read(arc.find(member(pack))))
+                except KeyError:
+                    raise StudioError(f"{pack} has no movement and road file (mapinfo.win)") from None
+            try:
+                net = RoadNet.read(sdb.split_mapinfo(raw)[1][0])
+            except (ValueError, IndexError, struct.error) as exc:
+                raise StudioError(f"{pack}: its road network can't be read ({exc})") from None
+            cached = {"nodes": [[round(p[0], 1), round(p[1], 1)] for p in net.points],
+                      "edges": [[a, b] for a, b, _cost in net.links]}
+            with self._grounds_lock:
+                self._sceneries[key] = cached
+        nodes, edges = list(cached["nodes"]), list(cached["edges"])
+        try:
+            mine = self._read_roads(self._roads_file(pack)) if self._map_dir() is not None else []
+        except StudioError:
+            mine = []
+        for r in mine:
+            first = len(nodes)
+            nodes += [[round(x, 1), round(y, 1)] for x, y in r.points]
+            edges += [[first + k, first + k + 1] for k in range(len(r.points) - 1)]
+        return {"nodes": nodes, "edges": edges, "offset": {"depot": 11696.0, "hq": 13580.0}}
 
     def _water(self, pack: str) -> tuple:
         """(where a map has water, as rusemod.bridges.Water; its bridge kind or None), kept per map."""

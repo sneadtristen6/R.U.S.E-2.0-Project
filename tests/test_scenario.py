@@ -174,6 +174,31 @@ def two_teams() -> bytes:
     return with_checksum(MAGIC + bytes(16) + bytes(2) + u32(4, 1) + u32(4) + u32(0) + u32(len(nd)) + nd)
 
 
+def campaths(paths=(("Warmup_J1", [(5000.0, 2000.0, 3000.0), (1600.0, 2000.0, 900.0)]),
+                    ("Warmup_J4", [(5000.0, 8000.0, 3000.0), (9400.0, 8000.0, 900.0)]))) -> bytes:
+    """A made-up campaths file laid out as the game's (TCameraPath: PositionKeyVector, DirectionKeyVector, Name; each
+    key a TCameraPathKey with its Coord), one look direction per key (straight down the x axis)."""
+    def ref(i, cls):
+        return val(0x09, struct.pack("<III", 0xBBBBBBBB, i, cls))
+
+    def vec(x, y, z):
+        return val(0x0B, struct.pack("<3f", x, y, z))
+    objects, strings = [], []
+    for name, keys in paths:
+        at = len(objects)
+        keys_at = [at + 1 + k for k in range(len(keys))]
+        dirs_at = [at + 1 + len(keys) + k for k in range(len(keys))]
+        strings.append(name)
+        objects.append((0, [(0, val(0x11, struct.pack("<I", len(keys)) + b"".join(ref(k, 1) for k in keys_at))),
+                            (1, val(0x11, struct.pack("<I", len(keys)) + b"".join(ref(k, 1) for k in dirs_at))),
+                            (2, val(0x07, struct.pack("<I", len(strings) - 1)))]))
+        objects += [(1, [(3, vec(*p))]) for p in keys]
+        objects += [(1, [(3, vec(-1.0, 0.0, 0.0))]) for _p in keys]
+    return make_ndf(objects=objects, classes=["TCameraPath", "TCameraPathKey"],
+                    props=[("PositionKeyVector", 0), ("DirectionKeyVector", 0), ("Name", 0), ("Coord", 1)],
+                    strings=strings)
+
+
 class Starts(unittest.TestCase):
     """More players need more starting points (PLAN A10): a new one copies a teammate's."""
 
@@ -209,7 +234,38 @@ class Starts(unittest.TestCase):
         it = Scenario.read(new[member]).items[1]
         self.assertEqual(it.position, (100.0, 200.0, 5.0))
         self.assertEqual(struct.unpack("<3f", bytes.fromhex(it.values["PositionCamera"])), (0.0, -400.0, 900.0))
-        self.assertTrue(any("warm-up camera flight (Warmup_J4)" in n for n in notes), notes)
+        self.assertEqual(notes, ["Blitz: leveldesign.scenario: 1 item(s) moved"])  # no camera file: nothing to carry
+
+    def test_the_warm_up_camera_comes_along(self):
+        """The match opens on the start's warm-up camera path (LittleGroove: PositionCamera is inert): a moved start
+        takes its path along, a new start gets a copy of the one it copies, a shared path is copied first."""
+        from rusemod.scenario import Move, Start, apply_moves, campath_member, campaths as read_paths, folder_of
+        member, cam = folder_of("Blitz") + "leveldesign.scenario", campath_member("Blitz", "leveldesign.scenario")
+        files = {member: two_teams(), cam: campaths()}
+        new, notes = apply_moves(files.get, "Blitz", [Move("leveldesign.scenario", 1, "StartingPoint", 100.0, 200.0)])
+        paths = read_paths(new[cam])
+        self.assertEqual(paths["Warmup_J4"]["path"], [[-3900.0, 200.0, 3000.0], [500.0, 200.0, 900.0]])  # by -8900,-7800
+        self.assertEqual(paths["Warmup_J1"]["path"], [[5000.0, 2000.0, 3000.0], [1600.0, 2000.0, 900.0]])  # the other's
+        self.assertEqual(paths["Warmup_J4"]["looks"], [[-1.0, 0.0, 0.0], [-1.0, 0.0, 0.0]])  # the same view
+        self.assertTrue(any("takes its warm-up camera (Warmup_J4) along" in n for n in notes), notes)
+        # a new start for team 1: its own copy of Warmup_J1, moved as far as it stands from team 1's start
+        new, _ = apply_moves(files.get, "Blitz", [Start("leveldesign.scenario", 1, 3000.0, 2000.0)])
+        s, paths = Scenario.read(new[member]), read_paths(new[cam])
+        self.assertEqual(s.items[-1].values["WarmupCamPath"], "Warmup_J1_mod1")
+        self.assertEqual(paths["Warmup_J1_mod1"]["path"], [[7000.0, 2000.0, 3000.0], [3600.0, 2000.0, 900.0]])
+        self.assertEqual(paths["Warmup_J1"]["path"][1], [1600.0, 2000.0, 900.0])  # team 1's own stays
+        self.assertEqual(s.items[0].values["WarmupCamPath"], "Warmup_J1")
+        # two starts on one path: the moved one gets its own copy, the other keeps the path where it was
+        shared = {member: two_teams(), cam: campaths()}
+        two = Scenario.read(shared[member])
+        two.set_warmup(1, "Warmup_J1")
+        shared[member] = two.to_bytes()
+        new, _ = apply_moves(shared.get, "Blitz", [Move("leveldesign.scenario", 1, "StartingPoint", 9900.0, 8000.0)])
+        s, paths = Scenario.read(new[member]), read_paths(new[cam])
+        self.assertEqual((s.items[0].values["WarmupCamPath"], s.items[1].values["WarmupCamPath"]),
+                         ("Warmup_J1", "Warmup_J1_mod1"))
+        self.assertEqual(paths["Warmup_J1"]["path"][1], [1600.0, 2000.0, 900.0])
+        self.assertEqual(paths["Warmup_J1_mod1"]["path"][1], [2500.0, 2000.0, 900.0])  # moved by +900, 0
 
     def test_a_start_without_a_camera_of_its_own(self):
         s = Scenario.read(scenario())  # its start has no PositionCamera: the game looks at the start itself

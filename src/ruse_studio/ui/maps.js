@@ -1314,6 +1314,52 @@ const SPAWN_GLYPH = {
   air: "M12 2v20 M3 11l9-3 9 3 M8 20l4-2 4 2",
   "": "M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z",
 };
+// What it's for (the unit list's groups, StudioApi.group_of; "depot": a map's supply depot spot): a picture each, so a
+// HQ, a depot, a factory, a fort or a decoy reads at a glance, and a unit by what builds it
+const GROUP_GLYPH = {
+  hq: "M3 21h18 M5 21V10l7-5 7 5v11 M12 9.5l1.1 2.2 2.4.4-1.7 1.7.4 2.4-2.2-1.2-2.2 1.2.4-2.4-1.7-1.7 2.4-.4z",
+  depot: "M4 9h16v11H4z M4 9l3-5h10l3 5 M9 13h6 M12 9v11",
+  money: "M4 9h16v11H4z M4 9l3-5h10l3 5 M9 13h6 M12 9v11",
+  factory: "M3 21V11l5 3v-3l5 3V5h5v16H3z M15 9h1 M15 13h1",
+  fort: "M12 3l8 3v6c0 5-3.5 8-8 9.5C7.5 20 4 17 4 12V6z",
+  fake: "M3 11l9-7 9 7 M5 10v10h14V10 M10 13.5a2 2 0 1 1 3 1.7c-.8.5-1 1-1 1.8 M12 19v.3",
+  barracks: "M12 3a2 2 0 1 0 0 4a2 2 0 1 0 0-4z M12 8v7 M8 11h8 M9 21l3-6 3 6",
+  armor: "M3 15h18v4H3z M6 15v-4h9v4 M15 12h6",
+  antitank: "M4 18a2 2 0 1 0 4 0a2 2 0 1 0-4 0 M7 16l13-8 M6 16v-4h7",
+  artillery: "M4 18a2 2 0 1 0 4 0a2 2 0 1 0-4 0 M7 16l10-11 M3 21h10 M14 8l3-3",
+  prototype: "M13 2L4 14h7l-1 8 9-12h-7z",
+  airfield: "M12 2v20 M3 11l9-3 9 3 M8 20l4-2 4 2",
+  turret: "M3 19h18 M5 19v-5a7 7 0 0 1 14 0v5 M12 12h9",
+};
+
+// A country's roundel, drawn in the icon's corner (radius r at cx, cy): US star, German cross, the British, French
+// and Italian rings, the Soviet star, the Japanese disc. Recognisable shapes, not the game's own art.
+function drawRoundel(g, nation, cx, cy, r) {
+  const ring = (cols) => cols.forEach((c, k) => { g.fillStyle = c; g.beginPath(); g.arc(cx, cy, r * (1 - k / cols.length), 0, Math.PI * 2); g.fill(); });
+  const star = (fill, rr) => {
+    g.fillStyle = fill; g.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const a = -Math.PI / 2 + k * Math.PI / 5, q = k % 2 ? rr * 0.42 : rr;
+      g.lineTo(cx + q * Math.cos(a), cy + q * Math.sin(a));
+    }
+    g.closePath(); g.fill();
+  };
+  g.save();
+  g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,0.85)";
+  g.beginPath(); g.arc(cx, cy, r + 1.5, 0, Math.PI * 2); g.stroke();
+  switch (nation) {
+    case 0: ring(["#1f3f8f"]); star("#ffffff", r * 0.8); break;                       // US
+    case 1: ring(["#ffffff"]); g.fillStyle = "#111";                                   // Germany: the cross
+      g.fillRect(cx - r * 0.75, cy - r * 0.2, r * 1.5, r * 0.4); g.fillRect(cx - r * 0.2, cy - r * 0.75, r * 0.4, r * 1.5); break;
+    case 2: ring(["#1f3f8f", "#ffffff", "#c8102e"]); break;                            // UK
+    case 3: ring(["#c8102e", "#ffffff", "#1f3f8f"]); break;                            // France
+    case 4: ring(["#1e7b3c", "#ffffff", "#c8102e"]); break;                            // Italy
+    case 5: ring(["#ffffff"]); star("#c8102e", r * 0.85); break;                       // USSR
+    case 6: ring(["#ffffff"]); g.fillStyle = "#c8102e"; g.beginPath(); g.arc(cx, cy, r * 0.6, 0, Math.PI * 2); g.fill(); break;  // Japan
+    default: ring(["#9aa7b2"]);
+  }
+  g.restore();
+}
 const NEUTRAL_COLOUR = 0x9aa7b2;
 
 function sideColour(camp) {
@@ -1337,19 +1383,10 @@ function spawnIcon(it, size, selected) {
   g.strokeStyle = "#ffffff";
   g.lineWidth = 2.2;
   g.lineCap = g.lineJoin = "round";
-  g.stroke(new Path2D(SPAWN_GLYPH[it.unit_kind || ""] || SPAWN_GLYPH[""]));
+  g.stroke(new Path2D(GROUP_GLYPH[it.group || ""] || SPAWN_GLYPH[it.unit_kind || ""] || SPAWN_GLYPH[""]));
   g.restore();
-  const code = it.nation !== undefined ? NATION_CODES[it.nation] || "" : "";
-  if (code) {
-    g.font = "700 26px system-ui, sans-serif";
-    g.textAlign = "center";
-    g.textBaseline = "alphabetic";
-    g.lineWidth = 6;
-    g.strokeStyle = "rgba(0,0,0,0.85)";
-    g.strokeText(code, 48, 116);
-    g.fillStyle = "#ffffff";
-    g.fillText(code, 48, 116);
-  }
+  // its country: a roundel on the badge's corner (a depot spot and an unknown unit have none)
+  if (it.nation !== undefined && it.nation !== null && it.group !== "depot") drawRoundel(g, it.nation, 78, 20, 15);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true,
@@ -1384,6 +1421,62 @@ function drapeZone(points, triangles, step) {
   };
   for (let i = 0; i + 2 < triangles.length; i += 3) split(triangles[i], triangles[i + 1], triangles[i + 2], 0);
   return { xy, tris };
+}
+
+// A starting point's opening camera (its warm-up path, StudioApi.map_scenarios "cam"; LittleGroove's map editor shows
+// it the same way): the flight the match opens with (a dotted line through its keyframes), a camera where it comes to
+// rest, a line to what it looks at, and on the ground the part of the map the match opens on (the game's view: 45
+// degrees tall, a 16:9 screen, as its screenshots' camera files say).
+const CAM_FOV = Math.PI / 4, CAM_ASPECT = 16 / 9;
+
+function drawStartCamera(it, group, colour, at) {
+  const { THREE } = mv.gl, path = it.cam.path, rest = path[path.length - 1], size = mv.size || 1000;
+  const v3 = (p) => new THREE.Vector3(p[0] * SCALE, p[2] * SCALE, p[1] * SCALE);
+  const label = fill(mv.words.scen_cam_what || "Opening camera · team {n}, place {p}", { n: it.alliance || "?", p: it.place || 1 });
+  if (path.length > 1) {  // the warm-up flight
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(path.map(v3)),
+      new THREE.LineDashedMaterial({ color: colour, dashSize: size * 0.01, gapSize: size * 0.008, transparent: true, opacity: 0.6 }));
+    line.computeLineDistances();
+    group.add(line);
+  }
+  // the camera at rest: a small cone pointing the way it looks
+  let look = it.cam.look || [it.x - rest[0], it.y - rest[1], 0];
+  const n = Math.hypot(...look) || 1;
+  look = look.map((c) => c / n);
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(size * 0.006, size * 0.016, 12),
+    new THREE.MeshLambertMaterial({ color: colour, emissive: colour, emissiveIntensity: 0.35 }));
+  cone.position.copy(v3(rest));
+  cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(look[0], look[2], look[1]));  // its tip
+  cone.userData.label = label + " · " + (mv.words.scen_cam_rest || "the match opens looking from here");
+  group.add(cone);
+  // where it looks, and the part of the map in view: each corner of the screen's ray down to the start's height
+  const ground = at(it.x, it.y).y / SCALE;  // the ground's height at the HQ (map units, as the camera's)
+  const hitAt = (d) => {
+    if (d[2] >= -1e-3) return null;  // at or above the horizon: never reaches the ground
+    const t = (rest[2] - ground) / -d[2];
+    return [rest[0] + d[0] * t, rest[1] + d[1] * t];
+  };
+  const centre = hitAt(look);
+  if (centre) {
+    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([v3(rest), at(centre[0], centre[1])]),
+      new THREE.LineBasicMaterial({ color: colour, transparent: true, opacity: 0.7 })));
+  }
+  const up = [0, 0, 1], right = [look[1] * up[2] - look[2] * up[1], look[2] * up[0] - look[0] * up[2], look[0] * up[1] - look[1] * up[0]];
+  const rn = Math.hypot(...right) || 1;
+  const r = right.map((c) => c / rn);
+  const u = [r[1] * look[2] - r[2] * look[1], r[2] * look[0] - r[0] * look[2], r[0] * look[1] - r[1] * look[0]];
+  const th = Math.tan(CAM_FOV / 2), tw = th * CAM_ASPECT, far = Math.max(1, Math.hypot(rest[0] - it.x, rest[1] - it.y) * 3);
+  const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sy]) => {
+    const d = [0, 1, 2].map((k) => look[k] + r[k] * sx * tw + u[k] * sy * th);
+    const hit = hitAt(d);
+    if (hit) return hit;
+    const dn = Math.hypot(d[0], d[1]) || 1;  // a top corner over the horizon: cut the view off far away
+    return [rest[0] + d[0] / dn * far, rest[1] + d[1] / dn * far];
+  });
+  const outline = new THREE.Line(new THREE.BufferGeometry().setFromPoints([...corners, corners[0]].map(([x, y]) => at(x, y, size * 0.002))),
+    new THREE.LineBasicMaterial({ color: colour, transparent: true, opacity: 0.85 }));
+  outline.userData.label = label + " · " + (mv.words.scen_cam_view || "what the screen shows when the match opens");
+  group.add(outline);
 }
 
 // Everything the picked scenario puts on the map, on the ground as it is now (strokes too).
@@ -1425,6 +1518,7 @@ function drawScenario() {
         + (it.mine ? ` · ${mv.words.scen_mine}` : "");
       m.userData.item = it.item;
       group.add(m);
+      if (it.cam) drawStartCamera(it, group, colour, at);
     } else if (it.kind === "Spawn") {  // an icon where a unit or building appears: what it is, its side, its country
       const m = spawnIcon(it, 0.055, scen.selected === it.item);  // a share of the view's height: readable at any zoom
       m.position.copy(at(it.x, it.y, 0));
@@ -1491,7 +1585,53 @@ async function loadSpawnUnits() {
   if (scen.units) return;
   const res = await mv.api.units(mv.lang || "base", "all", -1, "", "all");
   scen.units = res.units.filter((u) => !u.new);  // a mod's new unit isn't in the game's files yet
+  // a map's supply depot spot (the slab a player builds a depot on): not a unit of the list, offered first in Money
+  scen.units.unshift({ address: DEPOT_SLAB, kind: "buildings", group: "money", name: mv.words.scen_depot_slab || "Supply depot spot",
+    base_name: DEPOT_SLAB, nation_name: mv.words.scen_depot_any || "Any side" });
   renderScenTools();
+}
+
+// --- Stick to roads (LittleGroove's RUSE-Mod-Manager map editor, its _snap_to_road and _ROAD_SNAP_OFFSET, GPL-3.0):
+// a supply depot spot and a starting point (its HQ) go beside the nearest road, at the distance the game's own maps
+// keep (depot 11,696, HQ 13,580 map units from the road network's line, measured on every shipped scenario), on the
+// side the click is on. A toggle, kept in this window: off places them exactly where clicked (a field, say). ---
+const DEPOT_SLAB = "DalleBatimentDepot";
+let snapRoads = true;
+try { snapRoads = localStorage.getItem("studio.snaproads") !== "0"; } catch { /* not kept: fine */ }
+
+async function roadGraph() {
+  if (scen.roads && scen.roads.pack === mv.current) return scen.roads;
+  const g = await mv.api.map_road_graph(mv.current);
+  scen.roads = { ...g, pack: mv.current };
+  return scen.roads;
+}
+
+// (x, y) moved to the road-side spot nearest it, `kind` "depot" or "hq"; unchanged with the toggle off or no roads
+async function snapToRoad(kind, x, y) {
+  if (!snapRoads) return [x, y];
+  let g;
+  try { g = await roadGraph(); } catch { return [x, y]; }
+  const d = (g.offset || {})[kind], nodes = g.nodes || [];
+  if (!d || !nodes.length) return [x, y];
+  let best = null;
+  for (const [a, b] of g.edges || []) {
+    const [ax, ay] = nodes[a], [bx, by] = nodes[b], ex = bx - ax, ey = by - ay, l2 = ex * ex + ey * ey;
+    if (l2 <= 1e-9) continue;
+    const t = Math.max(0, Math.min(1, ((x - ax) * ex + (y - ay) * ey) / l2)), px = ax + t * ex, py = ay + t * ey;
+    let ux = x - px, uy = y - py;
+    const dl = Math.hypot(ux, uy);
+    if (dl < 1e-6) { const n = Math.sqrt(l2); ux = -ey / n; uy = ex / n; } else { ux /= dl; uy /= dl; }
+    const cx = px + d * ux, cy = py + d * uy, dd = (cx - x) ** 2 + (cy - y) ** 2;
+    if (!best || dd < best[0]) best = [dd, cx, cy];
+  }
+  return best ? [best[1], best[2]] : [x, y];
+}
+
+// what a placed or moved item sticks to the road as: "depot", "hq" or null
+function snapKind(item, unit) {
+  if (scen.tool === "start" || (item && item.kind === "StartingPoint")) return "hq";
+  if (unit === DEPOT_SLAB || (item && item.what === DEPOT_SLAB)) return "depot";
+  return null;
 }
 
 function renderScenTools() {
@@ -1553,6 +1693,11 @@ function renderScenTools() {
     $("scen-gap-label").textContent = fill(w.place_spacing, { m: spawnGap() });
     $("scen-gap-row").title = w.tip_scen_gap;
   }
+  const snapRow = $("scen-snap-row");
+  snapRow.classList.toggle("hidden", !["start", "move", "spawn"].includes(scen.tool));
+  $("scen-snap").checked = snapRoads;
+  $("scen-snap-label").textContent = w.scen_snap_roads || "Stick to roads";
+  snapRow.title = w.tip_scen_snap_roads || "";
   if (!mv.brush.mod && scen.tool) { scenNote(w.no_mod, "error"); return; }
   if (scen.tool === "move") {
     const it = s && scen.selected !== null ? s.items[scen.selected] : null;
@@ -1606,21 +1751,29 @@ function scenPointerDown(ev) {
   }
   const p = hitGround(ev);
   if (!p) return;
-  const x = p.x / SCALE, y = p.z / SCALE;
+  scenPlaceAt(s, p.x / SCALE, p.z / SCALE);
+}
+
+// The scenario tools' click on the ground at (cx, cy): move, add a starting point, or spawn (Stick to roads applied)
+async function scenPlaceAt(s, cx, cy) {
   if (scen.tool === "move") {
-    const it = s.items[scen.selected];
+    const it = s.items[scen.selected], kind = snapKind(it, null);
+    const [x, y] = kind ? await snapToRoad(kind, cx, cy) : [cx, cy];
     if (it.mine && it.start !== undefined) scenEdit(() => mv.api.scenario_move_start(mv.current, it.start, x, y));
     else if (it.mine) scenEdit(() => mv.api.scenario_move_spawn(mv.current, it.spawn, x, y));  // the mod's own spawn
     else scenEdit(() => mv.api.scenario_move(mv.current, s.file, it.item, x, y));
     return;
   }
-  if (scen.tool === "start") {  // a new starting point: the team's next place
+  if (scen.tool === "start") {  // a new starting point: the team's next place, beside a road unless the toggle's off
+    const [x, y] = await snapToRoad("hq", cx, cy);
     scenEdit(() => mv.api.scenario_add_start(mv.current, s.file, scen.team, x, y)).then(() => loadPlayers(mv.current));
     return;
   }
   const unit = $("scen-unit").value, camp = scen.camp, [fx, fy] = screenAhead();
   if (!unit) { scenNote(mv.words.scen_pick_unit, "error"); return; }
-  scenEdit(() => mv.api.scenario_spawn_many(mv.current, s.file, unit, formationPoints(x, y),
+  let points = formationPoints(cx, cy);
+  if (snapKind(null, unit) === "depot") points = await Promise.all(points.map(([px, py]) => snapToRoad("depot", px, py)));
+  scenEdit(() => mv.api.scenario_spawn_many(mv.current, s.file, unit, points,
     camp === "" ? null : Number(camp), Math.atan2(fy, fx)));
 }
 
@@ -3870,6 +4023,10 @@ function wire() {
   $("scen-gap").addEventListener("input", (e) => { scen.gap[scen.kind] = Number(e.target.value); renderScenTools(); });
   $("scen-spawn").addEventListener("click", () => setScenTool("spawn"));
   $("scen-start").addEventListener("click", () => setScenTool("start"));
+  $("scen-snap").addEventListener("change", (e) => {
+    snapRoads = e.target.checked;
+    try { localStorage.setItem("studio.snaproads", snapRoads ? "1" : "0"); } catch { /* not kept: fine */ }
+  });
   for (const g of ["building", "prop", "vegetation"]) {
     $(`scenery-${g}`).addEventListener("change", (e) => {
       mv.scenery.show[g] = e.target.checked;

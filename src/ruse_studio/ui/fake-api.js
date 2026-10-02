@@ -289,6 +289,14 @@
   Object.assign(words.us, {"zone_lift": "Zones' height", "tip_zone_lift": "How high the scenario's zones (sectors) float over the ground, so hills and trees don't poke through them. 0 % lies on the ground."});
   Object.assign(words.fr, {"zone_lift": "Hauteur des zones", "tip_zone_lift": "À quelle hauteur les zones (secteurs) du scénario flottent au-dessus du sol, pour que collines et arbres ne les traversent pas. 0 % : posées au sol."});
   Object.assign(words.sc, {"zone_lift": "区域高度", "tip_zone_lift": "剧本的区域（扇区）浮在地面上方的高度，避免山丘和树木穿出。0 % 贴在地面上。"});
+  // the Spawn tool: Stick to roads, the depot spot, the icons legend
+  Object.assign(words.us, {"scen_snap_roads": "Stick to roads", "tip_scen_snap_roads": "A supply depot spot or a starting point (its HQ) goes beside the nearest road, as far from it as the game's own maps keep theirs. Untick it to put one exactly where you click, in the middle of a field say.", "scen_depot_slab": "Supply depot spot", "scen_depot_any": "Any side", "legend_spawn_icons": "Icons: what a scenario puts there at the start, by what it's for: HQ (star), supply depot (crate), factory, fort (shield), decoy (?), and units by what builds them (soldier, tank, anti-tank gun, artillery, plane); the roundel in the corner is its country, the colour its side"});
+  Object.assign(words.fr, {"scen_snap_roads": "Coller aux routes", "tip_scen_snap_roads": "Un emplacement de dépôt ou un point de départ (son QG) se place à côté de la route la plus proche, à la distance que gardent les cartes du jeu. Décochez pour le poser exactement où vous cliquez, au milieu d'un champ par exemple.", "scen_depot_slab": "Emplacement de dépôt de ravitaillement", "scen_depot_any": "Tous camps", "legend_spawn_icons": "Icônes : ce que le scénario place au départ, selon son rôle : QG (étoile), dépôt (caisse), usine, fort (bouclier), leurre (?), et les unités selon ce qui les produit (soldat, char, antichar, artillerie, avion) ; la cocarde dans le coin est son pays, la couleur son camp"});
+  Object.assign(words.sc, {"scen_snap_roads": "吸附道路", "tip_scen_snap_roads": "补给站位置或起始点（其指挥部）会放在最近道路旁，与游戏自带地图的距离相同。取消勾选则放在你点击的位置，比如田野中央。", "scen_depot_slab": "补给站位置", "scen_depot_any": "任意阵营", "legend_spawn_icons": "图标：场景开始时放在此处的东西，按用途区分：指挥部（星）、补给站（箱子）、工厂、要塞（盾牌）、诱饵（？），单位按生产来源（士兵、坦克、反坦克炮、火炮、飞机）；角上的徽章表示国家，颜色表示阵营"});
+  // the opening camera (words.toml scen_cam_*)
+  Object.assign(words.us, {"scen_cam_what": "Opening camera · team {n}, place {p}", "scen_cam_rest": "the match opens looking from here, after its warm-up flight (the dotted line)", "scen_cam_view": "what the screen shows when the match opens"});
+  Object.assign(words.fr, {"scen_cam_what": "Caméra d'ouverture · équipe {n}, place {p}", "scen_cam_rest": "la partie s'ouvre en regardant d'ici, après le vol d'introduction (la ligne pointillée)", "scen_cam_view": "ce que montre l'écran à l'ouverture de la partie"});
+  Object.assign(words.sc, {"scen_cam_what": "开局镜头 · 队伍 {n}，位置 {p}", "scen_cam_rest": "对局在预热飞行（虚线）之后，从这里的视角开始", "scen_cam_view": "对局开始时屏幕显示的范围"});
   const nations = {
     base: ["EU", "Allemagne", "RU", "France", "Italie", "URSS", "Japon"],
     us: ["USA", "Germany", "UK", "France", "Italy", "USSR", "Japan"],
@@ -482,8 +490,11 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         { file: "leveldesign.scenario", kind: "skirmish", entries: [{ name: "(2) Island", kind: "skirmish", titles: { us: "Island", fr: "Île" } }], zones: [
           { name: "zone_west", number: 0, points: [300000, 450000, 560000, 450000, 560000, 800000, 300000, 800000], triangles: [0, 1, 2, 0, 2, 3] },
           { name: "zone_east", number: 1, points: [760000, 450000, 1020000, 450000, 1020000, 800000, 760000, 800000], triangles: [0, 1, 2, 0, 2, 3] }],
-          items: [{ kind: "StartingPoint", x: 430000, y: 620000, turn: 0, name: "", alliance: 1 },
-            { kind: "StartingPoint", x: 890000, y: 620000, turn: 0, name: "", alliance: 2 },
+          items: [{ kind: "StartingPoint", x: 430000, y: 620000, turn: 0, name: "", alliance: 1,
+              cam: { path: [[730000, 420000, 200000], [580000, 620000, 90000]], look: [-0.857, 0, -0.514] } },
+            { kind: "StartingPoint", x: 890000, y: 620000, turn: 0, name: "", alliance: 2,
+              cam: { path: [[590000, 820000, 200000], [740000, 620000, 90000]], look: [0.857, 0, -0.514] } },
+            { kind: "Spawn", x: 655000, y: 560000, turn: 0, name: "", camp: -1, what: "DalleBatimentDepot", unit_kind: "buildings", group: "depot" },
             { kind: "Spawn", x: 655000, y: 420000, turn: 0, name: "depot", camp: -1, what: "Unit_M4_Sherman", unit_kind: "ground", nation: 0 },
     { kind: "Spawn", x: 640000, y: 400000, turn: 0, name: "", camp: 2, what: "Batiment_QG_GER", unit_kind: "buildings", nation: 1 },
     { kind: "Spawn", x: 670000, y: 400000, turn: 0, name: "", camp: 1, what: "Avion_P47", unit_kind: "air", nation: 0 },
@@ -984,6 +995,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { saved: current + "/src/studio.rndf" };
       },
       test_in_game: async () => ({ job: "test" }),
+      // a made-up road network: one road east-west across the island, one north-south (Stick to roads)
+      map_road_graph: async () => ({ nodes: [[300000, 600000], [1000000, 600000], [655000, 350000], [655000, 900000]],
+        edges: [[0, 1], [2, 3]], offset: { depot: 11696, hq: 13580 } }),
       test_problems: async () => ({ problems: mode !== "testmistakes" ? [] : [
         { text: FAKE_MISTAKES[0], mod: "test2", fixes: [
           { kind: "spawn_neutral", path: "maps/M04_cotentin/scenario.toml", what: "Unit_Konoe_Shidan" },

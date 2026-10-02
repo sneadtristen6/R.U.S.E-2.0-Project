@@ -240,6 +240,8 @@
             <div class="tray-side">
               <select id="scen-unit" size="5" class="place-list hidden"></select>
               <div id="scen-camp" class="chips hidden" role="group"></div>
+              <!-- a depot spot and a starting point go beside the nearest road (maps.js snapToRoad): off = where clicked -->
+              <label id="scen-snap-row" class="small hidden"><input id="scen-snap" type="checkbox"> <span id="scen-snap-label"></span></label>
               <label id="scen-gap-row" class="brush-slider small hidden"><span id="scen-gap-label"></span>
                 <input id="scen-gap" type="range" min="4" max="150" step="1" value="25"></label>
               <div id="scen-players" class="chips hidden" role="group"></div>
