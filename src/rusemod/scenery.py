@@ -733,8 +733,9 @@ def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]
     reference). Each object goes on the reference whose boxes in the top block's tree hold it (_carriers), and the
     grids' cells under the new objects are marked as holding something (_grids_hold). Types must be ones the map
     already uses (in its name table). `objects` may hold RoadPiece too (a new road's stickers, in the map's own Route
-    style; a map without one gets none): they go in blocks of their own, each on the reference whose box holds them,
-    and the tree's nodes down to it get the road mark. Returns (new file, notes)."""
+    style; a map without one gets none): they're filed with the map's own pieces (file_roads); a piece no leaf holds
+    goes in a block of its own, on the reference whose box holds it, and the tree's nodes down to it get the road
+    mark. Returns (new file, notes)."""
     if not objects:
         return bytes(data), []
     notes = []
@@ -743,6 +744,9 @@ def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]
     if pieces and _road_style(Scenery(data)) is None:
         pieces = []
         notes.append("this map has no road stickers to copy: its new roads show from afar only")
+    if pieces:
+        data, pieces, more = file_roads(data, pieces)
+        notes += more
     outside: list = []
     for things, roads in ((objects, False), (pieces, True)):
         if not things:
@@ -1285,6 +1289,216 @@ def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tupl
             return math.hypot(max(x0 - p.x, 0.0, p.x - x1), max(y0 - p.y, 0.0, p.y - y1)), (x1 - x0) * (y1 - y0)
         out.setdefault(min(far, key=gap).at, []).append(p)
     return list(out.items()), left
+
+
+# --- road pieces filed where the map files its own: among a block's items, in the leaf of its tree that holds them ---
+@dataclass
+class _Leaf:
+    node: int      # the tree node it hangs from
+    side: str      # "L" or "R": that node's left or right side; "W": the node is a leaf itself
+    lo: int        # its entries: [lo, hi)
+    hi: int
+    box: tuple     # in its block's own coordinates
+    path: list     # [(node, "L" / "R" / "W")] from the root down to it
+
+
+def _leaves(nodes: list, n: int, bbox: tuple) -> list[_Leaf]:
+    """Every leaf of a block's tree (`nodes` as _tree gives them, over `n` entries), empty ones too, but the far-view
+    list's: a root seen from far lists those items on its left side, and the shipped maps list no road piece there."""
+    out, steps = [], 0
+    if not nodes:
+        return out
+    far = bool((nodes[0][0] >> 20) & 0x08)
+    todo = [(0, 0, n, tuple(bbox), [])]
+    while todo:
+        k, lo, hi, box, path = todo.pop()
+        steps += 1
+        if not 0 <= k < len(nodes) or steps > len(nodes):
+            raise SceneryError("a block's tree points outside itself")
+        w, split, b1, b2 = nodes[k]
+        if w & 0x10000000:
+            out.append(_Leaf(k, "W", lo, hi, box, path + [(k, "W")]))
+            continue
+        x0, y0, x1, y1 = box
+        if w & 3 == 0:
+            left, right = (x0, y0, x0 + b1 / 255 * (x1 - x0), y1), (x0 + b2 / 255 * (x1 - x0), y0, x1, y1)
+        else:
+            left, right = (x0, y0, x1, y0 + b1 / 255 * (y1 - y0)), (x0, y0 + b2 / 255 * (y1 - y0), x1, y1)
+        if not (k == 0 and far):
+            if w & 0x40000000:
+                out.append(_Leaf(k, "L", lo, split, left, path + [(k, "L")]))
+            else:
+                todo.append((k + 1, lo, split, left, path + [(k, "L")]))
+        if w & 0x80000000:
+            out.append(_Leaf(k, "R", split, hi, right, path + [(k, "R")]))
+        else:
+            todo.append((k + ((w & 0xFFFFF) >> 2), split, hi, right, path + [(k, "R")]))
+    return out
+
+
+def _one_more(nodes: list, path: list) -> None:
+    """`nodes` ([word, split, b1, b2] each) with one entry added at the end of the leaf `path` leads to: a node whose
+    left side holds that leaf, or that comes after it in the entries' order, splits one entry later; the rest keep
+    their splits (a node that's a leaf itself has none: 0 on every shipped map)."""
+    way = dict(path)
+    todo = [(0, "on")]
+    while todo:
+        k, where = todo.pop()
+        w = nodes[k][0]
+        if w & 0x10000000:
+            continue
+        if where == "on":
+            left, right = ("on", "after") if way[k] == "L" else ("before", "on")
+        else:
+            left = right = where
+        if where == "after" or (where == "on" and way[k] == "L"):
+            if nodes[k][1] >= 0xFFFF:
+                raise SceneryEditError("a block of the map's scenery holds too many items to take more")
+            nodes[k][1] += 1
+        for child, side, leaf in ((k + 1, left, 0x40000000), (k + ((w & 0xFFFFF) >> 2), right, 0x80000000)):
+            if not w & leaf and side != "before":
+                todo.append((child, side))
+
+
+def _grown(b: Block, adds: list, count: int | None = None) -> tuple[bytes, list[int]]:
+    """Block `b` with items added, each at the end of its leaf's entries (`adds`: [((node, side), the item's bytes)])
+    and after the block's last item, the nodes on the way to it given the road mark (those with a LOD mask), its
+    road pieces' count word set to `count` (None: left as it is), padded to 16 bytes as the shipped blocks are.
+    Every item it had keeps its offset and its leaf. Returns (the block, the new items' offsets)."""
+    nodes = [list(n) for n in _tree(b)]
+    entries = list(b.entries)
+    head = 0x20 if b.long else 0x1C
+    end = max((it.at + 4 + len(it.data) for it in b.items), default=4)
+    body = bytearray(b.raw[b.items_start:b.items_start + end])
+    if count is not None:
+        for it in b.items:
+            if it.kind == "road":
+                struct.pack_into("<I", body, it.at + 4 + 48, count)
+    ats = []
+    for key, item in adds:
+        leaf = next((lf for lf in _leaves(nodes, len(entries), b.bbox) if (lf.node, lf.side) == key), None)
+        if leaf is None:
+            raise SceneryError(f"block {b.index} has no leaf {key} to add to")
+        entries.insert(leaf.hi, len(body))
+        _one_more(nodes, leaf.path)
+        for k, _d in leaf.path:
+            if (nodes[k][0] >> 20) & ALL_TIERS:
+                nodes[k][0] |= ROAD_BIT
+        ats.append(len(body))
+        body += item
+    (w0,) = struct.unpack_from("<I", b.raw)
+    out = (struct.pack("<I", (w0 & 0x80000000) | len(entries)) + b.raw[4:head]
+           + struct.pack(f"<{len(entries)}I", *entries) + b"".join(struct.pack("<IHBB", *n) for n in nodes)
+           + bytes(body))
+    return out + b"\0" * (-len(out) % 16), ats
+
+
+def _with_blocks(sc: Scenery, data: bytes, raws: dict[int, bytes]) -> bytes:
+    """The scenery file with blocks replaced by `raws` (block index -> its new bytes, as _grown makes them), every
+    reference, theirs and the new ones alike, pointed at where its block now starts, and the tables after the blocks
+    moved with their end."""
+    starts, pos = {}, 0
+    for b in sc.blocks:
+        starts[b.offset] = pos
+        pos += len(raws.get(b.index, b.raw))
+    if pos > DATA_LIMIT:
+        raise SceneryEditError(f"the map's scenery would grow to {pos:,} bytes, past the {DATA_LIMIT:,} a map can hold")
+    parts = []
+    for b in sc.blocks:
+        raw = bytearray(raws.get(b.index, b.raw))
+        grown = sc._block(b.index, starts[b.offset], bytes(raw))
+        for it in grown.items:
+            if it.kind == "child":
+                if it.child_offset not in starts:
+                    raise SceneryError(f"block {b.index}: a child points at {it.child_offset}, which isn't a block's start")
+                struct.pack_into("<I", raw, grown.items_start + it.at,
+                                 (it.word & ~0x00FFFFFC) | starts[it.child_offset])
+        parts.append(bytes(raw))
+    f = list(sc.fields)
+    tab_off, tab_n, data_off, data_len = f[0], f[1], f[2], f[3]
+    if tab_off != 124 or data_off != tab_off + 4 * tab_n:
+        raise SceneryError("the scenery file's tables aren't in the order this writer knows")
+    end = data_off + data_len
+    for k in (4, 6, 8, 10, 12, 20, 22, 24):  # the tables after the blocks move with their end
+        if f[k] < end:
+            raise SceneryError("the scenery file's tables aren't in the order this writer knows")
+        f[k] += pos - data_len
+    f[3] = pos
+    table = [starts[b.offset] for b in sc.blocks] + [pos]
+    body = VERSION + struct.pack("<26I", *f) + struct.pack(f"<{tab_n}I", *table) + b"".join(parts) + data[end:]
+    return hashlib.md5(body).digest() + body
+
+
+def _homes(sc: Scenery) -> list[tuple]:
+    """Where a road piece can be filed: every full-list leaf of every block the map places once, as (block index,
+    (node, side), its box on the map, its way down already has the road mark, its area). A leaf whose way down has a
+    node with neither a LOD mask nor the road mark is left out (marking it would leave that node the road pass only)."""
+    _weight, where = sc.placings()
+    out = []
+    for b in sc.blocks:
+        m = where[b.index]
+        if m is None or not b.nodes:
+            continue
+        nodes = _tree(b)
+        for leaf in _leaves(nodes, len(b.entries), b.bbox):
+            words = [nodes[k][0] for k, _d in leaf.path]
+            marked = all(w & ROAD_BIT for w in words)
+            if not marked and not all(w & ROAD_BIT or (w >> 20) & ALL_TIERS for w in words):
+                continue
+            x0, y0, x1, y1 = leaf.box
+            xs = [m[0] * x + m[1] * y + m[3] for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1))]
+            ys = [m[4] * x + m[5] * y + m[7] for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1))]
+            out.append((b.index, (leaf.node, leaf.side), (min(xs), min(ys), max(xs), max(ys)), marked,
+                        (max(xs) - min(xs)) * (max(ys) - min(ys))))
+    return out
+
+
+def file_roads(data: bytes, pieces: list[RoadPiece]) -> tuple[bytes, list[RoadPiece], list[str]]:
+    """Road pieces filed the way the map files its own: each among the items of a block the map places once, in the
+    leaf of that block's tree whose box holds the piece's middle (the smallest such leaf, one whose way down already
+    has the road mark first), listed for close view only, with the block's count of pieces on every piece of it (on
+    D-Day the top block files 25 of the map's own pieces so, out in the open, and all 77 of a new 480 m road find a
+    leaf there). No block is added and no item moves; the nodes on the way down, in the block and in the blocks that
+    place it, get the road mark. Returns (file, the pieces no leaf holds, notes)."""
+    if not pieces:
+        return bytes(data), [], []
+    sc = Scenery(data)
+    style = _road_style(sc)
+    if style is None:
+        return bytes(data), list(pieces), []
+    homes = _homes(sc)
+    filed: dict[int, list] = {}
+    left = []
+    for p in pieces:
+        hold = [h for h in homes if h[2][0] <= p.x <= h[2][2] and h[2][1] <= p.y <= h[2][3]]
+        if not hold:
+            left.append(p)
+            continue
+        bi, key, _box, _marked, _area = min(hold, key=lambda h: (not h[3], h[4]))
+        filed.setdefault(bi, []).append((key, p))
+    if not filed:
+        return bytes(data), left, []
+    _weight, where = sc.placings()
+    raws, added = {}, {}
+    for bi, got in filed.items():
+        b = sc.blocks[bi]
+        count = sum(1 for it in b.items if it.kind == "road") + len(got)
+        to_local = _inverse(where[bi])
+        adds = [(key, _road_item(p, to_local, style, count)[0]) for key, p in got]
+        raws[bi], added[bi] = _grown(b, adds, count)
+    out = _with_blocks(sc, data, raws)
+    # the road mark on the way down to each new piece, from the map's top (a block placed once has one way)
+    grown = Scenery(out)
+    lo, n = grown.data_off, grown.fields[3]
+    blob = bytearray(out[lo:lo + n])
+    for bi, ats in added.items():
+        for at in ats:
+            _mark_for_roads(grown, blob, bi, at)
+    body = out[16:lo] + bytes(blob) + out[lo + n:]
+    out = hashlib.md5(body).digest() + body
+    where_to = ", ".join(f"{'the top block' if bi == 0 else f'block {bi}'} ({len(got)})" for bi, got in filed.items())
+    return out, left, [f"{sum(len(g) for g in filed.values())} road sticker piece(s) filed with the map's own, in the "
+                       f"leaf of a block's tree that holds each: {where_to}"]
 
 
 # The scenery's three grids, one record per cell: the game walks a cell at a level of detail only when its record

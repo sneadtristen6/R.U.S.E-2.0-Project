@@ -35,16 +35,16 @@ def road(start=(0.0, 0.0), handle=(0.0, 0.0), end=(0.0, 0.0), back=(0.0, 0.0)):
     return struct.pack("<I12f3I", 0x01000141, *f, 3, 129958752, 1567752)
 
 
-def block(items, far=False, mask=0x1F):
+def block(items, far=False, mask=0x1F, box=(0.0, 0.0, 1.0, 1.0)):
     """A block with a one-leaf tree; far: its entries list the first item again in front (the far-view rule); mask:
-    its root's (0x3F: with the road mark)."""
+    its root's (0x3F: with the road mark); box: its own."""
     entries, off = [], 0
     for it in items:
         entries.append(off)
         off += len(it)
     if far:
         entries = [0] + entries
-    head = struct.pack("<II4f", 0x80000000 | len(entries), 1, 0.0, 0.0, 1.0, 1.0) + bytes(8)
+    head = struct.pack("<II4f", 0x80000000 | len(entries), 1, *box) + bytes(8)
     tree = struct.pack(f"<{len(entries)}I", *entries) + struct.pack("<II", 0xC0000000 | mask << 20, 0x00FF0000)
     return head + tree + b"".join(items)
 
@@ -403,12 +403,15 @@ class RoadStickers(unittest.TestCase):
         self.assertFalse(far_leaf[0] & scenery.ROAD_BIT)
         self.assertEqual(b.mask, scenery.ALL_TIERS)  # the LOD mask itself is unchanged
 
-    def test_each_piece_goes_with_the_reference_whose_box_holds_it(self):
-        """Two roads, one by each wood: each road's pieces go in a new block on the reference whose leaf box in the
-        top block's tree holds them; the top block's nodes down to both get the road mark (not the far list's leaf);
-        the road pass then reaches every new piece and still the wood's own."""
+    def test_filed_with_the_maps_own_in_the_leaf_that_holds_them(self):
+        """Two roads, one by each wood: the woods are placed twice, so the pieces are filed among the top block's own
+        items (as D-Day files 25 of its own out in the open), each in the leaf of its tree whose box holds it. No block
+        is added and every item the map had keeps its leaf; the nodes down to the new pieces get the road mark (not
+        the far list's leaf); every piece carries its block's count; the road pass reaches each new piece and still
+        the wood's own."""
         data = two_woods()
         s0 = Scenery(data)
+        top0 = s0.blocks[0]
         own = {(1, it.at) for it in s0.blocks[1].items if it.kind == "road"}
         self.assertEqual(road_pass(s0), set())  # nothing yet: the top block's root has no road mark
         south = scenery.road_pieces([(1000.0, 1500.0), (9000.0, 1500.0)])
@@ -416,25 +419,61 @@ class RoadStickers(unittest.TestCase):
         new, notes = add_objects(data, south + north)
         s = Scenery(new)
         self.assertEqual(spots(new), spots(data))  # no object moved
-        self.assertEqual(len(s.blocks), 4)
+        self.assertEqual(len(s.blocks), 2)
         top = s.blocks[0]
-        refs = {it.at: s._by_offset[it.child_offset] for it in top.items if it.kind == "child"}
-        held = {}
-        for at, bi in refs.items():
-            pieces = [it for it in s.blocks[bi].items if it.kind == "road"]
-            held[at] = sorted(round(struct.unpack_from("<f", it.data, 4)[0]) for it in pieces)
-            self.assertEqual({struct.unpack_from("<I", it.data, 48)[0] for it in pieces}, {2})  # the block's count
-        south_ref, north_ref = (next(it for it in top.items if it.kind == "child" and round(it.matrix()[7]) == y)
-                                for y in (1000, 8000))
-        self.assertEqual(held[south_ref.at], [500, 500])  # 1,500 in the south wood's own frame
-        self.assertEqual(held[north_ref.at], [1000, 1000])
-        nodes = [struct.unpack_from("<I", top.nodes, 8 * k)[0] for k in range(3)]
-        self.assertEqual([bool(w & scenery.ROAD_BIT) for w in nodes], [True, False, True])
-        mine = {(bi, it.at) for bi in refs.values() for it in s.blocks[bi].items if it.kind == "road"}
+        before = Counter((top0.entries[e], box) for e, box in scenery._leaf_boxes(top0).items())
+        boxes = scenery._leaf_boxes(top)
+        after = Counter((top.entries[e], box) for e, box in boxes.items())
+        self.assertEqual(after - before, Counter({(it.at, boxes[top.entries.index(it.at)]): 1
+                                                  for it in top.items if it.kind == "road"}))  # the old ones kept
+        mine = [it for it in top.items if it.kind == "road"]
         self.assertEqual(len(mine), 4)
-        wood = s._by_offset[s.blocks[refs[south_ref.at]].items[0].child_offset]
-        self.assertEqual(road_pass(s), mine | {(wood, at) for _b, at in own})
-        self.assertEqual(len(notes), 2)
+        split = struct.unpack_from("<H", top.nodes, 4)[0]
+        for it in mine:
+            f = struct.unpack_from("<12f", it.data)
+            listed = [e for e, a in enumerate(top.entries) if a == it.at]
+            self.assertEqual(len(listed), 1)  # once, for close view: not in the far list
+            self.assertGreaterEqual(listed[0], split)
+            x0, y0, x1, y1 = boxes[listed[0]]
+            self.assertTrue(x0 <= (f[0] + f[6]) / 2 <= x1 and y0 <= (f[1] + f[7]) / 2 <= y1)
+            self.assertEqual(struct.unpack_from("<I", it.data, 48)[0], 4)  # the block's count
+        self.assertEqual(sorted(round(struct.unpack_from("<f", it.data, 4)[0]) for it in mine), [1500, 1500, 9000, 9000])
+        nodes = [struct.unpack_from("<IH", top.nodes, 8 * k) for k in range(3)]
+        self.assertEqual([bool(w & scenery.ROAD_BIT) for w, _s in nodes], [True, False, True])
+        self.assertEqual([sp for _w, sp in nodes], [2, 2, 6])  # the full list's split: the south pieces before it
+        self.assertEqual(road_pass(s), {(0, it.at) for it in mine} | own)
+        self.assertEqual(notes, ["4 road sticker piece(s) filed with the map's own, in the leaf of a block's tree that "
+                                 "holds each: the top block (4)"])
+
+    def test_a_block_placed_once_files_the_pieces_its_leaf_holds(self):
+        """A wood placed once, its box smaller than the top block's leaf: the piece goes among the wood's items, the
+        wood's own piece takes the new count, and the top block's way down to the wood gets the road mark."""
+        wood = block([compact(1, 0.0, 0.0), road((10.0, 20.0), (5.0, 0.0), (40.0, 20.0), (-5.0, 0.0))],
+                     box=(-5000.0, -5000.0, 5000.0, 5000.0))
+        top_box = (0.0, 0.0, 40960.0, 40960.0)
+        root_len = len(block([moved(0, 0, 0)], box=top_box))
+        data = make_scenery([block([moved(root_len, 20000.0, 20000.0)], box=top_box), wood], NAMES)
+        new, notes = add_objects(data, scenery.road_pieces([(19000.0, 21000.0), (23000.0, 21000.0)]))
+        s = Scenery(new)
+        self.assertEqual(len(s.blocks[0].items), 1)  # nothing filed in the top block
+        pieces = [it for it in s.blocks[1].items if it.kind == "road"]
+        self.assertEqual(len(pieces), 2)
+        self.assertEqual({struct.unpack_from("<I", it.data, 48)[0] for it in pieces}, {2})
+        self.assertEqual(tuple(round(v) for v in struct.unpack_from("<2f", pieces[1].data)), (-1000, 1000))
+        self.assertEqual(road_pass(s), {(1, it.at) for it in pieces})
+        self.assertIn("block 1 (1)", notes[0])
+
+    def test_a_split_moves_when_its_left_side_or_all_of_it_comes_after(self):
+        """The root splits 4 entries into two nodes of two leaves each: an entry added to the first node's right leaf
+        moves the root's split (its left side holds it) and the second node's (it comes after); one added to the
+        second node's left leaf moves that node's split only."""
+        nodes = [[0x1F << 20 | 2 << 2, 2, 0x80, 0x80], [0xC0000000, 1, 0x80, 0x80], [0xC0000000, 3, 0x80, 0x80]]
+        first = [list(n) for n in nodes]
+        scenery._one_more(first, [(0, "L"), (1, "R")])
+        self.assertEqual([n[1] for n in first], [3, 1, 4])
+        second = [list(n) for n in nodes]
+        scenery._one_more(second, [(0, "R"), (2, "L")])
+        self.assertEqual([n[1] for n in second], [2, 1, 4])
 
     def test_a_new_object_is_drawn_at_every_distance(self):
         """The game walks a cell of the scenery's grids only when its record says it holds something, finds a

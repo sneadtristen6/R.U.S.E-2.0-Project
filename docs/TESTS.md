@@ -316,6 +316,36 @@ the game. (2) The game crashed as soon as the US tank factory was placed (playin
 every one of the 71 US models in them had been given another number. Both are being worked out from how the game
 itself does it before any new copy.
 
+**Batch 5** (`D:\RUSE-Instances\batch5`, batch 4's mod with the close-up map's road mark): the new road still
+disappears as the camera comes down, piece by piece, the pieces nearest the camera first, once they're in range;
+higher up it's whole. The factories weren't tried.
+
+## Batch 6: roads up close three ways side by side, and the factories in order (2026-10-01)
+
+`D:\RUSE-Instances\batch6` from `D:\ruse-test-mods\batch6` (batch 4's mod plus three short test roads), with the town
+names and the Dev Toolkit; built from branch `roads-filed`: 0 errors, 1 warning (the Dev Toolkit's scripts). The HQ
+is where batch 3 had it. A top-down picture of the spots goes with it (north up). Start `RUSE.exe` inside the copy's
+folder, Steam running. **BATTLES > D-Day, as the US against one UK or USSR AI.** Do the roads first: a crash in step 2
+ends the game.
+1. **T12, roads up close, four roads.** Every road gets the same paint and road model from afar; only how its
+   close-up pieces (the map's road stickers) are stored differs:
+   - **LONG** (batch 4's road, north of the HQ, north-west then north-east) and **B** (205 m south of the HQ, 230 m
+     east-west): stored the way the map stores its own road pieces in open country, among its top block's items.
+   - **A** (105 m south of the HQ): stored as in batches 1-5, in a block of its own.
+   - **C** (305 m south of the HQ): not our pieces at all: a piece of the map's own road (8 pieces, a slight S-bend)
+     placed there again.
+   Zoom the camera right down onto each and pan along it.
+   - **Tell us for each of A, B, C and LONG:** does it stay drawn all the way down, or disappear piece by piece as
+     in batch 5?
+2. **T13, the factories, in this order** (the build menu's **Dev** tab gives +500 a click); the units are as in
+   batch 4 (the Tiger US and Stuka US models copied into the US's packs; nothing about units has changed since its
+   crash):
+   1. a **barracks** (or any building that isn't the tank factory or the airfield);
+   2. an **airfield**, then the **Stuka US** in the US air factory;
+   3. a **tank factory**, then the **Tiger US** in it.
+   - **Pass:** no crash; both units drawn, the Tiger drives, the Stuka flies.
+   - **Tell us** which step crashed, if one did (as the building is placed, or as the unit is built).
+
 ## T15. A new map in the menus: Blitz Twin (PLAN §13)
 
 A mod can now make a new map: a copy of a shipped one under its own name and pack, listed in BATTLES beside it, which
