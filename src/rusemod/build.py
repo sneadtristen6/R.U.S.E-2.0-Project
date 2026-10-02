@@ -948,12 +948,12 @@ def scenario_edits(order: list[str], mods: list, what: str = "scenario") -> dict
 
 
 def draw_new_roads(read_map, path_of, lines: list) -> tuple[dict, list[str]]:
-    """({member: new bytes}, notes): new roads (map points, in order) drawn every way the game shows a map's own:
-    painted into the ground's tiles (rusemod.groundpaint.paint_roads), marked in the map's close-up map the way its
-    own roads are (paint_detail: up close the ground's detail textures cover the tiles wherever that map doesn't
-    mark a road; without it a new road vanished near the camera in every test, T12), and added to the map's road
-    model (rusemod.roadstrips). `read_map(member)` gives the map pack's member as the build has it so far (a
-    reshaped ground counts) or None, `path_of(member)` its full path."""
+    """({member: new bytes}, notes): new roads (map points, in order) written into every road file the map's own roads
+    are in: painted into the ground's tiles (rusemod.groundpaint.paint_roads: seen in the game from afar), marked in
+    the map's close-up map the way its own roads are (paint_detail), and added to the map's road model
+    (rusemod.roadstrips). In the game a new road still vanishes near the camera (TESTS.md T12): the close-up map's mark
+    didn't change that (batch 5), and what the road model draws isn't known. `read_map(member)` gives the map pack's
+    member as the build has it so far (a reshaped ground counts) or None, `path_of(member)` its full path."""
     from .groundpaint import DETAIL, DETAIL_WIDER, ROAD_WIDTH, grid_bounds, paint_detail, paint_roads
     from .roadstrips import draw_roads
     from .scenery import MEMBER as SCENERY, Scenery
@@ -1381,8 +1381,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             every, who = placed.setdefault(name, ([], []))
             every.extend(objects)
             who.extend(i for i in ids if i not in who)
-        # new roads get the map's own road pieces (Route stickers) in the scenery, as the map's roads have them; what
-        # shows a road is drawn below (draw_new_roads): the painted ground from afar, the road model up close
+        # new roads get the map's own road pieces (Route stickers) in the scenery, as the map's roads have them; the
+        # other road files are written below (draw_new_roads). Seen in the game: the painted ground, from afar only
         from .bridges import cut
         from .scenery import RoadPiece, road_pieces
         with_pieces = {name: (list(objects), list(ids)) for name, (objects, ids) in placed.items()}
@@ -1489,7 +1489,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the new roads can't be drawn ({exc})"))
                 continue
             changed_members.update(painted)
-            say(f"roads painted and drawn up close: {name}, from {', '.join(ids)}")
+            # what the player reads: only what was seen in the game (painted roads show from afar; up close: T12)
+            say(f"roads: {name}, from {', '.join(ids)}: painted into the ground (they show from afar); up close new "
+                f"roads don't show yet")
             for note in notes:
                 say(f"  {note}")
             from .groundpaint import DETAIL

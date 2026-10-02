@@ -1,11 +1,15 @@
-"""The roads the game draws from high up: the road model of a map pack's static meshes (`output\\staticmeshes.spkpc`,
-a mesh pack like FORMATS.md §8, model `road`). The map's terrain settings (`mapterrain` in ZZ_GladPatchableWin.dat)
-name it on every map: a static mesh `Road`, mode 128 (the strip of the `Route` road pieces: width 400, colour
-dcdcdc64, stored B, G, R, A), from `DatasMap:\\Output\\StaticMeshes`. Proven in the game (2026-10-02, batch 12: every
-vertex coloured and lifted): it is the road line seen from high up, the map's own and the new roads added here both;
-up close the map's own textured road (grey, a dashed centre line) didn't change, so the close-up road is drawn by
-something else, not found yet (T12, on hold). The scenery's `Route` pieces (rusemod.scenery.RoadPiece) are what the
-map's tools built the model from.
+"""The road model of a map pack's static meshes (`output\\staticmeshes.spkpc`, or `staticmeshes_v02.spkpc` on Alpha,
+Gam_Ostfriesland, Gamma and Robert, Beta both: MEMBERS; a mesh pack like FORMATS.md §8, model `road`). The map's terrain
+settings (`mapterrain` in ZZ_GladPatchableWin.dat) name it on every map: a static mesh `Road`, mode 128 (the strip of
+the `Route` road pieces: width 400, colour dcdcdc64, stored B, G, R, A), from `DatasMap:\\Output\\StaticMeshes`. The
+scenery's `Route` pieces (rusemod.scenery.RoadPiece) are what the map's tools built the model from.
+
+What it draws in the game is NOT known yet (the record, 2026-10-02, owner): batch 11 set the Route strip's colour in
+the terrain settings to red and the roads came out blue from high up, the close-up road unchanged; batch 12 recoloured
+and lifted this model's vertices, and no red road was ever seen (a first note credited batch 11's blue to batch 12:
+wrong). What draws the close-up road (textured asphalt, a dashed centre line) isn't known (TESTS.md T12). This module
+writes new roads into the model, checked against the file's layout only (tests/test_roadstrips.py), never as proof
+that the game shows them.
 
 The model is one draw call over the whole map, cut into parts by cases of CASE map units, one part per case:
 
@@ -31,6 +35,8 @@ import math
 import struct
 
 MEMBER = "output\\staticmeshes.spkpc"
+# every name a map's static meshes go by, same layout (all 33 shipped files read and rebuild byte for byte, 2026-10-02)
+MEMBERS = (MEMBER, "output\\staticmeshes_v02.spkpc")
 MODEL = "road"
 CASE = 81920.0          # map units a case of the static meshes is across (every map's `CaseSize`)
 VERTEX = "TVertex__Position_3f__NormalIn01_4ubn__Normal2In01_4ubn__PSize_1f__Color0_col32__ArcLengths_2f__TexCoord0_2f"
@@ -355,29 +361,35 @@ def add_roads(raw: bytes, lines: list, height_at, bounds) -> tuple[bytes, list[s
             pieces += 1
     notes = []
     if lost:
-        notes.append(f"{lost} road piece(s) off the ground left out of the close-up strips")
+        notes.append(f"{lost} road piece(s) off the ground left out of the road model")
     if not pieces:
         return bytes(raw), notes
     new = pack.with_strips(by_case)
-    notes.insert(0, f"close-up strips: {pieces} road piece(s) added to the map's road model, in {len(by_case)} case(s)")
+    notes.insert(0, f"road model: {pieces} road piece(s) added, in {len(by_case)} case(s)")
     return new, notes
 
 
 def draw_roads(read, path_of, lines: list) -> tuple[dict, list[str]]:
-    """({member: new bytes}, notes): `lines` added to the map pack's road model, on its ground (`output\\highdef.tms`).
-    `read(name)` gives a member's bytes (the build's chain: a reshaped ground counts) or None, `path_of(name)` its full
-    path in the pack. A map with no static meshes (Alpha, Gam_Ostfriesland, Gamma, Robert) draws no road up close,
-    its own neither: nothing to add there."""
+    """({member: new bytes}, notes): `lines` added to the map pack's road model, on its ground (`output\\highdef.tms`),
+    in every static-mesh file the map has (MEMBERS: Alpha, Gam_Ostfriesland, Gamma and Robert have only the _v02 one,
+    Beta both; which one the game loads when there are two isn't known, so both get the roads). `read(name)` gives a
+    member's bytes (the build's chain: a reshaped ground counts) or None, `path_of(name)` its full path in the pack."""
     if not lines:
         return {}, []
-    raw = read(MEMBER)
-    if raw is None:
-        return {}, ["this map has no road model: its roads, the new ones too, show from afar only"]
+    found = [(m, raw) for m in MEMBERS if (raw := read(m)) is not None]
+    if not found:
+        return {}, ["this map has no road model: nothing to add the new roads to"]
     mesh = read("output\\highdef.tms")
     if mesh is None:
         raise StripError("the map has no ground mesh to lay the road strips on")
     from .bridges import Ground
     from .tms import Tms
     tms = Tms(mesh)
-    new, notes = add_roads(raw, lines, Ground(tms).height_at, (tms.bounds[0], tms.bounds[1], tms.bounds[3], tms.bounds[4]))
-    return ({path_of(MEMBER): new} if new != raw else {}), notes
+    out, notes = {}, []
+    for member, raw in found:
+        new, said = add_roads(raw, lines, Ground(tms).height_at, (tms.bounds[0], tms.bounds[1], tms.bounds[3],
+                                                                  tms.bounds[4]))
+        if new != raw:
+            out[path_of(member)] = new
+        notes += [f"{member.rsplit(chr(92), 1)[-1]}: {n}" for n in said] if len(found) > 1 else said
+    return out, notes
