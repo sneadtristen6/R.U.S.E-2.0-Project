@@ -33,12 +33,22 @@ def _game_program(exe: str) -> bool:
     return os.path.basename(exe).lower().startswith(GAME_PROGRAMS)
 
 
+def _old_copy(p: Path) -> bool:
+    """A modded copy other than the one both apps use now (rusemod.play.SHARED): one per mod set or Studio mod, as
+    the apps made them before 2026-10-02, or one built by hand. A copy holds the game's program and its Steam id."""
+    from .play import SHARED
+    return p.name != SHARED and not p.name.startswith(".") and (p / "steam_appid.txt").is_file() and \
+        any(f.name.lower() == "ruse.exe" for f in p.iterdir())
+
+
 def _leftovers(instances: Path) -> list[Path]:
-    """The copies a build left behind: half-built (.partial), old (.old), and what waits in the trash."""
+    """The copies a build left behind: half-built (.partial), old (.old), the old copies of each mod set or mod
+    (_old_copy), and what waits in the trash."""
     from .instance import TRASH
     if not instances.is_dir():
         return []
-    out = sorted(p for p in instances.iterdir() if p.is_dir() and p.name.endswith((".old", ".partial")))
+    out = sorted(p for p in instances.iterdir() if p.is_dir() and (p.name.endswith((".old", ".partial"))
+                                                                   or _old_copy(p)))
     trash = instances / TRASH
     return out + (sorted(trash.iterdir()) if trash.is_dir() else [])
 

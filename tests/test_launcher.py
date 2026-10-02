@@ -13,6 +13,7 @@ from unittest import mock
 
 from test_build import PACK, price, write_mod
 from ruse_launcher import __version__, app
+from rusemod.play import SHARED
 from ruse_launcher.api import MOD_FILES, LauncherApi, LauncherError, _words, language_code, words
 from rusemod import doctor, package, schema
 from rusemod.backup import BackupError
@@ -107,7 +108,7 @@ class Launcher(Base):
         api = self.api()
         j = wait_for(api, api.play("half")["job"])
         self.assertEqual(j["state"], "done", j)
-        copy = self.instances / "half"
+        copy = self.instances / SHARED
         self.assertEqual(price((copy / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes()), [53] * 5)
         self.assertEqual(self.started, [copy / "RUSE.exe"])
         self.assertTrue(any("modded copy ready" in line for line in j["lines"]))
@@ -244,7 +245,7 @@ class Library(Base):
         api.new_set("Half", ["econ-half"])
         j = wait_for(api, api.play("half")["job"])
         self.assertEqual(j["state"], "done", j)
-        copy = self.instances / "half"
+        copy = self.instances / SHARED
         self.assertEqual(price((copy / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes()), [53] * 5)
         broken = Path(self.tmp.name, "broken.rusemod")
         with zipfile.ZipFile(broken, "w") as z:
@@ -365,13 +366,13 @@ class SetsOnScreen(Base):
         api.new_set("Ten then half", ["bbb-ten", "aaa-half"])
         j = wait_for(api, api.play("ten-then-half")["job"])
         self.assertEqual(j["state"], "done", j)
-        copy = self.instances / "ten-then-half"
+        copy = self.instances / SHARED
         self.assertEqual(price((copy / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes()), [5] * 5)
         self.assertIn("load order: bbb-ten -> aaa-half", j["lines"])  # the set's order, not the ids' order
         api.new_set("Half then ten", ["aaa-half", "bbb-ten"])
         j = wait_for(api, api.play("half-then-ten")["job"])
         self.assertEqual(j["state"], "done", j)
-        copy = self.instances / "half-then-ten"
+        copy = self.instances / SHARED
         self.assertEqual(price((copy / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes()), [10] * 5)
         self.assertEqual(len(self.started), 2)
 
@@ -422,7 +423,7 @@ class Clashing(Base):
         self.assertIn("These mods can't be played together (1 clash):", j["message"])
         self.assertIn("Alpha and Beta each replace the same script, effetmap.xyz", j["message"])
         self.assertEqual(self.started, [])
-        self.assertFalse((self.instances / "clashing").exists())
+        self.assertFalse((self.instances / SHARED).exists())
 
 
     def test_best_order_puts_the_smaller_mod_after_the_bigger_one(self):
@@ -510,7 +511,7 @@ class Browse(ListServer):
         api.new_set("Half", ["econ-half"])
         j = wait_for(api, api.play("half")["job"])
         self.assertEqual(j["state"], "done", j)
-        self.assertEqual(price((self.instances / "half" / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes()), [53] * 5)
+        self.assertEqual(price((self.instances / SHARED / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes()), [53] * 5)
         with self.assertRaisesRegex(LauncherError, "no mod called"):
             api.install_from_index("nope")
 
@@ -661,7 +662,7 @@ class Troubleshooter(Base):
                 api.troubleshoot_fix(action)
         (self.instances / "half.old" / "Data").mkdir(parents=True)
         (self.instances / "half.old" / "Data" / "A.dat").write_bytes(b"pack")
-        game_in_copy = str(self.instances / "half" / "RUSE.exe")
+        game_in_copy = str(self.instances / SHARED / "RUSE.exe")
         with mock.patch("rusemod.winfiles.processes", return_value=[(7, game_in_copy)]):
             got = {f["key"]: f for f in api.troubleshoot()["findings"]}
             self.assertEqual((got["running"]["fix"], got["leftovers"]["fix"]), ("close_game", "clear_leftovers"))
@@ -670,6 +671,15 @@ class Troubleshooter(Base):
             close.assert_called_once_with(7)
         self.assertEqual(api.troubleshoot_fix("clear_leftovers"), {"done": 1, "left": []})
         self.assertFalse((self.instances / "half.old").exists())
+        # a copy per mod set, as the apps made them before: a leftover; the one both apps use now isn't
+        for name in ("old-set", SHARED):
+            (self.instances / name).mkdir(parents=True, exist_ok=True)
+            (self.instances / name / "RUSE.exe").write_bytes(b"MZ")
+            (self.instances / name / "steam_appid.txt").write_text("21970")
+        got = {f["key"]: f for f in api.troubleshoot()["findings"]}
+        self.assertEqual(got["leftovers"]["data"]["names"], "old-set")
+        self.assertEqual(api.troubleshoot_fix("clear_leftovers"), {"done": 1, "left": []})
+        self.assertEqual(sorted(p.name for p in self.instances.iterdir() if not p.name.startswith(".")), [SHARED])
         from rusemod.webui import Job
         busy = Job()  # a Play still building its copy: the copy would look like a leftover
         api._jobs[busy.id] = busy

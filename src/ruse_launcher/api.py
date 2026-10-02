@@ -44,7 +44,7 @@ from rusemod.mod_index import DEFAULT_URL, ModIndexError, size_text, states
 from rusemod.package import PackageError
 from rusemod.rmod import best_order as rmod_best_order, clashes as rmod_clashes, data_layout, overwritten as rmod_overwritten, sizes as rmod_sizes
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir, save_settings, settings
-from rusemod.play import Starter, instances_dir
+from rusemod.play import Starter, instances_dir, shared_copy
 from rusemod.rndf import RndfError
 from rusemod.steam import build_of, find_game
 from rusemod.webui import Job, job_view
@@ -630,5 +630,5 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         game, _found = self._game()
         if game is None:
             raise BuildError("We couldn't find R.U.S.E. Choose its folder first.")
-        instance = (self._instances or instances_dir(game)) / chosen["id"]
+        instance = shared_copy(game, self._instances)  # one modded copy on the PC, both apps'
         self._starter.modded(game, chosen["folders"], instance, chosen["name"], say)

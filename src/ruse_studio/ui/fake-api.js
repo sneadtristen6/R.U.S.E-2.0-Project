@@ -734,7 +734,7 @@
       "Saved as C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod"],
     check: [["Building the mod on this map, in a folder removed afterwards…", "  roads: 1 new road joined to the road network",
       "  bridges open", "Checking the movement graphs for infantry and vehicles…"], "The map is checked."],
-    test: [["Building the modded copy of R.U.S.E. for sherman-test in D:\\RUSE-Instances\\studio-sherman-test…",
+    test: [["Building the modded copy of R.U.S.E. for sherman-test in D:\\RUSE-Instances\\Modded game…",
       "  1 change in 1 file", "  modded copy ready: 41 files linked, 1 replaced", "Starting R.U.S.E. from the modded copy…"],
       "R.U.S.E. is starting."],
   };

@@ -274,7 +274,9 @@ search by name and see where each text is used. It costs some disk space (a gues
 - **Rebase:** when the game updates, a 3-way merge (old base, new base, mod) produces a conflict report.
 
 ### L4 Deploy & run
-- **Instances:** `D:\RUSE-Instances\<set>\` on the game's drive (hard links need the same volume).
+- **Instances:** one modded copy for the whole PC, `D:\RUSE-Instances\Modded game\` on the game's drive (hard links
+  need the same volume), rebuilt by every Play and Test in game of both apps (the owner, 2026-10-02: one copy, not
+  one per mod set); the copies older versions made per set or mod are leftovers the troubleshooter clears.
   - Big read-only packs are hard-linked.
   - Small files the game might write (ini, logs) are copied.
   - Rebuilt packs are real files.
@@ -372,7 +374,7 @@ search by name and see where each text is used. It costs some disk space (a gues
   that use it and asks "Change it for: only <the unit you came from> (it gets its own copy) / all N of them"; saved
   as `patch own` or `patch shared` (changes for all of them go first, so an own copy has them too). Not yet: ids and
   nation (locked), texts and names. "Test in game" builds the mod into
-  its own modded copy (`RUSE-Instances\studio-<mod>`) and starts the game with the engine's own code (`rusemod.play`,
+  the PC's one modded copy (`RUSE-Instances\Modded game`) and starts the game with the engine's own code (`rusemod.play`,
   the same the launcher uses), so testing doesn't need the launcher. Later the launcher lists the mods in the shared
   `mods\` folder too, so a mod made in the Studio can be played from the launcher like any other.
   - content browser, reference viewer, schema-driven property editor

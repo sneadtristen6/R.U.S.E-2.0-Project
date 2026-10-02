@@ -42,6 +42,16 @@ def instances_dir(game: Path) -> Path:
     return Path(game.anchor) / "RUSE-Instances"
 
 
+SHARED = "Modded game"  # the one modded copy on the PC: both apps build every Play and Test in game into it (the owner,
+# 2026-10-02: "only one stored ... version of game on whole pc needed"); one game runs at a time anyway
+BUILDING = ".building"  # held while either app builds the copy (rusemod.backup._claim): the other one waits its turn
+
+
+def shared_copy(game: Path, instances: Path | None = None) -> Path:
+    """The modded copy both apps use: `RUSE-Instances\\Modded game` on the game's drive (or in `instances`)."""
+    return (Path(instances) if instances else instances_dir(game)) / SHARED
+
+
 def keep_order(mods) -> None:
     """Make the given order of `mods` [(ModInfo, ops)] count for the load order: each mod loads after the one before
     it, unless either of the two already says how they relate (a dependency, `after` or `before`)."""
@@ -69,12 +79,22 @@ class Starter:
         themselves say otherwise (MOD_FORMAT §10.6). A problem raises BuildError (or RndfError, OSError) with a
         message for the player, and nothing starts; so do .rmod mods that can't go together (the build refuses them
         before building anything, naming every clash: rusemod.rmod.clashes)."""
+        from .backup import _claim, _release
         from .instance import refuse_if_running
         refuse_if_running(str(instance))  # before anything is built: a game still running from the copy is said at once
         mods = [load_mod(Path(m)) for m in mod_folders]
         keep_order(mods)
-        say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")
-        result = build_and_write(game, mods, instance=instance, say=say)
+        lock = instance.parent / BUILDING
+        lock.parent.mkdir(parents=True, exist_ok=True)
+        fd = _claim(lock)
+        if fd is None:
+            raise BuildError("The other app (the Launcher or the Studio) is building the modded game right now: wait "
+                             "for it to finish, then try again.")
+        try:
+            say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")
+            result = build_and_write(game, mods, instance=instance, say=say)
+        finally:
+            _release(lock, fd)
         if result.errors:
             raise BuildError("These mods have errors (listed above). Nothing was changed.")
         exe = next((p for p in instance.iterdir() if p.name.lower() == "ruse.exe"), None) if instance.is_dir() else None

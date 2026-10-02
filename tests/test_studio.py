@@ -381,7 +381,7 @@ class Editing(WithMod):
         while self.api.job(job)["state"] == "running" and time.time() < end:
             time.sleep(0.02)
         j = self.api.job(job)
-        copy = self.home / "copies" / "studio-tank-test"
+        copy = self.home / "copies" / "Modded game"  # the one modded copy
         self.assertEqual((j["state"], j["message"]), ("done", f"R.U.S.E. is starting from {copy}. To see your changes: "
                                                                f"your unit changes show in every game mode."), j)
         self.assertIn("  Your unit changes show in every game mode.", j["lines"])

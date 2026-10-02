@@ -36,7 +36,7 @@ from rusemod.lock import fingerprint_text
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
 from rusemod.patch import INT_RANGES
-from rusemod.play import Starter, instances_dir
+from rusemod.play import SHARED, Starter, instances_dir
 from rusemod.rndf import RndfError
 from rusemod.steam import build_of, data_revisions, find_game
 from rusemod.build import find_pack
@@ -2088,8 +2088,9 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         return {"deleted": address, "source": source, "saved": str(edits.file)}
 
     def test_in_game(self) -> dict:
-        """Build the current mod into its own modded copy (`RUSE-Instances\\studio-<mod>`) and start the game from it,
-        in the background. Returns {'job': id}; follow it with job(id)."""
+        """Build the current mod into the PC's one modded copy (`RUSE-Instances\\Modded game`, the Launcher's too:
+        rusemod.play.shared_copy) and start the game from it, in the background. Returns {'job': id}; follow it with
+        job(id)."""
         folder = self._mod_dir()
         if folder is None:
             raise StudioError("Pick or make a mod first.")
@@ -2100,7 +2101,7 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
 
         game = self._game()
         copies = self._copies(game)
-        instance = copies / f"studio-{folder.name}" if copies is not None else None
+        instance = copies / SHARED if copies is not None else None
         look = self._where_to_look(folder) if game is not None else []
 
         def work(say):
