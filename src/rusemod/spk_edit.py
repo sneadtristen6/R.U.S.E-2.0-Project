@@ -77,7 +77,7 @@ class Pack:
     extra1: tuple             # (bytes, count): empty except in the static-mesh packs
     extra2: tuple
     meshes: list[tuple]       # (first draw call, draw-call count)
-    draws: list[list]         # six u16: ?, material, index buffer, vertex buffer, 0xFFFF, 0xCDCD
+    draws: list[list]         # six u16: its mesh number, material, index buffer, vertex buffer, 0xFFFF, 0xCDCD
     skel_records: tuple       # (bytes, count)
     skel_data: bytes
     ibs: list[Buffer]
@@ -218,8 +218,9 @@ class Pack:
         mat_map: dict[int, int] = {}
         memo: dict[int, int] = {}
         new_first = len(self.draws)
+        mesh = len(self.meshes)
         for d in range(first, first + count):
-            unk, material, ib, vb, ffff, cdcd = src.draws[d]
+            _mesh, material, ib, vb, ffff, cdcd = src.draws[d]
             if material not in mat_map:
                 if self.materials is None or src.materials is None:
                     raise SpkError("a pack without materials")
@@ -230,7 +231,8 @@ class Pack:
             self.ibs.append(Buffer(b.count, b.kind, b.flags, b.data))
             v = src.vbs[vb]
             self.vbs.append(Buffer(v.count, self.format_index(src.formats[v.kind]), v.flags, v.data))
-            self.draws.append([unk, mat_map[material], len(self.ibs) - 1, len(self.vbs) - 1, ffff, cdcd])
+            # a draw call's first u16 is its own mesh number (9,720 of 9,720 in the shipped packs; sneadtristen6)
+            self.draws.append([mesh, mat_map[material], len(self.ibs) - 1, len(self.vbs) - 1, ffff, cdcd])
         self.meshes.append((new_first, count))
         new = Model(new_name or m.name, m.box, m.flags, len(self.meshes) - 1, NO_SKELETON)
         self.add_model(new)

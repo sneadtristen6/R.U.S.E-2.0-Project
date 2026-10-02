@@ -101,6 +101,7 @@ class Copy(unittest.TestCase):
         name = "ww2\\test\\tiger_lodmediumlod0.ase2ndfbin"
         new = dst.copy_model(src, name)
         self.assertEqual(new.mesh, 2)
+        self.assertEqual(dst.draws[-1][0], new.mesh)  # a draw call's first u16 is its own mesh number
         raw = dst.to_bytes()
         out, orig = Spk(raw), Spk(game_pack("tiger", "ZZ:\\GenTexGroup\\Tiger01.png", rename=b"tiger"))
         self.assertEqual(len(out.items), 3)
