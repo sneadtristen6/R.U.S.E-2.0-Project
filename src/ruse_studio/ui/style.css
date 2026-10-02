@@ -150,6 +150,7 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .test-problems-title { margin: 0; color: var(--error, #e8836f); font-weight: 600; }
 .test-problems .check-row { flex-wrap: wrap; }
 .test-problems .check-row > span:first-child { flex: 1 1 420px; }
+.test-problems .check-row > span + span { flex: none; white-space: nowrap; }  /* "(in test)" whole, never "(in tes t)" */
 .test-problems .check-row.fixed > span:first-child { text-decoration: line-through; color: var(--muted); }
 .status { display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 5px 20px; border-top: 1px solid var(--line);
           background: var(--panel); color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
