@@ -1142,3 +1142,26 @@ merged; suite 859 OK).**
   maps (Blitz, where painted cover was proven) gave the same bytes before and after.
 - Two working rules from the day: test copies only for what could break the game, with the test spots beside the
   player's HQ and a top-down map; and a release note claims only what passed in the game.
+
+### 2026-10-02: units from another nation work in any match
+
+- **Proven in the game:** a German Tiger and a German Ju 87 given to the US, in a match with the US alone (no German
+  player): both are researched, built, fight and fly with all their animations; the owner noticed no slowdown. How:
+  every skirmish loads the six main nations' unit packs (models, skeletons, animations, texture stand-ins and the
+  unit-card pictures), whoever plays. Japan is left as shipped (its packs crash outside its own operation, per
+  Prolution's tests). Built for this test only; it goes into `ruse build` next, for every mod made with the Studio or
+  the Launcher.
+- **Also proven:** with a player of the unit's own nation in the match, it works with no change at all; without one,
+  the game crashes when the unit is created (its model isn't loaded). This matches what the community found.
+- **What it replaces:** copying the units' models into the receiving nation's own packs (`rusemod.unitpacks`). Not
+  needed, and it broke that nation's own construction truck (the crash when a factory was placed, batches 4-7). It
+  will be switched off. A fix in the pack writer stays: every draw call names its own mesh, as all 1,529 draw calls
+  in the game's 82 mesh packs do (`da39aed`).
+- **Open:** with the widest version (every model of the six nations tagged for every nation), flying planes can't be
+  box-selected; a narrower version is waiting for its test. New roads still vanish up close (T12), although their
+  up-close textures are there.
+- **Checked on the game's files today:** a `.scenario`'s 16-byte hash is the MD5 of the file without those bytes and
+  the two after them (102 of 102 files; our writer already does this); every `.kdt` part re-encodes byte for byte
+  (64 of 64). A mod's game scripts can't use Python's `exec` statement (the game stops with "exec statement").
+- **Test copies:** a speed cheat that sets every unit to one top speed, combined with our own x3, left trucks unable
+  to leave the HQ; test copies use only the x3 from now on.
