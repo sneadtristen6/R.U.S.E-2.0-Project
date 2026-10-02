@@ -18,6 +18,9 @@ on a 4-byte boundary, the gap filled with 0x7E; an empty one sits where the last
 data starts on a 4-byte boundary (0x7E between). The name table is a trie (rusemod.spk), its entries padded to an
 even length with zeros; siblings keep the pack's order, which is folder by folder (us_1\\ before us_10\\).
 
+The maps' static meshes (the baked road and bridges): their two extra sections are decoded (see the notes above
+`read_chunks`), and `add_road_pieces` adds Route pieces to the road the game draws up close.
+
 Not done yet: skeletons (a model with a skeleton record can't be copied), the animation and proxy packs a unit
 also needs, and re-encoding compressed vertex buffers (a copy keeps them as they are; new geometry goes in stored
 as is, as most scenery is).
@@ -397,3 +400,180 @@ def _copy_value(dst: Ndf, src: Ndf, v: Value, memo: dict[int, int]) -> Value:
             out += _copy_value(dst, src, sub, memo).encode()
         return Value(tc, bytes(out))
     return Value(tc, p)
+
+
+# --- the maps' static meshes (output\staticmeshes*.spkpc): chunks, and new road pieces ---
+# Only these packs fill the two extra sections (DomesticNukes and his Claude, 2026-10-02, all 33 map packs):
+#  extra1 = chunks, 48 bytes each: f32 box (min x, y, z, max x, y, z), u16 cell id, 2 junk bytes, u32 first vertex,
+#           vertex count, first index, index count, u8 0, 3 junk bytes (Eugen's tool left memory there: 0xDD / 0xCD);
+#  extra2 = per draw call (u16 first chunk, u16 chunk count). A draw's chunks are back to back in its vertex and index
+#           buffers, cover them exactly, are sorted by cell id with no id twice, and a chunk's indices are absolute
+#           vertex numbers inside its own vertex range (5,022 of 5,022 chunks).
+#  cell id = the rank of the chunk's 81,920-unit square along a Hilbert curve over the next power-of-two grid,
+#           counting only squares inside the map (5,011 of 5,022; the rest straddle a square's edge and take a
+#           neighbour's id). Bridges and roads in one square share it.
+#  A road chunk's box is its vertices' box with the top raised by 10 (4,701 of 4,701).
+#  The road (the `road` model, MaterialBezierLine_Road): each Route piece is 6 vertices, two cross-sections of 3 at
+#  its ends (TexCoord u -0.5, 0, 0.5; v 400), and 4 triangles (a0,b1,b0)(a0,a1,b1)(a1,b2,b1)(a1,a2,b2).
+CELL = 81920.0
+_CHUNK = struct.Struct("<6fHHIIIIB3s")
+ROAD_COLOUR = (220, 220, 220, 100)
+ROAD_WIDTH = 400.0
+
+
+@dataclass
+class Chunk:
+    box: tuple
+    cell: int
+    v0: int
+    vn: int
+    i0: int
+    ni: int
+    flag: int = 0
+    junk: tuple = (0xDDDD, b"\xcd\xdd\xdd")
+
+
+def read_chunks(pack: "Pack") -> tuple[list[Chunk], list[tuple[int, int]]]:
+    raw1, n1 = pack.extra1
+    raw2, n2 = pack.extra2
+    if len(raw1) != _CHUNK.size * n1 or len(raw2) != 4 * n2:
+        raise SpkError("not a static-mesh pack's chunk sections")
+    chunks = []
+    for k in range(n1):
+        *box, cell, junk1, v0, vn, i0, ni, flag, junk2 = _CHUNK.unpack_from(raw1, _CHUNK.size * k)
+        chunks.append(Chunk(tuple(box), cell, v0, vn, i0, ni, flag, (junk1, junk2)))
+    return chunks, [struct.unpack_from("<HH", raw2, 4 * d) for d in range(n2)]
+
+
+def write_chunks(pack: "Pack", chunks: list[Chunk], per_draw: list[tuple[int, int]]) -> None:
+    pack.extra1 = (b"".join(_CHUNK.pack(*c.box, c.cell, c.junk[0], c.v0, c.vn, c.i0, c.ni, c.flag, c.junk[1])
+                            for c in chunks), len(chunks))
+    pack.extra2 = (b"".join(struct.pack("<HH", *p) for p in per_draw), len(per_draw))
+
+
+def hilbert(n: int, x: int, y: int) -> int:
+    d, s = 0, n // 2
+    while s:
+        rx, ry = (1 if x & s else 0), (1 if y & s else 0)
+        d += s * s * ((3 * rx) ^ ry)
+        if not ry:
+            if rx:
+                x, y = s - 1 - x, s - 1 - y
+            x, y = y, x
+        s //= 2
+    return d
+
+
+def cell_ids(map_box: tuple) -> dict[tuple[int, int], int]:
+    """{(column, row): cell id} for a map's 81,920-unit squares (map_box = mapinfo.win's x0, y0, x1, y1 at 32)."""
+    x0, y0, x1, y1 = map_box
+    w, h = -int(-(x1 - x0) // CELL), -int(-(y1 - y0) // CELL)
+    n = 1
+    while n < max(w, h):
+        n *= 2
+    cells = sorted((hilbert(n, x, y), (x, y)) for x in range(w) for y in range(h))
+    return {c: i for i, (_d, c) in enumerate(cells)}
+
+
+@dataclass
+class RoadPiece:
+    """One Route piece: its two ends (x, y, z on the ground), the curve's direction there (x, y), and the width
+    factor at each end (about 1; the game's own widen up to 1.8 at sharp joints)."""
+    a: tuple
+    b: tuple
+    ta: tuple
+    tb: tuple
+    size_a: float = 1.0
+    size_b: float = 1.0
+
+
+def _unit(t):
+    n = (t[0] * t[0] + t[1] * t[1]) ** 0.5 or 1.0
+    return t[0] / n, t[1] / n
+
+
+def _byte(v: float) -> int:
+    return max(0, min(255, round(v * 127 + 128)))
+
+
+def road_vertices(piece: RoadPiece) -> bytes:
+    """The piece's 6 vertices in the road format (Position_3f NormalIn01_4ubn Normal2In01_4ubn PSize_1f
+    Color0_col32 ArcLengths_2f TexCoord0_2f, 44 bytes)."""
+    out = bytearray()
+    for p, t, size in ((piece.a, piece.ta, piece.size_a), (piece.b, piece.tb, piece.size_b)):
+        tx, ty = _unit(t)
+        normal = bytes([_byte(tx), _byte(ty), 128, 128])
+        normal2 = bytes([_byte(ty), _byte(-tx), 128, 128])
+        for u in (-0.5, 0.0, 0.5):
+            out += struct.pack("<3f", *p) + normal + normal2 + struct.pack("<f", size) + bytes(ROAD_COLOUR) \
+                + struct.pack("<4f", 0.0, 0.0, u, ROAD_WIDTH)
+    return bytes(out)
+
+
+_PIECE_TRIANGLES = (0, 4, 3, 0, 1, 4, 1, 5, 4, 1, 2, 5)
+_ROAD_STRIDE = 44
+
+
+def road_draw(pack: "Pack") -> int:
+    """The draw call of the `road` model."""
+    m = pack.model("road")
+    first, count = pack.meshes[m.mesh]
+    if count != 1:
+        raise SpkError("the road model should be one draw call")
+    return first
+
+
+def add_road_pieces(pack: "Pack", pieces: list, map_box: tuple) -> int:
+    """Add Route pieces to the map's baked road mesh: each goes into the chunk of the square holding its middle
+    (a new chunk if the square has none), the chunk's box grows (top + 10), and the road's buffers are rebuilt in
+    chunk order. Returns the road's vertex count (it must stay under 65,536: the indices are u16)."""
+    chunks, per_draw = read_chunks(pack)
+    d = road_draw(pack)
+    _u, _mat, ib, vb, _f, _c = pack.draws[d]
+    first, count = per_draw[d]
+    if pack.vbs[vb].flags or pack.ibs[ib].flags:
+        raise SpkError("the road's buffers are compressed")
+    vdata, idata = pack.vbs[vb].data, pack.ibs[ib].data
+    ids = cell_ids(map_box)
+    groups = {}   # cell id -> [vertex bytes, local indices, old chunk or None]
+    for c in chunks[first:first + count]:
+        local = [i - c.v0 for i in struct.unpack_from(f"<{c.ni}H", idata, 2 * c.i0)]
+        groups[c.cell] = [bytearray(vdata[_ROAD_STRIDE * c.v0:_ROAD_STRIDE * (c.v0 + c.vn)]), local, c]
+    x0, y0 = map_box[0], map_box[1]
+    for p in pieces:
+        mx, my = (p.a[0] + p.b[0]) / 2, (p.a[1] + p.b[1]) / 2
+        key = (int((mx - x0) // CELL), int((my - y0) // CELL))
+        if key not in ids:
+            raise SpkError(f"a road piece outside the map at ({mx:.0f}, {my:.0f})")
+        g = groups.setdefault(ids[key], [bytearray(), [], None])
+        base = len(g[0]) // _ROAD_STRIDE
+        g[0] += road_vertices(p)
+        g[1] += [base + i for i in _PIECE_TRIANGLES]
+    new_v, new_i, new_chunks = bytearray(), [], []
+    for cell in sorted(groups):
+        vb_bytes, local, old = groups[cell]
+        v0, vn = len(new_v) // _ROAD_STRIDE, len(vb_bytes) // _ROAD_STRIDE
+        if old is not None and vn == old.vn:
+            box = old.box   # an untouched chunk keeps its box as shipped
+        else:
+            pos = [struct.unpack_from("<3f", vb_bytes, _ROAD_STRIDE * k) for k in range(vn)]
+            box = tuple(min(q[j] for q in pos) for j in range(3)) + tuple(max(q[j] for q in pos) for j in range(3))
+            box = box[:5] + (box[5] + 10.0,)
+        new_chunks.append(Chunk(box, cell, v0, vn, len(new_i), len(local), 0,
+                                old.junk if old is not None else (0xDDDD, b"\xcd\xdd\xdd")))
+        new_i += [v0 + i for i in local]
+        new_v += vb_bytes
+    total = len(new_v) // _ROAD_STRIDE
+    if total > 0xFFFF:
+        raise SpkError(f"the road would have {total} vertices; u16 indices allow 65,535")
+    chunks[first:first + count] = new_chunks
+    shift = len(new_chunks) - count
+    per_draw = [(f + (shift if f > first else 0), len(new_chunks) if k == d else n) for k, (f, n) in enumerate(per_draw)]
+    write_chunks(pack, chunks, per_draw)
+    pack.set_buffer("vb", vb, bytes(new_v), total)
+    pack.set_buffer("ib", ib, struct.pack(f"<{len(new_i)}H", *new_i), len(new_i))
+    m = pack.model("road")
+    lo = [min(m.box[j], *(c.box[j] for c in new_chunks)) for j in range(3)]
+    hi = [max(m.box[j + 3], *(c.box[j + 3] for c in new_chunks)) for j in range(3)]
+    m.box = tuple(lo + hi)
+    return total

@@ -828,6 +828,31 @@ German skirmish pack's 74 models copied into the US one read back exactly as the
   models at all, only materials.
 - Not done yet: skeletons (models with a skeleton record), the animation and proxy packs a unit needs, encoding
   compressed vertex buffers (new geometry is stored as is, like most scenery).
+
+### The maps' static meshes (`output\staticmeshes*.spkpc`): the baked road and bridges ✅ written
+
+From **DomesticNukes and his Claude** (2026-10-02), on all 33 map packs. Up close the game draws a map's roads from
+the `road` model here (material `MaterialBezierLine_Road`), not from the Route items in `save.boobspc`: those are
+what Eugen's tool baked it from. The pack has two models, `bridges` and `road`, and fills the two extra sections:
+
+- **Chunks** (the first extra section), 48 bytes each: f32 box (min x, y, z, max x, y, z), u16 cell id, 2 junk
+  bytes, u32 first vertex, vertex count, first index, index count, u8 0, 3 junk bytes (memory Eugen's tool left:
+  mostly 0xDD / 0xCD). **Per draw call** (the second): u16 first chunk, u16 chunk count.
+- A draw's chunks are back to back in its vertex and index buffers and cover them exactly; they are sorted by cell
+  id, with no id twice; a chunk's indices are absolute vertex numbers inside its own range (5,022 of 5,022 chunks).
+- **Cell id**: the map is cut into 81,920-unit squares; the id is a square's rank along a Hilbert curve over the next
+  power-of-two grid, counting only the squares inside the map (5,011 of 5,022; the rest straddle a square's edge and
+  take a neighbour's id). Bridges and roads in one square share it. `rusemod.spk_edit.cell_ids`.
+- A road chunk's box is its vertices' box with the top raised by 10 (4,701 of 4,701).
+- **The road**: format `Position_3f NormalIn01_4ubn Normal2In01_4ubn PSize_1f Color0_col32 ArcLengths_2f
+  TexCoord0_2f` (44 bytes), stored as is, u16 indices (the largest, Dolly, uses 31,302 vertices). Each Route piece is
+  6 vertices, two cross-sections of 3 at its ends (all at the centre point, z on the ground; TexCoord u −0.5 / 0 /
+  0.5, v 400 = the width; NormalIn01 = the curve's direction there, n × 127 + 128; Normal2 = (t.y, −t.x); PSize ≈ 1,
+  wider at sharp joints; colour (220, 220, 220, 100); ArcLengths 0), and 4 triangles (a0,b1,b0) (a0,a1,b1)
+  (a1,b2,b1) (a1,a2,b2).
+- `rusemod.spk_edit.add_road_pieces(pack, pieces, map_box)` adds pieces: each goes into the chunk of the square
+  holding its middle (a new chunk if there is none), and the road's buffers are rebuilt in chunk order. With no
+  pieces it rebuilds all 33 packs byte for byte. Not tested in the game yet.
 - `.apk` (nested EDAT), `.baf` (`0f000000`), `.ppk` (`PRXY` or nested EDAT), `.gpk` (UI, likely Scaleform GFx).
 - Scenery sets are European/African only: africa, allemagne, ardennes, europe, france, givre, hollande, italie. There is no tropical set.
 

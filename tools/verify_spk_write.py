@@ -4,7 +4,10 @@ r"""Verify the mesh-pack writer (rusemod.spk_edit) against every pack the game s
      (Maps\PC\DataMap*.dat: output\staticmeshes*.spkpc) rebuilds byte for byte, its header hash included;
   B. copying: every model of one pack copied into another (default: the German skirmish pack into the US one, the
      captured-Tiger case) reads back with rusemod.spk exactly like the original: positions, normals, UVs,
-     triangles, material names and textures.
+     triangles, material names and textures;
+  C. the maps' static meshes: every chunk's cell id against the Hilbert rule, and a 40-piece test road added through
+     each map's middle with every chunk rule kept (ids sorted and unique, chunks back to back, indices inside their
+     chunk) and the map's own road and bridges untouched.
 
 Usage:  set PYTHONPATH=<repo>\src  &&  py -3 tools\verify_spk_write.py [game_dir] [--from meshskirmish_ger] [--to meshskirmish_us]
 DomesticNukes and his Claude, 2026-10-02.
@@ -90,8 +93,75 @@ def main(argv):
           f"{'all read back the same' if not problems else f'{len(problems)} problems'}")
     for p in problems[:10]:
         print("      ", p)
+    road_problems = roads(game)
     print(f"in {time.time() - start:.0f}s")
-    return 0 if n["identical"] == n["packs"] and not problems else 1
+    return 0 if n["identical"] == n["packs"] and not problems and not road_problems else 1
+
+
+def roads(game: Path) -> list[str]:
+    """C. every map's static meshes: the chunk ids match the Hilbert rule; a test road (40 pieces through the map's
+    middle) goes in with every chunk rule kept and the map's own road and bridges untouched."""
+    import math
+    import struct
+    from collections import Counter
+    from rusemod.spk_edit import RoadPiece, add_road_pieces, cell_ids, read_chunks, road_draw
+
+    dm = Edat.open(str(find_pack(game, "DataMap_Win.dat")))
+    boxes = {}
+    for e in dm.entries:
+        p = e.path.lower()
+        if p.startswith("datasmap\\") and p.endswith("\\mapinfo.win"):
+            boxes[p.split("\\")[1]] = struct.unpack_from("<4f", bytes(dm.read(e)), 32)
+    problems, maps, matched, chunks_total = [], 0, 0, 0
+    for path, raw in packs(game):
+        if "staticmeshes" not in path.lower():
+            continue
+        key = path.split(":")[0][len("DataMap"):-len("_v09.dat")].lower()
+        box = boxes.get(key)
+        if box is None:
+            problems.append(f"{path}: no mapinfo box")
+            continue
+        maps += 1
+        pack = Pack.from_bytes(raw)
+        chunks, per_draw = read_chunks(pack)
+        ids = cell_ids(box)
+        for c in chunks:
+            cx, cy = int(((c.box[0] + c.box[3]) / 2 - box[0]) // 81920), int(((c.box[1] + c.box[4]) / 2 - box[1]) // 81920)
+            matched += ids.get((cx, cy)) == c.cell
+            chunks_total += 1
+        before = Spk(raw)
+        d = road_draw(pack)
+        x, y = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+        pieces = []
+        for k in range(40):
+            dx, dy = 4100 * math.cos(0.4 + 0.02 * k), 4100 * math.sin(0.4 + 0.02 * k)
+            pieces.append(RoadPiece((x, y, 0.0), (x + dx, y + dy, 0.0), (dx, dy), (dx, dy)))
+            x, y = x + dx, y + dy
+        add_road_pieces(pack, pieces, box)
+        after = Spk(pack.to_bytes())
+        chunks, per_draw = read_chunks(Pack.from_bytes(pack.to_bytes()))
+        f, n = per_draw[d]
+        road = chunks[f:f + n]
+        _m, ib, vb = after.draws[d]
+        idx = after.indices(ib)
+        pos = after.vertices(vb)[1]["Position_3f"]
+        old = before.vertices(before.draws[d][2])[1]["Position_3f"]
+        checks = {
+            "ids sorted and unique": [c.cell for c in road] == sorted({c.cell for c in road}),
+            "chunks back to back": all(road[i].v0 + road[i].vn == road[i + 1].v0 and road[i].i0 + road[i].ni == road[i + 1].i0
+                                       for i in range(len(road) - 1)),
+            "indices inside their chunk": all(all(c.v0 <= i < c.v0 + c.vn for i in idx[c.i0:c.i0 + c.ni]) for c in road),
+            "240 vertices added": len(pos) == len(old) + 240,
+            "the map's own road kept": not (Counter(old) - Counter(pos)),
+            "bridges untouched": all(before.part(k).positions == after.part(k).positions
+                                     for k in range(len(after.draws)) if k != d),
+        }
+        problems += [f"{path}: {k}" for k, ok in checks.items() if not ok]
+    print(f"C. {maps} maps' static meshes: chunk ids by the Hilbert rule {matched} of {chunks_total}; a 40-piece "
+          f"test road added on each: {'every rule kept' if not problems else f'{len(problems)} problems'}")
+    for p in problems[:10]:
+        print("      ", p)
+    return problems
 
 
 if __name__ == "__main__":

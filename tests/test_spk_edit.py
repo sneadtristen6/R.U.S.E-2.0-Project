@@ -7,8 +7,8 @@ from fixtures import make_ndf, val
 from test_spk import TEXTURE, make_pack
 from rusemod.ndf import Ndf
 from rusemod.spk import Spk, SpkError
-from rusemod.spk_edit import (NO_SKELETON, Buffer, Model, Pack, build_names, header_hash, material_list,
-                              read_names)
+from rusemod.spk_edit import (NO_SKELETON, Buffer, Chunk, Model, Pack, RoadPiece, build_names, cell_ids,
+                              header_hash, hilbert, material_list, read_chunks, read_names, road_vertices, write_chunks)
 
 LIST, MAT, FLOAT = 0, 1, 2
 
@@ -131,6 +131,37 @@ class Copy(unittest.TestCase):
         out = Spk(p.to_bytes())
         self.assertEqual(out.indices(0), [0, 1, 2])
         self.assertEqual(p.ibs[0], Buffer(3, 1, 0, struct.pack("<3H", 0, 1, 2)))
+
+
+
+class StaticMeshes(unittest.TestCase):
+    def test_cell_ids_follow_a_hilbert_curve_over_the_squares_inside_the_map(self):
+        ids = cell_ids((0, 0, 16 * 81920.0, 16 * 81920.0))      # a 16 x 16 map: the plain Hilbert index
+        self.assertEqual(ids, {(x, y): hilbert(16, x, y) for x in range(16) for y in range(16)})
+        ids = cell_ids((0, 0, 24 * 81920.0, 24 * 81920.0))      # 24 x 24 (Alpha): ranks along a 32 x 32 curve
+        quads = {"x<16,y<16": [], "x<16,y>=16": [], "x>=16,y>=16": [], "x>=16,y<16": []}
+        for (x, y), i in ids.items():
+            quads[f"x{'<' if x < 16 else '>='}16,y{'<' if y < 16 else '>='}16"].append(i)
+        self.assertEqual([(min(v), max(v)) for v in quads.values()], [(0, 255), (256, 383), (384, 447), (448, 575)])
+
+    def test_chunk_sections_round_trip(self):
+        p = Pack.from_bytes(game_pack())
+        chunks = [Chunk((0, 0, 0, 1, 1, 11), 3, 0, 4, 0, 6), Chunk((1, 1, 0, 2, 2, 11), 7, 4, 4, 6, 6, 0, (5, b"abc"))]
+        write_chunks(p, chunks, [(0, 1), (1, 1)])
+        back = Pack.from_bytes(p.to_bytes())
+        self.assertEqual(read_chunks(back), (chunks, [(0, 1), (1, 1)]))
+        self.assertEqual(len(back.extra1[0]), 96)
+
+    def test_a_road_piece_is_two_cross_sections_of_three(self):
+        raw = road_vertices(RoadPiece((0.0, 0.0, 5.0), (100.0, 0.0, 6.0), (1.0, 0.0), (1.0, 0.0)))
+        self.assertEqual(len(raw), 6 * 44)
+        rows = [struct.unpack_from("<3f4B4Bf4B4f", raw, 44 * k) for k in range(6)]
+        self.assertEqual([r[-1] for r in rows], [400.0] * 6)                       # v: the width
+        self.assertEqual([r[-2] for r in rows], [-0.5, 0.0, 0.5] * 2)              # u across the road
+        self.assertEqual(rows[0][3:5], (255, 128))                                 # the direction, n*127+128
+        self.assertEqual(rows[0][7:9], (128, 1))                                   # turned: (t.y, -t.x)
+        self.assertEqual(rows[0][12:16], (220, 220, 220, 100))
+        self.assertEqual([r[2] for r in rows], [5.0] * 3 + [6.0] * 3)
 
 
 if __name__ == "__main__":
