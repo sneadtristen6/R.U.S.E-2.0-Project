@@ -30,10 +30,18 @@ PROGRAM = re.compile(r"\bFUN_[0-9A-Fa-f]{6,}\b|\b0x14[0-9A-Fa-f]{7}\b|\bsub_14[0
 WORDING = re.compile(r"RUSE\.exe'?s\b|RUSE\.exe (?:does|reads|checks|holds|keeps|decides|loads|has|uses|calls)\b|"
                      r"program-side|\b(?:in|inside) the (?:game's )?program\b|"
                      r"\bthe (?:game's )?program (?:does|reads|checks|holds|keeps|decides|loads|calls|caps)\b|"
-                     r"exe internals|disassembl|\bRTTI\b|\bvtables?\b", re.I)
+                     r"exe internals|disassembl|\bRTTI\b|\bvtables?\b|"
+                     # how anything was studied (the owner, 2026-10-02: nothing public may point at it): our text says
+                     # "read the game's scripts", "the file's layout", "decoded", never these
+                     r"decompil|reverse[- ]?engineer|uncompyle|\bxdis\b|ghidra|\bIDA\b|\bvfunc|"
+                     # and the words and tools that lead to it
+                     r"bytecode|opcode|hex-?rays|binary ninja|x64dbg|ollydbg|cheat engine|\bdebugger\b|minidump|"
+                     r"crash ?dumps?\b|hex editor", re.I)
 # where the words may appear on purpose: this check itself, and code that must refuse such files; the GPL's text
 ALLOWED = {"tools/check_public.py", "tests/test_check_public.py", "tools/check_commit_msg.py"}
 WORDING_ALLOWED = {"LICENSE"}
+# LittleGroove's engine as he wrote and published it (PLAN decision 26): his words are his, left as they are
+WORDING_ALLOWED_DIRS = ("src/ruse_mod_engine/",)
 TEXT_LIMIT = 4_000_000
 
 
@@ -65,7 +73,7 @@ def problems(paths: list[str], read=lambda p: (ROOT / p).read_bytes()) -> list[s
         if m:
             out.append(f"{p}: names a place in the game's program ({m.group(0)}); program details stay private")
             continue
-        m = WORDING.search(text) if p not in WORDING_ALLOWED else None
+        m = WORDING.search(text) if p not in WORDING_ALLOWED and not p.startswith(WORDING_ALLOWED_DIRS) else None
         if m:
             line = text.count("\n", 0, m.start()) + 1
             out.append(f"{p}:{line}: says what the game's program does or holds ({m.group(0)!r}); public text says "

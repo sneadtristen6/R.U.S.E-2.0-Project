@@ -30,7 +30,7 @@ PY25 = b"\x0a\x0d\xf2\xb3"   # Python 2.5's magic number 62131, stored big-endia
 SCRIPT_PACK = "genpython\\eugenpatchable.ipk"   # the pack in ZZ_Win.dat that holds the unit list
 UNIT_LIST = "parametres\\classes.xyz"           # the unit list in that pack (the end of its member path)
 
-# Python 2.5 opcodes used by the unit list
+# Python 2.5 instructions used by the unit list
 BUILD_CLASS, LOAD_LOCALS, RETURN_VALUE, HAVE_ARGUMENT = 89, 82, 83, 90
 STORE_NAME, STORE_ATTR, LOAD_CONST, LOAD_NAME, BUILD_TUPLE, LOAD_ATTR = 90, 95, 100, 101, 102, 105
 CALL_FUNCTION, MAKE_FUNCTION = 131, 132
@@ -194,13 +194,13 @@ def dump(v) -> bytes:
 
 
 def instructions(code: bytes) -> list[tuple[int, int, int | None]]:
-    """(offset, opcode, argument or None) for Python 2.5 bytecode."""
+    """(offset, instruction, argument or None) for Python 2.5 compiled code."""
     out, p = [], 0
     while p < len(code):
         op = code[p]
         if op >= HAVE_ARGUMENT:
             if p + 3 > len(code):
-                raise ScriptError(f"bytecode ends inside an instruction at {p}")
+                raise ScriptError(f"the compiled code ends inside an instruction at {p}")
             out.append((p, op, code[p + 1] | code[p + 2] << 8))
             p += 3
         else:
@@ -313,7 +313,7 @@ def _checked(ul: UnitList, new: list[NewClass]) -> list[UnitClass]:
 
 
 def _statements(ul: UnitList, new: list[NewClass], likes: list[UnitClass]):
-    """The constants, names and bytecode that define and register `new`, appended to the module's own."""
+    """The constants, names and compiled code that define and register `new`, appended to the module's own."""
     index = {n: i for i, n in enumerate(ul.module.names)}
     consts, names, code = [], [], b""
     kc, kn = len(ul.module.consts), len(ul.module.names)
@@ -351,7 +351,7 @@ def add_classes(data: bytes, new: list[NewClass]) -> bytes:
         raise ScriptError("the unit list doesn't end with 'return None' as expected")
     (c0, c1), (k0, k1), (n0, n1) = _module_spans(data)
     if data[c0:c0 + 1] != b"s" or data[k0:k0 + 1] != b"(" or data[n0:n0 + 1] != b"(":
-        raise ScriptError("the unit list's bytecode, constants or names aren't stored the usual way")
+        raise ScriptError("the unit list's compiled code, constants or names aren't stored the usual way")
     new_data = (data[:c0] + dump(mod.code[:-4] + code + mod.code[-4:])
                 + b"(" + struct.pack("<i", len(mod.consts) + len(consts)) + data[k0 + 5:k1]
                 + b"".join(dump(c) for c in consts)
@@ -376,9 +376,9 @@ def check_added(old: bytes, new: bytes, added: list[NewClass]) -> None:
     if b.consts[len(a.consts):] != tuple(consts) or b.names[len(a.names):] != tuple(names):
         raise ScriptError("the added constants or names aren't exactly the template's")
     if b.code != a.code[:-4] + code + a.code[-4:]:
-        raise ScriptError("the module's bytecode isn't the old one plus the template")
+        raise ScriptError("the module's compiled code isn't the old one plus the template")
     if {op for _, op, _ in instructions(code)} - _ADDED_OPS:
-        raise ScriptError("the added bytecode uses an instruction the template never needs")
+        raise ScriptError("the added code uses an instruction the template never needs")
     after = unit_list(new)
     if len(after.classes) != len(ul.classes) + len(added):
         raise ScriptError("the unit list doesn't have exactly the added classes more")

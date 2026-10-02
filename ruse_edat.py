@@ -1,6 +1,6 @@
 """Read-only reader for Eugen Systems EDAT v1 archives (R.U.S.E.).
 
-Layout (reverse-engineered from the game files, little-endian):
+Layout (from the game files, little-endian):
   0x00  char[4]  "edat"
   0x04  u32      version (1)
   0x08  u8[16]   checksum (zero in Data\\*.dat, set in Maps\\*.dat)

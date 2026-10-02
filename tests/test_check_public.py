@@ -37,6 +37,16 @@ class Guard(unittest.TestCase):
         self.assertEqual(sorted(f.split(":")[0] for f in found), ["docs/a.md", "docs/b.md", "docs/c.md", "docs/d.md",
                                                                  "src/x.toml"])
 
+    def test_words_about_how_anything_was_studied_are_refused(self):
+        bad = {"docs/a.md": b"we decompiled the scripts", "docs/b.md": b"the format was reverse-engineered",
+               "docs/c.md": b"opened in Ghidra", "src/d.py": b"# uncompyle6 gives the source", "docs/e.md": b"vfunc3 does it",
+               "docs/f.md": b"Reverse engineering the map", "docs/h.md": b"the module's bytecode",
+               "docs/i.md": b"read from the crash dumps", "docs/j.md": b"watched it in Cheat Engine"}
+        fine = {"docs/g.md": b"the game's scripts, read; the file's layout, decoded",
+                "src/ruse_mod_engine/script_logic.py": b"decompile -> edit -> recompile (LittleGroove's words)"}
+        found = check({**bad, **fine})
+        self.assertEqual(sorted(f.split(":")[0] for f in found), sorted(bad))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -54,7 +54,7 @@ def write(root: Path):
     rev = root / "Data" / "PC" / "190852"
     rev.mkdir(parents=True)
     (root / "Maps" / "PC").mkdir(parents=True)
-    nested = make_edat([("file", "eugen.xyz", b"python bytecode")])
+    nested = make_edat([("file", "eugen.xyz", b"compiled script")])
     (rev / "ZZ_GladPatchableWin.dat").write_bytes(make_edat([
         ("dir", "genglad\\patchable\\gfx\\", [("file", "everything.cpp.gladndfbin", UNITS),
                                                ("file", "everything_debuginfo.cpp.gladndfbin", UNITS),
