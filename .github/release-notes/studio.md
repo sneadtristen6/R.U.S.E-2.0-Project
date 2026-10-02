@@ -1,6 +1,20 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.8.3:** the map editor's scenario tools from LittleGroove's RUSE-Mod-Manager: supply depots and HQs stick to
+roads, an icon for every building and unit, and each player's opening camera shown, carried and turned. Not yet tried
+in the game.
+
+| Before | Now |
+|---|---|
+| A supply depot spot couldn't be placed. | **Supply depot spot** is first under Add unit → Buildings → Money. |
+| A starting point went exactly where you clicked, on the road or far from it alike. | **Stick to roads** (on by default) puts it beside the nearest road, as far from it as the game's own maps do (LittleGroove measured it). Untick it to place in the middle of a field. |
+| Spawns were a few icons, with letters for the country. | An icon for what each one is (HQ, supply depot, factory, fort, decoy, soldier, tank, anti-tank, artillery, prototype, plane, turret) and the country's roundel. |
+| You couldn't see where a player's match opens. | Each starting point shows its opening camera: the flight in (dotted), where it stops, what it looks at, and the part of the map the screen shows. |
+| A moved starting point's opening camera stayed at the old place. | The camera moves with it; a new starting point gets a camera of its own. |
+| The opening camera couldn't be changed. | With **Move**, drag a start's camera round its HQ to open the match from another side; **Camera back** undoes it. |
+| A starting point in a wood was refused. | Allowed: an HQ works there, and supply trucks drive through woods. Only water, cliffs and blocked ground are refused. |
+
 **0.8.2:** a test stopped by a mistake in your mod tells you which and fixes it, mods and maps apart, clearer map
 colours and spawns, and one game copy for the whole PC.
 

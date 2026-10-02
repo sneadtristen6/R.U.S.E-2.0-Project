@@ -1,6 +1,14 @@
 **RUSE Launcher 0.3, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.3.3:** plays mods made with Studio 0.8.3.
+
+| Before | Now |
+|---|---|
+| A mod with a turned opening camera (Studio 0.8.3) was refused. | Built: the camera is turned as the mod says. |
+| A moved starting point's opening camera stayed at the old place. | The camera moves with it; a new starting point gets a camera of its own. |
+| A mod with a starting point in a wood was refused. | Built: an HQ works there. |
+
 **0.3.2:** one game copy for the whole PC, the version shown, and a clearer library.
 
 | Before | Now |
