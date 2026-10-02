@@ -911,6 +911,8 @@ async function showTestProblems() {
   if (!list.length) { offerTroubleshoot(); return; }
   const labels = { spawn_neutral: [w.test_fix_neutral, w.tip_test_fix_neutral],
     spawn_remove: [w.test_fix_remove_spawn, w.tip_test_fix_remove_spawn],
+    spawns_neutral_all: [w.test_fix_neutral_all, w.tip_test_fix_neutral_all],
+    spawns_remove_all: [w.test_fix_remove_all, w.tip_test_fix_remove_all],
     road_remove: [w.test_fix_remove_road, w.tip_test_fix_remove_road] };
   box.replaceChildren(el("p", { className: "test-problems-title", textContent: fillText(w.test_problems_title, { n: list.length }) }),
     ...list.map((p) => {
@@ -919,7 +921,7 @@ async function showTestProblems() {
       if (!p.fixes.length) row.append(el("span", { className: "muted small", textContent: w.test_no_fix }));
       for (const fix of p.fixes) {
         const [label, tip] = labels[fix.kind] || [fix.kind, ""];
-        const b = el("button", { type: "button", className: "small", textContent: fillText(label, { n: fix.road }), title: tip || "" });
+        const b = el("button", { type: "button", className: "small", textContent: fillText(label, { n: fix.road ?? fix.count }), title: tip || "" });
         b.addEventListener("click", async () => {
           for (const other of row.querySelectorAll("button")) other.disabled = true;  // one fix per mistake
           try {

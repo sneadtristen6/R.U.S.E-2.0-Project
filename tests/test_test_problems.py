@@ -102,6 +102,24 @@ class Problems(unittest.TestCase):
         with self.assertRaisesRegex(StudioError, "isn't in the mod any more"):
             self.api.test_fix(road3["fixes"][0])  # done once: never a second road by mistake
 
+    def test_every_team_spawn_of_the_setup_at_once(self):
+        """The build stops at the first team spawn: the owner's old mod had 57 on D-Day, one test each without this."""
+        path = self.test2 / "maps" / "M04_cotentin" / "scenario.toml"
+        more = ''.join(f'\n[[spawn]]\nfile = "leveldesign_3v3_v01.scenario"\nwhat = "Unit_M4_Sherman"\nx = {k}.0\ny = 5.0\n'
+                       f'camp = 2\n' for k in range(3))
+        more += '\n[[spawn]]\nfile = "leveldesign_normal.scenario"\nwhat = "Unit_M4_Sherman"\nx = 1.0\ny = 1.0\ncamp = 1\n'
+        path.write_text(path.read_text(encoding="utf-8") + more, encoding="utf-8")
+        fixes = self.api.test_problems()["problems"][0]["fixes"]
+        everyone = next(f for f in fixes if f["kind"] == "spawns_neutral_all")
+        self.assertEqual(everyone["count"], 4)  # this setup's: the Konoe Shidan and 3 Shermans, not the other setup's
+        self.assertIn("4 team spawn(s)", self.api.test_fix(everyone)["done"])
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual([(s["file"], s.get("camp", -1)) for s in data["spawn"]],
+                         [("leveldesign_3v3_v01.scenario", -1)] * 5 + [("leveldesign_normal.scenario", 1)])
+        gone = {**everyone, "kind": "spawns_remove_all", "file": "leveldesign_normal.scenario"}
+        self.api.test_fix(gone)
+        self.assertEqual(len(tomllib.loads(path.read_text(encoding="utf-8"))["spawn"]), 5)
+
     def test_only_the_last_test_s_files(self):
         fix = {"kind": "road_remove", "path": str(self.outside / "maps" / "M04_cotentin" / "roads.toml"),
                "points": [[0.0, 100.0], [5000.0, 100.0]]}

@@ -2248,6 +2248,13 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                         who = {"path": str(path), "pack": m["pack"], "what": s.what, "file": s.file,
                                "x": s.x, "y": s.y}
                         fixes = [who | {"kind": "spawn_neutral"}, who | {"kind": "spawn_remove"}]
+                        # the build stops at the first one: every team spawn of this setup at once, or one test per
+                        # spawn (the owner's old mod had 57 on D-Day)
+                        team = sum(1 for t in self._spawns_in(path) if t.file.lower() == s.file.lower()
+                                   and t.camp not in (None, scenario.NEUTRAL))
+                        if team > 1:
+                            every = {"path": str(path), "pack": m["pack"], "file": s.file, "count": team}
+                            fixes += [every | {"kind": "spawns_neutral_all"}, every | {"kind": "spawns_remove_all"}]
                         mod = folder.name
                         break
                 if fixes:
@@ -2289,19 +2296,24 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             raise StudioError("That file isn't part of the last test's mods.")
         kind = fix.get("kind")
         with self._saving:
-            if kind in ("spawn_neutral", "spawn_remove"):
+            if kind in ("spawn_neutral", "spawn_remove", "spawns_neutral_all", "spawns_remove_all"):
                 data = tomllib.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
                 moves = scenario.parse_moves(data.get("move", []), str(path))
                 starts = scenario.parse_starts(data.get("start", []), str(path))
                 spawns = scenario.parse_spawns(data.get("spawn", []), str(path))
-                k = next((i for i, s in enumerate(spawns) if s.what == fix.get("what") and s.file == fix.get("file")
-                          and s.x == fix.get("x") and s.y == fix.get("y")), None)
-                if k is None:
-                    raise StudioError("That spawn isn't in the mod any more.")
-                if kind == "spawn_neutral":
-                    spawns[k] = replace(spawns[k], camp=scenario.NEUTRAL)
+                if kind.endswith("_all"):  # every team spawn of that setup
+                    hit = [i for i, s in enumerate(spawns) if s.file.lower() == str(fix.get("file", "")).lower()
+                           and s.camp not in (None, scenario.NEUTRAL)]
                 else:
-                    del spawns[k]
+                    hit = [i for i, s in enumerate(spawns) if s.what == fix.get("what") and s.file == fix.get("file")
+                           and s.x == fix.get("x") and s.y == fix.get("y")][:1]
+                if not hit:
+                    raise StudioError("That spawn isn't in the mod any more.")
+                if kind in ("spawn_neutral", "spawns_neutral_all"):
+                    for k in hit:
+                        spawns[k] = replace(spawns[k], camp=scenario.NEUTRAL)
+                else:
+                    spawns = [s for i, s in enumerate(spawns) if i not in hit]
                 if moves or starts or spawns:
                     text = (scenario.moves_toml(moves, self.SCENARIO_HEADER) + "\n" + scenario.starts_toml(starts)
                             + "\n" + scenario.spawns_toml(spawns))
@@ -2310,7 +2322,8 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                                                          scenario.parse_spawns(d.get("spawn", []), str(path))))
                 else:
                     path.unlink()
-                done = f"{fix.get('what')}: {'made neutral' if kind == 'spawn_neutral' else 'taken out'}"
+                done = (f"{len(hit)} team spawn(s) in {fix.get('file')}" if kind.endswith("_all") else fix.get("what")) \
+                    + (": made neutral" if "neutral" in kind else ": taken out")
             elif kind == "road_remove":
                 roads = self._read_roads(path)
                 want = [list(p) for p in fix.get("points", [])]
