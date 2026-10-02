@@ -560,6 +560,10 @@ py -3 -m unittest discover -s tests
 
 ## Credits
 
+- **ProLution**, the godfather of R.U.S.E. modding (the RUSE Modding Database). His code is in ours: the map
+  terrain codec in [`src/ruse_mod_engine/terrain_codec.py`](src/ruse_mod_engine/terrain_codec.py) is built on his
+  terrain format work, released CC0, and its encoder is ported from his reference encoder. His finding on unit
+  flag 63 is in the build's checks.
 - **LittleGroove**: RUSE-Mod-Manager and its `.rmod` format. His engine is in
   [`src/ruse_mod_engine`](src/ruse_mod_engine/), used as it is, and applies `.rmod` mods in our builds.
 - **DomesticNukes and his Claude**: the notes on the map ground (`.kdt`) and scenery files that our readers follow.
