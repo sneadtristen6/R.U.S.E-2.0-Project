@@ -466,7 +466,7 @@ class ScenarioMoves(unittest.TestCase):
         result = build_and_write(self.game, [load_mod(sea)], instance=self.root / "copy", say=lines.append)
         self.assertEqual(len(result.errors), 1, lines)
         self.assertIn("sea: Blitz: scenario.toml: the new starting point for team 1 at (2000, 9000) in "
-                      "leveldesign.scenario is where vehicles can't go", result.errors[0].message)
+                      "leveldesign.scenario is where no ground unit can stand", result.errors[0].message)
         self.assertFalse((self.root / "copy").exists())
         land = self.mod("land", '[[start]]\nfile = "leveldesign.scenario"\nteam = 1\nx = 2000.0\ny = 2000.0\n')
         result = build_and_write(self.game, [load_mod(land)], instance=self.root / "copy", say=lines.append)

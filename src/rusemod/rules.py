@@ -83,10 +83,12 @@ RULES: dict[str, Rule] = {
                    "either (2026-10-02); which click reaches it isn't known; the 10 shipped units with flag 59 are "
                    "aircraft with a UniteTransportee"),
     "start-ground": Rule(
-        "A starting point must stand where vehicles can go, or the game builds that player's HQ wherever it finds room.",
-        "studied", "partly: the game's script builds the first HQ where the placer says, without asking whether it "
-                   "found room at the point (2026-10-02); how far away it lands isn't seen yet; every shipped starting "
-                   "point stands on ground vehicles use"),
+        "A starting point must stand where a ground unit can (not water, a cliff or a block for every unit), or the "
+        "game builds that player's HQ wherever it finds room. A wood is fine.",
+        "game", "woods: the owner (2026-10-02): an HQ in a wood works, and supply trucks drive through woods (only "
+                "tanks and other vehicles with flags 11/21/55 are kept out). Water and cliffs: the game's script builds "
+                "the first HQ where the placer says without asking whether it found room (studied); how far away it "
+                "lands isn't seen"),
     "seats-per-team": Rule(
         "Each player needs a starting point of their team, or that player starts with no HQ and no units.",
         "game", "rule test A (2026-10-02, Twilight of the Gods with team 2 one point short): the team's first slot got "

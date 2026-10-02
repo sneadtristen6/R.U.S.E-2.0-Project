@@ -777,9 +777,11 @@ ROAD_NEAR = 30000.0   # map units: 95% of the shipped starting points are this c
 
 def start_ground_problems(read, map_pack: str, moves: list) -> tuple[list[str], list[str]]:
     """(errors, warnings) for the mod's new and moved starting points on the map's movement and road network as the
-    build leaves them (`read(member)`: DataMap_Win.dat's files after every map edit). The game builds a player's HQ
-    at his starting point, or wherever it finds room near it (up to far away) when vehicles can't stand there, so a
-    start on water, a cliff or a block is an error; one far from any road is a warning (the HQ's trucks need one).
+    build leaves them (`read(member)`: DataMap_Win.dat's files after every map edit). A start where no ground unit can
+    stand (the infantry's graph, buffer 1: water, a cliff, a block for every unit, off the map) is an error: the game
+    builds the HQ wherever it finds room. Woods are fine (the owner, 2026-10-02: an HQ in a wood works, and supply
+    trucks drive through woods; only tanks and other vehicles with flags 11/21/55 are kept out, the vehicles' graph).
+    One far from any road is a warning: the shipped starts are near one (a pattern, not a rule of the game).
     A map whose mapinfo.win can't be read isn't checked."""
     from .cover import member
     from .nav import Graph
@@ -791,7 +793,7 @@ def start_ground_problems(read, map_pack: str, moves: list) -> tuple[list[str], 
     try:
         from ruse_mod_engine import sdb
         bufs = sdb.split_mapinfo(win)[1]
-        vehicles = Graph.read(bufs[2])
+        infantry = Graph.read(bufs[1])
     except (ValueError, IndexError, TypeError, struct.error):
         return [], []
     try:
@@ -804,16 +806,17 @@ def start_ground_problems(read, map_pack: str, moves: list) -> tuple[list[str], 
         what = (f"the new starting point for team {m.team}" if isinstance(m, Start) else
                 f"the starting point moved (item {m.item})")
         at = f"{map_pack}: scenario.toml: {what} at ({m.x:.0f}, {m.y:.0f}) in {m.file}"
-        if not vehicles.walkable(m.x, m.y):
-            errors.append(f"{at} is where vehicles can't go (water, a cliff, a block or off the map): the game would "
-                          f"build that player's HQ wherever it finds room, possibly far away. Put it on open ground")
+        if not infantry.walkable(m.x, m.y):
+            errors.append(f"{at} is where no ground unit can stand (water, a cliff, a block for every unit, or off the "
+                          f"map): the game would build that player's HQ wherever it finds room, possibly far away. Put "
+                          f"it on land (a wood is fine)")
             continue
         if roads:
             far = min(_to_segment(m.x, m.y, a, b) for a, b in roads)
             if far > ROAD_NEAR:
-                warnings.append(f"{at} is {far:,.0f} map units from the nearest road; the shipped starting points are "
-                                f"within about {ROAD_NEAR:,.0f}, and the HQ's supply trucks drive on roads. Move it "
-                                f"nearer a road, or add one (roads.toml)")
+                warnings.append(f"{at} is {far:,.0f} map units from the nearest road; 95% of the game's own starting "
+                                f"points are within about {ROAD_NEAR:,.0f} of one. That's how its maps are made, not a "
+                                f"rule: leave it if you mean it, or move it nearer a road")
     return errors, warnings
 
 

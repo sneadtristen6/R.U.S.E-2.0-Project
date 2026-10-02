@@ -501,9 +501,11 @@ rotation = 1.2        # radians, optional: as its teammate when left out
   team): its camera moved by the same offset, its warm-up camera path, its angles. It stands at the ground's height
   there, read from the map (every shipped starting point matches its ground).
 - New and moved starting points are checked on the map's movement and roads as the build leaves them (after its
-  blocks, bridges and roads): one where vehicles can't go (water, a cliff, a block, off the map) is refused, since the
-  game would build that player's HQ wherever it finds room, possibly far away; one more than about 30,000 map units
-  from a road gets a warning (the shipped ones are within that, and the HQ's trucks need a road).
+  blocks, bridges and roads): one where no ground unit can stand (water, a cliff, a block for every unit, off the
+  map) is refused, since the game would build that player's HQ wherever it finds room, possibly far away. A wood is
+  fine (the owner, 2026-10-02: an HQ there works, and supply trucks drive through woods; only tanks and other
+  vehicles with flags 11/21/55 are kept out). One more than about 30,000 map units from a road gets a warning: 95% of
+  the shipped starting points are that close, a pattern, not a rule.
 
 ### How many players: `maps/<map pack>/map.toml`
 

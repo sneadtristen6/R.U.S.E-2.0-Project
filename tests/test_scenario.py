@@ -341,8 +341,25 @@ def mapinfo(road_y=2000.0) -> bytes:
 
 
 class StartGround(unittest.TestCase):
-    """A starting point where vehicles can't stand gets its HQ wherever the game finds room, possibly far away: a new
-    or moved one is checked on the map's final movement and roads."""
+    """A starting point where no ground unit can stand gets its HQ wherever the game finds room, possibly far away: a
+    new or moved one is checked on the map's final movement and roads. A wood (closed to vehicles only) is fine: the
+    owner, 2026-10-02, an HQ there works and supply trucks drive through woods."""
+
+    def test_a_wood_is_fine_ground_no_unit_can_use_is_not(self):
+        from rusemod.cover import member
+        from rusemod.nav import Block, apply_blocks
+        from rusemod.scenario import Start, start_ground_problems
+        wood = {member("Blitz"): mapinfo()}
+        new, _notes = apply_blocks(wood.get, "Blitz", [Block(2000.0, 2000.0, 1500.0, "vehicles")])
+        wood.update(new)  # circle A closed to vehicles only, as a wood is
+        here = [Start("a.scenario", 1, 2000.0, 2000.0)]
+        self.assertEqual(start_ground_problems(wood.get, "Blitz", here), ([], []))
+        closed = {member("Blitz"): mapinfo()}
+        new, _notes = apply_blocks(closed.get, "Blitz", [Block(2000.0, 2000.0, 1500.0, "all")])
+        closed.update(new)  # closed to every unit
+        errors, _ = start_ground_problems(closed.get, "Blitz", here)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("where no ground unit can stand", errors[0])
 
     def test_on_the_ground_off_it_and_far_from_a_road(self):
         from rusemod.cover import member
@@ -354,7 +371,7 @@ class StartGround(unittest.TestCase):
                                                                  Move("a.scenario", 3, "StartingPoint", 2000.0, 7000.0)])
         self.assertEqual((len(errors), warnings), (2, []))
         self.assertIn("Blitz: scenario.toml: the new starting point for team 2 at (50000, 9000) in a.scenario is where "
-                      "vehicles can't go", errors[0])
+                      "no ground unit can stand", errors[0])
         self.assertIn("the starting point moved (item 3)", errors[1])
         far = {member("Blitz"): mapinfo(road_y=40000.0)}.get
         errors, warnings = start_ground_problems(far, "Blitz", ok)
