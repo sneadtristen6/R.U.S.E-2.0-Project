@@ -240,3 +240,69 @@ def load_everywhere(game, nations) -> dict[int, tuple[int, int]]:
             maps.add(origin[0] if origin else top)
         out[n] = (count, len(maps))
     return out
+
+
+# The force bit above loads a nation's meshes, proxies and animations, but not its skeletons or card pictures: those
+# load through one loader per nation in $/IA/Cluster, run for each nation in the match (skeletons through
+# TClusterInitialisationExecuteSelectifSubClusters, which has no force bit in a skirmish). A model whose skeleton
+# isn't loaded crashes the game when its unit is built (batch 1, 2026-10-01); a card picture that isn't, shows as a
+# plain coloured box, on the card and on the unit's marker. So the nation's skeleton packs and card picture packs are
+# added to every other nation's loaders too. Tested in the game (2026-10-02, batch 9e): a German Tiger and Ju 87 for
+# the US, with no German player, are built, fight, show their pictures and can be selected. Their UsefulnessMask must
+# NOT be widened: tagging the packs for every nation (batch 9c) left no unit selectable.
+LOADER_TAGS = ("US", "GER", "UK", "FR", "ITA", "URSS", "JAP")  # the $/IA/Cluster loaders' names, by Nationalite
+SKELETONS = "$/IA/Cluster/ClusterLoadPackSkeleton_{}"
+CARDS = ("$/IA/Cluster/ClusterLoadTexturePack_Menu{}_Synchrone", "$/IA/Cluster/ClusterLoadTexturePack_Menu{}_Asynchrone")
+
+
+def _packs(game, name):
+    obj = game.objects.get(name)
+    v = obj.props.get("Packs") if obj is not None else None
+    return v if isinstance(v, ListV) else None
+
+
+def load_with_every_nation(game, nations) -> dict[int, tuple[int, int]]:
+    """Have the skeleton and card picture packs of `nations` (Nationalite numbers) load in every nation's matches: each
+    added to the other nations' loaders. {nation: (skeleton packs added, card picture packs added)}; (0, 0) when
+    the nation has no loaders, or every loader has them already."""
+    import copy
+    own_skel, own_cards = {}, {}  # each nation's own packs, before any are added
+    for tag in LOADER_TAGS:
+        skel = _packs(game, SKELETONS.format(tag))
+        own_skel[tag] = [x for x in skel.items if isinstance(x, Inline) and x.obj.copied_from is None] \
+            if skel is not None else []
+        own_cards[tag] = list(dict.fromkeys(x.target for c in CARDS for x in (_packs(game, c.format(tag)) or
+                                                                               ListV([])).items if isinstance(x, Ref)))
+    out = {}
+    for n in sorted(set(nations)):
+        if not 0 <= n < len(LOADER_TAGS):
+            out[n] = (0, 0)
+            continue
+        own = LOADER_TAGS[n]
+        skel_items, cards = own_skel[own], own_cards[own]
+        added_skel = added_cards = 0
+        for tag in LOADER_TAGS:
+            if tag == own:
+                continue
+            into = _packs(game, SKELETONS.format(tag))
+            if into is not None:
+                have = {x.obj.copied_from for x in into.items if isinstance(x, Inline) and x.obj.copied_from}
+                for x in skel_items:
+                    if x.obj.origin is not None and x.obj.origin in have:
+                        continue
+                    c = copy.deepcopy(x.obj)
+                    c.copied_from, c.origin = x.obj.origin, None
+                    into.items.append(Inline(c))
+                    added_skel += 1
+            for loader_name in CARDS:
+                into = _packs(game, loader_name.format(tag))
+                if into is None:
+                    continue
+                have = {x.target for x in into.items if isinstance(x, Ref)}
+                for target in cards:
+                    if target not in have:
+                        into.items.append(Ref(target))
+                        have.add(target)
+                        added_cards += 1
+        out[n] = (added_skel, added_cards)
+    return out

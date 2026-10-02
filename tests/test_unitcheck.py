@@ -372,7 +372,7 @@ def forced(game, top="$/Cluster"):
 
 
 class ForceLoadOn:
-    """Tests of the force-load (build.FORCE_LOAD), off since T13 crashed, kept and tested until it's understood."""
+    """Tests of the force-load (build.FORCE_LOAD, as built)."""
 
     def setUp(self):
         import rusemod.build as b
@@ -381,9 +381,14 @@ class ForceLoadOn:
 
 
 class ForceLoadOff(unittest.TestCase):
-    """With FORCE_LOAD off (as built), a unit for another nation, and a spawned one, get their models copied into the
-    packs their matches load (rusemod.unitpacks; tests/test_unitpacks.py has the packs themselves), and nothing in the
-    cluster maps changes."""
+    """With FORCE_LOAD off (the old way, kept), a unit for another nation, and a spawned one, get their models copied
+    into the packs their matches load (rusemod.unitpacks; tests/test_unitpacks.py has the packs themselves), and
+    nothing in the cluster maps changes."""
+
+    def setUp(self):
+        import rusemod.build as b
+        self.addCleanup(setattr, b, "FORCE_LOAD", b.FORCE_LOAD)
+        b.FORCE_LOAD = False
 
     def test_a_unit_for_another_nation_gets_its_models_copied(self):
         result = BuildResult()
@@ -563,6 +568,47 @@ class LoadedEverywhere(ForceLoadOn, unittest.TestCase):
         self.assertIn("the unit data has no cluster maps that could load Germany's models", r.errors[0].message)
         r = self.check(Op("set", "$/Sherman", "Nationalite", num(1)), maps=short)  # US's pack is there: fine
         self.assertEqual([f.level for f in r.findings], ["note", "note"])
+
+    def test_skeletons_and_card_pictures_load_with_every_nation(self):
+        def skel(tag, n):
+            return Obj("TClusterLoadResource", {"Packs": ListV([Inline(Obj("TResourceDescriptorMeshPack", {
+                "PackName": Text("path", f"Pack\\GFXDescriptor\\Skeleton_{tag}.spk"),
+                "UsefulnessMask": num(0x1ff0000 | 1 << n, "uint32")}, origin=("cluster", 10 + n)))])})
+
+        def menu(tag):
+            return Obj("TClusterLoadResource", {"Packs": ListV([Ref(f"$/Menu{tag}Pack")])})
+        objects = {}
+        for n, tag in enumerate(unitcheck.LOADER_TAGS):
+            objects[unitcheck.SKELETONS.format(tag)] = skel(tag, n)
+            for c in unitcheck.CARDS:
+                objects[c.format(tag)] = menu(tag)
+        g = Game(objects=dict(objects, **self.MAPS))
+        self.assertEqual(unitcheck.load_with_every_nation(g, {1, 6}), {1: (6, 12), 6: (6, 12)})
+        us = g.objects[unitcheck.SKELETONS.format("US")].props["Packs"].items
+        self.assertEqual([x.obj.props["PackName"].value.rsplit("\\", 1)[-1] for x in us],
+                         ["Skeleton_US.spk", "Skeleton_GER.spk", "Skeleton_JAP.spk"])
+        self.assertIsNone(us[1].obj.origin)  # a copy, written as a new part
+        self.assertEqual(us[1].obj.props["UsefulnessMask"], num(0x1ff0002, "uint32"))  # masks left as they are
+        self.assertEqual([x.target for x in g.objects[unitcheck.CARDS[1].format("UK")].props["Packs"].items],
+                         ["$/MenuUKPack", "$/MenuGERPack", "$/MenuJAPPack"])
+        self.assertEqual(len(g.objects[unitcheck.SKELETONS.format("GER")].props["Packs"].items), 2)  # + Japan's
+        # twice: nothing more
+        self.assertEqual(unitcheck.load_with_every_nation(g, {1}), {1: (0, 0)})
+        self.assertEqual(unitcheck.load_with_every_nation(Game(objects={}), [1, 9]), {1: (0, 0), 9: (0, 0)})
+
+    def test_the_build_adds_them(self):
+        base = army()
+        base.objects.update(self.MAPS)
+        for n, tag in enumerate(unitcheck.LOADER_TAGS):
+            base.objects[unitcheck.SKELETONS.format(tag)] = Obj("TClusterLoadResource", {"Packs": ListV([Inline(Obj(
+                "TResourceDescriptorMeshPack", {}, origin=("cluster", n)))])})
+        result = BuildResult()
+        r = run(clone(("Nationalite", num(1)), source="$/Sherman"), base=base)
+        unit_models(base, r, zz_win(), result)
+        self.assertEqual(result.errors, [])
+        self.assertIn("US's unit skeletons and card pictures load in every nation's matches too (6 skeleton pack(s) "
+                      "and 0 card picture pack(s) added to the other nations' loaders)",
+                      [f.message for f in result.findings])
 
     def test_the_loaders(self):
         g = Game(objects={"$/Cluster": cluster_map(), "$/Other": Obj("TClusterLoadSelectifResource", {}),

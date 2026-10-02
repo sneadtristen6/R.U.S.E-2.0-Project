@@ -531,11 +531,19 @@ def skirmish_models(zz_win: Edat) -> dict | None:
     return unitcheck.pack_models(names) if names else None
 
 
-FORCE_LOAD = False  # set a nation's force-load bit in the cluster maps (unitcheck.load_everywhere): off since the game
-# crashed with it (T13, 2026-10-01: a German Ju 87 copy for the US crashed the game when it was built; the same plane
-# type of the US's own didn't). The skeleton packs load through another kind of cluster (one per nation, in each
-# scenario's cluster map), which that bit doesn't reach. Instead the models are copied into the packs the unit's own
-# nation loads (rusemod.unitpacks), as the game's packs already do for the few models two nations share
+FORCE_LOAD = True  # another nation's models for a unit: that nation's packs load in every skirmish (the force bit in
+# the cluster maps, unitcheck.load_everywhere, and its skeleton and card picture packs in every nation's loaders,
+# unitcheck.load_with_every_nation). Tested in the game 2026-10-02 (batch 9e). Off, the old way: the models are copied
+# into the packs the unit's own nation loads (rusemod.unitpacks); that broke the US's own construction truck (batches
+# 4 to 7), and the force bit alone crashed (T13: no skeletons).
+
+
+def _also_loaded(run, nations, result) -> None:
+    for n, (skel, cards) in sorted(unitcheck.load_with_every_nation(run.game, nations).items()):
+        if skel or cards:
+            result.findings.append(Finding("note", f"{unitcheck.NATIONS[n]}'s unit skeletons and card pictures load in "
+                                                   f"every nation's matches too ({skel} skeleton pack(s) and {cards} "
+                                                   f"card picture pack(s) added to the other nations' loaders)"))
 
 
 def _pack_names(paths) -> str:
@@ -551,10 +559,11 @@ def _given_note(given) -> str:
 def unit_models(base, run, zz_win, result: BuildResult, into=None) -> None:
     """New units, and units moved to another nation or given other models, whose models are only in another nation's
     skirmish mesh pack: the game loads a nation's unit models only in matches where a player has that nation
-    (unitcheck). So the models (meshes, skeletons, animations, texture stand-ins) are copied into the skirmish packs
-    of the unit's own nation (rusemod.unitpacks; `into`, a unitpacks.Packs, gathers them for the build, else they go
-    straight into result.model_changed), with a note; a unit whose models can't be copied is refused, saying why. What the game's
-    own units already have is fine. (FORCE_LOAD: the old way, the other nation's packs loaded in every skirmish.)"""
+    (unitcheck). So that nation's packs (meshes, proxies, animations, skeletons, card pictures) load in every skirmish
+    (FORCE_LOAD), with a note; a unit whose nation's packs no loader has is refused, saying why. What the game's own
+    units already have is fine. (FORCE_LOAD off, the old way: the models are copied into the skirmish packs of the
+    unit's own nation, rusemod.unitpacks; `into`, a unitpacks.Packs, gathers them for the build, else they go straight
+    into result.model_changed.)"""
     moved = {owner for owner, path in run.trail if owner in run.game.objects and _moves_path(path)}
     names = sorted(n for n in set(run.created) | moved if n in run.game.objects and unitcheck.is_unit(run.game.objects[n]))
     names = [n for n in names if unitcheck.model_files(run.game.objects[n], run.game)]
@@ -622,6 +631,7 @@ def unit_models(base, run, zz_win, result: BuildResult, into=None) -> None:
             result.model_changed.update(into.output())
         return
     loaded = unitcheck.load_everywhere(run.game, chosen)
+    _also_loaded(run, [n for n in chosen if loaded[n][0]], result)
     for nation, (count, maps) in sorted(loaded.items()):
         if count:
             result.findings.append(Finding("note", f"{unitcheck.NATIONS[nation]}'s unit models and animations now load "
@@ -723,6 +733,7 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult,
             result.model_changed.update(into.output())
         return
     loaded = unitcheck.load_everywhere(run.game, set(need))
+    _also_loaded(run, [n for n in need if loaded[n][0]], result)
     for nation, units in sorted(need.items()):
         which = ", ".join(sorted(units))
         ids = ", ".join(sorted({i for v in units.values() for i in v}))

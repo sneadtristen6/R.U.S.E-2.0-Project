@@ -353,6 +353,13 @@ UNIT_PACK = make_edat([("dir", "genglad\\patchable\\gfx\\", [("file", "everythin
 
 
 class TheBuild(unittest.TestCase):
+    """The build with FORCE_LOAD off (the old way, kept): models copied into the unit's own nation's packs."""
+
+    def setUp(self):
+        import rusemod.build as b
+        self.addCleanup(setattr, b, "FORCE_LOAD", b.FORCE_LOAD)
+        b.FORCE_LOAD = False
+
     def build(self, text, zz=None):
         with tempfile.TemporaryDirectory() as d:
             mod = Path(d, "moved.rndf")
