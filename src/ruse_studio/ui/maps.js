@@ -1813,11 +1813,30 @@ function renderScenTools() {
     spawnDesc();
     unit.title = w.tip_scen_unit;
     // a skirmish game spawns only neutral items (camp -1): a unit for a player's side would never appear there
+    // Who gets it: a scripted scenario's own camps from its mission script (StudioApi._scenario_owners_of,
+    // rusemod.missions): the human player's camp, the computer's, each with its country, Neutral first. A BATTLES map:
+    // Neutral only (the game starts it with no team list). The camp's number is what's saved. (The tester,
+    // 2026-10-03: "There is no option to place player units": the player's camp is 0, which wasn't offered.)
     const skirmish = !!s && s.kind === "skirmish";
-    if (skirmish) scen.camp = "-1";
-    camp.replaceChildren(...(skirmish ? ["-1"] : ["-1", "1", "2", "3", "4", "5", "6", "7", "8"]).map((n) =>
-      chipOf(n === "-1" ? w.scen_side_neutral : fill(w.scen_side_n, { n }), skirmish ? w.tip_scen_camp_skirmish : w.tip_scen_camp,
-        scen.camp === n, () => { scen.camp = n; renderScenTools(); })));
+    const neutral = { camp: -1, kind: "neutral" };
+    const owners = skirmish ? [neutral] : (s && s.owners) || [neutral];
+    if (scen.ownerScenario !== (s && s.file)) {  // a new scenario: its player's camp first
+      scen.ownerScenario = s && s.file;
+      scen.camp = String((owners.find((o) => o.kind === "player") || neutral).camp);
+    }
+    if (!owners.some((o) => String(o.camp) === scen.camp)) scen.camp = "-1";
+    camp.setAttribute("aria-label", w.scen_camp_label);
+    camp.replaceChildren(el("span", { className: "muted small", textContent: w.scen_camp_label }),
+      ...owners.map((o) => {
+        const id = String(o.camp), nation = o.nation === null || o.nation === undefined ? "" : (mv.nationNames || [])[o.nation] || "";
+        const number = fill(w.scen_owner_camp, { camp: o.camp });
+        const label = o.kind === "neutral" ? w.scen_side_neutral
+          : o.kind === "camp" ? fill(w.scen_owner_unknown, { camp: o.camp })
+            : `${o.kind === "player" ? w.scen_owner_player : w.scen_owner_ai}${nation ? " · " + nation : ""} (${number})`;
+        const tip = skirmish ? w.tip_scen_camp_skirmish
+          : w.tip_scen_camp + (o.team > 0 ? " " + fill(w.scen_owner_team, { team: o.team }) : "");
+        return chipOf(label, tip, scen.camp === id, () => { scen.camp = id; renderScenTools(); });
+      }));
     $("scen-count").replaceChildren(el("span", { className: "muted small", textContent: w.scen_count }),
       ...SPAWN_COUNTS.map((n) => chipOf(String(n), w.tip_scen_count, scen.count === n, () => { scen.count = n; renderScenTools(); })));
     $("scen-formation").replaceChildren(...FORMATIONS.map((f) => {

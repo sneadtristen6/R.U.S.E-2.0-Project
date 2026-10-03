@@ -861,8 +861,8 @@ def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
             raise ScenarioError(f"{at}: x, y and rotation are numbers; camp and trucks whole numbers") from None
         if not all(math.isfinite(v) for v in (x, y, rot)):
             raise ScenarioError(f"{at}: x, y and rotation must be finite numbers")
-        if camp is not None and not (camp == NEUTRAL or 1 <= camp <= 16):
-            raise ScenarioError(f"{at}: camp is -1 (neutral, like the shipped depots) or a side from 1 up")
+        if camp is not None and not (camp == NEUTRAL or 0 <= camp <= 16):
+            raise ScenarioError(f"{at}: camp is -1 (neutral) or a scenario camp from 0 up")
         if trucks is not None:
             if Spawn(f, what, x, y).class_path != DEPOT:
                 raise ScenarioError(f"{at}: trucks is only for a supply depot (what = \"DalleBatimentDepot\")")
@@ -1002,15 +1002,18 @@ def _to_segment(x: float, y: float, a, b) -> float:
     return math.hypot(x - ax - t * vx, y - ay - t * vy)
 
 
-def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None) -> tuple[dict[str, bytes], list[str]]:
+def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
+                mission=None) -> tuple[dict[str, bytes], list[str]]:
     """Apply a mod's scenario edits (in order: Move and Spawn) to a map's scenarios. `read(member)` gives a
     DataMap_Win.dat member's bytes, or None. `skirmish`: the map's scenarios (file names, lower case) that its
     skirmish and online entries load (rusemod.players.skirmish_files). Returns ({member: new bytes}, report lines).
     A move whose file or item isn't there, or whose item is another kind (the file isn't the one the mod was made
     for), raises ScenarioError; so does a spawn in a scenario that isn't there, and a spawn for a player's camp in a
     skirmish scenario (a skirmish game spawns only neutral items: the game leaves the others out without a word).
-    `warn(message)` is told of a spawn for a camp the scenario's own spawns never use (an Operation spawns only the
-    camps it plays)."""
+    `mission(file)` gives a scenario's camps from its mission script (rusemod.missions.Camp list; [] for none), and
+    `warn(message)` is told of a spawn for a camp the mission doesn't list (the game's launch code gives a spawn to its
+    camp only when the camp list has that number); for a scenario with no script to read, of a spawn for a camp its own
+    spawns never use."""
     folder = folder_of(map_pack)
     files: dict[str, Scenario] = {}
     camps: dict[str, set] = {}   # member (lower case) -> the camps its shipped spawns use (no Camp reads as 0)
@@ -1059,7 +1062,14 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None) -> tup
                 raise ScenarioError(f"{at} is for camp {camp}, but {m.file} is a skirmish map's scenario, and a "
                                     f"skirmish game spawns only neutral items: the game would leave it out without a "
                                     f"word. Set camp = -1 (or leave camp out), or spawn it in an Operation's scenario")
-            if camp != NEUTRAL and camp not in camps[member.lower()] and warn is not None:
+            listed = mission(m.file) if mission is not None and camp != NEUTRAL else []
+            if listed and camp not in {c.key for c in listed} and warn is not None:
+                its = ", ".join(f"{c.key} ({'the player' if c.player else 'the computer'}"
+                                f"{', ' + c.nation if c.nation else ''})" for c in sorted(listed, key=lambda c: c.key))
+                warn(f"{at} is for camp {camp}, which isn't one of the camps its mission lists ({its}); the game "
+                     f"gives a spawn only to a camp its mission lists, so it may never appear. Use one of those camps "
+                     f"(not tested in the game)")
+            elif not listed and camp != NEUTRAL and camp not in camps[member.lower()] and warn is not None:
                 used = ", ".join(str(c) for c in sorted(camps[member.lower()])) or "none"
                 warn(f"{at} is for camp {camp}, which none of the scenario's own spawns use (theirs: {used}); the game "
                      f"spawns items only for the camps the scenario plays, so it may never appear. Check it in the "

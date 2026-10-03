@@ -20,6 +20,7 @@ import math
 import re
 import sqlite3
 import struct
+import zlib
 import threading
 import tomllib
 import unicodedata
@@ -27,7 +28,7 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from rusemod import doctor, identity, mod_index, package, scenario, scenery, schema
+from rusemod import doctor, identity, missions, mod_index, package, scenario, scenery, schema
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, CommunityCalls, private_paths_out
@@ -301,6 +302,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._grounds_lock = threading.Lock()
         self._ground_jobs: dict[str, str] = {}  # picture being made -> its job, so asking twice doesn't make it twice
         self._sceneries: dict[tuple, dict] = {}  # the last maps' scenery (map_scenery)
+        self._scenario_owners: dict[tuple, list[dict]] = {}  # mission CampList owners, for the spawn picker
         self._descriptors: tuple = (None, {})    # (unit pack, its scenery types), read once per game build
         self._models_done: dict[str, dict] = {}  # map -> the index of its 3D models (map_models), once made
         self._check_jobs: dict[str, str] = {}  # map -> its "Check this map" job, so asking twice runs it once
@@ -1108,7 +1110,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         with self._grounds_lock:
             cached = self._sceneries.get(key)
         if cached is not None:
-            return self._with_units(self._with_scenario_edits(pack, cached)) if edited else cached
+            result = self._with_units(self._with_scenario_edits(pack, cached)) if edited else cached
+            return self._with_scenario_owners(game, pack, result)
         with Edat.open(str(path)) as arc:
             found = scenario.of_map(arc, pack)
             paths = {}  # each scenario's warm-up camera paths: a starting point's opening camera (scenario.campaths)
@@ -1137,7 +1140,49 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         out = self._with_units({"scenarios": out_list})
         with self._grounds_lock:
             self._sceneries[key] = out
-        return self._with_units(self._with_scenario_edits(pack, out)) if edited else out
+        result = self._with_units(self._with_scenario_edits(pack, out)) if edited else out
+        return self._with_scenario_owners(game, pack, result)
+
+    def _with_scenario_owners(self, game: Path, pack: str, view: dict) -> dict:
+        """Each scenario's `owners`: who Add unit can give a spawn to (_scenario_owners), read once per scenario."""
+        todo = [s for s in view.get("scenarios", [])
+                if (str(game), pack.lower(), s.get("file", "").lower()) not in self._scenario_owners]
+        if todo:
+            ia_path = find_pack(game, "IA_Common.dat")
+            try:
+                ia = Edat.open(str(ia_path)) if ia_path is not None else None
+            except OSError:
+                ia = None
+            try:
+                for s in todo:
+                    key = (str(game), pack.lower(), s.get("file", "").lower())
+                    self._scenario_owners[key] = self._scenario_owners_of(ia, pack, s.get("file", ""))
+            finally:
+                if ia is not None:
+                    ia.close()
+        for s in view.get("scenarios", []):
+            s["owners"] = self._scenario_owners[(str(game), pack.lower(), s.get("file", "").lower())]
+        return view
+
+    @staticmethod
+    def _scenario_owners_of(ia, pack: str, file: str) -> list[dict]:
+        """Who a spawn can be given to in a scenario (Add unit's "Who gets it?"): Neutral, then the camps its mission
+        script lists (rusemod.missions: each camp's number as a spawn saves it, whether a human player plays it, its
+        country and its team), by number; the game's rule is that a later camp with the same number takes it. A
+        scenario with no script to read (a BATTLES map's: those spawn only neutral items) gets plain camps 0 to 8,
+        none called a player."""
+        neutral = {"camp": scenario.NEUTRAL, "kind": "neutral"}
+        try:
+            found = missions.scenario_camps(ia, pack, file) if ia is not None else []
+        except (KeyError, ValueError, struct.error, zlib.error):  # (ScriptError is a ValueError)
+            found = []
+        if not found:
+            return [neutral, *({"camp": n, "kind": "camp"} for n in range(9))]
+        by_key = {}
+        for c in found:
+            by_key[c.key] = {"camp": c.key, "kind": "player" if c.player else "ai",
+                             "nation": missions.NATIONS.get(c.nation), "team": c.alliance}
+        return [neutral, *(by_key[k] for k in sorted(by_key))]
 
     def _with_units(self, view: dict) -> dict:
         """Each spawn told what it is, for the map view's icons and labels: "unit_kind" (ground, infantry, air,

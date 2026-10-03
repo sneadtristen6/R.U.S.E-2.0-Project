@@ -33,7 +33,10 @@ colour, spawns as white diamonds, zones as shaded areas.
 
 1. In the bar, click **Scenario**, then **Add unit**.
 2. Pick the kind (Buildings, Ground, Infantry, Air), then the type, then the unit in the list (grouped by nation).
-3. Pick the **side** it belongs to.
+3. Pick **Who gets it?** For an Operation or a campaign chapter the list is that scenario's own camps, from its mission:
+   **Player** (you: camp 0 in the campaign) and the **Computer**'s camps, each with its country, plus **Neutral**. The
+   number in brackets is what's saved. A **BATTLES** map takes only neutral units (the game starts it with no team
+   list, so a player's units there would never appear).
 4. **How many:** 1, 2, 4, 6, 8 or 10.
 5. For more than one, pick a **formation**: line, column, wedge, box or circle. It faces up the screen: turn the
    view to aim it. **Spacing** sets the metres between units.
@@ -73,7 +76,7 @@ limit is still to test).
 > Starting R.U.S.E. from Steam starts the game without your mod. Use **Test in game** (or the launcher's **Play**).
 
 > [!NOTE]
-> Which side number is which player in a battle is still being tested. Try Side 1 first, and tell us what you find in
+> Which starting point belongs to each lobby player in a battle is still being tested. Tell us what you find in
 > [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions).
 
 **Next:** [[Export and share|Export-and-Share]]

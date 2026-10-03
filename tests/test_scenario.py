@@ -367,6 +367,24 @@ class Spawns(unittest.TestCase):
         self.apply([Spawn("leveldesign.scenario", "Unit_M4_Sherman", 5.0, 6.0, camp=-1)], warned=warned)
         self.assertEqual(warned, [])
 
+    def test_a_camp_its_mission_lists_is_fine_and_one_it_doesnt_warns(self):
+        # the tester, 2026-10-03: French units for M03_Italie's camp 2 and British ones for camp 4 were warned "may
+        # never appear", as no shipped spawn uses those camps; the chapter's mission lists both (France, Britain)
+        from rusemod.missions import Camp
+        from rusemod.scenario import Spawn, apply_moves
+        camps = [Camp(0, "IR_763", True, "Player", "EU", 1), Camp(2, "IR_761", False, "Scripted", "France", 1),
+                 Camp(4, "IR_759", False, "Scripted", "RU", 1)]
+        warned = []
+        for camp in (0, 2, 4, -1):  # the player's camp (0, refused before) and two the shipped spawns never use
+            apply_moves({self.MEMBER: scenario()}.get, "Blitz", [Spawn("leveldesign.scenario", "Unit_X", 5.0, 6.0,
+                        camp=camp)], (), warned.append, mission=lambda file: camps)
+        self.assertEqual(warned, [])
+        apply_moves({self.MEMBER: scenario()}.get, "Blitz", [Spawn("leveldesign.scenario", "Unit_X", 5.0, 6.0, camp=7)],
+                    (), warned.append, mission=lambda file: camps)
+        self.assertEqual(len(warned), 1)
+        self.assertIn("camp 7, which isn't one of the camps its mission lists (0 (the player, EU), 2 (the computer, "
+                      "France), 4 (the computer, RU))", warned[0])
+
     def test_a_depot_takes_the_shipped_class_path_and_trucks(self):
         from rusemod.scenario import DEPOT, Spawn
         it = self.apply([Spawn("leveldesign.scenario", "DalleBatimentDepot", 5.0, 6.0)])
@@ -402,7 +420,9 @@ class Spawns(unittest.TestCase):
         from rusemod.scenario import Spawn, parse_spawns, spawns_toml
         spawns = [Spawn("a.scenario", "DalleBatimentDepot", 1.0, 2.0, -1, 0.5, 30), Spawn("a.scenario", "Unit_X", 3.0, 4.0, 2)]
         self.assertEqual(parse_spawns(tomllib.loads(spawns_toml(spawns))["spawn"]), spawns)
-        for bad, why in (({"camp": 0}, "camp is -1"), ({"camp": True}, "whole numbers"),
+        self.assertEqual(parse_spawns([{"file": "a.scenario", "what": "Unit_X", "x": 1, "y": 2,
+                                        "camp": 0}])[0].camp, 0)
+        for bad, why in (({"camp": -2}, "camp is -1"), ({"camp": True}, "whole numbers"),
                          ({"trucks": 5}, "only for a supply depot"),
                          ({"what": "DalleBatimentDepot", "trucks": -1}, "0 to 1000"),
                          ({"x": float("inf")}, "finite")):

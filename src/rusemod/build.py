@@ -1598,6 +1598,19 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         from .scenario import shipped_class_paths
                         shipped.append(shipped_class_paths(data_arc))
                     return shipped[0]
+                missions_read: dict = {}  # (map, scenario file) -> its mission's camps (rusemod.missions), read once
+
+                def mission_camps(map_name: str, file: str) -> list:
+                    key = (map_name.lower(), file.lower())
+                    if key not in missions_read:
+                        from . import missions
+                        ia_path = find_pack(game, "IA_Common.dat")
+                        try:
+                            with Edat.open(str(ia_path)) as ia:
+                                missions_read[key] = missions.scenario_camps(ia, map_name, file)
+                        except (OSError, TypeError, KeyError, ValueError, struct.error, zlib.error):
+                            missions_read[key] = []  # no script to read: the warning falls back to the spawns
+                    return missions_read[key]
                 for name, (map_moves, ids) in moves.items():
                     from .players import skirmish_files
                     from .scenario import Move, Spawn, spawn_class_problems
@@ -1624,7 +1637,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                             pass  # without the ground, a start takes its teammate's height
                     try:
                         new, notes = apply_moves(read_data, name, map_moves, skirmish_files(read_glad, name),
-                                                 warn=lambda msg, ids=ids: warn(f"{', '.join(ids)}: {msg}"))
+                                                 warn=lambda msg, ids=ids: warn(f"{', '.join(ids)}: {msg}"),
+                                                 mission=lambda file, name=name: mission_camps(name, file))
                     except (ScenarioError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue

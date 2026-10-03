@@ -469,7 +469,7 @@ file = "leveldesign_normal.scenario"
 what = "Unit_M4_Sherman"      # a unit's or building's class name (or the full class path the game's spawns use)
 x = 470000.0
 y = 650000.0
-camp = 1                      # the side: -1 neutral (the default, as the map's depots), or 1 up (an Operation's sides)
+camp = 0                      # who gets it: -1 neutral (the default), else one of the scenario's own camps (0 up)
 rotation = 0.5                # radians, optional
 trucks = 25                   # a supply depot (what = "DalleBatimentDepot") only: its trucks (default 25)
 ```
@@ -483,10 +483,14 @@ trucks = 25                   # a supply depot (what = "DalleBatimentDepot") onl
   shipped depots' `front.batiment_depot.DalleBatimentDepot`). Anything else is refused.
 - **A skirmish game spawns only neutral items** (camp -1): a spawn for a player's side in a scenario that a
   skirmish or online entry loads is refused, since the game would leave it out without a word. A spawn left without
-  a camp is written as -1 (the game reads no camp as camp 0, which no game plays).
-- In other scenarios (Operations, campaign chapters) a camp none of the scenario's own spawns use gets a warning: the
-  game spawns items only for the camps the scenario plays. Which `camp` is which player isn't known yet (an in-game
-  check).
+  a camp is written as -1 (the game reads no camp as camp 0, which in a campaign chapter is the player's).
+- In other scenarios (Operations, campaign chapters) the camps are the mission's own. Its script (in `IA_Common.dat`)
+  lists them (`CampList`), and a camp's number is its place in that list unless it sets its own `CampNumber` (the
+  rule as LittleGroove's engine documents it, from the game's own launch code). The camp it marks `NiveauIA.Player` is
+  the human player's: camp 0 in every campaign chapter (all eight campaign maps'). A spawn for a camp the mission
+  doesn't list gets a warning: the game gives a spawn only to a camp the list has (not yet seen in the game). The
+  Studio's Add unit offers the mission's camps, as Player or Computer with each one's country. A scenario with no
+  script to read is checked against the camps its own spawns use instead.
 
 A mod adds starting points, one table each: a player starts at a point of their team (the game's `AllianceNum`); the
 game hands a team's points out in order of their place (`AlliancePriority`, lowest first), whatever the numbers are,
