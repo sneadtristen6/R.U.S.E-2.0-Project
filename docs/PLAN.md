@@ -606,10 +606,24 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Now (updated 2026-10-03, night): start here.** **Studio 0.9.3 and Launcher 0.4.3 are out.** Roads were cracked
+**Now (updated 2026-10-03, night): start here.** **Studio 0.9.4 and Launcher 0.4.4 are out.** Roads were cracked
 in 0.9.0 / 0.4.0 (T12 passed: a new road looks like the map's own from high up and up close; the story in
-[ROADS.md](ROADS.md)). The owner: no 1.0 for a long time; 0.9.x patch releases from here; fixes may go out before an
+[ROADS.md](ROADS.md)). The owner: 0.9.x is the alpha, patch releases with plain notes; **1.0 is the launch**, with
+videos and announcements of everything made during the alpha (new maps among the first). Fixes may go out before an
 in-game test ("can be tested by a player later"), said so in the notes.
+
+In 0.9.4 / 0.4.4:
+- **New maps** (`rusemod.newmap`, the Studio's **Duplicate map**): a copy of any BATTLES map with a name of its own,
+  listed in BATTLES next to it, edited like any map; the Studio opens it with the shipped map's files under the copy's
+  own edits. **Seen in the game:** T15b (Blitz Twin flattened, a hill in the middle: it plays its own ground) and T16
+  (101 new maps listed at once, two played). Known: flattening a map's edge mountains leaves a cliff (the outermost
+  row of points keeps its height); names over about 35 characters are cut off in the menus; copies of other maps
+  than Blitz built, not yet played; a new map in multiplayer between two PCs not yet tried.
+- Issue #15's bugs: maps open about 4 times faster the second time, the Unit mod and Map changes menus told apart,
+  sides and zones explained, and a fourth version number for small fixes between releases.
+
+Next: the edge cliff left by flattening; a new map's own menu picture; a new map in multiplayer between two PCs;
+blank maps (flat ground, no water, one ground texture, empty scenery, fresh movement and sectors).
 
 In 0.9.3 / 0.4.3 (the owner's detail-loading tests on his test2 copy of M03_Italie):
 - **Everything a mod places is drawn from far** (rusemod.visibility): the game's decor levels reach 20,000 (close),
@@ -739,7 +753,10 @@ the test spots beside the player's HQ with a top-down map):
    Downloading it waits for the owner's go.
 8. **The Studio's Erase tool and new maps in the game's menus:** both merged into `next` (2026-10-01, night). A new
    map is a copy of a shipped one under its own name and pack (`maps/<NewName>/map.toml`, `copy_of`), listed in
-   BATTLES; its in-game test (T15) is in batch 4. Still to do: a menu picture of its own, and opening it in the Studio.
+   BATTLES. **Seen in the game 2026-10-03** (T15b: Blitz Twin flattened plays its own ground; T16: 101 new maps
+   listed and played). The Studio makes one with **Duplicate map** and opens it like any map (0.9.4). Still to do: a
+   menu picture of its own, the cliff left where a map's edge mountains are flattened, and a copy tried in a
+   multiplayer game between two PCs.
 9. **Small ones, when a session has room:** the town-names mod (names readable from any height, §14) on the mod list;
    the players' wishlist done in 0.8.0 (Open and Forest brushes, Bridges dock, Check this map) needs nothing more.
 10. **A4 Remove scenery:** the build's side is out in 0.8.0 (`[[erase]]` circles, copy on write; a cleared wood is
@@ -1144,8 +1161,9 @@ Both go to §11 (RUSE 2.0 design notes) when they're taken up; until then this i
    Studio: Start over and Level to flatten, brushes to sculpt (proven in-game 2026-09-30), water, scenery, the
    scenario. Missing pieces, in order: (a) cloning a pack and registering a new map (with its name in all ten
    languages and a menu picture): **built in the mod format and the build, 2026-10-01** (`maps/<New>/map.toml`
-   `copy_of`, `rusemod.newmap`; every other map file edits the copy; all 31 BATTLES entries copy; in-game test T15
-   waiting); left: its own menu picture, and the Studio's "New map…" and map view for it; (b) drawing zones (the
+   `copy_of`, `rusemod.newmap`; every other map file edits the copy; all 31 BATTLES entries copy; **seen in the game
+   2026-10-03**, T15b and T16: 101 new maps at once; the Studio's **Duplicate map** makes and opens one, 0.9.4);
+   left: its own menu picture; (b) drawing zones (the
    sectors players capture); (c) ground painting (sand, grass,
    rock); (d) the movement graphs and AI grid in `mapinfo.win` following the new ground where it becomes
    impassable (hills are fine today: units drove up one; cliffs, new lakes and blocked valleys aren't); (e) the sight
@@ -1185,7 +1203,8 @@ Players get it through the launcher like any mod.
 
 **Unknowns to check first (one game start each):** a copied pack under a new name loads as its own map; the menus
 show a new skirmish entry (LittleGroove proved it for Operations); a map with its own GUID works in multiplayer
-between two PCs with the mod. The first two are T15 (`D:\RUSE-Instances\newmap-agent-check`, Blitz Twin).
+between two PCs with the mod. The first two are answered (2026-10-03, T15b and T16): a copied pack plays as its own
+map, and the menus list new skirmish entries, 101 at once. Multiplayer between two PCs is still to try.
 
 **The map tools, the way Cities: Skylines does them** (owner, 2026-09-30): click to lay things out, see them at
 once, the game's rules follow. What the data says, and the order:

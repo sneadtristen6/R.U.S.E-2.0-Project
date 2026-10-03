@@ -336,7 +336,7 @@ Stuck on something? See [Questions? Ask any AI](#questions-ask-any-ai) at the bo
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.3) &middot; **Studio** for modders, a preview (latest: 0.9.3) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.4) &middot; **Studio** for modders, a preview (latest: 0.9.4) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -353,6 +353,10 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
 <details>
 <summary><b>Current stage (2026-10-03)</b></summary>
 
+- **Studio 0.9.4 and Launcher 0.4.4** (2026-10-03): new maps, early. The Studio's **Duplicate map** makes a new map
+  from any BATTLES map, listed in BATTLES next to it; seen in the game: a new map plays its own ground, and 101 new
+  maps at once were all listed and played. Maps open in a second the second time, and small fixes can come between
+  versions.
 - **Studio 0.9.3 and Launcher 0.4.3** (2026-10-03): everything a mod places is drawn out to the far distance (placed
   rocks seen at every height in the game), new roads through woods painted like the map's own (seen in the game),
   roads that can keep the trees on their path, props and trees named in all ten of the Studio's languages, and
@@ -419,8 +423,9 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
 - **8 players:** a map's count is its menu entry (`TMultiMapInfo`) and a starting point per player; mods set both
   (`maps/<map>/map.toml`, `[[start]]`). D-Day as a 4v4 is built; the lobby check is next.
 - **New maps in the menus:** a mod copies any BATTLES map under a name and pack of its own (`maps/<New>/map.toml`,
-  `copy_of`), listed in BATTLES beside it in the ten languages; the mod's other map files then edit the copy. Built;
-  the in-game test (TESTS.md T15, Blitz Twin) is next.
+  `copy_of`), listed in BATTLES beside it in the ten languages; the mod's other map files then edit the copy. **Seen
+  in the game:** a new map plays its own ground, and 101 new maps at once were all listed and played (TESTS.md T15b,
+  T16). The Studio's **Duplicate map** makes one in a click (0.9.4, early).
 - **Next** (PLAN.md §10): new roads drawn up close; units from another nation that work (a captured Tiger for the
   US); the map maker the Cities: Skylines way: an Erase tool in the Studio, forest tracks for infantry only, ruse
   areas, ground painting, finer terrain; then new maps in the Studio ("New map…") and join codes.
@@ -675,6 +680,23 @@ R.U.S.E. 2.0 stands on three people's work. None of it would be here without the
   helped make units from another nation work.
 - The notes on unit flags, bridge floors and how units stand on the ground went into the build's checks and the
   bridges units now drive over. DomesticNukes tests the releases in the game, too.
+
+### sneadtristen6 and Claude: building R.U.S.E. 2.0
+
+R.U.S.E. 2.0 is built by sneadtristen6, who leads it and tries every change in the game, and Claude, Anthropic's
+AI, working side by side since September 2026. What the two of them got the game to do in its first weeks:
+
+- **New maps.** On 3 October 2026 R.U.S.E. got new maps: listed in BATTLES beside the game's own, each playing its
+  own ground. To find the limit, 101 went in at once; all of them showed and played. As far as we know, they're the
+  first new maps the game has had since D-Day.
+- **A map editor that works in the game:** ground that units drive and fight on, lakes and dried rivers, roads that
+  look like the map's own from high up and right down at the ground, bridges that tanks, infantry and supply trucks
+  cross, buildings, props and trees that show at every distance, cover, and where units can go.
+- **Units:** change any of them, make new ones, and give a nation another army's tanks and planes.
+- **Two apps in the game's ten languages,** the Studio for modders and the Launcher for players, that never touch
+  the game's own folder.
+
+It's early, and there's much more to come. Thank you to the three above, without whom none of it would have started.
 
 Thanks also to everyone who has tried the apps, sent screenshots and reported bugs.
 

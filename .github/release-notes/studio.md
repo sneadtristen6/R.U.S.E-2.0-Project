@@ -1,6 +1,16 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.4:** new maps, early. **Duplicate map** makes a new map from any BATTLES map, and maps open in a second.
+
+| Before | Now |
+|---|---|
+| Map changes could only change the game's own maps. | **Duplicate map** (Maps tab, under the open map's name) makes a **new map**: a full copy with a name of its own, listed in BATTLES next to the original, that you then change like any map. The window says what it does and how it works. **Seen in the game:** a new map plays its own ground, and 101 new maps at once were all listed and played. Early: copies of maps other than Blitz build but weren't tried in the game yet, and flattening the mountains at a map's edge leaves a cliff there. Please report what you find. |
+| A map took seconds to open every time (M03_Italie: 7.6 s). | Its data is kept between visits and runs: 1.7 s the second time. |
+| "Mod" and "Map" were two menus alike. | **Unit mod** (with a tank) and **Map changes** (with a map). |
+| Sides and zones were easy to mix up. | **Who gets it?** says a side is who controls the units (one country can have several), and a zone's hover says it's an area of the map, not a side. |
+| Updates came only as whole versions. | Small fixes can come between versions (0.9.4.1), offered like any update. |
+
 **0.9.3:** everything you place shows from far, new roads through woods look like the map's own, trees you can keep
 on a road, props and trees by their names in your language, and builds about three times faster.
 

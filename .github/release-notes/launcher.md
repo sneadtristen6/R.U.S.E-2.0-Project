@@ -1,6 +1,13 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.4:** plays mods with new maps, made with Studio 0.9.4's Duplicate map.
+
+| Before | Now |
+|---|---|
+| New maps from a mod hadn't been tried in the game. | **Seen in the game:** a mod's new map is listed in BATTLES and plays its own ground, 101 at once. Early: report what you find. |
+| Updates came only as whole versions. | Small fixes can come between versions (0.4.4.1), offered like any update. |
+
 **0.4.3:** plays mods made with Studio 0.9.3, and builds them about three times faster.
 
 | Before | Now |
