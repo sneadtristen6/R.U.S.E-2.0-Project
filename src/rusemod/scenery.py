@@ -1409,7 +1409,11 @@ class _Leaf:
 
 def _leaves(nodes: list, n: int, bbox: tuple) -> list[_Leaf]:
     """Every leaf of a block's tree (`nodes` as _tree gives them, over `n` entries), empty ones too, but the far-view
-    list's: a root seen from far lists those items on its left side, and the shipped maps list no road piece there."""
+    list's (a root seen from far lists those items on its left side, and the shipped maps list no road piece there)
+    and a side whose entries run backwards: a node that splits before its own first entry, as the full list's node
+    does in the top block of M03_Italie and 8 other maps (113 such sides in the blocks the maps place once). The
+    game's walk finds nothing on such a side, and an entry added at its end went in front of the block's far-view
+    list, so the game drew the new entries from far instead of what the list held (on M03_Italie: the whole map)."""
     out, steps = [], 0
     if not nodes:
         return out
@@ -1429,15 +1433,16 @@ def _leaves(nodes: list, n: int, bbox: tuple) -> list[_Leaf]:
             left, right = (x0, y0, x0 + b1 / 255 * (x1 - x0), y1), (x0 + b2 / 255 * (x1 - x0), y0, x1, y1)
         else:
             left, right = (x0, y0, x1, y0 + b1 / 255 * (y1 - y0)), (x0, y0 + b2 / 255 * (y1 - y0), x1, y1)
-        if not (k == 0 and far):
+        if not (k == 0 and far) and lo <= split <= hi:
             if w & 0x40000000:
                 out.append(_Leaf(k, "L", lo, split, left, path + [(k, "L")]))
             else:
                 todo.append((k + 1, lo, split, left, path + [(k, "L")]))
-        if w & 0x80000000:
-            out.append(_Leaf(k, "R", split, hi, right, path + [(k, "R")]))
-        else:
-            todo.append((k + ((w & 0xFFFFF) >> 2), split, hi, right, path + [(k, "R")]))
+        if split <= hi:
+            if w & 0x80000000:
+                out.append(_Leaf(k, "R", max(split, lo), hi, right, path + [(k, "R")]))
+            else:
+                todo.append((k + ((w & 0xFFFFF) >> 2), max(split, lo), hi, right, path + [(k, "R")]))
     return out
 
 
@@ -1491,6 +1496,12 @@ def _grown(b: Block, adds: list, count: int | None = None) -> tuple[bytes, list[
                 nodes[k][0] |= ROAD_BIT
         ats.append(len(body))
         body += item
+    if nodes and (nodes[0][0] >> 20) & 0x08:  # a block seen from far keeps its far-view list exactly as it was
+        far = struct.unpack_from("<H", b.nodes, 4)[0]
+        if nodes[0][1] != far or entries[:far] != list(b.entries[:far]):
+            # not a game rule: a check on this writer's own output
+            raise SceneryError(f"block {b.index}: a road piece would have gone into its far-view list (a mistake in "
+                               f"this writer, not in the mod: please report it)")
     (w0,) = struct.unpack_from("<I", b.raw)
     out = (struct.pack("<I", (w0 & 0x80000000) | len(entries)) + b.raw[4:head]
            + struct.pack(f"<{len(entries)}I", *entries) + b"".join(struct.pack("<IHBB", *n) for n in nodes)

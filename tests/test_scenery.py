@@ -109,6 +109,25 @@ def two_woods():
     return make_scenery([root, wood], NAMES)
 
 
+def italy_top():
+    """A top block like M03_Italie's (and Alpha's, Dolly's, Korsun's, M02_Tunisie's, M08_Allemagne's, Mireille's,
+    Robert's): the root splits the far list off, both lists are leaves over the whole map, and the full list's node
+    splits at 0, so its left side runs backwards (from 2 to 0). It places the wood twice, both references listed for
+    far view, so the wood isn't a block placed once and a road piece out in the open goes among the top block's items."""
+    wood = block([compact(1, 0.0, 0.0), road((10.0, 20.0), (5.0, 0.0), (40.0, 20.0), (-5.0, 0.0))], mask=0x3F)
+    box = (0.0, 0.0, 40960.0, 40960.0)
+    nodes = (struct.pack("<IHBB", 0x3F << 20 | 2 << 2, 2, 0xFF, 0)            # the root: far list | full list
+             + struct.pack("<IHBB", 0xC0000000 | 0x08 << 20, 2, 0xFF, 0)     # the far list's leaf
+             + struct.pack("<IHBB", 0xC0000000 | 0x37 << 20, 0, 0xFF, 0))    # the full list's, split at 0
+    first = len(moved(0, 0, 0))
+    entries = [0, first, 0, first]
+    head = struct.pack("<II4f", 0x80000000 | len(entries), 3, *box) + bytes(8)
+    root_len = len(head) + 4 * len(entries) + len(nodes) + 2 * first
+    items = [moved(root_len, 5000.0, 5000.0), moved(root_len, 30000.0, 30000.0)]
+    root = head + struct.pack(f"<{len(entries)}I", *entries) + nodes + b"".join(items)
+    return make_scenery([root, wood], NAMES)
+
+
 def make_scenery(blocks, names):
     offsets, pos = [], 0
     for b in blocks:
@@ -501,6 +520,40 @@ class RoadStickers(unittest.TestCase):
         data = make_scenery([block([ref], box=top_box), wood], NAMES)
         _new, notes = add_objects(data, scenery.road_pieces([(25000.0, 26000.0), (27000.0, 26000.0)]))
         self.assertIn("the top block (1)", notes[0])
+
+    def test_a_backwards_side_never_takes_a_piece(self):
+        """M03_Italie's top block (italy_top): a road out in the open goes at the end of the full list, never on the
+        full list's node's left side, which runs backwards. An entry added at that side's end went in front of the
+        far-view list (a tester's build, 2026-10-03): the game would draw road pieces from far instead of the map's
+        blocks, and the new objects, with no far-listed block left to wrap, were hung on a grass decal (drawn up close
+        only). Now the far list keeps both references, and an object added with the road wraps one of them."""
+        data = italy_top()
+        top0 = Scenery(data).blocks[0]
+        self.assertEqual([(lf.node, lf.side) for lf in scenery._leaves(scenery._tree(top0), 4, top0.bbox)], [(2, "R")])
+        pieces = scenery.road_pieces([(15000.0, 20000.0), (19000.0, 20000.0)])
+        new, notes = add_objects(data, [NewObject("TypeWarrior/Chene_02", 16000.0, 21000.0)] + pieces)
+        s = Scenery(new)
+        top = s.blocks[0]
+        kinds = {it.at: it.kind for it in top.items}
+        self.assertEqual([kinds[a] for a in top.entries[:2]], ["child", "child"])  # the far list as it was
+        self.assertEqual(struct.unpack_from("<H", top.nodes, 4)[0], 2)
+        self.assertEqual(len(scenery._far_children(s)), 2)
+        self.assertEqual([kinds[a] for a in top.entries[4:]], ["road"] * len(pieces))  # the full list's end
+        self.assertIn("the top block (1)", notes[0])
+        self.assertIn("1 object(s) added in a new block with block 1 (drawn from far", notes[1])
+        self.assertNotIn("hung on", " ".join(notes))
+
+    def test_a_far_view_list_that_would_change_stops_the_build(self):
+        """Whatever leaf is asked for, a block's far-view list never changes: an entry that would land in it stops
+        the build with a message (the backwards side, forced back in here, is the case that did it)."""
+        from unittest import mock
+        top0 = Scenery(italy_top()).blocks[0]
+        piece = scenery._road_item(scenery.road_pieces([(15000.0, 20000.0), (19000.0, 20000.0)])[0],
+                                   scenery.IDENTITY, (20, (129958752, 1567752)), 1)[0]
+        backwards = scenery._Leaf(2, "L", 2, 0, top0.bbox, [(0, "R"), (2, "L")])
+        with mock.patch.object(scenery, "_leaves", return_value=[backwards]):
+            with self.assertRaisesRegex(SceneryError, "far-view list"):
+                scenery._grown(top0, [((2, "L"), piece)])
 
     def test_a_split_moves_when_its_left_side_or_all_of_it_comes_after(self):
         """The root splits 4 entries into two nodes of two leaves each: an entry added to the first node's right leaf
