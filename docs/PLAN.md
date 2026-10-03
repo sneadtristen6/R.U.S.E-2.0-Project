@@ -622,6 +622,11 @@ Studio 0.9.1 / Launcher 0.4.1 on the owner's word):
   **icon size** slider; icons shrink as the camera pulls out, so they aren't bulky from high up. Kept per PC. Nothing
   added to the top-left toolbar (the owner: it's bulky enough).
 - **Windows' installed apps list** shows the version actually installed (it showed the first installer's).
+- **Choose your language** on the first start of both apps (and once for players updating), with the game's language
+  in Steam marked; the language is a button at the top, no longer in Settings (the owner: a French player stayed on
+  the code names, not knowing the apps speak French).
+- **The game's own unit types** under Ground, Infantry and Air in the Studio's unit list (Light Tank, Heavy Bomber,
+  Armored Recon...), on each unit's line and in the map's Add unit list.
 
 **The bug list** ([issue #15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/15)), still open: the Mod
 and Map menus look the same; "New map..." isn't clear; the Studio is slow to start; a map is slow to open; removing
