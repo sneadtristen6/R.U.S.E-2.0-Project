@@ -1378,16 +1378,41 @@ class ZonesOnTheGround(unittest.TestCase):
         ground: drawn from the outline alone, a zone was a flat sheet a hill painted inside it poked through (the
         owner's D-Day hill, 2026-10-01). The split itself was checked in the Studio's page: every edge under the
         step, the area and the outline kept."""
-        maps = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "maps.js").read_text(encoding="utf-8")
-        draw = maps[maps.index("function drawScenario()"):]
-        draw = draw[:draw.index("\n}\n")]
+        draw = self.function("drawScenario()")
         self.assertIn("const step = 1.5 * Math.max(grid.sx, grid.sy);", draw)
-        self.assertIn("drapeZone(z.points, z.triangles, step)", draw)
-        self.assertIn("g.setIndex(tris);", draw)
-        self.assertNotIn("g.setIndex(z.triangles)", draw)
-        drape = maps[maps.index("function drapeZone("):]
-        drape = drape[:drape.index("\n}\n")]
-        self.assertIn("mid.get(key)", drape)  # an edge's middle made once: no cracks between two triangles
+        self.assertIn("drawZone(z, k, zones, at, step)", draw)
+        zone = self.function("drawZone(")
+        self.assertIn("drapeZone(p, z.triangles, step)", zone)
+        self.assertIn("g.setIndex(tris);", zone)
+        self.assertNotIn("g.setIndex(z.triangles)", zone)
+        self.assertIn("mid.get(key)", self.function("drapeZone("))  # an edge's middle made once: no cracks
+
+    def test_zones_are_borders_with_a_see_through_inside(self):
+        """The owner, 2026-10-03: the coloured sheets floating over the map covered its textures and the icons; "like
+        Stellaris borders ... the inside's kind of translucent, but the borders are clear". Each zone: a line along
+        its border (the edges only one of its triangles has), a glow just inside fading inwards and a faint fill, all
+        on the ground; the slider sets the inside (0: the borders alone) and is kept by the Studio (prefs "view").
+        Looked at in the Studio's page: borders, glow and fill at 35 %, the borders alone at 0 %."""
+        zone = self.function("drawZone(")
+        self.assertIn("zoneBorder(z.triangles)", zone)
+        self.assertIn("new THREE.LineSegments(", zone)
+        self.assertIn('zonePart: "fill"', zone)
+        self.assertIn('zonePart = "glow"', zone)
+        self.assertIn("e.n === 1", self.function("zoneBorder("))
+        self.assertIn("o.visible = zoneFill > 0", self.function("fillZones("))
+        maps = self.maps()
+        self.assertNotIn("liftZones", maps)  # nothing floats over the ground
+        self.assertIn("zone_fill: zoneFill", self.function("saveView("))
+        self.assertIn("view.zone_fill", self.function("keptScenView("))
+
+    @staticmethod
+    def maps():
+        return (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "maps.js").read_text(encoding="utf-8")
+
+    def function(self, head):
+        text = self.maps()
+        body = text[text.index("function " + head):]
+        return body[:body.index("\n}\n")]
 
 
 class MapIcons(unittest.TestCase):

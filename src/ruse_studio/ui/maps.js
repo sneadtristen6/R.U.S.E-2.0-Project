@@ -524,12 +524,28 @@ function renderLegend() {
 const LAYERS = ["water", "cover", "moves", "roads", "building", "prop", "vegetation", "scenario"];
 const alpha = Object.fromEntries(LAYERS.map((k) => [k, 1]));
 try { Object.assign(alpha, JSON.parse(localStorage.getItem("studio.alpha") || "{}")); } catch { /* not kept: fine */ }
-// How high the scenario's zones (sectors) float over the ground, 0 to 1 of ZONE_LIFT_MOST of the map's size (the owner,
-// 2026-10-02: hills and trees poked through them; raised by default, and a slider to set it)
-const ZONE_LIFT_MOST = 0.06;
-let zoneLift = 0.25;
-try { const kept = Number(localStorage.getItem("studio.zonelift")); if (localStorage.getItem("studio.zonelift") !== null && kept >= 0 && kept <= 1) zoneLift = kept; } catch { /* not kept: fine */ }
-const liftZones = () => { if (scen.zones) scen.zones.position.y = (mv.size || 1000) * ZONE_LIFT_MOST * zoneLift; };
+// The scenario's zones (sectors) as borders on the ground, like Stellaris' (the owner, 2026-10-03: the coloured sheets
+// floating over the map covered its textures and the icons, "it needs to change"; "like Stellaris borders ... the
+// inside's kind of translucent, but the borders are clear"): a clear line along each border, a glow just inside it
+// fading inwards, and a faint fill, all in the zone's own soft colour. The slider sets the inside, 0 to 1 of
+// ZONE_FILL_MOST (0: the borders alone); the borders always show. Kept by the Studio (prefs "view": saveView).
+const ZONE_FILL_MOST = 0.3, ZONE_GLOW = 2.2;  // the fill's opacity at 100 %, and the glow's at the border against it
+let zoneFill = 0.35;
+const zoneColour = (k) => new mv.gl.THREE.Color().setHSL((k * 0.137) % 1, 0.8, 0.5);
+
+// The zones' inside (fill and glow) at the slider's value, and the see-through slider's on top
+function fillZones() {
+  if (!scen.zones) return;
+  for (const o of scen.zones.children) {
+    const part = o.userData.zonePart;
+    if (!part) continue;
+    const m = o.material, base = part === "glow" ? Math.min(1, ZONE_FILL_MOST * ZONE_GLOW * zoneFill) : ZONE_FILL_MOST * zoneFill;
+    Object.assign(m.userData, { baseOpacity: base, baseTransparent: true, baseDepthWrite: false, alpha: undefined });  // fade's
+    m.opacity = base * alpha.scenario;
+    m.needsUpdate = true;
+    o.visible = zoneFill > 0;
+  }
+}
 
 function layerObjects(k) {
   switch (k) {
@@ -585,23 +601,23 @@ function renderLayers() {
       if (mv.gl) mv.gl.draw();
     });
     return el("label", { className: "layer-row" }, el("span", { textContent: name[k] || k }), range, value);
-  }), zoneLiftRow());
+  }), zoneFillRow());
 }
 
-// The zones' height over the ground (liftZones): a slider under the see-through ones
-function zoneLiftRow() {
-  const w = mv.words, value = el("span", { className: "muted", textContent: `${Math.round(zoneLift * 100)} %` });
-  const range = el("input", { type: "range", min: "0", max: "100", step: "5", value: String(Math.round(zoneLift * 100)),
-    title: w.tip_zone_lift || "" });
-  range.setAttribute("aria-label", w.zone_lift || "Zones' height");
+// How much of the zones' inside shows (fillZones): a slider under the see-through ones
+function zoneFillRow() {
+  const w = mv.words, value = el("span", { className: "muted", textContent: `${Math.round(zoneFill * 100)} %` });
+  const range = el("input", { type: "range", min: "0", max: "100", step: "5", value: String(Math.round(zoneFill * 100)),
+    title: w.tip_zone_fill || "" });
+  range.setAttribute("aria-label", w.zone_fill || "Zones' fill");
   range.addEventListener("input", () => {
-    zoneLift = Number(range.value) / 100;
+    zoneFill = Number(range.value) / 100;
     value.textContent = `${range.value} %`;
-    try { localStorage.setItem("studio.zonelift", String(zoneLift)); } catch { /* not kept: fine */ }
-    liftZones();
+    fillZones();
     if (mv.gl) mv.gl.draw();
   });
-  return el("label", { className: "layer-row", title: w.tip_zone_lift || "" }, el("span", { textContent: w.zone_lift || "Zones' height" }),
+  range.addEventListener("change", () => saveView());
+  return el("label", { className: "layer-row", title: w.tip_zone_fill || "" }, el("span", { textContent: w.zone_fill || "Zones' fill" }),
     range, value);
 }
 
@@ -1147,6 +1163,7 @@ function keptScenView(view) {
     for (const k of SCEN_LAYERS) if (typeof view.scen_layers[k] === "boolean") scen.layers[k] = view.scen_layers[k];
   }
   if (typeof view.icon_size === "number" && view.icon_size > 0) scen.iconSize = view.icon_size;
+  if (typeof view.zone_fill === "number" && view.zone_fill >= 0 && view.zone_fill <= 1) zoneFill = view.zone_fill;
   if (typeof view.stick_roads === "boolean") snapRoads = view.stick_roads;  // the Scenario tray's "Stick to roads"
   if (typeof view.road_snap === "boolean") road.snapOn = view.road_snap;     // the Roads tray's "Snap ends"
 }
@@ -1588,6 +1605,78 @@ function drawStartCamera(it, group, colour, at) {
   group.add(outline);
 }
 
+// A zone's border: the edges only one of its triangles has (whatever order its points come in), each with that
+// triangle's third corner, which says which way the inside is.
+function zoneBorder(triangles) {
+  const seen = new Map();
+  for (let i = 0; i + 2 < triangles.length; i += 3) {
+    const t = [triangles[i], triangles[i + 1], triangles[i + 2]];
+    for (let e = 0; e < 3; e++) {
+      const a = t[e], b = t[(e + 1) % 3], key = a < b ? `${a},${b}` : `${b},${a}`;
+      const got = seen.get(key);
+      if (got) got.n += 1;
+      else seen.set(key, { a, b, c: t[(e + 2) % 3], n: 1 });
+    }
+  }
+  return [...seen.values()].filter((e) => e.n === 1);
+}
+
+// A zone on the ground, Stellaris' way (ZONE_FILL_MOST): a clear line along its border, a glow just inside it that
+// fades inwards (clear at the border, gone `band` in), and a faint fill, in its own colour; all following the ground.
+function drawZone(z, k, zones, at, step) {
+  const { THREE } = mv.gl, colour = zoneColour(k), label = `${mv.words.scen_zone} ${k + 1} · ${z.name}`;
+  const p = z.points;
+  const { xy, tris } = drapeZone(p, z.triangles, step), n = xy.length / 2, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const v = at(xy[2 * i], xy[2 * i + 1]);
+    pos[3 * i] = v.x; pos[3 * i + 1] = v.y; pos[3 * i + 2] = v.z;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  g.setIndex(tris);
+  const fill = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity: 0,
+    side: THREE.DoubleSide, depthWrite: false }));
+  fill.userData = { label, zonePart: "fill" };  // pointing anywhere inside says which zone, filled or not
+  fill.renderOrder = 7;
+  zones.add(fill);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < p.length; i += 2) {
+    x0 = Math.min(x0, p[i]); x1 = Math.max(x1, p[i]); y0 = Math.min(y0, p[i + 1]); y1 = Math.max(y1, p[i + 1]);
+  }
+  const band = Math.min(0.1 * Math.min(x1 - x0, y1 - y0), 0.015 * (mv.size || 1000) / SCALE);
+  const line = [], glow = [], tint = [];
+  const corner = (x, y, a) => { const v = at(x, y); glow.push(v.x, v.y, v.z); tint.push(colour.r, colour.g, colour.b, a); };
+  for (const { a, b, c } of zoneBorder(z.triangles)) {
+    const ax = p[2 * a], ay = p[2 * a + 1], dx = p[2 * b] - ax, dy = p[2 * b + 1] - ay, len = Math.hypot(dx, dy);
+    if (!len) continue;
+    let nx = -dy / len, ny = dx / len;  // across the edge, turned to the inside (where the third corner is)
+    if (nx * (p[2 * c] - ax) + ny * (p[2 * c + 1] - ay) < 0) { nx = -nx; ny = -ny; }
+    const m = Math.max(1, Math.ceil(len / step));
+    for (let i = 0; i < m; i++) {
+      const [sx, sy, ex, ey] = [ax + dx * i / m, ay + dy * i / m, ax + dx * (i + 1) / m, ay + dy * (i + 1) / m];
+      const s0 = at(sx, sy, (mv.size || 1000) * 0.0005), e0 = at(ex, ey, (mv.size || 1000) * 0.0005);
+      line.push(s0.x, s0.y, s0.z, e0.x, e0.y, e0.z);
+      corner(sx, sy, 1); corner(ex, ey, 1); corner(ex + nx * band, ey + ny * band, 0);
+      corner(sx, sy, 1); corner(ex + nx * band, ey + ny * band, 0); corner(sx + nx * band, sy + ny * band, 0);
+    }
+  }
+  if (!line.length) return;
+  const gg = new THREE.BufferGeometry();
+  gg.setAttribute("position", new THREE.BufferAttribute(new Float32Array(glow), 3));
+  gg.setAttribute("color", new THREE.BufferAttribute(new Float32Array(tint), 4));
+  const shine = new THREE.Mesh(gg, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0,
+    side: THREE.DoubleSide, depthWrite: false }));
+  shine.userData.zonePart = "glow";
+  shine.renderOrder = 8;
+  zones.add(shine);
+  const lg = new THREE.BufferGeometry();
+  lg.setAttribute("position", new THREE.BufferAttribute(new Float32Array(line), 3));
+  const border = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: colour.clone().offsetHSL(0, 0, 0.2),
+    transparent: true, opacity: 0.95, depthWrite: false }));
+  border.renderOrder = 9;
+  zones.add(border);
+}
+
 // Everything the picked scenario puts on the map, on the ground as it is now (strokes too).
 function drawScenario() {
   clearScenario();
@@ -1596,24 +1685,11 @@ function drawScenario() {
   const { THREE } = gl, grid = makeGrid(mv.edit), group = new THREE.Group(), size = mv.size || 1000;
   const lift = size * 0.0015, at = (x, y, up = 0) => new THREE.Vector3(x * SCALE, groundAt(grid, x, y) * SCALE + lift + up, y * SCALE);
   const step = 1.5 * Math.max(grid.sx, grid.sy);  // about a ground cell and a half: the zone follows hills and pits
-  const zones = new THREE.Group();  // the zones together, raised over the ground by the slider (liftZones)
+  const zones = new THREE.Group();  // the zones together (their switch in the Scenario tray)
   group.add(zones);
   scen.zones = zones;
-  s.zones.forEach((z, k) => {  // a zone: its own triangles, see-through, in a colour of its own
-    const { xy, tris } = drapeZone(z.points, z.triangles, step), n = xy.length / 2, pos = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) {
-      const v = at(xy[2 * i], xy[2 * i + 1]);
-      pos[3 * i] = v.x; pos[3 * i + 1] = v.y; pos[3 * i + 2] = v.z;
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    g.setIndex(tris);
-    const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL((k * 0.137) % 1, 0.7, 0.55),
-      transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
-    mesh.userData.label = `${mv.words.scen_zone} ${k + 1} · ${z.name}`;
-    zones.add(mesh);
-  });
-  liftZones();
+  s.zones.forEach((z, k) => drawZone(z, k, zones, at, step));
+  fillZones();
   zones.visible = scen.layers.zones;
   const pillar = size * 0.03;
   for (const it of s.items) {
@@ -2076,7 +2152,7 @@ function scenarioAt(ev) {
   const rect = gl.renderer.domElement.getBoundingClientRect();
   gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
   gl.raycaster.setFromCamera(gl.ndc, gl.camera);
-  const shown = [...scen.group.children, ...(scen.zones ? scen.zones.children : [])]  // the zones: their own group
+  const shown = [...scen.group.children, ...(scen.zones && scen.zones.visible ? scen.zones.children : [])]  // their own group
     .filter((o) => o.isMesh && o.userData.label);
   const hits = gl.raycaster.intersectObjects(shown, false);
   const solid = hits.find((h) => h.object.geometry.type !== "BufferGeometry");  // a pillar or a diamond before a zone
@@ -4445,7 +4521,8 @@ function foldMaps(folded) {
 
 function saveView() {
   if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind, maps_folded: Boolean(mv.folded),
-    scen_layers: scen.layers, icon_size: scen.iconSize, stick_roads: snapRoads, road_snap: road.snapOn }).catch(() => {});
+    scen_layers: scen.layers, icon_size: scen.iconSize, zone_fill: zoneFill, stick_roads: snapRoads,
+    road_snap: road.snapOn }).catch(() => {});
 }
 
 // app.js opens the view when its tab is picked, and passes the words and the language on every language change.
