@@ -543,6 +543,15 @@ class RoadStickers(unittest.TestCase):
         self.assertIn("1 object(s) added in a new block with block 1 (drawn from far", notes[1])
         self.assertNotIn("hung on", " ".join(notes))
 
+    def test_between_carriers_that_hold_as_many_the_nearest(self):
+        """In a top block like M03_Italie's every far-listed reference's boxes are the whole map, so each holds a new
+        object as well as the other: it goes on the one whose block is nearest it (the first one, 13.8 km off a test
+        road, used to take everything)."""
+        new, _notes = add_objects(italy_top(), [NewObject("TypeWarrior/Chene_02", 29000.0, 29000.0)])
+        s = Scenery(new)
+        refs = {round(it.matrix()[3]): s._by_offset[it.child_offset] for it in s.blocks[0].items if it.kind == "child"}
+        self.assertEqual(refs, {5000: 2, 30000: 1})  # the north wood's reference now goes through the new block
+
     def test_a_far_view_list_that_would_change_stops_the_build(self):
         """Whatever leaf is asked for, a block's far-view list never changes: an entry that would land in it stops
         the build with a message (the backwards side, forced back in here, is the case that did it)."""

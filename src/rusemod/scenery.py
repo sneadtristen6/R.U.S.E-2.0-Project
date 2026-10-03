@@ -1377,12 +1377,20 @@ def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tupl
         rounds = [(lambda c, p: c.at in far_at and meets(c.full, p, close) and meets(c.far, p, far_cell),
                    lambda c: True),
                   (lambda c, p: meets(c.full, p, close), lambda c: c.at in far_at)]
+    # between carriers that hold as many, the one whose block is nearest the things (on M03_Italie every far-listed
+    # reference's boxes are the whole map: the first one, 13.8 km off a test road, took them all)
+    world = {it.at: _world_box(sc, it) for it in top.items if it.kind == "child"}
+
+    def off(c, mx, my):
+        x0, y0, x1, y1 = world[c.at]
+        return math.hypot(max(x0 - mx, 0.0, mx - x1), max(y0 - my, 0.0, my - y1))
     out: dict[int, list] = {}
     left = list(things)
     for holds, better in rounds:
         pool = [c for c in cands.values() if c.full]
         while left and pool:
-            best = max(pool, key=lambda c: (sum(holds(c, p) for p in left), better(c)))
+            mx, my = sum(p.x for p in left) / len(left), sum(p.y for p in left) / len(left)
+            best = max(pool, key=lambda c: (sum(holds(c, p) for p in left), better(c), -off(c, mx, my)))
             got = [p for p in left if holds(best, p)]
             if not got:
                 break
