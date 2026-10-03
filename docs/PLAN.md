@@ -606,12 +606,32 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Now (updated 2026-10-03): start here.** **Studio 0.9.0 and Launcher 0.4.0 are out: roads are cracked** (T12
-passed: a new road looks like the map's own from high up and up close; the story in [ROADS.md](ROADS.md)). The owner:
-no 1.0 for a long time; 0.9.x patch releases from here.
+**Now (updated 2026-10-03, evening): start here.** **Studio 0.9.2 and Launcher 0.4.2 are out.** Roads were cracked
+in 0.9.0 / 0.4.0 (T12 passed: a new road looks like the map's own from high up and up close; the story in
+[ROADS.md](ROADS.md)). The owner: no 1.0 for a long time; 0.9.x patch releases from here; fixes may go out before an
+in-game test ("can be tested by a player later"), said so in the notes.
 
-On `main`, **not released yet** (the owner's asks of 2026-10-03; next: the owner looks in the real Studio, then
-Studio 0.9.1 / Launcher 0.4.1 on the owner's word):
+In 0.9.2 / 0.4.2 (from a tester's M03_Italie campaign mod; not yet seen in the game unless said):
+- **Bridges for new roads on every map with bridges:** the stone bridges' floors (one wide strip end to end, up to
+  about 21,000 across) are found too; before, only the metal bridges' narrow ones, on 9 of the 29 maps.
+- **Road ends snap only at the ends,** to a placed bridge first; a box turns snapping off.
+- **The names a player knows** for units and buildings, and the game's own line for each.
+- **Who gets it?** lists the scenario's own sides from its mission (rusemod.missions); the player's side (0) is
+  allowed in the build, and only a side the mission doesn't list is warned.
+- **Scenery from far:** a new road's pieces out in the open went in front of a block's far-view list where the full
+  list's node splits before its own first entry (the top block of M03_Italie and 8 other maps, 113 blocks in all):
+  from far the game drew the pieces instead of the map's blocks, and new props, with no far-listed block left to
+  wrap, were hung on a grass decal and showed only up close (the tester's rocks). Fixed, with a guard; the owner's
+  in-game check of detail loading is next.
+- **Zones as borders on the ground** (Stellaris' way: a clear line, a see-through tint inside); a "Zones' fill"
+  slider in place of the zones' height.
+
+Next: the owner's detail-loading test (a test copy on M03_Italie); a campaign chapter's sectors (its mission spawns
+the scenario's units only in the sectors holding its markers: read from the mission, not tested; Studio display and
+a build warning); the tester's "map loading weird" lake screenshot (ask what's wrong first); more detailed graphics
+in the editor (the owner: "can be pushed later").
+
+*In 0.9.1 / 0.4.1 (released 2026-10-03):*
 - **Drag anything on the map, no tool needed:** starting points, supply depots, spawned units and opening cameras
   are grabbed and moved live, the way the camera ring already was. Depots and HQs still stick to roads while dragged
   (with the toggle on).

@@ -1,6 +1,19 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.2:** fixes from a tester's campaign map: bridges for new roads on every map, road ends that snap to bridges
+(or not at all), the names a player knows, units for the player, scenery that shows from far, and the scenario's
+zones as borders on the ground.
+
+| Before | Now |
+|---|---|
+| A road over water stopped the build on 20 of the 29 maps with bridges (Italy, Germany, Holland...): its bridge "would have no floor". | It gets its bridge and floor on every map with bridges. Not yet seen in the game on those maps. |
+| Every point of a road snapped to the nearest road, onto a road even when you'd placed a bridge there. | Only a road's two ends snap, to a placed bridge's end first. **Snap ends to roads and bridges** in the Roads tray turns it off. |
+| Buildings and units by their code names, like "Descriptor_Building_VehiculeFactoryLeurre". | By the names the game gives them (DECOY ARMOR BASE), with the game's own line on what each one does. |
+| No way to give units to the player in a campaign chapter: the player's side (0) was refused. | **Who gets it?** lists the scenario's own sides from its mission: "Player · USA (side 0)", "Computer · Germany (side 1)"... |
+| On M03_Italie and other maps, a new road out in the open hid the map's scenery from far, and props you placed showed only up close. | The map's far view stays as it was, and placed props show from far like the map's own. Not yet seen in the game. |
+| The scenario's zones were coloured sheets floating over the map, covering its ground and the icons. | Each zone is a clear line along its border on the ground with a see-through tint inside, like Stellaris' borders. **Zones' fill** sets the inside (0 %: the borders alone). |
+
 **0.9.1:** drag anything on the map, clearer icons you can size and hide, your language from the first start, and
 every unit's type as the game names it.
 

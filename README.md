@@ -306,7 +306,7 @@ Stuck on something? See [Questions? Ask any AI](#questions-ask-any-ai) at the bo
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.0) &middot; **Studio** for modders, a preview (latest: 0.9.0) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.2) &middot; **Studio** for modders, a preview (latest: 0.9.2) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -321,8 +321,15 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
 [docs/TESTS.md](docs/TESTS.md).
 
 <details>
-<summary><b>Current stage (2026-10-02)</b></summary>
+<summary><b>Current stage (2026-10-03)</b></summary>
 
+- **Studio 0.9.2 and Launcher 0.4.2** (2026-10-03): fixes from a tester's campaign map: bridges for new roads on
+  every map with bridges, road ends that snap to placed bridges (or not at all), the names a player knows, units for
+  the player in a campaign chapter, scenery and placed props that show from far again on M03_Italie and other maps,
+  and the scenario's zones as borders on the ground. Not yet seen in the game.
+- **Studio 0.9.1 and Launcher 0.4.1** (2026-10-03): drag anything on the map, icons by kind that you can size and
+  hide, "Choose your language" on the first start, the game's own unit types, and a mod set editor that finds mods by
+  name.
 - **Studio 0.9.0 and Launcher 0.4.0** (2026-10-02): roads are cracked. New roads look like the map's own,
   from high up and right down at the ground: the map's asphalt and edge stickers laid along them, the ground painted
   the way its roads are, and the plants and props on their path taken off. Tested in the game on D-Day after a lot of

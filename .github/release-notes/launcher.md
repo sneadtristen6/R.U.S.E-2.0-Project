@@ -1,6 +1,14 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.2:** plays mods made with Studio 0.9.2.
+
+| Before | Now |
+|---|---|
+| A mod with a road over water on Italy, Germany, Holland and other maps was refused: its bridge "would have no floor". | Built: the bridge gets the map's own floor. Not yet seen in the game on those maps. |
+| A mod giving units to the player in a campaign chapter (side 0) was refused, and units for the computer's sides were warned "may never appear". | Built; only a side the chapter's mission doesn't have is warned. |
+| On M03_Italie and other maps, a mod's new road out in the open hid the map's scenery from far, and its props showed only up close. | The map's far view stays as it was, and the mod's props show from far. Not yet seen in the game. |
+
 **0.4.1:** your language from the first start, and a mod set editor that finds mods by name.
 
 | Before | Now |
