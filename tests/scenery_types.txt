@@ -1,0 +1,1318 @@
+# Every scenery type the shipped maps offer to place (building, prop, vegetation): its code name, a tab, the game
+# editor's folder for it. Read from all 32 maps' scenery (2026-10-03); tests/test_scenerynames.py checks each
+# gets an English name.
+Abreuvoir_En_Pierre_G	Props/Givre
+AbreuvoirEnBois	Props/Ferme
+AbreuvoirEnPierre	Props/Ferme
+Abri_foin_01	Hollande/Batiments_Fermes
+Abri_foin_01_vide	Hollande/Batiments_Fermes
+Abri_foin_02	Hollande/Batiments_Fermes
+Abri_foin_02_vide	Hollande/Batiments_Fermes
+Amphore_01	COC/Tunisie/DecorsKasserine
+Amphore_02	COC/Tunisie/DecorsKasserine
+antenna_Dest	GermanyBuildings/Batiments_Villes/Dest
+Arbre_01_Dest	Vegetation/Arbres
+Arbre_02_Dest	Vegetation/Arbres
+Arbre_03_Dest	Vegetation/Arbres
+ArbreTunisie_10	Vegetation
+ArbreTunisie_11	Vegetation
+ArbreTunisie_14	Vegetation
+ArbreTunisie_16	Vegetation
+ArbreTunisie_24	Vegetation
+ArbreTunisie_27	Vegetation
+Arche_Italie_01	Italie/Batiments_Villes
+Arche_Italie_02	Italie/Batiments_Villes
+Arche_Italie_03	Italie/Batiments_Villes
+Ardennes_administration	COC/Ardennes/Batiments_ville
+Arrosoir	Props/Ferme/Outils
+BacAFleurs_g	Props/Givre/givre_villes
+Balai	Props/Ferme/Outils
+Banc_1	Props/Ferme
+Banc_1_G	Props/Givre
+Banc_2	Props/Ferme
+Banc_2_G	Props/Givre
+banc_bassine	Props/Ferme
+Banc_marron	Props/Ville
+Banc_vert	Props/Ville
+BancDeBois	Props/Ferme
+BancDeBois2	Props/Ferme
+Barak_01	Hollande/Batiments_ville
+Barak_02	Hollande/Batiments_ville
+Baraquement_gris	Props Base/decors/US
+Baraquement_vert	Props Base/decors/US
+barbele_01	Props Base/decors/generique
+barbele_02	Props Base/decors/generique
+barge_01	Props/objets fleuve
+Barriere	Props Base/decors/Props
+Barriere1_Angle	Props/Ferme/Murets
+Barriere1_Droit	Props/Ferme/Murets
+Barriere2_Angle	Props/Ferme/Murets
+Barriere2_Droit	Props/Ferme/Murets
+barriere_06	COC/Allemagne/Batiments_Fermes
+barriere_06_G	Props/Givre
+Barriere_blanche	Hollande/Clotures
+Barriere_PlotsBriques	Hollande/Clotures
+Barriere_Type1_Droit_G	Props/Givre/Barrieres
+BarriereChamps_01	Props/Ferme/Murets
+BarriereChamps_02	Props/Ferme/Murets
+BarriereChamps_03	Props/Ferme/Murets
+BarriereChamps_04	Props/Ferme/Murets
+BarriereChamps_1_G	Props/Givre/Barrieres
+BarriereChamps_2_G	Props/Givre/Barrieres
+BarriereChamps_3_G	Props/Givre/Barrieres
+Base_brancard	Props Base/decors/generique
+Base_deco_boite_pharma	Props Base/decors/generique
+Base_deco_machine1	Props Base/decors/generique
+Base_deco_machine2	Props Base/decors/generique
+Base_deco_panneau1	Props Base/decors/generique
+Base_deco_panneau3	Props Base/decors/generique
+Base_deco_paper	Props Base/decors/generique
+base_lit_draps	Props Base/decors/generique
+base_lit_nu	Props Base/decors/generique
+Batiment_Administratif_01	Italie/Batiments_Villes
+Batiment_Ferme	COC/Ardennes/Batiments_Fermes
+Batiment_Ferme_02	COC/Ardennes/Batiments_Fermes
+Batiment_Ferme_03	COC/Ardennes/Batiments_Fermes
+Batiment_Grand_Bleu_Ardennes	COC/Ardennes/Batiments_Ville
+Batiment_Grand_Marron_Ardennes	COC/Ardennes/Batiments_Ville
+Batiment_Grand_Vert_Ardennes	COC/Ardennes/Batiments_Ville
+Batiment_Petit_Bleu_Ardennes	COC/Ardennes/Batiments_Ville
+Batiment_Petit_Orange_Ardennes	COC/Ardennes/Batiments_Ville
+Batiment_Petit_Rouge_Ardennes	COC/Ardennes/Batiments_Ville
+batimentporche_g	COC/Ardennes/Batiments_Ville
+Bidon_Huile	Props Base/decors/US
+bidonlait_01	COC/Allemagne/Batiments_Fermes
+bidonlait_01_G	Props/Givre
+Big_fountain_type2_g	Props/Givre/givre_villes
+Bloc_beton_01	Props Base/decors
+Bloc_beton_02	Props Base/decors
+Bloc_Pieu_metal	Props Base/decors
+Borne_01	COC/Tunisie/DecorsKasserine
+Borne_02	COC/Tunisie/DecorsKasserine
+Borne_03	COC/Tunisie/DecorsKasserine
+Borne_05	COC/Tunisie/DecorsKasserine
+Borne_06	COC/Tunisie/DecorsKasserine
+Borne_incendie	Props/Ville
+borne_incendie_g	Props/Givre/givre_villes
+Bouleau_01	Vegetation/Arbres
+Bouleau_01_Brun	Vegetation/Arbres
+Bouleau_01_G	Vegetation_Givre/Arbres
+Bouleau_01_rouge	Vegetation/Arbres
+Bouleau_02	Vegetation/Arbres
+Bouleau_02_G	Vegetation_Givre/Arbres
+Bouleau_03	Vegetation/Arbres
+Bouleau_03_G	Vegetation_Givre/Arbres
+Bridge_Dest	COC/Normandie/Ponts
+Brouette	Props/Ferme
+BuissonSec01	Vegetation
+BuissonSec01_France	Vegetation/Buissons
+BuissonSec01_G	Vegetation_Givre/Buissons
+BuissonSec02	Vegetation
+BuissonSec02_France	Vegetation/Buissons
+BuissonSec02_G	Vegetation_Givre/Buissons
+BuissonSec03	Vegetation
+BuissonSec03_France	Vegetation/Buissons
+BuissonSec03_G	Vegetation_Givre/Buissons
+BuissonSec04	Vegetation
+BuissonSec04_France	Vegetation/Buissons
+BuissonSec04_G	Vegetation_Givre/Buissons
+BuissonSec05	Vegetation
+Bunker_Artillerie_detruit	COC/Normandie/Batiments_Plages
+Bunker_DCA	Props Base/decors
+Bunker_detuit	COC/Normandie/Batiments_Plages
+Bunker_detuit_02	COC/Normandie/Batiments_Plages
+cabane_01	COC/Allemagne/Batiments_Fermes
+cabane_01_G	COC/Ardennes/Batiments_fermes
+Cabane_En_Bois_G	Props/Givre
+Cabane_Pierre	COC/Normandie/Batiments_Fermes
+CabaneBerger	Italie/PetitsBatiments
+CabaneBerger_B	Italie/PetitsBatiments
+CabaneEnBois	Props/Ferme
+cabanon	COC/Allemagne/Batiments_Fermes
+Caillou_01	Props/Ferme
+Caillou_02	Props/Ferme
+Caillou_03	Props/Ferme
+Caillou_04	Props/Ferme
+Caillou_06	Props/Ferme
+Caillou_07	Props/Ferme
+Caillou_08	Props/Ferme
+Caillou_09	Props/Ferme
+Caillou_10	Props/Ferme
+Caillou_11	Props/Ferme
+Caillou_12	Props/Ferme
+Caillou_13	Props/Ferme
+Caillou_14	Props/Ferme
+Caisse_1	Props/Ferme
+Caisse_2	Props/Ferme
+Caisse_3	Props/Ferme
+Caisse_4	Props/Ferme
+Caisse_4_US	Props/Ferme
+Caisse_bois	Props Base/decors/US
+Caisse_bois_depot	Props Base/decors/depot
+caisse_bois_terre_g	Props/Givre/givre_villes
+Caisse_metal	Props Base/decors/US
+caisse_olive	Props
+caisse_Oranges	Props
+caisse_piment	Props
+CaissenEnBois	Props/Ferme
+CaissenEnBois_terre	Props/Ferme
+CaissenEnBois_vide	Props/Ferme
+caleche_01	Props
+Caleche_01_G	Props/Givre
+camion_01	Props
+camion_01_G	Props/Givre
+camion_02	Props
+camion_02_G	Props/Givre
+CarcasseCamion	COC/Normandie/Props_Normandie/Ville
+CarcasseCamion2	COC/Normandie/Props_Normandie/Ville
+CarcasseCamion3	COC/Normandie/Props_Normandie/Ville
+CarcasseCamion4	COC/Normandie/Props_Normandie/Ville
+chaise	Props/Ferme
+Champs_Bles	Vegetation/Cultures
+Champs_Bles_Bordure	Vegetation/Cultures
+champs_droit	COC/Tunisie/DetailSol
+Champs_Fleurs_Bordure	Vegetation/Cultures
+Champs_Fleurs_Tete_A	Vegetation/Cultures
+Champs_Fleurs_Tete_B	Vegetation/Cultures
+Champs_Fleurs_Tete_J	Vegetation/Cultures
+Champs_Fleurs_Tete_R	Vegetation/Cultures
+Champs_Fleurs_Tete_V	Vegetation/Cultures
+Champs_Fleurs_Tige_A	Vegetation/Cultures
+Champs_Fleurs_Tige_B	Vegetation/Cultures
+Champs_Fleurs_Tige_J	Vegetation/Cultures
+Champs_Fleurs_Tige_R	Vegetation/Cultures
+Champs_Fleurs_Tige_V	Vegetation/Cultures
+champs_millieu	COC/Tunisie/DetailSol
+Champs_Verts	Vegetation/Cultures
+Champs_Verts_Bordure	Vegetation/Cultures
+Champs_Verts_Clair	Vegetation/Cultures
+Champs_Verts_Clair_Bordure	Vegetation/Cultures
+Champs_Verts_Clair_G	Vegetation_Givre/Cultures
+Champs_Verts_G	Vegetation_Givre/Cultures
+ChampsPierres	Props/Ferme
+ChampsPierres_02	Props/Ferme
+ChampsPierres_03	Props/Ferme
+ChampsPierres_04	Props/Ferme
+ChampsPierres_05	Props/Ferme
+Charette_01	COC/Tunisie/DecorsKasserine
+Charette_1	Props/Ferme
+Charette_2	Props/Ferme
+Charette_3	Props/Ferme
+Charette_G	Props/Givre
+Charme_01	Vegetation/Arbres
+Charme_01_G	Vegetation_Givre/Arbres
+Charrette_Foin	Props/Ferme
+Charue_1	Props/Ferme
+Charue_2	Props/Ferme
+CharueFerme	Props/Ferme
+CharueFerme_G	Props/Givre
+CharuePommes	Props/Ferme
+Chataigner_01	Vegetation/Arbres
+Chataigner_01_G	Vegetation_Givre/Arbres
+Chateau_01	COC/Normandie/landmarks
+Chateau_dEau_01	COC/Normandie/Batiments_Fermes
+Chateau_dEau_02	COC/Normandie/Batiments_Fermes
+Chateau_dEau_03	COC/Normandie/Batiments_Fermes
+Chateau_dEau_04	COC/Normandie/Batiments_Fermes
+Chateau_Eau	COC/Allemagne/Batiments_Fermes
+chateaudeau_Ardennes	COC/Ardennes/Batiments_Fermes
+Checkpoint	Props Base/decors/US
+Chene_01	Vegetation/Arbres
+Chene_01_G	Vegetation_Givre/Arbres
+Chene_02	Vegetation/Arbres
+Chene_02_Brun	Vegetation/Arbres
+Chene_02_G	Vegetation_Givre/Arbres
+Chene_03	Vegetation/Arbres
+Chene_03_G	Vegetation_Givre/Arbres
+Cherbourg_Angle_45	COC/Normandie/Batiments_Cherbourg
+Cherbourg_Angle_90	COC/Normandie/Batiments_Cherbourg
+Cherbourg_Batiment_01	COC/Normandie/Batiments_Cherbourg
+Cherbourg_Batiment_01b	COC/Normandie/Batiments_Cherbourg
+Cherbourg_Batiment_01c	COC/Normandie/Batiments_Cherbourg
+Cherbourg_Batiment_02	COC/Normandie/Batiments_Cherbourg
+Cherbourg_Batiment_02b	COC/Normandie/Batiments_Cherbourg
+Cherbourg_Batiment_02c	COC/Normandie/Batiments_Cherbourg
+Cherbourg_Gare	COC/Normandie/Batiments_Cherbourg
+Cherbourg_Grue_Quai	COC/Normandie/Batiments_Cherbourg
+Cherbourg_Mairie	COC/Normandie/Batiments_Cherbourg
+Cheval	Animaux
+Cheval_Run	Animaux
+Cheval_Walk	Animaux
+Chevre	Animaux
+Chevre2	Animaux
+Chevre3	Animaux
+Chevre_Run	Animaux
+Chevre_Walk	Animaux
+Chien	Animaux
+Chien_Run	Animaux
+Chien_Walk	Animaux
+citerne_Ardennes_02	COC/Ardennes/Batiments_Fermes
+citerne_Ardennes_03	COC/Ardennes/Batiments_Fermes
+citerne_eau	COC/Allemagne/Batiments_Fermes
+citerne_eau_02	COC/Allemagne/Batiments_Fermes
+clapier_01	COC/Allemagne/Batiments_Fermes
+clapier_01_G	Props/Givre
+Cloitre_QG	Italie/MontCassin
+COC_Barque	COC/Tunisie/DecorsKasserine
+COC_Barque2	COC/Tunisie/DecorsKasserine
+COC_Barque2Retournee	COC/Tunisie/DecorsKasserine
+COC_Barque3	COC/Tunisie/DecorsKasserine
+COC_Barque3Retournee	COC/Tunisie/DecorsKasserine
+COC_BarqueBerge	COC/Tunisie/DecorsKasserine
+COC_BarqueBerge2	COC/Tunisie/DecorsKasserine
+COC_BarqueBerge3	COC/Tunisie/DecorsKasserine
+COC_BarqueRetournee	COC/Tunisie/DecorsKasserine
+COC_BatimentVillage_A	COC/Tunisie/BatimentsVillage
+COC_BatimentVillage_AWhite	COC/Tunisie/BatimentsVillage
+COC_BatimentVillage_B	COC/Tunisie/BatimentsVillage
+COC_BatimentVillage_C	COC/Tunisie/BatimentsVillage
+COC_BatimentVillage_CWhite	COC/Tunisie/BatimentsVillage
+COC_BatimentVillage_D	COC/Tunisie/BatimentsVillage
+COC_BatimentVillage_E	COC/Tunisie/BatimentsVillage
+COC_BidonHuile	COC/Tunisie/DecorsKasserine/MobilierMilitaire
+COC_Cabane_A	COC/Tunisie/DecorsKasserine
+COC_CaisseMunitionsB	COC/Tunisie/DecorsKasserine/MobilierMilitaire
+COC_CarcasseCamion	COC/Tunisie/DecorsKasserine
+COC_CarcasseCamion2	COC/Tunisie/DecorsKasserine
+COC_Charue	COC/Tunisie/DecorsKasserine
+COC_CharueAoranges	COC/Tunisie/DecorsKasserine
+COC_CharueAoranges2	COC/Tunisie/DecorsKasserine
+COC_Chevre	COC/Tunisie/Animaux
+COC_Chevre2	COC/Tunisie/Animaux
+COC_Chevre3	COC/Tunisie/Animaux
+COC_CLoture	COC/Tunisie/DecorsKasserine
+COC_Coussin01	COC/Tunisie/DecorsKasserine
+COC_Coussin02	COC/Tunisie/DecorsKasserine
+COC_Depot_Sacs	COC/Tunisie/DecorsKasserine/MobilierMilitaire
+COC_Depot_TenteBidons	COC/Tunisie/DecorsKasserine/MobilierMilitaire
+COC_dromadaire	COC/Tunisie/Animaux
+COC_echaffaudageEnBois	COC/Tunisie/DecorsKasserine
+COC_echelleEnBois	COC/Tunisie/DecorsKasserine
+COC_Echoppe_A_Close	COC/Tunisie/DecorsKasserine
+COC_Echoppe_B_Close	COC/Tunisie/DecorsKasserine
+COC_Echoppe_C_Close	COC/Tunisie/DecorsKasserine
+COC_Eoliene	COC/Tunisie/DecorsKasserine
+COC_Gazol1	COC/Tunisie/DecorsKasserine/MobilierMilitaire
+COC_Jarre1_Couvrenverse	COC/Tunisie/DecorsKasserine
+COC_Jarre1_Ferme	COC/Tunisie/DecorsKasserine
+COC_Jarre1_Groupe01	COC/Tunisie/DecorsKasserine
+COC_Jarre1_Groupe02	COC/Tunisie/DecorsKasserine
+COC_Jarre1_SansCouv	COC/Tunisie/DecorsKasserine
+COC_Jerrican	COC/Tunisie/DecorsKasserine/MobilierMilitaire
+COC_Materiel1	COC/Tunisie/DecorsKasserine/MobilierMilitaire
+COC_Materiel2	COC/Tunisie/DecorsKasserine/MobilierMilitaire
+COC_Materiel3	COC/Tunisie/DecorsKasserine/MobilierMilitaire
+COC_minaret	COC/Tunisie/BatimentsVillage
+COC_mulet	COC/Tunisie/Animaux
+COC_mulet2	COC/Tunisie/Animaux
+COC_mulet3	COC/Tunisie/Animaux
+COC_muretA_casse	COC/Tunisie/DecorsKasserine/Murets
+COC_muretA_coin	COC/Tunisie/DecorsKasserine/Murets
+COC_muretA_long	COC/Tunisie/DecorsKasserine/Murets
+COC_muretB_long03	COC/Tunisie/DecorsKasserine/Murets
+COC_MuretBatiment_Angle	COC/Tunisie/DecorsKasserine
+COC_MuretBatiment_B	COC/Tunisie/DecorsKasserine
+COC_MuretBatiment_B_Grand	COC/Tunisie/DecorsKasserine
+COC_muretC_casse	COC/Tunisie/DecorsKasserine/Murets
+COC_muretC_coin	COC/Tunisie/DecorsKasserine/Murets
+COC_muretC_plat01	COC/Tunisie/DecorsKasserine/Murets
+COC_muretC_porte	COC/Tunisie/DecorsKasserine/Murets
+COC_muretCultures_Droit	COC/Tunisie/DecorsKasserine/Murets
+COC_muretCultures_DroitLoin	COC/Tunisie/DecorsKasserine/Murets
+COC_muretD_coin	COC/Tunisie/DecorsKasserine/Murets
+COC_muretD_plat_01	COC/Tunisie/DecorsKasserine/Murets
+COC_muretD_plat_02	COC/Tunisie/DecorsKasserine/Murets
+COC_muretD_porte	COC/Tunisie/DecorsKasserine/Murets
+COC_MuretPlaceVillage	COC/Tunisie/DecorsKasserine
+COC_PanierAoranges	COC/Tunisie/DecorsKasserine
+COC_PanneauRoutier	COC/Tunisie/DecorsKasserine
+COC_PanneauRoutier2	COC/Tunisie/DecorsKasserine
+COC_Ponton01	COC/Tunisie/DecorsKasserine
+COC_Ponton02	COC/Tunisie/DecorsKasserine
+COC_PoteauElectrique_A	COC/Tunisie/DecorsKasserine
+COC_PoteauElectrique_B	COC/Tunisie/DecorsKasserine
+COC_RocailleA	COC/Tunisie/DecorsKasserine
+COC_Ruine_A	COC/Tunisie/DecorsKasserine
+COC_SacDeSable_A	COC/Tunisie/DecorsKasserine
+COC_SacDeSable_B	COC/Tunisie/DecorsKasserine
+COC_Stand1	COC/Tunisie/DecorsKasserine
+COC_TabouretPliant	COC/Tunisie/DecorsKasserine/MobilierMilitaire
+COC_Tapis01	COC/Tunisie/DecorsKasserine
+COC_Tapis02	COC/Tunisie/DecorsKasserine
+COC_Tapis03	COC/Tunisie/DecorsKasserine
+COC_Tapis04	COC/Tunisie/DecorsKasserine
+COC_Tapis05	COC/Tunisie/DecorsKasserine
+COC_TapisTendus_A	COC/Tunisie/DecorsKasserine
+COC_TapisTendus_B	COC/Tunisie/DecorsKasserine
+COC_TasRondinsPalmiers	COC/Tunisie/DecorsKasserine
+COC_TenteA	COC/Tunisie/DecorsKasserine
+COC_Tonneau_01	COC/Tunisie/DecorsKasserine
+COC_Tonneau_02	COC/Tunisie/DecorsKasserine
+COC_Tonneau_03	COC/Tunisie/DecorsKasserine
+COC_Tonneau_Ensemble01	COC/Tunisie/DecorsKasserine
+COC_Tonneau_Renverse	COC/Tunisie/DecorsKasserine
+COC_Velo	COC/Tunisie/DecorsKasserine
+COC_Velo_Position2	COC/Tunisie/DecorsKasserine
+COC_Velo_Position3	COC/Tunisie/DecorsKasserine
+COC_VeloMarron	COC/Tunisie/DecorsKasserine
+COC_VeloMarron_Position2	COC/Tunisie/DecorsKasserine
+COC_VeloMarron_Position3	COC/Tunisie/DecorsKasserine
+COC_VeloRouge	COC/Tunisie/DecorsKasserine
+COC_VeloRouge_Position2	COC/Tunisie/DecorsKasserine
+COC_VeloRouge_Position3	COC/Tunisie/DecorsKasserine
+Cochon	Animaux
+Cochon_Run	Animaux
+Cochon_Walk	Animaux
+Colditz_01	Allemagne/Landmarks
+Colditz_02	Allemagne/Landmarks
+Colditz_03	Allemagne/Landmarks
+Colditz_04	Allemagne/Landmarks
+Colditz_entree	Allemagne/Landmarks
+Colditz_fondation	Allemagne/Landmarks
+Cotentin_BacAFleurs	Props/Ville
+Cotentin_BigFountain_Type1	Props/Ville
+Cotentin_BigFountain_Type1_Dest	Props/Ville/Dest
+Cotentin_BigFountain_Type2	Props/Ville
+Cotentin_BigFountain_Type2_Dest	Props/Ville/Dest
+Cotentin_Cariole_Type1	Props/Ville
+Cotentin_Cariole_Type2	Props/Ville
+Cotentin_Chaine	Props/Ville/Cimetiere
+Cotentin_ChaiseCafe_A	COC/Normandie/Props_Normandie/Ville
+Cotentin_ChaiseCafe_B	COC/Normandie/Props_Normandie/Ville
+Cotentin_ChaiseCafe_C	COC/Normandie/Props_Normandie/Ville
+Cotentin_Devanture_01	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_02	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_03	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_04	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_05	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_06	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_07	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_08	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_09	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_10	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_11	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_12	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_13	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_14	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_15	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_Devanture_16	COC/Normandie/Props_Normandie/Ville/Reclames
+Cotentin_ElectricPost_2	Props/Ville
+Cotentin_Entrepot	COC/Normandie/Props_Normandie/Ville
+Cotentin_Entrepot_02	COC/Normandie/Props_Normandie/Ville
+Cotentin_Memorial_Type1	Props/Ville
+Cotentin_Memorial_Type2	Props/Ville
+Cotentin_Memorial_Type3	Props/Ville
+Cotentin_Memorial_Type3_Dest	Props/Ville
+Cotentin_PanierOsier1	Props/Ville
+Cotentin_PanierOsier2	Props/Ville
+Cotentin_PanierOsier3	Props/Ville
+Cotentin_PetiteFontaine_Type1	Props/Ville
+Cotentin_PetiteFontaine_Type1_Dest	Props/Ville/Dest
+Cotentin_PetiteFontaine_Type2	Props/Ville
+Cotentin_PetiteFontaine_Type2_Dest	Props/Ville
+Cotentin_PlotBeton	Props/Ville
+Cotentin_PlotBetonChaine	Props/Ville
+Cotentin_Sirene	COC/Normandie/Props_Normandie/Ville
+Cotentin_Stonewall2_Angle	Props/Ville/Murets
+Cotentin_Stonewall2_Straight	Props/Ville/Murets
+Cotentin_Stonewall3_Angle	Props/Ville/Murets
+Cotentin_Stonewall3_Straight	Props/Ville/Murets
+Cotentin_Stonewall4_Plot	Props/Ville/Murets
+Cotentin_Stonewall4_Portal	Props/Ville/Murets
+Cotentin_Stonewall4_PortalDoorLeft	Props/Ville/Murets
+Cotentin_Stonewall4_PortalDoorRight	Props/Ville/Murets
+Cotentin_Stonewall4_Straight	Props/Ville/Murets
+Cotentin_Stonewall_Angle	Props/Ville/Murets
+Cotentin_Stonewall_LeftGrid	Props/Ville/Murets
+Cotentin_Stonewall_RightGrid	Props/Ville/Murets
+Cotentin_Stonewall_Straight	Props/Ville/Murets
+Cotentin_StonewallPost_Straight	Props/Ville/Murets
+Cotentin_Store01	Props/Ville
+Cotentin_Store02	Props/Ville
+Cotentin_Store03	Props/Ville
+Cotentin_Store04	Props/Ville
+Cotentin_Store05	Props/Ville
+Cotentin_TableCafe_A	COC/Normandie/Props_Normandie/Ville
+Cotentin_TableCafe_B	COC/Normandie/Props_Normandie/Ville
+Cotentin_TableCafe_C	COC/Normandie/Props_Normandie/Ville
+Cotentin_Tombe_01	Props/Ville/Cimetiere
+Cotentin_Tombe_02	Props/Ville/Cimetiere
+Cotentin_Tombe_03	Props/Ville/Cimetiere
+Cotentin_Tombe_04	Props/Ville/Cimetiere
+Cotentin_Tombe_05	Props/Ville/Cimetiere
+Cotentin_Tombe_06	Props/Ville/Cimetiere
+Cotentin_Tombe_06_Dest	Props/Ville/Dest
+Cottage1_1	COC/Normandie/Batiments_Fermes
+Cottage1_2	COC/Normandie/Batiments_Fermes
+Cottage1_3	COC/Normandie/Batiments_Fermes
+Cottage2	COC/Normandie/Batiments_Fermes
+Cottage3	COC/Normandie/Batiments_Fermes
+Cypres_01	Vegetation/Arbres
+decapotable	Italie/Props
+decapotable_red	Italie/Props
+Echaffaudage_g	Props/Givre/givre_villes
+EchaffaudageBois	Props/Ferme
+EchaffaudageBois_Dest	Props/Ferme
+EchaffaudageEnBois_G	Props/Givre
+Echelle	Props/Ferme
+Ecole	COC/Normandie/Batiments_Villes_Villages
+ecole_Ardennes	COC/Ardennes/Batiments_Ville
+Ecurie	COC/Normandie/Batiments_Fermes
+ecurie	COC/Allemagne/Batiments_Fermes
+Eglise_01	COC/Allemagne/Batiments_Villes
+Eglise_02	COC/Allemagne/Batiments_Villes
+Eglise_03	COC/Allemagne/Batiments_Villes
+Eglise_04	COC/Allemagne/Batiments_Villes
+Eglise_Italie2	Italie/Batiments_Villes
+Eglise_Italie4	Italie/Batiments_Villes
+EgliseNormande_TypeA	COC/Normandie/Batiments_Villes_Villages
+EgliseNormande_TypeB	COC/Normandie/Batiments_Villes_Villages
+El_Djem_Colisee	COC/Tunisie/Landmarks
+EnseigneSuspendue_01_g	Props/Givre/givre_villes
+EnseigneSuspendue_02_g	Props/Givre/givre_villes
+EnseigneSuspendue_03_g	Props/Givre/givre_villes
+EnseigneSuspendue_04_g	Props/Givre/givre_villes
+EnseigneSuspendue_06_g	Props/Givre/givre_villes
+EnseigneSuspendue_07_g	Props/Givre/givre_villes
+EnseigneSuspendue_08_g	Props/Givre/givre_villes
+EnseigneSuspendue_11_g	Props/Givre/givre_villes
+EnseigneSuspendue_12_g	Props/Givre/givre_villes
+EnseigneSuspendue_14_g	Props/Givre/givre_villes
+Entrepot	COC/Normandie/Batiments_Fermes
+Entrepot_01	Hollande/Batiments_Fermes
+Entrepot_02	COC/Normandie/Batiments_Fermes
+Entrepot_petit	COC/Allemagne/Batiments_Fermes
+Entrepotardennes	COC/Ardennes/Batiments_Fermes
+Epicea_01	Vegetation/Arbres
+Epicea_01_G	Vegetation_Givre/Arbres
+Epicea_02_G	Vegetation_Givre/Arbres
+epouventail_01	Props
+Escalier_Italie	Italie/Batiments_Villes
+Etable_02	COC/Normandie/Batiments_Fermes
+Etable_03	COC/Normandie/Batiments_Fermes
+Etables	COC/Normandie/Batiments_Fermes
+Etables_g	COC/Ardennes/Batiments_Ville
+fagot_01	COC/Allemagne/Batiments_Fermes
+fagot_01_G	Props/Givre
+FagotBois_01	COC/Tunisie/DecorsKasserine
+FagotBois_02	COC/Tunisie/DecorsKasserine
+Farm_House_01	Italie/Batiments_Fermes
+Faux	Props/Ferme/Outils
+Ferme_01	COC/Allemagne/Batiments_Fermes
+Ferme_02	COC/Allemagne/Batiments_Fermes
+Ferme_03	COC/Allemagne/Batiments_Fermes
+Ferme_04	COC/Allemagne/Batiments_Fermes
+Ferme_05	COC/Allemagne/Batiments_Fermes
+Ferme_06	COC/Allemagne/Batiments_Fermes
+Ferme_07	COC/Allemagne/Batiments_Fermes
+Ferme_08	COC/Allemagne/Batiments_Fermes
+Ferme_09	COC/Allemagne/Batiments_Fermes
+Ferme_1	COC/Normandie/Batiments_Fermes
+Ferme_10	COC/Allemagne/Batiments_Fermes
+Ferme_1_B	COC/Normandie/Batiments_Fermes
+Ferme_1_C	COC/Normandie/Batiments_Fermes
+Ferme_2	COC/Normandie/Batiments_Fermes
+ferme_Ardennes_01	COC/Ardennes/Batiments_Fermes
+ferme_Ardennes_02	COC/Ardennes/Batiments_Fermes
+Ferme_Type1	Hollande/Batiments_Fermes
+FermeA_Bas	COC/Normandie/BatimentsMorceaux/FermeA
+FermeA_Milieu	COC/Normandie/BatimentsMorceaux/FermeA
+FermeA_Toit	COC/Normandie/BatimentsMorceaux/FermeA
+FermeAAngle_Bas	COC/Normandie/BatimentsMorceaux/FermeA
+FermeAAngle_Milieu	COC/Normandie/BatimentsMorceaux/FermeA
+FermeAAngle_Toit	COC/Normandie/BatimentsMorceaux/FermeA
+FermeAPetite_Bas	COC/Normandie/BatimentsMorceaux/FermeA
+FermeAPetite_Milieu	COC/Normandie/BatimentsMorceaux/FermeA
+FermeAPetite_Toit	COC/Normandie/BatimentsMorceaux/FermeA
+FermeB_Bas	COC/Normandie/BatimentsMorceaux/FermeB
+FermeB_Milieu	COC/Normandie/BatimentsMorceaux/FermeB
+FermeB_Toit	COC/Normandie/BatimentsMorceaux/FermeB
+FermeBAngle_Bas	COC/Normandie/BatimentsMorceaux/FermeB
+FermeBAngle_Milieu	COC/Normandie/BatimentsMorceaux/FermeB
+FermeBAngle_Toit	COC/Normandie/BatimentsMorceaux/FermeB
+FermeBPetite_Bas	COC/Normandie/BatimentsMorceaux/FermeB
+FermeBPetite_Milieu	COC/Normandie/BatimentsMorceaux/FermeB
+FermeBPetite_Toit	COC/Normandie/BatimentsMorceaux/FermeB
+Fiat500Topolino_2_G	Props/Givre
+Fiat500Topolino_3_G	Props/Givre
+Fiat500Topolino_G	Props/Givre
+Fiat_500	Props/Ville
+Fiat_500_02	Props/Ville
+Fiat_500_02_dest	Props/Ville
+Fiat_500_03	Props/Ville
+Fiat_500_03_Dest	Props/Ville
+Fiat_500_Dest	Props/Ville
+Figuier_barbarie_01	Vegetation
+Figuier_barbarie_02	Vegetation
+Figuier_barbarie_03	Vegetation
+FilElectrique	Props/Ville
+FiletPeche	COC/Tunisie/DecorsKasserine
+Fleau	Props/Ferme/Outils
+FleursJaunes	Vegetation
+FleursJaunes_France	Vegetation/Fleurs
+FleursJaunes_G	Vegetation_Givre/Fleurs
+Foin	Props/Ferme
+Foin_1	Props/Ferme
+Foin_2	Props/Ferme
+Foin_3	Props/Ferme
+FoinEtFourche	Props/Ferme
+Fontaine	COC/Tunisie/DecorsKasserine
+Fontaine_01	Props/Ville
+Fontaine_02	Props/Ferme
+Fontaine_04	Props/Ferme
+Four	COC/Tunisie/DecorsKasserine
+fourapain_01	Props
+FourAPain_G	Props/Givre
+Fourche_01	Props/Ferme/Outils
+Fourche_02	Props/Ferme/Outils
+Fourgon_1	COC/Normandie/Props_Normandie/Ville
+Fourgon_2	COC/Normandie/Props_Normandie/Ville
+Fourgon_3	COC/Normandie/Props_Normandie/Ville
+Fourgon_4	COC/Normandie/Props_Normandie/Ville
+Fourgon_5	COC/Normandie/Props_Normandie/Ville
+Fourgon_6	COC/Normandie/Props_Normandie/Ville
+Fourgon_Bleu	COC/Tunisie/DecorsKasserine
+Fourgon_Gris	COC/Tunisie/DecorsKasserine
+Fourgon_Gris_Ouvert_g	Props/Givre/givre_villes
+Fourgon_GrisOuvert	COC/Normandie/Props_Normandie/Ville
+Fourgon_Jaune_g	Props/Givre/givre_villes
+Fourgon_RougeBlanc	COC/Tunisie/DecorsKasserine
+Fourgon_RougeBlancOuvert	COC/Tunisie/DecorsKasserine
+Fourgon_VertBlanc	COC/Tunisie/DecorsKasserine
+Fourgon_VertBlancOuvert	COC/Tunisie/DecorsKasserine
+FR_B1Bis_Dest	Props Base/decors
+FR_S35_Dest	Props Base/decors
+Fumier	Props/Ferme
+GER_Bunker_Com	Props Base/decors
+GER_Intel_Center	Props Base/decors
+GER_Panzer_III_dest	Props Base/decors
+GER_Panzer_IV_G_dest	Props Base/decors
+GER_Propsbase_bottes	Props Base/decors
+GER_Propsbase_casque	Props Base/decors
+GER_Propsbase_sac1	Props Base/decors
+GER_Propsbase_sac2	Props Base/decors
+GER_Propsbase_sac3	Props Base/decors
+GER_Research_Center	Props Base/decors
+GER_SdkFz_222_dest	Props Base/decors
+Ger_Wall_Defense	Props Base/decors
+German_Antenna_01	Props Base/decors
+German_Canon_Fact_Cheminee	Props Base/decors
+German_Canon_Factory_Ent	Props Base/decors
+German_church_01_Dest	Italie/Batiments_Villes/Dest
+German_church_03_Dest	Italie/Batiments_Villes/Dest
+German_Hangar_01	Props Base/decors
+German_Hangar_03	Props Base/decors
+German_Hangar_03_bis	Props Base/decors
+German_Hangar_04	Props Base/decors
+German_House_01_Dest	Italie/Batiments_Villes/Dest
+German_House_02_Dest	Italie/Batiments_Villes/Dest
+German_House_03_Dest	Italie/Batiments_Villes/Dest
+German_House_04_Dest	Italie/Batiments_Villes/Dest
+German_House_05_Dest	Italie/Batiments_Villes/Dest
+German_House_06_Dest	Italie/Batiments_Villes/Dest
+German_House_07_Dest	Italie/Batiments_Villes/Dest
+German_House_08_Dest	Italie/Batiments_Villes/Dest
+German_House_09_Dest	Italie/Batiments_Villes/Dest
+German_House_10_Dest	Italie/Batiments_Villes/Dest
+German_HQ	Props Base/decors
+German_HQ_entrance	Props Base/decors
+German_Infantry_Bunker	Props Base/decors
+German_MG	Props Base/decors
+German_Mirador	Props Base/decors
+German_Silo_02_base	Props Base/decors
+GermanBunker	Props Base/decors
+GermanBunker_Com	Props Base/decors
+GermanDef_Bunker	Props Base/decors
+GermanFactory_DepotJerricans	Props Base/decors
+GermanFactory_DepotPlateau	Props Base/decors
+GermanFactory_Tuyau_01	Props Base/decors
+GermanFactory_Tuyau_02	Props Base/decors
+GermanFactory_Tuyau_03	Props Base/decors
+GermanFactoryGazol1	Props Base/decors
+GermanFactoryGazol2	Props Base/decors
+GermanFactoryKubelwagen_Ferme	Props Base/decors
+GermanFactoryKubelwagen_Ouvert	Props Base/decors
+GermanFactoryMateriel1	Props Base/decors
+GermanFactoryMateriel2	Props Base/decors
+GermanFactoryMateriel3	Props Base/decors
+GermanFactoryOpelBlitz_Ferme	Props Base/decors
+GermanFactoryOpelBlitzOuvert	Props Base/decors
+GermanSilo_base	Props Base/decors
+GermanTankFactory_hangar	Props Base/decors
+GermanTankFactoryWall	Props Base/decors
+Grand_Corps_de_Ferme	COC/Ardennes/Batiments_Fermes
+Grand_Corps_de_Ferme_02	COC/Ardennes/Batiments_Fermes
+Grand_Corps_de_Ferme_03	COC/Ardennes/Batiments_Fermes
+Grand_Corps_de_Ferme_04	COC/Ardennes/Batiments_Fermes
+Grand_Corps_de_Ferme_05	COC/Ardennes/Batiments_Fermes
+Grand_Corps_de_Ferme_06	COC/Ardennes/Batiments_Fermes
+GrandeEchelle	COC/Tunisie/DecorsKasserine
+GrandeEchelle_G	Props/Givre
+grandemaison_01	Hollande/Batiments_ville
+Grange	COC/Normandie/Batiments_Fermes
+Grange_01	Italie/Batiments_Fermes
+Grange_02	Italie/Batiments_Fermes
+Grange_03	Italie/Batiments_Fermes
+grange_04	COC/Allemagne/Batiments_Fermes
+grange_05	COC/Allemagne/Batiments_Fermes
+grange_Ardennes	COC/Ardennes/Batiments_Fermes
+Grange_en_pierre	COC/Ardennes/Batiments_Fermes
+grange_toit_brun	COC/Allemagne/Batiments_Fermes
+grange_toit_orange	COC/Allemagne/Batiments_Fermes
+grange_toit_violet	COC/Allemagne/Batiments_Fermes
+grangeardennes_02	COC/Ardennes/Batiments_Fermes
+grangedebois	COC/Ardennes/Batiments_Fermes
+Hache	Props/Ferme/Outils
+Hangar_port	COC/Normandie/Batiments_Cherbourg
+hangard_metallique	COC/Normandie/Batiments_Cherbourg
+Herbe_01	Vegetation
+Herbe_01_France	Vegetation/Divers
+Herbe_01_G	Vegetation_Givre/Divers
+HerbeHaute_02	Vegetation/Divers
+HerbesMarais_01	Vegetation/Cultures
+HerbesMarais_02	Vegetation/Cultures
+Herisson_Tcheque	Props Base/decors
+Hetre_01	Vegetation/Arbres
+Hetre_01_Brun	Vegetation/Arbres
+Hetre_01_G	Vegetation_Givre/Arbres
+Hetre_02_G	Vegetation_Givre/Arbres
+hollande_House_02	Hollande/Batiments_ville
+hollande_House_03	Hollande/Batiments_ville
+HorseCart_Type1_G	Props/Givre
+HorseCart_Type2_G	Props/Givre
+HorseCart_Type3_G	Props/Givre
+House_02	Italie/Batiments_Villes
+House_03	Italie/Batiments_Villes
+House_04	Italie/Batiments_Villes
+ITA_Barbeles	Props Base/decors/ITA
+ITA_Base_Entree	Props Base/decors/ITA
+ITA_Bunker	Props Base/decors/ITA
+ITA_bunker_02	Props Base/decors/ITA
+ITA_Cabane_camo_02	Props Base/decors/ITA
+ITA_Camion_Fiat_Dovunque_ferme	Props Base/decors/ITA
+ITA_Camion_Fiat_Dovunque_ouvert	Props Base/decors/ITA
+ITA_Caserne	Props Base/decors/ITA
+ITA_defense_bunker	Props Base/decors/ITA
+ITA_Defense_Wall	Props Base/decors/ITA
+ITA_factorytank_Carro_A	Props Base/decors/ITA
+ITA_factorytank_M15_42	Props Base/decors/ITA
+ITA_Hangar_Medium	Props Base/decors/ITA
+ITA_Hangar_Medium_Ouvert	Props Base/decors/ITA
+ITA_Hangar_Small_ferme	Props Base/decors/ITA
+ITA_Hangar_Small_ouvert	Props Base/decors/ITA
+ITA_HQ	Props Base/decors/ITA
+ITA_M11_Dest	Props Base/decors
+ITA_M13_Dest	Props Base/decors
+ITA_Mirador	Props Base/decors/ITA
+ITA_Silo	Props Base/decors/ITA
+ITA_Tente_cana_ferme	Props Base/decors/ITA
+ITA_Tente_cana_ouverte	Props Base/decors/ITA
+ITA_Tente_petite	Props Base/decors/ITA
+ITA_Wall	Props Base/decors/ITA
+JarreEpice_01	COC/Tunisie/DecorsKasserine
+JarreEpice_02	COC/Tunisie/DecorsKasserine
+JarreEpice_03	COC/Tunisie/DecorsKasserine
+JarreEpice_04	COC/Tunisie/DecorsKasserine
+Jeep_Willys	Props Base/decors/US
+Kiosque_Musique	Props/Ville
+Kiosque_Musique_Dest	Props/Ville/Dest
+Kiosque_musique_g	COC/Ardennes/Batiments_Ville
+kofeeshop	Hollande/Batiments_ville
+Lampadaire_1	Props/Ville
+Lampadaire_1_Dest	Props/Ville
+Lampadaire_1_g	Props/Givre/givre_villes
+Lampadaire_2	Props/Ville
+Lampadaire_2_Dest	Props/Ville
+Lampadaire_2_g	Props/Givre/givre_villes
+Lampadaire_3	Props/Ville
+Lampadaire_3_Dest	Props/Ville
+Lampadaire_3_g	Props/Givre/givre_villes
+Lampe_Murale	Props/Ville
+Lavande_01	Vegetation
+Lavande_02	Vegetation
+Linge	Italie/Props
+LingeDraps	Italie/Props
+LingeDraps_02	Italie/Props
+LittleStoneWall2_BoutEcroule_G	Props/Givre/Barrieres
+LittleStoneWall2_Corner2_G	Props/Givre/Barrieres
+LittleStoneWall2_Corner_G	Props/Givre/Barrieres
+LittleStoneWall2_Droit_Ecroule_G	Props/Givre/Barrieres
+LittleStoneWall2_Droit_G	Props/Givre/Barrieres
+Maison1Etage_Italie	Italie/Batiments_Villes
+Maison3F_1ET_Colombages_Cordonnerie	COC/Normandie/Batiments_villes_villages/
+Maison3F_1ET_Colombages_salonthe2	COC/Normandie/Batiments_villes_villages/
+Maison3F_2ET_Colombages_Cordonnerie	COC/Normandie/Batiments_villes_villages/
+Maison3F_2ET_Colombages_Cordonnerie2	COC/Normandie/Batiments_villes_villages/
+Maison3F_2ET_Colombages_Cordonnerie3	COC/Normandie/Batiments_villes_villages/
+Maison3F_2ET_Colombages_salonthe	COC/Normandie/Batiments_villes_villages/
+Maison_01	COC/Ardennes/Batiments_Fermes
+Maison_02	COC/Ardennes/Batiments_Fermes
+Maison_ferme_01	Hollande/Batiments_Fermes
+Maison_ferme_02	Hollande/Batiments_Fermes
+Maison_ferme_03	Hollande/Batiments_Fermes
+Maison_ferme_04	Hollande/Batiments_Fermes
+Maison_Italie_01	Italie/Batiments_Villes
+Maison_Italie_02	Italie/Batiments_Villes
+Maison_Italie_03	Italie/Batiments_Villes
+Maison_Italie_04	Italie/Batiments_Villes
+Maison_Italie_05	Italie/Batiments_Villes
+Maison_Italie_06	Italie/Batiments_Villes
+Maison_Italie_07	Italie/Batiments_Villes
+Maison_Italie_08	Italie/Batiments_Villes
+Maison_Italie_09	Italie/Batiments_Villes
+Maison_Ville_01	COC/Allemagne/Batiments_Villes
+Maison_Ville_02	COC/Allemagne/Batiments_Villes
+Maison_Ville_03	COC/Allemagne/Batiments_Villes
+Maison_Ville_04	COC/Allemagne/Batiments_Villes
+Maison_Ville_05	COC/Allemagne/Batiments_Villes
+Maison_Ville_06	COC/Allemagne/Batiments_Villes
+Maison_Ville_07	COC/Allemagne/Batiments_Villes
+Maison_Ville_08	COC/Allemagne/Batiments_Villes
+Maison_Ville_09	COC/Allemagne/Batiments_Villes
+Maison_Ville_10	COC/Allemagne/Batiments_Villes
+MaisonArche_Italie	Italie/Batiments_Villes
+maisonville_01	Hollande/Batiments_ville
+maisonville_02	Hollande/Batiments_ville
+maisonville_03	Hollande/Batiments_ville
+maisonville_04	Hollande/Batiments_ville
+maisonville_05	Hollande/Batiments_ville
+maisonville_06	Hollande/Batiments_ville
+maisonville_07	Hollande/Batiments_ville
+maisonville_08	Hollande/Batiments_ville
+maisonville_09	Hollande/Batiments_ville
+Malle_grande	Props/Ville
+Malle_petite	Props/Ville
+Market_01	COC/Normandie/Batiments_Villes_Villages
+market_01_Dest	Italie/Batiments_Villes/Dest
+market_01_g	COC/Ardennes/Batiments_Ville
+Market_02	COC/Normandie/Batiments_Villes_Villages
+Memorial_type1_G	Props/Givre
+Memorial_type2_G	Props/Givre
+Memorial_type3_G	Props/Givre
+MetierATisser	COC/Tunisie/DecorsKasserine
+MetierATisser2	COC/Tunisie/DecorsKasserine
+Meule	Italie/Batiments_Villes
+Meule_1	Props/Ferme
+Meule_2	Props/Ferme
+MG_Nest	Props Base/decors
+Mont_cassin_arche_milieu	Italie/MontCassin
+Mont_Cassin_Arches_T	Italie/MontCassin
+Mont_cassin_coin	Italie/MontCassin
+Mont_cassin_coupole	Italie/MontCassin
+Mont_cassin_mur_Fin01	Italie/MontCassin
+Mont_cassin_mur_Fin02	Italie/MontCassin
+Mont_cassin_mur_milieu	Italie/MontCassin
+Mont_cassin_petit_mur	Italie/MontCassin
+Mont_Cassin_Toit	Italie/MontCassin
+Mont_Cassin_Toit_Coin	Italie/MontCassin
+MonteCharge_Corde1	COC/Tunisie/DecorsKasserine
+MonteCharge_Corde2	COC/Tunisie/DecorsKasserine
+MonteCharge_Corde3	COC/Tunisie/DecorsKasserine
+MonteChargeFerme	Props/Ferme
+MonteChargeFerme_Corde1	Props/Ferme
+MonteChargeFerme_Corde2	Props/Ferme
+MonteChargeFerme_Corde3	Props/Ferme
+MonteChargeFerme_g	Props/Givre/givre_villes
+Monument_01	Props/Ville
+Monument_01_G	Props/Givre
+Monument_02	Props/Ville
+Monument_02_G	Props/Givre
+Moulin	COC/Normandie/Batiments_Fermes
+Moulin_01	Hollande/Batiments_Fermes
+Moulin_02	Hollande/Batiments_Fermes
+Moulin_03	Hollande/Batiments_Fermes
+moulin_06	Hollande/Batiments_fermes
+moulin_Ardennes	COC/Ardennes/Batiments_Fermes
+Moulin_carre_01	COC/Normandie/Batiments_Fermes
+Moulin_carre_02	COC/Normandie/Batiments_Fermes
+MoulinBatisse_BatimentBois	Hollande/Batiments_Fermes
+MoulinBatisse_Moulin	Hollande/Batiments_Fermes
+Mouton	Animaux
+Mouton_Run	Animaux
+Mouton_Walk	Animaux
+Mulet	Animaux
+Mulet2	Animaux
+Mulet3	Animaux
+Mulet_Run	Animaux
+Mulet_Walk	Animaux
+Olivier_01	Vegetation/Arbres
+Olivier_02	Vegetation/Arbres
+Oranger_01	Vegetation
+Orme_01	Vegetation/Arbres
+Orme_01_G	Vegetation_Givre/Arbres
+Palmier_04	Vegetation
+Palmier_05	Vegetation
+Palmier_06	Vegetation
+Palmier_07	Vegetation
+Palmier_Coupe	Vegetation
+Panier_Oranges	Props
+PaniersEmpiles1	COC/Tunisie/DecorsKasserine
+PaniersEmpiles2	COC/Tunisie/DecorsKasserine
+PareSoleilPaille	COC/Tunisie/DecorsKasserine
+Pelle	Props/Ferme/Outils
+peniche_01	Props/objets fleuve
+peniche_02	Props/objets fleuve
+PetitBatimentVille	Italie/Batiments_Villes
+Petite_Grange	COC/Ardennes/Batiments_Fermes
+PetiteEntree_Italie1	Italie/Batiments_Villes
+PetiteFontaine_1_g	Props/Givre/givre_villes
+PetiteFontaine_2_g	Props/Givre/givre_villes
+petitemaison_01	Hollande/Batiments_ville
+PetitMuretPierre2_Angle	Props/Ferme/Murets
+PetitMuretPierre2_AngleRond	Props/Ferme/Murets
+PetitMuretPierre2_BoutEcroule	Props/Ferme/Murets
+PetitMuretPierre2_Detruit	Props/Ferme/Murets
+PetitMuretPierre2_Detruit_droite	Props/Ferme/Murets
+PetitMuretPierre2_Detruit_gauche	Props/Ferme/Murets
+PetitMuretPierre2_Droit	Props/Ferme/Murets
+PetitMuretPierre2_Ecroule	Props/Ferme/Murets
+PetitMuretPierre_Angle	Props/Ferme/Murets
+PetitMuretPierre_AngleRond	Props/Ferme/Murets
+PetitMuretPierre_Droit	Props/Ferme/Murets
+PetitMuretPierre_PortailDroit	Props/Ferme/Murets
+PetitMuretPierre_PortailGauche	Props/Ferme/Murets
+PetitMuretPierre_SectionPortail	Props/Ferme/Murets
+PetitMuretPierreCultures_Angle	Props/Ferme/Murets
+PetitMuretPierreCultures_DroitLong_Morceau2	Props/Ferme/Murets
+PetitMuretPierreCultures_DroitLong_Morceau3	Props/Ferme/Murets
+PetitMuretPierreCultures_DroitLong_Morceau4	Props/Ferme/Murets
+PetitMuretPierreCultures_DroitLong_Morceau5	Props/Ferme/Murets
+PetitMuretPierreCultures_DroitLong_Morceau6	Props/Ferme/Murets
+PetitMuretPierreCultures_DroitLong_Morceau7	Props/Ferme/Murets
+PetitMuretPierreCultures_Gravats_1	Props/Ferme/Murets
+PetitMuretPierreCultures_Gravats_2	Props/Ferme/Murets
+PetitMuretPierreCultures_Moyen_Morceau1	Props/Ferme/Murets
+PetitMuretPierreCultures_Moyen_Morceau2	Props/Ferme/Murets
+PetitMuretPierreCultures_Moyen_Morceau3	Props/Ferme/Murets
+PetitMuretPierreCultures_Moyen_Morceau4	Props/Ferme/Murets
+PetitMuretPierreCultures_Moyen_Morceau5	Props/Ferme/Murets
+Phare	COC/Normandie/landmarks
+Phare2	COC/Normandie/landmarks
+pierre_01	COC/Allemagne/Batiments_Fermes
+pierre_01_G	Props/Givre
+pierre_02	COC/Allemagne/Batiments_Fermes
+pierre_02_G	Props/Givre
+Pierres	Props/Ferme
+Pigeonnier	COC/Normandie/Batiments_Fermes
+Pigeonnier_01	Italie/PetitsBatiments
+pigeonnier_01	COC/Allemagne/Batiments_Fermes
+Pigeonnier_02	COC/Normandie/Batiments_Fermes
+pigeonnier_02	COC/Allemagne/Batiments_Fermes
+Pigeonnier_03	Italie/Batiments_Fermes
+Pigeonnier_Ardennes_01	COC/Ardennes/Batiments_Fermes
+Pigeonnier_Ardennnes_02	COC/Ardennes/Batiments_Fermes
+PlancheBois_04	Props/Ferme
+Planches_Toits_01	COC/Tunisie/DecorsKasserine
+Planches_Toits_02	COC/Tunisie/DecorsKasserine
+Planches_Toits_03	COC/Tunisie/DecorsKasserine
+Planches_Toits_03bis	COC/Tunisie/DecorsKasserine
+Planches_Toits_03Droit	COC/Tunisie/DecorsKasserine
+Planches_Toits_04	COC/Tunisie/DecorsKasserine
+PlanchesBois_01	Props/Ferme
+PlanchesBois_02	Props/Ferme
+PlanchesBois_03	Props/Ferme
+PlanchesClouees	Props/Ferme
+PlanchesClouees_G	Props/Givre
+PlotsBetons_chaine_g	Props/Givre/givre_villes
+PlotsBetons_g	Props/Givre/givre_villes
+PlotsBriques	Hollande/Clotures
+Pneu	Props Base/decors/US
+PoissonsSuspendus	COC/Tunisie/DecorsKasserine
+PommesAuSol	Vegetation/Cultures
+Pommier	Vegetation/Arbres
+Pommier_G	Vegetation_Givre/Arbres
+Pont_01_Long_TangeantFloor	COC/Tunisie/DecorsKasserine/Ponts
+Pont_01_TangeantFloor	COC/Tunisie/DecorsKasserine/Ponts
+Pont_Allemagne_03	Allemagne/Ponts
+Pont_Allemagne_03_Detruit	Allemagne/Ponts
+Pont_Allemagne_03_TangeantFloor	Allemagne/Ponts
+Pont_Ardennes_01	Ardennes/Ponts
+Pont_Ardennes_01_TangeantFloor	Ardennes/Ponts
+Pont_Ardennes_Metallique_01_TangeantFloor	Ardennes/Ponts
+Pont_Ardennes_Metallique_02_TangeantFloor	Ardennes/Ponts
+Pont_Hollande_01_Arnhem	Hollande/Batiments_ville
+Pont_Hollande_01_Arnhem_TangeantFloor	Hollande/Batiments_ville
+Pont_Hollande_02_Bitume_TangeantFloor	Hollande/Batiments_ville
+Pont_Hollande_02_Bois_TangeantFloor	Hollande/Batiments_ville
+Pont_Hollande_03_Petit_TangeantFloor	Hollande/Batiments_ville
+Pont_Italie_01_TangeantFloor	Italie/Ponts
+Pont_Italie_02_TangeantFloor	Italie/Ponts
+Pont_Metallique_02	COC/Normandie/Ponts
+Pont_Metallique_02_TangeantFloor	COC/Normandie/Ponts
+Pont_Metallique_03	COC/Normandie/Ponts
+Pont_Metallique_03_TangeantFloor	COC/Normandie/Ponts
+Pont_TangeantFloor	COC/Normandie/Ponts
+ponton_01	Props
+Ponton_01_G	Props/Givre
+ponton_02	Props
+Ponton_02_G	Props/Givre
+Porcherie	COC/Normandie/Batiments_Fermes
+Porcherie_02	COC/Normandie/Batiments_Fermes
+pot_01	Props
+pot_02	Props
+pot_03	Props
+Pot_fleur_01	Italie/Props
+Pot_fleur_02	Italie/Props
+Pot_fleur_03	Italie/Props
+Poteau_electrique_A_g	Props/Givre/givre_villes
+PoteauElectrique_B	Props/Ville
+PoteauEnBois	COC/Tunisie/DecorsKasserine
+PotEpice_01	COC/Tunisie/DecorsKasserine
+PotEpice_02	COC/Tunisie/DecorsKasserine
+PotEpice_03	COC/Tunisie/DecorsKasserine
+PotEpice_04	COC/Tunisie/DecorsKasserine
+Poule	Animaux
+Poule_Run	Animaux
+Poule_Walk	Animaux
+Puit_01	Props
+Puit_01_G	Props/Givre
+Puit_02_G	Props/Givre
+Puit_03_G	Props/Givre
+Puits	COC/Tunisie/DecorsKasserine
+Puits02	COC/Tunisie/DecorsKasserine
+Puits_1	Props/Ferme
+Puits_1_Dest	Props/Ferme/Dest
+Puits_2	Props/Ferme
+Puits_2_Dest	Props/Ferme/Dest
+Quai_Cordages	COC/Normandie/Batiments_Cherbourg
+Quai_Dechets	COC/Normandie/Batiments_Cherbourg
+Quai_Planches	COC/Normandie/Batiments_Cherbourg
+QuaiCherBourg_Partie1	COC/Normandie/Batiments_Cherbourg
+QuaiCherBourg_Partie2	COC/Normandie/Batiments_Cherbourg
+QuaiCherBourg_Partie3	COC/Normandie/Batiments_Cherbourg
+RangeFoin	Italie/Batiments_Fermes
+rateau	Props/Ferme/Outils
+rochelow	COC/Tunisie/DetailSol
+rochelow_bright	COC/Tunisie/DetailSol
+rochemax	COC/Tunisie/DetailSol
+rochemax_bright	COC/Tunisie/DetailSol
+Rocher01	Vegetation
+Rocher_1_G	Props/Givre
+Rocher_2_G	Props/Givre
+Rocher_3_G	Props/Givre
+Rocher_4_G	Props/Givre
+RocherNormandie_01	Props/Ferme
+RocherNormandie_01B	Props/Ferme
+RocherNormandie_02	Props/Ferme
+RocherNormandie_03	Props/Ferme
+RocherNormandie_03B	Props/Ferme
+RocherNormandie_04	Props/Ferme
+Roseaux	Vegetation
+Roseaux02	Vegetation
+Roseaux03	Vegetation/Divers
+Rotissoire_Cochon	COC/Allemagne/Props
+roue_01	COC/Allemagne/Batiments_Fermes
+roue_01_G	Props/Givre
+Ruine	COC/Normandie/Batiments_Fermes
+Ruine_01	COC/Normandie/landmarks
+Ruine_02	COC/Normandie/landmarks
+Ruine_03	COC/Normandie/landmarks
+Ruine_Mur01	COC/Normandie/landmarks
+Ruine_Mur02	COC/Normandie/landmarks
+Ruine_Tour_grande	COC/Normandie/landmarks
+Ruins_Arch01	COC/Normandie/landmarks
+Ruins_Bat01	COC/Normandie/landmarks
+Ruins_Colonne01	COC/Normandie/landmarks
+Ruins_Colonne02	COC/Normandie/landmarks
+Ruins_Couloir	COC/Normandie/landmarks
+Ruins_Muraille01	COC/Normandie/landmarks
+Ruins_Muraille02	COC/Normandie/landmarks
+Ruins_Muraille03	COC/Normandie/landmarks
+Ruins_Muraille04	COC/Normandie/landmarks
+Ruins_Portal	COC/Normandie/landmarks
+Ruins_Stairway	COC/Normandie/landmarks
+Ruins_Tower01	COC/Normandie/landmarks
+Ruins_Tower02	COC/Normandie/landmarks
+Ruins_Tower03	COC/Normandie/landmarks
+Ruins_Tower04	COC/Normandie/landmarks
+Sac_A	Props/Ville
+Sac_B	Props/Ville
+SacDeSable_A_g	Props/Givre/givre_villes
+SacDeSable_B_g	Props/Givre/givre_villes
+SacEpices_01	COC/Tunisie/DecorsKasserine
+SacEpices_02	COC/Tunisie/DecorsKasserine
+SacEpices_03	COC/Tunisie/DecorsKasserine
+SacEpices_04	COC/Tunisie/DecorsKasserine
+SacOlives	Italie/Batiments_Villes
+Sacs_sable	Props Base/decors/US
+sacsable_courbe1	Props Base/decors/generique
+sacsable_courbe2	Props Base/decors/generique
+sacsable_debut	Props Base/decors/generique
+sacsable_debut_petit	Props Base/decors/generique
+sacsable_fin	Props Base/decors/generique
+sacsable_fin_petit	Props Base/decors/generique
+sacsable_milieu1	Props Base/decors/generique
+sacsable_milieu2	Props Base/decors/generique
+sacsable_milieu_petit_1	Props Base/decors/generique
+sacsable_milieu_petit_2	Props Base/decors/generique
+sacsable_x1	Props Base/decors/generique
+sacsable_x3	Props Base/decors/generique
+Salade_01	Vegetation
+Salade_01_France	Vegetation/Cultures
+Salade_01_G	Vegetation_Givre/Cultures
+Salade_02	Vegetation
+Salade_02_France	Vegetation/Cultures
+Salade_02_G	Vegetation_Givre/Cultures
+Sapin_01_G	Vegetation_Givre/Arbres
+Sapin_02_G	Vegetation_Givre/Arbres
+Seau	Props/Ferme/Outils
+Serpe	Props/Ferme/Outils
+silo_Dest	GermanyBuildings/Batiments_Villes/Dest
+stand01_a_g	Props/Givre/givre_villes
+stand01_b_g	Props/Givre/givre_villes
+Stand_01_a	Props/Ville
+Stand_01_a_Dest	Props/Ville/Dest
+Stand_01_b	Props/Ville
+Stand_01_b_Dest	Props/Ville/Dest
+Stand_01_c	Props/Ville
+Stand_01_c_Dest	Props/Ville/Dest
+Stand_02	Props/Ville
+stockfoin_01	COC/Allemagne/Batiments_Fermes
+stockfoin_02	COC/Allemagne/Batiments_Fermes
+StoneWall_MurDroit_g	Props/Givre/givre_villes
+StoneWall_PortailDroit_g	Props/Givre/givre_villes
+StoneWall_PortailGauche_g	Props/Givre/givre_villes
+StoneWall_Poteau_g	Props/Givre/givre_villes
+structure_montecharge	COC/Normandie/Batiments_Cherbourg
+Table	Props/Ferme
+Table_G	Props/Givre
+Tannerie_01	COC/Tunisie/DecorsKasserine
+Tannerie_02	COC/Tunisie/DecorsKasserine
+Tannerie_03	COC/Tunisie/DecorsKasserine
+TapisRoule_01	COC/Tunisie/DecorsKasserine
+TapisRoule_02	COC/Tunisie/DecorsKasserine
+TapisRoule_03	COC/Tunisie/DecorsKasserine
+TapisRoule_04	COC/Tunisie/DecorsKasserine
+TapisRoule_05	COC/Tunisie/DecorsKasserine
+TapisRoule_06	COC/Tunisie/DecorsKasserine
+TapisRoule_Charette	COC/Tunisie/DecorsKasserine
+tas_bois_G	Props/Givre
+TasBois_Part1	Props/Ferme
+TasBois_Part2	Props/Ferme
+TasBois_Part3	Props/Ferme
+TasDeBois	Props/Ferme
+TasDeBois_Partie1_G	Props/Givre
+TasDeBois_Partie2_G	Props/Givre
+TasDeBois_Partie3_G	Props/Givre
+TasDeBuches	Props/Ferme
+TasDeRondins	Props/Ferme
+TasFeuillesPalmier	Vegetation
+TasPlanchesBois	Props/Ferme
+TasPlanchesBois_02	Props/Ferme
+TasPoissons_1	COC/Normandie/Batiments_Cherbourg
+TasPoissons_2	COC/Normandie/Batiments_Cherbourg
+Tente_Cabane_gris_ger	Props Base/decors
+Tente_Camo_ger	Props Base/decors
+tente_generique_01	Props Base/decors/generique
+tente_generique_01_ouverte	Props Base/decors/generique
+tente_generique_02	Props Base/decors/generique
+tente_generique_03	Props Base/decors/generique
+tente_generique_04	Props Base/decors/generique
+tente_generique_05	Props Base/decors/generique
+tente_generique_06	Props Base/decors/generique
+Tenturesuspendues_01	COC/Tunisie/DecorsKasserine
+Tenturesuspendues_02	COC/Tunisie/DecorsKasserine
+Tenturesuspendues_03	COC/Tunisie/DecorsKasserine
+Tenturesuspendues_04	COC/Tunisie/DecorsKasserine
+Thon	COC/Normandie/Batiments_Cherbourg
+ToileTenduePourArbres	COC/Tunisie/DecorsKasserine
+ToileTenduePourArbres2	COC/Tunisie/DecorsKasserine
+ToileTenduePourArbres3	COC/Tunisie/DecorsKasserine
+Tomb_Chain_G	Props/Givre
+Tonneau	Props/Ville
+Tonneau_G	Props/Givre
+TonneauCouche	Props/Ville
+TonneauCouche_G	Props/Givre
+TonneauEpice	Props/Ville
+tonneauvert_01	COC/Allemagne/Batiments_Fermes
+Tour_radio	Props Base/decors/US
+TownHouse_EchaffaudageToit	COC/Normandie/props_normandie/Ville
+TownHouseAAngle120_Bas	COC/Normandie/BatimentsMorceaux/TownHouseA/A1
+TownHouseAAngle120_Haut	COC/Normandie/BatimentsMorceaux/TownHouseA/A1
+TownHouseAAngle120_Milieu	COC/Normandie/BatimentsMorceaux/TownHouseA/A1
+TownHouseAAngle120_Toit1	COC/Normandie/BatimentsMorceaux/TownHouseA/Toits
+TownHouseAAngle120_Toit4	COC/Normandie/BatimentsMorceaux/TownHouseA/Toits
+TownHouseAAngle120_Toit5	COC/Normandie/BatimentsMorceaux/TownHouseA/Toits
+TownHouseAAngle30_Bas	COC/Normandie/BatimentsMorceaux/TownHouseA/A1
+TownHouseAAngle30_Haut	COC/Normandie/BatimentsMorceaux/TownHouseA/A1
+TownHouseAAngle30_Milieu	COC/Normandie/BatimentsMorceaux/TownHouseA/A1
+TownHouseAAngle30_Toit2	COC/Normandie/BatimentsMorceaux/TownHouseA/Toits
+TownHouseAAngle30_Toit3	COC/Normandie/BatimentsMorceaux/TownHouseA/Toits
+TownHouseAAngle30_Toit4	COC/Normandie/BatimentsMorceaux/TownHouseA/Toits
+TownHouseAAngle_Bas	COC/Normandie/BatimentsMorceaux/TownHouseA/A1
+TownHouseAAngle_Haut	COC/Normandie/BatimentsMorceaux/TownHouseA/A1
+TownHouseAAngle_Milieu	COC/Normandie/BatimentsMorceaux/TownHouseA/A1
+TownHouseAAngle_Toit1	COC/Normandie/BatimentsMorceaux/TownHouseA/Toits
+TownHouseAAngle_Toit3	COC/Normandie/BatimentsMorceaux/TownHouseA/Toits
+TownHouseAAngle_Toit4	COC/Normandie/BatimentsMorceaux/TownHouseA/Toits
+TownHouseB2_Bas	COC/Normandie/BatimentsMorceaux/TownHouseB/B2
+TownHouseB2_Haut	COC/Normandie/BatimentsMorceaux/TownHouseB/B2
+TownHouseB2_Milieu	COC/Normandie/BatimentsMorceaux/TownHouseB/B2
+TownHouseB3_Bas	COC/Normandie/BatimentsMorceaux/TownHouseB/B3
+TownHouseB_Bas	COC/Normandie/BatimentsMorceaux/TownHouseB/B1
+TownHouseB_Toit1	COC/Normandie/BatimentsMorceaux/TownHouseB/Toits
+TownHouseB_Toit2	COC/Normandie/BatimentsMorceaux/TownHouseB/Toits
+TownHouseB_Toit3	COC/Normandie/BatimentsMorceaux/TownHouseB/Toits
+TownHouseB_Toit4	COC/Normandie/BatimentsMorceaux/TownHouseB/Toits
+TownHouseB_Toit5	COC/Normandie/BatimentsMorceaux/TownHouseB/Toits
+TownHouseBAngle_Bas	COC/Normandie/BatimentsMorceaux/TownHouseB/B1
+TownHouseBAngle_Haut	COC/Normandie/BatimentsMorceaux/TownHouseB/B1
+TownHouseBAngle_Milieu	COC/Normandie/BatimentsMorceaux/TownHouseB/B1
+TownHouseBAngle_Toit1	COC/Normandie/BatimentsMorceaux/TownHouseB/Toits
+TownHouseBAngle_Toit2	COC/Normandie/BatimentsMorceaux/TownHouseB/Toits
+TownHouseBAngle_Toit5	COC/Normandie/BatimentsMorceaux/TownHouseB/Toits
+TownHouseC2_Bas	COC/Normandie/BatimentsMorceaux/TownHouseC/C2
+TownHouseC3_Bas	COC/Normandie/BatimentsMorceaux/TownHouseC/C3
+TownHouseC4_Bas	COC/Normandie/BatimentsMorceaux/TownHouseC/C4
+TownHouseC5_Bas	COC/Normandie/BatimentsMorceaux/TownHouseC/C5
+TownHouseC6_Bas	COC/Normandie/BatimentsMorceaux/TownHouseC/C6
+TownHouseC_Bas	COC/Normandie/BatimentsMorceaux/TownHouseC/C1
+TownHouseC_Haut	COC/Normandie/BatimentsMorceaux/TownHouseC/C1
+TownHouseC_Milieu	COC/Normandie/BatimentsMorceaux/TownHouseC/C1
+TownHouseC_Toit1	COC/Normandie/BatimentsMorceaux/TownHouseC/Toits
+TownHouseC_Toit2	COC/Normandie/BatimentsMorceaux/TownHouseC/Toits
+TownHouseC_Toit3	COC/Normandie/BatimentsMorceaux/TownHouseC/Toits
+TownHouseC_Toit4	COC/Normandie/BatimentsMorceaux/TownHouseC/Toits
+TownHouseC_Toit5	COC/Normandie/BatimentsMorceaux/TownHouseC/Toits
+TownHouseD2_Bas	COC/Normandie/BatimentsMorceaux/TownHouseD/D2
+TownHouseD2_Haut	COC/Normandie/BatimentsMorceaux/TownHouseD/D2
+TownHouseD2_Milieu	COC/Normandie/BatimentsMorceaux/TownHouseD/D2
+TownHouseD_Bas	COC/Normandie/BatimentsMorceaux/TownHouseD/D1
+TownHouseD_Haut	COC/Normandie/BatimentsMorceaux/TownHouseD/D1
+TownHouseD_Milieu	COC/Normandie/BatimentsMorceaux/TownHouseD/D1
+TownHouseD_Toit1	COC/Normandie/BatimentsMorceaux/TownHouseD/Toits
+TownHouseD_Toit2	COC/Normandie/BatimentsMorceaux/TownHouseD/Toits
+TownHouseD_Toit3	COC/Normandie/BatimentsMorceaux/TownHouseD/Toits
+TownHouseD_Toit4	COC/Normandie/BatimentsMorceaux/TownHouseD/Toits
+TownHouseD_Toit5	COC/Normandie/BatimentsMorceaux/TownHouseD/Toits
+TownHouseDAngle_Bas	COC/Normandie/BatimentsMorceaux/TownHouseD/D1
+TownHouseDAngle_Haut	COC/Normandie/BatimentsMorceaux/TownHouseD/D1
+TownHouseDAngle_Milieu	COC/Normandie/BatimentsMorceaux/TownHouseD/D1
+TownHouseDAngle_Toit1	COC/Normandie/BatimentsMorceaux/TownHouseD/Toits
+TownHouseDAngle_Toit3	COC/Normandie/BatimentsMorceaux/TownHouseD/Toits
+TownHouseDAngle_Toit4	COC/Normandie/BatimentsMorceaux/TownHouseD/Toits
+Tracteur	Props/Ferme
+Tracteur_02	Props/Ferme
+Tracteur_03	Props/Ferme
+Traction_Avant	COC/Normandie/Props_Normandie/Ville
+Traction_Avant_g	Props/Givre/givre_villes
+Tramway	COC/Normandie/Batiments_Cherbourg
+Transformateur	COC/Normandie/Batiments_Fermes
+transformateur_Ardennes	COC/Ardennes/Batiments_Fermes
+trapeacharbon	COC/Allemagne/Batiments_Fermes
+trapeacharbon_G	COC/Ardennes/Batiments_fermes
+tricycle	COC/Allemagne/vehicules
+tricyclebordeaux	COC/Allemagne/vehicules
+tricyclecreme	COC/Allemagne/vehicules
+UK_Cromwell_Dest	Props Base/decors
+UK_Matilda_Dest	Props Base/decors
+UK_Tente_toile	Props Base/decors/UK
+URSS_Bunker	Props Base/decors/URSS
+URSS_Caserne	Props Base/decors/URSS
+URSS_Hangar_Medium_ouvert	Props Base/decors/URSS
+URSS_Tank_Factory	Props Base/decors/URSS
+URSS_Wall	Props Base/decors/URSS
+US_Avion_C47	Props Base/decors/US
+US_Cabane_camo_02	Props Base/decors/US
+US_fusil	Props Base/decors/US
+US_GMC_Cargo_ferme	Props Base/decors/US
+US_GMC_Cargo_ouvert	Props Base/decors/US
+US_HQ	Props Base/decors/US
+US_M24_Chafee_dest	Props Base/decors
+US_M26_Pershing_dest	Props Base/decors
+US_M3_Lee_dest	Props Base/decors
+US_M4_Sherman_dest	Props Base/decors
+US_Mirador	Props Base/decors/US
+us_piquet_carre	Props Base/decors/US
+us_Poteau_elec_cables	Props Base/decors/US
+us_Poteau_electrique	Props Base/decors/US
+US_Power_Generator	Props Base/decors/US
+US_Stuart_dest	Props Base/decors
+US_Tente_02	Props Base/decors/US
+US_Wall_Defense	Props Base/decors/US
+US_wpn_ammo	Props Base/decors/US
+US_wpn_BAR	Props Base/decors/US
+US_wpn_Bazooka	Props Base/decors/US
+V2_Command_Car	Props Base/decors
+V2_couche	Props Base/decors
+V2_Fuel_Car	Props Base/decors
+V2_Generateur_Electrique	Props Base/decors
+V2_pad	Props Base/decors
+V2_remorque	Props Base/decors
+V2_remorque_vide	Props Base/decors
+Vache	Animaux
+Vache2	Animaux
+Vache_Marche	Animaux
+Vache_Run	Animaux
+VacheCouchee	Animaux
+VacheCouchee_2	Animaux
+valise_osier	Props/Ville
+veget_EU_022	Vegetation/Buissons
+veget_EU_022_G	Vegetation_Givre/Buissons
+veget_EU_023	Vegetation/Buissons
+veget_EU_023_G	Vegetation_Givre/Buissons
+veget_EU_024	Vegetation/Buissons
+veget_EU_024_G	Vegetation_Givre/Buissons
+veget_EU_025	Vegetation/Buissons
+veget_EU_025_G	Vegetation_Givre/Buissons
+veget_EU_026	Vegetation/Buissons
+veget_EU_026_G	Vegetation_Givre/Buissons
+veget_EU_027	Vegetation/Fleurs
+veget_EU_028	Vegetation/Fleurs
+veget_EU_029	Vegetation/Fleurs
+veget_EU_030	Vegetation/Fleurs
+veget_EU_031	Vegetation/Fleurs
+veget_EU_031_G	Vegetation_Givre/Fleurs
+veget_EU_032	Vegetation/Fleurs
+veget_EU_032_G	Vegetation_Givre/Fleurs
+veget_EU_033	Vegetation/Fleurs
+veget_EU_034	Vegetation/Fleurs
+veget_EU_035	Vegetation/Fleurs
+veget_EU_036	Vegetation/Fleurs
+veget_EU_Ruins_Rosier	Vegetation/Buissons
+VegetauxsurEau	Vegetation
+VegetauxsurEau_France	Vegetation/Divers
+Velo	Props/Ville
+Velo_Position2	Props/Ville
+Velo_Position3	Props/Ville
+VeloMarron	Props/Ville
+VeloMarron_Position2	Props/Ville
+VeloMarron_Position3	Props/Ville
+VeloRouge	Props/Ville
+VeloRouge_Position2	Props/Ville
+VeloRouge_Position3	Props/Ville
+VieilleBaignoire	Props/Ferme
+VieilleBassine	Props/Ferme
+VieillePresse	Props/Ferme
+VieilOpelBlitz5	COC/Normandie/Props_Normandie/Ville
+VieilOpelBlitz5_g	Props/Givre/givre_villes
+VieilOpelBlitz_beige	COC/Allemagne/vehicules
+VieilOpelBlitz_beige_lait	COC/Allemagne/vehicules
+VieilOpelBlitz_bleu	COC/Allemagne/vehicules
+VieilOpelBlitz_rouge	COC/Allemagne/vehicules
+VieilOpelBlitz_rouge_biere	COC/Allemagne/vehicules
+VieilOpelBlitz_vert	COC/Allemagne/vehicules
+Vieux_Poele	Props/Ferme
+Vigne_Big_01	Vegetation/Cultures
+Vignes_01	Vegetation/Cultures
+Vignes_01_G	Vegetation_Givre/Cultures
+Vignes_02	Vegetation/Cultures
+Vignes_02_G	Vegetation_Givre/Cultures
+Vignes_03	Vegetation/Cultures
+Vignes_04	Vegetation/Cultures
+Vignes_05	Vegetation/Cultures
+VillageHouse_A2	COC/Normandie/BatimentsMorceaux/VillageHouseA/A2
+VillageHouse_B1	COC/Normandie/BatimentsMorceaux/VillageHouseB/B1
+VillageHouse_B2	COC/Normandie/BatimentsMorceaux/VillageHouseB/B2
+VillageHouse_C1	COC/Normandie/BatimentsMorceaux/VillageHouseC/C1
+VillageHouse_ToitA_1	COC/Normandie/BatimentsMorceaux/VillageHouseA/Toits
+VillageHouse_ToitA_2	COC/Normandie/BatimentsMorceaux/VillageHouseA/Toits
+VillageHouse_ToitA_3	COC/Normandie/BatimentsMorceaux/VillageHouseA/Toits
+VillageHouse_ToitA_4	COC/Normandie/BatimentsMorceaux/VillageHouseA/Toits
+VillageHouse_ToitA_5	COC/Normandie/BatimentsMorceaux/VillageHouseA/Toits
+VillageHouse_ToitB_1	COC/Normandie/BatimentsMorceaux/VillageHouseB/Toits
+VillageHouse_ToitB_4	COC/Normandie/BatimentsMorceaux/VillageHouseB/Toits
+VillageHouse_ToitB_5	COC/Normandie/BatimentsMorceaux/VillageHouseB/Toits
+VillageHouse_ToitC_3	COC/Normandie/BatimentsMorceaux/VillageHouseC/Toits
+VillageHouse_ToitC_4	COC/Normandie/BatimentsMorceaux/VillageHouseC/Toits
+VillageHouse_ToitC_5	COC/Normandie/BatimentsMorceaux/VillageHouseC/Toits

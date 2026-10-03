@@ -1221,3 +1221,5 @@ not decisions or an order: the map editor comes first.** Map ideas are in §12, 
    instead of an empty mod.
 4. **More detailed graphics in the Studio's map view (2026-10-03).** The owner: "it may not be possible, that's fine,
    that can be pushed later". Goes with "Polish waits" (§10).
+5. **A compass (2026-10-03).** The owner can't tell north from east in the game or the Studio ("I have no way of
+   telling which way is north"): a compass in the Studio's map view, and maybe one in the game through a UI mod.

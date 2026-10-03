@@ -2134,6 +2134,18 @@ cz = "Objekt k umístění; výběr zapne umísťování."
 jpn = "配置する物。選ぶと配置モードになります。"
 sc = "要放置的物体；选中即进入放置模式。"
 
+[place_code]
+us = "In the game's files"
+fr = "Dans les fichiers du jeu"
+ger = "In den Dateien des Spiels"
+ita = "Nei file del gioco"
+spa = "En los archivos del juego"
+pol = "W plikach gry"
+ru = "В файлах игры"
+cz = "V souborech hry"
+jpn = "ゲームのファイルでは"
+sc = "游戏文件中的名称"
+
 [tip_place_turn]
 us = "How the object is turned, in degrees (- and = keys while placing)."
 fr = "L'orientation de l'objet, en degrés (touches - et = pendant le placement)."

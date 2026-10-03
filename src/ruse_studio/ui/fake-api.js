@@ -756,10 +756,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       const u = (k * 7919 + seed) % 97 / 97, v = (k * 104729) % 89 / 89;
       items.vegetation.push(3, Math.round(c - 90000 + u * 180000), Math.round(c - 200000 + v * 90000), k, 0.8 + (k % 5) / 10);
     }
-    const palette = [["TypeWarrior/MairieNormande", "MairieNormande", "building", "COC/Normandie/Batiments_Villes_Villages", 1],
-      ["TypeWarrior/TownHouseB2_Haut", "TownHouseB2_Haut", "building", "COC/Normandie/BatimentsMorceaux/TownHouseB/B2", 39],
-      ["TypeWarrior/Charette_1", "Charette_1", "prop", "Props/Ferme", 30],
-      ["TypeWarrior/Chene_02", "Chene_02", "vegetation", "Vegetation/Arbres", 12000]];
+    // with their English names and what they are (rusemod.scenerynames)
+    const palette = [["TypeWarrior/MairieNormande", "MairieNormande", "building", "COC/Normandie/Batiments_Villes_Villages", 1, "Town hall (Normandy)", "town building"],
+      ["TypeWarrior/TownHouseB2_Haut", "TownHouseB2_Haut", "building", "COC/Normandie/BatimentsMorceaux/TownHouseB/B2", 39, "Town house B 2 high", "building piece"],
+      ["TypeWarrior/Charette_1", "Charette_1", "prop", "Props/Ferme", 30, "Cart 1", "farm prop"],
+      ["TypeWarrior/Cotentin_PanierOsier1", "Cotentin_PanierOsier1", "prop", "Props/Ville", 4, "Wicker basket 1 (Cotentin)", "town prop"],
+      ["TypeWarrior/Chene_02", "Chene_02", "vegetation", "Vegetation/Arbres", 12000, "Oak 2", "tree"]];
     return { types, items, palette, groups: { building: { shown: 40, total: 40 }, prop: { shown: 30, total: 30 },
       vegetation: { shown: 900, total: 12000 } } };
   }

@@ -2211,11 +2211,15 @@ function placeNote(text, kind) {
 // refuses it), so the search and the tooltip say so rather than offering every type in the game.
 function placeOptions() {
   const d = mv.scenery.data, p = mv.place, q = $("place-search").value.trim().toLowerCase();
+  // each row: [type, code name, group, the game editor's folder, how many the map has, its English name, what it is]
+  // (rusemod.scenerynames: the game names scenery only in its editor's code, mostly French)
   const rows = ((d && d.palette) || []).filter((r) => r[2] === p.group
-    && (!q || r[1].toLowerCase().includes(q) || r[3].toLowerCase().includes(q)));
+    && (!q || [r[1], r[3], r[5] || "", r[6] || ""].some((t) => t.toLowerCase().includes(q))));
   if (!rows.some((r) => r[0] === p.type)) p.type = rows.length ? rows[0][0] : null;
   $("place-type").replaceChildren(...rows.map((r) => {
-    const o = el("option", { value: r[0], textContent: r[4] ? `${r[1]}  (${r[4].toLocaleString()})` : r[1], title: r[3] });
+    const name = r[5] || r[1];
+    const o = el("option", { value: r[0], textContent: (r[6] ? `${name} · ${r[6]}` : name) + (r[4] ? `  (${r[4].toLocaleString()})` : ""),
+      title: `${name}${r[6] ? " · " + r[6] : ""}\n${mv.words.place_code || "In the game's files"}: ${r[1]} (${r[3]})` });
     o.selected = r[0] === p.type;
     return o;
   }));
