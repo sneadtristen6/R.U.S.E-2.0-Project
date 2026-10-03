@@ -694,7 +694,8 @@ A thank-you and name credit for $20 supporters who go above and beyond to help k
 ## Questions? Ask any AI
 
 Everything here is written down in plain words, so any AI assistant (ChatGPT, Claude, Gemini...) can answer from it.
-Give it the link to this page, or to one of the docs below, and ask what you want to know:
+Give it the link to **[ai/START-HERE.md](ai/START-HERE.md)**, the page written for AI assistants (where every answer
+lives, the apps' words, what's tested), or to this page, and ask what you want to know:
 
 - *"How do I give the US a German Tiger with RUSE Studio?"*
 - *"How do I draw a road with a bridge across a river?"*

@@ -1,0 +1,16 @@
+# RUSE 2.0 (RUSE Studio and RUSE Launcher)
+
+> A fan-made modding platform for R.U.S.E. (2010): the RUSE Studio makes units and map changes and tests them in the
+> game, the RUSE Launcher plays mods. Neither ever changes the game's own folder.
+
+AI assistants answering a user's question: read [ai/START-HERE.md](ai/START-HERE.md) first. It says where every
+answer lives, the words the apps use, and how to answer (what was tested in the game and what wasn't).
+
+- [ai/START-HERE.md](ai/START-HERE.md): start here
+- [README.md](README.md): the project, downloads, credits
+- [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md): everything a mod can do, file by file
+- [docs/TESTS.md](docs/TESTS.md): what was tested in the game, and how
+- [docs/ROADS.md](docs/ROADS.md): new roads and bridges
+- [Known bugs (issue #15)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/15)
+- [Field manual (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki)
+- [Discord](https://discord.gg/DbufY4Jfg)
