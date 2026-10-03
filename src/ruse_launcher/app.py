@@ -43,6 +43,9 @@ def main(argv=None) -> int:
                                              f"library; {api.status()['message']}"),
             ("the launcher's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['play']!r}"),
         ])
+    from rusemod.update import fix_app_list_version, installed_app
+    if installed_app():  # Windows' app list shows this version (issue #15: it said 0.1.0 when 0.3.1 was installed)
+        fix_app_list_version("launcher", __version__)
     api._pick_folder = lambda: pick_folder(api._window)
     api._pick_file = lambda: pick_file(api._window, MOD_FILES)
     return open_window("RUSE Launcher", UI, "index.html", api, width=1120, height=740,

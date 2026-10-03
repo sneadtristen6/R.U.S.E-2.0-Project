@@ -1353,6 +1353,41 @@ class ZonesOnTheGround(unittest.TestCase):
         self.assertIn("mid.get(key)", drape)  # an edge's middle made once: no cracks between two triangles
 
 
+class MapIcons(unittest.TestCase):
+    """Each kind of building and unit gets its own icon on the map (the owner, 2026-10-03), by the game's own names."""
+
+    def test_every_building_kind_and_every_bunker(self):
+        from ruse_studio.api import icon_of
+        b = lambda name: icon_of("buildings", "$/GFX/" + name, "")  # noqa: E731
+        self.assertEqual(b("Descriptor_Building_HeadquarterGR"), ("hq", False))
+        self.assertEqual(b("Descriptor_Building_TruckFactoryUK"), ("hq2", False))  # the secondary headquarters
+        self.assertEqual(b("Descriptor_Building_BatimentDepot_JAP"), ("depot", False))
+        self.assertEqual(b("Descriptor_Building_VehiculeFactoryFR"), ("armor_base", False))
+        self.assertEqual(b("Descriptor_Building_AeroportITA"), ("airfield", False))
+        self.assertEqual(b("Descriptor_Building_UsineAutomoteurGER"), ("at_base", False))
+        self.assertEqual(b("Descriptor_Building_Usine_Canon_JAP"), ("art_base", False))
+        self.assertEqual(b("Descriptor_Building_VehiculeFactoryLeurreUK"), ("armor_base", True))  # a decoy
+        self.assertEqual(b("Descriptor_Building_HeadquarterGRFake"), ("hq", True))
+        bunkers = {"Descriptor_Building_DefenseAT": "bunker_at", "Descriptor_Building_DefenseATITA": "bunker_at",
+                   "Descriptor_Building_DefenseDCAMGATNestUK": "bunker_at", "Descriptor_Building_DefenseDCAMGNest": "bunker_mg",
+                   "Descriptor_Building_DefenseMGNestGER": "bunker_mg", "Descriptor_Building_Def_Bunker_enterre_JAP": "bunker_mg",
+                   "Descriptor_Building_DefenseDCA": "bunker_aa", "Descriptor_Building_Def_Position_DCA_JAP": "bunker_aa",
+                   "Descriptor_Building_DefenseArtillerieDCAUK": "bunker_art",
+                   "Descriptor_Building_ArtillerieFieldLourd": "bunker_art", "Descriptor_Building_Def_Position_105mm_JAP": "bunker_art",
+                   "Descriptor_Building_DefenseMaginotFR": "bunker_fort", "Descriptor_Building_DefenseSiegfriedGER": "bunker_fort",
+                   "Descriptor_Building_DefenseLegereFR": "bunker_fort", "Descriptor_Building_PosteAlerteAvanceUK": "bunker_op"}
+        self.assertEqual({n: b(n)[0] for n in bunkers}, bunkers)
+
+    def test_units_by_what_they_are(self):
+        from ruse_studio.api import icon_of
+        self.assertEqual(icon_of("infantry", "$/GFX/Descriptor_Unit_Rangers", "barracks"), ("soldier", False))
+        self.assertEqual(icon_of("air", "$/GFX/Descriptor_Unit_P47", "airfield"), ("plane", False))
+        self.assertEqual(icon_of("ground", "$/GFX/Descriptor_Unit_M4_Sherman", "armor"), ("tank", False))
+        self.assertEqual(icon_of("ground", "$/GFX/Descriptor_Unit_M10", "antitank"), ("at_gun", False))
+        self.assertEqual(icon_of("ground", "$/GFX/Descriptor_Unit_M7_Priest", "artillery"), ("howitzer", False))
+        self.assertEqual(icon_of("ground", "$/GFX/Descriptor_Unit_Flak88", "artillery"), ("aa_gun", False))
+
+
 class Labels(unittest.TestCase):
     """Every display name has all ten languages, so no modder gets a half-translated tool."""
 

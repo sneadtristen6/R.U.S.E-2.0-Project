@@ -297,7 +297,8 @@
   Object.assign(words.us, {"scen_cam_what": "Opening camera · team {n}, place {p}", "scen_cam_rest": "the match opens looking from here, after its warm-up flight (the dotted line)", "scen_cam_view": "what the screen shows when the match opens"});
   Object.assign(words.fr, {"scen_cam_what": "Caméra d'ouverture · équipe {n}, place {p}", "scen_cam_rest": "la partie s'ouvre en regardant d'ici, après le vol d'introduction (la ligne pointillée)", "scen_cam_view": "ce que montre l'écran à l'ouverture de la partie"});
   Object.assign(words.sc, {"scen_cam_what": "开局镜头 · 队伍 {n}，位置 {p}", "scen_cam_rest": "对局在预热飞行（虚线）之后，从这里的视角开始", "scen_cam_view": "对局开始时屏幕显示的范围"});
-  Object.assign(words.us, {"scen_cam_drag": "Or drag a start's camera round its HQ to open the match from another side.", "scen_cam_drag_tip": "Move tool: drag it round the HQ", "scen_cam_turned": "Camera turned {deg}°.", "scen_cam_back": "Camera back"});
+  Object.assign(words.us, {"scen_cam_drag": "Or drag a start's camera round its HQ to open the match from another side.", "scen_cam_drag_tip": "drag it round the HQ to open the match from another side", "scen_drag_tip": "drag to move it", "scen_drag_help": "Drag any starting point, spawn, supply depot or camera on the map to move it: it's saved in the mod when you let go.", "scen_cam_turned": "Camera turned {deg}°.", "scen_cam_back": "Camera back"});
+  Object.assign(words.us, {"scen_layers_show": "Show", "scen_layer_starts": "Starts", "scen_layer_cams": "Cameras", "scen_layer_depots": "Depots", "scen_layer_buildings": "Buildings", "scen_layer_units": "Units", "scen_layer_zones": "Zones", "scen_layer_towns": "Towns", "tip_scen_layers": "Show or hide this kind on the map. Only the view changes, never the mod.", "scen_icon_size": "Icon size {pct} %", "tip_scen_icon_size": "How big the icons are on the map. They also get smaller as you zoom out."});
   const nations = {
     base: ["EU", "Allemagne", "RU", "France", "Italie", "URSS", "Japon"],
     us: ["USA", "Germany", "UK", "France", "Italy", "USSR", "Japan"],
@@ -495,10 +496,16 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
               cam: { path: [[730000, 420000, 200000], [580000, 620000, 90000]], look: [-0.857, 0, -0.514] } },
             { kind: "StartingPoint", x: 890000, y: 620000, turn: 0, name: "", alliance: 2,
               cam: { path: [[590000, 820000, 200000], [740000, 620000, 90000]], look: [0.857, 0, -0.514] } },
-            { kind: "Spawn", x: 655000, y: 560000, turn: 0, name: "", camp: -1, what: "DalleBatimentDepot", unit_kind: "buildings", group: "depot" },
-            { kind: "Spawn", x: 655000, y: 420000, turn: 0, name: "depot", camp: -1, what: "Unit_M4_Sherman", unit_kind: "ground", nation: 0 },
-    { kind: "Spawn", x: 640000, y: 400000, turn: 0, name: "", camp: 2, what: "Batiment_QG_GER", unit_kind: "buildings", nation: 1 },
-    { kind: "Spawn", x: 670000, y: 400000, turn: 0, name: "", camp: 1, what: "Avion_P47", unit_kind: "air", nation: 0 },
+            { kind: "Spawn", x: 655000, y: 560000, turn: 0, name: "", camp: -1, what: "DalleBatimentDepot", unit_kind: "buildings", group: "depot", icon: "depot" },
+            { kind: "Spawn", x: 655000, y: 420000, turn: 0, name: "depot", camp: -1, what: "Unit_M4_Sherman", unit_kind: "ground", nation: 0, group: "armor", icon: "tank" },
+    { kind: "Spawn", x: 640000, y: 400000, turn: 0, name: "", camp: 2, what: "Batiment_QG_GER", unit_kind: "buildings", nation: 1, group: "hq", icon: "hq" },
+    { kind: "Spawn", x: 670000, y: 400000, turn: 0, name: "", camp: 1, what: "Avion_P47", unit_kind: "air", nation: 0, icon: "plane" },
+    // one of each kind of icon, in a row south of the island's middle (the preview's check of every picture)
+    ...["soldier", "truck", "at_gun", "howitzer", "aa_gun", "armor_base", "airfield", "barracks", "at_base", "art_base",
+        "proto_base", "atomic", "hq2", "admin", "bunker_at", "bunker_mg", "bunker_aa", "bunker_art", "bunker_fort", "bunker_op"]
+      .map((icon, k) => ({ kind: "Spawn", x: 520000 + (k % 10) * 30000, y: 760000 + Math.floor(k / 10) * 40000, turn: 0,
+        name: icon, camp: 1 + (k % 2), what: "X_" + icon, nation: k % 7, icon, decoy: icon === "airfield",
+        unit_kind: ["soldier", "truck", "at_gun", "howitzer", "aa_gun"].includes(icon) ? "ground" : "buildings" })),
             { kind: "LabelVille", x: 655000, y: 700000, turn: 0, name: "", text: "Port Island" }] },
         { file: "leveldesign_challenge.scenario", kind: "operation", entries: [{ name: "Challenge - Island", kind: "operation", titles: { us: "Harbour raid", fr: "Raid sur le port" } }], zones: [], items: [{ kind: "StartingPoint", x: 655000, y: 620000, turn: 0, name: "", alliance: 1 }] }] });
   // a scenario edited in a mod: moves and spawns per mod and map

@@ -165,7 +165,7 @@ async function scene3d() {
   const sun = new THREE.DirectionalLight(0xfff1dc, 2.0);
   sun.position.set(-0.6, 1.0, -0.35);         // from the north-west, high: slopes read clearly
   scene.add(sun);
-  const draw = () => { fadeLayers(); renderer.render(scene, camera); };
+  const draw = () => { fadeLayers(); fitIcons(); renderer.render(scene, camera); };
   controls.addEventListener("change", draw);
   new ResizeObserver(() => {
     const w = host.clientWidth, h = host.clientHeight;
@@ -1121,6 +1121,47 @@ const ALLIANCE = [0x3f7fe0, 0xe0503f, 0x49b85a, 0xe0c33f, 0xa35ee0, 0x3fc8d8];
 const scen = { data: null, pick: 0, show: true, group: null, tool: null, selected: null, units: null, kind: "ground",
   type: null, camp: "-1", count: 1, formation: "line", gap: {}, team: 1, players: null };
 const SPAWN_KINDS = ["buildings", "ground", "infantry", "air"];
+
+// --- What the scenario shows, kind by kind, and how big its icons are. The owner, 2026-10-03: "why can't you just
+// disable the units and the supply depots? But keep the scenario areas or the camera spots", icons "not so bulky on the
+// map" when zoomed out, all of it "CUSTOMIZABLE", and nothing more in the top left: switches and a size slider in the
+// Scenario tray, kept in this window. Only the view changes, never the mod. ---
+const SCEN_LAYERS = ["starts", "cams", "depots", "buildings", "units", "zones", "towns"];
+const ICON_BASE = 0.042;  // an icon's height as a share of the view's, at size 100 %, close up
+scen.layers = Object.fromEntries(SCEN_LAYERS.map((k) => [k, true]));
+scen.iconSize = 1;
+try {
+  const kept = JSON.parse(localStorage.getItem("studio.scenview") || "{}");
+  Object.assign(scen.layers, kept.layers || {});
+  if (kept.size) scen.iconSize = kept.size;
+} catch { /* not kept: the defaults */ }
+
+function saveScenView() {
+  try { localStorage.setItem("studio.scenview", JSON.stringify({ layers: scen.layers, size: scen.iconSize })); } catch { /* fine */ }
+}
+
+// the icons' size now: the slider's, and smaller as the camera pulls back (down to 40 % with the whole map in view)
+function iconScale() {
+  const gl = mv.gl;
+  if (!gl) return ICON_BASE * scen.iconSize;
+  const d = gl.camera.position.distanceTo(gl.controls.target), far = Math.min(1, Math.max(0, (d / (mv.size || 1000) - 0.3) / 1.2));
+  return ICON_BASE * scen.iconSize * (1 - 0.6 * far);
+}
+
+function fitIcon(sprite, k = iconScale()) {
+  sprite.scale.set(k * 0.8, k, 1);
+}
+
+function fitIcons() {
+  if (!scen.group) return;
+  const k = iconScale();
+  for (const o of scen.group.children) if (o.userData.icon) fitIcon(o, k);
+}
+
+// which switch a spawn goes by
+function spawnLayer(it) {
+  return it.icon === "depot" || it.group === "depot" ? "depots" : it.unit_kind === "buildings" ? "buildings" : "units";
+}
 // Several at once: how many one click adds, in which shape, how far apart (metres, per kind to start with). The shape
 // faces up the screen (away from the camera), its middle on the click; each unit is turned that way too.
 const SPAWN_COUNTS = [1, 2, 4, 6, 8, 10];
@@ -1304,33 +1345,85 @@ function mapLabel(text, colour, size) {
   return sprite;
 }
 
-// A spawn's icon, always facing the camera: what it is (a house for a building, a tank, a soldier, a plane; a dot when
-// the game data doesn't say), on a badge in its side's colour (grey: neutral), and its country's letters under it.
+// A spawn's icon, always facing the camera: what it is, on a badge in its side's colour (grey: neutral), its country's
+// roundel in the corner. The owner, 2026-10-03: "the stick figure looks atrocious ... it should look like a soldier",
+// a depot a truck, an HQ clearly an HQ, tanks like tanks, an armor base and an airfield visibly different, and "the
+// bunkers need to have a difference between the bunkers". Filled silhouettes on a 24 x 24 grid: `fill` white, `cut`
+// knocked out of it in the badge's colour, `text` a word instead of a picture, `tag` a word knocked out of the picture
+// (each kind of bunker). Which icon: StudioApi.icon_of. A building's badge is square, a unit's round; a decoy's dashed.
 const NATION_CODES = ["US", "GER", "UK", "FR", "ITA", "USSR", "JAP"];
-const SPAWN_GLYPH = {
-  buildings: "M3 11l9-7 9 7 M5 10v10h14V10 M10 20v-6h4v6",
-  ground: "M3 15h18v4H3z M6 15v-4h9v4 M15 12h6",
-  infantry: "M12 3a2 2 0 1 0 0 4a2 2 0 1 0 0-4z M12 8v7 M8 11h8 M9 21l3-6 3 6",
-  air: "M12 2v20 M3 11l9-3 9 3 M8 20l4-2 4 2",
-  "": "M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z",
+const ART = {
+  soldier: { fill: "M8.4 6.4a3.6 3.6 0 0 1 7.2 0z M7.6 6.2h8.8v1.2H7.6z M10.3 9a1.7 1.7 0 1 0 3.4 0a1.7 1.7 0 1 0-3.4 0z"
+    + " M8.8 11h6.4l1 5.6h-1.9l-.6 5.6h-1.8l-.4-4.2-.4 4.2H9.3l-.6-5.6H6.8z M15.8 6.6l1.1-.5 2.6 12.6-1.2.3z" },
+  tank: { fill: "M2.5 15h19l-1.8 4.6H4.3z M4.5 12h14.5v3H4.5z M7.5 8.5h7.5l1.6 3.5H6.4z M15.6 9.6h6.6v1.4h-6.6z",
+    cut: "M6 17.2a1 1 0 1 0 2 0a1 1 0 1 0-2 0z M9.6 17.2a1 1 0 1 0 2 0a1 1 0 1 0-2 0z M13.2 17.2a1 1 0 1 0 2 0a1 1 0 1 0-2 0z"
+      + " M16.8 17.2a1 1 0 1 0 2 0a1 1 0 1 0-2 0z" },
+  truck: { fill: "M1.5 6.5h12.6v9.5H1.5z M14.6 9.2h4.3l3.4 3.9V16h-7.7z M1.5 16h20.8v1.5H1.5z"
+    + " M2.9 18.4a2.1 2.1 0 1 0 4.2 0a2.1 2.1 0 1 0-4.2 0z M15.6 18.4a2.1 2.1 0 1 0 4.2 0a2.1 2.1 0 1 0-4.2 0z",
+    cut: "M15.7 10.4h2.7l2.2 2.5h-4.9z M4.3 18.4a.7.7 0 1 0 1.4 0a.7.7 0 1 0-1.4 0z M17 18.4a.7.7 0 1 0 1.4 0a.7.7 0 1 0-1.4 0z" },
+  plane: { fill: "M12 1.8c.9 0 1.3.9 1.3 2.2v4.8l8.2 4.3v2.1l-8.2-2.4v4.6l2.6 2v1.6L12 20.2l-3.9 1v-1.6l2.6-2v-4.6l-8.2 2.4"
+    + "v-2.1l8.2-4.3V4c0-1.3.4-2.2 1.3-2.2z" },
+  at_gun: { fill: "M5.8 9.4h4.8v7.2H5.8z M10.2 12.1h10.6v1.7H10.2z M20.2 11.2h2.1v3.5h-2.1z"
+    + " M4.9 18.3a2.7 2.7 0 1 0 5.4 0a2.7 2.7 0 1 0-5.4 0z M1.8 21.6l5.2-4.4.9 1.1-5.2 4.4z",
+    cut: "M6.9 18.3a.7.7 0 1 0 1.4 0a.7.7 0 1 0-1.4 0z" },
+  howitzer: { fill: "M8.6 13.8l11-9.6 1.1 1.3-11 9.6z M6.2 11.6h5.4v4.8H6.2z"
+    + " M5.8 18.6a2.9 2.9 0 1 0 5.8 0a2.9 2.9 0 1 0-5.8 0z M1.6 22.1l5.5-3.9.8 1.1-5.5 3.9z M11.4 19l7.6 2.4-.4 1.2-7.6-2.4z",
+    cut: "M8 18.6a.7.7 0 1 0 1.4 0a.7.7 0 1 0-1.4 0z" },
+  aa_gun: { fill: "M9.6 14.4l4.2-11.6 1.3.5-4.2 11.6z M12.2 14.8l4.2-11.6 1.3.5-4.2 11.6z M4.5 14.8h13v2.8h-13z"
+    + " M5.6 19.6a1.7 1.7 0 1 0 3.4 0a1.7 1.7 0 1 0-3.4 0z M13 19.6a1.7 1.7 0 1 0 3.4 0a1.7 1.7 0 1 0-3.4 0z" },
+  bolt: { fill: "M13.4 1.5L4 13.6h6.6L9 22.5l10.4-12.6h-6.8z" },
+  bunker: { fill: "M2.2 19.2v-4.4C2.2 9.4 6.6 5.8 12 5.8s9.8 3.6 9.8 9v4.4z M1.2 19.2h21.6v1.7H1.2z" },
+  factory: { fill: "M2 21V11.2l6 3.3v-3.3l6 3.3V6.5h2.6V3h3v18z", cut: "M5 17h2v2H5z M9.5 17h2v2h-2z M14 17h2v2h-2z" },
+  house: { fill: "M2.5 11.5L12 3.5l9.5 8v9.8h-19z", cut: "M10 15h4v6.3h-4z" },
+  dot: { fill: "M7.5 12a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0-9 0z" },
 };
-// What it's for (the unit list's groups, StudioApi.group_of; "depot": a map's supply depot spot): a picture each, so a
-// HQ, a depot, a factory, a fort or a decoy reads at a glance, and a unit by what builds it
-const GROUP_GLYPH = {
-  hq: "M3 21h18 M5 21V10l7-5 7 5v11 M12 9.5l1.1 2.2 2.4.4-1.7 1.7.4 2.4-2.2-1.2-2.2 1.2.4-2.4-1.7-1.7 2.4-.4z",
-  depot: "M4 9h16v11H4z M4 9l3-5h10l3 5 M9 13h6 M12 9v11",
-  money: "M4 9h16v11H4z M4 9l3-5h10l3 5 M9 13h6 M12 9v11",
-  factory: "M3 21V11l5 3v-3l5 3V5h5v16H3z M15 9h1 M15 13h1",
-  fort: "M12 3l8 3v6c0 5-3.5 8-8 9.5C7.5 20 4 17 4 12V6z",
-  fake: "M3 11l9-7 9 7 M5 10v10h14V10 M10 13.5a2 2 0 1 1 3 1.7c-.8.5-1 1-1 1.8 M12 19v.3",
-  barracks: "M12 3a2 2 0 1 0 0 4a2 2 0 1 0 0-4z M12 8v7 M8 11h8 M9 21l3-6 3 6",
-  armor: "M3 15h18v4H3z M6 15v-4h9v4 M15 12h6",
-  antitank: "M4 18a2 2 0 1 0 4 0a2 2 0 1 0-4 0 M7 16l13-8 M6 16v-4h7",
-  artillery: "M4 18a2 2 0 1 0 4 0a2 2 0 1 0-4 0 M7 16l10-11 M3 21h10 M14 8l3-3",
-  prototype: "M13 2L4 14h7l-1 8 9-12h-7z",
-  airfield: "M12 2v20 M3 11l9-3 9 3 M8 20l4-2 4 2",
-  turret: "M3 19h18 M5 19v-5a7 7 0 0 1 14 0v5 M12 12h9",
+const MAP_ICONS = {
+  hq: { text: "HQ" }, hq2: { text: "HQ", sub: "2" }, admin: { text: "$" }, depot: ART.truck,
+  barracks: ART.soldier, armor_base: ART.tank, at_base: ART.at_gun, art_base: ART.howitzer, airfield: ART.plane,
+  proto_base: ART.bolt, atomic: { atom: true }, building: ART.house,
+  bunker_at: { ...ART.bunker, tag: "AT" }, bunker_mg: { ...ART.bunker, tag: "MG" }, bunker_aa: { ...ART.bunker, tag: "AA" },
+  bunker_art: { ...ART.bunker, tag: "ART" }, bunker_fort: { ...ART.bunker, tag: "FORT" }, bunker_op: { ...ART.bunker, tag: "OP" },
+  soldier: ART.soldier, tank: ART.tank, truck: ART.truck, plane: ART.plane, at_gun: ART.at_gun, howitzer: ART.howitzer,
+  aa_gun: ART.aa_gun, unit: ART.dot,
 };
+// a spawn the game data doesn't name (a mod's new unit): by its kind
+const KIND_ICON = { buildings: "building", infantry: "soldier", ground: "tank", air: "plane" };
+
+function drawIconArt(g, art, badge) {
+  if (art.text) {  // a word, as large as the badge takes
+    g.fillStyle = "#ffffff";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.font = `900 ${art.text.length > 1 ? 38 : 50}px "Segoe UI", Arial, sans-serif`;
+    g.fillText(art.text, 48, art.sub ? 44 : 50);
+    if (art.sub) { g.font = '900 22px "Segoe UI", Arial, sans-serif'; g.fillText(art.sub, 48, 74); }
+    return;
+  }
+  if (art.atom) {  // the atomic center: the radiation sign
+    g.fillStyle = "#ffffff";
+    for (let k = 0; k < 3; k++) {
+      const a = -Math.PI / 2 + k * 2 * Math.PI / 3;
+      g.beginPath(); g.moveTo(48, 48); g.arc(48, 48, 30, a - Math.PI / 6, a + Math.PI / 6); g.closePath(); g.fill();
+    }
+    g.fillStyle = badge; g.beginPath(); g.arc(48, 48, 11, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#ffffff"; g.beginPath(); g.arc(48, 48, 7, 0, Math.PI * 2); g.fill();
+    return;
+  }
+  g.save();
+  g.translate(16, 16);
+  g.scale(64 / 24, 64 / 24);
+  g.fillStyle = "#ffffff";
+  g.fill(new Path2D(art.fill));
+  if (art.cut) { g.fillStyle = badge; g.fill(new Path2D(art.cut)); }
+  if (art.tag) {  // the bunker's kind, knocked out of it
+    g.fillStyle = badge;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.font = `900 ${art.tag.length <= 2 ? 7.6 : art.tag.length === 3 ? 6.2 : 5.1}px "Segoe UI", Arial, sans-serif`;
+    g.fillText(art.tag, 12, 14.6);
+  }
+  g.restore();
+}
 
 // A country's roundel, drawn in the icon's corner (radius r at cx, cy): US star, German cross, the British, French
 // and Italian rings, the Soviet star, the Japanese disc. Recognisable shapes, not the game's own art.
@@ -1370,30 +1463,28 @@ function spawnIcon(it, size, selected) {
   const { THREE } = mv.gl, c = document.createElement("canvas"), g = c.getContext("2d");
   c.width = 96; c.height = 120;
   const hex = "#" + sideColour(it.camp).toString(16).padStart(6, "0");
+  const building = it.unit_kind === "buildings";
   g.fillStyle = hex;
-  g.strokeStyle = selected ? "#ffd34d" : it.mine ? "#e8c14f" : "rgba(0,0,0,0.8)";
+  g.strokeStyle = selected ? "#ffd34d" : it.mine ? "#e8c14f" : "rgba(0,0,0,0.85)";
   g.lineWidth = selected || it.mine ? 8 : 4;
+  if (it.decoy) g.setLineDash([10, 7]);  // a decoy: dashed
   g.beginPath();
-  g.roundRect(6, 6, 84, 84, 16);
+  if (building) g.roundRect(8, 8, 80, 80, 10);  // a building: square
+  else g.arc(48, 48, 40, 0, Math.PI * 2);       // a unit: round
   g.fill();
   g.stroke();
-  g.save();
-  g.translate(16, 16);
-  g.scale(64 / 24, 64 / 24);
-  g.strokeStyle = "#ffffff";
-  g.lineWidth = 2.2;
-  g.lineCap = g.lineJoin = "round";
-  g.stroke(new Path2D(GROUP_GLYPH[it.group || ""] || SPAWN_GLYPH[it.unit_kind || ""] || SPAWN_GLYPH[""]));
-  g.restore();
+  g.setLineDash([]);
+  drawIconArt(g, MAP_ICONS[it.icon] || MAP_ICONS[KIND_ICON[it.unit_kind]] || MAP_ICONS.unit, hex);
   // its country: a roundel on the badge's corner (a depot spot and an unknown unit have none)
-  if (it.nation !== undefined && it.nation !== null && it.group !== "depot") drawRoundel(g, it.nation, 78, 20, 15);
+  if (it.nation !== undefined && it.nation !== null && it.group !== "depot") drawRoundel(g, it.nation, 80, 18, 14);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true,
-    sizeAttenuation: false }));  // the same size on screen however far the camera is
-  sprite.scale.set(size * 0.8, size, 1);
+    sizeAttenuation: false }));  // its size on screen is set by fitIcons: the icon-size slider and the zoom
   sprite.center.set(0.5, 0);  // standing on its spot
   sprite.renderOrder = 11;
+  sprite.userData.icon = true;
+  fitIcon(sprite);
   return sprite;
 }
 
@@ -1512,27 +1603,30 @@ function drawScenario() {
     zones.add(mesh);
   });
   liftZones();
+  zones.visible = scen.layers.zones;
   const pillar = size * 0.03;
   for (const it of s.items) {
     if (it.kind === "StartingPoint") {  // a tall pillar in the alliance's colour
       const colour = ALLIANCE[((it.alliance || 1) - 1) % ALLIANCE.length];
+      if (it.cam && scen.layers.cams) {
+        const own = new THREE.Group();
+        own.userData = { camItem: it.item, colour, at };
+        drawStartCamera(it, own, colour, at);
+        group.add(own);
+      }
+      if (!scen.layers.starts) continue;
       const m = new THREE.Mesh(new THREE.CylinderGeometry(pillar * 0.08, pillar * 0.08, pillar, 12),
         new THREE.MeshLambertMaterial({ color: scen.selected === it.item ? 0xffffff : colour }));
       m.position.copy(at(it.x, it.y, pillar / 2));
       m.userData.label = (mv.words.scen_start_what ? mv.words.scen_start_what + " · " : "")
         + fill(mv.words.scen_start_place, { n: it.alliance || "?", p: it.place || 1 })
         + (it.name ? ` · ${it.name}` : "") + (it.moved ? ` · ${mv.words.scen_moved}` : "")
-        + (it.mine ? ` · ${mv.words.scen_mine}` : "");
+        + (it.mine ? ` · ${mv.words.scen_mine}` : "") + (mv.words.scen_drag_tip ? ` · ${mv.words.scen_drag_tip}` : "");
       m.userData.item = it.item;
       group.add(m);
-      if (it.cam) {
-        const own = new THREE.Group();
-        own.userData = { camItem: it.item, colour, at };
-        drawStartCamera(it, own, colour, at);
-        group.add(own);
-      }
     } else if (it.kind === "Spawn") {  // an icon where a unit or building appears: what it is, its side, its country
-      const m = spawnIcon(it, 0.055, scen.selected === it.item);  // a share of the view's height: readable at any zoom
+      if (!scen.layers[spawnLayer(it)]) continue;
+      const m = spawnIcon(it, ICON_BASE, scen.selected === it.item);
       m.position.copy(at(it.x, it.y, 0));
       const kindWord = mv.words["scen_kind_word_" + (it.unit_kind || "")] || "";
       const nation = it.nation !== undefined ? (mv.nationNames || [])[it.nation] || NATION_CODES[it.nation] : "";
@@ -1540,7 +1634,8 @@ function drawScenario() {
         + `${it.what ? " · " + it.what : ""}${nation ? " · " + nation : ""}`
         + (it.camp === -1 || (it.mine && it.camp === null) ? ` · ${mv.words.scen_side_neutral}`
           : it.camp !== undefined && it.camp !== null ? ` · ${fill(mv.words.scen_side_n, { n: it.camp })}` : "")
-        + (it.mine ? ` · ${mv.words.scen_mine}` : it.moved ? ` · ${mv.words.scen_moved}` : "");
+        + (it.mine ? ` · ${mv.words.scen_mine}` : it.moved ? ` · ${mv.words.scen_moved}` : "")
+        + (mv.words.scen_drag_tip ? ` · ${mv.words.scen_drag_tip}` : "");
       m.userData.item = it.item;
       group.add(m);
     } else if (it.kind === "CircularZone" && it.radius) {
@@ -1559,7 +1654,7 @@ function drawScenario() {
       const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x7fe0f0 }));
       line.userData.label = it.name;
       zones.add(line);
-    } else if ((it.kind === "LabelVille" || it.kind === "LabelMontagne") && (it.text || it.name)) {
+    } else if ((it.kind === "LabelVille" || it.kind === "LabelMontagne") && (it.text || it.name) && scen.layers.towns) {
       const sprite = mapLabel(it.text || it.name, it.kind === "LabelVille" ? "#ffffff" : "#e8d9a8", size * 0.012);
       sprite.position.copy(at(it.x, it.y, pillar * 0.4));
       group.add(sprite);
@@ -1705,6 +1800,16 @@ function renderScenTools() {
     $("scen-gap-label").textContent = fill(w.place_spacing, { m: spawnGap() });
     $("scen-gap-row").title = w.tip_scen_gap;
   }
+  $("scen-layers").replaceChildren(el("span", { className: "muted small", textContent: w.scen_layers_show || "Show" }),
+    ...SCEN_LAYERS.map((k) => chipOf(w["scen_layer_" + k] || k, w.tip_scen_layers, scen.layers[k], () => {
+      scen.layers[k] = !scen.layers[k];
+      saveScenView();
+      drawScenario();
+      renderScenTools();
+    })));
+  $("scen-size").value = Math.round(scen.iconSize * 100);
+  $("scen-size-label").textContent = fill(w.scen_icon_size || "Icon size {pct} %", { pct: Math.round(scen.iconSize * 100) });
+  $("scen-size-row").title = w.tip_scen_icon_size || "";
   const snapRow = $("scen-snap-row");
   snapRow.classList.toggle("hidden", !["start", "move", "spawn"].includes(scen.tool));
   $("scen-snap").checked = snapRoads;
@@ -1733,7 +1838,7 @@ function renderScenTools() {
     }
   } else if (scen.tool === "spawn") scenNote(w.scen_spawn_help);
   else if (scen.tool === "start") scenNote(w.scen_start_help);
-  else scenNote("");
+  else scenNote(s && w.scen_drag_help ? w.scen_drag_help : "");
 }
 
 // Save a change, then draw the scenario as the mod leaves it now.
@@ -1755,24 +1860,6 @@ function scenPointerDown(ev) {
   if (!scen.tool || ev.button !== 0 || !gl.ground || !mv.edit || !s) return;
   ev.preventDefault();
   if (!mv.brush.mod) { scenNote(mv.words.no_mod, "error"); return; }
-  if (scen.tool === "move") {  // a start's camera grabbed: it goes round its HQ while the button's down
-    const rect = gl.renderer.domElement.getBoundingClientRect();
-    gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
-    gl.raycaster.setFromCamera(gl.ndc, gl.camera);
-    const grips = scen.group ? scen.group.children.flatMap((o) => o.isGroup ? o.children : []).filter((o) => o.userData.camOf !== undefined) : [];
-    const grab = gl.raycaster.intersectObjects(grips, false)[0];
-    if (grab) {
-      const it = s.items.find((x) => x.item === grab.object.userData.camOf);
-      if (it && it.cam) {
-        const rest = it.cam.path[it.cam.path.length - 1];
-        scen.camDrag = { it, cam: it.cam, from: Math.atan2(rest[1] - it.y, rest[0] - it.x), turn: 0 };
-        scen.selected = it.item;
-        gl.renderer.domElement.setPointerCapture(ev.pointerId);
-        renderScenTools();
-        return;
-      }
-    }
-  }
   if (scen.tool === "move" && scen.selected === null) {  // first click: which item
     const rect = gl.renderer.domElement.getBoundingClientRect();
     gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
@@ -1787,6 +1874,85 @@ function scenPointerDown(ev) {
   const p = hitGround(ev);
   if (!p) return;
   scenPlaceAt(s, p.x / SCALE, p.z / SCALE);
+}
+
+// --- Drag to move (the owner, 2026-10-03: "a selector tool where you can then just go grab any of these little things
+// on the map and move it around"): with no placing tool picked (or Move), press on a starting point, a spawn (the
+// map's supply depots too) or a start's camera and drag; let go and it's saved in the mod, as the Move tool saves it.
+// A camera goes round its HQ (the camera ring); a depot spot and a starting point stick to roads when that's on.
+// Pressing on empty ground still turns the view. ---
+function canGrab() {
+  return Boolean(mv.gl && mv.edit && scen.group && scen.group.visible && !mv.brush.on && !mv.place.on && !road.on
+    && !bridge.on && (!scen.tool || scen.tool === "move"));
+}
+
+// What a press at `ev` would grab: {cam: the start} for a camera's grip, {it, objs} for an item (its drawn parts), or null
+function grabAt(ev) {
+  const gl = mv.gl, s = ((scen.data || {}).scenarios || [])[scen.pick];
+  if (!s || !canGrab()) return null;
+  const rect = gl.renderer.domElement.getBoundingClientRect();
+  gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
+  gl.raycaster.setFromCamera(gl.ndc, gl.camera);
+  const items = scen.group.children.filter((o) => o.userData.item !== undefined);
+  const grips = scen.group.children.flatMap((o) => o.isGroup ? o.children : []).filter((o) => o.userData.camOf !== undefined);
+  const hit = gl.raycaster.intersectObjects([...items, ...grips], false)[0];
+  if (!hit) return null;
+  if (hit.object.userData.camOf !== undefined) {
+    const it = s.items.find((x) => x.item === hit.object.userData.camOf);
+    return it && it.cam ? { cam: it, s } : null;
+  }
+  const it = s.items.find((x) => x.item === hit.object.userData.item);
+  if (!it || !["StartingPoint", "Spawn"].includes(it.kind)) return null;
+  const own = scen.group.children.find((o) => o.isGroup && o.userData.camItem === it.item);  // its camera moves with it
+  return { it, s, objs: items.filter((o) => o.userData.item === it.item).concat(own ? [own] : []) };
+}
+
+function grabStart(ev) {
+  if (ev.button !== 0) return false;
+  const g = grabAt(ev);
+  if (!g) return false;
+  ev.preventDefault();
+  ev.stopPropagation();  // the view doesn't turn under the drag
+  if (!mv.brush.mod) { scenNote(mv.words.no_mod, "error"); return true; }
+  const host = mv.gl.renderer.domElement.parentElement;
+  host.setPointerCapture(ev.pointerId);
+  if (g.cam) {
+    const it = g.cam, rest = it.cam.path[it.cam.path.length - 1];
+    scen.camDrag = { it, cam: it.cam, from: Math.atan2(rest[1] - it.y, rest[0] - it.x), turn: 0 };
+    return true;
+  }
+  const grid = makeGrid(mv.edit);
+  scen.itemDrag = { ...g, grid, x0: g.it.x, y0: g.it.y, x: g.it.x, y: g.it.y, moved: false, sx: ev.clientX, sy: ev.clientY,
+    start: g.objs.map((o) => ({ o, x: o.position.x, y: o.position.y, z: o.position.z })) };
+  mv.gl.renderer.domElement.style.cursor = "grabbing";
+  return true;
+}
+
+function itemDragMove(ev) {
+  const d = scen.itemDrag, p = d && hitGround(ev);
+  if (!p) return;
+  if (Math.abs(ev.clientX - d.sx) + Math.abs(ev.clientY - d.sy) > 3) d.moved = true;
+  d.x = p.x / SCALE;
+  d.y = p.z / SCALE;
+  const dx = (d.x - d.x0) * SCALE, dz = (d.y - d.y0) * SCALE;
+  const lift = (groundAt(d.grid, d.x, d.y) - groundAt(d.grid, d.x0, d.y0)) * SCALE;
+  for (const { o, x, y, z } of d.start) {
+    if (o.isGroup) o.position.set(dx, lift, dz);  // the camera's parts are placed in map space: the group slides
+    else o.position.set(x + dx, y + lift, z + dz);
+  }
+  mv.gl.draw();
+}
+
+async function itemDragEnd() {
+  const d = scen.itemDrag;
+  scen.itemDrag = null;
+  pointerMode();
+  if (!d || !d.moved) { if (d) { scen.selected = d.it.item; drawScenario(); renderScenTools(); } return; }
+  const it = d.it, kind = snapKind(it, null);
+  const [x, y] = kind ? await snapToRoad(kind, d.x, d.y) : [d.x, d.y];
+  if (it.mine && it.start !== undefined) scenEdit(() => mv.api.scenario_move_start(mv.current, it.start, x, y));
+  else if (it.mine) scenEdit(() => mv.api.scenario_move_spawn(mv.current, it.spawn, x, y));
+  else scenEdit(() => mv.api.scenario_move(mv.current, d.s.file, it.item, x, y));
 }
 
 // A start's warm-up camera turned `a` radians about the start, as the build turns it (scenario.CamPaths.turn): the
@@ -3518,13 +3684,29 @@ function watchPointer() {
     canvas.addEventListener(type, () => { if (mv.brush.painting) finishStroke(); });
   }
   canvas.addEventListener("pointerdown", scenPointerDown);
-  let camMove = null, camFrame = 0;
-  canvas.addEventListener("pointermove", (ev) => {
-    if (!scen.camDrag) return;
-    camMove = ev;
-    if (!camFrame) camFrame = requestAnimationFrame(() => { camFrame = 0; if (scen.camDrag && camMove) camDragMove(camMove); });
+  // Drag to move: listened for on the map's frame, before the view's own handlers (capture), so a press on an item
+  // grabs it instead of turning the view; the frame keeps the pointer until the button's let go.
+  const host = canvas.parentElement;
+  host.addEventListener("pointerdown", (ev) => { grabStart(ev); }, { capture: true });
+  let dragEv = null, dragFrame = 0;
+  host.addEventListener("pointermove", (ev) => {
+    if (!scen.camDrag && !scen.itemDrag) {  // over something it could grab: the hand
+      if (canGrab() && !ev.buttons) canvas.style.cursor = grabAt(ev) ? "grab" : (scen.tool ? "crosshair" : "");
+      return;
+    }
+    dragEv = ev;
+    if (!dragFrame) dragFrame = requestAnimationFrame(() => {
+      dragFrame = 0;
+      if (scen.camDrag && dragEv) camDragMove(dragEv);
+      else if (scen.itemDrag && dragEv) itemDragMove(dragEv);
+    });
   });
-  for (const type of ["pointerup", "pointercancel"]) canvas.addEventListener(type, () => { if (scen.camDrag) camDragEnd(); });
+  for (const type of ["pointerup", "pointercancel"]) {
+    host.addEventListener(type, () => {
+      if (scen.camDrag) camDragEnd();
+      else if (scen.itemDrag) itemDragEnd();
+    });
+  }
   canvas.addEventListener("pointerdown", roadPointerDown);
   canvas.addEventListener("pointerdown", (ev) => {
     if (!bridge.on || ev.button !== 0 || !gl.ground || !mv.edit) return;
@@ -4106,6 +4288,13 @@ function wire() {
   $("scen-gap").addEventListener("input", (e) => { scen.gap[scen.kind] = Number(e.target.value); renderScenTools(); });
   $("scen-spawn").addEventListener("click", () => setScenTool("spawn"));
   $("scen-start").addEventListener("click", () => setScenTool("start"));
+  $("scen-size").addEventListener("input", (e) => {  // the icons' size, live
+    scen.iconSize = Number(e.target.value) / 100;
+    saveScenView();
+    $("scen-size-label").textContent = fill(mv.words.scen_icon_size || "Icon size {pct} %", { pct: Number(e.target.value) });
+    fitIcons();
+    if (mv.gl) mv.gl.draw();
+  });
   $("scen-snap").addEventListener("change", (e) => {
     snapRoads = e.target.checked;
     try { localStorage.setItem("studio.snaproads", snapRoads ? "1" : "0"); } catch { /* not kept: fine */ }

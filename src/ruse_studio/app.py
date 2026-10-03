@@ -30,5 +30,8 @@ def main(argv=None) -> int:
             ("the Studio's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['search']!r}"),
             ("the game's names", lambda: f"ProductionPrice in Chinese is {schema.label('ProductionPrice', 'sc')!r}"),
         ])
+    from rusemod.update import fix_app_list_version, installed_app
+    if installed_app():  # Windows' app list shows this version (issue #15)
+        fix_app_list_version("studio", __version__)
     page = "spike3d.html" if args.spike else "index.html"
     return open_window("RUSE Studio", UI, page, api, extra={"cache": api.cache_dir})

@@ -79,6 +79,38 @@ AMMO_GROUP_OF = {text: g for g, texts in AMMO_GROUPS.items() for text in texts}
 AMMO_GROUP_ORDER = (*AMMO_GROUPS, "other")
 
 
+# Each building's map icon, by the game's own descriptor name (Descriptor_Building_VehiculeFactory is the Armor Base,
+# Usine_Canon the Artillery & AA Base, UsineAutomoteur the Anti-Tank Base...); the first match wins, so the bunkers'
+# longer names come first. The owner, 2026-10-03: an HQ clearly an HQ, a depot a truck, an armor base and an airfield
+# different, and "the bunkers need to have a difference between the bunkers".
+BUILDING_ICONS = (
+    ("hq2", ("TruckFactory",)), ("hq", ("Headquarter",)), ("depot", ("BatimentDepot",)), ("admin", ("BatimentAdministratif",)),
+    ("airfield", ("Aeroport",)), ("barracks", ("Caserne",)), ("armor_base", ("VehiculeFactory",)),
+    ("at_base", ("UsineAutomoteur",)), ("art_base", ("Usine_Canon",)), ("proto_base", ("ExperimentalFactory",)),
+    ("atomic", ("Usine_Atomique",)),
+    ("bunker_at", ("MGATNest", "DefenseAT")), ("bunker_mg", ("MGNest", "Bunker_enterre")),
+    ("bunker_aa", ("DefenseDCA", "Position_DCA")), ("bunker_art", ("Artillerie", "Position_105mm")),
+    ("bunker_fort", ("Maginot", "Siegfried", "DefenseLegere")), ("bunker_op", ("PosteAlerte",)),
+)
+UNIT_ICONS = {"armor": "tank", "antitank": "at_gun", "artillery": "howitzer", "airfield": "plane", "barracks": "truck",
+              "prototype": "tank", "turret": "bunker_mg"}  # a ground unit by what builds it (infantry: a soldier)
+
+
+def icon_of(kind: str, address: str, group: str) -> tuple[str, bool]:
+    """(the map icon for a unit or building, whether it's a decoy): see BUILDING_ICONS and UNIT_ICONS."""
+    name = _tail(address)
+    if kind == "buildings":
+        decoy = "Leurre" in name or name.endswith("Fake")
+        return next((icon for icon, parts in BUILDING_ICONS if any(p in name for p in parts)), "building"), decoy
+    if kind == "infantry":
+        return "soldier", False
+    if kind == "air":
+        return "plane", False
+    if group == "artillery" and any(p in name for p in ("DCA", "Flak", "Bofors", "Quad")):
+        return "aa_gun", False
+    return UNIT_ICONS.get(group, "unit"), False
+
+
 def group_of(kind: str, address: str, factory: int | None) -> str:
     """What a unit or building is for: one of GROUPS (a mod's new unit goes by the one it was copied from)."""
     if kind == "buildings":
@@ -1071,16 +1103,18 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
                 if name:
                     u = units.get(address, {})
                     kind = KIND_OF.get(cls, "")
+                    group = group_of(kind, address, u.get("factory")) if kind else ""
+                    icon, decoy = icon_of(kind, address, group) if kind else ("unit", False)
                     by_class.setdefault(name, {"unit": address, "unit_kind": kind, "nation": u.get("nation", 0),
-                                               # what it's for (HQ, depot, factory, armor, airfield...): its icon
-                                               "group": group_of(kind, address, u.get("factory")) if kind else ""})
+                                               # what it's for (HQ, depot, factory, armor, airfield...) and its icon
+                                               "group": group, "icon": icon, "decoy": decoy})
             self._by_class = by_class
         for s in view.get("scenarios", []):
             for it in s.get("items", []):
                 if it.get("kind") == "Spawn" and it.get("what") in self._by_class:
                     it.update(self._by_class[it["what"]])
                 elif it.get("kind") == "Spawn" and it.get("what") == "DalleBatimentDepot":
-                    it.update(unit_kind="buildings", group="depot")  # the map's supply depot slabs (not a unit class)
+                    it.update(unit_kind="buildings", group="depot", icon="depot")  # the map's supply depot slabs
         return view
 
     def _with_scenario_edits(self, pack: str, base: dict) -> dict:

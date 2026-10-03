@@ -188,5 +188,46 @@ class Calls(unittest.TestCase):
             self.assertEqual(quiet.update_check(), {"available": False, "version": "0.1.0", "current": "0.1.0"})
 
 
+class FakeReg:
+    """Just enough of winreg for fix_app_list_version: one HKCU with uninstall keys."""
+    HKEY_CURRENT_USER, KEY_READ, KEY_SET_VALUE, REG_SZ = "HKCU", 1, 2, 1
+
+    def __init__(self, keys):
+        self.keys = keys
+
+    def OpenKey(self, root, path, _reserved, _access):
+        if path not in self.keys:
+            raise FileNotFoundError(path)
+        return mock.MagicMock(__enter__=lambda s: path, __exit__=lambda s, *a: False)
+
+    def QueryValueEx(self, path, name):
+        if name not in self.keys[path]:
+            raise FileNotFoundError(name)
+        return self.keys[path][name], self.REG_SZ
+
+    def SetValueEx(self, path, name, _reserved, _kind, value):
+        self.keys[path][name] = value
+
+
+class AppList(unittest.TestCase):
+    """Windows' list of installed apps showed the Launcher as 0.1.0 with 0.3.1 installed (issue #15): the installed
+    app sets its own entry's version."""
+
+    def test_a_stale_version_is_put_right_and_a_right_one_left(self):
+        key = update.UNINSTALL + r"\{96F731B1-F85A-48E8-A810-49128DF99706}_is1"
+        reg = FakeReg({key: {"DisplayVersion": "0.1.0", "DisplayName": "RUSE Launcher"}})
+        self.assertEqual(update.fix_app_list_version("launcher", "0.4.0", reg), "0.1.0")
+        self.assertEqual(reg.keys[key]["DisplayVersion"], "0.4.0")
+        self.assertIsNone(update.fix_app_list_version("launcher", "0.4.0", reg))  # already right: untouched
+        self.assertIsNone(update.fix_app_list_version("studio", "0.9.0", reg))  # no entry (run from the repo, say)
+
+    def test_the_ids_are_the_installers(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("build_app", Path(__file__).parents[1] / "installers" / "build_app.py")
+        build_app = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(build_app)
+        self.assertEqual({a: v["id"] for a, v in build_app.APPS.items()}, update.APP_IDS)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -90,6 +90,34 @@ def installed_app() -> bool:
     return "__compiled__" in globals() or bool(getattr(sys, "frozen", False))
 
 
+# Each app's installer id (installers/build_app.py: they never change, so a new installer replaces the old version).
+APP_IDS = {"launcher": "96F731B1-F85A-48E8-A810-49128DF99706", "studio": "89731BD4-5E55-415F-970E-F6CBBB8CFD51"}
+UNINSTALL = r"Software\Microsoft\Windows\CurrentVersion\Uninstall"
+
+
+def fix_app_list_version(app: str, version: str, reg=None) -> str | None:
+    """Windows' list of installed apps shows the version the installer wrote. On the owner's PC it still said the
+    Launcher was 0.1.0 when 0.3.1 was installed (issue #15): the installer writes it on every install, so an old entry
+    written somewhere else (an install made from inside another app's sandbox, 2026-09-28) was shown instead. The
+    installed app sets its own entry's version when it differs. Returns the old version when it changed one, else None;
+    never raises (a list entry isn't worth failing a start for). `reg` is winreg (tests pass a stand-in)."""
+    try:
+        if reg is None:
+            import winreg as reg
+        key = rf"{UNINSTALL}\{{{APP_IDS[app]}}}_is1"
+        with reg.OpenKey(reg.HKEY_CURRENT_USER, key, 0, reg.KEY_READ | reg.KEY_SET_VALUE) as k:
+            try:
+                old = reg.QueryValueEx(k, "DisplayVersion")[0]
+            except OSError:
+                old = None
+            if old == version:
+                return None
+            reg.SetValueEx(k, "DisplayVersion", 0, reg.REG_SZ, version)
+            return old or ""
+    except (OSError, ImportError, KeyError):
+        return None
+
+
 def _get_json(url: str):
     req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
                                                "User-Agent": "RUSE-Mod-Platform-updater"})

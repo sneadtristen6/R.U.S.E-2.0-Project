@@ -238,6 +238,10 @@
               <div id="scen-formation" class="tool-tiles hidden" role="group"></div>
             </div>
             <div class="tray-side">
+              <!-- what the map shows of the scenario, kind by kind, and the icons' size (maps.js SCEN_LAYERS): view only -->
+              <div id="scen-layers" class="chips" role="group"></div>
+              <label id="scen-size-row" class="brush-slider small"><span id="scen-size-label"></span>
+                <input id="scen-size" type="range" min="40" max="160" step="5" value="100"></label>
               <select id="scen-unit" size="5" class="place-list hidden"></select>
               <div id="scen-camp" class="chips hidden" role="group"></div>
               <!-- a depot spot and a starting point go beside the nearest road (maps.js snapToRoad): off = where clicked -->
