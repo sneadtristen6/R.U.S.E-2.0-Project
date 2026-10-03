@@ -149,5 +149,49 @@ class CloseUpMap(unittest.TestCase):
         self.assertIsNone(close_up_copy(None, "M04_Cotentin", shipped, marked))
 
 
+class AsTheMapsOwnRoads(unittest.TestCase):
+    """New roads painted as the map's own are across (groundpaint.road_profile): the owner's shots of 2026-10-02
+    showed new roads up close too wide and pale beside D-Day's own, and the files said why (twice the close-up mark,
+    twice as wide, no shoulders)."""
+
+    def test_the_profile_is_measured_on_the_maps_road_pieces(self):
+        from rusemod.groundpaint import road_profile
+        big = (0.0, 0.0, 20000.0, 10000.0)  # 2 cells of 10,000: the finest tiles about 10 units a pixel
+        s = store()
+        painted = Tmst(*s.rebuild(paint_lines(s, big, [[(1000.0, 5000.0), (19000.0, 5000.0)]], RED, width=1000.0)))
+        pieces = [(x, 5000.0, x + 200.0, 5000.0, x + 400.0, 5000.0, x + 600.0, 5000.0) for x in range(2000, 17000, 600)]
+        p = road_profile(painted, big, pieces)
+        self.assertEqual(p.pieces, 25)
+        self.assertTrue(near(p.tile[0], RED, 30) and p.weight[0] == 1.0, (p.tile[0], p.weight[0]))
+        self.assertEqual(p.weight[15:], [0.0] * 16)  # 1,500 from the line: the ground beside
+        self.assertTrue(near(p.tile[-1], GREEN, 30))
+        self.assertIsNone(p.detail)
+        self.assertIsNone(road_profile(painted, big, pieces[:10]))  # too few roads to measure
+
+    def test_a_line_painted_as_the_profile_says(self):
+        from rusemod.groundpaint import RoadProfile
+        prof = RoadProfile([RED] * 5 + [GREEN] * 26, [1.0, 1.0, 1.0, 0.5, 0.25] + [0.0] * 26, None, 25)
+        self.assertEqual(prof.reach(), 500.0)
+        s = store()
+        painted = Tmst(*s.rebuild(paint_lines(s, BOUNDS, [[(100.0, 250.0), (900.0, 250.0)]], RED, profile=prof)))
+        top, below = painted.tiles[3], painted.tiles[5]  # cell 0's top-left and bottom-left quarters
+        self.assertTrue(near(pixel(painted, top, 300.0, 250.0), RED))             # in the road
+        self.assertTrue(near(pixel(painted, top, 300.0, 450.0), RED))             # 200 off: still the road (weight 1)
+        half = tuple((a + b) // 2 for a, b in zip(RED, GREEN))
+        self.assertTrue(near(pixel(painted, below, 300.0, 550.0), half, 30))      # 300 off: half way, as the map's
+        self.assertTrue(near(pixel(painted, below, 300.0, 760.0), GREEN))         # past its reach: the ground
+
+    def test_the_close_up_map_changed_as_the_maps_roads_change_it(self):
+        from rusemod.groundpaint import RoadProfile, paint_detail
+        prof = RoadProfile([RED] * 31, [1.0] + [0.0] * 30, [(0.0, -8.0, 0.0, 8.0)] * 3 + [(0.0,) * 4] * 28, 25)
+        road = (100.0, 156.0, 400.0, 156.0, 700.0, 156.0, 1000.0, 156.0)
+        new, notes = paint_detail(div_map(), BOUNDS, [[(200.0, 700.0), (1800.0, 700.0)]], [road], 60.0, prof)
+        self.assertIn("as the map's own roads change it", notes[0])
+        rgb, a = mark(new, 1000.0, 700.0)  # on the line: the ground's mark plus the map's roads' change
+        self.assertTrue(abs(a - (GROUND_MARK[1] + 8)) <= 3 and abs(rgb[1] - (GROUND_MARK[0][1] - 8)) <= 5, (rgb, a))
+        rgb, a = mark(new, 1000.0, 980.0)  # 280 off, past its reach (the change ends at 250): as it was
+        self.assertTrue(near(rgb, GROUND_MARK[0], 5) and abs(a - GROUND_MARK[1]) <= 3, (rgb, a))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -14,7 +14,9 @@ only (tests/test_groundpaint.py), never proof of what the game shows.
 from __future__ import annotations
 
 import math
+import statistics
 import struct
+from dataclasses import dataclass
 
 from . import dxt, tgu1
 from .tmst import Tgv, Tmst, zipo_pack, zipo_tile, zipo_unpack
@@ -23,9 +25,34 @@ LODS = ("highdef", "lowdef")
 ROAD_WIDTH = 1800.0     # map units (about 7 m): a road's painted width
 FEATHER = 0.6           # of the half-width: how far the edge fades into the ground
 
+PROFILE_STEP = 100.0    # map units between the samples of a road's cross-section (RoadProfile)
+PROFILE_SAMPLES = 31    # 0 to 3,000 from the road's line
+PROFILE_FIELD = 5       # the last samples (2,600 to 3,000): the ground beside the road
+PROFILE_MOST = 300      # the map's road pieces measured
+
 
 class PaintError(ValueError):
     pass
+
+
+@dataclass
+class RoadProfile:
+    """How the map's own roads look across, measured on its road pieces (road_profile): at k * PROFILE_STEP from a
+    road's line, `tile[k]` the median colour of the finest ground tiles and `weight[k]` how much of it a new road
+    takes (1 in the road, falling to 0 where the map's roads meet the ground beside them, their shoulders between),
+    and `detail[k]` the median change (r, g, b, alpha) the map's roads make in the close-up map against the ground
+    beside them (None when the map has no close-up map to measure). On D-Day (313 pieces): the road 157, 139, 110 out
+    to 450, a brown shoulder to about 1,500; in the close-up map alpha +8 and green -8 in the road, gone by 2,000."""
+    tile: list
+    weight: list
+    detail: list | None
+    pieces: int
+
+    def reach(self, what: str = "tile") -> float:
+        """How far from a road's line its paint (`tile`) or its close-up mark (`detail`) goes, in map units."""
+        values = self.weight if what == "tile" else [max(abs(c) for c in d) >= 1 for d in self.detail or []]
+        last = max((k for k, v in enumerate(values) if v), default=-1)
+        return (last + 1) * PROFILE_STEP
 
 
 def map_bounds(mesh: bytes) -> tuple[float, float, float, float]:
@@ -151,16 +178,121 @@ def road_colour(store: Tmst, bounds, pieces: list[tuple], most: int = 40) -> tup
     return tuple(round(v / n) for v in total) if n else (150, 140, 120)
 
 
+def _detail_reader(raw: bytes, bounds):
+    """A close-up map's (r, g, b, alpha) at a map point (None off it), or None when it can't be read (not DXT5 ZIPO)."""
+    tex = Tgv(raw)
+    payload = tex.payload(0)
+    if not tex.format.upper().startswith("DXT5") or payload[:4] != b"ZIPO":
+        return None
+    blocks, w, h = zipo_unpack(payload), tex.width, tex.height
+    x0, y0, x1, y1 = bounds
+
+    def at(x, y):
+        px, py = int((x - x0) / (x1 - x0) * w), int((y - y0) / (y1 - y0) * h)
+        if not (0 <= px < w and 0 <= py < h):
+            return None
+        k = (py // 4) * (w // 4) + px // 4
+        rgb, alpha = dxt.dxt5_block(bytes(blocks[16 * k:16 * k + 16]))
+        i = (py % 4) * 4 + px % 4
+        return rgb[i] + (alpha[i],)
+    return at
+
+
+def road_profile(store: Tmst, bounds, pieces: list[tuple], detail: bytes | None = None, detail_bounds=None,
+                 most: int = PROFILE_MOST) -> RoadProfile | None:
+    """The map's own roads across (RoadProfile), from the middles of up to `most` of its road pieces (rusemod.scenery
+    Scenery.roads), both sides, in the finest tiles of `store` (over `bounds`) and in the close-up map `detail` (over
+    `detail_bounds`, grid_bounds). None when the map has too few roads, or its roads don't stand out in its tiles."""
+    picks = pieces[::max(1, len(pieces) // most)][:most]
+    if len(picks) < 20:
+        return None
+    x0, y0, _x1, _y1 = bounds
+    side = 1 << (store.depth - 1)
+    cw, ch = _cells(store, bounds)
+    tw, th = cw / side, ch / side
+    tiles: dict = {}
+
+    def colour(x, y):
+        tx, ty = int((x - x0) // tw), int((y - y0) // th)
+        if (tx, ty) not in tiles:
+            try:
+                tiles[(tx, ty)] = _blocks(store, store.tile(0, tx, ty))
+            except (KeyError, PaintError):
+                tiles[(tx, ty)] = None
+        got = tiles[(tx, ty)]
+        if got is None:
+            return None
+        blocks, w, h = got
+        px, py = int((x - x0 - tx * tw) / tw * w), int((y - y0 - ty * th) / th * h)
+        k = (py // 4) * (w // 4) + px // 4
+        return dxt.block_pixels(bytes(blocks[8 * k:8 * k + 8]))[(py % 4) * 4 + px % 4]
+    mark = _detail_reader(detail, detail_bounds) if detail is not None and detail_bounds is not None else None
+    seen_tile = [[] for _ in range(PROFILE_SAMPLES)]
+    seen_mark = [[] for _ in range(PROFILE_SAMPLES)]
+    for p in picks:
+        x = 0.125 * p[0] + 0.375 * p[2] + 0.375 * p[4] + 0.125 * p[6]  # the Bézier's middle, and its direction
+        y = 0.125 * p[1] + 0.375 * p[3] + 0.375 * p[5] + 0.125 * p[7]
+        dx, dy = p[6] + p[4] - p[2] - p[0], p[7] + p[5] - p[3] - p[1]
+        n = math.hypot(dx, dy)
+        if n == 0:
+            continue
+        nx, ny = -dy / n, dx / n
+        for k in range(PROFILE_SAMPLES):
+            for s in ((1,) if k == 0 else (1, -1)):
+                sx, sy = x + nx * s * k * PROFILE_STEP, y + ny * s * k * PROFILE_STEP
+                c = colour(sx, sy)
+                if c is not None:
+                    seen_tile[k].append(c)
+                if mark is not None and (m := mark(sx, sy)) is not None:
+                    seen_mark[k].append(m)
+    if any(len(v) < 20 for v in seen_tile):
+        return None
+    med = [tuple(statistics.median(c[i] for c in v) for i in range(3)) for v in seen_tile]
+    field = tuple(statistics.median(c[i] for v in seen_tile[-PROFILE_FIELD:] for c in v) for i in range(3))
+    road = math.dist(med[0], field)
+    if road < 12:  # the map's roads are hardly there in its tiles: nothing to copy
+        return None
+    weight, ended = [], False
+    for m in med:
+        w = min(1.0, math.dist(m, field) / road)
+        ended = ended or w < 0.1
+        weight.append(0.0 if ended else round(w, 3))
+    delta = None
+    if mark is not None and all(len(v) >= 20 for v in seen_mark):
+        mmed = [tuple(statistics.median(c[i] for c in v) for i in range(4)) for v in seen_mark]
+        mfield = tuple(statistics.median(c[i] for v in seen_mark[-PROFILE_FIELD:] for c in v) for i in range(4))
+        delta, ended = [], False
+        for m in mmed:
+            d = tuple(round(m[i] - mfield[i], 1) for i in range(4))
+            ended = ended or max(abs(c) for c in d) < 1
+            delta.append((0.0,) * 4 if ended else d)
+    return RoadProfile([tuple(round(c) for c in m) for m in med], weight, delta, len(picks))
+
+
+def _across(profile_values, d: float, pw: float):
+    """The profile samples a pixel `pw` wide at `d` from a road's line covers: (index, share) pairs, so a pixel coarser
+    than the profile's steps (the far levels) takes their mean."""
+    n = max(1, min(16, math.ceil(pw / PROFILE_STEP)))
+    out = []
+    for j in range(n):
+        k = int(abs(d - pw / 2 + (j + 0.5) * pw / n) / PROFILE_STEP + 0.5)
+        if k < len(profile_values):
+            out.append(k)
+    return out, n
+
+
 def paint_lines(store: Tmst, bounds, lines: list[list[tuple[float, float]]], colour: tuple[int, int, int],
-                width: float = ROAD_WIDTH) -> dict[int, bytes]:
+                width: float = ROAD_WIDTH, profile: RoadProfile | None = None) -> dict[int, bytes]:
     """`lines` (lists of map points) painted `width` wide in `colour` on every tile of `store` they cross, at every
     level; returns {tile index: new tile record} for Tmst.members. The edge fades over FEATHER of the half-width,
-    and a line thinner than a pixel (the coarse levels) is painted faint rather than not at all."""
+    and a line thinner than a pixel (the coarse levels) is painted faint rather than not at all. With `profile` (the
+    map's own roads across, road_profile) a line is painted as they are instead: their colour, width and shoulders,
+    blended into the ground beside as theirs are."""
     segs = _segments(lines)
     if not segs:
         return {}
     half = width / 2
-    reach = half * (1 + FEATHER)
+    reach = profile.reach() if profile is not None else half * (1 + FEATHER)
     boxes = [(min(a, c) - reach, min(b, d) - reach, max(a, c) + reach, max(b, d) + reach) for a, b, c, d in segs]
     out = {}
     for tile in store.tiles:
@@ -196,6 +328,18 @@ def paint_lines(store: Tmst, bounds, lines: list[list[tuple[float, float]]], col
                     px = cx0 + (i % 4 + 0.5) * pw
                     py = cy0 + (i // 4 + 0.5) * ph
                     d = min(_dist(px, py, s) for s in here)
+                    if profile is not None:  # the map's own road across, as wide as this pixel
+                        ks, n = _across(profile.weight, d, pw)
+                        r, g, b = pixels[i]
+                        add = [0.0, 0.0, 0.0]
+                        for j in ks:
+                            share = profile.weight[j]
+                            for c, v in enumerate((r, g, b)):
+                                add[c] += share * (profile.tile[j][c] - v)
+                        if any(profile.weight[j] for j in ks):
+                            pixels[i] = tuple(max(0, min(255, round(v + a / n))) for v, a in zip((r, g, b), add))
+                            changed = True
+                        continue
                     a = max(0.0, min(1.0, (half + soft / 2 - d) / soft)) * faint
                     if a > 0:
                         r, g, b = pixels[i]
@@ -227,14 +371,16 @@ def _tgv_with_payload(raw: bytes, payload: bytes) -> bytes:
 
 
 def paint_detail(raw: bytes, bounds, lines: list[list[tuple[float, float]]], pieces: list[tuple],
-                 width: float = ROAD_WIDTH) -> tuple[bytes, list[str]]:
+                 width: float = ROAD_WIDTH, profile: RoadProfile | None = None) -> tuple[bytes, list[str]]:
     """`lines` marked in the close-up map (`output\\div_map.tgv_pc`, one DXT5 picture stretched over `bounds`, the
     ground's whole grid: grid_bounds): the weights by which the ground shaders blend their detail textures over the
     tiles near the camera (its channels are data, not colours: blue is 24 on every map). The map's own roads are
     marked there (alpha higher, red lower than the ground beside), which keeps their colour from the tiles showing up
     close; new roads get the median of all four channels along the map's road pieces, `width` wide (the map's own
-    run 2 to 3 pixels wide: DETAIL_WIDER). Returns (the new record, notes), or (b"", notes) when there's nothing to
-    paint."""
+    run 2 to 3 pixels wide: DETAIL_WIDER). With `profile` (road_profile) a new road changes it as the map's own roads
+    do instead: their median change against the ground beside, at each distance from the line, added to what's there
+    (on D-Day the old way marked twice as strong and twice as wide: a pale band beside new roads up close, the owner's
+    shots of 2026-10-02). Returns (the new record, notes), or (b"", notes) when there's nothing to paint."""
     tex = Tgv(raw)
     payload = tex.payload(0)
     if not tex.format.upper().startswith("DXT5") or payload[:4] != b"ZIPO":
@@ -268,7 +414,8 @@ def paint_detail(raw: bytes, bounds, lines: list[list[tuple[float, float]]], pie
     half = width / 2
     soft = max(half * FEATHER, pw)
     faint = min(1.0, width / pw)
-    reach = half + soft
+    change = profile.detail if profile is not None and profile.detail and profile.reach("detail") > 0 else None
+    reach = profile.reach("detail") if change else half + soft
     touched = set()
     for ax, ay, bx, by in segs:
         for bxi in range(int((min(ax, bx) - reach - x0) / pw) // 4, int((max(ax, bx) + reach - x0) / pw) // 4 + 1):
@@ -286,6 +433,15 @@ def paint_detail(raw: bytes, bounds, lines: list[list[tuple[float, float]]], pie
         changed = False
         for i in range(16):
             px, py = cx0 + (i % 4 + 0.5) * pw, cy0 + (i // 4 + 0.5) * ph
+            if change:  # the map's own roads' change, as wide as this pixel, added to what's there
+                ks, n = _across(change, min(_dist(px, py, s) for s in near), pw)
+                add = [sum(change[j][c] for j in ks) / n for c in range(4)]
+                if any(round(v) for v in add):
+                    r, g, b = rgb[i]
+                    rgb[i] = tuple(max(0, min(255, round(v + a))) for v, a in zip((r, g, b), add[:3]))
+                    alpha[i] = max(0, min(255, round(alpha[i] + add[3])))
+                    changed = True
+                continue
             a = max(0.0, min(1.0, (half + soft / 2 - min(_dist(px, py, s) for s in near)) / soft)) * faint
             if a > 0:
                 r, g, b = rgb[i]
@@ -297,15 +453,29 @@ def paint_detail(raw: bytes, bounds, lines: list[list[tuple[float, float]]], pie
             painted += 1
     if not painted:
         return b"", []
-    return _tgv_with_payload(raw, zipo_pack(bytes(blocks))), [
-        f"close-up map: {painted} block(s) painted, in the map's own road look {look}"]
+    how = (f"as the map's own roads change it (alpha {change[0][3]:+.0f} in the road, to {reach:,.0f} from it)"
+           if change else f"in the map's own road look {look}")
+    return _tgv_with_payload(raw, zipo_pack(bytes(blocks))), [f"close-up map: {painted} block(s) painted, {how}"]
+
+
+def map_road_profile(read, pieces: list[tuple]) -> RoadProfile | None:
+    """road_profile for a map pack (`read(member)`: its files as the build has them): its finest highdef tiles and its
+    close-up map. None when it can't be measured."""
+    mesh = read("output\\highdef.tms")
+    index, chunk = read("output\\highdef.tmst_pc"), read("output\\highdef.tmst_chunk_pc")
+    if mesh is None or index is None or chunk is None or not pieces:
+        return None
+    try:
+        return road_profile(Tmst(index, chunk), map_bounds(mesh), pieces, read(DETAIL), grid_bounds(mesh))
+    except (PaintError, ValueError, KeyError, struct.error):
+        return None
 
 
 def paint_roads(read, path_of, lines: list[list[tuple[float, float]]], pieces: list[tuple],
-                width: float = ROAD_WIDTH) -> tuple[dict, list[str]]:
-    """({member: new bytes}, notes): `lines` painted on both tile sets of a map pack, in its roads' colour. `read(name)`
-    gives a member's bytes (the build's chain) or None, `path_of(name)` its full path in the pack; `pieces` are the
-    map's road pieces (for the colour)."""
+                width: float = ROAD_WIDTH, profile: RoadProfile | None = None) -> tuple[dict, list[str]]:
+    """({member: new bytes}, notes): `lines` painted on both tile sets of a map pack, in its roads' colour, or as its
+    roads are across with `profile` (map_road_profile). `read(name)` gives a member's bytes (the build's chain) or
+    None, `path_of(name)` its full path in the pack; `pieces` are the map's road pieces (for the colour)."""
     mesh = read("output\\highdef.tms")
     if mesh is None:
         raise PaintError("the map has no ground mesh to place the paint on")
@@ -320,11 +490,14 @@ def paint_roads(read, path_of, lines: list[list[tuple[float, float]]], pieces: l
         store.index_path, store.chunk_path = path_of(f"output\\{lod}.tmst_pc"), path_of(f"output\\{lod}.tmst_chunk_pc")
         if colour is None:
             colour = road_colour(store, bounds, pieces)
-        tiles = paint_lines(store, bounds, lines, colour, width)
+        tiles = paint_lines(store, bounds, lines, colour, width, profile)
         if tiles:
             out.update(store.members(tiles))
         notes.append(f"{lod}: {len(tiles)} tile(s) painted")
-    if colour is not None:
+    if profile is not None:
+        notes.insert(0, f"painted as the map's own roads are across (from {profile.pieces} of its road pieces): "
+                        f"{profile.tile[0]} in the middle, shoulders to {profile.reach():,.0f} from the line")
+    elif colour is not None:
         notes.insert(0, f"road colour {colour}")
     # the close-up map (paint_detail) is drawn by build.draw_new_roads, which also keeps its copy in ZZ_Win.dat
     return out, notes

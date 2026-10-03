@@ -954,15 +954,16 @@ def draw_new_roads(read_map, path_of, lines: list) -> tuple[dict, list[str]]:
     (rusemod.roadstrips). In the game a new road still vanishes near the camera (TESTS.md T12): the close-up map's mark
     didn't change that (batch 5), and what the road model draws isn't known. `read_map(member)` gives the map pack's
     member as the build has it so far (a reshaped ground counts) or None, `path_of(member)` its full path."""
-    from .groundpaint import DETAIL, DETAIL_WIDER, ROAD_WIDTH, grid_bounds, paint_detail, paint_roads
+    from .groundpaint import DETAIL, DETAIL_WIDER, ROAD_WIDTH, grid_bounds, map_road_profile, paint_detail, paint_roads
     from .roadstrips import draw_roads
     from .scenery import MEMBER as SCENERY, Scenery
     raw = read_map(SCENERY)
     pieces = Scenery(raw).roads() if raw else []
-    painted, notes = paint_roads(read_map, path_of, lines, pieces)
+    profile = map_road_profile(read_map, pieces)  # new roads painted as the map's own are across (2026-10-02)
+    painted, notes = paint_roads(read_map, path_of, lines, pieces, profile=profile)
     detail, mesh = read_map(DETAIL), read_map("output\\highdef.tms")
     if detail is not None and mesh is not None:
-        marked, more = paint_detail(detail, grid_bounds(mesh), lines, pieces, ROAD_WIDTH * DETAIL_WIDER)
+        marked, more = paint_detail(detail, grid_bounds(mesh), lines, pieces, ROAD_WIDTH * DETAIL_WIDER, profile)
         notes += more
         if marked:
             painted[path_of(DETAIL)] = marked
