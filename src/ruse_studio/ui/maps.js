@@ -1147,6 +1147,8 @@ function keptScenView(view) {
     for (const k of SCEN_LAYERS) if (typeof view.scen_layers[k] === "boolean") scen.layers[k] = view.scen_layers[k];
   }
   if (typeof view.icon_size === "number" && view.icon_size > 0) scen.iconSize = view.icon_size;
+  if (typeof view.stick_roads === "boolean") snapRoads = view.stick_roads;  // the Scenario tray's "Stick to roads"
+  if (typeof view.road_snap === "boolean") road.snapOn = view.road_snap;     // the Roads tray's "Snap ends"
 }
 
 // the icons' size now: the slider's, and smaller as the camera pulls back (down to 40 % with the whole map in view)
@@ -2639,7 +2641,7 @@ const ROAD_SNAP = 15000;    // map units (about 58 m): an end this near a road s
 const ROAD_WIDTH = 1800;    // map units drawn (about 7 m)
 const ROAD_SAMPLE = 2000;   // map units between the points of a road's saved line
 const road = { on: false, tool: "straight", pts: [], mine: [], mod: null, mesh: null, preview: null, snap: null,
-  cursor: null, cross: null };
+  cursor: null, cross: null, snapOn: true };  // snapOn: the tray's "Snap ends" box, kept with the view (saveView)
 
 // Where the map's own roads run, as points (for snapping), from their pieces.
 function roadSamples() {
@@ -2654,16 +2656,38 @@ function roadSamples() {
   return out;
 }
 
-// The point to use for a click at (x, y): on the nearest road within ROAD_SNAP, or where it was clicked.
+// The ends of the bridges the mod places by hand (the Bridges dock): a road's end snaps to them before any road.
+function bridgeEnds() {
+  const types = bridgeTypes();
+  return mv.place.objects.filter((o) => types.has(o.type)).flatMap((o) => deckOf(o, types.get(o.type)));
+}
+
+// The point to use for a road's end at (x, y): the end of a bridge placed by hand within ROAD_SNAP (the owner,
+// 2026-10-03: "trying to snap the road to the bridge ... It wants to snap to the road"), else the nearest road's,
+// else where it was clicked. Off with the tray's "Snap ends" box (road.snapOn).
 function roadSnap(x, y) {
+  if (!road.snapOn) return { x, y, snapped: false };
+  let best = ROAD_SNAP * ROAD_SNAP, hit = null;
+  for (const [bx, by] of bridgeEnds()) {
+    const d = (bx - x) ** 2 + (by - y) ** 2;
+    if (d < best) { best = d; hit = { x: bx, y: by, snapped: true, bridge: true }; }
+  }
+  if (hit) return hit;
   if (!road.samples) road.samples = roadSamples();
   const S = road.samples;
-  let best = ROAD_SNAP * ROAD_SNAP, at = -1;
+  let at = -1;
   for (let i = 0; i < S.length; i += 2) {
     const d = (S[i] - x) ** 2 + (S[i + 1] - y) ** 2;
     if (d < best) { best = d; at = i; }
   }
   return at < 0 ? { x, y, snapped: false } : { x: S[at], y: S[at + 1], snapped: true };
+}
+
+// Whether the next click is a road's end, the only points that snap (a curve's bend and a freeform road's points on
+// the way go where they're clicked; a freeform road's last point snaps as it's finished, finishRoad).
+function roadEndNext() {
+  const n = road.pts.length;
+  return n === 0 || (road.tool === "straight" && n === 1) || (road.tool === "curve" && n === 2);
 }
 
 // A road's line from its clicks (and the pointer, while it's being drawn), as points about ROAD_SAMPLE apart.
@@ -2823,6 +2847,9 @@ function renderRoadTray() {
   $("road-undo").textContent = w.brush_undo;
   $("road-undo").title = w.tip_road_undo;
   $("road-undo").disabled = !road.mine.length;
+  $("road-snap").checked = road.snapOn;
+  $("road-snap-label").textContent = w.road_snap || "Snap ends to roads and bridges";
+  $("road-snap-row").title = w.tip_road_snap || "";
   const all = road.mine.reduce((n, r) => n + lineLength(r.points), 0);
   $("road-count").textContent = road.mine.length
     ? fill(w.road_count, { n: road.mine.length }) + " · " + fill(w.road_total, { len: roadMetres(all) }) : "";
@@ -2861,6 +2888,10 @@ async function finishRoad() {
   road.cursor = null;
   showRoadLength(null);
   if (pts.length < 2) { drawRoadPreview(); return; }
+  if (road.tool === "free") {  // its last point is its end: that one snaps (roadEndNext)
+    const q = roadSnap(...pts[pts.length - 1]);
+    pts[pts.length - 1] = [q.x, q.y];
+  }
   const line = roadLine(road.tool, pts);
   drawRoadPreview();
   try {
@@ -2901,7 +2932,7 @@ function roadPointerDown(ev) {
   if (!road.mod) { roadNote(mv.words.no_mod, "error"); return; }
   const hit = hitGround(ev);
   if (!hit) return;
-  const p = roadSnap(hit.x / SCALE, hit.z / SCALE);
+  const p = roadEndNext() ? roadSnap(hit.x / SCALE, hit.z / SCALE) : { x: hit.x / SCALE, y: hit.z / SCALE };
   road.pts.push([p.x, p.y]);
   const need = road.tool === "straight" ? 2 : road.tool === "curve" ? 3 : Infinity;
   if (road.pts.length >= need) finishRoad();
@@ -2911,7 +2942,7 @@ function roadPointerDown(ev) {
 function roadPointerMove(ev) {
   const hit = hitGround(ev);
   if (!hit) { showRoadLength(null); return; }
-  const p = roadSnap(hit.x / SCALE, hit.z / SCALE);
+  const p = roadEndNext() ? roadSnap(hit.x / SCALE, hit.z / SCALE) : { x: hit.x / SCALE, y: hit.z / SCALE, snapped: false };
   road.snap = p.snapped ? p : null;
   road.cursor = [p.x, p.y];
   drawRoadPreview();
@@ -4309,6 +4340,13 @@ function wire() {
   $("scen-snap").addEventListener("change", (e) => {
     snapRoads = e.target.checked;
     try { localStorage.setItem("studio.snaproads", snapRoads ? "1" : "0"); } catch { /* not kept: fine */ }
+    saveView();
+  });
+  $("road-snap").addEventListener("change", (e) => {  // a road's ends onto roads and placed bridges, or not
+    road.snapOn = e.target.checked;
+    road.snap = null;
+    drawRoadPreview();
+    saveView();
   });
   for (const g of ["building", "prop", "vegetation"]) {
     $(`scenery-${g}`).addEventListener("change", (e) => {
@@ -4369,7 +4407,7 @@ function foldMaps(folded) {
 
 function saveView() {
   if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind, maps_folded: Boolean(mv.folded),
-    scen_layers: scen.layers, icon_size: scen.iconSize }).catch(() => {});
+    scen_layers: scen.layers, icon_size: scen.iconSize, stick_roads: snapRoads, road_snap: road.snapOn }).catch(() => {});
 }
 
 // app.js opens the view when its tab is picked, and passes the words and the language on every language change.

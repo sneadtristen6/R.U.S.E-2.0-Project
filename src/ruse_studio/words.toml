@@ -7672,3 +7672,28 @@ ru = "Показать один тип юнитов, как его называ�
 cz = "Zobrazit jeden typ jednotek, jak ho nazývá hra: lehký, střední nebo těžký tank, stíhačka, bombardér, průzkum…"
 jpn = "ゲームでの呼び方で、ユニットの種類を 1 つだけ表示します：軽戦車・中戦車・重戦車、戦闘機、爆撃機、偵察…"
 sc = "只显示一种单位类型，名称与游戏中一致：轻型、中型或重型坦克、战斗机、轰炸机、侦察……"
+
+# the Roads tray's box: a new road's ends snap onto a bridge placed by hand, else a road (maps.js roadSnap)
+[road_snap]
+us = "Snap ends to roads and bridges"
+fr = "Accrocher les extrémités aux routes et aux ponts"
+ger = "Enden an Straßen und Brücken einrasten"
+ita = "Aggancia le estremità a strade e ponti"
+spa = "Ajustar los extremos a carreteras y puentes"
+pol = "Przyciągaj końce do dróg i mostów"
+ru = "Привязывать концы к дорогам и мостам"
+cz = "Přichytit konce k silnicím a mostům"
+jpn = "端を道路と橋にスナップ"
+sc = "端点吸附到道路和桥梁"
+
+[tip_road_snap]
+us = "A road's start and end jump onto the end of a bridge you placed, or onto a road, when you click near one (about 58 m). The points between go exactly where you click. Untick to place every point exactly."
+fr = "Le début et la fin d'une route se placent sur l'extrémité d'un pont que vous avez posé, ou sur une route, quand vous cliquez près de l'un d'eux (environ 58 m). Les points intermédiaires vont exactement où vous cliquez. Décochez pour placer chaque point exactement."
+ger = "Anfang und Ende einer Straße springen auf das Ende einer von Ihnen gesetzten Brücke oder auf eine Straße, wenn Sie in der Nähe klicken (etwa 58 m). Die Punkte dazwischen landen genau dort, wo Sie klicken. Abhaken, um jeden Punkt genau zu setzen."
+ita = "L'inizio e la fine di una strada saltano sull'estremità di un ponte che hai posato, o su una strada, quando clicchi vicino (circa 58 m). I punti intermedi vanno esattamente dove clicchi. Togli la spunta per posare ogni punto esattamente."
+spa = "El inicio y el final de una carretera saltan al extremo de un puente que hayas colocado, o a una carretera, cuando haces clic cerca (unos 58 m). Los puntos intermedios van exactamente donde haces clic. Desmárcalo para colocar cada punto exactamente."
+pol = "Początek i koniec drogi przeskakują na koniec postawionego przez ciebie mostu albo na drogę, gdy klikniesz blisko (około 58 m). Punkty pośrednie trafiają dokładnie tam, gdzie klikasz. Odznacz, aby stawiać każdy punkt dokładnie."
+ru = "Начало и конец дороги перескакивают на конец поставленного вами моста или на дорогу, если щёлкнуть рядом (около 58 м). Промежуточные точки ставятся точно туда, куда вы щёлкаете. Снимите флажок, чтобы ставить каждую точку точно."
+cz = "Začátek a konec silnice přeskočí na konec mostu, který jste postavili, nebo na silnici, když kliknete poblíž (asi 58 m). Body mezi nimi jdou přesně tam, kam kliknete. Odškrtněte pro přesné umístění každého bodu."
+jpn = "近く（約 58 m）をクリックすると、道路の始点と終点が自分で置いた橋の端か道路に吸い付きます。途中の点はクリックした場所にそのまま置かれます。すべての点を正確に置くにはチェックを外します。"
+sc = "在附近（约 58 米）点击时，道路的起点和终点会吸附到你放置的桥的端点或道路上。中间的点就放在你点击的位置。取消勾选可精确放置每个点。"

@@ -10,15 +10,15 @@ from rusemod.floors import WIDEN, Deck, NoFloor, build_tree, carry, floors_for, 
 from rusemod.kdt import Kdt
 
 
-def strip(deck: Deck, z0: float, z1: float, lift: float = 50.0) -> list:
-    """A floor like the shipped metal bridges': 4 sections along `deck`, 1,200 either side of its line, from z0 at
-    the start to z1 at the end, `lift` above that line."""
+def strip(deck: Deck, z0: float, z1: float, lift: float = 50.0, across: float = 1200.0) -> list:
+    """A floor like the shipped metal bridges': 4 sections along `deck`, `across` either side of its line (1,200; the
+    stone bridges' reach 6,940 to 21,160), from z0 at the start to z1 at the end, `lift` above that line."""
     out = []
     ts = [-1.0, -0.5, 0.0, 0.5, 1.0]
     for a, b in zip(ts, ts[1:]):
         za, zb = z0 + (z1 - z0) * (a + 1) / 2 + lift, z0 + (z1 - z0) * (b + 1) / 2 + lift
-        p = [(*deck.world(a, -1200.0), za), (*deck.world(a, 1200.0), za), (*deck.world(b, -1200.0), zb),
-             (*deck.world(b, 1200.0), zb)]
+        p = [(*deck.world(a, -across), za), (*deck.world(a, across), za), (*deck.world(b, -across), zb),
+             (*deck.world(b, across), zb)]
         out += [(p[0], p[1], p[2]), (p[1], p[3], p[2])]
     return out
 
@@ -157,6 +157,39 @@ class ForABuild(unittest.TestCase):
         with self.assertRaises(NoFloor) as got:  # off the ground mesh: no banks to sit on
             floors_for(Kdt(base_file()), lambda x, y: None, [(new, [SHIPPED])], [])
         self.assertEqual(got.exception.missing, [0])
+
+
+class StoneBridges(unittest.TestCase):
+    """The stone bridges' floors (Italy's, Germany's, Holland's small ones, measured on every shipped map 2026-10-03):
+    one strip end to end along the deck, far wider than the metal bridges' (6,940 to 21,160 either side), found only
+    when nothing is in the narrow band, and only at the deck's height."""
+    NEW = Deck.of(300000.0, 200000.0, 300000.0, 212000.0)
+
+    def test_a_wide_floor_is_copied_at_its_own_width(self):
+        k = Kdt(rebuild(Kdt(make_valid_kdt()), strip(SHIPPED, FLAT, FLAT, across=6940.0)))
+        data, _notes = floors_for(k, lambda x, y: FLAT, [(self.NEW, [SHIPPED])], [])
+        got = [t for t in triangles(Kdt(data)) if floors.on_deck(t, self.NEW, across=floors.ACROSS_WIDE)]
+        self.assertEqual(len(got), 8)
+        self.assertAlmostEqual(max(abs(self.NEW.local(p[0], p[1])[1]) for t in got for p in t), 6940.0, delta=100)
+
+    def test_a_wide_strip_at_another_height_is_no_floor(self):
+        k = Kdt(rebuild(Kdt(make_valid_kdt()), strip(SHIPPED, FLAT - 3000, FLAT - 3000, across=6940.0)))
+        with self.assertRaises(NoFloor):
+            floors_for(k, lambda x, y: FLAT, [(self.NEW, [SHIPPED])], [])
+
+    def test_the_narrow_band_comes_first(self):
+        wide = strip(SHIPPED, FLAT, FLAT, across=6940.0)
+        found, is_wide = floors.deck_floor(strip(SHIPPED, FLAT, FLAT) + wide, SHIPPED, (FLAT, FLAT))
+        self.assertEqual((len(found), is_wide), (8, False))  # the metal bridges' floor, as before
+        found, is_wide = floors.deck_floor(wide, SHIPPED, (FLAT, FLAT))
+        self.assertEqual((len(found), is_wide), (8, True))
+        self.assertEqual(floors.deck_floor(wide, SHIPPED, None), ([], False))  # no ground: no height to check against
+
+    def test_a_sunk_stone_bridge_loses_its_floor(self):
+        k = Kdt(rebuild(Kdt(make_valid_kdt()), strip(SHIPPED, FLAT, FLAT, across=6940.0)))
+        data, _notes = floors_for(k, lambda x, y: FLAT, [], [SHIPPED])
+        left = triangles(Kdt(data)) if data else []
+        self.assertEqual([t for t in left if floors.on_deck(t, SHIPPED, across=floors.ACROSS_WIDE)], [])
 
 
 def metal(deck: Deck, z: float) -> list:

@@ -34,6 +34,12 @@ from . import kdt as K
 MEMBER = "output\\occlusioninfo_objectsonly.kdt"
 LEAF_MOST = 8          # triangles in a leaf before it's split (the shipped leaves list 2 to 7)
 ACROSS = 2500.0        # map units either side of a deck's line its floor reaches (the decks are ~2,400 wide)
+ACROSS_WIDE = 30000.0  # ...and the stone bridges' (measured on every shipped map 2026-10-03: one strip end to end along
+                       # the deck at the deck's height, about 6,940 either side of its line on Italy's, 10,620 on
+                       # Germany's, 15,290 to 21,160 on Holland's small ones); looked for only when a bridge has nothing
+                       # in the narrow band, so the metal bridges' floors (D-Day's, tested in the game) are found as before
+HIGH = 1500.0          # ...every point of a wide floor within this of the deck's height (the line between its ends'
+                       # ground): so nothing else at that width (the riverbed, another object's floor) is taken
 WIDEN = 1.5            # how much wider than the shipped bridge's a new bridge's floor is made (its floors reach about
                        # 660 either side of the line, the movement on a new deck 640: a unit at the band's edge, or
                        # nudged past it by another, found no floor and dropped to the riverbed, which is what "under
@@ -110,13 +116,30 @@ def triangles(k: K.Kdt) -> list[tuple]:
     return out
 
 
-def on_deck(tri, deck: Deck, reach: float = 1.2) -> bool:
-    """A triangle lying on `deck`: every point within its length (a little past) and ACROSS of its line."""
+def on_deck(tri, deck: Deck, reach: float = 1.2, across: float = ACROSS) -> bool:
+    """A triangle lying on `deck`: every point within its length (a little past) and `across` of its line."""
     for x, y, _z in tri:
         t, s = deck.local(x, y)
-        if abs(t) > reach or abs(s) > ACROSS:
+        if abs(t) > reach or abs(s) > across:
             return False
     return True
+
+
+def deck_floor(tris: list, deck: Deck, ground: tuple[float, float] | None) -> tuple[list, bool]:
+    """The triangles of `deck`'s floor, and whether it's a wide one: the narrow band first (the metal bridges', ACROSS);
+    for a bridge with nothing there, the wide strip the stone bridges have (ACROSS_WIDE), every point at the deck's
+    height (within HIGH of the line between `ground`, its ends' ground; none without it)."""
+    narrow = [t for t in tris if on_deck(t, deck)]
+    if narrow or ground is None:
+        return narrow, False
+
+    def level(tri):
+        for x, y, z in tri:
+            t = deck.local(x, y)[0]
+            if abs(z - (ground[0] + (ground[1] - ground[0]) * (t + 1) / 2)) > HIGH:
+                return False
+        return True
+    return [t for t in tris if on_deck(t, deck, across=ACROSS_WIDE) and level(t)], True
 
 
 def beside_deck(tri, deck: Deck, reach: float = 1.2) -> bool:
@@ -363,30 +386,35 @@ def floors_for(k: K.Kdt, height_at, new: list, gone: list[Deck], water=None) -> 
     floors' aprons (without it they get the band alone). Returns (the file, notes). Raises NoFloor when a new deck
     gets no floor: the build opens movement along every new deck, and units there would stand on the riverbed."""
     shipped = triangles(k)
-    tris = [t for t in shipped if not any(on_deck(t, d) or beside_deck(t, d) for d in gone)] if gone else list(shipped)
-    removed = len(shipped) - len(tris)
-    notes, added, reaches, missing = [], 0, [], []
 
     def ground(deck):
         (x0, y0), (x1, y1) = deck.ends()
         g0, g1 = height_at(x0, y0), height_at(x1, y1)
         return None if g0 is None or g1 is None else (g0, g1)
+    if gone:  # each sunk deck's floor (narrow or wide, deck_floor) and its aprons go
+        out = {id(t) for d in gone for t in deck_floor(shipped, d, ground(d))[0]}
+        tris = [t for t in shipped if id(t) not in out and not any(beside_deck(t, d) for d in gone)]
+    else:
+        tris = list(shipped)
+    removed = len(shipped) - len(tris)
+    notes, added, reaches, missing = [], 0, [], []
 
     def tilt(deck):
         g = ground(deck)
         return abs(g[1] - g[0]) if g else math.inf
     for i, (deck, sources) in enumerate(new):
-        floor, src, src_g = [], None, None
+        floor, src, src_g, wide = [], None, None, False
         for s in sorted(sources, key=tilt):  # the flattest shipped bridge of the kind gives the truest floor
-            f, g = [t for t in shipped if on_deck(t, s)], ground(s)
+            g = ground(s)
+            f, w = deck_floor(shipped, s, g)
             if f and g:
-                floor, src, src_g = f, s, g
+                floor, src, src_g, wide = f, s, g, w
                 break
         dst_g = ground(deck)
         if not floor or dst_g is None:
             missing.append(i)
             continue
-        band = carry(floor, src, src_g, deck, dst_g)
+        band = carry(floor, src, src_g, deck, dst_g, widen=1.0 if wide else WIDEN)  # a wide floor is wide enough
         tris += band
         added += 1
         if water is not None:
