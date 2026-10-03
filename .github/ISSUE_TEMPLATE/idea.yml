@@ -1,0 +1,39 @@
+name: Idea or request
+description: Something you'd like the Studio, the Launcher or RUSE 2.0 to do.
+title: "[Idea] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! Ideas are also welcome on the project's [Discord](https://discord.gg/DbufY4Jfg) and in
+        [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions), where others can join in.
+  - type: dropdown
+    id: app
+    attributes:
+      label: For which part?
+      options:
+        - RUSE Studio (units)
+        - RUSE Studio (maps)
+        - RUSE Launcher
+        - The game itself (RUSE 2.0)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like?
+      description: What it does, as a player or modder would use it.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why?
+      description: What it would let you do that you can't now.
+  - type: textarea
+    id: pictures
+    attributes:
+      label: Pictures or examples
+      description: Screenshots, sketches, or another game or mod that does it. Drag them in here.

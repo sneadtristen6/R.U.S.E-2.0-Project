@@ -437,7 +437,8 @@ The order is in [PLAN.md §10 "Now"](docs/PLAN.md#10-now); the latest decisions 
 
 **[Field manual (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki)** &middot;
 **[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)**: questions, ideas, bug reports and
-mods to show
+mods to show &middot; **[Discord](https://discord.gg/DbufY4Jfg)**: talk with the community and the makers &middot;
+**[Contributing](CONTRIBUTING.md)** &middot; **[Code of conduct](CODE_OF_CONDUCT.md)**
 
 | Doc | What it covers |
 |---|---|
@@ -457,6 +458,8 @@ mods to show
 <a name="for-contributors"></a>
 <details>
 <summary><b>For contributors</b></summary>
+
+How to report bugs, test in the game and send code: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 <details>
 <summary><b>Code so far</b>: the engine, the <code>ruse</code> tool and what it builds</summary>

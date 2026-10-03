@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Discord
+    url: https://discord.gg/DbufY4Jfg
+    about: Talk with the community and the makers, ask quick questions, show your mods.
+  - name: Questions and help (Discussions)
+    url: https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions
+    about: How do I...? Questions, ideas and mods to show.
+  - name: Field manual (wiki)
+    url: https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki
+    about: How the Studio and the Launcher work, step by step.
