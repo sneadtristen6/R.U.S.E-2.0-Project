@@ -606,12 +606,30 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Now (updated 2026-10-03, evening): start here.** **Studio 0.9.2 and Launcher 0.4.2 are out.** Roads were cracked
+**Now (updated 2026-10-03, night): start here.** **Studio 0.9.3 and Launcher 0.4.3 are out.** Roads were cracked
 in 0.9.0 / 0.4.0 (T12 passed: a new road looks like the map's own from high up and up close; the story in
 [ROADS.md](ROADS.md)). The owner: no 1.0 for a long time; 0.9.x patch releases from here; fixes may go out before an
 in-game test ("can be tested by a player later"), said so in the notes.
 
-In 0.9.2 / 0.4.2 (from a tester's M03_Italie campaign mod; not yet seen in the game unless said):
+In 0.9.3 / 0.4.3 (the owner's detail-loading tests on his test2 copy of M03_Italie):
+- **Everything a mod places is drawn from far** (rusemod.visibility): the game's decor levels reach 20,000 (close),
+  100,000 (middle) and 500,000+ (far) from the camera, and most props have a close or middle mode alone; a mod's
+  objects of such a type use a copy of it that serves the far pass too, the map's own unchanged. Shared mode entries
+  are copied, never changed; copied buildings stay solid; all 706 types that get a copy checked through the engine.
+  **Seen in the game:** placed rocks at every height.
+- **New roads through woods** painted at every level like the map's own (seen in the game), and a road can keep its
+  trees (`keep_trees`, the Studio's box): fainter and greyer in a wood (seen in the game).
+- **Props, trees and buildings named in all ten languages** (rusemod.scenerynames_lang), switching with the
+  language button.
+- **Builds about three times faster** (306 to about 90 seconds for the owner's test2): a map's road look and the
+  shipped tiles it paints on are measured once and kept (`cache/build` in the platform's folder), and clones with no
+  ids skip the id scan.
+
+Next: the texture flicker on a new road as the camera turns (the owner: minor); faster builds still (the engine's
+copy of the game and its index, the ground tiles' writing); a campaign chapter's sectors; the tester's lake
+screenshot (ask what's wrong first); more detailed graphics in the editor (the owner: "can be pushed later").
+
+*In 0.9.2 / 0.4.2 (released 2026-10-03; from a tester's M03_Italie campaign mod; not yet seen in the game unless said):*
 - **Bridges for new roads on every map with bridges:** the stone bridges' floors (one wide strip end to end, up to
   about 21,000 across) are found too; before, only the metal bridges' narrow ones, on 9 of the 29 maps.
 - **Road ends snap only at the ends,** to a placed bridge first; a box turns snapping off.
@@ -625,11 +643,6 @@ In 0.9.2 / 0.4.2 (from a tester's M03_Italie campaign mod; not yet seen in the g
   in-game check of detail loading is next.
 - **Zones as borders on the ground** (Stellaris' way: a clear line, a see-through tint inside); a "Zones' fill"
   slider in place of the zones' height.
-
-Next: the owner's detail-loading test (a test copy on M03_Italie); a campaign chapter's sectors (its mission spawns
-the scenario's units only in the sectors holding its markers: read from the mission, not tested; Studio display and
-a build warning); the tester's "map loading weird" lake screenshot (ask what's wrong first); more detailed graphics
-in the editor (the owner: "can be pushed later").
 
 *In 0.9.1 / 0.4.1 (released 2026-10-03):*
 - **Drag anything on the map, no tool needed:** starting points, supply depots, spawned units and opening cameras

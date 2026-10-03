@@ -1,6 +1,17 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.3:** everything you place shows from far, new roads through woods look like the map's own, trees you can keep
+on a road, props and trees by their names in your language, and builds about three times faster.
+
+| Before | Now |
+|---|---|
+| Props, trees and buildings to place were listed by French code names: Caillou_10, ChampsPierres_02, Osier... | By names in the Studio's language, all ten, with what kind of thing each one is: "Stony field 2", "Champ de pierres 2", "Steiniges Feld 2". They change with the language button. The code name and its folder are in the tooltip. |
+| Rocks and most other props you placed vanished as soon as the camera left close range, and came and went as you turned it. | Everything a mod places is drawn out to the far distance, the map's own objects unchanged. **Seen in the game:** placed rocks show at every height. |
+| From high up a new road through a wood was a bright strip, and after a first fix it was gone from medium-long range. | Painted through woods the way the map's own roads are, at every height. **Seen in the game.** |
+| A new road always took the trees off its path, about 6 m either side. | **Keep the trees on new roads** in the Roads tray: the trees and bushes stay over the road, and in a wood the road shows fainter and greyer. **Seen in the game.** |
+| **Test in game** took about 5 minutes to build a mod with new roads on M03_Italie. | About 1½ minutes: what a map's roads look like is measured once and kept, and copies skip a slow check they don't need. |
+
 **0.9.2:** fixes from a tester's campaign map: bridges for new roads on every map, road ends that snap to bridges
 (or not at all), the names a player knows, units for the player, scenery that shows from far, and the scenario's
 zones as borders on the ground.

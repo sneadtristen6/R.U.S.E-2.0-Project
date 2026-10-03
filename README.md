@@ -336,7 +336,7 @@ Stuck on something? See [Questions? Ask any AI](#questions-ask-any-ai) at the bo
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.2) &middot; **Studio** for modders, a preview (latest: 0.9.2) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.3) &middot; **Studio** for modders, a preview (latest: 0.9.3) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -353,6 +353,10 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
 <details>
 <summary><b>Current stage (2026-10-03)</b></summary>
 
+- **Studio 0.9.3 and Launcher 0.4.3** (2026-10-03): everything a mod places is drawn out to the far distance (placed
+  rocks seen at every height in the game), new roads through woods painted like the map's own (seen in the game),
+  roads that can keep the trees on their path, props and trees named in all ten of the Studio's languages, and
+  builds about three times faster.
 - **Studio 0.9.2 and Launcher 0.4.2** (2026-10-03): fixes from a tester's campaign map: bridges for new roads on
   every map with bridges, road ends that snap to placed bridges (or not at all), the names a player knows, units for
   the player in a campaign chapter, scenery and placed props that show from far again on M03_Italie and other maps,

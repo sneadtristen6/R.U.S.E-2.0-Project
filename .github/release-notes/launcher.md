@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.3:** plays mods made with Studio 0.9.3, and builds them about three times faster.
+
+| Before | Now |
+|---|---|
+| Rocks and most other props a mod placed vanished as soon as the camera left close range. | Drawn out to the far distance; the map's own objects unchanged. **Seen in the game.** |
+| A mod's new road through a wood was a bright strip from high up, or gone from medium-long range. | Painted through woods the way the map's own roads are. **Seen in the game.** |
+| A mod's roads always took the trees off their path. | A road can keep them (`keep_trees`): it runs under the trees, fainter and greyer in a wood. |
+| **Play** took about 5 minutes to build a mod with new roads on M03_Italie. | About 1½ minutes after the first time on a map. |
+
 **0.4.2:** plays mods made with Studio 0.9.2.
 
 | Before | Now |
