@@ -12,7 +12,7 @@ Game build examined: Steam re-release, Steam build 24670294, data revision **190
 | NDF binary (`.ndfbin .gladndfbin .truendfbin`) | Glad packs, ZZ_Win, DataMap_Win | 1,982 | ✅ R (TOPO ❔) | P0 |
 | Localisation (`.dic`, `TRA\0`) | ZZ_Win | 1,232 (+31 `DICS`/`DICV`) | ✅ layout | P0 |
 | Python scripts (`.xyz`) | `.ipk` in ZZ_Win, IA_Common | 327 | ✅ R | P2 |
-| Map registration (`mapinfo.cpp`, `clustermap.cpp`) | ZZ_GladPatchable | 86 maps | ✅ R; W: a new map, a copy of a BATTLES map (`rusemod.newmap`, all 31 entries; in-game test T15 waiting) | P1 |
+| Map registration (`mapinfo.cpp`, `clustermap.cpp`) | ZZ_GladPatchable | 86 maps | ✅ R; W: a new map, a copy of a BATTLES map (`rusemod.newmap`, all 31 entries; seen in the game: T15b, T16, 101 at once) | P1 |
 | Map support files (`save.boobspc`, `output.sdb`) | Maps\PC | per map | 🟡 checksums known | P1 |
 | Scenario (`.scenario`) | DataMap_Win | 102 | ✅ R (zones and design items; `rusemod.scenario`, all 102) | P1 |
 | AI map grids (`mapinfo.win`) | DataMap_Win | 34 | 🟡 buffer 0: the road network, read and written byte-identical on all 33 (`rusemod.roadnet`, `tools/verify_roadnet.py`: points on the road curves, links with a u16 word (the game works bits 1-15, the distance / 20, out again when it loads the map and keeps only bit 0 from the file, a flag set on most links where vehicles can go), per-point link lists, a k-d tree over the links, never more than 24 levels deep: the game walks it with a fixed stack of 32 entries, as it does the graphs' indexes); buffers 1-2: the infantry and vehicle navigation graphs, read and written byte-identical (`rusemod.nav`, `tools/verify_nav.py`; every shipped one is one connected piece, and a crossing's last two u16 are road network links; their local maps understood, and new ones written for new bridges: "Movement graphs" in §6); buffer 4: the cover grid, written (`rusemod.cover`, from LittleGroove's `sdb.py`) | P1 |
@@ -361,7 +361,8 @@ Map names and paths all come from data. **Adding a map looks data-only.**
 
 Map packs also hold models (`.spk`), textures, AI grids and sound banks.
 
-**A new map** (built: `rusemod.newmap`, MOD_FORMAT §8; in-game test T15 waiting). How a shipped map's files name
+**A new map** (built: `rusemod.newmap`, MOD_FORMAT §8; seen in the game 2026-10-03: listed in BATTLES and playing its
+own ground, 101 new maps at once, `TESTS.md` T15b and T16). How a shipped map's files name
 each other, which is what a copy under a new name changes (read from the data, 2026-10-01):
 - Its map-list entry (`TMapLoadInfo`, a top object: TOPO lists exactly the 86) loads its scenario's cluster through
   `ClusterLoads` → `TClusterWithNDFLoadedSubCluster` → `TNDFTransaction.BaseName`

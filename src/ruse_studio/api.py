@@ -257,6 +257,45 @@ def _save_checked(path: Path, text: str, read) -> None:
     ModEdits._write(path, text)
 
 
+def _copied(view: dict, copy) -> dict:
+    """A shipped map's scenarios as a new map of it has them (`copy`: (name, newmap.NewMap); None: the map itself):
+    only the one its BATTLES entry loads (the entry map.toml names, else the BATTLES ones), listed under the new
+    map's name, as the build makes it. The cached view stays the game's."""
+    if copy is None:
+        return view
+    _name, spec = copy
+
+    def battles(s):
+        return [e for e in s["entries"] if e["kind"] == "skirmish" and (spec.entry is None or e["name"] == spec.entry)]
+    out = []
+    for s in view["scenarios"]:
+        found = battles(s)
+        if not found:
+            continue
+        seats = re.match(r"^\(\d+\)", found[0]["name"])  # "(2) Blitz" -> "(2) Blitz at Dusk"
+        out.append({**s, "entries": [{"name": f"{seats.group(0)} {spec.names['us']}" if seats else spec.names["us"],
+                                      "kind": "skirmish",
+                                      "titles": {lang: spec.names.get(lang, spec.names["us"])
+                                                 for lang in (found[0]["titles"] or {"us": ""})}}]})
+    return {**view, "scenarios": out}
+
+
+def _pack_name(name: str, taken: set) -> str:
+    """A new map's own name (its folder and files: a letter, then up to 39 letters, digits and _; rusemod.newmap
+    check_name) from what the menus call it: "Blitz at dusk" -> BlitzAtDusk, accents dropped; NewMap when nothing is
+    left (a name in Russian or Japanese). `taken` (lower case): names in use; a number is added until it's free."""
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
+    words = re.findall(r"[A-Za-z0-9]+", plain)
+    base = "".join(w[:1].upper() + w[1:] for w in words)
+    if not base or not base[0].isalpha():
+        base = "NewMap" + base
+    base = base[:36]
+    out, n = base, 2
+    while out.lower() in taken:
+        out, n = f"{base}{n}", n + 1
+    return out
+
+
 def _aside(path: Path) -> Path:
     """Rename a mod file that can't be read to <name>.broken.toml (-2, -3... when taken): out of the build's way,
     never lost. Returns the new path."""
@@ -914,7 +953,119 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if game is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
-        return {"maps": [m for m in map_list(game) if m["found"]]}
+        shipped = [m for m in map_list(game) if m["found"]]
+        copies = self._new_maps()
+        if not copies:
+            return {"maps": shipped}
+        out = []
+        for m in shipped:
+            out.append(m)
+            for name, spec in copies.values():  # each new map right after the map it copies
+                if spec.copy_of.lower() == m["pack"].lower():
+                    out.append({"pack": name, "names": [spec.names["us"]], "paths": [name],
+                                "titles": {lang: [spec.names.get(lang, spec.names["us"])] for lang in m["titles"]},
+                                "kinds": ["skirmish"], "file": pack_file(name), "found": True,
+                                "copy_of": m["pack"], "copy_of_names": m["names"]})
+        return {"maps": out}
+
+    # --- new maps (MOD_FORMAT §8 "A new map"): a copy of a shipped map with a name of its own, made by the build from
+    # the map project's maps/<name>/map.toml (copy_of). The map view shows a copy as the map it copies with the copy's
+    # own edits on top: its game data is read from the shipped map, its edits go to maps/<name>/. Proven in the game
+    # (TESTS.md T15b, T16: 101 new maps listed at once, each playing its own ground).
+    def _new_maps(self) -> dict:
+        """The current map project's new maps: {name, lower case: (name, newmap.NewMap)}."""
+        from rusemod import newmap
+        folder = self._map_dir()
+        out: dict = {}
+        if folder is None or not (folder / "maps").is_dir():
+            return out
+        for f in sorted((folder / "maps").iterdir()):
+            path = f / "map.toml"
+            if not path.is_file():
+                continue
+            try:
+                specs = newmap.parse(tomllib.loads(path.read_text(encoding="utf-8")), f"maps/{f.name}/map.toml",
+                                     f.name)
+            except (OSError, ValueError):  # (a broken file is the mod check's to say)
+                continue
+            if specs:
+                out[f.name.lower()] = (f.name, specs[0])
+        return out
+
+    def _game_pack(self, pack: str) -> str:
+        """The game's map whose files a map of the view is read from: a new map's shipped map, else the map itself."""
+        copy = self._new_maps().get(str(pack).lower())
+        return copy[1].copy_of if copy else pack
+
+    def duplicate_options(self, pack: str) -> dict:
+        """What Duplicate map needs to know about `pack` before asking for a name: {"source": the shipped map it
+        copies, "entries": its BATTLES entries (one to pick when there are several), "name": a suggested name,
+        "folder": the map project the copy goes into (None: one is made), "why": why it can't be copied, or None}."""
+        from rusemod import newmap
+        from rusemod import players as pl
+        from rusemod.ndf import Ndf
+        game = self._game()
+        glad_path = find_pack(game, "ZZ_GladPatchableWin.dat") if game is not None else None
+        if glad_path is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("ZZ_GladPatchableWin.dat isn't in the game folder.")
+        source = self._game_pack(pack)
+        with Edat.open(str(glad_path)) as glad:
+            def read(member):
+                e = glad.entry(member)
+                return bytes(glad.read(e)) if e is not None else None
+            g, m = Ndf(read(pl.GLOBALS)), Ndf(read(pl.MAPINFO))
+            entries = [name for _mi, gi, name in pl.entries(m, g, source) if newmap._listed(g, gi)]
+        m = next((x for x in self.maps()["maps"] if x["pack"] == pack), {})
+        called = ((m.get("titles") or {}).get("us") or m.get("names") or [pack])[0]  # what players call it
+        folder = self._map_dir()
+        return {"source": source, "entries": entries, "name": f"{called} 2",
+                "folder": str(folder) if folder else None,
+                # not a game rule: our map copier starts from a map BATTLES lists (its scenario and menu entry)
+                "why": None if entries else "Only maps BATTLES lists can be duplicated for now (this one has no "
+                                            "BATTLES entry to copy)."}
+
+    def duplicate_map(self, pack: str, name: str, entry: str | None = None) -> dict:
+        """Make a new map: a copy of `pack` called `name` in the menus, in the current map project (one is made when
+        none is picked). The map project's changes to `pack` so far are copied with it, so the copy starts as the
+        map view shows it. Returns {"pack": the new map's own name (its folder and files), "maps": maps()}."""
+        from rusemod import newmap
+        name = " ".join(str(name or "").split())
+        if not name:
+            raise StudioError("Give the new map a name.")
+        if len(name) > newmap.NAME_LONGEST:
+            raise StudioError(f"The name is {len(name)} characters; the menus take {newmap.NAME_LONGEST}.")
+        opts = self.duplicate_options(pack)
+        if opts["why"]:
+            raise StudioError(opts["why"])
+        if entry is not None and entry not in opts["entries"]:
+            raise StudioError(f"{opts['source']} has no BATTLES entry {entry!r}.")
+        if entry is None and len(opts["entries"]) > 1:
+            raise StudioError("This map has several BATTLES entries: pick the one to copy.")
+        old_copy = self._new_maps().get(pack.lower())
+        if entry is None and old_copy is not None:
+            entry = old_copy[1].entry
+        if self._map_dir() is None:
+            self.new_mod(name, "map")
+        folder = self._map_dir()
+        taken = {m["pack"].lower() for m in self.maps()["maps"]}
+        taken |= {f.name.lower() for f in (folder / "maps").iterdir()} if (folder / "maps").is_dir() else set()
+        new = _pack_name(name, taken)
+        players = self._read_players(pack)  # the map's player count in this project comes along too
+        if entry is None and players is not None:
+            entry = players.entry
+        spec = newmap.NewMap(opts["source"], {"us": name}, entry)
+        target, src_dir = folder / "maps" / new, folder / "maps" / pack
+        header = (f"A new map: a copy of {opts['source']} called {name!r} in the menus (MOD_FORMAT §8).\n"
+                  "Made in the RUSE Studio's Duplicate map, which rewrites this file.")
+        with self._saving:
+            target.mkdir(parents=True)
+            for f in sorted(src_dir.iterdir()) if src_dir.is_dir() else []:  # the changes made to it so far
+                if f.is_file() and f.name in MAP_FILES and f.name != "map.toml":
+                    (target / f.name).write_bytes(f.read_bytes())
+            _save_checked(target / "map.toml", newmap.map_toml(spec, players.count if players else None, header),
+                          lambda data: newmap.parse(data, "map.toml", new))
+        return {"pack": new, "maps": self.maps()["maps"]}
 
     # A map's data the window asks for (its scenery, roads, bridges, cover...), kept in memory: about six kinds a map,
     # so 24 is the last few maps. It was 3 in all, so one map's own kinds pushed each other out as it opened, and
@@ -949,6 +1100,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         `lod`: "lowdef" (light, opens fast) or "highdef" (the close-up mesh the game draws near the camera)."""
         if lod not in LODS:
             raise StudioError(f"No detail level called {lod!r}")
+        pack = self._game_pack(pack)  # a new map shows the ground it copies
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
@@ -970,6 +1122,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def map_scenery(self, pack: str) -> dict:
         """What stands on a map, for the 3D view (rusemod.scenery.view): every building, and a sample of props and
         trees, each with its type (name, group, the game editor's category, its model). About a second per map."""
+        pack = self._game_pack(pack)
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
@@ -1006,6 +1159,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def map_roads(self, pack: str) -> dict:
         """A map's roads for the 3D view (rusemod.scenery Scenery.roads): {"pieces": [x0, y0, x1, y1, x2, y2, x3, y3,
         ...]}, each road piece a cubic Bézier's four points, in map units."""
+        pack = self._game_pack(pack)
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
@@ -1038,6 +1192,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         "bits": base64 of n*n bits (cell i at byte i // 8, bit i % 8; row by row from y0), 1 = cover}. n is at most
         1024 (bigger grids are sampled); kept per map."""
         from rusemod import cover
+        pack = self._game_pack(pack)
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
@@ -1075,6 +1230,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         from y0; 1 = a circle of that graph holds the cell's middle). n is 512; kept per map."""
         from rusemod import cover, nav
         from ruse_mod_engine import sdb
+        pack = self._game_pack(pack)
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
@@ -1143,11 +1299,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if path is None or glad_path is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError(f"{scenario.PACK if path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game folder.")
+        mine, pack = pack, self._game_pack(pack)  # a new map: the game's scenarios of the map it copies, its own edits
+        copy = self._new_maps().get(mine.lower()) if mine != pack else None
         key = ("scenarios", str(path), path.stat().st_mtime, pack.lower())
         with self._grounds_lock:
             cached = self._sceneries.get(key)
         if cached is not None:
-            result = self._with_units(self._with_scenario_edits(pack, cached)) if edited else cached
+            result = self._with_units(self._with_scenario_edits(mine, _copied(cached, copy))) if edited \
+                else _copied(cached, copy)
             return self._with_scenario_owners(game, pack, result)
         with Edat.open(str(path)) as arc:
             found = scenario.of_map(arc, pack)
@@ -1177,7 +1336,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         out = self._with_units({"scenarios": out_list})
         with self._grounds_lock:
             self._sceneries[key] = out
-        result = self._with_units(self._with_scenario_edits(pack, out)) if edited else out
+        result = self._with_units(self._with_scenario_edits(mine, _copied(out, copy))) if edited else _copied(out, copy)
         return self._with_scenario_owners(game, pack, result)
 
     def _with_scenario_owners(self, game: Path, pack: str, view: dict) -> dict:
@@ -1312,6 +1471,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def map_ground(self, pack: str) -> dict:
         """The map's real ground textures as one picture, made once per map pack (about half a minute) and kept in
         the cache: {"url": "cache/ground/..."} when it's there, else {"job": id}; ask again when the job is done."""
+        pack = self._game_pack(pack)
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
@@ -1591,6 +1751,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """The map's online entries and how many players each takes: {"entries": [{"name", "players", "layouts",
         "file"}], "mod": the mod's count or None, "entry": the entry it sets, "missing": the starting points the
         mod's count still needs ([team, place] pairs), "most": 8}. No entries: the map isn't played online."""
+        from rusemod import newmap
         from rusemod import players as pl
         from rusemod.ndf import Ndf
         game = self._game()
@@ -1604,7 +1765,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 return bytes(glad.read(e)) if e is not None else None
             g, m = Ndf(read(pl.GLOBALS)), Ndf(read(pl.MAPINFO))
             found = []
-            for mi, gi, name in pl.entries(m, g, pack):
+            copy = self._new_maps().get(pack.lower())  # a new map has the one BATTLES entry it copies
+            for mi, gi, name in pl.entries(m, g, copy[1].copy_of if copy else pack):
+                if copy and not (newmap._listed(g, gi) and copy[1].entry in (None, name)):
+                    continue
                 p = {g.prop_name(pi): v for pi, v in g.objects[gi].props}
                 layouts = [t for key, t in pl.LAYOUTS if key in p and p[key].scalar()]
                 found.append({"name": name, "players": p["NbPlayers"].scalar() if "NbPlayers" in p else None,
@@ -1630,7 +1794,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if not path.is_file():
             return None
         try:
-            got = pl.parse_map(tomllib.loads(path.read_text(encoding="utf-8")), str(path))
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+            if "copy_of" in data and "players" not in data:
+                return None  # a new map's file: its entry is the one it copies, not a player count's
+            got = pl.parse_map(data, str(path))
         except (tomllib.TOMLDecodeError, UnicodeDecodeError, pl.PlayersError) as exc:
             raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
                               f"by hand.") from None
@@ -1640,6 +1807,18 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """Set how many players the map takes in the current mod (None: as the game has it). Returns map_players."""
         from rusemod import players as pl
         path = self._map_file(pack)
+        copy = self._new_maps().get(pack.lower())
+        if copy is not None:  # a new map's file says what it copies too: it's rewritten, never removed
+            from rusemod import newmap
+            spec = replace(copy[1], entry=entry or copy[1].entry)
+            if count is not None:
+                pl.parse_map({"players": int(count)}, "the count")  # (refuses a count the lobby can't seat)
+            text = newmap.map_toml(spec, None if count is None else int(count),
+                                   f"A new map: a copy of {spec.copy_of} called {spec.names['us']!r} in the menus "
+                                   "(MOD_FORMAT §8).\nMade in the RUSE Studio, which rewrites this file.")
+            with self._saving:
+                _save_checked(path, text, lambda data: newmap.parse(data, str(path), copy[0]))
+            return self.map_players(pack)
         with self._saving:
             if count is None:
                 if path.is_file():
@@ -1750,11 +1929,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if game is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
-        map_path, unit_path = find_pack(game, pack_file(pack)), find_pack(game, "ZZ_GladPatchableWin.dat")
+        src = pack_file(self._game_pack(pack))  # a new map's scenery is the map it copies
+        map_path, unit_path = find_pack(game, src), find_pack(game, "ZZ_GladPatchableWin.dat")
         if map_path is None or unit_path is None:
             # not a game rule: the game or one of its files isn't found
-            raise StudioError(f"{pack_file(pack) if map_path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game "
-                              f"folder.")
+            raise StudioError(f"{src if map_path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game folder.")
         with Edat.open(str(unit_path)) as unit_arc, Edat.open(str(map_path)) as map_arc:
             descs = self._scenery_types(unit_path, unit_arc)
             try:
@@ -1884,19 +2063,20 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if path is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError(f"{scenario.PACK} isn't in the game folder.")
-        key = ("roadgraph", str(path), path.stat().st_mtime, pack.lower())
+        src = self._game_pack(pack)  # a new map's road network is the map it copies
+        key = ("roadgraph", str(path), path.stat().st_mtime, src.lower())
         with self._grounds_lock:
             cached = self._sceneries.get(key)
         if cached is None:
             with Edat.open(str(path)) as arc:
                 try:
-                    raw = bytes(arc.read(arc.find(member(pack))))
+                    raw = bytes(arc.read(arc.find(member(src))))
                 except KeyError:
-                    raise StudioError(f"{pack} has no movement and road file (mapinfo.win)") from None
+                    raise StudioError(f"{src} has no movement and road file (mapinfo.win)") from None
             try:
                 net = RoadNet.read(sdb.split_mapinfo(raw)[1][0])
             except (ValueError, IndexError, struct.error) as exc:
-                raise StudioError(f"{pack}: its road network can't be read ({exc})") from None
+                raise StudioError(f"{src}: its road network can't be read ({exc})") from None
             cached = {"nodes": [[round(p[0], 1), round(p[1], 1)] for p in net.points],
                       "edges": [[a, b] for a, b, _cost in net.links]}
             with self._grounds_lock:
@@ -1916,6 +2096,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """(where a map has water, as rusemod.bridges.Water; its bridge kind or None), kept per map."""
         from rusemod.bridges import Water, bridge_type
         from rusemod.tms import Tms
+        pack = self._game_pack(pack)
         game = self._game()
         map_path = find_pack(game, pack_file(pack)) if game is not None else None
         if map_path is None:
@@ -1984,6 +2165,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """The map's own bridge kinds, for the Bridges dock: {"kinds": [rusemod.bridges.kinds' dicts], "kind": the
         kind new roads' bridges are, or None when the map has none}. Kept per map (each kind's model is measured)."""
         from rusemod.bridges import kinds, model_length
+        pack = self._game_pack(pack)
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found

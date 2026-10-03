@@ -37,9 +37,13 @@ Studio's are marked pre-release). Each app offers its updates when it starts.
 
 - **Unit mod** (Units tab, top menu): where a user's unit changes are saved. Folder:
   `%LOCALAPPDATA%\RUSE Mod Platform\mods\<name>`.
-- **Map changes** (Maps tab, top menu): where changes to the game's maps are saved, apart from the unit mod. It
-  holds changes to the game's own maps; it doesn't make a brand-new map. Folder:
+- **Map changes** (Maps tab, top menu): where changes to the game's maps are saved, apart from the unit mod: changes
+  to the game's own maps, and the new maps made with Duplicate map. Folder:
   `%LOCALAPPDATA%\RUSE Mod Platform\maps\<name>`.
+- **Duplicate map** (Maps tab, under the open map's name; Studio 0.9.4): makes a **new map**, a full copy of the map
+  open with a name of its own, listed in the game's BATTLES next to the original. Everything changed on the copy is
+  the copy's alone. Seen in the game: 101 new maps at once, each listed and playing its own ground. Only maps BATTLES
+  lists can be copied for now. Early: new maps may have bugs (flattening the mountains at a map's edge leaves a rim).
 - **Test in game** (Studio): builds the modded copy with the unit mod and the map changes, and starts the game.
 - **Play** (Launcher): the same for a player's mod set.
 - **Side** (when placing units: "Who gets it?"): who controls the units: the player, one of the computer's sides, or

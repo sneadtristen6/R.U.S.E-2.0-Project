@@ -4020,9 +4020,11 @@ function renderList() {
   const shown = mv.kind && mv.kind !== "all" ? mv.maps.filter((m) => (m.kinds || []).includes(mv.kind)) : mv.maps;
   $("map-list").replaceChildren(...shown.map((m) => {
     const names = menuNames(m);
+    const sub = m.copy_of ? fill(mv.words.map_copy_of || "{map}", { map: mapName(m.copy_of) })
+      : (names.length ? names.slice(1) : m.names).join(" · ");
     const b = el("button", { type: "button", title: fill(mv.words.tip_open_map || "{file}", { file: m.file }) },
       el("span", { className: "name" }, ...nameLine(m)),
-      el("span", { className: "sub", textContent: (names.length ? names.slice(1) : m.names).join(" · ") }));
+      el("span", { className: "sub", textContent: sub }));
     b.setAttribute("aria-current", String(m.pack === mv.current));
     b.addEventListener("click", () => show(m.pack));
     return el("li", null, b);
@@ -4032,6 +4034,90 @@ function renderList() {
 function showTitle() {
   const m = mv.maps.find((x) => x.pack === mv.current);
   if (mv.current) $("map-title").replaceChildren(...(m ? nameLine(m) : [mv.current]));
+}
+
+// What players call a map in the Studio's language (its own name when the menus have none)
+function mapName(pack) {
+  const m = mv.maps.find((x) => x.pack === pack);
+  return m ? (menuNames(m)[0] || m.names[0] || m.pack) : pack;
+}
+
+// --- Duplicate map: a new map, a full copy of the one open with a name of its own, listed in BATTLES next to it
+// (StudioApi.duplicate_map; MOD_FORMAT §8 "A new map"). The window says what that is and how it works before asking
+// for the name; the copy opens once it's made, and its edits are its own. ---
+function packName(name) {  // the folder and file name the Studio gives it (api.py _pack_name), before any number
+  const words = name.normalize("NFKD").replace(/[̀-ͯ]/g, "").match(/[A-Za-z0-9]+/g) || [];
+  let base = words.map((x) => x[0].toUpperCase() + x.slice(1)).join("");
+  if (!base || !/^[A-Za-z]/.test(base)) base = "NewMap" + base;
+  return base.slice(0, 36);
+}
+
+async function openDuplicate() {
+  const w = mv.words, pack = mv.current;
+  if (!pack) return;
+  const map = mapName(pack);
+  $("dup-title").textContent = w.duplicate_map;
+  $("dup-lead").textContent = fill(w.dup_lead, { map });
+  $("dup-how").textContent = w.dup_how;
+  $("dup-how-own").textContent = w.dup_how_own;
+  $("dup-how-edits").textContent = fill(w.dup_how_edits, { map });
+  $("dup-how-where").textContent = "";
+  $("dup-how-tested").textContent = w.dup_how_tested;
+  $("dup-name-label").textContent = w.dup_name;
+  $("dup-entry-label").textContent = w.dup_entry;
+  $("dup-go").textContent = w.dup_go;
+  $("dup-cancel").textContent = w.cancel;
+  $("dup-note").textContent = "";
+  $("dup-name").value = "";
+  $("dup-file").textContent = "";
+  $("dup-long").classList.add("hidden");
+  $("dup-entry-row").classList.add("hidden");
+  $("dup-go").disabled = true;
+  $("duplicate").showModal();
+  let opts;
+  try {
+    opts = await mv.api.duplicate_options(pack);
+  } catch (err) {
+    $("dup-note").textContent = (err && err.message) || String(err);
+    return;
+  }
+  $("dup-how-where").textContent = opts.folder ? fill(w.dup_how_where, { folder: opts.folder }) : w.dup_how_new;
+  if (opts.why) { $("dup-note").textContent = opts.why; return; }
+  $("dup-entry").replaceChildren(...opts.entries.map((e) => el("option", { value: e, textContent: e })));
+  $("dup-entry-row").classList.toggle("hidden", opts.entries.length < 2);
+  $("dup-name").value = `${map} 2`;
+  $("dup-go").disabled = false;
+  dupNameChanged();
+  $("dup-name").focus();
+  $("dup-name").select();
+}
+
+function dupNameChanged() {
+  const w = mv.words, name = $("dup-name").value.trim();
+  $("dup-file").textContent = name ? fill(w.dup_file, { file: packName(name) }) : "";
+  $("dup-long").textContent = w.dup_long;
+  $("dup-long").classList.toggle("hidden", name.length <= 35);  // TESTS.md T16: longer names get cut off in game
+}
+
+async function duplicate(e) {
+  e.preventDefault();
+  const w = mv.words, pack = mv.current, name = $("dup-name").value.trim();
+  if (!name || !pack) return;
+  const entry = $("dup-entry-row").classList.contains("hidden") ? null : $("dup-entry").value;
+  $("dup-go").disabled = true;
+  $("dup-note").textContent = "";
+  try {
+    const map = mapName(pack);
+    const res = await mv.api.duplicate_map(pack, name, entry);
+    mv.maps = res.maps;
+    $("duplicate").close();
+    // the map project may be new: the header's menu shows it (app.js), and the status line says what was made
+    window.dispatchEvent(new CustomEvent("map-duplicated", { detail: { text: fill(w.dup_done, { name, map }) } }));
+    await show(res.pack);
+  } catch (err) {
+    $("dup-note").textContent = (err && err.message) || String(err);
+    $("dup-go").disabled = false;
+  }
 }
 
 function renderWords() {
@@ -4072,6 +4158,8 @@ function renderWords() {
   $("brush-clear-no").textContent = w.cancel;
   $("brush-clear-no").title = w.tip_cancel;
   if (!mv.current) $("map-pick").textContent = w.pick_map;
+  $("map-duplicate").textContent = w.duplicate_map;
+  $("map-duplicate").title = w.tip_duplicate_map;
   foldMaps(Boolean(mv.folded));
   renderBrushes();
   renderScenTools();
@@ -4519,6 +4607,11 @@ function wire() {
   $("bridge-turn").addEventListener("input", (e) => { bridge.turn = Number(e.target.value); renderBridgeTray(); drawBridges(); });
   $("check-run").addEventListener("click", () => runCheck());
   $("maps-fold").addEventListener("click", () => { foldMaps(!mv.folded); saveView(); });
+  $("map-duplicate").addEventListener("click", openDuplicate);
+  $("dup-form").addEventListener("submit", duplicate);
+  $("dup-name").addEventListener("input", dupNameChanged);
+  $("dup-cancel").addEventListener("click", () => $("duplicate").close());
+  $("duplicate").addEventListener("keydown", (e) => e.stopPropagation());  // typing a name never moves the map
   $("brush-clear").addEventListener("click", () => {
     const w = mv.words, n = (erasing() ? mv.brush.erase : mv.brush.strokes).length.toLocaleString();
     $("brush-sure-text").textContent = fill(erasing() ? w.erase_really_clear : w.really_clear, { n });
@@ -4602,8 +4695,10 @@ window.MapView = {
     return { position: gl.camera.position.toArray(), target: gl.controls.target.toArray(), placed: mv.place.objects.length,
       scenario: scen.group ? scen.group.children.map((o) => o.userData.label || o.type) : null };
   },
-  // another mod was picked: its strokes on this map (or none) replace the ones drawn
+  // another mod was picked: its strokes on this map (or none) replace the ones drawn, and its new maps the list's
   modChanged() {
+    if (mv.api && mv.maps.length) mv.api.maps().then((res) => { mv.maps = res.maps; renderList(); showTitle(); })
+      .catch(() => {});
     if (mv.current && mv.edit) loadStrokes(mv.current, mv.ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
     if (mv.current && mv.edit) loadPlaced(mv.current, mv.ask).catch((err) => placeNote((err && err.message) || String(err), "error"));
     if (mv.current && mv.edit) loadModRoads(mv.current, mv.ask).catch((err) => roadNote((err && err.message) || String(err), "error"));

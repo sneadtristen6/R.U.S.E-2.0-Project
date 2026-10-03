@@ -282,8 +282,16 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
   isn't changed here).
 - `tools/verify_newmap.py <modded copy> <new map> <copy_of>` reads a built copy back and checks every registration and
   file of the new map, and that nothing else of the game changed.
-- The Studio's map view doesn't open a new map yet (it shows the game's own maps); build it with `ruse build` or the
-  Studio's Test in game. Not tried in the game yet (`TESTS.md` T15).
+- **The Studio makes one:** **Duplicate map** (Maps tab, under the open map's name) asks for the name, writes this
+  file in the map changes (a new one is made when none is picked) and copies the changes made to the map so far.
+  The new map is listed right after the map it copies and opens like any map: the view reads the shipped map's files
+  and shows the copy's own edits on top, which go to `maps/<NewName>/`. The folder name comes from the menu name
+  ("Blitz at Dusk" → `BlitzAtDusk`, a number added when it's taken).
+- **Seen in the game** (`TESTS.md` T15b, T16): a new map is listed in BATTLES and plays its own ground (Blitz Twin
+  flattened, with a hill in the middle); 101 new maps at once were all listed, the map row scrolling, and played.
+  Names over about 35 characters are cut off in the menus. Copies of maps other than Blitz build but weren't tried in
+  the game yet. Known bug: flattening the mountains at a map's edge leaves a cliff along the edge (its outermost row
+  of points keeps its height).
 
 ### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`; PLAN §7 MT, T2–T3)
 
@@ -416,7 +424,7 @@ The same file takes the map's own scenery away, one circle each:
 [[erase]]
 x      = 672688.0                       # the circle's middle (map units)
 y      = 659281.0
-radius = 5000.0                         # map units (100 = 1 m), at most 200,000
+radius = 5000.0                         # map units (about 256 = 1 m), at most 200,000
 # optional:
 what  = ["vegetation", "prop"]          # what it takes: vegetation, prop, decal, building (default: trees and props)
 types = ["TypeWarrior/Pont_Normandie"]  # and these types, whatever they are (the only way to erase a bridge)

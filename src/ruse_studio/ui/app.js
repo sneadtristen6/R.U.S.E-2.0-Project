@@ -1164,6 +1164,12 @@ function showView(view) {
   else window.addEventListener("mapview-ready", open, { once: true });
 }
 
+// Duplicate map (maps.js) made a new map: it may have made a map project for it too, which the header's menu shows
+window.addEventListener("map-duplicated", async (e) => {
+  try { useMods(await api().mods("map")); } catch (err) { problem(err); }
+  say(e.detail.text, "ok");
+});
+
 // --- "Choose your language" (rusemod.uilang.LanguageCalls): opens by itself until the player has picked a language
 // there (the Studio used to start on the code names, and a French player stayed on them, not knowing it speaks
 // French), then from the language button at the top. Each language is shown in its own words, the screen's title in

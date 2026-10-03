@@ -415,6 +415,54 @@ Start `RUSE.exe` inside `D:\RUSE-Instances\newmap-agent-check` (Steam running).
 - **Later, once this passes:** the same copy on two PCs in one multiplayer game (the map's ids come from its name, so
   both builds match); then a new map's own menu picture.
 
+**Results (owner, 2026-10-03), in his words:**
+- `D:\RUSE-Instances\blitz-twin-check` (16:01): Blitz Twin was not listed in the main menu; Blitz showed and
+  loaded Blitz; no hill seen.
+- `D:\RUSE-Instances\map-slot-check` (16:22; the same mod plus a second new map, **Blitz Borrowed**, whose BATTLES
+  entry was pointed at the game's hidden slot "Tech: Test IA SuperCrossRoads", and Blitz given Tank Graveyard's
+  picture):
+  - Blitz showed Tank Graveyard's picture, so the game reads our map list.
+  - **Blitz Twin was listed**, and he loaded both Blitz and Blitz Twin fine.
+  - Blitz Borrowed was not there: an entry pointed at a hidden slot doesn't show.
+  - No test hill seen in either map.
+- Blitz Twin's BATTLES entry and map-list slot are byte-identical in the two copies (only reference numbers
+  shift), so why it showed in the second and not the first is not known.
+- **Next:** `D:\ruse-test-mods\newmap-flat` (T15b below), Blitz Twin's whole ground flattened with one big hill in
+  the middle, to see whether it plays its own ground.
+
+## T15b. Blitz Twin flat (2026-10-03)
+
+`D:\RUSE-Instances\flat-twin-check` from `D:\ruse-test-mods\newmap-flat` plus the cheat mod: 0 errors. Only
+Blitz Twin changes. Its whole ground goes flat at 31,000 (above Blitz's highest river, so the rivers, lakes and sea
+go under the ground too), and one hill stands in the middle, about 940 m across and 155 m high. The outermost row of
+points keeps its height. Bridges keep theirs too, so they end buried or in the air. Scenery and towns stay where
+they were.
+1. BATTLES: pick **Blitz Twin**, 1v1 against one AI.
+   - **Pass:** flat ground everywhere with one big hill in the middle.
+   - **Fail:** Blitz's own mountains and rivers (the game plays Blitz's ground), or a crash while loading.
+2. Play **Blitz** once: its mountains and rivers as always.
+
+**Result (owner, 2026-10-03): PASSED** ("That works"). A new map plays its own ground. One small visual bug where
+the edge mountains were flattened (the outer row of points keeps its height), to work out later.
+
+## T16. How many new maps fit (2026-10-03)
+
+`D:\RUSE-Instances\many-maps-check` from `D:\ruse-test-mods\newmap-many` (written by a script: Blitz Twin flat as in
+T15b, plus Blitz 1 to Blitz 100, each a new map of its own) and the cheat mod. Blitz 1 to 11 each have one change
+named in the menu (hill left of your HQ, hill right of it, hill in the middle, crater in the middle, rivers gone, all
+flat, flat-top mountain in the middle, wall of hills between the HQs, ring of hills round your HQ, hills left and
+right of it, unchanged). Blitz 12 to 100 are plain copies. Left and right are as the match opens, from his HQ.
+1. BATTLES: go through the whole map row.
+   - **Tell us:** the highest Blitz number listed, whether the row still works (scrolling, picking), and anything
+     odd (a crash, a freeze, blank names).
+2. Play a few: Blitz 4 (crater), Blitz 9 (ring of hills), and the highest one listed.
+   - **Pass:** each shows the change in its name.
+
+**Result (owner, 2026-10-03, 16:53-16:55): PASSED** ("cracked"). All 101 new maps were listed: the map row scrolls
+(Blitz 99, Blitz 100, then Blitz Twin), and he played Blitz 4 (crater in the middle) and Blitz 8 (wall of hills between
+the HQs). No limit found at 101. Long names don't fit: "Blitz 7: flat-top mountain in the middle" (40 characters) is
+cut off in CHOOSE MAP's title, and "Blitz 8: wall of hills between the HQs" (38) in the lobby.
+
 ## T11. Launcher 0.2.9
 
 - **Pass:** the launcher offers 0.2.9 when it opens; **Update** installs it and it starts again; **Play** works.

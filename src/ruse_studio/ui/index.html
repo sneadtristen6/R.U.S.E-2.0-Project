@@ -101,6 +101,8 @@
       <div id="map-hud" class="map-hud hidden">
         <div id="map-title" class="map-title"></div>
         <div id="map-stats" class="muted small"></div>
+        <!-- a new map from this one (maps.js openDuplicate) -->
+        <button id="map-duplicate" type="button" class="chip map-duplicate"></button>
         <div class="map-controls">
           <button id="map-detail" type="button" class="chip"></button>
           <label class="small"><input id="map-water" type="checkbox" checked> <span id="map-water-label"></span></label>
@@ -368,6 +370,27 @@
       <button id="share-discussions" type="button" class="small"></button>
       <button id="share-close" type="button" class="small ghost"></button>
     </div>
+  </dialog>
+
+  <!-- Duplicate map (maps.js openDuplicate, StudioApi.duplicate_map): what a new map is and how it works, then its
+       name; the copy opens once it's made -->
+  <dialog id="duplicate" class="doctor" aria-labelledby="dup-title">
+    <h2 id="dup-title"></h2>
+    <p id="dup-lead" class="small"></p>
+    <h3 id="dup-how" class="dup-how-title"></h3>
+    <ul class="dup-how small"><li id="dup-how-own"></li><li id="dup-how-edits"></li><li id="dup-how-where"></li>
+      <li id="dup-how-tested"></li></ul>
+    <form id="dup-form" class="dup-form">
+      <label><span id="dup-name-label"></span> <input id="dup-name" autocomplete="off" maxlength="60" required></label>
+      <label id="dup-entry-row" class="hidden"><span id="dup-entry-label"></span> <select id="dup-entry"></select></label>
+      <p id="dup-file" class="muted small"></p>
+      <p id="dup-long" class="small dup-long hidden"></p>
+      <p id="dup-note" class="small" role="status"></p>
+      <div class="actions">
+        <button id="dup-go" type="submit" class="small primary"></button>
+        <button id="dup-cancel" type="button" class="small ghost"></button>
+      </div>
+    </form>
   </dialog>
 
   <footer id="status" class="status" role="status"></footer>
