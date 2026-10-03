@@ -810,10 +810,25 @@ class Words(unittest.TestCase):
         for tag, code in [("fr-FR", "fr"), ("de_DE", "ger"), ("zh_CN", "sc"), ("en_US", "us"), ("cs_CZ.UTF-8", "cz"),
                           ("", "us"), ("xx", "us"), ("Japanese_Japan", "us")]:
             self.assertEqual(language_code(tag), code, tag)
+        no_steam = lambda: None  # noqa: E731
         with tempfile.TemporaryDirectory() as d:
-            self.assertEqual(LauncherApi(home=d, ui_language=lambda: "pl_PL").default_language(), "pol")
-            self.assertEqual(LauncherApi(home=d, ui_language=mock.Mock(side_effect=OSError)).default_language(), "us")
+            self.assertEqual(LauncherApi(home=d, ui_language=lambda: "pl_PL", find=no_steam).default_language(), "pol")
+            self.assertEqual(LauncherApi(home=d, ui_language=mock.Mock(side_effect=OSError),
+                                         find=no_steam).default_language(), "us")
             self.assertEqual([lang["code"] for lang in LauncherApi(home=d).languages()], list(schema.LANGS))
+
+    def test_starts_in_the_games_language_in_steam(self):
+        # the game set to French in Steam beats an English PC; a language the game doesn't have falls to the PC's
+        with tempfile.TemporaryDirectory() as d:
+            french = LauncherApi(home=d, ui_language=lambda: "en_US", find=lambda: {"language": "french"})
+            self.assertEqual(french.default_language(), "fr")
+            self.assertEqual(french.language_choice(), {"suggested": "fr", "from": "steam", "chosen": False})
+            odd = LauncherApi(home=d, ui_language=lambda: "de_DE", find=lambda: {"language": "koreana"})
+            self.assertEqual(odd.language_choice(), {"suggested": "ger", "from": "pc", "chosen": False})
+            broken = LauncherApi(home=d, ui_language=lambda: "xx", find=mock.Mock(side_effect=OSError))
+            self.assertEqual(broken.language_choice(), {"suggested": "us", "from": "default", "chosen": False})
+            french.set_pref("lang_chosen", True)
+            self.assertTrue(french.language_choice()["chosen"])
 
 
 class Window(unittest.TestCase):

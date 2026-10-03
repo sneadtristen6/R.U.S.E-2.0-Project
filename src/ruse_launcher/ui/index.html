@@ -12,8 +12,21 @@
       <small id="app-version" class="app-version"></small></div>
     <div id="status" class="status" role="status"></div>
     <button id="choose" class="small hidden" type="button"></button>
+    <!-- the language, always in sight (it used to hide in Settings): opens "Choose your language" -->
+    <button id="lang-open" class="small ghost lang-open" type="button"><svg viewBox="0 0 24 24" width="16" height="16"
+      aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><span id="lang-name"></span></button>
     <button id="settings-open" class="small ghost" type="button"></button>
   </header>
+  <!-- "Choose your language" (rusemod.uilang): opens by itself until the player picks one, then from the button -->
+  <div id="lang-pick" class="lang-pick hidden" role="dialog" aria-modal="true" aria-labelledby="lang-pick-title">
+    <div class="lang-pick-box">
+      <button id="lang-pick-close" class="lang-pick-close ghost small" type="button">×</button>
+      <h1 id="lang-pick-title"></h1>
+      <p id="lang-pick-all" class="lang-pick-all"></p>
+      <div id="lang-pick-list" class="lang-pick-list"></div>
+      <p id="lang-pick-help" class="muted small"></p>
+    </div>
+  </div>
   <div id="update-bar" class="update-bar hidden" role="status"><span id="update-text"></span>
     <button id="update-now" class="small" type="button"></button>
     <button id="update-info" class="small ghost" type="button"></button></div>
@@ -94,10 +107,6 @@
           <h1 id="settings-title"></h1>
           <div class="set-actions"><button id="settings-back" class="small ghost" type="button"></button></div>
         </div>
-        <section class="setting" id="set-language">
-          <h2 id="set-language-title"></h2>
-          <label class="lang"><span id="lang-label" class="sr-only"></span><select id="lang"></select></label>
-        </section>
         <section class="setting" id="set-game">
           <h2 id="set-game-title"></h2><p id="set-game-path" class="small"></p>
           <div class="actions"><button id="set-game-change" type="button" class="small"></button></div>

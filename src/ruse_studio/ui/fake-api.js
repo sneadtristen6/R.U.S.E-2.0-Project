@@ -3,7 +3,8 @@
 // game found, ?fake=testfails a Test in game that fails, with its Troubleshoot link; ?fake=testmistakes one the build
 // stopped on two mistakes in the mods, each with its fix; ?fake=backup, ?fake=oldbackup,
 // ?fake=nospace and ?fake=running the clean game backup's states, in Settings; ?fake=firstbackup the installer's
-// "Keep a clean copy" ask, made on the first start). Only English, French
+// "Keep a clean copy" ask, made on the first start; ?fake=lang "Choose your language" with the game set to French in
+// Steam). Only English, French
 // and Chinese words are included here; the real Studio has all ten languages. It does nothing in the real Studio window.
 "use strict";
 
@@ -352,6 +353,10 @@
     { id: "Building_DefenseMaginotFR", kind: "buildings", nation: 2, factory: 3, slot: null, key: "B_MAGINOT",
       names: { us: "Maginot line", fr: "Ligne Maginot", sc: "马奇诺防线" }, price: 30, hp: 80, speed: 0 },
   ];
+  const FAKE_TYPES = {  // the game's type of each, on its card (TypeUnitHintToken)
+    M4_Sherman: { us: "Advanced Medium Tank", fr: "Char moyen avancé" }, M3A1_Stuart: { us: "Light Tank", fr: "Char léger" },
+    Panzer_IV_G: { us: "Medium Tank", fr: "Char moyen" }, Type97_ChiHa: { us: "Medium Tank", fr: "Char moyen" },
+    Soldat_US_Leger: { us: "Light Infantry", fr: "Infanterie légère" }, P40Warhawk: { us: "Fighter", fr: "Chasseur" } };
   // units made in the Studio: copies of one of the above, kept per mod like src/studio.rndf holds them
   const newUnits = [];  // { mod, id, source, name, price, nation, factory }
   const newAddress = (id) => E + id;
@@ -561,6 +566,21 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     }
     return out;
   }
+  // "Choose your language" (?fake=lang: the game set to French in Steam; it also opens on ?fake=noindex, a first start)
+  Object.assign(words.us, { lang_pick_title: "Choose your language", lang_from_steam: "Your game's language in Steam",
+    lang_from_pc: "Your PC's language", lang_pick_close: "Close", tip_lang_open: "Change the language.",
+    lang_code_names: "Code names, for modding (screens in English)",
+    tip_unit_type: "Show one type of unit, as the game names it: light, medium or heavy tank, fighter, bomber, recon…",
+    lang_pick_help: "The Studio, its help and the game's unit names in your language. You can change it any time with the language button at the top." });
+  Object.assign(words.fr, { lang_pick_title: "Choisissez votre langue", lang_from_steam: "La langue de votre jeu sur Steam",
+    lang_from_pc: "La langue de votre PC", lang_pick_close: "Fermer", tip_lang_open: "Changer la langue.",
+    lang_code_names: "Noms internes, pour le modding (écrans en anglais)",
+    tip_unit_type: "Afficher un seul type d'unité, tel que le jeu le nomme : char léger, moyen ou lourd, chasseur, bombardier, reconnaissance…",
+    lang_pick_help: "Le Studio, son aide et les noms des unités du jeu dans votre langue. Vous pouvez la changer à tout moment avec le bouton de langue en haut." });
+  Object.assign(words.sc, { lang_pick_title: "选择你的语言", lang_from_steam: "你在 Steam 中的游戏语言",
+    lang_from_pc: "你的电脑语言", lang_pick_close: "关闭", tip_lang_open: "更改语言。",
+    lang_code_names: "内部名称（用于制作模组，界面为英语）",
+    lang_pick_help: "用你的语言显示 Studio、帮助和游戏中的单位名称。随时可以用顶部的语言按钮更改。" });
   const words_ = (lang) => words[lang] || words.us;
   const modsView = () => ({ mods: mods.slice(), current });
 
@@ -885,6 +905,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         { code: "pol", name: "Polski" }, { code: "ru", name: "Русский" }, { code: "cz", name: "Čeština" },
         { code: "jpn", name: "日本語" }, { code: "sc", name: "简体中文" }],
       strings: async (lang) => words_(lang),
+      language_choice: async () => ({ suggested: mode === "lang" ? "fr" : "us", from: mode === "lang" ? "steam" : "pc",
+        chosen: Boolean(prefs.lang_chosen) || !(mode === "lang" || mode === "noindex") }),
       nations: async (lang) => nations[lang] || nations.us,
       status: async () => mode === "noindex" ? { ready: false, can_build: true }
         : mode === "oldindex" ? { ready: false, can_build: true, old: true } : { ready: true, build: "24687178" },
@@ -911,12 +933,17 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         });
         const shown = made.concat(units).filter((u) => (kind === "all" || u.kind === kind) && (nation < 0 || u.nation === nation));
         const present = new Set(shown.map((u) => u.group || groupOf(u)));
-        const out = shown.filter((u) => group === "all" || (u.group || groupOf(u)) === group)
+        // the game's own type of each unit (StudioApi.units: TypeUnitHintToken's text), the subsections under a kind
+        const typeOf = (u) => { const t = FAKE_TYPES[u.new ? u.source.slice(E.length) : u.id]; return t ? t[lang] || t.us : null; };
+        const types = ["ground", "infantry", "air"].includes(kind)
+          ? [...new Set(shown.map(typeOf).filter(Boolean))] : [];
+        const out = shown.filter((u) => group === "all" || (group.startsWith("type:") ? typeOf(u) === group.slice(5)
+          : (u.group || groupOf(u)) === group))
           .map((u) => ({ address: E + u.id, name: u.new ? u.names.us : nameOf(u, lang), base_name: "Descriptor_Unit_" + u.id,
             kind: u.kind, nation: u.nation, nation_name: (nations[lang] || nations.us)[u.nation], factory: u.factory,
-            slot: u.slot, new: Boolean(u.new), source: u.source || null, group: u.group || groupOf(u) }))
+            slot: u.slot, new: Boolean(u.new), source: u.source || null, group: u.group || groupOf(u), type: typeOf(u) }))
           .filter((u) => !search || u.name.toLowerCase().includes(search.toLowerCase()));
-        return { units: out, total: units.length + made.length, groups: GROUPS.filter((g) => present.has(g)) };
+        return { units: out, total: units.length + made.length, groups: GROUPS.filter((g) => present.has(g)), types };
       },
       menus: async (lang) => {
         const names = nations[lang] || nations.us;

@@ -86,8 +86,8 @@ class FindGame(unittest.TestCase):
                 '"UserConfig" { "language" "english" "BetaKey" "compat" } }')
             found = find_game([steam])
             self.assertEqual(found["game_dir"], lib / "steamapps" / "common" / "R.U.S.E")
-            self.assertEqual((found["build_id"], found["branch"], found["data_revisions"]),
-                             ("24687178", "compat", ["190852"]))
+            self.assertEqual((found["build_id"], found["branch"], found["data_revisions"], found["language"]),
+                             ("24687178", "compat", ["190852"], "english"))
 
     def test_nothing_found(self):
         with tempfile.TemporaryDirectory() as d:

@@ -25,10 +25,7 @@ from __future__ import annotations
 
 import functools
 import json
-import locale
-import os
 import re
-import sys
 import time
 import tomllib
 from pathlib import Path
@@ -47,6 +44,7 @@ from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir, sa
 from rusemod.play import Starter, instances_dir, shared_copy
 from rusemod.rndf import RndfError
 from rusemod.steam import build_of, find_game
+from rusemod.uilang import LanguageCalls, language_code, pc_language, suggest
 from rusemod.webui import Job, job_view
 
 from rusemod.library import MANIFEST, Library, LibraryError, read_info
@@ -73,24 +71,6 @@ def words(lang: str = "us") -> dict:
     return {key: texts.get(lang) or texts["us"] for key, texts in _words().items()}
 
 
-_CODES = {"en": "us", "fr": "fr", "de": "ger", "it": "ita", "es": "spa", "pl": "pol", "ru": "ru", "cs": "cz",
-          "ja": "jpn", "zh": "sc"}
-
-
-def language_code(tag: str) -> str:
-    """A language tag as Windows or Python gives it ("fr-FR", "de_DE", "zh_CN") -> the game's code, or "us"."""
-    head = re.split(r"[-_.@]", (tag or "").strip().lower())[0]
-    return _CODES.get(head, "us")
-
-
-def pc_language() -> str:
-    """The language this PC shows its own screens in, as a tag."""
-    if sys.platform == "win32":
-        import ctypes
-        return locale.windows_locale.get(ctypes.windll.kernel32.GetUserDefaultUILanguage(), "en")
-    return locale.getlocale()[0] or os.environ.get("LANG", "") or "en"
-
-
 def _kind_of(path) -> str:
     """"map" for a mod that only changes maps (a map from the Studio's Maps tab: maps/ files, no unit changes or
     texts), else "mod": the library shows maps apart from mods."""
@@ -101,7 +81,7 @@ def _kind_of(path) -> str:
     return "mod" if has_more else "map"
 
 
-class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
+class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls):
     """The launcher's back end. The arguments replace the real world in tests: the game folder, the launcher's own
     folder, where modded copies and the game's backups go, how links, the game and Steam get started, and the
     window's dialogs."""
@@ -132,11 +112,9 @@ class LauncherApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         return [lang for lang in schema.languages() if lang["code"] != schema.BASE]
 
     def default_language(self) -> str:
-        """The language to start in: this PC's, when the game has it; English otherwise."""
-        try:
-            return language_code(self._ui_language())
-        except Exception:  # noqa: BLE001  (a PC whose language can't be read still gets a launcher)
-            return "us"
+        """The language to start in: the game's in Steam, else this PC's when the game has it, else English
+        (rusemod.uilang)."""
+        return suggest(self._steam_language(), self._pc_tag())[0]
 
     def strings(self, lang: str = "us") -> dict:
         return words(lang)

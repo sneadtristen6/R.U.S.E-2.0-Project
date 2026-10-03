@@ -30,7 +30,21 @@
     </label>
     <button id="test" type="button" class="primary" disabled></button>
     <button id="troubleshoot" type="button" class="ghost"></button>
+    <!-- the language, always in sight (it used to hide in Settings): opens "Choose your language" -->
+    <button id="lang-open" type="button" class="ghost lang-open"><svg viewBox="0 0 24 24" width="16" height="16"
+      aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><span id="lang-name"></span></button>
   </header>
+  <!-- "Choose your language" (rusemod.uilang): opens by itself until the player picks one, then from the button -->
+  <div id="lang-pick" class="lang-pick hidden" role="dialog" aria-modal="true" aria-labelledby="lang-pick-title">
+    <div class="lang-pick-box">
+      <button id="lang-pick-close" class="lang-pick-close ghost" type="button">×</button>
+      <h1 id="lang-pick-title"></h1>
+      <p id="lang-pick-all" class="lang-pick-all"></p>
+      <div id="lang-pick-list" class="lang-pick-list"></div>
+      <button id="lang-pick-base" class="link lang-pick-base" type="button"></button>
+      <p id="lang-pick-help" class="muted small"></p>
+    </div>
+  </div>
   <div id="update-bar" class="update-bar hidden" role="status"><span id="update-text"></span>
     <button id="update-now" class="small" type="button"></button>
     <button id="update-info" class="small ghost" type="button"></button></div>
@@ -276,10 +290,6 @@
   <main id="settings-view" class="settings-view hidden">
     <div class="settings">
       <h1 id="settings-title"></h1>
-      <section class="setting" id="set-language">
-        <h2 id="set-language-title"></h2><p id="set-language-help" class="muted small"></p>
-        <label class="lang"><span id="lang-label" class="sr-only">Language</span><select id="lang"></select></label>
-      </section>
       <section class="setting" id="set-keys">
         <h2 id="set-keys-title"></h2><p id="set-keys-help" class="muted small"></p>
         <div id="keys-panel" class="keys-panel"></div>

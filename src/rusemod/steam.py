@@ -100,8 +100,11 @@ def find_game(roots: list[Path] | None = None) -> dict | None:
                 continue
             branch = (state.get("userconfig", {}).get("betakey")
                       or state.get("mountedconfig", {}).get("betakey") or "public")
+            # the language the player set for the game in Steam (Properties > Language): rusemod.uilang
+            language = (state.get("userconfig", {}).get("language")
+                        or state.get("mountedconfig", {}).get("language") or None)
             return {"game_dir": game_dir, "build_id": state.get("buildid", "?"), "branch": branch,
-                    "data_revisions": data_revisions(game_dir), "library": lib}
+                    "data_revisions": data_revisions(game_dir), "library": lib, "language": language}
     return None
 
 

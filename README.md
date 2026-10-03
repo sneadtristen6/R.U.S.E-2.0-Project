@@ -194,8 +194,9 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - **Help at hand:** both apps open the wiki, Discussions and a ready-filled bug report (Studio 0.7.1, Launcher
   0.2.7).
 - Units, buildings and ammunition sorted by type (factories, money, forts, decoys; AP, HE, anti-aircraft...).
-- A Settings tab (language, keys, game folder, updates), kept through updates. The Studio offers its own new
-  versions.
+- A Settings tab (keys, game folder, updates), kept through updates. The Studio offers its own new versions.
+- The language is a button at the top of both apps, and the first start opens "Choose your language": each of the
+  ten languages in its own words, with the one R.U.S.E. is set to in Steam (else the PC's) marked.
 
 Modders who write mods by hand can also use the `ruse` command-line tool, from the source (see
 [For contributors](#for-contributors) below).

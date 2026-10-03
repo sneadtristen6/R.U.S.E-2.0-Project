@@ -147,6 +147,27 @@ class Studio(unittest.TestCase):
         self.assertEqual(armor["groups"], everything["groups"])  # the choices stay: they're of the kind and nation
         self.assertEqual(self.api.units(kind="buildings")["groups"], ["money"])
 
+    def test_subsections_by_the_games_types(self):
+        # the test game's units have no type of their own, so each goes under what it's for; buildings get none
+        ground = self.api.units("us", "ground")
+        self.assertEqual(ground["types"], ["Armor"])
+        self.assertEqual({u["base_name"]: u["type"] for u in ground["units"]},
+                         {"Descriptor_Unit_M4_Sherman": "Armor", "Descriptor_Unit_Panzer_IV_G": "Armor"})
+        self.assertEqual(len(self.api.units("us", "ground", group="type:Armor")["units"]), 2)
+        self.assertEqual(self.api.units("us", "ground", group="type:Heavy Bomber")["units"], [])
+        self.assertEqual(self.api.units("us", "buildings")["types"], [])
+        self.assertIsNone(self.api.units("us", "buildings")["units"][0]["type"])
+        self.assertEqual(self.api.units("us", "all")["types"], [])  # All keeps the groups
+        self.assertEqual([u["base_name"] for u in self.api.units("us", search="armor")["units"]],
+                         ["Descriptor_Unit_M4_Sherman", "Descriptor_Unit_Panzer_IV_G"])  # the type is searched too
+
+    def test_type_order(self):
+        from ruse_studio.api import _type_order
+        found = {"Heavy Bomber": "AIR_bh", "Fighter": "AIR_f", "Light Bomber": "AIR_bl", "Fort guns": None,
+                 "Something new": "AIR_zz", "Heavy Tank": "TANK_h", "Light Tank": "TANK_l"}
+        self.assertEqual(_type_order(found), ["Light Tank", "Heavy Tank", "Fighter", "Light Bomber", "Heavy Bomber",
+                                              "Something new", "Fort guns"])
+
     def test_what_a_unit_is_for(self):
         from ruse_studio.api import group_of
         building = "$/GFX/Everything/Descriptor_Building_"

@@ -33,7 +33,9 @@ def save_settings(home: Path, values: dict) -> None:
     (home / "settings.json").write_text(json.dumps(values, indent=2), encoding="utf-8")
 
 
-PREF_KEYS = {"lang", "keys", "view"}  # what a window may keep: its language, its map-view keys, small view choices
+# what a window may keep: its language (and whether the player picked it on "Choose your language", rusemod.uilang),
+# its map-view keys, small view choices
+PREF_KEYS = {"lang", "lang_chosen", "keys", "view"}
 PREF_SIZE = 4096                      # characters a kept value may take, as JSON
 
 

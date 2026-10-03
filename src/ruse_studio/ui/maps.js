@@ -1776,9 +1776,11 @@ function renderScenTools() {
       if (!byNation.has(u.nation_name)) byNation.set(u.nation_name, []);
       byNation.get(u.nation_name).push(u);
     }
+    // each unit with the game's own type ("Light Tank", "Heavy Bomber"), and its code name when names are shown
     unit.replaceChildren(...[...byNation].map(([nation, us]) => el("optgroup", { label: nation || "?" },
       ...us.sort((a, b) => a.name.localeCompare(b.name)).map((u) => el("option", { value: u.address,
-        textContent: u.name + (u.name !== u.base_name && mv.lang !== "base" ? ` (${u.base_name.replace(/^Descriptor_[A-Za-z]+_/, "")})` : "") })))));
+        textContent: u.name + (u.type ? ` · ${u.type}` : "")
+          + (u.name !== u.base_name && mv.lang !== "base" ? ` (${u.base_name.replace(/^Descriptor_[A-Za-z]+_/, "")})` : "") })))));
     if (keep && [...unit.options].some((o) => o.value === keep)) unit.value = keep;
     unit.title = w.tip_scen_unit;
     // a skirmish game spawns only neutral items (camp -1): a unit for a player's side would never appear there

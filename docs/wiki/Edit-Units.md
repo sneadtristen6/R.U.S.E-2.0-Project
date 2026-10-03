@@ -6,7 +6,7 @@
 
 The **Units** tab lists every unit and building. Narrow it down with:
 
-- the **search** box (code names or the names players see, in any of the game's ten languages: Settings > Language);
+- the **search** box (code names or the names players see, in any of the game's ten languages: the language button at the top);
 - the **kind** and **nation** chips;
 - the **type** menu: what it's for, like HQ, money, factories, forts and decoys for buildings, or the factory that
   builds a unit.

@@ -486,18 +486,20 @@ class Index:
                                (lang, dictionary, dictionary, limit)).fetchall()
 
     def units(self, classes) -> list[dict]:
-        """Named objects of `classes` (units, buildings…) with their nation, factory, menu slot and name key."""
+        """Named objects of `classes` (units, buildings…) with their nation, factory, menu slot, name key and type key
+        (TypeUnitHintToken: the game's own "Light Tank", "Heavy Bomber", "Armored Recon"... on the unit's card)."""
         marks = ",".join("?" * len(classes))
         rows = self.db.execute(f"""
             SELECT o.address, o.class,
               (SELECT num FROM value WHERE object = o.id AND path = 'Nationalite'),
               (SELECT num FROM value WHERE object = o.id AND path = 'Factory'),
               (SELECT num FROM value WHERE object = o.id AND path = 'PositionInMenu'),
-              (SELECT text FROM value WHERE object = o.id AND path = 'NameInMenuToken')
+              (SELECT text FROM value WHERE object = o.id AND path = 'NameInMenuToken'),
+              (SELECT text FROM value WHERE object = o.id AND path = 'TypeUnitHintToken')
             FROM object o WHERE o.class IN ({marks}) AND o.shadow = 0 AND o.export IS NOT NULL
             ORDER BY o.address""", list(classes)).fetchall()
         return [{"address": a, "class": c, "nation": int(n or 0), "factory": None if f is None else int(f),
-                 "slot": None if s is None else int(s), "key": k} for a, c, n, f, s, k in rows]
+                 "slot": None if s is None else int(s), "key": k, "type_key": t} for a, c, n, f, s, k, t in rows]
 
     def flag_sets(self, prop: str = "InitialFlagSet") -> list[dict]:
         """Every number the named objects' `prop` lists hold (a unit's flags): [{flag, count, examples}], by number;

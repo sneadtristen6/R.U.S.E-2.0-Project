@@ -34,7 +34,7 @@ async function loadLang() {
     const kept = (await api().prefs()).lang;
     if (kept) return kept;
   } catch { /* an older Studio: the window's storage */ }
-  try { return localStorage.getItem("studio.lang") || "base"; } catch { return "base"; }
+  try { return localStorage.getItem("studio.lang"); } catch { return null; }
 }
 
 function saveLang(lang) {
@@ -77,7 +77,9 @@ async function setLanguage(lang) {
   $("tab-maps").textContent = w.maps_tab;
   $("tab-settings").textContent = w.settings_tab;
   if (state.view === "maps" && window.MapView) window.MapView.setWords(w, lang);
-  $("lang-label").textContent = w.language;
+  $("lang-name").textContent = lang === "base" ? w.game_names
+    : (state.languages.find((l) => l.code === lang) || {}).name || "";
+  renderLangPick();
   $("mod-label").textContent = w.mod;
   $("test").textContent = w.test_in_game;
   $("troubleshoot").textContent = w.doc_button;
@@ -95,15 +97,13 @@ async function setLanguage(lang) {
   $("test-log-close").textContent = w.close;
   $("test-log-copy").textContent = w.doc_copy;
   // tooltips: one sentence on every control, from words.toml (tip_*)
-  const tips = { "tab-units": "tip_tab_units", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", lang: "tip_lang",
+  const tips = { "tab-units": "tip_tab_units", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close", "test-log-copy": "tip_copy_log",
     "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
     "backup-make": "tip_backup_make", "backup-check": "tip_backup_check", "backup-restore": "tip_backup_restore",
     "backup-deep": "tip_backup_deep", "set-updates-check": "tip_updates_check" };
   for (const [id, key] of Object.entries(tips)) $(id).title = w[key] || "";
-  $("lang").replaceChildren(...state.languages.map((l) =>
-    el("option", { value: l.code, textContent: l.code === "base" ? w.game_names : l.name, selected: l.code === lang })));
   $("search").placeholder = w.search;
   $("no-index-text").textContent = state.oldIndex ? w.old_index : w.no_index;
   $("build-index").textContent = w.build_index;
@@ -342,32 +342,41 @@ function renderChips() {
   }));
 }
 
-// What the units listed are for: a building's job (HQ, money, factory, fort, fake) or the factory that builds a unit.
-function renderGroups(groups) {
+// The second sort, under the kind: for Ground, Infantry and Air the game's own types ("Light Tank", "Heavy Bomber",
+// "Armored Recon": StudioApi.units' `types`, picked as TYPE_PICK + the name); for buildings, ammunition and All, what
+// they're for (a building's job, or the factory that builds a unit).
+const TYPE_PICK = "type:";
+
+function renderGroups(groups, types) {
   const w = state.words, pick = $("unit-group");
-  pick.classList.toggle("hidden", !groups.length);
-  pick.title = w.tip_group;
-  pick.setAttribute("aria-label", w.tip_group);
+  const options = types.length ? types.map((t) => [TYPE_PICK + t, t]) : groups.map((g) => [g, w["group_" + g] || g]);
+  pick.classList.toggle("hidden", !options.length);
+  pick.title = types.length ? w.tip_unit_type : w.tip_group;
+  pick.setAttribute("aria-label", pick.title);
   pick.replaceChildren(el("option", { value: "all", textContent: w.group_all }),
-    ...groups.map((g) => el("option", { value: g, textContent: w["group_" + g] || g })));
-  pick.value = groups.includes(state.group) ? state.group : "all";
+    ...options.map(([value, label]) => el("option", { value, textContent: label })));
+  pick.value = options.some(([value]) => value === state.group) ? state.group : "all";
 }
 
 async function refreshList() {
   let res;
   try {
     res = await api().units(state.lang, state.kind, state.nation, state.search, state.group || "all");
+    if ((state.group || "").startsWith(TYPE_PICK) && !(res.types || []).includes(state.group.slice(TYPE_PICK.length))) {
+      state.group = "all";  // a type picked in another language or kind: show them all again
+      res = await api().units(state.lang, state.kind, state.nation, state.search, "all");
+    }
     state.edited = new Set(await api().edited());
   } catch (err) { problem(err); return; }
   $("count").textContent = state.words.units.replace("{n}", res.units.length);
-  renderGroups(res.groups || []);
+  renderGroups(res.groups || [], res.types || []);
   $("unit-list").replaceChildren(...res.units.map((u) => {
     const sub = u.kind === "ammo"
       ? (u.nations.length ? u.nations.join(", ") + " · " : "") +
         (u.users.length ? fill(state.words.fired_by, { names: u.users.slice(0, 3).join(", ") +
           (u.users.length > 3 ? ", …" : "") }) : state.words.fired_by_nobody) +
         (u.name !== u.base_name ? ` · ${u.base_name}` : "")
-      : `${u.nation_name} · ${state.words[u.kind]}` + (u.name !== u.base_name ? ` · ${u.base_name}` : "");
+      : `${u.nation_name} · ${u.type || state.words[u.kind]}` + (u.name !== u.base_name ? ` · ${u.base_name}` : "");
     const b = el("button", { type: "button", title: state.words.tip_open_unit },
       el("span", { className: "name", textContent: u.name }),
       el("span", { className: "sub", textContent: sub }));
@@ -1140,10 +1149,73 @@ function showView(view) {
   else window.addEventListener("mapview-ready", open, { once: true });
 }
 
+// --- "Choose your language" (rusemod.uilang.LanguageCalls): opens by itself until the player has picked a language
+// there (the Studio used to start on the code names, and a French player stayed on them, not knowing it speaks
+// French), then from the language button at the top. Each language is shown in its own words, the screen's title in
+// all of them, and the one the game is set to in Steam (else the PC's) is marked; the code names are one link below ---
+let langPick = null;  // while open: { first, suggested, from, own: {code: that language's words}, done }
+
+async function openLangPick(first) {
+  let choice = { suggested: state.lang, from: "default", chosen: true };
+  try { choice = await api().language_choice(); } catch { if (first) return; }  // an older back end: the button only
+  if (first && choice.chosen) return;
+  const own = {};
+  await Promise.all(state.languages.filter((l) => l.code !== "base").map(async (l) => {
+    try { own[l.code] = await api().strings(l.code); } catch { own[l.code] = {}; }
+  }));
+  await new Promise((done) => {
+    langPick = { first, suggested: choice.suggested, from: choice.from, own, done };
+    renderLangPick();
+    const pick = $("lang-pick-list").querySelector(".suggested") || $("lang-pick-list").querySelector("button");
+    if (pick) pick.focus();
+  });
+}
+
+function closeLangPick() {
+  const p = langPick;
+  langPick = null;
+  renderLangPick();
+  if (p) p.done();
+}
+
+async function pickLanguage(code) {
+  await setLanguage(code);
+  Promise.resolve().then(() => api().set_pref("lang_chosen", true)).catch(() => {});
+  closeLangPick();
+}
+
+function renderLangPick() {
+  const p = langPick, w = state.words;
+  $("lang-pick").classList.toggle("hidden", !p);
+  if (!p) return;
+  $("lang-pick-title").textContent = w.lang_pick_title;
+  $("lang-pick-help").textContent = w.lang_pick_help;
+  const titles = new Set(Object.values(p.own).map((o) => o.lang_pick_title).filter(Boolean));
+  titles.delete(w.lang_pick_title);
+  $("lang-pick-all").textContent = [...titles].join(" · ");
+  const close = $("lang-pick-close");
+  close.classList.toggle("hidden", p.first);  // the first time a language is picked: one click, and it's done
+  close.title = w.lang_pick_close;
+  close.setAttribute("aria-label", w.lang_pick_close);
+  $("lang-pick-list").replaceChildren(...state.languages.filter((l) => l.code !== "base").map((l) => {
+    const marked = l.code === p.suggested && p.from !== "default", theirs = p.own[l.code] || {};
+    const b = el("button", { type: "button", className: "lang-choice" + (marked ? " suggested" : "")
+      + (l.code === state.lang ? " current" : ""), lang: l.code === "us" ? "en" : l.code });
+    b.setAttribute("aria-pressed", String(l.code === state.lang));
+    b.append(el("span", { className: "lang-native", textContent: l.name }));
+    // why it's marked, in that language's own words: the player reads it even before the screen speaks it
+    if (marked) b.append(el("small", { textContent: p.from === "steam" ? theirs.lang_from_steam : theirs.lang_from_pc }));
+    b.addEventListener("click", () => pickLanguage(l.code).catch(problem));
+    return b;
+  }));
+  const base = $("lang-pick-base");
+  base.textContent = w.lang_code_names;
+  base.classList.toggle("current", state.lang === "base");
+}
+
 // --- Settings: one entry per section (its words are set_<id>_title / _help); a new setting is one more entry and
 // its section in index.html. What they change is kept by the app (settings.json), not by the window.
-const SETTINGS = [
-  { id: "language", render() {} },  // the language list is filled at start (renderLanguages) and saved on change
+const SETTINGS = [  // the language isn't here: it has its own button at the top ("Choose your language")
   { id: "keys", render() { if (window.MapView && window.MapView.renderKeysPanel) window.MapView.renderKeysPanel(api(), state.words); } },
   { id: "game", async render() {
     const w = state.words, g = await api().game_folder();
@@ -1462,8 +1534,19 @@ async function start() {
   });
   state.languages = await api().languages();
   state.lang = await loadLang();
+  if (!state.lang) {  // nothing kept yet: the language the game is set to in Steam, else the PC's (rusemod.uilang)
+    try { state.lang = (await api().language_choice()).suggested; } catch { state.lang = "base"; }  // an older back end
+  }
   if (!state.languages.some((l) => l.code === state.lang)) state.lang = "base";
-  $("lang").addEventListener("change", (e) => setLanguage(e.target.value));
+  $("lang-open").addEventListener("click", () => openLangPick(false).catch(problem));
+  $("lang-pick-close").addEventListener("click", closeLangPick);
+  $("lang-pick-base").addEventListener("click", () => pickLanguage("base").catch(problem));
+  // Escape closes it when it was opened from the button, and never reaches the unit list's or the map's own keys
+  window.addEventListener("keydown", (e) => {
+    if (!langPick) return;
+    e.stopPropagation();
+    if (e.key === "Escape" && !langPick.first) closeLangPick();
+  }, true);
   $("mod").addEventListener("change", (e) => pickMod(e, "mod"));
   $("map-project").addEventListener("change", (e) => pickMod(e, "map"));
   $("new-mod").addEventListener("submit", createMod);
@@ -1502,6 +1585,7 @@ async function start() {
   $("update-info").addEventListener("click", () => { state.showChanges = !state.showChanges; renderChanges(); });
   await setLanguage(state.lang);
   checkUpdate();
+  await openLangPick(true);  // until a language is picked there: "Choose your language", first
   firstBackup(status.ready).catch(problem);
 }
 

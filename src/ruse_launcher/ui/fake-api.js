@@ -3,7 +3,8 @@
 // run ("Choose your mods"), ?fake=firstoffline the first run with no list to show, ?fake=offline the list's saved
 // copy, ?fake=installfail one mod of several that fails its check; ?fake=backup,
 // ?fake=oldbackup, ?fake=nospace and ?fake=running the clean game backup's states, in Settings; ?fake=firstbackup the
-// installer's "Keep a clean copy" ask, made on the first start). Only English, French
+// installer's "Keep a clean copy" ask, made on the first start; ?fake=lang "Choose your language" with the game set to
+// French in Steam). Only English, French
 // and Chinese words are included here; the real launcher has all ten languages. It does nothing in the real window.
 "use strict";
 
@@ -124,6 +125,16 @@
     { id: "missing-mod", name: "Sample set with a missing mod", description: "", mods: ["some-other-mod"] },
     { id: "clashing", name: "Sample set with clashing mods", description: "", mods: ["anchored-ships", "harbour-pack", "ardennes-rescripted", "ardennes-endless"] },
   ];
+  // "Choose your language" (?fake=lang: the game set to French in Steam; it also opens on the first-run modes)
+  Object.assign(words.us, { lang_pick_title: "Choose your language", lang_from_steam: "Your game's language in Steam",
+    lang_from_pc: "Your PC's language", lang_pick_close: "Close", tip_lang_open: "Change the language.",
+    lang_pick_help: "The Launcher in your language. You can change it any time with the language button at the top." });
+  Object.assign(words.fr, { lang_pick_title: "Choisissez votre langue", lang_from_steam: "La langue de votre jeu sur Steam",
+    lang_from_pc: "La langue de votre PC", lang_pick_close: "Fermer", tip_lang_open: "Changer la langue.",
+    lang_pick_help: "Le Launcher dans votre langue. Vous pouvez la changer à tout moment avec le bouton de langue en haut." });
+  Object.assign(words.sc, { lang_pick_title: "选择你的语言", lang_from_steam: "你在 Steam 中的游戏语言",
+    lang_from_pc: "你的电脑语言", lang_pick_close: "关闭", tip_lang_open: "更改语言。",
+    lang_pick_help: "用你的语言显示 Launcher。随时可以用顶部的语言按钮更改。" });
   const wordsOf = (lang) => words[lang] || words.us;
   const known = (id) => library.find((m) => m.id === id);
   const resolve = (entry) => known(entry) ? null : /^[a-z0-9][a-z0-9-]*$/.test(entry)
@@ -401,6 +412,8 @@
         return { job: "fake" };
       },
       browse: async (search) => browseView(search),
+      language_choice: async () => ({ suggested: mode === "lang" ? "fr" : "us", from: mode === "lang" ? "steam" : "pc",
+        chosen: Boolean(prefs.lang_chosen) || !(mode === "lang" || mode.startsWith("first")) }),
       first_run: async () => ({ show: !chosen && !library.length }),
       first_run_done: async () => { chosen = true; return { show: false }; },
       install_mods: async (ids) => {

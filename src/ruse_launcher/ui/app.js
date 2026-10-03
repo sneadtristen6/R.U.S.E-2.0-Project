@@ -74,9 +74,9 @@ async function setLanguage(lang) {
   state.words = await api().strings(lang);
   renderUpdate();
   const w = state.words;
-  text($("lang-label"), w.language);
-  $("lang").replaceChildren(...state.languages.map((l) =>
-    el("option", { value: l.code, textContent: l.name, selected: l.code === lang })));
+  text($("lang-name"), (state.languages.find((l) => l.code === lang) || {}).name || "");
+  $("lang-open").title = w.tip_lang_open;
+  renderLangPick();
   text($("choose"), w.choose_folder);
   text($("settings-open"), w.settings_tab);
   text($("sets-title"), w.mod_sets);
@@ -155,8 +155,7 @@ function render() {
 
 // --- Settings: one entry per section (its words are set_<id>_title); a new setting is one more entry and its
 // section in index.html. What they change is kept by the launcher (settings.json), not by the window.
-const SETTINGS = [
-  { id: "language", render() {} },  // the list is filled at start and saved on change
+const SETTINGS = [  // the language isn't here: it has its own button at the top ("Choose your language")
   { id: "game", render() {
     const w = state.words, s = state.status || {};
     text($("set-game-path"), s.found ? fill(w.set_game_path, { path: s.game_dir || "" }) : (s.message || w.set_game_none));
@@ -877,6 +876,67 @@ async function installTicked(view, onEnd) {
   });
 }
 
+// --- "Choose your language" (rusemod.uilang.LanguageCalls): opens by itself until the player has picked a language
+// there, before "Choose your mods" (a player who plays R.U.S.E. in French on an English PC never found French when it
+// sat in Settings), then from the language button at the top. Each language is shown in its own words, the screen's
+// title in all of them, and the one the game is set to in Steam (else the PC's) is marked ---
+let langPick = null;  // while open: { first, suggested, from, own: {code: that language's words}, done }
+
+async function openLangPick(first) {
+  let choice = { suggested: state.lang, from: "default", chosen: true };
+  try { choice = await api().language_choice(); } catch { if (first) return; }  // an older back end: the button only
+  if (first && choice.chosen) return;
+  const own = {};
+  await Promise.all(state.languages.map(async (l) => {
+    try { own[l.code] = await api().strings(l.code); } catch { own[l.code] = {}; }
+  }));
+  await new Promise((done) => {
+    langPick = { first, suggested: choice.suggested, from: choice.from, own, done };
+    renderLangPick();
+    const pick = $("lang-pick-list").querySelector(".suggested") || $("lang-pick-list").querySelector("button");
+    if (pick) pick.focus();
+  });
+}
+
+function closeLangPick() {
+  const p = langPick;
+  langPick = null;
+  renderLangPick();
+  if (p) p.done();
+}
+
+async function pickLanguage(code) {
+  await setLanguage(code);
+  Promise.resolve().then(() => api().set_pref("lang_chosen", true)).catch(() => {});
+  closeLangPick();
+}
+
+function renderLangPick() {
+  const p = langPick, w = state.words;
+  $("lang-pick").classList.toggle("hidden", !p);
+  if (!p) return;
+  text($("lang-pick-title"), w.lang_pick_title);
+  text($("lang-pick-help"), w.lang_pick_help);
+  const titles = new Set(state.languages.map((l) => (p.own[l.code] || {}).lang_pick_title).filter(Boolean));
+  titles.delete(w.lang_pick_title);
+  text($("lang-pick-all"), [...titles].join(" · "));
+  const close = $("lang-pick-close");
+  close.classList.toggle("hidden", p.first);  // the first time a language is picked: one click, and it's done
+  close.title = w.lang_pick_close;
+  close.setAttribute("aria-label", w.lang_pick_close);
+  $("lang-pick-list").replaceChildren(...state.languages.map((l) => {
+    const marked = l.code === p.suggested && p.from !== "default", theirs = p.own[l.code] || {};
+    const b = el("button", { type: "button", className: "lang-choice" + (marked ? " suggested" : "")
+      + (l.code === state.lang ? " current" : ""), lang: l.code === "us" ? "en" : l.code });
+    b.setAttribute("aria-pressed", String(l.code === state.lang));
+    b.append(el("span", { className: "lang-native", textContent: l.name }));
+    // why it's marked, in that language's own words: the player reads it even before the screen speaks it
+    if (marked) b.append(el("small", { textContent: p.from === "steam" ? theirs.lang_from_steam : theirs.lang_from_pc }));
+    b.addEventListener("click", () => pickLanguage(l.code).catch(problem));
+    return b;
+  }));
+}
+
 // --- the first run: "Choose your mods" while the library is empty and the player hasn't chosen yet. Everything in
 // the list is ticked except the cheats and test tools; offline it's the copy from before, or only Skip ---
 async function openWelcome() {
@@ -1154,7 +1214,9 @@ async function start() {
   state.languages = await api().languages();
   state.lang = (await loadLang()) || await api().default_language();
   if (!state.languages.some((l) => l.code === state.lang)) state.lang = "us";
-  $("lang").addEventListener("change", (e) => setLanguage(e.target.value).catch(problem));
+  $("lang-open").addEventListener("click", () => openLangPick(false).catch(problem));
+  $("lang-pick-close").addEventListener("click", closeLangPick);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && langPick && !langPick.first) closeLangPick(); });
   $("settings-open").addEventListener("click", () => { state.settings = true; render(); loadBackup(); });
   $("backup-make").addEventListener("click", makeBackup);
   $("backup-check").addEventListener("click", checkBackup);
@@ -1217,6 +1279,7 @@ async function start() {
   await setLanguage(state.lang);
   await refresh();
   checkUpdate();
+  await openLangPick(true);  // until a language is picked there: "Choose your language", first
   await firstBackup();
   openWelcome();  // the first run: "Choose your mods"
 }

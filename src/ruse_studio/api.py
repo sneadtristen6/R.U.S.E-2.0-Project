@@ -14,6 +14,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import functools
+import html
 import json
 import math
 import re
@@ -39,6 +40,7 @@ from rusemod.patch import INT_RANGES
 from rusemod.play import SHARED, Starter, instances_dir
 from rusemod.rndf import RndfError
 from rusemod.steam import build_of, data_revisions, find_game
+from rusemod.uilang import LanguageCalls
 from rusemod.build import find_pack
 from rusemod.edat import Edat
 from rusemod.modcheck import check_mod_folder
@@ -109,6 +111,29 @@ def icon_of(kind: str, address: str, group: str) -> tuple[str, bool]:
     if group == "artillery" and any(p in name for p in ("DCA", "Flak", "Bofors", "Quad")):
         return "aa_gun", False
     return UNIT_ICONS.get(group, "unit"), False
+
+
+# The unit list's subsections under Ground, Infantry and Air (owner, 2026-10-03: "heavy tank light tank medium tank
+# heavy bomber medium bomber light bomber ... when it's a recon unit recon"): the game's own type of each unit, its
+# TypeUnitHintToken's text. The list's type pick sends one as TYPE_PICK + its name.
+UNIT_KINDS = ("ground", "infantry", "air")
+TYPE_PICK = "type:"
+# The order the types are offered in: each family together, light before medium before heavy, fighters before
+# bombers (the game's type keys; a key not here comes after them, by name)
+TYPE_ORDER = (
+    "RECO_u", "RECO_ar", "TANK_l", "TANK_ladv", "TANK_m", "TANK_madv", "TANK_h", "TANK_hadv", "TANK_jadv", "FLAME",
+    "TD", "TD_us", "TD_adv", "TD_adv_us", "AT", "AT_adv", "AAAT", "AA", "AA_m", "AA_ar", "ART_l", "ART_m", "ART_h",
+    "ART_ar", "ART_har", "ASSAULT", "ASSAULT_h", "ROCKETV", "ROCKETLV", "ROCKETT", "NUKE_art", "NUKE_mis",
+    "INF_l", "INF_r", "INF_h", "INF_e", "INF_sharp", "INF_sap",
+    "AIR_f", "AIR_fadv", "AIR_j", "AIR_fb", "AIR_fbadv", "AIR_bl", "AIR_bm", "AIR_bh", "AIR_bj", "AIR_arec", "AIR_rec",
+    "AIR_tr")
+ARMOUR_TYPES = ("D_", "TB_")  # type keys whose text is how much a fort takes ("Fragile Position"), not what it is
+
+
+def _type_order(kinds: dict) -> list[str]:
+    """The type names there are ({name: its game type key, or None for a group's name}), in TYPE_ORDER."""
+    rank = {key: n for n, key in enumerate(TYPE_ORDER)}
+    return sorted(kinds, key=lambda t: (rank.get(kinds[t], len(TYPE_ORDER) + (kinds[t] is None)), t))
 
 
 def group_of(kind: str, address: str, factory: int | None) -> str:
@@ -251,7 +276,7 @@ def words(lang: str = schema.BASE) -> dict:
     return {key: texts.get(lang) or texts["us"] for key, texts in _words().items()}
 
 
-class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
+class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
 
@@ -365,6 +390,9 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
         try:
             rows = self._all_units(ix)
             names = ix.names([u["key"] for u in rows], lang) if lang != schema.BASE else {}
+            # the game's own type of each unit, on its card ("Light Tank", "Heavy Bomber"): English with the code names
+            type_names = {k: html.unescape(t).strip() for k, t in
+                          ix.names([u["type_key"] for u in rows], lang if lang in schema.LANGS else "us").items()}
         finally:
             ix.close()
         by_address = {u["address"]: u for u in rows}
@@ -381,25 +409,37 @@ class StudioApi(UpdateCalls, PrefsCalls, CommunityCalls, BackupCalls):
             new.append({"address": unit.target, "class": src["class"], "key": None,
                         "nation": int(own.get("Nationalite", src["nation"])),
                         "factory": own.get("Factory", src["factory"]), "slot": None, "new": True,
-                        "source": unit.source, "name": unit.name})
-        words = search.strip().lower()
-        out, present = [], set()
+                        "source": unit.source, "name": unit.name, "type_key": src.get("type_key")})
+        query, own_words = search.strip().lower(), words(lang)
+        out, present, kinds = [], set(), {}
         for u in new + rows:
             k = KIND_OF.get(u["class"], "ground")
             if kind != "all" and k != kind or nation >= 0 and u["nation"] != nation:
                 continue
             g = group_of(k, u.get("source") or u["address"], u["factory"])
+            utype = None
+            if k != "buildings":  # a building's type text is how much it takes, not what it is
+                key = u.get("type_key") or ""
+                utype = type_names.get(key) if not key.startswith(ARMOUR_TYPES) else None
+                if utype:
+                    kinds.setdefault(utype, key)
+                else:  # a fort's gun, a ship, a transport: no type of its own in the game, so what it's for
+                    utype = own_words.get("group_" + g) or None
+                    if utype:
+                        kinds.setdefault(utype, None)
             present.add(g)
-            if group != "all" and g != group:
+            if group.startswith(TYPE_PICK) and utype != group[len(TYPE_PICK):] or \
+                    not group.startswith(TYPE_PICK) and group != "all" and g != group:
                 continue
             name = u.get("name") or names.get(u["key"]) or _tail(u["address"])
-            if words and words not in name.lower() and words not in u["address"].lower():
+            if query and not any(query in s.lower() for s in (name, u["address"], utype or "")):
                 continue
             out.append({"address": u["address"], "name": name, "base_name": _tail(u["address"]), "kind": k,
                         "nation": u["nation"], "nation_name": schema.nation(u["nation"], lang),
                         "factory": u["factory"], "slot": u["slot"], "new": u.get("new", False),
-                        "source": u.get("source"), "group": g})
-        return {"units": out, "total": len(rows) + len(new), "groups": [g for g in GROUPS if g in present]}
+                        "source": u.get("source"), "group": g, "type": utype})
+        return {"units": out, "total": len(rows) + len(new), "groups": [g for g in GROUPS if g in present],
+                "types": _type_order(kinds) if kind in UNIT_KINDS else []}
 
     # --- ammunition: what a weapon fires (damage, range, rate of fire); several units' weapons share one ---
     def _all_ammo(self, ix: Index) -> list[dict]:
