@@ -683,8 +683,9 @@ R.U.S.E. 2.0 stands on three people's work. None of it would be here without the
 
 ### sneadtristen6 and Claude: building R.U.S.E. 2.0
 
-R.U.S.E. 2.0 is built by sneadtristen6, who leads it and tries every change in the game, and Claude, Anthropic's
-AI, working side by side since September 2026. What the two of them got the game to do in its first weeks:
+**sneadtristen6 is the mind behind R.U.S.E. 2.0.** The ideas are his, he decides what it becomes, and he plays
+every change in the game before it goes out. **Claude**, Anthropic's AI, helps shape his ideas into plans and writes
+the code. Side by side since September 2026, in its first weeks they got the game to do this:
 
 - **New maps.** On 3 October 2026 R.U.S.E. got new maps: listed in BATTLES beside the game's own, each playing its
   own ground. To find the limit, 101 went in at once; all of them showed and played. As far as we know, they're the
