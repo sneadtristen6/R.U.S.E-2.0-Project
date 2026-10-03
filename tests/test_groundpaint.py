@@ -183,6 +183,47 @@ class AsTheMapsOwnRoads(unittest.TestCase):
         self.assertIsNone(p.detail)
         self.assertIsNone(road_profile(painted, big, pieces[:10]))  # too few roads to measure
 
+    def test_the_maps_profile_measured_once_and_kept(self):
+        """With a cache folder the map's road look is measured once (half a build's time on M03_Italie) and read
+        back after, the same; anything it's measured from changing (here its road pieces) means measuring again."""
+        import tempfile
+        from unittest import mock
+        from rusemod import groundpaint
+        big = (0.0, 0.0, 20000.0, 10000.0)
+        s = store()
+        painted = Tmst(*s.rebuild(paint_lines(s, big, [[(1000.0, 5000.0), (19000.0, 5000.0)]], RED, width=1000.0)))
+        head = bytearray(0x23C)
+        struct.pack_into("<2I", head, 0x10, 2, 1)  # its grid: 2 x 1 cells of 10,000
+        struct.pack_into("<2f", head, 0x1C, 10000.0, 10000.0)
+        mesh = bytes(head) + struct.pack("<6f", *big[:2], 0.0, *big[2:], 50.0)
+        files = {"output\\highdef.tms": mesh, "output\\highdef.tmst_pc": painted.index,
+                 "output\\highdef.tmst_chunk_pc": painted.chunk}
+        pieces = [(x, 5000.0, x + 200.0, 5000.0, x + 400.0, 5000.0, x + 600.0, 5000.0) for x in range(2000, 17000, 600)]
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.object(groundpaint, "road_profile", wraps=groundpaint.road_profile) as measure:
+            first = groundpaint.map_road_profile(files.get, pieces, d)
+            again = groundpaint.map_road_profile(files.get, pieces, d)
+            self.assertEqual(measure.call_count, 1)
+            self.assertEqual(again, first)
+            self.assertEqual(first, groundpaint.map_road_profile(files.get, pieces))  # as with no cache
+            groundpaint.map_road_profile(files.get, pieces[:-1], d)
+            self.assertEqual(measure.call_count, 3)  # (the uncached call, then the changed pieces)
+
+    def test_a_game_tile_decoded_once_and_kept(self):
+        """A shipped (TGU1) tile's blocks are kept in the cache folder by the payload's fingerprint: decoded once,
+        read back the same; another payload is decoded on its own."""
+        import tempfile
+        from unittest import mock
+        from rusemod import groundpaint
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.object(groundpaint.tgu1, "decode", side_effect=lambda p: bytes(reversed(p))) as decode:
+            a = groundpaint._tgu1_blocks(b"TGU1 one", d)
+            self.assertEqual(groundpaint._tgu1_blocks(b"TGU1 one", d), a)
+            self.assertEqual(decode.call_count, 1)
+            self.assertEqual(groundpaint._tgu1_blocks(b"TGU1 two", d), b"owt 1UGT")
+            self.assertEqual(groundpaint._tgu1_blocks(b"TGU1 one"), a)  # no cache: decoded as before
+            self.assertEqual(decode.call_count, 3)
+
     def test_a_line_painted_as_the_profile_says(self):
         from rusemod.groundpaint import RoadProfile
         prof = RoadProfile([RED] * 5 + [GREEN] * 26, [1.0, 1.0, 1.0, 0.5, 0.25] + [0.0] * 26, None, 25)

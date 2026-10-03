@@ -962,7 +962,7 @@ def scenario_edits(order: list[str], mods: list, what: str = "scenario") -> dict
     return out
 
 
-def draw_new_roads(read_map, path_of, lines: list, shaded=None) -> tuple[dict, list[str]]:
+def draw_new_roads(read_map, path_of, lines: list, shaded=None, cache=None) -> tuple[dict, list[str]]:
     """({member: new bytes}, notes): new roads (map points, in order) written into every road file the map's own roads
     are in: painted into the ground's tiles as the map's own roads are across (rusemod.groundpaint.road_profile: what
     shows from afar), marked in the map's close-up map the way its own roads are (paint_detail), and added to the
@@ -971,14 +971,15 @@ def draw_new_roads(read_map, path_of, lines: list, shaded=None) -> tuple[dict, l
     `read_map(member)` gives the map pack's member as the build has it so far (a reshaped ground counts) or None,
     `path_of(member)` its full path. `shaded(x, y, i)`: true where lines[i] runs under trees (a road that keeps its
     trees, in one of the map's woods): painted fainter and greyer there (groundpaint.UNDER_TREES). A road that clears
-    its trees is painted through a wood as the map's own roads are (the owner, 2026-10-03)."""
+    its trees is painted through a wood as the map's own roads are (the owner, 2026-10-03). `cache`: a folder where
+    the map's measured road look is kept between builds (groundpaint.map_road_profile)."""
     from .groundpaint import DETAIL, DETAIL_WIDER, ROAD_WIDTH, grid_bounds, map_road_profile, paint_detail, paint_roads
     from .roadstrips import draw_roads
     from .scenery import MEMBER as SCENERY, Scenery
     raw = read_map(SCENERY)
     pieces = Scenery(raw).roads() if raw else []
-    profile = map_road_profile(read_map, pieces)  # new roads painted as the map's own are across (2026-10-02)
-    painted, notes = paint_roads(read_map, path_of, lines, pieces, profile=profile, shaded=shaded)
+    profile = map_road_profile(read_map, pieces, cache)  # new roads painted as the map's own are across (2026-10-02)
+    painted, notes = paint_roads(read_map, path_of, lines, pieces, profile=profile, shaded=shaded, cache=cache)
     detail, mesh = read_map(DETAIL), read_map("output\\highdef.tms")
     if detail is not None and mesh is not None:
         marked, more = paint_detail(detail, grid_bounds(mesh), lines, pieces, ROAD_WIDTH * DETAIL_WIDER, profile)
@@ -1001,6 +1002,13 @@ def close_up_copy(text_arc, map_name: str, shipped: bytes, marked: bytes) -> tup
     except KeyError:
         return None
     return (e.path, marked) if bytes(text_arc.read(e)) == shipped else None
+
+
+def build_cache() -> Path:
+    """BUILD_CACHE: the folder in the platform's own folder (rusemod.home) where builds keep what they measure once
+    (a map's road look: groundpaint.map_road_profile). Safe to delete: it's measured again."""
+    from .home import default_home
+    return default_home() / "cache" / "build"
 
 
 def find_pack(game: Path, name: str) -> Path | None:
@@ -1040,11 +1048,13 @@ def report_lines(findings, show_all: bool = False, keep: int = 3):
 
 
 def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Path | None = None,
-                    instance: Path | None = None, say=print, show_all: bool = False) -> BuildResult:
+                    instance: Path | None = None, say=print, show_all: bool = False,
+                    cache: Path | None = None) -> BuildResult:
     """Build `mods` [(ModInfo, ops)] against the game at `game` and write the result: rebuilt packs to `out` (a .dat
     file, or a folder for several packs) and/or a modded copy at `instance`. This is `ruse build`, and the launcher's
     Play. `say` gets every report line as it comes. Nothing is written when the build has errors. Problems the user
-    can fix raise BuildError.
+    can fix raise BuildError. `cache`: a folder for what can be measured once and kept between builds (BUILD_CACHE
+    under the platform's folder for the apps and `ruse build`; none in the tests).
 
     .rmod mods (rusemod.rmod) are applied first, in their order in `mods`, and the other mods on top of them. Two
     .rmod mods that can't go together (the same file replaced with different contents, MOD_FORMAT.md §13) stop the
@@ -1571,7 +1581,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             try:
                 wood = woods_of(name) if keep else None
                 shaded = (lambda x, y, i, wood=wood, keep=keep: i in keep and wood(x, y)) if wood else None
-                painted, notes = draw_new_roads(read_map, lambda m, a=map_arc: a.find(m).path, lines, shaded)
+                painted, notes = draw_new_roads(read_map, lambda m, a=map_arc: a.find(m).path, lines, shaded, cache)
             except (PaintError, SceneryError, ValueError, KeyError, struct.error, zlib.error) as exc:
                 result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the new roads can't be drawn ({exc})"))
                 continue

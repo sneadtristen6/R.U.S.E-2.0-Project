@@ -2212,15 +2212,18 @@ function placeNote(text, kind) {
 // refuses it), so the search and the tooltip say so rather than offering every type in the game.
 function placeOptions() {
   const d = mv.scenery.data, p = mv.place, q = $("place-search").value.trim().toLowerCase();
-  // each row: [type, code name, group, the game editor's folder, how many the map has, its English name, what it is]
-  // (rusemod.scenerynames: the game names scenery only in its editor's code, mostly French)
+  // each row: [type, code name, group, the game editor's folder, how many the map has, its name, what it is], the
+  // last two in each of the Studio's languages ({code: text}; rusemod.scenerynames: the game names scenery only in its
+  // editor's code, mostly French), shown in the Studio's language, searched in it and in English
+  const said = (v) => (typeof v === "string" ? v : (v && (v[mv.lang] || v.us)) || "");
   const rows = ((d && d.palette) || []).filter((r) => r[2] === p.group
-    && (!q || [r[1], r[3], r[5] || "", r[6] || ""].some((t) => t.toLowerCase().includes(q))));
+    && (!q || [r[1], r[3], said(r[5]), said(r[6]), (r[5] && r[5].us) || "", (r[6] && r[6].us) || ""]
+      .some((t) => t.toLowerCase().includes(q))));
   if (!rows.some((r) => r[0] === p.type)) p.type = rows.length ? rows[0][0] : null;
   $("place-type").replaceChildren(...rows.map((r) => {
-    const name = r[5] || r[1];
-    const o = el("option", { value: r[0], textContent: (r[6] ? `${name} · ${r[6]}` : name) + (r[4] ? `  (${r[4].toLocaleString()})` : ""),
-      title: `${name}${r[6] ? " · " + r[6] : ""}\n${mv.words.place_code || "In the game's files"}: ${r[1]} (${r[3]})` });
+    const name = said(r[5]) || r[1], what = said(r[6]);
+    const o = el("option", { value: r[0], textContent: (what ? `${name} · ${what}` : name) + (r[4] ? `  (${r[4].toLocaleString()})` : ""),
+      title: `${name}${what ? " · " + what : ""}\n${mv.words.place_code || "In the game's files"}: ${r[1]} (${r[3]})` });
     o.selected = r[0] === p.type;
     return o;
   }));
@@ -4577,6 +4580,7 @@ window.MapView = {
     renderWords();
     renderScenTools();
     renderList();
+    if (mv.scenery.data) placeOptions();  // the props, trees and buildings to place, named in the new language
     showTitle();
     if (mv.stats) $("map-stats").textContent = fill(words.map_stats, mv.stats);
   },

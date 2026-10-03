@@ -33,7 +33,7 @@ from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, CommunityCalls, private_paths_out
 from rusemod.update import UpdateCalls
-from rusemod.build import MAP_FILES, BuildError, build_and_write, load_mod
+from rusemod.build import MAP_FILES, BuildError, build_and_write, build_cache, load_mod
 from rusemod.lock import fingerprint_text
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
@@ -2739,7 +2739,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 say("R.U.S.E. wasn't found, so the file carries no game build or fingerprint.")
             else:
                 say("Building the mod on the game, to record the game build and the fingerprint…")
-                result = build_and_write(game, [load_mod(folder)], say=lambda line: say("  " + line))
+                result = build_and_write(game, [load_mod(folder)], say=lambda line: say("  " + line),
+                                         cache=build_cache())
                 if result.errors:
                     raise BuildError("Fix the mod first: the build above has errors, so nothing was exported.")
                 build_id = build_of(game)

@@ -409,7 +409,7 @@ def check_map(game: Path, mod_folder: Path, pack: str, say=None) -> list[dict]:
     afterwards, and the built map checked (check_built). `say` gets the build's report lines. Findings, or one "ok"
     finding when there's nothing to say; a build with errors gives one "fail" finding with the first."""
     from .bridges import Water, _covered, crossings, model_length, placed_spans
-    from .build import DEFAULT_PACK, BuildError, build_and_write, find_pack, load_mod
+    from .build import DEFAULT_PACK, BuildError, build_and_write, build_cache, find_pack, load_mod
     from .cover import PACK, member
     from .edat import Edat
     from .rndf import RndfError
@@ -427,7 +427,7 @@ def check_map(game: Path, mod_folder: Path, pack: str, say=None) -> list[dict]:
     map_pack = find_pack(game, pack_file(pack))
     with tempfile.TemporaryDirectory(prefix="rusemod-mapcheck-") as tmp:
         try:
-            result = build_and_write(game, mods, out=Path(tmp), say=say or (lambda _line: None))
+            result = build_and_write(game, mods, out=Path(tmp), say=say or (lambda _line: None), cache=build_cache())
         except BuildError as exc:  # a load order that can't be met, a pack that can't be read
             return [_finding("build", "fail", "mc_build_failed", why=str(exc))]
         if result.errors:

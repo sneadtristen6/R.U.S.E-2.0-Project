@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import re
 
+from .scenerynames_lang import LANGS as OTHER_LANGS
+
 # two words that read as one thing, in English order
 PHRASES = {
     ("panier", "osier"): "wicker basket", ("valise", "osier"): "wicker suitcase", ("champs", "pierres"): "stony field",
@@ -18,6 +20,7 @@ PHRASES = {
     ("metier", "a"): "loom", ("four", "a"): "bread oven", ("salon", "the"): "tea room", ("mont", "cassin"): "Monte Cassino",
     ("monte", "cassin"): "Monte Cassino", ("filet", "peche"): "fishing net", ("echoppe", "epices"): "spice stall",
     ("petit", "muret"): "low wall", ("en", "bois"): "wooden", ("de", "bois"): "wooden", ("maison", "ville"): "town house",
+    ("town", "house"): "town house",
     ("plot", "beton"): "concrete bollard", ("borne", "incendie"): "fire hydrant", ("muret", "a"): "low wall A", ("muret", "pierre"): "stone wall", ("pierre", "cultures"): "field-stone",
 }
 
@@ -181,20 +184,52 @@ def unknown(code: str) -> list[str]:
     return out
 
 
-def kind(category: str) -> str:
-    """What a type is, from the game editor's folder for it ("Vegetation/Arbres" -> "tree")."""
+LANGS = ("us",) + OTHER_LANGS  # the Studio's ten
+_ROMANCE = ("fr", "ita", "spa")  # adjectives after the noun, as the code's French has them
+_NO_SPACES = ("jpn", "sc")
+_TABLE: dict | None = None
+
+
+def _say(english: str, lang: str) -> str:
+    """An English word or phrase of these names in `lang` (rusemod.scenerynames_lang); as it is when it has no row (a
+    model or place name) or `lang` is English ("us", or "base": the game's own names, which these types don't have)."""
+    global _TABLE
+    if lang not in OTHER_LANGS:
+        return english
+    if _TABLE is None:
+        from .scenerynames_lang import table
+        _TABLE = table()
+    return _TABLE.get(english, {}).get(lang, english)
+
+
+def kind(category: str, lang: str = "us") -> str:
+    """What a type is, from the game editor's folder for it ("Vegetation/Arbres" -> "tree"), in `lang`."""
     c = (category or "").lower().replace("\\", "/")
     parts = [p for p in c.split("/") if p]
     for p in reversed(parts):
         for key, name in KINDS:
             if p == key or p.startswith(key):
-                return name
+                return _say(name, lang)
     return ""
 
 
-def plain(code: str, category: str = "") -> str:
-    """A type's name in English: "Cotentin_PanierOsier1" -> "Wicker basket 1 (Cotentin)", "Bouleau_02_G" ->
-    "Birch 2, winter look", "veget_EU_022" -> "Bush 22 (Europe)". Words no table knows stay as they are."""
+def names(code: str, category: str = "") -> dict[str, str]:
+    """A type's name in each of the Studio's languages: {language code: plain(code, category, it)}."""
+    return {lang: plain(code, category, lang) for lang in LANGS}
+
+
+def kinds(category: str) -> dict[str, str]:
+    """What a type is in each of the Studio's languages: {language code: kind(category, it)}."""
+    return {lang: kind(category, lang) for lang in LANGS}
+
+
+def plain(code: str, category: str = "", lang: str = "us") -> str:
+    """A type's name, in English by default: "Cotentin_PanierOsier1" -> "Wicker basket 1 (Cotentin)", "Bouleau_02_G"
+    -> "Birch 2, winter look", "veget_EU_022" -> "Bush 22 (Europe)". Words no table knows stay as they are. In another
+    of the Studio's languages (`lang`, words.toml's codes) each English word or phrase is put in it
+    (rusemod.scenerynames_lang), French, Italian and Spanish keeping the code's own order (the noun, then its
+    adjective: "Buisson sec" -> "Buisson sec"), the others the English one; word by word, so it reads like a label,
+    not a sentence."""
     ws = words(code)
     winter = len(ws) > 1 and ws[-1] in ("G", "g")  # _G: the winter maps' frosted copy (filed under Givre, frost)
     if winter:
@@ -221,13 +256,16 @@ def plain(code: str, category: str = "") -> str:
             out.append(w)
         i += 1
     for k in range(1, len(out)):  # French puts most adjectives after the noun: "Buisson sec" -> "Dry bush"
+        if lang in _ROMANCE:
+            break
         if out[k] in ADJECTIVES and out[k - 1] not in ADJECTIVES and not out[k - 1].isdigit() and len(out[k - 1]) > 1:
             out[k - 1], out[k] = out[k], out[k - 1]
-    text = " ".join(out).strip() or code
+    out = [_say(w, lang) for w in out]
+    text = ("" if lang in _NO_SPACES else " ").join(out).strip() or code
     text = re.sub(r"\s+", " ", text)
     text = text[0].upper() + text[1:]
     if winter:
-        text += ", winter look"
+        text += ", " + _say("winter look", lang)
     if regions:
-        text += f" ({', '.join(regions)})"
+        text += f" ({', '.join(_say(r, lang) for r in regions)})"
     return text

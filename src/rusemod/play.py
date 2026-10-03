@@ -11,7 +11,7 @@ import time
 import webbrowser
 from pathlib import Path
 
-from .build import BuildError, build_and_write, load_mod
+from .build import BuildError, build_and_write, build_cache, load_mod
 
 STEAM_PLAY = "steam://rungameid/21970"
 STEAM_OPEN = "steam://open/main"
@@ -93,7 +93,7 @@ class Starter:
                              "for it to finish, then try again.")
         try:
             say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")
-            result = build_and_write(game, mods, instance=instance, say=say)
+            result = build_and_write(game, mods, instance=instance, say=say, cache=build_cache())
         finally:
             _release(lock, fd)
         if result.errors:

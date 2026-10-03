@@ -22,7 +22,7 @@ import os
 import sys
 from pathlib import Path
 
-from .build import BuildError, build_and_write, find_pack, load_mod
+from .build import BuildError, build_and_write, build_cache, find_pack, load_mod
 from .build import report_lines  # noqa: F401  (kept here for callers of rusemod.cli.report_lines)
 from .edat import Edat
 from .ndf import Ndf
@@ -166,7 +166,8 @@ def cmd_build(args) -> int:
     from .instance import InstanceError
     try:
         result = build_and_write(game, mods, pack=pack, out=Path(args.out) if args.out else None,
-                                 instance=Path(args.instance) if args.instance else None, show_all=args.all)
+                                 instance=Path(args.instance) if args.instance else None, show_all=args.all,
+                                 cache=build_cache())
     except (BuildError, InstanceError) as exc:  # (a game still running from the copy is said plainly, not dumped)
         raise UserError(str(exc)) from None
     return 2 if result.errors else 0

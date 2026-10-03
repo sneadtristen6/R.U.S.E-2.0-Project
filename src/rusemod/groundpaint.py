@@ -13,10 +13,12 @@ make it (road_profile), it lets them blend in. The checks here are on the files'
 """
 from __future__ import annotations
 
+import json
 import math
 import statistics
 import struct
 from dataclasses import dataclass
+from pathlib import Path
 
 from . import dxt, tgu1
 from .tmst import Tgv, Tmst, zipo_pack, zipo_tile, zipo_unpack
@@ -81,15 +83,38 @@ def grid_bounds(mesh: bytes) -> tuple[float, float, float, float]:
     return x0, y0, x0 + gw * cw, y0 + gh * ch
 
 
-def _blocks(store: Tmst, tile) -> tuple[bytearray, int, int]:
+def _tgu1_blocks(payload: bytes, cache=None) -> bytes:
+    """A TGU1 payload's DXT1 blocks. Decoding one of the game's 512-pixel tiles takes about a second; with `cache` (a
+    folder) the blocks are kept there, named by a fingerprint of the payload itself, so each tile is decoded once."""
+    if cache is None:
+        return tgu1.decode(payload)
+    import hashlib
+    import zlib
+    kept = Path(cache) / f"tgu1-{hashlib.blake2b(payload, digest_size=20).hexdigest()}.bin"
+    try:
+        return zlib.decompress(kept.read_bytes())
+    except (OSError, zlib.error):
+        pass  # not kept yet (or unreadable): decoded again
+    blocks = tgu1.decode(payload)
+    try:
+        kept.parent.mkdir(parents=True, exist_ok=True)
+        part = kept.with_suffix(".part")
+        part.write_bytes(zlib.compress(blocks, 1))
+        part.replace(kept)  # whole or not at all: two builds at once never read half a file
+    except OSError:
+        pass
+    return blocks
+
+
+def _blocks(store: Tmst, tile, cache=None) -> tuple[bytearray, int, int]:
     """A tile's DXT1 blocks and its width and height in pixels, from the payload itself: never assumed (the whole-map
     overview tile is 256 wide on Blitz and 1024 x 512 on D-Day, the others 512) and never taken from the TGV
-    header, which can say more than it holds."""
+    header, which can say more than it holds. `cache`: _tgu1_blocks's."""
     tex = store.texture(tile)
     payload = tex.payload(0)
     if payload[:4] == b"TGU1":
         head = tgu1.Header.parse(payload)
-        w, h, blocks = head.width * 4, head.height * 4, bytearray(tgu1.decode(payload))
+        w, h, blocks = head.width * 4, head.height * 4, bytearray(_tgu1_blocks(payload, cache))
     elif payload[:4] == b"ZIPO":
         blocks = bytearray(zipo_unpack(payload))
         w, h = tex.width, tex.height  # a plain tile (ours): its header is right, and checked below
@@ -144,9 +169,10 @@ def _dist(px, py, seg) -> float:
     return math.hypot(px - ax - t * dx, py - ay - t * dy)
 
 
-def road_colour(store: Tmst, bounds, pieces: list[tuple], most: int = 40) -> tuple[int, int, int]:
+def road_colour(store: Tmst, bounds, pieces: list[tuple], most: int = 40, cache=None) -> tuple[int, int, int]:
     """The colour of the map's own roads: its pictures' pixels at the middles of up to `most` road pieces
-    (rusemod.scenery Scenery.roads), from the finest level; a grey-brown when the map has no road."""
+    (rusemod.scenery Scenery.roads), from the finest level; a grey-brown when the map has no road. `cache`:
+    _tgu1_blocks's."""
     if not pieces:
         return (150, 140, 120)
     step = max(1, len(pieces) // most)
@@ -168,7 +194,7 @@ def road_colour(store: Tmst, bounds, pieces: list[tuple], most: int = 40) -> tup
             tile = store.tile(0, tx, ty)
         except KeyError:
             continue
-        blocks, w, h = _blocks(store, tile)
+        blocks, w, h = _blocks(store, tile, cache)
         for x, y in spots:
             px = int((x - x0 - tx * tw) / tw * w)
             py = int((y - y0 - ty * th) / th * h)
@@ -293,13 +319,15 @@ def _under_trees(old: tuple, new: tuple) -> tuple:
 
 
 def paint_lines(store: Tmst, bounds, lines: list[list[tuple[float, float]]], colour: tuple[int, int, int],
-                width: float = ROAD_WIDTH, profile: RoadProfile | None = None, shaded=None) -> dict[int, bytes]:
+                width: float = ROAD_WIDTH, profile: RoadProfile | None = None, shaded=None,
+                cache=None) -> dict[int, bytes]:
     """`lines` (lists of map points) painted `width` wide in `colour` on every tile of `store` they cross, at every
     level; returns {tile index: new tile record} for Tmst.members. The edge fades over FEATHER of the half-width,
     and a line thinner than a pixel (the coarse levels) is painted faint rather than not at all. With `profile` (the
     map's own roads across, road_profile) a line is painted as they are instead: their colour, width and shoulders,
     blended into the ground beside as theirs are. `shaded(x, y, i)`: true where the pixel at (x, y), whose nearest line
-    is lines[i], lies under trees (a road that keeps its trees, in a wood): painted fainter and greyer there."""
+    is lines[i], lies under trees (a road that keeps its trees, in a wood): painted fainter and greyer there.
+    `cache`: _tgu1_blocks's."""
     owner = [i for i, line in enumerate(lines) for _ in zip(line, line[1:])]  # each segment's line
     segs = _segments(lines)
     if not segs:
@@ -334,7 +362,7 @@ def paint_lines(store: Tmst, bounds, lines: list[list[tuple[float, float]]], col
                 if min(_dist(cx, cy, s) for s in here) > reach + 3 * max(pw, ph):
                     continue
                 if blocks is None:
-                    blocks = _blocks(store, tile)[0]
+                    blocks = _blocks(store, tile, cache)[0]
                 k = by * nx + bx
                 pixels = dxt.block_pixels(bytes(blocks[8 * k:8 * k + 8]))
                 changed = False
@@ -478,25 +506,62 @@ def paint_detail(raw: bytes, bounds, lines: list[list[tuple[float, float]]], pie
     return _tgv_with_payload(raw, zipo_pack(bytes(blocks))), [f"close-up map: {painted} block(s) painted, {how}"]
 
 
-def map_road_profile(read, pieces: list[tuple]) -> RoadProfile | None:
+PROFILE_KEPT = 1   # the kept profiles' format: a new one means they're all measured again
+
+
+def map_road_profile(read, pieces: list[tuple], cache=None) -> RoadProfile | None:
     """road_profile for a map pack (`read(member)`: its files as the build has them): its finest highdef tiles and its
-    close-up map. None when it can't be measured."""
+    close-up map. None when it can't be measured.
+
+    Measuring unpacks a couple of hundred of the map's tiles: half of a build's time on M03_Italie (361 of 715 seconds,
+    2026-10-03). With `cache` (a folder) the answer is kept there, named by a fingerprint of everything it's measured
+    from (the tiles, the close-up map, the ground mesh and the road pieces, as the build has them: a reshaped ground
+    or new road pieces give another name), so a map is measured once."""
     mesh = read("output\\highdef.tms")
     index, chunk = read("output\\highdef.tmst_pc"), read("output\\highdef.tmst_chunk_pc")
     if mesh is None or index is None or chunk is None or not pieces:
         return None
+    detail = read(DETAIL)
+    kept = None
+    if cache is not None:
+        import hashlib
+        h = hashlib.blake2b(digest_size=20)
+        for part in (f"v{PROFILE_KEPT}".encode(), mesh, index, chunk, detail or b"",
+                     struct.pack(f"<{8 * len(pieces)}d", *(v for p in pieces for v in p[:8]))):
+            h.update(struct.pack("<Q", len(part)))
+            h.update(part)
+        kept = Path(cache) / f"road-profile-{h.hexdigest()}.json"
+        try:
+            got = json.loads(kept.read_text(encoding="utf-8"))
+            if got is None:
+                return None
+            return RoadProfile([tuple(c) for c in got["tile"]], got["weight"],
+                               [tuple(d) for d in got["detail"]] if got["detail"] is not None else None, got["pieces"])
+        except (OSError, ValueError, KeyError, TypeError):
+            pass  # not kept yet (or unreadable): measured again
     try:
-        return road_profile(Tmst(index, chunk), map_bounds(mesh), pieces, read(DETAIL), grid_bounds(mesh))
+        profile = road_profile(Tmst(index, chunk), map_bounds(mesh), pieces, detail, grid_bounds(mesh))
     except (PaintError, ValueError, KeyError, struct.error):
         return None
+    if kept is not None:
+        try:
+            kept.parent.mkdir(parents=True, exist_ok=True)
+            kept.write_text(json.dumps(None if profile is None else
+                                       {"tile": profile.tile, "weight": profile.weight, "detail": profile.detail,
+                                        "pieces": profile.pieces}), encoding="utf-8")
+        except OSError:
+            pass  # not kept: measured again next time
+    return profile
 
 
 def paint_roads(read, path_of, lines: list[list[tuple[float, float]]], pieces: list[tuple],
-                width: float = ROAD_WIDTH, profile: RoadProfile | None = None, shaded=None) -> tuple[dict, list[str]]:
+                width: float = ROAD_WIDTH, profile: RoadProfile | None = None, shaded=None,
+                cache=None) -> tuple[dict, list[str]]:
     """({member: new bytes}, notes): `lines` painted on both tile sets of a map pack, in its roads' colour, or as its
     roads are across with `profile` (map_road_profile). `read(name)` gives a member's bytes (the build's chain) or
     None, `path_of(name)` its full path in the pack; `pieces` are the map's road pieces (for the colour); `shaded` as
-    paint_lines has it (under trees: fainter and greyer)."""
+    paint_lines has it (under trees: fainter and greyer); `cache`: a folder where decoded tiles are kept
+    (_tgu1_blocks)."""
     mesh = read("output\\highdef.tms")
     if mesh is None:
         raise PaintError("the map has no ground mesh to place the paint on")
@@ -510,8 +575,8 @@ def paint_roads(read, path_of, lines: list[list[tuple[float, float]]], pieces: l
         store.lod = lod
         store.index_path, store.chunk_path = path_of(f"output\\{lod}.tmst_pc"), path_of(f"output\\{lod}.tmst_chunk_pc")
         if colour is None:
-            colour = road_colour(store, bounds, pieces)
-        tiles = paint_lines(store, bounds, lines, colour, width, profile, shaded)
+            colour = road_colour(store, bounds, pieces, cache=cache)
+        tiles = paint_lines(store, bounds, lines, colour, width, profile, shaded, cache)
         if tiles:
             out.update(store.members(tiles))
         notes.append(f"{lod}: {len(tiles)} tile(s) painted")

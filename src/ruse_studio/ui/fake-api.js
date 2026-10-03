@@ -756,12 +756,21 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       const u = (k * 7919 + seed) % 97 / 97, v = (k * 104729) % 89 / 89;
       items.vegetation.push(3, Math.round(c - 90000 + u * 180000), Math.round(c - 200000 + v * 90000), k, 0.8 + (k % 5) / 10);
     }
-    // with their English names and what they are (rusemod.scenerynames)
-    const palette = [["TypeWarrior/MairieNormande", "MairieNormande", "building", "COC/Normandie/Batiments_Villes_Villages", 1, "Town hall (Normandy)", "town building"],
-      ["TypeWarrior/TownHouseB2_Haut", "TownHouseB2_Haut", "building", "COC/Normandie/BatimentsMorceaux/TownHouseB/B2", 39, "Town house B 2 high", "building piece"],
-      ["TypeWarrior/Charette_1", "Charette_1", "prop", "Props/Ferme", 30, "Cart 1", "farm prop"],
-      ["TypeWarrior/Cotentin_PanierOsier1", "Cotentin_PanierOsier1", "prop", "Props/Ville", 4, "Wicker basket 1 (Cotentin)", "town prop"],
-      ["TypeWarrior/Chene_02", "Chene_02", "vegetation", "Vegetation/Arbres", 12000, "Oak 2", "tree"]];
+    // with their names and what they are in each language (rusemod.scenerynames; English, French and German here,
+    // the others fall back to English)
+    const palette = [["TypeWarrior/MairieNormande", "MairieNormande", "building", "COC/Normandie/Batiments_Villes_Villages", 1,
+        { us: "Town hall (Normandy)", fr: "Mairie (Normandie)", ger: "Rathaus (Normandie)" },
+        { us: "town building", fr: "bâtiment de ville", ger: "Stadtgebäude" }],
+      ["TypeWarrior/TownHouseB2_Haut", "TownHouseB2_Haut", "building", "COC/Normandie/BatimentsMorceaux/TownHouseB/B2", 39,
+        { us: "Town house B 2 high", fr: "Maison de ville B 2 haut", ger: "Stadthaus B 2 hoch" },
+        { us: "building piece", fr: "élément de bâtiment", ger: "Gebäudeteil" }],
+      ["TypeWarrior/Charette_1", "Charette_1", "prop", "Props/Ferme", 30, { us: "Cart 1", fr: "Charrette 1", ger: "Karren 1" },
+        { us: "farm prop", fr: "objet de ferme", ger: "Hofgegenstand" }],
+      ["TypeWarrior/Cotentin_PanierOsier1", "Cotentin_PanierOsier1", "prop", "Props/Ville", 4,
+        { us: "Wicker basket 1 (Cotentin)", fr: "Panier en osier 1 (Cotentin)", ger: "Weidenkorb 1 (Cotentin)" },
+        { us: "town prop", fr: "objet de ville", ger: "Stadtgegenstand" }],
+      ["TypeWarrior/Chene_02", "Chene_02", "vegetation", "Vegetation/Arbres", 12000, { us: "Oak 2", fr: "Chêne 2", ger: "Eiche 2" },
+        { us: "tree", fr: "arbre", ger: "Baum" }]];
     return { types, items, palette, groups: { building: { shown: 40, total: 40 }, prop: { shown: 30, total: 30 },
       vegetation: { shown: 900, total: 12000 } } };
   }

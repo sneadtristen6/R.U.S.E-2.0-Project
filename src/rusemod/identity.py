@@ -96,8 +96,13 @@ def debug_name(source: str, source_debug: str, name: str) -> str:
 
 def refresh(game, name: str, source: str, skip=(), new=()) -> list:
     """Give the clone `name` (copied from `source`) fresh identity values, in place. `skip`: properties the clone
-    sets itself; `new`: the objects mods added so far. Returns [(property, old value, new value)] per value changed."""
-    obj, scan, changed = game.objects[name], _scan(game), []
+    sets itself; `new`: the objects mods added so far. Returns [(property, old value, new value)] per value changed.
+    A clone with none of the properties these rules look at (a scenery type's copy, rusemod.visibility) has nothing to
+    change, so the game isn't scanned for it (3 seconds a clone)."""
+    obj = game.objects[name]
+    if not any(p in obj.props for p in RULES if p not in skip):
+        return []
+    scan, changed = _scan(game), []
     added = set(new) | {name}
     for prop in IDS:
         old = obj.props.get(prop)

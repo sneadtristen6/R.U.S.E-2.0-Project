@@ -494,9 +494,9 @@ def view(map_arc, unit_arc, descs: dict[str, Descriptor] | None = None, budget: 
             flat += [index[s], round(x), round(y), round(turn, 3), round(size, 2)]
         items[g] = flat
     per_type = sc.types()
-    from .scenerynames import kind, plain  # the game names these only in its editor's code, mostly French
+    from .scenerynames import kinds, names  # the game names these only in its editor's code, mostly French
     palette = sorted(([descs[n].name, n.split("/", 1)[-1], descs[n].group, descs[n].category, per_type.get(i, 0),
-                       plain(n.split("/", 1)[-1]), kind(descs[n].category)]
+                       names(n.split("/", 1)[-1]), kinds(descs[n].category)]
                       for i, n in enumerate(sc.names[:len(sc.flags)])
                       if sc.flags[i] == 1 and n in descs and descs[n].group in PLACEABLE),
                      key=lambda r: (PLACEABLE.index(r[2]), -r[4], r[1].lower()))
