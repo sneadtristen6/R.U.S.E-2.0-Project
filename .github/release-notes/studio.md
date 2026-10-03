@@ -1,6 +1,18 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.1:** drag anything on the map, clearer icons you can size and hide, your language from the first start, and
+every unit's type as the game names it.
+
+| Before | Now |
+|---|---|
+| Starting points, supply depots and spawned units moved only with the Move tool, one click then another. | Grab any of them on the map and drag it, with no tool picked, the way the opening cameras already turned. Depots and HQs still stick to roads while you drag. |
+| Map icons were stick figures and boxes, and every bunker looked the same. | An icon for each kind: a soldier, a tank, a truck for supply depots, a plane, guns, a clearly marked HQ, the armor base and the airfield told apart, and every bunker its own (anti-tank, machine gun, anti-aircraft, artillery, fort, lookout post). |
+| Icons were bulky from high up, and the only way to hide them was to hide the whole scenario. | Icons shrink as the camera pulls out, a slider sets their size, and the Scenario tray shows or hides each kind (starts, cameras, depots, buildings, units, zones, towns). Kept for next time. |
+| The Studio started on the code names, and the language sat in Settings, so players didn't know it speaks their language. | The first start asks: "Choose your language", each language in its own words, the one your game is set to in Steam marked. Then a language button at the top, always in sight. |
+| Units were only "Ground" or "Air". | Under Ground, Infantry and Air, the game's own types: Light, Medium and Heavy Tank, Tank Destroyer, Armored Recon, Fighter, Fighter-bomber, Light, Medium and Heavy Bomber, Air Recon... on each unit's line too, in your language. Search finds them ("bomber", "recon"). |
+| Windows' list of installed apps showed the first version ever installed. | It shows the version you have. |
+
 **0.9.0:** roads are cracked. A road you draw now looks like the map's own roads, from high up and right down
 at the ground. It took a lot of time and a lot of tests to get there, longer than the bridges
 did; [the story of how](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/ROADS.md). Tested in the game on D-Day.

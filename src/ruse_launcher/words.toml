@@ -2838,3 +2838,40 @@ ru = "Launcher на вашем языке. Его можно сменить в �
 cz = "Launcher ve vašem jazyce. Kdykoli ho můžete změnit tlačítkem jazyka nahoře."
 jpn = "Launcher をあなたの言語で。上の言語ボタンでいつでも変更できます。"
 sc = "用你的语言显示 Launcher。随时可以用顶部的语言按钮更改。"
+
+# the mod set editor: Create on top with the set's own mods, then the rest of the library to add (app.js renderEditor)
+[set_in_this]
+us = "In this set ({n})"
+fr = "Dans cet ensemble ({n})"
+ger = "In diesem Set ({n})"
+ita = "In questo set ({n})"
+spa = "En este conjunto ({n})"
+pol = "W tym zestawie ({n})"
+ru = "В этом наборе ({n})"
+cz = "V této sadě ({n})"
+jpn = "このセットの MOD（{n}）"
+sc = "此组合中（{n}）"
+
+[set_none_yet]
+us = "No mods yet: tick them below."
+fr = "Aucun mod pour l'instant : cochez-les ci-dessous."
+ger = "Noch keine Mods: Haken Sie sie unten an."
+ita = "Nessuna mod per ora: spuntale qui sotto."
+spa = "Aún no hay mods: márcalos abajo."
+pol = "Nie ma jeszcze modów: zaznacz je poniżej."
+ru = "Модов пока нет: отметьте их ниже."
+cz = "Zatím žádné módy: zaškrtněte je níže."
+jpn = "まだ MOD がありません。下でチェックしてください。"
+sc = "还没有模组：在下方勾选。"
+
+[set_add_mods]
+us = "Add mods from your library"
+fr = "Ajouter des mods de votre bibliothèque"
+ger = "Mods aus Ihrer Bibliothek hinzufügen"
+ita = "Aggiungi mod dalla tua libreria"
+spa = "Añadir mods de tu biblioteca"
+pol = "Dodaj mody z biblioteki"
+ru = "Добавить моды из библиотеки"
+cz = "Přidat módy z knihovny"
+jpn = "ライブラリから MOD を追加"
+sc = "从你的库中添加模组"

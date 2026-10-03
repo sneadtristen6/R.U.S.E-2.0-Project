@@ -675,11 +675,13 @@ function renderEditor() {
   const name = el("input", { value: ed.name, maxLength: 60, required: true, placeholder: w.set_name, autocomplete: "off" });
   name.setAttribute("aria-label", w.set_name);
   name.addEventListener("input", () => { ed.name = name.value; });
-  const rows = el("ul", { className: "pick-list" });
+  // the owner, 2026-10-03: Create up top with the mods already in the set, where it's seen, and a search that narrows
+  // the rest of the library by name ("the list doesn't condense to what the mod is called")
+  const rows = el("ul", { className: "pick-list" }), more = el("ul", { className: "pick-list" });
   const known = new Map(state.library.map((m) => [m.id, m]));
   const inSet = ed.mods.map((entry, i) => ({ entry, name: ed.names[i], mod: known.get(entry) || null, on: true }));
   const others = state.library.filter((m) => !ed.mods.includes(m.id)).map((m) => ({ entry: m.id, name: m.name, mod: m, on: false }));
-  for (const [i, r] of inSet.concat(others).entries()) {
+  const pickRow = (r) => {
     const tick = el("input", { type: "checkbox", checked: r.on });
     tick.addEventListener("change", () => {
       if (tick.checked) { ed.mods.push(r.entry); ed.names.push(r.name); }
@@ -689,24 +691,41 @@ function renderEditor() {
     const label = el("label", {}, tick, " ", el("span", { className: "name", textContent: r.name }));
     if (r.mod && r.mod.version) label.append(el("span", { className: "meta", textContent: " " + fill(w.version_v, { v: r.mod.version }) }));
     if (!r.mod) label.append(el("span", { className: "meta", textContent: " · " + w.from_folder }));
-    const li = el("li", {}, label);
-    if (r.on) {
-      const up = el("button", { type: "button", className: "small ghost arrow", textContent: "↑", title: w.move_up, disabled: i === 0 });
-      const down = el("button", { type: "button", className: "small ghost arrow", textContent: "↓", title: w.move_down,
-        disabled: i === inSet.length - 1 });
-      up.setAttribute("aria-label", w.move_up);
-      down.setAttribute("aria-label", w.move_down);
-      const swap = (a, b) => {
-        [ed.mods[a], ed.mods[b]] = [ed.mods[b], ed.mods[a]];
-        [ed.names[a], ed.names[b]] = [ed.names[b], ed.names[a]];
-        renderEditor();
-      };
-      up.addEventListener("click", () => swap(i, i - 1));
-      down.addEventListener("click", () => swap(i, i + 1));
-      li.append(el("span", { className: "order" }, up, down));
-    }
+    return el("li", {}, label);
+  };
+  for (const [i, r] of inSet.entries()) {  // the set's own mods, in load order, with arrows to move them
+    const li = pickRow(r);
+    const up = el("button", { type: "button", className: "small ghost arrow", textContent: "↑", title: w.move_up, disabled: i === 0 });
+    const down = el("button", { type: "button", className: "small ghost arrow", textContent: "↓", title: w.move_down,
+      disabled: i === inSet.length - 1 });
+    up.setAttribute("aria-label", w.move_up);
+    down.setAttribute("aria-label", w.move_down);
+    const swap = (a, b) => {
+      [ed.mods[a], ed.mods[b]] = [ed.mods[b], ed.mods[a]];
+      [ed.names[a], ed.names[b]] = [ed.names[b], ed.names[a]];
+      renderEditor();
+    };
+    up.addEventListener("click", () => swap(i, i - 1));
+    down.addEventListener("click", () => swap(i, i + 1));
+    li.append(el("span", { className: "order" }, up, down));
     rows.append(li);
   }
+  // the rest of the library, narrowed as the name is typed (only this list is redrawn: the box keeps its focus)
+  const find = el("input", { type: "search", className: "set-find", value: ed.search || "", placeholder: w.library_search,
+    spellcheck: false, autocomplete: "off" });
+  find.setAttribute("aria-label", w.library_search);
+  const none = el("p", { className: "muted note hidden" });
+  const showMore = () => {
+    const q = (ed.search || "").trim().toLowerCase();
+    const shown = q ? others.filter((r) => `${r.name} ${r.mod.description || ""} ${r.mod.author || ""}`.toLowerCase().includes(q))
+      : others;
+    more.replaceChildren(...shown.map(pickRow));
+    none.classList.toggle("hidden", !q || shown.length > 0);
+    text(none, fill(w.library_no_match, { q: (ed.search || "").trim() }));
+  };
+  find.addEventListener("input", () => { ed.search = find.value; showMore(); });
+  find.addEventListener("keydown", (e) => { if (e.key === "Enter") e.preventDefault(); });  // Enter isn't Create
+  showMore();
   const save = el("button", { type: "submit", className: "small", textContent: ed.id ? w.save : w.create });
   const cancel = el("button", { type: "button", className: "small ghost", textContent: w.cancel });
   cancel.addEventListener("click", () => { state.editing = null; render(); });
@@ -722,10 +741,12 @@ function renderEditor() {
   form.replaceChildren(
     el("h1", { textContent: ed.id ? w.edit : w.new_set }),
     el("label", { className: "field" }, el("span", { textContent: w.set_name }), name),
+    el("div", { className: "actions" }, save, cancel),
     el("p", { className: "muted", textContent: state.library.length || ed.mods.length ? w.tick_mods : w.library_empty_for_set }),
-    rows,
+    el("h2", { className: "set-part", textContent: fill(w.set_in_this, { n: ed.mods.length }) }),
+    ...(inSet.length ? [rows] : [el("p", { className: "muted note", textContent: w.set_none_yet })]),
     clashes,
-    el("div", { className: "actions" }, save, cancel));
+    ...(others.length ? [el("h2", { className: "set-part", textContent: w.set_add_mods }), find, none, more] : []));
   form.onsubmit = async (e) => {
     e.preventDefault();
     if (!ed.name.trim()) { name.focus(); return; }

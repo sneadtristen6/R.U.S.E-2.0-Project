@@ -128,9 +128,12 @@
   // "Choose your language" (?fake=lang: the game set to French in Steam; it also opens on the first-run modes)
   Object.assign(words.us, { lang_pick_title: "Choose your language", lang_from_steam: "Your game's language in Steam",
     lang_from_pc: "Your PC's language", lang_pick_close: "Close", tip_lang_open: "Change the language.",
+    set_in_this: "In this set ({n})", set_none_yet: "No mods yet: tick them below.", set_add_mods: "Add mods from your library",
     lang_pick_help: "The Launcher in your language. You can change it any time with the language button at the top." });
   Object.assign(words.fr, { lang_pick_title: "Choisissez votre langue", lang_from_steam: "La langue de votre jeu sur Steam",
     lang_from_pc: "La langue de votre PC", lang_pick_close: "Fermer", tip_lang_open: "Changer la langue.",
+    set_in_this: "Dans cet ensemble ({n})", set_none_yet: "Aucun mod pour l'instant : cochez-les ci-dessous.",
+    set_add_mods: "Ajouter des mods de votre bibliothèque",
     lang_pick_help: "Le Launcher dans votre langue. Vous pouvez la changer à tout moment avec le bouton de langue en haut." });
   Object.assign(words.sc, { lang_pick_title: "选择你的语言", lang_from_steam: "你在 Steam 中的游戏语言",
     lang_from_pc: "你的电脑语言", lang_pick_close: "关闭", tip_lang_open: "更改语言。",

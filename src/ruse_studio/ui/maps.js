@@ -1125,7 +1125,8 @@ const SPAWN_KINDS = ["buildings", "ground", "infantry", "air"];
 // --- What the scenario shows, kind by kind, and how big its icons are. The owner, 2026-10-03: "why can't you just
 // disable the units and the supply depots? But keep the scenario areas or the camera spots", icons "not so bulky on the
 // map" when zoomed out, all of it "CUSTOMIZABLE", and nothing more in the top left: switches and a size slider in the
-// Scenario tray, kept in this window. Only the view changes, never the mod. ---
+// Scenario tray, kept by the Studio (prefs "view": saveView; the window's own storage is only a fallback, it's lost
+// every start). Only the view changes, never the mod. ---
 const SCEN_LAYERS = ["starts", "cams", "depots", "buildings", "units", "zones", "towns"];
 const ICON_BASE = 0.042;  // an icon's height as a share of the view's, at size 100 %, close up
 scen.layers = Object.fromEntries(SCEN_LAYERS.map((k) => [k, true]));
@@ -1138,6 +1139,14 @@ try {
 
 function saveScenView() {
   try { localStorage.setItem("studio.scenview", JSON.stringify({ layers: scen.layers, size: scen.iconSize })); } catch { /* fine */ }
+  saveView();
+}
+
+function keptScenView(view) {
+  if (view.scen_layers && typeof view.scen_layers === "object") {
+    for (const k of SCEN_LAYERS) if (typeof view.scen_layers[k] === "boolean") scen.layers[k] = view.scen_layers[k];
+  }
+  if (typeof view.icon_size === "number" && view.icon_size > 0) scen.iconSize = view.icon_size;
 }
 
 // the icons' size now: the slider's, and smaller as the camera pulls back (down to 40 % with the whole map in view)
@@ -4359,7 +4368,8 @@ function foldMaps(folded) {
 }
 
 function saveView() {
-  if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind, maps_folded: Boolean(mv.folded) }).catch(() => {});
+  if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind, maps_folded: Boolean(mv.folded),
+    scen_layers: scen.layers, icon_size: scen.iconSize }).catch(() => {});
 }
 
 // app.js opens the view when its tab is picked, and passes the words and the language on every language change.
@@ -4378,6 +4388,7 @@ window.MapView = {
           const view = (await api.prefs()).view || {};
           mv.kind = view.map_kind || mv.kind;
           foldMaps(Boolean(view.maps_folded));
+          keptScenView(view);  // the Scenario tray's kinds shown and icon size
         } catch { /* kept nothing */ }
         mv.maps = (await api.maps()).maps;
       } catch (err) {

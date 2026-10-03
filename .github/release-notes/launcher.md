@@ -1,6 +1,14 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.1:** your language from the first start, and a mod set editor that finds mods by name.
+
+| Before | Now |
+|---|---|
+| Making a mod set listed your whole library with Create at the bottom, and no way to find a mod by its name. | Create is at the top, with the mods already in the set right under it; below, "Add mods from your library" with a search that narrows the list as you type. |
+| The language sat in Settings, so players didn't know the Launcher speaks their language. | The first start asks: "Choose your language", each language in its own words, the one your game is set to in Steam marked (players updating see it once). Then a language button at the top, always in sight. |
+| Windows' list of installed apps showed the first version ever installed. | It shows the version you have. |
+
 **0.4.0:** plays mods with new roads the way Studio 0.9 builds them: they look like the map's own roads, from high
 up and right down at the ground (tested in the game on D-Day). [How roads were cracked](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/ROADS.md).
 

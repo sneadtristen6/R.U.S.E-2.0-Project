@@ -212,7 +212,10 @@ button:disabled { cursor: default; opacity: 0.45; }
 .set-head h1 { flex: 1 1 auto; min-width: 200px; }
 .set-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .rename-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.rename-form input, .editor input[type="text"], .editor input:not([type]) {
+/* the mod set editor's parts: the set's own mods (with Create above them), then the rest of the library to add */
+.editor .set-part { margin: 6px 0 0; font-size: 15px; color: var(--accent); letter-spacing: 0.02em; }
+.editor .set-find { max-width: 360px; }
+.rename-form input, .editor input[type="text"], .editor input:not([type]), .editor input[type="search"] {
   padding: 8px 12px; background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--radius);
   font: inherit; color: var(--text); min-width: 280px; }
 .rename-form input { font-size: 22px; font-weight: 700; }
