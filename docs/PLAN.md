@@ -1215,3 +1215,9 @@ not decisions or an order: the map editor comes first.** Map ideas are in §12, 
    from high up, so a town is an easy landmark ("the river 750 m south-east of Toulaville") without zooming in. The
    names are the scenarios' town labels (`LabelVille`); how far away they show and how big is to be found (likely the
    labels' display settings in the data). Handy for every test copy too.
+3. **A showcase map to start with (2026-10-03).** One small 1v1 map, such as Centre of Gravity, made into a showcase
+   mod: "this is how it works". The owner's YouTube video walks through it, the README gets a section about it, and
+   the Studio offers it first ("Try this first, as seen in the video"), so a newcomer opens a working example
+   instead of an empty mod.
+4. **More detailed graphics in the Studio's map view (2026-10-03).** The owner: "it may not be possible, that's fine,
+   that can be pushed later". Goes with "Polish waits" (§10).
