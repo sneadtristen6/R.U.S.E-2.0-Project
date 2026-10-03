@@ -1,4 +1,6 @@
-"""New maps: a shipped map copied under a name of its own, listed in BATTLES beside it (PLAN §13, level 2).
+"""New maps: a shipped map copied under a name of its own, listed in BATTLES beside it (PLAN §13, level 2), or, when
+map.toml's `entry` names one, as a new Operation (last in OPERATIONS) or a new campaign chapter (last in the
+campaign) running the shipped one's mission script.
 
 A mod makes one with `maps/<NewName>/map.toml` (MOD_FORMAT §8):
 
@@ -38,7 +40,7 @@ from . import loc
 from .dic import Dic, name_to_key
 from .edat import Entry
 from .ndf import Ndf, Value, local_ref, sub_values
-from .players import GLOBALS, MAPINFO, entries
+from .players import GLOBALS, MAPINFO
 
 BS = "\\"
 NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,39}$")
@@ -48,6 +50,13 @@ KEY_STEM, KEY_FIRST = "M_D_", 31
 TRACK_STEM, TRACK_FIRST = "MP", 31    # the shipped BATTLES maps are MP01 .. MP30
 LADDER = ("DispoLadder1v1", "DispoLadder2v2")   # ranked matchmaking: the shipped map's place, not a copy's
 DROPPED = LADDER + ("RewardId",)
+# The three menus a map-list entry can be in (globals.cpp), and what each calls its entries: BATTLES' multiplayer and
+# skirmish maps (TMultiMapInfo, in a TMultiPack's MultiList), the Operations (TChallengeMapInfo, a TChallengePack's
+# ChallengeList) and the campaign's chapters (TChapterMapInfo, a TChapterPack's ChapterList). The game fills all three
+# the same way: an entry shows when its GUID is a loaded map-list entry's.
+KINDS = {"TMultiMapInfo": "battles", "TChallengeMapInfo": "operation", "TChapterMapInfo": "campaign"}
+MENU_NAMES = {"battles": "BATTLES", "operation": "OPERATIONS", "campaign": "the CAMPAIGN"}
+TRACKS = {"battles": (TRACK_STEM, TRACK_FIRST), "operation": ("CH", 40), "campaign": ("M", 24)}  # shipped: CH26-39, M01-23
 
 
 class NewMapError(ValueError):
@@ -158,6 +167,7 @@ class Clone:
     data: dict = field(default_factory=dict)        # DataMap_Win.dat: new members
     texts: dict = field(default_factory=dict)       # ZZ_Win.dat: the menus' dictionaries, changed
     scenario: str = ""                              # the scenario file (lower case) the new entry loads
+    kind: str = "battles"                           # the menu it's in: battles, operation or campaign (KINDS)
     key: str = ""                                   # the name's text key, e.g. M_D_31
     entry_name: str = ""                            # the new map-list name, e.g. "(2) Blitz at Dusk"
     guid: bytes = b""                               # ties the map-list entry to its BATTLES entry
@@ -278,6 +288,35 @@ def _listed(g: Ndf, gi: int) -> bool:
     return any(v.tc == 0x11 and any(local_ref(x) == gi for x in sub_values(v)) for o in g.objects for _pi, v in o.props)
 
 
+def menu_entries(m: Ndf, g: Ndf, pack: str) -> list[tuple[int, int, str, str]]:
+    """Every menu entry of map `pack` a player can pick: [(its TMapLoadInfo, its menu entry, its map-list name, its
+    kind: battles, operation or campaign)], in the map list's order. Entries no menu pack lists, and the tutorial's
+    (a chapter pack with IsTuto), are left out."""
+    tuto = set()
+    for o in g.objects:
+        p = _props(g, o)
+        if "IsTuto" in p and p["IsTuto"].scalar():
+            tuto |= {local_ref(x) for v in p.values() if v.tc == 0x11 for x in sub_values(v)}
+    by_guid = {}
+    for i, o in enumerate(g.objects):
+        kind = KINDS.get(g.classes[o.cls])
+        p = _props(g, o) if kind else {}
+        if kind and "GUID" in p and i not in tuto:
+            by_guid.setdefault(bytes(p["GUID"].payload), (i, kind))
+    out = []
+    for i, o in enumerate(m.objects):
+        if m.classes[o.cls] != "TMapLoadInfo":
+            continue
+        p = _props(m, o)
+        root = next((_text(m, p[k]) for k in ("RootDatapackName", "Path") if k in p), None)
+        if not root or root.lower() != pack.lower() or "GUID" not in p:
+            continue
+        found = by_guid.get(bytes(p["GUID"].payload))
+        if found is not None and _listed(g, found[0]):
+            out.append((i, found[0], _text(m, p["Name"]) if "Name" in p else "", found[1]))
+    return out
+
+
 def _cluster_base(m: Ndf, load: dict) -> str | None:
     """The scenario cluster a map-list entry loads (its NDF transaction's BaseName)."""
     for v in sub_values(load["ClusterLoads"])[1::2] if "ClusterLoads" in load else []:
@@ -308,28 +347,33 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
         # rule: newmap-names
         raise NewMapError(f"maps/{new}: the game already has a map called {new}; give the new map another folder "
                           f"name")
-    found = [f for f in entries(m, g, src) if _listed(g, f[1])]
-    if not found:
+    every = menu_entries(m, g, src)  # BATTLES maps, Operations, campaign chapters
+    if not every:
         if src.lower() in roots:
             # not a game rule: our map copier needs the game's own map files as they are
-            raise NewMapError(f"maps/{new}: {src} isn't played in BATTLES (it has no skirmish entry), so it can't be "
-                              f"copied as a skirmish map yet; start from a map BATTLES lists")
+            raise NewMapError(f"maps/{new}: no menu offers {src} (BATTLES, OPERATIONS or the CAMPAIGN), so there's no "
+                              f"entry to copy; start from a map one of them lists")
         # not a game rule: the game or one of its files isn't found
         raise NewMapError(f"maps/{new}: copy_of = {src!r} isn't a map of this game (it takes the map's pack name, like "
                           f"SuperCrossRoads4 for Blitz)")
+    found = [f for f in every if f[3] == "battles"]
     if spec.entry:
-        chosen = [f for f in found if f[2] == spec.entry]
+        chosen = [f for f in every if f[2] == spec.entry]
         if not chosen:
-            names = ", ".join(repr(n) for _i, _g, n in found)
-            raise NewMapError(f"maps/{new}: {src} has no BATTLES entry {spec.entry!r} (its entries: {names})")
+            names = ", ".join(repr(f[2]) for f in every)
+            raise NewMapError(f"maps/{new}: {src} has no entry {spec.entry!r} (its entries: {names})")
         found = chosen
     elif len(found) > 1:
-        names = ", ".join(repr(n) for _i, _g, n in found)
+        names = ", ".join(repr(f[2]) for f in found)
         raise NewMapError(f"maps/{new}: {src} has several BATTLES entries ({names}); say which one to copy in "
                           f"map.toml (entry = \"...\")")
-    mi, gi, list_name = found[0]
+    elif not found:
+        names = ", ".join(repr(f[2]) for f in every)
+        raise NewMapError(f"maps/{new}: {src} isn't in BATTLES; to copy one of its Operations or campaign chapters, "
+                          f"name it in map.toml (entry = \"...\"): {names}")
+    mi, gi, list_name, kind = found[0]
     load = _props(m, m.objects[mi])
-    out = Clone(new, src, pack_id=guid_for(new, "pack"), guid=guid_for(new, "entry"))
+    out = Clone(new, src, pack_id=guid_for(new, "pack"), guid=guid_for(new, "entry"), kind=kind)
     used = {bytes(v.payload) for nd in (m, g) for o in nd.objects for pi, v in o.props
             if nd.prop_name(pi) == "GUID" and v.tc == 0x1A}
     if out.guid in used:
@@ -433,25 +477,30 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
     _set(m, o, "GUID", Value(0x1A, out.guid))
     m.set_topo(list(m.topo) + [j])
 
-    # 5. BATTLES: its own entry, in the menu pack that lists the shipped map, after the maps of its size
+    # 5. the menu: its own entry beside the shipped one's. BATTLES: in the menu pack that lists the shipped map, after
+    # the maps of its size. An Operation or a campaign chapter: at the end of its pack's list, the briefing, pictures,
+    # bonus times and population caps the shipped one's (its mission script too: the scenario's cluster still names
+    # the shipped one's scripting folder).
     gs = _props(g, g.objects[gi])
     out.key = _free_key(read_zz)
     tracks = {(_text(g, _props(g, x).get("TrackingId")) or "") for x in g.objects}
-    t = TRACK_FIRST
-    while f"{TRACK_STEM}{t:02d}" in tracks:
+    stem, t = TRACKS[kind]
+    while f"{stem}{t:02d}" in tracks:
         t += 1
-    k = g.add_object(g.objects[gi].cls, [(pi, v) for pi, v in g.objects[gi].props if g.prop_name(pi) not in DROPPED])
+    dropped = DROPPED if kind == "battles" else ()
+    k = g.add_object(g.objects[gi].cls, [(pi, v) for pi, v in g.objects[gi].props if g.prop_name(pi) not in dropped])
     _set(g, g.objects[k], "GUID", Value(0x1A, out.guid))
     _set(g, g.objects[k], "Description", Value(0x1D, struct.pack("<Q", name_to_key(out.key))))
     if "TrackingId" in gs:
-        _set_text(g, g.objects[k], "TrackingId", f"{TRACK_STEM}{t:02d}")
-    left = _props(g, g.objects[k])
-    if not any(p.startswith("DispoMulti") and v.tc in (0x00, 0x02) and v.scalar() for p, v in left.items()):
-        raise NewMapError(f"maps/{new}: {list_name!r} is only offered in ranked games, which a copy can't join; pick "
-                          f"another entry")
-    if any(p in gs for p in LADDER):
-        out.notes.append(f"{new} isn't offered in ranked games (the shipped map's ladder place stays its own)")
-    _place(g, gi, k)
+        _set_text(g, g.objects[k], "TrackingId", f"{stem}{t:02d}")
+    if kind == "battles":
+        left = _props(g, g.objects[k])
+        if not any(p.startswith("DispoMulti") and v.tc in (0x00, 0x02) and v.scalar() for p, v in left.items()):
+            raise NewMapError(f"maps/{new}: {list_name!r} is only offered in ranked games, which a copy can't join; "
+                              f"pick another entry")
+        if any(p in gs for p in LADDER):
+            out.notes.append(f"{new} isn't offered in ranked games (the shipped map's ladder place stays its own)")
+    _place(g, gi, k, at_end=kind != "battles")
     out.glad_changed = {MAPINFO: m.to_member(compress=bool(m.flags & 0x80)),
                         GLOBALS: g.to_member(compress=bool(g.flags & 0x80))}
 
@@ -467,9 +516,10 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
     if not out.texts:
         raise NewMapError(f"maps/{new}: the menus' texts ({MENU_TEXTS}.dic) aren't in ZZ_Win.dat, so the new map "
                           f"would have no name")
-    out.notes.insert(0, f"{new}: a copy of {list_name!r} ({src}), listed in BATTLES as {spec.names['us']!r} (text "
-                        f"{out.key} in {len(out.texts)} dictionaries; map list {out.entry_name!r}, scenario "
-                        f"{out.scenario}), its pack {pack_file(new)} copied from {out.pack_from}")
+    out.notes.insert(0, f"{new}: a copy of {list_name!r} ({src}), listed in {MENU_NAMES[kind]} as "
+                        f"{spec.names['us']!r} (text {out.key} in {len(out.texts)} dictionaries; map list "
+                        f"{out.entry_name!r}, scenario {out.scenario}), its pack {pack_file(new)} copied from "
+                        f"{out.pack_from}")
     return out
 
 
@@ -503,9 +553,10 @@ def _free_key(read_zz) -> str:
     return f"{KEY_STEM}{n:02d}"
 
 
-def _place(g: Ndf, source: int, new: int) -> None:
+def _place(g: Ndf, source: int, new: int, at_end: bool = False) -> None:
     """Put menu entry `new` in the menu pack listing `source`, after the last entry of its size group (CategoryId):
-    the menus show a pack's maps in runs of one size."""
+    the menus show a pack's maps in runs of one size. `at_end`: last in the list (an Operation, a campaign chapter:
+    the shipped ones keep their order and numbers)."""
     def cat(i):
         p = _props(g, g.objects[i])
         return p["CategoryId"].scalar() if "CategoryId" in p else None
@@ -517,7 +568,7 @@ def _place(g: Ndf, source: int, new: int) -> None:
             refs = [local_ref(x) for x in items]
             if source not in refs:
                 continue
-            at = max(n for n, r in enumerate(refs) if r is not None and cat(r) == cat(new)) + 1
+            at = len(items) if at_end else max(n for n, r in enumerate(refs) if r is not None and cat(r) == cat(new)) + 1
             items.insert(at, Value(0x09, struct.pack("<III", 0xBBBBBBBB, new, g.objects[new].cls)))
             o.props[k] = (pi, Value(0x11, struct.pack("<I", len(items)) + b"".join(x.encode() for x in items)))
             return

@@ -259,24 +259,27 @@ def _save_checked(path: Path, text: str, read) -> None:
 
 def _copied(view: dict, copy) -> dict:
     """A shipped map's scenarios as a new map of it has them (`copy`: (name, newmap.NewMap); None: the map itself):
-    only the one its BATTLES entry loads (the entry map.toml names, else the BATTLES ones), listed under the new
-    map's name, as the build makes it. The cached view stays the game's."""
+    only the one its entry loads (the entry map.toml names: a BATTLES map, an Operation or a campaign chapter; else
+    the BATTLES ones), listed under the new map's name, as the build makes it. The cached view stays the game's."""
     if copy is None:
         return view
     _name, spec = copy
 
-    def battles(s):
-        return [e for e in s["entries"] if e["kind"] == "skirmish" and (spec.entry is None or e["name"] == spec.entry)]
+    def copied(s):
+        if spec.entry is not None:
+            return [e for e in s["entries"] if e["name"] == spec.entry]
+        return [e for e in s["entries"] if e["kind"] == "skirmish"]
     out = []
     for s in view["scenarios"]:
-        found = battles(s)
+        found = copied(s)
         if not found:
             continue
         seats = re.match(r"^\(\d+\)", found[0]["name"])  # "(2) Blitz" -> "(2) Blitz at Dusk"
-        out.append({**s, "entries": [{"name": f"{seats.group(0)} {spec.names['us']}" if seats else spec.names["us"],
-                                      "kind": "skirmish",
-                                      "titles": {lang: spec.names.get(lang, spec.names["us"])
-                                                 for lang in (found[0]["titles"] or {"us": ""})}}]})
+        out.append({**s, "kind": found[0]["kind"],
+                    "entries": [{"name": f"{seats.group(0)} {spec.names['us']}" if seats else spec.names["us"],
+                                 "kind": found[0]["kind"],
+                                 "titles": {lang: spec.names.get(lang, spec.names["us"])
+                                            for lang in (found[0]["titles"] or {"us": ""})}}]})
     return {**view, "scenarios": out}
 
 
@@ -964,7 +967,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 if spec.copy_of.lower() == m["pack"].lower():
                     out.append({"pack": name, "names": [spec.names["us"]], "paths": [name],
                                 "titles": {lang: [spec.names.get(lang, spec.names["us"])] for lang in m["titles"]},
-                                "kinds": ["skirmish"], "file": pack_file(name), "found": True,
+                                "kinds": [self._copy_kind(spec)], "file": pack_file(name), "found": True,
                                 "copy_of": m["pack"], "copy_of_names": m["names"]})
         return {"maps": out}
 
@@ -999,31 +1002,67 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def duplicate_options(self, pack: str) -> dict:
         """What Duplicate map needs to know about `pack` before asking for a name: {"source": the shipped map it
-        copies, "entries": its BATTLES entries (one to pick when there are several), "name": a suggested name,
-        "folder": the map project the copy goes into (None: one is made), "why": why it can't be copied, or None}."""
-        from rusemod import newmap
-        from rusemod import players as pl
-        from rusemod.ndf import Ndf
-        game = self._game()
-        glad_path = find_pack(game, "ZZ_GladPatchableWin.dat") if game is not None else None
-        if glad_path is None:
-            # not a game rule: the game or one of its files isn't found
-            raise StudioError("ZZ_GladPatchableWin.dat isn't in the game folder.")
+        copies, "entries": what a copy can start from (_menu_entries: its BATTLES maps, Operations and campaign
+        chapters), "name": a suggested name, "folder": the map project the copy goes into (None: one is made), "why":
+        why it can't be copied, or None}."""
         source = self._game_pack(pack)
-        with Edat.open(str(glad_path)) as glad:
-            def read(member):
-                e = glad.entry(member)
-                return bytes(glad.read(e)) if e is not None else None
-            g, m = Ndf(read(pl.GLOBALS)), Ndf(read(pl.MAPINFO))
-            entries = [name for _mi, gi, name in pl.entries(m, g, source) if newmap._listed(g, gi)]
+        entries = self._menu_entries(source)
         m = next((x for x in self.maps()["maps"] if x["pack"] == pack), {})
         called = ((m.get("titles") or {}).get("us") or m.get("names") or [pack])[0]  # what players call it
         folder = self._map_dir()
         return {"source": source, "entries": entries, "name": f"{called} 2",
                 "folder": str(folder) if folder else None,
-                # not a game rule: our map copier starts from a map BATTLES lists (its scenario and menu entry)
-                "why": None if entries else "Only maps BATTLES lists can be duplicated for now (this one has no "
-                                            "BATTLES entry to copy)."}
+                # not a game rule: our map copier starts from one of the menus' entries (its scenario and menu entry)
+                "why": None if entries else "No menu offers this map (BATTLES, OPERATIONS or the CAMPAIGN), so it has "
+                                            "no entry to copy."}
+
+    def _menu_entries(self, source: str) -> list[dict]:
+        """The game's menu entries of map `source` a copy can start from (rusemod.newmap.menu_entries), in the map
+        list's order: [{"name": its map-list name, "kind": battles, operation or campaign, "titles": what the menus
+        call it, {lang: text}}]. Kept per game file."""
+        from rusemod import newmap
+        from rusemod import players as pl
+        from rusemod.ndf import Ndf
+        from rusemod.terrain import menu_keys, menu_texts
+        game = self._game()
+        glad_path = find_pack(game, "ZZ_GladPatchableWin.dat") if game is not None else None
+        if glad_path is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("ZZ_GladPatchableWin.dat isn't in the game folder.")
+        key = ("menu-entries", str(glad_path), glad_path.stat().st_mtime, source.lower())
+        with self._grounds_lock:
+            cached = self._sceneries.get(key)
+        if cached is not None:
+            return cached
+        with Edat.open(str(glad_path)) as glad:
+            def read(member):
+                e = glad.entry(member)
+                return bytes(glad.read(e)) if e is not None else None
+            g, m = Ndf(read(pl.GLOBALS)), Ndf(read(pl.MAPINFO))
+        found = newmap.menu_entries(m, g, source)
+        menus, keys = menu_keys(g), {}
+        for mi, _gi, name, _kind in found:
+            guid = next((bytes(v.payload) for pi, v in m.objects[mi].props if m.prop_name(pi) == "GUID"), b"")
+            ranked = sorted(menus.get(guid, []))
+            keys[name] = ranked[0][1] if ranked else None
+        texts = menu_texts(game, {k for k in keys.values() if k is not None})
+        out = [{"name": name, "kind": kind,
+                "titles": {lang: t[keys[name]] for lang, t in texts.items() if keys[name] in t}}
+               for _mi, _gi, name, kind in found]
+        with self._grounds_lock:
+            self._sceneries[key] = out
+        return out
+
+    def _copy_kind(self, spec) -> str:
+        """The map list's kind of a new map (the Maps view's filter: skirmish, operation or campaign), by the entry it
+        copies: a BATTLES map unless map.toml names an Operation's or a campaign chapter's."""
+        if spec.entry is None:
+            return "skirmish"
+        try:
+            kind = next((e["kind"] for e in self._menu_entries(spec.copy_of) if e["name"] == spec.entry), "battles")
+        except (StudioError, OSError, ValueError):
+            kind = "battles"
+        return {"battles": "skirmish"}.get(kind, kind)
 
     def duplicate_map(self, pack: str, name: str, entry: str | None = None) -> dict:
         """Make a new map: a copy of `pack` called `name` in the menus, in the current map project (one is made when
@@ -1038,13 +1077,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         opts = self.duplicate_options(pack)
         if opts["why"]:
             raise StudioError(opts["why"])
-        if entry is not None and entry not in opts["entries"]:
-            raise StudioError(f"{opts['source']} has no BATTLES entry {entry!r}.")
-        if entry is None and len(opts["entries"]) > 1:
-            raise StudioError("This map has several BATTLES entries: pick the one to copy.")
         old_copy = self._new_maps().get(pack.lower())
         if entry is None and old_copy is not None:
-            entry = old_copy[1].entry
+            entry = old_copy[1].entry  # a copy of a copy copies the same entry
+        battles = [e["name"] for e in opts["entries"] if e["kind"] == "battles"]
+        if entry is not None and entry not in [e["name"] for e in opts["entries"]]:
+            raise StudioError(f"{opts['source']} has no entry {entry!r}.")
+        if entry is None and len(battles) != 1:
+            raise StudioError("Pick what to copy: one of this map's BATTLES maps, Operations or campaign chapters.")
+        if entry is not None and battles == [entry]:
+            entry = None  # the map's one BATTLES map: map.toml needn't say it
         if self._map_dir() is None:
             self.new_mod(name, "map")
         folder = self._map_dir()

@@ -11,7 +11,10 @@ from unittest import mock
 from rusemod import newmap
 from ruse_studio.api import StudioApi, StudioError, _copied, _pack_name
 
-OPTIONS = {"source": "SuperCrossRoads4", "entries": ["(2) Blitz"], "name": "Blitz 2", "folder": None, "why": None}
+ANZIO = "Challenge - 1v1 39 Blitz_2 (Anzio)"
+ENTRIES = [{"name": "(2) Blitz", "kind": "battles", "titles": {"us": "Blitz"}},
+           {"name": ANZIO, "kind": "operation", "titles": {"us": "Anzio"}}]
+OPTIONS = {"source": "SuperCrossRoads4", "entries": ENTRIES, "name": "Blitz 2", "folder": None, "why": None}
 SHIPPED = [{"pack": "SuperCrossRoads4", "names": ["(2) Blitz"], "titles": {"us": ["Blitz"]}, "kinds": ["skirmish"],
             "file": "DataMapSuperCrossRoads4_v09.dat", "found": True}]
 
@@ -48,6 +51,12 @@ class CopiedScenarios(unittest.TestCase):
 
     def test_the_map_itself_unchanged(self):
         self.assertIs(_copied(self.VIEW, None), self.VIEW)
+
+    def test_an_operations_scenario(self):
+        spec = newmap.NewMap("SuperCrossRoads4", {"us": "Anzio Twin"}, "Challenge - 1v1 39 Blitz_2 (Anzio)")
+        got = _copied(self.VIEW, ("AnzioTwin", spec))["scenarios"]
+        self.assertEqual([(s["file"], s["kind"]) for s in got], [("scenario_challenge_2.scenario", "operation")])
+        self.assertEqual(got[0]["entries"][0]["name"], "Anzio Twin")
 
 
 class Duplicate(unittest.TestCase):
@@ -119,17 +128,30 @@ class Duplicate(unittest.TestCase):
             self.api.duplicate_map("SuperCrossRoads4", "   ")
         with self.assertRaisesRegex(StudioError, "60"):
             self.api.duplicate_map("SuperCrossRoads4", "x" * 61)
-        with self.assertRaisesRegex(StudioError, "no BATTLES entry"):
+        with self.assertRaisesRegex(StudioError, "has no entry"):
             self.api.duplicate_map("SuperCrossRoads4", "Blitz 2", entry="(4) Nope")
 
     def test_several_entries_need_one_picked(self):
-        OPTIONS_TWO = dict(OPTIONS, entries=["(6) Centre de gravite", "(4) Centre de gravite (2v2)"])
-        with mock.patch.object(StudioApi, "duplicate_options", return_value=OPTIONS_TWO):
-            with self.assertRaisesRegex(StudioError, "pick the one"):
+        two = [{"name": n, "kind": "battles", "titles": {}} for n in ("(6) Centre de gravite", "(4) Centre de gravite (2v2)")]
+        with mock.patch.object(StudioApi, "duplicate_options", return_value=dict(OPTIONS, entries=two)):
+            with self.assertRaisesRegex(StudioError, "Pick what to copy"):
                 self.api.duplicate_map("TwoIslands", "Gravity")
             pack = self.api.duplicate_map("TwoIslands", "Gravity", entry="(4) Centre de gravite (2v2)")["pack"]
         data = tomllib.loads((self.api._map_dir() / "maps" / pack / "map.toml").read_text(encoding="utf-8"))
         self.assertEqual(data["entry"], "(4) Centre de gravite (2v2)")
+
+    def test_an_operation(self):
+        pack = self.api.duplicate_map("SuperCrossRoads4", "Anzio Twin", entry=ANZIO)["pack"]
+        data = tomllib.loads((self.api._map_dir() / "maps" / pack / "map.toml").read_text(encoding="utf-8"))
+        self.assertEqual((data["copy_of"], data["entry"], data["name"]), ("SuperCrossRoads4", ANZIO, "Anzio Twin"))
+        with mock.patch.object(StudioApi, "_menu_entries", return_value=ENTRIES):
+            listed = {m["pack"]: m["kinds"] for m in self.api.maps()["maps"]}
+        self.assertEqual(listed["AnzioTwin"], ["operation"])  # the Maps list's Operations filter shows it
+
+    def test_the_one_battles_map_needs_no_entry(self):
+        pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk", entry="(2) Blitz")["pack"]
+        data = tomllib.loads((self.api._map_dir() / "maps" / pack / "map.toml").read_text(encoding="utf-8"))
+        self.assertNotIn("entry", data)
 
     def test_a_map_battles_doesnt_list(self):
         with mock.patch.object(StudioApi, "duplicate_options", return_value=dict(OPTIONS, entries=[], why="Only maps")):

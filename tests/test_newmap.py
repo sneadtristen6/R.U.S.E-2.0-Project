@@ -15,7 +15,8 @@ from rusemod.build import BuildError, build_and_write, load_mod
 from rusemod.dic import Dic, name_to_key
 from rusemod.edat import Edat
 from rusemod.ndf import Ndf, local_ref, sub_values
-from rusemod.newmap import (Grown, NewMap, NewMapError, NewPack, check_name, guid_for, make, map_toml, parse)
+from rusemod.newmap import (Grown, NewMap, NewMapError, NewPack, check_name, guid_for, make, map_toml, menu_entries,
+                            parse)
 from rusemod.players import GLOBALS, MAPINFO, entries, skirmish_files
 
 BS = chr(92)
@@ -274,8 +275,8 @@ class Making(unittest.TestCase):
     def test_what_cant_be_copied(self):
         for name, spec, why in (
                 ("BlitzAtDusk", NewMap("Nowhere", {"us": "x"}), "isn't a map of this game"),
-                ("BlitzAtDusk", NewMap("M01_Leipzig", {"us": "x"}), "isn't played in BATTLES"),
-                ("BlitzAtDusk", NewMap("SuperCrossRoads4", {"us": "x"}, "(4) Blitz"), r"no BATTLES entry '\(4\) Blitz'"),
+                ("BlitzAtDusk", NewMap("M01_Leipzig", {"us": "x"}), "no menu offers M01_Leipzig"),
+                ("BlitzAtDusk", NewMap("SuperCrossRoads4", {"us": "x"}, "(4) Blitz"), r"has no entry '\(4\) Blitz'"),
                 ("SuperCrossroads4", NewMap("Alpha", {"us": "x"}), "already has a map called"),
                 ("Flat_X", NewMap("SuperCrossRoads4", {"us": "x"}), "test maps")):
             with self.subTest(why=why), self.assertRaisesRegex(NewMapError, why):
@@ -286,6 +287,60 @@ class Making(unittest.TestCase):
             made(data=no_grid)
         with self.assertRaisesRegex(NewMapError, "menus' texts"):
             made(texts={"x": b""})
+
+
+def menu_globals(entry_cls: str, pack_cls: str, list_prop: str, track: str, tuto: bool = False) -> bytes:
+    """globals.cpp with Blitz's one menu entry in another menu: an Operation (TChallengeMapInfo in a TChallengePack's
+    ChallengeList) or a campaign chapter (TChapterMapInfo in a TChapterPack's ChapterList); `tuto`: the tutorial's
+    chapter pack (IsTuto)."""
+    return make_ndf(
+        objects=[(0, [(0, key("M_D_01")), (1, val(0x1A, GUID_BLITZ)), (2, s(0)), (3, i32(1))]),
+                 (0, [(0, key("M_D_08")), (1, val(0x1A, GUID_OTHER)), (2, s(1)), (3, i32(1))]),
+                 (1, [(4, val(0x11, struct.pack("<I", 2) + ref(0, 0) + ref(1, 0)))] + ([(5, yes())] if tuto else []))],
+        classes=[entry_cls, pack_cls],
+        props=[("Description", 0), ("GUID", 0), ("TrackingId", 0), ("CategoryId", 0), (list_prop, 1), ("IsTuto", 1)],
+        strings=[track, "X99"], topo=[2], compress=True)
+
+
+class OperationsAndChapters(unittest.TestCase):
+    """A copy of an Operation or a campaign chapter: the same files as a BATTLES map's, and its entry in that menu,
+    last in its pack's list, with a tracking id of its own."""
+
+    def made_in(self, entry_cls, pack_cls, list_prop, track, entry="(2) Blitz", tuto=False):
+        glad = glad_files()
+        glad[GLOBALS] = menu_globals(entry_cls, pack_cls, list_prop, track, tuto)
+        return made("AnzioTwin", NewMap("SuperCrossRoads4", {"us": "Anzio Twin"}, entry), glad=glad)
+
+    def check(self, c, cls, list_prop, track, menu):
+        g = Ndf(c.glad_changed[GLOBALS])
+        [k] = [i for i, o in enumerate(g.objects) if g.classes[o.cls] == cls and "GUID" in props(g, o)
+               and bytes(props(g, o)["GUID"].payload) == c.guid]
+        p = props(g, g.objects[k])
+        self.assertEqual(text(g, p["TrackingId"]), track)
+        self.assertEqual(struct.unpack("<Q", p["Description"].payload)[0], name_to_key(c.key))
+        listed = props(g, g.objects[2])[list_prop]
+        self.assertEqual([local_ref(x) for x in sub_values(listed)], [0, 1, k])  # last: the shipped ones keep their order
+        self.assertIn(f"listed in {menu} as 'Anzio Twin'", c.notes[0])
+        m = Ndf(c.glad_changed[MAPINFO])
+        self.assertEqual([(f[2], f[3]) for f in menu_entries(m, g, "AnzioTwin")], [("(2) Anzio Twin", c.kind)])
+
+    def test_an_operation(self):
+        c = self.made_in("TChallengeMapInfo", "TChallengePack", "ChallengeList", "CH26")
+        self.assertEqual(c.kind, "operation")
+        self.check(c, "TChallengeMapInfo", "ChallengeList", "CH40", "OPERATIONS")
+
+    def test_a_campaign_chapter(self):
+        c = self.made_in("TChapterMapInfo", "TChapterPack", "ChapterList", "M01")
+        self.assertEqual(c.kind, "campaign")
+        self.check(c, "TChapterMapInfo", "ChapterList", "M24", "the CAMPAIGN")
+
+    def test_named_by_its_entry(self):
+        with self.assertRaisesRegex(NewMapError, r"isn't in BATTLES; to copy one of its Operations.*'\(2\) Blitz'"):
+            self.made_in("TChallengeMapInfo", "TChallengePack", "ChallengeList", "CH26", entry=None)
+
+    def test_not_the_tutorial(self):
+        with self.assertRaisesRegex(NewMapError, "no menu offers SuperCrossRoads4"):
+            self.made_in("TChapterMapInfo", "TChapterPack", "ChapterList", "M01", tuto=True)
 
 
 class ThePacks(unittest.TestCase):
@@ -436,7 +491,7 @@ class Building(unittest.TestCase):
         self.assertIn("aaa and bbb both make a new map called blitzatdusk", result.errors[0].message)
         self.assertIn("Nothing was written.", lines)
         result, lines = self.build(self.mod("campaign", {"map.toml": 'copy_of = "M01_Leipzig"\n'}, name="Leipzig2"))
-        self.assertIn("campaign: maps/Leipzig2: M01_Leipzig isn't played in BATTLES", result.errors[0].message)
+        self.assertIn("campaign: maps/Leipzig2: no menu offers M01_Leipzig", result.errors[0].message)
         self.assertFalse((self.root / "copy").exists())
         result, lines = self.build(self.mod("ghost", {"terrain.toml": '[[stroke]]\nbrush = "hill"\nx = 1.0\ny = 1.0\n'
                                                                       'radius = 600.0\nheight = 4.0\n'}, name="NoSuchMap"))

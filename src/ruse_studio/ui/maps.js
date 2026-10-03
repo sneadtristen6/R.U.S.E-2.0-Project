@@ -4052,10 +4052,52 @@ function packName(name) {  // the folder and file name the Studio gives it (api.
   return base.slice(0, 36);
 }
 
+// The three kinds of new map, in the order the window shows them (StudioApi._menu_entries' kinds)
+const DUP_KINDS = ["battles", "operation", "campaign"];
+const dup = { entries: [], kind: null, typed: false };
+
+function entryTitle(e) {  // what the menus call an entry in the Studio's language, else its map-list name
+  const t = e.titles || {};
+  return (mv.lang !== "base" && (t[mv.lang] || t.us)) || e.name;
+}
+
+function renderDupKinds() {
+  const w = mv.words;
+  $("dup-kind").textContent = w.dup_kind;
+  $("dup-kinds").replaceChildren(...DUP_KINDS.map((k) => {
+    const has = dup.entries.some((e) => e.kind === k);
+    const b = el("button", { type: "button", className: "dup-kind", disabled: !has },
+      el("span", { className: "kind-name", textContent: w[`dup_kind_${k}`] }),
+      el("span", { className: "kind-what", textContent: has ? w[`dup_kind_${k}_what`] : w.dup_kind_none }));
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", String(dup.kind === k));
+    b.addEventListener("click", () => { dup.kind = k; renderDupKinds(); fillDupEntries(); });
+    return b;
+  }));
+}
+
+function fillDupEntries() {
+  const mine = dup.entries.filter((e) => e.kind === dup.kind);
+  $("dup-entry").replaceChildren(...mine.map((e) => el("option", { value: e.name, textContent: entryTitle(e), title: e.name })));
+  $("dup-entry-row").classList.toggle("hidden", mine.length < 2);
+  dupSuggestName();
+}
+
+function dupSuggestName() {  // "<what the copied entry is called> 2", until a name is typed
+  if (dup.typed) return;
+  const e = dup.entries.find((x) => x.name === $("dup-entry").value);
+  $("dup-name").value = e ? `${entryTitle(e).replace(/^\d+\.\s*/, "")} 2` : "";  // a chapter's number left out
+  dupNameChanged();
+}
+
 async function openDuplicate() {
   const w = mv.words, pack = mv.current;
   if (!pack) return;
   const map = mapName(pack);
+  dup.entries = [];
+  dup.kind = null;
+  dup.typed = false;
+  renderDupKinds();
   $("dup-title").textContent = w.duplicate_map;
   $("dup-lead").textContent = fill(w.dup_lead, { map });
   $("dup-how").textContent = w.dup_how;
@@ -4083,11 +4125,11 @@ async function openDuplicate() {
   }
   $("dup-how-where").textContent = opts.folder ? fill(w.dup_how_where, { folder: opts.folder }) : w.dup_how_new;
   if (opts.why) { $("dup-note").textContent = opts.why; return; }
-  $("dup-entry").replaceChildren(...opts.entries.map((e) => el("option", { value: e, textContent: e })));
-  $("dup-entry-row").classList.toggle("hidden", opts.entries.length < 2);
-  $("dup-name").value = `${map} 2`;
+  dup.entries = opts.entries || [];
+  dup.kind = DUP_KINDS.find((k) => dup.entries.some((e) => e.kind === k)) || null;
+  renderDupKinds();
+  fillDupEntries();
   $("dup-go").disabled = false;
-  dupNameChanged();
   $("dup-name").focus();
   $("dup-name").select();
 }
@@ -4103,7 +4145,7 @@ async function duplicate(e) {
   e.preventDefault();
   const w = mv.words, pack = mv.current, name = $("dup-name").value.trim();
   if (!name || !pack) return;
-  const entry = $("dup-entry-row").classList.contains("hidden") ? null : $("dup-entry").value;
+  const entry = $("dup-entry").value || null;  // the server leaves the map's one BATTLES map out of map.toml
   $("dup-go").disabled = true;
   $("dup-note").textContent = "";
   try {
@@ -4609,7 +4651,8 @@ function wire() {
   $("maps-fold").addEventListener("click", () => { foldMaps(!mv.folded); saveView(); });
   $("map-duplicate").addEventListener("click", openDuplicate);
   $("dup-form").addEventListener("submit", duplicate);
-  $("dup-name").addEventListener("input", dupNameChanged);
+  $("dup-name").addEventListener("input", () => { dup.typed = true; dupNameChanged(); });
+  $("dup-entry").addEventListener("change", dupSuggestName);
   $("dup-cancel").addEventListener("click", () => $("duplicate").close());
   $("duplicate").addEventListener("keydown", (e) => e.stopPropagation());  // typing a name never moves the map
   $("brush-clear").addEventListener("click", () => {

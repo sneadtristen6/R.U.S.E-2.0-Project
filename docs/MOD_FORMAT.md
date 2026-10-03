@@ -252,7 +252,8 @@ later (M8).
 
 ```toml
 copy_of = "SuperCrossRoads4"   # the shipped map it starts from, by its pack name (this one is Blitz)
-entry = "(2) Blitz"            # optional: which of its BATTLES entries, when it has several (the map list's name)
+entry = "(2) Blitz"            # optional: which of its entries, by the map list's name: a BATTLES map (needed when it
+                               # has several), or an Operation's or a campaign chapter's (the copy is then one too)
 players = 4                    # optional: as on any map (below), for the copy
 
 [name]                         # what the menus call it, or one name for every language: name = "Blitz Twin"
@@ -276,6 +277,14 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
   `scenario.toml` names that file.
 - The ids come from the name, so every PC that builds the mod gets the same files: a multiplayer game needs the mod on
   both PCs, like any mod. The copy isn't offered in ranked games (the shipped map's ladder place stays its own).
+- **An Operation or a campaign chapter:** `entry` names it (`"Challenge - 1v1 39 Blitz_2 (Anzio)"` for Anzio,
+  `"M02_Tunisie_chapter1"` for Tunisia's first chapter). The copy is then a new Operation, last in OPERATIONS (a
+  `TChallengeMapInfo` in the shipped one's pack, tracking id from `CH40`), or a new chapter, last in the campaign (a
+  `TChapterMapInfo`, from `M24`), with the shipped one's briefing, pictures, bonus times and population caps. Its
+  mission script, cutscenes and dialog are the shipped one's: the copied scenario still names the shipped scripting
+  folder. **Seen in the game:** a new Operation (Anzio Twin, `TESTS.md` T17). A new chapter isn't tried yet; the game
+  opens a chapter only when the one before it in its list is finished, so a copy put last opens after the campaign's
+  last chapter.
 - Refused, with the reason: `copy_of` a map the game hasn't got, or one BATTLES doesn't list (campaign and Operation
   maps); a name the game's map list already has, or one starting `flat_` (the game's test maps); a map with several
   BATTLES entries and no `entry`; two mods making maps of one name; `name` without `copy_of` (a shipped map's menu name

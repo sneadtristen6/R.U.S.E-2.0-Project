@@ -463,6 +463,28 @@ right of it, unchanged). Blitz 12 to 100 are plain copies. Left and right are as
 the HQs). No limit found at 101. Long names don't fit: "Blitz 7: flat-top mountain in the middle" (40 characters) is
 cut off in CHOOSE MAP's title, and "Blitz 8: wall of hills between the HQs" (38) in the lobby.
 
+## T17. A new Operation and a new campaign chapter (2026-10-03)
+
+`D:\RUSE-Instances\ops-check` from `D:\ruse-test-mods\newmap-ops` plus the cheat mod: 0 errors. Two new maps made
+the way Blitz Twin was, from another menu's entry (`entry` in map.toml), each flattened whole with one big hill in the
+middle so it's plain which ground it plays:
+- **Anzio Twin:** a copy of the Operation Anzio (Blitz, `Challenge - 1v1 39 Blitz_2 (Anzio)`), listed last in
+  OPERATIONS. Its mission script is Anzio's own: the copied scenario still names Anzio's scripting folder.
+- **Taking Command Twin:** a copy of Tunisia's first chapter (`M02_Tunisie_chapter1`, "2. TAKING COMMAND!"),
+  listed last in the campaign, with the shipped chapter's script. The game marks each chapter unlocked from saved
+  progress, so the copy may show locked.
+1. OPERATIONS: is **Anzio Twin** listed? Play it.
+   - **Pass:** flat ground with a big hill in the middle, and Anzio's mission runs (briefing, objectives, the enemy
+     acting, a way to win or lose).
+2. CAMPAIGN: is **Taking Command Twin** listed, and can it be started (or is it locked)? Play it if it starts.
+   - **Pass:** flat Tunisia with a big hill in the middle, and the chapter's mission runs.
+- **Tell us** anything odd: a crash while loading, a mission that never starts, texts missing.
+
+**Result (owner, 2026-10-03): the Operation PASSED** ("operations worked"). The campaign chapter wasn't tried: his
+campaign isn't all unlocked, and the game's own code opens a chapter only when the one before it in its list is
+finished (the first of a list is always open), so a copy put last stays locked until the last chapter is done. He'll
+try a campaign copy himself; cutscenes and dialog may need their own work ("an extended campaign with new scenes").
+
 ## T11. Launcher 0.2.9
 
 - **Pass:** the launcher offers 0.2.9 when it opens; **Update** installs it and it starts again; **Play** works.

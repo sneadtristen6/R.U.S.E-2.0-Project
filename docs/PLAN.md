@@ -1137,8 +1137,14 @@ the ground** (T5). Scenery and roads come after the ground works in-game (M6, M8
    the game's cover bonuses belong to forest and town zones, not to the shape of the ground, so a ditch is only a
    picture until a cover zone can be drawn on it (M6). A tunnel would have to be a gameplay trick (two connected
    points), and nothing in the data does that yet.
+3. **An extended campaign with new scenes** (owner, 2026-10-03: "thinking a extended campaign with new scenes or
+   something, idk just a thought"). New chapters after (or beside) the game's own, with cutscenes of their own. What
+   the game does, from its code: a chapter opens only when the one before it in its list is finished, and the first
+   of a list is always open; a campaign is a chapter pack, and the menu reads every pack. So a campaign of our own
+   (a new pack) should open at its first chapter (not tried yet). A copied chapter keeps the shipped chapter's
+   cutscenes and dialog; new ones would need their own work.
 
-Both go to §11 (RUSE 2.0 design notes) when they're taken up; until then this is the record.
+These go to §11 (RUSE 2.0 design notes) when they're taken up; until then this is the record.
 
 ## 13. Making a new map (design draft, 2026-09-30)
 
