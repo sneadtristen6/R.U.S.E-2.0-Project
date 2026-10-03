@@ -21,11 +21,13 @@
       <button id="tab-maps" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-settings" type="button" role="tab" aria-selected="false"></button>
     </div>
-    <label id="pick-mod" class="pick-mod"><span id="mod-label">Mod</span>
+    <label id="pick-mod" class="pick-mod"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path
+      d="M3 15h18l-2 4H5z M6 15v-3h9v3 M15 13h6"/></svg><span id="mod-label">Unit mod</span>
       <select id="mod"></select>
     </label>
     <!-- the Maps tab's own: maps are kept apart from mods (app.js renderMods, StudioApi.mods(kind="map")) -->
-    <label id="pick-map" class="pick-mod hidden"><span id="map-project-label">Map</span>
+    <label id="pick-map" class="pick-mod hidden"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path
+      d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z M9 4v14 M15 6v14"/></svg><span id="map-project-label">Map changes</span>
       <select id="map-project"></select>
     </label>
     <button id="test" type="button" class="primary" disabled></button>

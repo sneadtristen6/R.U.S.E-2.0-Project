@@ -1625,7 +1625,10 @@ function zoneBorder(triangles) {
 // A zone on the ground, Stellaris' way (ZONE_FILL_MOST): a clear line along its border, a glow just inside it that
 // fades inwards (clear at the border, gone `band` in), and a faint fill, in its own colour; all following the ground.
 function drawZone(z, k, zones, at, step) {
-  const { THREE } = mv.gl, colour = zoneColour(k), label = `${mv.words.scen_zone} ${k + 1} · ${z.name}`;
+  // its hover: "Zone 2 · an area of the map (a sector), not a side" (the owner asked whether zones are sides; the
+  // zone's own name in the file is only a code, zone_<guid>)
+  const { THREE } = mv.gl, colour = zoneColour(k);
+  const label = `${mv.words.scen_zone} ${k + 1} · ${mv.words.scen_zone_what || z.name}`;
   const p = z.points;
   const { xy, tris } = drapeZone(p, z.triangles, step), n = xy.length / 2, pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) {

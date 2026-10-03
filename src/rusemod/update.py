@@ -1,8 +1,10 @@
 """Updating the installed apps from GitHub Releases (PLAN.md decision 10): both apps ask for their newest release on
 start, and offer it; Update downloads its installer, checks it, and runs it silently, and the app starts again.
 
-- **Which release:** the newest one whose tag is `<app>-v<major.minor.patch>` (launcher-v0.2.0, studio-v0.5.0), newer
-  than the running version. Drafts never count; the Studio's releases are pre-releases (a preview) and count.
+- **Which release:** the newest one whose tag is `<app>-v<major.minor.patch>` (launcher-v0.2.0, studio-v0.5.0), or
+  with a fourth number for a small fix (studio-v0.9.4.1: TAG_VERSION), newer than the running version. Drafts never
+  count; the Studio's releases are pre-releases (a preview) and count. Apps from before 0.9.4 / 0.4.4 see only
+  three-number tags.
 - **Which file:** the release's `RUSE-<App>-Setup-<version>.exe`.
 - **Checked before it runs:** its SHA-256 must equal what GitHub reports for the file (the asset's `digest`) and the
   one our release notes publish (.github/workflows/release.yml writes it); at least one must be there, and both must
@@ -78,6 +80,9 @@ def changes_since(body: str, current: str, newest: str) -> list[dict]:
     return out
 
 
+TAG_VERSION = r"\d+\.\d+\.\d+(?:\.\d+)?"  # a release tag's version: three numbers, or four for a small fix (0.9.4.1)
+
+
 def version_tuple(v: str) -> tuple:
     try:
         return tuple(int(p) for p in str(v).split("."))
@@ -148,7 +153,7 @@ def feed_releases(text: str) -> list[dict]:
         if not link or not link.group(1).startswith(f"https://github.com/{REPO}/releases/tag/"):
             continue
         tag = link.group(1).rsplit("/", 1)[-1]
-        m = re.match(r"^(launcher|studio)-v(\d+\.\d+\.\d+)$", tag)
+        m = re.match(rf"^(launcher|studio)-v({TAG_VERSION})$", tag)
         assets = []
         if m:
             name = f"RUSE-{APPS[m.group(1)]}-Setup-{m.group(2)}.exe"
@@ -171,7 +176,7 @@ def latest(app: str, current: str, fetch=_get_json, fetch_text=_get_text) -> Rel
             releases = feed_releases(fetch_text(FEED))
         except (OSError, ValueError):
             raise UpdateError(f"GitHub couldn't be reached to look for updates ({exc}).") from None
-    tag_re = re.compile(rf"^{app}-v(\d+\.\d+\.\d+)$")
+    tag_re = re.compile(rf"^{app}-v({TAG_VERSION})$")
     best = None
     for rel in releases if isinstance(releases, list) else []:
         m = tag_re.match(str(rel.get("tag_name", "")))

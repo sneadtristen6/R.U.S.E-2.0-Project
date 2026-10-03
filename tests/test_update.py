@@ -36,6 +36,15 @@ class Finding(unittest.TestCase):
         self.assertEqual(latest("studio", "0.4.1", fetch=lambda url: [release("studio-v0.5.0", pre=True)]).version,
                          "0.5.0")  # the Studio's releases are pre-releases, and count
 
+    def test_a_small_fix_with_a_fourth_number(self):
+        """The owner, 2026-10-03: small fixes between releases (studio-v0.9.4.1) are offered like any other."""
+        rels = [release("studio-v0.9.4", pre=True), release("studio-v0.9.4.1", pre=True), release("studio-v0.9.3", pre=True)]
+        rel = latest("studio", "0.9.4", fetch=lambda url: rels)
+        self.assertEqual((rel.version, rel.asset), ("0.9.4.1", "RUSE-Studio-Setup-0.9.4.1.exe"))
+        self.assertIsNone(latest("studio", "0.9.4.1", fetch=lambda url: rels))
+        self.assertEqual(latest("studio", "0.9.3", fetch=lambda url: rels).version, "0.9.4.1")
+        self.assertIsNone(latest("studio", "0.9.3", fetch=lambda url: [release("studio-v0.9.4.1.2", pre=True)]))
+
     def test_only_a_release_that_can_be_checked(self):
         for rel, why in ((release("launcher-v0.2.0", digest=False, notes=False), "can't be checked"),
                          (release("launcher-v0.2.0", digest="0" * 64), "can't be checked"),

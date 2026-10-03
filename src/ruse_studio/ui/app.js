@@ -136,7 +136,7 @@ function renderMods() {
   }
   $("mod").title = w.tip_pick_mod || "";
   $("map-project").title = w.tip_pick_map || "";
-  $("map-project-label").textContent = w.map_project || "Map";
+  $("map-project-label").textContent = w.map_project || "Map changes";
   $("test").disabled = !(state.mod || state.map) || $("test").dataset.running === "1";
 }
 

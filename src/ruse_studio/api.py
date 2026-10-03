@@ -916,6 +916,34 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
         return {"maps": [m for m in map_list(game) if m["found"]]}
 
+    # A map's data the window asks for (its scenery, roads, bridges, cover...), kept in memory: about six kinds a map,
+    # so 24 is the last few maps. It was 3 in all, so one map's own kinds pushed each other out as it opened, and
+    # every visit read everything again (issue #15: "a map is slow to open").
+    MAP_DATA_KEPT = 24
+    MAP_DATA_FORMAT = 1  # the kept files' format: a new one means they're all made again
+
+    def _kept_on_disk(self, what: str, pack: str, sources: list, make):
+        """`make()`'s answer (JSON-ready) for one map, kept in the cache folder between runs: named by the map, the
+        game files it's read from (each one's size and time: a game update or a changed pack makes a new one) and this
+        Studio's version (the names and rules it's made with). Reading the game files again took seconds a map on
+        M03_Italie (its road pieces 2.8, its scenery 2, its bridges 1.3). Never fails for the cache's sake."""
+        from . import __version__
+        stamp = "-".join(f"{p.stat().st_size}-{int(p.stat().st_mtime)}" for p in sources)
+        kept = self.cache_dir / "maps" / f"{what}-{pack}-{stamp}-v{__version__}-{self.MAP_DATA_FORMAT}.json"
+        try:
+            return json.loads(kept.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            pass
+        out = make()
+        try:
+            kept.parent.mkdir(parents=True, exist_ok=True)
+            part = kept.with_suffix(".part")
+            part.write_text(json.dumps(out, separators=(",", ":")), encoding="utf-8")
+            part.replace(kept)  # whole or not at all
+        except OSError:
+            pass
+        return out
+
     def map_view(self, pack: str, lod: str = "lowdef") -> dict:
         """One map's ground for the 3D view: its mesh as packed buffers the window unpacks, and its overview picture.
         `lod`: "lowdef" (light, opens fast) or "highdef" (the close-up mesh the game draws near the camera)."""
@@ -930,7 +958,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if key in self._grounds:
                 self._grounds[key] = self._grounds.pop(key)  # most recent last
                 return self._grounds[key]
-        view = terrain(game, pack, lod)
+        map_path = find_pack(game, pack_file(pack))
+        view = (self._kept_on_disk(f"ground-{lod}", pack, [map_path], lambda: terrain(game, pack, lod))
+                if map_path is not None else terrain(game, pack, lod))
         with self._grounds_lock:
             self._grounds[key] = view
             while len(self._grounds) > 4:
@@ -953,14 +983,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         with self._grounds_lock:
             if key in self._sceneries:
                 return self._sceneries[key]
-        with Edat.open(str(unit_path)) as unit_arc, Edat.open(str(map_path)) as map_arc:
-            try:
-                out = scenery.view(map_arc, unit_arc, self._scenery_types(unit_path, unit_arc))
-            except (KeyError, scenery.SceneryError) as exc:
-                raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
+        def make():
+            with Edat.open(str(unit_path)) as unit_arc, Edat.open(str(map_path)) as map_arc:
+                try:
+                    return scenery.view(map_arc, unit_arc, self._scenery_types(unit_path, unit_arc))
+                except (KeyError, scenery.SceneryError) as exc:
+                    raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
+        out = self._kept_on_disk("scenery", pack, [map_path, unit_path], make)
         with self._grounds_lock:
             self._sceneries[key] = out
-            while len(self._sceneries) > 3:
+            while len(self._sceneries) > self.MAP_DATA_KEPT:
                 self._sceneries.pop(next(iter(self._sceneries)))
         return out
 
@@ -986,15 +1018,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         with self._grounds_lock:
             if key in self._sceneries:
                 return self._sceneries[key]
-        with Edat.open(str(map_path)) as map_arc:
-            try:
-                sc = scenery.Scenery(bytes(map_arc.read(map_arc.find(scenery.MEMBER))))
-            except (KeyError, scenery.SceneryError, struct.error) as exc:
-                raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
-        out = {"pieces": [round(v) for piece in sc.roads() for v in piece]}
+        def make():
+            with Edat.open(str(map_path)) as map_arc:
+                try:
+                    sc = scenery.Scenery(bytes(map_arc.read(map_arc.find(scenery.MEMBER))))
+                except (KeyError, scenery.SceneryError, struct.error) as exc:
+                    raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
+            return {"pieces": [round(v) for piece in sc.roads() for v in piece]}
+        out = self._kept_on_disk("roads", pack, [map_path], make)
         with self._grounds_lock:
             self._sceneries[key] = out
-            while len(self._sceneries) > 3:
+            while len(self._sceneries) > self.MAP_DATA_KEPT:
                 self._sceneries.pop(next(iter(self._sceneries)))
         return out
 
@@ -1017,16 +1051,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             cached = self._sceneries.get(key)
         if cached is not None:
             return cached
-        with Edat.open(str(path)) as arc:
+        def make():
+            with Edat.open(str(path)) as arc:
+                try:
+                    win = bytes(arc.read(arc.find(cover.member(pack))))
+                except KeyError:
+                    raise StudioError(f"{pack} has no cover grid in {cover.PACK}, so its cover can't be shown or "
+                                      f"painted.") from None
             try:
-                win = bytes(arc.read(arc.find(cover.member(pack))))
-            except KeyError:
-                raise StudioError(f"{pack} has no cover grid in {cover.PACK}, so its cover can't be shown or painted.") from None
-        try:
-            got = cover.cover_bits(win)
-        except (cover.CoverError, ValueError, struct.error) as exc:
-            raise StudioError(f"{pack}: its cover grid can't be read ({exc}).") from None
-        out = {"size": got["size"], "box": list(got["box"]), "bits": base64.b64encode(got["bits"]).decode("ascii")}
+                got = cover.cover_bits(win)
+            except (cover.CoverError, ValueError, struct.error) as exc:
+                raise StudioError(f"{pack}: its cover grid can't be read ({exc}).") from None
+            return {"size": got["size"], "box": list(got["box"]), "bits": base64.b64encode(got["bits"]).decode("ascii")}
+        out = self._kept_on_disk("cover", pack.lower(), [path], make)
         with self._grounds_lock:
             self._sceneries[key] = out
         return out
@@ -1904,7 +1941,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         out = (water, kind)
         with self._grounds_lock:
             self._sceneries[key] = out
-            while len(self._sceneries) > 3:
+            while len(self._sceneries) > self.MAP_DATA_KEPT:
                 self._sceneries.pop(next(iter(self._sceneries)))
         return out
 
@@ -1960,27 +1997,31 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         with self._grounds_lock:
             if key in self._sceneries:
                 return self._sceneries[key]
-        with Edat.open(str(unit_path)) as unit_arc:
-            dkey = (str(unit_path), unit_path.stat().st_mtime)
-            if self._descriptors[0] != dkey:
-                self._descriptors = (dkey, scenery.descriptors(unit_arc))
-        descs = self._descriptors[1]
-        with Edat.open(str(map_path)) as map_arc:
-            try:
-                sc = scenery.Scenery(bytes(map_arc.read(map_arc.find(scenery.MEMBER))))
-            except (KeyError, scenery.SceneryError, struct.error) as exc:
-                raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
-        lengths: dict = {}
+        def make():
+            with Edat.open(str(unit_path)) as unit_arc:
+                dkey = (str(unit_path), unit_path.stat().st_mtime)
+                if self._descriptors[0] != dkey:
+                    self._descriptors = (dkey, scenery.descriptors(unit_arc))
+            descs = self._descriptors[1]
+            with Edat.open(str(map_path)) as map_arc:
+                try:
+                    sc = scenery.Scenery(bytes(map_arc.read(map_arc.find(scenery.MEMBER))))
+                except (KeyError, scenery.SceneryError, struct.error) as exc:
+                    raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
+            lengths: dict = {}
 
-        def length_of(kind):
-            if kind not in lengths:
-                lengths[kind] = model_length(game, descs, kind)
-            return lengths[kind]
-        found = kinds(sc, descs, length_of)
-        out = {"kinds": found, "kind": next((k["type"] for k in found if k["roads"]), None)}
+            def length_of(kind):
+                if kind not in lengths:
+                    lengths[kind] = model_length(game, descs, kind)
+                return lengths[kind]
+            found = kinds(sc, descs, length_of)
+            return {"kinds": found, "kind": next((k["type"] for k in found if k["roads"]), None)}
+        # (the bridge models' lengths come from ZZ_Win.dat)
+        zz = find_pack(game, "ZZ_Win.dat")
+        out = self._kept_on_disk("bridges", pack, [map_path, unit_path] + ([zz] if zz else []), make)
         with self._grounds_lock:
             self._sceneries[key] = out
-            while len(self._sceneries) > 3:
+            while len(self._sceneries) > self.MAP_DATA_KEPT:
                 self._sceneries.pop(next(iter(self._sceneries)))
         return out
 

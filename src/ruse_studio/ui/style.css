@@ -37,6 +37,9 @@ button:disabled { cursor: default; opacity: 0.5; }
 .brand img { width: 30px; height: 30px; flex: none; border-radius: 7px; }
 .brand span { color: var(--accent); }
 .pick-mod { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+/* the two menus told apart at a glance (issue #15: "the Mod and Map menus look the same"): a tank for the unit mod, a
+   folded map for the map changes, each in the accent colour */
+.pick-mod svg { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linejoin: round; flex: none; }
 .pick-mod select { background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--radius);
                    padding: 5px 8px; }
 /* the language button (right end of the top bar) and "Choose your language" (app.js openLangPick) */
