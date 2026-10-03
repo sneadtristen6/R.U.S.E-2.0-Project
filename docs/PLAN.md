@@ -606,7 +606,28 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Now (updated 2026-10-02): start here.** **Studio 0.8.1 and Launcher 0.3.1** (smaller releases, the owner: "lets not
+**Now (updated 2026-10-03): start here.** **Studio 0.9.0 and Launcher 0.4.0 are out: roads are cracked** (T12
+passed: a new road looks like the map's own from high up and up close; the story in [ROADS.md](ROADS.md)). The owner:
+no 1.0 for a long time; 0.9.x patch releases from here.
+
+On `main`, **not released yet** (the owner's asks of 2026-10-03; next: the owner looks in the real Studio, then
+Studio 0.9.1 / Launcher 0.4.1 on the owner's word):
+- **Drag anything on the map, no tool needed:** starting points, supply depots, spawned units and opening cameras
+  are grabbed and moved live, the way the camera ring already was. Depots and HQs still stick to roads while dragged
+  (with the toggle on).
+- **New map icons by kind:** a soldier, a tank, a truck for depots, a plane, guns, a clearly marked HQ, the armor
+  base and the airfield different, and every bunker its own (anti-tank, machine gun, anti-aircraft, artillery, fort,
+  lookout post). Buildings are square badges, units round ones, decoys dashed.
+- **Show or hide each kind** in the Scenario tray (starts, cameras, depots, buildings, units, zones, towns), and an
+  **icon size** slider; icons shrink as the camera pulls out, so they aren't bulky from high up. Kept per PC. Nothing
+  added to the top-left toolbar (the owner: it's bulky enough).
+- **Windows' installed apps list** shows the version actually installed (it showed the first installer's).
+
+**The bug list** ([issue #15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/15)), still open: the Mod
+and Map menus look the same; "New map..." isn't clear; the Studio is slow to start; a map is slow to open; removing
+the map's own roads (step 17); team spawns on BATTLES maps and the rule tests (game rules: tested in the game first).
+
+*Before 0.9 (2026-10-02):* **Studio 0.8.1 and Launcher 0.3.1** (smaller releases, the owner: "lets not
 go .9 yet smaller releases"), from the branch `allnations`. Units from another nation work (tested in the game
 2026-10-02: a German Tiger and Ju 87 and a Japanese Zero and Chi-Ha for the US, with no German or Japanese player).
 Roads up close are still open. In them: both apps in R.U.S.E.'s blues with the owner's artwork as logos; the launcher's sidebar in two tabs
@@ -626,15 +647,15 @@ don't hide in; placed objects on the ground at any size; cover painted in place 
 | Test | Who | Decides | State |
 |---|---|---|---|
 | **T8 Bridges:** units (a tank, then infantry) and a supply route cross the new D-Day bridges | owner, `D:\RUSE-Instances\bridges` | bridges done, or what to fix | **passed 2026-10-01, 04:27**: tanks, infantry and a supply truck cross on the decks, the men at the deck's height (the floor's aprons, `934d414`) |
-| **T12 New roads up close:** a new road's texture still shows with the camera close to the ground | owner, `D:\RUSE-Instances\bridges` | the road fix (step 1) | **FAILED** (owner, 2026-10-01, every batch: a new road still disappears near the camera; open, a known issue of 0.8.0) |
+| **T12 New roads up close:** a new road's texture still shows with the camera close to the ground | owner, `D:\RUSE-Instances\bridges` | the road fix (step 1) | **passed** (owner, probe 5, 2026-10-02: the new road shows up close like the map's own, built into 0.9.0; failed every batch before that, see ROADS.md) |
 | **T9 A road over an old bridge:** the old one gone, units cross on the new one | owner | the replace rule | after T8 (the new deck goes into the old bridge's local map; the old floor and its aprons go) |
 | **T10 Read-only game folder:** Test in game after updating | the player who reported it | the fix | waiting for him |
 | **T11 Launcher 0.2.11:** the update is offered, Play works | owner | — | — |
 | **T13 A unit from another nation's factory:** it shows and fights in a skirmish with no player of its own nation | owner | the unit packs fix | batch 4 (the force-load of batch 1 crashed) |
 
 *Next steps* (in order):
-1. **New roads up close: STILL BROKEN (T12 failed in every batch, 2026-10-01; the owner has said so many times).** A
-   new road's texture shows from afar but disappears near the camera. The fix of the morning (new scenery blocks
+1. **New roads up close: DONE in 0.9.0 (T12 passed, 2026-10-02; how in [ROADS.md](ROADS.md)).** The history below
+   is kept for the record. A new road's texture showed from afar but disappeared near the camera. The fix of the morning (new scenery blocks
    marked as holding road pieces, each piece given what the map's own pieces have; LOG.md) didn't change that in
    the game. Open, listed as a known issue of 0.8.0; the next session on roads starts from the game's own road
    pieces up close (exe first). Never call it working before T12 passes.
@@ -711,9 +732,9 @@ the test spots beside the player's HQ with a top-down map):
     - **Removing the map's own roads** (owner, 2026-10-02: "you should be able to remove existing roads, and that's
       something we still don't know how to do"). A road shows in several places, and only some are known: the supply
       network (we write it), the road model drawn from high up (we write it), the painted ground; the textured road
-      with its dashed line seen up close comes from somewhere not found yet (the same open question that put new
-      roads on hold). So it waits for that answer; then each place gets its "take out", and a test copy shows the
-      road gone from far and near, and trucks no longer using it.
+      with its dashed line seen up close was the open question, answered by 0.9 (ROADS.md: the map's own asphalt
+      and edge pieces in the scenery, which new roads now get too). So each place can now get its "take out"
+      (not built, not tested); then a test copy shows the road gone from far and near, and trucks no longer using it.
 
 *Planned (owner, 2026-09-30):* **A10**, at least 8 players on a map (D-Day first), past 8 tried later.
 
@@ -740,7 +761,8 @@ the opening camera and the camera ring. Still to bring over, from going through 
 - Remove the map's own scenario items (the Studio removes only the spawns and starts a mod adds): a new mod entry.
 - A placed item's details: a depot's trucks, its side, its turn.
 - Reshape sectors (zones) by dragging their corners (his sector and capture-zone mesh editing).
-- An icon size slider, and toggles for country flags and side numbers on the icons.
+- Toggles for country flags and side numbers on the icons (the icon size slider and show/hide per kind are on
+  `main` since 2026-10-03).
 - Which game modes a map offers (1v1, 2v2, free-for-all), and making a new scenario.
 
 *Asked for 1.0 (owner, 2026-10-01):* a R.U.S.E. 2.0 image when the game starts. Waits for the owner's artwork.

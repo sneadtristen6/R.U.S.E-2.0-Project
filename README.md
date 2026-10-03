@@ -295,6 +295,8 @@ library from the web). To try what is merged but not released yet: the repo's **
 run, **Artifacts** (needs a GitHub login; the files expire after 90 days). More in
 [installers/README.md](installers/README.md), including what to do about browser warnings.
 
+Stuck on something? See [Questions? Ask any AI](#questions-ask-any-ai) at the bottom of this page.
+
 <details>
 <summary><b>Status</b></summary>
 
@@ -595,13 +597,55 @@ py -3 -m unittest discover -s tests
 
 ## Credits
 
-- **ProLution**, the godfather of R.U.S.E. modding (the RUSE Modding Database). His code is in ours: the map
-  terrain codec in [`src/ruse_mod_engine/terrain_codec.py`](src/ruse_mod_engine/terrain_codec.py) is built on his
-  terrain format work, released CC0, and its encoder is ported from his reference encoder. His finding on unit
-  flag 63 is in the build's checks.
-- **LittleGroove**: RUSE-Mod-Manager and its `.rmod` format. His engine is in
-  [`src/ruse_mod_engine`](src/ruse_mod_engine/), used as it is, and applies `.rmod` mods in our builds.
-- **DomesticNukes and his Claude**: the notes on the map ground (`.kdt`) and scenery files that our readers follow.
+R.U.S.E. 2.0 stands on three people's work. None of it would be here without them.
+
+### ProLution: the godfather of R.U.S.E. modding
+
+- Built the **RUSE Modding Database** and wrote the guides people learned from, custom Operations among them.
+- **ProLution's code is in ours:** the map terrain codec in
+  [`src/ruse_mod_engine/terrain_codec.py`](src/ruse_mod_engine/terrain_codec.py) is built on ProLution's terrain
+  format work (released CC0), and its encoder is ported from ProLution's reference encoder.
+- ProLution found that unit flag 63 crashes the game on a unit that isn't a truck. That is one of the build's checks.
+
+### LittleGroove: the first
+
+- **LittleGroove was the first to give R.U.S.E. a real mod manager:** RUSE-Mod-Manager and its `.rmod` format.
+  Every community mod in the Launcher works because of it.
+- **LittleGroove's engine is in ours,** used as it is: [`src/ruse_mod_engine`](src/ruse_mod_engine/) applies
+  `.rmod` mods in every build, and moves a mod made for another game build with LittleGroove's version maps. It's
+  why the whole program is GPL-3.0.
+- **LittleGroove's map editor led the way for ours:** supply depots and HQs sticking to roads (LittleGroove's
+  measured distances), the opening camera each match starts on, and turning it round the HQ all come from that work.
+  So does the scenario file's checksum, without which the game won't load a changed scenario, and the units editor's
+  ammo types and flag lists.
+- What the manager does and how we build on it: [docs/LITTLEGROOVE_STUDY.md](docs/LITTLEGROOVE_STUDY.md).
+
+### DomesticNukes: the map maker's groundwork
+
+- **DomesticNukes worked out the map files** that the map editor writes: the ground units walk on (`.kdt`), where
+  every building, tree and prop stands (the scenery file), and the recipe the terrain brushes follow so a reshaped
+  map loads and plays.
+- **DomesticNukes wrote the water brushes:** lakes and drained rivers, merged from DomesticNukes' own pull request.
+- **DomesticNukes' notes on the model files (`.spk`)** put the game's real 3D models in the Studio's map view, and
+  helped make units from another nation work.
+- The notes on unit flags, bridge floors and how units stand on the ground went into the build's checks and the
+  bridges units now drive over. DomesticNukes tests the releases in the game, too.
+
+Thanks also to everyone who has tried the apps, sent screenshots and reported bugs.
+
+## Questions? Ask any AI
+
+Everything here is written down in plain words, so any AI assistant (ChatGPT, Claude, Gemini...) can answer from it.
+Give it the link to this page, or to one of the docs below, and ask what you want to know:
+
+- *"How do I give the US a German Tiger with RUSE Studio?"*
+- *"How do I draw a road with a bridge across a river?"*
+- *"My test in game stopped with an error. What does it mean?"*
+- *"What does a mod's scenario.toml file do?"*
+
+The best pages to point it at: [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md) (everything a mod can do, file by file),
+[docs/TESTS.md](docs/TESTS.md) (what has been tested in the game, and how), [docs/ROADS.md](docs/ROADS.md) (how new
+roads work). Still stuck? Open an [issue](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues).
 
 ## License
 
