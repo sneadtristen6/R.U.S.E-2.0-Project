@@ -4,11 +4,13 @@
 
 **Build the battlefield, then fight on it.**
 
-<img src="docs/images/bridge-infantry-at-deck-height.jpg" alt="R.U.S.E. in game: two infantry squads and a supply truck crossing a new bridge, every man standing at the deck's height" width="800">
+<img src="docs/images/ruse-2-0-brand.png" alt="R.U.S.E. 2.0 brand artwork: a detailed strategy map with a river, bridge, roads and unit markers" width="640">
 
 [![Download RUSE Launcher](https://img.shields.io/badge/Download-RUSE%20Launcher-1f6fc4?style=for-the-badge)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)
 &nbsp;&nbsp;
 [![Download RUSE Studio](https://img.shields.io/badge/Download-RUSE%20Studio-1f6fc4?style=for-the-badge)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio)
+&nbsp;&nbsp;
+[![Support on Patreon](https://img.shields.io/badge/Support%20on-Patreon-65764A?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/SneadTristen6)
 
 <sub>Windows. Needs R.U.S.E. on Steam. Never touches your Steam install.</sub>
 
@@ -19,6 +21,28 @@
 **A game that plays a game with R.U.S.E.** It learns how R.U.S.E. reads every file it uses, and checks your mod the
 way the game will before the game ever starts: anything that would break in the game is stopped first, with a note
 saying what to change. The goal: what you make works in the game every time, the first time.
+
+## Support development
+
+R.U.S.E. 2.0 is my first modding project. If you want to support development and follow the behind-the-scenes work,
+[visit my Patreon](https://www.patreon.com/SneadTristen6). Any support helps me keep building.
+
+### One-time support options
+
+| Option | Amount | Recognition |
+| --- | --- | --- |
+| [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | $20 once | Your chosen name in the Above & Beyond Supporters section of the GitHub and mod credits. |
+| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 once | A prominent acknowledgment in the Monumental Supporters section, with a dedicated thank-you for helping lay the foundation for the project's vision. |
+
+I've always envisioned **Iwo Jima as the flagship map for a Pacific Defense DLC-style expansion**, alongside
+adding **China** to the game. Support helps me work toward that dream. These are development goals for this
+independent fan project.
+
+Credit is optional: after purchasing, send a Patreon message with your chosen public name and permission to
+publish it, or choose to remain anonymous. Credits are updated with project releases. These Shop purchases do
+not renew automatically.
+
+You can also [request a feature for a one-time $3](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812).
 
 ## Roads are cracked (Studio 0.9)
 
@@ -48,6 +72,12 @@ It took a lot of time and a lot of tests, longer than the bridges. [How it was c
 Reshape any R.U.S.E. map. Hills, towns, roads, and bridges your units actually cross. Draw a road in RUSE Studio.
 Where it meets water, the build puts the map's own kind of bridge across it, and tanks, infantry, and supply trucks
 cross on the deck. Roads and bridges are what new maps get built on, so this is the piece everything else stands on.
+
+<p align="center">
+  <img src="docs/images/bridge-infantry-at-deck-height.jpg" alt="R.U.S.E. in game: two infantry squads and a supply truck crossing a new bridge, every man standing at the deck's height" width="800">
+  <br>
+  <sub>Infantry and a supply truck crossing a new bridge at deck height, in the game.</sub>
+</p>
 
 <table>
   <tr>
@@ -640,6 +670,19 @@ R.U.S.E. 2.0 stands on three people's work. None of it would be here without the
   bridges units now drive over. DomesticNukes tests the releases in the game, too.
 
 Thanks also to everyone who has tried the apps, sent screenshots and reported bugs.
+
+### Supporter credits
+
+Supporter names are added here after the supporter chooses a public credit name.
+
+#### Monumental Supporters
+
+A prominent, personal thank-you for $100 supporters helping lay the foundation for R.U.S.E. 2.0 and the vision
+of Pacific Defense, with Iwo Jima as its flagship map, and China. This group appears first in the supporter credits.
+
+#### Above & Beyond Supporters
+
+A thank-you and name credit for $20 supporters who go above and beyond to help keep development moving.
 
 ## Questions? Ask any AI
 
