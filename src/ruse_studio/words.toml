@@ -7698,6 +7698,30 @@ cz = "Začátek a konec silnice přeskočí na konec mostu, který jste postavil
 jpn = "近く（約 58 m）をクリックすると、道路の始点と終点が自分で置いた橋の端か道路に吸い付きます。途中の点はクリックした場所にそのまま置かれます。すべての点を正確に置くにはチェックを外します。"
 sc = "在附近（约 58 米）点击时，道路的起点和终点会吸附到你放置的桥的端点或道路上。中间的点就放在你点击的位置。取消勾选可精确放置每个点。"
 
+[road_trees]
+us = "Keep the trees on new roads"
+fr = "Garder les arbres sur les nouvelles routes"
+ger = "Bäume auf neuen Straßen behalten"
+ita = "Mantieni gli alberi sulle nuove strade"
+spa = "Mantener los árboles en las carreteras nuevas"
+pol = "Zachowaj drzewa na nowych drogach"
+ru = "Оставлять деревья на новых дорогах"
+cz = "Ponechat stromy na nových silnicích"
+jpn = "新しい道路の木を残す"
+sc = "保留新道路上的树木"
+
+[tip_road_trees]
+us = "Ticked, the roads you draw next keep the trees and bushes standing on their path, so a road through a wood runs under the trees. Unticked, they're taken off for about 6 m either side, as a cleared lane. Fences, walls and other props on the path go either way. Roads already drawn keep how they were made."
+fr = "Coché, les routes que vous tracez ensuite gardent les arbres et buissons sur leur tracé : une route qui traverse un bois passe sous les arbres. Décoché, ils sont retirés sur environ 6 m de chaque côté, comme une allée dégagée. Les clôtures, murs et autres objets sur le tracé partent dans les deux cas. Les routes déjà tracées restent comme elles ont été faites."
+ger = "Angehakt behalten die Straßen, die Sie als Nächstes zeichnen, die Bäume und Büsche auf ihrem Weg: Eine Straße durch einen Wald verläuft unter den Bäumen. Nicht angehakt werden sie auf etwa 6 m zu beiden Seiten entfernt, als freie Schneise. Zäune, Mauern und andere Objekte auf dem Weg verschwinden in beiden Fällen. Bereits gezeichnete Straßen bleiben, wie sie angelegt wurden."
+ita = "Con la spunta, le strade che disegni dopo mantengono gli alberi e i cespugli sul loro percorso: una strada che attraversa un bosco passa sotto gli alberi. Senza spunta vengono tolti per circa 6 m per lato, come una corsia sgombra. Recinzioni, muri e altri oggetti sul percorso vengono tolti in entrambi i casi. Le strade già disegnate restano come sono state fatte."
+spa = "Marcado, las carreteras que dibujes después conservan los árboles y arbustos de su trazado: una carretera que cruza un bosque pasa bajo los árboles. Desmarcado, se quitan unos 6 m a cada lado, como un paso despejado. Las vallas, muros y otros objetos del trazado se quitan en ambos casos. Las carreteras ya dibujadas se quedan como se hicieron."
+pol = "Zaznaczone: drogi, które narysujesz następnie, zachowują drzewa i krzewy na swojej trasie, więc droga przez las biegnie pod drzewami. Odznaczone: są usuwane na około 6 m po obu stronach, jak wycięta przecinka. Płoty, mury i inne obiekty na trasie znikają w obu przypadkach. Już narysowane drogi zostają takie, jak je zrobiono."
+ru = "Если отмечено, следующие нарисованные дороги сохраняют деревья и кусты на своём пути: дорога через лес идёт под деревьями. Если не отмечено, они убираются примерно на 6 м с каждой стороны, как просека. Заборы, стены и другие объекты на пути убираются в обоих случаях. Уже нарисованные дороги остаются такими, какими были сделаны."
+cz = "Zaškrtnuto: silnice, které nakreslíte příště, ponechají stromy a keře na své trase, takže silnice lesem vede pod stromy. Nezaškrtnuto: odstraní se asi 6 m na každou stranu jako vykácený průsek. Ploty, zdi a další objekty na trase zmizí v obou případech. Už nakreslené silnice zůstanou, jak byly udělány."
+jpn = "チェックすると、次に描く道路は経路上の木や茂みを残し、森を通る道路は木の下を通ります。外すと、両側約 6 m の範囲で取り除かれ、切り開かれた道になります。経路上の柵や壁などの物はどちらの場合も取り除かれます。すでに描いた道路は作ったときのままです。"
+sc = "勾选后，接下来绘制的道路会保留路径上的树木和灌木，穿过树林的道路会从树下经过。不勾选时，会清除两侧约 6 米内的树木，形成一条开阔的通道。路径上的栅栏、墙和其他物件无论哪种情况都会被移除。已经绘制的道路保持原样。"
+
 # a building or unit the game gives no name (StudioApi.units' game_name): what it's for instead
 [no_game_name]
 us = "{group}: no name in the game"

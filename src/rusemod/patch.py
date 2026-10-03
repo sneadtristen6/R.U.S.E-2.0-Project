@@ -515,12 +515,25 @@ class Engine:
                     all_.append((name, path, o))
             self._by_class, self._all, self._index_gen = by_class, all_, self._gen
         found = self._by_class.get(cls, []) if cls else self._all
-        if filter_:
-            field_, eq, want = filter_.partition("=")
+        # several conditions, all to match: [RegistrationName="TypeWarrior/X", file="propsset.cpp"]; `file` is part
+        # of the game file the object is in (two files may define a scenery type of one name: the summer and winter
+        # prop sets)
+        for cond in _conditions(filter_ or ""):
+            field_, eq, want = cond.partition("=")
             if not eq or not field_.strip():
                 raise PatchError(f"a filter is written [Property=value], not [{filter_}]")
-            found = [t for t in found if _matches(t[2], field_.strip(), want.strip())]
+            field_, want = field_.strip(), want.strip()
+            if field_ == "file":
+                found = [t for t in found if _unquote(want).lower() in self._file_of(t[0], t[2]).lower()]
+            else:
+                found = [t for t in found if _matches(t[2], field_, want)]
         return found
+
+    def _file_of(self, name: str, obj: Obj) -> str:
+        """The game file a top-level object is in: from its origin, else its `<file>#<index>` name."""
+        top = self.game.objects.get(name)
+        origin = (top.origin or top.copied_from) if top is not None else None
+        return origin[0] if origin else name.partition("#")[0]
 
     def _target(self, op: Op, text: str, verb: str) -> tuple[str, str]:
         """An object as written (`$/Name`, or `@Class[Prop=value]` with an optional `:path`) -> (top-level object
@@ -901,6 +914,24 @@ def _matches(obj: Obj, field_: str, want: str) -> bool:
     if isinstance(v, Ref):
         return v.target == want or (v.target is None and want == "nil")
     return False
+
+
+def _conditions(filter_: str) -> list[str]:
+    """A filter's conditions, split at the commas outside quotes."""
+    out, cur, quote = [], "", None
+    for ch in filter_:
+        if quote:
+            quote = None if ch == quote else quote
+        elif ch in "'\"":
+            quote = ch
+        elif ch == ",":
+            out.append(cur)
+            cur = ""
+            continue
+        cur += ch
+    if cur.strip():
+        out.append(cur)
+    return [c for c in out if c.strip()]
 
 
 def _unquote(s: str) -> str:

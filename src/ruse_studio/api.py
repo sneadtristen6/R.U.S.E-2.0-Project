@@ -1817,8 +1817,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def roads(self, pack: str) -> dict:
         """The roads the current mod adds to a map, for the Maps view: {"roads": [{"points": [[x, y], ...], "join":
-        map units, "crossings": [[x0, y0, x1, y1], ...] where it crosses water (a bridge goes there when the map has a
-        bridge kind)}], "bridge": the map's bridge kind or None, "saved": the file or None, "mod": the mod or None
+        map units, "keep_trees": whether the trees on its path stay, "crossings": [[x0, y0, x1, y1], ...] where it
+        crosses water (a bridge goes there when the map has a bridge kind)}], "bridge": the map's bridge kind or None, "saved": the file or None, "mod": the mod or None
         when none is picked}."""
         folder = self._map_dir()
         if folder is None:
@@ -1828,7 +1828,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             roads = self._read_roads(path)
         water, kind = self._water(pack) if roads else (None, None)
         from rusemod.bridges import crossings
-        return {"roads": [{"points": [list(p) for p in r.points], "join": r.join,
+        return {"roads": [{"points": [list(p) for p in r.points], "join": r.join, "keep_trees": r.keep_trees,
                            "crossings": [list(map(round, c)) for c in crossings(water, r.points)] if water and r.bridges else []}
                           for r in roads],
                 "bridge": kind, "saved": str(path) if roads else None, "mod": str(folder)}
@@ -2012,16 +2012,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             self._write_objects(path, every)
         return {"count": len(every), "saved": str(path), "object": asdict(o)}
 
-    def road_add(self, pack: str, points: list, join: float = 3000.0) -> dict:
+    def road_add(self, pack: str, points: list, join: float = 3000.0, keep_trees: bool = False) -> dict:
         """Add a road (its line: [[x, y], ...] in map units, in order) to the map in the current mod. Its ends join a
-        road within `join` map units (the window snaps them onto one). Returns {"count": roads on the map now,
-        "saved": the file}."""
+        road within `join` map units (the window snaps them onto one); with `keep_trees` the trees and bushes on its
+        path stay (the Roads tray's box). Returns {"count": roads on the map now, "saved": the file}."""
         from rusemod import roadnet
         path = self._roads_file(pack)
         if not isinstance(points, list) or len(points) > self.ROAD_POINTS_MOST:
             raise StudioError(f"A road's line holds 2 to {self.ROAD_POINTS_MOST} points")
         try:
-            new = roadnet.parse_roads([{"points": [list(p) for p in points], "join": join}], "the new road")
+            new = roadnet.parse_roads([{"points": [list(p) for p in points], "join": join,
+                                        "keep_trees": keep_trees is True}], "the new road")
         except (roadnet.RoadNetError, TypeError) as exc:
             raise StudioError(str(exc)) from None
         with self._saving:

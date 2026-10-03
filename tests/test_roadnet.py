@@ -231,9 +231,12 @@ class ModRoads(unittest.TestCase):
     def test_the_file(self):
         from rusemod.roadnet import Road, parse_roads, roads_toml
         import tomllib
-        roads = [Road([(1.0, 2.0), (3.5, 4.0)], 5000.0)]
-        self.assertEqual(parse_roads(tomllib.loads(roads_toml(roads, "made by hand"))["road"]), roads)
+        roads = [Road([(1.0, 2.0), (3.5, 4.0)], 5000.0), Road([(5.0, 6.0), (7.0, 8.0)], keep_trees=True)]
+        text = roads_toml(roads, "made by hand")
+        self.assertEqual(parse_roads(tomllib.loads(text)["road"]), roads)
+        self.assertEqual(text.count("keep_trees = true"), 1)  # written only when it's on
         for bad, why in (([{"points": [[1, 2]]}], "at least two"), ([{"points": [[1, 2], [3]]}], r"\[x, y\]"),
+                         ([{"points": [[1, 2], [3, 4]], "keep_trees": "yes"}], "keep_trees must be true or false"),
                          ([{"points": [[1, 2], [3, True]]}], r"\[x, y\]"), ([{"points": [[1, 2], [3, 4]], "join": -1}], "join"),
                          ([{"points": [[1, 2], [3, 4]], "width": 3}], "unknown key 'width'"), (["x"], "isn't a table")):
             with self.assertRaisesRegex(RoadNetError, why):

@@ -27,6 +27,7 @@ from .edat import Edat
 from .lock import fingerprint, fingerprint_text
 from .model import ModelError, game_path, load, save
 from .patch import Engine, Finding, Text, _walk_obj
+from .visibility import SUFFIX as SEEN_SUFFIX
 from .resolve import ModInfo, ResolveError, load_order
 from .rndf import parse
 from .spk import Spk, SpkError
@@ -447,6 +448,7 @@ class BuildResult:
     terrain_changed: dict = field(default_factory=dict)  # map pack file name -> {member path: new bytes}
     new_maps: dict = field(default_factory=dict)    # new map's pack name -> newmap.Clone (what it adds)
     added: dict = field(default_factory=dict)       # pack file name -> {member path: bytes}: members new maps add
+    visibility: dict = field(default_factory=dict)  # a placed type drawn up close only -> its copy (rusemod.visibility)
     fingerprint: bytes | None = None
 
     @property
@@ -846,7 +848,19 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     result = BuildResult(order=[m.id for m in order])
     pack = load_pack(arc)
     base, loaded, members, shadows = pack.base, pack.loaded, pack.members, pack.shadows
-    run = Engine(base).run([by_id[m.id] for m in order])
+    # the types mods place that the game doesn't draw from far get copies that it does, used by the mods' objects
+    # alone (rusemod.visibility; the owner, 2026-10-03)
+    from . import visibility
+    placed = {getattr(o, "type", None) for m in order for objects in m.scenery.values() for o in objects}
+    if any(r.bridges for _m, (roads, _ids) in scenario_edits(result.order, mods, "roads").items() for r in roads):
+        from .scenery import descriptors as _descriptors  # the bridges the build adds for new roads: any kind
+        placed |= {t for t, d in _descriptors(arc).items() if d.bridge}
+    result.visibility = visibility.plan(base, {t for t in placed if t})
+    extra = []
+    if result.visibility:
+        extra = [(ModInfo("r2-visibility"), parse(visibility.rndf(base, result.visibility), file="visibility.rndf",
+                                                  mod="r2-visibility"))]
+    run = Engine(base).run([by_id[m.id] for m in order] + extra)
     result.findings = [Finding("note", n) for n in base.notes] + list(run.findings)
     if shadows:
         result.findings.insert(0, Finding("note", f"left {len(shadows)} debug-info copies as shipped "
@@ -948,21 +962,23 @@ def scenario_edits(order: list[str], mods: list, what: str = "scenario") -> dict
     return out
 
 
-def draw_new_roads(read_map, path_of, lines: list) -> tuple[dict, list[str]]:
+def draw_new_roads(read_map, path_of, lines: list, shaded=None) -> tuple[dict, list[str]]:
     """({member: new bytes}, notes): new roads (map points, in order) written into every road file the map's own roads
     are in: painted into the ground's tiles as the map's own roads are across (rusemod.groundpaint.road_profile: what
     shows from afar), marked in the map's close-up map the way its own roads are (paint_detail), and added to the
     map's road model (rusemod.roadstrips, the far road). What shows up close is the asphalt and edge stickers the
     scenery step lays along them (scenery.road_decals; proven in the game on D-Day 2026-10-02, TESTS.md T12).
     `read_map(member)` gives the map pack's member as the build has it so far (a reshaped ground counts) or None,
-    `path_of(member)` its full path."""
+    `path_of(member)` its full path. `shaded(x, y, i)`: true where lines[i] runs under trees (a road that keeps its
+    trees, in one of the map's woods): painted fainter and greyer there (groundpaint.UNDER_TREES). A road that clears
+    its trees is painted through a wood as the map's own roads are (the owner, 2026-10-03)."""
     from .groundpaint import DETAIL, DETAIL_WIDER, ROAD_WIDTH, grid_bounds, map_road_profile, paint_detail, paint_roads
     from .roadstrips import draw_roads
     from .scenery import MEMBER as SCENERY, Scenery
     raw = read_map(SCENERY)
     pieces = Scenery(raw).roads() if raw else []
     profile = map_road_profile(read_map, pieces)  # new roads painted as the map's own are across (2026-10-02)
-    painted, notes = paint_roads(read_map, path_of, lines, pieces, profile=profile)
+    painted, notes = paint_roads(read_map, path_of, lines, pieces, profile=profile, shaded=shaded)
     detail, mesh = read_map(DETAIL), read_map("output\\highdef.tms")
     if detail is not None and mesh is not None:
         marked, more = paint_detail(detail, grid_bounds(mesh), lines, pieces, ROAD_WIDTH * DETAIL_WIDER, profile)
@@ -1392,9 +1408,15 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         ROAD_CLEAR_M = round(ROAD_CLEAR / 260, 1)  # in metres for the notes (about 260 map units to the metre)
         with_pieces = {name: (list(objects), list(ids)) for name, (objects, ids) in placed.items()}
         road_lines: dict = {}  # map pack name -> the new roads' lines off the bridge decks (for the stickers)
+        under_trees: dict = {}  # map pack name -> the ids of those lines whose road keeps its trees (keep_trees)
         for name, (map_roads, ids) in road_edits.items():
             decks = bridge_spans.get(name, []) + bridge_decks.get(name, [])
-            lines = cut([r.points for r in map_roads if r.paint], decks)
+            lines = []
+            for r in (r for r in map_roads if r.paint):
+                part = cut([r.points], decks)
+                if r.keep_trees:
+                    under_trees.setdefault(name, set()).update(id(line) for line in part)
+                lines += part
             pieces = [q for line in lines for q in road_pieces(line)]
             if pieces and find_map(name) is not None:  # (a missing map is said with the roads)
                 every, who = with_pieces.setdefault(name, ([], []))
@@ -1436,12 +1458,17 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         edge, gap = ROAD_DECALS[asphalt]
                         edge = edge if used.get(edge) else None
                         dressed = [o for line in road_lines[name] for o in road_decals(line, asphalt, edge, gap)]
-                        areas = list(areas) + [a for line in road_lines[name] for a in road_clearing(line)]
+                        shaded = under_trees.get(name, set())
+                        areas = list(areas) + [a for line in road_lines[name]
+                                               for a in road_clearing(line, keep_trees=id(line) in shaded)]
+                        kept = sum(1 for line in road_lines[name] if id(line) in shaded)
                         sunk = sunk + [f"new roads up close: {sum(1 for o in dressed if o.type == asphalt)} asphalt "
                                        f"sticker(s) ({asphalt.split('/')[-1]})"
                                        + (f" with their edges ({edge.split('/')[-1]})" if edge else "")
                                        + f"; the plants and props on their path taken off ({ROAD_CLEAR_M} m either "
-                                       f"side; woods' cover and movement unchanged)"]
+                                       f"side; woods' cover and movement unchanged)"
+                                       + (f", but {kept} of {len(road_lines[name])} keep their trees and bushes "
+                                          f"(keep_trees: only props taken off)" if kept else "")]
                 objects = list(objects) + dressed
                 erased_notes, erased = [], {}
                 if areas:  # the map's own scenery out first: the new objects then stay whatever the areas cover
@@ -1458,6 +1485,18 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     objects, lowered = grounded(objects, descs, lowest)
                 finally:
                     lowest.close()
+                as_placed = objects  # by their own types: what the steps after go by (solid buildings, ...)
+                seen = result.visibility  # placed types with no far mode: their copies, drawn from far too
+                if seen and any(getattr(o, "type", None) in seen for o in objects):
+                    from dataclasses import replace as _replace
+                    from .scenery import add_names
+                    swapped = sorted({o.type for o in objects if getattr(o, "type", None) in seen})
+                    objects = [_replace(o, type=seen[o.type]) if getattr(o, "type", None) in seen else o for o in objects]
+                    raw = add_names(raw, [seen[t] for t in swapped])
+                    sunk = sunk + [f"drawn from far too (the game draws these only up close, or no further than the "
+                                   f"middle distance): "
+                                   f"{', '.join(t.split('/')[-1] for t in swapped)}; the mod's objects use copies of "
+                                   f"them ({SEEN_SUFFIX}), the map's own stay as shipped"]
                 changed_members[member], notes = add_objects(raw, objects)
                 notes = sunk + erased_notes + notes + ([f"{lowered} placed object(s) lowered to stand on the ground "
                                                         f"(their models start above their base point: an upper "
@@ -1483,7 +1522,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     f"cross the water where they stood (the map's movement still has the decks). Leave the bridges "
                     f"out of the erase areas' types, or place a bridge there again")))
             from .nav import solid_blocks
-            walls, wall_notes = solid_blocks(game, [o for o in objects if not isinstance(o, RoadPiece)])
+            # by the placed types, not their far-drawn copies (rusemod.visibility), which the game's descriptors list
+            # under the copies' names only: a copied building stays solid to units
+            walls, wall_notes = solid_blocks(game, [o for o in as_placed if not isinstance(o, RoadPiece)])
             for note in wall_notes:
                 say(f"  {note}")
             if walls:
@@ -1491,10 +1532,27 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if entry is None:
                 map_packs.append((map_path, map_arc, changed_members))
             result.terrain_changed[map_path.name] = changed_members
+        def woods_of(name):
+            """The map's woods (its grid's "in forest" cells, as shipped), or None when its grid can't be read."""
+            from .cover import CoverError, in_forest, member
+            data_path = find_pack(game, "DataMap_Win.dat")
+            if data_path is None:
+                return None
+            try:
+                data_arc = open_pack(data_path)
+                return in_forest(bytes(data_arc.read(data_arc.find(member(name)))))
+            except (KeyError, CoverError, ValueError, struct.error):
+                return None
+
         for name, (map_roads, ids) in scenario_edits(result.order, mods, "roads").items():  # new roads painted
             from .bridges import cut
             decks = bridge_spans.get(name, []) + bridge_decks.get(name, [])
-            lines = cut([r.points for r in map_roads if r.paint], decks)  # not on a bridge's deck
+            lines, keep = [], set()  # the lines off the bridges' decks; those of roads that keep their trees
+            for r in (r for r in map_roads if r.paint):
+                part = cut([r.points], decks)
+                if r.keep_trees:
+                    keep.update(range(len(lines), len(lines) + len(part)))
+                lines += part
             map_path = find_map(name) if lines else None
             if map_path is None:
                 continue  # (a missing map is said with the road network below)
@@ -1511,7 +1569,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             from .groundpaint import PaintError
             from .scenery import SceneryError
             try:
-                painted, notes = draw_new_roads(read_map, lambda m, a=map_arc: a.find(m).path, lines)
+                wood = woods_of(name) if keep else None
+                shaded = (lambda x, y, i, wood=wood, keep=keep: i in keep and wood(x, y)) if wood else None
+                painted, notes = draw_new_roads(read_map, lambda m, a=map_arc: a.find(m).path, lines, shaded)
             except (PaintError, SceneryError, ValueError, KeyError, struct.error, zlib.error) as exc:
                 result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the new roads can't be drawn ({exc})"))
                 continue

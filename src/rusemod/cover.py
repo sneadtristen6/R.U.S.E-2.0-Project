@@ -149,6 +149,19 @@ def _cells(tree, r: int) -> bytes:
     return bytes(out)
 
 
+def in_forest(win: bytes):
+    """A test (x, y) -> True where the map's grid says "in forest" (its woods, as Eugen's designers drew them)."""
+    g = grid(win)
+    r, cells = g["size"], g["cells"]
+    x0, y0, w, h = g["box"]
+    bit = LAYERS["cover"]
+
+    def test(x: float, y: float) -> bool:
+        cx, cy = int((x - x0) / w * r), int((y - y0) / h * r)
+        return 0 <= cx < r and 0 <= cy < r and bool(cells[cy * r + cx] & bit)
+    return test
+
+
 def cover_bits(win: bytes, most: int = 1024) -> dict:
     """Where units hide, small enough to send to the map view: {"size": n (at most `most`; bigger grids are
     sampled), "box": (x0, y0, width, height), "bits": n*n bits, cell i at byte i // 8, bit i % 8, 1 = cover}."""

@@ -643,10 +643,12 @@ def road_decals(line, asphalt: str, edge: str | None, gap: float = ROAD_DECAL_GA
     return out
 
 
-def road_clearing(line, half: float = ROAD_CLEAR) -> list["EraseArea"]:
+def road_clearing(line, half: float = ROAD_CLEAR, keep_trees: bool = False) -> list["EraseArea"]:
     """Erase areas taking the plants and props off a new road's path: circles of `half` along its line, close enough
     that the band is at least 0.97 * `half` wide either side, from half a circle in. Its cover and movement stay as
-    they are (keep_ground): only what stands on the road goes."""
+    they are (keep_ground): only what stands on the road goes. With `keep_trees` (the road's own switch) only the props
+    go: the trees and bushes stay over the road."""
+    kinds = ("prop",) if keep_trees else ("vegetation", "prop")
     step = half / 2
     out, walked, nxt = [], 0.0, step
     for (ax, ay), (bx, by) in zip(line, line[1:]):
@@ -655,8 +657,7 @@ def road_clearing(line, half: float = ROAD_CLEAR) -> list["EraseArea"]:
             continue
         while nxt <= walked + d + 1e-6:
             t = nxt - walked
-            out.append(EraseArea(ax + (bx - ax) * t / d, ay + (by - ay) * t / d, half, ("vegetation", "prop"),
-                                 keep_ground=True))
+            out.append(EraseArea(ax + (bx - ax) * t / d, ay + (by - ay) * t / d, half, kinds, keep_ground=True))
             nxt += step
         walked += d
     return out
@@ -845,6 +846,36 @@ def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]
                      f"from the map's own scenery: they went with the nearest block and may not show at every "
                      f"distance (move them nearer a village, a farm or a wood): {where}")
     return data, notes
+
+
+def add_names(data: bytes, new: list[str]) -> bytes:
+    """The scenery file with scenery type names added to its name table (each with flag 1, an object type, as
+    every name but Route has), before the empty name that ends it; the tables after it move with it. Names the
+    table has already are left alone. For a mod's types the map doesn't use yet, such as a visibility copy
+    (rusemod.visibility)."""
+    sc = Scenery(data)
+    have = set(sc.names)
+    new = [n for n in dict.fromkeys(new) if n not in have]
+    if not new:
+        return bytes(data)
+    f = list(sc.fields)
+    names_off, names_len, flags_off, flags_n = f[6], f[7], f[4], f[5]
+    if not (names_off + names_len == flags_off and flags_off + flags_n <= f[8] <= f[10] <= f[12] <= f[20]):
+        raise SceneryError("the scenery file's tables aren't in the order this writer knows")
+    end = names_off + names_len - 4  # the empty name that ends the table: its 4-byte length
+    if struct.unpack_from("<I", data, end)[0] != 0:
+        raise SceneryError("the scenery file's name table doesn't end with an empty name")
+    added = b"".join(struct.pack("<I", len(n.encode("latin-1"))) + n.encode("latin-1") for n in new)
+    out = bytearray(data[:end]) + added + data[end:flags_off + flags_n] + bytes([1] * len(new)) + data[flags_off + flags_n:]
+    grow = len(added)
+    f[7] = names_len + grow
+    f[4] = flags_off + grow
+    f[5] = flags_n + len(new)
+    for k in (8, 10, 12, 20, 22, 24):
+        f[k] += grow + len(new)
+    struct.pack_into("<26I", out, 20, *f)
+    out[:16] = hashlib.md5(bytes(out[16:])).digest()
+    return bytes(out)
 
 
 BURY = 200000.0  # map units an object sunk out of sight goes under the ground (about 770 m)

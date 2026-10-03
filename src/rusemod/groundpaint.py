@@ -24,6 +24,11 @@ from .tmst import Tgv, Tmst, zipo_pack, zipo_tile, zipo_unpack
 LODS = ("highdef", "lowdef")
 ROAD_WIDTH = 1800.0     # map units (about 7 m): a road's painted width
 FEATHER = 0.6           # of the half-width: how far the edge fades into the ground
+# A road that keeps its trees, where it runs through a wood: painted this share as strongly, its colour this much of
+# the way to grey (the owner, 2026-10-03: "when it's in the trees, it should be invisible. Or less visible, more
+# gray"). A road that clears its trees is painted as the map's own roads through woods are, at every level.
+UNDER_TREES = 0.35
+UNDER_TREES_GREY = 0.6
 
 PROFILE_STEP = 100.0    # map units between the samples of a road's cross-section (RoadProfile)
 PROFILE_SAMPLES = 31    # 0 to 3,000 from the road's line
@@ -281,16 +286,25 @@ def _across(profile_values, d: float, pw: float):
     return out, n
 
 
+def _under_trees(old: tuple, new: tuple) -> tuple:
+    """A road pixel under trees: `new` (the road's colour there) turned greyer and only partly laid over `old`."""
+    grey = sum(new) / 3
+    return tuple(max(0, min(255, round(o + (n + (grey - n) * UNDER_TREES_GREY - o) * UNDER_TREES))) for o, n in zip(old, new))
+
+
 def paint_lines(store: Tmst, bounds, lines: list[list[tuple[float, float]]], colour: tuple[int, int, int],
-                width: float = ROAD_WIDTH, profile: RoadProfile | None = None) -> dict[int, bytes]:
+                width: float = ROAD_WIDTH, profile: RoadProfile | None = None, shaded=None) -> dict[int, bytes]:
     """`lines` (lists of map points) painted `width` wide in `colour` on every tile of `store` they cross, at every
     level; returns {tile index: new tile record} for Tmst.members. The edge fades over FEATHER of the half-width,
     and a line thinner than a pixel (the coarse levels) is painted faint rather than not at all. With `profile` (the
     map's own roads across, road_profile) a line is painted as they are instead: their colour, width and shoulders,
-    blended into the ground beside as theirs are."""
+    blended into the ground beside as theirs are. `shaded(x, y, i)`: true where the pixel at (x, y), whose nearest line
+    is lines[i], lies under trees (a road that keeps its trees, in a wood): painted fainter and greyer there."""
+    owner = [i for i, line in enumerate(lines) for _ in zip(line, line[1:])]  # each segment's line
     segs = _segments(lines)
     if not segs:
         return {}
+    index = {s: k for k, s in enumerate(segs)}
     half = width / 2
     reach = profile.reach() if profile is not None else half * (1 + FEATHER)
     boxes = [(min(a, c) - reach, min(b, d) - reach, max(a, c) + reach, max(b, d) + reach) for a, b, c, d in segs]
@@ -327,7 +341,9 @@ def paint_lines(store: Tmst, bounds, lines: list[list[tuple[float, float]]], col
                 for i in range(16):
                     px = cx0 + (i % 4 + 0.5) * pw
                     py = cy0 + (i // 4 + 0.5) * ph
-                    d = min(_dist(px, py, s) for s in here)
+                    d, s_at = min((_dist(px, py, s), s) for s in here)
+                    under = shaded is not None and shaded(px, py, owner[index[s_at]])
+                    old = pixels[i]
                     if profile is not None:  # the map's own road across, as wide as this pixel
                         ks, n = _across(profile.weight, d, pw)
                         r, g, b = pixels[i]
@@ -338,6 +354,8 @@ def paint_lines(store: Tmst, bounds, lines: list[list[tuple[float, float]]], col
                                 add[c] += share * (profile.tile[j][c] - v)
                         if any(profile.weight[j] for j in ks):
                             pixels[i] = tuple(max(0, min(255, round(v + a / n))) for v, a in zip((r, g, b), add))
+                            if under:
+                                pixels[i] = _under_trees(old, pixels[i])
                             changed = True
                         continue
                     a = max(0.0, min(1.0, (half + soft / 2 - d) / soft)) * faint
@@ -345,6 +363,8 @@ def paint_lines(store: Tmst, bounds, lines: list[list[tuple[float, float]]], col
                         r, g, b = pixels[i]
                         pixels[i] = (round(r + (colour[0] - r) * a), round(g + (colour[1] - g) * a),
                                      round(b + (colour[2] - b) * a))
+                        if under:
+                            pixels[i] = _under_trees(old, pixels[i])
                         changed = True
                 if changed:
                     blocks[8 * k:8 * k + 8] = dxt.encode_block(pixels)
@@ -472,10 +492,11 @@ def map_road_profile(read, pieces: list[tuple]) -> RoadProfile | None:
 
 
 def paint_roads(read, path_of, lines: list[list[tuple[float, float]]], pieces: list[tuple],
-                width: float = ROAD_WIDTH, profile: RoadProfile | None = None) -> tuple[dict, list[str]]:
+                width: float = ROAD_WIDTH, profile: RoadProfile | None = None, shaded=None) -> tuple[dict, list[str]]:
     """({member: new bytes}, notes): `lines` painted on both tile sets of a map pack, in its roads' colour, or as its
     roads are across with `profile` (map_road_profile). `read(name)` gives a member's bytes (the build's chain) or
-    None, `path_of(name)` its full path in the pack; `pieces` are the map's road pieces (for the colour)."""
+    None, `path_of(name)` its full path in the pack; `pieces` are the map's road pieces (for the colour); `shaded` as
+    paint_lines has it (under trees: fainter and greyer)."""
     mesh = read("output\\highdef.tms")
     if mesh is None:
         raise PaintError("the map has no ground mesh to place the paint on")
@@ -490,7 +511,7 @@ def paint_roads(read, path_of, lines: list[list[tuple[float, float]]], pieces: l
         store.index_path, store.chunk_path = path_of(f"output\\{lod}.tmst_pc"), path_of(f"output\\{lod}.tmst_chunk_pc")
         if colour is None:
             colour = road_colour(store, bounds, pieces)
-        tiles = paint_lines(store, bounds, lines, colour, width, profile)
+        tiles = paint_lines(store, bounds, lines, colour, width, profile, shaded)
         if tiles:
             out.update(store.members(tiles))
         notes.append(f"{lod}: {len(tiles)} tile(s) painted")

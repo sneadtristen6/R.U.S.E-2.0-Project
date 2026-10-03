@@ -403,6 +403,12 @@ lift    = -225.0                        # its height against the ground the game
 - **Only types the map already uses**: a type from another theatre isn't loaded on that map. Moving shipped objects
   isn't offered yet.
 - Several mods' objects are added in load order.
+- **Seen from far:** the game draws a scenery type only out to the distances its descriptor has a mode for (close
+  20,000 map units from the camera, middle 100,000, far 500,000 or more by the graphics settings), and most props and
+  bushes have a close or middle mode alone. So a mod's object of such a type is drawn with a copy of its type named
+  `<type>_R2Seen`, which also serves the farther distances (rusemod.visibility); the map's own objects keep the shipped
+  types. Seen in the game 2026-10-03: placed rocks shown at every height while the map's own vanish. The build notes
+  name every type that got a copy.
 
 The same file takes the map's own scenery away, one circle each:
 
@@ -653,6 +659,10 @@ join = 20000.0       # an end this near a road joins it (a junction); else it's 
     their own spacing; only D-Day's has been seen in the game. A map with none of them gets the paint only.
   - **Its path cleared:** the map's plants and props within 1,500 map units (about 6 m) of the road's line are taken
     off, as an erase area would, but its woods' cover and movement stay as they were, and its buildings stay.
+    `keep_trees = true` (default false; the Studio's "Keep the trees on new roads") keeps the trees and bushes on
+    its path (props still go): a road under the trees. Where such a road runs through one of the map's woods, the
+    ground's picture shows it fainter and greyer (a third as strong); a road that clears its trees is painted
+    through woods as the map's own roads are (seen in the game 2026-10-03).
   - The map's own road pieces (`Route`) and road model are written too, as before.
   `bridges = true` (the default) puts the map's own bridge kind where it
   crosses water, one piece stretched

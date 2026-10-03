@@ -1166,6 +1166,7 @@ function keptScenView(view) {
   if (typeof view.zone_fill === "number" && view.zone_fill >= 0 && view.zone_fill <= 1) zoneFill = view.zone_fill;
   if (typeof view.stick_roads === "boolean") snapRoads = view.stick_roads;  // the Scenario tray's "Stick to roads"
   if (typeof view.road_snap === "boolean") road.snapOn = view.road_snap;     // the Roads tray's "Snap ends"
+  if (typeof view.road_trees === "boolean") road.keepTrees = view.road_trees;  // and its "Keep the trees"
 }
 
 // the icons' size now: the slider's, and smaller as the camera pulls back (down to 40 % with the whole map in view)
@@ -2758,7 +2759,9 @@ const ROAD_SNAP = 15000;    // map units (about 58 m): an end this near a road s
 const ROAD_WIDTH = 1800;    // map units drawn (about 7 m)
 const ROAD_SAMPLE = 2000;   // map units between the points of a road's saved line
 const road = { on: false, tool: "straight", pts: [], mine: [], mod: null, mesh: null, preview: null, snap: null,
-  cursor: null, cross: null, snapOn: true };  // snapOn: the tray's "Snap ends" box, kept with the view (saveView)
+  cursor: null, cross: null, snapOn: true, keepTrees: false };  // snapOn: the tray's "Snap ends" box, keepTrees its
+// "Keep the trees" box (the next roads drawn keep the trees and bushes on their path: roads.toml keep_trees), both
+// kept with the view (saveView)
 
 // Where the map's own roads run, as points (for snapping), from their pieces.
 function roadSamples() {
@@ -2967,6 +2970,9 @@ function renderRoadTray() {
   $("road-snap").checked = road.snapOn;
   $("road-snap-label").textContent = w.road_snap || "Snap ends to roads and bridges";
   $("road-snap-row").title = w.tip_road_snap || "";
+  $("road-trees").checked = road.keepTrees;
+  $("road-trees-label").textContent = w.road_trees || "Keep the trees on new roads";
+  $("road-trees-row").title = w.tip_road_trees || "";
   const all = road.mine.reduce((n, r) => n + lineLength(r.points), 0);
   $("road-count").textContent = road.mine.length
     ? fill(w.road_count, { n: road.mine.length }) + " · " + fill(w.road_total, { len: roadMetres(all) }) : "";
@@ -3012,9 +3018,10 @@ async function finishRoad() {
   const line = roadLine(road.tool, pts);
   drawRoadPreview();
   try {
-    await mv.api.road_add(pack, line);
+    const keep = road.keepTrees;
+    await mv.api.road_add(pack, line, 3000, keep);
     if (pack !== mv.current) return;
-    road.mine.push({ points: line, join: 3000, crossings: [] });
+    road.mine.push({ points: line, join: 3000, crossings: [], keep_trees: keep });
     road.samples = null;  // the new road's points snap too
     drawModRoads();
     renderRoadTray();
@@ -4466,6 +4473,10 @@ function wire() {
     drawRoadPreview();
     saveView();
   });
+  $("road-trees").addEventListener("change", (e) => {  // the next roads keep the trees on their path, or clear them
+    road.keepTrees = e.target.checked;
+    saveView();
+  });
   for (const g of ["building", "prop", "vegetation"]) {
     $(`scenery-${g}`).addEventListener("change", (e) => {
       mv.scenery.show[g] = e.target.checked;
@@ -4526,7 +4537,7 @@ function foldMaps(folded) {
 function saveView() {
   if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind, maps_folded: Boolean(mv.folded),
     scen_layers: scen.layers, icon_size: scen.iconSize, zone_fill: zoneFill, stick_roads: snapRoads,
-    road_snap: road.snapOn }).catch(() => {});
+    road_snap: road.snapOn, road_trees: road.keepTrees }).catch(() => {});
 }
 
 // app.js opens the view when its tab is picked, and passes the words and the language on every language change.

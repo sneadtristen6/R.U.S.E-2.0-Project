@@ -61,6 +61,21 @@ class Painting(unittest.TestCase):
         self.assertTrue(near(pixel(painted, fine, 300.0, 350.0), GREEN))  # 100 units off the line: grass
         self.assertEqual(_blocks(painted, painted.tiles[0])[1:], (256, 256))  # the overview kept its own size
 
+    def test_a_road_under_trees_fainter_and_greyer_on_every_level(self):
+        """Lines a road that keeps its trees, in a wood (shaded): painted on every level still, but only partly and
+        greyer; the other line (a road that clears its trees) as before."""
+        from rusemod.groundpaint import _under_trees
+        s = store()
+        lines = [[(100.0, 250.0), (900.0, 250.0)], [(100.0, 750.0), (900.0, 750.0)]]
+        out = paint_lines(s, BOUNDS, lines, RED, width=40.0, shaded=lambda x, y, i: i == 0)
+        painted = Tmst(*s.rebuild(out))
+        for i in (0, 1, 3):  # the overview, cell 0's tile, its top-left quarter
+            under = pixel(painted, painted.tiles[i], 300.0, 250.0)
+            self.assertTrue(near(under, _under_trees(GREEN, RED)), (i, under))
+            self.assertFalse(near(under, GREEN, 8), i)  # painted, not left off
+        for i in (0, 1):  # (the quarter holds the first line only)
+            self.assertTrue(near(pixel(painted, painted.tiles[i], 300.0, 750.0), RED), i)  # the cleared road
+
     def test_nothing_crossed_nothing_written(self):
         self.assertEqual(paint_lines(store(), BOUNDS, [[(100.0, 250.0), (900.0, 250.0)]][:0], RED), {})
         self.assertEqual(paint_lines(store(), BOUNDS, [[(5000.0, 5000.0), (6000.0, 5000.0)]], RED), {})
