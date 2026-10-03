@@ -150,9 +150,15 @@ The copy: `D:\RUSE-Instances\bridges` (rebuilt 2026-10-01 from the Studio mod `t
 2. Pan along each new road up close, then onto one of the map's own roads near them: both stay drawn.
 3. While there: the bridges as in T8 (one tank and one squad across), to see nothing went back.
 
-**Result: FAILED, again and again** (owner, 2026-10-01, in batches 1-3 and his screenshots: "roads visible up close
-is not working, I told you that many times"). With the fix of the morning (`34c1ab4`) a new road still disappears
-near the camera. **Open: a new road isn't drawn up close.** Never write that it is until this test passes.
+**Result: PASSED on 2026-10-02 (owner, probe 5: "holy fuck, we cracked it", "night and day"),** after failing
+again and again from 2026-10-01 (batches 1-12). What draws a road up close is the map's **asphalt stickers**
+(`Route_Bitume` on D-Day) laid along it, each with an **edge sticker** either side (`Route_Bitume_Bords`), on ground
+painted the way the map's own roads are across, with the plants and props on the road's path taken off. The paint is
+what shows from afar; the stickers take over near the camera. Built into `ruse build` for Studio 0.9 / Launcher 0.4
+(scenery.road_decals, road_clearing; groundpaint.road_profile). The full story: [ROADS.md](ROADS.md).
+
+The history below is kept: **FAILED, again and again** (owner, 2026-10-01, in batches 1-3 and his screenshots: "roads
+visible up close is not working, I told you that many times").
 
 **The record of every road probe** (2026-10-02, owner; only what was seen in the game counts):
 - Batches 1-3: new roads painted into the ground's tiles show from afar, vanish near the camera.
@@ -165,10 +171,19 @@ near the camera. **Open: a new road isn't drawn up close.** Never write that it 
   from high up**; the map's own close-up road (textured asphalt, a dashed centre line) unchanged.
 - Batch 12: the road model's vertices (staticmeshes `road`) lifted and recoloured red: the result isn't recorded
   (a note first credited batch 11's blue to it: wrong). **No batch ever showed a red road.**
-- What draws the close-up road: **not known**. File checks (tests/test_roadstrips.py, the road walk in
-  tests/test_scenery.py) only show what we write; they are not results. Next (owner's go, 2026-10-02): probes changed
-  one thing at a time at a fixed camera (each screenshot's `.ini` holds the camera and the frame's draw counts), the
-  ground detail setting swept at one spot, then a frame capture of the close-up road.
+- Probe 1 (2026-10-02): a road with D-Day's asphalt stickers laid along it, the same road without, the stickers
+  without a road. **Up close the stickered road drew asphalt with a dashed centre line; the bare one vanished.** The
+  first time a new road showed up close. It looked pale.
+- Probe 2: edge stickers added (every asphalt sticker on D-Day has two), and a lane with the asphalt laid twice:
+  gravel shoulders appeared; doubling made no difference.
+- Probe 3: the same with one more file changed: no real change (that file turned out not to be the one the game
+  reads).
+- Probe 4: the ground paint and the close-up ground marks measured on the map's own roads and copied (ours had been
+  twice as strong and twice as wide): "barely passes, needs better blending".
+- Probe 5, five lanes, one change each: the junction copied from a stock T (a hard square block), the colour of the
+  nearest road (no clear difference), the stickers turned the stock dead end's way (a cracked join the owner liked),
+  and **the plants and props on the road's path taken off (lane 4): the owner's pick, "it even blends with the grass
+  really nicely"**. Built as the recipe.
 
 ## T9. A road over one of the map's own bridges (Studio 0.7.4)
 

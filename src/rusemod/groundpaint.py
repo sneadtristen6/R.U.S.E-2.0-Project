@@ -6,10 +6,10 @@ where supply trucks already drive it (the roads a player sees from afar are pain
 
 The map's close-up map (`output\\div_map.tgv_pc`, the "texture diversity", one DXT5 picture over the whole grid of
 cells) marks every map's own roads (alpha higher, red lower than the ground beside: all 31 maps with roads), and
-paint_detail gives a new road the same mark. A first idea was that this mark keeps a road showing near the camera; the
-game says otherwise (batch 5, 2026-10-01: with the mark, the new road still vanished up close). What the mark does in
-the game, and what draws the close-up road, isn't known yet (TESTS.md T12). The checks here are on the files' bytes
-only (tests/test_groundpaint.py), never proof of what the game shows.
+paint_detail gives a new road the same mark. The mark alone doesn't draw a road up close (batch 5, 2026-10-01): the
+map's asphalt stickers do (scenery.road_decals, TESTS.md T12, proven 2026-10-02); measured as the map's own roads
+make it (road_profile), it lets them blend in. The checks here are on the files' bytes only
+(tests/test_groundpaint.py), never proof of what the game shows.
 """
 from __future__ import annotations
 

@@ -595,6 +595,71 @@ def road_pieces(line, step: float = ROAD_PIECE) -> list[RoadPiece]:
     return out
 
 
+# What draws a road up close (proven in the game on D-Day, 2026-10-02, the owner: "night and day"): the map's asphalt
+# stickers laid along it the way the map lays its own, each with an edge sticker either side, on a road whose ground is
+# painted as the map's roads are (rusemod.groundpaint.road_profile), with the plants and props standing on its path
+# taken off. Measured on D-Day's own roads: an asphalt sticker every 1,506 to 1,598 along (its x axis along the road),
+# size 2.0; two edge stickers at the same place, 1,361 to 1,405 across, the right one turned as the asphalt, the left
+# one turned round (22,841 pairs). Every shipped map with roads lays them this way, with one of three pairs (counted
+# on all 32: about twice as many edge stickers beside its roads as asphalt ones on them): D-Day's on 27 maps, and on
+# the desert maps RouteBitume with Bords_Route (Alpha, ChessMate, Edge, Mireille: one every 1,465, size 2.0) or the
+# Tunisian pair. Only D-Day's has been seen in the game.
+ROAD_DECALS = {  # asphalt -> (its edge sticker, map units between asphalt stickers)
+    "TypeWarrior/Route_Bitume": ("TypeWarrior/Route_Bitume_Bords", 1590.0),
+    "TypeWarrior/RouteBitume": ("TypeWarrior/Bords_Route", 1465.0),
+    "TypeWarrior/RouteBitumeTunisie": ("TypeWarrior/Bords_Route_Tunisie", 1455.0),  # Tunisia's: one every 1,455
+}
+ROAD_DECAL_GAP = 1590.0    # map units between a road's asphalt stickers (D-Day's)
+ROAD_DECAL_EDGE = 1380.0   # an edge sticker's offset across the road
+ROAD_DECAL_SIZE = 2.0
+ROAD_CLEAR = 1500.0        # map units either side of a new road's line its plants and props are taken off
+
+
+def road_decals(line, asphalt: str, edge: str | None, gap: float = ROAD_DECAL_GAP) -> list[NewObject]:
+    """A road's line (map points, in order) dressed as the map's own roads are up close: an `asphalt` sticker every
+    `gap` along it (the first one `gap` from its start, as the tested roads had), turned along the line there, and an
+    `edge` sticker either side of each. Never solid."""
+    out, walked, nxt = [], 0.0, gap
+    for (ax, ay), (bx, by) in zip(line, line[1:]):
+        d = math.hypot(bx - ax, by - ay)
+        if d <= 0:
+            continue
+        ux, uy = (bx - ax) / d, (by - ay) / d
+        turn = math.degrees(math.atan2(uy, ux))
+        while nxt <= walked + d + 1e-6:
+            t = nxt - walked
+            x, y = ax + ux * t, ay + uy * t
+            out.append(NewObject(asphalt, x, y, turn, ROAD_DECAL_SIZE, solid=False))
+            if edge:
+                nx, ny = -uy, ux
+                out.append(NewObject(edge, x + nx * ROAD_DECAL_EDGE, y + ny * ROAD_DECAL_EDGE, turn, ROAD_DECAL_SIZE,
+                                     solid=False))
+                out.append(NewObject(edge, x - nx * ROAD_DECAL_EDGE, y - ny * ROAD_DECAL_EDGE, turn + 180.0,
+                                     ROAD_DECAL_SIZE, solid=False))
+            nxt += gap
+        walked += d
+    return out
+
+
+def road_clearing(line, half: float = ROAD_CLEAR) -> list["EraseArea"]:
+    """Erase areas taking the plants and props off a new road's path: circles of `half` along its line, close enough
+    that the band is at least 0.97 * `half` wide either side, from half a circle in. Its cover and movement stay as
+    they are (keep_ground): only what stands on the road goes."""
+    step = half / 2
+    out, walked, nxt = [], 0.0, step
+    for (ax, ay), (bx, by) in zip(line, line[1:]):
+        d = math.hypot(bx - ax, by - ay)
+        if d <= 0:
+            continue
+        while nxt <= walked + d + 1e-6:
+            t = nxt - walked
+            out.append(EraseArea(ax + (bx - ax) * t / d, ay + (by - ay) * t / d, half, ("vegetation", "prop"),
+                                 keep_ground=True))
+            nxt += step
+        walked += d
+    return out
+
+
 def _road_style(sc: "Scenery") -> tuple[int, tuple[int, int]] | None:
     """(the Route name's number, the two trailing words every piece carries) as the map's own road pieces have
     them, or None when it has none."""
@@ -828,12 +893,15 @@ DATA_LIMIT = 0xFFFFFC  # a reference holds a block's offset in 24 bits (4-byte s
 @dataclass(frozen=True)
 class EraseArea:
     """A circle whose scenery the build takes off the map: the groups in `what` (never a bridge) and the types named
-    in `types` (any kind, bridges too). Road pieces and level-design markers stay."""
+    in `types` (any kind, bridges too). Road pieces and level-design markers stay. `keep_ground`: the ground's cover
+    and movement stay even when it takes trees (a new road's own clearing, road_clearing), unlike a mod's erase area,
+    which clears a wood (build.cleared_woods)."""
     x: float
     y: float
     radius: float
     what: tuple = ERASE_DEFAULT
     types: tuple = ()
+    keep_ground: bool = False
 
 
 @dataclass
@@ -870,13 +938,40 @@ def _object_boxes(sc: Scenery) -> list:
     return out
 
 
-def _meeting(box: tuple, m: tuple, areas: list) -> list:
-    """The (area, its names) of `areas` whose circle meets the box (in a placement's coordinates, placed with `m`)."""
+class _AreaGrid:
+    """The (area, names) pairs bucketed on a grid of `cell` map units by their circles' boxes, so a placement far
+    from most areas looks at only the few near it (a new road's clearing makes thousands of small circles: 2,141 for
+    the owner's D-Day roads, which took 25 minutes when every placement was tested against every circle)."""
+
+    def __init__(self, pairs: list, cell: float = 16000.0):
+        self.cell, self.cells = cell, {}
+        for k, (a, ok) in enumerate(pairs):
+            for gx in range(int((a.x - a.radius) // cell), int((a.x + a.radius) // cell) + 1):
+                for gy in range(int((a.y - a.radius) // cell), int((a.y + a.radius) // cell) + 1):
+                    self.cells.setdefault((gx, gy), []).append(k)
+        self.pairs = pairs
+
+    def query(self, x0: float, y0: float, x1: float, y1: float) -> list:
+        c = self.cell
+        if (x1 - x0) * (y1 - y0) > 400 * c * c:  # a huge box (the top block): the cells would cost more than the list
+            return self.pairs
+        found = set()
+        for gx in range(int(x0 // c), int(x1 // c) + 1):
+            for gy in range(int(y0 // c), int(y1 // c) + 1):
+                found.update(self.cells.get((gx, gy), ()))
+        return [self.pairs[k] for k in sorted(found)]
+
+
+def _meeting(box: tuple, m: tuple, areas: list, grid: "_AreaGrid | None" = None) -> list:
+    """The (area, its names) of `areas` whose circle meets the box (in a placement's coordinates, placed with `m`);
+    `grid` (over exactly `areas`) narrows the search first."""
     xs, ys = [], []
     for x, y in ((box[0], box[1]), (box[2], box[1]), (box[0], box[3]), (box[2], box[3])):
         xs.append(m[0] * x + m[1] * y + m[3])
         ys.append(m[4] * x + m[5] * y + m[7])
     x0, y0, x1, y1 = min(xs), min(ys), max(xs), max(ys)
+    if grid is not None:
+        areas = grid.query(x0, y0, x1, y1)
     return [(a, ok) for a, ok in areas
             if max(x0 - a.x, 0.0, a.x - x1) ** 2 + max(y0 - a.y, 0.0, a.y - y1) ** 2 <= a.radius ** 2]
 
@@ -888,23 +983,29 @@ def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridg
     roots = sc.roots()
     if roots != [0]:
         raise SceneryError("the scenery file's blocks aren't in the order this writer knows")
-    pairs = []
+    pairs, takes = [], {}  # (area, the name indexes it takes); areas asking the same share one set
     for a in areas:
-        named = set(a.types)
-        pairs.append((a, {s for s, n in enumerate(sc.names[:len(sc.flags)])
-                          if n in named or (kinds.get(s) in a.what and s not in bridges)}))
+        key = (tuple(a.what), tuple(a.types))
+        if key not in takes:
+            named = set(a.types)
+            takes[key] = {s for s, n in enumerate(sc.names[:len(sc.flags)])
+                          if n in named or (kinds.get(s) in a.what and s not in bridges)}
+        pairs.append((a, takes[key]))
     boxes = _object_boxes(sc)
+    grid = _AreaGrid(pairs) if len(pairs) > 64 else None
 
     def visit(bi: int, m: tuple, near: list) -> _Cut | None:
         """`near`: the areas that meet this placement (only they can take anything from it)."""
         b = sc.blocks[bi]
         removed, changes, gone = set(), {}, {}
+        g = grid if near is pairs else None  # the grid holds exactly every area: only for the top placement
         for it in b.items:
             if it.kind == "object":
                 local = it.matrix()
                 x = m[0] * local[3] + m[1] * local[7] + m[2] * local[11] + m[3]
                 y = m[4] * local[3] + m[5] * local[7] + m[6] * local[11] + m[7]
-                if any(it.symbol in ok and (x - a.x) ** 2 + (y - a.y) ** 2 <= a.radius ** 2 for a, ok in near):
+                here = g.query(x, y, x, y) if g is not None else near
+                if any(it.symbol in ok and (x - a.x) ** 2 + (y - a.y) ** 2 <= a.radius ** 2 for a, ok in here):
                     removed.add(it.at)
                     gone[it.symbol] = gone.get(it.symbol, 0) + 1
             elif it.kind == "child":
@@ -912,7 +1013,7 @@ def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridg
                 if boxes[j] is None:
                     continue
                 cm = compose(m, it.matrix())
-                inner = _meeting(boxes[j], cm, near)
+                inner = _meeting(boxes[j], cm, near, g)
                 if not inner:
                     continue
                 c = visit(j, cm, inner)

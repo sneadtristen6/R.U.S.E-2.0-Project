@@ -388,6 +388,30 @@ class RoadStickers(unittest.TestCase):
         self.assertEqual(len(new_pieces), 2)
         self.assertLessEqual(new_pieces, road_pass(after))  # the road pass would reach them (the walk, not the screen)
 
+    def test_the_close_up_road_asphalt_and_edges_along_the_line(self):
+        """What draws a road up close (proven on D-Day, 2026-10-02): an asphalt sticker every gap along the line,
+        turned along it, an edge sticker either side (the left one turned round), never solid."""
+        objs = scenery.road_decals([(0.0, 0.0), (4000.0, 0.0), (4000.0, 3000.0)], "A", "E", gap=1500.0)
+        asphalt = [(o.x, o.y, o.turn) for o in objs if o.type == "A"]
+        self.assertEqual(asphalt, [(1500.0, 0.0, 0.0), (3000.0, 0.0, 0.0), (4000.0, 500.0, 90.0),
+                                   (4000.0, 2000.0, 90.0)])  # the walk goes round the corner
+        first = objs[:3]
+        self.assertEqual([(o.type, round(o.x), round(o.y), round(o.turn)) for o in first],
+                         [("A", 1500, 0, 0), ("E", 1500, 1380, 0), ("E", 1500, -1380, 180)])
+        self.assertTrue(all(o.size == 2.0 and not o.solid for o in objs))
+        self.assertEqual(len(scenery.road_decals([(0.0, 0.0), (4000.0, 0.0)], "A", None, gap=1500.0)), 2)  # no edges
+        self.assertEqual(scenery.road_decals([(0.0, 0.0), (1000.0, 0.0)], "A", "E"), [])  # shorter than a gap
+
+    def test_a_new_roads_path_cleared_without_touching_the_ground(self):
+        """The plants and props on a new road's path go (probe 5's lane 4); its cover and movement stay."""
+        from rusemod.build import cleared_woods
+        areas = scenery.road_clearing([(0.0, 0.0), (6000.0, 0.0)])
+        self.assertEqual([a.x for a in areas], [750.0 * k for k in range(1, 9)])
+        self.assertTrue(all(a.radius == 1500.0 and a.what == ("vegetation", "prop") and a.keep_ground for a in areas))
+        self.assertEqual(cleared_woods({"Test": (areas, ["mod"])}), ({}, {}))  # no wood cleared, no cover taken
+        mine = [scenery.EraseArea(0.0, 0.0, 500.0)]
+        self.assertIn("Test", cleared_woods({"Test": (mine, ["mod"])})[0])  # a mod's own erase area still clears
+
     def test_a_new_block_lists_road_pieces_for_close_view_only(self):
         piece = scenery.road_pieces([(0.0, 0.0), (4000.0, 0.0)])[0]
         style = (20, (129958752, 1567752))
@@ -645,6 +669,24 @@ class Erasing(unittest.TestCase):
         self.assertEqual(new[t.grids[0][0]:], raw[s.grids[0][0]:])
         self.assertEqual(t.names, s.names)
         return t
+
+    def test_many_areas_take_the_same_with_the_grid(self):
+        """A new road's clearing makes thousands of circles: past 64 they're looked up on a grid, which must take
+        exactly what testing every circle takes."""
+        raw = village()
+        areas = [scenery.EraseArea(5050.0, 0.0, 100.0)] + [scenery.EraseArea(200000.0 + k * 3000.0, 0.0, 1500.0)
+                                                           for k in range(70)] + [scenery.EraseArea(5000.0, 9000.0, 10.0)]
+        kinds = {i: "vegetation" for i, n in enumerate(Scenery(raw).names) if "Chene" in n}
+        fast = scenery.erase_objects(raw, areas, kinds)[0]  # 72 areas: the grid
+        slow = scenery.erase_objects(raw, areas[:64], kinds)[0]  # at most 64 at a time: every circle tested
+        slow = scenery.erase_objects(slow, areas[64:], kinds)[0]
+        self.assertEqual(spots(fast), spots(slow))
+        self.assertEqual(spots(raw) - spots(fast), Counter({(1, 5000.0, 0.0): 1, (1, 5100.0, 0.0): 1,
+                                                            (1, 5000.0, 9000.0): 1}))
+        g = scenery._AreaGrid([(a, set()) for a in areas])
+        near = [p[0] for p in g.query(5000.0, 0.0, 5000.0, 0.0)]  # candidates: the circles of that cell only
+        self.assertEqual(near, [areas[0], areas[-1]])
+        self.assertEqual(g.query(-1e9, -1e9, 1e9, 1e9), g.pairs)  # a huge box: the whole list
 
     def test_a_shared_patch_is_copied_for_the_erased_spot(self):
         raw = forest()

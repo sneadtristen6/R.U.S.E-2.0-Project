@@ -1,5 +1,15 @@
-**RUSE Launcher 0.3, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
+**RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
+
+**0.4.0:** plays mods with new roads the way Studio 0.9 builds them: they look like the map's own roads, from high
+up and right down at the ground (tested in the game on D-Day). [How roads were cracked](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/ROADS.md).
+
+![A new road up close on D-Day](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-5-done-close.jpg)
+
+| Before | Now |
+|---|---|
+| A mod's new roads vanished up close. | They're drawn with the map's own asphalt and edge stickers, painted the way the map's roads are, with the plants on their path taken off. |
+| A mod with many erase circles took minutes to build. | Much faster. |
 
 **0.3.3:** plays mods made with Studio 0.8.3.
 

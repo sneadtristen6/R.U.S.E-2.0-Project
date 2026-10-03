@@ -504,13 +504,17 @@ plain DXT1: no TGU1 encoder is needed.** TGU1 decoding is still useful for readi
 
 #### Road stickers, the road model and the close-up map (2026-09-30, 2026-10-01; code `rusemod.scenery.RoadPiece`, `rusemod.roadstrips`)
 
-**Seen in the game, and only that** (the record, 2026-10-02): from afar, roads are painted into the ground's tile
-pyramid (`highdef`/`lowdef` `.tmst`), and a new road painted there shows from afar. Up close the map's own road is a
-textured asphalt road with a dashed centre line; what draws it is **not known**, and a new road still vanishes near
-the camera (T12) whatever else we wrote: the close-up map's mark (batch 5), the road model and the road pieces. Batch
-11 set the `Route` strip's colour (mode 128, below) to red: roads came out blue from high up, the close-up road
-unchanged; no batch ever showed a red road. Everything else in this section is the files' layout, not what the game
-draws from them.
+**Seen in the game** (T12, passed 2026-10-02): from afar, roads are painted into the ground's tile pyramid
+(`highdef`/`lowdef` `.tmst`). **Up close, a road is drawn by asphalt stickers**: ordinary scenery objects of a sticker
+type (`Route_Bitume` on D-Day; the scenery decors' `TSceneryDescriptorSticker`), one every 1,506 to 1,598 map units
+along the road, size 2.0, its x axis along the road, each with two edge stickers (`Route_Bitume_Bords`) at the same
+place 1,361 to 1,405 across, the right one turned as the asphalt, the left one turned round (D-Day: 22,841 pairs).
+The descriptors: footprint -512 to +512 (asphalt and edges), `EndLinkPos` 380 for the asphalt, `ZOrder` (a float)
+edges 27, `Route_Bitu_Demi` 44, `Bitume_Base` 49, asphalt 56, the fade stickers 57 and 58; all Mode 16. Every shipped
+map with roads lays them this way with one of three pairs (`Route_Bitume`/`Route_Bitume_Bords` on 27 maps,
+`RouteBitume`/`Bords_Route` and `RouteBitumeTunisie`/`Bords_Route_Tunisie` on the desert maps). The road pieces and
+road model below draw the far road, not the close one: batch 11 set the `Route` strip's colour to red and the roads
+came out blue from high up, the close-up road unchanged. The story: [ROADS.md](ROADS.md).
 
 The scenery's **road pieces** are what the road model was made from: `Route` items, whose
 descriptor `TypeWarrior/Route` (category `LB`) is a `TSceneryDescriptorMultiMode` whose mode 128 is a
@@ -719,8 +723,8 @@ his Claude; checked here on all 32 maps.
   in line; `Scenery.roads`). A road piece's name is the special type `Route` (flag 2); the first of its three
   last words is how many road pieces its block holds, the other two look like left-over editor addresses. **From
   afar, the roads a player sees are painted into the ground's texture tiles**; the pieces lie exactly on them
-  (checked on Blitz's ground picture); what draws the road up close isn't known (T12: a new road vanishes near the
-  camera whatever we wrote, 2026-09-30 to 2026-10-02); otherwise a child block (offset = bits 2–23, always after its parent). Transform by
+  (checked on Blitz's ground picture); up close the road is drawn by asphalt stickers, ordinary objects (above;
+  T12, 2026-10-02); otherwise a child block (offset = bits 2–23, always after its parent). Transform by
   bits 0–1: 3 = 12 f32 (3 rows of 4), 2 = a move (3 f32), 1 = none, 0 = compact (4 int16 × 3/32767 for the 2×2 turn
   and scale, then x, y, z and the height scale as f32; so compact sizes stop at 3.0).
 - **Objects stand at height 0**; the game sets them on the ground. A name is a scenery type: a descriptor in the

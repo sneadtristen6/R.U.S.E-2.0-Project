@@ -1,6 +1,22 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.0:** roads are cracked. A road you draw now looks like the map's own roads, from high up and right down
+at the ground. It took a lot of time and a lot of tests to get there, longer than the bridges
+did; [the story of how](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/ROADS.md). Tested in the game on D-Day.
+
+![A new road up close on D-Day: asphalt with a dashed centre line and gravel shoulders fading into the grass](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-5-done-close.jpg)
+
+| Before | Now |
+|---|---|
+| A new road vanished as the camera came down to it: only its paint showed, from high up. | Up close it's drawn with the map's own asphalt stickers, laid along it the way the map lays them, with an edge sticker either side: asphalt, a dashed centre line, gravel shoulders. |
+| The paint was one flat colour, paler and wider than the map's roads. | The paint is measured on the map's own roads: their colour, their shoulders, and how they fade into the ground. Each map gets its own. |
+| Grass, bushes and the farm's trees grew through a new road. | The map's plants and props on the road's path are taken off (about 6 m either side). Woods keep their cover and movement, and buildings stay. |
+| Only D-Day's road stickers were known. | The desert maps' own stickers are used there, laid the same way (not yet seen in the game). |
+| A big erase (thousands of circles) took many minutes to build. | Much faster: only the circles near each part of the map are looked at. |
+
+![Three new roads off D-Day's main road](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-6-done-overview.jpg)
+
 **0.8.3:** the map editor's scenario tools from LittleGroove's RUSE-Mod-Manager: supply depots and HQs stick to
 roads, an icon for every building and unit, and each player's opening camera shown, carried and turned. Not yet tried
 in the game.

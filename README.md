@@ -20,6 +20,29 @@
 way the game will before the game ever starts: anything that would break in the game is stopped first, with a note
 saying what to change. The goal: what you make works in the game every time, the first time.
 
+## Roads are cracked (Studio 0.9)
+
+A road you draw in RUSE Studio now looks like the map's own roads, from high up and right down at the ground: the
+map's own asphalt with its dashed centre line, gravel shoulders fading into the grass, nothing growing through it.
+Tested in the game on D-Day.
+
+<table>
+  <tr>
+    <th width="50%">Before</th>
+    <th width="50%">After</th>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/roads-2-pale.jpg" alt="R.U.S.E. in game: an earlier try, the new roads pale and blotchy up close" width="400">
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/roads-5-done-close.jpg" alt="R.U.S.E. in game on D-Day: a new road up close, asphalt with a dashed centre line and gravel shoulders" width="400">
+    </td>
+  </tr>
+</table>
+
+It took a lot of time and a lot of tests, longer than the bridges. [How it was cracked](docs/ROADS.md)
+
 ## Bridges work. Map making starts here.
 
 Reshape any R.U.S.E. map. Hills, towns, roads, and bridges your units actually cross. Draw a road in RUSE Studio.
@@ -280,7 +303,7 @@ run, **Artifacts** (needs a GitHub login; the files expire after 90 days). More 
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.3.3) &middot; **Studio** for modders, a preview (latest: 0.8.3) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.0) &middot; **Studio** for modders, a preview (latest: 0.9.0) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -295,8 +318,12 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
 [docs/TESTS.md](docs/TESTS.md).
 
 <details>
-<summary><b>Current stage (2026-10-01)</b></summary>
+<summary><b>Current stage (2026-10-02)</b></summary>
 
+- **Studio 0.9.0 and Launcher 0.4.0** (2026-10-02): roads are cracked. New roads look like the map's own,
+  from high up and right down at the ground: the map's asphalt and edge stickers laid along them, the ground painted
+  the way its roads are, and the plants and props on their path taken off. Tested in the game on D-Day after a lot of
+  tests ([docs/ROADS.md](docs/ROADS.md)).
 - **Studio 0.8.3 and Launcher 0.3.3** (2026-10-02): the map editor's scenario tools from LittleGroove's
   RUSE-Mod-Manager: supply depots and HQs stick to roads (a toggle), an icon for every building and unit with its
   country's roundel, and each player's opening camera shown, carried with a moved start and turned round its HQ by
@@ -315,7 +342,7 @@ order, units a skirmish spawns, and Browse mods. The tests, step by step for any
   cleared by a mod (`[[erase]]`), placed objects on the ground at any size, cover painted in place on the 8 maps that
   aren't square, the Bridges dock, Check this map, Open and Forest brushes, Troubleshoot and a clean game backup in
   both apps, and the Supported mods list in the launcher. Tested in the game in three batches
-  ([docs/TESTS.md](docs/TESTS.md)). Known issue: new roads aren't drawn up close yet.
+  ([docs/TESTS.md](docs/TESTS.md)). (New roads up close: fixed in 0.9.0.)
 
 - **Map making works in the game** (Blitz, 2026-09-30): the Studio's terrain brushes (the recipe is DomesticNukes
   and his Claude's), a moved starting point, painted cover (`maps/<map>/cover.toml`, or the Studio's Cover, Uncover

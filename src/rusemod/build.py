@@ -293,12 +293,13 @@ def cleared_woods(erasing: dict) -> tuple[dict, dict]:
     """For each map's erase areas that take trees ({map: (areas, ids)}): (opens of that ground to every unit, the
     forest cover taken away there), each {map: (list, ids)}. With its trees gone the ground is no wood any more, but
     the map's movement still keeps vehicles off it and its cover still hides infantry there (a D-Day test,
-    2026-10-01: tanks couldn't drive into a cleared wood). Erasing only props leaves both."""
+    2026-10-01: tanks couldn't drive into a cleared wood). Erasing only props leaves both, and so does a new road's
+    own clearing (keep_ground)."""
     from .cover import Paint
     from .nav import Block
     opens, uncover = {}, {}
     for name, (areas, ids) in erasing.items():
-        woods = [a for a in areas if "vegetation" in a.what]
+        woods = [a for a in areas if "vegetation" in a.what and not a.keep_ground]
         if woods:
             opens[name] = ([Block(a.x, a.y, a.radius, "all", True) for a in woods], list(ids))
             uncover[name] = ([Paint(a.x, a.y, a.radius, "cover", True) for a in woods], list(ids))
@@ -949,11 +950,12 @@ def scenario_edits(order: list[str], mods: list, what: str = "scenario") -> dict
 
 def draw_new_roads(read_map, path_of, lines: list) -> tuple[dict, list[str]]:
     """({member: new bytes}, notes): new roads (map points, in order) written into every road file the map's own roads
-    are in: painted into the ground's tiles (rusemod.groundpaint.paint_roads: seen in the game from afar), marked in
-    the map's close-up map the way its own roads are (paint_detail), and added to the map's road model
-    (rusemod.roadstrips). In the game a new road still vanishes near the camera (TESTS.md T12): the close-up map's mark
-    didn't change that (batch 5), and what the road model draws isn't known. `read_map(member)` gives the map pack's
-    member as the build has it so far (a reshaped ground counts) or None, `path_of(member)` its full path."""
+    are in: painted into the ground's tiles as the map's own roads are across (rusemod.groundpaint.road_profile: what
+    shows from afar), marked in the map's close-up map the way its own roads are (paint_detail), and added to the
+    map's road model (rusemod.roadstrips, the far road). What shows up close is the asphalt and edge stickers the
+    scenery step lays along them (scenery.road_decals; proven in the game on D-Day 2026-10-02, TESTS.md T12).
+    `read_map(member)` gives the map pack's member as the build has it so far (a reshaped ground counts) or None,
+    `path_of(member)` its full path."""
     from .groundpaint import DETAIL, DETAIL_WIDER, ROAD_WIDTH, grid_bounds, map_road_profile, paint_detail, paint_roads
     from .roadstrips import draw_roads
     from .scenery import MEMBER as SCENERY, Scenery
@@ -1382,18 +1384,23 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             every, who = placed.setdefault(name, ([], []))
             every.extend(objects)
             who.extend(i for i in ids if i not in who)
-        # new roads get the map's own road pieces (Route stickers) in the scenery, as the map's roads have them; the
-        # other road files are written below (draw_new_roads). Seen in the game: the painted ground, from afar only
+        # new roads get the map's own road pieces (Route stickers) in the scenery, as the map's roads have them, and,
+        # to show up close, its asphalt and edge stickers along them with their path cleared (road_decals: proven in
+        # the game 2026-10-02); the other road files are written below (draw_new_roads: the painted ground, from afar)
         from .bridges import cut
-        from .scenery import RoadPiece, road_pieces
+        from .scenery import ROAD_CLEAR, ROAD_DECALS, RoadPiece, road_clearing, road_decals, road_pieces
+        ROAD_CLEAR_M = round(ROAD_CLEAR / 260, 1)  # in metres for the notes (about 260 map units to the metre)
         with_pieces = {name: (list(objects), list(ids)) for name, (objects, ids) in placed.items()}
+        road_lines: dict = {}  # map pack name -> the new roads' lines off the bridge decks (for the stickers)
         for name, (map_roads, ids) in road_edits.items():
             decks = bridge_spans.get(name, []) + bridge_decks.get(name, [])
-            pieces = [q for line in cut([r.points for r in map_roads if r.paint], decks) for q in road_pieces(line)]
+            lines = cut([r.points for r in map_roads if r.paint], decks)
+            pieces = [q for line in lines for q in road_pieces(line)]
             if pieces and find_map(name) is not None:  # (a missing map is said with the roads)
                 every, who = with_pieces.setdefault(name, ([], []))
                 every.extend(pieces)
                 who.extend(i for i in ids if i not in who)
+                road_lines[name] = lines
         erasing = scenario_edits(result.order, mods, "erase")  # the mods' erase areas (scenery.toml [[erase]])
         for name, (_areas, ids) in erasing.items():
             every, who = with_pieces.setdefault(name, ([], []))
@@ -1417,6 +1424,25 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 member = map_arc.find(MEMBER).path
                 raw = changed_members.get(member) or bytes(map_arc.read(map_arc.find(MEMBER)))
                 raw, sunk = bury_objects(raw, bridge_hide.get(name, []))  # before the new blocks move them
+                dressed: list = []
+                if road_lines.get(name):  # up close: the map's asphalt stickers along the new roads, path cleared
+                    sc_now = Scenery(raw)
+                    used = {sc_now.names[i]: n for i, n in sc_now.types().items()}
+                    asphalt = max((t for t in ROAD_DECALS if used.get(t)), key=lambda t: used[t], default=None)
+                    if asphalt is None:
+                        sunk = sunk + ["new roads: this map has none of the asphalt stickers the game's maps lay "
+                                       "along their roads, so new roads show from afar only (the painted ground)"]
+                    else:
+                        edge, gap = ROAD_DECALS[asphalt]
+                        edge = edge if used.get(edge) else None
+                        dressed = [o for line in road_lines[name] for o in road_decals(line, asphalt, edge, gap)]
+                        areas = list(areas) + [a for line in road_lines[name] for a in road_clearing(line)]
+                        sunk = sunk + [f"new roads up close: {sum(1 for o in dressed if o.type == asphalt)} asphalt "
+                                       f"sticker(s) ({asphalt.split('/')[-1]})"
+                                       + (f" with their edges ({edge.split('/')[-1]})" if edge else "")
+                                       + f"; the plants and props on their path taken off ({ROAD_CLEAR_M} m either "
+                                       f"side; woods' cover and movement unchanged)"]
+                objects = list(objects) + dressed
                 erased_notes, erased = [], {}
                 if areas:  # the map's own scenery out first: the new objects then stay whatever the areas cover
                     if descs is None:
@@ -1490,9 +1516,10 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the new roads can't be drawn ({exc})"))
                 continue
             changed_members.update(painted)
-            # what the player reads: only what was seen in the game (painted roads show from afar; up close: T12)
-            say(f"roads: {name}, from {', '.join(ids)}: painted into the ground (they show from afar); up close new "
-                f"roads don't show yet")
+            # what the player reads: what was seen in the game (T12, 2026-10-02: the paint from afar, the stickers up
+            # close, laid in the scenery step above)
+            say(f"roads: {name}, from {', '.join(ids)}: painted into the ground as the map's own roads are (what shows "
+                f"from afar); up close the map's asphalt stickers draw them (see the scenery notes)")
             for note in notes:
                 say(f"  {note}")
             from .groundpaint import DETAIL

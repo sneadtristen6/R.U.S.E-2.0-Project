@@ -638,9 +638,18 @@ join = 20000.0       # an end this near a road joins it (a junction); else it's 
   units, nor across a town's buildings. A road that gets none in a movement (all of it in one circle, or through
   woods vehicles can't enter) is said in the build's notes: units go across country there. Not tried in the game
   yet.
-- `paint = true` (the default) paints it into the ground's texture tiles in the map's own road colour (proven in the
-  game: seen from afar) and lays the map's own road stickers along it (`Route` pieces, about 16 m each: what draws a
-  road up close; **not working yet**: in the game a new road still disappears near the camera, TESTS.md T12);
+- `paint = true` (the default) makes it look like the map's own roads, from afar and up close (**proven in the game
+  on D-Day, 2026-10-02**, TESTS.md T12; the story: [ROADS.md](ROADS.md)):
+  - **From afar:** it's painted into the ground's texture tiles the way the map's own roads are across: their colour
+    in the middle and their shoulders, measured on up to 300 of the map's road pieces, and the same mark in the
+    map's close-up ground map. Each map gets its own.
+  - **Up close:** the map's own asphalt stickers are laid along it the way the map lays them (D-Day's `Route_Bitume`
+    every 1,590 map units, size 2, turned along the road), each with an edge sticker either side (`Route_Bitume_Bords`,
+    1,380 across). The desert maps' pairs (`RouteBitume` / `Bords_Route`, and Tunisia's) are laid the same way, at
+    their own spacing; only D-Day's has been seen in the game. A map with none of them gets the paint only.
+  - **Its path cleared:** the map's plants and props within 1,500 map units (about 6 m) of the road's line are taken
+    off, as an erase area would, but its woods' cover and movement stay as they were, and its buildings stay.
+  - The map's own road pieces (`Route`) and road model are written too, as before.
   `bridges = true` (the default) puts the map's own bridge kind where it
   crosses water, one piece stretched
   bank to bank (rusemod.bridges), with a floor units stand on: the floor of a shipped bridge of its kind, carried
