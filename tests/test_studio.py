@@ -161,6 +161,22 @@ class Studio(unittest.TestCase):
         self.assertEqual([u["base_name"] for u in self.api.units("us", search="armor")["units"]],
                          ["Descriptor_Unit_M4_Sherman", "Descriptor_Unit_Panzer_IV_G"])  # the type is searched too
 
+    def test_names_a_player_knows_and_the_games_own_line(self):
+        # the owner, 2026-10-03: "descriptor building vehicular factory lorette ... what the fuck is that"
+        base = {u["base_name"]: u for u in self.api.units()["units"]}
+        sherman = base["Descriptor_Unit_M4_Sherman"]
+        self.assertEqual((sherman["name"], sherman["game_name"]), ("Descriptor_Unit_M4_Sherman", "M4 Sherman"))
+        depot = base["Descriptor_Building_Depot"]  # the test game gives it no name
+        unnamed = "Money (depots, admin): no name in the game"
+        self.assertEqual((depot["game_name"], depot["desc"], depot["decoy"]), (unnamed, "", False))
+        us = {u["base_name"]: u for u in self.api.units("us")["units"]}
+        self.assertEqual(us["Descriptor_Building_Depot"]["name"], unnamed)  # not the code name
+        self.assertEqual([u["base_name"] for u in self.api.units(search="m4 sherman")["units"]],
+                         ["Descriptor_Unit_M4_Sherman"])  # the game's name is searched with the code names too
+        page = self.api.unit("$/GFX/Everything/Descriptor_Unit_M4_Sherman")
+        self.assertEqual((page["name"], page["game_name"], page["desc"]),
+                         ("Descriptor_Unit_M4_Sherman", "M4 Sherman", ""))
+
     def test_type_order(self):
         from ruse_studio.api import _type_order
         found = {"Heavy Bomber": "AIR_bh", "Fighter": "AIR_f", "Light Bomber": "AIR_bl", "Fort guns": None,

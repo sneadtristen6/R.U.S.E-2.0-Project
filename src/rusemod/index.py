@@ -28,6 +28,7 @@ objects: it survives lists being reordered, and the patch engine understands it.
 from __future__ import annotations
 
 import hashlib
+import html
 import os
 import re
 import sqlite3
@@ -486,8 +487,9 @@ class Index:
                                (lang, dictionary, dictionary, limit)).fetchall()
 
     def units(self, classes) -> list[dict]:
-        """Named objects of `classes` (units, buildings…) with their nation, factory, menu slot, name key and type key
-        (TypeUnitHintToken: the game's own "Light Tank", "Heavy Bomber", "Armored Recon"... on the unit's card)."""
+        """Named objects of `classes` (units, buildings…) with their nation, factory, menu slot, name key, type key
+        (TypeUnitHintToken: the game's own "Light Tank", "Heavy Bomber", "Armored Recon"... on the unit's card) and
+        description key (the card's line, "May field armored units and armored recon."; else its long text)."""
         marks = ",".join("?" * len(classes))
         rows = self.db.execute(f"""
             SELECT o.address, o.class,
@@ -495,11 +497,14 @@ class Index:
               (SELECT num FROM value WHERE object = o.id AND path = 'Factory'),
               (SELECT num FROM value WHERE object = o.id AND path = 'PositionInMenu'),
               (SELECT text FROM value WHERE object = o.id AND path = 'NameInMenuToken'),
-              (SELECT text FROM value WHERE object = o.id AND path = 'TypeUnitHintToken')
+              (SELECT text FROM value WHERE object = o.id AND path = 'TypeUnitHintToken'),
+              COALESCE((SELECT text FROM value WHERE object = o.id AND path = 'DescriptionUnitHintToken'),
+                       (SELECT text FROM value WHERE object = o.id AND path = 'LongDescriptionUnitHintToken'))
             FROM object o WHERE o.class IN ({marks}) AND o.shadow = 0 AND o.export IS NOT NULL
             ORDER BY o.address""", list(classes)).fetchall()
         return [{"address": a, "class": c, "nation": int(n or 0), "factory": None if f is None else int(f),
-                 "slot": None if s is None else int(s), "key": k, "type_key": t} for a, c, n, f, s, k, t in rows]
+                 "slot": None if s is None else int(s), "key": k, "type_key": t, "desc_key": d}
+                for a, c, n, f, s, k, t, d in rows]
 
     def flag_sets(self, prop: str = "InitialFlagSet") -> list[dict]:
         """Every number the named objects' `prop` lists hold (a unit's flags): [{flag, count, examples}], by number;
@@ -534,7 +539,8 @@ class Index:
         return dict(self.db.execute("SELECT prop, type FROM prop_seen WHERE class = ? ORDER BY count, type", (cls,)))
 
     def names(self, keys, lang: str) -> dict:
-        """Key name -> its text in one language, preferring the unit-name dictionary (baseunite)."""
+        """Key name -> its text in one language, preferring the unit-name dictionary (baseunite). The game's texts keep
+        some characters as HTML entities ("ARTILLERY &amp; ANTI-AIR BASE"): they come back as the characters."""
         keys = [k for k in set(keys) if k]
         out = {}
         for start in range(0, len(keys), 500):
@@ -542,7 +548,7 @@ class Index:
             marks = ",".join("?" * len(chunk))
             for name, text in self.db.execute(f"""SELECT name, text FROM text WHERE lang = ? AND name IN ({marks})
                                                   ORDER BY dictionary = 'baseunite'""", [lang] + chunk):
-                out[name] = text
+                out[name] = html.unescape(text) if text and "&" in text else text
         return out
 
     def _step(self, src: int, path: str) -> str:

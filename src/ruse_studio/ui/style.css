@@ -94,6 +94,9 @@ button:disabled { cursor: default; opacity: 0.5; }
 
 .detail { padding: 24px 32px; overflow: auto; }
 .detail h1 { margin: 0; font-size: 26px; }
+/* the name a player knows (with the code names) and the game's own line for the unit, as on its card */
+.detail .game-name { margin: 2px 0 0; color: var(--accent); font-weight: 600; letter-spacing: 0.03em; }
+.detail .unit-desc { margin: 6px 0 2px; max-width: 760px; color: var(--text); font-style: italic; }
 .address { display: flex; align-items: center; gap: 10px; margin: 6px 0 4px; }
 .address code { color: var(--muted); font: 12px Consolas, "Cascadia Mono", monospace; overflow-wrap: anywhere; }
 .address button, .ghost { padding: 3px 10px; font-size: 12px; background: transparent; border: 1px solid var(--line); }

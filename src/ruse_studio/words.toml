@@ -7697,3 +7697,16 @@ ru = "Начало и конец дороги перескакивают на к
 cz = "Začátek a konec silnice přeskočí na konec mostu, který jste postavili, nebo na silnici, když kliknete poblíž (asi 58 m). Body mezi nimi jdou přesně tam, kam kliknete. Odškrtněte pro přesné umístění každého bodu."
 jpn = "近く（約 58 m）をクリックすると、道路の始点と終点が自分で置いた橋の端か道路に吸い付きます。途中の点はクリックした場所にそのまま置かれます。すべての点を正確に置くにはチェックを外します。"
 sc = "在附近（约 58 米）点击时，道路的起点和终点会吸附到你放置的桥的端点或道路上。中间的点就放在你点击的位置。取消勾选可精确放置每个点。"
+
+# a building or unit the game gives no name (StudioApi.units' game_name): what it's for instead
+[no_game_name]
+us = "{group}: no name in the game"
+fr = "{group} : sans nom dans le jeu"
+ger = "{group}: im Spiel ohne Namen"
+ita = "{group}: senza nome nel gioco"
+spa = "{group}: sin nombre en el juego"
+pol = "{group}: bez nazwy w grze"
+ru = "{group}: без названия в игре"
+cz = "{group}: ve hře bez názvu"
+jpn = "{group}：ゲーム内に名前なし"
+sc = "{group}：游戏中无名称"

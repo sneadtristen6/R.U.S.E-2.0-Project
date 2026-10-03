@@ -1745,6 +1745,20 @@ async function snapToRoad(kind, x, y) {
   return best ? [best[1], best[2]] : [x, y];
 }
 
+// The Add unit list's name for a unit: the game's own (English with the code names), else its code name.
+function spawnName(u) {
+  return mv.lang === "base" ? u.game_name || u.name : u.name;
+}
+
+// Under the Add unit list: the game's own line for the unit picked ("May field armored units and armored recon.",
+// "Decoy building: ... booby-trapped"), as on its card in the game.
+function spawnDesc() {
+  const box = $("scen-unit-desc"), pick = $("scen-unit").value;
+  const u = (scen.units || []).find((x) => x.address === pick);
+  box.textContent = (u && u.desc) || "";
+  box.classList.toggle("hidden", scen.tool !== "spawn" || !box.textContent);
+}
+
 // what a placed or moved item sticks to the road as: "depot", "hq" or null
 function snapKind(item, unit) {
   if (scen.tool === "start" || (item && item.kind === "StartingPoint")) return "hq";
@@ -1754,6 +1768,7 @@ function snapKind(item, unit) {
 
 function renderScenTools() {
   const w = mv.words, s = ((scen.data || {}).scenarios || [])[scen.pick];
+  spawnDesc();  // shown only with Add unit
   iconTile($("scen-move"), "move", w.scen_move_tool).title = w.tip_scen_move;
   $("scen-move").setAttribute("aria-pressed", String(scen.tool === "move"));
   iconTile($("scen-spawn"), "spawn", w.scen_spawn_tool).title = w.tip_scen_spawn;
@@ -1787,12 +1802,15 @@ function renderScenTools() {
       if (!byNation.has(u.nation_name)) byNation.set(u.nation_name, []);
       byNation.get(u.nation_name).push(u);
     }
-    // each unit with the game's own type ("Light Tank", "Heavy Bomber"), and its code name when names are shown
+    // each unit by the name a player knows (the game's, even with the code names: "ARMOR BASE", not
+    // VehiculeFactory), its type ("Light Tank", "Heavy Bomber") and its code name; the game's own line for the one
+    // picked shows under the list (spawnDesc)
     unit.replaceChildren(...[...byNation].map(([nation, us]) => el("optgroup", { label: nation || "?" },
-      ...us.sort((a, b) => a.name.localeCompare(b.name)).map((u) => el("option", { value: u.address,
-        textContent: u.name + (u.type ? ` · ${u.type}` : "")
-          + (u.name !== u.base_name && mv.lang !== "base" ? ` (${u.base_name.replace(/^Descriptor_[A-Za-z]+_/, "")})` : "") })))));
+      ...us.sort((a, b) => spawnName(a).localeCompare(spawnName(b))).map((u) => el("option", { value: u.address,
+        textContent: spawnName(u) + (u.type ? ` · ${u.type}` : "")
+          + (spawnName(u) !== u.base_name ? ` (${u.base_name.replace(/^Descriptor_[A-Za-z]+_/, "")})` : "") })))));
     if (keep && [...unit.options].some((o) => o.value === keep)) unit.value = keep;
+    spawnDesc();
     unit.title = w.tip_scen_unit;
     // a skirmish game spawns only neutral items (camp -1): a unit for a player's side would never appear there
     const skirmish = !!s && s.kind === "skirmish";
@@ -4342,6 +4360,7 @@ function wire() {
     try { localStorage.setItem("studio.snaproads", snapRoads ? "1" : "0"); } catch { /* not kept: fine */ }
     saveView();
   });
+  $("scen-unit").addEventListener("change", spawnDesc);  // the picked unit's own line from the game
   $("road-snap").addEventListener("change", (e) => {  // a road's ends onto roads and placed bridges, or not
     road.snapOn = e.target.checked;
     road.snap = null;

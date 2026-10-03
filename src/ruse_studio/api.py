@@ -390,9 +390,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         try:
             rows = self._all_units(ix)
             names = ix.names([u["key"] for u in rows], lang) if lang != schema.BASE else {}
-            # the game's own type of each unit, on its card ("Light Tank", "Heavy Bomber"): English with the code names
-            type_names = {k: html.unescape(t).strip() for k, t in
-                          ix.names([u["type_key"] for u in rows], lang if lang in schema.LANGS else "us").items()}
+            # the game's own words on each unit's card, English beside the code names: its type ("Light Tank", "Heavy
+            # Bomber"), its name and its line ("May field armored units and armored recon."; the owner, 2026-10-03:
+            # "descriptor building vehicular factory lorette ... what the fuck is that")
+            told = lang if lang in schema.LANGS else "us"
+            type_names = {k: html.unescape(t).strip() for k, t in ix.names([u["type_key"] for u in rows], told).items()}
+            game_names = names if lang != schema.BASE else ix.names([u["key"] for u in rows], told)
+            descs = ix.names([u.get("desc_key") for u in rows], told)
         finally:
             ix.close()
         by_address = {u["address"]: u for u in rows}
@@ -409,7 +413,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             new.append({"address": unit.target, "class": src["class"], "key": None,
                         "nation": int(own.get("Nationalite", src["nation"])),
                         "factory": own.get("Factory", src["factory"]), "slot": None, "new": True,
-                        "source": unit.source, "name": unit.name, "type_key": src.get("type_key")})
+                        "source": unit.source, "name": unit.name, "type_key": src.get("type_key"),
+                        "desc_key": src.get("desc_key")})
         query, own_words = search.strip().lower(), words(lang)
         out, present, kinds = [], set(), {}
         for u in new + rows:
@@ -431,13 +436,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if group.startswith(TYPE_PICK) and utype != group[len(TYPE_PICK):] or \
                     not group.startswith(TYPE_PICK) and group != "all" and g != group:
                 continue
-            name = u.get("name") or names.get(u["key"]) or _tail(u["address"])
-            if query and not any(query in s.lower() for s in (name, u["address"], utype or "")):
+            # what a player would call it: its own name, the game's, else (no name in the game) what it's for
+            game_name = (u.get("name") or (game_names.get(u["key"]) or "").strip()
+                         or own_words.get("no_game_name", "{group}").replace("{group}", own_words.get("group_" + g, g)))
+            name = (u.get("name") or names.get(u["key"]) or (game_name if lang != schema.BASE else "")
+                    or _tail(u["address"]))
+            desc = (descs.get(u.get("desc_key")) or "").strip()
+            if query and not any(query in s.lower() for s in (name, u["address"], utype or "", game_name)):
                 continue
             out.append({"address": u["address"], "name": name, "base_name": _tail(u["address"]), "kind": k,
                         "nation": u["nation"], "nation_name": schema.nation(u["nation"], lang),
                         "factory": u["factory"], "slot": u["slot"], "new": u.get("new", False),
-                        "source": u.get("source"), "group": g, "type": utype})
+                        "source": u.get("source"), "group": g, "type": utype, "game_name": game_name, "desc": desc,
+                        "decoy": g == "fake"})
         return {"units": out, "total": len(rows) + len(new), "groups": [g for g in GROUPS if g in present],
                 "types": _type_order(kinds) if kind in UNIT_KINDS else []}
 
@@ -809,6 +820,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             used_by = [{"address": a, "path": p} for a, p in all_users[:30]]
             key = next((t for p, _n, t in o["values"] if p == "NameInMenuToken"), None)
             shown = ix.names([key], lang).get(key) if key and lang != schema.BASE else None
+            # the game's own words for it, English beside the code names: its name and its card's line
+            told = lang if lang in schema.LANGS else "us"
+            said = {p: t for p, _n, t in o["values"]
+                    if p in ("DescriptionUnitHintToken", "LongDescriptionUnitHintToken")}
+            dkey = said.get("DescriptionUnitHintToken") or said.get("LongDescriptionUnitHintToken")
+            about = ix.names([k for k in (key, dkey) if k], told)
+            game_name, desc = (about.get(key) or "").strip(), (about.get(dkey) or "").strip()
             source_name = self._names(ix, [new.source], lang)[new.source] if new else None
         finally:
             ix.close()
@@ -854,6 +872,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if members:
                 groups.append({"key": g, "name": schema.group_name(g, lang), "rows": members})
         return {"address": address, "class": o["class"], "name": shown or _tail(address),
+                "game_name": (new.name if top else game_name), "desc": desc,
                 "stable": o["stable"], "shared": o["shared"], "owners": o["owners"], "groups": groups,
                 "parts": parts, "uses": uses, "used_by": used_by, "editable": editable, "why_not": why,
                 "named": bool(o["export"]), "share": share,

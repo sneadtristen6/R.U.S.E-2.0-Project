@@ -357,6 +357,14 @@
     M4_Sherman: { us: "Advanced Medium Tank", fr: "Char moyen avancé" }, M3A1_Stuart: { us: "Light Tank", fr: "Char léger" },
     Panzer_IV_G: { us: "Medium Tank", fr: "Char moyen" }, Type97_ChiHa: { us: "Medium Tank", fr: "Char moyen" },
     Soldat_US_Leger: { us: "Light Infantry", fr: "Infanterie légère" }, P40Warhawk: { us: "Fighter", fr: "Chasseur" } };
+  const FAKE_DESC = {  // the game's own line for each, on its card (DescriptionUnitHintToken)
+    M4_Sherman: "Enjoys greater firepower than common medium tanks. Can fire while moving. Can't go in woods.",
+    Building_CaserneLeurre: "Decoy building: The building is booby-trapped to kill any unit trying to capture it!",
+    Building_Headquarter: "May field engineers and receive supply convoys. Generates $1 every 4s." };
+  const aboutOf = (address) => {  // the name a player knows (the game's, in capitals) and that line
+    const u = units.find((x) => E + x.id === address);
+    return u ? { game_name: u.names.us.toUpperCase(), desc: FAKE_DESC[u.id] || "" } : { game_name: "", desc: "" };
+  };
   // units made in the Studio: copies of one of the above, kept per mod like src/studio.rndf holds them
   const newUnits = [];  // { mod, id, source, name, price, nation, factory }
   const newAddress = (id) => E + id;
@@ -601,7 +609,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           edited_own: share && share.via ? edits.get(editKey(address, prop, "own", via)) ?? null : null };
       }) });
     }
-    return { address, class: cls, name, stable: true, shared: Boolean(share), owners: [], groups: out, parts, uses,
+    return { address, class: cls, name, ...aboutOf(address), stable: true, shared: Boolean(share), owners: [], groups: out, parts, uses,
       used_by: usedBy, editable, why_not: whyNot, users, share: share || null, named: !address.includes(":"),
       can_copy: editable && !address.includes(":") && units.some((u) => E + u.id === address), new: null,
       can_copy_ammo: false, has_weapons: !address.includes(":") && cls !== "TAmmunition" };
@@ -941,7 +949,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           : (u.group || groupOf(u)) === group))
           .map((u) => ({ address: E + u.id, name: u.new ? u.names.us : nameOf(u, lang), base_name: "Descriptor_Unit_" + u.id,
             kind: u.kind, nation: u.nation, nation_name: (nations[lang] || nations.us)[u.nation], factory: u.factory,
-            slot: u.slot, new: Boolean(u.new), source: u.source || null, group: u.group || groupOf(u), type: typeOf(u) }))
+            slot: u.slot, new: Boolean(u.new), source: u.source || null, group: u.group || groupOf(u), type: typeOf(u),
+            ...(u.new ? { game_name: u.names.us, desc: aboutOf(u.source).desc } : aboutOf(E + u.id)),
+            decoy: (u.group || groupOf(u)) === "fake" }))
           .filter((u) => !search || u.name.toLowerCase().includes(search.toLowerCase()));
         return { units: out, total: units.length + made.length, groups: GROUPS.filter((g) => present.has(g)), types };
       },

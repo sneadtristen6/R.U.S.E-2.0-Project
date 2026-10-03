@@ -358,6 +358,15 @@ function renderGroups(groups, types) {
   pick.value = options.some(([value]) => value === state.group) ? state.group : "all";
 }
 
+// A unit's or building's second line: with the code names, the name a player knows first ("ARMOR BASE"); then its
+// country, its type (a building: what it's for, so a decoy says so), and its code name when names are shown.
+function unitSub(u) {
+  const w = state.words;
+  const what = u.type || (u.kind === "buildings" ? w["group_" + u.group] || w.buildings : w[u.kind]);
+  const known = state.lang === "base" && u.game_name && u.game_name !== u.name ? `${u.game_name} · ` : "";
+  return known + `${u.nation_name} · ${what}` + (u.name !== u.base_name ? ` · ${u.base_name}` : "");
+}
+
 async function refreshList() {
   let res;
   try {
@@ -376,8 +385,10 @@ async function refreshList() {
         (u.users.length ? fill(state.words.fired_by, { names: u.users.slice(0, 3).join(", ") +
           (u.users.length > 3 ? ", …" : "") }) : state.words.fired_by_nobody) +
         (u.name !== u.base_name ? ` · ${u.base_name}` : "")
-      : `${u.nation_name} · ${u.type || state.words[u.kind]}` + (u.name !== u.base_name ? ` · ${u.base_name}` : "");
-    const b = el("button", { type: "button", title: state.words.tip_open_unit },
+      : unitSub(u);
+    // the game's own line for it ("May field armored units and armored recon.") as its tooltip
+    const tip = u.desc ? `${u.desc}\n${state.words.tip_open_unit}` : state.words.tip_open_unit;
+    const b = el("button", { type: "button", title: tip },
       el("span", { className: "name", textContent: u.name }),
       el("span", { className: "sub", textContent: sub }));
     b.dataset.address = u.address;
@@ -816,6 +827,10 @@ async function showUnit(address, via) {
   const copy = el("button", { type: "button", textContent: w.copy_address, title: w.tip_copy_address });
   copy.addEventListener("click", () => navigator.clipboard && navigator.clipboard.writeText(u.address));
   const parts = [el("h1", { textContent: u.name }),
+    // with the code names, the name a player knows; and the game's own line for it, as on its card in the game
+    ...(state.lang === "base" && u.game_name && u.game_name !== u.name
+      ? [el("div", { className: "game-name", textContent: u.game_name })] : []),
+    ...(u.desc ? [el("p", { className: "unit-desc", textContent: u.desc })] : []),
     el("div", { className: "address" }, el("code", { textContent: u.address }), copy),
     el("div", { className: "meta", textContent: u.class })];
   if (u.new) parts.push(copyNotice(u));
