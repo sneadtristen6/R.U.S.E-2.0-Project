@@ -357,6 +357,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._blenders: dict[str, object] = {}  # a unit's work folder -> the Blender opened on it (Bring back asks
         # it to save)
         self._previews_lock = threading.Lock()  # one unit model made for the preview at a time
+        # the Erase tool's count (scenery_erased): one at a time, and a newer ask stops the one running, so painting
+        # many circles never piles up counts (the owner's whole-map erase on M04_Cotentin, 2026-10-04: one count took
+        # 161 s and 0.7 GB, and a count per stroke ran the Studio out of memory)
+        self._erased_lock = threading.Lock()
+        self._erased_ask = threading.Lock()
+        self._erased_gen = 0
 
     # --- where things are ---
     def _game(self) -> Path | None:
@@ -2071,10 +2077,24 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def scenery_erased(self, pack: str) -> dict:
         """What the current mod's circles to erase take off a map when the mod is built, worked out the way the build
         erases (rusemod.scenery.erase_count): {"count": circles, "takes": {group: objects}, "error": why the build
-        would refuse them (the map's scenery would grow too big), or ""}. A second or two on the biggest maps."""
+        would refuse them (the map's scenery would grow too big), or ""}. Seconds even on the biggest map erased
+        whole. One count runs at a time; a newer ask stops an older one, which then answers {"superseded": true}."""
         none = {"count": 0, "takes": {}, "error": ""}
         if self._map_dir() is None:
             return none
+        with self._erased_ask:
+            self._erased_gen += 1
+            mine = self._erased_gen
+        with self._erased_lock:
+            if mine != self._erased_gen:
+                return {**none, "superseded": True}
+            try:
+                return self._count_erased(pack, lambda: mine != self._erased_gen)
+            except scenery.EraseCancelled:
+                return {**none, "superseded": True}
+
+    def _count_erased(self, pack: str, cancel) -> dict:
+        none = {"count": 0, "takes": {}, "error": ""}
         path = self._scenery_file(pack)
         with self._saving:
             areas = self._read_objects(path, "erase")
@@ -2097,7 +2117,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 raise StudioError(f"{map_path.name} has no scenery file.") from None
         out = {"count": len(areas), "takes": {}, "error": ""}
         try:
-            out["takes"] = scenery.erase_count(raw, areas, descs)
+            out["takes"] = scenery.erase_count(raw, areas, descs, cancel)
         except (scenery.SceneryError, struct.error) as exc:
             raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
         except scenery.SceneryEditError as exc:

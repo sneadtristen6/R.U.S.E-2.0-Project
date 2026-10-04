@@ -330,6 +330,7 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .level-ok .finding-dot { background: #4fbf6a; }
 .brush-list .chip { padding: 4px 11px; font-size: 13px; }
 .tray-erase { display: flex; flex-direction: column; gap: 5px; }
+.tray-erase > button { align-self: flex-start; }  /* Erase the whole map: as wide as its words */
 /* Map Paint (maps.js renderPaintPanel): the colour wheel beside the colour picked, the eyedropper and the swatches */
 .tray-paint { display: flex; flex-direction: column; gap: 6px; }
 .paint-colour { display: flex; gap: 10px; align-items: flex-start; }

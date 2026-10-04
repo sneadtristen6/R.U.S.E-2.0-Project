@@ -868,12 +868,14 @@ class Erasing(unittest.TestCase):
         copy = t.blocks[1]
         self.assertEqual(sum(1 for it in copy.items if it.kind == "child"), 1)
         self.assertEqual(spots(raw) - spots(new), Counter({(1, x, 1000.0): 1 for x in (10000.0, 10100.0, 10200.0)}))
-        # every oak everywhere: both woods keep only their road piece; the patch nothing places goes, so does the wood
+        # every oak everywhere: both woods keep only their road piece; the patch nothing places goes, so does the wood.
+        # The two woods lose the same objects, so they share one copy, placed twice (as the shipped maps share blocks)
         new, notes, by = scenery.erase_objects(raw, [scenery.EraseArea(5000.0, 500.0, 9000.0)], E_KINDS, {2})
         t = self.check(raw, new)
         self.assertEqual(by, {"vegetation": 12})
-        self.assertEqual(len(t.blocks), 3)
-        self.assertEqual(t.placings()[0], [1, 1, 1])
+        self.assertEqual(len(t.blocks), 2)
+        self.assertEqual(t.placings()[0], [1, 2])
+        self.assertIn("1 shared block(s) copied", notes[1])
         self.assertIn("2 no longer placed anywhere left out", notes[1])
         self.assertEqual(Counter(sym for sym, _m in t.walk()), Counter({0: 1, 2: 1}))
 

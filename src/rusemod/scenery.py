@@ -62,6 +62,18 @@ class Item:
         return decode_transform(self.tform, self.data)
 
 
+def _translation(kind: int, data: bytes) -> tuple:
+    """Where decode_transform's matrix moves the origin to, (tx, ty, tz), without the rest of it."""
+    if kind == T_IDENTITY:
+        return 0.0, 0.0, 0.0
+    if kind == T_MOVE:
+        return struct.unpack_from("<3f", data)
+    if kind == T_FULL:
+        return struct.unpack_from("<f", data, 12)[0], struct.unpack_from("<f", data, 28)[0], \
+            struct.unpack_from("<f", data, 44)[0]
+    return struct.unpack_from("<3f", data, 8)
+
+
 def decode_transform(kind: int, data: bytes) -> tuple:
     if kind == T_IDENTITY:
         return IDENTITY
@@ -919,7 +931,8 @@ def bury_objects(data: bytes, places: list[tuple[int, int]]) -> tuple[bytes, lis
 # --- erasing the map's own scenery (a mod's [[erase]] areas in scenery.toml; docs/MOD_FORMAT.md §8) ---
 ERASE_GROUPS = ("vegetation", "prop", "decal", "building")  # what an erase area may name in `what`
 ERASE_DEFAULT = ("vegetation", "prop")                        # trees and props, unless the area says otherwise
-ERASE_MAX = 200000.0  # map units an erase area's radius may reach (2 km)
+ERASE_MAX = 4000000.0  # map units an erase area's radius may reach: any map, whole (M04_Cotentin is 3,932,160 wide); a
+                       # whole-map erase takes seconds (erase_plan's bulk) and fits (erase_objects shares copies)
 DATA_LIMIT = 0xFFFFFC  # a reference holds a block's offset in 24 bits (4-byte steps): the blocks' data stops there
 
 
@@ -948,12 +961,27 @@ class EraseArea:
                            # map: rusemod.mend.Filled.touches); the shape only narrows the search
 
     def footprint(self):
-        from .brush import Footprint
-        if self.shape == "line":
-            return Footprint("line", self.x, self.y, self.radius, x2=self.x2, y2=self.y2)
-        if self.shape == "square":
-            return Footprint("square", self.x, self.y, self.radius, self.dx, self.dy)
-        return Footprint("round", self.x, self.y, self.radius)
+        """Its shape (rusemod.brush.Footprint), made once: an erase over a big map asks it millions of times."""
+        f = self.__dict__.get("_foot")
+        if f is None:
+            from .brush import Footprint
+            if self.shape == "line":
+                f = Footprint("line", self.x, self.y, self.radius, x2=self.x2, y2=self.y2)
+            elif self.shape == "square":
+                f = Footprint("square", self.x, self.y, self.radius, self.dx, self.dy)
+            else:
+                f = Footprint("round", self.x, self.y, self.radius)
+            object.__setattr__(self, "_foot", f)
+        return f
+
+    def covers(self, points) -> bool:
+        """Whether every one of `points` ((x, y) pairs) lies inside it: a block's four corners (each shape is convex, so
+        its corners inside means all of it is)."""
+        if self.shape == "round":
+            r2 = self.radius * self.radius
+            return all((x - self.x) ** 2 + (y - self.y) ** 2 <= r2 for x, y in points)
+        f = self.footprint()
+        return all(f.t2(x, y) <= 1.0 for x, y in points)
 
     def box(self) -> tuple[float, float, float, float]:
         """x min, y min, x max, y max."""
@@ -1055,12 +1083,17 @@ def _size_of(m: tuple, local: tuple) -> float:
 
 
 def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridges=frozenset(),
-               sizes: dict[str, float] | None = None) -> _Cut | None:
+               sizes: dict[str, float] | None = None, cancel=None) -> _Cut | None:
     """What erasing `areas` takes out, placement by placement from the top block down, or None for nothing. An object
     goes when its place lies in an area that may remove its kind: its group (`kinds`: name index -> group) is in the
     area's `what` and it isn't a bridge (`bridges`: name indexes), or its name is in the area's `types`. In an area
     `by_size`, an object also goes when its reach does (`sizes`: type name -> how far it reaches from its middle at
-    size 1, map units; times the size it is placed at)."""
+    size 1, map units; times the size it is placed at).
+
+    A placement lying wholly inside one area, with no area meeting it that takes other names, loses every object of
+    that area's names at once (bulk), worked out once per block: erasing most of a big map (the owner's whole-map erase
+    on M04_Cotentin, 2026-10-04) no longer tests every object of every placement. `cancel()`, asked now and then,
+    stops the plan with EraseCancelled when it says so."""
     roots = sc.roots()
     if roots != [0]:
         raise SceneryError("the scenery file's blocks aren't in the order this writer knows")
@@ -1091,17 +1124,59 @@ def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridg
         return f.t2(x, y) * a.radius * a.radius <= r * r
     boxes = _object_boxes(sc)
     grid = _AreaGrid(pairs) if len(pairs) > 64 else None
+    sized = any(a.mask is not None or id(a) in feet for _s, _ok, a in pairs)  # an object's size counts somewhere
+    whole: dict = {}  # (block, id(its names)) -> what taking every object of those names under it takes (bulk)
+    seen = [0]
+
+    def bulk(j: int, ok: set) -> _Cut | None:
+        """What a placement of block j loses when every object under it lies in an area taking the names `ok` and no
+        area meeting it takes any other: every object of those names, its children's too. Worked out once per block
+        and names (most blocks are placed many times: a wood's patch), each placement getting its own copy (the
+        writer makes one block copy per cut)."""
+        key = (j, id(ok))
+        if key not in whole:
+            b = sc.blocks[j]
+            removed, changes, gone = set(), {}, {}
+            for it in b.items:
+                if it.kind == "object":
+                    if it.symbol in ok:
+                        removed.add(it.at)
+                        gone[it.symbol] = gone.get(it.symbol, 0) + 1
+                elif it.kind == "child":
+                    k = sc._by_offset[it.child_offset]
+                    if boxes[k] is None:
+                        continue
+                    c = bulk(k, ok)
+                    if c is None:
+                        continue
+                    for s, n in c.gone.items():
+                        gone[s] = gone.get(s, 0) + n
+                    if c.empty:
+                        removed.add(it.at)
+                    else:
+                        changes[it.at] = c
+            whole[key] = None if not removed and not changes else \
+                _Cut(j, removed, changes, gone, len(removed) == len(b.items) and j != 0)
+        return _copy_cut(whole[key])
 
     def visit(bi: int, m: tuple, near: list) -> _Cut | None:
         """`near`: the areas that meet this placement (only they can take anything from it)."""
+        seen[0] += 1
+        if cancel is not None and seen[0] % 4096 == 0 and cancel():
+            raise EraseCancelled("a newer erase was asked for")
         b = sc.blocks[bi]
         removed, changes, gone = set(), {}, {}
         g = grid if near is pairs else None  # the grid holds exactly every area: only for the top placement
         for it in b.items:
             if it.kind == "object":
-                local = it.matrix()
-                x = m[0] * local[3] + m[1] * local[7] + m[2] * local[11] + m[3]
-                y = m[4] * local[3] + m[5] * local[7] + m[6] * local[11] + m[7]
+                if sized:
+                    local = it.matrix()
+                    tx, ty, tz = local[3], local[7], local[11]
+                else:  # only where it stands counts: its place, without the rest of its transform
+                    local = None
+                    tx, ty, tz = _translation(it.tform, it.data)
+                x = m[0] * tx + m[1] * ty + m[2] * tz + m[3]
+                y = m[4] * tx + m[5] * ty + m[6] * tz + m[7]
                 here = g.query(x, y, x, y) if g is not None else near
                 if any(it.symbol in ok and takes_it(a, x, y, it.symbol, m, local) for _searched, ok, a in here):
                     removed.add(it.at)
@@ -1114,7 +1189,12 @@ def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridg
                 inner = _meeting(boxes[j], cm, near, g)
                 if not inner:
                     continue
-                c = visit(j, cm, inner)
+                bx = boxes[j]
+                corners = [(cm[0] * x + cm[1] * y + cm[3], cm[4] * x + cm[5] * y + cm[7])
+                           for x, y in ((bx[0], bx[1]), (bx[2], bx[1]), (bx[0], bx[3]), (bx[2], bx[3]))]
+                over = next((ok for _s, ok, a in inner if a.mask is None and a.covers(corners)
+                             and all(other <= ok for _s2, other, _a2 in inner)), None)
+                c = bulk(j, over) if over is not None else visit(j, cm, inner)
                 if c is None:
                     continue
                 for s, n in c.gone.items():
@@ -1127,6 +1207,18 @@ def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridg
             return None
         return _Cut(bi, removed, changes, gone, len(removed) == len(b.items) and bi != 0)
     return visit(0, IDENTITY, pairs)
+
+
+class EraseCancelled(Exception):
+    """erase_plan stopped because its `cancel()` said so (the Studio: a newer count was asked for)."""
+
+
+def _copy_cut(c: _Cut | None) -> _Cut | None:
+    """A cut of its own for one placement (the writer copies a shared block once per cut), sharing the sets it only
+    reads."""
+    if c is None:
+        return None
+    return _Cut(c.block, c.removed, {k: _copy_cut(v) for k, v in c.changes.items()}, c.gone, c.empty)
 
 
 def _rebuilt(b: Block, removed: set) -> tuple[bytes, dict[int, int]]:
@@ -1157,7 +1249,8 @@ def _rebuilt(b: Block, removed: set) -> tuple[bytes, dict[int, int]]:
 
 
 def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
-                  bridges=frozenset(), sizes: dict[str, float] | None = None) -> tuple[bytes, list[str], dict[str, int]]:
+                  bridges=frozenset(), sizes: dict[str, float] | None = None,
+                  cancel=None) -> tuple[bytes, list[str], dict[str, int]]:
     """The scenery file with the objects in `areas` taken out (erase_plan says which). Most of a map's trees are in
     blocks it places many times (a wood's patch, repeated across the map), so a placement that loses objects gets a
     copy of its block of its own, without them (copy on write): the reference that placed it points to the copy, the
@@ -1172,18 +1265,35 @@ def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
     sc = Scenery(data)
     unknown = sorted({t for a in areas for t in a.types} - set(sc.names[:len(sc.flags)]))
     said = [f"{', '.join(unknown)}: not on this map, so the erase areas take none of it"] if unknown else []
-    cut = erase_plan(sc, areas, kinds, bridges, sizes)
+    cut = erase_plan(sc, areas, kinds, bridges, sizes, cancel)
     if cut is None:
         return bytes(data), [f"the erase area(s) cover nothing they may remove: {len(areas)} area(s), no change"] + said, {}
     weight, _where = sc.placings()
     inplace: dict[int, _Cut] = {}
     copies: dict[int, list] = {}
+    # placements that lose the same objects from the same block share one copy of it, as the shipped maps share
+    # blocks: a big erase (most of a map, its ground stickers kept) otherwise copies a wood's patch once for every
+    # place it stands and passes what a map can hold (the owner's whole-map erase on M04_Cotentin, 2026-10-04)
+    keyed: dict[int, tuple] = {}
+    same: dict[tuple, _Cut] = {}
+    alias: dict[int, _Cut] = {}  # id(a cut) -> the cut whose copy it shares
+
+    def key(c: _Cut) -> tuple:
+        k = keyed.get(id(c))
+        if k is None:
+            k = keyed[id(c)] = (c.block, frozenset(c.removed),
+                                tuple(sorted((at, key(ch)) for at, ch in c.changes.items())))
+        return k
     todo = [cut]
     while todo:
         c = todo.pop()
         if weight[c.block] == 1:
             inplace[c.block] = c
         else:
+            first = same.setdefault(key(c), c)
+            if first is not c:
+                alias[id(c)] = first
+                continue  # its children are the first one's too
             copies.setdefault(c.block, []).append(c)
         todo += c.changes.values()
     # the blocks out, in order: each block's copies right before it
@@ -1206,6 +1316,8 @@ def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
             if it.kind != "child" or (c is not None and it.at in c.removed):
                 continue
             ch = c.changes.get(it.at) if c is not None else None
+            if ch is not None:
+                ch = alias.get(id(ch), ch)
             yield it, (out_of_cut[id(ch)] if ch is not None else out_of_block[sc._by_offset[it.child_offset]])
     reached, todo_k = {out_of_block[0]}, [out_of_block[0]]
     while todo_k:
@@ -1265,14 +1377,14 @@ def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
     return hashlib.md5(body).digest() + body, notes + said, by_group
 
 
-def erase_count(data: bytes, areas: list[EraseArea], descs: dict[str, Descriptor]) -> dict[str, int]:
+def erase_count(data: bytes, areas: list[EraseArea], descs: dict[str, Descriptor], cancel=None) -> dict[str, int]:
     """What `areas` take off the map whose scenery file is `data`, per group as erase_objects counts them, worked out
     the way the build erases (so an erase too big for the map raises SceneryEditError, as the build refuses it). The
-    Studio's Erase tool says it while circles are painted; nothing is written."""
+    Studio's Erase tool says it while circles are painted; nothing is written. `cancel`: erase_plan's."""
     names = Scenery(data).names
     kinds = {i: descs[n].group for i, n in enumerate(names) if n in descs}
     bridges = {i for i, n in enumerate(names) if n in descs and descs[n].bridge}
-    return erase_objects(data, areas, kinds, bridges)[2]
+    return erase_objects(data, areas, kinds, bridges, cancel=cancel)[2]
 
 
 # --- what hides painted ground up close (TESTS.md T21: with it taken off under a patch, the paint shows at every

@@ -510,7 +510,7 @@ The same file takes the map's own scenery away, one circle each:
 [[erase]]
 x      = 672688.0                       # the circle's middle (map units)
 y      = 659281.0
-radius = 5000.0                         # map units (about 256 = 1 m), at most 200,000
+radius = 5000.0                         # map units (about 256 = 1 m), at most 4,000,000 (any map, whole)
 # optional:
 what  = ["vegetation", "prop"]          # what it takes: vegetation, prop, decal, building (default: trees and props)
 types = ["TypeWarrior/Pont_Normandie"]  # and these types, whatever they are (the only way to erase a bridge)

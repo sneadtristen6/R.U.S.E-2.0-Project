@@ -7000,6 +7000,30 @@ cz = "Co kruhy odstraňují. Každý kruh si ponechá, co bylo vybráno, když s
 jpn = "円が撤去するもの。各円は描いたときの選択を保ちます。"
 sc = "圆圈要移除的内容。每个圆圈保留绘制时所选的内容。"
 
+[erase_whole]
+us = "Erase the whole map"
+fr = "Effacer toute la carte"
+ger = "Ganze Karte löschen"
+ita = "Cancella tutta la mappa"
+spa = "Borrar todo el mapa"
+pol = "Wyczyść całą mapę"
+ru = "Стереть всю карту"
+cz = "Vymazat celou mapu"
+jpn = "マップ全体を消去"
+sc = "清除整张地图"
+
+[tip_erase_whole]
+us = "One area over the whole map, taking what's picked above. Undo takes it back."
+fr = "Une zone sur toute la carte, qui retire ce qui est choisi au-dessus. Annuler la retire."
+ger = "Ein Bereich über die ganze Karte, der entfernt, was oben gewählt ist. Rückgängig nimmt ihn zurück."
+ita = "Un'area su tutta la mappa, che toglie ciò che è scelto sopra. Annulla la toglie."
+spa = "Un área sobre todo el mapa que quita lo elegido arriba. Deshacer la quita."
+pol = "Jeden obszar na całą mapę, usuwa to, co wybrano powyżej. Cofnij go usuwa."
+ru = "Одна область на всю карту, убирает выбранное выше. «Отменить» убирает её."
+cz = "Jedna oblast přes celou mapu, odstraní, co je vybráno výše. Zpět ji odebere."
+jpn = "マップ全体に1つの範囲を置き、上で選んだものを消します。元に戻すで取り消せます。"
+sc = "在整张地图上放一个区域，清除上面选中的内容。撤销可将其撤回。"
+
 [erase_trees_note]
 us = "Where trees go, the ground opens to every unit and loses its forest cover (proven in the game)."
 fr = "Là où les arbres disparaissent, le sol s'ouvre à toutes les unités et perd son couvert forestier (vérifié en jeu)."

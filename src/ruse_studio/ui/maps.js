@@ -58,7 +58,7 @@ const PAINT_KINDS = new Set(["paint", "stamp"]);  // their sizes grow on a curve
 const SIZE_UNIT = { cover: 0.25, uncover: 0.25, town: 0.1, block: 0.25, block_infantry: 0.25, block_vehicles: 0.25,
   open: 0.25, open_infantry: 0.25, open_vehicles: 0.25, forest: 0.25, erase: 0.25 };
 const ERASE_DEFAULT = ["vegetation", "prop"];  // what a circle takes unless it says (rusemod.scenery.ERASE_DEFAULT)
-const ERASE_MAX = 200000;  // map units a circle's radius may reach (rusemod.scenery.ERASE_MAX)
+const ERASE_MAX = 4000000;  // map units a circle's radius may reach (rusemod.scenery.ERASE_MAX)
 
 // A brush's radius in map units: its Size slider as a share of the map's width. Map Paint's grows on a curve instead,
 // from a fine line (about 15 m across on a standard map) to a ginormous patch (about 1.3 km across): the owner,
@@ -3889,15 +3889,20 @@ function sizeLabel() {
 }
 
 // What the circles take when the mod is built, counted by the Studio the way the build erases
-// (StudioApi.scenery_erased), again after each change; the last count asked for is the one said.
+// (StudioApi.scenery_erased), again after each change; the last count asked for is the one said. Asked once the
+// painting pauses (TAKES_WAIT), so a run of strokes costs one count, not one each (the Studio counts one at a time
+// and stops an older count for a newer one: a count per stroke over a whole big map once ran it out of memory).
+const TAKES_WAIT = 400;  // ms after the last change
 async function countTakes(pack) {
   const b = mv.brush, ask = ++b.takesAsk;
   b.takes = b.erase.length ? "counting" : null;
   showTakes();
   if (!b.takes) return;
+  await new Promise((done) => setTimeout(done, TAKES_WAIT));
+  if (ask !== b.takesAsk || pack !== mv.current) return;  // another change came: its own count follows
   try {
     const res = await mv.api.scenery_erased(pack);
-    if (ask !== b.takesAsk || pack !== mv.current) return;
+    if (ask !== b.takesAsk || pack !== mv.current || (res && res.superseded)) return;
     b.takes = res;
   } catch (err) {
     if (ask !== b.takesAsk || pack !== mv.current) return;
@@ -3948,6 +3953,9 @@ function renderBrushes() {
   if (erase) {
     $("brush-erase-what").replaceChildren(...["vegetation", "prop", "building"].map((g) => chipOf(w[`scenery_${g}`],
       w.tip_erase_what, b.eraseWhat[g], () => { b.eraseWhat[g] = !b.eraseWhat[g]; renderBrushes(); })));
+    $("brush-erase-whole").textContent = w.erase_whole;
+    $("brush-erase-whole").title = w.tip_erase_whole;
+    $("brush-erase-whole").disabled = !b.mod;
     $("brush-erase-trees").textContent = w.erase_trees_note;
     $("brush-erase-trees").classList.toggle("hidden", !b.eraseWhat.vegetation);
     $("brush-erase-buildings").textContent = w.erase_buildings_note;
@@ -4191,6 +4199,23 @@ async function finishErase(g) {
     showCount();
     brushNote((err && err.message) || String(err), "error");
   }
+}
+
+// "Erase the whole map": one square over all of it, taking what's picked (the owner, 2026-10-04: "a simple optimized
+// way to just erase the whole map in one button"), saved like a drag's circles, so Undo takes it back. The build and
+// the count take a whole-map area at once (rusemod.scenery.erase_plan's bulk): seconds, even on M04_Cotentin.
+async function eraseWhole() {
+  const b = mv.brush;
+  if (!b.mod || b.painting || !mv.edit) return;
+  const what = ["vegetation", "prop", "building"].filter((g) => b.eraseWhat[g]);
+  if (!what.length) { brushNote(mv.words.erase_none, "error"); return; }
+  const [x0, y0, , x1, y1] = mv.edit.bounds;
+  const radius = Math.min(ERASE_MAX, Math.ceil(Math.max(x1 - x0, y1 - y0) / 2) + 1000);
+  const a = { x: Math.round((x0 + x1) / 2), y: Math.round((y0 + y1) / 2), radius, what, shape: "square", dx: 1, dy: 0 };
+  b.erase.push(a);
+  eraseDab(a);
+  tintSoon();
+  await finishErase({ erase: [a] });
 }
 
 // Undo under the Erase brush: the last drag's circles (one circle, for those saved before this session).
@@ -5184,6 +5209,7 @@ function wire() {
   $("place-spacing").addEventListener("input", (e) => { mv.place.spacing[mv.place.group] = Number(e.target.value); renderPlace(); });
   $("place-area").addEventListener("input", (e) => { mv.place.area = Number(e.target.value); renderPlace(); });
   $("brush-undo").addEventListener("click", () => undoStroke());
+  $("brush-erase-whole").addEventListener("click", () => eraseWhole());
   $("road-finish").addEventListener("click", () => finishRoad());
   $("road-undo").addEventListener("click", () => undoRoad());
   $("bridge-undo").addEventListener("click", () => undoBridge());
