@@ -26,6 +26,15 @@ class Dxt1(unittest.TestCase):
         back = dxt.decode(blocks, w, h)
         self.assertLess(sum(abs(a - b) for a, b in zip(rgb, back)) / len(rgb), 6)
 
+    def test_two_colours_square_to_grey(self):
+        # red against blue: their axis (1, 0, -1) is square to the search's first guess (1, 1, 1); both ends came
+        # out as the mean, a purple-blue, before (found 2026-10-04 by the model importer's test)
+        for one, two in (((200, 10, 10), (10, 10, 200)), ((0, 200, 0), (100, 0, 100))):
+            pixels = [one] * 4 + [two] * 12
+            back = dxt.block_pixels(dxt.encode_block(pixels))
+            for want, got in zip(pixels, back):
+                self.assertLessEqual(max(abs(a - b) for a, b in zip(want, got)), 8, (want, got))
+
     def test_png_writer(self):
         png = dxt.png_bytes(bytes([10, 20, 30]) * 4, 2, 2)
         self.assertEqual(png[:8], b"\x89PNG\r\n\x1a\n")
