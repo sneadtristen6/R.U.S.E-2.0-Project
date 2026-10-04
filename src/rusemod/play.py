@@ -67,8 +67,8 @@ CODE = _code_id()  # taken once, as the program starts: an edit made to the code
 def built_from(game: Path, mod_paths, pack: str = DEFAULT_PACK) -> dict:
     """What a modded copy is built from, for rusemod.instance.needs_build: the mods in their order (every file of
     each), the game (its Steam build, and every file's size and time), the pack the units come from and the app's code
-    (CODE). Taken before the mods are read, so a mod edited during the build counts as changed next time. `key` is the
-    SHA-256 of all of it."""
+    (CODE). Taken before the mods are read and again after the build (Starter.modded): a copy whose mods changed in
+    between keeps no record, so the next Play builds. `key` is the SHA-256 of all of it."""
     game = Path(game)
     files = []
     for root, _dirs, names in os.walk(game):
@@ -97,6 +97,24 @@ def built_from(game: Path, mod_paths, pack: str = DEFAULT_PACK) -> dict:
              "game_files": hashlib.sha256(json.dumps(sorted(files, key=lambda f: f[0])).encode()).hexdigest(),
              "mods": mods, "pack": pack, "code": CODE}
     return {"key": hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest(), **parts}
+
+
+def mod_stamps(mod_paths) -> list:
+    """Every file of the mods, with its size and time: taken with built_from before the build and again after, a file
+    written in between shows even when its bytes are back as they were (built_from compares bytes only)."""
+    out = []
+    for m in mod_paths:
+        found = []
+        for root, dirs, names in os.walk(m) if os.path.isdir(m) else [(os.path.dirname(m), [], [os.path.basename(m)])]:
+            dirs[:] = [d for d in dirs if d != "__pycache__"]
+            found += [os.path.join(root, n) for n in names]
+        for path in sorted(found):
+            try:
+                st = os.stat(path)
+                out.append([path, st.st_size, st.st_mtime_ns])
+            except OSError:
+                out.append([path, None, None])
+    return out
 
 
 def in_words(say, words: dict | None):
@@ -179,10 +197,11 @@ class Starter:
         before building anything, naming every clash: rusemod.rmod.clashes).
 
         When the copy was last built from these same mods (every file as it was), this game build and this app, and
-        is still as that build left it, nothing is built: the game starts from it (rusemod.instance.needs_build).
+        is still as that build left it, nothing is built: the game starts from it (rusemod.instance.needs_build). A
+        mod changed while the build read it leaves the copy with no record, so the next Play builds again.
         `words`: the app's words in the player's language, for the lines meant for the player (in_words)."""
         from .backup import _claim, _release
-        from .instance import needs_build, refuse_if_running, take_back
+        from .instance import forget, needs_build, refuse_if_running, take_back
         say = in_words(say, words)
         refuse_if_running(str(instance))  # before anything is built: a game still running from the copy is said at once
         lock = instance.parent / BUILDING
@@ -194,7 +213,8 @@ class Starter:
                              "for it to finish, then try again.")
         result = None
         try:
-            made_from = built_from(game, mod_folders)  # before the mods are read: an edit from now on shows next time
+            made_from = built_from(game, mod_folders)  # before the mods are read, and again after the build
+            stamps = mod_stamps(mod_folders)
             if needs_build(str(game), str(instance), made_from) and \
                     not take_back(str(game), str(instance), made_from):
                 mods = [load_mod(Path(m)) for m in mod_folders]
@@ -202,6 +222,8 @@ class Starter:
                 say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")
                 result = build_and_write(game, mods, instance=instance, say=say, cache=build_cache(),
                                          built_from=made_from)
+                if built_from(game, mod_folders)["key"] != made_from["key"] or mod_stamps(mod_folders) != stamps:
+                    forget(str(instance))  # changed while the build read it: the copy may hold some of each
             else:
                 say(Note("play_unchanged"))
         finally:

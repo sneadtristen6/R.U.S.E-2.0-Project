@@ -14,7 +14,7 @@ from unittest import mock
 
 from test_build import PACK, price, write_mod
 from rusemod import instance as inst
-from rusemod.build import build_and_write
+from rusemod.build import build_and_write, load_mod
 from rusemod.instance import NOTES, RECORD, Note, build_instance, needs_build, read_record, set_aside_old
 from rusemod.play import Starter, built_from, in_words
 
@@ -99,8 +99,6 @@ class Unchanged(Base):
         self.assertEqual(self.started, [self.copy / "RUSE.exe"] * 2)  # and the game starts from the copy
         self.assertEqual(files_of(self.copy), first)
         self.assertEqual(price((self.copy / UNITS).read_bytes()), [53] * 5)
-        (self.copy / "game.log").write_bytes(b"what the game wrote")  # a file the game made: not the build's
-        self.assertEqual(self.play(mod), 0)
 
     def test_the_old_copy_comes_back_when_the_mods_are_back_as_they_were(self):
         mod = write_mod(self.root, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
@@ -158,6 +156,37 @@ class Changes(Base):
         self.assertEqual(self.play(mod), 1)
         self.assertTrue((self.copy / "Data" / "PC" / "190852" / "New.dat").is_file())
 
+    def test_a_mod_edited_while_the_build_reads_it_builds_again_next_time(self):
+        mod = write_mod(self.root, "econ", {"eco.rndf": "patch $/B ( ProductionPrice *= 4 )"})
+        eco = mod / "src" / "eco.rndf"
+
+        def saved_meanwhile(path):  # the player saves the mod just after Play looked at it
+            eco.write_text("patch $/B ( ProductionPrice *= 3 )", encoding="utf-8")
+            return load_mod(path)
+        with mock.patch("rusemod.play.load_mod", saved_meanwhile):
+            self.assertEqual(self.play(mod), 1)
+        self.assertEqual(price((self.copy / UNITS).read_bytes()), [315] * 5)
+        self.assertFalse((self.copy / RECORD).exists())  # what it was built from isn't certain
+        eco.write_text("patch $/B ( ProductionPrice *= 4 )", encoding="utf-8")  # back as Play first saw it
+        self.assertEqual(self.play(mod), 1)  # built again: not the copy made from "*= 3"
+        self.assertEqual(price((self.copy / UNITS).read_bytes()), [420] * 5)
+        self.assertEqual(self.play(mod), 0)
+
+    def test_a_mod_written_while_the_build_reads_it_builds_again_next_time(self):
+        mod = write_mod(self.root, "econ", {"eco.rndf": "patch $/B ( ProductionPrice *= 4 )"})
+        eco = mod / "src" / "eco.rndf"
+
+        def written_meanwhile(path):  # changed and put back while it was read: the same bytes, a new time
+            st = os.stat(eco)
+            eco.write_text(eco.read_text(encoding="utf-8"), encoding="utf-8")
+            os.utime(eco, ns=(st.st_atime_ns, st.st_mtime_ns + 1_000_000_000))
+            return load_mod(path)
+        with mock.patch("rusemod.play.load_mod", written_meanwhile):
+            self.assertEqual(self.play(mod), 1)
+        self.assertFalse((self.copy / RECORD).exists())
+        self.assertEqual(self.play(mod), 1)
+        self.assertEqual(self.play(mod), 0)
+
     def test_another_version_of_the_app_builds_again(self):
         mod = write_mod(self.root, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
         self.play(mod)
@@ -195,6 +224,10 @@ class BrokenCopies(Base):
         (self.copy / COMMON).write_bytes(b"the common pack")  # the same bytes, but no longer the game's file
         self.assertEqual(self.play(self.mod), 1)
         self.assertTrue(os.path.samefile(self.copy / COMMON, self.game / COMMON))
+
+    def test_a_file_the_build_didnt_put_there(self):
+        (self.copy / "Data" / "PC" / "190852" / "Stray.dat").write_bytes(b"a pack left in the copy")
+        self.rebuilt()  # gone: the game could load it with the rest
 
     def test_no_record_or_one_that_cant_be_read(self):
         for broken in (None, "{not json", json.dumps({"format": 99}), json.dumps([1, 2])):

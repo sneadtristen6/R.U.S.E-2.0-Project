@@ -20,9 +20,11 @@ the new one builds; the instance is built in `<dst>.partial` and only then swapp
 looks usable.
 
 Reusing what's there (a player, 2026-10-04: "Waiting 30 minutes every time just to add or remove a unit"):
-  - when the copy's record says it was built from exactly what Play has now, and every file in it is as the record
-    says, the game starts from it with no build at all (needs_build); so does the old copy set aside by a build that
-    then stopped on a mistake in the mods, once the mods are back as they were for it (take_back);
+  - when the copy's record says it was built from exactly what Play has now, every file in it is as the record says
+    and nothing else is there, the game starts from it with no build at all (needs_build); so does the old copy set
+    aside by a build that then stopped on a mistake in the mods, once the mods are back as they were for it
+    (take_back). A copy whose mods changed while the build read them keeps no record (forget), so the next Play
+    builds;
   - otherwise the new copy is still built in `.partial`, but each file of the old copy that is still an unchanged copy
     of the game's file goes into it as it is, without copying: hard-linked from the old copy (on the copy's own drive,
     so this works when the game is on another drive), or moved out of an old copy set aside when that drive has no
@@ -312,7 +314,8 @@ def _intact(src: str, folder: str, rel: str, entry: dict) -> bool:
 def needs_build(src: str, dst: str, built_from: dict | None) -> str:
     """Why the copy at `dst` can't be started as it is, for what Play would build now (`built_from`, from
     rusemod.play.built_from), or "" when it can: its record says it was built from exactly that, out of this game
-    folder, and every file the build put there is still as the record says."""
+    folder, every file the build put there is still as the record says, and nothing else is in it (a pack left there
+    could be loaded with the rest, as a new map's pack is; the game was seen writing nothing into its folder)."""
     src, dst = os.path.abspath(src), os.path.abspath(dst)
     if not built_from or not built_from.get("key"):
         return "nothing to compare the copy with"
@@ -328,7 +331,21 @@ def needs_build(src: str, dst: str, built_from: dict | None) -> str:
     for rel, entry in record["files"].items():
         if not _intact(src, dst, rel, entry):
             return f"{rel} in the copy isn't as its build left it"
+    known = set(record["by_path"]) | {_norm(RECORD)}
+    for root, _dirs, names in os.walk(dst):
+        for n in names:
+            rel = os.path.relpath(os.path.join(root, n), dst)
+            if _norm(rel) not in known:
+                return f"{rel} in the copy wasn't put there by its build"
     return ""
+
+
+def forget(dst: str) -> None:
+    """Take the record out of the copy at `dst`, so the next Play builds again: what it was built from isn't certain."""
+    try:
+        os.remove(os.path.join(dst, RECORD))
+    except FileNotFoundError:
+        pass
 
 
 def take_back(src: str, dst: str, built_from: dict | None) -> bool:
