@@ -462,6 +462,9 @@ class Editing(WithMod):
         while self.api.job(again)["state"] == "running" and time.time() < end:
             time.sleep(0.02)
         self.assertEqual(self.api.job(again)["state"], "done")
+        # nothing changed since: the copy is started as it is, with no build
+        self.assertEqual(self.api.job(again)["lines"][0], _words()["play_unchanged"]["us"])
+        self.assertEqual(self.started, [copy / "RUSE.exe"] * 2)
 
     def test_export_mod_makes_one_file_with_the_build_and_fingerprint(self):
         with self.assertRaises(StudioError):

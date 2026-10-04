@@ -275,12 +275,15 @@ search by name and see where each text is used. It costs some disk space (a gues
 
 ### L4 Deploy & run
 - **Instances:** one modded copy for the whole PC, `D:\RUSE-Instances\Modded game\` on the game's drive (hard links
-  need the same volume), rebuilt by every Play and Test in game of both apps (the owner, 2026-10-02: one copy, not
-  one per mod set); the copies older versions made per set or mod are leftovers the troubleshooter clears.
+  need the same volume), built by Play and Test in game of both apps (the owner, 2026-10-02: one copy, not one per
+  mod set); the copies older versions made per set or mod are leftovers the troubleshooter clears. A Play with the
+  same mods (every file), game build and app as the copy's last build, and the copy as that build left it, starts it
+  with no build; a build takes the old copy's unchanged files as they are (`rusemod.instance`, 2026-10-04).
   - Big read-only packs are hard-linked.
   - Small files the game might write (ini, logs) are copied.
   - Rebuilt packs are real files.
   - `steam_appid.txt` lets RUSE.exe start from that folder.
+  - `rusemod-copy.json` records what the copy was built from and how each file got there, written last.
 
   Tools never write into a hard-linked file; they replace it. Several instances can sit side by side.
 - **Launch/join:** Steam-compatible launch; `+connect_lobby <id>` when joining a lobby (checked in M3).
