@@ -9,6 +9,8 @@ from pathlib import Path
 
 FO_DELETE = 3
 FOF_SILENT, FOF_NOCONFIRMATION, FOF_ALLOWUNDO, FOF_NOERRORUI = 0x4, 0x10, 0x40, 0x400
+FOF_WANTNUKEWARNING = 0x4000  # something too big for the bin: Windows asks before deleting it for good, never silently
+# (A file another program has open isn't moved: Windows says "the system call level is not correct", code 0x7c.)
 
 
 class _FileOp(ctypes.Structure):
@@ -25,7 +27,8 @@ def to_recycle_bin(path: Path) -> None:
     if sys.platform != "win32":
         raise OSError("the Recycle Bin is Windows' own: nothing was moved")
     op = _FileOp(None, FO_DELETE, str(path) + "\0\0", None,
-                 FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI, False, None, None)
+                 FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_WANTNUKEWARNING | FOF_SILENT | FOF_NOERRORUI, False, None,
+                 None)
     code = ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op))
     if code or op.fAnyOperationsAborted or path.exists():
         raise OSError(f"Windows couldn't move {path} to the Recycle Bin (code {code:#x}): close anything that has it "
