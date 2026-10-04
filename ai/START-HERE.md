@@ -28,7 +28,7 @@ Studio's are marked pre-release). Each app offers its updates when it starts.
 | New roads, bridges and how they look | [docs/ROADS.md](../docs/ROADS.md) |
 | Known bugs, what's fixed, what's coming | [issue #15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/15) |
 | What changed in a version | [Studio release notes](../.github/release-notes/studio.md), [Launcher release notes](../.github/release-notes/launcher.md) |
-| What's planned | [docs/PLAN.md](../docs/PLAN.md) (the "Now" section first) |
+| What's planned | [docs/PLAN.md](../docs/PLAN.md) (the "Now" section first); the big patch before 1.0: [docs/BIG_PATCH.md](../docs/BIG_PATCH.md); the Iwo Jima showcase (a plan): [docs/IWO_JIMA.md](../docs/IWO_JIMA.md) |
 | Helping out, reporting a bug, sending code | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 | The game's file formats (for programmers) | [docs/FORMATS.md](../docs/FORMATS.md) |
 | Talking to people | the [Discord](https://discord.gg/DbufY4Jfg), or [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions) |
@@ -42,8 +42,19 @@ Studio's are marked pre-release). Each app offers its updates when it starts.
   `%LOCALAPPDATA%\RUSE Mod Platform\maps\<name>`.
 - **Duplicate map** (Maps tab, under the open map's name; Studio 0.9.4): makes a **new map**, a full copy of the map
   open with a name of its own, listed in the game's BATTLES next to the original. Everything changed on the copy is
-  the copy's alone. Seen in the game: 101 new maps at once, each listed and playing its own ground. Only maps BATTLES
-  lists can be copied for now. Early: new maps may have bugs (flattening the mountains at a map's edge leaves a rim).
+  the copy's alone. Seen in the game: 101 new maps at once, each listed and playing its own ground. Since Studio 0.9.5
+  it also makes a new **Operation** or **Campaign chapter** from a map's entry (a new Operation was seen in the game; a
+  new campaign chapter wasn't tried yet), and flattening the mountains at a map's edge no longer leaves a cliff.
+- **3D model** (a unit's page, Studio 0.9.5): the unit in 3D, with the mod's paint on it.
+- **Repaint in Blender** (under the 3D model): **Open in Blender** opens the unit's models with their pictures in
+  Blender (free; **Get Blender (free)** and **Choose Blender…** show when the Studio doesn't find it); the user paints
+  on the model, then **Bring back** puts the paint in the mod. Seen in the game.
+- **Use this view as the card** / **Game's card**: the unit's picture in the build menu, taken from the 3D view inside
+  the dashed frame. Seen in the game. A **New unit** gets a card of its own (`files/cards/<the unit's name>.png`), so
+  making it never changes the original's (not yet seen in the game).
+- **Map Paint** (Maps tab; early): paints the ground's picture with a colour or with the map's own ground copied from
+  another spot. **Clear the ground under it** (on by default) takes grass, crops and stones off under the paint so it
+  shows up close; seen in the game from high up.
 - **Test in game** (Studio): builds the modded copy with the unit mod and the map changes, and starts the game.
 - **Play** (Launcher): the same for a player's mod set.
 - **Side** (when placing units: "Who gets it?"): who controls the units: the player, one of the computer's sides, or
@@ -67,6 +78,13 @@ Studio's are marked pre-release). Each app offers its updates when it starts.
   The Launcher adds such a file (drag it in).
 - **"Something I placed can't be seen from far."** Since Studio 0.9.3 everything a mod places is drawn out to the far
   distance. On an older version, update.
+- **"Can I change how a unit looks?"** Yes, since Studio 0.9.5: its page's **Repaint in Blender** and **Use this view
+  as the card** (both seen in the game).
+- **"Can I make my own 3D models or new units with their own model?"** Not in the apps yet. A second Sherman with a
+  model of its own was made in testing and seen in the game; making models in the Studio is what's next
+  ([docs/PLAN.md](../docs/PLAN.md), "Now").
+- **"What's coming?"** [docs/PLAN.md](../docs/PLAN.md) ("Now"), and for the big patch before 1.0 (RUSE Guard's fair
+  play, music and sounds), [docs/BIG_PATCH.md](../docs/BIG_PATCH.md): written up there, not in the apps yet.
 - **"How do I report a bug?"** The apps' **Report a problem** button, or
   [Discussions → Bug reports](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions). Check
   [issue #15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/15) first.
