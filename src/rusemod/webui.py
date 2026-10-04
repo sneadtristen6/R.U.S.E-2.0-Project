@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import functools
 import http.server
+import inspect
 import os
 import sys
 import threading
@@ -86,6 +87,35 @@ def job_view(jobs: dict, job_id: str, since: int = 0) -> dict:
                                         "count": 0}
 
 
+def page_api(api):
+    """What a window's page may call: an object holding only `api`'s public methods (those its class defines, not
+    starting with _), each passing the call on with the same arguments. pywebview hands the page every public attribute
+    of the object it's given and walks into any that isn't a function: the Studio's `cache_dir` (a Path) gave the page
+    270 of its 371 names (rename, rmdir, write_text, and on through .parent.parent). And on a call it looks the dotted
+    name up on that object with getattr, whatever the page sends, underscores included: `_home.rename`, `_starter`, a
+    class dict's `clear`. This object has nothing else: no properties, no data, no private parts, and the real API only
+    inside its methods (pywebview 6.2.1)."""
+    cls = type(api)
+    names = sorted(n for n in dir(cls) if not n.startswith("_") and inspect.isfunction(getattr(cls, n, None)))
+    return type(f"{cls.__name__}Page", (), {n: _passed_on(api, cls, n) for n in names})()
+
+
+def _passed_on(api, cls, name: str):
+    """A function for page_api's class calling `api.name`, with the method's own signature (self first, as pywebview
+    reads it: the page's function takes the same arguments)."""
+    method = getattr(api, name)
+
+    def call(self, *args, **kwargs):
+        return method(*args, **kwargs)
+    call.__name__ = call.__qualname__ = name
+    call.__doc__ = method.__doc__
+    try:
+        call.__signature__ = inspect.signature(getattr(cls, name))
+    except (TypeError, ValueError):
+        pass  # no signature to read: the page's function takes its arguments as they come
+    return call
+
+
 def open_window(title: str, folder: Path, page: str, api, width=1180, height=760,
                 extra: dict[str, Path] | None = None, setup=None) -> int:
     """Open a window showing `folder/page`, with `api` callable from its JavaScript. Needs pywebview. What the screens
@@ -99,7 +129,7 @@ def open_window(title: str, folder: Path, page: str, api, width=1180, height=760
     if not web_engine_ok(title):
         return 3
     server, base = serve(folder, extra)
-    window = webview.create_window(title, f"{base}/{page}", js_api=api, width=width, height=height,
+    window = webview.create_window(title, f"{base}/{page}", js_api=page_api(api), width=width, height=height,
                                    min_size=(900, 600), background_color="#0a1628")  # the apps' navy, before the page draws
     api._window = window
     if setup is not None:
