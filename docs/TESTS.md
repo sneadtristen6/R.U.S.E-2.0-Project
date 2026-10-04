@@ -1176,6 +1176,10 @@ the copy). The model's other firsts, not seen in the game yet: 5 draw calls (the
 model's draw calls in a list that grows, so no fixed limit was found), plain skinned buffers (the game has 168, its
 animals'). Build M1 Abrams B first, then the M1 Abrams.
 
+**Run 4 (owner, 2026-10-04 ~12:50): "both of the Abrams built just fine".** M1 Abrams B and the M1 Abrams were both
+built with no crash: run 3's texture levels were the last fault in building one. The rest of the pass list (shape and
+paint up close and far off, size, turret and gun aiming, driving, firing) wasn't reported yet.
+
 ## T30. Iwo Jima groundwork (2026-10-04)
 
 (First written up as T27; that number was also taken by the Blender test above, so this one is T30.)
