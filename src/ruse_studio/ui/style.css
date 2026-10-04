@@ -120,6 +120,36 @@ button:disabled { cursor: default; opacity: 0.5; }
 .primary:hover:not(:disabled) { filter: brightness(1.08); }
 .note { margin-left: 8px; color: var(--muted); font-size: 12px; }
 
+/* a unit's page: its values, and beside them its 3D model with the Blender buttons (app.js unitView, lookBox);
+   on a narrow window the model comes first, under the name */
+.unit-page { display: grid; grid-template-columns: minmax(0, 780px) minmax(320px, 1fr); gap: 0 32px; align-items: start; }
+.unit-page.no-model { grid-template-columns: minmax(0, 780px); }
+.unit-page.no-model .unit-side { display: none; }
+/* sticks beside the values; taller than the window (the model, its card, the Blender box), it scrolls on its own */
+.unit-side { position: sticky; top: -12px; min-width: 0; max-height: calc(100vh - 110px); overflow-y: auto;
+             overscroll-behavior: contain; padding-right: 4px; }
+.unit-view { position: relative; height: min(50vh, 480px); min-height: 280px; overflow: hidden;
+             border: 1px solid var(--line); border-radius: var(--radius);
+             background: radial-gradient(ellipse at 50% 38%, #2b3d52 0%, #16212e 62%, #0d1520 100%); }
+.unit-view canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+.unit-view canvas:active { cursor: grabbing; }
+.unit-view .view-note { position: absolute; left: 12px; right: 12px; bottom: 10px; color: var(--muted); font-size: 12px;
+                        pointer-events: none; }
+.unit-view .hint { position: absolute; top: 8px; right: 12px; color: var(--muted); font-size: 11px; pointer-events: none; }
+/* the card's frame (app.js cardRect): what "Use this view as the card" takes; the rest of the view dimmed a little.
+   It lets the mouse through to the 3D view under it. */
+.unit-view .card-frame { position: absolute; border: 1px dashed rgba(255, 255, 255, 0.55); border-radius: 2px;
+                         box-shadow: 0 0 0 9999px rgba(5, 10, 18, 0.28); pointer-events: none; }
+.unit-view .card-frame span { position: absolute; left: 6px; top: 4px; color: rgba(255, 255, 255, 0.7); font-size: 11px; }
+.card-row { display: flex; gap: 12px; align-items: flex-start; margin-top: 10px; }
+.card-row .card-thumb { width: 150px; flex: none; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); }
+.card-row p { margin: 0 0 8px; }
+.card-row .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 1240px) {
+  .unit-page { grid-template-columns: minmax(0, 1fr); }
+  .unit-side { position: static; order: -1; max-height: none; overflow: visible; }
+  .unit-view { height: 300px; }
+}
 .group { margin-top: 22px; }
 .group h2 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
 .group table { border-collapse: collapse; width: 100%; max-width: 780px; }
@@ -137,6 +167,18 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .boxes input[aria-invalid="true"] { border-color: var(--error); outline-color: var(--error); }
 .was { margin-top: 3px; font-size: 12px; color: var(--muted); }
 .was:empty { display: none; }
+/* a range: its slider beside the box, and about how far that is in metres (app.js rangeSlider, weaponRange) */
+.range { display: inline-flex; align-items: center; gap: 8px; flex: 1 1 180px; min-width: 0; }
+.range input[type="range"] { flex: 1 1 auto; min-width: 100px; max-width: 260px; accent-color: var(--accent); }
+.range input[type="range"]:disabled { opacity: 0.6; }
+.range-m { white-space: nowrap; }
+.weapon-range { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 6px; }
+.weapon-range .range-label { color: var(--muted); }
+.weapon-range input[type="number"] { width: 6.5em; padding: 2px 6px; background: var(--panel-hi); border: 1px solid var(--line);
+                                      border-radius: 6px; font-variant-numeric: tabular-nums; }
+.weapon-range.edited input[type="number"] { border-color: var(--accent); }
+.weapon-range input[aria-invalid="true"] { border-color: var(--error); }
+.range-for { margin-top: 4px; font-size: 12px; }
 
 .parts { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 4px; max-width: 780px; }
 .parts button { width: 100%; text-align: left; padding: 6px 10px; background: var(--panel); border: 1px solid var(--line); }
@@ -288,6 +330,23 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .level-ok .finding-dot { background: #4fbf6a; }
 .brush-list .chip { padding: 4px 11px; font-size: 13px; }
 .tray-erase { display: flex; flex-direction: column; gap: 5px; }
+/* Map Paint (maps.js renderPaintPanel): the colour wheel beside the colour picked, the eyedropper and the swatches */
+.tray-paint { display: flex; flex-direction: column; gap: 6px; }
+.paint-colour { display: flex; gap: 10px; align-items: flex-start; }
+.paint-wheel { width: 150px; height: 150px; flex: none; cursor: crosshair; touch-action: none; }
+.paint-side { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.paint-now { display: flex; align-items: center; gap: 6px; }
+.paint-hex { width: 6.5em; padding: 2px 6px; font: 12px Consolas, monospace; background: var(--panel-hi);
+             border: 1px solid var(--line); color: inherit; }
+.swatches { display: flex; flex-wrap: wrap; gap: 4px; max-width: 170px; }
+.swatches:empty { display: none; }
+.swatch { width: 18px; height: 18px; padding: 0; border: 1px solid #000; outline: 1px solid #5d7ea6; cursor: pointer; }
+.swatch.big { width: 28px; height: 28px; cursor: default; }
+.swatch[aria-pressed="true"] { outline: 2px solid #fff; }
+.paint-stamp { display: flex; flex-direction: column; gap: 5px; }
+.tray-paint > .chip { align-self: flex-start; }  /* Clear the ground under it: as wide as its words, like the others */
+.brush-tip { display: flex; flex-direction: column; gap: 5px; }  /* the brush types: shape, edge, a square's angle */
+.brush-tip .chips:empty { display: none; }
 .brush-slider { display: grid; grid-template-columns: 1fr 2fr; align-items: center; gap: 8px; color: var(--muted); }
 .brush-slider input { width: 100%; margin: 0; accent-color: #4aa8f5; }
 .map-keys { line-height: 1.35; }

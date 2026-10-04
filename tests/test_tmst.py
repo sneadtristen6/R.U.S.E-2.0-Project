@@ -137,6 +137,12 @@ class Textures(unittest.TestCase):
         self.assertEqual((tex.payload(0), tex.payload(1)), (b"abc", b"defgh"))
         self.assertEqual(len(raw) % 4, 0)
 
+    def test_make_tgv_flag(self):
+        # The game reads a payload by this flag: 1 = a codec tag first (every texture), 0 = raw blocks (every
+        # stand-in). Raw blocks under flag 1 were read as a TGU1 header and crashed the game (T23, 2026-10-03).
+        self.assertEqual(Tgv(make_tgv(4, 4, "DXT5", [bytes(16)], flag=0)).flag, 0)
+        self.assertEqual(Tgv(make_tgv(4, 4, "DXT5", [bytes(16)])).flag, 1)
+
     def test_solid_and_checker_blocks(self):
         red, blue = rgb565(255, 0, 0), rgb565(0, 0, 255)
         self.assertEqual((red, blue), (0xF800, 0x001F))

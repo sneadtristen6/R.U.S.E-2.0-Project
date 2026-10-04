@@ -48,18 +48,26 @@ const BRUSHES = {
   open_vehicles: ["open", "vehicles", 1, false, 3, 0],
   forest: ["forest", "flat", 1, false, 3, 0],  // trees (as Place, Area scatters them) and cover over them: cover strokes
   erase: ["erase", "flat", 1, false, 3, 0],  // the map's own trees and props taken away: scenery.toml [[erase]] circles
+  // Map Paint (PLAN §15): the ground's picture, not its shape; strength is the opacity (rusemod.groundpaint)
+  paint: ["paint", "soft", 1, false, 7, 60],  // a colour from the wheel, the map's own colours or the eyedropper
+  stamp: ["stamp", "soft", 1, false, 7, 100],  // the map's own ground copied from a spot picked (a clone stamp)
 };
 const WATER = new Set(["water", "drain"]);
+const PAINT_KINDS = new Set(["paint", "stamp"]);  // their sizes grow on a curve (brushRadius)
 // finer sizes than the ground brushes' (share of 1%)
 const SIZE_UNIT = { cover: 0.25, uncover: 0.25, town: 0.1, block: 0.25, block_infantry: 0.25, block_vehicles: 0.25,
   open: 0.25, open_infantry: 0.25, open_vehicles: 0.25, forest: 0.25, erase: 0.25 };
 const ERASE_DEFAULT = ["vegetation", "prop"];  // what a circle takes unless it says (rusemod.scenery.ERASE_DEFAULT)
 const ERASE_MAX = 200000;  // map units a circle's radius may reach (rusemod.scenery.ERASE_MAX)
 
-// A brush's radius in map units: its Size slider as a share of the map's width.
+// A brush's radius in map units: its Size slider as a share of the map's width. Map Paint's grows on a curve instead,
+// from a fine line (about 15 m across on a standard map) to a ginormous patch (about 1.3 km across): the owner,
+// 2026-10-03, "make like a ginormous patch red, not just a tiny little" one.
+const PAINT_SIZE = [0.0015, 1.38];  // the smallest radius as a share of the map's width, and each step's growth
 function brushRadius(name) {
-  const [x0, , , x1] = mv.edit.bounds;
-  return settingsOf(name).size / 100 * (x1 - x0) * (SIZE_UNIT[name] || 1);
+  const [x0, , , x1] = mv.edit.bounds, size = settingsOf(name).size;
+  if (PAINT_KINDS.has(name)) return (x1 - x0) * PAINT_SIZE[0] * Math.pow(PAINT_SIZE[1], size - 1);
+  return size / 100 * (x1 - x0) * (SIZE_UNIT[name] || 1);
 }
 const CRATER_RIM = 0.35;
 const HEIGHT_SHARE = 0.6;  // strength 100% = this share of the map's height range (hill, raise, lower, crater, plateau)
@@ -96,36 +104,59 @@ function along(s, x, y) {
   return [t, px * px + py * py];
 }
 
-function heightAt(s, x, y, z, average) {
-  const [kind, shape, sign] = BRUSHES[s.brush], r2 = s.radius * s.radius;
-  if (kind === "ramp") {
-    const [t, d2] = along(s, x, y);
-    if (d2 >= r2) return z;
-    const target = s.level + (s.level2 - s.level) * t;
-    return z + (target - z) * (s.weight * shapeWeight(shape, d2 / r2));
+// --- brush types (the owner, 2026-10-03: "a couple of different Brush types. In every tool that has a brush"): a stroke
+// (or an Erase area) is round, a square whose sides run along (dx, dy), or a line to (x2, y2), with a soft edge (the
+// brush's own fall-off) or a hard one; the same rules as rusemod/brush.py's Footprint and edge_weight ---
+const HARD_EDGE = 0.85;
+function footShape(s) {
+  if (s.brush === "ramp" || s.shape === "line") return "line";
+  return s.square || s.shape === "square" ? "square" : "round";
+}
+
+// (how far out / radius)²: 0 in the middle (on a line), 1 on the edge.
+function footT2(s, x, y) {
+  const ox = x - s.x, oy = y - s.y, shape = footShape(s);
+  if (shape === "square") {
+    const dx = s.dx === undefined ? 1 : s.dx, dy = s.dy === undefined ? 0 : s.dy, n = Math.hypot(dx, dy) || 1;
+    const m = Math.max(Math.abs(ox * dx + oy * dy), Math.abs(oy * dx - ox * dy)) / n / s.radius;
+    return m * m;
   }
-  const dx = x - s.x, dy = y - s.y, d2 = dx * dx + dy * dy;
-  if (d2 >= r2) return z;
-  const p = shapeWeight(shape, d2 / r2);
+  if (shape === "line") return along(s, x, y)[1] / (s.radius * s.radius);
+  return (ox * ox + oy * oy) / (s.radius * s.radius);
+}
+
+function edgeWeight(edge, shape, t2) {
+  if (edge !== "hard" || shape === "crater") return shapeWeight(shape, t2);
+  const t = Math.sqrt(t2);
+  if (t <= HARD_EDGE) return 1;
+  const k = (t - HARD_EDGE) / (1 - HARD_EDGE);
+  return 1 - k * k * (3 - 2 * k);
+}
+
+function heightAt(s, x, y, z, average) {
+  const [kind, shape, sign] = BRUSHES[s.brush], t2 = footT2(s, x, y);
+  if (t2 >= 1) return z;
+  const p = edgeWeight(s.edge, shape, t2);
+  if (kind === "ramp") return z + (s.level + (s.level2 - s.level) * along(s, x, y)[0] - z) * (s.weight * p);
   if (kind === "add") return z + sign * s.height * p;
   if (kind === "level") return z + (s.level - z) * (s.weight * p);
   return z + (average(x, y) - z) * (s.weight * p);
 }
 
-// The square around a stroke's circle (a ramp: around its whole band): x min, x max, y min, y max.
+// The box round everything a stroke (or Erase area) covers: x min, x max, y min, y max.
 function boxOf(s) {
-  if (s.brush === "ramp") {
-    return [Math.min(s.x, s.x2) - s.radius, Math.max(s.x, s.x2) + s.radius,
-            Math.min(s.y, s.y2) - s.radius, Math.max(s.y, s.y2) + s.radius];
+  const shape = footShape(s), r = s.radius;
+  if (shape === "line") return [Math.min(s.x, s.x2) - r, Math.max(s.x, s.x2) + r, Math.min(s.y, s.y2) - r, Math.max(s.y, s.y2) + r];
+  if (shape === "square") {
+    const dx = s.dx === undefined ? 1 : s.dx, dy = s.dy === undefined ? 0 : s.dy, n = Math.hypot(dx, dy) || 1;
+    const ex = (Math.abs(dx) + Math.abs(dy)) / n * r;  // a square turned any way: its corners' reach on either axis
+    return [s.x - ex, s.x + ex, s.y - ex, s.y + ex];
   }
-  return [s.x - s.radius, s.x + s.radius, s.y - s.radius, s.y + s.radius];
+  return [s.x - r, s.x + r, s.y - r, s.y + r];
 }
 
 function covers(s, x, y) {
-  const r2 = s.radius * s.radius;
-  if (s.brush === "ramp") return along(s, x, y)[1] < r2;
-  const dx = x - s.x, dy = y - s.y;
-  return dx * dx + dy * dy < r2;
+  return footT2(s, x, y) < 1;
 }
 
 function el(tag, props, ...children) {
@@ -181,6 +212,11 @@ async function scene3d() {
   ring.renderOrder = 10;
   ring.visible = false;
   scene.add(ring);
+  // a square brush's outline: four sides (corners 1 out), turned by the brush's angle (showRing)
+  const squareRing = new THREE.Mesh(new THREE.RingGeometry(0.955, 1, 4, 1, Math.PI / 4), ring.material);
+  squareRing.renderOrder = 10;
+  squareRing.visible = false;
+  scene.add(squareRing);
   // a ramp being made: a ring where it starts and a line from there to the pointer
   const startRing = ring.clone();
   const guide = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
@@ -188,7 +224,7 @@ async function scene3d() {
   guide.renderOrder = 10;
   guide.visible = false;
   scene.add(startRing, guide);
-  mv.gl = { THREE, renderer, scene, camera, controls, draw, ground: null, water: null, ring, startRing, guide,
+  mv.gl = { THREE, renderer, scene, camera, controls, draw, ground: null, water: null, ring, squareRing, startRing, guide,
     raycaster: new THREE.Raycaster(), ndc: new THREE.Vector2() };
   watchPointer();
   setBrushMode(mv.brush.on);
@@ -215,7 +251,8 @@ async function meshes(view) {
   for (let i = 0; i < n; i++) {
     const qx = q[3 * i], qy = q[3 * i + 1];
     wx[i] = x0 + qx * sx; wy[i] = y0 + qy * sy; base[i] = z0 + q[3 * i + 2] * sz;
-    fixed[i] = qx === 0 || qx === Q || qy === 0 || qy === Q ? 1 : 0;  // the map's edge never moves
+    // the map's edge: the ground brushes move it (its curtain follows, rusemod.tms); the water brushes leave it
+    fixed[i] = qx === 0 || qx === Q || qy === 0 || qy === Q ? 1 : 0;
     const X = (x0 + qx * sx) * SCALE, Z = (y0 + qy * sy) * SCALE;
     pos[3 * i] = X; pos[3 * i + 1] = (z0 + q[3 * i + 2] * sz) * SCALE; pos[3 * i + 2] = Z;
     wpos[3 * i] = X; wpos[3 * i + 1] = (z0 + wq[i] * sz) * SCALE; wpos[3 * i + 2] = Z;
@@ -356,6 +393,7 @@ function gridApply(g, s, average) {
 
 function applyStroke(ed, s) {
   if (PAINTS[s.brush]) { overlayDab(s); return; }  // the cover grid or where units go, not the ground
+  if (PAINT_KINDS.has(s.brush)) { paintDab(s); return; }  // the ground's picture (Map Paint), not its shape
   if (WATER.has(s.brush)) {  // the water surface inside the circle, as rusemod.water does: no falloff
     const [xlo, xhi, ylo, yhi] = boxOf(s), level = s.brush === "water" ? s.level : ed.baseWater;
     near(ed.index, xlo, xhi, ylo, yhi, (i) => {
@@ -372,7 +410,7 @@ function applyStroke(ed, s) {
   }
   const [xlo, xhi, ylo, yhi] = boxOf(s);
   near(ed.index, xlo, xhi, ylo, yhi, (i) => {
-    if (ed.fixed[i] || !covers(s, ed.wx[i], ed.wy[i])) return;
+    if (!covers(s, ed.wx[i], ed.wy[i])) return;
     ed.z[i] = heightAt(s, ed.wx[i], ed.wy[i], ed.z[i], average);
     ed.touched[i] = 1;
   });
@@ -440,12 +478,14 @@ function reapply() {
     if (o.cells) o.cells.set(o.base);
     o.batch = true;
   }
+  paintBegin();
   for (const s of mv.brush.strokes) applyStroke(ed, s);
   for (const a of mv.brush.erase) eraseDab(a);
   for (const o of OVERLAYS) {
     o.batch = false;
     overlayDraw(o, 0, o.size - 1, 0, o.size - 1);
   }
+  paintEnd();
   redraw(true, true);
   placeScenery();
 }
@@ -670,7 +710,9 @@ function clearsWood(a) {
 // One Erase circle on the overlays (only `only`, when given): red on the erased one; a wood cleared on the others.
 function eraseDab(a, only) {
   for (const brush of clearsWood(a) ? ["erase", "open", "uncover"] : ["erase"]) {
-    if (!only || PAINTS[brush][0] === only) overlayDab({ brush, x: a.x, y: a.y, radius: a.radius });
+    if (!only || PAINTS[brush][0] === only) {
+      overlayDab({ brush, x: a.x, y: a.y, radius: a.radius, shape: a.shape, dx: a.dx, dy: a.dy, x2: a.x2, y2: a.y2 });
+    }
   }
 }
 
@@ -720,23 +762,21 @@ function overlayMesh(o) {
   gl.scene.add(o.mesh);
 }
 
-// One brush circle on the cells whose centres are inside it (rusemod.cover.paint's rule; rusemod.nav closes the
-// graphs' circles that reach into it). A cover stroke with square = true (written by hand in terrain.toml, MOD_FORMAT
-// §8) is a square along the map's axes, `radius` from its middle to each side, as the build paints it.
+// One brush stroke on the cells whose centres are inside it (rusemod.cover.paint's rule; rusemod.nav closes the
+// graphs' circles that reach into it): a circle, a square turned any way (square = true, written by hand in
+// terrain.toml, MOD_FORMAT §8, is one along the map's axes), or a line, as the build paints it (footT2).
 function overlayDab(s) {
   const [o, on, off] = PAINTS[s.brush];
   if (!o.cells) return;
-  const n = o.size, [bx, by, bw, bh] = o.box, cw = bw / n, ch = bh / n;
-  const c0 = Math.max(0, Math.floor((s.x - s.radius - bx) / cw)), c1 = Math.min(n - 1, Math.ceil((s.x + s.radius - bx) / cw));
-  const r0 = Math.max(0, Math.floor((s.y - s.radius - by) / ch)), r1 = Math.min(n - 1, Math.ceil((s.y + s.radius - by) / ch));
+  const n = o.size, [bx, by, bw, bh] = o.box, cw = bw / n, ch = bh / n, [x0, x1, y0, y1] = boxOf(s);
+  const c0 = Math.max(0, Math.floor((x0 - bx) / cw)), c1 = Math.min(n - 1, Math.ceil((x1 - bx) / cw));
+  const r0 = Math.max(0, Math.floor((y0 - by) / ch)), r1 = Math.min(n - 1, Math.ceil((y1 - by) / ch));
   if (c0 > c1 || r0 > r1) return;
-  const rr = s.radius * s.radius;
   for (let r = r0; r <= r1; r++) {
-    const dy = by + (r + 0.5) * ch - s.y;
+    const y = by + (r + 0.5) * ch;
     for (let c = c0; c <= c1; c++) {
-      const dx = bx + (c + 0.5) * cw - s.x, i = r * n + c;
-      const inside = s.square ? Math.abs(dx) <= s.radius && Math.abs(dy) <= s.radius : dx * dx + dy * dy <= rr;
-      if (inside) o.cells[i] = (o.cells[i] & ~off) | on;
+      const i = r * n + c;
+      if (footT2(s, bx + (c + 0.5) * cw, y) <= 1) o.cells[i] = (o.cells[i] & ~off) | on;
     }
   }
   if (!o.batch) overlayDraw(o, r0, r1, c0, c1);
@@ -860,6 +900,356 @@ function forget(mesh) {
   mesh.material.dispose();
 }
 
+// --- Map Paint (PLAN §15; rusemod.groundpaint.paint_strokes): the Colour and Texture brushes paint the ground's
+// picture. The Studio shows them on its own copy of the map's picture (a canvas laid on the ground), with the build's
+// rules: each stroke at its opacity times its brush's fall-off, in order; a Texture stroke copies the map's own
+// picture from where it was told (sx, sy), as the map was before any paint. The build paints every level of the
+// game's tiles the same way; what the game shows is not tested yet. ---
+const paint = {
+  canvas: null, ctx: null, data: null, base: null, tex: null, material: null, original: null, batch: false,
+  colour: "#8a7a4e", recent: [], palette: null,  // the colour painted, the last ones used, the map's own colours
+  picking: null,  // "colour": the next click takes the ground's colour; "source": it picks where Texture copies from
+  source: null,   // where Texture copies from: { x, y } picked, until the next stroke turns it into the offset
+  offset: null,   // Texture's offset from each point it paints to where it copies from: { sx, sy }, kept stroke to stroke
+  clear: true,    // the strokes take off what hides them up close (the build: groundpaint.paint_clearing; T21)
+};
+
+// The canvas the paint is shown on: the ground's picture as the map has it, made again when the picture changes (a
+// new map, or the real tiles in place of the small overview). null while the map has no picture.
+function paintSurface() {
+  const gl = mv.gl;
+  if (!gl || !gl.ground || !mv.edit) return null;
+  const mat = gl.ground.material;
+  if (paint.canvas && paint.material === mat && mat.map === paint.tex) return paint;
+  const shown = mat.map && mat.map !== paint.tex ? mat.map : paint.material === mat ? paint.original : null;
+  const image = shown && shown.image;
+  if (!image || !image.width) return null;
+  const c = paint.canvas && paint.canvas.width === image.width && paint.canvas.height === image.height
+    ? paint.canvas : el("canvas", { width: image.width, height: image.height });
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.drawImage(image, 0, 0);
+  if (paint.tex) paint.tex.dispose();
+  Object.assign(paint, { canvas: c, ctx, material: mat, original: shown, palette: null,
+    base: ctx.getImageData(0, 0, c.width, c.height) });
+  paint.data = new ImageData(new Uint8ClampedArray(paint.base.data), c.width, c.height);
+  const tex = new gl.THREE.CanvasTexture(c);
+  tex.colorSpace = shown.colorSpace;
+  tex.anisotropy = shown.anisotropy;
+  paint.tex = tex;
+  mat.map = tex;
+  mat.color.set(0xffffff);
+  mat.needsUpdate = true;
+  return paint;
+}
+
+// Where a map point falls on the picture: column and row (the picture is north up, row 0 at the map's y min).
+function paintPixel(x, y) {
+  const [x0, y0, , x1, y1] = mv.edit.bounds, c = paint.canvas;
+  return [(x - x0) / (x1 - x0) * c.width, (y - y0) / (y1 - y0) * c.height];
+}
+
+function paintBegin() {
+  const gl = mv.gl, mat = gl && gl.ground && gl.ground.material;
+  // a map with no paint keeps its own picture (one painted earlier this session is put back to it)
+  if (!mv.brush.strokes.some((s) => PAINT_KINDS.has(s.brush)) && !(paint.canvas && paint.material === mat)) return;
+  if (!paintSurface()) return;
+  paint.data.data.set(paint.base.data);
+  paint.batch = true;
+}
+
+function paintEnd() {
+  if (!paint.batch) return;
+  paint.batch = false;
+  paint.ctx.putImageData(paint.data, 0, 0);
+  paint.tex.needsUpdate = true;
+}
+
+// The picture changed under the paint (the real tiles arrived): the paint again on the new one.
+function paintRefresh() {
+  if (!mv.brush.strokes.some((s) => PAINT_KINDS.has(s.brush))) return;
+  if (!paintSurface()) return;
+  paintBegin();
+  for (const s of mv.brush.strokes) if (PAINT_KINDS.has(s.brush)) paintDab(s);
+  paintEnd();
+}
+
+// One Colour or Texture stroke on the picture, as rusemod.groundpaint.paint_strokes lays it on the game's tiles.
+function paintDab(s) {
+  if (!paintSurface()) return;
+  const c = paint.canvas, W = c.width, H = c.height, px = paint.data.data, base = paint.base.data;
+  const [xlo, xhi, ylo, yhi] = boxOf(s);
+  const [c0, r0] = paintPixel(xlo, ylo), [c1, r1] = paintPixel(xhi, yhi);
+  const ca = Math.max(0, Math.floor(c0)), cb = Math.min(W - 1, Math.ceil(c1));
+  const ra = Math.max(0, Math.floor(r0)), rb = Math.min(H - 1, Math.ceil(r1));
+  if (ca > cb || ra > rb) return;
+  const [x0, y0, , x1, y1] = mv.edit.bounds, pw = (x1 - x0) / W, ph = (y1 - y0) / H;
+  const rgb = s.brush === "paint" ? hexRgb(s.colour) : null, weight = s.weight === undefined ? 1 : s.weight;
+  const ox = s.brush === "stamp" ? s.sx / pw : 0, oy = s.brush === "stamp" ? s.sy / ph : 0;
+  for (let r = ra; r <= rb; r++) {
+    const y = y0 + (r + 0.5) * ph;
+    for (let col = ca; col <= cb; col++) {
+      const t2 = footT2(s, x0 + (col + 0.5) * pw, y);
+      if (t2 >= 1) continue;
+      const a = edgeWeight(s.edge, "soft", t2) * weight;
+      if (a <= 0) continue;
+      const k = 4 * (r * W + col);
+      let cr, cg, cbl;
+      if (rgb) [cr, cg, cbl] = rgb;
+      else {  // Texture: the map's own picture where it copies from, as the map was before any paint
+        const sc = Math.floor(col + 0.5 + ox), sr = Math.floor(r + 0.5 + oy);
+        if (sc < 0 || sr < 0 || sc >= W || sr >= H) continue;
+        const j = 4 * (sr * W + sc);
+        cr = base[j]; cg = base[j + 1]; cbl = base[j + 2];
+      }
+      px[k] += (cr - px[k]) * a;
+      px[k + 1] += (cg - px[k + 1]) * a;
+      px[k + 2] += (cbl - px[k + 2]) * a;
+    }
+  }
+  if (paint.batch) return;
+  paint.ctx.putImageData(paint.data, 0, 0, ca, ra, cb - ca + 1, rb - ra + 1);
+  paint.tex.needsUpdate = true;
+}
+
+// The ground's colour at a map point as the picture shows it now (the paint too), or null off it.
+function paintColourAt(x, y) {
+  if (!paintSurface()) return null;
+  const [col, row] = paintPixel(x, y), c = paint.canvas;
+  const i = Math.floor(col), j = Math.floor(row);
+  if (i < 0 || j < 0 || i >= c.width || j >= c.height) return null;
+  const k = 4 * (j * c.width + i), d = paint.data.data;
+  return rgbHex([d[k], d[k + 1], d[k + 2]]);
+}
+
+function hexRgb(hex) {
+  return [1, 3, 5].map((i) => parseInt(String(hex || "#000000").slice(i, i + 2), 16) || 0);
+}
+
+function rgbHex(rgb) {
+  return "#" + rgb.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+}
+
+function rgbHsv([r, g, b]) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let h = 0;
+  if (d) h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [(h * 60 + 360) % 360, max ? d / max : 0, max];
+}
+
+function hsvRgb(h, s, v) {
+  const f = (n) => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+  return [f(5) * 255, f(3) * 255, f(1) * 255];
+}
+
+// The map's own ground colours, for the palette: its picture sampled on a grid, gathered into the colours it holds
+// most (near ones as one), the commonest first.
+function mapColours(most = 10) {
+  if (!paintSurface()) return [];
+  if (paint.palette) return paint.palette;
+  const c = paint.canvas, d = paint.base.data, bins = new Map(), N = 64;
+  for (let j = 0; j < N; j++) {
+    for (let i = 0; i < N; i++) {
+      const k = 4 * (Math.floor((j + 0.5) / N * c.height) * c.width + Math.floor((i + 0.5) / N * c.width));
+      const key = (d[k] >> 4) << 8 | (d[k + 1] >> 4) << 4 | (d[k + 2] >> 4);
+      const b = bins.get(key) || [0, 0, 0, 0];
+      b[0] += d[k]; b[1] += d[k + 1]; b[2] += d[k + 2]; b[3] += 1;
+      bins.set(key, b);
+    }
+  }
+  const out = [];
+  for (const b of [...bins.values()].sort((p, q) => q[3] - p[3])) {
+    const rgb = [b[0] / b[3], b[1] / b[3], b[2] / b[3]];
+    if (out.some((o) => Math.hypot(o[0] - rgb[0], o[1] - rgb[1], o[2] - rgb[2]) < 28)) continue;
+    out.push(rgb);
+    if (out.length >= most) break;
+  }
+  paint.palette = out.map(rgbHex);
+  return paint.palette;
+}
+
+// The colour picked: from the wheel, the box, a swatch or the eyedropper.
+function setPaintColour(hex, keep) {
+  paint.colour = hex.toLowerCase();
+  if (keep) rememberColour(paint.colour);
+  renderPaintPanel();
+  const gl = mv.gl;
+  if (gl && gl.ring && mv.brush.on && mv.brush.name === "paint") { gl.ring.material.color.set(paint.colour); gl.draw(); }
+}
+
+function rememberColour(hex) {
+  paint.recent = [hex, ...paint.recent.filter((c) => c !== hex)].slice(0, 8);
+}
+
+// The colour wheel: hue round the ring, how strong and how light in the square inside it.
+const WHEEL = 150, WHEEL_OUT = 74, WHEEL_IN = 60, WHEEL_HALF = (WHEEL_IN - 5) / Math.SQRT2;
+function drawWheel() {
+  const canvas = $("paint-wheel");
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== WHEEL * dpr) { canvas.width = canvas.height = WHEEL * dpr; }
+  const ctx = canvas.getContext("2d"), c = WHEEL / 2;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, WHEEL, WHEEL);
+  const ring = ctx.createConicGradient(0, c, c);
+  for (let h = 0; h <= 360; h += 30) ring.addColorStop(h / 360, `hsl(${h} 100% 50%)`);
+  ctx.beginPath();
+  ctx.arc(c, c, WHEEL_OUT, 0, 2 * Math.PI);
+  ctx.arc(c, c, WHEEL_IN, 0, 2 * Math.PI, true);
+  ctx.fillStyle = ring;
+  ctx.fill("evenodd");
+  const [h, s, v] = rgbHsv(hexRgb(paint.colour)), a = c - WHEEL_HALF, side = 2 * WHEEL_HALF;
+  ctx.fillStyle = `hsl(${h} 100% 50%)`;
+  ctx.fillRect(a, a, side, side);
+  const white = ctx.createLinearGradient(a, 0, a + side, 0);
+  white.addColorStop(0, "#fff");
+  white.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = white;
+  ctx.fillRect(a, a, side, side);
+  const black = ctx.createLinearGradient(0, a, 0, a + side);
+  black.addColorStop(0, "rgba(0,0,0,0)");
+  black.addColorStop(1, "#000");
+  ctx.fillStyle = black;
+  ctx.fillRect(a, a, side, side);
+  const mark = (x, y) => {
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#fff";
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, 6.5, 0, 2 * Math.PI);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#000";
+    ctx.stroke();
+  };
+  const t = h * Math.PI / 180, mid = (WHEEL_IN + WHEEL_OUT) / 2;
+  mark(c + Math.cos(t) * mid, c + Math.sin(t) * mid);
+  mark(a + s * side, a + (1 - v) * side);
+}
+
+function wheelPick(ev, part) {
+  const rect = $("paint-wheel").getBoundingClientRect(), c = WHEEL / 2;
+  const x = (ev.clientX - rect.left) * WHEEL / rect.width - c, y = (ev.clientY - rect.top) * WHEEL / rect.height - c;
+  let [h, s, v] = rgbHsv(hexRgb(paint.colour));
+  if (part === "hue") h = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  else {
+    s = Math.min(1, Math.max(0, (x + WHEEL_HALF) / (2 * WHEEL_HALF)));
+    v = Math.min(1, Math.max(0, 1 - (y + WHEEL_HALF) / (2 * WHEEL_HALF)));
+  }
+  if (part === "hue" && s === 0) s = 1;  // a grey turned on the ring takes the colour, not stays grey
+  setPaintColour(rgbHex(hsvRgb(h, s, v)));
+}
+
+// The Colour and Texture panels under the brushes: what's picked, and the ways to pick it.
+function renderPaintPanel() {
+  const w = mv.words, name = mv.brush.name, on = mv.brush.on && PAINT_KINDS.has(BRUSHES[name][0]);
+  $("brush-paint").classList.toggle("hidden", !on);
+  if (!on) return;
+  const colour = name === "paint";
+  $("paint-colour").classList.toggle("hidden", !colour);
+  $("paint-stamp").classList.toggle("hidden", colour);
+  if (colour) {
+    $("paint-swatch").style.background = paint.colour;
+    $("paint-swatch").title = w.tip_paint_swatch_now;
+    const hex = $("paint-hex");
+    if (document.activeElement !== hex) hex.value = paint.colour;
+    hex.title = w.tip_paint_hex;
+    hex.setAttribute("aria-label", w.tip_paint_hex);
+    $("paint-wheel").title = w.tip_paint_wheel;
+    $("paint-wheel").setAttribute("aria-label", w.tip_paint_wheel);
+    const dropper = $("paint-dropper");
+    dropper.textContent = w.paint_eyedropper;
+    dropper.title = w.tip_paint_eyedropper;
+    dropper.setAttribute("aria-pressed", String(paint.picking === "colour"));
+    const swatch = (hex) => {
+      const b = el("button", { type: "button", className: "swatch", title: `${w.tip_paint_swatch} (${hex})` });
+      b.style.background = hex;
+      b.setAttribute("aria-pressed", String(hex === paint.colour));
+      b.setAttribute("aria-label", hex);
+      b.addEventListener("click", () => setPaintColour(hex, true));
+      return b;
+    };
+    $("paint-map-label").textContent = w.paint_map_colours;
+    $("paint-map-label").title = w.tip_paint_map_colours;
+    $("paint-map").replaceChildren(...mapColours().map(swatch));
+    $("paint-recent-label").textContent = w.paint_recent;
+    $("paint-recent-label").classList.toggle("hidden", !paint.recent.length);
+    $("paint-recent").replaceChildren(...paint.recent.map(swatch));
+    drawWheel();
+  } else {
+    const pick = $("stamp-pick");
+    pick.textContent = w.stamp_pick;
+    pick.title = w.tip_stamp_pick;
+    pick.setAttribute("aria-pressed", String(paint.picking === "source"));
+    $("stamp-state").textContent = paint.picking === "source" ? w.stamp_pick_help
+      : paint.source || paint.offset ? w.stamp_from : w.stamp_from_none;
+  }
+  const clear = $("paint-clear");
+  clear.textContent = w.paint_clear;
+  clear.title = w.tip_paint_clear;
+  clear.setAttribute("aria-pressed", String(paint.clear));
+  $("paint-note").textContent = w.paint_note;
+}
+
+// The colour of the object under the pointer (a building, a prop, a tree drawn with its real model), for matching the
+// ground to it (the owner, 2026-10-03: "a paint matcher so you can match the colors of certain objects"): the texel of
+// its own picture where the ray meets it, so its colour without the light, as the ground's picture is.
+// { hex, name } or null when no model is there (or the ground is in front of it, or that spot of it is see-through).
+const texels = new WeakMap();  // a model's picture -> its pixels, read once
+function objectColourAt(ev) {
+  const gl = mv.gl, d = mv.scenery.data;
+  const meshes = Object.values(mv.scenery.models || {}).flat().filter((m) => m.visible && m.userData.real);
+  if (!meshes.length) return null;
+  const rect = gl.renderer.domElement.getBoundingClientRect();
+  gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
+  gl.raycaster.setFromCamera(gl.ndc, gl.camera);
+  const hit = gl.raycaster.intersectObjects(meshes, false)[0];
+  if (!hit || !hit.uv || hit.instanceId === undefined) return null;
+  const ground = gl.raycaster.intersectObject(gl.ground, false)[0];
+  if (ground && ground.distance < hit.distance) return null;
+  const map = hit.object.material.map, img = map && map.image;
+  if (!img || !img.width) return null;
+  let px = texels.get(img);
+  if (!px) {
+    const c = el("canvas", { width: img.width, height: img.height }), ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0);
+    px = ctx.getImageData(0, 0, img.width, img.height);
+    texels.set(img, px);
+  }
+  const u = hit.uv.x - Math.floor(hit.uv.x), v = hit.uv.y - Math.floor(hit.uv.y);
+  const col = Math.min(px.width - 1, Math.floor(u * px.width));
+  const row = Math.min(px.height - 1, Math.floor((map.flipY ? 1 - v : v) * px.height));
+  const k = 4 * (row * px.width + col);
+  if (px.data[k + 3] < 128) return null;  // a see-through bit (between a tree's leaves)
+  const { flat, rows } = hit.object.userData, t = d && d.types[flat[5 * rows[hit.instanceId]]];
+  return { hex: rgbHex([px.data[k], px.data[k + 1], px.data[k + 2]]), name: t ? t[0] : "" };
+}
+
+// A click while picking: the colour there (the eyedropper, or Alt+click with Colour: an object's own colour when one
+// is clicked, else the ground's), or where Texture copies from (its button, or Alt+click with Texture). True when the
+// click was taken.
+function paintPick(x, y, alt, ev) {
+  const name = mv.brush.name;
+  if (!PAINT_KINDS.has(name) || !(paint.picking || alt)) return false;
+  if (name === "paint") {
+    const obj = ev ? objectColourAt(ev) : null, hex = obj ? obj.hex : paintColourAt(x, y);
+    paint.picking = null;
+    if (hex) setPaintColour(hex, true);
+    else renderPaintPanel();
+    brushNote(!hex ? "" : obj ? fill(mv.words.paint_took_object, { name: obj.name || "?", hex })
+      : fill(mv.words.paint_took, { hex }));
+    return true;
+  }
+  paint.source = { x, y };
+  paint.offset = null;
+  paint.picking = null;
+  renderPaintPanel();
+  brushNote(mv.words.stamp_picked);
+  return true;
+}
+
 function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 // The map's real ground textures (its texture tiles, stitched once by the engine and kept in the cache) replace the
@@ -896,6 +1286,7 @@ async function realGround(pack, ask) {
   mat.map = tex;
   mat.color.set(0xffffff);
   mat.needsUpdate = true;
+  paintRefresh();  // the paint again, on the sharper picture
   mv.gl.draw();
   note.textContent = "";
 }
@@ -1073,8 +1464,9 @@ function erasedTest() {
   const areas = mv.brush.erase, C = 20000, cells = new Map();
   if (!areas.length) return null;
   for (const a of areas) {
-    for (let cx = Math.floor((a.x - a.radius) / C); cx <= Math.floor((a.x + a.radius) / C); cx++) {
-      for (let cy = Math.floor((a.y - a.radius) / C); cy <= Math.floor((a.y + a.radius) / C); cy++) {
+    const [x0, x1, y0, y1] = boxOf(a);
+    for (let cx = Math.floor(x0 / C); cx <= Math.floor(x1 / C); cx++) {
+      for (let cy = Math.floor(y0 / C); cy <= Math.floor(y1 / C); cy++) {
         const key = `${cx},${cy}`;
         (cells.get(key) || cells.set(key, []).get(key)).push(a);
       }
@@ -1084,7 +1476,7 @@ function erasedTest() {
   const takes = (a, group, t) => ((a.what || ERASE_DEFAULT).includes(group) && !(t && t[5]))
     || Boolean(t && a.types && a.types.some((n) => n.slice(n.indexOf("/") + 1) === t[0]));
   return (group, t, x, y) => (cells.get(`${Math.floor(x / C)},${Math.floor(y / C)}`) || [])
-    .some((a) => (x - a.x) ** 2 + (y - a.y) ** 2 <= a.radius * a.radius && takes(a, group, t));
+    .some((a) => footT2(a, x, y) <= 1 && takes(a, group, t));
 }
 
 function tintScenery() {
@@ -1193,7 +1585,7 @@ function spawnLayer(it) {
 }
 // Several at once: how many one click adds, in which shape, how far apart (metres, per kind to start with). The shape
 // faces up the screen (away from the camera), its middle on the click; each unit is turned that way too.
-const SPAWN_COUNTS = [1, 2, 4, 6, 8, 10];
+const SPAWN_MOST = 10;  // the "how many" slider's top
 const FORMATIONS = ["line", "column", "wedge", "box", "circle"];
 const SPAWN_GAP = { infantry: 12, ground: 25, air: 50, buildings: 60 };
 
@@ -1917,8 +2309,16 @@ function renderScenTools() {
           : w.tip_scen_camp + (o.team > 0 ? " " + fill(w.scen_owner_team, { team: o.team }) : "");
         return chipOf(label, tip, scen.camp === id, () => { scen.camp = id; renderScenTools(); });
       }));
-    $("scen-count").replaceChildren(el("span", { className: "muted small", textContent: w.scen_count }),
-      ...SPAWN_COUNTS.map((n) => chipOf(String(n), w.tip_scen_count, scen.count === n, () => { scen.count = n; renderScenTools(); })));
+    // a slider, 1 to 10 (a player asked for 3, 5, 7 and 9 too, 2026-10-03: the buttons offered 1, 2, 4, 6, 8, 10)
+    const countLabel = el("span", { className: "muted small", textContent: fill(w.scen_count_n, { n: scen.count }) });
+    const countSlider = el("input", { type: "range", min: "1", max: String(SPAWN_MOST), step: "1",
+      value: String(scen.count), title: w.tip_scen_count });
+    countSlider.addEventListener("input", () => {
+      scen.count = Number(countSlider.value);
+      countLabel.textContent = fill(w.scen_count_n, { n: scen.count });
+      $("scen-formation").classList.toggle("hidden", scen.count === 1);
+    });
+    $("scen-count").replaceChildren(el("label", { className: "brush-slider small" }, countLabel, countSlider));
     $("scen-formation").replaceChildren(...FORMATIONS.map((f) => {
       const tile = iconTile(el("button", { type: "button", className: "tool-tile small-tile", title: w.tip_scen_formation }),
         "formation_" + f, w["formation_" + f]);
@@ -2571,18 +2971,19 @@ const DOCK = [
   ["cover", ["cover", "uncover", "town", "forest"]],
   ["movement", ["block", "block_infantry", "block_vehicles", "open", "open_infantry", "open_vehicles"]],
   ["roads", null], ["bridges", null],
-  ["building", null], ["prop", null], ["vegetation", null], ["erase", ["erase"]],
+  ["building", null], ["prop", null], ["vegetation", null], ["paint", ["paint", "stamp"]], ["erase", ["erase"]],
   ["scenario", null], ["check", null],
 ];
 // The bar's tiles: kinds that go together share one (the owner, 2026-10-01: the bar was too long), its tray showing a
-// tab per kind. [group, its kinds, its icon]; Erase keeps its own, as it will take more than trees and props.
+// tab per kind. [group, its kinds, its icon]. Map Paint holds Paint and Erase (the owner, 2026-10-03: "an editing tab
+// or like a drawing tab and include the erase tool with it").
 const DOCK_GROUPS = [
   ["ground", ["terrain", "water"], "terrain"],
   ["zones", ["cover", "movement"], "cover"],
   ["ways", ["roads", "bridges"], "roads"],
   ["building", ["building"], "building"],
   ["nature", ["prop", "vegetation"], "vegetation"],
-  ["erase", ["erase"], "erase"],
+  ["paint", ["paint", "erase"], "paint"],
   ["scenario", ["scenario"], "scenario"],
   ["check", ["check"], "check"],
 ];
@@ -2627,6 +3028,8 @@ const ICONS = {
   open_vehicles: "M3 16h18v4H3z M7 16v-4h8v4 M15 13h6",
   forest: "M7 3l-4 7h3l-3 5h8l-3-5h3z M7 15v5 M17 6l-4 7h3l-3 5h8l-3-5h3z M17 18v3",
   erase: "M4 15l9-9 7 7-6 6H8z M9 10l7 7 M3 21h18",
+  paint: "M14 3l7 7-8 8-4 1 1-4z M12 5l7 7 M4 21c3 0 4-1 4-3",
+  stamp: "M9 3h6v5l-2 2v3h6v4H5v-4h6v-3L9 8z M4 21h16",
   move: "M12 3v18 M3 12h18 M9 6l3-3 3 3 M9 18l3 3 3-3 M6 9l-3 3 3 3 M18 9l3 3-3 3",
   spawn: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8v8 M8 12h8",
   start: "M6 21V3 M6 4h11l-3 4 3 4H6",
@@ -2659,7 +3062,7 @@ function brushKind(name) {
 function kindName(kind) {
   const w = mv.words;
   return { terrain: w.dock_terrain, water: w.brush_water, cover: w.brush_cover, movement: w.dock_movement, roads: w.dock_roads,
-    bridges: w.dock_bridges, check: w.dock_check, scenario: w.scen_show, erase: w.brush_erase }[kind]
+    bridges: w.dock_bridges, check: w.dock_check, scenario: w.scen_show, erase: w.brush_erase, paint: w.dock_paint }[kind]
     || w[`scenery_${kind}`] || kind;
 }
 
@@ -3391,8 +3794,57 @@ function showMark(at) {
 
 // --- the brush tools ---
 function settingsOf(name) {
-  if (!mv.brush.settings[name]) mv.brush.settings[name] = { size: BRUSHES[name][4], strength: BRUSHES[name][5] };
+  if (!mv.brush.settings[name]) {
+    mv.brush.settings[name] = { size: BRUSHES[name][4], strength: BRUSHES[name][5], shape: "round", edge: "soft", angle: 0 };
+  }
   return mv.brush.settings[name];
+}
+
+// Which brush types a brush offers: the shapes (a ramp is a line already; Town and Forest work round the click) and
+// whether its edge can be hard (only the ground brushes fall off: cover, movement, water and Erase take whole cells).
+function tipChoices(name) {
+  const kind = BRUSHES[name][0];
+  const shapes = ["ramp", "town", "forest"].includes(kind) ? [] : ["round", "square", "line"];
+  const edges = ["add", "level", "smooth", "ramp", "paint", "stamp"].includes(kind) && shapes.length ? ["soft", "hard"] : [];
+  return { shapes, edges };
+}
+
+// The picked brush's shape as a stroke's fields (rusemod/brush.py): a square's turn as its direction, a line's end.
+function tipFields(name, end) {
+  const set = settingsOf(name), { shapes, edges } = tipChoices(name), out = {};
+  const shape = shapes.includes(set.shape) ? set.shape : "round";
+  if (shape === "square") {
+    const a = set.angle * Math.PI / 180;
+    out.shape = "square";
+    out.dx = Math.round(Math.cos(a) * 1e6) / 1e6;  // the Studio turns the angle into the direction; the build needs no
+    out.dy = Math.round(Math.sin(a) * 1e6) / 1e6;  // sines (every PC must build the same bytes)
+    if (out.dx === 0 && out.dy === 0) out.dx = 1;
+  } else if (shape === "line" && end) {
+    Object.assign(out, { shape: "line", x2: end.x, y2: end.y });
+  }
+  if (edges.includes(set.edge) && set.edge === "hard") out.edge = "hard";
+  return out;
+}
+
+// The brush row: its shapes, its edges and a square's angle (whichever the picked brush offers).
+function renderBrushTip() {
+  const w = mv.words, name = mv.brush.name, set = settingsOf(name), { shapes, edges } = tipChoices(name);
+  const shapeOf = shapes.includes(set.shape) ? set.shape : "round";
+  $("brush-shape").replaceChildren(...shapes.map((s) => chipOf(w[`brush_shape_${s}`] || s, w[`tip_brush_shape_${s}`],
+    shapeOf === s, () => { set.shape = s; cancelRamp(); renderBrushTip(); if (s === "line") brushNote(w.brush_line_help); })));
+  $("brush-edge").replaceChildren(...edges.map((e) => chipOf(w[`brush_edge_${e}`] || e, w[`tip_brush_edge_${e}`],
+    (set.edge || "soft") === e, () => { set.edge = e; renderBrushTip(); })));
+  $("brush-shape").classList.toggle("hidden", !shapes.length);
+  $("brush-edge").classList.toggle("hidden", !edges.length);
+  $("brush-angle-row").classList.toggle("hidden", shapeOf !== "square");
+  $("brush-angle").value = set.angle;
+  $("brush-angle-label").textContent = fill(w.brush_angle || "{deg}", { deg: set.angle });
+}
+
+// The brush picked draws a line: two clicks, where it starts and where it ends (as the ramp).
+function drawsLine() {
+  const name = mv.brush.name;
+  return BRUSHES[name][0] === "ramp" || (tipChoices(name).shapes.length && settingsOf(name).shape === "line");
 }
 
 function brushNote(text, kind) {
@@ -3432,7 +3884,7 @@ async function loadStrokes(pack, ask) {
 // The size slider's name; the Erase brush's says how wide its circle is.
 function sizeLabel() {
   const w = mv.words;
-  $("brush-size-label").textContent = erasing() && mv.edit
+  $("brush-size-label").textContent = (erasing() || PAINT_KINDS.has(mv.brush.name)) && mv.edit
     ? fill(w.erase_size, { m: Math.round(2 * brushRadius(mv.brush.name) / METRE).toLocaleString() }) : w.brush_size;
 }
 
@@ -3483,22 +3935,27 @@ function renderBrushes() {
     tile.addEventListener("click", () => pickBrush(name));
     return tile;
   }));
-  const set = settingsOf(b.name), erase = erasing();
+  const set = settingsOf(b.name), erase = erasing(), painting = PAINT_KINDS.has(BRUSHES[b.name][0]);
   $("brush-size").value = set.size;
   $("brush-strength").value = set.strength;
   $("brush-strength-row").classList.toggle("hidden",
     ["cover", "town", "block", "open", "forest", "erase"].includes(BRUSHES[b.name][0]));
+  // Map Paint's strength is how much each dab covers the ground's picture
+  $("brush-strength-label").textContent = painting ? fill(w.brush_opacity, { n: set.strength }) : w.brush_strength;
+  $("brush-strength").title = painting ? w.tip_brush_opacity : w.tip_brush_strength;
+  renderPaintPanel();
   $("brush-erase").classList.toggle("hidden", !erase);  // what the Erase brush's new circles take
   if (erase) {
     $("brush-erase-what").replaceChildren(...["vegetation", "prop", "building"].map((g) => chipOf(w[`scenery_${g}`],
       w.tip_erase_what, b.eraseWhat[g], () => { b.eraseWhat[g] = !b.eraseWhat[g]; renderBrushes(); })));
     $("brush-erase-trees").textContent = w.erase_trees_note;
     $("brush-erase-trees").classList.toggle("hidden", !b.eraseWhat.vegetation);
-    $("brush-erase-warn").textContent = w.erase_buildings_warn;
-    $("brush-erase-warn").classList.toggle("hidden", !b.eraseWhat.building);
+    $("brush-erase-buildings").textContent = w.erase_buildings_note;
+    $("brush-erase-buildings").classList.toggle("hidden", !b.eraseWhat.building);
   }
   $("brush-undo").title = erase ? w.tip_erase_undo : w.tip_brush_undo;
   $("brush-clear").title = erase ? w.tip_erase_clear : w.tip_brush_clear;
+  renderBrushTip();
   sizeLabel();
   showOverlays();
   $("map-help").textContent = b.on ? w.brush_help : w.map_help;
@@ -3547,8 +4004,9 @@ function pointerMode() {
   // the middle button turns the view in every mode (the wheel zooms), so the hand never has to change buttons
   gl.controls.mouseButtons = busy ? { LEFT: null, MIDDLE: M.ROTATE, RIGHT: M.PAN }
                                   : { LEFT: M.ROTATE, MIDDLE: M.ROTATE, RIGHT: M.PAN };
-  if (!mv.brush.on && gl.ring) { gl.ring.visible = false; gl.draw(); }
+  if (!mv.brush.on && gl.ring) { gl.ring.visible = false; gl.squareRing.visible = false; gl.draw(); }
   if (gl.ring) gl.ring.material.color.setHex(mv.brush.on && erasing() ? 0xe0533d : 0xc8a64b);  // Erase's ring in red
+  if (gl.ring && mv.brush.on && mv.brush.name === "paint") gl.ring.material.color.set(paint.colour);  // Colour's in its colour
   if (busy) $("scenery-hover").textContent = "";
   gl.renderer.domElement.style.cursor = busy ? "crosshair" : "";
 }
@@ -3563,6 +4021,9 @@ function newStroke(x, y, level, end) {
   if (kind === "smooth") s.weight = set.strength / 100;
   if (kind === "ramp") { s.level = level; s.weight = set.strength / 100; s.x2 = end.x; s.y2 = end.y; s.level2 = end.z; }
   if (kind === "water") s.level = level;
+  if (kind === "paint") { s.colour = paint.colour; s.weight = set.strength / 100; s.clear = paint.clear; }
+  if (kind === "stamp") { s.sx = paint.offset.sx; s.sy = paint.offset.sy; s.weight = set.strength / 100; s.clear = paint.clear; }
+  if (kind !== "ramp") Object.assign(s, tipFields(name, end));
   return s;
 }
 
@@ -3577,17 +4038,29 @@ function hitGround(ev) {
 function showRing(p) {
   const gl = mv.gl;
   if (!gl.ring) return;
-  const r = brushRadius(mv.brush.name) * SCALE, lift = r * 0.02;
-  gl.ring.visible = Boolean(p);
+  const name = mv.brush.name, r = brushRadius(name) * SCALE, lift = r * 0.02;
+  const square = tipChoices(name).shapes.length > 0 && settingsOf(name).shape === "square";
+  gl.ring.visible = Boolean(p) && !square;
+  gl.squareRing.visible = Boolean(p) && square;
   if (p) {
     gl.ring.position.set(p.x, p.y + lift, p.z);
     gl.ring.scale.set(r, r, r);
+    gl.squareRing.position.set(p.x, p.y + lift, p.z);
+    gl.squareRing.scale.set(r * Math.SQRT2, r * Math.SQRT2, r * Math.SQRT2);  // its corners are 1 out: its sides r
+    // the scene's Z is the map's y (south): turning the drawing by -angle runs its sides along (cos a, sin a)
+    gl.squareRing.rotation.set(-Math.PI / 2, 0, -settingsOf(name).angle * Math.PI / 180);
   }
   const start = mv.brush.rampStart;
   gl.startRing.visible = Boolean(start);
   gl.guide.visible = Boolean(start && p);
   if (start) {
     gl.startRing.position.set(start.sx, start.sy + lift, start.sz);
+    gl.startRing.scale.set(r, r, r);
+  } else if (name === "stamp" && p && (paint.offset || paint.source)) {  // Texture: where it copies from, as it moves
+    const sx = paint.offset ? p.x + paint.offset.sx * SCALE : paint.source.x * SCALE;
+    const sz = paint.offset ? p.z + paint.offset.sy * SCALE : paint.source.y * SCALE;
+    gl.startRing.visible = true;
+    gl.startRing.position.set(sx, p.y + lift, sz);
     gl.startRing.scale.set(r, r, r);
   }
   if (start && p) {
@@ -3604,6 +4077,8 @@ function dab(group, x, y) {
   if (group.erase) {  // an Erase drag: a circle taking what's picked, shown on the overlays and on what it takes
     const r = Math.min(ERASE_MAX, Math.max(1, Math.round(brushRadius(mv.brush.name))));
     const a = { x: Math.round(x), y: Math.round(y), radius: r, what: group.what };
+    const tip = tipFields(mv.brush.name, group.end && { x: Math.round(group.end.x), y: Math.round(group.end.y) });
+    if (tip.shape) Object.assign(a, tip);  // a square turned any way, or a line to where the second click was
     group.erase.push(a);
     group.last = [x, y];
     mv.brush.erase.push(a);
@@ -3643,7 +4118,10 @@ function forestOf(radius) {
 function paintTo(p) {
   const g = mv.brush.painting;
   if (!g || g.stamp || !g.last) return;
-  const x = p.x / SCALE, y = p.z / SCALE, spacing = g.erase ? g.erase[0].radius / 2 : g.strokes[0].radius / 3;
+  // dabs along the drag: closer for the ground brushes (a smooth ridge); Map Paint's at half their radius, as each
+  // dab builds the colour up where they overlap
+  const first = g.erase ? g.erase[0] : g.strokes[0];
+  const x = p.x / SCALE, y = p.z / SCALE, spacing = g.erase || PAINT_KINDS.has(first.brush) ? first.radius / 2 : first.radius / 3;
   let [lx, ly] = g.last;
   let dist = Math.hypot(x - lx, y - ly);
   while (dist >= spacing) {
@@ -3811,6 +4289,18 @@ function watchPointer() {
     const x = p.x / SCALE, y = p.z / SCALE, z = p.y / SCALE, [, , z0, , , z1] = mv.edit.bounds;
     // a plateau's top and a lake's surface sit Strength above the ground clicked; Level and Flatten take its height
     const level = kind === "water" || name === "plateau" ? z + lift(set.strength, z0, z1) : kind === "level" ? z : 0;
+    if (paintPick(x, y, ev.altKey, ev)) return;  // Map Paint: the eyedropper, or Texture's spot to copy from (or Alt+click)
+    if (kind === "stamp") {  // Texture copies from the spot picked: the first stroke after picking fixes the offset
+      if (!paint.offset && !paint.source) { brushNote(mv.words.stamp_from_none, "error"); return; }
+      if (!paint.offset || paint.source) {
+        const start = drawsLine() && mv.brush.rampStart ? mv.brush.rampStart : { x, y };
+        paint.offset = { sx: Math.round(paint.source.x - start.x), sy: Math.round(paint.source.y - start.y) };
+        paint.source = null;
+        if (!paint.offset.sx && !paint.offset.sy) { paint.offset = null; brushNote(mv.words.stamp_same, "error"); return; }
+        renderPaintPanel();
+      }
+    }
+    if (kind === "paint") rememberColour(paint.colour);
     if (kind === "town") {  // one click: cover circles around the town's buildings, saved as one group
       const strokes = townStrokes(x, y);
       if (!strokes.length) { brushNote(mv.words.town_none, "error"); return; }
@@ -3821,21 +4311,29 @@ function watchPointer() {
       finishStroke().then(() => { if (mv.brush.groups.length > saved) brushNote(fill(mv.words.town_done, { n: strokes.length })); });
       return;
     }
-    if (kind === "ramp") {  // two clicks: where it starts (the ground's height there), then where it ends
-      const start = mv.brush.rampStart;
-      if (!start) { mv.brush.rampStart = { x, y, z, sx: p.x, sy: p.y, sz: p.z }; showRing(p); return; }
+    const what = ["vegetation", "prop", "building"].filter((g) => mv.brush.eraseWhat[g]);
+    if (kind === "erase" && !what.length) { brushNote(mv.words.erase_none, "error"); return; }
+    if (drawsLine()) {  // two clicks: where it starts (the ground's height there), then where it ends: a ramp, or any
+      const start = mv.brush.rampStart;  // brush drawn as a line (a ridge, a ditch, a hedge of cover, a wall, a strip)
+      if (!start) {
+        mv.brush.rampStart = { x, y, z, level, sx: p.x, sy: p.y, sz: p.z };
+        showRing(p);
+        if (kind !== "ramp") brushNote(mv.words.brush_line_next);
+        return;
+      }
       if (start.x === x && start.y === y) return;
       mv.brush.rampStart = null;
       showRing(p);
-      const ramp = { strokes: [], last: null, level: start.z, stamp: true, start: mv.brush.strokes.length, end: { x, y, z } };
-      mv.brush.painting = ramp;
-      dab(ramp, start.x, start.y);
+      const end = { x, y, z };
+      const line = kind === "erase" ? { strokes: [], erase: [], what, last: null, stamp: true, end }
+        : { strokes: [], last: null, level: kind === "ramp" ? start.z : start.level, stamp: true,
+            start: mv.brush.strokes.length, end };
+      mv.brush.painting = line;
+      dab(line, start.x, start.y);
       finishStroke();
       return;
     }
     if (kind === "erase") {  // circles along the drag, each taking what's picked (trees and props to start with)
-      const what = ["vegetation", "prop", "building"].filter((g) => mv.brush.eraseWhat[g]);
-      if (!what.length) { brushNote(mv.words.erase_none, "error"); return; }
       mv.brush.painting = { strokes: [], erase: [], what, last: null, stamp: false };
       dab(mv.brush.painting, x, y);
       canvas.setPointerCapture(ev.pointerId);
@@ -3982,7 +4480,7 @@ function watchPointer() {
     });
   });
   canvas.addEventListener("pointerleave", () => {
-    if (mv.brush.on && gl.ring) { gl.ring.visible = false; gl.draw(); }
+    if (mv.brush.on && gl.ring) { gl.ring.visible = false; gl.squareRing.visible = false; gl.draw(); }
     if (mv.place.on && mv.place.how === "area" && gl.ring) { gl.ring.visible = false; gl.draw(); }
   });
 }
@@ -4623,7 +5121,56 @@ function wire() {
     });
   }
   $("brush-size").addEventListener("input", (e) => { settingsOf(mv.brush.name).size = Number(e.target.value); sizeLabel(); });
-  $("brush-strength").addEventListener("input", (e) => { settingsOf(mv.brush.name).strength = Number(e.target.value); });
+  $("brush-strength").addEventListener("input", (e) => {
+    settingsOf(mv.brush.name).strength = Number(e.target.value);
+    if (PAINT_KINDS.has(BRUSHES[mv.brush.name][0])) {  // Map Paint's opacity says its number as it moves
+      $("brush-strength-label").textContent = fill(mv.words.brush_opacity, { n: e.target.value });
+    }
+  });
+  // Map Paint: the colour wheel (drag round the ring for the colour, in the square for how strong and how light), the
+  // colour as #rrggbb, the eyedropper, and Texture's spot to copy from
+  let wheelPart = null;
+  $("paint-wheel").addEventListener("pointerdown", (e) => {
+    const rect = e.currentTarget.getBoundingClientRect(), c = WHEEL / 2;
+    const x = (e.clientX - rect.left) * WHEEL / rect.width - c, y = (e.clientY - rect.top) * WHEEL / rect.height - c;
+    const d = Math.hypot(x, y);
+    wheelPart = d >= WHEEL_IN - 2 && d <= WHEEL_OUT + 3 ? "hue"
+      : Math.abs(x) <= WHEEL_HALF + 3 && Math.abs(y) <= WHEEL_HALF + 3 ? "square" : null;
+    if (!wheelPart) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    wheelPick(e, wheelPart);
+  });
+  $("paint-wheel").addEventListener("pointermove", (e) => { if (wheelPart && e.buttons) wheelPick(e, wheelPart); });
+  for (const type of ["pointerup", "pointercancel"]) {
+    $("paint-wheel").addEventListener(type, () => { if (wheelPart) rememberColour(paint.colour); wheelPart = null; renderPaintPanel(); });
+  }
+  $("paint-hex").addEventListener("change", (e) => {
+    const v = e.target.value.trim(), hex = v.startsWith("#") ? v : "#" + v;
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) setPaintColour(hex, true);
+    else { e.target.value = paint.colour; brushNote(mv.words.paint_hex_bad, "error"); }
+  });
+  $("paint-dropper").addEventListener("click", () => {
+    paint.picking = paint.picking === "colour" ? null : "colour";
+    renderPaintPanel();
+    brushNote(paint.picking ? mv.words.paint_pick_help : "");
+  });
+  $("stamp-pick").addEventListener("click", () => {
+    paint.picking = paint.picking === "source" ? null : "source";
+    renderPaintPanel();
+    brushNote(paint.picking ? mv.words.stamp_pick_help : "");
+  });
+  $("paint-clear").addEventListener("click", () => {  // for the strokes painted from now on
+    paint.clear = !paint.clear;
+    renderPaintPanel();
+  });
+  $("brush-angle").addEventListener("input", (e) => {  // a square brush's turn: its outline follows at once
+    settingsOf(mv.brush.name).angle = Number(e.target.value);
+    $("brush-angle-label").textContent = fill(mv.words.brush_angle || "{deg}", { deg: e.target.value });
+    if (mv.gl && mv.gl.squareRing && mv.gl.squareRing.visible) {
+      mv.gl.squareRing.rotation.z = -Number(e.target.value) * Math.PI / 180;
+      mv.gl.draw();
+    }
+  });
   $("brush-look").addEventListener("click", () => lookAround());
   $("place-undo").addEventListener("click", () => undoPlace());
   $("place-search").addEventListener("input", () => { placeOptions(); if (mv.place.on) placeNote(mv.place.type ? "" : whyNoType(), "error"); });

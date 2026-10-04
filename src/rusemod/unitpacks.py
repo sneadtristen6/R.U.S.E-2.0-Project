@@ -14,7 +14,7 @@ nation's packs the same way, and a spawned unit's go into the common ones. The f
 ZZ_Win.dat, the same for every nation.
 
 Mesh packs (MESHPCPC, version 4), little-endian:
-  0x00  magic, u32 4, u32 file size, 16 bytes (an id; the game doesn't check it against the content)
+  0x00  magic, u32 4, u32 file size, 16 bytes: the MD5 of bytes 0x00-0x0F and 0x20-0x2F (`header_id`)
   0x20  (u32 0, u32 size) of the part read first (everything but the buffers); 0x28 (offset, size) of the buffers
   0x30  u32 model count
   0x34  8 x (offset, size, count): names, vertex formats, materials, two empty, meshes, draw calls, index-buffer table
@@ -35,7 +35,7 @@ Mesh packs (MESHPCPC, version 4), little-endian:
   order; buffers, materials and skeletons are shared by number.
 
 Texture stand-in packs (PRXYPCPC, version 4):
-  0x00  magic, u32 4, u32 file size, 16-byte id
+  0x00  magic, u32 4, u32 file size, 16 bytes: the MD5 of bytes 0x00-0x0F and 0x20-0x2F (`header_id`)
   0x20  table (offset, size), data (offset, size), u32 count, names (offset, size), u32 count
         table: 24 bytes per texture: 8-byte key (the game registers stand-ins by it; the first pack to bring one wins),
         u32 offset in the data, u32 size, 8 bytes; names: 256 bytes (the texture under gentexproxy\\, as .tgv) and the
@@ -57,6 +57,15 @@ NAMES_HEAD = struct.pack("<I", 10) + bytes(6)
 ITEM = struct.Struct("<6fIHH")  # a model's box, flags, mesh, skeleton
 NONE = 0xCDCD
 MODEL = ".ase2ndfbin"
+
+
+def header_id(head: bytes) -> bytes:
+    """The 16 bytes at 0x10 of a mesh or stand-in pack: the MD5 of its magic, version and file size (0x00-0x0F) and
+    the places of the two parts the game reads (0x20-0x2F). The game checks it when it opens a pack and leaves out a
+    pack whose id doesn't match, every model in it then missing: T32 run 1 (2026-10-04) grew four packs and kept their
+    old ids, and crashed at the first model needed. All 156 mesh and stand-in packs the game ships match. So a pack
+    written with a new size needs a new id, and `to_bytes` always writes it."""
+    return hashlib.md5(bytes(head[0:0x10]) + bytes(head[0x20:0x30])).digest()
 
 MESH_DIR = "gen_5\\pack\\gfxdescriptor\\"
 PROXY_DIR = "gentexproxy\\pack\\gfxdescriptor\\"
@@ -167,7 +176,6 @@ class Buffer:
 @dataclass
 class MeshPack:
     """One MESHPCPC pack (meshes, or skeletons only), every part kept so it writes back as it was."""
-    ident: bytes
     items: dict = field(default_factory=dict)     # name -> [box and flags (28 bytes), mesh, skeleton]
     formats: list = field(default_factory=list)   # vertex format names (256 bytes each, zero-padded)
     materials: bytes = b""                         # the materials' NDF
@@ -190,7 +198,7 @@ class MeshPack:
         vb_off, vb_size = struct.unpack_from("<II", raw, 0xA8)
         st_off, _st_size, st_count = struct.unpack_from("<III", raw, 0xB0)
         sd_off, _sd_size = struct.unpack_from("<II", raw, 0xBC)
-        pack = cls(bytes(raw[0x10:0x20]))
+        pack = cls()
         no, ns, nc = sec["names"]
         if ns:
             if raw[no:no + 10] != NAMES_HEAD:
@@ -268,12 +276,8 @@ class MeshPack:
         struct.pack_into("<II", out, 0xA8, *at["vb_data"])
         struct.pack_into("<III", out, 0xB0, *at["skel_table"], len(self.skeletons))
         struct.pack_into("<II", out, 0xBC, *at["skel_data"])
-        out[0x10:0x20] = self.ident
+        out[0x10:0x20] = header_id(out)
         return bytes(out)
-
-    def renew(self) -> None:
-        """A new id for a changed pack (the content's MD5, so the same pack always gets the same one)."""
-        self.ident = hashlib.md5(self.to_bytes()).digest()
 
     # --- reading models ---
     def bones(self, name: str) -> bool:
@@ -498,7 +502,6 @@ class Proxy:
 @dataclass
 class ProxyPack:
     """One PRXYPCPC pack. Stand-ins that share their picture are written once, as the game's are."""
-    ident: bytes
     proxies: list = field(default_factory=list)  # Proxy, in the pack's order
     shared: list = field(default_factory=list)   # for each proxy, the number of the one whose bytes it uses (or its own)
 
@@ -509,7 +512,7 @@ class ProxyPack:
         to, ts, do, ds, count, no, ns, count2 = struct.unpack_from("<8I", raw, 0x20)
         if count != count2 or ts != 24 * count or ns != 264 * count:
             raise PackError("its tables don't agree")
-        pack = cls(bytes(raw[0x10:0x20]))
+        pack = cls()
         first: dict[int, int] = {}
         for i in range(count):
             key, off, size, extra = struct.unpack_from("<8sII8s", raw, to + 24 * i)
@@ -538,12 +541,9 @@ class ProxyPack:
         to, do = 0x40, 0x40 + len(table)
         no = do + len(data)
         struct.pack_into("<II", out, 0x08, 4, no + len(names))
-        out[0x10:0x20] = self.ident
         struct.pack_into("<8I", out, 0x20, to, len(table), do, len(data), n, no, len(names), n)
+        out[0x10:0x20] = header_id(out)
         return bytes(out + table + data + names)
-
-    def renew(self) -> None:
-        self.ident = hashlib.md5(self.to_bytes()).digest()
 
     def add(self, src: "ProxyPack", name: str) -> None:
         """Copy the stand-in `name` (gentexproxy\\...\\x01.tgv) of `src` in, in name order; a picture this pack
@@ -754,6 +754,5 @@ class Packs:
             if path.endswith(".apk"):
                 out[e.path] = archive_with(bytes(self.arc.read(e)), self._apk_added[path])
             else:
-                p.renew()
                 out[e.path] = p.to_bytes()
         return out

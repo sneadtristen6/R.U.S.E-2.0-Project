@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.5:** plays mods made with Studio 0.9.5: repainted units, their own cards, and units with models of their own.
+
+| Before | Now |
+|---|---|
+| A mod couldn't change how a unit looks. | Repainted units and cards from a mod show in the game. **Seen in the game:** a red Sherman, a card made in the Studio. |
+| A mod whose unit model packs grew was dropped by the game: a crash at the first factory. | Built the way the game checks them. **Seen in the game:** a second Sherman with a model of its own. |
+| A mod spawning another nation's units in a campaign chapter or Operation crashed while loading (French units on Holland). | Their models load there too. **Seen in the game.** |
+| Flattening the mountains at a map's edge left a cliff there. | The edge follows the ground. **Seen in the game.** |
+
 **0.4.4:** plays mods with new maps, made with Studio 0.9.4's Duplicate map.
 
 | Before | Now |

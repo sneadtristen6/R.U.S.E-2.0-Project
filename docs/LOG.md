@@ -1143,6 +1143,26 @@ merged; suite 859 OK).**
 - Two working rules from the day: test copies only for what could break the game, with the test spots beside the
   player's HQ and a top-down map; and a release note claims only what passed in the game.
 
+### 2026-10-04: two Shermans, a model pack's id, and a new unit's own card (Studio 0.9.5)
+
+- **The owner: "TEST"** (does the game draw a model shape we wrote?). T32 run 1 grew four mesh packs (the Sherman's
+  buffers stored plain) and the game crashed at the first factory: a model with no mesh. Run 2 changed only the
+  stored height range in place (every pack its own size): **the tall Sherman was drawn** ("This isn't a normal
+  Sherman, right?").
+- **Why run 1 crashed:** a mesh or stand-in pack's 16 bytes at 0x10 are the MD5 of its bytes 0x00-0x0F and
+  0x20-0x2F, and the game leaves out a pack whose id doesn't match, every model in it missing. All 156 of the game's
+  packs match; our pack writer kept the old id (or put the MD5 of the whole pack there). `unitpacks.header_id`, written
+  by both pack writers every time; the 156 packs still write back byte for byte. That writer is also the one units
+  given to another nation's army use (`Packs.give`): not yet tried in the game since.
+- **The owner: "I want to have both Sherman".** T33: a clone of the Sherman whose `MeshDescriptor.FileName` names a
+  new model, the Sherman 1.6 times taller, added beside the Sherman's in its four mesh packs (and its name in the two
+  skeleton packs, the Sherman's skeleton shared). **Passed: "MADE TWO UNITS".** The model step is a test builder for
+  now; making models in the Studio comes next.
+- **His UI bug: the same picture.** A clone starts with its source's card file. A new unit's own card is now
+  `files/cards/<its name>.png`: the build gives the clone a card file beside the source's and adds it to the menu packs
+  that hold the source's (`unitlook.own_cards`, `build.unit_cards`); the Studio saves the card there on a new unit's
+  page. TESTS T34 (not yet run).
+
 ### 2026-10-04: music, sounds and campaign scenes (research, nothing built)
 
 - **Why:** the owner's idea (PLAN §14 idea 8): new music for R.U.S.E. 2.0 and its Iwo Jima Operation, sounds of
@@ -1158,6 +1178,128 @@ merged; suite 859 OK).**
 - **Checked in the game:** the community "Custom Music" mod (the menu music replaced by a longer stereo song, its
   description left as it was) works (owner, 2026-10-04). Whether the whole song plays isn't recorded yet.
 - **Not built, not tested:** our own sound encoder, new tracks, new films, building sounds.
+
+### 2026-10-04: RUSE Guard, our half (fair play; made, switched off, not tested in the game)
+
+- **Why:** R.U.S.E. matches are played in step on every PC (only the players' orders travel), the game compares
+  nothing between players (only its own build when listing lobbies), and Steam lists no anti-cheat for it. The game's
+  own orders that add money, make a unit or kill units are carried out on every PC whoever sends them; the game's
+  scripts send "add money" only from the developer menu and never send "make a unit". So a script mod that sends them
+  cheats in a way the other player can't see, and two players with different mods drift apart silently, which looks
+  like cheating when it isn't.
+- **What we made (`rusemod.fairplay`):** a set with a cheat (the mod list's "cheat" tag, kept next to an installed
+  mod in `tags.toml`, or the mod's own `[mod] tags`) or a .rmod whose scripts name those orders or the developer menu
+  builds an OFFLINE copy, which gets our lock after the game's match rules script: an online match says so and is
+  given up 5 s in. Every other copy gets a join code; the build's record (`fairplay.json` in the copy: the code and
+  the size, time and SHA-256 of every file it wrote) lets the Launcher see a copy changed since. The Launcher: the
+  Join code box (copy, compare with a friend's), "Runs scripts" and "Cheat" badges, Play waits for "I trust this
+  author" on each script mod (per version). The watcher (a spawn order or a money jump of 400+ shown on screen) is
+  in every modded copy, no switch (owner: a watcher you can turn off makes no sense).
+- **Where our scripts go: the maps' own script folders, not the 2.4 GB pack.** Each scenario names its script
+  folder, which the game searches before its own scripts (Eugen's co-op maps carry their own multiplayer script
+  there). So the build puts the lock and the watcher after each folder's own match script, and gives a folder
+  without a multiplayer script the game's one followed by ours: 68 folders, all in IA_Common.dat (1.5 MB). The first
+  try appended them to the game's match rules module in ZZ_Win.dat, which made every Play write 2.4 GB; dropped
+  (owner: "there's got to be a way ... where it doesn't disrupt it that much").
+- **A crash of ours, the same day:** the owner's Studio Test in game (run from the project folder, for T27) built a
+  copy while the work was half-way: the scripts already written for the maps' folders (`import front.game_rules`)
+  but still appended to the match rules module itself, where that module isn't bound until it finishes loading. The
+  game stopped at map load ("'module' object has no attribute 'game_rules'", read from its crash report by the 3D
+  unit session). Fixed by the move to the maps' folders, and **our game scripts now stay out of every build until
+  F1/F3 pass** (`fairplay.IN_BUILDS`).
+- **How our scripts go in:** `pyscript.append_module` puts a compiled script of ours after a game module's own code
+  as one code object (the game refuses `exec`), every index and jump moved past the module's own, checked back
+  (`check_appended`). The scripts' sources are `src/rusemod/gamescripts/*.py25`, compiled with Python 2.5 by
+  `tools/compile_gamescript.py25`; a test fails if a `.bin` doesn't match its source. Every instruction and built-in
+  they use is one the game's own 245 scripts use.
+- **Checked without the game:** a map's skirmish script with ours run under Python 2.5 against stand-ins, with the
+  game's real match rules: offline match, the watcher only; online, the message and the surrender 5 s in; a spawn
+  order and a +530 jump flagged; a second script in one session switches nothing on twice. `tests/test_fairplay.py`
+  runs the whole step on the game's own files (68 folders, the pack under 4 MB).
+- **Not tested in the game yet:** TESTS.md F1 (the lock in a real match), F2 (the Launcher), F3 (the watcher, and that
+  normal play never sets it off). Written up for the big patch before 1.0: `docs/BIG_PATCH.md`. **All of it switched off** (`fairplay.ON = False`; owner: "don't implement the patch", not working in the Launcher yet); code kept.
+
+### 2026-10-04: T27 passed, and a unit's card from the Studio's 3D view
+
+- **T27 passed:** the Sherman wears the paint from Blender in the game. On the way two crashes: the fair play watcher
+  (another session's unfinished scripts, now kept out of every build) and, likely, stand-in packs that grew: the
+  Sherman's track stand-in shares its picture with three other Shermans', and the build gave it a copy of its own
+  (or, where it was the first, repainted theirs). A shared stand-in is now left as the game has it.
+- **The owner's go:** "It just takes a screenshot of the model at whatever angle they want ... Add it to the Studio."
+- **New:** the unit page's 3D view has the card's dashed frame; *Use this view as the card* saves what's inside it at
+  the card's size, with the paint, over a backdrop like the game's cards; *Game's card* takes it back. The build
+  writes cards as the game stores them (one DXT1_LIN level, ZIPO; all 450 of the game's are, every one rebuilt byte
+  for byte by our writer; all 788 units' cards found). `rusemod.unitlook.make_picture`, `StudioApi.look_card`.
+- **Checked:** on the real game, a capture of the painted Sherman through the Studio's call and a build (0 errors,
+  32 s): read back, the game's header and format, the picture within DXT1's rounding. In-game: TESTS T31.
+- **T31, first run: the old card.** The build menu shows the copy of a card inside the menu packs (archives of their
+  own inside ZZ_Win.dat: `gen\pack\menuus.ppk`, `outgame.ppk`, one per nation; 13 of the 64 nested packs hold cards).
+  The build now replaces a changed card there too (`unitlook.in_nested_packs`). **Second run passed:** "worked", the
+  Sherman's card in the build menu is the one taken in the Studio.
+
+### 2026-10-04: the unit's model on its page, and no saving step in Blender (after the first go at T27)
+
+- **The owner's words:** "The model isn't in studio though. I want to be able to see an example of the model like on
+  the right side"; "The P51 Mustang loaded in super weirdly in a blender"; "I am not seeing top left where you save."
+- **New:** a unit's page shows its 3D model on the right, turning until dragged, scroll to zoom, with the mod's
+  paint on it (`StudioApi.unit_preview`: the .glb made once per game build, about 5 s, then a quarter of a second;
+  three.js, as the Maps view). The Blender buttons sit under it. Bring back asks the Blender it opened to save the
+  paint and waits for the answer (`rusemod.blender.ask_to_save`); in Blender, Ctrl+S and a *Save paint (Ctrl+S)*
+  button save it, it saves on its own every 10 s, it opens in Texture Paint, and two lines on the view say what to
+  do (`blender_open.py`).
+- **Fixed:** the flat square through the Mustang's nose was its propeller disc (material type `helice_1`: 43 draw
+  calls, all on planes; every other unit draw call is `Standard`). It's a piece of its own now, hidden.
+- **Not a bug:** the Mustang's page is `Descriptor_Avion_Junkers_87_GR` in the game's data (named P51 MUSTANG,
+  drawn with the Mustang's model).
+- **Checked:** in Blender's window (simulated keys): Ctrl+S saved without a file dialog, the Studio's ask was answered
+  in 0.2 to 0.6 s, Bring back took the picture. In the preview window: the real Mustang and T-26 on the page, the
+  mod's paint on the T-26. Tests: `test_unitlook` (Blender stood in), `test_gltf`.
+
+### 2026-10-03, night: paint back into the game, and the Studio's buttons (Blender bridge, step 2)
+
+- **The owner's go:** "include studio buttons. And the bring back button. It should just try and do it all at once
+  and I'll test it."
+- **New:** mods can repaint textures (`files/replace/<texture>.tgv.png`, MOD_FORMAT §7; `rusemod.unitlook`,
+  `rusemod.png`): the build encodes only the painted 4 x 4 blocks again, in every level, the rest stays the game's
+  byte for byte, the stand-ins too. The Studio's unit page has a *3D model and paint* box: Open in Blender (the unit
+  written out with its pictures, Blender opened with each texture linked to its picture), Bring back (the pictures
+  painted since go into the mod), or Get Blender / Choose Blender when it isn't found (`rusemod.blender`).
+- **Checked:** an exported picture left alone counts as unpainted (0 blocks); a Chinese emblem painted over the
+  T-26's turret numbers re-encodes 768 of 87,381 blocks and renders on the turret from the texture as written;
+  Blender's own save of a painted picture goes through Bring back and a full build on the game's files (only the
+  painted blocks, the stand-in in 3 packs, 0 errors, 30 s). Tests: `test_unitlook`. In-game test: TESTS T27.
+
+### 2026-10-03, late: units out to Blender (Blender bridge, step 1)
+
+- **The owner's go:** "go blender start step 1 install whatever". Blender 4.5.14 LTS (portable, from Blender's
+  official mirrors, checksum agreed by four of them) unpacked in `D:\Tools`.
+- **New:** `ruse export-model <name>... [--open]` writes game models as .glb files with their textures (the
+  alpha as a picture beside them) and can open them in Blender, textured (`rusemod.gltf`, `rusemod.blender_open`).
+  Units keep their bones and weights. Checked in Blender on a T-26, a Sherman and a German soldier (his gun is its
+  own piece). Exports go to `extracted/models`, ignored by git: the models are the game's.
+- **Fixed on the way:** model texture coordinates (`_2wn`) are signed; we read them unsigned, so every model used
+  a quarter of its picture. Found when the T-26 came out mostly black; renders prove the fix (its turret number,
+  a house's window panes). The Studio's map view drew buildings the same wrong way: its model cache is rebuilt once
+  with the fix. All 9,650 draw calls still decode (`tools/verify_spk.py`).
+- **Next (step 2):** paint a texture (in Blender or any editor) and write it back into the game.
+
+### 2026-10-03: unit textures read (the start of changing how units look)
+
+- **Read:** the textures of every unit (DXT5, the part of the TGU1 format with alpha), in `rusemod.tgu1`; layout in
+  FORMATS.md §7. Small mips are stored as plain blocks, large ones coded. Checked on the game's own files (all
+  3,831 textures, 9,469 payloads): every one decodes, every coded one using up every bit stream exactly, and each
+  mip halved matches the next smaller one (alpha as closely as colour; a wrong alpha rule doubles the difference or
+  breaks the streams). Suite 1,095 OK.
+- **What's in them:** infantry pictures hold the real colours (faces, uniforms), one picture per nation's infantry.
+  A vehicle's material is tagged `Camp`, which the game's shader settings tie to a side colour (`CampColor`, with a
+  distance fade); how that mixes with the picture isn't known yet. Its alpha holds markings (the Sherman's star)
+  and patches whose meaning isn't known yet either. The T-26's picture holds its green camouflage and
+  turret number, so a Chinese T-26 is a repaint.
+- **T23 passed (in the game, after one crash of ours):** the game takes a unit texture we wrote: the Sherman turned
+  red stays red at every distance. The alpha: 0 = the player's side colour up close (the Stuart, to confirm), 255 =
+  white shine at some angles (the Wolverine). The first copy crashed because its small stand-ins carried the
+  wrong TGV flag (1 instead of the game's 0 for raw blocks); FORMATS §7 now says what the flag means, and a test
+  guards it.
 
 ### 2026-10-02: units from another nation work in any match
 

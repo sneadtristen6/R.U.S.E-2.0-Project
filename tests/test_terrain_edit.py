@@ -12,7 +12,7 @@ import unittest
 
 from fixtures import make_edat
 from test_kdt import hand_storage, make_kdt
-from test_tms import make_tms
+from test_tms import make_tms, skirt_meshes, skirt_q
 from rusemod.brush import Stroke
 from rusemod.edat import Edat
 from rusemod import kdt_edit
@@ -109,9 +109,9 @@ def cliff_mesh(high: bytes) -> bytes:
 
 
 def make_map(camera=True, cliff=False) -> dict:
-    """The four ground files of a made-up map, by member path. `cliff`: the close-up mesh has the little cliff of
-    `cliff_mesh`, and the gameplay ground sits on its tops."""
-    high = make_tms(gw=3, gh=3, n=11, zf=bumpy)
+    """The four ground files of a made-up map, by member path; the close-up mesh has a skirt like the shipped ones.
+    `cliff`: the close-up mesh has the little cliff of `cliff_mesh`, and the gameplay ground sits on its tops."""
+    high = make_tms(gw=3, gh=3, n=11, zf=bumpy, skirt=True)
     low = make_tms(gw=3, gh=3, n=5, zf=bumpy)
     hd, ld = Tms(high), Tms(low)
     b = hd.bounds
@@ -208,9 +208,8 @@ class Together(unittest.TestCase):
                 for p, q in zip(a.positions(), b.positions()):
                     self.assertEqual((p[0], p[1], p[3]), (q[0], q[1], q[3]))
                     x, y, z = (old_mesh.to_world(k, p[k]) for k in range(3))
-                    if exact or edge(p[0], p[1]):
-                        want = p[2] if edge(p[0], p[1]) else old_mesh.to_quant(2, z + self.lift(x, y))
-                        self.assertEqual(q[2], want)
+                    if exact:
+                        self.assertEqual(q[2], old_mesh.to_quant(2, z + self.lift(x, y)))
                     else:
                         self.assertAlmostEqual(new_mesh.to_world(2, q[2]), z + self.lift(x, y), delta=15.0)
         # the gameplay ground's points are the close-up mesh's, so they get exactly the same new heights
@@ -225,8 +224,8 @@ class Together(unittest.TestCase):
         for s in range(len(cam.subtrees)):
             for p, q in zip(old_cam.positions(s), cam.positions(s)):
                 x, y = cam.to_world(0, p[0]), cam.to_world(1, p[1])
-                lift = 0.0 if edge(p[0], p[1]) else self.lift(x, y)
-                self.assertAlmostEqual(cam.to_world(2, q[2]), old_cam.to_world(2, p[2]) + lift, delta=15.0 + step)
+                self.assertAlmostEqual(cam.to_world(2, q[2]), old_cam.to_world(2, p[2]) + self.lift(x, y),
+                                       delta=15.0 + step)
         # the corner cell is out of reach and keeps its exact bytes; the moved cell's patch bounds reach the top
         self.assertEqual(hd.cells[0].vb, self.hd.cells[0].vb)
         centre = hd.cells[4]
@@ -339,16 +338,35 @@ class Together(unittest.TestCase):
                     west += 1
         self.assertTrue(east and west)
 
-    def test_edge_points_never_move(self):
-        changed, _ = edit_map(reader(self.files), [Stroke("hill", 1500.0, 1500.0, 5000.0, height=50.0)])
-        for key in ("highdef", "lowdef"):
-            old, new = Tms(self.files[FILES[key]]), Tms(changed[FILES[key]])
-            for a, b in zip(old.cells, new.cells):
-                for p, q in zip(a.positions(), b.positions()):
-                    if edge(p[0], p[1]):
-                        self.assertEqual(p, q)
-                    else:
-                        self.assertGreater(q[2], p[2])
+    def test_edge_points_move_and_the_curtain_follows(self):
+        """A stroke over the whole map moves its edge too, in every file (the edge kept still was a wall of old
+        mountain round the owner's flattened Blitz Twin, 2026-10-03), and the close-up mesh's curtain follows it."""
+        changed, _ = edit_map(reader(self.files), [Stroke("plateau", 1500.0, 1500.0, 5000.0, level=2500.0)])
+        # level in the files on the gameplay ground's points; the far mesh and the camera floor follow its change and
+        # keep their own bumps (up to 100 units; the ground was 900 to 1,000 before)
+        for key, delta in (("highdef", 0.11), ("ground", 0.11), ("lowdef", 110.0), ("camera", 110.0)):
+            for x, y, z in self.points(changed, key):
+                self.assertAlmostEqual(z, 2500.0, delta=delta, msg=(key, x, y))
+        hd = Tms(changed[FILES["highdef"]])
+        edge_q = {(p[0], p[1]): p[2] for c in hd.cells for p in c.positions() if edge(p[0], p[1])}
+        curtain = skirt_meshes(hd)[0][1]
+        self.assertTrue(curtain)
+        for x, y, z, _w in curtain:
+            self.assertIn(z, (0, skirt_q(hd, edge_q[(x, y)])))
+        self.assertEqual(sum(v[2] == 0 for v in curtain), len(curtain) // 2)
+
+    def test_beyond_the_edge_a_point_follows_the_edge_beside_it(self):
+        """The camera floor reaches past the map's edge (every shipped one 175,000 out, 20,999 under the floor at
+        the edge): where there's no gameplay ground under a point, it takes the change at the nearest edge point."""
+        from rusemod.terrain_edit import _Surface, _tree_points
+        ground = Kdt(self.files[FILES["ground"]])
+        pts = _tree_points("ground", ground)
+        pts.apply(Stroke("hill", 0.0, 1500.0, 800.0, height=300.0))
+        surface = _Surface(ground, pts)
+        self.assertGreater(surface.change(0.0, 1500.0), 250.0)
+        self.assertEqual(surface.change(-175000.0, 1500.0), surface.change(0.0, 1500.0))
+        self.assertEqual(surface.change(-50.0, -50.0), surface.change(0.0, 0.0))
+        self.assertEqual(surface.change(4000.0, 1500.0), surface.change(3000.0, 1500.0))
 
     def test_a_stroke_outside_the_map_changes_nothing(self):
         changed, notes = edit_map(reader(self.files), [Stroke("hill", 9000.0, 9000.0, 100.0, height=5.0)], "Test")

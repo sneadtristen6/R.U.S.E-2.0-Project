@@ -606,7 +606,18 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Now (updated 2026-10-03, night): start here.** **Studio 0.9.4 and Launcher 0.4.4 are out.** Roads were cracked
+**Now (updated 2026-10-04): start here.** **Studio 0.9.5 and Launcher 0.4.5: units get a look of their own** (the
+owner's big update, everything from the sessions of 2026-10-03 and 04 that passed in the game; LOG.md and the release
+notes). Firsts seen in the game: a unit repainted by a mod (T23) and in Blender (T27), a build-menu card made in the
+Studio (T31), a second Sherman with a 3D model of its own (T32, T33: model packs that grow need the id the game
+checks, now written), a mission of our own played to a victory (T22, a test builder), a new Operation (T17). Also:
+another nation's units in campaign chapters and Operations, the map's edge following flattened mountains (T18),
+erased buildings opening their ground (T25), Map Paint (early). Waiting: T34 (a new unit's own card). Kept out until
+tested in the game: RUSE Guard (fair play, in the private repository, switched off), the road model following
+reshaped ground, the riverbed mend. Next: making models in the Studio (a new unit with a model of its own, then new
+shapes from Blender; the owner: the Japanese fort or tunnel).
+
+**Before (2026-10-03, night):** **Studio 0.9.4 and Launcher 0.4.4 are out.** Roads were cracked
 in 0.9.0 / 0.4.0 (T12 passed: a new road looks like the map's own from high up and up close; the story in
 [ROADS.md](ROADS.md)). The owner: 0.9.x is the alpha, patch releases with plain notes; **1.0 is the launch**, with
 videos and announcements of everything made during the alpha (new maps among the first). Fixes may go out before an
@@ -616,14 +627,76 @@ In 0.9.4 / 0.4.4:
 - **New maps** (`rusemod.newmap`, the Studio's **Duplicate map**): a copy of any BATTLES map with a name of its own,
   listed in BATTLES next to it, edited like any map; the Studio opens it with the shipped map's files under the copy's
   own edits. **Seen in the game:** T15b (Blitz Twin flattened, a hill in the middle: it plays its own ground) and T16
-  (101 new maps listed at once, two played). Known: flattening a map's edge mountains leaves a cliff (the outermost
-  row of points keeps its height); names over about 35 characters are cut off in the menus; copies of other maps
-  than Blitz built, not yet played; a new map in multiplayer between two PCs not yet tried.
+  (101 new maps listed at once, two played). Known: flattening a map's edge mountains left a wall there (fixed after
+  0.9.4: the edge moves and its curtain follows, T18 waiting); names over about 35 characters are cut off in the
+  menus; copies of other maps than Blitz built, not yet played; a new map in multiplayer between two PCs not yet tried.
+- Found 2026-10-03 (the all-maps edge check): on Alpha, Chess Mate, Compass Rose, Edge and Hurtgen, a stroke that
+  moves a whole part of the gameplay ground across a height split of the file's top tree leaves that part on the
+  wrong side of it (clicks there may miss); Blitz has no such split. Being looked into.
 - Issue #15's bugs: maps open about 4 times faster the second time, the Unit mod and Map changes menus told apart,
   sides and zones explained, and a fourth version number for small fixes between releases.
 
-Next: the edge cliff left by flattening; a new map's own menu picture; a new map in multiplayer between two PCs;
-blank maps (flat ground, no water, one ground texture, empty scenery, fresh movement and sectors).
+Next (the owner, 2026-10-03: "test the bug when flattening ... then we got to figure out water. Then lastly, adding a
+nation"): T18 passed (the edge fix); water, and "how a navy map would work"; a new nation. From T18 and after it, in
+his words:
+- the old riverbed and coastal cliffs on a flattened map "tearing ... when you're approaching it" (TESTS T18);
+- "when the ground's flat and there's no river", the bridge could become a road;
+- "the buildings bug where the units go around it ... would kind of fuck up new maps ... you can expand on the maps,
+  but you can't really make it new" (units still steer round where removed buildings stood: fresh movement data, part
+  of blank maps).
+- Roads (the owner, 2026-10-03): "need a way to delete roads you've created. It's similar to being able to erase
+  buildings and the buildings not be there for pathfinding", and "also just general roads on the map will go to the
+  map editor so that way you can have a completely blank slate". Two steps: (1) a Delete tool in Roads & bridges that
+  takes one of the mod's own roads out of roads.toml (today only Undo, the last one): everything the build makes from
+  it goes with it (the paint, the far road, the stickers, the supply route, its bridges); (2) the map's own roads
+  removable too, for a blank map: their supply routes out of the road network, their painted strip repainted
+  (Map Paint's Texture), their far road model and stickers taken away, units' movement left as it is. Step 2 is
+  research first: what each of those files holds for a shipped road, then a test copy.
+- The Launcher (the owner, 2026-10-03): "embed into the launcher a crash log finder. So that way we can find game
+  crashes and help fix bugs from their PC ... That way nobody ever has the code we have." The game's crash reporter
+  leaves a folder per crash (CrashRpt) on the player's PC: the Launcher lists them (when, which mods were on, the
+  modded copy's fingerprint), and with the player's OK packs one into a zip they send us (Discord or the bug report),
+  never sent by itself. What's in them is read on our side with our own tools; the Launcher only finds and packs.
+- "a script to have artillery fire wherever we want ... lets add this for everything that shoots a range slider in
+  units tab": (1) the game's mission scripts have an artillery strike at a position (`DescriptorFrappeArtillerie`:
+  Group or ToutesLesArtilleries, Position; 508 uses in the shipped missions), a bomber strike at a position
+  (`DescriptorBombardement`, 333), a firing-range limit (`DescriptorUnitGroupPorteeDeTirLimitee`: Distance) and a
+  rate-of-fire change (`DescriptorModifieCadenceTir`): a Scenario tool "artillery strike here" the build turns into
+  checked script code, with our own scenarios' scripting; (2) a range slider on everything that shoots in the Units
+  tab (each weapon's PorteeMaximale, today a number field).
+  The owner's answer (2026-10-03): "keep it to like artillery fire. So like whatever unit has the artillery
+  theoretically could. So if an infantry unit had in the future a mortar, you could [strike with] it". So the tool
+  offers the units that carry flag 1 (artillerie: indirect fire; it works on any unit, tested), a mod's own ones
+  too, and nothing is tied to a unit's type. In the shipped script the strike gives the game the group, the spot and
+  ToutesLesArtilleries (all of them, or not); the game aims at an invisible aim point it places at the spot
+  (`Descriptor_Unit_CibleArtillerie`, flags 18, 20, 42, 55, 57). Not tested: which units actually fire at it (a
+  flag-1 infantry unit with a long-range ammo first). The tool waits for our scenarios' scripting.
+  The owner (2026-10-03): "I definitely want the scripts. To have it fire directly on the spot for campaigns and
+  operations." How a shipped mission does it (M02_Tunisie chapter 1 has 26): a named spot in the scenario (a `Name`
+  design item, `TagPosition('PV1_GER_Art_2_strike_6')`), a unit group (`VariableUnitGroup(UnitList=[TagUnit(<a
+  spawn's Name>), ...])`), the strike (`DescriptorFrappeArtillerie`) inside a sequence (`DescriptorPlayEffetAfterWait`
+  = wait N seconds, then the strike); the launch descriptor lists every tag (`TagList`) and group (`PostInit`) and
+  runs one root action (`EffetMap`, a `DescriptorSimultaneous` in Anzio). So a strike can be added at the end of any
+  mission script: the tags and groups added to those lists, the root wrapped with the strikes beside it. The plan:
+  1. T19: one such strike added by hand to Anzio (four Priests, "all guns" and "nearest gun only"); waiting for the
+     owner's test.
+  2. The build: a fixed, checked template (names of letters, digits and `_`, numbers, true/false; assembled like the
+     new units' entries, rusemod.pyscript, with nothing else allowed), appended to the scenario's own script.
+  3. The Studio's Scenario tab: "Artillery strike": click the spot, pick the guns (the scenario's units that carry
+     flag 1, a mod's own too), all of them or the nearest, and when (after N seconds first; later: when a zone is
+     entered or an objective is done).
+  Found on the way: the platform finds a mission's script by the scenario's file name, which misses two Operations
+  whose scenario cluster names another folder (Anzio and Seelow: `Scripting_challenge`), so their sides aren't read;
+  the cluster's own folder is the right one (part of step 2).
+- Done 2026-10-03: the Scenario's Add unit "how many" is a slider from 1 to 10 (a player asked for 3, 5, 7, 9).
+- Done 2026-10-03 ("the range slider should go in now"): every range box (an ammo's max and min range) has a slider
+  beside it and says about how far that is in metres (about 260 game units to a metre); each weapon on a unit's page
+  has a Range line too. When other units fire the same ammo, the modder picks "only this unit" (the weapon gets its
+  own copy of the ammo, Ammo_Range_<unit>_<n>, carrying the mod's other changes to it) or "all N units that fire
+  this ammo"; Undo puts the game's range back and drops a copy it no longer needs (api.set_range). Tooltips in the
+  ten languages. Also: the top-tree height splits above; a new map's
+own menu picture; a new map in multiplayer between two PCs; blank maps (flat ground, no water, one ground texture,
+empty scenery, fresh movement and sectors).
 
 In 0.9.3 / 0.4.3 (the owner's detail-loading tests on his test2 copy of M03_Italie):
 - **Everything a mod places is drawn from far** (rusemod.visibility): the game's decor levels reach 20,000 (close),
@@ -1138,11 +1211,21 @@ the ground** (T5). Scenery and roads come after the ground works in-game (M6, M8
    picture until a cover zone can be drawn on it (M6). A tunnel would have to be a gameplay trick (two connected
    points), and nothing in the data does that yet.
 3. **An extended campaign with new scenes** (owner, 2026-10-03: "thinking a extended campaign with new scenes or
-   something, idk just a thought"). New chapters after (or beside) the game's own, with cutscenes of their own. What
-   the game does, from its code: a chapter opens only when the one before it in its list is finished, and the first
-   of a list is always open; a campaign is a chapter pack, and the menu reads every pack. So a campaign of our own
-   (a new pack) should open at its first chapter (not tried yet). A copied chapter keeps the shipped chapter's
-   cutscenes and dialog; new ones would need their own work.
+   something, idk just a thought"). New chapters after (or beside) the game's own, with cutscenes of their own. How
+   the game does it: a chapter opens only when the one before it in its list is finished, and the first of a list is
+   always open; a campaign is a chapter pack, and the menu reads every pack. So a campaign of our own (a new pack)
+   should open at its first chapter (not tried yet). A copied chapter keeps the shipped chapter's cutscenes and
+   dialog; new ones would need their own work.
+4. **A navy map** (owner, 2026-10-03): a game mode like his YouTube channel's Crossing the T: carriers, battleships,
+   destroyers and cruisers (no submarines); a wide-open sea with each side's harbour on a tiny island holding its
+   supply depots, and a naval battle between them. Ships can't go on land (a blocker), they're slow, fire slowly,
+   and need balancing across the game modes. What exists: the community Navy Mod adds a destroyer, a heavy cruiser
+   and a battleship to every nation, but they drive on land; the game's movement data has ground for infantry and
+   vehicles and treats water as closed to both, so whether ships can get water movement of their own is the first
+   thing to find out (not known yet). Found 2026-10-03 (Iwo Jima research): the game itself ships a hidden US
+   Battleship, Destroyer, Heavy Cruiser, LST and LCVP with their models, and its Salerno chapter places them on the
+   sea and has them shell the shore. The owner (2026-10-03): a ship's wake, an animation behind a moving ship, for the
+   Navy mod ("that's for another day"); the sea's textures and waves later.
 5. **Scripted Operations and campaign missions with end goals** (owner, 2026-10-03: "scripted campaign and
    operation missions ... endgame goals, like Iwo Jima for the operation ... add new missions"). An Operation or a
    chapter of our own with its own mission: sides, goals ("take Mount Suribachi and hold it"), timed and triggered
@@ -1154,6 +1237,18 @@ the ground** (T5). Scenery and roads come after the ground works in-game (M6, M8
    of its own, on a new Operation: its own texts, popups, units it brings, a goal reached in a circle, an artillery
    strike, a second goal and the victory screen. Not tested yet: a campaign of our own opening at its first chapter,
    new spoken dialog, cutscenes; what makes a goal a main one rather than a bonus one.
+6. **Iwo Jima, the showcase Operation** (owner, 2026-10-03: "start working on a potential map template of what Iwo
+   Jima would look like. Scripting, that sort of thing for the operation", "this is going to be the showcase").
+   His wishes: Mount Suribachi "very clear"; "the infamous bunkers that would have to be flamethrowered out";
+   "tunnels ... a building or like quote unquote tunnel that like comes out of the trees, and they just like rush out
+   of the ground"; and for maps in general: garrison orders, trenches, beach landings. Then: "it's too small ... I
+   want it to be big ... work through the jungle and manage my units correctly in order to win ... waves of
+   Japanese ... like it terrified those GIs. I want to capture that feeling", the fleet shelling, "maybe like a
+   bombing run from an aircraft carrier" (a carrier and Navy planes: new models, the Blender work); and it must not
+   look like D-Day ("I don't want to be able to load in and be like, oh, this is D-Day ... we might have to add a new
+   tree, a jungle tree ... we really gotta be thinking about this"). A draft template
+   (the map, the Operation phase by phase, what each piece rests on, the tests): [IWO_JIMA.md](IWO_JIMA.md). Nothing
+   decided.
 
 These go to §11 (RUSE 2.0 design notes) when they're taken up; until then this is the record.
 
@@ -1272,6 +1367,36 @@ not decisions or an order: the map editor comes first.** Map ideas are in §12, 
    that can be pushed later". Goes with "Polish waits" (§10).
 5. **A compass (2026-10-03).** The owner can't tell north from east in the game or the Studio ("I have no way of
    telling which way is north"): a compass in the Studio's map view, and maybe one in the game through a UI mod.
+6. **Changing how units look (2026-10-03).** The owner asked to think about the 3D unit models: editing units so
+   they look different, and what that would look like for China. Steps, cheapest first: borrow another unit's model
+   (already works: the Tiger and the Ju 87 given to the US); repaint (a unit's texture out as a picture, painted in
+   any image editor or the Studio, written back as a new texture for that unit only); markings (a roundel, numbers,
+   characters placed on the model); swapping parts between models; new models from Blender (M7). In the Studio: a
+   "Look" tab on each unit, with its model turning in 3D. For China (§11): borrowed models repainted in Chinese
+   uniform colours (the 88th Division keeps its German helmets), the Blue Sky with a White Sun on its planes and tanks.
+   The owner also asked about new hats, uniforms and gun models (2026-10-03): uniforms are a repaint; a soldier's
+   hat is part of his body model (another hat = borrow another nation's soldier, or edit the model); his gun is a
+   separate piece of the model, so guns could be swapped between soldiers. T23 proved repaints load in the game.
+   The owner's picture of it (2026-10-03): like creating a class in Call of Duty, in the Studio's Units tab: see the
+   unit's model, click it, change its model, its paint, its parts. Blender itself can't run inside the Studio's
+   window, but the Studio's 3D view (it already draws the game's models) could show the unit with slots (body from
+   any nation, gun, paint, markings), and an "Edit in Blender" button could open the unit in Blender and take it
+   back when saved. The owner chose to start with the Blender bridge (step 1: any unit out to Blender).
+   After seeing the T-26 load in Blender (2026-10-03): "it's fine that Blender can't be in the studio", but the
+   Studio should offer it: "want to make a new model? Here's the link to Blender", to add a new model seamlessly
+   (a button that opens the unit in Blender, or a link to get Blender when it isn't installed).
+   **Built 2026-10-03 (owner's go):** step 1 (`ruse export-model`) and step 2 with the Studio's buttons (Open in
+   Blender, Bring back, Get Blender): mods repaint textures (MOD_FORMAT §7); passed in the game 2026-10-04 (TESTS T27: the Sherman wears its Blender paint); next there, the build-menu card picture.
+   Next steps: a texture of China's own (a copy, so the Soviet T-26 keeps its paint), then model write-back (step 3).
+7. **Formations when giving orders in game (2026-10-03).** The owner: choosing a shape for a group's move order
+   should be as easy as the Studio's Add units tool (a shape, a preview under the pointer). What the game does today:
+   a group sent to one point spreads into rows by unit type (tanks, infantry, AT guns, recon, AA, artillery), for
+   most types rows 30 m apart, units 25 m apart, a row at most 200 m wide. Those numbers are game data
+   (`FormationConstantes`), so a mod can change them now, for every order alike. A shape chosen per order (line,
+   column, wedge, box, circle, as in the Studio; right-drag to set the front's width and direction) needs the game's
+   own scripts: an `.rmod` or RUSE 2.0 (§11), not a shared mod (decision 23). Nothing tested in the game yet.
+   Owner, later the same day: make it a mod (with the script warning) until RUSE 2.0, aimed at the next patch. The
+   game's right-drag already makes its rectangle formation, so shapes go on keys: 1 a V, 2 a square, and so on.
 8. **Sound, music and campaign scenes (2026-10-04).** The owner: new music for R.U.S.E. 2.0 and its Iwo Jima
    Operation, "just to add variation to the game"; maybe different sounds for buildings and units; and how campaign
    scenes could be added. What the data shows (read 2026-10-04, nothing tested in game; FORMATS §9):
@@ -1289,3 +1414,85 @@ not decisions or an order: the map editor comes first.** Map ideas are in §12, 
    - **Campaign scenes**, three kinds: a full-screen film, a small picture-in-picture film during a mission (both
      WebM videos played by name), and in-game scenes made of a camera path, black bars, dialogue and music (pure
      mission data). Blender can make the films in the game's exact video format.
+
+## 15. Painting the ground, brush types, and more detail (FIRM, owner 2026-10-03)
+
+The owner, 2026-10-03, after T18 (a flattened riverbed shows the map's painted ravine lying flat): "implement painting
+in the studio as a firm idea. Probably make like an editing tab or like a drawing tab and include the erase tool with
+it ... your fine line, your brush tool ... there's no square like placement tool ... a certain angle on a beach or a
+rock ... a color wheel palette and all that sort of stuff. You'll have to really think about it." Then: "Brush should be
+included in every tool ... a couple of different Brush types. In every tool that has a brush." And on detail:
+"increasing the totals game resolution ... how many textures or tiles ... are on the map ... to allow for better
+shading, better textures, better graphics"; "how are object textures stored and can you double those?"
+
+**What the ground is drawn from** (read 2026-10-03; FORMATS §6-7): the ground shader takes the map's picture pyramid
+(`uniBigTextureTeinte`: the highdef and lowdef `.tmst` tiles, 512 × 512 DXT1, 160 map units = 0.6 m a pixel at the
+finest level on Blitz), the whole-map pictures `terrain.png` / `terrainwithunit.png` where tiles aren't loaded, the
+map's close-up picture (`uniDiversityMap`, `div_map.tgv_pc`, DXT5, about 5 m a pixel) and the shadows. There is no list
+of shared detail textures in the shader settings: what a map looks like up close is its own painted pictures. The
+game draws tiles we write (plain DXT1, proven 2026-09-29; roads painted into them, proven 2026-09-30). The riverbed and
+cliffs of T18 are painted into those tiles with their light and shadow (seen 2026-10-03), so repainting is the fix.
+
+**The design (first draft, for the owner's look):**
+1. **A Paint tab** in the dock (the editing/drawing tab), holding Colour, Texture, Repaint and **Erase** (moved here
+   from its own tile).
+   - **Colour:** paints a colour onto the ground picture with an opacity: a colour wheel, a palette of the map's own
+     ground colours (sampled from the map: its grass, fields, sand, rock, roads), an eyedropper, recent colours.
+   - **Texture:** paints with the map's own ground copied from a spot you pick (a clone stamp: real grass or sand, not
+     a flat colour), or with the game's own ground textures (the decors' `Herbe`, `Sable`, `Roche`, `Terre` sticker
+     pictures); each stroke also gives the close-up picture the source's values, so it blends the same up close.
+   - **Repaint what moved:** one click repaints every place the ground brushes moved by more than a few metres with a
+     texture you pick (the T18 riverbed and coast).
+   - Written as `maps/<map>/paint.toml` strokes, applied in order by the build to every level of both tile pyramids,
+     the whole-map pictures and the close-up picture (rusemod.groundpaint's tile writer); the Studio's 3D view shows
+     the paint at once on the map's picture.
+2. **Brush types in every tool that has a brush** (ground, water, cover, movement, erase, paint): **soft round** (today's),
+   **hard round**, **square** (turned to any angle: a beach's line, a field), and **line** (a fine line or a wide band
+   between two clicks, Shift for straight). Size, strength or opacity, angle. The build's brush rules (rusemod.brush)
+   learn the same shapes so the game gets what the Studio shows.
+3. **More detail ("doubling"), each one tried in the game before it's offered:**
+   - the ground picture with one finer level (each finest tile as four: twice the pixels each way, 0.3 m a pixel on
+     Blitz); whether the game's terrain loader takes a deeper pyramid is not known (one test map);
+   - the close-up picture at twice its size (2048 → 4096 on Blitz);
+   - a finer ground mesh for better shading (cutting the mesh finer: not built);
+   - **object textures** are `.tgv` files in `ZZ_Win.dat` (DXT1, DXT5 or A8R8G8B8, each picture zlib-packed or in the
+     game's own TGU1 coding; buildings share atlases); a texture twice the size can be written (plain DXT, as the ground
+     tiles), but its extra detail has to come from somewhere: plain upscaling only smooths, a sharper picture needs an
+     upscaling program or new art. Not known yet: whether the game takes bigger textures (one test), and each doubled
+     texture takes four times the memory.
+
+Order proposed: brush types → the Paint tab (Colour, Texture, Erase moved in) → Repaint what moved, with a flat Blitz
+Twin test copy → the detail tests (a deeper pyramid on one map, one doubled building atlas).
+
+**Done 2026-10-03, step 2: the Map Paint tile** (the owner's name), holding **Paint** and **Erase** (moved in). Paint
+has two brushes, each round, square (any angle) or a line, soft or hard edged, with Opacity:
+- **Colour**: a colour wheel (hue ring, strength and lightness square), its #rrggbb, an eyedropper (or Alt+click), the
+  map's own colours (its picture sampled: grass, fields, sand, rock, roads) and the last ones used;
+- **Texture**: the map's own ground copied from a spot you pick (or Alt+click): the first stroke after picking sets
+  the distance, a second ring shows where it copies from as the brush moves.
+Saved as `paint` / `stamp` strokes in terrain.toml (MOD_FORMAT §8); the build lays them on every level of both tile
+sets and, for Texture, the close-up picture (rusemod.groundpaint.paint_strokes, stamp_detail), before the new roads.
+The Studio shows them at once on its copy of the map's picture. In the game (T20, owner 2026-10-03 21:55): **shows
+from high up, not up close**, "the same issue as roads did". Every tile level is red in the copy; what Blitz draws near
+the camera over the ground there is crops, grass, bushes, stones and ground stickers (263,000 objects in the 1 km
+patch). T21 takes the stickers off under one patch and all of that low cover under another; if that's it, Map Paint
+clears the low cover under strong paint the way a new road clears its path (rusemod.scenery.road_clearing).
+**Built 2026-10-04 (local, no release until the models are done: owner):** T21 passed (yellow: all the low cover off
+shows the paint up close), so Map Paint strokes `clear` by default (the Studio's "Clear the ground under it",
+groundpaint.paint_clearing): stickers, low plants and stones go wherever the stroke is at least half strength, by
+how far each reaches (scenery.EraseArea.by_size: a sticker 20 m across centred outside a patch still covered its
+edge in T26). Its first in-game look: T27's frames. Also built the same day, from T25 (passed): an erase area that
+takes buildings opens its ground to every unit (build.cleared_woods), so units drive where a town's houses stood.
+Flattened rivers (T18's "tearing", T26, T27): the jagged rock up close is the river's rock sticker
+(`Stickers_France_AutoBuild_Rocher_parallaxe_off_03`, 832 of Blitz's 833 in an old hollow), not either picture (T27:
+neither alone took it away; T26's one clean stretch had its stickers off too). From high, the picture still shows the
+old river. The fix, in T28 (not in the build until it passes): the bank stickers reaching into a filled hollow taken
+off, and the hollow's picture and close-up map mended from both banks (`rusemod.mend`: each side takes the ground
+beyond its own bank moved across, cross-fading in the middle; T26's copied field read as a road). Then the build does
+it wherever its ground edits fill a hollow (the old mesh's hollows that the new ground no longer has). The same day, from
+the owner: Map Paint's sizes run from 15 m to about 1.4 km across ("make like a ginormous patch red, not just a tiny
+little" one; the build fills the blocks a solid stroke covers whole at once, and the DXT encoder is twice as fast,
+the same bytes); and "a paint matcher so you can match the colors of certain objects": the eyedropper takes a
+building's, prop's or tree's own colour (its picture's texel where clicked, without the light), tried in code only
+(the Studio preview has no game models). Next in this list:
+the game's own ground textures as Texture sources (the decors' sticker pictures), then step 3.

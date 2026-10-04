@@ -4,7 +4,8 @@ Every map pack holds two of these, output\\highdef.tms and output\\lowdef.tms (a
 cells per side). The map is cut into a grid of cells. Each cell is one irregular triangle mesh with its own
 compressed vertex buffer, a triangle list for the whole ground (list 0), an optional second list that repeats
 the triangles covered by water (list 1), and a table of 8 x 8 culling patches with height bounds. A "skirt" mesh
-(a curtain hanging from the map edge) follows the cells. Layout in docs/FORMATS.md.
+(a curtain hanging from the map edge) follows the cells; when edge points move, it follows them (Tms._fit_skirt).
+Layout in docs/FORMATS.md.
 
 Every vertex holds a quantized position (x, y, z, water) as four u16 and a normal as four u8. All three axes use
 the file's bounding box: world = min + q * (max - min) / 32767. `water` is the water-surface height on the same
@@ -19,6 +20,7 @@ ships; the predictor and triangle lists stay as they were) and the bounds of the
 """
 from __future__ import annotations
 
+import bisect
 import math
 import struct
 import zlib
@@ -31,6 +33,7 @@ CELL_SIZE = 48
 Q_MAX = 32767         # quantized span of every axis
 VERTEX_TYPE = "$/M3D/System/VERTEXTYPE/TVertex__PositionIn4w_4w__NormalIn01_4ubn"
 POSITION, NORMAL = 8, 4   # vertex element kinds: 4 x u16 and 4 x u8
+SKIRT_BOTTOM = -3000.0    # the curtain's foot (its q 0); its top heights run from there to the file's highest height
 
 # ---------------------------------------------------------------------------------------------------------------
 # LZ stream codec (the payload of every vertex-buffer stream).
@@ -489,11 +492,29 @@ def _f32(x: float) -> float:
     return struct.unpack("<f", struct.pack("<f", x))[0]
 
 
+def _sides(x: int, y: int) -> list[tuple[int, int]]:
+    """Which of the map's four edges a point (quantized) lies on, each with how far along it: (0, x) on y = 0,
+    (1, y) on x = 0, (2, y) on x = max, (3, x) on y = max; a corner is on two."""
+    out = []
+    if y == 0:
+        out.append((0, x))
+    if x == 0:
+        out.append((1, y))
+    if x == Q_MAX:
+        out.append((2, y))
+    if y == Q_MAX:
+        out.append((3, x))
+    return out
+
+
 # ---------------------------------------------------------------------------------------------------------------
 # The file.
 
 class Tms:
     """A parsed .tms file. `cells` is row-major (index = y * grid_w + x)."""
+
+    # edge vertices whose height changed since the skirt last followed them: (cell, vertex) -> (x, y, z before)
+    _edge_old: dict | None = None
 
     def __init__(self, raw: bytes):
         if raw[:4] != MAGIC or raw[-4:] != MAGIC:
@@ -551,6 +572,8 @@ class Tms:
     def to_bytes(self) -> bytes:
         """Serialize: header, cell table, patch tables, geometry (per cell: vertex buffer then its triangle
         lists, each 4-byte aligned with zero padding), skirt descriptor, skirt meshes, closing magic."""
+        if self._edge_old:
+            self._fit_skirt()
         table = bytearray()
         geo = bytearray()
         patches = bytearray()
@@ -660,21 +683,19 @@ class Tms:
 
     # -- editing ----------------------------------------------------------------------------------------------
 
-    def edit_heights(self, fn: Callable[[float, float, float], float | None], keep_border: bool = True) -> int:
+    def edit_heights(self, fn: Callable[[float, float, float], float | None]) -> int:
         """Set new ground heights. `fn(x, y, z)` gets a vertex's world position and returns its new world z (or
         None to leave it). Heights are clamped to the file's z bounds (the whole-file quantization range).
-        Vertices on the outer map edge are left alone by default: the skirt mesh hangs from them.
+        Vertices on the outer map edge move too, and the skirt hanging from them follows (written by to_bytes).
 
         For every changed cell: normals are recomputed for the changed vertices and their neighbours (area-weighted
         face normals of list 0), the streams are re-encoded, and the bounds of the touched patches recomputed.
         Returns the number of vertices whose height changed."""
         total = 0
-        for c in self.cells:
+        for k, c in enumerate(self.cells):
             pos = [list(p) for p in c.positions()]
             changed = []
             for i, p in enumerate(pos):
-                if keep_border and (p[0] in (0, Q_MAX) or p[1] in (0, Q_MAX)):
-                    continue
                 nz = fn(self.to_world(0, p[0]), self.to_world(1, p[1]), self.to_world(2, p[2]))
                 if nz is None:
                     continue
@@ -683,7 +704,7 @@ class Tms:
                     p[2] = q
                     changed.append(i)
             if changed:
-                self._commit(c, pos, changed)
+                self._commit(k, pos, changed)
                 total += len(changed)
         return total
 
@@ -700,10 +721,18 @@ class Tms:
                 pos[i][2] = q
                 changed.append(i)
         if changed:
-            self._commit(c, pos, changed)
+            self._commit(k, pos, changed)
         return len(changed)
 
-    def _commit(self, c: Cell, pos: list[list[int]], changed: list[int]) -> None:
+    def _commit(self, k: int, pos: list[list[int]], changed: list[int]) -> None:
+        c = self.cells[k]
+        old = c.positions()
+        for i in changed:   # an edge vertex moved: the skirt hanging from it follows when the file is written
+            x, y, z, _w = old[i]
+            if x in (0, Q_MAX) or y in (0, Q_MAX):
+                if self._edge_old is None:
+                    self._edge_old = {}
+                self._edge_old.setdefault((k, i), (x, y, z))
         tri = c.triangles(0)
         moved = set(changed)
         faces = [t for t in range(0, len(tri), 3) if tri[t] in moved or tri[t + 1] in moved or tri[t + 2] in moved]
@@ -720,6 +749,102 @@ class Tms:
             if p.vcount and any(p.vstart <= i < p.vstart + p.vcount for i in changed):
                 p.zhi = self._z_f32(max(v[2] for v in pos[p.vstart:p.vstart + p.vcount]))
         c.set_patches(patches)
+
+    # -- skirt -------------------------------------------------------------------------------------------------
+    # What hangs from the map's outer edge (checked on all 32 maps, 2026-10-03). The descriptor: u32 flags (bit 0 the
+    # curtain, bit 1 the water's side), then per submesh u32 index bytes, vertex bytes, bounds bytes (0x60) and part
+    # bytes (0x40), then the 512-byte vertex type ...PositionIn4w_4w. The data, per submesh: u16 indices, vertices as
+    # 4 x u16 (x, y, z, 0), 4 parts' bounds (6 f32: min x, y, z, max x, y, z), 4 parts (u32 vstart, vcount, istart,
+    # icount). Submesh 1, the curtain: under every edge point of the ground (all 46,332 tops of the 32 maps) a top
+    # vertex at the ground's height and a foot at q 0, on the scale SKIRT_BOTTOM .. the file's highest height (the
+    # shipped tops are the ground's height to within one step in 99.97%). Submesh 2, the water's side where the sea or
+    # a river meets the edge: from the ground's height there (on the ground's own scale, as the cells') up to the
+    # water's surface. Hurtgen and Krak des Chevaliers have no water at their edges: flags 1, no submesh 2. The far
+    # mesh has no skirt (its descriptor is all zero).
+
+    def _skirt_layout(self) -> list[tuple[int, int, int, int, int]]:
+        """Where each submesh lies in skirt_data: (vertex offset, vertex count, bounds offset, parts offset, parts)."""
+        out, pos = [], 0
+        if len(self.skirt) < 36:
+            return out
+        for m in range(2):
+            ib, vb, bb, pb = struct.unpack_from("<4I", self.skirt, 4 + 16 * m)
+            out.append((pos + ib, vb // 8, pos + ib + vb, pos + ib + vb + bb, pb // 16))
+            pos += ib + vb + bb + pb
+        return out
+
+    def _fit_skirt(self) -> None:
+        """Make the skirt follow the edge points whose height changed: the curtain's tops go to the edge's new height,
+        and the water's side runs from the edge's new height up to the water, folding flat where the ground now stands
+        above it. The parts holding a moved vertex get new height bounds; everything else keeps its bytes."""
+        old, self._edge_old = self._edge_old or {}, None
+        if not old or not any(self.skirt):
+            return
+        now: dict[tuple[int, int], int] = {}      # the edge's height at each of its x, y: now and before the edits
+        before: dict[tuple[int, int], int] = {}
+        for k, c in enumerate(self.cells):   # an x, y can hold several points (cells meet there; a cliff's top, foot)
+            for i, (x, y, z, _w) in enumerate(c.positions()):
+                if x in (0, Q_MAX) or y in (0, Q_MAX):
+                    was = old.get((k, i), (x, y, z))[2]
+                    now[(x, y)] = max(now.get((x, y), z), z)
+                    before[(x, y)] = max(before.get((x, y), was), was)
+        cols = {xy: (before[xy], now[xy]) for xy in now if now[xy] != before[xy]}
+        if not cols:
+            return
+        sides: dict[int, list] = {}   # per edge, (how far along it, height before, height now), in order
+        for (x, y), z in now.items():
+            for side, along in _sides(x, y):
+                sides.setdefault(side, []).append((along, before[(x, y)], z))
+        for profile in sides.values():
+            profile.sort()
+
+        def column(x: int, y: int):
+            """(height before, height now) of the edge under a skirt vertex, None where it didn't move. The water's
+            side also has vertices between the edge's own points (where its surface meets the bank): there, from the
+            edge points either side."""
+            if (x, y) in now:
+                return cols.get((x, y))
+            for side, along in _sides(x, y):
+                profile = sides.get(side, [])
+                n = bisect.bisect_left(profile, (along,))
+                if 0 < n < len(profile):
+                    (a0, b0, z0), (a1, b1, z1) = profile[n - 1], profile[n]
+                    t = (along - a0) / (a1 - a0) if a1 != a0 else 0.0
+                    was, new = round(b0 + (b1 - b0) * t), round(z0 + (z1 - z0) * t)
+                    return (was, new) if was != new else None
+            return None
+
+        data = bytearray(self.skirt_data)
+        scale = (self.bounds[5] - SKIRT_BOTTOM) / Q_MAX
+        for m, (voff, count, boff, poff, nparts) in enumerate(self._skirt_layout()):
+            verts = [struct.unpack_from("<3H", data, voff + 8 * j) for j in range(count)]
+            foot: dict[tuple[int, int], int] = {}   # the water's side: its lowest vertex under each edge point
+            for x, y, z in verts:
+                foot[(x, y)] = min(foot.get((x, y), z), z)
+            touched = set()
+            for j, (x, y, z) in enumerate(verts):
+                moved = column(x, y)
+                if moved is None:
+                    continue
+                new = moved[1]
+                if m == 0:   # the curtain: its foot stays, its top goes to the edge's new height
+                    if z == 0:
+                        continue
+                    nz = min(max(round((self.to_world(2, new) - SKIRT_BOTTOM) / scale), 1), Q_MAX)
+                else:        # the water's side: its foot on the ground, its top at the water or flat on the ground
+                    nz = new if z == foot[(x, y)] else max(z, new)
+                if nz != z:
+                    struct.pack_into("<H", data, voff + 8 * j + 4, nz)
+                    touched.add(j)
+            for part in range(nparts):
+                vstart, vcount, _i0, _ni = struct.unpack_from("<4I", data, poff + 16 * part)
+                if vcount and any(vstart <= j < vstart + vcount for j in touched):
+                    zs = [struct.unpack_from("<H", data, voff + 8 * j + 4)[0] for j in range(vstart, vstart + vcount)]
+                    lo, hi = ((SKIRT_BOTTOM + min(zs) * scale, SKIRT_BOTTOM + max(zs) * scale) if m == 0
+                              else (self.to_world(2, min(zs)), self.to_world(2, max(zs))))
+                    struct.pack_into("<f", data, boff + 24 * part + 8, lo)
+                    struct.pack_into("<f", data, boff + 24 * part + 20, hi)
+        self.skirt_data = bytes(data)
 
     # -- water -------------------------------------------------------------------------------------------------
     # The shipped maps' water rules (private notes water-and-trees-2026-09-29, checked on all 32 maps): a vertex's

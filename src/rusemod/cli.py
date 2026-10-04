@@ -5,6 +5,7 @@
   ruse names <pack> [filter]           list the named objects in a pack's data files
   ruse dump <pack> <file> [filter]     show one data file as text
   ruse extract <pack> <filter> [--out DIR]   copy files out of a pack (default folder: extracted/)
+  ruse export-model <name>... [--out DIR]    game models as .glb files for Blender (default: extracted/models)
   ruse build <mod>... [--pack P] [--out FILE|DIR] [--instance DIR]   build mods into packs or a modded copy
   ruse index build                     index the whole game (once per game build; about a minute)
   ruse index find|show|where|filter|texts|clone|report ...   ask the index (see `ruse index -h`)
@@ -156,6 +157,45 @@ def cmd_extract(args) -> int:
     return 0
 
 
+def cmd_export_model(args) -> int:
+    from . import gltf
+    from .models import Library
+    out = Path(args.out).resolve()
+    game = _game_dir(args).resolve()
+    if out == game or game in out.parents:
+        # not a game rule: we never write into the game folder
+        raise UserError(f"Refusing to write into the game folder ({game}). Pick another --out folder.")
+    lib = Library(game)
+    try:
+        names = []
+        for want in args.names:
+            w = want.lower().replace("/", "\\")
+            found = sorted(n for n in lib.where if w in n and n.endswith("lod0.ase2ndfbin")
+                           and "_lodmedium" not in n and (args.all or "_dest" not in n))
+            if not found:
+                print(f"no model matches {want!r}")
+            names += [n for n in found if n not in names]
+        if not names:
+            return 1
+        written = gltf.export(lib, names, out, side=args.size)
+        for s in written:
+            bones = f", {len(s['bones'])} bones" if "bones" in s else ""
+            print(f"{s['file']}: {s['draw_calls']} part(s), {s['vertices']:,} vertices, {s['triangles']:,} triangles"
+                  f"{bones}; pictures: {', '.join(s['pictures'])}")
+    finally:
+        lib.close()
+    if args.open:
+        from .blender import DOWNLOAD, find_blender, open_models
+        blender = find_blender(args.blender)
+        if blender is None:
+            # not a game rule: Blender isn't found on this PC
+            raise UserError(f"Couldn't find Blender (free: {DOWNLOAD}). Pass its blender.exe with --blender, "
+                            f"or set RUSE_BLENDER.")
+        open_models(blender, [s["file"] for s in written])
+        print(f"opening in Blender: {blender}")
+    return 0
+
+
 def cmd_build(args) -> int:
     try:
         mods = [load_mod(m) for m in args.mods]
@@ -278,6 +318,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("filter", help="part of the file path, e.g. gfx\\\\everything")
     p.add_argument("--out", default="extracted", help="where to put them (default: extracted/, ignored by git)")
     p.set_defaults(fn=cmd_extract)
+    p = sub.add_parser("export-model", help="write game models as .glb files for Blender (with their pictures)")
+    p.add_argument("names", nargs="+", help="part of a model's path, e.g. us_m4_sherman or ger_panzergrenadier")
+    p.add_argument("--out", default="extracted/models", help="where to put them (default: extracted/models, "
+                   "ignored by git: the models are the game's)")
+    p.add_argument("--size", type=int, default=2048, help="largest texture side to export (default 2048)")
+    p.add_argument("--all", action="store_true", help="also the destroyed versions (_dest)")
+    p.add_argument("--open", action="store_true", help="then open them in Blender, textured")
+    p.add_argument("--blender", help="Blender's blender.exe (default: $RUSE_BLENDER, the PATH or Program Files)")
+    p.set_defaults(fn=cmd_export_model)
     p = sub.add_parser("build", help="build mods into a rebuilt pack or a modded copy of the game")
     p.add_argument("mods", nargs="+", help="mod folders (with mod.toml), .rmod files, or single .rndf files")
     p.add_argument("--pack", default="ZZ_GladPatchableWin.dat", help="the pack the mods change (default: the unit data)")

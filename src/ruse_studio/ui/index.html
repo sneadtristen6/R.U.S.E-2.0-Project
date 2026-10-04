@@ -145,17 +145,49 @@
             <div id="tray-tabs" class="tray-tabs" role="tablist"></div>
             <span id="tray-tip" class="muted small"></span></div>
           <div id="tray-brush" class="tray-body hidden">
-            <div id="brush-list" class="tool-tiles" role="group"></div>
+            <div class="tray-main">
+              <div id="brush-list" class="tool-tiles" role="group"></div>
+              <!-- Map Paint (maps.js renderPaintPanel): Colour's wheel, its #rrggbb, the eyedropper, the map's own
+                   colours and the last ones used; Texture's spot to copy from. Under the brushes, where there's room. -->
+              <div id="brush-paint" class="tray-paint hidden">
+                <div id="paint-colour" class="paint-colour">
+                  <canvas id="paint-wheel" class="paint-wheel" width="150" height="150" role="img"></canvas>
+                  <div class="paint-side">
+                    <div class="paint-now"><span id="paint-swatch" class="swatch big"></span>
+                      <input id="paint-hex" class="paint-hex" maxlength="7" spellcheck="false" autocomplete="off"></div>
+                    <button id="paint-dropper" type="button" class="chip"></button>
+                    <div id="paint-map-label" class="muted small"></div>
+                    <div id="paint-map" class="swatches" role="group"></div>
+                    <div id="paint-recent-label" class="muted small"></div>
+                    <div id="paint-recent" class="swatches" role="group"></div>
+                  </div>
+                </div>
+                <div id="paint-stamp" class="paint-stamp hidden">
+                  <button id="stamp-pick" type="button" class="chip"></button>
+                  <div id="stamp-state" class="muted small"></div>
+                </div>
+                <button id="paint-clear" type="button" class="chip" aria-pressed="true"></button>
+                <div id="paint-note" class="muted small"></div>
+              </div>
+            </div>
             <div class="tray-side">
               <label class="brush-slider small"><span id="brush-size-label"></span>
                 <input id="brush-size" type="range" min="1" max="15" step="1" value="6"></label>
               <label id="brush-strength-row" class="brush-slider small"><span id="brush-strength-label"></span>
                 <input id="brush-strength" type="range" min="1" max="100" step="1" value="50"></label>
+              <!-- the brush types (2026-10-03): round, square (turned by the angle) or line; a soft or hard edge
+                   (maps.js renderBrushTip; rusemod/brush.py Footprint and edge_weight) -->
+              <div id="brush-tip" class="brush-tip">
+                <div id="brush-shape" class="chips" role="group"></div>
+                <div id="brush-edge" class="chips" role="group"></div>
+                <label id="brush-angle-row" class="brush-slider small hidden"><span id="brush-angle-label"></span>
+                  <input id="brush-angle" type="range" min="0" max="179" step="1" value="0"></label>
+              </div>
               <!-- the Erase brush: what its new circles take, and what that does in the game (maps.js renderBrushes) -->
               <div id="brush-erase" class="tray-erase hidden">
                 <div id="brush-erase-what" class="chips" role="group"></div>
                 <div id="brush-erase-trees" class="muted small"></div>
-                <div id="brush-erase-warn" class="small error-text"></div>
+                <div id="brush-erase-buildings" class="muted small"></div>
               </div>
               <div class="map-controls">
                 <button id="brush-undo" type="button" class="ghost" disabled></button>

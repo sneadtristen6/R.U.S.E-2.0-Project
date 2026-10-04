@@ -19,6 +19,8 @@ my-mod/
   mod.toml                    the mod's name, id, version, author (required)
   src/studio.rndf             unit changes made in the Studio
   text/studio.baseunite.csv   names of new units
+  files/replace/gen/...png    a unit's paint (from Blender) or a unit's card, under the game texture it changes
+  files/cards/<unit>.png      a new unit's own card in the build menu, named after the new unit
   maps/<map pack name>/       one folder per map the mod changes:
     terrain.toml                ground brushes (also water, cover and block brushes)
     scenery.toml                buildings, props and trees placed

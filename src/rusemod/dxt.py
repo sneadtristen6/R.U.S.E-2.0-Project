@@ -61,33 +61,63 @@ def _dist(p: tuple[int, int, int], q: tuple[int, int, int]) -> int:
 
 
 def best_indices(pixels: list[tuple[int, int, int]], c0: int, c1: int) -> tuple[int, int]:
-    """Pick the nearest palette entry for each of the 16 pixels. Returns (index word, total squared error)."""
-    pal = palette(c0, c1)
-    word = err = 0
-    for i, p in enumerate(pixels):
-        best, be = 0, None
-        for k, q in enumerate(pal):
-            e = _dist(p, q)
-            if be is None or e < be:
-                best, be = k, e
-        word |= best << (2 * i)
+    """Pick the nearest palette entry for each of the 16 pixels (the first of equals). Returns (index word, total
+    squared error). Unrolled over the palette's four colours: the encoder's inner loop, run many times a block."""
+    (r0, g0, b0), (r1, g1, b1), (r2, g2, b2), (r3, g3, b3) = palette(c0, c1)
+    word = err = shift = 0
+    for r, g, b in pixels:
+        d0, d1, d2 = r - r0, g - g0, b - b0
+        be, best = d0 * d0 + d1 * d1 + d2 * d2, 0
+        d0, d1, d2 = r - r1, g - g1, b - b1
+        e = d0 * d0 + d1 * d1 + d2 * d2
+        if e < be:
+            be, best = e, 1
+        d0, d1, d2 = r - r2, g - g2, b - b2
+        e = d0 * d0 + d1 * d1 + d2 * d2
+        if e < be:
+            be, best = e, 2
+        d0, d1, d2 = r - r3, g - g3, b - b3
+        e = d0 * d0 + d1 * d1 + d2 * d2
+        if e < be:
+            be, best = e, 3
+        word |= best << shift
         err += be
+        shift += 2
     return word, err
 
 
 def _endpoints(pixels: list[tuple[int, int, int]]) -> tuple[tuple[float, ...], tuple[float, ...]]:
     """Extremes of the block along its principal colour axis (power iteration on the covariance)."""
+    # written out as plain loops for speed, adding in the same order as before, so every value is the same to the bit
     n = len(pixels)
-    mean = [sum(p[i] for p in pixels) / n for i in range(3)]
-    cov = [[sum((p[i] - mean[i]) * (p[j] - mean[j]) for p in pixels) for j in range(3)] for i in range(3)]
-    axis = [1.0, 1.0, 1.0]
+    sr = sg = sb = 0
+    for r, g, b in pixels:
+        sr += r
+        sg += g
+        sb += b
+    mr, mg, mb = sr / n, sg / n, sb / n
+    c00 = c01 = c02 = c11 = c12 = c22 = 0
+    for r, g, b in pixels:
+        dr, dg, db = r - mr, g - mg, b - mb
+        c00 += dr * dr
+        c01 += dr * dg
+        c02 += dr * db
+        c11 += dg * dg
+        c12 += dg * db
+        c22 += db * db
+    ax, ay, az = 1.0, 1.0, 1.0
     for _ in range(8):
-        axis = [sum(cov[i][j] * axis[j] for j in range(3)) for i in range(3)]
-        norm = max(abs(a) for a in axis) or 1.0
-        axis = [a / norm for a in axis]
-    proj = [sum((p[i] - mean[i]) * axis[i] for i in range(3)) for p in pixels]
-    lo, hi = min(proj), max(proj)
-    return (tuple(mean[i] + hi * axis[i] for i in range(3)), tuple(mean[i] + lo * axis[i] for i in range(3)))
+        ax, ay, az = c00 * ax + c01 * ay + c02 * az, c01 * ax + c11 * ay + c12 * az, c02 * ax + c12 * ay + c22 * az
+        norm = max(abs(ax), abs(ay), abs(az)) or 1.0
+        ax, ay, az = ax / norm, ay / norm, az / norm
+    lo = hi = None
+    for r, g, b in pixels:
+        t = (r - mr) * ax + (g - mg) * ay + (b - mb) * az
+        if lo is None or t < lo:
+            lo = t
+        if hi is None or t > hi:
+            hi = t
+    return (mr + hi * ax, mg + hi * ay, mb + hi * az), (mr + lo * ax, mg + lo * ay, mb + lo * az)
 
 
 def _to565(c: tuple[float, ...]) -> int:

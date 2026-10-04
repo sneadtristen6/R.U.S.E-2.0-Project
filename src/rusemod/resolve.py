@@ -35,8 +35,11 @@ class ModInfo:
     cover: dict = field(default_factory=dict)                # map pack name -> [cover.Paint] (§8)
     movement: dict = field(default_factory=dict)             # map pack name -> [nav.Block] (§8)
     roads: dict = field(default_factory=dict)                # map pack name -> [roadnet.Road] (§8)
+    paint: dict = field(default_factory=dict)                # map pack name -> [brush.Stroke] paint/stamp (§8)
     players: dict = field(default_factory=dict)              # map pack name -> [players.Players] (§8, map.toml)
     new_maps: dict = field(default_factory=dict)             # new map's pack name -> [newmap.NewMap] (§8, map.toml)
+    textures: dict = field(default_factory=dict)             # texture path in ZZ_Win.dat -> (colour PNG, alpha PNG) (§7)
+    cards: dict = field(default_factory=dict)                # a new unit's name -> its own card PNG (files/cards, §7)
 
 
 # --- versions ---

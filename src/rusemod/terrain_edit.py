@@ -11,7 +11,10 @@ The gameplay ground leads (the recipe of DomesticNukes and his Claude, checked i
 2. The other three files follow its surface: each of their points moves by the change of the gameplay ground's
    triangle under it (its corners' changes, weighted by where the point lies in it). The files don't share one
    set of triangles, so moving each by the brush itself left the drawn slope up to 1,700 units off the ground units
-   stand on (units sank into it).
+   stand on (units sank into it). A drawn mesh's point that isn't on the ground's surface (the far mesh is fitted
+   on its own, up to 3,000 off it on Blitz; a cliff's foot) also loses that offset as far as the strokes flatten
+   (rusemod.brush Stroke.kept: all of it across a plateau's middle, none under a hill), or a flattened map kept
+   bumps where its mountains were. The camera floor keeps its offset: that's how high the camera stays.
 3. Both .kdt files keep their trees true (rusemod.kdt_edit): the height limits over every moved triangle, and the
    MainNode's over every moved part, are widened (a part is rebuilt when a moved triangle crosses a height split).
    Stale limits made the game refuse move orders there and let the camera fall through.
@@ -19,7 +22,10 @@ The gameplay ground leads (the recipe of DomesticNukes and his Claude, checked i
    rusemod.tms recomputes around moved points (stale bounds left trees at the old height).
 Without a gameplay ground file, every stroke moves every file's points by itself, as before.
 
-The map's outer edge stays where it is (the drawn mesh's curtain hangs from it). Heights stay inside each file's own
+The map's outer edge moves like any other point: the curtain that hangs from the close-up mesh's edge follows it
+(rusemod.tms; keeping the edge still left a wall of old mountain one point thick round a flattened map, the owner's
+flat Blitz Twin, 2026-10-03), and the camera floor's ring beyond the edge (175,000 out, 20,999 under the floor at the
+edge on every map) moves as the edge beside it. Heights stay inside each file's own
 height range: a point pushed past the top or the bottom stops there, and the report says how many did. In the
 meshes, the normals around moved points are recomputed (rusemod.tms); in the .kdt trees, a moved point takes the
 normal of the nearest close-up mesh point (nearest in x, y, then in height: the close-up mesh can hold several points
@@ -37,7 +43,7 @@ from dataclasses import dataclass, field
 
 from . import kdt_edit
 from .brush import HeightGrid, Stroke
-from .kdt import MEMBERS as KDT_MEMBERS, Q_MASK, Kdt
+from .kdt import MEMBERS as KDT_MEMBERS, Kdt
 from .tms import Q_MAX, Tms
 
 FILES = {"highdef": "output\\highdef.tms", "lowdef": "output\\lowdef.tms",
@@ -49,7 +55,7 @@ GRID_SAMPLES = 64      # height samples per close-up cell for the smooth brush's
 @dataclass
 class _Points:
     """One file's points, flattened: world x, y and the current z, which file part each belongs to (a mesh cell or a
-    tree's subtree) and its number there. Points on the map's outer edge are left out: they never move."""
+    tree's subtree) and its number there."""
     name: str
     x: list = field(default_factory=list)
     y: list = field(default_factory=list)
@@ -100,8 +106,6 @@ def _mesh_points(name: str, tms: Tms) -> _Points:
     pts = _Points(name)
     for k, cell in enumerate(tms.cells):
         for i, (qx, qy, qz, _w) in enumerate(cell.positions()):
-            if qx in (0, Q_MAX) or qy in (0, Q_MAX):
-                continue
             pts.add(tms.to_world(0, qx), tms.to_world(1, qy), tms.to_world(2, qz), k, i)
     b = tms.bounds
     pts.build_index(b[0], b[1], b[3], b[4])
@@ -112,8 +116,6 @@ def _tree_points(name: str, kdt: Kdt) -> _Points:
     pts = _Points(name)
     for s in range(len(kdt.subtrees)):
         for i, (qx, qy, qz) in enumerate(kdt.positions(s)):
-            if qx in (0, Q_MASK) or qy in (0, Q_MASK):
-                continue
             pts.add(kdt.to_world(0, qx), kdt.to_world(1, qy), kdt.to_world(2, qz), s, i)
     pts.build_index(kdt.bounds_min[0], kdt.bounds_min[1], kdt.bounds_max[0], kdt.bounds_max[1])
     return pts
@@ -166,8 +168,9 @@ def _commit_tree(kdt: Kdt, pts: _Points, normal_at) -> tuple[int, int, int, dict
 
 class _Surface:
     """How much the gameplay ground's surface moved, at any x, y: inside a triangle of it that moved, its corners'
-    changes weighted by where the point lies (barycentric); 0 elsewhere. Built from the ground before its new heights
-    are written."""
+    changes weighted by where the point lies (barycentric); 0 elsewhere. Beyond the map's edge (the camera floor's
+    ring), the change at the nearest point of the edge. `old(x, y)` is the ground's height there before, in a moved
+    triangle (else None). Built from the ground before its new heights are written."""
 
     def __init__(self, kdt: Kdt, pts: _Points):
         new_q: dict[int, dict[int, int]] = {}
@@ -183,13 +186,15 @@ class _Surface:
             for k in range(0, len(idx), 3):
                 a, b, c = idx[k], idx[k + 1], idx[k + 2]
                 if a in dz or b in dz or c in dz:
-                    corners = [(kdt.to_world(0, pos[v][0]), kdt.to_world(1, pos[v][1]), dz.get(v, 0.0)) for v in (a, b, c)]
-                    (x0, y0, _), (x1, y1, _), (x2, y2, _) = corners
+                    corners = [(kdt.to_world(0, pos[v][0]), kdt.to_world(1, pos[v][1]), dz.get(v, 0.0),
+                                kdt.to_world(2, pos[v][2])) for v in (a, b, c)]
+                    (x0, y0, _, _), (x1, y1, _, _), (x2, y2, _, _) = corners
                     det = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2)
                     if det:  # a wall (no area seen from above) has no surface to follow
                         self.tris.append((corners, det))
         self.step = max(kdt.bounds_max[0] - kdt.bounds_min[0], kdt.bounds_max[1] - kdt.bounds_min[1], 1.0) / 256.0
         self.x0, self.y0 = kdt.bounds_min[0], kdt.bounds_min[1]
+        self.x1, self.y1 = kdt.bounds_max[0], kdt.bounds_max[1]
         self.buckets: dict[tuple, list[int]] = {}
         for n, (corners, _det) in enumerate(self.tris):
             xs, ys = [c[0] for c in corners], [c[1] for c in corners]
@@ -203,15 +208,31 @@ class _Surface:
     def __bool__(self) -> bool:
         return bool(self.tris)
 
-    def change(self, x: float, y: float) -> float:
+    def _at(self, x: float, y: float, value: int) -> float | None:
+        x, y = min(max(x, self.x0), self.x1), min(max(y, self.y0), self.y1)
         for n in self.buckets.get((self._b(x, self.x0), self._b(y, self.y0)), ()):
-            ((x0, y0, d0), (x1, y1, d1), (x2, y2, d2)), det = self.tris[n]
+            (c0, c1, c2), det = self.tris[n]
+            (x0, y0), (x1, y1), (x2, y2) = c0[:2], c1[:2], c2[:2]
             l0 = ((y1 - y2) * (x - x2) + (x2 - x1) * (y - y2)) / det
             l1 = ((y2 - y0) * (x - x2) + (x0 - x2) * (y - y2)) / det
             l2 = 1.0 - l0 - l1
             if l0 >= -1e-9 and l1 >= -1e-9 and l2 >= -1e-9:
-                return l0 * d0 + l1 * d1 + l2 * d2
-        return 0.0
+                return l0 * c0[value] + l1 * c1[value] + l2 * c2[value]
+        return None
+
+    def change(self, x: float, y: float) -> float:
+        return self._at(x, y, 2) or 0.0
+
+    def old(self, x: float, y: float) -> float | None:
+        return self._at(x, y, 3)
+
+
+def _kept(strokes: list[Stroke], x: float, y: float) -> float:
+    """How much of the ground's old shape at (x, y) is left after all the strokes (Stroke.kept, one after another)."""
+    kept = 1.0
+    for s in strokes:
+        kept *= s.kept(x, y)
+    return kept
 
 
 def _refit(kdt: Kdt, moved: dict) -> str:
@@ -259,20 +280,18 @@ def _area(meshes: dict, trees: dict) -> tuple[float, float, float, float]:
 
 def _touches(stroke: Stroke, area) -> bool:
     x0, y0, x1, y1 = area
-    if stroke.brush == "ramp":
-        bx0, bx1, by0, by1 = stroke.box()
-        return bx0 < x1 and bx1 > x0 and by0 < y1 and by1 > y0
-    dx = max(x0 - stroke.x, 0.0, stroke.x - x1)
-    dy = max(y0 - stroke.y, 0.0, stroke.y - y1)
-    return dx * dx + dy * dy < stroke.radius * stroke.radius
+    return stroke.footprint().meets(x0, y0, x1, y1)
 
 
 def _area_of(stroke: Stroke) -> tuple[float, float, float]:
     """A circle (x, y, radius) around everything a stroke can change."""
-    if stroke.brush == "ramp":
-        half = math.hypot(stroke.x2 - stroke.x, stroke.y2 - stroke.y) / 2
-        return (stroke.x + stroke.x2) / 2, (stroke.y + stroke.y2) / 2, half + stroke.radius
-    return stroke.x, stroke.y, stroke.radius
+    fp = stroke.footprint()
+    if fp.shape == "line":
+        half = math.hypot(fp.x2 - fp.x, fp.y2 - fp.y) / 2
+        return (fp.x + fp.x2) / 2, (fp.y + fp.y2) / 2, half + fp.r
+    if fp.shape == "square":
+        return fp.x, fp.y, fp.r * math.sqrt(2.0)
+    return fp.x, fp.y, fp.r
 
 
 def _near_bridge_floors(read, strokes: list[Stroke], name: str) -> list[str]:
@@ -343,9 +362,11 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
     notes += _near_bridge_floors(read, strokes, name)
     # the gameplay ground leads; without it, every file is moved by the strokes themselves
     painted = [points["ground"]] if "ground" in points else list(points.values())
+    applied = []
     for n, stroke in enumerate(strokes, start=1):
         if stroke.brush == "smooth" and grid is None:
             continue
+        applied.append(stroke)
         average = grid.average_for(stroke) if stroke.brush == "smooth" else None
         covered = sum(pts.apply(stroke, average) for pts in painted)
         if grid is not None:
@@ -362,9 +383,17 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
         surface = _Surface(trees["ground"], points["ground"])
         if surface:
             for key, pts in points.items():
-                if key != "ground":
-                    for k in range(len(pts.z)):
-                        pts.z[k] += surface.change(pts.x[k], pts.y[k])
+                if key == "ground":
+                    continue
+                for k in range(len(pts.z)):
+                    x, y = pts.x[k], pts.y[k]
+                    dz = surface.change(x, y)
+                    kept = _kept(applied, x, y) if key in meshes else 1.0
+                    if kept < 1.0:   # a drawn mesh's own bumps off the ground go as far as the strokes flatten
+                        g = surface.old(x, y)
+                        if g is not None:
+                            dz -= (pts.z[k] - g) * (1.0 - kept)
+                    pts.z[k] += dz
 
     changed: dict[str, bytes] = {}
     counts = []

@@ -39,7 +39,21 @@ COMPONENTS = {"Position_3f": 12, "NormalIn01_4ubn": 4, "NormalAndChenilleIndexIn
               "BlIdx_4ub": 4, "TexCoord0_2wn": 4, "TexCoord0_2f": 8, "TexPackedAtlas0_4ubn": 4,
               "TexPackedAtlas1_4ubn": 4, "Color_4ub": 4, "Color0_4ub": 4, "TexCoord1_2wn": 4, "TexCoord1_2f": 8,
               "Color0_col32": 4}  # (the last: the maps' road strips, rusemod.roadstrips)
-UV_WORD = 65535.0  # a stored `_2wn` UV is value / 65535 (not confirmed in-game; compressed ones use their own mask)
+UV_SIGNED = 32767.0  # a `_2wn` UV is a signed 16-bit fraction: u 0..1, v -1..0 (sampling wraps, so v + 1)
+
+
+def _s16(x: int) -> int:
+    x &= 0xFFFF
+    return x - 0x10000 if x & 0x8000 else x
+
+
+def wn_uv(u: int, v: int, bits: int = 16) -> tuple[float, float]:
+    """A `_2wn` texture coordinate's two stored words -> (u, v) on the picture. The words are the top `bits` bits
+    of a signed 16-bit fraction (plain buffers: all 16; compressed ones: 11, their mask is 2047); u comes out 0..1,
+    v -1..0, moved up by 1 into the picture (the game's sampling wraps). Checked by rendering units and buildings
+    with their textures (2026-10-03): read unsigned, models used only a quarter of their picture."""
+    shift = 16 - bits
+    return _s16(u << shift) / UV_SIGNED, _s16(v << shift) / UV_SIGNED + 1.0
 
 
 class SpkError(ValueError):
@@ -65,6 +79,8 @@ class Part:
     uvs: list                 # u, v per vertex, already moved into the atlas when the vertex has atlas bytes
     indices: list             # triangles: 3 vertex numbers each
     atlas: list = field(default_factory=list)  # the raw atlas bytes per vertex (min u, min v, width, height) × 255
+    bones: list = field(default_factory=list)  # skinned models: 4 bone numbers per vertex (the material's own list)
+    weights: list = field(default_factory=list)  # and their 4 weights, 0..255
 
 
 def layout(format_name: str) -> list[tuple[str, int, int]]:
@@ -204,11 +220,14 @@ class Spk:
         uv_key = next((k for k in comps if k.startswith("TexCoord0")), None)
         uvs = list(comps[uv_key]) if uv_key else []
         if uv_key == "TexCoord0_2wn" and uvs and isinstance(uvs[0][0], int):
-            uvs = [(u / UV_WORD, v / UV_WORD) for u, v in uvs]
+            uvs = [wn_uv(u, v) for u, v in uvs]
         atlas = comps.get("TexPackedAtlas0_4ubn", [])
         if atlas and uvs:  # each vertex's UV runs inside its sub-texture of the atlas
             uvs = [(a[0] / 255 + u * a[2] / 255, a[1] / 255 + v * a[3] / 255) for (u, v), a in zip(uvs, atlas)]
-        return Part(material, pos, nrm, [c for p in uvs for c in p], self.indices(ib), [list(a) for a in atlas])
+        bones = [list(b) for b in comps.get("BlIdx_4ub", [])]
+        weights = [list(w) for w in comps.get("BlW_4ubn", [])]
+        return Part(material, pos, nrm, [c for p in uvs for c in p], self.indices(ib), [list(a) for a in atlas],
+                    bones, weights)
 
 
 def _code(comp: str, size: int) -> str:
@@ -233,10 +252,14 @@ def _material(nd, obj) -> dict:
     def text(v):
         return nd.strings[struct.unpack("<I", v.payload)[0]] if v.tc in (0x07, 0x1C) else None
 
-    out = {"name": "", "type": "", "textures": {}}
+    out = {"name": "", "type": "", "textures": {}, "skinning": [], "tags": []}
     for pi, v in obj.props:
         prop = nd.prop_name(pi)
-        if prop == "MaterialName":
+        if prop == "SkinningRemapping":  # a vertex's bone number n is the skeleton's bone skinning[n]
+            out["skinning"] = [x.scalar() for x in sub_values(v)]
+        elif prop == "Tags":
+            out["tags"] = [t for t in (text(x) for x in sub_values(v)) if t]
+        elif prop == "MaterialName":
             out["name"] = text(v) or ""
         elif prop == "MaterialType":
             out["type"] = text(v) or ""
@@ -316,10 +339,11 @@ def _component(s: bytes, kind: int, mode: int, n: int, parents) -> list:
         lo, hi = struct.unpack_from("<2f", s, 2), struct.unpack_from("<2f", s, 10)
         vals = _predicted(struct.unpack_from(f"<{2 * n}H", s, 20), n, 2, Q, parents, mode)
         return [tuple(_dequant(v[k], Q, lo[k], hi[k]) for k in range(2)) for v in vals]
-    if kind == 6:  # word2 (UVs as _2wn): u16 mask, u16 0, then 2 u16 per vertex; uv = value / mask
+    if kind == 6:  # word2 (UVs as _2wn): u16 mask (2047 in every shipped stream), u16 0, then 2 u16 per vertex:
+        # the top bits of each signed 16-bit word (wn_uv)
         mask = struct.unpack_from("<H", s, 0)[0]
         vals = _predicted(struct.unpack_from(f"<{2 * n}H", s, 4), n, 2, mask, parents, mode)
-        return [(u / mask, v / mask) for u, v in vals]
+        return [wn_uv(u, v, mask.bit_length()) for u, v in vals]
     if kind == 4:  # ubyte4 (normals, atlas bytes, bone weights and indices)
         return _predicted(list(s[:4 * n]), n, 4, 0xFF, parents, mode)
     raise SpkError(f"unknown vertex stream kind {kind}")

@@ -1,7 +1,9 @@
-"""TGU1: the game's own compressed-DXT1 texture payload (terrain tiles, some .tgv mips). Read and write.
+"""TGU1: the game's own compressed-DXT texture payload (terrain tiles, model textures). Read, and write DXT1.
 
-A TGU1 payload replaces the raw DXT1 bytes of a TGV mip. It is a 36-byte header and a zlib stream (flushed
-with a sync flush, no final block). The inflated body describes the DXT1 surface in three parts:
+A TGU1 payload replaces the raw DXT1 or DXT5 bytes of a TGV mip. Its header is 32 bytes; flags bit 0x001 says DXT5
+(units, the leaves of some trees), 0x100 says coded. A payload that isn't coded holds its blocks as they are right
+after the header (the small mips of model textures). A coded one has a u32 body size at 0x20 and a zlib stream
+(flushed with a sync flush, no final block). The inflated body describes the DXT1 surface in three parts:
 
 * endpoint colours: every 4x4-pixel block has two RGB565 endpoints, stored as six small images (Y, Cb, Cr of
   endpoint 0, then of endpoint 1) with one sample per DXT1 block. Each image is cut into 4x4 tiles, each tile
@@ -9,6 +11,18 @@ with a sync flush, no final block). The inflated body describes the DXT1 surface
 * palette indices (selectors): a full-resolution image (one sample per pixel), DCT-coded per DXT1 block; the
   decoded value v maps to palette position clamp(v + 2, 0, 3), i.e. the index order 0, 2, 3, 1;
 * optional raw selector words and an endpoint-order list (both empty in every shipped terrain tile).
+
+A DXT5 body goes on with the alpha half of each block, after the colour selectors:
+
+* alpha endpoints: two small images (one sample per block, 4x4 tiles of 4x4 DCTs, DC predicted, dequantised like
+  the Y images): the first is alpha 0, the second how far alpha 1 lies below it (alpha 1 = alpha 0 - it, both
+  clamped to 0..255); an equal pair becomes (a, a - 1), or (1, 0) when a is 0, so every block has 8 alpha steps;
+* alpha selectors: one bank like the colour selectors' (raw-word count included), at 4 times the selector
+  quality, always the full transform; value v gives the palette position clamp(v + 4, 0, 7), from alpha 0 to
+  alpha 1, i.e. the DXT5 index order 0, 2, 3, 4, 5, 6, 7, 1.
+
+Only the header's block count of blocks (in rows from the top) carry selectors; the blocks after them come out
+zero. Model atlases use that for an empty bottom; terrain tiles always fill every block.
 
 Coefficients are stored "sub-band major": a bank holds 17 bit streams, stream 0 the per-block coefficient
 counts (delta-coded), stream j the j-th coefficient (zigzag order) of every block that has at least j.
@@ -29,7 +43,9 @@ MAGIC = b"TGU1"
 HEADER = struct.Struct("<4s8I")          # magic, version, width, height, color q, selector q, blocks, flags, body size
 VERSION = 5
 FLAG_CODED = 0x100                       # set in every TGU1 payload the game ships
-FLAG_ALPHA = 0x001                       # DXT5-style alpha banks follow (not supported here)
+FLAG_ALPHA = 0x001                       # DXT5: alpha banks follow the colour ones
+PLAIN_HEADER = 32                        # a payload that isn't coded: this header, then its blocks as they are
+ALPHA_ORDER = (0, 2, 3, 4, 5, 6, 7, 1)   # alpha palette position (a0 .. a1) -> DXT5 index
 
 QUANT = (18, 14, 18, 49, 12, 16, 37, 78, 24, 57, 104, 121, 51, 69, 103, 100)   # row-major 4x4
 ZIGZAG = (0, 1, 4, 8, 5, 2, 3, 6, 9, 12, 13, 10, 7, 11, 14, 15)                # j-th coefficient -> position
@@ -128,6 +144,8 @@ class _Bank:
 
     def __init__(self, body: bytes, pos: int, has_raw: bool, dc_predict: bool):
         n_raw = 0
+        if pos + 68 + 4 * has_raw > len(body):
+            raise ValueError("TGU1 bank runs past the end of the body")
         if has_raw:
             n_raw = struct.unpack_from("<I", body, pos)[0]
             pos += 4
@@ -240,6 +258,31 @@ def selector_word(values: list[int]) -> int:
     return word
 
 
+def alpha_pair(v0: int, v1: int, version: int = VERSION) -> tuple[int, int]:
+    """A block's two decoded alpha endpoint samples -> (alpha 0, alpha 1); never an equal pair (but in version 2)."""
+    a0 = min(255, max(0, v0))
+    a1 = max(0, a0 - min(255, max(0, v1)))
+    if a0 == a1 and version != 2:
+        return (a0, a0 - 1) if v0 > 0 else (1, 0)
+    return a0, a1
+
+
+def alpha_word(values: list[int]) -> int:
+    """16 decoded alpha selector values (row-major) -> the 48-bit DXT5 alpha index field."""
+    word = 0
+    for i, v in enumerate(values):
+        p = min(_s16(_sat16(v) + 4), 7)
+        word |= ALPHA_ORDER[max(p, 0)] << (3 * i)
+    return word
+
+
+def alpha_scale(selector_quality: int, version: int, a0: int, a1: int) -> int:
+    """The alpha selectors' dequantisation factor: 4 x the selector quality (before version 4: per block)."""
+    if version >= 4:
+        return selector_quality * 4
+    return (selector_quality * 0xC00) // (abs(a0 - a1) + 1)
+
+
 def ycbcr_to_565(y: int, cb: int, cr: int) -> int:
     """Endpoint colour conversion: float32 maths, round-half-even, clamp, truncate to 565."""
     yf = _f32((y - 16.0) * _KY)
@@ -285,15 +328,21 @@ def fix_order(ends: list[list[int]], toggles: list[int]) -> None:
 
 @dataclass
 class Decoded:
-    """Everything `decode_full` recovers; `dxt` is the decoded DXT1 surface."""
+    """Everything `decode_full` recovers; `dxt` is the decoded DXT1 or DXT5 surface."""
     header: Header
     planes: list[list[int]]          # 6 endpoint images (EP0 Y, Cb, Cr, EP1 Y, Cb, Cr), width*height each
     ends: list[list[int]]            # per block [c0, c1] after the order pass
-    selectors: list[int]             # per block index word
+    selectors: list[int]             # per block index word (the header's block count of them)
     toggles: list[int]
     raw_selectors: list[int]
     dxt: bytes
-    banks: list["_Bank"]             # the 6 endpoint banks and the selector bank, with what they held
+    banks: list["_Bank"]             # the 6 endpoint banks and the selector bank (+ the 3 alpha ones), with what they held
+    alpha_ends: list[tuple[int, int]] = None      # DXT5: per block (alpha 0, alpha 1)
+    alpha_selectors: list[int] = None             # DXT5: per block 48-bit index field
+
+    @property
+    def alpha(self) -> bool:
+        return bool(self.header.flags & FLAG_ALPHA)
 
 
 def inflate(payload: bytes) -> tuple[Header, bytes]:
@@ -306,15 +355,22 @@ def inflate(payload: bytes) -> tuple[Header, bytes]:
 
 
 def decode_full(payload: bytes) -> Decoded:
-    head, body = inflate(payload)
+    head = Header.parse(payload)
     if head.version != VERSION:
         raise ValueError(f"unsupported TGU1 version {head.version} (only {VERSION})")
-    if not head.flags & FLAG_CODED or head.flags & FLAG_ALPHA:
-        raise ValueError(f"unsupported TGU1 flags {head.flags:#x} (only DXT1 terrain, {FLAG_CODED:#x})")
+    if head.flags & ~(FLAG_CODED | FLAG_ALPHA):
+        raise ValueError(f"unsupported TGU1 flags {head.flags:#x}")
+    alpha = bool(head.flags & FLAG_ALPHA)
     w, h = head.width, head.height
-    # block_count is w × h in every terrain tile, but smaller in model atlases (a France buildings atlas of 128 x 128
-    # blocks says 14805), for a reason not known yet; decoding doesn't use it: the banks' own checks below (every
-    # stream used up, no bytes left over) are what say a payload was read right.
+    if not head.flags & FLAG_CODED:  # the blocks as they are
+        size = w * h * (16 if alpha else 8)
+        dxt = bytes(payload[PLAIN_HEADER:PLAIN_HEADER + size])
+        if len(dxt) != size:
+            raise ValueError(f"TGU1 plain payload holds {len(dxt)} of {size} bytes")
+        return Decoded(head, [], [], [], [], [], dxt, [])
+    head, body = inflate(payload)
+    # block_count is w × h in every terrain tile, smaller in model atlases (a France buildings atlas of 128 x 128
+    # blocks says 14805): only that many blocks carry selectors, and the rest come out zero.
     if w % 4 or h % 4 or head.block_count > w * h:
         raise ValueError(f"unsupported TGU1 size {w}x{h} blocks ({head.block_count})")
 
@@ -327,8 +383,16 @@ def decode_full(payload: bytes) -> Decoded:
         banks.append(bank)
         pos = bank.end
     sel_bank = _Bank(body, pos, has_raw=True, dc_predict=False)
-    if sel_bank.end != len(body):
-        raise ValueError(f"TGU1 body has {len(body) - sel_bank.end} unexpected trailing bytes")
+    end = sel_bank.end
+    alpha_banks = []
+    if alpha:
+        for _ in range(2):
+            alpha_banks.append(_Bank(body, end, has_raw=False, dc_predict=True))
+            end = alpha_banks[-1].end
+        alpha_banks.append(_Bank(body, end, has_raw=True, dc_predict=False))
+        end = alpha_banks[-1].end
+    if end != len(body):
+        raise ValueError(f"TGU1 body has {len(body) - end} unexpected trailing bytes")
 
     tables = color_tables(head.color_quality)
     planes = [[0] * (w * h) for _ in range(6)]
@@ -358,7 +422,8 @@ def decode_full(payload: bytes) -> Decoded:
     raw = iter(sel_bank.raw)
     selectors = []
     scale = head.selector_quality
-    for c0, c1 in ends:
+    count = head.block_count
+    for c0, c1 in ends[:count]:
         if c0 > c1:
             coefs, dc_only = sel_bank.block()
             selectors.append(selector_word(idct_selector(coefs, scale, dc_only)))
@@ -366,14 +431,50 @@ def decode_full(payload: bytes) -> Decoded:
             selectors.append(0)
         else:
             selectors.append(next(raw))
-    for bank in banks + [sel_bank]:
+
+    alpha_ends, alpha_selectors = None, None
+    if alpha:
+        a_planes = [[0] * (w * h) for _ in range(2)]
+        for by in range(0, h, 4):
+            for bx in range(0, w, 4):
+                for p in range(2):
+                    coefs, _ = alpha_banks[p].block()
+                    out = idct_color(coefs, tables[0])
+                    plane = a_planes[p]
+                    for r in range(4):
+                        for c in range(4):
+                            plane[(by + c) * w + bx + r] = out[r * 4 + c]
+        alpha_ends = [alpha_pair(v0, v1, head.version) for v0, v1 in zip(*a_planes)]
+        alpha_selectors = []
+        for a0, a1 in alpha_ends[:count]:
+            if a0 == a1:
+                alpha_selectors.append(0)
+                continue
+            coefs, _ = alpha_banks[2].block()
+            sc = alpha_scale(head.selector_quality, head.version, a0, a1)
+            alpha_selectors.append(alpha_word(idct_selector(coefs, sc, False)))
+
+    for bank in banks + [sel_bank] + alpha_banks:
         bank.check_consumed()
-    dxt = b"".join(struct.pack("<HHI", c0, c1, s) for (c0, c1), s in zip(ends, selectors))
-    return Decoded(head, planes, ends, selectors, toggles, sel_bank.raw, dxt, banks + [sel_bank])
+    zero = bytes(16 if alpha else 8)
+    out_blocks = []
+    for i in range(w * h):
+        if i >= count:
+            out_blocks.append(zero)
+            continue
+        colour = struct.pack("<HHI", ends[i][0], ends[i][1], selectors[i])
+        if alpha:
+            a0, a1 = alpha_ends[i]
+            word = alpha_selectors[i]
+            colour = struct.pack("<BBHI", a0, a1, word & 0xFFFF, word >> 16) + colour
+        out_blocks.append(colour)
+    dxt = b"".join(out_blocks)
+    return Decoded(head, planes, ends, selectors, toggles, sel_bank.raw, dxt, banks + [sel_bank] + alpha_banks,
+                   alpha_ends, alpha_selectors)
 
 
 def decode(payload: bytes) -> bytes:
-    """TGU1 payload -> raw DXT1 blocks (8 bytes per 4x4 block, rows of blocks top to bottom)."""
+    """TGU1 payload -> raw DXT1 or DXT5 blocks (8 or 16 bytes per 4x4 block, rows of blocks top to bottom)."""
     return decode_full(payload).dxt
 
 

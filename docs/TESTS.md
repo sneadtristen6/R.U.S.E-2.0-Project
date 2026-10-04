@@ -485,6 +485,313 @@ campaign isn't all unlocked, and the game's own code opens a chapter only when t
 finished (the first of a list is always open), so a copy put last stays locked until the last chapter is done. He'll
 try a campaign copy himself; cutscenes and dialog may need their own work ("an extended campaign with new scenes").
 
+## T18. Blitz Twin flat to the edge (2026-10-03)
+
+The edge bug from T15b, fixed: flattening kept the map's outermost row of points at their old height (the curtain
+that hangs from the edge, the map's side seen when zoomed out, hung from them), which left a wall of old mountain one
+point thick along the edge (his shots 16:42-16:43: tall striped walls on the skyline). Now the edge moves with the
+ground in all four ground files, the curtain follows it, the water's side (where the sea or a river met the edge)
+folds away under ground raised above the water, and the camera floor's ring past the edge moves with the edge beside
+it. Under a plateau the far mesh also drops its own bumps, so the map is flat from far too (it kept up to 12 m of
+them where the mountains were).
+
+`D:\RUSE-Instances\flat-edge-check` from `D:\ruse-test-mods\newmap-flat-edge` (T15b's two strokes: the whole map flat
+at 31,000, one hill in the middle) plus the cheat mod: 0 errors. Read back: every edge point of the four files at
+31,000, the curtain's top one straight line at 31,001, the water's side folded flat, both trees' checks clean.
+Checked in memory on all 32 maps (`tools/verify_terrain.py --edges`: the whole map flattened, then a hill on one
+edge): the edge and the skirt where they should be on every map.
+1. BATTLES: **Blitz Twin**, 1v1 against one AI. From your HQ, look out to the map's edges ahead, behind, left and
+   right, low over the ground and from higher up.
+   - **Pass:** flat ground right to the edge; no striped walls or rims of mountain along it.
+   - **Fail:** walls or mountain shapes along an edge (as in T15b), or a hole where the edge should be.
+2. Zoom all the way out to the table: its sides all round.
+   - **Pass:** a clean, straight side everywhere.
+   - **Fail:** gaps you can see through, jagged mountain shapes on a side, or a strip of water standing on a side.
+3. Fly the camera to an edge and along it, low.
+   - **Tell us:** whether it climbs over places where mountains used to be (the camera floor keeps its own height
+     above the ground, which was set for the mountains).
+4. As in T15b: the hill in the middle; towns and trees where they were; bridges buried or hanging.
+
+**Result (owner, 2026-10-03, 19:15-19:17): PASSED** ("boom fixed", "The mountains work. That's confirmed."). In his
+words: the bridge "looks completely fine. It's on the same level perfectly"; "even the rocky beach looks pretty okay";
+"the lighthouse is still there". New: where the map went "super flat", the old riverbed (and the old coastal cliffs)
+"looks like shit and has a lot of tearing. Especially when you're approaching it ... not necessarily like once you're
+there and have it loaded in"; "up close, you definitely get some texture issues"; "I feel like you're merging a lot of
+mesh layers". His idea: "just have a limit to how low it can go". Read back, the ground there is flat in both meshes;
+the shipped rock props and stickers there are small and sit on the ground, so they aren't it. Being looked into: the
+close-up ground (`div_map`, the weights the ground blends its detail textures by near the camera) still marks rock
+there.
+
+## T19. An artillery strike added to a mission (2026-10-03)
+
+The first step to scripted strikes in campaigns and Operations ("I definitely want the scripts. To have it fire
+directly on the spot"): before the Studio gets the tool, a strike is added by hand to a shipped mission, the Operation
+**Anzio**, to see that the game runs it. `D:\RUSE-Instances\strike-test` (the cheat mod, plus Anzio changed by a test
+script): four new **M7 Priests** for you beside your HQ, two named spots, and two strikes the mission starts on its
+own, the game's own artillery strike order:
+- about **30 seconds** in: the **first pair** of Priests (the two side by side) both fire at **spot 1**, beyond your
+  AT guns, about 500 m from your HQ ("all the guns");
+- about **60 seconds** in: of the **second pair**, only the Priest nearer **spot 2** fires at it ("the nearest gun
+  only"); spot 2 is beyond your Wolverines, about 500 m from your HQ.
+
+Start `RUSE.exe` inside `D:\RUSE-Instances\strike-test` (Steam running).
+1. OPERATIONS: **Anzio**. Don't give the four Priests any orders; watch them from the start.
+   - **Pass:** at about 0:30 two Priests fire together and the shells land on one place; at about 1:00 one more
+     Priest fires at another place. The mission runs as usual (briefing, objectives, the enemy acting).
+   - **Fail:** a crash while loading or at 0:30 / 1:00, the mission never starting, or the Priests never firing.
+2. **Tell us:** how long they keep firing (one salvo, or until something stops them), whether a Priest drives
+   somewhere first, whether the shells land on one exact spot or spread out, and whether both Priests of the second
+   pair fired. Screenshots welcome (full and zoomed).
+
+**Superseded by T22 (2026-10-03):** T22's four Priests fired a scripted strike in the game ("the priest fire"); this
+copy wasn't run and is removed. Not tested: the nearest-gun-only form (only one gun of the group fires).
+
+## T20. Map Paint on Blitz (2026-10-03)
+
+The Studio's new Map Paint tile paints the ground's picture (Colour and Texture brushes). This is the first look in
+the game: `D:\RUSE-Instances\paint-test` (the cheat mod, plus `D:\ruse-test-mods\paint-test`: 10 strokes, the same
+five spots round each of Blitz's two starting points, so they're by your HQ wherever you start). Read back from the
+copy's own tiles before the test: every spot is there.
+- a **ginormous red patch**, 1 km across, beside your HQ (its near edge about 460 m away);
+- a **blue circle**, 100 m across, close to your HQ;
+- a **soft sand-coloured patch**, about 230 m across, see-through at its edge;
+- a **dark dirt track**, a straight line 400 m long and 20 m wide;
+- a **copied patch**, about 200 m across: the map's own ground from 600 m away laid on it.
+
+Start `RUSE.exe` inside `D:\RUSE-Instances\paint-test` (Steam running).
+1. BATTLES: **Blitz**, 1v1 against one AI. Look at the spots from far (zoomed out) and from close (zoomed right in).
+   - **Pass:** the red patch and the other spots show on the ground from far and from close, with the map's
+     buildings, trees and units on top of them as usual.
+   - **Fail:** a crash while loading, the ground black or striped, or nothing painted.
+2. **Tell us:** up close, is the red still red, or does the map's own ground pattern show through it (the game blends
+   detail textures over the picture near the camera)? Does the copied patch look like ground from elsewhere, blended
+   at its edge? Screenshots welcome (full and zoomed).
+
+**Result (owner, 2026-10-03, 21:55): FAILED up close.** "The same issue as roads did: it doesn't show up close but
+it shows up high." In his two shots, the red patch is where it should be from high up (placed with the shot's own
+camera, it lines up with the red). Low over it, the camera just outside the patch, the red shows only from about the
+middle of the screen on, and its near edge follows field edges. Read back from the copy, every level of both tile
+sets (the close camera's and the far one's) is red at the patch, so the picture isn't what's missing. What Blitz
+places inside the patch: about 263,000 objects drawn only near the camera, mostly crops (`Champs_Bles`,
+`Champs_Verts`), tall grass, bushes, stones and 22,000 ground stickers (`Herbe_verte`, `Herbe_fonce`,
+`Labourage_herbeclaire`, `traces_*`). The likely cover; T21 tests it.
+
+## T21. Map Paint up close: what covers it (2026-10-03)
+
+T20's paint shows from high up but not near the camera, where the map's crops, grass and ground stickers are drawn
+over the ground. This test takes them off under some patches to see which ones hide the paint.
+`D:\RUSE-Instances\paint-close` (the cheat mod, plus `D:\ruse-test-mods\paint-close`, made by
+`D:\ruse-scratch\make_paint_close.py`): three patches in a ring round each of Blitz's starting points, all 460 m
+across and about 960 m from the HQ, each its own colour:
+- **red:** paint only (as T20);
+- **blue:** paint, and the map's **ground stickers** under it taken off;
+- **yellow:** paint, and under it the ground stickers, the **crops, grass, bushes, flowers and stones** taken off.
+Trees, buildings, fences and other props stay under all three; the ground's cover and movement are unchanged.
+Read back from the copy: each patch's colour at its middle on the finest tiles of both sets; under blue 0 stickers
+left (Steam: 3,573 and 3,865), under yellow 0 stickers, 0 low plants, 0 stones; trees, props and buildings as in
+Steam everywhere. The build took off 64,024 objects (the scenery grew 2.1 MB).
+
+Start `RUSE.exe` inside `D:\RUSE-Instances\paint-close` (Steam running).
+1. BATTLES: **Blitz**, 1v1 against one AI. Fly low over each patch, then come down close inside it.
+   - **Pass (the fix found):** a patch stays its colour right up to the camera.
+2. **Tell us**, for each colour: does it stay coloured up close, and what does the ground there look like up close
+   (flat colour, or a pattern showing through)? Anything odd: holes, things floating, the game slower. Screenshots
+   welcome (full and zoomed).
+
+**Result (owner, 2026-10-03, 22:18): yellow wins.** "The red does not work. Same issue as before." "The yellow one
+works fantastic ... it colors everything." "The blue one also works well, but it has a weird, like, fade." Of yellow:
+"It has a weird render. Up close and down. Like it works, but it doesn't work great. Yellow wins." His shots: the
+yellow patch yellow right up to the camera with its trees standing on it; the red patch stopping along a line near
+the camera as in T20. So what hides paint up close is the low cover (ground stickers, crops, grass, bushes, stones);
+taking it off under the paint shows the paint. The lag he had was his PC (another job held the processor at 100%).
+Open: what blue's "fade" and yellow's "weird render" look like (to ask, with a shot).
+
+## T25. Erased town buildings: the ground opened to units (2026-10-03)
+
+The owner's "buildings bug": units still go around where erased buildings stood. Read from Blitz's movement: in its
+towns the ground under almost every building is closed (1,108 of 1,156 in the town by HQ 1), while lone farm
+buildings stand on open ground. `D:\RUSE-Instances\town-open` (the cheat mod, plus `D:\ruse-test-mods\town-open`,
+made by `D:\ruse-scratch\make_town_open.py`): in the town nearest each starting point, two spots 120 m across, about
+300 to 500 m from the HQ and 190 m apart. At both, everything but the trees is taken off (buildings, props, ground
+stickers, crops, grass, stones: 914 building pieces in all) and the ground is painted, the low cover gone so the paint
+shows up close:
+- **red:** the movement left as it is, as the build does today;
+- **blue:** the ground opened to all units (`[[open]]`) over the same circle.
+Read back from the copy: at the blue spots the ground units can stand on went from 31-36% to 100% (vehicles and
+infantry); at the red spots it stays 23-25%, as in Steam.
+
+Start `RUSE.exe` inside `D:\RUSE-Instances\town-open` (Steam running).
+1. BATTLES: **Blitz**, 1v1 against one AI. Take a tank and an infantry squad to the town. Order each to the middle of
+   the red spot, then to the middle of the blue spot, then straight across each.
+   - **Pass (the fix found):** at blue they drive in and across where the houses stood; at red they stop short or
+     go around the old houses' places.
+   - **Fail:** blue acts like red, or a crash on an order.
+2. **Tell us** anything odd: units stuck, odd paths, the town's capture or the game slower.
+
+**Result (owner, 2026-10-04, ~00:26): PASSED.** "The blue one works. The red one acts like buildings. Blue one, it's
+completely gone, but there's still trees visible. The infantry doesn't go into ... hiding mode or anything, so ...
+the blue one is for sure good. This works." Both spots' paint showed up close at every height ("the paint works
+perfectly"). So opening the ground where erased town buildings stood lets units through, and infantry there no
+longer act as in a town. Also seen: the BATTLES menu showed Blitz as 3 players with four seats. Not our build: the
+cheat mod in every test copy (Dev_Toolkit_V1.rmod) sets Blitz's entry to 3 players with 3-team and free-for-all
+layouts on purpose ("Blitz gets a spectator slot"); Steam's says 2.
+
+## T26. The flattened riverbed up close (2026-10-03)
+
+T18's "tearing" where Blitz Twin's old riverbed was flattened, "especially when you're approaching it". In his shot
+19:16:22 the near part of the riverbed (about 210 m from the camera) looks like jagged rock and the far part (about
+630 m) a smooth brown band: the river's steep banks are painted into the ground's picture with their light and
+shadow (seen 2026-10-03), and up close the finest picture and the low cover take over. Two possible fixes, side by
+side. `D:\RUSE-Instances\river-repaint` (the cheat mod, plus `D:\ruse-test-mods\river-repaint`, made by
+`D:\ruse-scratch\make_river_repaint.py`): Blitz Twin flattened as in T18, and four stretches of the old riverbed near
+each starting point (300 to 660 m from the HQ), each 120 m across, with a disc 30 m across painted on the bank beside
+it:
+- **red disc:** the stretch repainted with the map's own ground from a dry field 200 m away (Map Paint's Texture:
+  the picture and the close-up ground map);
+- **blue disc:** the stretch's low cover taken off (ground stickers, props, crops, grass, bushes, stones; the trees
+  stay);
+- **yellow disc:** both;
+- **white disc:** nothing changed (as T18).
+All eight stretches were checked in the map's own picture first: each is the same painted rocky river as the one in
+his shot. Read back from the copy: the repainted stretches hold the field's picture and close-up values (within the
+texture blocks' rounding, up to 9 of 255), the cleared ones hold no stickers, props, low plants or stones (trees as in
+Steam), the others are Steam's, and each disc has its colour.
+
+Start `RUSE.exe` inside `D:\RUSE-Instances\river-repaint` (Steam running).
+1. BATTLES: **Blitz Twin**, 1v1 against one AI. Find the four discs on the river banks near your HQ. At each, fly
+   low along the old riverbed beside it, approaching from far, then stop close over it.
+   - **Pass:** the white stretch tears as in T18 and at least one of the others doesn't: that colour is the fix.
+2. **Tell us**, for each colour: does it still tear when approaching, and how it looks once you're close.
+
+**First look (owner, 2026-10-04, 00:04-00:06): "better and worse"; the yellow stretch is fixed.** "At some angles,
+but then other angles, it's doing that tearing thing. Still, it's still very much there ... this is atrocious right
+here ... a road pops through ... The bridge still appears here." His shots, placed with each shot's own camera (the
+discs land where they show, so the placing is right):
+- 00:05:16, the **yellow** stretch (repainted and cleared), 227 m away: smooth light ground inside the stretch's
+  circle; the jagged rock starts again right past both of its ends. The owner, shown it marked: this is "the road
+  popping through ... that's the river it's following": the repainted riverbed reads as a light road between the
+  tree rows. The rock is gone there, but a copied field in a 120 m circle doesn't blend.
+- The test's wording didn't work: "What blue stretch? ... there's no blue stretch". Only the discs are coloured; the
+  river beside each disc is what changed. A next test marks the changed river itself.
+- 00:05:58, the **blue** stretch (cleared), 172 m away: a smooth brown riverbed there, but the smooth part runs past
+  the circle too, so this shot alone doesn't settle blue. To ask.
+- 00:05:44, the **white** stretch (unchanged), 125 m away: jagged 3D rock, as T18.
+- 00:04:48-00:05:00 and 00:05:31-:33 (the two bridges): river parts no stretch touches: unchanged.
+Up close the old riverbed is 3D rock (lumps, spikes, flat walls with stretched texture), not a flat picture. The
+types most tied to Blitz's rivers are ground stickers of the "AutoBuild" kind: `Stickers_France_AutoBuild_Rocher_
+parallaxe_off_03` (832 of its 833 by a river), `..._sable_7`, `..._roche_6`, `..._roche_2`, `..._terre_5`,
+`..._herbroche_8/9`. Likely: stickers shaped to the old banks, standing up on the flat ground (to confirm with blue).
+The discs: on this map they show up close only in part (cut in field shapes), unlike T25's town spots: the big crop
+patches whose middles lie outside a 30 m disc still cover it, since an erase takes an object by where its middle is.
+
+**After (2026-10-04): the rock isn't objects** (wrong: see T27's result; it's the river's bank stickers). Where he saw the worst of it (the white stretch; under both bridges,
+placed with each shot's camera), the riverbed holds what any dry field holds within 40 m: crops, bushes, a few stones,
+the road's edge stickers; none of the river's AutoBuild stickers, no rock props (`D:\ruse-scratch\rock_spots.py`). The
+river's stickers lie flat (none leans). The build already rebuilds the mesh's underwater triangles when ground moves
+(`Tms._water_lists`; FORMATS' "not rebuilt" was stale). Left: the ground's two pictures, both made for the old gorge:
+the picture (the tile sets, its steep banks painted with their light and shadow) and the close-up ground map
+(`div_map`). The yellow stretch had both replaced. T27 separates them.
+
+## T27. The flattened riverbed: picture or close-up map? (2026-10-04)
+
+`D:\RUSE-Instances\river-layers` (the cheat mod, plus `D:\ruse-test-mods\river-layers`, made by
+`D:\ruse-scratch\make_river_layers.py`, then `river_layers_post.py` on the copy): Blitz Twin flattened as in T18,
+and four pieces of the old riverbed near each starting point (300 to 900 m from the HQ). Each piece is a square
+120 m across lined up with the river, **inside a painted frame of its colour** (lines 6 m wide, 30 m outside the
+piece). Each piece gets the map's own ground from a dry field 200 m away:
+- **red frame:** in the close-up ground map only (the picture as it was);
+- **blue frame:** in the picture only (the close-up map as it was);
+- **yellow frame:** in both (as T26's yellow stretch, without its clearing);
+- **white frame:** nothing.
+The frames are Map Paint lines with the new clearing (stickers, low plants and stones taken off by how far each
+reaches): its first test up close. Read back from the copy: each piece holds exactly its layers (red: the picture
+untouched, the close-up values the field's; blue the reverse; yellow both; within the texture blocks' rounding, up
+to 11 of 255); all 32 frame lines their colour, and nothing that could hide them left reaching onto them. The build
+took off 13,479 objects under the frames.
+
+Start `RUSE.exe` inside `D:\RUSE-Instances\river-layers` (Steam running).
+1. BATTLES: **Blitz Twin**, 1v1 against one AI. Find the four frames on the river near your HQ. At each, fly in low
+   from far, then stop close over the river inside the frame.
+   - **Tell us**, for each colour: is the jagged rock still there up close inside the frame? The white one should
+     have it, as T18.
+   - **And:** do the frames show at every height, close up included?
+
+**Result (owner, 2026-10-04, 01:19-01:20): no layer fixes it.** "Red's a complete fail." Yellow "is very close up high
+but once you get down low it looks like a bunch of rock ... maybe if that was like a combination of the two and
+blended in it wouldn't look that bad ... it looks really bad up close." Blue "looks good up [high] ... is it supposed to
+show a road? But then up close, it looks shit." "White looks bad up front, too." His shots 01:19:34 to 01:20:35 (the
+three before them, 01:17:51 to 01:18:06, are of another map: their map Id differs). Read after:
+- **The rock is the river's bank stickers, not the ground's pictures.** The copy's mesh at the pieces is flat at
+  31,000, every normal straight up, no water triangles. What reaches over the middle of all three river pieces (by
+  each object's full size) and not over a dry field: 2-3 of `Stickers_France_AutoBuild_Rocher_parallaxe_off_03`, the
+  river's rock sticker (30 m square; class `STICKERS_AutoBuild/France`; a rock picture with strata and a bump map,
+  drawn up close only). T26's yellow stretch, the one place the rock went, also had its stickers taken off; T27's
+  yellow had the same two pictures without that. So T26's "After: the rock isn't objects" was wrong: that check counted
+  objects by where their middle is, within 40 m, at spots placed from his shots.
+- **Blue's road:** the dry field the blue piece's picture was copied from has a road through it (34 asphalt pieces and
+  dirt tracks in its 120 m square): the copy brought it.
+- The frames (Map Paint lines with the new clearing): his shots show them from about 50 to 540 m up; whether they
+  hold right down close is to ask.
+
+## T28. The flattened riverbed: bank stickers off, ground mended from both banks (2026-10-04)
+
+The fix T27 points to, in two parts, side by side. `D:\RUSE-Instances\river-mend` (the cheat mod, plus
+`D:\ruse-test-mods\river-mend`, made by `D:\ruse-scratch\make_river_mend.py`, then `river_mend_post.py` on the copy):
+Blitz Twin flattened as in T18, and three pieces of the old riverbed near each starting point, at the spots of T27's
+frames (500 to 750 m from the HQ). Each piece is a square 160 m across lined up with the river, marked by **four
+corner marks of its colour** (6 m wide, 30 m long, 12 m outside the square, on the banks: no mark crosses the river,
+so none clears it). The old riverbed in each square (the old ground's hollows, `rusemod.mend.Gorge`: deeper than its
+banks by more than 1.5 m, plus 4 m round for the painted rims) gets:
+- **orange:** the river's bank stickers taken off: those of the `STICKERS_AutoBuild` classes reaching into it (17
+  and 15, every one the rock sticker). Nothing else: its pictures are the old river's.
+- **green:** those taken off (21 each: 15 and 16 rock stickers, the rest bank stickers of tracks and grass), and the
+  riverbed's picture (both tile sets, every level) and close-up map
+  **mended from both banks** (`rusemod.mend`): each side of the bed takes the ground beyond its own bank, moved
+  across by the bed's width, mirrored only within 6 m of the bank so its edge meets its own ground, the two sides
+  cross-fading through the middle (the owner, T27: "a combination of the two and blended in").
+- **purple:** all the low cover reaching into it taken off (every ground sticker, low plant and stone: 401 and 1,660;
+  T26's yellow had that), and mended as green.
+The river outside each square is as it was: the "before", right beside it. Read back from the copy: at orange and
+green no bank sticker reaches into the riverbed any more, at purple nothing low; green and purple's pictures differ
+from Steam's by more than 12 of 255 at 78 to 83% of the riverbed's sample points (a mended point can land near the
+old value) and the close-up map at 79 to 88%, orange's at none; of the dry ground in the squares, 2 to 4 points changed at each mended piece, every one
+within 1.5 m of the mended bed (re-encoded with it in one 4x4 block of the picture), none at orange; every mark its
+colour. Seen from above (`D:\ruse-scratch\shots\t28_*`): the mended beds take the fields round them and their tracks;
+some of Steam's own painted boulders lie on the banks just outside.
+
+Start `RUSE.exe` inside `D:\RUSE-Instances\river-mend` (Steam running).
+1. BATTLES: **Blitz Twin**, 1v1 against one AI. Find the three marked pieces near your HQ (orange where T27's blue
+   frame was, green where yellow was, purple where white was). At each, fly in low from far, then stop close over
+   the riverbed inside the marks.
+   - **Tell us**, for each colour: is the jagged rock gone up close? How does the ground there look, high and close:
+     like the fields round it, a road, odd patterns?
+   - **Pass (the fix):** green (or purple) has no rock up close and looks like part of the fields from every height.
+     Orange tells whether the stickers alone take the rock away.
+
+**Result (owner, 2026-10-04, ~02:15): purple wins.** "It's looking like the purple test wins. I like some of the idea of
+the darker riverbed, but I think it's just better to make it look like grass when it's super, super flat." So where
+ground edits fill a hollow flat, the build takes off all the low cover reaching into it and mends its pictures (to
+build; started, see below).
+
+**A bug he caught (same shots, 02:13-02:15, the map view):** "The brighter white road set is just not there. And it's
+not aligned with the actual roads ... When you zoom in, the darker, dirt roads that are more tan are like the actual
+roads." Read after: the white roads seen from high up are the map's road model (`output\staticmeshes.spkpc`, model
+`road`), which holds the ground's height at every vertex; the build raised the ground 27 to 54 m and left the model at
+the old heights. The model's middle line projected with shot 02:15:17's own camera lies on the white roads at its
+stored heights and on the tan painted roads at the new ground's (`D:\ruse-scratch\road_project.py`, marked crop
+`D:\ruse-scratch\shots\021517_roads_a.png`). **Fixed in the build (local, not seen in the game yet):** a terrain edit
+moves the road model's vertices with the close-up mesh (`terrain_edit._reseat_roads`, `roadstrips.StaticMeshes.
+with_heights`), each part's box made again as all 4,701 shipped parts have it (its vertices' bounds, the top 10 higher)
+and the model's box as all 33 shipped models (its parts' and the corner 0, 0, 0). Tests: test_roadstrips (moved and
+moved back gives the very bytes), test_terrain_edit (moves by the mesh's change under each vertex).
+
+**Where it stopped (paused by the owner, 2026-10-04):** wiring purple into the build. Timed on Blitz: the old hollows
+over the whole map 18 s (11.8% of it); mend_tiles over a 1 km square of the finest level 79 s, so a whole flattened
+map would take tens of minutes as it is. Next: work out each pixel's sources on the 2.5 m hollow grid and sample the
+fine picture through them (keeps the fields' grain), then the build step (filled = an old hollow the new ground no
+longer has; low cover reaching into it off by size; mend both tile sets and the close-up map), then one test copy
+with the road model fix.
+
 ## T22. A mission of our own, in its own folder (2026-10-03)
 
 The first step to scripted Operations and campaign missions with their own end goals (PLAN §12 idea 5; the owner:
@@ -521,6 +828,421 @@ whole time). Still open:
 - Goal 1 came up as a **BONUS OBJECTIVE**, goal 2 as a NEW OBJECTIVE. Goal 1's label is drawn at a spot (style 1, as
   the game's spot-marked goals are), goal 2's over a group (style 12, as Anzio's main goal): which setting makes a
   goal a main one isn't known yet.
+
+## T23. Three US tanks repainted: does the game take a unit texture we wrote? (2026-10-03)
+
+The first step to changing how units look (PLAN §14 idea 6; China's units are repaints of borrowed models). Three
+US tank textures are changed in `D:\RUSE-Instances\unit-paint` (from `D:\ruse-test-mods\unit-paint`, plus the cheat
+mod; US ground units 3 times as fast), by a test build outside the apps: 0 errors. Each texture is written the way
+the game stores its own small texture levels (blocks as they are, every level), and its small stand-in the same way.
+Checked on the copy itself: all 24,058 files in its `ZZ_Win.dat`, 24,051 the game's byte for byte and the 7 changed
+ones exactly as made; in each changed texture, the part that should stay the same is the game's byte for byte.
+
+| Tank | Built in | What was changed |
+|---|---|---|
+| M4 Sherman | Armor Base | its colour turned red (each colour's brightness kept, so its pattern and shading stay) |
+| M3A1 Stuart | Armor Base | its alpha set to 0 everywhere (colour unchanged) |
+| M10 Wolverine | Anti-Tank Base | its alpha set to 255 everywhere (colour unchanged) |
+
+Play a skirmish as the **US** against an AI of **Germany** (not the US or the UK: their tanks could share these
+pictures), any map. Build one of each, look at each one up close beside any other US tank (unchanged), then zoom
+out slowly. If one of the three isn't in its base's menu, say which: the other two still answer most of it.
+- **Pass (step 1):** the Sherman is red. That proves the game takes a unit texture we wrote.
+- **Tell us (step 2):** how the Stuart and the Wolverine differ from a normal tank: the star and other markings,
+  shine, darker or lighter, and the player colour (up close and from far out). This tells us what the alpha does.
+- **Fail:** a crash or an invisible tank (say when), or all three look normal.
+
+**First try (owner, 2026-10-03, 22:46): the game crashed when a tank was built.** Our fault, in the small stand-ins:
+the game's are flagged as raw blocks (flag 0, all 2,822 of them), ours were written with flag 1 (a codec tag first),
+so the game read the Stuart's blocks as a codec header and copied a nonsense size. Rebuilt with each stand-in changed
+in place (every byte outside its blocks the game's, flag 0 kept); the full textures were right (flag 1, as all
+3,831 of the game's). Checked again on the rebuilt copy: all 24,058 files, 24,051 the game's byte for byte, the 7
+changed ones exactly as made, the stand-ins' flag 0. A test now guards the flag (`test_tmst`).
+
+**Result (owner, 2026-10-03, 22:56-22:58): PASSED, no crash.** The game takes a unit texture we wrote: "The
+Sherman's the answer. It's completely red at all levels", up close and as the zoomed-out piece. What he saw:
+- **Sherman (colour red):** red everywhere, "except there's a little visual bug with it. When you zoom in really,
+  really, really close, there's like a blue line" (his crops 22:57:47 and :53: blue stripes across the hull).
+- **Wolverine (alpha 255):** "Is the Wolverine supposed to be white? ... I think that could be the sun ... it's
+  only at certain angles" (crops 22:57:12 and :16).
+- **Stuart (alpha 0):** no blue-line issue up close; "the Stuart doesn't load up high", and "at high distances,
+  nothing" (crops 22:58:18 and :23 up close, 22:58:29 the zoomed-out pieces).
+What it points to (to confirm with the owner): a vehicle's alpha is the side colour where it's low (the Stuart
+up close in his crops looks all in his blue) and shine where it's high (the Wolverine white in the sun). The
+Sherman's blue lines would then be the game's own: its alpha (kept byte for byte) is black in two stripes; the red
+only makes them stand out. The side colour seems to apply only up close; the paint shows at every distance.
+
+## T24. Formations on keys (2026-10-03)
+
+The first step to formations (PLAN §14 idea 7, a mod until RUSE 2.0). `D:\RUSE-Instances\formation-test` (the cheat
+mod, plus `D:\ruse-test-mods\formation-test\formations-test.rmod`): 0 errors, one warning (it changes one of the
+game's scripts, the one that turns clicks into orders; the game's own script is kept inside it, unchanged, and the
+mod's code runs after it). Checked on the copy: of the 140 scripts in its pack, 139 are the game's byte for byte and
+the changed one is exactly as built; the shapes were checked outside the game (each unit gets one order, the selection
+comes back). Keys: **1** V, **2** square, **3** line, **4** column, **5** circle, **0** the game's own formation.
+
+Skirmish, any map. Make about six tanks and select them all.
+1. Press **1**, right-click open ground well away from them. Then **2**, **3**, **4**, **5**, each with a right-click.
+   - **Pass:** they end in a V (point towards where they drove), a square of two rows, a line across their way, a
+     column, a ring.
+2. (Dropped in test 0.2: a drag's release never reaches the scripts. The game's own drag stays on **0**.)
+3. Press **0**, then right-click and right-drag as usual.
+   - **Pass:** the game's own behaviour, its rectangle included.
+4. With a shape picked, right-click an enemy unit or building.
+   - **Pass:** they attack it as normal.
+- **Tell us:** whether a number key also does something else in the game; whether the game's own rectangle shows up
+  when a shape is picked; how it looks when the faster units arrive first.
+- **Fail:** right-click does nothing with a shape picked (press 0 to get normal orders back), units go to wrong
+  places, or a crash. The game writes `formation_log.txt` in the copy's folder for us.
+
+**First build (owner, 2026-10-03, 22:52): crashed after the lobby.** The crash report holds the game's own Python
+error: "NotImplementedError: exec statement". The game's Python has `exec` turned off, and the first build ran the
+game's script through it. Rebuilt the same night without it: one script made of the game's own code, unchanged, then
+the mod's; every Python operation and built-in it uses also appears in the game's own 245 scripts. 0 errors; the copy
+checked again (139 of 140 scripts the game's byte for byte, the changed one exactly as built).
+
+**Second build (owner, 2026-10-03, ~23:00): loads; keys reach the mod; orders stuck.** After 1-5, right-click sent no
+order at all; **0** gave orders back (confirmed). Cause: the game calls a button's release through a table it fills
+once when the input class is made, so the mod's release code never ran and every click waited for it. In his words,
+the game's own formation "goes nine wide and then goes back" (his shots 23:00-23:01): rows of nine as the game's data
+says (rows up to 200 m, 25 m apart). Third build the same night: the release goes into that table too, a click whose
+release never comes is dropped at the next click, and the outside-the-game check now clicks through the game's own
+button code. 0 errors; 139 of 140 scripts the game's byte for byte, the changed one exactly as built. No sign on
+screen yet when a key picks a shape.
+
+**Third build (owner, 2026-10-03, ~23:07-23:09): orders go out, no shapes; a drag sends nothing.** His shots: the
+group in a loose cluster after **1**, a fan of order arrows (several orders, each to the whole group), units "having an
+aneurysm". Cause: the game's order goes to what the selection object gives back (its `selection` list); setting the
+selection the way the game's own fast-strike button does only lands a frame later, so every one-unit order went to
+the whole group. A drag: the release never reaches the scripts (the game's own drag takes it), so nothing was sent.
+Fourth build (test 0.2) the same night: each unit's order is given with the selection list pointed at that unit alone,
+then the real list put back; the shape is placed on the click (no drag in a shape: the game's own drag stays on 0);
+15 m between units (25 m made a V of 30 tanks some 375 m a side). 0 errors; the copy checked as before.
+
+**Test 0.2 (owner, 2026-10-03, 23:15-23:17): the shapes WORK** ("it seems like all the formations are working",
+"seems to be working pretty well"; his shots of 1-5 with about ten Stuarts: a V, two rows of five, a line, a
+column, a ring). To fix, in his words: it isn't "taking into account how many units are there ... to keep the
+formation even" (the V's arms came out uneven), and nothing shows which shape is picked. Test 0.3 the same night: a
+V's arms are always the same length (an even count puts two at the point); a square takes full rows whenever the
+count allows (9 = 3 x 3, 10 = 2 x 5, 12 = 3 x 4), a short last row centred; a ring's neighbours 25 m apart (at 15 m
+ten tanks made a lump); the HUD's message line says "Formation: V (0: off)" while a shape is picked (the line the
+game's own placing messages use), cleared on 0. Checked outside the game for every shape and every count from 1 to
+40. 0 errors; the copy checked as before.
+
+**Test 0.3 (owner, 2026-10-03, 23:22-23:24): PASSED** ("V formation with an odd number. V formation with an even
+number ... Much better. Okay, formations work"; his shots: an even V, the square, the line, a wider ring; of the label:
+"It's coming up"). His word: push it to the mod list. Packed as Formations 0.3.0 (`D:\ruse-test-mods\formations-mod`,
+the script byte for byte the one tested), checked and built from the package: 0 errors, the script warning.
+
+## T27. Paint a unit in Blender from the Studio, and see it in the game (2026-10-03)
+
+The Blender bridge, step 2 (PLAN §14 idea 6), in the Studio run from the project folder (not released yet). A unit's
+page has a new box, **3D model and paint**: *Open in Blender* opens the unit textured in Blender; *Bring back* puts
+what was painted and saved there into the mod; *Test in game* then shows it. When Blender isn't found, the box offers
+*Get Blender (free)* (blender.org) and *Choose Blender…*. Checked before handing over, without the window: the whole
+loop on the T-26 (Blender's own save of a painted picture, Bring back, then a full build on the game's files: only
+the painted blocks encoded again, the stand-in in its 3 packs, 0 errors); the box's buttons in the preview window.
+
+1. Start the Studio from the project folder (the command in the reply), pick or make a mod.
+2. Open a unit you can build and see easily (the M4 Sherman, US Armor Base), find **3D model and paint**.
+3. *Open in Blender*. In Blender: the **Texture Paint** tab, paint something big and bright on the tank, then
+   **Image > Save** (Alt+S). Close Blender.
+4. Back in the Studio: *Bring back* (it should say it brought back 1 picture), then *Test in game*.
+5. In the game, build that unit.
+- **Pass:** the unit wears what you painted, up close and zoomed out.
+- **Tell us:** which step didn't work and what it said, or anything that looked wrong (Blender, the Studio box,
+  the unit in the game).
+
+**First go (2026-10-04, his words and shots):** the box was there and Blender opened the P-51 Mustang textured, but
+"The model isn't in studio though. I want to be able to see an example of the model" (on the page's empty right
+side); the Mustang "loaded in super weirdly" (a flat square through its nose: the propeller disc, which the game draws
+with a shader of its own over the whole picture); and he couldn't find where to save ("I am not seeing top left where
+you save"). Changed the same day, before he tries again:
+- the unit's page shows its model on the right, turning, drag to turn and scroll to zoom, with the mod's paint on it
+  once brought back (checked in the preview window with the real Mustang and T-26);
+- propeller discs are a hidden piece of their own, in Blender and the Studio;
+- no saving step: Blender opens in Texture Paint with a hint written on the view; Bring back asks it to save; Ctrl+S
+  and a **Save paint (Ctrl+S)** button at the top left save too, and it saves on its own every 10 seconds. Checked
+  in Blender's window: Ctrl+S saved (no file dialog), the Studio's ask was answered in 0.2 to 0.6 s, and Bring back
+  took the picture.
+- Not a bug: the Mustang's page is `Descriptor_Avion_Junkers_87_GR` in the game's own data (an old name; its text is
+  P51 MUSTANG and its model the Mustang's).
+
+**Second go, steps now:** 1 and 2 as above (the page shows the model on the right); 3. *Open in Blender*, paint on
+the tank with the left mouse button (the colour: the first colour square at the top); 4. back in the Studio, *Bring
+back* (Blender can stay open; the model on the page changes to your paint), then *Test in game*; 5. build the unit.
+
+**Second go (2026-10-04, 01:00):** "So far, everything's worked with the studio and Blender": the Sherman showed on
+its page, he painted it (teal, blue, green and black on the hull, green on the tracks), Bring back took both pictures.
+Then two crashes:
+- **The Studio's copy (01:04)** stopped itself when the map loaded. Not the paint: the game's own error text names the
+  fair play watcher, another session's unfinished work that the Studio run from the project folder put in the copy.
+  That session keeps its scripts out of every build now.
+- **A paint-only copy without the watcher (`paint-check`, 01:08)** crashed with a memory fault, in a thread with none
+  of the game's own code on its stack (so the dump doesn't show what the game was doing). What this copy did that
+  T23's never did: the Sherman's track stand-in shares its picture with the Firefly's, the Calliope's and the
+  flamethrower Sherman's. In 2 packs the build gave it its own copy (the pack grew by 1,064 bytes; T23's packs all
+  kept their size), and in the other 2 it painted it in place, so the Calliope's and the flamethrower's far-off tracks
+  changed too (a real bug either way). The leading suspect, not proven.
+- **Fixed:** a shared stand-in is now left as the game has it (only that texture's far-off look keeps the old
+  colours). `paint-check-2` (same paint, no watcher): every stand-in pack keeps the game's size, and its only changed
+  bytes are the hull stand-in's (1,130 in each of 4 packs).
+
+**PASSED (2026-10-04, 01:18), `paint-check-2`.** In his words: "It normally would fail when I hit launch game just to
+start loading in, so I haven't made it this far yet ... yep sweet works like a charm." His shots: the Sherman built
+from the Armor Base wears the paint (teal turret, green tracks, blue on the hull), up close and from higher up. Both
+crashes came as the game started loading the map, which fits the grown stand-in packs for the second one (still not
+proven). Left over: the build menu's card still shows the game's picture of the Sherman
+(`ww2/res2d/texanimationuniticone/eu/m4_sherman.png`, the unit's `TextureForInterface`: 360 x 184, DXT1, one level,
+ZIPO-packed, like the ground tiles we already write). Copy recycled.
+
+## T31. A unit's build-menu card made in the Studio (2026-10-04)
+
+The owner, after T27: "the only thing is changing what it looks like in the factory now"; his go for the Studio way:
+"It just takes a screenshot of the model at whatever angle they want ... Add it to the Studio." A unit's page now
+has a dashed **Card** frame on its 3D view and, under it, the card now (a thumbnail), **Use this view as the card**
+and **Game's card**. The button takes what's inside the frame at the card's own size (360 x 184 for the Sherman),
+with the mod's paint, over a backdrop like the game's cards, into the mod (`files/replace/<card>.tgv.png`); the build
+writes it the way the game stores all 450 of its cards (one DXT1_LIN level, ZIPO). Checked before handing over, on
+the real game: the Studio found the Sherman's card and saved a capture of his painted Sherman; the build (0 errors,
+32 s) wrote it; read back from the copy, the header and format are the game's and the picture matches the capture
+(mean difference 3.5 of 255, DXT1's rounding). `D:\RUSE-Instances\card-check`: his Sherman paint plus that card, no
+fair play watcher.
+
+1. Start `card-check` (Steam running), a skirmish as the US.
+2. Open the Armor Base's build menu and point at the Sherman.
+- **Pass:** the Sherman's card is the green-and-teal Sherman on a hazy sky and sandy ground.
+- **Tell us:** a crash (and when), the old card, or a broken picture (stripes, wrong colours).
+
+**Run 1 (2026-10-04, 01:51): the old card.** His shots: the painted Sherman placed from the Armor Base (so this copy),
+the game's own card in its build menu. Cause, found in the files: the game's cards are also inside the menu packs,
+archives of their own inside ZZ_Win.dat (`gen\pack\menuus.ppk`, 62 US cards; `outgame.ppk`, 273; one per nation, and
+a few more: 64 nested packs, 13 with cards), each with an identical copy of the card; only the loose `.tgv` had been
+replaced. The build now replaces a changed card in every nested pack that holds a copy (all 64 rebuild byte for byte).
+`card-check` recycled. **Run 2:** `D:\RUSE-Instances\card-check-2` (same paint and card): 0 errors, 36 s; the card
+replaced in `menuus.ppk` and `outgame.ppk` too, identical to the loose one there, every other member of both packs
+the game's byte for byte.
+
+**PASSED (2026-10-04, 02:01), run 2.** In his words: "worked". His shot: the Armor Base's build menu shows the
+Sherman's card as the green-and-teal Sherman from the Studio's 3D view (under the game's blue tint while it's being
+researched). Copy recycled.
+
+## T32. Does the game draw a model shape we wrote? (2026-10-04)
+
+The owner, on "the game may not accept a model it didn't ship with until we test it": "TEST". The first step of new
+models (PLAN M7): the M4 Sherman's model reshaped and written back into the four model packs that hold it (the
+all-units pack, the US skirmish one, the US one with boats, the level-design one): everything above the tracks 1.8
+times taller (hull top, turret, gun; the box in its name record from 772 to 1,150), the wheels and tracks as they are
+(they turn round their own axles), its three vertex buffers stored plain (the game's own level-design pack already
+stores two of them plain). Checked before handing over: in each pack, every other model, buffer and material is the
+game's byte for byte, and the Sherman reads back with the new shape (6,842 vertices, 3,278 stretched); read back from
+the copy too. A side-by-side render, game's and ours: `D:\ruse-scratch\look\sherman_pair.png`. The copy also has the
+T27 paint and the T31 card, so it's easy to spot. `D:\RUSE-Instances\model-check` (no fair play scripts).
+
+1. Start `model-check` (Steam running), a skirmish as the US, build a Sherman (Armor Base).
+- **Pass:** a tall Sherman (turret and hull top stretched up, wheels and tracks normal) with the paint, drawn up
+  close and zoomed out; it drives, turns its turret and fires.
+- **Tell us:** a crash (and when), an invisible or broken tank (spikes, holes, a normal-height Sherman), or anything
+  odd when it moves or fires.
+
+**Run 1 (2026-10-04, 02:17): crashed when he started building the Armor Base** ("broke once i went to build armor
+base"). The dump: a model in the world asked for its size and had no model behind it (a null mesh). So a model of
+one of the rewritten packs didn't load, before any Sherman was built. The packs had grown (the plain buffers: +173 KB
+each); every change that has worked in the game kept the packs' sizes, and the one other time US model packs were
+rebuilt bigger (2026-10-01, other nations' models copied in) the game also crashed at a factory placement. `model-check`
+recycled.
+**Run 2:** the same question with no size change: the whole Sherman 1.6 times taller (from the ground up), done by
+patching the stored z range of its packed position streams (the floats are stored literals, so the streams keep
+their size; each decoded and compared) and the z of its two plain buffers, and its box; every pack the game's size,
+only those bytes changed (24 in each US pack, 3,260 in the level-design one). Wheels are stretched too, so they may
+look odd turning. `D:\RUSE-Instances\model-check-2`.
+First go (02:27): the game froze ("just stopped responding no crash"); its dump is a copy into memory it never got
+(a write at 0x2aaaa0), with no game code named. Windows had 1.6 GB of memory left to give out right after (C: had 2.3
+GB free, so the page file couldn't grow, and four leftover memory-plugin servers held 6.4 GB): the PC, not the model.
+**PASSED (2026-10-04), second go.** The tall Sherman is built and drawn ("This isn't a normal Sherman, right?
+... it looks like a [Stuart] almost"). **The game draws a model shape we wrote**, when the packs keep their size. As
+built, it replaces the Sherman (no second unit): the owner wants both, a new unit with its own model. That needs a new
+model in the packs, so they grow: the run 1 crash. Next: why a grown pack loses a model.
+**Why run 1 crashed (found the same night):** each mesh and texture stand-in pack carries a 16-byte id at 0x10, the
+MD5 of its bytes 0x00-0x0F and 0x20-0x2F (magic, version, file size, the places of the two parts the game reads). The
+game checks it when it opens a pack and leaves out a pack whose id doesn't match. All 156 such packs the game ships
+match; run 1's four grown packs kept their old ids, so none matched, and every model in them was missing. Our pack
+writer (`rusemod.unitpacks`) now always writes the id (`header_id`); the 156 game packs still write back byte for byte.
+`model-check-2` recycled.
+
+## T33. Two Shermans: a new unit with its own model (2026-10-04)
+
+The owner: "I want to have both Sherman". The game's M4 Sherman, unchanged, AND a second unit, **Tall Sherman**: a
+clone of the Sherman (its own id 4059, menu place 306, its name, its class in the game's unit list) whose model is a
+new one, `us_m4_sherman\coc_shermanm4tall_tirlod0`: the Sherman 1.6 times taller (T32 run 2's shape, which the game
+drew). The new model is ADDED beside the Sherman's in its four mesh packs (they grow 48 to 77 KB, with the right ids),
+and its name in the two skeleton packs (the Sherman's skeleton, shared). Checked before handing over: every game model
+in those packs byte for byte as it was; the new one's vertices read back 1.6 times taller with everything else the
+Sherman's; read back from the copy; the Tall Sherman's model link names the new model and the Sherman's the game's.
+Plus the cheat mod. Mod: `D:\ruse-test-mods\two-shermans`; builder: private `testcopy\build_two_shermans.py`.
+`D:\RUSE-Instances\two-shermans`.
+
+1. Skirmish as the US, build the Armor Base.
+- **Pass:** the build menu has both the M4 Sherman and the Tall Sherman (with the Sherman's card for now); the
+  Sherman builds normal height, the Tall Sherman tall; both drive, turn their turrets and fire.
+- **Tell us:** a crash (and when), a missing or invisible one, or both looking the same.
+
+**PASSED (2026-10-04, 03:09-03:12).** The owner: "MADE TWO UNITS". His shots: the Armor Base menu lists SHERMAN and
+Tall Sherman (at $25 before the upgrade, $1 after with the cheat mod); both built and standing side by side, the Tall
+Sherman visibly taller. So packs that grow load when their ids are right, a model added under a new name is drawn,
+and a cloned unit can name it. His UI bug: **both have the same picture** in the menu (the clone shares the Sherman's
+card); a new unit needs its own. (Also seen, not raised: the new name is mixed case where the game's are capitals;
+before the upgrade the Lee's upgrade row showed both Shermans.) The copy was rebuilt for T34.
+
+## T34. A new unit's own card (2026-10-04)
+
+The owner's UI bug from T33: the Tall Sherman showed the Sherman's picture. A new unit now gets its own card:
+`files/cards/<the unit's name>.png` in its mod (the Studio puts it there when you make the card on a new unit's page,
+instead of over its source's). The build points the clone's TextureForInterface at a file of its own beside its
+source's (`DataDir:\WW2\Res2D\TexAnimationUnitIcone\EU\descriptor_unit_r2_m4_sherman_tall.png`, written as the game
+writes its own), makes the picture from the source's card (same format and size) and adds it to the menu packs that
+hold the source's (menuus.ppk 62 -> 63 files, outgame.ppk 273 -> 274; every game file in them unchanged; laid out as
+the game's, which all 64 menu packs give back byte for byte). It isn't added loose in ZZ_Win.dat: the build menu shows
+the menu packs' copies (T31). The copy is T33's (both Shermans, cheat mod) plus the Tall Sherman's card: the Sherman's,
+flipped and tinted red. Read back from the copy. `D:\RUSE-Instances\two-shermans`.
+
+1. Skirmish as the US, Armor Base.
+- **Pass:** the Sherman's card as always, the Tall Sherman's red and facing the other way.
+- **Tell us:** the Tall Sherman with no picture (a blank or missing card), still the Sherman's, or a crash.
+
+## T30. Iwo Jima groundwork (2026-10-04)
+
+(First written up as T27; that number was also taken by the Blender test above, so this one is T30.)
+
+The pieces the Iwo Jima showcase rests on (`docs/IWO_JIMA.md`), in one Operation, all round your HQ. A new Operation,
+**IWO JIMA TEST** (listed last in OPERATIONS): a copy of Swamps' US-against-Japan Operation, Gold for the Brave, so
+Japan's units are at home, running a mission of ours, with your HQ moved onto Swamps' shore. Its scenario loads the US
+models "with boats" (as the game's own D-Day and Italy chapters do), so the game's own hidden fleet can sail.
+`D:\RUSE-Instances\iwo-groundwork` from `D:\ruse-test-mods\iwo-groundwork` (plus the cheat mod; US units 3 times as
+fast): 0 errors. Read back from the copy: the mission and its texts, the packs, the scenario, and the ground: the bay
+now under the sea, the island 23 m out of it, the cone 66 m up with its crater. The map of the spots:
+`D:\ruse-test-mods\iwo-groundwork\t26_map.svg`.
+
+Look round your HQ first (the map): **A** a new bay (land sunk into the sea), **B** a small new island raised out of the
+sea with a causeway down to it from the cliff top, **C** a volcano cone, and **the US fleet** offshore (a battleship, a
+cruiser, a destroyer, an LST, two LCVPs). Then, on their own:
+1. About 3 s in: a popup and the goal **"WATCH THE FLEET AND THE BOMBERS"**.
+2. About 23 s: **the fleet opens fire** on a spot on the far side of the bay (map 1).
+3. About 48 s: **three bombers** come in from the sea and bomb a spot beyond the cone (map 2).
+4. About 1:23: **three Japanese pillboxes** appear (map 3), with **two Crocodiles** and four Shermans for you by your HQ;
+   goal **"BURN OUT THE 3 PILLBOXES"**. The Crocodiles' flame and the pillboxes' guns both reach about 300 m.
+5. Then the goal **"DRIVE A TANK INTO THE CIRCLE"** (map 4). A tank in it: **"THEY'RE COMING OUT OF THE GROUND!"**,
+   six squads of Japanese infantry appear there and go for your tanks; 20 s later, **another wave**.
+6. Beat both waves: **VICTORY** 10 s later.
+- **Tell us**, as far as you get:
+  - **The bay:** sea from high up and up close? Do your units keep out of it?
+  - **The island:** out of the sea? Can a tank drive down the causeway onto it? How does it look up close?
+  - **The cone:** clear from your HQ?
+  - **The ships:** there, on the water, the right way up? Does the battleship fire, and where do the shells land?
+  - **The bombers:** do they come in and bomb?
+  - **Pillboxes:** does the flame burn them out?
+  - **The wave:** does it come out and charge?
+  - **The goals:** main or bonus? The circle goal's label is drawn in the main goals' style, to see what decides it.
+  - The first step that didn't happen, and anything odd (a crash, lag, a ship somewhere strange).
+- Expected oddities: some of Gold for the Brave's own US units stay at its old start (far from your HQ); your HQ is
+  about 760 m from the nearest road (supply isn't part of this test).
+
+**Run 1 (2026-10-04): the fleet fired and the bombers came; the game stopped when the pillboxes were due.** In the
+owner's words, it "made it through the bombers", the battleships kept shooting, and it stopped "when the pillboxes
+started appearing". The game's own error text named the cause: our mission asked for `Unit_Bunker_enterre_JAP`.
+That is the pillbox's gun unit, and it carries the building flag. The game's create step sends anything with that
+flag to its building placer, which only takes a building, so it stopped with an error.
+- **The fix:** the pillbox is the building, `Building_Def_Bunker_enterre_JAP`. It brings its gun unit with it. Eugen's
+  missions always create defences by their `Building_` name (the Siegfried line in 12 missions, MG nests in 9), and
+  none creates a defence's gun unit.
+- **The guard:** the mission build now refuses a created unit that carries the building flag without being a building,
+  and a unit name with no unit behind it. It passes every unit type the game's own missions create (228).
+- Rebuilt the same day, 0 errors, and read back: the script names the building, and everything else is as before.
+- Steps 1 to 3 were seen. The rest, and the "Tell us" list, wait for run 2.
+
+**Run 2 (2026-10-04): passed, start to victory, no crash.** In the owner's words:
+- "I made it through the objective", the fleet and bombers goal.
+- "The pillbox is spawned. I can move my guys around. I can build the base."
+- "Crocodiles killed the pillboxes."
+- "They're coming out of the ground": the wave came and charged.
+- "Another wave, man. Really didn't let me have a chance": the second wave came, and it was beaten.
+- "Iwo Jima test is done. Nice. No crashes."
+
+So every piece of our own mission works in the game. That covers the pillboxes made by the mission and burned out by
+the Crocodiles, the "group is empty" goal on buildings, Japanese infantry made at a spot, the attack order on the
+player's tanks, the repeat wave, and the victory.
+- **Tuning for the real map:**
+  - The wave spawned "like on top of me": it appears right where the player's tank enters the circle. In the
+    Operation the tunnel exit should sit apart from the spot that sets it off, in the trees, so the Japanese rush out
+    at the column instead of appearing inside it.
+  - 20 s between waves left no breathing room. The next wave could wait for the last one to be beaten, or come later.
+- **The black box:** "every time we're in one of these test operations, that black box appears and says nothing"
+  (T22 and this one). It "appears right at the start. It's normally where the objectives are listed, but yours are on
+  the side." It's the goals panel: our missions open it 4 s in (`DescriptorObjectifsPanel`, copied from Anzio), and
+  nothing else in the game opens it except the Escape menu. In Eugen's missions it lists the goals; in ours it comes
+  up empty, and why isn't found from reading alone. As the owner suggested, our missions no longer open it; the goals
+  still show on the side. Not seen in the game yet: the next mission test shows whether the box is gone.
+- **The owner's answers:**
+  - "The bay looked kind of like the sea, but it's really small. There's no, like, mountain or anything. It's just a
+    bigger map with a small beach." The cone was only 66 m tall and about 400 m across: a hill on Swamps' scale.
+  - "Ships were sitting on the water, yep."
+  - "They said main and bonus, I think." By the game's own goal code, all four of ours were main goals: a goal's
+    label style decides it. Styles 0 (`Objectif_Primaire_Right`) and 12 (`Objectif_Primaire_Right_Folded`) are main;
+    1 (`Objectif_Bonus_Right`) and 23 (`Objectif_Bonus_LowPosition`) are bonus. Ours were all 12. This answers
+    T22's open question.
+- Recorded; the copy `D:\RUSE-Instances\iwo-groundwork` goes to the Recycle Bin (the mod source stays).
+
+## F1-F3. RUSE Guard, our half (fair play; 2026-10-04, not run yet; parked: fair play is switched off until the owner says)
+
+Fair play (`rusemod.fairplay`, PLAN §14): a mod set with a cheat or a test tool makes an **offline** copy, which
+leaves multiplayer and co-op matches; every other copy has a **join code** to compare with the people you play with;
+mods that run scripts wait for **"I trust this author"**; the **watcher**, in every modded copy, says on screen
+when a match sees a cheat order. The lock and the watcher go in every map's own script folder (68 folders, the
+1.5 MB IA_Common.dat; the game looks there before its own scripts, as Eugen's co-op maps' own multiplayer scripts
+show); the 2.4 GB ZZ_Win.dat stays a free link. Checked before handing over, without the game: the map's skirmish
+script (the game's own, then ours) run under the game's Python version against stand-ins, with the game's real match
+rules module (an offline match: the watcher only; an online one: the message, then the surrender 5 s in; a spawn
+order and a +530 money jump flagged; a second script in the same session switches nothing on twice);
+`tests/test_fairplay.py` (on the game's own files too). **No test copy built yet.** The one thing only the game can
+show: that a map's own folder copy is the one that runs. If F1's message never shows, that's the place to look.
+**Until F1 and F3 pass, everyday builds leave our game scripts out** (`fairplay.IN_BUILDS = False`): an earlier form
+of them stopped the owner's game at map load on 2026-10-04 (a Studio Test in game built from the project folder; they
+ran inside the game's match rules module while it was still loading). The F1/F3 copies are built with them on.
+
+**F1. The offline lock in a real match** (needs a second player: a friend, or a second PC and Steam account).
+1. Build a set with a cheat in it (the cheat mod) and press Play. The build log says "offline only: …"; the Join code
+   box says the copy is for offline play.
+2. Skirmish against the AI: plays as normal (nothing on screen, no surrender).
+3. Host or join a multiplayer match with the other player (vanilla on their side is fine).
+- **Pass:** at the start the message "This copy of R.U.S.E. was built with cheats or test tools…" shows, and about
+  5 s in the match is given up for you; the other player sees you surrender.
+- **Tell us:** whether the message showed, whether the surrender came, anything else (a crash, a stuck screen).
+
+**F2. The Launcher: join codes, the trust tick, the cheat badge** (the Launcher run from the project folder; no match).
+1. Library: a mod that runs scripts (Formations, or any .rmod with scripts) has a red "Runs scripts" badge. Play a set
+   with it: Play stops and asks for the tick. Tick "I trust this author": Play goes on, the badge turns blue.
+2. A cheat from Supported mods shows a red "Cheat" badge.
+3. Play a set without cheats, then "Join code" at the bottom: a code starting RUSE1:, Copy works. Paste the same code
+   and Compare: "Same game". Paste a code from a different set: what differs is listed.
+4. "Check every file of the copy": "Every file checked…" after a few seconds.
+- **Pass:** each step as said.
+
+**F3. The watcher, offline** (skirmish against the AI; the test tool's own +500 button stands in for a cheater).
+1. Make a set with Dev Toolkit (it's a test tool, so the copy is offline; that only matters online) and press Play.
+2. Play a skirmish about 10 minutes normally: supply trucks, buildings, the AI. **Note any watcher message**: none
+   should show.
+3. Then the Dev tab's +500: "player N got 500 money at once".
+- **Pass:** step 3's message, and nothing in step 2. A message in step 2 means normal money comes in steps of 400
+  or more somewhere: tell us what you were doing, and the step gets raised. No message in step 3 means the map's
+  folder copy didn't run (see above).
+
+**F4. RUSE Guard's in-game record** (two PCs, an honest multiplayer match; needs fair play switched on and the
+in-game scripts allowed in the build).
+1. Both players Play the same mod set (the same join code) and play a multiplayer skirmish for 5 minutes.
+2. After the game closes, each copy's folder had `ruse_guard_match.txt`: the Launcher collected it into its outbox.
+- **Pass:** the file was written at all (the game's scripts may write files), its `state` lines came every 10 s,
+  and the two players' `state` lines are identical (DomesticNukes' T3: two honest games give the same series).
+- **Tell us:** no file (the game refused to write it), or the first line where the two differ.
 
 ## T11. Launcher 0.2.9
 

@@ -12,7 +12,8 @@ from rusemod import Edat
 from rusemod.build import build_pack, load_mod
 from rusemod.spk import Spk
 from rusemod.unitpacks import (COMMON, NAMES_HEAD, Buffer, MeshPack, PackError, Packs, Proxy, ProxyPack,
-                               animation_name, archive_with, pack_paths, proxy_name, read_names, write_names)
+                               animation_name, archive_with, header_id, pack_paths, proxy_name, read_names,
+                               write_names)
 
 BONES = "$/M3D/System/VERTEXTYPE/TVertex__Position_3f__NormalIn01_4ubn__BlW_4ubn__BlIdx_4ub"
 PLAIN = "$/M3D/System/VERTEXTYPE/TVertex__Position_3f__NormalIn01_4ubn"
@@ -63,7 +64,7 @@ TRIANGLES = {6: (0, 1, 2, 0, 2, 3), 3: (0, 1, 2)}
 def mesh_pack(models: dict, textures) -> MeshPack:
     """{name: (x, bones, material, 6 or 3 indices)} -> a pack, one draw call per model; models with the same
     triangles share their index buffer."""
-    pack = MeshPack(bytes(16), formats=[BONES.encode().ljust(256, b"\0"), PLAIN.encode().ljust(256, b"\0")],
+    pack = MeshPack(formats=[BONES.encode().ljust(256, b"\0"), PLAIN.encode().ljust(256, b"\0")],
                     materials=materials(textures), material_count=len(textures))
     ibs = []
     for k, name in enumerate(sorted(models, key=lambda n: n.replace("\\", "\0"))):
@@ -80,7 +81,7 @@ def mesh_pack(models: dict, textures) -> MeshPack:
 
 def skeleton_pack(models: dict) -> MeshPack:
     """{name: skeleton bytes} -> a skeleton pack (models with the same bytes share one)."""
-    pack = MeshPack(bytes(16), formats=[], materials=materials([]), material_count=0)
+    pack = MeshPack(formats=[], materials=materials([]), material_count=0)
     for name, blob in models.items():
         if blob not in pack.skeletons:
             pack.skeletons.append(blob)
@@ -89,7 +90,7 @@ def skeleton_pack(models: dict) -> MeshPack:
 
 
 def proxy_pack(names, picture=b"TGV:") -> ProxyPack:
-    pack = ProxyPack(bytes(16))
+    pack = ProxyPack()
     for k, name in enumerate(sorted(names, key=lambda n: n.replace("\\", "\0"))):
         key = hashlib.md5(name.encode()).digest()[:8]
         pack.proxies.append(Proxy(key, picture + name.encode()[-8:], struct.pack("<HHI", 0, 0, 0xAAAAAAAA),
@@ -236,10 +237,15 @@ class Meshes(unittest.TestCase):
         again = MeshPack.read(us.to_bytes())
         self.assertEqual(again.skeletons[again.items[TANK][2]], b"SKEL" * 4)
 
-    def test_a_new_id(self):
+    def test_header_id_follows_the_size(self):  # the game drops a pack whose id isn't this MD5 (T32 run 1)
         pack = MeshPack.read(self.raw)
-        pack.renew()
-        self.assertEqual(pack.ident, hashlib.md5(self.raw).digest())
+        pack.items[UNITS + "ger\\tank\\ger_panzeriv_talllod0.ase2ndfbin"] = list(pack.items[TANK])  # a new name
+        grown = pack.to_bytes()
+        self.assertGreater(len(grown), len(self.raw))
+        for raw in (self.raw, grown):
+            self.assertEqual(raw[0x10:0x20], hashlib.md5(raw[:0x10] + raw[0x20:0x30]).digest())
+        self.assertNotEqual(grown[0x10:0x20], self.raw[0x10:0x20])
+        self.assertEqual(header_id(grown), grown[0x10:0x20])
 
     def test_not_a_pack(self):
         with self.assertRaises(PackError):
@@ -302,7 +308,7 @@ class Giving(unittest.TestCase):
             spk = Spk(out[path])
             self.assertEqual(sorted(spk.items), sorted([SHERMAN, TANK, TANK_DEAD]))
             self.assertEqual(spk.model(TANK)[0].positions[:3], [0.0, 0.0, 0.0])
-            self.assertNotEqual(out[path][0x10:0x20], bytes(16))  # a new id
+            self.assertEqual(out[path][0x10:0x20], header_id(out[path]))  # the id the game checks
         skel = MeshPack.read(out["gen_5\\pack\\gfxdescriptor\\skeleton_us.spk"])
         self.assertEqual(skel.skeletons[skel.items[TANK_DEAD][2]], b"SKEL" * 4)
         for path in pack_paths("us")["proxy"]:

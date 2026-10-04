@@ -78,8 +78,9 @@ def make_pack() -> bytes:
     compressed (the same quad: packed positions and UVs, an index buffer of zlib'd differences)."""
     quad = [(0.0, 0.0, 0.0), (100.0, 0.0, 0.0), (100.0, 0.0, 50.0), (0.0, 0.0, 50.0)]
     uvs = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]
-    stored = b"".join(struct.pack("<3f4B2H4B", *p, 128, 128, 255, 0, round(u[0] * 65535), round(u[1] * 65535),
-                                  0, 0, 128, 128) for p, u in zip(quad, uvs))
+    # `_2wn` as the game stores it: signed 16-bit fractions, u 0..1, v -1..0 (v - 1)
+    stored = b"".join(struct.pack("<3f4B2H4B", *p, 128, 128, 255, 0, round(u[0] * 32767) & 0xFFFF,
+                                  round((u[1] - 1) * 32767) & 0xFFFF, 0, 0, 128, 128) for p, u in zip(quad, uvs))
     packed = packed_vertices(quad, uvs)
     tri = [0, 1, 2, 0, 2, 3]
     ib_plain = struct.pack("<6H", *tri)
@@ -143,7 +144,21 @@ class Pack(unittest.TestCase):
         self.assertEqual(self.spk.items["ww2\\test\\walllod0.ase2ndfbin"].box, (0, 0, 0, 100, 0, 50))
         self.assertEqual([c for c, _o, _s in layout(STORED)],
                          ["Position_3f", "NormalIn01_4ubn", "TexCoord0_2wn", "TexPackedAtlas0_4ubn"])
-        self.assertEqual(self.spk.materials(), [{"name": "wall", "type": "", "textures": {"diffuseTexture": TEXTURE}}])
+        self.assertEqual(self.spk.materials(), [{"name": "wall", "type": "", "textures": {"diffuseTexture": TEXTURE},
+                                                 "skinning": [], "tags": []}])
+
+    def test_signed_uv_words(self):
+        from rusemod.spk import wn_uv
+        # plain buffers: whole signed 16-bit words; u 0..1, v -1..0 moved up by 1
+        self.assertEqual(wn_uv(0, 0x8001), (0.0, 0.0))
+        self.assertEqual(wn_uv(32767, 0), (1.0, 1.0))
+        u, v = wn_uv(16384, 0xC000)  # u 0.5, v -0.5 -> 0.5
+        self.assertAlmostEqual(u, 0.5, 3)
+        self.assertAlmostEqual(v, 0.5, 3)
+        # compressed buffers: 11-bit values (mask 2047), the words' top bits
+        u, v = wn_uv(512, 1536, bits=11)
+        self.assertAlmostEqual(u, 0.5, 3)
+        self.assertAlmostEqual(v, 0.5, 3)
 
     def test_a_stored_model_with_its_atlas_corner(self):
         (part,) = self.spk.model("ww2\\test\\walllod0.ase2ndfbin")

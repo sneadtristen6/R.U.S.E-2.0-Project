@@ -116,9 +116,13 @@ def load_mod(path) -> tuple[ModInfo, list]:
         _cover_brushes(info)
         info.movement = read_movement(path)
         _block_brushes(info)
+        _paint_brushes(info)
         info.roads = _read_maps(path, "roads.toml")
         info.players = _read_maps(path, "map.toml")
         _new_maps(info)
+        from .unitlook import mod_cards, mod_textures
+        info.textures = mod_textures(path)
+        info.cards = mod_cards(path)
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -253,8 +257,8 @@ def _cover_brushes(info) -> None:
         cover = [s for s in strokes if s.kind.kind == "cover"]
         if not cover:
             continue
-        info.cover.setdefault(pack, []).extend(Paint(s.x, s.y, s.radius, "cover", s.kind.sign < 0, s.square)
-                                               for s in cover)
+        info.cover.setdefault(pack, []).extend(Paint(s.x, s.y, s.radius, "cover", s.kind.sign < 0, s.square, s.shape,
+                                                     s.dx, s.dy, s.x2, s.y2) for s in cover)
         rest = [s for s in strokes if s.kind.kind != "cover"]
         if rest:
             info.terrain[pack] = rest
@@ -268,6 +272,9 @@ def read_movement(folder: Path) -> dict:
     return _read_maps(folder, "movement.toml")
 
 
+BLOCK_CELL = 1280.0  # map units: a square block or open stroke is laid down as circles round cells about this size
+
+
 def _block_brushes(info) -> None:
     """The Studio's block and open brushes (terrain.toml) take ground away from units or give it to them: they move
     to `info.movement` in their order (after the mod's own movement.toml blocks and opens), like the cover brushes to
@@ -278,9 +285,26 @@ def _block_brushes(info) -> None:
         blocks = [s for s in strokes if s.kind.kind in moving]
         if not blocks:
             continue
-        info.movement.setdefault(pack, []).extend(Block(s.x, s.y, s.radius, s.kind.shape, s.kind.kind == "open")
-                                                  for s in blocks)
+        # the movement graphs are made of circles: a square or a line goes in as circles covering it
+        info.movement.setdefault(pack, []).extend(Block(x, y, r, s.kind.shape, s.kind.kind == "open")
+                                                  for s in blocks for x, y, r in s.footprint().circles(BLOCK_CELL))
         rest = [s for s in strokes if s.kind.kind not in moving]
+        if rest:
+            info.terrain[pack] = rest
+        else:
+            del info.terrain[pack]
+
+
+def _paint_brushes(info) -> None:
+    """The Studio's Map Paint brushes (paint, stamp) live in terrain.toml with the others, but change the ground's
+    picture, not its shape: they move to `info.paint` in their order, like the cover brushes to the cover grid."""
+    from .brush import PAINT_KINDS
+    for pack, strokes in list(info.terrain.items()):
+        paint = [s for s in strokes if s.kind.kind in PAINT_KINDS]
+        if not paint:
+            continue
+        info.paint.setdefault(pack, []).extend(paint)
+        rest = [s for s in strokes if s.kind.kind not in PAINT_KINDS]
         if rest:
             info.terrain[pack] = rest
         else:
@@ -291,19 +315,28 @@ BED_RADII = (3840.0, 2560.0, 1920.0, 1280.0)  # down to nav.MIN_RADIUS: a new mo
 
 
 def cleared_woods(erasing: dict) -> tuple[dict, dict]:
-    """For each map's erase areas that take trees ({map: (areas, ids)}): (opens of that ground to every unit, the
-    forest cover taken away there), each {map: (list, ids)}. With its trees gone the ground is no wood any more, but
-    the map's movement still keeps vehicles off it and its cover still hides infantry there (a D-Day test,
-    2026-10-01: tanks couldn't drive into a cleared wood). Erasing only props leaves both, and so does a new road's
-    own clearing (keep_ground)."""
+    """For each map's erase areas that take trees or buildings ({map: (areas, ids)}): (opens of that ground to every
+    unit, the forest cover taken away where trees went), each {map: (list, ids)}. With its trees gone the ground is no
+    wood any more, but the map's movement still keeps vehicles off it and its cover still hides infantry there (a
+    D-Day test, 2026-10-01: tanks couldn't drive into a cleared wood). Buildings the same: a town's movement closes
+    whole blocks (houses, yards, walls: 1,108 of the 1,156 building pieces of Blitz's town by its first starting
+    point), so the area opens whole; each house's own ground alone opens next to nothing (islands no unit reaches,
+    checked in memory on T25's spots). Seen in the game 2026-10-04 (TESTS.md T25): tanks and infantry drive through
+    where Blitz's town stood, and infantry there no longer act as in a town. Erasing only props leaves both, and so
+    does a new road's own clearing (keep_ground)."""
     from .cover import Paint
     from .nav import Block
     opens, uncover = {}, {}
     for name, (areas, ids) in erasing.items():
-        woods = [a for a in areas if "vegetation" in a.what and not a.keep_ground]
+        cleared = [a for a in areas if ("vegetation" in a.what or "building" in a.what) and not a.keep_ground]
+        woods = [a for a in cleared if "vegetation" in a.what]
+        if cleared:
+            # a square or a line opens as circles covering it (the movement graphs are circles), and uncovers itself
+            opens[name] = ([Block(x, y, r, "all", True) for a in cleared
+                            for x, y, r in a.footprint().circles(BLOCK_CELL)], list(ids))
         if woods:
-            opens[name] = ([Block(a.x, a.y, a.radius, "all", True) for a in woods], list(ids))
-            uncover[name] = ([Paint(a.x, a.y, a.radius, "cover", True) for a in woods], list(ids))
+            uncover[name] = ([Paint(a.x, a.y, a.radius, "cover", True, False, a.shape, a.dx, a.dy, a.x2, a.y2)
+                              for a in woods], list(ids))
     return opens, uncover
 
 
@@ -443,11 +476,13 @@ class BuildResult:
     text_changed: dict = field(default_factory=dict)  # member path in the text pack (ZZ_Win.dat) -> new bytes
     script_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (the script pack) -> new bytes
     model_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (a skirmish unit pack) -> new bytes
+    texture_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (a texture, a stand-in pack) -> bytes
     close_up_maps: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (a map's close-up map copy) -> bytes
     new_classes: list = field(default_factory=list)  # class names added to the game's Python unit list
     terrain_changed: dict = field(default_factory=dict)  # map pack file name -> {member path: new bytes}
     new_maps: dict = field(default_factory=dict)    # new map's pack name -> newmap.Clone (what it adds)
     added: dict = field(default_factory=dict)       # pack file name -> {member path: bytes}: members new maps add
+    own_cards: dict = field(default_factory=dict)   # new units' cards: card member to add -> (its source's, the PNG)
     visibility: dict = field(default_factory=dict)  # a placed type drawn up close only -> its copy (rusemod.visibility)
     fingerprint: bytes | None = None
 
@@ -483,10 +518,10 @@ def load_pack(arc: Edat) -> PackModel:
 
 def needs_zz_win(mods: list) -> bool:
     """Whether building `mods` [(ModInfo, ops)] needs ZZ_Win.dat: some mod adds texts or a new map (its name in the
-    menus), or new objects (a new unit needs a class in the Python unit list, which lives there), or moves a unit to
+    menus), repaints a texture (files/replace, rusemod.unitlook), or new objects (a new unit needs a class in the Python unit list, which lives there), or moves a unit to
     another nation or model (the skirmish mesh packs there say whether its models are loaded for it: unit_models)."""
-    return any(m.texts or m.new_maps for m, _ in mods) or any(op.kind in ("create", "clone") or _moves(op)
-                                                               for _, ops in mods for op in ops)
+    return any(m.texts or m.new_maps or getattr(m, "textures", None) for m, _ in mods) or \
+        any(op.kind in ("create", "clone") or _moves(op) for _, ops in mods for op in ops)
 
 
 def new_maps(order: list[str], mods: list) -> dict:
@@ -781,6 +816,42 @@ def _reader(arc: Edat):
     return read, entries
 
 
+def unit_cards(run, order: list, result: BuildResult) -> dict:
+    """New units' own cards (a mod's files/cards/<the unit's name>.png; rusemod.unitlook): a clone starts with its
+    source's card file, so the two looked the same in the build menu (T33). Its TextureForInterface gets a file of its
+    own beside the source's (a later mod's picture wins). Returns {card member to add: (its source's card member, the
+    PNG)} for own_cards."""
+    from .patch import Inline
+    from .unitlook import card_member, own_card_name
+    wanted: dict = {}
+    for m in order:
+        for unit, png in (getattr(m, "cards", None) or {}).items():
+            wanted[unit] = (png, m.id)
+    by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    out: dict = {}
+    for unit, (png, mod_id) in sorted(wanted.items()):
+        name = by_name.get(unit)
+        if name is None:
+            # not a game rule: a card picture for a unit no mod in the set makes
+            result.findings.append(Finding("error", f"{mod_id}: files/cards/{unit}.png: no mod in the set makes a new "
+                                                    f"unit {unit} (a game unit's card is changed with "
+                                                    f"files/replace/<its card>.tgv.png)"))
+            continue
+        tex = run.game.objects[name].props.get("TextureForInterface")
+        file = tex.obj.props.get("FileName") if isinstance(tex, Inline) else None
+        if not isinstance(file, Text) or file.kind != "path":
+            # not a game rule: what our build supports (a card part of its own, naming a picture file)
+            result.findings.append(Finding("error", f"{mod_id}: files/cards/{unit}.png: {unit} has no card of its own "
+                                                    f"(TextureForInterface) naming a picture, so it can't get one"))
+            continue
+        new = own_card_name(file.value, unit)
+        out[card_member(new)] = (card_member(file.value), png)
+        tex.obj.props["FileName"] = Text("path", new)
+        result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own card, {new} (files/cards/{unit}.png), "
+                                               f"made from {file.value}'s"))
+    return out
+
+
 def unit_classes(base, run, zz_win, result: BuildResult) -> None:
     """Give every new unit a class in the game's Python unit list (ZZ_Win.dat), like the unit it copies. Units the
     list can't take (made from scratch, or copies of units it doesn't list) get a warning: the game ignores them."""
@@ -896,6 +967,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     for key in fill_loc(run.game, text_plan.keys if text_plan else {}):
         result.findings.append(Finding("error", f"loc('{key}') has no text: no mod in the set defines {key!r} in "
                                                 f"its text/*.csv"))
+    result.own_cards = unit_cards(run, order, result)
     if result.errors:
         return result
     notes: list = []
@@ -1437,6 +1509,13 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         for name, (_areas, ids) in erasing.items():
             every, who = with_pieces.setdefault(name, ([], []))
             who.extend(i for i in ids if i not in who)
+        from .brush import PAINT_KINDS
+        painting = scenario_edits(result.order, mods, "paint")  # Map Paint: what hides it up close goes (`clear`)
+        for name, (strokes, ids) in painting.items():
+            if any(s.kind.kind in PAINT_KINDS and s.clear for s in strokes):
+                every, who = with_pieces.setdefault(name, ([], []))
+                who.extend(i for i in ids if i not in who)
+        low_sizes: dict = {}  # type name -> how far it reaches at size 1 (stickers, low plants, stones), once a build
         solid: dict = {}  # map pack name -> (nav.Block for each placed building, the mods' ids)
         for name, (objects, ids) in with_pieces.items():
             map_path = find_map(name)
@@ -1480,6 +1559,34 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                                        + (f", but {kept} of {len(road_lines[name])} keep their trees and bushes "
                                           f"(keep_trees: only props taken off)" if kept else "")]
                 objects = list(objects) + dressed
+                sizes = None  # an erase by size (Map Paint's clearing): how far each type reaches
+                strokes = painting.get(name, ([], []))[0]
+                if any(s.kind.kind in PAINT_KINDS and s.clear for s in strokes):
+                    # up close the game draws the map's stickers, low plants and stones over the ground's picture:
+                    # only with them taken off does the paint show near the camera (TESTS.md T21, T26)
+                    from .groundpaint import paint_clearing
+                    from .scenery import low_cover, model_reach, sticker_reach
+                    if descs is None:
+                        descs = descriptors(arc)
+                    low = low_cover(descs, set(Scenery(raw).names))
+                    under = paint_clearing(strokes, low)
+                    if under:
+                        if not low_sizes:
+                            low_sizes.update(sticker_reach(arc))
+                        missing = [t for t in low if t not in low_sizes]
+                        if missing:
+                            from .models import Library
+                            lib = Library(game)
+                            try:
+                                for t in missing:
+                                    low_sizes[t] = model_reach(lib, descs[t])
+                            finally:
+                                lib.close()
+                        areas = list(areas) + under
+                        sizes = low_sizes
+                        sunk = sunk + [f"Map Paint: what hides it up close taken off under {len(under)} stroke(s) "
+                                       f"(ground stickers, low plants and stones reaching where it is at least half "
+                                       f"strength; trees, buildings, cover and movement unchanged)"]
                 erased_notes, erased = [], {}
                 if areas:  # the map's own scenery out first: the new objects then stay whatever the areas cover
                     if descs is None:
@@ -1487,7 +1594,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     names = Scenery(raw).names
                     kinds = {i: descs[n].group for i, n in enumerate(names) if n in descs}
                     bridges = {i for i, n in enumerate(names) if n in descs and descs[n].bridge}
-                    raw, erased_notes, erased = erase_objects(raw, areas, kinds, bridges)
+                    raw, erased_notes, erased = erase_objects(raw, areas, kinds, bridges, sizes)
                 if descs is None:
                     descs = descriptors(arc)
                 lowest = _LowestPoints(game, descs)
@@ -1522,10 +1629,15 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             for note in notes:
                 say(f"  {note}")
             if erased.get("building"):
-                result.findings.append(Finding("warning", (
-                    f"{', '.join(erase_ids)}: {name}: {erased['building']} of the map's buildings erased: the ground "
-                    f"where they stood stays closed to units (the map's movement still has them). Leave buildings "
-                    f"out of the erase areas' what, or expect units to go around where they were")))
+                if any("building" in a.what and not a.keep_ground for a in areas):
+                    say(f"  {erased['building']} of the map's buildings erased: the ground of the erase area(s) that "
+                        f"take buildings is opened to every unit (cleared_woods; seen in the game, T25)")
+                if any("building" not in a.what and any(t in descs and descs[t].group == "building"
+                                                        and not descs[t].bridge for t in a.types) for a in areas):
+                    result.findings.append(Finding("warning", (
+                        f"{', '.join(erase_ids)}: {name}: buildings erased by name (an erase area's types) leave their "
+                        f"ground closed to units: the map's movement still has them. Name \"building\" in that area's "
+                        f"what to open its ground too")))
             if erased.get("bridge"):
                 result.findings.append(Finding("warning", (
                     f"{', '.join(erase_ids)}: {name}: {erased['bridge']} of the map's bridges erased: units can still "
@@ -1554,6 +1666,44 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             except (KeyError, CoverError, ValueError, struct.error):
                 return None
 
+        for name, (strokes, ids) in scenario_edits(result.order, mods, "paint").items():  # the Map Paint strokes,
+            # before the new roads, so a road drawn over paint shows on top of it
+            map_path = find_map(name)
+            if map_path is None:
+                # not a game rule: the game or one of its files isn't found
+                result.findings.append(Finding("error", f"{', '.join(ids)}: the map {name} isn't in this game "
+                                                        f"({pack_file(name)} is missing), so it can't be painted"
+                                                        f"{_meant(game, name)}"))
+                continue
+            entry = next((e for e in map_packs if e[0] == map_path), None)
+            map_arc = entry[1] if entry else open_pack(map_path)
+            changed_members = entry[2] if entry else {}
+
+            def read_map(member, a=map_arc, done=changed_members):
+                try:
+                    e = a.find(member)
+                except KeyError:
+                    return None
+                return done.get(e.path) or bytes(a.read(e))
+            from .groundpaint import DETAIL, PaintError, paint_ground
+            try:
+                painted, notes = paint_ground(read_map, lambda m, a=map_arc: a.find(m).path, strokes, cache)
+            except (PaintError, ValueError, KeyError, struct.error, zlib.error) as exc:
+                result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the paint can't be laid ({exc})"))
+                continue
+            changed_members.update(painted)
+            say(f"paint: {name}, from {', '.join(ids)}: {len(strokes)} stroke(s) on the ground's picture")
+            for note in notes:
+                say(f"  {note}")
+            marked = next((v for k, v in painted.items() if k.lower().endswith(DETAIL)), None)
+            copy = close_up_copy(text_arc, name, bytes(map_arc.read(map_arc.find(DETAIL))), marked) if marked else None
+            if copy:
+                result.close_up_maps[copy[0]] = copy[1]
+                say(f"  close-up map: its copy in {text_path.name} kept the same")
+            if entry is None and painted:
+                map_packs.append((map_path, map_arc, changed_members))
+            if painted:
+                result.terrain_changed[map_path.name] = changed_members
         for name, (map_roads, ids) in scenario_edits(result.order, mods, "roads").items():  # new roads painted
             from .bridges import cut
             decks = bridge_spans.get(name, []) + bridge_decks.get(name, [])
@@ -1874,8 +2024,26 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     + (f" ({len(changed_members)} file(s) changed: {files})" if changed_members else ""))
             else:
                 say(f"changed: {map_path.name} ({len(changed_members)} file(s): {files})")
+        textures: dict = {}  # painted textures (MOD_FORMAT §7, rusemod.unitlook): a later mod's picture wins
+        by_id = {m.id: m for m, _ops in mods}
+        for mod_id in result.order:
+            textures.update(getattr(by_id.get(mod_id), "textures", None) or {})
+        if textures and text_arc is not None:
+            from .unitlook import LookError, changes as texture_changes
+            say(f"painted textures: {len(textures)}")
+            try:
+                result.texture_changed = texture_changes(text_arc, textures, say=say, before=result.model_changed)
+            except LookError as exc:
+                raise BuildError(str(exc)) from None
+        if result.own_cards and text_arc is not None:  # new units' own cards, in the menu packs (rusemod.unitlook)
+            from .unitlook import LookError, own_cards
+            try:
+                result.texture_changed.update(own_cards(text_arc, result.own_cards,
+                                                        {**result.model_changed, **result.texture_changed}, say=say))
+            except LookError as exc:
+                raise BuildError(str(exc)) from None
         zz_win_changed = {**result.text_changed, **result.script_changed, **result.model_changed,
-                          **result.close_up_maps}
+                          **result.close_up_maps, **result.texture_changed}
         for data_path, _a, changed_members in data_packs:
             new_ones = {m.lower() for m in result.added.get(data_path.name, {})}
             shipped = [m for m in changed_members if m.replace("/", "\\").lower() not in new_ones]  # (new: "added")

@@ -1,6 +1,30 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.5:** units get a look of their own. See any unit in 3D, repaint it in Blender, give it your own card in the
+build menu. And our firsts, all seen in the game:
+
+- **The first unit repainted by a mod:** a red Sherman, up close and from far.
+- **The first unit painted in Blender** and brought back into the game.
+- **The first build-menu card made in the Studio,** shown in the game's own Armor Base menu.
+- **The first new unit with a model of its own,** beside the game's: the Tall Sherman, next to the Sherman (made in
+  testing; making your own models in the Studio comes next).
+- **The first mission of our own** played to a victory: a new Operation with its own goals, units and an artillery
+  strike (made in testing).
+
+| Before | Now |
+|---|---|
+| A unit's page showed its values only. | **3D model** on the unit's page: turn it, zoom in, see your mod's paint on it. |
+| A unit's look was the game's. | **Repaint in Blender:** **Open in Blender** opens the unit's models with their pictures; paint on the model, then **Bring back** saves your paint and puts it in your mod. **Seen in the game**, up close and from far. Blender is free: if the Studio doesn't find it, **Get Blender (free)** and **Choose Blender…** are right there. |
+| A unit's picture in the build menu was the game's. | **Use this view as the card:** turn and zoom the 3D model until it looks right in the dashed frame; that view becomes the unit's card in the build menu. **Seen in the game.** |
+| A new unit showed the same card as the unit it copies, so the two looked alike in the menu. | A new unit's card is its own (`files/cards/<the unit's name>.png`): making its card never changes the original's. Not yet seen in the game. |
+| A unit model pack that grew was dropped by the game, every model in it missing: a crash at the first factory. | Model packs are written the way the game checks them, whatever their size. **Seen in the game:** a second Sherman with a model of its own. |
+| A nation's units given to another army had no model in campaign chapters and Operations: a mod spawning French units on Holland crashed while loading. | Their models load there too. **Seen in the game** (French units on Colditz). |
+| **Duplicate map** made BATTLES maps only. | It also makes a new **Operation** or **Campaign chapter** from any map's entry. **Seen in the game:** a new Operation. Early: a new campaign chapter wasn't tried yet. |
+| Flattening the mountains at a map's edge left a cliff there. | The map's edge follows the ground. **Seen in the game** (Blitz Twin, flat to the edge). |
+| Units went round the places where erased town buildings had stood. | The ground opens to every unit where buildings go, as with trees. **Seen in the game.** |
+| No way to paint the map's ground. | **Map Paint:** paint the ground's picture with a colour (the wheel, the map's own colours, or the eyedropper) or with the map's own ground copied from another spot. **Clear the ground under it** (on by default) takes the grass, crops and stones off under the paint so it shows at every height. Early: seen in the game from high up. |
+
 **0.9.4:** new maps, early. **Duplicate map** makes a new map from any BATTLES map, and maps open in a second.
 
 | Before | Now |

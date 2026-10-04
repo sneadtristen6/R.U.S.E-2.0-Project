@@ -437,6 +437,44 @@ function rowState(r, mode) {
   return { base: r.numbers, mine: asList(r, r.edited) };
 }
 
+// How far a weapon shoots (an ammo's range): a slider beside its number box, and about how far that is in metres (the
+// game counts about 260 of its units to a metre, rusemod.nav.METRE). Ranges go from a few metres to the V2's 10 km,
+// so a slider reaches 4 times the game's own value (further when more is set); the box takes any exact number.
+const RANGE_PROPS = new Set(["PorteeMaximale", "PorteeMinimale"]);
+const METRE = 260, RANGE_STEP = 13000;  // most of the game's ranges are whole 13,000s (50 m)
+
+function rangeTop(game, now) {
+  const most = Math.max(4 * (game || 0), now || 0, 20 * RANGE_STEP);
+  return Math.ceil(most / RANGE_STEP) * RANGE_STEP;
+}
+
+function metres(v) {
+  return fill(state.words.range_metres, { m: Math.round(v / METRE).toLocaleString() });
+}
+
+// A slider for a range's number box: moving it fills the box and says the metres, letting go saves (the box's own
+// change event); typing in the box moves it. Returns { node, sync }: sync after the box is set from code.
+function rangeSlider(box, game) {
+  const w = state.words;
+  const slider = el("input", { type: "range", min: "0", step: String(METRE), disabled: box.disabled,
+    title: w.tip_range_slider });
+  slider.setAttribute("aria-label", w.range_slider);
+  const far = el("span", { className: "muted small range-m", title: w.tip_range_box });
+  const sync = () => {
+    const v = Number(box.value);
+    if (box.value.trim() === "" || !Number.isFinite(v)) return;
+    slider.max = String(rangeTop(game, v));
+    slider.value = String(v);
+    far.textContent = metres(v);
+  };
+  slider.addEventListener("input", () => { box.value = slider.value; far.textContent = metres(Number(slider.value)); });
+  slider.addEventListener("change", () => box.dispatchEvent(new Event("change")));
+  box.addEventListener("input", sync);
+  box.addEventListener("change", sync);
+  sync();
+  return { node: el("span", { className: "range" }, slider, far), sync };
+}
+
 function row(u, r, mode) {
   const w = state.words;
   const th = el("th", { textContent: r.label });
@@ -447,11 +485,15 @@ function row(u, r, mode) {
   const st = rowState(r, mode);
   const shown = st.mine || st.base;
   const boxes = shown.map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+  const ranged = RANGE_PROPS.has(r.prop) && !r.list && r.type !== "bool";
+  if (ranged) boxes[0].title = w.tip_range_box;
   // A list whose values are all the same (a unit's five prices, one per battle date) gets one box that changes them
   // all, so a modder can't change one of five by accident; "set each" shows every box.
   let one = r.list && shown.length > 1 && r.type !== "bool" && shown.every((n) => n === shown[0])
     ? numberBox(r, shown[0], `${r.label} (${w.all_values.replace("{n}", shown.length)})`) : null;
   const holder = el("div", { className: "boxes" }, ...(one ? [one] : boxes));
+  const slider = ranged ? rangeSlider(boxes[0], r.numbers[0]) : null;
+  if (slider) holder.append(slider.node);
   if (one) {
     const each = el("button", { type: "button", className: "link", textContent: w.each_value, title: w.tip_each_value });
     each.addEventListener("click", () => {
@@ -486,6 +528,7 @@ function row(u, r, mode) {
           b.setAttribute("aria-invalid", "false");
         });
         if (one) { one.value = String(st.base[0]); one.setAttribute("aria-invalid", "false"); }
+        if (slider) slider.sync();
         showWas();
         await refreshMarks();
         say("");
@@ -506,6 +549,7 @@ function row(u, r, mode) {
       const value = r.list ? res.value : [res.value];
       value.forEach((n, i) => { if (boxes[i].type !== "checkbox") boxes[i].value = String(n); });
       if (one) one.value = String(value[0]);
+      if (slider) slider.sync();
       setMine(sameNumbers(value, st.base) ? null : value);
       state.lastEdit = { address: u.address, prop: r.prop, mode, via, label: r.label };  // what Ctrl+Z takes back
       showWas();
@@ -605,11 +649,67 @@ function flagRow(u, r, mode, th) {
   return tr;
 }
 
-// A unit's weapons and what each fires: one dropdown per weapon, listing every ammunition (the mod's copies first).
+// A weapon's range on its unit's page (api.set_range): a slider and a box. When other units fire the same ammo, the
+// modder picks for whom: only this unit (the weapon gets its own copy of the ammo, as "Copy ammo" does) or all of them.
+const rangeFor = new Map();  // weapon address -> "own" or "shared", kept while the Studio is open
+
+function weaponRange(u, wp, redraw) {
+  const w = state.words;
+  const base = u.address.split(":")[0];
+  const box = el("input", { type: "number", step: "any", inputMode: "decimal", value: String(wp.range),
+    disabled: !state.mod, title: w.tip_range_box });
+  box.setAttribute("aria-label", w.range);
+  const slider = rangeSlider(box, wp.game_range);
+  const line = el("div", { className: "weapon-range" },
+    el("span", { className: "range-label", textContent: w.range, title: w.tip_range }), box, slider.node);
+  const out = el("div", {}, line);
+  const others = wp.firing.filter((f) => f.address !== base);
+  if (wp.own_copy) out.append(el("div", { className: "muted small", textContent: w.range_own_copy }));
+  else if (others.length) {
+    const names = wp.firing.map((f) => f.name);
+    const shown = names.length > 12 ? names.slice(0, 12).join(", ") + ", …" : names.join(", ");
+    const choice = el("div", { className: "choice range-for", role: "radiogroup" }, el("span", { textContent: w.change_for }));
+    const name = (wp.firing.find((f) => f.address === base) || { name: u.name }).name;
+    for (const [mode, text, tip] of [["own", fill(w.only_unit, { name }), w.tip_range_only],
+      ["shared", fill(w.range_all, { n: names.length }), fill(w.tip_range_all, { names: shown })]]) {
+      const input = el("input", { type: "radio", name: `range-for-${wp.address}`, value: mode, title: tip,
+        disabled: !state.mod, checked: (rangeFor.get(wp.address) || "own") === mode });
+      input.addEventListener("change", () => rangeFor.set(wp.address, mode));
+      choice.append(el("label", { title: tip }, input, " " + text));
+    }
+    out.append(choice);
+  }
+  const save = async (value, mode) => {
+    try {
+      const res = await api().set_range(u.address, wp.address, value, mode);
+      await refreshMarks();
+      say(w.saved.replace("{file}", res.saved), "ok");
+    } catch (err) { problem(err); }
+    redraw();
+  };
+  box.addEventListener("change", () => {
+    const v = Number(box.value);
+    const bad = box.value.trim() === "" || !Number.isFinite(v);
+    box.setAttribute("aria-invalid", String(bad));
+    if (!bad && v !== wp.range) save(v, wp.own_copy || !others.length ? "own" : rangeFor.get(wp.address) || "own");
+  });
+  if (wp.game_range !== null && wp.range !== wp.game_range) {
+    line.classList.add("edited");
+    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_range_reset,
+      disabled: !state.mod });
+    undo.addEventListener("click", () => save(wp.game_range, "shared"));
+    out.append(el("div", { className: "was" },
+      el("span", { textContent: fill(w.was, { v: `${wp.game_range} (${metres(wp.game_range)})` }) }), undo));
+  }
+  return out;
+}
+
+// A unit's weapons and what each fires: one dropdown per weapon, listing every ammunition (the mod's copies first),
+// and how far it shoots.
 function weaponsGroup(u) {
   const w = state.words;
   const group = el("div", { className: "group hidden" }, el("h2", { textContent: w.weapons }));
-  api().weapons(u.address, state.lang).then((res) => {
+  const draw = () => api().weapons(u.address, state.lang).then((res) => {
     if (!res.weapons.length) return;
     const table = el("table");
     res.weapons.forEach((wp, i) => {
@@ -625,7 +725,9 @@ function weaponsGroup(u) {
       const was = el("div", { className: "was" });
       // the muzzle flash and sound this weapon plays (they follow the ammo: api.set_ammo)
       const shot = el("div", { className: "muted small", textContent: wp.shot ? fill(w.shot, { fx: wp.shot }) : "" });
-      const tr = el("tr", { className: wp.edited ? "edited" : "" }, th, el("td", {}, el("div", { className: "boxes" }, pick, open), was, shot));
+      const cell = el("td", {}, el("div", { className: "boxes" }, pick, open), was, shot);
+      if (wp.range !== null && wp.range !== undefined) cell.append(weaponRange(u, wp, draw));
+      const tr = el("tr", { className: wp.edited ? "edited" : "" }, th, cell);
       const showWas = (edited) => {
         tr.classList.toggle("edited", edited);
         was.replaceChildren();
@@ -638,19 +740,19 @@ function weaponsGroup(u) {
       pick.addEventListener("change", async () => {
         try {
           const saved = await api().set_ammo(u.address, wp.address, pick.value);
-          showWas(saved.edited);
-          const now = (await api().weapons(u.address, state.lang)).weapons.find((x) => x.address === wp.address);
-          shot.textContent = now && now.shot ? fill(w.shot, { fx: now.shot }) : "";
           await refreshMarks();
           say(w.saved.replace("{file}", saved.saved), "ok");
         } catch (err) { problem(err); }
+        draw();  // its shot and its range follow the ammo
       });
       showWas(wp.edited);
       table.append(tr);
     });
-    group.append(table, el("p", { className: "muted small", textContent: w.weapons_help }));
+    group.replaceChildren(el("h2", { textContent: w.weapons }), table,
+      el("p", { className: "muted small", textContent: w.weapons_help }));
     group.classList.remove("hidden");
   }).catch(problem);
+  draw();
   return group;
 }
 
@@ -811,6 +913,331 @@ function copyNotice(u) {
   return box;
 }
 
+// --- a unit's 3D model on its page, turning slowly until it's dragged (api.unit_preview: the game's model as a .glb
+// from rusemod.gltf, made once per game build and kept in the cache). three.js comes from the internet, as for the
+// Maps view (index.html). One renderer for every page, moved into the page shown. The mod's paint (what Bring back
+// put in it) goes on in place of the game's picture; propeller discs (`<model>_propeller`) stay hidden, as in
+// Blender: the game spins them with a shader of its own. ---
+const uview = { gl: null, ask: 0 };
+
+async function unitViewGl() {
+  if (uview.gl) return uview.gl;
+  const THREE = await import("three");
+  const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
+  const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio || 1);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 1000);
+  scene.add(new THREE.HemisphereLight(0xeef3f8, 0x4a4234, 2.2));
+  const sun = new THREE.DirectionalLight(0xfff4e0, 2.4);
+  sun.position.set(3, 5, 4);
+  scene.add(sun, camera);
+  camera.add(new THREE.DirectionalLight(0xffffff, 0.8));  // a little light from where we look
+  const controls = new OrbitControls(camera, renderer.domElement);
+  Object.assign(controls, { enableDamping: true, autoRotate: true, autoRotateSpeed: 1.5, enablePan: true });
+  controls.addEventListener("start", () => {  // dragged or zoomed: it stays where it's put
+    controls.autoRotate = false;
+    if (uview.gl.fit) uview.gl.fit.moved = true;
+  });
+  const model = new THREE.Group();
+  const soft = el("canvas", { width: 128, height: 128 }), sctx = soft.getContext("2d");  // a shadow fading out
+  const fade = sctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  fade.addColorStop(0, "rgba(0, 0, 0, 0.55)");
+  fade.addColorStop(0.55, "rgba(0, 0, 0, 0.3)");
+  fade.addColorStop(1, "rgba(0, 0, 0, 0)");
+  sctx.fillStyle = fade;
+  sctx.fillRect(0, 0, 128, 128);
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2, 2),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(soft), transparent: true, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2;
+  scene.add(model, shadow);
+  uview.gl = { THREE, renderer, scene, camera, controls, model, shadow, loader: new GLTFLoader(),
+    pictures: new THREE.TextureLoader() };
+  const loop = () => {
+    requestAnimationFrame(loop);
+    const host = renderer.domElement.parentElement;
+    if (!host || !host.isConnected || host.offsetParent === null) return;  // another page or the Maps tab
+    const wd = host.clientWidth, ht = host.clientHeight, size = renderer.getSize(new THREE.Vector2());
+    if (wd && ht && (size.x !== wd || size.y !== ht)) {
+      renderer.setSize(wd, ht);
+      camera.aspect = wd / ht;
+      camera.updateProjectionMatrix();
+      if (uview.gl.fit && !uview.gl.fit.moved) unitViewFit(uview.gl);  // not zoomed yet: keep it all in view
+      placeCardFrame();
+    }
+    controls.update();
+    renderer.render(scene, camera);
+  };
+  loop();
+  return uview.gl;
+}
+
+// The camera about as far from the model as it takes to see all of it (its bounding sphere, which is roomy round a
+// box: 0.85 of that distance still keeps a turning plane's wings in) in the view's narrower angle, looking from
+// where it looks now.
+function unitViewFit(gl) {
+  const { centre, radius } = gl.fit;
+  const tan = Math.tan(gl.camera.fov * Math.PI / 360);
+  let half = Math.atan(tan * Math.min(1, gl.camera.aspect));
+  const host = gl.renderer.domElement.parentElement, f = uview.frame;
+  let room = 0.85;
+  if (f && f.el.isConnected && host && host.clientWidth && host.clientHeight) {  // a card: fit inside its frame,
+    const r = cardRect(host.clientWidth, host.clientHeight, f.aspect);         // filling it as the game's cards do
+    half = Math.min(Math.atan(tan * r.h / host.clientHeight),
+      Math.atan(tan * (host.clientWidth / host.clientHeight) * r.w / host.clientWidth));
+    room = 0.62;
+  }
+  const away = gl.camera.position.clone().sub(gl.controls.target);
+  if (away.lengthSq() < 1e-12) away.set(0.85, 0.42, 0.85);
+  gl.controls.target.copy(centre);
+  gl.camera.position.copy(centre).add(away.normalize().multiplyScalar(radius / Math.sin(half) * room));
+  gl.controls.update();
+}
+
+// --- the unit's card (its picture in the build menu): what's inside the dashed frame on the 3D view, taken at the
+// card's own size over a backdrop like the game's cards (a hazy sky, far hills, sandy ground), and saved in the mod
+// (api.look_card; the build writes it as the game stores its cards, rusemod.unitlook.make_picture). ---
+function cardRect(wd, ht, aspect) {  // the frame: as big as fits with a small margin, centred
+  const room = 0.88;
+  let fw = wd * room, fh = fw / aspect;
+  if (fh > ht * room) { fh = ht * room; fw = fh * aspect; }
+  return { x: (wd - fw) / 2, y: (ht - fh) / 2, w: fw, h: fh };
+}
+
+function placeCardFrame() {
+  const f = uview.frame;
+  if (!f || !f.el.isConnected) return;
+  const host = f.el.parentElement, r = cardRect(host.clientWidth, host.clientHeight, f.aspect);
+  Object.assign(f.el.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` });
+}
+
+function cardBackdrop(ctx, wd, ht) {
+  ctx.save();
+  const sky = ctx.createLinearGradient(0, 0, 0, ht * 0.62);
+  sky.addColorStop(0, "#aebdca");
+  sky.addColorStop(1, "#dde2e5");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, wd, ht);
+  ctx.filter = "blur(2px)";
+  ctx.fillStyle = "rgba(120, 132, 146, 0.75)";  // far hills, hazy
+  ctx.beginPath();
+  ctx.moveTo(0, ht * 0.56);
+  for (let x = 0; x <= wd; x += 4) {
+    const t = x / wd;
+    ctx.lineTo(x, ht * (0.47 - 0.08 * Math.sin(t * 5.1 + 0.6) * Math.sin(t * 2.3 + 1.1) - 0.03 * Math.sin(t * 17)));
+  }
+  ctx.lineTo(wd, ht * 0.6);
+  ctx.lineTo(0, ht * 0.6);
+  ctx.fill();
+  const ground = ctx.createLinearGradient(0, ht * 0.52, 0, ht);
+  ground.addColorStop(0, "#d2c4a8");
+  ground.addColorStop(1, "#a88f6c");
+  ctx.fillStyle = ground;
+  ctx.fillRect(0, ht * 0.55, wd, ht * 0.45);
+  ctx.restore();
+}
+
+// What's inside the frame now, as a PNG data address at the card's size (drawn twice as big, then halved: smoother).
+function cardShot(card) {
+  const gl = uview.gl, { THREE } = gl, host = gl.renderer.domElement.parentElement;
+  const wd = host.clientWidth, ht = host.clientHeight, r = cardRect(wd, ht, card.width / card.height);
+  const shot = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  try {
+    shot.setPixelRatio(1);
+    shot.setSize(card.width * 2, card.height * 2, false);
+    const cam = gl.camera.clone();
+    cam.aspect = wd / ht;
+    cam.setViewOffset(wd, ht, r.x, r.y, r.w, r.h);
+    shot.render(gl.scene, cam);
+    const c = el("canvas", { width: card.width, height: card.height }), ctx = c.getContext("2d");
+    cardBackdrop(ctx, card.width, card.height);
+    ctx.drawImage(shot.domElement, 0, 0, card.width, card.height);
+    return c.toDataURL("image/png");
+  } finally {
+    shot.dispose();
+    shot.forceContextLoss();
+  }
+}
+
+function cardRow(u, card) {
+  const w = state.words;
+  const thumb = el("img", { className: "card-thumb", src: card.url, alt: w.card_now, title: w.card_now });
+  const use = el("button", { type: "button", textContent: w.card_use, title: w.tip_card_use });
+  const reset = el("button", { type: "button", className: "ghost", textContent: w.card_reset, title: w.tip_card_reset });
+  const show = (c) => {
+    thumb.src = c.url;
+    reset.classList.toggle("hidden", !c.own);
+  };
+  show(card);
+  use.addEventListener("click", async () => {
+    if (!state.mod) { say(w.no_mod, "error"); return; }
+    use.disabled = true;
+    try {
+      const r = await api().look_card(u.address, cardShot(card));
+      show(r.card);
+      say(r.message, "ok");
+    } catch (err) { problem(err); } finally { use.disabled = false; }
+  });
+  reset.addEventListener("click", async () => {
+    try { const r = await api().look_card_reset(u.address); show(r.card); say(r.message, "ok"); }
+    catch (err) { problem(err); }
+  });
+  return el("div", { className: "card-row" }, thumb,
+    el("div", {}, el("p", { className: "muted small", textContent: w.card_note }), el("div", { className: "actions" }, use, reset)));
+}
+
+function unitView(u) {
+  const w = state.words;
+  const status = el("div", { className: "view-note", textContent: w.unit_view_loading });
+  const host = el("div", { className: "unit-view" }, status);
+  const box = el("div", { className: "group unit-view-box" }, el("h2", { textContent: w.unit_view }), host);
+  const load = async () => {
+    const ask = ++uview.ask;
+    const info = await api().unit_preview(u.address);
+    if (ask !== uview.ask) return;
+    if (!info.models || !info.models.length) {  // no model the Studio can show: the values take the whole page
+      const page = box.closest(".unit-page");
+      if (page) page.classList.add("no-model");
+      box.remove();
+      return;
+    }
+    const gl = await unitViewGl();
+    if (ask !== uview.ask) return;
+    const { THREE } = gl;
+    const loaded = await Promise.all(info.models.map((m) => gl.loader.loadAsync(m.url)));
+    const paint = await Promise.all(Object.entries(info.paint || {}).map(async ([tex, url]) => {
+      const t = await gl.pictures.loadAsync(url);
+      Object.assign(t, { flipY: false, colorSpace: THREE.SRGBColorSpace, wrapS: THREE.RepeatWrapping,
+        wrapT: THREE.RepeatWrapping });
+      return [tex, t];
+    }));
+    if (ask !== uview.ask) return;
+    for (const old of [...gl.model.children]) {  // the last page's model
+      gl.model.remove(old);
+      old.traverse((o) => {
+        if (!o.isMesh) return;
+        o.geometry.dispose();
+        for (const m of [].concat(o.material)) { if (m.map) m.map.dispose(); m.dispose(); }
+      });
+    }
+    const pictureOf = Object.fromEntries(paint), shown = [];
+    let painted = 0;
+    for (const g of loaded) {
+      g.scene.traverse((o) => {
+        if (/_propeller$/.test(o.name)) o.visible = false;
+      });
+      g.scene.traverse((o) => {
+        if (!o.isMesh) return;
+        let seen = true;
+        for (let p = o; p; p = p.parent) if (!p.visible) seen = false;
+        if (seen) shown.push(o);
+        for (const m of [].concat(o.material)) {
+          const t = pictureOf[m.userData && m.userData.rusemod_texture];
+          if (t) { m.map = t; m.needsUpdate = true; painted++; }
+        }
+      });
+      gl.model.add(g.scene);
+    }
+    gl.model.updateMatrixWorld(true);
+    const bounds = new THREE.Box3();
+    for (const o of shown) {
+      o.geometry.computeBoundingBox();
+      bounds.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));
+    }
+    const centre = bounds.getCenter(new THREE.Vector3()), size = bounds.getSize(new THREE.Vector3());
+    const reach = Math.max(size.length(), 0.01);
+    gl.shadow.position.set(centre.x, bounds.min.y + reach * 0.002, centre.z);
+    gl.shadow.scale.setScalar(Math.max(size.x, size.z) * 0.62);
+    gl.camera.near = reach / 100;
+    gl.camera.far = reach * 20;
+    gl.camera.updateProjectionMatrix();
+    gl.camera.position.set(centre.x + 0.85, centre.y + 0.42, centre.z + 0.85);  // from the front corner, a bit above
+    gl.controls.target.copy(centre);
+    gl.controls.minDistance = reach * 0.15;
+    gl.controls.maxDistance = reach * 5;
+    gl.controls.autoRotate = true;
+    host.prepend(gl.renderer.domElement);
+    status.textContent = painted ? w.unit_view_paint : "";
+    for (const old of host.querySelectorAll(".hint, .card-frame")) old.remove();  // a reload after Bring back
+    host.append(el("div", { className: "hint", textContent: w.unit_view_hint }));
+    const oldRow = box.querySelector(".card-row");
+    if (oldRow) oldRow.remove();
+    uview.frame = null;
+    if (info.card) {
+      const frame = el("div", { className: "card-frame" }, el("span", { textContent: w.card_frame }));
+      host.append(frame);
+      uview.frame = { el: frame, aspect: info.card.width / info.card.height };
+      placeCardFrame();
+      box.append(cardRow(u, info.card));
+    }
+    gl.fit = { centre, radius: reach / 2, moved: false };
+    unitViewFit(gl);  // after the frame is in: a card's model starts out fitting inside it
+  };
+  box.reload = () => load().catch((err) => { status.textContent = (err && err.message) || String(err); });
+  box.reload();
+  return box;
+}
+
+// --- a unit's look: its model out to Blender, the paint back into the mod (api.look, look_open, look_bring_back,
+// choose_blender, get_blender; rusemod.unitlook). Blender is a program of its own: the Studio opens it, with the
+// unit loaded and each texture linked to its picture, and takes back what was painted there (Bring back asks
+// Blender to save it first, rusemod.blender.ask_to_save). `brought` is called after paint came back.
+function lookBox(u, brought) {
+  const w = state.words;
+  const address = u.address;
+  const body = el("div", { className: "muted small", textContent: w.look_working });
+  const box = el("div", { className: "group look" }, el("h2", { textContent: w.unit_look, title: w.tip_unit_look }), body);
+  const draw = (info) => {
+    if (!info.models || !info.models.length) { box.remove(); return; }
+    const parts = [];
+    if (!info.blender) {
+      const get = el("button", { type: "button", textContent: w.look_get_blender, title: w.tip_look_get_blender });
+      get.addEventListener("click", () => api().get_blender().catch(problem));
+      const choose = el("button", { type: "button", className: "ghost", textContent: w.look_choose_blender,
+        title: w.tip_look_choose_blender });
+      choose.addEventListener("click", async () => {
+        try {
+          const r = await api().choose_blender();
+          if (r.message) say(r.message, "error");
+          draw(await api().look(address));
+        } catch (err) { problem(err); }
+      });
+      parts.push(el("p", { textContent: w.look_no_blender }), el("div", { className: "actions" }, get, choose));
+    } else {
+      const open = el("button", { type: "button", textContent: w.look_open, title: w.tip_look_open });
+      const back = el("button", { type: "button", textContent: w.look_back, title: w.tip_look_back,
+        disabled: !info.opened || !state.mod });
+      open.addEventListener("click", async () => {
+        open.disabled = true;
+        say(w.look_opening);
+        try { const r = await api().look_open(address); say(r.message, "ok"); draw(r); }
+        catch (err) { problem(err); } finally { open.disabled = false; }
+      });
+      back.addEventListener("click", async () => {
+        back.disabled = true;
+        say(w.look_bringing);
+        try {
+          const r = await api().look_bring_back(address);
+          say(r.message, r.brought.length ? "ok" : "");
+          draw(r);
+          if (r.brought.length && brought) brought();
+        } catch (err) { problem(err); } finally { back.disabled = !state.mod; }
+      });
+      parts.push(el("p", { className: "muted small", textContent: w.look_how }),
+        el("div", { className: "actions" }, open, back));
+      if (!state.mod) parts.push(el("p", { className: "notice", textContent: w.no_mod }));
+    }
+    if (info.painted && info.painted.length) {
+      parts.push(el("p", { className: "small", textContent: fill(w.look_painted, { n: info.painted.length }) }));
+    }
+    body.className = "new-unit";
+    body.replaceChildren(...parts);
+  };
+  api().look(address).then(draw).catch((err) => { body.textContent = (err && err.message) || String(err); });
+  return box;
+}
+
 async function showUnit(address, via) {
   via = via || "";
   if (!state.page || state.page.via !== via) state.mode = "own";  // a new way in: "only this unit" first
@@ -833,6 +1260,7 @@ async function showUnit(address, via) {
     ...(u.desc ? [el("p", { className: "unit-desc", textContent: u.desc })] : []),
     el("div", { className: "address" }, el("code", { textContent: u.address }), copy),
     el("div", { className: "meta", textContent: u.class })];
+  const head = parts.length;  // the name, address and class: above the page's columns
   if (u.new) parts.push(copyNotice(u));
   if (!u.editable) parts.push(el("p", { className: "notice", textContent: w[u.why_not] || u.why_not }));
   else if (!state.mod) parts.push(el("p", { className: "notice", textContent: w.no_mod }));
@@ -872,6 +1300,13 @@ async function showUnit(address, via) {
     const list = el("ul", { className: "parts" });
     for (const r of u.used_by) list.append(el("li", { className: "muted small", textContent: `${r.address}  (${r.path})` }));
     parts.push(el("div", { className: "group" }, el("h2", { textContent: w.used_by }), list));
+  }
+  if (u.named || u.new) {  // a unit: its model beside its values, with the Blender buttons under it
+    const view = unitView(u);
+    const side = el("aside", { className: "unit-side" }, view, lookBox(u, () => view.reload()));
+    $("detail").replaceChildren(...parts.slice(0, head),
+      el("div", { className: "unit-page" }, el("div", { className: "unit-main" }, ...parts.slice(head)), side));
+    return;
   }
   $("detail").replaceChildren(...parts);
 }

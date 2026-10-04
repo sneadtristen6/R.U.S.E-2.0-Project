@@ -44,6 +44,44 @@ not renew automatically.
 
 You can also [request a feature for a one-time $3](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812).
 
+## Units get their own look, and our first new unit (Studio 0.9.5)
+
+See any unit in 3D on its page in RUSE Studio, repaint it in Blender, and make its card in the build menu from the
+3D view. Our firsts, all seen in the game:
+
+- **The first unit repainted by a mod:** a red Sherman, up close and from far.
+- **The first unit painted in Blender** and brought back into the game.
+- **The first build-menu card made in the Studio,** in the game's own Armor Base menu.
+- **The first new unit with a 3D model of its own,** beside the game's: the Tall Sherman, next to the Sherman. Made in
+  testing; making your own models in the Studio comes next.
+- **The first mission of our own** played to a victory: a new Operation with its own goals, units and an artillery
+  strike. Made in testing.
+
+<img src="docs/images/studio-unit-3d.jpg" alt="RUSE Studio: the Sherman's page with its values, its 3D model turning on the right, and Repaint in Blender under it" width="800">
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/units-two-shermans.jpg" alt="R.U.S.E. in game: two Shermans side by side, the left one a new unit with a taller model of its own" width="400"><br>
+      <sub>Two Shermans: the game's, and a new unit with a model of its own.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/units-tall-sherman-menu.jpg" alt="R.U.S.E. in game: the Armor Base build menu with the new Tall Sherman under the Sherman" width="400"><br>
+      <sub>The new unit in the Armor Base's build menu.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/units-repainted-red.jpg" alt="R.U.S.E. in game: two Shermans repainted red by a mod" width="400"><br>
+      <sub>Repainted by a mod.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/units-card-in-menu.jpg" alt="R.U.S.E. in game: the Sherman's build-menu card replaced by one made from RUSE Studio's 3D view" width="400"><br>
+      <sub>A card made from the Studio's 3D view, in the game's build menu.</sub>
+    </td>
+  </tr>
+</table>
+
 ## Roads are cracked (Studio 0.9)
 
 A road you draw in RUSE Studio now looks like the map's own roads, from high up and right down at the ground: the
@@ -336,7 +374,7 @@ Stuck on something? See [Questions? Ask any AI](#questions-ask-any-ai) at the bo
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.4) &middot; **Studio** for modders, a preview (latest: 0.9.4) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.5) &middot; **Studio** for modders, a preview (latest: 0.9.5) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -345,14 +383,23 @@ ground that units drive on and take orders on), a moved starting point, painted 
 buildings (at up to 8× their size), and both apps updating themselves; on 2026-10-01, roads with new bridges
 that tanks, infantry and supply trucks cross, infantry following new roads, a bridge placed by hand, a building at
 10× standing on the ground, a dried riverbed units walk, and a cleared wood tanks drive into and infantry no longer
-hide in. **Not yet checked in the game:** a new unit
-made in the Studio's window, mod sets made in the launcher's window, a mod exported as one file, sharing a load
+hide in; on 2026-10-03 and 04, units repainted by a mod and in Blender, a build-menu card made in the Studio, a
+second Sherman with a 3D model of its own, a mission of our own played to a victory, a new Operation, another nation's
+units in a campaign map, and erased buildings opening their ground. **Not yet checked in the game:** a new unit
+made in the Studio's window, a new unit's own card, mod sets made in the launcher's window, a mod exported as one file, sharing a load
 order, units a skirmish spawns, and Browse mods. The tests, step by step for anyone with the game:
 [docs/TESTS.md](docs/TESTS.md).
 
 <details>
-<summary><b>Current stage (2026-10-03)</b></summary>
+<summary><b>Current stage (2026-10-04)</b></summary>
 
+- **Studio 0.9.5 and Launcher 0.4.5** (2026-10-04): units get a look of their own. A unit's page shows it in 3D;
+  **Repaint in Blender** opens it in Blender and brings your paint back into your mod (seen in the game); **Use this
+  view as the card** makes its build-menu card from the 3D view (seen in the game), and a new unit's card is its own.
+  Model packs that grow are written the way the game checks them: seen in the game, a second Sherman with a model of
+  its own. Also: another nation's units load in campaign chapters and Operations, **Duplicate map** makes Operations
+  and campaign chapters, the map's edge follows flattened mountains, erased buildings open their ground, and **Map
+  Paint** (early).
 - **Studio 0.9.4 and Launcher 0.4.4** (2026-10-03): new maps, early. The Studio's **Duplicate map** makes a new map
   from any BATTLES map, listed in BATTLES next to it; seen in the game: a new map plays its own ground, and 101 new
   maps at once were all listed and played. Maps open in a second the second time, and small fixes can come between

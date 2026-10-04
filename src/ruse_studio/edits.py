@@ -216,11 +216,13 @@ class ModEdits:
         return unit
 
     def remove_unit(self, target: str) -> None:
-        """Delete a new unit: its copy, every change made to it and its parts, and its name."""
+        """Delete a new unit: its copy, every change made to it and its parts, its name and its own card (a card with
+        no unit is an error in the build)."""
         self.new_units.pop(target, None)
         for key in [k for k in self.edits if k[0] == target]:
             del self.edits[key]
         self.save()
+        (self.folder / "files" / "cards" / f"{target.rsplit('/', 1)[-1]}.png").unlink(missing_ok=True)
 
     def new_unit_of(self, address: str) -> NewUnit | None:
         """The new unit an address belongs to (the unit itself, or a part inside it), or None."""

@@ -226,6 +226,33 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
 
 - `files/replace/<game path>.<source ext>` replaces an existing file. For example,
   `files/replace/gen/ww2/res3d/…/sherman.tgv.png` is cooked to that `.tgv`.
+- **Built for textures (2026-10-03, `rusemod.unitlook`; proven in the game by T23):** `files/replace/<texture's path in
+  ZZ_Win.dat>.png` repaints its colour, e.g. `files/replace/gen/ww2/res3d/units/urss/char/urss_t-26/
+  tsccombcs_combineddsctexture01.tgv.png`. The picture is the texture's own size (what `ruse export-model` and the
+  Studio's Open in Blender write). Its alpha channel is never used: the texture keeps the game's alpha (on vehicles
+  the player's side colour and shine) unless `<texture>.tgv.alpha.png` (grey) is there too. Only the 4 × 4 blocks
+  that were painted are encoded again, in every level; the rest stay the game's, byte for byte. The texture's small
+  stand-in (in the `.ppk` packs) gets the same. A later mod's picture wins over an earlier one's. A repaint changes
+  every unit drawn with that texture (one picture can serve a nation's whole infantry).
+- **A unit's card** (its picture in the build menu, the unit's `TextureForInterface`) is replaced the same way:
+  `files/replace/gen/ww2/res2d/texanimationuniticone/eu/m4_sherman.tgv.png`, the card's own size (360 x 184 for most
+  units). The build writes it as the game stores all 450 of its cards: one DXT1_LIN level, ZIPO-packed, only the
+  changed 4 x 4 blocks encoded again, and replaces it in every menu pack that holds a copy (the build menu shows
+  those: `gen/pack/menuus.ppk` and the like). Proven in the game (TESTS T31).
+- **A new unit's own card:** a copied unit starts with its source's card file, so the two look alike in the build menu
+  (T33). `files/cards/<the new unit's name>.png` (`files/cards/Descriptor_Unit_R2_M4_Sherman_Tall.png`), the source's
+  card's size, gives it a card of its own: the build points its `TextureForInterface` at a file beside the source's,
+  named after the unit (`...\EU\descriptor_unit_r2_m4_sherman_tall.png`), makes it the way the game stores cards and
+  adds it to each menu pack that holds the source's card. The source's card is left as it is. A picture there for a
+  unit no mod in the set makes is an error. The Studio writes it there when the card is made on a new unit's page,
+  and removes it with the unit. Not yet seen in the game (TESTS T34).
+- **The Studio's unit page** shows the unit's 3D model, turning, with the mod's paint on it (a .glb made once per game
+  build in the Studio's cache). A dashed frame on it marks the card: *Use this view as the card* saves what's inside
+  it, over a backdrop like the game's cards, as the mod's card; *Game's card* removes it. Under it, *Open in Blender* writes the unit's models and pictures to a work folder
+  outside the mod and opens Blender with them in its Texture Paint workspace, each texture linked to its picture;
+  *Bring back* asks that Blender to save the paint (it also saves on Ctrl+S, on its "Save paint" button and every
+  10 seconds) and copies the pictures painted since into the mod's `files/replace`. The game's models never go into
+  a mod.
 - `files/add/mods/<mod id>/<name>.<source ext>` adds a new file, referenced from `.rndf` by its game path.
 - Which pack receives new files depends on whether NDF can mount an extra pack (tested in M2). The preferred
   answer is a mod-owned pack mounted by NDF.
@@ -299,8 +326,9 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
 - **Seen in the game** (`TESTS.md` T15b, T16): a new map is listed in BATTLES and plays its own ground (Blitz Twin
   flattened, with a hill in the middle); 101 new maps at once were all listed, the map row scrolling, and played.
   Names over about 35 characters are cut off in the menus. Copies of maps other than Blitz build but weren't tried in
-  the game yet. Known bug: flattening the mountains at a map's edge leaves a cliff along the edge (its outermost row
-  of points keeps its height).
+  the game yet. Flattening the mountains at a map's edge left a wall along it (the outermost row of points kept its
+  height); the edge now moves with the ground and the curtain hanging from it follows (built, not yet seen in the
+  game: `TESTS.md` T18).
 
 ### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`; PLAN §7 MT, T2–T3)
 
@@ -314,7 +342,7 @@ list shows it under each map). The file holds strokes, one dab of a brush each:
 
 ```toml
 [[stroke]]
-brush  = "hill"      # hill, raise, lower, crater, plateau, flatten, smooth, ramp, water, drain, cover, uncover
+brush  = "hill"      # hill, raise, lower, crater, plateau, flatten, smooth, ramp, water, drain, cover, uncover, …
 x      = 983040.0    # the centre, in world units: x grows east, y grows south
 y      = 983040.0
 radius = 60000.0
@@ -362,6 +390,41 @@ level  = 23500.0     # water: the water surface (world z); the ground under it f
 | `uncover` | the same, taking cover away (also `square = true`) | the cells whose centres are inside |
 | `block`, `block_infantry`, `block_vehicles` | ground units can't use (all of them, infantry or vehicles): a `movement.toml` block after the mod's own; the ground doesn't move | the circle |
 | `open`, `open_infantry`, `open_vehicles` | ground units can use where the map has none (the reverse of block): a `movement.toml` open after the mod's own; the ground doesn't move | the circle, in circles of 5 m or more (towns: 1.2 m) |
+| `paint` | the Studio's Map Paint **Colour**: lays `colour` ("#rrggbb") on the ground's picture at `weight` (its opacity, 0..1, 1 when left out), on every level of both tile sets; the ground doesn't move. With `clear` (true when left out) the build also takes off what hides it up close (below). Seen in the game (TESTS.md T20, T21) | round hump weighting (a hard edge: full nearly to the edge) |
+| `stamp` | Map Paint's **Texture**: lays the map's own picture from (`x` + `sx`, `y` + `sy`) at `weight`, as the map was before any paint, at every level; the map's close-up picture (`div_map`) takes that spot's values too, so it blends up close as the spot does. `clear` as for `paint`. Seen in the game with `clear` (T26: a light field copied into a riverbed reads as a road; copy from ground like its surroundings) | round hump weighting |
+
+```toml
+[[stroke]]
+brush  = "paint"
+x      = 806088.0
+y      = 881645.0
+radius = 10400.0
+colour = "#e02020"   # paint: the colour, red, green, blue in hex
+weight = 1.0         # paint, stamp: the opacity, 0..1
+
+[[stroke]]
+brush  = "stamp"
+x      = 741088.0
+y      = 959645.0
+radius = 26000.0
+sx     = 110000.0    # stamp: where the ground it copies lies, from each point it paints (world units)
+sy     = 110000.0
+weight = 1.0
+clear  = false       # paint, stamp: leave what hides it up close (true when left out: it goes)
+```
+
+Paint strokes apply in their order, each over what's below it (a stroke on the same place again builds up), before
+the mod's new roads are painted, so a road drawn over paint shows on top.
+
+**What hides paint up close** (`clear`, `rusemod.groundpaint.paint_clearing`): near the camera the game draws the map's
+ground stickers, low plants (crops, grass, bushes, flowers) and stones over the ground's picture, so paint under them
+shows only from afar (seen in the game, TESTS.md T20). With `clear` the build takes them off wherever the stroke
+paints at least half strength (its opacity times its fall-off): every sticker, low plant and stone that reaches in,
+by its own size (a sticker's descriptor extent, a plant's model; times the size it's placed at), since a sticker
+20 m across centred outside a patch still covers its edge (T26). Trees, buildings, the cover and the movement stay.
+Seen in the game: a patch cleared this way shows at every height (T21). A stroke weaker than half clears nothing.
+Clearing a very large patch copies many of the map's shared blocks and can pass what its scenery holds (see Erase
+areas); the build then refuses it: paint smaller, or set `clear = false` on the biggest strokes.
 
 Block and open strokes apply in their order, so where two meet the later one wins. The Studio's **Forest** brush
 isn't a brush of its own in the file: one drag writes the trees it scatters to `scenery.toml` (as Place, Area would)
@@ -381,7 +444,11 @@ and `cover` strokes over the same circles here; its Undo takes back both.
 - **All four files together.** A map's ground is in four files (FORMATS.md §6): the close-up and far meshes the game
   draws, the gameplay ground and the camera floor (`.kdt`). Every stroke moves the points of all four inside its
   circle by a function of position and height only, so points they share stay at the same height. The map's outer
-  edge never moves (the drawn mesh's curtain hangs from it).
+  edge moves like the rest: the curtain hanging from it (the map's side when zoomed out) follows, the water's side
+  where sea or river met the edge folds away under ground raised above the water, and the camera floor's ring past
+  the edge moves with the edge beside it. A stroke that goes toward a height (plateau, flatten, level, ramp, smooth)
+  also takes away the drawn meshes' own bumps off the gameplay ground as far as it flattens, so a flattened map is flat
+  from far too; the camera floor keeps its height above the ground (not yet seen in the game: `TESTS.md` T18).
 - **The same on every PC.** Only arithmetic and square roots, which every PC rounds the same way, so two PCs build the
   same bytes. The reshaped map counts for multiplayer: its files are part of the fingerprint (§12).
 - **Load order:** when several mods reshape one map, their strokes run in load order, one mod's after another's.
@@ -441,8 +508,13 @@ types = ["TypeWarrior/Pont_Normandie"]  # and these types, whatever they are (th
 
 - An object goes when its place lies in the circle. Road pieces and level-design markers always stay; buildings and
   decals only when `what` names them, bridges only when `types` does.
-- **Buildings and bridges are drawn only**: the map's movement still has them, so where an erased building stood stays
-  closed to units, and an erased bridge's deck stays open over the water. The build says so as a warning.
+- **A circle that takes buildings opens its ground**: the build opens the whole circle to every unit, after the mod's
+  own movement edits (`rusemod.build.cleared_woods`). A town's movement closes whole blocks (houses, yards, walls),
+  so the circle opens whole, not each house's own ground. Proven in the game 2026-10-04 (TESTS.md T25): tanks and
+  infantry drive through where Blitz's town stood, and infantry there no longer act as in a town. Buildings erased by
+  name only (`types`, without `"building"` in `what`) keep their ground closed, with a warning.
+- **Bridges are drawn only**: the map's movement still has them, so an erased bridge's deck stays open over the
+  water. The build says so as a warning.
 - **A circle that takes trees clears a wood**: the build also opens its ground to every unit and takes the forest
   cover away there, after the mod's own movement and cover edits (`rusemod.build.cleared_woods`; proven in the game
   2026-10-01: tanks drive in, infantry there are seen).

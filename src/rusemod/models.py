@@ -26,6 +26,7 @@ PACKS = "gen_5\\pack\\"
 TEXTURE_ROLES = ("diffuseTexture", "CombinedDSCTexture", "CombinedDSTexture")  # the picture to draw, best first
 MEDIUM = "_lodmedium"  # a lighter version some models have, for the middle distance (what a map view mostly shows)
 PICTURE_SIDE = 512     # atlases are drawn from a mip level at most this wide: plenty from the map view's distance
+CACHE_VERSION = 2      # bumped when what the cache holds changes (2: `_2wn` UVs read signed, 2026-10-03)
 
 
 def medium_name(model: str) -> str:
@@ -92,9 +93,9 @@ class Library:
             out.append((part, tex))
         return out
 
-    def picture(self, texture: str) -> tuple[int, int, bytes] | None:
-        """An atlas as RGBA pixels (width, height, bytes), from a mip level at most PICTURE_SIDE wide; None when it
-        isn't there or its codec isn't read yet (TGU1 with alpha)."""
+    def picture(self, texture: str, most: int = PICTURE_SIDE) -> tuple[int, int, bytes] | None:
+        """An atlas as RGBA pixels (width, height, bytes), from a mip level at most `most` wide; None when it
+        isn't there or its codec isn't read."""
         from . import dxt, tgu1
         from .tmst import Tgv, zipo_unpack
         entry = self.arc.entry(texture_member(texture))
@@ -103,14 +104,14 @@ class Library:
         tgv = Tgv(bytes(self.arc.read(entry)))
         # mip levels are listed smallest first: the last one is the full picture, each one before it half as wide
         mip, w, h = len(tgv.mips) - 1, tgv.width, tgv.height
-        while max(w, h) > PICTURE_SIDE and mip > 0:
+        while max(w, h) > most and mip > 0:
             mip, w, h = mip - 1, max(4, w // 2), max(4, h // 2)
         payload = tgv.payload(mip)
         try:
             if payload[:4] == b"TGU1":
                 head = tgu1.Header.parse(payload)
                 w, h = head.width * 4, head.height * 4  # its own size, in blocks (a TGV can say more than it stores)
-                blocks = tgu1.decode(payload)  # DXT1 only: TGU1 with alpha isn't read yet
+                blocks = tgu1.decode(payload)  # DXT1 or DXT5 (unit textures)
             elif payload[:4] == b"ZIPO":
                 blocks = zipo_unpack(payload)
             else:
@@ -136,7 +137,7 @@ def map_models(game: Path, types: list, out_dir: Path, say=None) -> dict:
             found = [n for n in (lib.find(w) for w in wanted) if n]
             if found:
                 names[i] = tuple(found)
-        key = hashlib.sha1(json.dumps(sorted(set(names.values()))).encode()).hexdigest()[:16]
+        key = hashlib.sha1(json.dumps([CACHE_VERSION] + sorted(set(names.values()))).encode()).hexdigest()[:16]
         out_dir.mkdir(parents=True, exist_ok=True)
         index_file = out_dir / f"{key}.json"
         if index_file.is_file():

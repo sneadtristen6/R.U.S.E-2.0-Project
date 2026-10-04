@@ -1955,7 +1955,7 @@ def solid_blocks(game, objects) -> tuple[list[Block], list[str]]:
     from pathlib import Path
     from .build import find_pack
     from .edat import Edat
-    from .scenery import descriptors
+    from .scenery import descriptors, model_reach
     wanted = [o for o in objects if o.solid]
     if not wanted:
         return [], []
@@ -1975,16 +1975,7 @@ def solid_blocks(game, objects) -> tuple[list[Block], list[str]]:
             if lib is None:
                 from .models import Library
                 lib = Library(Path(game))
-            far = 0.0
-            for model in (d.models or ([d.model] if d.model else [])):
-                name = lib.find(model)
-                if name is None:
-                    continue
-                for part, _tex in lib.parts(name):
-                    pos = part.positions
-                    for k in range(0, len(pos) - 2, 3):
-                        far = max(far, (pos[k] * pos[k] + pos[k + 1] * pos[k + 1]) ** 0.5)
-            reach[o.type] = far or FOOTPRINT
+            reach[o.type] = model_reach(lib, d) or FOOTPRINT
         out.append(Block(o.x, o.y, reach[o.type] * o.size, "all"))
     if lib is not None:
         lib.close()

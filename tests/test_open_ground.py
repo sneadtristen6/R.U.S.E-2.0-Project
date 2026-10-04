@@ -166,6 +166,25 @@ class Files(unittest.TestCase):
             nav.Block(3.0, 0.0, 1000.0, "all", True)])
         self.assertEqual([s.brush for s in info.terrain["Blitz"]], ["raise"])
 
+    def test_a_square_or_a_line_goes_in_as_circles_covering_it(self):
+        """The movement graphs are circles: a square or a line block (the brush types, 2026-10-03) goes in as circles
+        whose union covers it, in the stroke's place in the order."""
+        from rusemod.build import BLOCK_CELL, _block_brushes
+        strokes = parse_strokes([
+            {"brush": "block", "x": 0.0, "y": 0.0, "radius": 3000.0, "shape": "square", "dx": 1.0, "dy": 1.0},
+            {"brush": "open_vehicles", "x": 0.0, "y": 0.0, "radius": 500.0, "shape": "line", "x2": 4000.0, "y2": 0.0}])
+        info = SimpleNamespace(terrain={"Blitz": strokes}, movement={})
+        _block_brushes(info)
+        blocks = info.movement["Blitz"]
+        square = [b for b in blocks if not b.open]
+        line = [b for b in blocks if b.open]
+        self.assertEqual(len(square), len(strokes[0].footprint().circles(BLOCK_CELL)))
+        self.assertEqual(blocks, square + line)                  # in their order
+        self.assertTrue(all(b.units == "vehicles" for b in line))
+        for px, py in ((2000.0, 0.0), (0.0, 2000.0), (0.0, 0.0)):  # inside the turned square: covered
+            self.assertTrue(any((px - b.x) ** 2 + (py - b.y) ** 2 <= b.radius ** 2 for b in square))
+        self.assertTrue(any((2000.0 - b.x) ** 2 + (400.0 - b.y) ** 2 <= b.radius ** 2 for b in line))
+
 
 class Built(unittest.TestCase):
     def test_opened_ground_in_the_modded_copy(self):

@@ -84,6 +84,28 @@ class Painting(unittest.TestCase):
         self.assertEqual(sum(1 for b in cells(out)[1] if b & 0x08), 0)
         self.assertEqual(cover.paint(mapinfo(), [cover.Paint(90000.0, 90000.0, 500.0, square=True)]), mapinfo())
 
+    def test_a_turned_square_and_a_line(self):
+        """The brush types (2026-10-03): a square turned any way, and a line, paint the cells whose centres they
+        hold, like the circle and the square along the axes."""
+        def painted(out):
+            size, c = cells(out)
+            return sorted((i, j) for j in range(size) for i in range(size) if c[j * 8 + i] & 0x08 and (i > 1 or j > 1))
+        out = cover.paint(mapinfo(), [cover.Paint(4500.0, 4500.0, 1500.0, shape="square", dx=1.0, dy=1.0)])
+        want = []
+        for i in range(8):
+            for j in range(8):
+                ox, oy = i * 1000 + 500 - 4500, j * 1000 + 500 - 4500
+                u, v = abs(ox + oy) / 2 ** 0.5, abs(oy - ox) / 2 ** 0.5
+                if max(u, v) <= 1500 and (i > 1 or j > 1):
+                    want.append((i, j))
+        self.assertEqual(painted(out), sorted(want))
+        self.assertIn((6, 4), want)       # toward a corner, 2,000 out
+        self.assertNotIn((6, 5), want)    # past a side
+        out = cover.paint(mapinfo(), [cover.Paint(1500.0, 4500.0, 600.0, shape="line", x2=6500.0, y2=4500.0)])
+        self.assertEqual(painted(out), [(i, 4) for i in range(1, 7)])
+        self.assertEqual(cover.paint(mapinfo(), [cover.Paint(90000.0, 0.0, 500.0, shape="line", x2=95000.0, y2=0.0)]),
+                         mapinfo())   # off the map: the same file
+
     def test_erasing_and_the_blocked_layer(self):
         out = cover.paint(mapinfo(), [cover.Paint(1000.0, 1000.0, 1500.0, erase=True),   # the wood cleared
                                       cover.Paint(7000.0, 7000.0, 800.0, "blocked", erase=True),
@@ -130,7 +152,9 @@ class Painting(unittest.TestCase):
 class File(unittest.TestCase):
     def test_read_and_written(self):
         paints = [cover.Paint(1.0, 2.0, 3.0), cover.Paint(4.0, 5.0, 6.0, "blocked", True),
-                  cover.Paint(7.0, 8.0, 9.0, square=True)]
+                  cover.Paint(7.0, 8.0, 9.0, square=True),
+                  cover.Paint(1.0, 2.0, 3.0, shape="square", dx=0.5, dy=0.5),
+                  cover.Paint(1.0, 2.0, 3.0, shape="line", x2=4.0, y2=5.0)]
         import tomllib
         text = cover.paints_toml(paints, "two circles and a square")
         self.assertTrue(text.startswith("# two circles"))
@@ -226,8 +250,9 @@ class Built(unittest.TestCase):
         # the wood cleared by cover.toml, the plus painted by the brush, its middle taken away again
 
     def test_a_square_brush_in_terrain_toml(self):
-        """A square cover stroke (`square = true`, written by hand: the Studio's cover brushes paint circles): read and
-        written back, built as a square on the cover grid; only the cover brushes can be square."""
+        """A square cover stroke (`square = true`, the older way to write shape = "square"): read and written back,
+        built as a square on the cover grid. Every brush can be square now (the owner, 2026-10-03: brush types "in
+        every tool that has a brush")."""
         from rusemod.brush import BrushError, parse_strokes, strokes_toml
         folder = self.mod("square", "")
         strokes = parse_strokes([{"brush": "cover", "x": 4500.0, "y": 4500.0, "radius": 1200.0, "square": True}])
@@ -245,20 +270,23 @@ class Built(unittest.TestCase):
         self.assertEqual(sorted(i for i in range(64) if c[i] & 0x08 and i >= 16),
                          sorted(j * 8 + i for i in (3, 4, 5) for j in (3, 4, 5)))
         self.assertTrue(any("cover: 1 square(s)" in line for line in lines), lines)
-        for bad, why in (({"brush": "raise", "x": 1.0, "y": 1.0, "radius": 1.0, "height": 1.0, "square": True},
-                          "only the cover brushes can be square"),
-                         ({"brush": "cover", "x": 1.0, "y": 1.0, "radius": 1.0, "square": 1}, "true or false")):
-            with self.assertRaisesRegex(BrushError, why):
-                parse_strokes([bad])
+        raised = parse_strokes([{"brush": "raise", "x": 1.0, "y": 1.0, "radius": 1.0, "height": 1.0, "square": True}])
+        self.assertTrue(raised[0].covers(1.9, 1.9))  # a raise can be square too
+        with self.assertRaisesRegex(BrushError, "true or false"):
+            parse_strokes([{"brush": "cover", "x": 1.0, "y": 1.0, "radius": 1.0, "square": 1}])
 
     def test_the_studio_draws_a_square_stroke_as_a_square(self):
         """The Studio's map view draws each cover stroke of terrain.toml on the grid by cover.paint's rule (maps.js
-        overlayDab): a square one as a square, centres on its edge in (the review of 2026-10-01 found it drawn as a
-        circle; the drawing itself was checked in the Studio's preview)."""
+        overlayDab): a square one as a square (turned any way), a line as a line, centres on its edge in (the review of
+        2026-10-01 found a square drawn as a circle; the drawing itself was checked in the Studio's preview)."""
         maps = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "maps.js").read_text(encoding="utf-8")
         dab = maps[maps.index("function overlayDab(s)"):]
         dab = dab[:dab.index("\n}\n")]
-        self.assertIn("s.square ? Math.abs(dx) <= s.radius && Math.abs(dy) <= s.radius : dx * dx + dy * dy <= rr", dab)
+        self.assertIn("footT2(s, bx + (c + 0.5) * cw, y) <= 1", dab)   # centres on the edge are in, as cover.paint
+        self.assertIn("boxOf(s)", dab)
+        shape = maps[maps.index("function footShape(s)"):]
+        shape = shape[:shape.index("\n}\n")]
+        self.assertIn('s.square || s.shape === "square" ? "square" : "round"', shape)   # square = true too
 
     def test_the_map_view_gets_the_grid(self):
         import base64

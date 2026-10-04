@@ -750,6 +750,42 @@ class Erasing(unittest.TestCase):
         self.assertEqual(near, [areas[0], areas[-1]])
         self.assertEqual(g.query(-1e9, -1e9, 1e9, 1e9), g.pairs)  # a huge box: the whole list
 
+    def test_a_turned_square_and_a_line_erase_what_they_hold(self):
+        """The brush types (2026-10-03): an erase area can be a square turned any way or a line; it takes what stands
+        inside it, as a circle does, and is read and written back."""
+        raw = village()
+        kinds = {i: "vegetation" for i, n in enumerate(Scenery(raw).names) if "Chene" in n}
+        two = Counter({(1, 5000.0, 0.0): 1, (1, 5100.0, 0.0): 1})
+        for area in (scenery.EraseArea(5050.0, 0.0, 60.0, shape="square", dx=1.0, dy=1.0),
+                     scenery.EraseArea(4950.0, 0.0, 10.0, shape="line", x2=5150.0, y2=0.0)):
+            new = scenery.erase_objects(raw, [area], kinds)[0]
+            self.assertEqual(spots(raw) - spots(new), two, area.shape)
+        beside = scenery.EraseArea(4950.0, 500.0, 10.0, shape="line", x2=5150.0, y2=500.0)
+        self.assertEqual(scenery.erase_objects(raw, [beside], kinds)[0], raw)
+        import tomllib
+        areas = [scenery.EraseArea(1.0, 2.0, 3.0, shape="square", dx=0.6, dy=0.8),
+                 scenery.EraseArea(1.0, 2.0, 3.0, ("prop",), shape="line", x2=4.0, y2=5.0)]
+        back = scenery.parse_erase(tomllib.loads(scenery.objects_toml([], erase=areas))["erase"])
+        self.assertEqual(back, areas)
+        with self.assertRaisesRegex(scenery.SceneryEditError, "a line needs x2 and y2"):
+            scenery.parse_erase([{"x": 1, "y": 2, "radius": 3, "shape": "line"}])
+
+    def test_by_size_an_area_takes_what_reaches_into_it(self):
+        """Map Paint's clearing (TESTS.md T26): a sticker or a plant centred outside a painted patch still covers its
+        edge, so an area by size takes whatever reaches in: its type's reach times the size it is placed at."""
+        raw = village()
+        kinds = {i: "vegetation" for i, n in enumerate(Scenery(raw).names) if "Chene" in n}
+        reach = {"TypeWarrior/Chene_02": 50.0}
+        for area in (scenery.EraseArea(5200.0, 0.0, 60.0, by_size=True),  # the oak at 5100 is 100 off: 60 + 50 reach it
+                     scenery.EraseArea(5200.0, 0.0, 60.0, shape="square", by_size=True),
+                     scenery.EraseArea(5200.0, -100.0, 60.0, shape="line", x2=5200.0, y2=100.0, by_size=True)):
+            new = scenery.erase_objects(raw, [area], kinds, sizes=reach)[0]
+            self.assertEqual(spots(raw) - spots(new), Counter({(1, 5100.0, 0.0): 1}), area.shape)  # not the one at 5000
+        plain = scenery.EraseArea(5200.0, 0.0, 60.0)
+        self.assertEqual(scenery.erase_objects(raw, [plain], kinds, sizes=reach)[0], raw)          # by its middle only
+        by_size = scenery.EraseArea(5200.0, 0.0, 60.0, by_size=True)
+        self.assertEqual(scenery.erase_objects(raw, [by_size], kinds)[0], raw)                     # no sizes known
+
     def test_a_shared_patch_is_copied_for_the_erased_spot(self):
         raw = forest()
         new, notes, by = scenery.erase_objects(raw, [scenery.EraseArea(10100.0, 0.0, 50.0)], E_KINDS, {2})
@@ -917,15 +953,25 @@ class Building(unittest.TestCase):
             new = bytes(arc.read(arc.find(scenery.MEMBER)))
             self.assertEqual(spots(village()) - spots(new), Counter({(1, 5000.0, 0.0): 1, (1, 5100.0, 0.0): 1}))
             self.assertEqual((game / "Maps" / "PC" / "DataMapTest_v09.dat").read_bytes(), shipped)
-            # the hall only when the area names buildings, with a word that units still can't walk there
+            # the hall only when the area names buildings; the area's ground is then opened (T25), no warning
             (mod / "maps" / "Test" / "scenery.toml").write_text(
                 '[[erase]]\nx = 1000\ny = 2000\nradius = 10\nwhat = ["building"]\n', encoding="utf-8")
+            lines = []
             result = build_and_write(game, [load_mod(mod)], out=root / "out2", say=lines.append)
             self.assertEqual(result.errors, [])
-            self.assertIn("stays closed to units", " ".join(f.message for f in result.findings))
+            self.assertNotIn("stays closed", " ".join(f.message for f in result.findings))
+            self.assertTrue(any("buildings erased: the ground of the erase area(s) that take buildings is opened" in ln
+                                for ln in lines), lines)
             arc = Edat((root / "out2" / "DataMapTest_v09.dat").read_bytes())
             new = bytes(arc.read(arc.find(scenery.MEMBER)))
             self.assertEqual(spots(village()) - spots(new), Counter({(0, 1000.0, 2000.0): 1}))
+            # by name only (types, no "building" in what): erased, with the warning that its ground stays closed
+            (mod / "maps" / "Test" / "scenery.toml").write_text(
+                '[[erase]]\nx = 1000\ny = 2000\nradius = 10\nwhat = ["prop"]\ntypes = ["TypeWarrior/MairieNormande"]\n',
+                encoding="utf-8")
+            result = build_and_write(game, [load_mod(mod)], out=root / "out3", say=lines.append)
+            self.assertEqual(result.errors, [])
+            self.assertIn("leave their ground closed to units", " ".join(f.message for f in result.findings))
 
     def test_objects_go_into_the_map(self):
         with tempfile.TemporaryDirectory() as tmp:

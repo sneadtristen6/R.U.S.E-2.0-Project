@@ -68,9 +68,11 @@ def _text(v) -> str:
     return v.decode("latin-1") if isinstance(v, bytes) else str(v)
 
 
-def _follow(code: Code, made: dict, lists: list) -> None:
+def _follow(code: Code, made: dict, lists: list, calls: dict | None = None, launch: list | None = None) -> None:
     """Record every VariableCamp(...) stored under a name into `made` {name: keywords}, and every CampList=[...] given
-    to a call into `lists`, in `code` and the code objects inside it."""
+    to a call into `lists`, in `code` and the code objects inside it; with `calls`, every call stored under a name
+    {name: (what's called, keywords, positional arguments)}, and with `launch`, the keywords of each call given a
+    CampList (the launch descriptor's)."""
     stack: list = []
     for _at, op, arg in instructions(code.code):
         if op == LOAD_CONST:
@@ -89,6 +91,7 @@ def _follow(code: Code, made: dict, lists: list) -> None:
             n_pos, n_kw = arg & 0xFF, arg >> 8
             kw_items = stack[len(stack) - 2 * n_kw:] if n_kw else []
             del stack[len(stack) - 2 * n_kw:]
+            args = stack[len(stack) - n_pos:] if n_pos else []
             del stack[len(stack) - n_pos:]
             callee = stack.pop()
             kwargs = {}
@@ -97,17 +100,21 @@ def _follow(code: Code, made: dict, lists: list) -> None:
                     kwargs[_text(k[1])] = v
             if "CampList" in kwargs and kwargs["CampList"][0] == "list":
                 lists.append([v[1] for v in kwargs["CampList"][1] if v[0] == "name"])
-            stack.append(("call", callee[1] if callee[0] in ("name", "attr") else None, kwargs))
+                if launch is not None:
+                    launch.append(kwargs)
+            stack.append(("call", callee[1] if callee[0] in ("name", "attr") else None, kwargs, args))
         elif op in (STORE_NAME, STORE_GLOBAL, STORE_FAST) and stack:
             v = stack.pop()
             names = code.varnames if op == STORE_FAST else code.names
             if v[0] == "call" and v[1] and v[1].endswith("VariableCamp"):
                 made[_text(names[arg])] = v[2]
+            if v[0] == "call" and calls is not None:
+                calls[_text(names[arg])] = (v[1], v[2], v[3])
         else:
             stack.clear()  # something not followed: start again at the next statement
     for c in code.consts:
         if isinstance(c, Code):
-            _follow(c, made, lists)
+            _follow(c, made, lists, calls, launch)
 
 
 def _last(v) -> str | None:
@@ -139,6 +146,31 @@ def camps(raw: bytes) -> list[Camp]:
         ai = _last(kw.get("NiveauIA"))
         out.append(Camp(number if number is not None and number != -1 else i, var, ai == "Player", ai,
                         _last(kw.get("Nationalite")), _int(kw.get("Alliance"))))
+    return out
+
+
+def spawn_markers(raw: bytes) -> dict[int, list[str]]:
+    """The launch descriptor's UnitToSpawnList (.xyz bytes): {chapter: the names of its position markers}. Playing a
+    chapter the list has, the game places a scenario's spawns only in the sectors holding one of that chapter's markers
+    (the game's TagHelper.is_in_zone_of_spawn); a chapter it doesn't have places them all. The markers are the
+    scenario's named items (TagPosition('ZONE_10'))."""
+    made, lists, calls, launch = {}, [], {}, []
+    _follow(module_code(raw), made, lists, calls, launch)
+    out: dict[int, list[str]] = {}
+    spawns = launch[0].get("UnitToSpawnList") if launch else None
+    for v in (spawns[1] if spawns and spawns[0] == "list" else []):
+        what = calls.get(v[1]) if v[0] == "name" else None
+        if not what or not (what[0] or "").endswith("UnitToSpawn"):
+            continue
+        chapter, positions = _int(what[1].get("Chapter")), what[1].get("PositionList")
+        if chapter is None:
+            continue
+        names = []
+        for p in (positions[1] if positions and positions[0] == "list" else []):
+            tag = calls.get(p[1]) if p[0] == "name" else None
+            if tag and (tag[0] or "").endswith("TagPosition") and tag[2] and tag[2][0][0] == "const":
+                names.append(_text(tag[2][0][1]))
+        out[chapter] = names
     return out
 
 

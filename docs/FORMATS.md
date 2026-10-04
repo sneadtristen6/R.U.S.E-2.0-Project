@@ -454,12 +454,21 @@ Header (0x368 bytes):
   zero bytes. Tokens by the first byte's low bits: `11` + bit 2 clear = 2 B (len bits 3–6 + 4, dist bits 7–15 + 1);
   `11` + bit 2 set = 3 B (len bits 3–10 + 4, dist bits 11–23 + 1); else bit 2 set = 1 B (len low 2 bits + 1, dist
   bits 3–7 + 1); else 2 B (len low 2 bits + 1, dist bits 3–15 + 1). Units, overlapping copies allowed, max distance 8192.
-- **Skirt:** a curtain from the map edge down to −3000 (own z scale, −3000..zmax); a second submesh ❔. Not edited.
+- **Skirt** (what hangs from the map's edge; checked on all 32 maps): descriptor `u32 flags` (bit 0 the curtain,
+  bit 1 the water's side), per submesh `u32 index bytes, vertex bytes, bounds bytes (0x60), part bytes (0x40)`, then
+  the 512-byte vertex type `$/M3D/System/VERTEXTYPE/TVertex__PositionIn4w_4w`. Data per submesh: u16 indices,
+  vertices 4 × u16 (x, y, z, 0), 4 parts' bounds (6 f32: min x, y, z, max x, y, z), 4 parts (u32 vstart, vcount,
+  istart, icount). Submesh 1, the **curtain**: under every edge point a top at the ground's height and a foot at q 0,
+  z on its own scale −3000..zmax (46,332 tops, the ground's height to within one step in 99.97%). Submesh 2, the
+  **water's side** where the sea or a river meets the edge: from the ground up to the water surface, z on the mesh's
+  own scale; 133 of its points lie between edge points, where the surface meets the bank. Hurtgen and Krak des
+  Chevaliers have no water at their edges: flags 1, no submesh 2. Far meshes: all zero. Edits: the skirt follows
+  moved edge points (`rusemod.tms`).
 
 Proven: all 64 files (1,390 cells) rebuild byte-identical; every cell re-encoded with our own LZ re-reads identical
 (0.957× size, not byte-identical to Eugen's encoder); a mesa edit on Two Islands re-reads with exactly the new heights.
-Open: in-game acceptance; `.kdt` copy; water list not rebuilt after edits; edge vertices skipped; raising above the
-file's top height needs re-quantizing (edits are clamped).
+Open: in-game acceptance; `.kdt` copy; raising above the file's top height needs re-quantizing (edits are clamped).
+(The water list is rebuilt after edits: `Tms._water_lists`, wherever moved ground meets water.)
 
 #### Texture tiles (`.tmst_pc` index + `.tmst_chunk_pc` store)
 
@@ -806,7 +815,7 @@ his Claude; checked here on all 32 maps.
 | Offset | Meaning |
 |---|---|
 | 0x00 | u32 version = 1 |
-| 0x04 | u32 1 |
+| 0x04 | u32 flag: 1 = each mip payload starts with a codec tag (`TGU1`, `ZIPO`; all 3,831 textures), 0 = the payloads are the blocks as they are (all 2,822 texture stand-ins in `.ppk` packs). The game picks how it reads a payload by this flag: raw blocks under flag 1 crash it (T23, 2026-10-03) |
 | 0x08 | u32 width, u32 height, u32 width, u32 height |
 | 0x18 | u16 mipCount |
 | 0x1A | u16 formatNameLength (4, or 12 for `A8R8G8B8`…) |
@@ -821,8 +830,31 @@ his Claude; checked here on all 32 maps.
   is the raw row-major block array. Python zlib level 9 + sync flush reproduces some shipped streams byte-exactly.
 - ✅ A model atlas can say a bigger size in its header than its largest mip holds (a 2048-pixel France buildings
   atlas stores 512 × 512 blocks); each mip's own size is in its TGU1 header (in 4 × 4 blocks). TGU1 in model atlases
-  is the terrain's DXT1 codec (§6), except that its block count is smaller than width × height (meaning not known;
-  decoding doesn't need it). TGU1 with alpha (DXT5, some leaf atlases) isn't read yet.
+  is the terrain's DXT1 codec (§6). Its block count can be smaller than width × height: only that many blocks (rows
+  from the top) carry selectors, and the rest are zero (an empty bottom of the atlas).
+- ✅ **TGU1 with alpha (DXT5)** is read (`rusemod.tgu1`, 2026-10-03): every unit texture is DXT5 TGU1 version 5.
+  Header bit 0x001 = DXT5, 0x100 = coded; the header is 32 bytes. A mip that isn't coded (flags 0x001: the
+  units' mips up to 16 × 16 blocks) is the header and then its DXT5 blocks as they are. A coded one adds, after the
+  colour banks, two alpha endpoint images (DCT tiles like the Y images; the second is how far alpha 1 lies below
+  alpha 0; an equal pair becomes (a, a − 1), or (1, 0)) and an alpha selector bank (4 × the selector quality;
+  value + 4, clamped to 0..7, is the position from alpha 0 to alpha 1: DXT5 indices 0, 2, 3, 4, 5, 6, 7, 1).
+  Checked on every texture in `ZZ_Win.dat` (3,831 textures, 9,469 TGU1 payloads): every one decodes, every coded
+  one using up every bit stream exactly. Each mip, halved, matches the next smaller one, alpha as closely as colour
+  (unit textures: within 10 of 255 on average); the two far-off cases are explained: a gravel-noise decal (28,
+  noise halves badly) and an atlas whose empty bottom is see-through black in its plain mips and zero blocks in
+  its coded ones (alpha 131; unused space).
+- **Unit textures** (2026-10-03): a vehicle has `TSCCombCS_CombinedDSCTexture01` (1024 × 1024, material role
+  `CombinedDSCTexture`, tagged `Camp`) and a track `TSCCombDSTrack_CombinedDSTexture01` (128 × 128, tagged
+  `IndexedChenilles`); a nation's infantry share one `TSCOther_diffuseTexture01` (2048 × 2048, plain
+  `diffuseTexture`, no tag). The infantry picture is the real colours (faces, uniforms). The vehicle picture's colour
+  is the paint and shading (the T-26: green camouflage and its turret number; the Sherman: a pale pattern), and its
+  alpha holds markings (the Sherman's star is black there) and black patches. The shader settings tie the `Camp`
+  tag to `CampColor` material packs (a side colour, with a distance fade). **Seen in the game (T23, 2026-10-03):**
+  the colour is the paint at every distance (a Sherman turned red stayed red, up close and as the zoomed-out
+  piece); alpha 0 everywhere made a Stuart the player's colour up close (still to confirm with the owner) but not
+  from far; alpha 255 everywhere made a Wolverine white at some angles to the sun (shine). So low alpha = side
+  colour, high = shine; the values in between aren't tested. A written texture loads like the game's own: stored
+  as plain TGU1 mips (flag 0x001) under TGV flag 1.
 
 ## 8. Meshes, animations, UI 🟡
 
@@ -847,7 +879,12 @@ number below the material count, every position inside its model's box.
   descriptor without `DataDir:\`. Some models have a lighter `_lodmedium` version beside them.
 - **Vertex formats**: u32 256, then 256-byte names that spell the layout, e.g.
   `TVertex__Position_3f__NormalIn01_4ubn__TexCoord0_2wn__TexPackedAtlas0_4ubn` (positions f32; normal bytes
-  b / 255 × 2 − 1; UVs u16 / 65535 or 2 f32; the atlas bytes below).
+  b / 255 × 2 − 1; UVs `_2wn` 2 signed 16-bit fractions (/ 32767: u 0..1, v −1..0, which wraps to v + 1) or
+  2 f32; the atlas bytes below). **Corrected 2026-10-03:** `_2wn` had been read unsigned (u16 / 65535), so every
+  model used only a quarter of its picture (u 0..0.5, v 0.5..1) and the Studio's map view drew buildings with the
+  wrong part of their atlas. Proved by rendering: read signed, the T-26's turret number and a village house's
+  window panes land where they belong. 99.7% of unit vertices and 91-99% of scenery vertices have their v word
+  above the midpoint (negative), u below it.
 - **Materials**: an NDF with one `TMeshMaterial` per material; `Textures` maps a role to (image, 0). The image is
   `diffuseTexture`, or `CombinedDSCTexture` / `CombinedDSTexture` on most buildings: `ZZ:\GenTexGroup\...\X01.png`
   is the texture `gen\...\x01.tgv` in `ZZ_Win.dat`, an atlas.
@@ -858,14 +895,27 @@ number below the material count, every position inside its model's box.
 - **Compressed vertex buffer**: a `VBUF` chunk like the terrain's (§6): a predictor (the same parent codes), then
   one `SUBP` stream per component (storage 0 raw, 1 zlib, 3 LZ; mode 2 = relative to the parent), sizes rounded up
   to 4. Positions: u16 Q, 3 f32 min, 3 f32 max, u16, then 3 × u16; t = q / Q, x = min + t × (max − min) up to
-  t = 0.5, else max − (1 − t) × (max − min). UVs `_2f` the same with 2 values, `_2wn` a u16 mask then 2 × u16
-  (uv = value / mask); normals and atlas bytes 4 × u8.
+  t = 0.5, else max − (1 − t) × (max − min). UVs `_2f` the same with 2 values, `_2wn` a u16 mask (2,047 in all
+  2,377 shipped streams) then 2 × u16: 11-bit values, the top bits of the signed 16-bit words above
+  (`spk.wn_uv`); normals and atlas bytes 4 × u8.
 - **LZ** (§6) with two more cases: a stored block (bit 7 of the width byte: the units follow the first 8 bytes) and
   literals packed 5 or 11 bits wide.
 - **Atlas bytes**: a vertex's (min u, min v, width, height) × 255 of its part of the atlas; the drawn UV is
   min + uv × size.
 - **Scenery descriptors**: a tree is a `TSceneryDescriptorComposite` of two models, its leaves and its trunk
   (`DescriptorComposition`), so `rusemod.scenery` gives every descriptor all its models.
+- The game reads each buffer by its own flag (compressed or plain), whatever the model is for: unit models are all
+  stored compressed, scenery mostly plain, so a unit model can be written plain (2026-10-03; not tried in game).
+- **Soldiers** (2026-10-03): one skinned body piece (head, hat, uniform and gear; ~20 bones) and a separate gun
+  piece held by skeleton bone 21 (and the root, bone 0). The German, Soviet and British soldiers checked all use
+  bone 21 for the gun (the British bazooka man also 23); skeletons use 3ds Max Biped bone names (`bip01 r hand`).
+  Whether bone 21 is the same named bone in every skeleton isn't read yet (the skeleton packs' bone lists).
+- **Out to Blender** (2026-10-03, `ruse export-model`, `rusemod.gltf`): a model as glTF 2.0 (.glb) with its
+  colour texture; the alpha (side colour and shine, not see-through) as a picture beside it. Model axes (x, y, z)
+  are written as glTF (x, z, y) × 0.01, a mirror (triangles turned round): checked on the T-26, whose turret
+  number reads right. Skinned models keep each vertex's bones and weights (through the material's
+  `SkinningRemapping`), on joints at the origin (the skeleton packs' bone positions aren't read yet). Checked in
+  Blender 4.5 LTS on a T-26, a Sherman and a German soldier (48, 46 and 35 bones, textures right).
 - Not read yet: mirrored vertices (no shipped pack uses them), writing new models (PLAN M7).
 
 ### Skirmish unit packs: ✅ written (`src/rusemod/unitpacks.py`; check `tools/verify_unitpacks.py`)
@@ -884,6 +934,11 @@ A skirmish loads four packs of `ZZ_Win.dat` per nation in the match (§3), plus 
   Tom's mesh, skeleton and stand-in), so `rusemod.unitpacks` copies a unit's models the same way: what the target
   packs (or the common ones) lack, from the pack of the nation that has it. The full textures are loose files of
   `ZZ_Win.dat`, the same for every nation.
+- **Each mesh and stand-in pack's id** (16 bytes at 0x10) is the MD5 of its bytes 0x00-0x0F (magic, version, file
+  size) and 0x20-0x2F (the places of the two parts the game reads), in all 156 such packs of `ZZ_Win.dat`. The game
+  checks it when it opens a pack and leaves out a pack whose id doesn't match, every model in it missing: four packs
+  that grew with their old id crashed the game at the first factory (TESTS T32 run 1). Written with the right id,
+  packs that grow load: a second Sherman with a model of its own, added beside the game's (T33).
 - The layout of each pack (offsets, the name trie, the section order and padding, the stand-ins' table) is in the
   module's docstring. Every `.spk`, `.ppk` and `.apk` in `ZZ_Win.dat` writes back byte for byte, and every unit's
   models copied into every other nation's packs and the common ones read back as in the pack they came from, the

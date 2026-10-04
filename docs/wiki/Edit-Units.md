@@ -24,6 +24,18 @@ Flags (what a unit can do or be) show as chips: the cross takes one off, the men
 A new unit starts as a copy of a game unit, with its own name, so you can change it without touching the original.
 Pick the unit, choose **New unit**, give it a name, and change it like any other.
 
+## Change how a unit looks
+
+The unit's page shows its **3D model**: drag to turn it, scroll to zoom.
+
+- **Repaint in Blender:** click **Open in Blender** (Blender is free; if the Studio doesn't find it, the page offers
+  **Get Blender (free)** and **Choose Blender…** to show it where `blender.exe` is). The unit opens with its pictures,
+  ready to paint on the model. Paint, then click **Bring back**: your
+  paint goes into your mod. Seen in the game, up close and from far.
+- **Its card in the build menu:** turn and zoom the 3D model until it looks right inside the dashed frame, then
+  **Use this view as the card**. **Game's card** takes it back. Seen in the game. On a new unit, the card is its own:
+  the unit it copies keeps its picture.
+
 ## Give a weapon other ammo
 
 A weapon can fire another unit's ammunition; its muzzle flash and sound come with it. Ammunition is sorted by type

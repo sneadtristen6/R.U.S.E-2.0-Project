@@ -18,6 +18,7 @@ import html
 import json
 import math
 import re
+import shutil
 import sqlite3
 import struct
 import zlib
@@ -47,9 +48,9 @@ from rusemod.edat import Edat
 from rusemod.modcheck import check_mod_folder
 from rusemod.roadnet import RoadNetError
 from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
-from rusemod.webui import Job, job_view, pick_folder, pick_save
+from rusemod.webui import Job, job_view, pick_file, pick_folder, pick_save
 
-from .edits import EditsFileError, Link, ModEdits, NewUnit
+from .edits import EditsFileError, Link, ModEdits, NewUnit, plain_name
 from . import __version__
 
 KINDS = {"ground": ("TUniteAuSolDescriptor",), "infantry": ("TInfanterieDescriptor",),
@@ -58,6 +59,8 @@ KIND_OF = {cls: kind for kind, classes in KINDS.items() for cls in classes}
 AMMO = "TAmmunition"  # a weapon's shots (damage, range, rate of fire): listed as the "ammo" kind, and copied for a
 WEAPON = "TMountedWeaponDescriptor"  # weapon of its own; a weapon on a unit fires one ammo (its Ammunition)
 SHOT_TAG = "weapon_effet_tag"  # a weapon's EffectTag names the part of the unit's model it fires from (_shots)
+RANGE = "PorteeMaximale"  # a weapon's range: a value of the ammo it fires (set_range)
+RANGE_COPY = "Ammo_Range_"  # the start of the name of an ammo copy set_range makes for one weapon
 FLAG_LISTS = set(WHOLE_LISTS)  # lists edited as a set of flags, any length (a unit's InitialFlagSet)
 NOT_EDITABLE = {"DescriptorId", "TrackingId", "AmmunitionId", "Nationalite"}  # ids stay unique (rusemod.identity);
 # moving a unit to another nation needs more than one number (its menus, and the new nation's add-on for China), so it
@@ -243,7 +246,10 @@ _FILE_MISTAKES = (tomllib.TOMLDecodeError, UnicodeDecodeError, BrushError, scena
 
 def _erase_dict(a) -> dict:
     """An erase area (rusemod.scenery.EraseArea) as the Maps view takes it."""
-    return {"x": a.x, "y": a.y, "radius": a.radius, "what": list(a.what), "types": list(a.types)}
+    out = {"x": a.x, "y": a.y, "radius": a.radius, "what": list(a.what), "types": list(a.types)}
+    if a.shape != "round":  # the brush types: a square (its direction) or a line (its end)
+        out.update(shape=a.shape, dx=a.dx, dy=a.dy, x2=a.x2, y2=a.y2)
+    return out
 
 
 def _save_checked(path: Path, text: str, read) -> None:
@@ -348,6 +354,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._descriptors: tuple = (None, {})    # (unit pack, its scenery types), read once per game build
         self._models_done: dict[str, dict] = {}  # map -> the index of its 3D models (map_models), once made
         self._check_jobs: dict[str, str] = {}  # map -> its "Check this map" job, so asking twice runs it once
+        self._blenders: dict[str, object] = {}  # a unit's work folder -> the Blender opened on it (Bring back asks
+        # it to save)
+        self._previews_lock = threading.Lock()  # one unit model made for the preview at a time
 
     # --- where things are ---
     def _game(self) -> Path | None:
@@ -577,8 +586,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                           for n in sorted(set(rows) | set(schema.flag_numbers()))]}
 
     def weapons(self, address: str, lang: str = schema.BASE) -> dict:
-        """A unit's mounted weapons and what each fires: [{address, name, ammo: {address, name}, edited}], plus
-        every ammunition it could fire instead (`choices`, the game's and the mod's copies)."""
+        """A unit's mounted weapons and what each fires: [{address, name, ammo: {address, name}, edited, range,
+        game_range, firing, own_copy}], plus every ammunition it could fire instead (`choices`, the game's and the
+        mod's copies). `range` is the ammo's range now (None when it has none), `game_range` that ammo's in the game
+        (a copy's: its source's),
+        `firing` the units that fire the same ammo with the mod's picks (this one too: address and name), `own_copy`
+        whether it fires a copy made in this mod that no other unit fires."""
         try:
             edits = self._edits()
         except EditsFileError:
@@ -597,12 +610,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 o = ix.show(part)
                 tag = next((t for p, _n, t in o["values"] if p == "EffectTag"), None)
                 fires = next((what for p, k, what in ix.uses(part) if p == "Ammunition" and k == "object"), None)
-                weapons.append({"real": part, "address": (base + part[len(new.source):]) if new else part,
-                                "name": tag or f"{_tail(part)}", "fires": fires,
-                                "shot": self._shot_now(ix, edits, unit_shots.get(tag, []), real, base)})
+                where = (base + part[len(new.source):]) if new else part
+                chosen = edits.get(where, "Ammunition") if edits else None
+                current = str(chosen) if chosen else fires
+                weapons.append({"real": part, "address": where, "name": tag or f"{_tail(part)}", "fires": fires,
+                                "shot": self._shot_now(ix, edits, unit_shots.get(tag, []), real, base),
+                                "range": self._range(ix, edits, current) if current else None,
+                                "game_range": self._range(ix, edits, current, game=True) if current else None,
+                                "firing": self._firing(ix, edits, current) if current else []})
             rows = self._all_ammo(ix)
             names = self._ammo_names(ix, rows, lang)
             nation_of = {u["address"]: u["nation"] for u in self._all_units(ix)}
+            firing_names = self._names(ix, sorted({u for w in weapons for u in w["firing"]}), lang,
+                                       edits.new_units if edits else None)
         finally:
             ix.close()
         users = {a["address"]: a["users"] for a in rows}
@@ -619,8 +639,101 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             current = str(chosen) if chosen else w["fires"]
             out.append({"address": w["address"], "name": w["name"],
                         "ammo": {"address": current, "name": names.get(current) or (_tail(current) if current else "")},
-                        "game_ammo": w["fires"], "edited": bool(chosen), "shot": w["shot"]})
+                        "game_ammo": w["fires"], "edited": bool(chosen), "shot": w["shot"],
+                        "range": w["range"], "game_range": w["game_range"],
+                        "firing": [{"address": u, "name": firing_names[u]} for u in w["firing"]],
+                        "own_copy": bool(edits and current in edits.new_units and w["firing"] == [base])})
         return {"weapons": out, "choices": choices}
+
+    def _range(self, ix: Index, edits: ModEdits | None, ammo: str, game: bool = False) -> float | None:
+        """An ammunition's range (RANGE) with the mod's change, if any (`game`: as the game has it; a copy made in
+        the mod: its source's); None when it has none."""
+        mine = edits.get(ammo, RANGE) if edits and not game else None
+        if mine is not None:
+            return mine
+        real, _new = self._resolve(edits, ammo)
+        try:
+            return next((n for p, n, _t in ix.show(real)["values"] if p == RANGE and n is not None), None)
+        except KeyError:  # an ammunition this game build hasn't got
+            return None
+
+    def _fires(self, ix: Index, edits: ModEdits | None, unit: str) -> set[str]:
+        """The ammunition a unit's weapons fire now, with the mod's picks (set_ammo)."""
+        real, new = self._resolve(edits, unit)
+        try:
+            plan = ix.clone_plan(real)
+        except KeyError:
+            return set()
+        out = set()
+        for part in plan["copied"] + plan["shared"]:
+            if ix.show(part)["class"] != WEAPON:
+                continue
+            chosen = edits.get((unit + part[len(new.source):]) if new else part, "Ammunition") if edits else None
+            game = next((what for p, k, what in ix.uses(part) if p == "Ammunition" and k == "object"), None)
+            if chosen or game:
+                out.add(str(chosen) if chosen else game)
+        return out
+
+    def _firing(self, ix: Index, edits: ModEdits | None, ammo: str) -> list[str]:
+        """The named units whose weapons fire `ammo` now: the game's, less the weapons the mod points at another,
+        plus the ones it points at this one and the mod's copies of units that fire it."""
+        real, _new = self._resolve(edits, ammo)
+        maybe = set(next((a["users"] for a in self._all_ammo(ix) if a["address"] == real), []))
+        if edits:
+            maybe |= {t for t, u in edits.new_units.items() if u.source in maybe}
+            maybe |= {t for (t, path, _how), e in edits.edits.items()
+                      if path.rpartition(".")[2] == "Ammunition" and isinstance(e.value, Link)}
+        return sorted(u for u in maybe if ammo in self._fires(ix, edits, u))
+
+    def set_range(self, unit: str, weapon: str, value, mode: str = "own") -> dict:
+        """A weapon's range, from its unit's page: the range of the ammunition it fires. "shared" changes that ammo,
+        for every unit that fires it. "own" changes this unit only: an ammo no other unit fires (the game's, or a
+        copy made in this mod) is changed where it is; otherwise the weapon gets a copy of it (new_ammo's recipe,
+        named RANGE_COPY + the unit and the weapon's number) and fires that (set_ammo). A copy made here that's back
+        at its source's range, with nothing else changed on it, goes again and the weapon fires its source."""
+        if mode not in ("own", "shared"):
+            raise StudioError(f"For whom: own or shared, not {mode!r}")
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value):
+            raise StudioError("Range: one number.")
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        listed = self.weapons(unit)["weapons"]
+        n, w = next(((i, x) for i, x in enumerate(listed) if x["address"] == weapon), (None, None))
+        if w is None:
+            raise StudioError(f"{weapon} isn't a weapon of {unit}")
+        ammo = w["ammo"]["address"]
+        if w["range"] is None:
+            raise StudioError(f"{ammo} has no range to change")
+        alone = [u["address"] for u in w["firing"]] in ([], [unit.partition(":")[0]])
+        if mode == "shared" or alone:
+            saved = self.edit(ammo, RANGE, value)
+            fired = ammo
+            copy = edits.new_units.get(ammo)
+            if copy and _tail(ammo).startswith(RANGE_COPY) and copy.source == w["game_ammo"] and alone:
+                if not ModEdits(edits.folder).of(ammo):  # nothing changed on it now: the game's own ammo again
+                    self.set_ammo(unit, weapon, copy.source)
+                    with self._saving:
+                        ModEdits(edits.folder).remove_unit(ammo)
+                    fired = copy.source
+            return {"saved": saved["saved"], "ammo": fired, "range": saved["value"], "copied": False}
+        source = edits.new_units[ammo].source if ammo in edits.new_units else ammo
+        carry = edits.of(ammo)  # what the mod changed on the ammo it fired goes with it: only the range differs
+        unit_name = re.sub(r"^Descriptor_[A-Za-z]+_", "", _tail(unit.partition(":")[0]))
+        stem = safe_name(f"{unit_name} {n + 1}")
+        ix = self._open()
+        try:
+            namespace = source.rsplit("/", 1)[0]
+            target, k = f"{namespace}/{RANGE_COPY}{stem}", 2
+            while target in edits.new_units or self._exists(ix, target):
+                target, k = f"{namespace}/{RANGE_COPY}{stem}_{k}", k + 1
+        finally:
+            ix.close()
+        with self._saving:
+            ModEdits(edits.folder).add_unit(target, source, plain_name(target), carry, named=False)
+        self.set_ammo(unit, weapon, target)
+        saved = self.edit(target, RANGE, value)
+        return {"saved": saved["saved"], "ammo": target, "range": saved["value"], "copied": True}
 
     def set_ammo(self, unit: str, weapon: str, ammo: str) -> dict:
         """Make a unit's weapon fire another ammunition (one of `weapons(unit)["choices"]`), saved in the current mod
@@ -2618,6 +2731,330 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             edits = ModEdits(edits.folder)
             edits.reset(where, prop, how)
         return {"saved": str(edits.file)}
+
+    # --- a unit's look: its models out to Blender, its paint back into the mod (rusemod.unitlook, rusemod.blender) ---
+    @staticmethod
+    def _unit_models(ix: Index, address: str) -> list[str]:
+        """The model files (.ase2ndfbin, as mesh packs name them) of a unit's graphics: the object its GfxDescriptor
+        names and that object's own parts (not the shared interface pieces they refer to)."""
+        gfx = next((w for p, k, w in ix.uses(address) if p == "GfxDescriptor" and k == "object"), None)
+        files, seen, todo = set(), set(), [gfx] if gfx else []
+        while todo and len(seen) < 2000:
+            a = todo.pop()
+            if a in seen:
+                continue
+            seen.add(a)
+            for _p, kind, what in ix.uses(a):
+                if kind == "file" and str(what).lower().endswith(".ase2ndfbin"):
+                    files.add(str(what).lower().replace("/", "\\"))
+                elif kind == "object" and what and what not in seen and what.startswith(gfx):
+                    todo.append(what)
+        return sorted(files)
+
+    @staticmethod
+    def _unit_card_file(ix: Index, address: str) -> str | None:
+        """The unit's card, its picture in the build menu, as its TextureForInterface names it (None: it has none)."""
+        tex = next((w for p, k, w in ix.uses(address) if p == "TextureForInterface" and k == "object"), None)
+        if tex is None:
+            return None
+        return next((str(w) for p, k, w in ix.uses(tex) if p == "FileName" and k == "file"), None)
+
+    def _look_card(self, address: str) -> str | None:
+        """The unit's card as a texture path in ZZ_Win.dat (rusemod.unitlook.card_member), or None."""
+        from rusemod.unitlook import card_member
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, _unit = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            name = self._unit_card_file(ix, real)
+        finally:
+            ix.close()
+        return card_member(name) if name else None
+
+    def _own_card_file(self, address: str) -> Path | None:
+        """A new unit's own card in the current mod (files/cards/<its name>.png, rusemod.unitlook), whether made yet
+        or not; None for the game's own units (their card is changed in place, files/replace)."""
+        from rusemod.unitlook import CARDS
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            return None
+        unit = edits.new_unit_of(address) if edits else None
+        mod = self._mod_dir()
+        return mod / CARDS / f"{_tail(unit.target)}.png" if unit is not None and mod is not None else None
+
+    def _card_view(self, address: str) -> dict | None:
+        """The card as the unit page shows it: {"texture", "width", "height", "url": the picture now (the mod's or the
+        game's, a copy in the cache), "own": whether the mod has its own}; None when the unit has no card. A new unit's
+        own card is files/cards/<its name>.png; until it has one, it shows its source's."""
+        from rusemod.dxt import png_bytes
+        from rusemod.unitlook import is_picture, mod_textures, picture_rgba
+        member = self._look_card(address)
+        game = self._game()
+        if member is None or game is None:
+            return None
+        zz = find_pack(game, "ZZ_Win.dat")
+        st = zz.stat()
+        arc = Edat.open(str(zz))
+        try:
+            entry = arc.entry(member)
+            original = bytes(arc.read(entry)) if entry is not None else None
+        finally:
+            arc.close()
+        if original is None or not is_picture(original):
+            return None
+        w, h, rgba = picture_rgba(original)
+        mod = self._mod_dir()
+        mine = self._own_card_file(address)  # a new unit's own card (made or not); None for a game unit
+        mine_made = mine is not None and mine.is_file()
+        replaced = (mod_textures(mod).get(member) or (None, None))[0] if mod is not None else None
+        own = mine if mine_made else replaced  # a new unit without its own shows its source's, as the mod has it
+        if own is not None:
+            fst = own.stat()
+            name = hashlib.sha1(f"{own}|{fst.st_size}|{fst.st_mtime_ns}".encode()).hexdigest()[:16] + ".png"
+            copy = self.cache_dir / "units" / "paint" / name
+            if not copy.is_file():
+                copy.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(own, copy)
+        else:
+            name = hashlib.sha1(f"{member}|{st.st_size}|{int(st.st_mtime)}".encode()).hexdigest()[:16] + ".png"
+            copy = self.cache_dir / "units" / "cards" / name
+            if not copy.is_file():
+                copy.parent.mkdir(parents=True, exist_ok=True)
+                part = copy.with_name(copy.name + ".part")
+                part.write_bytes(png_bytes(rgba, w, h, channels=4))
+                part.replace(copy)
+        return {"texture": member, "width": w, "height": h, "own": mine_made if mine is not None else own is not None,
+                "url": f"cache/units/{'paint' if own is not None else 'cards'}/{name}"}
+
+    def look_card(self, address: str, picture: str) -> dict:
+        """Use `picture` (a PNG, as a data: address or base64, the card's own size: the page takes it from its 3D
+        view) as the unit's card in the current mod (files/replace/<card>.png). Returns {"card": _card_view, "message"}."""
+        from rusemod.png import read_png
+        from rusemod.unitlook import REPLACE
+        mod = self._mod_dir()
+        if mod is None:
+            raise StudioError("Pick or make a mod first: the card goes into it.")
+        card = self._card_view(address)
+        if card is None:
+            raise StudioError("This unit has no card picture the Studio can change.")
+        try:
+            data = base64.b64decode(picture.split(",", 1)[-1], validate=True)
+            w, h, _px = read_png(data)
+        except (ValueError, TypeError):
+            raise StudioError("The card picture couldn't be read (not a PNG).") from None
+        if (w, h) != (card["width"], card["height"]):
+            raise StudioError(f"The card picture is {w} x {h}; this unit's card is {card['width']} x {card['height']}.")
+        # a new unit gets a card of its own (files/cards); a game unit's is changed in place (files/replace)
+        to = self._own_card_file(address) or mod / REPLACE / (card["texture"].replace("\\", "/") + ".png")
+        to.parent.mkdir(parents=True, exist_ok=True)
+        part = to.with_name(to.name + ".part")
+        part.write_bytes(data)
+        part.replace(to)
+        return {"card": self._card_view(address),
+                "message": f"The card is in {mod.name} now. Click Test in game to see it in the build menu."}
+
+    def look_card_reset(self, address: str) -> dict:
+        """Remove the current mod's card for this unit: the game's own comes back. Returns {"card", "message"}."""
+        from rusemod.unitlook import REPLACE
+        mod = self._mod_dir()
+        card = self._card_view(address)
+        if mod is not None and card is not None:
+            (self._own_card_file(address) or mod / REPLACE / (card["texture"].replace("\\", "/") + ".png")).unlink(
+                missing_ok=True)
+        return {"card": self._card_view(address), "message": "The game's own card is back."}
+
+    def _look_folder(self, address: str) -> Path:
+        mod = self._mod_dir()
+        return self.cache_dir / "looks" / (mod.name if mod else "_") / re.sub(r"[^A-Za-z0-9_-]", "_", _tail(address))
+
+    def _blender(self) -> Path | None:
+        from rusemod.blender import find_blender
+        from rusemod.home import settings as shared_settings
+        return find_blender(shared_settings(self._home).get("blender"))
+
+    def _look_models(self, address: str) -> tuple[list[str], list[str]]:
+        """(the unit's models, the textures they're drawn with: paths in ZZ_Win.dat)."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, _unit = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            names = self._unit_models(ix, real)
+        finally:
+            ix.close()
+        if not names:  # ammo, weapons and the like: nothing to open
+            return [], []
+        from rusemod import models
+        lib = models.Library(self._game())
+        try:
+            found = [n for n in (lib.find(m, lighter=False) for m in names) if n]
+            textures = sorted({models.texture_member(t) for n in found for _p, t in lib.parts(n) if t})
+        finally:
+            lib.close()
+        return found, textures
+
+    def look(self, address: str) -> dict:
+        """The Look box of a unit: {"models": its models, "textures": the pictures they're drawn with, "painted":
+        those the current mod repaints, "blender": Blender's path ("" when not found), "download": where to get it,
+        "opened": whether the unit has been opened in Blender (its work folder is there)}."""
+        from rusemod.blender import DOWNLOAD
+        from rusemod.unitlook import LOOK_FILE, mod_textures
+        if self._game() is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("We couldn't find R.U.S.E., so there are no models to open.")
+        found, textures = self._look_models(address)
+        mod = self._mod_dir()
+        painted = sorted(set(textures) & set(mod_textures(mod))) if mod else []
+        blender = self._blender()
+        return {"models": found, "textures": textures, "painted": painted, "blender": str(blender or ""),
+                "download": DOWNLOAD, "opened": (self._look_folder(address) / LOOK_FILE).is_file()}
+
+    def look_open(self, address: str) -> dict:
+        """Write the unit's models with their pictures into its work folder and open them in Blender, ready to paint
+        (each texture linked to its picture: Image > Save writes it). Returns look() and a "message"."""
+        from rusemod import models, unitlook
+        from rusemod.blender import open_models
+        blender = self._blender()
+        if blender is None:
+            raise StudioError("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use "
+                              "Choose Blender… to show the Studio where blender.exe is.")
+        found, _textures = self._look_models(address)
+        if not found:
+            raise StudioError("This unit has no 3D model the Studio can open.")
+        folder = self._look_folder(address)
+        if folder.exists():
+            shutil.rmtree(folder, ignore_errors=True)  # a fresh copy of the game's pictures each time
+        lib = models.Library(self._game())
+        try:
+            record = unitlook.prepare(lib, found, folder)
+        finally:
+            lib.close()
+        mod = self._mod_dir()
+        if mod is not None:  # paint the mod already has goes on the pictures, so work goes on from it
+            have = unitlook.mod_textures(mod)
+            for name, info in record["pictures"].items():
+                pics = have.get(info["texture"])
+                src = pics[1 if info["kind"] == "alpha" else 0] if pics else None
+                if src is not None:
+                    shutil.copyfile(src, folder / name)
+        self._blenders[str(folder)] = open_models(blender, record["models"])
+        return {**self.look(address), "message": f"Opening {len(found)} model(s) in Blender. Paint on the model "
+                "there, then come back and click Bring back: it saves your paint and puts it in your mod."}
+
+    def look_bring_back(self, address: str) -> dict:
+        """Copy every picture painted in Blender (since Open in Blender) into the current mod (files/replace), so
+        Test in game shows it. The Blender painting it is asked to save first (rusemod.blender.ask_to_save): a
+        Blender this Studio opened and still running is waited for (20 s at most), one it doesn't know of (the
+        Studio was restarted) 2 s, a closed one not at all. Returns look(), "brought" [{texture, kind}] and a
+        "message"."""
+        from rusemod import unitlook
+        from rusemod.blender import ask_to_save
+        mod = self._mod_dir()
+        if mod is None:
+            raise StudioError("Pick or make a mod first: the paint goes into it.")
+        folder = self._look_folder(address)
+        if not (folder / unitlook.LOOK_FILE).is_file():
+            raise StudioError("Open this unit in Blender first and paint it, then Bring back.")
+        proc = self._blenders.get(str(folder))
+        running = proc is not None and proc.poll() is None
+        quiet = False
+        if running or proc is None:
+            quiet = ask_to_save(folder, timeout=20.0 if running else 2.0) is None and running
+        record = json.loads((folder / unitlook.LOOK_FILE).read_text(encoding="utf-8"))
+        brought = unitlook.bring_back(folder, mod)
+        for b in brought:  # what's in the mod now is the new starting point: bringing back twice adds nothing
+            pic = folder / b["picture"]
+            record["pictures"][b["picture"]]["hash"] = unitlook._pixels_hash(pic, b["kind"] == "alpha")
+        if brought:
+            (folder / unitlook.LOOK_FILE).write_text(json.dumps(record, indent=1), encoding="utf-8")
+        message = (f"Brought back {len(brought)} painted picture(s) into {mod.name}. Click Test in game to see them."
+                   if brought else "Nothing new was painted yet. Paint on the model in Blender, then click Bring "
+                                   "back.")
+        if quiet:
+            message += (" Blender didn't answer in time: in Blender, click Save paint (Ctrl+S), then Bring back "
+                        "again.")
+        return {**self.look(address), "brought": [{"texture": b["texture"], "kind": b["kind"]} for b in brought],
+                "message": message}
+
+    PREVIEW_SIDE = 1024  # the preview's pictures: a mip level at most this wide (unit pictures are 1024 or 2048)
+    PREVIEW_VERSION = 1  # bumped when what rusemod.gltf writes changes (1: propeller discs apart, 2026-10-04)
+
+    def unit_preview(self, address: str) -> dict:
+        """A unit's 3D model for the preview on its page: {"models": [{"url": "cache/units/...glb", "name"}],
+        "paint": {texture: url of the mod's painted picture of it}, "card": its build-menu card (_card_view) or None}.
+        The .glb files (rusemod.gltf) are made once per game build and kept in the cache: a few seconds the first
+        time, then at once."""
+        from rusemod import gltf, models
+        from rusemod.unitlook import mod_textures
+        game = self._game()
+        if game is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("We couldn't find R.U.S.E., so there are no models to show.")
+        found, textures = self._look_models(address)
+        st = find_pack(game, "ZZ_Win.dat").stat()
+        build = f"{st.st_size}-{int(st.st_mtime)}-v{self.PREVIEW_VERSION}"  # a new game build makes them again
+        out = self.cache_dir / "units" / build
+        shown = []
+        with self._previews_lock:
+            lib = None
+            try:
+                for name in found:
+                    stem = re.sub(r"[^A-Za-z0-9_-]", "_", name.rsplit("\\", 1)[-1].replace("lod0.ase2ndfbin", ""))
+                    file = out / f"{stem}-{hashlib.sha1(name.encode()).hexdigest()[:8]}.glb"
+                    if not file.is_file():
+                        if lib is None:
+                            lib = models.Library(game)
+                        glb, _pictures, _summary = gltf.model_glb(lib, name, side=self.PREVIEW_SIDE)
+                        out.mkdir(parents=True, exist_ok=True)
+                        part = file.with_name(file.name + ".part")
+                        part.write_bytes(glb)
+                        part.replace(file)
+                    shown.append({"url": f"cache/units/{build}/{file.name}", "name": stem})
+            finally:
+                if lib is not None:
+                    lib.close()
+        paint = {}
+        mod = self._mod_dir()
+        have = mod_textures(mod) if mod is not None else {}
+        for tex in textures:
+            colour = (have.get(tex) or (None, None))[0]
+            if colour is None:
+                continue
+            st = colour.stat()  # a copy in the cache (the window shows files from there), named for this version
+            name = hashlib.sha1(f"{colour}|{st.st_size}|{st.st_mtime_ns}".encode()).hexdigest()[:16] + ".png"
+            copy = self.cache_dir / "units" / "paint" / name
+            if not copy.is_file():
+                copy.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(colour, copy)
+            paint[tex] = f"cache/units/paint/{name}"
+        return {"models": shown, "paint": paint, "card": self._card_view(address) if shown else None}
+
+    def choose_blender(self) -> dict:
+        """Ask where blender.exe is; kept in settings.json. Returns look()-style {"blender": path or ""}."""
+        from rusemod.home import save_settings, settings as shared_settings
+        if self._window is None:
+            return {"blender": str(self._blender() or "")}
+        chosen = pick_file(self._window, ("Blender (blender.exe)",))
+        if chosen and Path(chosen).name.lower() == "blender.exe" and Path(chosen).is_file():
+            values = shared_settings(self._home)
+            values["blender"] = str(chosen)
+            save_settings(self._home, values)
+        elif chosen:
+            return {"blender": str(self._blender() or ""), "message": "That isn't blender.exe. Pick blender.exe in "
+                                                                       "Blender's folder."}
+        return {"blender": str(self._blender() or "")}
+
+    def get_blender(self) -> dict:
+        """Open Blender's download page (it's free) in the web browser."""
+        from rusemod.blender import DOWNLOAD
+        self._starter.open_url(DOWNLOAD)
+        return {"url": DOWNLOAD}
 
     # --- new units ---
     def new_unit(self, source: str, name: str, price, nation: int = -1, factory: int = -1) -> dict:

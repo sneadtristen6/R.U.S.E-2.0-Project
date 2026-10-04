@@ -506,6 +506,300 @@ def paint_detail(raw: bytes, bounds, lines: list[list[tuple[float, float]]], pie
     return _tgv_with_payload(raw, zipo_pack(bytes(blocks))), [f"close-up map: {painted} block(s) painted, {how}"]
 
 
+# --- the Map Paint tab (PLAN §15): colour and the map's own ground laid on its picture ------------------------------
+# Strokes are rusemod.brush.Stroke of the paint and stamp brushes, in order: a paint stroke lays its colour, a stamp the
+# map's own picture from (x + sx, y + sy) at the same level (as the map has it before any paint, so a stamp never copies
+# another stroke's paint), each at its opacity (`weight`) times its brush's fall-off (round, square or line; soft or
+# hard edge). Every level of both tile sets is painted, so it shows from afar too; a stroke narrower than a few pixels
+# of a coarse level tints them by how much of each it covers.
+
+def _picture_sampler(store: Tmst, bounds, level: int, cache=None):
+    """The map's own picture at one level of `store` (its tiles as they are, before any paint): rgb at a map point, or
+    None off the map. Tiles are decoded once, and each 4x4 block once."""
+    x0, y0, _x1, _y1 = bounds
+    tiles: dict = {}
+    pixels: dict = {}
+    if level >= store.depth:  # the whole-map overview tile
+        over = next((t for t in store.tiles if t.level == store.depth), None)
+        rect = _tile_rect(store, over, bounds) if over is not None else None
+    else:
+        cw, ch = _cells(store, bounds)
+        side = 1 << (store.depth - 1 - level)
+        tw, th = cw / side, ch / side
+
+    def at(x, y):
+        if level >= store.depth:
+            if over is None:
+                return None
+            key, tile = (0, 0), over
+            rx0, ry0, rx1, ry1 = rect
+        else:
+            key = (int((x - x0) // tw), int((y - y0) // th))
+            tile = None
+            rx0, ry0 = x0 + key[0] * tw, y0 + key[1] * th
+            rx1, ry1 = rx0 + tw, ry0 + th
+        if key not in tiles:
+            try:
+                tiles[key] = _blocks(store, tile if tile is not None else store.tile(level, *key), cache)
+            except (KeyError, PaintError):
+                tiles[key] = None
+        got = tiles[key]
+        if got is None:
+            return None
+        blocks, w, h = got
+        px, py = int((x - rx0) / (rx1 - rx0) * w), int((y - ry0) / (ry1 - ry0) * h)
+        if not (0 <= px < w and 0 <= py < h):
+            return None
+        k = (py // 4) * (w // 4) + px // 4
+        block = pixels.get((key, k))
+        if block is None:
+            block = pixels[(key, k)] = dxt.block_pixels(bytes(blocks[8 * k:8 * k + 8]))
+        return block[(py % 4) * 4 + px % 4]
+    return at
+
+
+def _coverage(stroke, px: float, py: float, pw: float, ph: float) -> float:
+    """How strongly `stroke` paints the pixel centred at (px, py), pw x ph map units: its fall-off at the centre, or the
+    mean over 3 x 3 points of the pixel when the stroke is under two pixels across (a coarse level)."""
+    if stroke.radius >= 2 * max(pw, ph):
+        return stroke.strength_at(px, py)
+    total = 0.0
+    for j in (-1, 0, 1):
+        for i in (-1, 0, 1):
+            total += stroke.strength_at(px + i * pw / 3, py + j * ph / 3)
+    return total / 9
+
+
+def _solid_over(stroke, colour, x0: float, y0: float, x1: float, y1: float) -> bool:
+    """Whether `stroke` paints the whole box (x0, y0)-(x1, y1) its one colour: a full-opacity, hard-edged colour stroke
+    whose full-strength part (out to HARD_EDGE) holds all four corners. Every footprint (round, square, line) is convex,
+    so its corners inside means all of it is."""
+    from .brush import HARD_EDGE
+    if colour is None or stroke.weight < 1.0 or stroke.edge != "hard":
+        return False
+    f, most = stroke.footprint(), HARD_EDGE * HARD_EDGE
+    return all(f.t2(x, y) <= most for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)))
+
+
+CLEAR_AT = 0.5  # how strong Map Paint must be (its opacity times its fall-off) for what hides it up close to go
+
+
+def _reach_at(stroke, level: float) -> float:
+    """How far out the stroke paints at least `level` (its weight times its fall-off), as a share of its radius;
+    0 when it paints that strongly nowhere. Every fall-off weakens outward, so a halving search finds it."""
+    from .brush import edge_weight
+    if stroke.weight < level:
+        return 0.0
+    lo, hi = 0.0, 1.0
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        if stroke.weight * edge_weight(stroke.edge, stroke.kind.shape, mid * mid) >= level:
+            lo = mid
+        else:
+            hi = mid
+    return lo
+
+
+def paint_clearing(strokes: list, low: list[str]) -> list:
+    """Erase areas (rusemod.scenery.EraseArea, by size) that take off what hides the Map Paint `strokes` up close:
+    the ground stickers and `low` (the map's low plants and stones: scenery.low_cover), wherever a stroke with `clear`
+    paints at least CLEAR_AT: its footprint shrunk to there. A weaker stroke clears nothing. Trees and buildings stay,
+    and so do the ground's cover and movement (no vegetation or building group: build.cleared_woods leaves them).
+    Seen in the game: only a patch with all that taken off shows up close (TESTS.md T21); a sticker centred outside a
+    patch still covers its edge (T26), so they go by how far they reach."""
+    from .brush import PAINT_KINDS
+    from .scenery import EraseArea
+    out = []
+    for s in strokes:
+        if s.kind.kind not in PAINT_KINDS or not s.clear:
+            continue
+        t = _reach_at(s, CLEAR_AT)
+        if t <= 0.0:
+            continue
+        f = s.footprint()
+        out.append(EraseArea(f.x, f.y, f.r * t, ("decal",), tuple(low), shape=f.shape, dx=f.dx, dy=f.dy, x2=f.x2,
+                             y2=f.y2, by_size=True))
+    return out
+
+
+def paint_strokes(store: Tmst, bounds, strokes: list, cache=None) -> dict[int, bytes]:
+    """The Map Paint `strokes` laid on every tile of `store` (over `bounds`, map_bounds) they touch, at every level, in
+    order; only the 4x4 blocks they touch are encoded again. A block a solid stroke covers whole (_solid_over) takes
+    its colour at once, and only the strokes after it are worked out pixel by pixel there, so a ginormous patch costs
+    about its edge. Returns {tile index: new tile record} for Tmst.members. `cache`: _tgu1_blocks's."""
+    from .brush import colour_rgb
+    if not strokes:
+        return {}
+    boxes = [s.box() for s in strokes]  # x min, x max, y min, y max
+    colours = [colour_rgb(s.colour) if s.kind.kind == "paint" else None for s in strokes]
+    solid_blocks: dict = {}  # colour -> its 4x4 block, encoded once
+    samplers: dict = {}
+    out = {}
+    for tile in store.tiles:
+        rx0, ry0, rx1, ry1 = _tile_rect(store, tile, bounds)
+        near = [k for k, (bx0, bx1, by0, by1) in enumerate(boxes) if bx0 < rx1 and bx1 > rx0 and by0 < ry1 and by1 > ry0]
+        if not near:
+            continue
+        w, h = _dims(store, tile)  # never assumed: the overview tile is 256 on Blitz, 1024 x 512 on D-Day
+        pw, ph = (rx1 - rx0) / w, (ry1 - ry0) / h
+        blocks, painted = None, False
+        nx = w // 4
+        for by in range(h // 4):
+            cy0 = ry0 + by * 4 * ph
+            cy1 = cy0 + 4 * ph
+            row = [k for k in near if boxes[k][2] < cy1 and boxes[k][3] > cy0]
+            if not row:
+                continue
+            for bx in range(nx):
+                cx0 = rx0 + bx * 4 * pw
+                here = [k for k in row if boxes[k][0] < cx0 + 4 * pw and boxes[k][1] > cx0]
+                if here:  # in a stroke's box, but maybe out of its shape (a round patch's box corners): a pixel's margin
+                    here = [k for k in here
+                            if strokes[k].footprint().meets(cx0 - pw, cy0 - ph, cx0 + 5 * pw, cy0 + 5 * ph)]
+                if not here:
+                    continue
+                if blocks is None:
+                    blocks = _blocks(store, tile, cache)[0]
+                kb = by * nx + bx
+                solid = next((k for k in reversed(here)
+                              if _solid_over(strokes[k], colours[k], cx0, cy0, cx0 + 4 * pw, cy0 + 4 * ph)), None)
+                if solid is not None:  # the block is that stroke's colour; only the strokes after it are left
+                    here = [k for k in here if k > solid]
+                    if not here:
+                        c = colours[solid]
+                        if c not in solid_blocks:
+                            solid_blocks[c] = dxt.encode_block([c] * 16)
+                        blocks[8 * kb:8 * kb + 8] = solid_blocks[c]
+                        painted = True
+                        continue
+                    pixels = [colours[solid]] * 16
+                    changed = True
+                else:
+                    pixels = dxt.block_pixels(bytes(blocks[8 * kb:8 * kb + 8]))
+                    changed = False
+                for i in range(16):
+                    px, py = cx0 + (i % 4 + 0.5) * pw, cy0 + (i // 4 + 0.5) * ph
+                    r, g, b = pixels[i]
+                    touched = False
+                    for k in here:
+                        s = strokes[k]
+                        a = _coverage(s, px, py, pw, ph) * s.weight
+                        if a <= 0.0:
+                            continue
+                        c = colours[k]
+                        if c is None:  # a stamp: the map's own picture at the same level, where it copies from
+                            if tile.level not in samplers:
+                                samplers[tile.level] = _picture_sampler(store, bounds, tile.level, cache)
+                            c = samplers[tile.level](px + s.sx, py + s.sy)
+                            if c is None:
+                                continue
+                        r, g, b = r + (c[0] - r) * a, g + (c[1] - g) * a, b + (c[2] - b) * a
+                        touched = True
+                    if touched:
+                        new = (max(0, min(255, round(r))), max(0, min(255, round(g))), max(0, min(255, round(b))))
+                        if new != pixels[i]:
+                            pixels[i] = new
+                            changed = True
+                if changed:
+                    blocks[8 * kb:8 * kb + 8] = dxt.encode_block(pixels)
+                    painted = True
+        if painted:
+            out[tile.index] = zipo_tile(bytes(blocks), w, h)
+    return out
+
+
+def stamp_detail(raw: bytes, bounds, strokes: list) -> tuple[bytes, list[str]]:
+    """The stamp `strokes` copied into the close-up map too (`output\\div_map.tgv_pc`, one DXT5 picture over `bounds`,
+    grid_bounds): each point takes the close-up values (all four channels) from where the stamp copies the ground, so
+    it blends up close as its source does. Paint strokes leave the close-up map alone. Returns (the new record, notes),
+    or (b"", notes) when nothing changed."""
+    stamps = [s for s in strokes if s.kind.kind == "stamp"]
+    if not stamps:
+        return b"", []
+    tex = Tgv(raw)
+    payload = tex.payload(0)
+    if not tex.format.upper().startswith("DXT5") or payload[:4] != b"ZIPO":
+        return b"", [f"close-up map: {tex.format} {payload[:4]!r} can't be painted yet"]
+    old = zipo_unpack(payload)
+    blocks = bytearray(old)
+    w, h = tex.width, tex.height
+    if len(blocks) != w * h:
+        raise PaintError(f"the close-up map holds {len(blocks)} bytes, not {w}x{h} DXT5")
+    x0, y0, x1, y1 = bounds
+    pw, ph = (x1 - x0) / w, (y1 - y0) / h
+    nx, ny = w // 4, h // 4
+    decoded: dict = {}
+
+    def source(x, y):
+        """The close-up map's values at (x, y) as it was before the stamps."""
+        px, py = int((x - x0) / pw), int((y - y0) / ph)
+        if not (0 <= px < w and 0 <= py < h):
+            return None
+        k = (py // 4) * nx + px // 4
+        if k not in decoded:
+            decoded[k] = dxt.dxt5_block(bytes(old[16 * k:16 * k + 16]))
+        rgb, alpha = decoded[k]
+        i = (py % 4) * 4 + px % 4
+        return rgb[i] + (alpha[i],)
+    painted = 0
+    for s in stamps:
+        bx0, bx1, by0, by1 = s.box()
+        for byi in range(max(0, int((by0 - y0) / ph) // 4), min(ny, int((by1 - y0) / ph) // 4 + 1)):
+            for bxi in range(max(0, int((bx0 - x0) / pw) // 4), min(nx, int((bx1 - x0) / pw) // 4 + 1)):
+                k = byi * nx + bxi
+                rgb, alpha = dxt.dxt5_block(bytes(blocks[16 * k:16 * k + 16]))
+                changed = False
+                for i in range(16):
+                    px, py = x0 + (bxi * 4 + i % 4 + 0.5) * pw, y0 + (byi * 4 + i // 4 + 0.5) * ph
+                    a = _coverage(s, px, py, pw, ph) * s.weight
+                    if a <= 0.0:
+                        continue
+                    c = source(px + s.sx, py + s.sy)
+                    if c is None:
+                        continue
+                    r, g, b = rgb[i]
+                    new = (round(r + (c[0] - r) * a), round(g + (c[1] - g) * a), round(b + (c[2] - b) * a))
+                    na = round(alpha[i] + (c[3] - alpha[i]) * a)
+                    if new != rgb[i] or na != alpha[i]:
+                        rgb[i], alpha[i] = new, na
+                        changed = True
+                if changed:
+                    blocks[16 * k:16 * k + 16] = dxt.encode_dxt5_block(rgb, alpha)
+                    painted += 1
+    if not painted:
+        return b"", []
+    return _tgv_with_payload(raw, zipo_pack(bytes(blocks))), [f"close-up map: {painted} block(s) copied with the stamps"]
+
+
+def paint_ground(read, path_of, strokes: list, cache=None) -> tuple[dict, list[str]]:
+    """({member: new bytes}, notes): the Map Paint `strokes` laid on both tile sets of a map pack (paint_strokes) and,
+    for the stamps, its close-up map (stamp_detail). `read(name)` gives a member's bytes (the build's chain) or None,
+    `path_of(name)` its full path in the pack; `cache`: _tgu1_blocks's."""
+    mesh = read("output\\highdef.tms")
+    if mesh is None:
+        raise PaintError("the map has no ground mesh to place the paint on")
+    bounds = map_bounds(mesh)
+    out, notes = {}, []
+    for lod in LODS:
+        index, chunk = read(f"output\\{lod}.tmst_pc"), read(f"output\\{lod}.tmst_chunk_pc")
+        if index is None or chunk is None:
+            continue
+        store = Tmst(index, chunk)
+        store.lod = lod
+        store.index_path, store.chunk_path = path_of(f"output\\{lod}.tmst_pc"), path_of(f"output\\{lod}.tmst_chunk_pc")
+        tiles = paint_strokes(store, bounds, strokes, cache)
+        if tiles:
+            out.update(store.members(tiles))
+        notes.append(f"{lod}: {len(tiles)} tile(s) painted")
+    detail = read(DETAIL)
+    if detail is not None and any(s.kind.kind == "stamp" for s in strokes):
+        marked, more = stamp_detail(detail, grid_bounds(mesh), strokes)
+        notes += more
+        if marked:
+            out[path_of(DETAIL)] = marked
+    return out, notes
+
+
 PROFILE_KEPT = 1   # the kept profiles' format: a new one means they're all measured again
 
 

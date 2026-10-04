@@ -74,8 +74,8 @@ UNITS = make_ndf(
              (3, [(8, ref(6, 4)), (10, i32(2500)), (11, f32(0.1)), (12, flag(1))]),                       # 4 M4 gun
              (3, [(8, ref(6, 4))]),                                                                       # 5 Panzer gun
              (4, [(9, i32(40))]),                                                                         # 6 shared ammo
-             (4, [(15, u32(1001)), (9, i32(55)), (16, key(MEDIUM)), (17, key(APSHELL))]),                # 7 Ammo 75
-             (4, [(15, u32(1002)), (9, i32(90)), (16, key(LARGE)), (17, key(APSHELL))]),                 # 8 Ammo 88
+             (4, [(15, u32(1001)), (9, i32(55)), (16, key(MEDIUM)), (17, key(APSHELL)), (20, f32(104000))]),  # 7 Ammo 75
+             (4, [(15, u32(1002)), (9, i32(90)), (16, key(LARGE)), (17, key(APSHELL)), (20, f32(130000))]),   # 8 Ammo 88
              (5, [(18, s(0)), (19, ref(7, 4))])],                                                        # 9 Panzer's mount
     classes=["TUniteAuSolDescriptor", "TInfanterieDescriptor", "TBatimentDescriptor", "TWeapon", "TAmmunition",
              "TMountedWeaponDescriptor"],
@@ -83,7 +83,7 @@ UNITS = make_ndf(
            ("Nationalite", 0), ("SeuilMort", 1), ("ProductionPrice", 2), ("Ammo", 3), ("Puissance", 4),
            ("PorteeMaximale", 3), ("TempsEntreDeuxTirs", 3), ("TirEnMouvement", 3), ("MountedWeapon", 0),
            ("InitialFlagSet", 0), ("AmmunitionId", 4), ("Name", 4), ("TypeName", 4), ("EffectTag", 5),
-           ("Ammunition", 5)],
+           ("Ammunition", 5), ("PorteeMaximale", 4)],
     strings=["weapon_effet_tag1"],
     exports={0: "GFX/Everything/Descriptor_Unit_M4_Sherman", 1: "GFX/Everything/Descriptor_Unit_Panzer_IV_G",
              2: "GFX/Everything/Descriptor_Unit_Soldat_US_Leger", 3: "GFX/Everything/Descriptor_Building_Depot",
@@ -757,7 +757,9 @@ class AmmoAndFlags(WithMod):
         w = self.api.weapons(PANZER_IV, "us")
         self.assertEqual(w["weapons"], [{"address": PANZER_MOUNT, "name": "weapon_effet_tag1",
                                          "ammo": {"address": AMMO_75, "name": "AP shell · Medium cal."},
-                                         "game_ammo": AMMO_75, "edited": False, "shot": ""}])
+                                         "game_ammo": AMMO_75, "edited": False, "shot": "",
+                                         "range": 104000.0, "game_range": 104000.0, "own_copy": False,
+                                         "firing": [{"address": PANZER_IV, "name": "Panzer IV"}]}])
         self.assertEqual([(c["address"], c["nations"]) for c in w["choices"]],
                          [(AMMO_88, []), (AMMO_75, ["Germany"])])  # by name: Large before Medium; whose it is
         self.assertEqual(self.api.weapons(M4)["weapons"], [])  # the M4's gun is the older, simpler shape
@@ -814,6 +816,48 @@ class AmmoAndFlags(WithMod):
         gone = self.api.delete_unit(made["address"])
         self.assertEqual(gone["source"], AMMO_75)
         self.assertEqual(self.api.ammo()["total"], 2)
+
+    def test_a_weapons_range_from_its_units_page(self):
+        with self.assertRaises(StudioError):
+            self.api.set_range(PANZER_IV, PANZER_MOUNT, 150000)  # no mod yet
+        folder = Path(self.api.new_mod("Ranges")["current"])
+        rndf = lambda: (folder / "src" / "studio.rndf").read_text(encoding="utf-8")  # noqa: E731
+        weapon = lambda unit=PANZER_IV: self.api.weapons(unit)["weapons"][0]  # noqa: E731
+        # only the Panzer fires Ammo 75: "only this unit" changes it where it is, no copy needed
+        saved = self.api.set_range(PANZER_IV, PANZER_MOUNT, 150000, "own")
+        self.assertEqual((saved["ammo"], saved["range"], saved["copied"]), (AMMO_75, 150000, False))
+        self.assertIn("\npatch $/GFX/Everything/Ammo_Canon_75\n(\n    PorteeMaximale = 150000\n)\n", rndf())
+        self.assertEqual((weapon()["range"], weapon()["game_range"]), (150000, 104000.0))
+        # a copy of the Panzer fires it too: now "only this unit" gives the Panzer's gun a copy of its own
+        twin = self.api.new_unit(PANZER_IV, "Panzer Twin", 45)["address"]
+        self.assertEqual([f["address"] for f in weapon()["firing"]], [PANZER_IV, twin])
+        saved = self.api.set_range(PANZER_IV, PANZER_MOUNT, 160000, "own")
+        copy = "$/GFX/Everything/Ammo_Range_Panzer_IV_G_1"
+        self.assertEqual((saved["ammo"], saved["range"], saved["copied"]), (copy, 160000, True))
+        mine = weapon()
+        self.assertEqual((mine["ammo"]["address"], mine["range"], mine["game_range"], mine["own_copy"], mine["edited"]),
+                         (copy, 160000, 104000.0, True, True))
+        self.assertEqual((weapon(twin)["ammo"]["address"], weapon(twin)["range"]), (AMMO_75, 150000))  # the twin keeps it
+        self.assertIn("\nexport Ammo_Range_Panzer_IV_G_1 is clone $/GFX/Everything/Ammo_Canon_75\n(\n"
+                      "    PorteeMaximale = 160000\n)\n", rndf())
+        # "all of them" changes the ammo for every unit that fires it: here the twin alone fires Ammo 75 now
+        self.api.set_range(twin, twin + ":MountedWeapon", 140000, "shared")
+        self.assertEqual((weapon(twin)["range"], weapon()["range"]), (140000, 160000))
+        self.api.delete_unit(twin)  # (this test's build has no texts to add a unit's name to)
+        ndf = self.build(folder)
+        made = find_export(ndf, copy)
+        self.assertEqual(ndf.objects[made].get(20).scalar(), 160000)
+        self.assertEqual(struct.unpack("<III", ndf.objects[9].get(19).payload)[1], made)  # the Panzer's mount fires it
+        # back to the game's range: the copy made for it goes, and the gun fires the game's ammo again
+        saved = self.api.set_range(PANZER_IV, PANZER_MOUNT, 104000, "shared")
+        self.assertEqual((saved["ammo"], saved["copied"]), (AMMO_75, False))
+        self.assertNotIn("Ammo_Range_", rndf())
+        self.assertNotIn("Panzer_IV_G:MountedWeapon", rndf())
+        self.assertEqual(weapon()["ammo"]["address"], AMMO_75)
+        for unit, w, value, mode in [(PANZER_IV, PANZER_MOUNT, 1, "everyone"), (PANZER_IV, PANZER_MOUNT, "far", "own"),
+                                     (M4, PANZER_MOUNT, 1, "own"), (PANZER_IV, PANZER_IV + ":Weapon", 1, "own")]:
+            with self.subTest(unit=unit, weapon=w, value=value, mode=mode), self.assertRaises(StudioError):
+                self.api.set_range(unit, w, value, mode)
 
     def test_flags_are_a_list_of_any_length(self):
         flags = self.api.flags("us")["flags"]
@@ -881,7 +925,18 @@ class Terrain(WithMod):
         self.assertEqual([s["brush"] for s in view["strokes"]], ["hill", "plateau", "smooth"])
         self.assertEqual(view["strokes"][0], {"brush": "hill", "x": 500.0, "y": 600.0, "radius": 120.0, "height": 30.0,
                                               "level": 0.0, "weight": 1.0, "x2": 0.0, "y2": 0.0, "level2": 0.0,
-                                              "square": False})
+                                              "square": False, "shape": "round", "edge": "soft", "dx": 1.0, "dy": 0.0,
+                                              "colour": "", "sx": 0.0, "sy": 0.0, "clear": True})
+        # the brush types (2026-10-03): a square turned any way and a line, with a hard edge, saved and read back
+        turned = {"brush": "raise", "x": 1, "y": 2, "radius": 30, "height": 5.0, "shape": "square", "dx": 0.6,
+                  "dy": 0.8, "edge": "hard"}
+        ditch = {"brush": "lower", "x": 1, "y": 2, "radius": 30, "height": 5.0, "shape": "line", "x2": 400, "y2": 2}
+        self.api.terrain_add("TwoIslands", [turned, ditch])
+        back = self.api.terrain("TwoIslands")["strokes"][-2:]
+        self.assertEqual([(s["shape"], s["edge"], s["dx"], s["dy"]) for s in back],
+                         [("square", "hard", 0.6, 0.8), ("line", "soft", 1.0, 0.0)])
+        self.assertEqual((back[1]["x2"], back[1]["y2"]), (400.0, 2.0))
+        self.api.terrain_undo("TwoIslands", 2)
         self.assertEqual(self.api.terrain("SuperCrossroads4")["strokes"], [])  # another map has its own
         # Undo takes the last strokes off; the file goes when none is left, and its empty folders with it
         self.assertEqual(self.api.terrain_undo("TwoIslands", 2), {"count": 1, "removed": 2, "saved": str(file)})

@@ -935,6 +935,37 @@ class EraseArea:
     what: tuple = ERASE_DEFAULT
     types: tuple = ()
     keep_ground: bool = False
+    shape: str = "round"   # round, square (sides along dx, dy, `radius` from its middle to each side) or line (to x2,
+    dx: float = 1.0        # y2, `radius` either side): rusemod.brush Footprint
+    dy: float = 0.0
+    x2: float = 0.0
+    y2: float = 0.0
+    by_size: bool = False  # an object goes when any of it reaches in (its type's reach times its size: erase_plan's
+                           # `sizes`), not only its middle: Map Paint's clearing (a sticker 20 m across centred outside
+                           # a painted patch still covers its edge up close; seen in the game, TESTS.md T26)
+
+    def footprint(self):
+        from .brush import Footprint
+        if self.shape == "line":
+            return Footprint("line", self.x, self.y, self.radius, x2=self.x2, y2=self.y2)
+        if self.shape == "square":
+            return Footprint("square", self.x, self.y, self.radius, self.dx, self.dy)
+        return Footprint("round", self.x, self.y, self.radius)
+
+    def box(self) -> tuple[float, float, float, float]:
+        """x min, y min, x max, y max."""
+        bx0, bx1, by0, by1 = self.footprint().box()
+        return bx0, by0, bx1, by1
+
+    def contains(self, x: float, y: float) -> bool:
+        if self.shape == "round":
+            return (x - self.x) ** 2 + (y - self.y) ** 2 <= self.radius ** 2
+        return self.footprint().t2(x, y) <= 1.0
+
+    def meets(self, x0: float, y0: float, x1: float, y1: float) -> bool:
+        if self.shape == "round":
+            return max(x0 - self.x, 0.0, self.x - x1) ** 2 + max(y0 - self.y, 0.0, self.y - y1) ** 2 <= self.radius ** 2
+        return self.footprint().meets(x0, y0, x1, y1)
 
 
 @dataclass
@@ -978,9 +1009,10 @@ class _AreaGrid:
 
     def __init__(self, pairs: list, cell: float = 16000.0):
         self.cell, self.cells = cell, {}
-        for k, (a, ok) in enumerate(pairs):
-            for gx in range(int((a.x - a.radius) // cell), int((a.x + a.radius) // cell) + 1):
-                for gy in range(int((a.y - a.radius) // cell), int((a.y + a.radius) // cell) + 1):
+        for k, pair in enumerate(pairs):
+            ax0, ay0, ax1, ay1 = pair[0].box()
+            for gx in range(int(ax0 // cell), int(ax1 // cell) + 1):
+                for gy in range(int(ay0 // cell), int(ay1 // cell) + 1):
                     self.cells.setdefault((gx, gy), []).append(k)
         self.pairs = pairs
 
@@ -1005,25 +1037,53 @@ def _meeting(box: tuple, m: tuple, areas: list, grid: "_AreaGrid | None" = None)
     x0, y0, x1, y1 = min(xs), min(ys), max(xs), max(ys)
     if grid is not None:
         areas = grid.query(x0, y0, x1, y1)
-    return [(a, ok) for a, ok in areas
-            if max(x0 - a.x, 0.0, a.x - x1) ** 2 + max(y0 - a.y, 0.0, a.y - y1) ** 2 <= a.radius ** 2]
+    return [p for p in areas if p[0].meets(x0, y0, x1, y1)]
 
 
-def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridges=frozenset()) -> _Cut | None:
+SIZE_MOST = 8.0  # the largest size an erase by size allows for when it narrows its search (Blitz places none past 5.3)
+
+
+def _size_of(m: tuple, local: tuple) -> float:
+    """How big an object is placed: the length of its x axis once its own transform and its placement's are joined."""
+    a = m[0] * local[0] + m[1] * local[4] + m[2] * local[8]
+    c = m[4] * local[0] + m[5] * local[4] + m[6] * local[8]
+    e = m[8] * local[0] + m[9] * local[4] + m[10] * local[8]
+    return math.sqrt(a * a + c * c + e * e)
+
+
+def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridges=frozenset(),
+               sizes: dict[str, float] | None = None) -> _Cut | None:
     """What erasing `areas` takes out, placement by placement from the top block down, or None for nothing. An object
     goes when its place lies in an area that may remove its kind: its group (`kinds`: name index -> group) is in the
-    area's `what` and it isn't a bridge (`bridges`: name indexes), or its name is in the area's `types`."""
+    area's `what` and it isn't a bridge (`bridges`: name indexes), or its name is in the area's `types`. In an area
+    `by_size`, an object also goes when its reach does (`sizes`: type name -> how far it reaches from its middle at
+    size 1, map units; times the size it is placed at)."""
     roots = sc.roots()
     if roots != [0]:
         raise SceneryError("the scenery file's blocks aren't in the order this writer knows")
-    pairs, takes = [], {}  # (area, the name indexes it takes); areas asking the same share one set
+    reach = {s: sizes[n] for s, n in enumerate(sc.names[:len(sc.flags)]) if n in sizes} if sizes else {}
+    most = max(reach.values(), default=0.0) * SIZE_MOST
+    pairs, takes = [], {}  # (area as searched, the name indexes it takes, the area); areas asking the same share one set
+    feet: dict = {}        # id(area) -> its footprint, for an area by size (made once)
     for a in areas:
         key = (tuple(a.what), tuple(a.types))
         if key not in takes:
             named = set(a.types)
             takes[key] = {s for s, n in enumerate(sc.names[:len(sc.flags)])
                           if n in named or (kinds.get(s) in a.what and s not in bridges)}
-        pairs.append((a, takes[key]))
+        if a.by_size and most:
+            from dataclasses import replace
+            feet[id(a)] = a.footprint()
+            pairs.append((replace(a, radius=a.radius + most), takes[key], a))
+        else:
+            pairs.append((a, takes[key], a))
+
+    def takes_it(a: EraseArea, x: float, y: float, symbol: int, m: tuple, local: tuple) -> bool:
+        f = feet.get(id(a))
+        if f is None:
+            return a.contains(x, y)
+        r = a.radius + reach.get(symbol, 0.0) * _size_of(m, local)  # (how far out / r)² grown by the object's reach
+        return f.t2(x, y) * a.radius * a.radius <= r * r
     boxes = _object_boxes(sc)
     grid = _AreaGrid(pairs) if len(pairs) > 64 else None
 
@@ -1038,7 +1098,7 @@ def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridg
                 x = m[0] * local[3] + m[1] * local[7] + m[2] * local[11] + m[3]
                 y = m[4] * local[3] + m[5] * local[7] + m[6] * local[11] + m[7]
                 here = g.query(x, y, x, y) if g is not None else near
-                if any(it.symbol in ok and (x - a.x) ** 2 + (y - a.y) ** 2 <= a.radius ** 2 for a, ok in here):
+                if any(it.symbol in ok and takes_it(a, x, y, it.symbol, m, local) for _searched, ok, a in here):
                     removed.add(it.at)
                     gone[it.symbol] = gone.get(it.symbol, 0) + 1
             elif it.kind == "child":
@@ -1092,7 +1152,7 @@ def _rebuilt(b: Block, removed: set) -> tuple[bytes, dict[int, int]]:
 
 
 def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
-                  bridges=frozenset()) -> tuple[bytes, list[str], dict[str, int]]:
+                  bridges=frozenset(), sizes: dict[str, float] | None = None) -> tuple[bytes, list[str], dict[str, int]]:
     """The scenery file with the objects in `areas` taken out (erase_plan says which). Most of a map's trees are in
     blocks it places many times (a wood's patch, repeated across the map), so a placement that loses objects gets a
     copy of its block of its own, without them (copy on write): the reference that placed it points to the copy, the
@@ -1107,7 +1167,7 @@ def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
     sc = Scenery(data)
     unknown = sorted({t for a in areas for t in a.types} - set(sc.names[:len(sc.flags)]))
     said = [f"{', '.join(unknown)}: not on this map, so the erase areas take none of it"] if unknown else []
-    cut = erase_plan(sc, areas, kinds, bridges)
+    cut = erase_plan(sc, areas, kinds, bridges, sizes)
     if cut is None:
         return bytes(data), [f"the erase area(s) cover nothing they may remove: {len(areas)} area(s), no change"] + said, {}
     weight, _where = sc.placings()
@@ -1210,12 +1270,89 @@ def erase_count(data: bytes, areas: list[EraseArea], descs: dict[str, Descriptor
     return erase_objects(data, areas, kinds, bridges)[2]
 
 
+# --- what hides painted ground up close (TESTS.md T21: with it taken off under a patch, the paint shows at every
+# height; the game draws it only near the camera, over the ground's picture) ---
+LOW_STONES = ("caillou", "champspierres", "pierres")  # the stone props T21 took off (by name: they share Props/Ferme)
+
+
+def low_cover(descs: dict[str, Descriptor], names) -> list[str]:
+    """Of `names` (a map's type names), the low cover besides the ground stickers (those go as a whole group, decal):
+    the low plants (every vegetation type outside Vegetation/Arbres: crops, grass, bushes, flowers) and the stones."""
+    out = []
+    for nm in names:
+        d = descs.get(nm)
+        if d is None:
+            continue
+        if d.group == "vegetation" and not d.category.lower().startswith("vegetation/arbres"):
+            out.append(nm)
+        elif d.group == "prop" and nm.rsplit("/", 1)[-1].lower().startswith(LOW_STONES):
+            out.append(nm)
+    return sorted(out)
+
+
+def sticker_reach(arc) -> dict[str, float]:
+    """How far each sticker type reaches from its middle at size 1, across the ground (map units): from its
+    descriptor's MinExtent and MaxExtent (Herbe_verte: 2,000 or 2,048 to each side, about 11 m from its middle), the
+    largest where several decor sets define the name. From the unit-data pack `arc` (an Edat)."""
+    from .ndf import Ndf
+    out: dict[str, float] = {}
+    for e in arc.entries:
+        if not e.path.lower().startswith(SCENERY_DIR):
+            continue
+        n = Ndf(bytes(arc.read(e)))
+        names = [p for p, _ in n.props]
+        for i, o in enumerate(n.objects):
+            d = {names[pi]: v for pi, v in o.props}
+            lo, hi = d.get("MinExtent"), d.get("MaxExtent")
+            if lo is None or hi is None or len(lo.payload) < 12 or len(hi.payload) < 12:
+                continue
+            v = d.get("RegistrationName")
+            name = n.strings[struct.unpack("<I", v.payload)[0]] if v is not None and v.tc in (0x07, 0x1C) else ""
+            if not name:
+                path = n.exports.get(i) or ""
+                name = path[2:] if path.startswith("$/TypeWarrior/") else ""
+            if not name:
+                continue
+            (x0, y0, _z0), (x1, y1, _z1) = struct.unpack("<3f", lo.payload[:12]), struct.unpack("<3f", hi.payload[:12])
+            r = math.hypot(max(abs(x0), abs(x1)), max(abs(y0), abs(y1)))
+            if math.isfinite(r):
+                out[name] = max(out.get(name, 0.0), r)
+    return out
+
+
+def model_reach(lib, d: Descriptor) -> float:
+    """How far a type's close-up models reach from its middle across the ground at size 1 (map units); 0 when none is
+    found. `lib`: a rusemod.models.Library."""
+    far = 0.0
+    for model in (d.models or ([d.model] if d.model else [])):
+        name = lib.find(model)
+        if name is None:
+            continue
+        for part, _tex in lib.parts(name):
+            pos = part.positions
+            for k in range(0, len(pos) - 2, 3):
+                far = max(far, (pos[k] * pos[k] + pos[k + 1] * pos[k + 1]) ** 0.5)
+    return far
+
+
 def parse_erase(rows: list, where: str = "scenery.toml") -> list[EraseArea]:
     out = []
     for k, row in enumerate(rows):
-        extra = sorted(set(row) - {"x", "y", "radius", "what", "types"})
+        extra = sorted(set(row) - {"x", "y", "radius", "what", "types", "shape", "dx", "dy", "x2", "y2"})
         if extra:
             raise SceneryEditError(f"{where}: erase area {k + 1}: unknown key {extra[0]!r}")
+        shape = row.get("shape", "round")
+        if shape not in ("round", "square", "line"):
+            raise SceneryEditError(f"{where}: erase area {k + 1}: shape must be round, square or line")
+        try:
+            dx, dy = float(row.get("dx", 1.0)), float(row.get("dy", 0.0))
+            x2, y2 = float(row.get("x2", 0.0)), float(row.get("y2", 0.0))
+        except (TypeError, ValueError):
+            raise SceneryEditError(f"{where}: erase area {k + 1}: dx, dy, x2 and y2 must be numbers") from None
+        if shape == "line" and ("x2" not in row or "y2" not in row):
+            raise SceneryEditError(f"{where}: erase area {k + 1}: a line needs x2 and y2 (where it ends)")
+        if shape == "square" and dx == 0.0 and dy == 0.0:
+            raise SceneryEditError(f"{where}: erase area {k + 1}: the square's direction dx, dy can't be 0, 0")
         try:
             x, y, r = float(row["x"]), float(row["y"]), float(row["radius"])
         except KeyError as exc:
@@ -1237,7 +1374,7 @@ def parse_erase(rows: list, where: str = "scenery.toml") -> list[EraseArea]:
                                    f"[\"TypeWarrior/MairieNormande\"]")
         if not what and not types:
             raise SceneryEditError(f"{where}: erase area {k + 1} names nothing to erase (what and types are empty)")
-        out.append(EraseArea(x, y, r, tuple(what), tuple(types)))
+        out.append(EraseArea(x, y, r, tuple(what), tuple(types), shape=shape, dx=dx, dy=dy, x2=x2, y2=y2))
     return out
 
 
@@ -1923,6 +2060,12 @@ def objects_toml(objects: list[NewObject], header: str = "", erase: list[EraseAr
     lines = [f"# {ln}" if ln else "#" for ln in header.splitlines()] + ([""] if header else [])
     for a in erase:
         lines += ["[[erase]]", f"x = {a.x!r}", f"y = {a.y!r}", f"radius = {a.radius!r}"]
+        if a.shape != "round":
+            lines.append(f'shape = "{a.shape}"')
+        if a.shape == "square" and (a.dx, a.dy) != (1.0, 0.0):
+            lines += [f"dx = {a.dx!r}", f"dy = {a.dy!r}"]
+        if a.shape == "line":
+            lines += [f"x2 = {a.x2!r}", f"y2 = {a.y2!r}"]
         lines += [f"what = [{', '.join(json.dumps(g) for g in a.what)}]"] if tuple(a.what) != ERASE_DEFAULT else []
         lines += ([f"types = [{', '.join(json.dumps(t) for t in a.types)}]"] if a.types else []) + [""]
     for o in objects:

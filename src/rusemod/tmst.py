@@ -182,11 +182,13 @@ class Tgv:
         return self.payload(0)[:4].decode("latin-1")
 
 
-def make_tgv(width: int, height: int, fmt: str, mips: list[bytes]) -> bytes:
-    """Build a TGV record (version 1, flag 1, as the game's own) with the given mip payloads, 4-aligned."""
+def make_tgv(width: int, height: int, fmt: str, mips: list[bytes], flag: int = 1) -> bytes:
+    """Build a TGV record (version 1) with the given mip payloads, 4-aligned. `flag` 1: each payload has a codec
+    tag (TGU1, ZIPO), as every texture of the game; 0: the payloads are the blocks as they are, as every texture
+    stand-in (.ppk) of the game. The game reads a payload by this flag, so it must match the payloads."""
     name = fmt.encode("ascii")
     table = _aligned(28 + len(name))
-    head = bytearray(struct.pack("<6IHH", 1, 1, width, height, width, height, len(mips), len(name)) + name)
+    head = bytearray(struct.pack("<6IHH", 1, flag, width, height, width, height, len(mips), len(name)) + name)
     head += b"\0" * (table - len(head))
     pos, offsets = table + 8 * len(mips), []
     for m in mips:
