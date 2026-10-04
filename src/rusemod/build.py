@@ -25,7 +25,7 @@ from . import loc, pyscript, unitcheck, unitpacks
 from .brush import BrushError, parse_strokes
 from .edat import Edat
 from .lock import fingerprint, fingerprint_text
-from .model import ModelError, game_path, load, save
+from .model import ModelError, collector_paused, game_path, load, save
 from .patch import Engine, Finding, Text, _walk_obj
 from .visibility import SUFFIX as SEEN_SUFFIX
 from .resolve import ModInfo, ResolveError, load_order
@@ -499,8 +499,9 @@ class PackModel:
     shadows: list         # debug-info copies, left as shipped
 
 
-def load_pack(arc: Edat) -> PackModel:
-    """The data files of `arc` as the engine's model, the way builds see them (debug-info copies left out)."""
+def load_pack(arc: Edat, cache=None) -> PackModel:
+    """The data files of `arc` as the engine's model, the way builds see them (debug-info copies left out). `cache`:
+    a folder where the model is kept for the next build of the same files (model.load)."""
     members, files, shadows = {}, {}, []
     changed = getattr(arc, "changed", {})  # a pack that .rmod mods changed first (rusemod.rmod.Layered)
     for e in arc.entries:
@@ -512,7 +513,7 @@ def load_pack(arc: Edat) -> PackModel:
                 continue
             files[game_path(e.path)] = bytes(arc.read(e))
             members[game_path(e.path)] = e.path
-    base, loaded = load(files)
+    base, loaded = load(files, cache)
     return PackModel(base, loaded, members, shadows)
 
 
@@ -916,14 +917,15 @@ def unit_classes(base, run, zz_win, result: BuildResult) -> None:
                                                f"Python unit list, like {n.like}"))
 
 
-def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None = None) -> BuildResult:
+def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None = None,
+               cache: Path | None = None) -> BuildResult:
     """Run `mods` [(ModInfo, ops)] on the data files of `arc`, and their texts and new units' classes on
     `text_arc` (ZZ_Win.dat; needed when a mod has text/*.csv or new units). Nothing is written; see
-    BuildResult.changed / text_changed / script_changed."""
+    BuildResult.changed / text_changed / script_changed. `cache`: load_pack's."""
     order = load_order([m for m, _ in mods])
     by_id = {m.id: (m, ops) for m, ops in mods}
     result = BuildResult(order=[m.id for m in order])
-    pack = load_pack(arc)
+    pack = load_pack(arc, cache)
     base, loaded, members, shadows = pack.base, pack.loaded, pack.members, pack.shadows
     # the types mods place that the game doesn't draw from far get copies that it does, used by the mods' objects
     # alone (rusemod.visibility; the owner, 2026-10-03)
@@ -1084,7 +1086,8 @@ def close_up_copy(text_arc, map_name: str, shipped: bytes, marked: bytes) -> tup
 
 def build_cache() -> Path:
     """BUILD_CACHE: the folder in the platform's own folder (rusemod.home) where builds keep what they measure once
-    (a map's road look: groundpaint.map_road_profile). Safe to delete: it's measured again."""
+    (a map's road look: groundpaint.map_road_profile; the unit data as loaded: model.load). Safe to delete: it's
+    measured again."""
     from .home import default_home
     return default_home() / "cache" / "build"
 
@@ -1186,7 +1189,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         arc = open_pack(pack_path)
         text_arc = open_pack(text_path) if text_path else None
         try:
-            result = build_pack(arc, mods, build_id, text_arc) if mods else BuildResult()
+            # the collector paused for the unit data's build: on two-shermans its passes over the loaded model and the
+            # engine's copy of it took 2 to 4 seconds, and 5 to 9 with the model read from the cache, which it then
+            # counts as new and looks through again and again (2026-10-04)
+            with collector_paused():
+                result = build_pack(arc, mods, build_id, text_arc, cache) if mods else BuildResult()
         except ResolveError as exc:
             raise BuildError(f"load order: {exc}") from None
         if run:

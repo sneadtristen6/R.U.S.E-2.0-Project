@@ -296,6 +296,24 @@ class Terrain(unittest.TestCase):
                                  say=lines.append)
         return result, lines
 
+    def test_the_unit_data_is_built_with_the_collector_paused(self):
+        import gc
+        from unittest import mock
+
+        import rusemod.build as build
+        seen = []
+
+        def build_pack(*args, **kwargs):
+            seen.append(gc.isenabled())
+            return real(*args, **kwargs)
+        real = build.build_pack
+        self.assertTrue(gc.isenabled())
+        with mock.patch.object(build, "build_pack", build_pack):
+            result, lines = self.build(self.mod("hill", rndf={"a.rndf": "patch $/B ( ProductionPrice *= 2 )"}))
+        self.assertEqual(result.errors, [], lines)
+        self.assertEqual(seen, [False])
+        self.assertTrue(gc.isenabled())  # running again after
+
     def test_the_mod_file_is_read(self):
         info, ops = load_mod(self.mod("hill"))
         self.assertEqual((info.terrain, ops), ({"Test": [Stroke("hill", 1500.0, 1500.0, 600.0, height=400.0)]}, []))

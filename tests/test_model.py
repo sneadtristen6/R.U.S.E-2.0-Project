@@ -1,13 +1,20 @@
 """The bridge between game data files and the rules engine: load, run mods, write back (made-up data)."""
+import hashlib
+import os
+import pickle
 import struct
+import tempfile
 import unittest
+import zlib
 from decimal import Decimal
+from pathlib import Path
+from unittest import mock
 
 from fixtures import make_ndf, val
-from rusemod import Ndf
+from rusemod import Ndf, model
 from rusemod.dic import name_to_key
 from rusemod.model import ModelError, load, save
-from rusemod.patch import Engine, Inline, Op, Ref, num
+from rusemod.patch import Engine, Inline, ListV, MapV, Obj, Op, PairV, Ref, Text, _walk_obj, num
 from rusemod.resolve import ModInfo
 from rusemod.rndf import parse
 
@@ -243,6 +250,156 @@ class NewObjects(unittest.TestCase):
         self.assertEqual(struct.unpack("<III", ndf.objects[0].get(2).payload)[:2], (0xBBBBBBBB, 1))
         base, _loaded, result = build("patch $/B ( Weapon = $/A:Weapon )  patch $/A:Weapon.Ammo ( Puissance = 1 )")
         self.assertIn("which 2 places use", result.errors[0].message)  # from then on it counts as shared
+
+
+# mods for comparing a kept model with one loaded afresh: every kind of change save() writes
+KEPT_MODS = [
+    ("patch $/A ( ProductionPrice *= 0.5  Speed *= 1.1 )", None),
+    ("patch shared $/A:Weapon.Ammo ( Puissance = 55 )", None),
+    ("patch $/B ( Title = 'New title' )\npatch $/A ( Name = key(R2MARINE) )", None),
+    ("export C is clone $/A ( ProductionPrice = [1, 1, 1, 1, 1] )", None),
+    ("export C is clone $/A ( )\nexport D is clone ~/C ( ProductionPrice = [2, 2, 2, 2, 2] )", None),
+    ("export C is clone $/A ( )\npatch $/Menu ( Units += [~/C] )", None),
+    ("", [Op("create", "$/Z", cls="TRadar", body=[Op("set", path="Range", value=num(3000))], mod="m")]),
+    ("delete $/B", None),
+    ("patch own $/A:Weapon.Ammo ( Puissance = 1 )", None),
+    ("patch $/B ( Weapon = $/A:Weapon )", None),
+]
+KEPT_FILES = {**FILES, OTHER: MENU}
+
+
+def model_text(game, loaded) -> str:
+    """Everything a loaded model is, as text: its objects with their origins, in order, its notes, each file's state."""
+    return repr((list(game.objects.items()), game.notes, game.files,
+                 [(p, nf.path, nf.raw, list(nf.names.items()), sorted(nf.inline), list(nf.index_of.items()),
+                   nf.n_objects) for p, nf in loaded.items()]))
+
+
+def saved(text, ops, files, cache):
+    base, loaded = load(files, cache)
+    result = Engine(base).run([(ModInfo("m"), ops if ops is not None else parse(text, file="m.rndf", mod="m"))])
+    assert result.errors == [], [f.message for f in result.errors]
+    notes = []
+    return save(base, result.game, loaded, result.created, notes), notes, loaded
+
+
+class KeptModel(unittest.TestCase):
+    """With a cache folder the loaded model is kept, by a fingerprint of the files and the code, and read back."""
+
+    def test_a_kept_model_is_the_model_loaded_afresh(self):
+        fresh = model_text(*load(KEPT_FILES))
+        with tempfile.TemporaryDirectory() as d:
+            first = load(KEPT_FILES, d)
+            kept = model.kept_path(KEPT_FILES, d)
+            self.assertTrue(kept.is_file())
+            with mock.patch.object(model, "_load", side_effect=AssertionError("loaded afresh")):
+                second = load(KEPT_FILES, d)  # from the kept file
+            self.assertEqual(model_text(*first), fresh)
+            self.assertEqual(model_text(*second), fresh)
+            self.assertIsNone(second[1][UNITS]._ndf)  # the files themselves aren't read until saving needs one
+
+    def test_saving_from_a_kept_model_writes_the_same_bytes(self):
+        with tempfile.TemporaryDirectory() as d:
+            load(KEPT_FILES, d)
+            for text, ops in KEPT_MODS:
+                with self.subTest(text or ops[0].kind):
+                    out, notes, _ = saved(text, ops, KEPT_FILES, None)
+                    kept_out, kept_notes, loaded = saved(text, ops, KEPT_FILES, d)
+                    self.assertTrue(out)
+                    self.assertEqual(kept_out, out)
+                    self.assertEqual(kept_notes, notes)
+                    # only what changes is read: a mod that leaves the menu file alone never opens it
+                    self.assertEqual(loaded[OTHER]._ndf is None, OTHER not in out and "create" not in repr(ops))
+
+    def test_a_changed_file_or_order_or_code_is_loaded_afresh(self):
+        changed = {UNITS: make_ndf(objects=OBJECTS[:2] + [(2, [(4, i32(41))])] + OBJECTS[3:], classes=CLASSES,
+                                   props=PROPS, strings=["Old title"], exports={0: "A", 3: "B"},
+                                   imports=["VersionOption/ShowOfficialMap"], topo=[0, 3], compress=True),
+                   OTHER: MENU}
+        with tempfile.TemporaryDirectory() as d:
+            load(KEPT_FILES, d)
+            paths = {model.kept_path(KEPT_FILES, d), model.kept_path(changed, d),
+                     model.kept_path({OTHER: MENU, UNITS: FILES[UNITS]}, d)}
+            self.assertEqual(len(paths), 3)  # each file's bytes count, and their order
+            game, loaded = load(changed, d)
+            self.assertEqual(game.objects[f"{UNITS}#2"].props["Puissance"].value, 41)  # the new bytes, not the kept
+            self.assertEqual(model_text(game, loaded), model_text(*load(changed)))
+            with mock.patch.object(model, "code_version", return_value=model.code_version() + b"another"):
+                other_code = model.kept_path(KEPT_FILES, d)
+            self.assertNotIn(other_code, paths)  # other code: another name
+
+    def test_a_damaged_kept_file_is_ignored_and_kept_again(self):
+        game, loaded = load(KEPT_FILES)
+        fresh = model_text(game, loaded)
+
+        def kept_file(*inside, raw=None):
+            body = zlib.compress(raw if raw is not None else pickle.dumps(inside, protocol=5))
+            return hashlib.blake2b(body, digest_size=model.KEPT_DIGEST).digest() + body
+
+        whole = kept_file(model.KEPT_FORMAT, game, {p: nf.state() for p, nf in loaded.items()})
+        flipped = bytearray(whole)
+        flipped[len(flipped) // 2] ^= 0x40
+        damage = {"one byte changed": bytes(flipped), "cut short": whole[:len(whole) // 2], "empty": b"",
+                  "not a model": kept_file(raw=b"hello"),
+                  "another format": kept_file(model.KEPT_FORMAT + 1, game, {}),
+                  "a file left out": kept_file(model.KEPT_FORMAT, game, {}),
+                  "something else inside": kept_file(model.KEPT_FORMAT, os.getcwd, {})}  # never called
+        with tempfile.TemporaryDirectory() as d:
+            kept = model.kept_path(KEPT_FILES, d)
+            for what, data in damage.items():
+                with self.subTest(what):
+                    kept.write_bytes(data)
+                    self.assertIsNone(model._read_kept(kept, KEPT_FILES))
+                    self.assertEqual(model_text(*load(KEPT_FILES, d)), fresh)  # loaded afresh
+                    self.assertEqual(model_text(*model._read_kept(kept, KEPT_FILES)), fresh)  # and kept again, whole
+            kept.write_bytes(whole)
+            self.assertEqual(model_text(*model._read_kept(kept, KEPT_FILES)), fresh)  # an undamaged one reads
+
+    def test_only_the_most_recently_used_are_kept(self):
+        with tempfile.TemporaryDirectory() as d:
+            old = [Path(d) / f"model-{i:040x}.bin" for i in range(model.KEPT_MOST + 3)]
+            for k, f in enumerate(old):
+                f.write_bytes(b"old")
+                os.utime(f, (1_000_000 + k, 1_000_000 + k))
+            other = Path(d) / "road-profile-0.json"  # the cache's other files are left alone
+            other.write_text("{}")
+            os.utime(other, (1, 1))
+            load(KEPT_FILES, d)
+            left = sorted(Path(d).glob("model-*.bin"))
+            self.assertEqual(len(left), model.KEPT_MOST)
+            self.assertIn(model.kept_path(KEPT_FILES, d), left)
+            self.assertEqual(set(left) - {model.kept_path(KEPT_FILES, d)}, set(old[-(model.KEPT_MOST - 1):]))
+            self.assertTrue(other.is_file())
+
+    def test_the_collector_runs_again_after_a_pause_as_before(self):
+        import gc
+        self.assertTrue(gc.isenabled())
+        with self.assertRaises(ValueError), model.collector_paused():
+            with model.collector_paused():
+                self.assertFalse(gc.isenabled())
+            self.assertFalse(gc.isenabled())  # an inner pause leaves the outer one be
+            raise ValueError
+        self.assertTrue(gc.isenabled())
+        gc.disable()
+        try:
+            with model.collector_paused():
+                pass
+            self.assertFalse(gc.isenabled())  # it was off: left off
+        finally:
+            gc.enable()
+
+    def test_walked_is_walk_obj(self):
+        inner = Obj("TPart", {"Deep": ListV([Ref("$/X"), Inline(Obj("TDeeper", {"N": num(1)}))])})
+        obj = Obj("T", {"A": num(1), "L": ListV([num(2), ListV([num(3)]), Inline(inner)]),
+                        "M": MapV([(Text("string", "k"), PairV(num(4), Inline(Obj("TValue", {"V": num(5)})))),
+                                   (num(6), ListV([]))]),
+                        "P": PairV(Ref(None), Inline(Obj("TPair", {}))), "Z": Text("key", "M_D_01")})
+        want = list(_walk_obj(obj))
+        got = model.walked(obj)
+        self.assertEqual(len(got), len(want))
+        self.assertTrue(all(a is b for a, b in zip(got, want)))
+        self.assertEqual([id(p) for p in model.parts_inside(obj)], [id(v.obj) for v in want if isinstance(v, Inline)])
+        self.assertEqual([p.cls for p in model.parts_inside(obj)], ["TPart", "TDeeper", "TValue", "TPair"])
 
 
 if __name__ == "__main__":
