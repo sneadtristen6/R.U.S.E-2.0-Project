@@ -246,9 +246,13 @@ with them rewritten too (C4), so which one it reads, if any, is unknown. `ruse b
   `SkirmishPacks` list one pack per nation in `Nationalite` order (the mesh ones are the seven `MeshSkirmish_<nation>.spk`
   in ZZ_Win.dat, `gen_5\pack\gfxdescriptor\`: `us ger uk fr ita urss japan`, plus `MeshSkirmishWitBoat_US`). In a
   skirmish a loader loads its `SkirmishCommon` and `SkirmishPacks[i]` for each nation i in the match and each bit i
-  set in its `ForceLoadBitFieldIfSkirmish` (a uint32; no shipped loader sets it); in other games, its
-  `NotSkirmishPacks` (every nation's). `ForceLoadBitFieldNationalite` (set to 2 on 4 objects of one scenario) belongs
-  to `TClusterInitialisationExecuteSelectifSubClusters`: it picks sub-clusters, not packs.
+  set in its `ForceLoadBitFieldIfSkirmish` (a uint32; no shipped loader sets it); in other games (campaign chapters,
+  Operations), its `NotSkirmishPacks` and nothing else, the force bit included. 55 cluster maps list one pack of every
+  nation's there (`PackMesh_All`); the other 30 list only the nations their mission plays, one pack each (Holland's
+  chapters: common, US, GER, UK; Colditz: common, US, GER; Italy and D-Day name `…SkirmishWithBoat_US`, which holds
+  all 71 models of `MeshSkirmish_US` and five ships), so the build adds a needed nation's pack to those lists
+  (`unitcheck.load_in_missions`; tested on Colditz, T22). `ForceLoadBitFieldNationalite` (set to 2 on 4 objects of one
+  scenario) belongs to `TClusterInitialisationExecuteSelectifSubClusters`: it picks sub-clusters, not packs.
 - A unit's models are the `.ase2ndfbin` files its `Gfx…` parts name (the mesh is an unnamed object they refer to).
   Every shipped buildable unit has its models in its own nation's pack or the common one, except the six non-US
   atomic cannons, which use the US Long Tom's. Moved to another nation, a buildable unit misses its model in every

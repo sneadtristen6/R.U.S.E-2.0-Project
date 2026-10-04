@@ -14,7 +14,7 @@
                     mesh pack, MeshSkirmish_<nation>.spk, beside the common one), or one the cluster maps' loaders
                     force (load_everywhere): a unit whose model is only in another nation's pack would have no model,
                     or crash the game, in every other match, so the build has that nation's packs load in every
-                    skirmish.
+                    skirmish, and in every campaign chapter and Operation (load_in_missions).
 
 patch.Engine asks for the first five at the end of every run and reports what the mods made wrong (what the game's
 data already had is left alone); build.build_pack asks for the models, which need ZZ_Win.dat.
@@ -239,6 +239,39 @@ def load_everywhere(game, nations) -> dict[int, tuple[int, int]]:
             bits = int(old.value) if isinstance(old, Num) else 0
             if not bits >> n & 1:
                 part.props[FORCE] = Num("uint32", Decimal(bits | 1 << n))
+            count += 1
+            origin = game.objects[top].origin
+            maps.add(origin[0] if origin else top)
+        out[n] = (count, len(maps))
+    return out
+
+
+# Outside a skirmish (a campaign chapter, an Operation) a loader loads its NotSkirmishPacks and nothing else: the force
+# bit above does nothing there. 30 of the 85 cluster maps list only the nations their mission plays, one pack each
+# (Holland's chapters: the common pack, US, Germany and UK), so another nation's unit, spawned there or bought, has no
+# model (a player's build spawning French units, Holland, 2026-10-03: the game crashed loading the mission). The other
+# 55 list one pack of every nation's units (PackMesh_All) and need nothing.
+NOT_SKIRMISH = "NotSkirmishPacks"
+
+
+def load_in_missions(game, nations) -> dict[int, tuple[int, int]]:
+    """Have the per-nation packs of `nations` (Nationalite numbers) load in every campaign chapter and Operation too:
+    each loader whose NotSkirmishPacks names nations' packs one by one gets SkirmishPacks[n] added when it lacks it.
+    A WithBoat pack counts as its nation's (Italy and D-Day list the US's with boats, which holds all of the plain
+    one's models and five ships). {nation: (loaders it was added to, cluster maps they're in)}."""
+    out = {}
+    for n in sorted(set(nations)):
+        count, maps = 0, set()
+        for top, _path, part in loaders(game):
+            packs = part.props["SkirmishPacks"].items
+            listed = part.props.get(NOT_SKIRMISH)
+            if n >= len(packs) or not isinstance(packs[n], Ref) or not packs[n].target or not isinstance(listed, ListV):
+                continue
+            per_nation = {x.target for x in packs if isinstance(x, Ref) and x.target}
+            have = {x.target.replace("WithBoat", "") for x in listed.items if isinstance(x, Ref) and x.target}
+            if not have & per_nation or packs[n].target in have:
+                continue  # one pack for every nation (or none named one by one), or the nation's there already
+            listed.items.append(Ref(packs[n].target))
             count += 1
             origin = game.objects[top].origin
             maps.add(origin[0] if origin else top)

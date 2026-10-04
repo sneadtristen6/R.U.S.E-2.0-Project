@@ -485,6 +485,25 @@ campaign isn't all unlocked, and the game's own code opens a chapter only when t
 finished (the first of a list is always open), so a copy put last stays locked until the last chapter is done. He'll
 try a campaign copy himself; cutscenes and dialog may need their own work ("an extended campaign with new scenes").
 
+## T22. Another nation's units in a campaign chapter (2026-10-03)
+
+A player (Oozaru, Discord) crashed loading Holland's campaign map with a build that spawned French units. Campaign
+chapters and Operations load the unit models of only the nations they play (Holland's chapters: US, Germany, UK), and
+the build's fix for other nations' units reached skirmishes only. Now a nation a mod needs is added to every mission's
+own list too (France here: 29 loaders in 14 missions). `D:\RUSE-Instances\campaign-fr` from
+`D:\ruse-test-mods\campaign-fr` (plus the cheat mod): 0 errors. Read back from the copy: Holland's and Colditz's
+lists hold France's packs, France's skeletons ride with the other nations', and the spawns are the player's.
+1. CAMPAIGN: **1. COLDITZ CASTLE** (always open). Beside your starting Pershings: 4 French **B1 Bis** tanks and 2
+   French infantry squads, yours.
+   - **Pass:** the mission loads; the French units are drawn, can be selected and move.
+   - **Fail:** a crash while loading or as the mission starts, or the French units invisible.
+2. If it's unlocked: **13. SCREAMING EAGLES**, the player's map. 4 B1 Bis on one side of your HQ, 2 French squads
+   on the other, 120 m from it. Pass / Fail as above.
+
+**Result (owner, 2026-10-03, 22:42): Colditz PASSED** ("colditz worked fine", two shots): the mission loaded and ran
+("ADVANCE UPON THE FRONT"), the 4 B1 Bis drawn beside his Pershings, the French infantry there too. Screaming Eagles
+wasn't tried (not unlocked in his campaign); it gets the same change.
+
 ## T11. Launcher 0.2.9
 
 - **Pass:** the launcher offers 0.2.9 when it opens; **Update** installs it and it starts again; **Play** works.
