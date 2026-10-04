@@ -232,13 +232,13 @@ def load_everywhere(game, nations) -> dict[int, tuple[int, int]]:
     out = {}
     for n in sorted(set(nations)):
         count, maps = 0, set()
-        for top, _path, part in loaders(game):
+        for top, path, part in loaders(game):
             if n >= len(part.props["SkirmishPacks"].items):
                 continue
             old = part.props.get(FORCE)
             bits = int(old.value) if isinstance(old, Num) else 0
-            if not bits >> n & 1:
-                part.props[FORCE] = Num("uint32", Decimal(bits | 1 << n))
+            if not bits >> n & 1:  # (changed in the game's own copy of the object: patch.Game.own)
+                game.own_part(top, path).props[FORCE] = Num("uint32", Decimal(bits | 1 << n))
             count += 1
             origin = game.objects[top].origin
             maps.add(origin[0] if origin else top)
@@ -262,7 +262,7 @@ def load_in_missions(game, nations) -> dict[int, tuple[int, int]]:
     out = {}
     for n in sorted(set(nations)):
         count, maps = 0, set()
-        for top, _path, part in loaders(game):
+        for top, path, part in loaders(game):
             packs = part.props["SkirmishPacks"].items
             listed = part.props.get(NOT_SKIRMISH)
             if n >= len(packs) or not isinstance(packs[n], Ref) or not packs[n].target or not isinstance(listed, ListV):
@@ -271,7 +271,7 @@ def load_in_missions(game, nations) -> dict[int, tuple[int, int]]:
             have = {x.target.replace("WithBoat", "") for x in listed.items if isinstance(x, Ref) and x.target}
             if not have & per_nation or packs[n].target in have:
                 continue  # one pack for every nation (or none named one by one), or the nation's there already
-            listed.items.append(Ref(packs[n].target))
+            game.own_part(top, path).props[NOT_SKIRMISH].items.append(Ref(packs[n].target))  # (patch.Game.own)
             count += 1
             origin = game.objects[top].origin
             maps.add(origin[0] if origin else top)
@@ -292,8 +292,12 @@ SKELETONS = "$/IA/Cluster/ClusterLoadPackSkeleton_{}"
 CARDS = ("$/IA/Cluster/ClusterLoadTexturePack_Menu{}_Synchrone", "$/IA/Cluster/ClusterLoadTexturePack_Menu{}_Asynchrone")
 
 
-def _packs(game, name):
+def _packs(game, name, change: bool = False):
+    """The Packs list of the loader `name`, or None. `change`: in the game's own copy of the loader, to add to it
+    (patch.Game.own)."""
     obj = game.objects.get(name)
+    if obj is not None and change:
+        obj = game.own(name)
     v = obj.props.get("Packs") if obj is not None else None
     return v if isinstance(v, ListV) else None
 
@@ -329,7 +333,7 @@ def load_with_every_nation(game, nations) -> dict[int, tuple[int, int]]:
                         continue
                     c = copy.deepcopy(x.obj)
                     c.copied_from, c.origin = x.obj.origin, None
-                    into.items.append(Inline(c))
+                    _packs(game, SKELETONS.format(tag), change=True).items.append(Inline(c))
                     added_skel += 1
             for loader_name in CARDS:
                 into = _packs(game, loader_name.format(tag))
@@ -338,7 +342,7 @@ def load_with_every_nation(game, nations) -> dict[int, tuple[int, int]]:
                 have = {x.target for x in into.items if isinstance(x, Ref)}
                 for target in cards:
                     if target not in have:
-                        into.items.append(Ref(target))
+                        _packs(game, loader_name.format(tag), change=True).items.append(Ref(target))
                         have.add(target)
                         added_cards += 1
         out[n] = (added_skel, added_cards)

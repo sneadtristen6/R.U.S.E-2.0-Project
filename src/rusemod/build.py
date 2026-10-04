@@ -803,8 +803,10 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult,
 def fill_loc(game, keys: dict) -> list[str]:
     """Turn every loc('...') value into the game key its text got. Returns the loc keys no mod defines."""
     missing = []
-    for obj in game.objects.values():
-        for v in _walk_obj(obj):
+    for name, obj in list(game.objects.items()):
+        if not any(isinstance(v, Text) and v.kind == "loc" for v in _walk_obj(obj)):
+            continue
+        for v in _walk_obj(game.own(name)):  # (changed in the game's own copy of the object: patch.Game.own)
             if isinstance(v, Text) and v.kind == "loc":
                 if v.value in keys:
                     v.kind, v.value = "key", keys[v.value]
@@ -852,7 +854,7 @@ def unit_cards(run, order: list, result: BuildResult) -> dict:
             continue
         new = own_card_name(file.value, unit)
         out[card_member(new)] = (card_member(file.value), png)
-        tex.obj.props["FileName"] = Text("path", new)
+        tex.obj.props["FileName"] = Text("path", new)  # (a copy the engine made: not the shipped game's object)
         result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own card, {new} (files/cards/{unit}.png), "
                                                f"made from {file.value}'s"))
     return out
