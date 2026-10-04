@@ -955,6 +955,11 @@ A skirmish loads four packs of `ZZ_Win.dat` per nation in the match (§3), plus 
 - **A stand-in's key** (the 8 bytes before its offset in the table) is the 64-bit CRC of its name as stored
   (`gentexproxy\...\x01.tgv`): polynomial 0x42F0E1EBA9EA3693, highest bit first, starting and ending with every bit
   flipped. True of all 2,822 stand-ins in the game's 74 stand-in packs (2026-10-04); `rusemod.unitmodel.standin_key`.
+- **A model's picture is found through its texture group:** the start of the picture's own file name up to the first
+  `_` (`TSCCombCS_CombinedDSCTexture01.png` is in `TSCCombCS`, the group of every unit body picture; tracks
+  `TSCCombDSTrack`, props `TSCForceDXT1`...). A picture whose name starts with a group the game doesn't have crashes it
+  when the model is first drawn (TESTS T35 run 2), so `rusemod.unitmodel` names a new picture after its copied body
+  texture's group.
 - The layout of each pack (offsets, the name trie, the section order and padding, the stand-ins' table) is in the
   module's docstring. Every `.spk`, `.ppk` and `.apk` in `ZZ_Win.dat` writes back byte for byte, and every unit's
   models copied into every other nation's packs and the common ones read back as in the pack they came from, the

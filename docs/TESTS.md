@@ -1150,6 +1150,17 @@ the same model with the Sherman's card, to tell the model from the card.
 1. Build **M1 Abrams B first**. A crash then is the model; none, and the model works.
 2. Then the **M1 Abrams**: its own card, now also a loose file.
 
+**Run 2 (owner, 2026-10-04 12:13): both listed, both researched; building M1 Abrams B crashed the game, at the same
+spot.** B has the Sherman's own card, so the card wasn't the cause (its fix stays: cards are loose files in the game
+too). The cause, read from the game's code: a model's picture (`ZZ:\GenTexGroup\...\X.png`) is found through its
+texture group, which is the start of the picture's own file name up to the first `_` (`TSCCombCS_CombinedDSC...`:
+`TSCCombCS`, the group of every unit body picture). Ours were named `descriptor_unit_r2_m1_abrams_01.png`, a group
+`descriptor` the game doesn't have, and the lookup's empty answer was used. Fixed: a new picture's name starts with
+its copied body texture's group (`TSCCombCS_descriptor_unit_r2_m1_abrams_01.png`).
+
+**Run 3 (rebuilt 2026-10-04):** the same two units with the pictures renamed; read back from the copy. Build M1
+Abrams B first again, then the M1 Abrams.
+
 ## T30. Iwo Jima groundwork (2026-10-04)
 
 (First written up as T27; that number was also taken by the Blender test above, so this one is T30.)

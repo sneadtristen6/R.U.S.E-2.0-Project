@@ -340,6 +340,17 @@ def texture_member(image: str) -> str:
     return member(image)
 
 
+def texture_group(picture: str) -> str:
+    """The texture group a model's picture belongs to: the start of its own file name, up to the first _ (the
+    Sherman's TSCCombCS_CombinedDSCTexture01.png: TSCCombCS). The game finds a model's picture through that group,
+    so a new picture's name starts the same way (T35 runs 1 and 2: pictures named descriptor_unit_..._01.png named a
+    group "descriptor" the game doesn't have, and it crashed when the unit was built)."""
+    name = picture.replace("/", "\\").rsplit("\\", 1)[-1]
+    if "_" not in name:
+        raise UnitModelError(f"{name}: no texture group in its name (the part before the first _)")
+    return name.split("_", 1)[0]
+
+
 def standin_member(member: str) -> str:
     return "gentexproxy\\" + member[len("gen\\"):] if member.startswith("gen\\") else "gentexproxy\\" + member
 
@@ -454,8 +465,9 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
     new = model_name(src.model, unit)
     if any(new in MeshPack.read(raw).items for raw in src.mesh_packs.values()):
         raise UnitModelError(f"the packs already have a model called {new}")
-    folder = src.body_texture.rsplit("\\", 1)[0]
-    images = [f"{folder}\\{unit}_{k + 1:02d}.png" for k in range(len(prep.pictures))]
+    folder, body = src.body_texture.rsplit("\\", 1)
+    group = texture_group(body)
+    images = [f"{folder}\\{group}_{unit}_{k + 1:02d}.png" for k in range(len(prep.pictures))]
     pts = [p for part in prep.parts for p in part.positions]
     if not pts:
         raise UnitModelError("the model has no points")

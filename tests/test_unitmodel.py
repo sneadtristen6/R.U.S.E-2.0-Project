@@ -303,14 +303,15 @@ class Packs(unittest.TestCase):
             self.assertEqual([tuple(part.indices[i:i + 3]) for i in range(0, len(part.indices), 3)], exp.triangles)
             self.assertEqual({tuple(b) for b in part.bones}, {(0 if exp.bone == "chassis" else 1, 0, 0, 0)})
             self.assertEqual(mats[part.material]["skinning"], [0, 1])
+            # named in the copied body texture's group (TSCComb_...): the game finds a picture through it
             self.assertEqual(list(mats[part.material]["textures"].values()),
-                             ["ZZ:\\GenTexGroup\\WW2\\Res3D\\Units\\GER\\Tank\\panzer_model_01.png"])
+                             ["ZZ:\\GenTexGroup\\WW2\\Res3D\\Units\\GER\\Tank\\TSCComb_panzer_model_01.png"])
             u, v = exp.uvs[0]
             self.assertEqual(tuple(part.uvs[0:2]), struct.unpack("<2f", struct.pack("<2f", u, v - 1.0)))
         skel = MeshPack.read(w.changed[SKELETONS])
         self.assertEqual(skel.skeletons, [SKELETON])
         self.assertEqual(skel.items[new][2], skel.items[TANK][2])
-        member = "gen\\ww2\\res3d\\units\\ger\\tank\\panzer_model_01.tgv"
+        member = "gen\\ww2\\res3d\\units\\ger\\tank\\tsccomb_panzer_model_01.tgv"
         self.assertEqual(list(w.added), [member])
         g = Tgv(w.added[member])
         self.assertEqual((g.width, g.height, g.format, len(g.mips)), (8, 4, "DXT5", 2))
@@ -319,7 +320,7 @@ class Packs(unittest.TestCase):
         self.assertLessEqual(max(abs(a - b) for a, b in zip(first[:3], RED)), 4)  # (5-6-5 colours)
         self.assertEqual(first[3], modelin.PLAIN_ALPHA)
         proxies = ProxyPack.read(w.changed[PROXIES])
-        name = "gentexproxy\\ww2\\res3d\\units\\ger\\tank\\panzer_model_01.tgv"
+        name = "gentexproxy\\ww2\\res3d\\units\\ger\\tank\\tsccomb_panzer_model_01.tgv"
         self.assertIn(name, proxies.names())
         p = proxies.proxies[proxies.names().index(name)]
         self.assertEqual((p.key, p.extra), (unitmodel.standin_key(name), struct.pack("<HHI", 0, 0, 0xAAAAAAAA)))
