@@ -128,5 +128,51 @@ class Tgu1Alpha(unittest.TestCase):
             tgu1.decode(bytes(payload))
 
 
+def speckled(w, h, seed):
+    """A made-up picture with fields, a slope and grain, so its payload uses many coefficients and long codes."""
+    out = bytearray()
+    v = seed
+    for y in range(h):
+        for x in range(w):
+            v = (v * 1103515245 + 12345) & 0x7FFFFFFF
+            grain = (v >> 16) % 23
+            out += bytes(((x * 5 + grain) % 256, (40 + (y // 8) * 37 + grain * 2) % 256, (x * y // 7 + seed) % 256))
+    return bytes(out)
+
+
+@unittest.skipIf(tgu1.whole_arrays() is None, "numpy isn't here: tgu1.decode uses decode_full alone")
+class Tgu1WholeArrays(unittest.TestCase):
+    """rusemod.tgu1np: the same blocks as decode_full, byte for byte, or None for what it leaves to it."""
+
+    def test_the_same_blocks_as_value_by_value(self):
+        fast = tgu1.whole_arrays()
+        for w, h, seed in ((32, 32, 1), (64, 32, 7), (128, 128, 3), (16, 48, 11)):
+            for picture in (gradient(w, h), speckled(w, h, seed)):
+                payload = tgu1.encode(dxt.encode(picture, w, h), w, h)
+                got = fast.decode(payload)
+                self.assertIsNotNone(got, (w, h, seed))
+                self.assertEqual(got, tgu1.decode_full(payload).dxt, (w, h, seed))
+                self.assertEqual(tgu1.decode(payload), got)
+
+    def test_blocks_past_the_block_count_are_zero_as_there(self):
+        fast = tgu1.whole_arrays()
+        for count in (64, 24, 0):
+            payload = coded(8, 8, count, alpha=False)
+            self.assertEqual(fast.decode(payload), tgu1.decode_full(payload).dxt, count)
+
+    def test_what_it_doesnt_read_is_left_to_decode_full(self):
+        fast = tgu1.whole_arrays()
+        self.assertIsNone(fast.decode(coded(8, 8, 64, alpha=True)))          # DXT5
+        raw = struct.pack("<I", 0) + b"".join(tgu1.pack_bank([[0] * 16] * 4) for _ in range(6))
+        raw += tgu1.pack_bank([[0] * 16] * 60, raw=[5, 6, 7, 8])               # raw selector words
+        self.assertIsNone(fast.decode(tgu1.pack_payload(tgu1.Header(5, 8, 8, 80, 40, 64, tgu1.FLAG_CODED), raw)))
+        cut = bytearray(coded(8, 8, 64, alpha=False))
+        struct.pack_into("<I", cut, 0x18, 65)                                 # more blocks than the picture has
+        self.assertIsNone(fast.decode(bytes(cut)))
+        self.assertIsNone(fast.decode(b"ZIPO" + bytes(40)))                   # (decode_full says what's wrong)
+        with self.assertRaises(ValueError):
+            tgu1.decode(b"ZIPO" + bytes(40))
+
+
 if __name__ == "__main__":
     unittest.main()

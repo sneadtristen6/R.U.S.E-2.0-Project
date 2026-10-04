@@ -18,6 +18,7 @@ import math
 import os
 import statistics
 import struct
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -636,15 +637,34 @@ def paint_clearing(strokes: list, low: list[str]) -> list:
     return out
 
 
+_WHOLE = []  # [rusemod.paintnp, or None without numpy], looked for once
+
+
+def whole_arrays():
+    """rusemod.paintnp, Map Paint on whole grids, when numpy is there (the apps carry it); None without it."""
+    if not _WHOLE:
+        try:
+            from . import paintnp
+            _WHOLE.append(paintnp)
+        except ImportError:
+            _WHOLE.append(None)
+    return _WHOLE[0]
+
+
 def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None) -> dict[int, bytes]:
     """The Map Paint `strokes` laid on every tile of `store` (over `bounds`, map_bounds) they touch, at every level, in
     order; only the 4x4 blocks they touch are encoded again. A block a solid stroke covers whole (_solid_over) takes
     its colour at once, and only the strokes after it are worked out pixel by pixel there, so a ginormous patch costs
     about its edge. Returns {tile index: new tile record} for Tmst.members. `cache`: _tgu1_blocks's; `only`: the
-    tile indices to paint (a worker's share), each painted as it is among all of them."""
+    tile indices to paint (a worker's share), each painted as it is among all of them.
+
+    With numpy there, a tile no stamp reaches is painted on whole grids (rusemod.paintnp): these same sums in this
+    same order, so the same record, many times sooner. The pixel-by-pixel way below is what it is checked against,
+    and what paints stamps, and everything without numpy."""
     from .brush import colour_rgb
     if not strokes:
         return {}
+    arrays = whole_arrays()
     boxes = [s.box() for s in strokes]  # x min, x max, y min, y max
     colours = [colour_rgb(s.colour) if s.kind.kind == "paint" else None for s in strokes]
     # the strokes that can cover a block whole (_solid_over's own first look, made once)
@@ -659,6 +679,13 @@ def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None) -> 
         near = [k for k, (bx0, bx1, by0, by1) in enumerate(boxes) if bx0 < rx1 and bx1 > rx0 and by0 < ry1 and by1 > ry0]
         if not near:
             continue
+        if arrays is not None:
+            record = arrays.paint_tile(sys.modules[__name__], store, tile, (rx0, ry0, rx1, ry1), near, strokes, boxes,
+                                       colours, hard, cache)
+            if record is not None:
+                if record:
+                    out[tile.index] = record
+                continue
         w, h = _dims(store, tile)  # never assumed: the overview tile is 256 on Blitz, 1024 x 512 on D-Day
         pw, ph = (rx1 - rx0) / w, (ry1 - ry0) / h
         quick = {k: _quick_round(strokes[k], pw, ph) for k in near}

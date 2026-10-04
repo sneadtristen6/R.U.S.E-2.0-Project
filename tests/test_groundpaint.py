@@ -293,13 +293,58 @@ class MapPaint(unittest.TestCase):
 
         import rusemod.groundpaint as gp
         layers = strokes(*LAYERS)
-        quick = gp.paint_strokes(two_colour_store(), BOUNDS, layers)
-        with mock.patch.object(gp, "_quick_round", lambda *a: None), mock.patch.object(gp, "NEAR", -1.0):
-            plain = gp.paint_strokes(two_colour_store(), BOUNDS, layers)
+        with mock.patch.object(gp, "whole_arrays", lambda: None):  # (the pixel-by-pixel way, with and without them)
+            quick = gp.paint_strokes(two_colour_store(), BOUNDS, layers)
+            with mock.patch.object(gp, "_quick_round", lambda *a: None), mock.patch.object(gp, "NEAR", -1.0):
+                plain = gp.paint_strokes(two_colour_store(), BOUNDS, layers)
         self.assertEqual(sorted(quick), sorted(plain))
         self.assertTrue(quick)
         for i in plain:
             self.assertEqual(quick[i], plain[i], i)
+
+    def test_whole_grids_paint_the_same_tiles_as_pixel_by_pixel(self):
+        """rusemod.paintnp (numpy) against paint_strokes's own pixels, record for record: every footprint and edge,
+        layers over one another, strokes under two pixels across, blocks a hard stroke covers whole with more laid
+        after, and a stamp (its tiles are left to the pixels)."""
+        from unittest import mock
+
+        import rusemod.groundpaint as gp
+        if gp.whole_arrays() is None:
+            self.skipTest("numpy isn't here: paint_strokes paints pixel by pixel alone")
+        red, sand, blue = "#e61e1e", "#c8aa6e", "#0010d2"
+        sets = {
+            "soft layers": LAYERS,
+            "hard, whole blocks, then more": [
+                {"brush": "paint", "x": 500.0, "y": 500.0, "radius": 450.0, "colour": red, "edge": "hard"},
+                {"brush": "paint", "x": 700.0, "y": 420.0, "radius": 300.0, "colour": sand, "weight": 0.7},
+                {"brush": "paint", "x": 380.0, "y": 610.0, "radius": 260.0, "colour": blue, "edge": "hard"},
+                {"brush": "paint", "x": 420.0, "y": 580.0, "radius": 90.0, "colour": red, "edge": "hard", "weight": 0.6}],
+            "squares turned and lines": [
+                {"brush": "paint", "x": 900.0, "y": 400.0, "radius": 220.0, "colour": blue, "shape": "square",
+                 "dx": 1.0, "dy": 0.6, "edge": "hard"},
+                {"brush": "paint", "x": 1100.0, "y": 500.0, "radius": 180.0, "colour": red, "shape": "square",
+                 "dx": 0.3, "dy": -1.0, "weight": 0.8},
+                {"brush": "paint", "x": 200.0, "y": 150.0, "radius": 40.0, "colour": sand, "shape": "line",
+                 "x2": 1700.0, "y2": 820.0},
+                {"brush": "paint", "x": 300.0, "y": 900.0, "radius": 25.0, "colour": blue, "shape": "line",
+                 "x2": 1500.0, "y2": 80.0, "edge": "hard"}],
+            "under two pixels across": [
+                {"brush": "paint", "x": 303.9 + 37.0 * k, "y": 253.9 + 11.0 * k, "radius": 1.5 + 0.9 * k,
+                 "colour": red if k % 2 else blue, "edge": "hard" if k % 3 == 0 else "soft"} for k in range(12)],
+            "a stamp among them": [
+                {"brush": "paint", "x": 1300.0, "y": 250.0, "radius": 200.0, "colour": red},
+                {"brush": "stamp", "x": 300.0, "y": 250.0, "radius": 100.0, "sx": 1000.0, "sy": 0.0, "edge": "hard"},
+                {"brush": "paint", "x": 420.0, "y": 300.0, "radius": 150.0, "colour": blue, "weight": 0.5}],
+        }
+        for what, items in sets.items():
+            made = strokes(*items)
+            grids = gp.paint_strokes(two_colour_store(), BOUNDS, made)
+            with mock.patch.object(gp, "whole_arrays", lambda: None):
+                pixels = gp.paint_strokes(two_colour_store(), BOUNDS, made)
+            self.assertTrue(pixels, what)
+            self.assertEqual(sorted(grids), sorted(pixels), what)
+            for i in pixels:
+                self.assertEqual(grids[i], pixels[i], (what, i))
 
     def test_shared_out_the_tiles_are_the_same_as_one_programs(self):
         """paint_ground's workers: the same tiles as one program, in the set's order; workers that can't start leave
@@ -404,19 +449,22 @@ class MapPaint(unittest.TestCase):
         s = store()
         red = {"brush": "paint", "x": 500.0, "y": 500.0, "radius": 450.0, "colour": "#e61e1e", "edge": "hard"}
         both = strokes(red, {"brush": "paint", "x": 300.0, "y": 300.0, "radius": 60.0, "colour": "#c8aa6e", "weight": 0.5})
-        quick = paint_strokes_of(s, both)
-        with mock.patch.object(groundpaint, "_solid_over", return_value=False):
-            self.assertEqual(paint_strokes_of(s, both), quick)  # the same bytes, every pixel worked out
-        painted = Tmst(*s.rebuild(quick))
-        self.assertTrue(near(pixel(painted, painted.tiles[1], 700.0, 600.0), RED))
-        alone = strokes(red)
-        start = time.perf_counter()
-        paint_strokes_of(s, alone)
-        took = time.perf_counter() - start
-        with mock.patch.object(groundpaint, "_solid_over", return_value=False):
+        grids = paint_strokes_of(s, both)  # (on whole grids when numpy is here)
+        with mock.patch.object(groundpaint, "whole_arrays", lambda: None):  # pixel by pixel from here on
+            quick = paint_strokes_of(s, both)
+            self.assertEqual(grids, quick)
+            with mock.patch.object(groundpaint, "_solid_over", return_value=False):
+                self.assertEqual(paint_strokes_of(s, both), quick)  # the same bytes, every pixel worked out
+            painted = Tmst(*s.rebuild(quick))
+            self.assertTrue(near(pixel(painted, painted.tiles[1], 700.0, 600.0), RED))
+            alone = strokes(red)
             start = time.perf_counter()
             paint_strokes_of(s, alone)
-            slow_took = time.perf_counter() - start
+            took = time.perf_counter() - start
+            with mock.patch.object(groundpaint, "_solid_over", return_value=False):
+                start = time.perf_counter()
+                paint_strokes_of(s, alone)
+                slow_took = time.perf_counter() - start
         # only its edge is worked out pixel by pixel: a hard edge fades over its outer 15%, a quarter of the patch
         self.assertLess(took, slow_took * 0.75)
 
