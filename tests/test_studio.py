@@ -1538,6 +1538,19 @@ class Labels(unittest.TestCase):
         self.assertGreater(len(used), 25)
         self.assertEqual(sorted(used - set(_words())), [])
 
+    def test_import_model_has_a_way_in_from_the_units_tab(self):
+        # The owner (2026-10-04) didn't find Import model: it shows on a new unit's page only. The Units tab starts
+        # with Change a unit / New unit (import a model), above the search and kinds, and a game unit's page says
+        # where a model of one's own goes, with a button that makes the new unit.
+        ui = Path(__file__).parents[1] / "src" / "ruse_studio" / "ui"
+        page = (ui / "index.html").read_text(encoding="utf-8")
+        self.assertLess(page.index('id="unit-start"'), page.index('id="search"'))
+        app = (ui / "app.js").read_text(encoding="utf-8")
+        self.assertIn('["new", "start_new", "tip_start_new"]', app)
+        self.assertIn("newUnitForm(u, state.start === \"new\")", app)
+        self.assertIn("parts.push(modelWant(startNew))", app)
+        self.assertIn("(import a model)", _words()["start_new"]["us"])
+
     def test_each_word_has_the_same_blanks_in_every_language(self):  # a {name} lost in a translation stays empty
         for name, entry in _words().items():
             blanks = {lang: set(re.findall(r"\{(\w+)\}", text)) for lang, text in entry.items()}

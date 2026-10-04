@@ -22,7 +22,9 @@ Flags (what a unit can do or be) show as chips: the cross takes one off, the men
 ## Make a new unit
 
 A new unit starts as a copy of a game unit, with its own name, so you can change it without touching the original.
-Pick the unit, choose **New unit**, give it a name, and change it like any other.
+The Units tab has two buttons at the top: **Change a unit** (the list, then the unit's values and Blender) and
+**New unit (import a model)**. With **New unit**, pick the unit to start from, give it a name, and click **Create**;
+then change it like any other. Or pick the unit and choose **New unit…** on its page.
 
 ## Change how a unit looks
 
@@ -36,7 +38,8 @@ The unit's page shows its **3D model**: drag to turn it, scroll to zoom.
   **Use this view as the card**. **Game's card** takes it back. Seen in the game. On a new unit, the card is its own:
   the unit it copies keeps its picture.
 - **A model of its own (new units):** **Import model…** brings in a 3D model from Blender or any 3D tool. See
-  [[Import a model|Import-a-Model]].
+  [[Import a model|Import-a-Model]]. A game unit keeps its model: its page has **New unit from this one…** to make
+  the new unit the model goes on.
 
 ## Give a weapon other ammo
 

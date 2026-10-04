@@ -72,6 +72,9 @@
 
   <main id="units-view" class="layout">
     <aside class="browser">
+      <!-- the two ways in (app.js renderStart): change a unit, or start a new one from it to import a model into -->
+      <div id="unit-start" class="start-choice" role="group"></div>
+      <p id="start-help" class="start-help small hidden"></p>
       <input id="search" type="search" autocomplete="off">
       <div id="kinds" class="chips" role="group"></div>
       <div id="nations" class="chips" role="group"></div>

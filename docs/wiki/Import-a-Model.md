@@ -27,8 +27,11 @@ parts named Main_Body, Main_Turre, Main_Barre...).
 
 ## 2. Make the unit
 
-In the **Units** tab, open the unit to copy (for a tank, a tank: the Sherman for the Abrams), choose **New unit**,
-give it a name. The new unit's model will turn and drive like this unit's.
+In the **Units** tab, click **New unit (import a model)** at the top, then pick the unit to start from (for a tank,
+a tank: the Sherman for the Abrams). Give it a name and click **Create**: the new unit's page opens at
+**Import model…**. The new unit's model will turn and drive like this unit's. A game unit's page has the same way
+in: **New unit from this one…** under **Its own model**. (Studio 0.9.6 has neither button yet: open the unit and
+choose **New unit…** on its page.)
 
 ## 3. Import
 

@@ -84,6 +84,14 @@ button:disabled { cursor: default; opacity: 0.5; }
            min-height: 0; }
 .browser input { width: 100%; padding: 8px 10px; background: var(--panel); border: 1px solid var(--line);
                  border-radius: var(--radius); }
+/* the Units tab's two ways in: Change a unit, New unit (import a model) */
+.start-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.start { padding: 8px 10px; background: var(--panel); border: 1px solid var(--line); font-size: 13px; font-weight: 600;
+         line-height: 1.25; text-align: center; }
+.start:hover { border-color: var(--accent); }
+.start[aria-pressed="true"] { background: var(--accent-dark); border-color: var(--accent); }
+.start-help { margin: 0; padding: 6px 10px; border-left: 3px solid var(--accent); background: var(--panel);
+              border-radius: 0 var(--radius) var(--radius) 0; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { padding: 3px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; font-size: 12px; }
 .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
@@ -214,6 +222,10 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .model-own p { margin: 0; }
 .model-own .actions { flex-wrap: wrap; align-items: center; }
 .model-own input.model-size { width: 5em; }
+/* a new unit just made: its model box lit for a moment, where Import model is */
+.model-own.lit { outline: 2px solid transparent; outline-offset: 5px; border-radius: 2px; animation: lit 3s ease-out; }
+@keyframes lit { from { outline-color: var(--accent); } 60% { outline-color: var(--accent); } to { outline-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .model-own.lit { animation: none; outline-color: var(--accent); } }
 .unit-list button.edited .name { color: var(--accent); }
 
 .test-panel { position: relative; border-top: 1px solid var(--line); background: #071120; }

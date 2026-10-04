@@ -9,6 +9,8 @@ const state = { lang: "base", kind: "all", nation: -1, search: "", group: "all",
   page: null,     // the object shown: { address, via }; via = the named unit the modder came from
   mode: "own",    // a part several units share: change it for "own" (that unit only) or "shared" (all of them)
   view: "units",  // the tab: "units" or "maps" (maps.js)
+  start: "change",     // the Units tab's way in (renderStart): "change" a unit, or start a "new" one from it
+  focusModel: null,    // a new unit just made: its page opens at Import model (lookBox)
   lastEdit: null };  // the last value changed this session, for Ctrl+Z: { address, prop, mode, via, label }
 const KINDS = ["all", "ground", "infantry", "air", "buildings", "ammo"];  // ammo: what weapons fire (its own list)
 const WHOLE = new Set(["int8", "int16", "uint16", "int32", "uint32", "int64"]);
@@ -107,8 +109,8 @@ async function setLanguage(lang) {
   $("search").placeholder = w.search;
   $("no-index-text").textContent = state.oldIndex ? w.old_index : w.no_index;
   $("build-index").textContent = w.build_index;
-  if ($("pick")) $("pick").textContent = w.pick_unit;  // gone once a unit is shown
   renderMods();
+  renderStart();  // and the hint on the right, gone once a unit is shown
   renderChips();
   if (state.view === "settings") renderSettings();  // the language is picked there: its own words change at once
   if ($("no-index").classList.contains("hidden")) {
@@ -324,9 +326,38 @@ function mark(button) {
 }
 
 // --- the list on the left ---
+// Its two ways in, above the kinds (the owner, 2026-10-04: "new unit, import, or adjust an existing one"): Change a
+// unit (pick it: its values, Open in Blender) or New unit (pick the unit to start from: its New unit form opens, and
+// the new unit's page opens at Import model). Ammunition has no model, so New unit leaves it out.
+const STARTS = [["change", "start_change", "tip_start_change"], ["new", "start_new", "tip_start_new"]];
+
+function renderStart() {
+  const w = state.words;
+  $("unit-start").replaceChildren(...STARTS.map(([key, word, tip]) => {
+    const b = el("button", { type: "button", className: "start", textContent: w[word], title: w[tip] });
+    b.setAttribute("aria-pressed", String(state.start === key));
+    b.addEventListener("click", () => setStart(key));
+    return b;
+  }));
+  $("start-help").textContent = w.start_new_help;
+  $("start-help").classList.toggle("hidden", state.start !== "new");
+  if ($("pick")) $("pick").textContent = state.start === "new" ? w.pick_unit_new : w.pick_unit;
+}
+
+function setStart(key) {
+  if (state.start === key) return;
+  state.start = key;
+  if (key === "new" && state.kind === "ammo") { state.kind = "all"; state.group = "all"; }
+  renderStart();
+  renderChips();
+  refreshList();
+  if (state.page) showUnit(state.page.address, state.page.via);  // the unit shown: with its New unit form, or without
+}
+
 function renderChips() {
   const w = state.words;
-  $("kinds").replaceChildren(...KINDS.map((k) => {
+  const kinds = state.start === "new" ? KINDS.filter((k) => k !== "ammo") : KINDS;
+  $("kinds").replaceChildren(...kinds.map((k) => {
     const b = el("button", { type: "button", className: "chip", textContent: w[k], title: w.tip_kind });
     b.setAttribute("aria-pressed", String(state.kind === k));
     b.addEventListener("click", () => { state.kind = k; state.group = "all"; renderChips(); refreshList(); });
@@ -387,7 +418,8 @@ async function refreshList() {
         (u.name !== u.base_name ? ` · ${u.base_name}` : "")
       : unitSub(u);
     // the game's own line for it ("May field armored units and armored recon.") as its tooltip
-    const tip = u.desc ? `${u.desc}\n${state.words.tip_open_unit}` : state.words.tip_open_unit;
+    const open = state.start === "new" && !u.new ? state.words.tip_start_from : state.words.tip_open_unit;
+    const tip = u.desc ? `${u.desc}\n${open}` : open;
     const b = el("button", { type: "button", title: tip },
       el("span", { className: "name", textContent: u.name }),
       el("span", { className: "sub", textContent: sub }));
@@ -813,10 +845,13 @@ function factoryLabel(f) {
   return f.units.join(", ") + (more > 0 ? ` ${state.words.more_units.replace("{n}", more)}` : "");
 }
 
-function newUnitForm(u) {
+// `opened`: the form shows at once (the Units tab's New unit way in). The box's openForm() opens it from elsewhere
+// (the model box's "New unit from this one…").
+function newUnitForm(u, opened) {
   const w = state.words;
-  const open = el("button", { type: "button", className: "ghost", textContent: w.new_unit, title: w.tip_new_unit });
-  const form = el("form", { className: "new-unit hidden" });
+  const open = el("button", { type: "button", className: "ghost" + (opened ? " hidden" : ""), textContent: w.new_unit,
+    title: w.tip_new_unit });
+  const form = el("form", { className: "new-unit" + (opened ? "" : " hidden") });
   const name = el("input", { autocomplete: "off", maxLength: 60, required: true, placeholder: w.new_unit_name,
     title: w.tip_unit_name });
   name.setAttribute("aria-label", w.new_unit_name);
@@ -854,6 +889,7 @@ function newUnitForm(u) {
   const cancel = el("button", { type: "button", className: "ghost", textContent: w.cancel, title: w.tip_cancel });
   cancel.addEventListener("click", () => { form.classList.add("hidden"); open.classList.remove("hidden"); });
   form.append(
+    el("p", { className: "small", textContent: fill(w.new_unit_next, { name: u.name }) }),
     el("label", {}, el("span", { textContent: w.new_unit_name }), name),
     el("label", {}, el("span", { textContent: w.price }), price),
     el("div", { className: "menu-choice" }, el("span", { textContent: w.build_menu }),
@@ -876,12 +912,21 @@ function newUnitForm(u) {
       const pick = other.checked && menus;
       const res = await api().new_unit(u.address, name.value.trim(), cost,
         pick ? Number(nation.value) : -1, pick ? Number(factory.value) : -1);
+      state.focusModel = res.address;  // its page opens at Import model
+      if (state.start === "new") { state.start = "change"; renderStart(); renderChips(); }  // made: now it's changed
       await refreshList();
       await showUnit(res.address);
       say(w.unit_made.replace("{name}", res.name), "ok");
     } catch (err) { problem(err); create.disabled = false; }
   });
-  return el("div", { className: "copy" }, open, form);
+  const box = el("div", { className: "copy" }, open, form);
+  box.openForm = () => {
+    if (form.classList.contains("hidden")) open.click();
+    else name.focus();
+    box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  };
+  if (opened) requestAnimationFrame(() => name.focus({ preventScroll: true }));
+  return box;
 }
 
 function copyNotice(u) {
@@ -1182,8 +1227,10 @@ function unitView(u) {
 // --- a unit's look: its model out to Blender, the paint back into the mod (api.look, look_open, look_bring_back,
 // choose_blender, get_blender; rusemod.unitlook). Blender is a program of its own: the Studio opens it, with the
 // unit loaded and each texture linked to its picture, and takes back what was painted there (Bring back asks
-// Blender to save it first, rusemod.blender.ask_to_save). `brought` is called after paint came back.
-function lookBox(u, brought) {
+// Blender to save it first, rusemod.blender.ask_to_save). `brought` is called after paint came back. A game unit's
+// model can't be swapped: a model of one's own goes on a new unit, so a game unit's box says so, and `startNew` (its
+// page's New unit form, when it can be copied) makes one.
+function lookBox(u, brought, startNew) {
   const w = state.words;
   const address = u.address;
   const body = el("div", { className: "muted small", textContent: w.look_working });
@@ -1231,9 +1278,17 @@ function lookBox(u, brought) {
     if (info.painted && info.painted.length) {
       parts.push(el("p", { className: "small", textContent: fill(w.look_painted, { n: info.painted.length }) }));
     }
-    if (info.new_unit && state.mod) parts.push(modelBox(address, info, draw, brought));
+    let model = null;
+    if (info.new_unit && state.mod) parts.push(model = modelBox(address, info, draw, brought));
+    else if (!info.new_unit && u.can_copy && u.editable) parts.push(modelWant(startNew));  // (no mod: no startNew)
     body.className = "new-unit";
     body.replaceChildren(...parts);
+    if (model && state.focusModel === address) {  // just made: show where its model goes
+      state.focusModel = null;
+      model.classList.add("lit");
+      model.pick.focus({ preventScroll: true });
+      keepInSight(model);
+    }
   };
   api().look(address).then(draw).catch((err) => { body.textContent = (err && err.message) || String(err); });
   return box;
@@ -1279,7 +1334,30 @@ function modelBox(address, info, draw, changed) {
     box.append(el("p", { className: "muted small", textContent: w.model_how }),
       el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size)));
   }
+  box.pick = pick;
   return box;
+}
+
+// A box in the unit's side column brought into sight (the side column and the page each scrolled as little as it
+// takes), and kept there for a few seconds while the 3D view above it loads: it grows as it does.
+function keepInSight(box) {
+  const side = box.closest(".unit-side");
+  const keep = () => { if (box.isConnected) box.scrollIntoView({ block: "nearest" }); };
+  requestAnimationFrame(keep);
+  if (!side || typeof ResizeObserver === "undefined") return;
+  const watch = new ResizeObserver(keep);
+  for (const part of side.children) watch.observe(part);
+  setTimeout(() => watch.disconnect(), 4000);
+}
+
+// a game unit's page: where its own model would go, and the way there (a new unit from it)
+function modelWant(startNew) {
+  const w = state.words;
+  const go = el("button", { type: "button", textContent: w.model_want_button, title: w.tip_model_want,
+    disabled: !startNew });
+  if (startNew) go.addEventListener("click", startNew);
+  return el("div", { className: "model-own" }, el("h3", { textContent: w.model_title }),
+    el("p", { className: "muted small", textContent: w.model_want }), el("div", { className: "actions" }, go));
 }
 
 async function showUnit(address, via) {
@@ -1306,9 +1384,10 @@ async function showUnit(address, via) {
     el("div", { className: "meta", textContent: u.class })];
   const head = parts.length;  // the name, address and class: above the page's columns
   if (u.new) parts.push(copyNotice(u));
+  let copyForm = null;  // New unit…: open at once when the Units tab's way in is New unit
   if (!u.editable) parts.push(el("p", { className: "notice", textContent: w[u.why_not] || u.why_not }));
   else if (!state.mod) parts.push(el("p", { className: "notice", textContent: w.no_mod }));
-  else if (u.can_copy) parts.push(newUnitForm(u));
+  else if (u.can_copy) parts.push(copyForm = newUnitForm(u, state.start === "new"));
   else if (u.can_copy_ammo) parts.push(newAmmoForm(u));
   if (u.editable && u.users) parts.push(el("p", { className: "notice warn",
     textContent: w.users_warning.replace("{n}", u.users) }));
@@ -1347,7 +1426,8 @@ async function showUnit(address, via) {
   }
   if (u.named || u.new) {  // a unit: its model beside its values, with the Blender buttons under it
     const view = unitView(u);
-    const side = el("aside", { className: "unit-side" }, view, lookBox(u, () => view.reload()));
+    const side = el("aside", { className: "unit-side" }, view,
+      lookBox(u, () => view.reload(), copyForm && copyForm.openForm));
     $("detail").replaceChildren(...parts.slice(0, head),
       el("div", { className: "unit-page" }, el("div", { className: "unit-main" }, ...parts.slice(head)), side));
     return;
