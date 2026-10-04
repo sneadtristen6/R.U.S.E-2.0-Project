@@ -1592,6 +1592,9 @@ function showView(view) {
   $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
   $("pick-mod").classList.toggle("hidden", view === "maps");  // the Units tab edits a mod, the Maps tab a map
   $("pick-map").classList.toggle("hidden", view !== "maps");
+  // "No game index yet" (and the index's build, a minute or more) covers the Units tab only: the Maps tab and
+  // Settings (where the installer's clean backup shows how far it is) can be used meanwhile
+  $("no-index").classList.toggle("off-tab", view !== "units");
   if (view === "settings") { renderSettings(); loadBackup(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);

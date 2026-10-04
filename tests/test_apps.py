@@ -65,6 +65,17 @@ class TwoApps(unittest.TestCase):
             self.assertEqual(StudioApi(home=home, find=lambda: None)._game(), game)
             self.assertEqual(game_dir(home, find=lambda: steam)[0], game)  # a folder picked by hand comes first
 
+    def test_the_studio_without_its_game_index_still_has_maps_and_settings(self):
+        """"No game index yet" and the index's build (a minute or more, the first start after an update of the game
+        or of the index's format) cover the Units tab only, the one that needs the index: Maps and Settings, where
+        the installer's clean backup shows how far it is, can be used meanwhile (seen in the page with
+        index.html?fake=noindex, 2026-10-04; there's no JavaScript test runner here, so this checks the two lines)."""
+        ui = SRC / "ruse_studio" / "ui"
+        self.assertIn(".no-index.off-tab { display: none; }", (ui / "style.css").read_text(encoding="utf-8"))
+        script = (ui / "app.js").read_text(encoding="utf-8")
+        show_view = script[script.index("function showView(view) {"):script.index("\n}\n", script.index("function showView"))]
+        self.assertIn('$("no-index").classList.toggle("off-tab", view !== "units");', show_view)
+
 
 if __name__ == "__main__":
     unittest.main()
