@@ -113,9 +113,12 @@ def open_window(title: str, folder: Path, page: str, api, width=1180, height=760
         setup(window)
     if log is not None:
         for event, step in (("shown", "shown"), ("before_load", "page"), ("loaded", "loaded")):
-            handlers = getattr(window.events, event, None)  # pywebview's window events (6.x has all three)
-            if handlers is not None:
-                handlers += _step(log, step)
+            try:
+                handlers = getattr(window.events, event, None)  # pywebview's window events (6.x has all three)
+                if handlers is not None:
+                    handlers += _step(log, step)
+            except Exception:  # noqa: BLE001  (another pywebview: that step isn't logged, the window opens anyway)
+                pass
         log.mark("window")
     try:
         webview.start(private_mode=False, storage_path=str(default_home() / "webview"))

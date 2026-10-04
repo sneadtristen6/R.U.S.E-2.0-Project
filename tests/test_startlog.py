@@ -144,6 +144,16 @@ class OneStart(Base):
                              inspect.getfullargspec(getattr(plain, name)).args[1:], name)
         self.assertEqual(api.units.__doc__, Api.units.__doc__)
 
+    def test_a_back_end_that_cant_be_wrapped_stays_as_it_is(self):
+        class Fixed:  # no instance attributes can be set
+            __slots__ = ()
+
+            def status(self):
+                return {"ready": True}
+
+        api = startlog.timed(Fixed(), self.log())
+        self.assertEqual(api.status(), {"ready": True})
+
     def test_first_calls_stop_counting_after_the_start(self):
         log = self.log()
         log.go()

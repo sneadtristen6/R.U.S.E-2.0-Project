@@ -282,9 +282,12 @@ def timed(api, log: StartLog | None = None):
     for name in dir(type(api)):
         if name.startswith("_"):
             continue
-        raw = inspect.getattr_static(api, name, None)
-        if inspect.isfunction(raw):  # plain methods: not properties, static or class methods
-            setattr(api, name, _wrapped(log, name, getattr(api, name), raw))
+        try:
+            raw = inspect.getattr_static(api, name, None)
+            if inspect.isfunction(raw):  # plain methods: not properties, static or class methods
+                setattr(api, name, _wrapped(log, name, getattr(api, name), raw))
+        except Exception:  # noqa: BLE001  (the log never stops the app: that call just isn't timed)
+            continue
     return api
 
 
