@@ -1110,6 +1110,10 @@ flipped and tinted red. Read back from the copy. `D:\RUSE-Instances\two-shermans
 - **Pass:** the Sherman's card as always, the Tall Sherman's red and facing the other way.
 - **Tell us:** the Tall Sherman with no picture (a blank or missing card), still the Sherman's, or a crash.
 
+**Answered by T35 run 1 (2026-10-04):** a new unit's own card shows in the build menu, and the game crashed when that
+unit was built (the card wasn't a file of ZZ_Win.dat's own; fixed, retested in T35 run 2). This copy wasn't run; it
+was recycled.
+
 ## T35. The first imported model: an M1 Abrams (2026-10-04)
 
 The model importer's first test. A free M1 Abrams model (a .3ds with its .tga pictures, from a free-model site; test
