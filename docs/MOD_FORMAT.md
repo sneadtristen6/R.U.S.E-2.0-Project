@@ -246,6 +246,16 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   adds it to each menu pack that holds the source's card. The source's card is left as it is. A picture there for a
   unit no mod in the set makes is an error. The Studio writes it there when the card is made on a new unit's page,
   and removes it with the unit. Not yet seen in the game (TESTS T34).
+- **A new unit's own model:** `files/models/<the new unit's name>.glb` (`files/models/Descriptor_Unit_R2_M1_Abrams.glb`)
+  gives a copied unit a model of its own. The build points its model part (`GfxDescriptor.MeshDescriptor.FileName`) at
+  a new model beside its source's (`...\US_M4_Sherman\Descriptor_Unit_R2_M1_Abramslod0.Ase2ndfbin`) and writes it into
+  every pack that holds the source's model, following the source's bones: the parts in the node called `chassis` move
+  with the hull, those in `tourelle_01` turn with the turret. Each picture in the .glb becomes a texture of its own,
+  with its small stand-in. The file is what `ruse import-model` (or the Studio's *Import model*) writes from a .3ds or
+  .glb from any 3D tool: fitted to the source unit (its length, its turret's turning point, its ground), in the axes
+  `ruse export-model` writes, so it opens in Blender and can be changed there and saved over (keep the node names).
+  The source's wreck stays its own. A model there for a unit no mod in the set makes is an error. Not yet seen in the
+  game (TESTS T35).
 - **The Studio's unit page** shows the unit's 3D model, turning, with the mod's paint on it (a .glb made once per game
   build in the Studio's cache). A dashed frame on it marks the card: *Use this view as the card* saves what's inside
   it, over a backdrop like the game's cards, as the mod's card; *Game's card* removes it. Under it, *Open in Blender* writes the unit's models and pictures to a work folder

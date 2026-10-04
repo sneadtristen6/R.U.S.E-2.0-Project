@@ -6,6 +6,7 @@
   ruse dump <pack> <file> [filter]     show one data file as text
   ruse extract <pack> <filter> [--out DIR]   copy files out of a pack (default folder: extracted/)
   ruse export-model <name>... [--out DIR]    game models as .glb files for Blender (default: extracted/models)
+  ruse import-model <file> --like <model> --unit <name> [--mod DIR]   a .3ds/.glb as a new unit's own model
   ruse build <mod>... [--pack P] [--out FILE|DIR] [--instance DIR]   build mods into packs or a modded copy
   ruse index build                     index the whole game (once per game build; about a minute)
   ruse index find|show|where|filter|texts|clone|report ...   ask the index (see `ruse index -h`)
@@ -196,6 +197,43 @@ def cmd_export_model(args) -> int:
     return 0
 
 
+def cmd_import_model(args) -> int:
+    from .models import Library
+    from .modelin import ModelError
+    from .unitmodel import MODELS, import_model
+    game = _game_dir(args).resolve()
+    lib = Library(game)
+    try:
+        want = args.like.lower().replace("/", "\\")
+        found = sorted(n for n in lib.where if want in n and n.endswith("lod0.ase2ndfbin") and "_dest" not in n
+                       and "_lodmedium" not in n)
+    finally:
+        lib.close()
+    exact = [n for n in found if n.rsplit("\\", 1)[-1] == want or n == want]
+    if len(exact) == 1:
+        found = exact
+    if len(found) != 1:
+        print(f"{len(found)} models match {args.like!r}" + (": " + ", ".join(found[:12]) if found else "")
+              + "; name one (export-model lists them too)")
+        return 1
+    out = Path(args.out) if args.out else Path(args.mod) / MODELS / f"{args.unit}.glb"
+    if game == out.resolve() or game in out.resolve().parents:
+        # not a game rule: we never write into the game folder
+        raise UserError(f"Refusing to write into the game folder ({game}).")
+    try:
+        r = import_model(game, found[0], Path(args.file), out, size=args.size, side=args.side, pictures=args.pictures)
+    except (ModelError, OSError, ValueError) as exc:
+        raise UserError(str(exc)) from None
+    print(f"{out}: {r['vertices']:,} points, {r['triangles']:,} triangles in {r['draws']} part(s), fitted to "
+          f"{r['like']} (facing {'+' if r['facing'][1] > 0 else '-'}{r['facing'][0]}, scale {r['scale']:.3f})")
+    for name, role in r["parts"].items():
+        print(f"  {name}: {role}")
+    print("  pictures: " + ", ".join(f"{n} {w}x{h}" for n, w, h in r["pictures"]))
+    if r.get("missing"):
+        print("  NOT FOUND (a flat colour instead; point --pictures at their folder): " + ", ".join(r["missing"]))
+    return 0
+
+
 def cmd_build(args) -> int:
     try:
         mods = [load_mod(m) for m in args.mods]
@@ -327,6 +365,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--open", action="store_true", help="then open them in Blender, textured")
     p.add_argument("--blender", help="Blender's blender.exe (default: $RUSE_BLENDER, the PATH or Program Files)")
     p.set_defaults(fn=cmd_export_model)
+    p = sub.add_parser("import-model", help="fit a .3ds or .glb model to a unit, as a new unit's own model in a mod")
+    p.add_argument("file", help="the model: .3ds (its .tga or .png pictures beside it) or .glb (pictures inside)")
+    p.add_argument("--like", required=True, help="the model of the unit the new one copies (part of its path, e.g. "
+                   "coc_shermanm4_tir)")
+    p.add_argument("--unit", required=True, help="the new unit's name, e.g. Descriptor_Unit_R2_M1_Abrams")
+    p.add_argument("--mod", default=".", help="the mod folder: it goes to files/models/<unit>.glb there")
+    p.add_argument("--out", help="write the .glb here instead")
+    p.add_argument("--size", type=float, default=1.0, help="its length over the copied unit's (default 1: as long)")
+    p.add_argument("--side", type=int, default=1024, help="largest picture side (default 1024, as the game's)")
+    p.add_argument("--pictures", help="where a .3ds's pictures are (default: beside it, then one folder up)")
+    p.set_defaults(fn=cmd_import_model)
     p = sub.add_parser("build", help="build mods into a rebuilt pack or a modded copy of the game")
     p.add_argument("mods", nargs="+", help="mod folders (with mod.toml), .rmod files, or single .rndf files")
     p.add_argument("--pack", default="ZZ_GladPatchableWin.dat", help="the pack the mods change (default: the unit data)")

@@ -103,6 +103,13 @@
         <div id="map-stats" class="muted small"></div>
         <!-- a new map from this one (maps.js openDuplicate) -->
         <button id="map-duplicate" type="button" class="chip map-duplicate"></button>
+        <!-- a new map's folder to the Recycle Bin (maps.js deleteMap, StudioApi.delete_map): shown on new maps only -->
+        <button id="map-delete" type="button" class="ghost danger map-delete hidden"></button>
+        <div id="map-delete-sure" class="map-delete-sure hidden">
+          <span id="map-delete-ask" class="small"></span>
+          <button id="map-delete-yes" type="button" class="ghost danger"></button>
+          <button id="map-delete-no" type="button" class="ghost"></button>
+        </div>
         <div class="map-controls">
           <button id="map-detail" type="button" class="chip"></button>
           <label class="small"><input id="map-water" type="checkbox" checked> <span id="map-water-label"></span></label>

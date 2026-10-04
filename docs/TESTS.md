@@ -1110,6 +1110,80 @@ flipped and tinted red. Read back from the copy. `D:\RUSE-Instances\two-shermans
 - **Pass:** the Sherman's card as always, the Tall Sherman's red and facing the other way.
 - **Tell us:** the Tall Sherman with no picture (a blank or missing card), still the Sherman's, or a crash.
 
+**Answered by T35 run 1 (2026-10-04):** a new unit's own card shows in the build menu, and the game crashed when that
+unit was built (the card wasn't a file of ZZ_Win.dat's own; fixed, retested in T35 run 2). This copy wasn't run; it
+was recycled.
+
+## T35. The first imported model: an M1 Abrams (2026-10-04)
+
+The model importer's first test. A free M1 Abrams model (a .3ds with its .tga pictures, from a free-model site; test
+only, never shipped) fitted to the Sherman by `rusemod.modelin` (its parts named hull, turret, barrel...; facing the
+way its gun points; 1.36 times the Sherman's length, the real ratio; its turret ring on the Sherman's turret point)
+and written as the mod's `files/models/Descriptor_Unit_R2_M1_Abrams.glb`. The build gives the new unit (a copy of the
+Sherman, "M1 Abrams") that model: 17,122 points, 13,828 triangles, 5 draw calls (one per picture) in the four mesh
+packs that hold the Sherman's; the Sherman's skeleton under the new name in both skeleton packs; its 4 pictures as new
+textures loose in ZZ_Win.dat (DXT5, every level), each with a stand-in in the four stand-in packs that hold the
+Sherman's (keyed by the CRC of its name). Every game model, stand-in and texture in those packs read back unchanged;
+every pack's id right. Its own card too (T34's way). The test mod: `D:\ruse-test-mods\abrams` (with the cheat mod).
+`D:\RUSE-Instances\abrams`.
+
+1. Skirmish as the US, Armor Base: the M1 Abrams with its own card (the Abrams on a desert backdrop).
+2. Build one, look at it up close and far off, move it, let it fight.
+- **Pass:** the Abrams' shape and desert paint; bigger than a Sherman; its turret and gun turn to aim; it drives and
+  fires.
+- **Known, not a fail:** its wheels and tracks don't turn (they ride on the hull bone yet); the gun's flash shows
+  where the Sherman's muzzle is (part way along the Abrams' longer gun); its wreck is the Sherman's; no side colour on
+  it.
+- **Tell us:** a crash (when?), no model or a Sherman instead, black/white/garbled paint, parts in the wrong place, or
+  the turret swinging off its ring.
+
+**Run 1 (owner, 2026-10-04 11:47): the game loaded, the Armor Base deployed, the M1 Abrams showed in its build menu
+with its own card, researched and was bought; the game crashed when it was built.** The crash: a read of address 0
+in the game's texture loading for its interface pictures, which asks every loaded source for the file by name and
+got none. A unit's card is read from ZZ_Win.dat's own files once the unit is on the map (all 450 of the game's cards
+are there as well as in the menu packs); the build had put the Abrams' card in the menu packs only (T34's way, which
+is why the build menu showed it). Fixed: a new unit's card is also a file of ZZ_Win.dat's own. T34's copy
+(`two-shermans`) has the same fault.
+
+**Run 2 (rebuilt 2026-10-04):** the fix, the colour fix in the texture encoder, and a second unit, **M1 Abrams B**:
+the same model with the Sherman's card, to tell the model from the card.
+1. Build **M1 Abrams B first**. A crash then is the model; none, and the model works.
+2. Then the **M1 Abrams**: its own card, now also a loose file.
+
+**Run 2 (owner, 2026-10-04 12:13): both listed, both researched; building M1 Abrams B crashed the game, at the same
+spot.** B has the Sherman's own card, so the card wasn't the cause (its fix stays: cards are loose files in the game
+too). The cause, read from the game's code: a model's picture (`ZZ:\GenTexGroup\...\X.png`) is found through its
+texture group, which is the start of the picture's own file name up to the first `_` (`TSCCombCS_CombinedDSC...`:
+`TSCCombCS`, the group of every unit body picture). Ours were named `descriptor_unit_r2_m1_abrams_01.png`, a group
+`descriptor` the game doesn't have, and the lookup's empty answer was used. Fixed: a new picture's name starts with
+its copied body texture's group (`TSCCombCS_descriptor_unit_r2_m1_abrams_01.png`).
+
+**Run 3 (rebuilt 2026-10-04):** the same two units with the pictures renamed; read back from the copy. Build M1
+Abrams B first again, then the M1 Abrams.
+
+**Run 3 (owner, 2026-10-04 12:27): building M1 Abrams B crashed the game again, differently: heap corruption
+(0xc0000374, found by Windows in the game's texture-loading thread as it made room for the next texture; the game's
+own crash report wasn't written, Windows' dump was).** So the group fix got past runs 1-2's spot. The cause, read
+from the game's code and checked on its data: the game makes room for level k of a w x h DXT texture as
+(w * h / 16) >> 2k blocks, rounded down, and writes as many blocks as the level itself says it holds. Our 1024 x 512
+and 256 x 128 pictures went down to 4 x 4, one level past where the shorter side is 4: the game made room for 0
+blocks there and the 1 block was written past the end. Every one of the game's own textures stops at that side (all
+289 unit textures checked: 0 levels off); ours were the only ones in the archive that didn't fit. Fixed: levels stop
+where the game's do, and the writer refuses any level that doesn't hold exactly the game's room.
+
+**Run 4 (rebuilt 2026-10-04):** every new texture's and stand-in's levels match the game's room exactly (checked in
+the copy). The model's other firsts, not seen in the game yet: 5 draw calls (the game's most is 4; its loader keeps a
+model's draw calls in a list that grows, so no fixed limit was found), plain skinned buffers (the game has 168, its
+animals'). Build M1 Abrams B first, then the M1 Abrams.
+
+**Run 4 (owner, 2026-10-04 12:46-12:50): PASSED.** "It spawned ... the turret even moved. It seems to be working ...
+this looks good"; "Both the Abrams work ... The right one in the image with two of them is the one that was crashing
+initially"; the game was closed normally ("I didn't crash"; no crash in Windows' records). M1 Abrams B and the M1
+Abrams (its own card) were both built and stood at the base in their desert paint, larger than a Sherman, turret
+turning. The first model from another 3D model in R.U.S.E. Shots: the game's Screenshots folder, 12:47:59-12:49:41
+(12:49:29: the two side by side). Not seen yet: fighting; tracks and wheels (static, expected), the gun flash and the
+wreck (the Sherman's, expected).
+
 ## T30. Iwo Jima groundwork (2026-10-04)
 
 (First written up as T27; that number was also taken by the Blender test above, so this one is T30.)

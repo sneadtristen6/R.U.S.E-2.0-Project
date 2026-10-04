@@ -920,7 +920,16 @@ number below the material count, every position inside its model's box.
   number reads right. Skinned models keep each vertex's bones and weights (through the material's
   `SkinningRemapping`), on joints at the origin (the skeleton packs' bone positions aren't read yet). Checked in
   Blender 4.5 LTS on a T-26, a Sherman and a German soldier (48, 46 and 35 bones, textures right).
-- Not read yet: mirrored vertices (no shipped pack uses them), writing new models (PLAN M7).
+- **Skeletons** (2026-10-04, `rusemod.unitmodel.read_skeleton`): an entry starts u32 1, the bone count, then the
+  offsets of its bind matrices (3 x 4 f32 per bone, model to bone), the parents (i32, -1 for none), a second table,
+  and the names; the names' lengths (u16) from byte 0x24. A bone turns round -R^T t of its matrix: the Sherman's 14
+  road wheels land within 2 units of their own points' middle, its turret (`tourelle_01`) at (-70, 5, 326).
+- **Triangles wind outward:** (b - a) x (c - a) points the way of the stored normals (all 5,287 of the Sherman's).
+- **New models** (2026-10-04, `rusemod.modelin`, `rusemod.unitmodel`): written plain, in the skinned format with float
+  texture coordinates (`..._BlW_4ubn__BlIdx_4ub__TexCoord0_2f__TexPackedAtlas0_4ubn`, 55 of the game's buffers), one
+  bone per vertex at weight 255, atlas bytes (0, 0, 255, 255) as on every unit; the stored v is the picture's v - 1, as
+  the game's own. Not seen in the game yet (TESTS T35).
+- Not read yet: mirrored vertices (no shipped pack uses them).
 
 ### Skirmish unit packs: ✅ written (`src/rusemod/unitpacks.py`; check `tools/verify_unitpacks.py`)
 
@@ -943,6 +952,18 @@ A skirmish loads four packs of `ZZ_Win.dat` per nation in the match (§3), plus 
   checks it when it opens a pack and leaves out a pack whose id doesn't match, every model in it missing: four packs
   that grew with their old id crashed the game at the first factory (TESTS T32 run 1). Written with the right id,
   packs that grow load: a second Sherman with a model of its own, added beside the game's (T33).
+- **A stand-in's key** (the 8 bytes before its offset in the table) is the 64-bit CRC of its name as stored
+  (`gentexproxy\...\x01.tgv`): polynomial 0x42F0E1EBA9EA3693, highest bit first, starting and ending with every bit
+  flipped. True of all 2,822 stand-ins in the game's 74 stand-in packs (2026-10-04); `rusemod.unitmodel.standin_key`.
+- **A model's picture is found through its texture group:** the start of the picture's own file name up to the first
+  `_` (`TSCCombCS_CombinedDSCTexture01.png` is in `TSCCombCS`, the group of every unit body picture; tracks
+  `TSCCombDSTrack`, props `TSCForceDXT1`...). A picture whose name starts with a group the game doesn't have crashes it
+  when the model is first drawn (TESTS T35 run 2), so `rusemod.unitmodel` names a new picture after its copied body
+  texture's group.
+- **A texture's levels must fit the room the game makes:** for level k (0 = full size) of a w x h DXT texture the game
+  makes room for (w * h / 16) >> 2k blocks, rounded down, and writes as many blocks as the level says it holds. So the
+  levels stop when the shorter side is 4 (1024 x 512: 8 levels, the last 8 x 4); one more level gets no room and its
+  block lands past the end, corrupting the game's memory (TESTS T35 run 3). All 289 of the game's unit textures fit.
 - The layout of each pack (offsets, the name trie, the section order and padding, the stand-ins' table) is in the
   module's docstring. Every `.spk`, `.ppk` and `.apk` in `ZZ_Win.dat` writes back byte for byte, and every unit's
   models copied into every other nation's packs and the common ones read back as in the pack they came from, the

@@ -121,8 +121,10 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.players = _read_maps(path, "map.toml")
         _new_maps(info)
         from .unitlook import mod_cards, mod_textures
+        from .unitmodel import mod_models
         info.textures = mod_textures(path)
         info.cards = mod_cards(path)
+        info.models = mod_models(path)
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -483,6 +485,9 @@ class BuildResult:
     new_maps: dict = field(default_factory=dict)    # new map's pack name -> newmap.Clone (what it adds)
     added: dict = field(default_factory=dict)       # pack file name -> {member path: bytes}: members new maps add
     own_cards: dict = field(default_factory=dict)   # new units' cards: card member to add -> (its source's, the PNG)
+    own_models: dict = field(default_factory=dict)  # new units' models: unit -> (its source's model, the .glb, mod id)
+    model_imports: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (packs the new models go in) -> bytes
+    new_files: dict = field(default_factory=dict)  # new members of ZZ_Win.dat (new cards, new models' textures) -> bytes
     visibility: dict = field(default_factory=dict)  # a placed type drawn up close only -> its copy (rusemod.visibility)
     fingerprint: bytes | None = None
 
@@ -861,6 +866,42 @@ def unit_cards(run, order: list, result: BuildResult) -> dict:
     return out
 
 
+def unit_own_models(run, order: list, result: BuildResult) -> dict:
+    """New units' own models (a mod's files/models/<the unit's name>.glb; rusemod.unitmodel): the clone's model part
+    names a model of its own, beside its source's, which the build writes into the packs that hold the source's.
+    Returns {unit: (its source's model, the .glb, mod id)}."""
+    from .patch import Inline
+    wanted: dict = {}
+    for m in order:
+        for unit, glb in (getattr(m, "models", None) or {}).items():
+            wanted[unit] = (glb, m.id)
+    by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    out: dict = {}
+    for unit, (glb, mod_id) in sorted(wanted.items()):
+        name = by_name.get(unit)
+        if name is None:
+            # not a game rule: a model for a unit no mod in the set makes
+            result.findings.append(Finding("error", f"{mod_id}: files/models/{unit}.glb: no mod in the set makes a "
+                                                    f"new unit {unit}"))
+            continue
+        gfx = run.game.objects[name].props.get("GfxDescriptor")
+        mesh = gfx.obj.props.get("MeshDescriptor") if isinstance(gfx, Inline) else None
+        file = mesh.obj.props.get("FileName") if isinstance(mesh, Inline) else None
+        if not isinstance(file, Text) or file.kind != "path" or not file.value.lower().endswith(".ase2ndfbin"):
+            # not a game rule: what our build supports (a model part of its own, naming one model file)
+            result.findings.append(Finding("error", f"{mod_id}: files/models/{unit}.glb: {unit} has no model part of "
+                                                    f"its own (GfxDescriptor.MeshDescriptor) naming a model, so it "
+                                                    f"can't get one"))
+            continue
+        source = file.value
+        folder = source.replace("/", "\\").rsplit("\\", 1)[0]
+        mesh.obj.props["FileName"] = Text("path", f"{folder}\\{unit}lod0.Ase2ndfbin")
+        out[unit] = (source, glb, mod_id)
+        result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own model (files/models/{unit}.glb), "
+                                               f"beside {source}"))
+    return out
+
+
 def unit_classes(base, run, zz_win, result: BuildResult) -> None:
     """Give every new unit a class in the game's Python unit list (ZZ_Win.dat), like the unit it copies. Units the
     list can't take (made from scratch, or copies of units it doesn't list) get a warning: the game ignores them."""
@@ -978,6 +1019,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
         result.findings.append(Finding("error", f"loc('{key}') has no text: no mod in the set defines {key!r} in "
                                                 f"its text/*.csv"))
     result.own_cards = unit_cards(run, order, result)
+    result.own_models = unit_own_models(run, order, result)
     if result.errors:
         return result
     notes: list = []
@@ -2095,11 +2137,29 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             from .unitlook import LookError, own_cards
             try:
                 result.texture_changed.update(own_cards(text_arc, result.own_cards,
-                                                        {**result.model_changed, **result.texture_changed}, say=say))
+                                                        {**result.model_changed, **result.texture_changed}, say=say,
+                                                        loose=result.new_files))
             except LookError as exc:
                 raise BuildError(str(exc)) from None
+        if result.own_models and text_arc is not None:  # new units' own models (rusemod.unitmodel)
+            from .unitmodel import UnitModelError, read_mod_glb, write_unit_model
+            for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
+                try:
+                    written = write_unit_model(text_arc, source, unit, read_mod_glb(glb), earlier={
+                        **result.model_changed, **result.texture_changed, **result.model_imports})
+                except (UnitModelError, ValueError, OSError, struct.error) as exc:
+                    raise BuildError(f"{mod_id}: files/models/{Path(glb).name}: {exc}") from None
+                result.model_imports.update(written.changed)
+                result.new_files.update(written.added)
+                r = written.report
+                say(f"own model of {unit}: {r.get('vertices', '?')} points, {r.get('triangles', '?')} triangles in "
+                    f"{r.get('draws', '?')} draw call(s), {len(written.added)} texture(s); into "
+                    f"{len(written.changed)} pack(s) beside {source}")
+        if result.new_files and text_arc is not None:  # new cards and model textures: files of ZZ_Win.dat's own
+            from .newmap import Grown
+            text_arc = Grown(text_arc, result.new_files)
         zz_win_changed = {**result.text_changed, **result.script_changed, **result.model_changed,
-                          **result.close_up_maps, **result.texture_changed}
+                          **result.close_up_maps, **result.texture_changed, **result.model_imports}
         for data_path, _a, changed_members in data_packs:
             new_ones = {m.lower() for m in result.added.get(data_path.name, {})}
             shipped = [m for m in changed_members if m.replace("/", "\\").lower() not in new_ones]  # (new: "added")

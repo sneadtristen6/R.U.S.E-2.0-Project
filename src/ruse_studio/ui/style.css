@@ -208,6 +208,12 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .menu-picks select:disabled { opacity: 0.5; }
 .new-unit .actions { display: flex; gap: 8px; }
 .new-unit .actions button { padding: 6px 14px; font-size: 14px; }
+/* a new unit's own model (app.js modelBox) */
+.model-own { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.model-own h3 { margin: 0; font-size: 14px; }
+.model-own p { margin: 0; }
+.model-own .actions { flex-wrap: wrap; align-items: center; }
+.model-own input.model-size { width: 5em; }
 .unit-list button.edited .name { color: var(--accent); }
 
 .test-panel { position: relative; border-top: 1px solid var(--line); background: #071120; }
@@ -406,6 +412,8 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 
 /* Duplicate map (maps.js openDuplicate): what a new map is, how it works, then its name */
 .map-duplicate { align-self: flex-start; margin: 4px 0; }
+.map-delete { align-self: flex-start; margin: 0 0 4px; }
+.map-delete-sure { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 4px; }
 .dup-how-title { margin: 12px 0 4px; font-size: 14px; }
 .dup-how { margin: 0; padding-left: 20px; display: grid; gap: 6px; line-height: 1.45; }
 .dup-form { display: grid; gap: 8px; margin-top: 14px; }

@@ -106,10 +106,18 @@ def _endpoints(pixels: list[tuple[int, int, int]]) -> tuple[tuple[float, ...], t
         c12 += dg * db
         c22 += db * db
     ax, ay, az = 1.0, 1.0, 1.0
-    for _ in range(8):
-        ax, ay, az = c00 * ax + c01 * ay + c02 * az, c01 * ax + c11 * ay + c12 * az, c02 * ax + c12 * ay + c22 * az
-        norm = max(abs(ax), abs(ay), abs(az)) or 1.0
-        ax, ay, az = ax / norm, ay / norm, az / norm
+    for start in range(2):
+        for _ in range(8):
+            ax, ay, az = (c00 * ax + c01 * ay + c02 * az, c01 * ax + c11 * ay + c12 * az,
+                          c02 * ax + c12 * ay + c22 * az)
+            norm = max(abs(ax), abs(ay), abs(az)) or 1.0
+            ax, ay, az = ax / norm, ay / norm, az / norm
+        if start or (ax, ay, az) != (0.0, 0.0, 0.0):
+            break
+        # (1, 1, 1) was square to the block's colour axis (red against blue: (1, 0, -1)), so it shrank to nothing and
+        # both ends came out as the block's mean: start again from the pixel farthest from the mean
+        far = max(pixels, key=lambda p: (p[0] - mr) ** 2 + (p[1] - mg) ** 2 + (p[2] - mb) ** 2)
+        ax, ay, az = far[0] - mr, far[1] - mg, far[2] - mb
     lo = hi = None
     for r, g, b in pixels:
         t = (r - mr) * ax + (g - mg) * ay + (b - mb) * az
@@ -117,6 +125,10 @@ def _endpoints(pixels: list[tuple[int, int, int]]) -> tuple[tuple[float, ...], t
             lo = t
         if hi is None or t > hi:
             hi = t
+    # the axis is scaled to its largest part being 1, not to length 1: the ends lie at t / |axis|^2 along it (they
+    # landed |axis|^2 times too far out before, up to 3 times for greys: fixed 2026-10-04)
+    square = ax * ax + ay * ay + az * az or 1.0
+    hi, lo = hi / square, lo / square
     return (mr + hi * ax, mg + hi * ay, mb + hi * az), (mr + lo * ax, mg + lo * ay, mb + lo * az)
 
 

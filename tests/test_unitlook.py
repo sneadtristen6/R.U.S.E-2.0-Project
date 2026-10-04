@@ -281,10 +281,12 @@ class Texture(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             pic = Path(d, "Descriptor_Unit_R2_X.png")
             pic.write_bytes(png([[(200, 30, 30)] * 8] * 4))
-            said = []
-            out = unitlook.own_cards(zz, {new: (folder + "test.tgv", pic)}, say=said.append)
+            said, loose = [], {}
+            out = unitlook.own_cards(zz, {new: (folder + "test.tgv", pic)}, say=said.append, loose=loose)
             self.assertEqual(sorted(p.rsplit("\\", 1)[-1] for p in out), ["menuus.ppk"])
             inner = Edat(out[next(iter(out))])
+            # a file of ZZ_Win.dat's own too, like the game's cards: read there once the unit is on the map (T35 crash)
+            self.assertEqual(loose, {new: bytes(inner.read(inner.entry(new)))})
             made = Tgv(bytes(inner.read(inner.entry(new))))
             self.assertEqual((made.format, made.width, made.height, made.codec, made.flag), ("DXT1_LIN", 8, 4, "ZIPO", 1))
             # (200, 30, 30) in 5-6-5 bits: 24, 7, 4 -> (198, 28, 33)
@@ -362,6 +364,30 @@ class Blender(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             self.assertIsNone(blender.ask_to_save(Path(d), timeout=0.3))
             self.assertFalse((Path(d) / blender.SAVE_REQUEST).exists())  # a Blender opened later won't answer it
+
+    def test_a_portable_blender_is_found(self):
+        """Blender unzipped from blender.org (no installer: not in Program Files, not on the PATH) is found at the top
+        of a drive or one folder down, the newest first: the owner's D:\\Tools\\blender-4.5.14-windows-x64 wasn't."""
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as drive, tempfile.TemporaryDirectory() as home:
+            for folder in ("Tools/blender-4.5.14-windows-x64", "blender-4.2.3-windows-x64", "Games/notblender"):
+                Path(drive, folder).mkdir(parents=True)
+            for folder in ("Tools/blender-4.5.14-windows-x64", "blender-4.2.3-windows-x64"):
+                Path(drive, folder, "blender.exe").write_bytes(b"")
+            Path(drive, "Games", "notblender", "blender.exe").write_bytes(b"")  # not a blender* folder: no
+            Path(home, "Downloads", "blender-3.6.0").mkdir(parents=True)
+            Path(home, "Downloads", "blender-3.6.0", "blender.exe").write_bytes(b"")
+            with mock.patch.object(blender, "_drives", lambda: [drive]), \
+                    mock.patch("pathlib.Path.home", lambda: Path(home)):
+                found = blender.portable_blenders()
+                self.assertEqual(sorted(p.parent.name for p in found),
+                                 ["blender-3.6.0", "blender-4.2.3-windows-x64", "blender-4.5.14-windows-x64"])
+                with mock.patch.dict("os.environ", {"ProgramFiles": drive, "ProgramW6432": "", "RUSE_BLENDER": ""}), \
+                        mock.patch("shutil.which", lambda name: None), \
+                        mock.patch("rusemod.steam.steam_roots", lambda: []):
+                    self.assertEqual(blender.find_blender().parent.name, "blender-4.5.14-windows-x64")
+                    chosen = Path(drive, "blender-4.2.3-windows-x64", "blender.exe")
+                    self.assertEqual(blender.find_blender(str(chosen)), chosen)  # the user's pick first
 
     def test_the_opener_uses_the_same_file_names(self):
         import re
@@ -476,6 +502,47 @@ class StudioLook(unittest.TestCase):
         self.assertFalse(self.api._card_view("$/GFX/Everything/Descriptor_Unit_Test")["own"])  # nor shown for it
         self.assertFalse(self.api.look_card_reset(address)["card"]["own"])
         self.assertFalse(own.exists())
+
+    def test_new_units_own_model(self):
+        """Import model: a .3ds or .glb fitted to the copied unit (rusemod.unitmodel.import_model, its own tests) goes
+        to the mod's files/models/<the unit's name>.glb, with a record of what was made; the page shows it."""
+        from unittest import mock
+
+        from ruse_studio.api import StudioError
+        from ruse_studio.edits import NewUnit
+        address = "$/GFX/Everything/Descriptor_Unit_R2_New"
+        unit = NewUnit(address, "$/GFX/Everything/Descriptor_Unit_Test", "New")
+
+        class Edits:
+            def new_unit_of(self, a):
+                return unit if a.split(":")[0] == address else None
+        self.api._edits = lambda: Edits()
+        calls = []
+
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None):
+            calls.append((source, Path(file).name, size))
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_bytes(b"glTF-own")
+            return {"vertices": 10, "triangles": 4, "draws": 1, "parts": {"Hull": "hull"}, "missing": []}
+        model = Path(self.dir.name) / "tank.3ds"
+        model.write_bytes(b"3ds")
+        self.assertIsNone(self.api.look(address)["own_model"])
+        self.assertTrue(self.api.look(address)["new_unit"])
+        with mock.patch("rusemod.unitmodel.import_model", fake_import):
+            res = self.api.model_import(address, str(model), "1.36")
+            with self.assertRaises(StudioError):
+                self.api.model_import("$/GFX/Everything/Descriptor_Unit_Test", str(model))  # a game unit
+            with self.assertRaises(StudioError):
+                self.api.model_import(address, str(model), 9)  # too big
+        own = self.mod / "files" / "models" / "Descriptor_Unit_R2_New.glb"
+        self.assertEqual((own.read_bytes(), calls), (b"glTF-own", [(self.MODEL, "tank.3ds", 1.36)]))
+        self.assertEqual((res["model"]["vertices"], res["model"]["file"]), (10, "tank.3ds"))
+        self.assertEqual(self.api.look(address)["own_model"]["vertices"], 10)
+        shown = self.api.unit_preview(address)["models"]
+        self.assertEqual(len(shown), 1)
+        self.assertEqual((self.api.cache_dir / shown[0]["url"][len("cache/"):]).read_bytes(), b"glTF-own")
+        self.assertIsNone(self.api.model_import_remove(address)["own_model"])
+        self.assertFalse(own.exists() or own.with_suffix(".json").exists())
 
     def test_bring_back_asks_the_running_blender_to_save(self):
         import json
