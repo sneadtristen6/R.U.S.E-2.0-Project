@@ -1143,6 +1143,17 @@ the ground** (T5). Scenery and roads come after the ground works in-game (M6, M8
    of a list is always open; a campaign is a chapter pack, and the menu reads every pack. So a campaign of our own
    (a new pack) should open at its first chapter (not tried yet). A copied chapter keeps the shipped chapter's
    cutscenes and dialog; new ones would need their own work.
+5. **Scripted Operations and campaign missions with end goals** (owner, 2026-10-03: "scripted campaign and
+   operation missions ... endgame goals, like Iwo Jima for the operation ... add new missions"). An Operation or a
+   chapter of our own with its own mission: sides, goals ("take Mount Suribachi and hold it"), timed and triggered
+   events (reinforcements, strikes, messages), a win and a loss, and for a campaign the next chapter. What's known
+   (2026-10-03): the game's 45 shipped missions are lists of the game's own mission blocks (169 kinds in use: goals,
+   timers, zone checks, orders, unit drops, victory and defeat), each mission with its own text file in every
+   language; Prolution's Fortress Europa replaces a whole campaign mission and plays; LittleGroove's engine (in ours)
+   has an Operation model with goal templates. **Seen in the game (T22, 2026-10-03):** a mission of ours in a folder
+   of its own, on a new Operation: its own texts, popups, units it brings, a goal reached in a circle, an artillery
+   strike, a second goal and the victory screen. Not tested yet: a campaign of our own opening at its first chapter,
+   new spoken dialog, cutscenes; what makes a goal a main one rather than a bonus one.
 
 These go to §11 (RUSE 2.0 design notes) when they're taken up; until then this is the record.
 

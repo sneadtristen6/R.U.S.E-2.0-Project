@@ -485,6 +485,43 @@ campaign isn't all unlocked, and the game's own code opens a chapter only when t
 finished (the first of a list is always open), so a copy put last stays locked until the last chapter is done. He'll
 try a campaign copy himself; cutscenes and dialog may need their own work ("an extended campaign with new scenes").
 
+## T22. A mission of our own, in its own folder (2026-10-03)
+
+The first step to scripted Operations and campaign missions with their own end goals (PLAN §12 idea 5; the owner:
+"build a test, just make sure the test is very obvious for me to see"). A new Operation, **MISSION TEST** (a copy of
+Anzio on Blitz's ground, listed last in OPERATIONS), runs a mission we wrote: its own script folder, its own texts in
+every language, and everything at your HQ. It also covers T19's question (does a scripted artillery strike fire).
+`D:\RUSE-Instances\mission-test` from `D:\ruse-test-mods\mission-test` (plus the cheat mod; US units 3 times as
+fast), made by a test build that adds the mission's files: 0 errors. Read back from the copy: the script, the 11 text
+files, the scenario's new spots and circle, Anzio's own mission unchanged. Every block and setting the mission uses
+is written the way the game's own missions write it (all 67 names and 157 settings found in them). The map of the
+spots: `D:\ruse-test-mods\mission-test\t20_map_clean.svg`.
+
+What should happen, in order (the Italians get no orders: they stay where they are):
+1. About 3 s in: a popup, **"MISSION TEST is running: this is our own mission ..."**, and a new goal, **"MISSION
+   TEST: DRIVE A TANK INTO THE CIRCLE"**, in the goals list and marked on the map.
+2. About 13 s: **6 Shermans** appear beside your HQ (yours), with a popup.
+3. About 23 s: **4 M7 Priests** appear on the other side of your HQ (yours), with a popup. Leave them alone.
+4. Drive a Sherman about 300 m from your HQ to **the circle: where the road goes into the big wood** (the map). When
+   it's in: goal done, a popup **"Circle reached! ..."**, and a second goal, **"WATCH THE ARTILLERY STRIKE"**.
+5. 10 s later the **4 Priests fire** at a field about 450 m from your HQ, beside a road (the map).
+6. 30 s after that: goal 2 done, a popup **"Strike over ..."**, then the **VICTORY** screen 10 s later.
+- **Pass:** all six happen.
+- **Tell us** the first step that didn't happen (a crash, the loading screen never ending, no popup, no goal, no
+  units, the circle doing nothing, no shells, no victory), and whether the texts were our English ones. Screenshots
+  welcome.
+
+**Result (owner, 2026-10-03, 22:13-22:15): PASSED.** "Everything's worked so far ... Victory in 10 seconds, the
+mission test is done. Besides the lag, it worked like a charm": all six steps, the Priests fired, the victory screen.
+In his shots: our popups and goals in English, goal 1's marker over the wood, goal 2 after the Sherman reached the
+circle. The lag at each step was his PC ("without a doubt my computer": another job had the processor at 100% the
+whole time). Still open:
+- Anzio's own objectives showed somewhere ("you didn't get rid of the main mission's objectives"): where (the
+  Operation's briefing in the menu, or in the game) is to ask; the mission itself holds none of them.
+- Goal 1 came up as a **BONUS OBJECTIVE**, goal 2 as a NEW OBJECTIVE. Goal 1's label is drawn at a spot (style 1, as
+  the game's spot-marked goals are), goal 2's over a group (style 12, as Anzio's main goal): which setting makes a
+  goal a main one isn't known yet.
+
 ## T11. Launcher 0.2.9
 
 - **Pass:** the launcher offers 0.2.9 when it opens; **Update** installs it and it starts again; **Play** works.
