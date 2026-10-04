@@ -1,5 +1,5 @@
 """The engine works on a copy of the caller's game that has the game's objects in common with it until one is changed
-(patch.shared_copy, Game.own): the caller's game must come out of a build exactly as it went in, because the build
+(patch.lazy_copy, Game.own): the caller's game must come out of a build exactly as it went in, because the build
 compares the two to write only what changed (model.save) and reads the game as shipped after (build.unit_classes,
 build.unit_models). Made-up data, no game files needed."""
 import unittest
@@ -10,7 +10,7 @@ from rusemod import unitcheck
 from rusemod.build import fill_loc
 from rusemod.model import EXTERNAL
 from rusemod.patch import (Engine, Game, Inline, ListV, MapV, Num, Obj, Op, PairV, Ref, Text, _walk_obj, num, nums,
-                           shared_copy)
+                           lazy_copy)
 from rusemod.resolve import ModInfo
 
 
@@ -213,7 +213,7 @@ class TheCallersGame(unittest.TestCase):
 class SharedCopy(unittest.TestCase):
     def test_own_copies_once_and_only_what_is_shared(self):
         g = callers_game()
-        c = shared_copy(g)
+        c = lazy_copy(g)
         self.assertIs(c.objects["$/Lee"], g.objects["$/Lee"])
         lee = c.own("$/Lee")
         self.assertIsNot(lee, g.objects["$/Lee"])
@@ -233,6 +233,18 @@ class SharedCopy(unittest.TestCase):
         c.objects["$/Gone"] = Obj("T")
         self.assertIs(c.own("$/Gone"), c.objects["$/Gone"])
         self.assertEqual(g.objects["$/Gone"].cls, "TUniteAuSolDescriptor")
+
+    def test_each_loader_after_the_engine_copies_before_it_changes(self):
+        # one at a time on a fresh copy: in a build load_everywhere runs first and has copied the cluster maps
+        # already, so a loader after it that changed in place would go unseen there
+        for name, change in (("load_everywhere", lambda c: unitcheck.load_everywhere(c, {1})),
+                             ("load_in_missions", lambda c: unitcheck.load_in_missions(c, {3})),
+                             ("load_with_every_nation", lambda c: unitcheck.load_with_every_nation(c, {1}))):
+            g = callers_game()
+            before = snapshot(g)
+            c = lazy_copy(g)
+            self.assertTrue(any(n for counts in change(c).values() for n in counts), name)  # it changed something
+            self.assertEqual(snapshot(g), before, name)
 
     def test_a_game_of_its_own_changes_in_place(self):
         g = callers_game()

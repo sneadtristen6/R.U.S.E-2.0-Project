@@ -89,12 +89,12 @@ class Game:
     objects: dict = field(default_factory=dict)   # name -> Obj
     files: dict = field(default_factory=dict)     # game path -> bytes
     notes: list = field(default_factory=list)     # things noticed while loading, for the build report
-    # name -> the Obj this game still has in common with the game it was copied from (shared_copy), until it's changed
+    # name -> the Obj this game still has in common with the game it was copied from (lazy_copy), until it's changed
     shared: dict = field(default_factory=dict, compare=False, repr=False)
 
     def own(self, name: str) -> Obj:
         """The top-level object `name`, to change in place. One this game still has in common with the game it was
-        copied from (shared_copy) is copied first, with its parts, so that game never changes."""
+        copied from (lazy_copy) is copied first, with its parts, so that game never changes."""
         obj = self.objects[name]
         if self.shared.pop(name, None) is obj:
             obj = copy.deepcopy(obj)
@@ -111,7 +111,7 @@ class Game:
         return name in self.shared and self.shared[name] is self.objects.get(name)
 
 
-def shared_copy(game: Game) -> Game:
+def lazy_copy(game: Game) -> Game:
     """A copy of `game` to change: lists of objects and files of its own, the objects themselves in common with `game`
     until one is changed (Game.own copies it first), so `game` never changes. A build changes a few of the unit data's
     21,926 top-level objects; copying them all took 6.7 to 9.3 s of each build (measured 2026-10-04)."""
@@ -246,7 +246,7 @@ class Engine:
         # the caller's game stays as it was: the build compares the two to write only what changed (model.save), and
         # reads the game as shipped after (build.unit_classes, build.unit_models). Every change in place goes through
         # _own (Game.own), which copies an object the two still have in common first.
-        self.game = shared_copy(game)
+        self.game = lazy_copy(game)
         self.findings: list[Finding] = []
         self.touch = defaultdict(list)     # (object, path) -> [(op, category, items)]
         self.obj_log = defaultdict(list)   # object -> [op] (property operations, for patch-then-delete)
