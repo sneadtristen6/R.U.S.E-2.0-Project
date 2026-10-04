@@ -20,7 +20,8 @@ SAVE_REQUEST, SAVE_DONE = "save.request", "save.done"  # files in the models' fo
 
 def find_blender(chosen: str | None = None) -> Path | None:
     """blender.exe: the one `chosen` (the user's pick, kept in settings), else $RUSE_BLENDER, the PATH, Program
-    Files (Blender Foundation), or Steam's Blender; None when none is found."""
+    Files (Blender Foundation), Steam's Blender, or a portable one (the zip from blender.org unpacked anywhere
+    usual: portable_blenders); None when none is found."""
     for c in (chosen, os.environ.get("RUSE_BLENDER"), shutil.which("blender")):
         if c and Path(c).is_file():
             return Path(c)
@@ -29,7 +30,7 @@ def find_blender(chosen: str | None = None) -> Path | None:
     for root in filter(None, roots):
         found += glob.glob(os.path.join(root, "Blender Foundation", "*", "blender.exe"))
     if found:
-        return Path(sorted(found)[-1])
+        return newest(found)
     try:
         from .steam import libraries, steam_roots
         for root in steam_roots():
@@ -39,7 +40,43 @@ def find_blender(chosen: str | None = None) -> Path | None:
                     return exe
     except Exception:  # noqa: BLE001  (no Steam, or its files unreadable: just not found there)
         pass
-    return None
+    portable = portable_blenders()
+    return newest(portable) if portable else None
+
+
+def _drives() -> list[str]:
+    """The PC's local hard drives ("C:\\", "D:\\"...): no network, CD or removable drive (they can be slow)."""
+    if os.name != "nt":
+        return []
+    import ctypes
+    import string
+    mask = ctypes.windll.kernel32.GetLogicalDrives()
+    drives = [f"{d}:\\" for i, d in enumerate(string.ascii_uppercase) if mask >> i & 1]
+    return [d for d in drives if ctypes.windll.kernel32.GetDriveTypeW(d) == 3]  # DRIVE_FIXED
+
+
+def portable_blenders() -> list[Path]:
+    """Blenders unpacked from blender.org's zip (no installer, so in no list): a blender* folder holding blender.exe
+    at the top of a local drive or one folder down (D:\\Tools\\blender-4.5.14-windows-x64, the owner's), or in the
+    user's Downloads, Desktop or Documents (or one folder down there)."""
+    places = list(_drives())
+    home = Path.home()
+    places += [str(home / sub) for sub in ("Downloads", "Desktop", "Documents")]
+    found: list[Path] = []
+    for top in places:
+        for pattern in (os.path.join(top, "blender*", "blender.exe"), os.path.join(top, "*", "blender*", "blender.exe")):
+            found += [Path(p) for p in glob.glob(pattern)]
+    return sorted(set(found))
+
+
+def newest(paths) -> Path:
+    """The Blender with the highest version in its folder's name (blender-4.5.14-windows-x64 over 4.2.3)."""
+    import re
+
+    def version(p) -> tuple:
+        m = re.search(r"(\d+)\.(\d+)(?:\.(\d+))?", Path(p).parent.name)
+        return tuple(int(x or 0) for x in m.groups()) if m else (0, 0, 0)
+    return Path(max(paths, key=lambda p: (version(p), str(p))))
 
 
 def open_models(blender: Path, files: list) -> subprocess.Popen:

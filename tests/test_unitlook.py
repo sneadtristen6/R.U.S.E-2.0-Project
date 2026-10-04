@@ -363,6 +363,30 @@ class Blender(unittest.TestCase):
             self.assertIsNone(blender.ask_to_save(Path(d), timeout=0.3))
             self.assertFalse((Path(d) / blender.SAVE_REQUEST).exists())  # a Blender opened later won't answer it
 
+    def test_a_portable_blender_is_found(self):
+        """Blender unzipped from blender.org (no installer: not in Program Files, not on the PATH) is found at the top
+        of a drive or one folder down, the newest first: the owner's D:\\Tools\\blender-4.5.14-windows-x64 wasn't."""
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as drive, tempfile.TemporaryDirectory() as home:
+            for folder in ("Tools/blender-4.5.14-windows-x64", "blender-4.2.3-windows-x64", "Games/notblender"):
+                Path(drive, folder).mkdir(parents=True)
+            for folder in ("Tools/blender-4.5.14-windows-x64", "blender-4.2.3-windows-x64"):
+                Path(drive, folder, "blender.exe").write_bytes(b"")
+            Path(drive, "Games", "notblender", "blender.exe").write_bytes(b"")  # not a blender* folder: no
+            Path(home, "Downloads", "blender-3.6.0").mkdir(parents=True)
+            Path(home, "Downloads", "blender-3.6.0", "blender.exe").write_bytes(b"")
+            with mock.patch.object(blender, "_drives", lambda: [drive]), \
+                    mock.patch("pathlib.Path.home", lambda: Path(home)):
+                found = blender.portable_blenders()
+                self.assertEqual(sorted(p.parent.name for p in found),
+                                 ["blender-3.6.0", "blender-4.2.3-windows-x64", "blender-4.5.14-windows-x64"])
+                with mock.patch.dict("os.environ", {"ProgramFiles": drive, "ProgramW6432": "", "RUSE_BLENDER": ""}), \
+                        mock.patch("shutil.which", lambda name: None), \
+                        mock.patch("rusemod.steam.steam_roots", lambda: []):
+                    self.assertEqual(blender.find_blender().parent.name, "blender-4.5.14-windows-x64")
+                    chosen = Path(drive, "blender-4.2.3-windows-x64", "blender.exe")
+                    self.assertEqual(blender.find_blender(str(chosen)), chosen)  # the user's pick first
+
     def test_the_opener_uses_the_same_file_names(self):
         import re
         source = blender.OPENER.read_text(encoding="utf-8")
