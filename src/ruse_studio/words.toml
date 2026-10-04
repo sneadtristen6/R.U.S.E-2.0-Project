@@ -9155,3 +9155,28 @@ ru = "Цвет — это # и шесть шестнадцатеричных ц�
 cz = "Barva je # a šest šestnáctkových číslic, např. #8a7a4e."
 jpn = "色は # と16進数6桁で表します（例：#8a7a4e）。"
 sc = "颜色写作 # 加六位十六进制数字，例如 #8a7a4e。"
+
+# Lines the build says in Test in game's log (rusemod.instance.NOTES: the same English for "us")
+[play_unchanged]
+us = "Nothing changed since the last build: the modded copy is used as it is."
+fr = "Rien n'a changé depuis la dernière fois : la copie avec mods est utilisée telle quelle."
+ger = "Seit dem letzten Mal hat sich nichts geändert: Die Mod-Kopie wird so verwendet, wie sie ist."
+ita = "Nulla è cambiato dall'ultima volta: la copia con mod viene usata così com'è."
+spa = "Nada ha cambiado desde la última vez: la copia con mods se usa tal como está."
+pol = "Od ostatniego razu nic się nie zmieniło: kopia z modami jest używana bez zmian."
+ru = "С прошлого раза ничего не изменилось: копия с модами используется как есть."
+cz = "Od minula se nic nezměnilo: kopie s módy se použije tak, jak je."
+jpn = "前回から何も変わっていないため、MOD入りのコピーをそのまま使います。"
+sc = "自上次以来没有任何变化：直接使用现有的模组版副本。"
+
+[play_other_drive]
+us = "The modded copy is on another drive than the game, so the game's packs are copied into it, not shared: {gb} GB copied this time. With modded copies on the game's drive ({drive}), starting the game with mods is much faster."
+fr = "La copie avec mods est sur un autre disque que le jeu : les fichiers du jeu y sont copiés au lieu d'être partagés ({gb} Go copiés cette fois). Avec les copies avec mods sur le disque du jeu ({drive}), le jeu avec mods démarre bien plus vite."
+ger = "Die Mod-Kopie liegt auf einem anderen Laufwerk als das Spiel, daher werden die Spieldateien hineinkopiert statt geteilt: diesmal {gb} GB. Liegen die Mod-Kopien auf dem Laufwerk des Spiels ({drive}), startet das Spiel mit Mods viel schneller."
+ita = "La copia con mod è su un'unità diversa da quella del gioco, quindi i file del gioco vi vengono copiati invece che condivisi: {gb} GB copiati questa volta. Con le copie con mod sull'unità del gioco ({drive}), il gioco con le mod si avvia molto più in fretta."
+spa = "La copia con mods está en una unidad distinta de la del juego, así que los archivos del juego se copian en ella en vez de compartirse: {gb} GB copiados esta vez. Con las copias con mods en la unidad del juego ({drive}), el juego con mods se inicia mucho más rápido."
+pol = "Kopia z modami jest na innym dysku niż gra, więc pliki gry są do niej kopiowane, a nie współdzielone: tym razem {gb} GB. Gdy kopie z modami są na dysku gry ({drive}), gra z modami uruchamia się dużo szybciej."
+ru = "Копия с модами находится не на том диске, где игра, поэтому файлы игры копируются в неё, а не используются совместно: в этот раз {gb} ГБ. Если копии с модами лежат на диске игры ({drive}), игра с модами запускается намного быстрее."
+cz = "Kopie s módy je na jiném disku než hra, takže se do ní soubory hry kopírují místo sdílení: tentokrát {gb} GB. S kopiemi s módy na disku hry ({drive}) se hra s módy spouští mnohem rychleji."
+jpn = "MOD入りのコピーがゲームとは別のドライブにあるため、ゲームのファイルを共有できずコピーしています（今回 {gb} GB）。MOD入りのコピーをゲームのドライブ（{drive}）に置くと、MOD入りのゲームがずっと速く起動します。"
+sc = "模组版副本与游戏不在同一驱动器上，因此游戏文件只能复制过去，无法共享：本次复制了 {gb} GB。把模组版副本放在游戏所在的驱动器（{drive}）上，启动模组版游戏会快很多。"

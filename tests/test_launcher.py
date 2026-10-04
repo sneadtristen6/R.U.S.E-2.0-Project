@@ -122,6 +122,19 @@ class Launcher(Base):
         busy.state = "done"
         self.assertEqual(wait_for(api, api.play("half")["job"])["state"], "done")
 
+    def test_a_second_play_with_nothing_changed_builds_nothing(self):
+        # a player, 2026-10-04: "Waiting 30 minutes every time just to add or remove a unit"
+        mod = write_mod(self.tmp.name, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
+        self.mod_set("half", [mod])
+        api = self.api()
+        api.set_pref("lang", "fr")
+        self.assertEqual(wait_for(api, api.play("half")["job"])["state"], "done")
+        j = wait_for(api, api.play("half")["job"])
+        self.assertEqual(j["state"], "done", j)
+        self.assertEqual(j["lines"][0], words("fr")["play_unchanged"])  # said in the player's language
+        self.assertFalse(any("modded copy ready" in line for line in j["lines"]))
+        self.assertEqual(self.started, [self.instances / SHARED / "RUSE.exe"] * 2)
+
     def test_steam_is_started_first_when_it_isnt_running(self):
         mod = write_mod(self.tmp.name, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
         self.mod_set("half", [mod])

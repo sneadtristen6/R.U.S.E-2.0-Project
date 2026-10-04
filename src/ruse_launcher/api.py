@@ -625,4 +625,5 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
             # not a game rule: the game or one of its files isn't found
             raise BuildError("We couldn't find R.U.S.E. Choose its folder first.")
         instance = shared_copy(game, self._instances)  # one modded copy on the PC, both apps'
-        self._starter.modded(game, chosen["folders"], instance, chosen["name"], say)
+        self._starter.modded(game, chosen["folders"], instance, chosen["name"], say,
+                             words=words(self.prefs().get("lang") or "us"))  # the lines for the player, in theirs

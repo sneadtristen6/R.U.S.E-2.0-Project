@@ -1127,12 +1127,13 @@ def report_lines(findings, show_all: bool = False, keep: int = 3):
 
 def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Path | None = None,
                     instance: Path | None = None, say=print, show_all: bool = False,
-                    cache: Path | None = None) -> BuildResult:
+                    cache: Path | None = None, built_from: dict | None = None) -> BuildResult:
     """Build `mods` [(ModInfo, ops)] against the game at `game` and write the result: rebuilt packs to `out` (a .dat
     file, or a folder for several packs) and/or a modded copy at `instance`. This is `ruse build`, and the launcher's
     Play. `say` gets every report line as it comes. Nothing is written when the build has errors. Problems the user
     can fix raise BuildError. `cache`: a folder for what can be measured once and kept between builds (BUILD_CACHE
-    under the platform's folder for the apps and `ruse build`; none in the tests).
+    under the platform's folder for the apps and `ruse build`; none in the tests). `built_from`: what the mods were
+    read from (rusemod.play.built_from), kept in the copy's record so the next Play can start it without a build.
 
     .rmod mods (rusemod.rmod) are applied first, in their order in `mods`, and the other mods on top of them. Two
     .rmod mods that can't go together (the same file replaced with different contents, MOD_FORMAT.md §13) stop the
@@ -2124,18 +2125,23 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     a.write_to(f, changed)
                 say(f"wrote {target}")
         if instance is not None:
-            from .instance import build_instance
+            from .instance import Note, build_instance
             replace, add = {}, {}
             for path, a, changed in rebuilt:
                 rel = str(path.resolve().relative_to(Path(game).resolve()))
                 # a new map's pack isn't in the game: the copy gets it as a file of its own
                 (replace if path.exists() else add)[rel] = (lambda f, a=a, changed=changed: a.write_to(f, changed))
-            copied = build_instance(str(game), str(instance), replace=replace, add=add)
+            copied = build_instance(str(game), str(instance), replace=replace, add=add, built_from=built_from)
             say(f"modded copy ready: {instance}  {copied}")
             locked = copied.get("read-only packs", 0)
-            if copied.get("full copies", 0) > locked:
-                say(f"note: {instance} is on another drive than the game, so its {copied['full copies'] - locked} "
-                    f"packs are full copies, which take disk space. On the game's drive they'd be free.")
+            if getattr(copied, "other_drive", False):  # said once, every build: how much it cost this time
+                drive = os.path.splitdrive(os.path.realpath(game))[0] or str(Path(game).anchor)
+                say(Note("play_other_drive", gb=f"{copied.copied_bytes / (1 << 30):.1f}", drive=drive))
+            elif copied.get("full copies", 0) > locked:  # the game's drive, but maybe one that can't share files
+                from .winfiles import volume
+                fs = volume(str(instance)).get("fs", "")
+                if fs and fs.upper() != "NTFS":  # FAT32, exFAT: no hard links at all
+                    say(Note("doc_drive_other", path=str(Path(instance).parent), fs=fs))
             if locked:
                 say(f"note: {locked} of the game's packs are marked read-only, so they were copied rather than linked "
                     f"(a link would share the mark, and the copy couldn't be removed later). Unticking Read-only in "
