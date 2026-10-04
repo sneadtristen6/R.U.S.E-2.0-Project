@@ -21,9 +21,11 @@ from __future__ import annotations
 import copy
 import re
 import struct
+from bisect import bisect_left
 from collections import defaultdict
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from operator import itemgetter
 
 INT_RANGES = {"bool": (0, 255), "int8": (-2**7, 2**7 - 1), "int16": (-2**15, 2**15 - 1), "uint16": (0, 2**16 - 1),
               "int32": (-2**31, 2**31 - 1), "uint32": (0, 2**32 - 1), "int64": (-2**63, 2**63 - 1)}
@@ -87,6 +89,33 @@ class Game:
     objects: dict = field(default_factory=dict)   # name -> Obj
     files: dict = field(default_factory=dict)     # game path -> bytes
     notes: list = field(default_factory=list)     # things noticed while loading, for the build report
+    # name -> the Obj this game still has in common with the game it was copied from (shared_copy), until it's changed
+    shared: dict = field(default_factory=dict, compare=False, repr=False)
+
+    def own(self, name: str) -> Obj:
+        """The top-level object `name`, to change in place. One this game still has in common with the game it was
+        copied from (shared_copy) is copied first, with its parts, so that game never changes."""
+        obj = self.objects[name]
+        if self.shared.pop(name, None) is obj:
+            obj = copy.deepcopy(obj)
+            self.objects[name] = obj
+        return obj
+
+    def own_part(self, name: str, path: str) -> Obj:
+        """The part at `path` ("" for the object itself, "SubClusterList[1]" as _parts names it) of the top-level
+        object `name`, to change in place (own)."""
+        return part_at(self.own(name), path)
+
+    def shares(self, name: str) -> bool:
+        """Whether the top-level object `name` is still the same object as in the game this one was copied from."""
+        return name in self.shared and self.shared[name] is self.objects.get(name)
+
+
+def shared_copy(game: Game) -> Game:
+    """A copy of `game` to change: lists of objects and files of its own, the objects themselves in common with `game`
+    until one is changed (Game.own copies it first), so `game` never changes. A build changes a few of the unit data's
+    21,926 top-level objects; copying them all took 6.7 to 9.3 s of each build (measured 2026-10-04)."""
+    return Game(dict(game.objects), dict(game.files), list(game.notes), shared=dict(game.objects))
 
 
 def num(v, kind="int32") -> Num:
@@ -214,7 +243,10 @@ def _parse_path(path: str) -> list[tuple[str, list[str]]]:
 # --- the engine ---
 class Engine:
     def __init__(self, game: Game):
-        self.game = copy.deepcopy(game)
+        # the caller's game stays as it was: the build compares the two to write only what changed (model.save), and
+        # reads the game as shipped after (build.unit_classes, build.unit_models). Every change in place goes through
+        # _own (Game.own), which copies an object the two still have in common first.
+        self.game = shared_copy(game)
         self.findings: list[Finding] = []
         self.touch = defaultdict(list)     # (object, path) -> [(op, category, items)]
         self.obj_log = defaultdict(list)   # object -> [op] (property operations, for patch-then-delete)
@@ -258,6 +290,21 @@ class Engine:
         if level == "warning" and op is not None and op.override:
             level = "note"
         self.findings.append(Finding(level, message, op))
+
+    def _own(self, name: str) -> Obj:
+        """The top-level object `name`, to change in place (Game.own). When that copies it, the find index
+        (_objects_of) is pointed at the copy's parts, so filters see the changes made to it."""
+        old = self.game.objects[name]
+        obj = self.game.own(name)
+        if obj is not old and self._index_gen == self._gen:
+            new = dict(zip((id(o) for _p, o in _parts(old)), (o for _p, o in _parts(obj))))  # same parts, same order
+            classes = {o.cls for o in new.values()}
+            for found in [self._all] + [self._by_class[c] for c in classes if c in self._by_class]:
+                i = bisect_left(found, name, key=itemgetter(0))  # (in name order, one object's parts together)
+                while i < len(found) and found[i][0] == name:
+                    found[i] = (name, found[i][1], new.get(id(found[i][2]), found[i][2]))
+                    i += 1
+        return obj
 
     # --- dispatch ---
     def apply(self, op: Op) -> None:
@@ -435,7 +482,7 @@ class Engine:
         """Walk the property path. Returns (owner name, Obj holding the property, property, list index or None, path
         from owner). Crossing into an object that others use too needs `own` or `shared` (MOD_FORMAT §10.5)."""
         segs = _parse_path(op.path)
-        owner, obj, walked = name, self.game.objects[name], []
+        owner, obj, walked = name, self._own(name), []  # (every object the walk enters is one the operation changes)
         for i, (prop, sels) in enumerate(segs):
             last = i == len(segs) - 1
             if last and len(sels) <= 1 and (not sels or re.fullmatch(r"-?\d+", sels[0])):
@@ -468,7 +515,7 @@ class Engine:
                     obj, walked = copy_.obj, walked + [step]
                     self._gen += 1
                 else:
-                    owner, obj, walked = val.target, self.game.objects[val.target], []
+                    owner, obj, walked = val.target, self._own(val.target), []
             else:
                 raise PatchError(f"{op.at()}: {owner}:{'.'.join(walked + [step])} isn't an object")
         raise PatchError(f"{op.at()}: empty property path")
@@ -558,10 +605,12 @@ class Engine:
             prefix = f"{prefix}.{sub}" if prefix else sub
         return name, prefix
 
-    def _part_at(self, op: Op, name: str, path: str):
+    def _part_at(self, op: Op, name: str, path: str, own: bool = False):
         """A read-only walk from the top-level object `name` along `path`: (holder, key, the value at the end).
-        Crosses references to named objects on the way; the end may be a part, a reference or a plain value."""
-        obj, holder, key, val = self.game.objects[name], None, None, None
+        Crosses references to named objects on the way; the end may be a part, a reference or a plain value.
+        `own`: for a change at the end, through the engine's own copies of the objects on the way (_own)."""
+        get = self._own if own else self.game.objects.__getitem__
+        obj, holder, key, val = get(name), None, None, None
         segs = _parse_path(path)
         for i, (prop, sels) in enumerate(segs):
             val = obj.props.get(prop)
@@ -575,7 +624,7 @@ class Engine:
             if isinstance(val, Inline):
                 obj = val.obj
             elif isinstance(val, Ref) and val.target in self.game.objects:
-                name, obj = val.target, self.game.objects[val.target]
+                name, obj = val.target, get(val.target)
             else:
                 raise PatchError(f"{op.at()}: {name}:{path}: {prop} isn't an object")
         return holder, key, val
@@ -595,6 +644,7 @@ class Engine:
         if isinstance(val, Ref):
             return val.target
         if isinstance(val, Inline):
+            holder, key, val = self._part_at(op, name, prefix, own=True)  # the same part, in the object _share changes
             return self._share(op, val.obj, holder, key)
         raise PatchError(f"{op.at()}: {text} isn't an object")
 
@@ -713,16 +763,12 @@ class Engine:
 
     # --- the end: round numbers once, check references, the truck flags and what the game needs of units ---
     def _finish(self) -> None:
-        for name, obj in self.game.objects.items():
-            for v in _walk_obj(obj):
-                if isinstance(v, Num):
-                    try:
-                        v.value = _round(v)
-                    except PatchError as exc:
-                        self._find("error", f"{name}: {exc}")
-                elif isinstance(v, Ref) and v.target is not None and v.target not in self.game.objects:
-                    why = f", which {self.deleted[v.target].at()} deleted" if v.target in self.deleted else ""
-                    self._find("error", f"{name} still refers to {v.target}{why}")
+        for name, obj in list(self.game.objects.items()):
+            found = self._finish_obj(name, obj, write=not self.game.shares(name))
+            if found is None:  # a number of an object still in common with the caller's game changes: copied first
+                found = self._finish_obj(name, self._own(name), write=True)
+            for message in found:
+                self._find("error", message)
         new = [n for n in self.created if n in self.game.objects]
         if new:
             from .identity import clashes
@@ -730,6 +776,27 @@ class Engine:
                 self._find("warning", message, self.created[name])
         self._truck_flags(new)
         self._unit_rules(new)
+
+    def _finish_obj(self, name: str, obj: Obj, write: bool) -> list[str] | None:
+        """Round the numbers of the top-level object `name` once (in place) and check its references: the errors, in
+        order. Not `write`: None as soon as rounding would change a number, even only in how it's written (5.0 to 5),
+        or would make a new NaN, which compares unequal and so counts as changed (model.save)."""
+        found = []
+        for v in _walk_obj(obj):
+            if isinstance(v, Num):
+                try:
+                    r = _round(v)
+                except PatchError as exc:
+                    found.append(f"{name}: {exc}")
+                    continue
+                if write:
+                    v.value = r
+                elif not (r == v.value and r.compare_total(v.value) == 0):
+                    return None
+            elif isinstance(v, Ref) and v.target is not None and v.target not in self.game.objects:
+                why = f", which {self.deleted[v.target].at()} deleted" if v.target in self.deleted else ""
+                found.append(f"{name} still refers to {v.target}{why}")
+        return found
 
     def _blame(self, hit) -> Op | None:
         """The last property operation for which `hit(owner, path)` holds."""
@@ -894,6 +961,17 @@ def _parts_in(v, path: str):
     elif isinstance(v, ListV):
         for i, x in enumerate(v.items):
             yield from _parts_in(x, f"{path}[{i}]")
+
+
+def part_at(obj: Obj, path: str) -> Obj:
+    """The part of `obj` at a path as _parts gives it: `obj` itself for "", else through parts and list items
+    ("SubClusterList[1].Loader")."""
+    for prop, sels in _parse_path(path) if path else []:
+        v = obj.props[prop]
+        for sel in sels:
+            v = v.items[int(sel)]
+        obj = v.obj
+    return obj
 
 
 def _matches(obj: Obj, field_: str, want: str) -> bool:
