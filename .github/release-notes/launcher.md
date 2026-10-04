@@ -10,7 +10,7 @@ model of their own.
 | Every build read the game's unit data afresh. | Kept between builds: a big test mod 213 s, then 68 s. |
 | A mod's new unit had the model of the unit it copies. | Its own model from the mod (`files/models`) is in the game. **Seen in the game:** an M1 Abrams beside the Sherman. |
 | A mod's new unit with its own card crashed the game when it was built. | Fixed. **Seen in the game.** |
-| Repainted units' colours came out a little off in places. | Closer to the mod's picture. |
+| Repainted units' colours came out a little off in places. | Closer to the mod's picture. A mod with repainted units or painted ground gets a new fingerprint and join code: everyone playing together should update. |
 | A slow start left no clue. | **Copy report** lists the last five starts' steps. |
 | — | Plays mods with Studio 0.9.6's whole-map erase, roads on reshaped ground and riverbed fill (new, not yet seen in the game at scale). |
 
