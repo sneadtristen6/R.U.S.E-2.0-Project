@@ -19,6 +19,7 @@ hand); the build's own step is not seen yet. The checks here are on the files' b
 from __future__ import annotations
 
 import math
+import os
 from array import array
 from collections import deque
 
@@ -34,6 +35,9 @@ STEP = 2.5 * METRE     # the hollows' grid
 EASE = 6 * METRE       # mirrored by the bank, moved across from this far in
 SMOOTH = 8 * METRE     # the way across and the width taken over this far round
 CROSS = 0.5            # the share of a hollow's width, about its middle, where its two sides cross-fade
+WINDOW = 2000 * METRE  # the side of the squares the map is mended in, one after another (mend_map)
+NEAR_WATER = 2 * REACH + WIDER + 2 * STEP  # how far from the old water a riverbed's hollow can reach
+COARSE = 10 * METRE    # the grid the old water is first looked for on, to pick the windows
 
 
 def _slide(values: list, r: int, pick) -> list:
@@ -195,6 +199,138 @@ class Filled:
         cols = [i for i in range(self.nx) if any(self.bits[j * self.nx + i] for j in rows)]
         s = self.step
         return self.x0 + cols[0] * s, self.y0 + rows[0] * s, self.x0 + (cols[-1] + 1) * s, self.y0 + (rows[-1] + 1) * s
+
+
+def wet_bits(tms, x0: float, y0: float, nx: int, ny: int, step: float) -> bytearray:
+    """Where the mesh `tms` (rusemod.tms.Tms) has water (its water triangles, list 1) on an nx x ny grid from
+    (x0, y0), `step` apart: 1 for a square whose middle is under water."""
+    wet = bytearray(nx * ny)
+    for c in tms.cells:
+        tri = c.triangles(1)
+        if not tri:
+            continue
+        pts = [((tms.to_world(0, p[0]) - x0) / step - 0.5, (tms.to_world(1, p[1]) - y0) / step - 0.5)
+               for p in c.positions()]
+        for t in range(0, len(tri) - 2, 3):
+            a, b, d = pts[tri[t]], pts[tri[t + 1]], pts[tri[t + 2]]
+            den = (b[1] - d[1]) * (a[0] - d[0]) + (d[0] - b[0]) * (a[1] - d[1])
+            if not den:
+                continue
+            i0, i1 = max(math.ceil(min(a[0], b[0], d[0])), 0), min(math.floor(max(a[0], b[0], d[0])), nx - 1)
+            j0, j1 = max(math.ceil(min(a[1], b[1], d[1])), 0), min(math.floor(max(a[1], b[1], d[1])), ny - 1)
+            for j in range(j0, j1 + 1):
+                for i in range(i0, i1 + 1):
+                    l1 = ((b[1] - d[1]) * (i - d[0]) + (d[0] - b[0]) * (j - d[1])) / den
+                    l2 = ((d[1] - a[1]) * (i - d[0]) + (a[0] - d[0]) * (j - d[1])) / den
+                    if l1 >= -1e-9 and l2 >= -1e-9 and 1 - l1 - l2 >= -1e-9:
+                        wet[j * nx + i] = 1
+    return wet
+
+
+def riverbeds_only(filled: Filled, wet: bytearray) -> int:
+    """Keep only the stretches of `filled`'s squares (side by side, not corner to corner) that reach the old water
+    (`wet`, on the same grid): a riverbed raised flat. A dry valley or dip raised flat was a field's picture before and
+    is one now; mending it cost most of the time on a whole flattened map (all of Blitz: 3.16 km2 filled, 1.33 km2 of
+    it reaching the water, 2026-10-04). Returns how many squares were let go."""
+    nx, ny, bits = filled.nx, filled.ny, filled.bits
+    seen = bytearray(nx * ny)
+    gone = 0
+    for k in range(nx * ny):
+        if not bits[k] or seen[k]:
+            continue
+        stretch, q, wets = [k], deque([k]), bool(wet[k])
+        seen[k] = 1
+        while q:
+            m = q.popleft()
+            i, j = m % nx, m // nx
+            for a, b in ((i - 1, j), (i + 1, j), (i, j - 1), (i, j + 1)):
+                if 0 <= a < nx and 0 <= b < ny:
+                    n = b * nx + a
+                    if bits[n] and not seen[n]:
+                        seen[n] = 1
+                        q.append(n)
+                        stretch.append(n)
+                        wets = wets or bool(wet[n])
+        if not wets:
+            for m in stretch:
+                bits[m] = 0
+            gone += len(stretch)
+    return gone
+
+
+class Riverbeds:
+    """The riverbeds a build mends, window by window (mend_map): each window's Filled, holding only its own square
+    of the map (a window's grid reaches past it, for the banks). Answers as a Filled does, for the build's low cover."""
+
+    def __init__(self, x0: float, y0: float, side: float, parts: dict):
+        self.x0, self.y0, self.side, self.parts = x0, y0, side, parts  # (window column, row) -> Filled
+
+    def holds(self, x: float, y: float) -> bool:
+        part = self.parts.get((int((x - self.x0) // self.side), int((y - self.y0) // self.side)))
+        return part is not None and part.holds(x, y)
+
+    def touches(self, x: float, y: float, reach: float) -> bool:
+        if self.holds(x, y):
+            return True
+        for f in (0.5, 1.0):
+            r = reach * f
+            for k in range(8):
+                a = k * math.pi / 4
+                if self.holds(x + r * math.cos(a), y + r * math.sin(a)):
+                    return True
+        return False
+
+    def count(self) -> int:
+        return sum(p.count() for p in self.parts.values())
+
+    def box(self) -> tuple[float, float, float, float] | None:
+        boxes = [b for b in (p.box() for p in self.parts.values()) if b is not None]
+        if not boxes:
+            return None
+        return (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes),
+                max(b[3] for b in boxes))
+
+
+def _windows(before, box, areas) -> list[tuple[int, int, tuple[float, float, float, float]]]:
+    """The windows of the map to mend: WINDOW squares (from the box's corner) over `box`, each kept when a square of
+    COARSE within NEAR_WATER of the old ground's water lies in it inside a stroke's circle. [(column, row, its square
+    clipped to the box)], in order."""
+    s = COARSE
+    pad = NEAR_WATER + s
+    x0, y0 = box[0] - pad, box[1] - pad
+    nx, ny = max(1, math.ceil((box[2] + pad - x0) / s)), max(1, math.ceil((box[3] + pad - y0) / s))
+    wet = wet_bits(before, x0, y0, nx, ny, s)
+    if not any(wet):
+        return []
+    r = max(1, math.ceil(NEAR_WATER / s))
+    near = _filter2([list(wet[j * nx:(j + 1) * nx]) for j in range(ny)], r, max)
+    out = []
+    cols, rows = math.ceil((box[2] - box[0]) / WINDOW), math.ceil((box[3] - box[1]) / WINDOW)
+    for wj in range(rows):
+        for wi in range(cols):
+            core = (box[0] + wi * WINDOW, box[1] + wj * WINDOW, min(box[2], box[0] + (wi + 1) * WINDOW),
+                    min(box[3], box[1] + (wj + 1) * WINDOW))
+            i0, i1 = max(0, math.floor((core[0] - x0) / s)), min(nx, math.ceil((core[2] - x0) / s))
+            j0, j1 = max(0, math.floor((core[1] - y0) / s)), min(ny, math.ceil((core[3] - y0) / s))
+            mine = [(ax, ay, ar) for ax, ay, ar in areas
+                    if ax + ar > core[0] and ax - ar < core[2] and ay + ar > core[1] and ay - ar < core[3]]
+            if not mine:
+                continue
+            keep = False
+            for j in range(j0, j1):
+                row = near[j]
+                y = y0 + (j + 0.5) * s
+                for i in range(i0, i1):
+                    if row[i]:
+                        x = x0 + (i + 0.5) * s
+                        if any((x - ax) ** 2 + (y - ay) ** 2 <= ar * ar for ax, ay, ar in mine):
+                            keep = True
+                            break
+                if keep:
+                    break
+            if keep:
+                out.append((wi, wj, core))
+    return out
 
 
 def _smooth(t: float) -> float:
@@ -399,42 +535,144 @@ def mend_tiles(store, bounds, plan: Plan, hollow, box, cache=None, source=None) 
     own resolution; `hollow(x, y)`: where no ground is read from. `source`: the tile set the banks' ground is read from
     (default `store`; the map's own, if paint is on `store` already, so none is copied in). Only the 4x4 blocks with a
     mended pixel are encoded again. Returns {tile index: new tile record} for Tmst.members."""
+    return mend_tiles_parts(store, bounds, [(plan, hollow, box)], cache, source, quick=False)
+
+
+def mend_tiles_parts(store, bounds, parts, cache=None, source=None, quick: bool = True) -> dict[int, bytes]:
+    """mend_tiles for several Plans at once (`parts`: [(plan, hollow, box)], one per window of mend_map, their squares
+    to fill apart): each tile is read and written once, each 4x4 block encoded once with all its mended pixels.
+    `quick`: blocks encoded with dxt.encode_block_quick."""
     out = {}
     samplers: dict = {}
     source = store if source is None else source
     for tile in store.tiles:
-        rx0, ry0, rx1, ry1 = _tile_rect(store, tile, bounds)
-        if rx0 >= box[2] or rx1 <= box[0] or ry0 >= box[3] or ry1 <= box[1]:
-            continue
-        blocks, w, h = _blocks(store, tile, cache)
-        pw, ph = (rx1 - rx0) / w, (ry1 - ry0) / h
-        if tile.level not in samplers:
-            samplers[tile.level] = _picture_sampler(source, bounds, tile.level, cache)
-        at = samplers[tile.level]
+        record = _mend_tile(store, tile, bounds, parts, samplers, source, cache, quick)
+        if record is not None:
+            out[tile.index] = record
+    return out
+
+
+def _touches(store, tile, bounds, parts) -> list:
+    rx0, ry0, rx1, ry1 = _tile_rect(store, tile, bounds)
+    return [p for p in parts if not (rx0 >= p[2][2] or rx1 <= p[2][0] or ry0 >= p[2][3] or ry1 <= p[2][1])]
+
+
+def _mend_tile(store, tile, bounds, parts, samplers: dict, source, cache, quick: bool) -> bytes | None:
+    """One tile of mend_tiles_parts: its new record, or None when nothing in it is mended. `samplers`: the map's own
+    picture at each level (groundpaint._picture_sampler), made on first use."""
+    mine = _touches(store, tile, bounds, parts)
+    if not mine:
+        return None
+    rx0, ry0, rx1, ry1 = _tile_rect(store, tile, bounds)
+    blocks, w, h = _blocks(store, tile, cache)
+    pw, ph = (rx1 - rx0) / w, (ry1 - ry0) / h
+    if tile.level not in samplers:
+        samplers[tile.level] = _picture_sampler(source, bounds, tile.level, cache)
+    at = samplers[tile.level]
+    byblock: dict = {}
+    for plan, hollow, box in mine:
         i0, i1 = max(0, math.floor((box[0] - rx0) / pw)), min(w, math.ceil((box[2] - rx0) / pw))
         j0, j1 = max(0, math.floor((box[1] - ry0) / ph)), min(h, math.ceil((box[3] - ry0) / ph))
-        byblock: dict = {}
         for i, j, x, y in _to_fill(plan, i0, i1, j0, j1, rx0, ry0, pw, ph):
             v = plan.fill_value(x, y, at, hollow)
             if v is not None:
                 byblock.setdefault((j // 4) * (w // 4) + i // 4, []).append(((j % 4) * 4 + i % 4, v))
-        if not byblock:
-            continue
-        for kb, pix in byblock.items():
-            pixels = dxt.block_pixels(bytes(blocks[8 * kb:8 * kb + 8]))
-            for idx, v in pix:
-                pixels[idx] = tuple(max(0, min(255, c)) for c in v[:3])
-            blocks[8 * kb:8 * kb + 8] = dxt.encode_block(pixels)
-        out[tile.index] = zipo_tile(bytes(blocks), w, h)
+    if not byblock:
+        return None
+    encode = dxt.encode_block_quick if quick else dxt.encode_block
+    for kb, pix in byblock.items():
+        pixels = dxt.block_pixels(bytes(blocks[8 * kb:8 * kb + 8]))
+        for idx, v in pix:
+            pixels[idx] = tuple(max(0, min(255, c)) for c in v[:3])
+        blocks[8 * kb:8 * kb + 8] = encode(pixels)
+    return zipo_tile(bytes(blocks), w, h)
+
+
+def _mend_window(before, after, wi: int, wj: int, core) -> tuple:
+    """One window of mend_map: (wi, wj, its Filled holding only riverbeds in its own square or None, their Plan or
+    None, the dry squares let go). Its grid reaches REACH past its square, so its hollows and banks are whole."""
+    reach = (core[0] - REACH, core[1] - REACH, core[2] + REACH, core[3] + REACH)
+    filled = Filled(before, after, reach)
+    if not filled.count():
+        return wi, wj, None, None, 0
+    dry = riverbeds_only(filled, wet_bits(before, filled.x0, filled.y0, filled.nx, filled.ny, filled.step))
+    s, nx = filled.step, filled.nx
+    for k in range(nx * filled.ny):  # its own square only: the next window's squares are that window's
+        if filled.bits[k]:
+            x, y = filled.x0 + (k % nx + 0.5) * s, filled.y0 + (k // nx + 0.5) * s
+            if not (core[0] <= x < core[2] and core[1] <= y < core[3]):
+                filled.bits[k] = 0
+    if not filled.count():
+        return wi, wj, None, None, dry
+    return wi, wj, filled, plan_filled(filled), dry
+
+
+# --- the mend shared out to worker programs, one per core but one (each answer is the same as one program's) ---
+WORKERS = max(1, min(8, (os.cpu_count() or 1) - 1))
+_WORK: dict = {}  # in a worker: what its jobs share (set by its starter)
+
+
+def _start_windows(before_raw: bytes, after_raw: bytes) -> None:
+    from .tms import Tms
+    _WORK["before"], _WORK["after"] = Tms(before_raw), Tms(after_raw)
+
+
+def _window_job(job: tuple) -> tuple:
+    return _mend_window(_WORK["before"], _WORK["after"], *job)
+
+
+def _start_tiles(pack_file: str, lod: str, parts: list, bounds, cache) -> None:
+    from .edat import Edat
+    from .tmst import Tmst
+    arc = Edat.open(pack_file)
+    store = Tmst(bytes(arc.read(arc.find(f"output\\{lod}.tmst_pc"))), arc.read(arc.find(f"output\\{lod}.tmst_chunk_pc")))
+    _WORK.update(arc=arc, store=store, parts=parts, bounds=bounds, cache=cache, samplers={},
+                 tiles={t.index: t for t in store.tiles})
+
+
+def _tile_job(indices: list) -> dict:
+    store, out = _WORK["store"], {}
+    for i in indices:
+        record = _mend_tile(store, _WORK["tiles"][i], _WORK["bounds"], _WORK["parts"], _WORK["samplers"], store,
+                            _WORK["cache"], True)
+        if record is not None:
+            out[i] = record
     return out
 
 
-def mend_map(read, path_of, changed: dict, before, after, areas, cache=None) -> tuple[Filled | None, list[str]]:
-    """The build's step after its ground edits: the hollows of the old ground (`before`, a Tms) that the new ground
+def _pool(start, args, workers: int):
+    from concurrent.futures import ProcessPoolExecutor
+    return ProcessPoolExecutor(max_workers=workers, initializer=start, initargs=args)
+
+
+def workers_start() -> str:
+    """For the apps' self-test: worker programs start and answer (the mend shares its work out to them)."""
+    with _pool(_start_windows_probe, (), 2) as pool:
+        got = sorted(pool.map(_probe, [1, 2, 3]))
+    if got != [2, 4, 6]:
+        raise RuntimeError(f"the workers answered {got}")
+    return f"{WORKERS} worker(s) on this PC"
+
+
+def _start_windows_probe() -> None:
+    _WORK["probe"] = 2
+
+
+def _probe(n: int) -> int:
+    return n * _WORK["probe"]
+
+
+def mend_map(read, path_of, changed: dict, before, after, areas, cache=None, pack_file: str | None = None,
+             workers: int | None = None) -> tuple[Riverbeds | None, list[str]]:
+    """The build's step after its ground edits: the riverbeds of the old ground (`before`, a Tms) that the new ground
     (`after`) fills, within the strokes' `areas` ((x, y, radius) each), mended in both tile sets and the close-up
     map. `read(member)` gives the map pack's own member (the pictures the banks' ground is read from) or None,
     `path_of(member)` its full path; the mended members go into `changed` (the build's chain for this map). Returns
-    (the Filled, for the low cover the build takes off there; or None when nothing is filled), notes."""
+    (the Riverbeds, for the low cover the build takes off there; or None when nothing is filled), notes.
+
+    `pack_file`: the map's pack as a file whose members are the ones `read` gives (none for a pack the build changed
+    in memory): then the windows and the tiles are shared out to `workers` programs (default WORKERS) when there is
+    more than one window's work, each answer the same as one program's."""
     from .groundpaint import DETAIL, LODS, grid_bounds, map_bounds
     from .tmst import Tmst
     b = before.bounds
@@ -444,11 +682,29 @@ def mend_map(read, path_of, changed: dict, before, after, areas, cache=None) -> 
            min(b[3], max(x + r for x, _y, r in areas)), min(b[4], max(y + r for _x, y, r in areas)))
     if box[0] >= box[2] or box[1] >= box[3]:
         return None, []
-    filled = Filled(before, after, box)
-    if not filled.count():
+    # window by window, only where the old ground had water under the strokes: a riverbed is found within NEAR_WATER
+    # of its water, and each window's grid reaches REACH past its square, so its hollows and banks are whole there
+    jobs = _windows(before, box, areas)
+    workers = WORKERS if workers is None else workers
+    share = pack_file is not None and workers > 1 and len(jobs) > 1
+    done = []
+    if share:
+        try:
+            with _pool(_start_windows, (before.to_bytes(), after.to_bytes()), min(workers, len(jobs))) as pool:
+                done = list(pool.map(_window_job, jobs))
+        except Exception:  # noqa: BLE001 - workers that can't start: the same work in this program
+            share, done = False, []
+    if not done:
+        done = [_mend_window(before, after, *job) for job in jobs]
+    parts, filled_parts, dry = [], {}, 0
+    for wi, wj, filled, plan, d in done:  # in the windows' order: the same answer however the work was shared
+        dry += d
+        if filled is not None:
+            parts.append((plan, filled.hollow, filled.box()))
+            filled_parts[(wi, wj)] = filled
+    if not parts:
         return None, []
-    plan = plan_filled(filled)
-    fbox = filled.box()
+    beds = Riverbeds(box[0], box[1], WINDOW, filled_parts)
     mesh = read("output\\highdef.tms")
     bounds = map_bounds(mesh)
     notes, painted = [], 0
@@ -459,26 +715,47 @@ def mend_map(read, path_of, changed: dict, before, after, areas, cache=None) -> 
         own = Tmst(index, chunk)
         own.lod = lod
         own.index_path, own.chunk_path = path_of(f"output\\{lod}.tmst_pc"), path_of(f"output\\{lod}.tmst_chunk_pc")
-        tiles = mend_tiles(own, bounds, plan, filled.hollow, fbox, cache)
+        tiles = None
+        todo = [t.index for t in own.tiles if _touches(own, t, bounds, parts)]
+        if share and len(todo) > 1:
+            n = min(workers, len(todo))
+            batches = [todo[k::n] for k in range(n)]  # every n-th tile: the expensive ones spread out
+            try:
+                with _pool(_start_tiles, (pack_file, lod, parts, bounds, cache), n) as pool:
+                    tiles = {}
+                    for got in pool.map(_tile_job, batches):
+                        tiles.update(got)
+                tiles = {i: tiles[i] for i in sorted(tiles)}
+            except Exception:  # noqa: BLE001 - workers that can't start: the same work in this program
+                tiles = None
+        if tiles is None:
+            tiles = mend_tiles_parts(own, bounds, parts, cache)
         if tiles:
             changed.update(own.members(tiles))
             painted += len(tiles)
     detail = read(DETAIL)
     if detail is not None:
-        new, more = mend_detail(detail, grid_bounds(mesh), plan, filled.hollow, fbox)
+        new, more = mend_detail_parts(detail, grid_bounds(mesh), parts)
         notes += more
         if new:
             changed[path_of(DETAIL)] = new
-    area = filled.count() * filled.step * filled.step / (METRE * METRE) / 10000.0
-    notes.insert(0, f"filled riverbeds and hollows (the old ground's, raised flat): {area:.1f} ha mended from both "
-                    f"banks in {painted} picture tile(s)")
-    return filled, notes
+    ha = (METRE * METRE) * 10000.0
+    step2 = STEP * STEP
+    notes.insert(0, f"filled riverbeds (the old ground's, raised flat): {beds.count() * step2 / ha:.1f} ha mended from "
+                    f"both banks in {painted} picture tile(s)"
+                    + (f"; dry hollows raised flat left as they are ({dry * step2 / ha:.1f} ha)" if dry else ""))
+    return beds, notes
 
 
 def mend_detail(raw: bytes, bounds, plan: Plan, hollow, box, source: bytes | None = None) -> tuple[bytes, list[str]]:
     """The filled hollows mended in the close-up map too (`output\\div_map.tgv_pc`, one DXT5 picture over `bounds`,
     groundpaint.grid_bounds), all four channels, as mend_tiles; `source`: the record the banks' values are read from
     (default `raw`). Returns (the new record, notes), or (b"", notes)."""
+    return mend_detail_parts(raw, bounds, [(plan, hollow, box)], source)
+
+
+def mend_detail_parts(raw: bytes, bounds, parts, source: bytes | None = None) -> tuple[bytes, list[str]]:
+    """mend_detail for several Plans at once (`parts`, as mend_tiles_parts)."""
     tex = Tgv(raw)
     payload = tex.payload(0)
     if not tex.format.upper().startswith("DXT5") or payload[:4] != b"ZIPO":
@@ -503,13 +780,14 @@ def mend_detail(raw: bytes, bounds, plan: Plan, hollow, box, source: bytes | Non
         rgb, alpha = decoded[k]
         i = (b % 4) * 4 + a % 4
         return rgb[i] + (alpha[i],)
-    i0, i1 = max(0, math.floor((box[0] - x0) / pw)), min(w, math.ceil((box[2] - x0) / pw))
-    j0, j1 = max(0, math.floor((box[1] - y0) / ph)), min(h, math.ceil((box[3] - y0) / ph))
     byblock: dict = {}
-    for i, j, x, y in _to_fill(plan, i0, i1, j0, j1, x0, y0, pw, ph):
-        v = plan.fill_value(x, y, value, hollow)
-        if v is not None:
-            byblock.setdefault((j // 4) * nbx + i // 4, []).append(((j % 4) * 4 + i % 4, v))
+    for plan, hollow, box in parts:
+        i0, i1 = max(0, math.floor((box[0] - x0) / pw)), min(w, math.ceil((box[2] - x0) / pw))
+        j0, j1 = max(0, math.floor((box[1] - y0) / ph)), min(h, math.ceil((box[3] - y0) / ph))
+        for i, j, x, y in _to_fill(plan, i0, i1, j0, j1, x0, y0, pw, ph):
+            v = plan.fill_value(x, y, value, hollow)
+            if v is not None:
+                byblock.setdefault((j // 4) * nbx + i // 4, []).append(((j % 4) * 4 + i % 4, v))
     if not byblock:
         return b"", []
     for kb, pix in byblock.items():

@@ -137,5 +137,84 @@ class MendGridTest(unittest.TestCase):
         self.assertEqual(got, {})
 
 
+class WetMesh(FakeMesh):
+    """FakeMesh whose water (triangle list 1) covers only the squares with x below `wet_x`."""
+
+    def __init__(self, n, step, z, wet_x):
+        super().__init__(n, step, z)
+        cell = self.cells[0]
+        pos, ground = cell._pos, cell._tri
+        water = [v for t in range(0, len(ground), 3) for v in ground[t:t + 3]
+                 if max(pos[k][0] for k in ground[t:t + 3]) <= wet_x]
+
+        class Cell(FakeCell):
+            def triangles(self, k):
+                return water if k == 1 else ground
+        self.cells = [Cell(pos, ground)]
+
+
+class RiverbedsOnlyTest(unittest.TestCase):
+    """The build mends riverbeds only: the stretches of filled hollows that reach the old water (mend.riverbeds_only),
+    window by window (mend.Riverbeds); a dry dip raised flat is left as it is."""
+    m = 260.0
+
+    def test_the_old_water_is_found_from_the_mesh(self):
+        m = self.m
+        mesh = WetMesh(41, 2.5 * m, lambda x, y: 10000.0, wet_x=40 * m)
+        wet = mend.wet_bits(mesh, 0.0, 0.0, 40, 40, 2.5 * m)
+        self.assertTrue(wet[10 * 40 + 5])          # x = 13.75 m: under the water
+        self.assertFalse(wet[10 * 40 + 30])        # x = 76 m: dry
+
+    def test_only_the_stretches_reaching_the_water_are_kept(self):
+        nx, ny = 20, 4
+        filled = mend.Filled.__new__(mend.Filled)
+        filled.nx, filled.ny = nx, ny
+        # two stretches: columns 2-4 (one of its squares wet) and columns 10-12 (dry)
+        filled.bits = bytearray(1 if (2 <= k % nx <= 4 or 10 <= k % nx <= 12) else 0 for k in range(nx * ny))
+        wet = bytearray(nx * ny)
+        wet[1 * nx + 3] = 1
+        gone = mend.riverbeds_only(filled, wet)
+        self.assertEqual(gone, 3 * ny)
+        self.assertTrue(all(filled.bits[j * nx + i] for i in (2, 3, 4) for j in range(ny)))
+        self.assertFalse(any(filled.bits[j * nx + i] for i in (10, 11, 12) for j in range(ny)))
+
+    def test_the_windows_answer_as_one(self):
+        m = self.m
+        box = (60 * m, 60 * m, 140 * m, 140 * m)
+        trench = lambda depth: FakeMesh(81, 2.5 * m, lambda x, y: 10000.0 - (depth if abs(x - 100 * m) < 10 * m else 0))
+        whole = mend.Filled(trench(2600.0), trench(0.0), box)
+        beds = mend.Riverbeds(0.0, 0.0, 100 * m, {(0, 0): whole, (1, 0): whole})  # two windows, y below 100 m
+        for x, y in ((100 * m, 70 * m), (80 * m, 70 * m), (95 * m, 90 * m), (104 * m, 80 * m)):
+            self.assertEqual(beds.holds(x, y), whole.holds(x, y), (x, y))
+        self.assertTrue(beds.holds(100 * m, 70 * m))
+        self.assertFalse(beds.holds(100 * m, 120 * m))  # a window not given: nothing there
+        self.assertEqual(beds.touches(80 * m, 70 * m, 25 * m), whole.touches(80 * m, 70 * m, 25 * m))
+        self.assertEqual(beds.count(), 2 * whole.count())
+        self.assertEqual(beds.box(), whole.box())
+        self.assertIsNone(mend.Riverbeds(0.0, 0.0, 100 * m, {}).box())
+
+    def test_a_dry_dip_raised_flat_isnt_mended(self):
+        """mend_map with no water under the strokes: nothing to mend, nothing read."""
+        m = self.m
+        trench = lambda depth: WetMesh(81, 2.5 * m, lambda x, y: 10000.0 - (depth if abs(x - 100 * m) < 10 * m else 0),
+                                       wet_x=-1.0)  # no water anywhere
+        before, after = trench(2600.0), trench(0.0)
+        before.bounds = after.bounds = (0.0, 0.0, 0.0, 200 * m, 200 * m, 0.0)
+
+        def read(member):
+            raise AssertionError(f"nothing to mend, but {member} was read")
+        self.assertEqual(mend.mend_map(read, str, {}, before, after, [(100 * m, 100 * m, 40 * m)]), (None, []))
+
+
+class QuickEncoderTest(unittest.TestCase):
+    def test_a_block_comes_back_close_and_a_plain_one_exactly(self):
+        from rusemod import dxt
+        plain = [(40, 120, 60)] * 16
+        self.assertEqual(dxt.block_pixels(dxt.encode_block_quick(plain)), dxt.block_pixels(dxt.encode_block(plain)))
+        grain = [(40 + 9 * (k % 4), 110 + 6 * (k // 4), 55 + k) for k in range(16)]
+        back = dxt.block_pixels(dxt.encode_block_quick(grain))
+        self.assertLess(max(abs(a - b) for p, q in zip(grain, back) for a, b in zip(p, q)), 24)
+
+
 if __name__ == "__main__":
     unittest.main()

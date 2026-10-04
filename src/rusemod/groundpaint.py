@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import statistics
 import struct
 from dataclasses import dataclass
@@ -98,7 +99,7 @@ def _tgu1_blocks(payload: bytes, cache=None) -> bytes:
     blocks = tgu1.decode(payload)
     try:
         kept.parent.mkdir(parents=True, exist_ok=True)
-        part = kept.with_suffix(".part")
+        part = kept.with_name(f"{kept.name}.{os.getpid()}.part")  # its own per program: builds and their workers at once
         part.write_bytes(zlib.compress(blocks, 1))
         part.replace(kept)  # whole or not at all: two builds at once never read half a file
     except OSError:

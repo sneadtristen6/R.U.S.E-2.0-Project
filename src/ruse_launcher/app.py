@@ -30,6 +30,11 @@ def dropped(api: LauncherApi, window, paths) -> None:
         window.evaluate_js(f"window.dispatchEvent(new CustomEvent('mod-dropped', {{detail: {json.dumps(event)}}}))")
 
 
+def _workers() -> str:
+    from rusemod.mend import workers_start
+    return workers_start()
+
+
 def main(argv=None) -> int:
     log = startlog.begin("launcher", __version__)  # the start-up log (rusemod.startlog): written once the window is due
     log.mark("imports")
@@ -46,6 +51,7 @@ def main(argv=None) -> int:
             ("the launcher answers", lambda: f"{len(api.mod_sets())} mod set(s), {len(api.library())} mod(s) in the "
                                              f"library; {api.status()['message']}"),
             ("the launcher's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['play']!r}"),
+            ("worker programs start (a big map's riverbeds are mended by them)", _workers),
         ])
     log.mark("api")
     log.go()

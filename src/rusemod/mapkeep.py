@@ -54,6 +54,19 @@ def pack_identity(arc, path) -> list:
     return out
 
 
+def plain_file(arc) -> str | None:
+    """The file a map's pack reads its members from, when they're the file's own (a new map's: its shipped pack's);
+    None for a pack the build changed in memory (.rmod changes), whose members only this program has."""
+    base = getattr(arc, "base", None)
+    if base is not None and hasattr(arc, "pack_id"):  # a new map: the shipped pack's members
+        arc = base
+    if getattr(arc, "changed", None) or getattr(arc, "added", None):
+        return None
+    f = getattr(arc, "_file", None)
+    where = getattr(arc, "path", None) or (f.name if f is not None else None)
+    return str(where) if where and os.path.isfile(where) else None
+
+
 def key(name: str, identity: list, strokes: list, depth) -> str | None:
     """The fingerprint a map's kept ground is named by; None when the code can't be read to tell (then nothing is
     kept)."""
@@ -72,7 +85,7 @@ class _Unpickler(pickle.Unpickler):
     """Reads back only what a kept map holds: plain values, and the filled hollows (rusemod.mend)."""
 
     def find_class(self, module, name):
-        if module == "rusemod.mend" and name in ("Filled", "Gorge"):
+        if module == "rusemod.mend" and name in ("Filled", "Gorge", "Riverbeds"):
             from . import mend
             return getattr(mend, name)
         raise pickle.UnpicklingError(f"a kept map doesn't hold {module}.{name}")

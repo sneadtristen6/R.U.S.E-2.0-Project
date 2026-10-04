@@ -1402,11 +1402,12 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 # a riverbed raised flat still shows its old banks: up close the river's rock stickers and the low
                 # cover laid for it, from high up the banks painted in the picture (TESTS.md T27). Its pictures are
                 # mended from both banks here, its low cover taken off with the scenery below (T28: "purple wins")
+                from .mapkeep import plain_file
                 from .mend import mend_map
                 try:
                     filled, more = mend_map(read, lambda m, a=map_arc: a.find(m).path, changed_members, Tms(before),
                                             Tms(changed_members[GROUND["highdef"]]), [_area_of(s) for s in strokes],
-                                            cache)
+                                            cache, pack_file=plain_file(map_arc))
                 except (ValueError, KeyError, struct.error, zlib.error) as exc:
                     made["warnings"].append(f"{', '.join(ids)}: {name}: the riverbeds the terrain edits fill can't "
                                             f"be mended ({exc}): they keep their old banks' look")
@@ -1705,6 +1706,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         sunk = sunk + [f"Map Paint: what hides it up close taken off under {len(under)} stroke(s) "
                                        f"(ground stickers, low plants and stones reaching where it is at least half "
                                        f"strength; trees, buildings, cover and movement unchanged)"]
+                beds_area = []  # the filled riverbeds' clearing: the build's own, so it gives way when the map is full
                 if name in filled_hollows:
                     # a riverbed raised flat: the river's rock stickers make jagged rock on it up close (T27), and
                     # the field it becomes shows only with all its low cover gone (T28: "purple wins")
@@ -1714,20 +1716,35 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     low = low_cover(descs, set(Scenery(raw).names))
                     filled = filled_hollows[name][0]
                     fx0, fy0, fx1, fy1 = filled.box()
-                    areas = list(areas) + [EraseArea((fx0 + fx1) / 2, (fy0 + fy1) / 2, max(fx1 - fx0, fy1 - fy0) / 2,
-                                                     ("decal",), tuple(low), shape="square", by_size=True,
-                                                     mask=filled.touches)]
+                    beds_area = [EraseArea((fx0 + fx1) / 2, (fy0 + fy1) / 2, max(fx1 - fx0, fy1 - fy0) / 2,
+                                           ("decal",), tuple(low), shape="square", by_size=True, mask=filled.touches)]
                     sizes = reach_of(low)
-                    sunk = sunk + ["filled riverbeds: the ground stickers, low plants and stones reaching into them "
-                                   "taken off (trees, buildings, cover and movement unchanged)"]
                 erased_notes, erased = [], {}
-                if areas:  # the map's own scenery out first: the new objects then stay whatever the areas cover
-                    if descs is None:
+                if areas or beds_area:  # the map's own scenery out first: the new objects then stay whatever the
+                    if descs is None:  # areas cover
                         descs = descriptors(arc)
                     names = Scenery(raw).names
                     kinds = {i: descs[n].group for i, n in enumerate(names) if n in descs}
                     bridges = {i for i, n in enumerate(names) if n in descs and descs[n].bridge}
-                    raw, erased_notes, erased = erase_objects(raw, areas, kinds, bridges, sizes)
+                    try:
+                        raw_after, erased_notes, erased = erase_objects(raw, list(areas) + beds_area, kinds, bridges,
+                                                                        sizes)
+                        if beds_area:
+                            sunk = sunk + ["filled riverbeds: the ground stickers, low plants and stones reaching "
+                                           "into them taken off (trees, buildings, cover and movement unchanged)"]
+                    except SceneryEditError:
+                        if not beds_area:
+                            raise
+                        # the clearing would make the map's scenery too big (all of Blitz Twin flattened: 20.8 MB of
+                        # a 16.7 MB most, 2026-10-04): the riverbeds keep their low cover, the rest is erased as asked
+                        result.findings.append(Finding("warning", f"{', '.join(ids)}: {name}: the filled riverbeds' "
+                                                                  f"ground stickers, low plants and stones stay: taking "
+                                                                  f"them off would make the map's scenery bigger than a "
+                                                                  f"map can hold. Their pictures are mended all the "
+                                                                  f"same"))
+                        raw_after, erased_notes, erased = (erase_objects(raw, areas, kinds, bridges, sizes)
+                                                           if areas else (raw, [], {}))
+                    raw = raw_after
                 if descs is None:
                     descs = descriptors(arc)
                 lowest = _LowestPoints(game, descs)
