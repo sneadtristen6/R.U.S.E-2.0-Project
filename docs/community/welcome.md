@@ -8,6 +8,10 @@ This is the place to talk about **RUSE Launcher**, **RUSE Studio** and the mods 
 **New here?** Start with the [wiki](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki): how to play mods, how
 to make them, and what to do when something goes wrong.
 
+**About the name:** R.U.S.E. 2.0 is a placeholder. Before 1.0 we'll consult Eugen Systems, the makers of R.U.S.E.,
+and the project will take a name they're okay with. Ideas and constructive criticism:
+[What should the project be called?](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions/18)
+
 ### Where to post
 
 - 🐞 **Bug reports**: something doesn't work. The apps' **Report a problem** button opens one with your version

@@ -22,6 +22,10 @@
 way the game will before the game ever starts: anything that would break in the game is stopped first, with a note
 saying what to change. The goal: what you make works in the game every time, the first time.
 
+**About the name:** R.U.S.E. 2.0 is a placeholder. Before the full version (1.0) comes out, we'll consult Eugen
+Systems, the makers of R.U.S.E., and the project will take a name they're okay with. Name ideas and constructive
+criticism are welcome in [the name discussion](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions/18).
+
 ## Support development
 
 R.U.S.E. 2.0 is my first modding project. If you want to support development and follow the behind-the-scenes work,
