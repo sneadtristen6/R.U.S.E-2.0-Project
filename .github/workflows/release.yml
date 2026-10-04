@@ -61,4 +61,8 @@ jobs:
           (PowerShell: ``Get-FileHash $($setup.Name)``).
           "@
           $pre = if ("${{ steps.tag.outputs.app }}" -eq "studio") { "--prerelease" } else { "--latest" }  # the Studio is a preview
-          gh release create "${{ github.ref_name }}" $setup.FullName --title (($setup.BaseName -replace '-Setup-', ' ') -replace '-', ' ') --notes $notes $pre
+          # the notes go in a file: on the command line, the Studio's (32 KB with every version's) passed Windows' 32,767
+          # character limit and gh couldn't start (studio-v0.9.5, 2026-10-04)
+          $notesFile = Join-Path $env:RUNNER_TEMP "release-notes.md"
+          Set-Content -Path $notesFile -Value $notes -Encoding utf8
+          gh release create "${{ github.ref_name }}" $setup.FullName --title (($setup.BaseName -replace '-Setup-', ' ') -replace '-', ' ') --notes-file $notesFile $pre
