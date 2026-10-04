@@ -3,12 +3,15 @@ title: "What should the project be called?"
 category: General
 order: 0
 ---
-**R.U.S.E. 2.0 is a placeholder name.** Before the full version, 1.0 with all its new features, we'll consult
-**Eugen Systems**, the makers of R.U.S.E., and the project will take a name they're okay with. Until then it stays
-R.U.S.E. 2.0, as a working name only.
+**R.U.S.E. 2.0 is a working name.** The plan from the start has been to approach **Eugen Systems**, the makers of
+R.U.S.E., about the name before the full version (1.0, with all its new features), and the project will take a name
+they're okay with. Until then it stays R.U.S.E. 2.0.
 
-**We understand the name can be confusing, and that's what this discussion is for.** Copyright concerns aren't
-really the place here: this thread is about what the project should be called.
+**We've been careful from the start:** the apps never ship or share any of Eugen's files. They work from each
+player's own copy of R.U.S.E., the Steam install is never changed, and mods carry data only.
+
+**We understand the name can be confusing, and that's what this discussion is for:** what the project should be
+called.
 
 **What it has to name:** a free, fan-made toolkit for R.U.S.E. **RUSE Studio** makes mods: units, maps, missions, and
 now your own 3D models. The **RUSE Launcher** plays them. Your Steam install is never changed.
