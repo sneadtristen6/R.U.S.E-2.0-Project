@@ -20,7 +20,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from .patch import INT_RANGES, Inline, Num, Text, _walk_value
+from .model import parts_inside
+from .patch import INT_RANGES, Num, Text
 
 IDS = ("DescriptorId", "TrackingId", "AmmunitionId")
 DEBUG_NAME = "ClassNameForDebug"
@@ -60,10 +61,8 @@ def _scan(game) -> _Scan:
 
     for name, obj in game.objects.items():
         note_ids(obj)
-        for v in obj.props.values():  # ids inside owned parts count toward the highest too
-            for x in _walk_value(v):
-                if isinstance(x, Inline):
-                    note_ids(x.obj)
+        for part in parts_inside(obj):  # ids inside owned parts count toward the highest too
+            note_ids(part)
         for prop in IDS:
             v = _int(obj.props.get(prop))
             if v is not None:
