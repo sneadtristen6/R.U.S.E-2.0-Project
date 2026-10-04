@@ -22,7 +22,7 @@ Early: its tracks and wheels don't turn yet, and the gun flash and wreck are the
 Also in this update:
 
 - **Test in game** and the Launcher's **Play** start at once when nothing changed, and a build reuses what it made
-  last time (a big test mod: 213 s, then 68 s).
+  last time (a big test mod took 213 s every time; now 68 s after the first build).
 - **Delete map** for the maps you made with Duplicate map (to the Recycle Bin, where you can get them back).
 - **Erase the whole map**, and erasing big areas in seconds.
 - Roads follow ground you reshaped, and flattened riverbeds are filled from their banks. New: not yet seen in the game

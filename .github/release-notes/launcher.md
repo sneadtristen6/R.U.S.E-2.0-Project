@@ -7,7 +7,7 @@ model of their own.
 | Before | Now |
 |---|---|
 | **Play** rebuilt the whole modded copy every time, even with nothing changed (a player: "waiting 30 minutes every time"). | Nothing changed: the game starts at once. A change rebuilds, but the last copy's unchanged files are reused, so a copy on another drive than the game no longer copies every pack again. Play says how much it copied. |
-| Every build read the game's unit data afresh. | Kept between builds: a big test mod 213 s, then 68 s. |
+| Every build read the game's unit data afresh. | Kept between builds: a big test mod took 213 s every time; now the next builds after the first take 68 s. |
 | A mod's new unit had the model of the unit it copies. | Its own model from the mod (`files/models`) is in the game. **Seen in the game:** an M1 Abrams beside the Sherman. |
 | A mod's new unit with its own card crashed the game when it was built. | Fixed. **Seen in the game.** |
 | Repainted units' colours came out a little off in places. | Closer to the mod's picture. A mod with repainted units or painted ground gets a new fingerprint and join code: everyone playing together should update. |
