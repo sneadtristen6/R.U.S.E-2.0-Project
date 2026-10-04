@@ -1133,6 +1133,19 @@ every pack's id right. Its own card too (T34's way). The test mod: `D:\ruse-test
 - **Tell us:** a crash (when?), no model or a Sherman instead, black/white/garbled paint, parts in the wrong place, or
   the turret swinging off its ring.
 
+**Run 1 (owner, 2026-10-04 11:47): the game loaded, the Armor Base deployed, the M1 Abrams showed in its build menu
+with its own card, researched and was bought; the game crashed when it was built.** The crash: a read of address 0
+in the game's texture loading for its interface pictures, which asks every loaded source for the file by name and
+got none. A unit's card is read from ZZ_Win.dat's own files once the unit is on the map (all 450 of the game's cards
+are there as well as in the menu packs); the build had put the Abrams' card in the menu packs only (T34's way, which
+is why the build menu showed it). Fixed: a new unit's card is also a file of ZZ_Win.dat's own. T34's copy
+(`two-shermans`) has the same fault.
+
+**Run 2 (rebuilt 2026-10-04):** the fix, the colour fix in the texture encoder, and a second unit, **M1 Abrams B**:
+the same model with the Sherman's card, to tell the model from the card.
+1. Build **M1 Abrams B first**. A crash then is the model; none, and the model works.
+2. Then the **M1 Abrams**: its own card, now also a loose file.
+
 ## T30. Iwo Jima groundwork (2026-10-04)
 
 (First written up as T27; that number was also taken by the Blender test above, so this one is T30.)

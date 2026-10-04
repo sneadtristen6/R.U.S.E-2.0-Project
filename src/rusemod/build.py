@@ -487,7 +487,7 @@ class BuildResult:
     own_cards: dict = field(default_factory=dict)   # new units' cards: card member to add -> (its source's, the PNG)
     own_models: dict = field(default_factory=dict)  # new units' models: unit -> (its source's model, the .glb, mod id)
     model_imports: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (packs the new models go in) -> bytes
-    model_textures: dict = field(default_factory=dict)  # new members of ZZ_Win.dat (the new models' textures) -> bytes
+    new_files: dict = field(default_factory=dict)  # new members of ZZ_Win.dat (new cards, new models' textures) -> bytes
     visibility: dict = field(default_factory=dict)  # a placed type drawn up close only -> its copy (rusemod.visibility)
     fingerprint: bytes | None = None
 
@@ -2087,11 +2087,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             from .unitlook import LookError, own_cards
             try:
                 result.texture_changed.update(own_cards(text_arc, result.own_cards,
-                                                        {**result.model_changed, **result.texture_changed}, say=say))
+                                                        {**result.model_changed, **result.texture_changed}, say=say,
+                                                        loose=result.new_files))
             except LookError as exc:
                 raise BuildError(str(exc)) from None
         if result.own_models and text_arc is not None:  # new units' own models (rusemod.unitmodel)
-            from .newmap import Grown
             from .unitmodel import UnitModelError, read_mod_glb, write_unit_model
             for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
                 try:
@@ -2100,12 +2100,14 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 except (UnitModelError, ValueError, OSError, struct.error) as exc:
                     raise BuildError(f"{mod_id}: files/models/{Path(glb).name}: {exc}") from None
                 result.model_imports.update(written.changed)
-                result.model_textures.update(written.added)
+                result.new_files.update(written.added)
                 r = written.report
                 say(f"own model of {unit}: {r.get('vertices', '?')} points, {r.get('triangles', '?')} triangles in "
                     f"{r.get('draws', '?')} draw call(s), {len(written.added)} texture(s); into "
                     f"{len(written.changed)} pack(s) beside {source}")
-            text_arc = Grown(text_arc, result.model_textures)  # its textures: files of ZZ_Win.dat's own
+        if result.new_files and text_arc is not None:  # new cards and model textures: files of ZZ_Win.dat's own
+            from .newmap import Grown
+            text_arc = Grown(text_arc, result.new_files)
         zz_win_changed = {**result.text_changed, **result.script_changed, **result.model_changed,
                           **result.close_up_maps, **result.texture_changed, **result.model_imports}
         for data_path, _a, changed_members in data_packs:

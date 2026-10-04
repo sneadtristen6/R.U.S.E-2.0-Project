@@ -287,11 +287,14 @@ def mod_cards(folder: Path) -> dict:
     return {f.stem: f for f in sorted(root.glob("*.png"))}
 
 
-def own_cards(zz, cards: dict, earlier: dict | None = None, say=print) -> dict:
+def own_cards(zz, cards: dict, earlier: dict | None = None, say=print, loose: dict | None = None) -> dict:
     """{nested pack's path in ZZ_Win.dat: its new bytes} for new units' own cards ({card member to add: (its source's
     card member, the PNG)}): each picture made from the source's card (make_picture: its format, size and header) and
     added to every menu pack that holds the source's card. `earlier`: members other build steps already changed
-    (path -> bytes), the source's card (if a mod repainted it too) and the packs taken from there."""
+    (path -> bytes), the source's card (if a mod repainted it too) and the packs taken from there. `loose` (a dict)
+    gets each card as a file of ZZ_Win.dat's own too ({member: bytes}): all 450 of the game's cards are there as well
+    as in the menu packs, and the game reads them there once a unit is on the map (T35, 2026-10-04: an Abrams with
+    its card only in the menu packs showed in the build menu and crashed the game when built)."""
     from .unitpacks import archive_with
     before = {k.lower().replace("/", "\\"): v for k, v in (earlier or {}).items()}
     made: dict = {}  # source member (lower) -> {new member: bytes}
@@ -310,6 +313,8 @@ def own_cards(zz, cards: dict, earlier: dict | None = None, say=print) -> dict:
         except (ValueError, LookError) as exc:
             raise LookError(f"{png}: {exc}") from None
         made.setdefault(e.path.lower(), {})[new] = data
+        if loose is not None:
+            loose[new] = data
         say(f"card {new}: its own, made from {source}")
     out: dict = {}
     for e in zz.entries:

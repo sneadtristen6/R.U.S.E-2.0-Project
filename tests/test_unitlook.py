@@ -281,10 +281,12 @@ class Texture(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             pic = Path(d, "Descriptor_Unit_R2_X.png")
             pic.write_bytes(png([[(200, 30, 30)] * 8] * 4))
-            said = []
-            out = unitlook.own_cards(zz, {new: (folder + "test.tgv", pic)}, say=said.append)
+            said, loose = [], {}
+            out = unitlook.own_cards(zz, {new: (folder + "test.tgv", pic)}, say=said.append, loose=loose)
             self.assertEqual(sorted(p.rsplit("\\", 1)[-1] for p in out), ["menuus.ppk"])
             inner = Edat(out[next(iter(out))])
+            # a file of ZZ_Win.dat's own too, like the game's cards: read there once the unit is on the map (T35 crash)
+            self.assertEqual(loose, {new: bytes(inner.read(inner.entry(new)))})
             made = Tgv(bytes(inner.read(inner.entry(new))))
             self.assertEqual((made.format, made.width, made.height, made.codec, made.flag), ("DXT1_LIN", 8, 4, "ZIPO", 1))
             # (200, 30, 30) in 5-6-5 bits: 24, 7, 4 -> (198, 28, 33)
