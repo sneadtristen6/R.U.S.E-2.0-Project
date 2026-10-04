@@ -571,6 +571,19 @@ def _coverage(stroke, px: float, py: float, pw: float, ph: float) -> float:
     return total / 9
 
 
+def _quick_round(stroke, pw: float, ph: float) -> tuple[float, float, float] | None:
+    """(x, y, r²) for a stroke whose coverage paint_strokes works out in place, the same sums as _coverage: a round,
+    soft-edged brush of the soft shape (Map Paint's own) at least two pixels across. None for any other."""
+    if (stroke.footprint().shape != "round" or stroke.edge == "hard" or stroke.kind.shape != "soft"
+            or not stroke.radius >= 2 * max(pw, ph)):
+        return None
+    f = stroke.footprint()
+    return f.x, f.y, f.r * f.r
+
+
+NEAR = 0.49  # within this of a colour in every channel, a pixel rounds to that colour however much more of it is laid
+
+
 def _solid_over(stroke, colour, x0: float, y0: float, x1: float, y1: float) -> bool:
     """Whether `stroke` paints the whole box (x0, y0)-(x1, y1) its one colour: a full-opacity, hard-edged colour stroke
     whose full-strength part (out to HARD_EDGE) holds all four corners. Every footprint (round, square, line) is convex,
@@ -623,26 +636,32 @@ def paint_clearing(strokes: list, low: list[str]) -> list:
     return out
 
 
-def paint_strokes(store: Tmst, bounds, strokes: list, cache=None) -> dict[int, bytes]:
+def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None) -> dict[int, bytes]:
     """The Map Paint `strokes` laid on every tile of `store` (over `bounds`, map_bounds) they touch, at every level, in
     order; only the 4x4 blocks they touch are encoded again. A block a solid stroke covers whole (_solid_over) takes
     its colour at once, and only the strokes after it are worked out pixel by pixel there, so a ginormous patch costs
-    about its edge. Returns {tile index: new tile record} for Tmst.members. `cache`: _tgu1_blocks's."""
+    about its edge. Returns {tile index: new tile record} for Tmst.members. `cache`: _tgu1_blocks's; `only`: the
+    tile indices to paint (a worker's share), each painted as it is among all of them."""
     from .brush import colour_rgb
     if not strokes:
         return {}
     boxes = [s.box() for s in strokes]  # x min, x max, y min, y max
     colours = [colour_rgb(s.colour) if s.kind.kind == "paint" else None for s in strokes]
+    # the strokes that can cover a block whole (_solid_over's own first look, made once)
+    hard = [c is not None and s.weight >= 1.0 and s.edge == "hard" for s, c in zip(strokes, colours)]
     solid_blocks: dict = {}  # colour -> its 4x4 block, encoded once
     samplers: dict = {}
     out = {}
     for tile in store.tiles:
+        if only is not None and tile.index not in only:
+            continue
         rx0, ry0, rx1, ry1 = _tile_rect(store, tile, bounds)
         near = [k for k, (bx0, bx1, by0, by1) in enumerate(boxes) if bx0 < rx1 and bx1 > rx0 and by0 < ry1 and by1 > ry0]
         if not near:
             continue
         w, h = _dims(store, tile)  # never assumed: the overview tile is 256 on Blitz, 1024 x 512 on D-Day
         pw, ph = (rx1 - rx0) / w, (ry1 - ry0) / h
+        quick = {k: _quick_round(strokes[k], pw, ph) for k in near}
         blocks, painted = None, False
         nx = w // 4
         for by in range(h // 4):
@@ -662,8 +681,8 @@ def paint_strokes(store: Tmst, bounds, strokes: list, cache=None) -> dict[int, b
                 if blocks is None:
                     blocks = _blocks(store, tile, cache)[0]
                 kb = by * nx + bx
-                solid = next((k for k in reversed(here)
-                              if _solid_over(strokes[k], colours[k], cx0, cy0, cx0 + 4 * pw, cy0 + 4 * ph)), None)
+                solid = next((k for k in reversed(here) if hard[k]
+                              and _solid_over(strokes[k], colours[k], cx0, cy0, cx0 + 4 * pw, cy0 + 4 * ph)), None)
                 if solid is not None:  # the block is that stroke's colour; only the strokes after it are left
                     here = [k for k in here if k > solid]
                     if not here:
@@ -678,26 +697,56 @@ def paint_strokes(store: Tmst, bounds, strokes: list, cache=None) -> dict[int, b
                 else:
                     pixels = dxt.block_pixels(bytes(blocks[8 * kb:8 * kb + 8]))
                     changed = False
+                # from each stroke on, the one colour all the rest lay at most full strength (None when they differ,
+                # or one is a stamp or over full strength)
+                tail = [None] * len(here)
+                for j in range(len(here) - 1, -1, -1):
+                    c = colours[here[j]]
+                    if (c is not None and 0.0 <= strokes[here[j]].weight <= 1.0
+                            and (j == len(here) - 1 or tail[j + 1] == c)):
+                        tail[j] = c
                 for i in range(16):
                     px, py = cx0 + (i % 4 + 0.5) * pw, cy0 + (i // 4 + 0.5) * ph
                     r, g, b = pixels[i]
                     touched = False
-                    for k in here:
+                    close = None  # a colour the pixel is within NEAR of, after laying it
+                    for j, k in enumerate(here):
+                        if close is not None and tail[j] == close:
+                            # the rest only lay more of the colour it's nearly at: each takes it nearer (by a share of
+                            # the way, at most all of it), so it rounds to that colour as it would after all of them
+                            break
                         s = strokes[k]
-                        a = _coverage(s, px, py, pw, ph) * s.weight
+                        c = colours[k]
+                        q = quick[k]
+                        if q is not None:  # _coverage's own sums, worked out here (most of the build's paint time)
+                            ox, oy = px - q[0], py - q[1]
+                            t2 = (ox * ox + oy * oy) / q[2]
+                            if t2 >= 1.0:
+                                continue
+                            u = 1.0 - t2
+                            a = u * u * s.weight
+                        else:
+                            a = _coverage(s, px, py, pw, ph) * s.weight
                         if a <= 0.0:
                             continue
-                        c = colours[k]
                         if c is None:  # a stamp: the map's own picture at the same level, where it copies from
                             if tile.level not in samplers:
                                 samplers[tile.level] = _picture_sampler(store, bounds, tile.level, cache)
                             c = samplers[tile.level](px + s.sx, py + s.sy)
                             if c is None:
                                 continue
+                            r, g, b = r + (c[0] - r) * a, g + (c[1] - g) * a, b + (c[2] - b) * a
+                            touched, close = True, None
+                            continue
                         r, g, b = r + (c[0] - r) * a, g + (c[1] - g) * a, b + (c[2] - b) * a
                         touched = True
+                        close = c if (-NEAR < r - c[0] < NEAR and -NEAR < g - c[1] < NEAR
+                                      and -NEAR < b - c[2] < NEAR) else None
                     if touched:
-                        new = (max(0, min(255, round(r))), max(0, min(255, round(g))), max(0, min(255, round(b))))
+                        nr, ng, nb = round(r), round(g), round(b)
+                        new = (nr if 0 <= nr <= 255 else 0 if nr < 0 else 255,
+                               ng if 0 <= ng <= 255 else 0 if ng < 0 else 255,
+                               nb if 0 <= nb <= 255 else 0 if nb < 0 else 255)
                         if new != pixels[i]:
                             pixels[i] = new
                             changed = True
@@ -772,15 +821,84 @@ def stamp_detail(raw: bytes, bounds, strokes: list) -> tuple[bytes, list[str]]:
     return _tgv_with_payload(raw, zipo_pack(bytes(blocks))), [f"close-up map: {painted} block(s) copied with the stamps"]
 
 
-def paint_ground(read, path_of, strokes: list, cache=None) -> tuple[dict, list[str]]:
+def paint_inputs(read) -> str:
+    """A fingerprint of everything paint_ground reads from a map (`read`, the build's chain): the ground mesh (where
+    the tiles lie), both tile sets and the close-up map; for keeping the painted pictures between builds."""
+    import hashlib
+    h = hashlib.blake2b(digest_size=20)
+    for member in ["output\\highdef.tms", DETAIL] + [f"output\\{lod}.{kind}" for lod in LODS
+                                                     for kind in ("tmst_pc", "tmst_chunk_pc")]:
+        raw = read(member)
+        h.update(f"{member}\0{-1 if raw is None else len(raw)}\0".encode())
+        if raw is not None:
+            h.update(raw)
+    return h.hexdigest()
+
+
+# --- Map Paint shared out to worker programs (rusemod.mend's way): each tile's answer is the same as one program's ---
+_WORK: dict = {}  # in a worker: its tile set and strokes (set by _start_paint)
+SHARE_FROM = 5    # tiles to paint before the work is shared out: fewer take seconds in one program
+
+
+def _start_paint(index_file: str, chunk_file: str, bounds, strokes: list, cache) -> None:
+    import mmap
+    with open(index_file, "rb") as f:
+        index = f.read()
+    held = open(chunk_file, "rb")  # (kept open with its view while the worker lives)
+    chunk = mmap.mmap(held.fileno(), 0, access=mmap.ACCESS_READ)
+    _WORK.update(store=Tmst(index, chunk), bounds=bounds, strokes=strokes, cache=cache, held=held)
+
+
+def _paint_job(indices: list) -> dict:
+    return paint_strokes(_WORK["store"], _WORK["bounds"], _WORK["strokes"], _WORK["cache"], only=set(indices))
+
+
+def _paint_tiles(store: Tmst, bounds, strokes: list, cache, workers: int, alone: list) -> dict[int, bytes]:
+    """paint_strokes on a tile set, its tiles shared out to `workers` programs when there are SHARE_FROM or more to
+    paint, in small runs so none waits on another; put back in the set's order. The workers read the set from a file
+    written once (in `cache`, the build's folder, when given). Workers that can't start: the same work in this program,
+    and why goes in `alone`."""
+    import tempfile
+    from .mend import _pool
+    boxes = [s.box() for s in strokes]
+    todo = []
+    for tile in store.tiles:
+        rx0, ry0, rx1, ry1 = _tile_rect(store, tile, bounds)
+        if any(bx0 < rx1 and bx1 > rx0 and by0 < ry1 and by1 > ry0 for bx0, bx1, by0, by1 in boxes):
+            todo.append(tile.index)
+    if workers > 1 and len(todo) >= SHARE_FROM:
+        try:
+            if cache is not None:
+                Path(cache).mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory(prefix="paint-", dir=cache) as folder:
+                index_file, chunk_file = os.path.join(folder, "index"), os.path.join(folder, "chunk")
+                with open(index_file, "wb") as f:
+                    f.write(store.index)
+                with open(chunk_file, "wb") as f:
+                    f.write(store.chunk)
+                runs = [todo[k:k + 4] for k in range(0, len(todo), 4)]
+                got: dict = {}
+                with _pool(_start_paint, (index_file, chunk_file, bounds, strokes, cache),
+                           min(workers, len(runs))) as pool:
+                    for part in pool.map(_paint_job, runs):
+                        got.update(part)
+            return {i: got[i] for i in todo if i in got}
+        except Exception as exc:  # noqa: BLE001 - workers that can't start: the same work in this program
+            alone.append(f"{type(exc).__name__}: {exc}")
+    return paint_strokes(store, bounds, strokes, cache)
+
+
+def paint_ground(read, path_of, strokes: list, cache=None, workers: int | None = None) -> tuple[dict, list[str]]:
     """({member: new bytes}, notes): the Map Paint `strokes` laid on both tile sets of a map pack (paint_strokes) and,
     for the stamps, its close-up map (stamp_detail). `read(name)` gives a member's bytes (the build's chain) or None,
-    `path_of(name)` its full path in the pack; `cache`: _tgu1_blocks's."""
+    `path_of(name)` its full path in the pack; `cache`: _tgu1_blocks's. The tiles are shared out to `workers` programs
+    (default mend.WORKERS; a map painted all over has thousands), each answer the same as one program's."""
+    from .mend import WORKERS
     mesh = read("output\\highdef.tms")
     if mesh is None:
         raise PaintError("the map has no ground mesh to place the paint on")
     bounds = map_bounds(mesh)
-    out, notes = {}, []
+    out, notes, alone = {}, [], []
     for lod in LODS:
         index, chunk = read(f"output\\{lod}.tmst_pc"), read(f"output\\{lod}.tmst_chunk_pc")
         if index is None or chunk is None:
@@ -788,10 +906,12 @@ def paint_ground(read, path_of, strokes: list, cache=None) -> tuple[dict, list[s
         store = Tmst(index, chunk)
         store.lod = lod
         store.index_path, store.chunk_path = path_of(f"output\\{lod}.tmst_pc"), path_of(f"output\\{lod}.tmst_chunk_pc")
-        tiles = paint_strokes(store, bounds, strokes, cache)
+        tiles = _paint_tiles(store, bounds, strokes, cache, WORKERS if workers is None else workers, alone)
         if tiles:
             out.update(store.members(tiles))
         notes.append(f"{lod}: {len(tiles)} tile(s) painted")
+    if alone:
+        notes.append(f"painted on one core: the worker programs couldn't start ({alone[0]})")
     detail = read(DETAIL)
     if detail is not None and any(s.kind.kind == "stamp" for s in strokes):
         marked, more = stamp_detail(detail, grid_bounds(mesh), strokes)

@@ -277,9 +277,51 @@ def paint_strokes_of(s, made):
     return paint_strokes(s, BOUNDS, made)
 
 
+LAYERS = [{"brush": "paint", "x": 150.0 + 90.0 * (k % 7), "y": 120.0 + 70.0 * (k // 7), "radius": 260.0,
+           "colour": "#0010d2" if k % 5 else "#e61e1e", "weight": 1.0 if k % 3 else 0.6} for k in range(21)]
+
+
 class MapPaint(unittest.TestCase):
     """The Map Paint tab's strokes (PLAN §15): a colour, or the map's own ground copied from another spot, laid on the
     ground's picture at every level, each at its opacity times its brush's fall-off."""
+
+    def test_the_quick_sums_and_skipping_a_colour_already_reached_change_no_pixel(self):
+        """Many soft layers of one colour (the owner's whole map painted over): the round strokes' fall-off worked out
+        in place, and the layers skipped once a pixel is within NEAR of their colour, give the same tiles as the plain
+        sums with every layer laid."""
+        from unittest import mock
+
+        import rusemod.groundpaint as gp
+        layers = strokes(*LAYERS)
+        quick = gp.paint_strokes(two_colour_store(), BOUNDS, layers)
+        with mock.patch.object(gp, "_quick_round", lambda *a: None), mock.patch.object(gp, "NEAR", -1.0):
+            plain = gp.paint_strokes(two_colour_store(), BOUNDS, layers)
+        self.assertEqual(sorted(quick), sorted(plain))
+        self.assertTrue(quick)
+        for i in plain:
+            self.assertEqual(quick[i], plain[i], i)
+
+    def test_shared_out_the_tiles_are_the_same_as_one_programs(self):
+        """paint_ground's workers: the same tiles as one program, in the set's order; workers that can't start leave
+        the work to this program, and a note says so."""
+        from unittest import mock
+
+        import rusemod.groundpaint as gp
+        layers = strokes(*LAYERS)
+        one = gp.paint_strokes(two_colour_store(), BOUNDS, layers)
+        self.assertGreaterEqual(len(one), gp.SHARE_FROM)
+        alone: list = []
+        shared = gp._paint_tiles(two_colour_store(), BOUNDS, layers, None, 2, alone)
+        self.assertEqual(alone, [])
+        self.assertEqual(list(shared), list(one))
+        self.assertEqual(shared, one)
+
+        def no_pool(*_args):
+            raise OSError("no programs here")
+        with mock.patch("rusemod.mend._pool", no_pool):
+            again = gp._paint_tiles(two_colour_store(), BOUNDS, layers, None, 2, alone)
+        self.assertEqual(again, one)
+        self.assertEqual(alone, ["OSError: no programs here"])
 
     def test_what_hides_it_up_close_goes_where_it_is_at_least_half_strength(self):
         """TESTS.md T21: only with the stickers, low plants and stones taken off does paint show near the camera; the

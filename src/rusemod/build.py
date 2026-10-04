@@ -1844,12 +1844,22 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 except KeyError:
                     return None
                 return done.get(e.path) or bytes(a.read(e))
-            from .groundpaint import DETAIL, PaintError, paint_ground
-            try:
-                painted, notes = paint_ground(read_map, lambda m, a=map_arc: a.find(m).path, strokes, cache)
-            except (PaintError, ValueError, KeyError, struct.error, zlib.error) as exc:
-                result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the paint can't be laid ({exc})"))
-                continue
+            from . import mapkeep
+            from .groundpaint import DETAIL, PaintError, paint_ground, paint_inputs
+            # the same paint on the same ground as an earlier build: its pictures from the build cache (a map painted
+            # all over takes many minutes), kept like a reshaped map (rusemod.mapkeep)
+            paint_k = mapkeep.key(name, ["paint", paint_inputs(read_map)], strokes, None) if cache is not None else None
+            kept = mapkeep.read(cache, paint_k)
+            if kept is not None and isinstance(kept.get("notes"), list):
+                painted, notes = kept["members"], kept["notes"]
+            else:
+                try:
+                    painted, notes = paint_ground(read_map, lambda m, a=map_arc: a.find(m).path, strokes, cache)
+                except (PaintError, ValueError, KeyError, struct.error, zlib.error) as exc:
+                    result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the paint can't be laid "
+                                                            f"({exc})"))
+                    continue
+                mapkeep.write(cache, paint_k, {"members": painted, "notes": notes})
             changed_members.update(painted)
             say(f"paint: {name}, from {', '.join(ids)}: {len(strokes)} stroke(s) on the ground's picture")
             for note in notes:
