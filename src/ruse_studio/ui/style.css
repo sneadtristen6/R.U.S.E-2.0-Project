@@ -208,6 +208,12 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .menu-picks select:disabled { opacity: 0.5; }
 .new-unit .actions { display: flex; gap: 8px; }
 .new-unit .actions button { padding: 6px 14px; font-size: 14px; }
+/* a new unit's own model (app.js modelBox) */
+.model-own { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.model-own h3 { margin: 0; font-size: 14px; }
+.model-own p { margin: 0; }
+.model-own .actions { flex-wrap: wrap; align-items: center; }
+.model-own input.model-size { width: 5em; }
 .unit-list button.edited .name { color: var(--accent); }
 
 .test-panel { position: relative; border-top: 1px solid var(--line); background: #071120; }

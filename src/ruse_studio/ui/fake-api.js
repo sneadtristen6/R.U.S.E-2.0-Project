@@ -479,8 +479,13 @@
     return { models: ["ww2\\res3d\\units\\fake\\" + address.split("/").pop().toLowerCase() + "lod0.ase2ndfbin"],
              textures: [pic], painted: fakePainted.has(address) ? [pic] : [], download: "https://www.blender.org/download/",
              blender: mode === "noblender" ? "" : "C:\\Program Files\\Blender Foundation\\Blender 4.5\\blender.exe",
-             opened: fakeLooks.has(address) };
+             opened: fakeLooks.has(address), new_unit: mine().some((n) => address === newAddress(n.id)),
+             own_model: fakeModels.get(address) || null };
   }
+  const fakeModels = new Map();  // a new unit's own model (model_import): what the report says
+  const FAKE_IMPORT = { file: "Tank Abrams.3ds", vertices: 17122, triangles: 13828, draws: 5, missing: [],
+                        parts: { Main_Body: "hull", Main_Turre: "turret", Main_Barre: "gun", Minigun: "turret",
+                                 Main_Wheel: "hull", Track: "hull" } };
   // a made-up tank for the 3D preview (three boxes with a striped picture), as a .gltf in a data: address; its paint
   // (after Bring back) is the same picture in red. ?preview=<url of a .glb> shows that model instead.
   const fakeShot = (base, stripe) => {
@@ -1046,6 +1051,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"dup_kind": "What kind of new map", "dup_kind_battles": "Battles map", "dup_kind_battles_what": "Played in BATTLES: skirmish against the computer, and online with players who have it. Listed next to the original. Seen in the game.", "dup_kind_operation": "Operation", "dup_kind_operation_what": "A new Operation, at the end of OPERATIONS: the original's mission, briefing and objectives, on your copy of the map. Seen in the game.", "dup_kind_campaign": "Campaign chapter", "dup_kind_campaign_what": "A new chapter, at the end of the campaign: the original chapter's mission, cutscenes and dialog, on your copy of the map. The game opens a chapter once the one before it is finished. Not yet tried in the game.", "dup_kind_none": "This map has none."});
   // Duplicate map (words.toml duplicate_map, dup_*, map_copy_of)
   Object.assign(words.us, {"duplicate_map": "Duplicate map", "tip_duplicate_map": "Make a new map from this one: a full copy with a name of its own, as a Battles map, an Operation or a campaign chapter. You then change the copy like any map.", "dup_lead": "Makes a new map: a full copy of {map} with a name of its own, in the game's menus next to the original. Everything you change on the copy (ground, buildings, roads, starting points, players) is the copy's alone: {map} stays as it is.", "dup_how": "How it works", "dup_how_own": "The copy gets its own map file, its own place in the game's menus and its name in every language. Its ids come from its name, so every PC with your map changes gets the very same map, and players who have it can play it together online.", "dup_how_edits": "Your changes to {map} so far come along, so the copy starts as you see it now.", "dup_how_where": "It's saved in your map changes ({folder}); Test in game and Export… take it along like any other change. Ranked games don't offer it.", "dup_how_new": "No map changes is picked, so a new one is made for it, named after it; Test in game and Export… take it along like any other change. Ranked games don't offer it.", "dup_how_tested": "New in this version and still early: tried in the game with 101 new maps at once, each listed and playing its own ground.", "dup_name": "Name in the menus", "dup_file": "Its files and folder: {file}", "dup_long": "Names over 35 characters get cut off in the game's menus.", "dup_entry": "Which one to copy", "dup_go": "Duplicate", "dup_done": "{name}: a new map, a copy of {map}. Change it like any map; Test in game plays it.", "map_copy_of": "new map · copy of {map}"});
+  // a new unit's own model (words.toml model_*, tip_model_*)
+  Object.assign(words.us, {"model_title": "Its own model", "model_how": "It uses the model of the unit it copies. Import a 3D model (.3ds, or .glb from Blender and most 3D tools) to give it one of its own: it's fitted to that unit's length (times Size), its turret on that unit's turret, and turns and drives the same way.", "model_import": "Import model…", "model_import_again": "Import another…", "tip_model_import": "Pick a .3ds (with its pictures beside it, or in the folder above) or a .glb. It's fitted to the copied unit and saved in your mod; Test in game shows it.", "model_size": "Size", "tip_model_size": "Its length over the copied unit's: 1 is as long; an M1 Abrams over a Sherman is 1.36.", "model_importing": "Fitting the model to the unit…", "model_done": "{file} is now this unit's model. Click Test in game to see it.", "model_own": "From {file}: {points} points, {triangles} triangles.", "model_turret": "Turning with the turret: {parts}. The rest moves with the hull.", "model_missing": "Pictures not found: {names}. Those parts show one flat colour. Put the pictures beside the model (or the folder above it) and import it again.", "model_remove": "Use the copied unit's model", "tip_model_remove": "Take its own model out of the mod: it looks like the unit it copies again."});
   // Delete map (words.toml delete_map, tip_delete_map, really_delete_map, map_deleted)
   Object.assign(words.us, {"delete_map": "Delete map", "tip_delete_map": "Take this new map out of your map changes, with everything changed on it. Its folder goes to the Recycle Bin, so it can be put back from there. The game's own maps can't be deleted.", "really_delete_map": "Delete {name}? Everything changed on it goes to the Recycle Bin with it.", "map_deleted": "{name} was deleted: its folder is in the Recycle Bin, if you want it back."});
   const exported = { path: "C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod", file: "sherman-test-0.1.0.rusemod",
@@ -1282,6 +1289,13 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       unit: async (address, lang, via) => unit(address, lang, via),
       // a unit's look (?fake=noblender: Blender not found): every unit has one made-up model and two pictures
       look: async (address) => fakeLook(address),
+      model_import: async (address, file, size) => {
+        if (!fakeLook(address).new_unit) throw new Error("Only a new unit made in this mod can get a model of its own: copy the unit first.");
+        await new Promise((r) => setTimeout(r, 400));
+        fakeModels.set(address, { ...FAKE_IMPORT, scale: 2.46 * (size || 1) });
+        return { model: fakeModels.get(address), ...fakeLook(address) };
+      },
+      model_import_remove: async (address) => { fakeModels.delete(address); return fakeLook(address); },
       look_open: async (address) => {
         if (mode === "noblender") throw new Error("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use Choose Blender… to show the Studio where blender.exe is.");
         fakeLooks.add(address);

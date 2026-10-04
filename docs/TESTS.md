@@ -1110,6 +1110,29 @@ flipped and tinted red. Read back from the copy. `D:\RUSE-Instances\two-shermans
 - **Pass:** the Sherman's card as always, the Tall Sherman's red and facing the other way.
 - **Tell us:** the Tall Sherman with no picture (a blank or missing card), still the Sherman's, or a crash.
 
+## T35. The first imported model: an M1 Abrams (2026-10-04)
+
+The model importer's first test. A free M1 Abrams model (a .3ds with its .tga pictures, from a free-model site; test
+only, never shipped) fitted to the Sherman by `rusemod.modelin` (its parts named hull, turret, barrel...; facing the
+way its gun points; 1.36 times the Sherman's length, the real ratio; its turret ring on the Sherman's turret point)
+and written as the mod's `files/models/Descriptor_Unit_R2_M1_Abrams.glb`. The build gives the new unit (a copy of the
+Sherman, "M1 Abrams") that model: 17,122 points, 13,828 triangles, 5 draw calls (one per picture) in the four mesh
+packs that hold the Sherman's; the Sherman's skeleton under the new name in both skeleton packs; its 4 pictures as new
+textures loose in ZZ_Win.dat (DXT5, every level), each with a stand-in in the four stand-in packs that hold the
+Sherman's (keyed by the CRC of its name). Every game model, stand-in and texture in those packs read back unchanged;
+every pack's id right. Its own card too (T34's way). The test mod: `D:\ruse-test-mods\abrams` (with the cheat mod).
+`D:\RUSE-Instances\abrams`.
+
+1. Skirmish as the US, Armor Base: the M1 Abrams with its own card (the Abrams on a desert backdrop).
+2. Build one, look at it up close and far off, move it, let it fight.
+- **Pass:** the Abrams' shape and desert paint; bigger than a Sherman; its turret and gun turn to aim; it drives and
+  fires.
+- **Known, not a fail:** its wheels and tracks don't turn (they ride on the hull bone yet); the gun's flash shows
+  where the Sherman's muzzle is (part way along the Abrams' longer gun); its wreck is the Sherman's; no side colour on
+  it.
+- **Tell us:** a crash (when?), no model or a Sherman instead, black/white/garbled paint, parts in the wrong place, or
+  the turret swinging off its ring.
+
 ## T30. Iwo Jima groundwork (2026-10-04)
 
 (First written up as T27; that number was also taken by the Blender test above, so this one is T30.)

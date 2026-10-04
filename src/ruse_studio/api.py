@@ -2804,6 +2804,62 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         mod = self._mod_dir()
         return mod / CARDS / f"{_tail(unit.target)}.png" if unit is not None and mod is not None else None
 
+    def _own_model_file(self, address: str) -> Path | None:
+        """A new unit's own model in the current mod (files/models/<its name>.glb, rusemod.unitmodel), whether made yet
+        or not; None for the game's own units."""
+        from rusemod.unitmodel import MODELS
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            return None
+        unit = edits.new_unit_of(address) if edits else None
+        mod = self._mod_dir()
+        return mod / MODELS / f"{_tail(unit.target)}.glb" if unit is not None and mod is not None else None
+
+    def model_import(self, address: str, file: str | None = None, size: float = 1.0) -> dict:
+        """Give a new unit a model of its own: `file` (a .3ds with its pictures beside it, or a .glb; asked for when
+        not given) fitted to the model of the unit it copies (its length times `size`, its turret on the copy's
+        turret point) and saved as the mod's files/models/<the unit's name>.glb, which the build writes into the game
+        beside the copied model. Returns {"model": what was made (parts, counts, pictures, "missing"), **look()}."""
+        from rusemod.modelin import ModelError
+        from rusemod.unitmodel import import_model
+        target = self._own_model_file(address)
+        if target is None:
+            # not a game rule: the Studio gives models only to the units a mod makes (a game unit's stays the game's)
+            raise StudioError("Only a new unit made in this mod can get a model of its own: copy the unit first.")
+        if file is None:
+            if self._window is None:
+                return {"model": None, **self.look(address)}
+            file = pick_file(self._window, ("3D model (*.3ds;*.glb)",))
+            if not file:
+                return {"model": None, **self.look(address)}
+        try:
+            size = float(size)
+        except (TypeError, ValueError):
+            raise StudioError("The size is a number: 1 is as long as the unit it copies.") from None
+        if not 0.2 <= size <= 5:
+            raise StudioError("Give a size from 0.2 to 5 (1 is as long as the unit it copies).")
+        found = [m for m in self._look_models(address)[0] if "_dest" not in m.lower()]
+        if not found:
+            raise StudioError("The unit this one copies has no 3D model to fit a new one to.")
+        try:
+            report = import_model(self._game(), found[0], Path(file), target, size=size)
+        except (ModelError, OSError, ValueError) as exc:
+            raise StudioError(f"{Path(file).name}: {exc}") from None
+        report["file"] = Path(file).name
+        record = target.with_suffix(".json")
+        record.write_text(json.dumps({"from": str(file), "size": size, "report": report}, indent=1), encoding="utf-8")
+        return {"model": report, **self.look(address)}
+
+    def model_import_remove(self, address: str) -> dict:
+        """Take a new unit's own model out of the mod: it shows the model of the unit it copies again."""
+        target = self._own_model_file(address)
+        if target is not None:
+            with self._saving:
+                target.unlink(missing_ok=True)
+                target.with_suffix(".json").unlink(missing_ok=True)
+        return self.look(address)
+
     def _card_view(self, address: str) -> dict | None:
         """The card as the unit page shows it: {"texture", "width", "height", "url": the picture now (the mod's or the
         game's, a copy in the cache), "own": whether the mod has its own}; None when the unit has no card. A new unit's
@@ -2930,8 +2986,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         mod = self._mod_dir()
         painted = sorted(set(textures) & set(mod_textures(mod))) if mod else []
         blender = self._blender()
+        own = self._own_model_file(address)
+        own_model = None
+        if own is not None and own.is_file():
+            try:
+                own_model = json.loads(own.with_suffix(".json").read_text(encoding="utf-8")).get("report") or {}
+            except (OSError, ValueError):
+                own_model = {}
         return {"models": found, "textures": textures, "painted": painted, "blender": str(blender or ""),
-                "download": DOWNLOAD, "opened": (self._look_folder(address) / LOOK_FILE).is_file()}
+                "download": DOWNLOAD, "opened": (self._look_folder(address) / LOOK_FILE).is_file(),
+                "new_unit": own is not None, "own_model": own_model}
 
     def look_open(self, address: str) -> dict:
         """Write the unit's models with their pictures into its work folder and open them in Blender, ready to paint
@@ -3015,6 +3079,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no models to show.")
         found, textures = self._look_models(address)
+        own = self._own_model_file(address)
+        if own is not None and own.is_file():  # its own model (files/models): shown as the mod has it
+            st = own.stat()
+            name = hashlib.sha1(f"{own}|{st.st_size}|{st.st_mtime_ns}".encode()).hexdigest()[:16] + ".glb"
+            copy = self.cache_dir / "units" / "own" / name
+            if not copy.is_file():
+                copy.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(own, copy)
+            return {"models": [{"url": f"cache/units/own/{name}", "name": own.stem}], "paint": {},
+                    "card": self._card_view(address)}
         st = find_pack(game, "ZZ_Win.dat").stat()
         build = f"{st.st_size}-{int(st.st_mtime)}-v{self.PREVIEW_VERSION}"  # a new game build makes them again
         out = self.cache_dir / "units" / build

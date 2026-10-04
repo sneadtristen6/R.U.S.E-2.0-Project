@@ -1231,10 +1231,54 @@ function lookBox(u, brought) {
     if (info.painted && info.painted.length) {
       parts.push(el("p", { className: "small", textContent: fill(w.look_painted, { n: info.painted.length }) }));
     }
+    if (info.new_unit && state.mod) parts.push(modelBox(address, info, draw, brought));
     body.className = "new-unit";
     body.replaceChildren(...parts);
   };
   api().look(address).then(draw).catch((err) => { body.textContent = (err && err.message) || String(err); });
+  return box;
+}
+
+// --- a new unit's own model (api.model_import, model_import_remove; rusemod.modelin, rusemod.unitmodel): a .3ds or
+// .glb from any 3D tool, fitted to the copied unit (its length times Size, its turret on the copy's turret point) and
+// kept in the mod as files/models/<the unit's name>.glb; the build puts it in the game beside the copied model ---
+function modelBox(address, info, draw, changed) {
+  const w = state.words;
+  const own = info.own_model;
+  const size = el("input", { type: "number", min: "0.2", max: "5", step: "0.05", value: "1", className: "model-size",
+    title: w.tip_model_size });
+  const pick = el("button", { type: "button", textContent: own ? w.model_import_again : w.model_import,
+    title: w.tip_model_import });
+  pick.addEventListener("click", async () => {
+    pick.disabled = true;
+    say(w.model_importing);
+    try {
+      const r = await api().model_import(address, null, Number(size.value) || 1);
+      if (r.model) {  // (none: the file picker was closed)
+        say(fill(w.model_done, { file: r.model.file || "" }), "ok");
+        if (changed) changed();
+      }
+      draw(r);
+    } catch (err) { problem(err); } finally { pick.disabled = false; }
+  });
+  const box = el("div", { className: "model-own" }, el("h3", { textContent: w.model_title }));
+  if (own) {
+    box.append(el("p", { className: "small", textContent: fill(w.model_own, { file: own.file || "",
+      points: (own.vertices || 0).toLocaleString(), triangles: (own.triangles || 0).toLocaleString() }) }));
+    const turret = Object.entries(own.parts || {}).filter(([, role]) => role !== "hull").map(([name]) => name);
+    if (turret.length) box.append(el("p", { className: "muted small", textContent: fill(w.model_turret, { parts: turret.join(", ") }) }));
+    if (own.missing && own.missing.length) {
+      box.append(el("p", { className: "notice warn", textContent: fill(w.model_missing, { names: own.missing.join(", ") }) }));
+    }
+    const drop = el("button", { type: "button", className: "ghost", textContent: w.model_remove, title: w.tip_model_remove });
+    drop.addEventListener("click", async () => {
+      try { draw(await api().model_import_remove(address)); if (changed) changed(); } catch (err) { problem(err); }
+    });
+    box.append(el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size), drop));
+  } else {
+    box.append(el("p", { className: "muted small", textContent: w.model_how }),
+      el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size)));
+  }
   return box;
 }
 
