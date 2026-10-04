@@ -21,6 +21,7 @@ my-mod/
   text/studio.baseunite.csv   names of new units
   files/replace/gen/...png    a unit's paint (from Blender) or a unit's card, under the game texture it changes
   files/cards/<unit>.png      a new unit's own card in the build menu, named after the new unit
+  files/models/<unit>.glb     a new unit's own 3D model (Import model), named after the new unit
   maps/<map pack name>/       one folder per map the mod changes:
     terrain.toml                ground brushes (also water, cover and block brushes)
     scenery.toml                buildings, props and trees placed

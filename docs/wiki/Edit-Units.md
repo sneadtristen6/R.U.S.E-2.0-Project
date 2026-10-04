@@ -35,6 +35,8 @@ The unit's page shows its **3D model**: drag to turn it, scroll to zoom.
 - **Its card in the build menu:** turn and zoom the 3D model until it looks right inside the dashed frame, then
   **Use this view as the card**. **Game's card** takes it back. Seen in the game. On a new unit, the card is its own:
   the unit it copies keeps its picture.
+- **A model of its own (new units):** **Import model…** brings in a 3D model from Blender or any 3D tool. See
+  [[Import a model|Import-a-Model]].
 
 ## Give a weapon other ammo
 

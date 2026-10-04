@@ -1,6 +1,19 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.6:** **Play** starts at once when nothing changed, and plays mods made with Studio 0.9.6: new units with a 3D
+model of their own.
+
+| Before | Now |
+|---|---|
+| **Play** rebuilt the whole modded copy every time, even with nothing changed (a player: "waiting 30 minutes every time"). | Nothing changed: the game starts at once. A change rebuilds, but the last copy's unchanged files are reused, so a copy on another drive than the game no longer copies every pack again. Play says how much it copied. |
+| Every build read the game's unit data afresh. | Kept between builds: a big test mod 213 s, then 68 s. |
+| A mod's new unit had the model of the unit it copies. | Its own model from the mod (`files/models`) is in the game. **Seen in the game:** an M1 Abrams beside the Sherman. |
+| A mod's new unit with its own card crashed the game when it was built. | Fixed. **Seen in the game.** |
+| Repainted units' colours came out a little off in places. | Closer to the mod's picture. |
+| A slow start left no clue. | **Copy report** lists the last five starts' steps. |
+| — | Plays mods with Studio 0.9.6's whole-map erase, roads on reshaped ground and riverbed fill (new, not yet seen in the game at scale). |
+
 **0.4.5:** plays mods made with Studio 0.9.5: repainted units, their own cards, and units with models of their own.
 
 | Before | Now |

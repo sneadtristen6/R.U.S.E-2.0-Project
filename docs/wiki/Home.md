@@ -27,6 +27,7 @@ starts a quick test copy on its own, to check your work as you go.
 |---|---|
 | Make my first mod (10 minutes, start here) | [[Your first mod|Your-First-Mod]] |
 | Change a unit, make a new one, swap its ammo | [[Edit units|Edit-Units]] |
+| Give a new unit a 3D model from Blender or any 3D tool | [[Import a model|Import-a-Model]] |
 | Raise hills, dig craters, make ramps, add lakes | [[Shape the ground|Shape-the-Ground]] |
 | Make a town or wood units can hide in; block ground | [[Cover and movement|Cover-and-Movement]] |
 | Draw new roads (supply trucks use them) | [[Draw roads|Draw-Roads]] |

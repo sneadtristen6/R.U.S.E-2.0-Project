@@ -1,6 +1,30 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.6:** a new unit can have a 3D model of its own, from any 3D tool, and **Test in game** starts at once when
+nothing changed. And a first:
+
+- **The first model from another 3D program in R.U.S.E.:** an M1 Abrams, made a new US unit beside the Sherman. It's
+  bought at the Armor Base with its own card, built, and turns its turret like the game's tanks. Seen in the game.
+
+| Before | Now |
+|---|---|
+| A new unit had the model of the unit it copies. | **Import model…** on a new unit's page: pick a **.3ds** (its pictures beside it, or in the folder above) or a **.glb** (from Blender and most 3D tools). The Studio fits it to the unit it copies: its length (times **Size**: 1 is as long, an Abrams over a Sherman is 1.36), its turret on that unit's turret so the game turns it the same way, its pictures as textures of its own. The page shows it in 3D; **Use the copied unit's model** takes it out again. It goes into your mod as `files/models/<the unit's name>.glb`, which opens in Blender. **Seen in the game.** Early: tracks and wheels don't turn yet, the gun's flash shows where the copied unit's muzzle is, and the wreck is the copied unit's. |
+| A new unit with its own card crashed the game when it was built (0.9.5). | Its card is where the game reads it on the map too. **Seen in the game.** |
+| A map made with **Duplicate map** couldn't be deleted in the Studio. | **Delete map**, under Duplicate map on a new map: it asks once, then its folder goes to the Recycle Bin, where you can get it back. The game's own maps can't be deleted. |
+| The Studio said Blender wasn't installed if it was unzipped rather than installed. | It finds Blender wherever you unzipped it (a drive's top folder or one below, Downloads, Desktop, Documents). |
+| Repaints came out with some colours a little off (a red and blue patch could turn purple). | Each 4 x 4 patch keeps its own colours. |
+| **Test in game** rebuilt the whole modded copy every time, even with nothing changed. | Nothing changed since the last build: the game starts at once, no build (a test mod: 21-29 s to under 0.1 s). A build reuses the last copy's unchanged files instead of copying them again. |
+| Every build read the game's unit data afresh. | It's kept between builds: a big test mod built in 213 s, then 68 s the next time. The game no longer copies all its data before a build. |
+| Erasing most of a big map ran the Studio out of memory, and a whole-map erase was refused as too big. | Erase counts in seconds, one at a time; **Erase the whole map** in the Erase tray (Undo takes it back). Erased scenery is written compactly. New: not yet seen in the game at scale. |
+| Ground flattened under a road left the far-view road at the old height. | The road model follows the new ground. New: not yet seen in the game. |
+| A flattened riverbed kept its rock and gorge pictures up close. | It's filled from both banks and its low cover taken off. New: not yet seen done by the build in the game. |
+| While the game index built (about a minute), the Studio could only wait. | Maps and Settings stay usable; the line at the bottom says when it's ready. |
+| A slow start left no clue. | Each start's steps are timed; **Copy report** in Troubleshoot lists the last five. |
+| The window's page could reach more of the app than its own calls. | It gets only the app's own calls. |
+
+Also `ruse import-model <file> --like <model> --unit <name>` does the same from the command line.
+
 **0.9.5:** units get a look of their own. See any unit in 3D, repaint it in Blender, give it your own card in the
 build menu. And our firsts, all seen in the game:
 
