@@ -1364,19 +1364,24 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     return Ndf(bytes(a.read(e))) if e is not None else None
                 return max_depth(nd)
 
-            try:
-                changed_members, notes = edit_map(read, strokes, name, max_depth_of=depth_of)
-            except (ValueError, struct.error, zlib.error) as exc:
-                result.findings.append(Finding("error", f"{map_path.name}: its ground files can't be read ({exc})"))
-                continue
-            say(f"terrain: {name}, from {', '.join(ids)}")
-            for note in notes:
-                say(f"  {note}")
-            from .terrain_edit import FILES as GROUND, _area_of
-            before = read(GROUND["highdef"]) if GROUND["highdef"] in changed_members else None
-            if before is not None:  # ground under water is never walkable on a shipped map: new water is blocked
+            def make_ground(read=read, depth=depth_of, map_arc=map_arc, map_path=map_path, name=name, strokes=strokes,
+                            ids=ids) -> dict | None:
+                """The map's new ground: its files, the lines said about it, the new water's blocks and the drained
+                beds' circles, the filled hollows, warnings. None after an error (said in the findings)."""
+                try:
+                    changed_members, notes = edit_map(read, strokes, name, max_depth_of=depth)
+                except (ValueError, struct.error, zlib.error) as exc:
+                    result.findings.append(Finding("error", f"{map_path.name}: its ground files can't be read ({exc})"))
+                    return None
+                made = {"members": changed_members, "lines": [f"  {note}" for note in notes], "zones": [],
+                        "beds": [], "filled": None, "warnings": []}
+                from .terrain_edit import FILES as GROUND, _area_of
+                before = read(GROUND["highdef"]) if GROUND["highdef"] in changed_members else None
+                if before is None:
+                    return made
+                # ground under water is never walkable on a shipped map: new water is blocked
                 from .bridges import Water
-                from .nav import Block, water_blocks
+                from .nav import water_blocks
                 from .tms import Tms
                 try:
                     now_at = Water(Tms(changed_members[GROUND["highdef"]])).at
@@ -1385,15 +1390,15 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: where the terrain edits put "
                                                             f"water can't be worked out ({exc}), so units could walk "
                                                             f"on the bed of new water"))
-                    continue
+                    return {**made, "failed": True}  # its lines are said, as before; the map isn't changed
                 if zones:
-                    flooded[name] = ([Block(x, y, r, "all") for x, y, r in zones], ids)
-                    say(f"  {name}: {len(zones)} block(s) over the new water, so units keep out of it")
+                    made["zones"] = list(zones)
+                    made["lines"].append(f"  {name}: {len(zones)} block(s) over the new water, so units keep out of it")
                 if drained:  # a dried bed: the map's movement has no ground there, so it's opened to units
-                    beds[name] = ([Block(x, y, r, "all", True) for x, y, r in _bed_circles(drained, now_at)], ids)
+                    made["beds"] = list(_bed_circles(drained, now_at))
                     mx, my = (sum(p[k] for p in drained) / len(drained) for k in (0, 1))
-                    say(f"  {name}: water drained around ({mx:.0f}, {my:.0f}): its bed opened to units "
-                        f"({len(beds[name][0])} circle(s))")
+                    made["lines"].append(f"  {name}: water drained around ({mx:.0f}, {my:.0f}): its bed opened to "
+                                         f"units ({len(made['beds'])} circle(s))")
                 # a riverbed raised flat still shows its old banks: up close the river's rock stickers and the low
                 # cover laid for it, from high up the banks painted in the picture (TESTS.md T27). Its pictures are
                 # mended from both banks here, its low cover taken off with the scenery below (T28: "purple wins")
@@ -1403,14 +1408,44 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                                             Tms(changed_members[GROUND["highdef"]]), [_area_of(s) for s in strokes],
                                             cache)
                 except (ValueError, KeyError, struct.error, zlib.error) as exc:
-                    result.findings.append(Finding("warning", f"{', '.join(ids)}: {name}: the riverbeds the terrain "
-                                                              f"edits fill can't be mended ({exc}): they keep their old "
-                                                              f"banks' look"))
+                    made["warnings"].append(f"{', '.join(ids)}: {name}: the riverbeds the terrain edits fill can't "
+                                            f"be mended ({exc}): they keep their old banks' look")
                     filled, more = None, []
-                for note in more:
-                    say(f"  {name}: {note}")
-                if filled is not None:
-                    filled_hollows[name] = (filled, ids)
+                made["lines"] += [f"  {name}: {note}" for note in more]
+                made["filled"] = filled
+                return made
+
+            # a map reshaped the same way as in an earlier build: its ground as that build made it (rusemod.mapkeep;
+            # a map flattened across kilometres takes many minutes to make)
+            from . import mapkeep
+            keep_key = None
+            if cache is not None:
+                try:
+                    depth = depth_of()
+                    keep_key = mapkeep.key(name, mapkeep.pack_identity(map_arc, map_path), strokes, depth)
+                except Exception:  # noqa: BLE001 - nothing to tell it by: the map is made as before, and not kept
+                    keep_key = None
+            made = mapkeep.read(cache, keep_key)
+            if made is None:
+                made = make_ground()
+                if made is None:
+                    continue
+                if not made["warnings"] and not made.get("failed"):
+                    mapkeep.write(cache, keep_key, made)
+            say(f"terrain: {name}, from {', '.join(ids)}")
+            for line in made["lines"]:
+                say(line)
+            if made.get("failed"):
+                continue
+            result.findings += [Finding("warning", w) for w in made["warnings"]]
+            from .nav import Block
+            if made["zones"]:
+                flooded[name] = ([Block(x, y, r, "all") for x, y, r in made["zones"]], ids)
+            if made["beds"]:
+                beds[name] = ([Block(x, y, r, "all", True) for x, y, r in made["beds"]], ids)
+            if made["filled"] is not None:
+                filled_hollows[name] = (made["filled"], ids)
+            changed_members = made["members"]
             if changed_members:
                 map_packs.append((map_path, map_arc, changed_members))
                 result.terrain_changed[map_path.name] = changed_members

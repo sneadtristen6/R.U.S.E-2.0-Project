@@ -290,11 +290,56 @@ class Terrain(unittest.TestCase):
         (folder / "maps" / map_name / "terrain.toml").write_text(terrain, encoding="utf-8")
         return folder
 
-    def build(self, *folders, copy="copy"):
+    def build(self, *folders, copy="copy", cache=None):
         lines = []
         result = build_and_write(self.game, [load_mod(f) for f in folders], instance=self.root / copy,
-                                 say=lines.append)
+                                 say=lines.append, cache=cache)
         return result, lines
+
+    def copy_files(self, copy: str) -> dict:
+        out = {}
+        for p in sorted((self.root / copy).rglob("*")):
+            if p.is_file() and p.name != "rusemod-copy.json":
+                out[p.relative_to(self.root / copy).as_posix()] = p.read_bytes()
+        return out
+
+    def said(self, lines: list, copy: str) -> list:
+        """The build's lines with its copy's folder named the same, to compare two builds into two copies."""
+        return [line.replace(str(self.root / copy), "<copy>") for line in lines]
+
+    def test_a_reshaped_map_is_kept_for_the_next_build(self):
+        """rusemod.mapkeep: a build with the same strokes on a map takes its ground from the build cache, the same
+        bytes and lines as making it again; other strokes, or a damaged kept file, make it again."""
+        from unittest import mock
+
+        import rusemod.build as build
+        cache = self.root / "cache"
+        made = []
+        real = build.edit_map
+
+        def edit_map(*args, **kwargs):
+            made.append(args[2])
+            return real(*args, **kwargs)
+        hill = self.mod("hill")
+        with mock.patch.object(build, "edit_map", edit_map):
+            first, lines1 = self.build(hill, copy="c1", cache=cache)
+            second, lines2 = self.build(hill, copy="c2", cache=cache)
+        self.assertEqual((first.errors, second.errors), ([], []), lines1)
+        self.assertEqual(made, ["Test"])  # made once, kept for the second build
+        self.assertEqual(self.said(lines2, "c2"), self.said(lines1, "c1"))
+        self.assertEqual(self.copy_files("c2"), self.copy_files("c1"))
+        self.assertEqual(second.terrain_changed, first.terrain_changed)
+        self.assertEqual(len(list((cache / "maps").glob("map-*.bin"))), 1)
+        with mock.patch.object(build, "edit_map", edit_map):
+            self.build(self.mod("other", HILL.replace("400.0", "300.0")), copy="c3", cache=cache)  # other strokes
+        self.assertEqual(made, ["Test", "Test"])
+        for kept in (cache / "maps").glob("map-*.bin"):  # damaged: made again, the same bytes
+            kept.write_bytes(kept.read_bytes()[:-10] + b"0123456789")
+        with mock.patch.object(build, "edit_map", edit_map):
+            third, lines3 = self.build(hill, copy="c4", cache=cache)
+        self.assertEqual(made, ["Test", "Test", "Test"])
+        self.assertEqual(self.copy_files("c4"), self.copy_files("c1"))
+        self.assertEqual(self.said(lines3, "c4"), self.said(lines1, "c1"))
 
     def test_the_unit_data_is_built_with_the_collector_paused(self):
         import gc
