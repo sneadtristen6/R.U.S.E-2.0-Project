@@ -1050,6 +1050,7 @@ ends with one in-game test (batched, one game start) and a release. Sessions are
 | D4 | **Models** (M7): SPK to glTF and back, static then animated (with DomesticNukes) | D2 | 6-12 |
 | D5 | **Scripting** (M9): compile Python 2.5 scripts; game modes (Island Defense) | a CPython 2.5.1 download (owner's OK) | 3-6 |
 | D6 | Sound (M11), last | — | 4-10 |
+| D7 | **Trenches and the dugout** (owner, 2026-10-04: "add to the plan"; the design and what's known: §14 idea 12). Trenches placed by the map (the Studio): a strip of cover infantry hide in (pinned 40% less, ambush), slowing tanks the way towns do (a fine local movement map, a few crossing places). Trenches built in a match: a cheap defence building, pieces snapped along a line by a script mod; a garrison key takes the squad into the dugout (off the map, in step in multiplayer through the game's spawn and kill actions), where it takes a small share of each hit on the trench (following the trench's pinning), until you pull it out, hurt (a lower-health copy of its type). Test 1: a map trench line under artillery. Test 2: the dugout. A trench model of its own comes with D4 | script mods (as Formations, T24), D4 for the model | 3-5 |
 
 *Phase E: content* (after the tools it needs): **RUSE 2.0** (private: balance, units, China) grows alongside
 Phases A-D; **Pacific Island Defense** needs B, D2, D4 and D5.
@@ -1428,6 +1429,110 @@ not decisions or an order: the map editor comes first.** Map ideas are in §12, 
    - **Campaign scenes**, three kinds: a full-screen film, a small picture-in-picture film during a mission (both
      WebM videos played by name), and in-game scenes made of a camera path, black bars, dialogue and music (pure
      mission data). Blender can make the films in the game's exact video format.
+9. **Our own place in the game's menus (2026-10-04).** The owner: a button for our campaign, "a campaign extended",
+   kept separate from the main campaign; maybe a new game mode instead of only Operations; modded multiplayer. What's
+   known (read 2026-10-04, nothing tested in game):
+   - The menus are a fixed set of screens (main menu, campaign, chapters, Operations, multiplayer, extras, lobby),
+     each a Flash screen file; a button sends the screen a word it already knows. A new button needs a changed
+     screen file and more than data: RUSE 2.0 (§11).
+   - What the screens list is data: the campaign's chapters (24, in 2 packs, grouped by act), the Operations (14, in
+     3 packs and 3 groups) and the Battles maps (30, in 3 packs). The DLCs added their content as new packs.
+   - Without new buttons: our missions as Operations work today (T17). Maybe their own group in the Operations screen
+     (a 4th group: not known), or a chapter list of their own: a third chapter pack, whose first chapter would be open
+     (the game opens a chapter when the one before it in its list is done, the first always). Whether the campaign
+     screen shows a third pack is not known: one test each.
+   - A new game mode as content: a map whose mission sets the rules (Island Defense, §12's navy map), played as an
+     Operation (our own mission was played to a win). In skirmish or multiplayer, the rules are one of the game's
+     scripts, so a script mod like Formations could add rules for one map (not tested). A new entry in the lobby's
+     "Mode" list (beside the 1939/1942/1945 eras and the DLC's Total War and Nuclear) isn't in the data: RUSE 2.0.
+   - Modded multiplayer works when every player has the same mods (the game doesn't notice when they differ, so the
+     Launcher's join codes are the guard; the two-PC test is still owed, C4). A "Modded multiplayer" button: RUSE 2.0.
+   - The in-game build menu's tabs (Tanks, Infantry, Planes, Ruses...) are data: position, title, factory.
+10. **More multiplayer slots in a lobby (2026-10-04).** The owner asked again; the work is written up in §10 as
+    A10b: the lobby screen has 8 seats (2 teams of 2, 2 teams of 4, a 4 x 2 grid for free-for-all), and a map set to
+    10 shows "Number of players 10" but seats 8 and starts with 8 (rule test B). A 10-seat lobby and end-game screen,
+    then a test with 10 AIs, show whether the game takes a 9th and 10th player. The screen files sit in archives an
+    `.rmod` can replace (with the script-style warning); editing them needs a Flash editor (a download, owner's OK).
+11. **A Studio UI made to explain the model work (2026-10-04).** The owner: a UI overhaul of the Studio's Blender
+    side, the model grabber included, "very explainable" for fellow modders and for players who want to try it.
+    Ideas to start from: a numbered strip (open in Blender, change it, bring back, test in game) with only the next
+    button lit; a plain box saying where the changes go (your mod only, never the game) and what other players need;
+    the game's look beside yours in the 3D view; a first-run "try it with the Sherman" walkthrough; a short Blender
+    cheat sheet with clips; messages that say what to do next; a Simple and a Modder level; what the mod changes on
+    each unit. After the model work in progress lands; nothing of it changed before then.
+12. **Trenches, garrisons, beach forts, landing craft and infantry taking cover (2026-10-04).** The owner: rework the
+    Armed Factories mod idea for trenches and garrisoning other buildings, forts like pillboxes on the beach, landing
+    craft; and "similar to how tanks have formations, we should have infantry being able to take cover". What's known
+    (read 2026-10-04, nothing tested in game):
+    - Armed Factories (community) gives every production building an always-on gun through the building's
+      `UniteDefense` (as two of the game's decoys already do). Any building can be armed that way.
+    - The game has no garrisoning, no carrying of troops (only paratroopers from planes) and no landing: units never
+      enter buildings or boats. Map houses are scenery, not units, so they can't be armed.
+    - What can stand in: a "fortified house" or "trench" as a new building with an infantry gun (`UniteDefense`) and
+      a model of its own (the Blender work); trench lines as painted cover (the Cover brush hides infantry, proven)
+      with painted ground; beach forts from the game's 16 defences (MG nests, Siegfried, Maginot, AT, AA, Japan's
+      buried bunker, 105 mm and AA positions), placed by a map or a mission (T30: pillboxes made by the mission).
+    - Landing craft: the game's LCVP and LST are units that move on water (T30: on the sea); a landing is a mission
+      bringing troops in at the beach while the boats sit at the waterline (T30). Boats that carry and unload in
+      skirmish would need a script mod that makes the troops appear at the beach (not tried).
+    - Infantry taking cover: a key, as Formations, sending the selected infantry into the nearest wood or town. The
+      game's missions have an Ambush order (a group finds hiding spots within a distance): if a script can give it,
+      that is the game's own take-cover. Otherwise the mod needs each map's cover spots, which the build can read.
+    - Owner, the same day: "garrisoning a trench would be so cool ... a whole new layer" (not limited to cheap).
+      Cover protects as well as hides, in the game's tuning data (`Constantes`): infantry in cover are pinned 40%
+      less (x0.6), hold fire as an ambush on their own, and an ambush pins three times as hard (x3); ambush spots are
+      looked for within 50 m. So a trench can be a narrow strip of cover (the Cover brush, proven to hide) that tanks
+      can't cross but infantry can (the two movement maps, proven), painted and given a trench model (the Blender
+      work), with a Garrison key (as Formations) spreading the selected infantry along the nearest trench. Trenches
+      dug during a match: see below (they can't make cover; they protect through the dugout).
+    - The owner's design, the same day: tanks "were literally made to cross trenches": they cross, with a severe
+      slowdown, "similar to cities"; a trench is a building you build, connectable along a line; under artillery its
+      infantry take cover like in trees, going into an underground hideout, taking damage over time, but less than a
+      shell in the open field. What's known for each:
+      - Towns slow units with no speed number of their own: a town has a fine local movement map that units weave
+        through (roads are what speed units up). A trench can do the same: a fine local map, a few narrow places
+        where tanks cross, infantry free (local movement maps: built and proven for bridges, T8).
+      - A building you build: a new defence type, cheap and quick, with a trench model (the Blender work; a stand-in
+        model until then). Connecting along a line: the placing preview is one of the game's scripts, so a script
+        mod can snap the next piece to the last one's end, turned along the line (the game already snaps defences to
+        roads within 50 m). The game builds at most 2 buildings at once (data, can be raised); each needs a truck.
+      - The dugout: in the data, cover lowers being pinned (x0.6), not damage; whether cover lowers damage at all
+        isn't known. Infantry going into a trench and out again isn't in the game; it could be faked (the squad
+        taken off, the trench's own gun and armour take the shelling, the squad put back): safe against the AI, but
+        in multiplayer it has to run where both players' games agree (the match's rules script), not tried.
+        Otherwise: RUSE 2.0.
+      - The owner, then: the squad in the dugout keeps taking damage, "doing math when the shells hit", a small share
+        of each, and you choose when to pull it out. What's there for it: the trench is a unit, so the game already
+        does the maths of each shell on it; the squad takes a share of the trench's damage, hit by hit. The game's
+        scripts can send actions that every player's game carries out (17 kinds, Spawn unit and Kill among them),
+        so taking the squad in and putting it back can stay in step in multiplayer. A squad's health is one number
+        (400 for most infantry), and setting it from a script would change one player's game only; a squad coming
+        out hurt can be a copy of its type with less health (75%, 50%, 25%), spawned by that action. Checked in the
+        game's code (2026-10-04): a script can't read a unit's health (the per-side damage value is a score of the
+        damage a unit has dealt, not taken); it can read how pinned a unit is (`GetValeurPinned`, `is_pinned`), and
+        a building gets pinned when hit, so the squad's share can follow the trench's pinning, hit by hit. The
+        spawn action builds the type's own class, and buildings have theirs (437 in the game's unit list; missions
+        make pillboxes by their building name, T30); spawning a building through that action is untested.
+      - Trenches built during a match can't make cover: the effects that change the map's state while playing
+        (shells, bombs, destroyed buildings) write to the map's look (knocked-down trees and buildings), and infantry
+        hiding reads the map's cover grid loaded at the start. Cover trenches are the map's (the Studio); a trench
+        built in a match protects through the dugout instead.
+    - First tests when it's taken up, round the player's HQ: (1) a trench line placed by the map: cover, the town-like
+      slowdown for tanks, infantry in it and in the open under the same enemy artillery; (2) the dugout: a trench
+      building made by the spawn action, the garrison key, enemy artillery on it, the squad's share following the
+      trench's pinning, pulled out with what's left.
+13. **Operations where you make your own defences, as in Men of War: Assault Squad (2026-10-04).** The owner: "the
+    operations and how it works in there, where you make your defenses, is exactly what I want to take Ruse." An idea
+    for later, beside item 12; what Men of War does there hasn't been looked at yet.
+14. **A model from a picture (2026-10-04).** The owner: "take this image of a tank ... It's now converted into a model.
+    What if we just made that?" Open picture-to-3D tools exist that run on his PC's 8 GB graphics card (TripoSR and
+    Stable Fast 3D, both free to use; Hunyuan3D 2.1 needs about 29 GB). They give one lump with no turret or gun of
+    its own, so the importer (M7, Studio's Import model, 2026-10-04) is needed either way to cut it into parts on the
+    unit's bones; a picture button would sit in front of it. After the importer is proven in the game (T35).
+15. **Maps and models from other Eugen games (2026-10-04).** The owner: "a lot of the same tool would be used for ...
+    importing terrain from other maps"; ProLution's point that R.U.S.E. is the simplest RTS to do it with. The same
+    steps as the model importer (read the other game's files, fit them to R.U.S.E.'s, write them as the game's), for
+    ground and scenery. Only ever read from the player's own copy of the other game; nothing of theirs is shipped.
 
 ## 15. Painting the ground, brush types, and more detail (FIRM, owner 2026-10-03)
 
