@@ -786,6 +786,22 @@ class Erasing(unittest.TestCase):
         by_size = scenery.EraseArea(5200.0, 0.0, 60.0, by_size=True)
         self.assertEqual(scenery.erase_objects(raw, [by_size], kinds)[0], raw)                     # no sizes known
 
+    def test_a_mask_takes_what_reaches_into_it_however_its_shape_runs(self):
+        """The filled riverbeds of a reshaped map (rusemod.mend.Filled.touches): the area's square only narrows the
+        search; the mask, asked with each object's place and reach, says what goes."""
+        raw = village()
+        kinds = {i: "vegetation" for i, n in enumerate(Scenery(raw).names) if "Chene" in n}
+        reach = {"TypeWarrior/Chene_02": 50.0}
+        asked = []
+
+        def mask(x, y, r):  # a strip at x 5140..5160: the oak at 5100 reaches it (50), the one at 5000 doesn't
+            asked.append((x, y, r))
+            return x + r >= 5140.0 and x - r <= 5160.0
+        area = scenery.EraseArea(5100.0, 0.0, 400.0, shape="square", by_size=True, mask=mask)
+        new = scenery.erase_objects(raw, [area], kinds, sizes=reach)[0]
+        self.assertEqual(spots(raw) - spots(new), Counter({(1, 5100.0, 0.0): 1}))
+        self.assertIn((5100.0, 0.0, 50.0), asked)  # each with its own reach
+
     def test_a_shared_patch_is_copied_for_the_erased_spot(self):
         raw = forest()
         new, notes, by = scenery.erase_objects(raw, [scenery.EraseArea(10100.0, 0.0, 50.0)], E_KINDS, {2})

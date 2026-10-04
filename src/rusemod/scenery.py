@@ -943,6 +943,9 @@ class EraseArea:
     by_size: bool = False  # an object goes when any of it reaches in (its type's reach times its size: erase_plan's
                            # `sizes`), not only its middle: Map Paint's clearing (a sticker 20 m across centred outside
                            # a painted patch still covers its edge up close; seen in the game, TESTS.md T26)
+    mask: object = field(default=None, compare=False)  # with by_size: `mask(x, y, reach)` says whether an object
+                           # reaching that far from (x, y) goes, inside the shape (the filled riverbeds of a reshaped
+                           # map: rusemod.mend.Filled.touches); the shape only narrows the search
 
     def footprint(self):
         from .brush import Footprint
@@ -1079,6 +1082,8 @@ def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridg
             pairs.append((a, takes[key], a))
 
     def takes_it(a: EraseArea, x: float, y: float, symbol: int, m: tuple, local: tuple) -> bool:
+        if a.mask is not None:
+            return a.mask(x, y, reach.get(symbol, 0.0) * _size_of(m, local))
         f = feet.get(id(a))
         if f is None:
             return a.contains(x, y)

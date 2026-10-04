@@ -1281,6 +1281,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         map_packs = []  # (path, open pack, {member: new bytes})
         flooded: dict = {}  # map pack name -> (nav.Block over each new water, the mods' ids)
         beds: dict = {}     # map pack name -> (nav.Block opens over each dried bed, the mods' ids)
+        filled_hollows: dict = {}  # map pack name -> (mend.Filled: riverbeds the edits raised flat, the mods' ids)
         for name, (strokes, ids) in terrain_edits(result.order, mods).items():
             map_path = find_map(name)
             if map_path is None:
@@ -1341,6 +1342,23 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     mx, my = (sum(p[k] for p in drained) / len(drained) for k in (0, 1))
                     say(f"  {name}: water drained around ({mx:.0f}, {my:.0f}): its bed opened to units "
                         f"({len(beds[name][0])} circle(s))")
+                # a riverbed raised flat still shows its old banks: up close the river's rock stickers and the low
+                # cover laid for it, from high up the banks painted in the picture (TESTS.md T27). Its pictures are
+                # mended from both banks here, its low cover taken off with the scenery below (T28: "purple wins")
+                from .mend import mend_map
+                try:
+                    filled, more = mend_map(read, lambda m, a=map_arc: a.find(m).path, changed_members, Tms(before),
+                                            Tms(changed_members[GROUND["highdef"]]), [_area_of(s) for s in strokes],
+                                            cache)
+                except (ValueError, KeyError, struct.error, zlib.error) as exc:
+                    result.findings.append(Finding("warning", f"{', '.join(ids)}: {name}: the riverbeds the terrain "
+                                                              f"edits fill can't be mended ({exc}): they keep their old "
+                                                              f"banks' look"))
+                    filled, more = None, []
+                for note in more:
+                    say(f"  {name}: {note}")
+                if filled is not None:
+                    filled_hollows[name] = (filled, ids)
             if changed_members:
                 map_packs.append((map_path, map_arc, changed_members))
                 result.terrain_changed[map_path.name] = changed_members
@@ -1521,6 +1539,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if any(s.kind.kind in PAINT_KINDS and s.clear for s in strokes):
                 every, who = with_pieces.setdefault(name, ([], []))
                 who.extend(i for i in ids if i not in who)
+        for name, (_filled, ids) in filled_hollows.items():  # riverbeds raised flat: their low cover goes (T28)
+            every, who = with_pieces.setdefault(name, ([], []))
+            who.extend(i for i in ids if i not in who)
         low_sizes: dict = {}  # type name -> how far it reaches at size 1 (stickers, low plants, stones), once a build
         solid: dict = {}  # map pack name -> (nav.Block for each placed building, the mods' ids)
         for name, (objects, ids) in with_pieces.items():
@@ -1565,34 +1586,53 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                                        + (f", but {kept} of {len(road_lines[name])} keep their trees and bushes "
                                           f"(keep_trees: only props taken off)" if kept else "")]
                 objects = list(objects) + dressed
-                sizes = None  # an erase by size (Map Paint's clearing): how far each type reaches
+                sizes = None  # an erase by size (Map Paint's clearing, filled riverbeds): how far each type reaches
                 strokes = painting.get(name, ([], []))[0]
+                from .scenery import low_cover, model_reach, sticker_reach
+
+                def reach_of(low):
+                    """How far each of the map's low types reaches (measured once a build)."""
+                    if not low_sizes:
+                        low_sizes.update(sticker_reach(arc))
+                    missing = [t for t in low if t not in low_sizes]
+                    if missing:
+                        from .models import Library
+                        lib = Library(game)
+                        try:
+                            for t in missing:
+                                low_sizes[t] = model_reach(lib, descs[t])
+                        finally:
+                            lib.close()
+                    return low_sizes
                 if any(s.kind.kind in PAINT_KINDS and s.clear for s in strokes):
                     # up close the game draws the map's stickers, low plants and stones over the ground's picture:
                     # only with them taken off does the paint show near the camera (TESTS.md T21, T26)
                     from .groundpaint import paint_clearing
-                    from .scenery import low_cover, model_reach, sticker_reach
                     if descs is None:
                         descs = descriptors(arc)
                     low = low_cover(descs, set(Scenery(raw).names))
                     under = paint_clearing(strokes, low)
                     if under:
-                        if not low_sizes:
-                            low_sizes.update(sticker_reach(arc))
-                        missing = [t for t in low if t not in low_sizes]
-                        if missing:
-                            from .models import Library
-                            lib = Library(game)
-                            try:
-                                for t in missing:
-                                    low_sizes[t] = model_reach(lib, descs[t])
-                            finally:
-                                lib.close()
                         areas = list(areas) + under
-                        sizes = low_sizes
+                        sizes = reach_of(low)
                         sunk = sunk + [f"Map Paint: what hides it up close taken off under {len(under)} stroke(s) "
                                        f"(ground stickers, low plants and stones reaching where it is at least half "
                                        f"strength; trees, buildings, cover and movement unchanged)"]
+                if name in filled_hollows:
+                    # a riverbed raised flat: the river's rock stickers make jagged rock on it up close (T27), and
+                    # the field it becomes shows only with all its low cover gone (T28: "purple wins")
+                    from .scenery import EraseArea
+                    if descs is None:
+                        descs = descriptors(arc)
+                    low = low_cover(descs, set(Scenery(raw).names))
+                    filled = filled_hollows[name][0]
+                    fx0, fy0, fx1, fy1 = filled.box()
+                    areas = list(areas) + [EraseArea((fx0 + fx1) / 2, (fy0 + fy1) / 2, max(fx1 - fx0, fy1 - fy0) / 2,
+                                                     ("decal",), tuple(low), shape="square", by_size=True,
+                                                     mask=filled.touches)]
+                    sizes = reach_of(low)
+                    sunk = sunk + ["filled riverbeds: the ground stickers, low plants and stones reaching into them "
+                                   "taken off (trees, buildings, cover and movement unchanged)"]
                 erased_notes, erased = [], {}
                 if areas:  # the map's own scenery out first: the new objects then stay whatever the areas cover
                     if descs is None:
