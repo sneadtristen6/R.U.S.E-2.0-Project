@@ -13,6 +13,9 @@ R.U.S.E. (2010). There are many ways to help, and most of them need no code.
 - Please don't paste paths that show your Windows user name: `%LOCALAPPDATA%\...` is enough.
 - Check you're on the latest version first: each app offers its updates when it starts.
 
+A security problem (a mod or a file that can harm a player's PC, an update that installs although it doesn't match,
+a leaked key) goes privately, never in a public post: [SECURITY.md](SECURITY.md) says how.
+
 The bugs we know about are listed in [issue #15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/15).
 
 ## Test in the game
