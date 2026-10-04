@@ -182,6 +182,24 @@ class Together(unittest.TestCase):
         d2 = (x - 1500.0) ** 2 + (y - 1500.0) ** 2
         return 400.0 * (1 - d2 / 360000.0) ** 2 if d2 < 360000.0 else 0.0
 
+    def test_the_road_model_moves_with_the_ground(self):
+        """The road model (the white roads seen from high up) holds the ground's height at every vertex: it moves by
+        the close-up mesh's change under each (left, it stood off the painted roads on flattened Blitz Twin)."""
+        from test_roadstrips import road_vertices, static_pack
+        from rusemod.roadstrips import MEMBER
+        files = dict(self.files)
+        files[MEMBER] = static_pack(road_cases=((0, (1000.0, 1500.0, 2000.0, 1700.0)),))
+        changed, notes = edit_map(reader(files), [self.hill], "Test")
+        self.assertIn(MEMBER, changed)
+        self.assertTrue(any("road model" in n and "6 point(s) moved" in n for n in notes), notes)
+        before, after = Tms(files[FILES["highdef"]]), Tms(changed[FILES["highdef"]])
+        for (x, y, z0, *_r), (_x, _y, z1, *_s) in zip(road_vertices(files[MEMBER]), road_vertices(changed[MEMBER])):
+            rise = after.height_at(x, y) - before.height_at(x, y)
+            self.assertGreater(rise, 10.0)  # the hill's flank: 15 at the far end, more nearer its top
+            self.assertAlmostEqual(z1 - z0, rise, delta=0.01)
+        flat = edit_map(reader(files), [Stroke("hill", 9000.0, 9000.0, 100.0, height=5.0)], "Test")[0]
+        self.assertNotIn(MEMBER, flat)  # ground that didn't move leaves it
+
     def test_a_stroke_at_a_bridges_floor_is_said(self):
         """A unit stands on the higher of the ground and a bridge's floor, and the floor keeps its height: a stroke
         that reaches a bridge's floor gets a note (lower ground leaves the floor's end in the air)."""

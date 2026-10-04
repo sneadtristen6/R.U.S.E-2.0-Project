@@ -323,6 +323,37 @@ def _near_bridge_floors(read, strokes: list[Stroke], name: str) -> list[str]:
     return out
 
 
+def _reseat_roads(read, before: Tms, after: Tms, name: str) -> tuple[dict[str, bytes], list[str]]:
+    """The map's road model (rusemod.roadstrips: the white roads seen from high up) moved with its close-up mesh: each
+    vertex by the ground's change of height under it, in every static-mesh file the map has. Left, the model kept the
+    old heights and stood off the roads painted on the ground (flattened Blitz Twin, 2026-10-04)."""
+    from .bridges import Ground
+    from .roadstrips import MEMBERS, StaticMeshes, StripError
+    old, new = Ground(before).height_at, Ground(after).height_at
+
+    def moved(x, y):
+        a, b = old(x, y), new(x, y)
+        return None if a is None or b is None else b - a
+    out, notes = {}, []
+    for member in MEMBERS:
+        try:
+            raw = read(member)
+        except KeyError:  # a pack's own find, asked for a file the map hasn't got
+            raw = None
+        if raw is None:
+            continue
+        try:
+            new_raw, n = StaticMeshes(raw).with_heights(moved)
+        except StripError as exc:
+            notes.append(f"{name}: {member.rsplit(chr(92), 1)[-1]}: the road model can't follow the ground ({exc}): "
+                         f"the white roads seen from high up keep the old heights")
+            continue
+        if n:
+            out[member] = new_raw
+            notes.append(f"{name}: road model ({member.rsplit(chr(92), 1)[-1]}): {n} point(s) moved with the ground")
+    return out, notes
+
+
 def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=None) -> tuple[dict[str, bytes], list[str]]:
     """Apply `strokes`, in order, to a map pack's ground. `read(member path)` gives a member's bytes, or None when
     the pack hasn't got it. Height brushes come first, then the water brushes (rusemod.water); then the map's water
@@ -422,6 +453,9 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
         elif water_strokes:
             water_notes.append(f"{name}: the map's water depth scale couldn't be read, so its water textures were "
                                f"left as they are")
+        roads, road_notes = _reseat_roads(read, Tms(read(FILES["highdef"])), meshes["highdef"], name)
+        changed.update(roads)
+        water_notes += road_notes
     normal_at = _normal_lookup(meshes["highdef"], points["highdef"]) if "highdef" in meshes else None
     fitted = []
     for key in ("ground", "camera"):

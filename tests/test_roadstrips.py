@@ -133,6 +133,31 @@ class Reading(unittest.TestCase):
             StaticMeshes(b"MESHPCPC" + bytes(8))
 
 
+class FollowingTheGround(unittest.TestCase):
+    def test_the_road_model_moves_with_the_ground_its_boxes_as_the_shipped_ones(self):
+        raw = static_pack()
+        # the ground 30,000 higher west of x = 50,000 (the first strip's case), unchanged east of it (the second's)
+        new, n = StaticMeshes(raw).with_heights(lambda x, y: 30000.0 if x < 50000 else None)
+        self.assertEqual((n, len(new)), (6, len(raw)))
+        self.assertEqual([v[2] for v in road_vertices(new)], [30500.0] * 6 + [500.0] * 6)
+        pack = StaticMeshes(new)
+        g0, gn = pack.groups[pack.draws[pack.road_draw()][4]]
+        boxes = [tuple(p[:6]) for p in pack.parts[g0:g0 + gn]]
+        # each part: its vertices' bounds, the top 10 higher (every shipped part); the model: its parts and (0, 0, 0)
+        self.assertEqual(boxes, [(2000.0, 2000.0, 30500.0, 9000.0, 2000.0, 30510.0),
+                                 (90000.0, 90000.0, 500.0, 99000.0, 90000.0, 510.0)])
+        self.assertEqual(Spk(new).items["road"].box, (0.0, 0.0, 0.0, 99000.0, 90000.0, 30510.0))
+        self.assertEqual(pack.parts[0], StaticMeshes(raw).parts[0])  # the bridge model as it was
+        self.assertEqual(new[:0x30], raw[:0x30])  # same layout: the header and its hash stay
+        lowered, _n = StaticMeshes(new).with_heights(lambda x, y: -30000.0 if x < 50000 else None)
+        self.assertEqual(lowered, raw)  # and back: the very bytes
+
+    def test_ground_that_didnt_move_leaves_the_same_file(self):
+        raw = static_pack()
+        self.assertEqual(StaticMeshes(raw).with_heights(lambda x, y: None), (raw, 0))
+        self.assertEqual(StaticMeshes(raw).with_heights(lambda x, y: 0.0), (raw, 0))
+
+
 class Adding(unittest.TestCase):
     def setUp(self):
         self.raw = static_pack()

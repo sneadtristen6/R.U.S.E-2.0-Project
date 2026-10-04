@@ -18,7 +18,8 @@ The model is one draw call over the whole map, cut into parts by cases of CASE m
               colour (4 bytes), two f32 0, and (u, v): u -0.5, 0 or 0.5 across the road, v its width
     piece     each road piece is its own strip: two points, three vertices at each (u -0.5, 0, 0.5), 12 indices
               (SEGMENT) over the 6; a curved piece has more points (4,678 strips for D-Day's 4,693 pieces)
-    part      48 bytes in the pack's fourth section: its box (6 f32: the vertices' bounds), u16 case, u16 pad,
+    part      48 bytes in the pack's fourth section: its box (6 f32: the vertices' bounds, its top TOP higher), u16
+              case, u16 pad,
               u32 first vertex, vertex count, first index, index count, u32 pad; a draw call's parts are listed by
               case, one each, its vertices and indices in that order with no gap; indices count from the buffer's
               start (u16, so the model holds at most 65,536 vertices)
@@ -26,8 +27,17 @@ The model is one draw call over the whole map, cut into parts by cases of CASE m
     case      the cases are numbered along a curve (case_numbers) over the map's grid of CASE squares, skipping
               those off the map (checked on every part of the 28 maps that have the file)
 
+The model's own box (in its record) is its parts' boxes and the map's corner (0, 0, 0) together. Both box rules hold
+on every part and model of the 33 shipped files (4,701 parts, 2026-10-04).
+
 The pack's header hash is MD5 of its first 16 bytes and bytes 0x20-0x2F. Rebuilt with nothing added, every shipped
-file comes back byte for byte."""
+file comes back byte for byte.
+
+The model holds the ground's height at every vertex, so it doesn't follow a reshaped ground by itself: on Blitz Twin
+flattened 27 to 54 m higher, the white roads seen from high up (the map view's too) stood off the roads painted on the
+ground, by as much as an old height projected at that camera angle (the owner's shots of 2026-10-04 02:15, the
+model's vertices projected with the shot's camera: on the white roads at their stored height, on the painted ones on
+the new ground). reseat moves them with the ground."""
 from __future__ import annotations
 
 import hashlib
@@ -44,6 +54,7 @@ STRIDE = 44
 SEGMENT = (0, 4, 3, 0, 1, 4, 1, 5, 4, 1, 2, 5)  # a strip between two points' three vertices, as every shipped one
 MOST = 65536            # vertices a model's u16 indices reach
 WIDEST = 2.0            # a bend's width factor at most (the shipped ones reach 1.8)
+TOP = 10.0              # a part's box reaches this far above its highest vertex (all 4,701 shipped parts)
 HEADER = 0xC4
 SECTIONS = ("names", "formats", "materials", "parts", "groups", "meshes", "draws", "ib_table")
 _PART = struct.Struct("<6fHHIIIII")
@@ -271,8 +282,8 @@ class StaticMeshes:
                 ids += [base + j for j in SEGMENT]
             for v in verts[v0 + (old[case][9] if case in old else 0):]:
                 x, y, z = struct.unpack_from("<3f", v)
-                box = [x, y, z, x, y, z] if box is None else [min(box[0], x), min(box[1], y), min(box[2], z),
-                                                              max(box[3], x), max(box[4], y), max(box[5], z)]
+                box = [x, y, z, x, y, z + TOP] if box is None else [min(box[0], x), min(box[1], y), min(box[2], z),
+                                                                    max(box[3], x), max(box[4], y), max(box[5], z + TOP)]
             p = old.get(case)
             parts.append([*box, case, p[7] if p else pad[0], v0, len(verts) - v0, i0, len(ids) - i0,
                           p[12] if p else pad[1]])
@@ -328,6 +339,45 @@ class StaticMeshes:
     def _section(self, i: int) -> bytes:
         off, size, _n = self.sections[i]
         return self.raw[off:off + size]
+
+    def with_heights(self, moved) -> tuple[bytes, int]:
+        """The pack with the road model's vertices raised or lowered by `moved(x, y)` (the ground's change of height
+        there; None or 0 leaves a vertex), each changed part's box made again as the shipped ones are (its vertices'
+        bounds, TOP above the highest) and the model's box from its parts' and the map's corner. Same size, same
+        layout, so the header and its hash stay. Returns (new bytes, vertices moved); nothing moved: the same bytes."""
+        if self.model is None:
+            return self.raw, 0
+        d = self.road_draw()
+        _w, _mat, _ib, vb, group, _pad = self.draws[d]
+        base = self.vb_data[0] + self.vbs[vb][0]
+        count = self.vbs[vb][1] // STRIDE
+        out = bytearray(self.raw)
+        zs, n = [], 0
+        for k in range(count):
+            x, y, z = struct.unpack_from("<3f", out, base + STRIDE * k)
+            dz = moved(x, y)
+            if dz:
+                z = struct.unpack("<f", struct.pack("<f", z + dz))[0]
+                struct.pack_into("<f", out, base + STRIDE * k + 8, z)
+                n += 1
+            zs.append(z)
+        if not n:
+            return self.raw, 0
+        g0, gn = self.groups[group]
+        po = self.sections[3][0]
+        boxes = []
+        for i in range(g0, g0 + gn):
+            p = self.parts[i]
+            fv, nv = p[8], p[9]
+            box = list(p[:6])
+            if nv:
+                box[2], box[5] = min(zs[fv:fv + nv]), max(zs[fv:fv + nv]) + TOP
+                struct.pack_into("<6f", out, po + 48 * i, *box)
+            boxes.append(struct.unpack_from("<6f", out, po + 48 * i))
+        at = self.model[0] + 8
+        model = [min([0.0] + [b[a] for b in boxes]) for a in range(3)] + [max(b[a] for b in boxes) for a in range(3, 6)]
+        struct.pack_into("<6f", out, at, *model)
+        return bytes(out), n
 
 
 def add_roads(raw: bytes, lines: list, height_at, bounds) -> tuple[bytes, list[str]]:
