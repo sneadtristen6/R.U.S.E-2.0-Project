@@ -1222,6 +1222,24 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                           lambda data: newmap.parse(data, "map.toml", new))
         return {"pack": new, "maps": self.maps()["maps"]}
 
+    def delete_map(self, pack: str) -> dict:
+        """Delete a new map (one made with Duplicate map) from the current map project: its folder maps/<name>/, with
+        every change made to it, goes to the Recycle Bin (it can be put back from there). The game's own maps can't be
+        deleted. Returns {"deleted": its name, "copy_of": the map it copied (the view opens that), "maps": maps()}."""
+        from rusemod.recycle import to_recycle_bin
+        copy = self._new_maps().get(str(pack or "").lower())
+        if copy is None:
+            # not a game rule: the Studio deletes only what it made; the game's own maps are never touched
+            raise StudioError(f"{pack} isn't a new map made in these map changes, so it can't be deleted here: the "
+                              "game's own maps stay.")
+        name, spec = copy
+        with self._saving:
+            try:
+                to_recycle_bin(self._map_dir() / "maps" / name)
+            except OSError as exc:
+                raise StudioError(str(exc)) from None
+        return {"deleted": name, "copy_of": spec.copy_of, "maps": self.maps()["maps"]}
+
     # A map's data the window asks for (its scenery, roads, bridges, cover...), kept in memory: about six kinds a map,
     # so 24 is the last few maps. It was 3 in all, so one map's own kinds pushed each other out as it opened, and
     # every visit read everything again (issue #15: "a map is slow to open").

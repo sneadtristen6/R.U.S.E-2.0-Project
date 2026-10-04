@@ -4532,6 +4532,39 @@ function renderList() {
 function showTitle() {
   const m = mv.maps.find((x) => x.pack === mv.current);
   if (mv.current) $("map-title").replaceChildren(...(m ? nameLine(m) : [mv.current]));
+  renderDelete();
+}
+
+// --- Delete map: a new map's folder to the Recycle Bin (StudioApi.delete_map) after one "are you sure"; the game's own
+// maps have no such button. The map it copied opens in its place. ---
+function renderDelete() {
+  const w = mv.words, m = mv.maps.find((x) => x.pack === mv.current);
+  const mine = Boolean(m && m.copy_of), asking = mine && mv.deleteAsk === mv.current;
+  $("map-delete").classList.toggle("hidden", !mine || asking);
+  $("map-delete-sure").classList.toggle("hidden", !asking);
+  $("map-delete").textContent = w.delete_map;
+  $("map-delete").title = w.tip_delete_map;
+  if (!$("map-delete-yes").disabled) $("map-delete-ask").textContent = fill(w.really_delete_map, { name: m ? mapName(m.pack) : "" });
+  $("map-delete-yes").textContent = w.delete_map;
+  $("map-delete-yes").title = w.tip_delete_map;
+  $("map-delete-no").textContent = w.cancel;
+  $("map-delete-no").title = w.tip_cancel;
+}
+
+async function deleteMap() {
+  const w = mv.words, pack = mv.current, name = mapName(pack);
+  $("map-delete-yes").disabled = true;
+  try {
+    const res = await mv.api.delete_map(pack);
+    mv.maps = res.maps;
+    mv.deleteAsk = null;
+    $("map-delete-yes").disabled = false;
+    window.dispatchEvent(new CustomEvent("map-deleted", { detail: { text: fill(w.map_deleted, { name }) } }));
+    await show(res.copy_of);
+  } catch (err) {
+    $("map-delete-yes").disabled = false;
+    $("map-delete-ask").textContent = (err && err.message) || String(err);
+  }
 }
 
 // What players call a map in the Studio's language (its own name when the menus have none)
@@ -4700,6 +4733,7 @@ function renderWords() {
   if (!mv.current) $("map-pick").textContent = w.pick_map;
   $("map-duplicate").textContent = w.duplicate_map;
   $("map-duplicate").title = w.tip_duplicate_map;
+  renderDelete();
   foldMaps(Boolean(mv.folded));
   renderBrushes();
   renderScenTools();
@@ -5197,6 +5231,9 @@ function wire() {
   $("check-run").addEventListener("click", () => runCheck());
   $("maps-fold").addEventListener("click", () => { foldMaps(!mv.folded); saveView(); });
   $("map-duplicate").addEventListener("click", openDuplicate);
+  $("map-delete").addEventListener("click", () => { mv.deleteAsk = mv.current; renderDelete(); $("map-delete-yes").focus(); });
+  $("map-delete-no").addEventListener("click", () => { mv.deleteAsk = null; renderDelete(); });
+  $("map-delete-yes").addEventListener("click", deleteMap);
   $("dup-form").addEventListener("submit", duplicate);
   $("dup-name").addEventListener("input", () => { dup.typed = true; dupNameChanged(); });
   $("dup-entry").addEventListener("change", dupSuggestName);

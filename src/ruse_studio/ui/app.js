@@ -1604,6 +1604,8 @@ window.addEventListener("map-duplicated", async (e) => {
   try { useMods(await api().mods("map")); } catch (err) { problem(err); }
   say(e.detail.text, "ok");
 });
+// Delete map (maps.js) sent a new map to the Recycle Bin: the status line says so
+window.addEventListener("map-deleted", (e) => say(e.detail.text, "ok"));
 
 // --- "Choose your language" (rusemod.uilang.LanguageCalls): opens by itself until the player has picked a language
 // there (the Studio used to start on the code names, and a French player stayed on them, not knowing it speaks

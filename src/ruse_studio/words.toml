@@ -8014,6 +8014,55 @@ cz = "Vytvořit z této mapy novou: úplnou kopii s vlastním názvem, jako mapu
 jpn = "このマップから新しいマップを作ります。独自の名前を持つ完全なコピーを、BATTLESのマップ、オペレーション、キャンペーンの章として作れます。あとは普通のマップと同じようにコピーを変更できます。"
 sc = "用这张地图做一张新地图：一份有自己名字的完整副本，可作为“战役”地图、行动或战役章节。之后可以像任何地图一样修改副本。"
 
+# --- Delete map (maps.js renderDelete, StudioApi.delete_map): a new map's folder to the Recycle Bin ---
+[delete_map]
+us = "Delete map"
+fr = "Supprimer la carte"
+ger = "Karte löschen"
+ita = "Elimina mappa"
+spa = "Eliminar mapa"
+pol = "Usuń mapę"
+ru = "Удалить карту"
+cz = "Smazat mapu"
+jpn = "マップを削除"
+sc = "删除地图"
+
+[tip_delete_map]
+us = "Take this new map out of your map changes, with everything changed on it. Its folder goes to the Recycle Bin, so it can be put back from there. The game's own maps can't be deleted."
+fr = "Retirer cette nouvelle carte de vos modifications de cartes, avec tout ce qui y a été changé. Son dossier part dans la Corbeille, d'où il peut être restauré. Les cartes du jeu ne peuvent pas être supprimées."
+ger = "Diese neue Karte samt allen Änderungen aus Ihren Kartenänderungen entfernen. Ihr Ordner kommt in den Papierkorb und lässt sich dort wiederherstellen. Die Karten des Spiels selbst lassen sich nicht löschen."
+ita = "Togli questa nuova mappa dalle tue modifiche alle mappe, con tutto ciò che vi hai cambiato. La sua cartella va nel Cestino, da cui si può ripristinare. Le mappe del gioco non si possono eliminare."
+spa = "Quitar este mapa nuevo de tus cambios de mapas, con todo lo cambiado en él. Su carpeta va a la Papelera de reciclaje, desde donde se puede restaurar. Los mapas del propio juego no se pueden eliminar."
+pol = "Usuń tę nową mapę ze swoich zmian map, razem ze wszystkim, co na niej zmieniono. Jej folder trafia do Kosza, skąd można go przywrócić. Map samej gry nie można usunąć."
+ru = "Убрать эту новую карту из ваших изменений карт вместе со всем, что на ней изменено. Её папка уходит в Корзину, откуда её можно восстановить. Карты самой игры удалить нельзя."
+cz = "Odebrat tuto novou mapu z vašich změn map, i se vším, co se na ní změnilo. Její složka jde do Koše, odkud ji lze obnovit. Mapy samotné hry smazat nelze."
+jpn = "この新しいマップを、変更内容ごとマップ変更から外します。フォルダーはごみ箱に移るので、そこから元に戻せます。ゲーム本来のマップは削除できません。"
+sc = "将这张新地图连同其上的所有修改从你的地图修改中移除。它的文件夹会移到回收站，可从那里还原。游戏自带的地图无法删除。"
+
+[really_delete_map]
+us = "Delete {name}? Everything changed on it goes to the Recycle Bin with it."
+fr = "Supprimer {name} ? Tout ce qui y a été changé part avec elle dans la Corbeille."
+ger = "{name} löschen? Alle Änderungen daran kommen mit in den Papierkorb."
+ita = "Eliminare {name}? Tutto ciò che vi hai cambiato va con lei nel Cestino."
+spa = "¿Eliminar {name}? Todo lo cambiado en él va con él a la Papelera de reciclaje."
+pol = "Usunąć {name}? Wszystkie zmiany na niej trafią razem z nią do Kosza."
+ru = "Удалить {name}? Всё, что на ней изменено, уйдёт вместе с ней в Корзину."
+cz = "Smazat {name}? Vše, co se na ní změnilo, půjde s ní do Koše."
+jpn = "{name} を削除しますか？ 変更内容もいっしょにごみ箱に移ります。"
+sc = "删除 {name}？其上的所有修改会一起移到回收站。"
+
+[map_deleted]
+us = "{name} was deleted: its folder is in the Recycle Bin, if you want it back."
+fr = "{name} a été supprimée : son dossier est dans la Corbeille, si vous voulez la récupérer."
+ger = "{name} wurde gelöscht: Ihr Ordner liegt im Papierkorb, falls Sie sie zurückwollen."
+ita = "{name} è stata eliminata: la sua cartella è nel Cestino, se la rivuoi."
+spa = "{name} se eliminó: su carpeta está en la Papelera de reciclaje, si lo quieres recuperar."
+pol = "Usunięto {name}: jej folder jest w Koszu, jeśli zechcesz ją odzyskać."
+ru = "{name} удалена: её папка в Корзине, если захотите её вернуть."
+cz = "{name} byla smazána: její složka je v Koši, kdybyste ji chtěli zpět."
+jpn = "{name} を削除しました。元に戻したいときは、フォルダーがごみ箱にあります。"
+sc = "已删除 {name}：如需找回，它的文件夹在回收站中。"
+
 [dup_lead]
 us = "Makes a new map: a full copy of {map} with a name of its own, in the game's menus next to the original. Everything you change on the copy (ground, buildings, roads, starting points, players) is the copy's alone: {map} stays as it is."
 fr = "Crée une nouvelle carte : une copie complète de {map} avec son propre nom, dans les menus du jeu à côté de l'originale. Tout ce que vous changez sur la copie (sol, bâtiments, routes, points de départ, joueurs) ne concerne qu'elle : {map} reste tel quel."

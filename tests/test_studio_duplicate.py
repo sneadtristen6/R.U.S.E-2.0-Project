@@ -2,6 +2,7 @@
 open, written as maps/<name>/map.toml in the map project. The view shows the copy as the map it copies with the copy's
 own edits; its player count and the changes made to the map so far come along. Proven in the game: 101 new maps
 listed at once, each playing its own ground (TESTS.md T15b, T16)."""
+import shutil
 import tempfile
 import tomllib
 import unittest
@@ -169,6 +170,65 @@ class Duplicate(unittest.TestCase):
             self.api.set_players(pack, None)  # back to the game's count: the file stays, the copy with it
         data = tomllib.loads(path.read_text(encoding="utf-8"))
         self.assertEqual((data["copy_of"], "players" in data), ("SuperCrossRoads4", False))
+
+
+class DeleteMap(Duplicate):
+    """Delete map (StudioApi.delete_map): a new map's folder goes to the Recycle Bin (here: a stand-in that removes it
+    and says what it was given), never one of the game's maps."""
+
+    def setUp(self):
+        super().setUp()
+        self.binned = []
+
+        def to_bin(path):
+            self.binned.append(Path(path))
+            shutil.rmtree(path)
+        patch = mock.patch("rusemod.recycle.to_recycle_bin", side_effect=to_bin)
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def test_a_new_map_goes_to_the_bin(self):
+        pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
+        folder = self.api._map_dir() / "maps" / pack
+        (folder / "scenery.toml").write_text("# placed\n", encoding="utf-8")
+        res = self.api.delete_map(pack.lower())  # (the list's name, any case)
+        self.assertEqual((res["deleted"], res["copy_of"]), (pack, "SuperCrossRoads4"))
+        self.assertEqual(self.binned, [folder])
+        self.assertFalse(folder.exists())
+        self.assertEqual([m["pack"] for m in res["maps"]], ["SuperCrossRoads4"])
+
+    def test_the_others_stay(self):
+        keep = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
+        gone = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Night")["pack"]
+        shipped = self.api._map_dir() / "maps" / "SuperCrossRoads4"
+        shipped.mkdir()
+        (shipped / "terrain.toml").write_text("# a change to the game's map\n", encoding="utf-8")
+        res = self.api.delete_map(gone)
+        self.assertEqual([m["pack"] for m in res["maps"]], ["SuperCrossRoads4", keep])
+        self.assertTrue((self.api._map_dir() / "maps" / keep / "map.toml").is_file())
+        self.assertTrue((shipped / "terrain.toml").is_file())
+
+    def test_the_games_own_maps_cant_be(self):
+        self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")
+        for pack in ("SuperCrossRoads4", "Nope", "", None):
+            with self.assertRaisesRegex(StudioError, "game's own maps stay"):
+                self.api.delete_map(pack)
+        self.assertEqual(self.binned, [])
+
+    def test_when_windows_refuses(self):
+        pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
+        with mock.patch("rusemod.recycle.to_recycle_bin", side_effect=OSError("close anything that has it open")):
+            with self.assertRaisesRegex(StudioError, "close anything"):
+                self.api.delete_map(pack)
+        self.assertTrue((self.api._map_dir() / "maps" / pack / "map.toml").is_file())
+
+
+class RecycleBin(unittest.TestCase):
+    def test_nothing_there(self):
+        from rusemod.recycle import to_recycle_bin
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(FileNotFoundError):
+                to_recycle_bin(Path(tmp, "gone"))
 
 
 if __name__ == "__main__":
