@@ -960,6 +960,10 @@ A skirmish loads four packs of `ZZ_Win.dat` per nation in the match (§3), plus 
   `TSCCombDSTrack`, props `TSCForceDXT1`...). A picture whose name starts with a group the game doesn't have crashes it
   when the model is first drawn (TESTS T35 run 2), so `rusemod.unitmodel` names a new picture after its copied body
   texture's group.
+- **A texture's levels must fit the room the game makes:** for level k (0 = full size) of a w x h DXT texture the game
+  makes room for (w * h / 16) >> 2k blocks, rounded down, and writes as many blocks as the level says it holds. So the
+  levels stop when the shorter side is 4 (1024 x 512: 8 levels, the last 8 x 4); one more level gets no room and its
+  block lands past the end, corrupting the game's memory (TESTS T35 run 3). All 289 of the game's unit textures fit.
 - The layout of each pack (offsets, the name trie, the section order and padding, the stand-ins' table) is in the
   module's docstring. Every `.spk`, `.ppk` and `.apk` in `ZZ_Win.dat` writes back byte for byte, and every unit's
   models copied into every other nation's packs and the common ones read back as in the pack they came from, the

@@ -1161,6 +1161,21 @@ its copied body texture's group (`TSCCombCS_descriptor_unit_r2_m1_abrams_01.png`
 **Run 3 (rebuilt 2026-10-04):** the same two units with the pictures renamed; read back from the copy. Build M1
 Abrams B first again, then the M1 Abrams.
 
+**Run 3 (owner, 2026-10-04 12:27): building M1 Abrams B crashed the game again, differently: heap corruption
+(0xc0000374, found by Windows in the game's texture-loading thread as it made room for the next texture; the game's
+own crash report wasn't written, Windows' dump was).** So the group fix got past runs 1-2's spot. The cause, read
+from the game's code and checked on its data: the game makes room for level k of a w x h DXT texture as
+(w * h / 16) >> 2k blocks, rounded down, and writes as many blocks as the level itself says it holds. Our 1024 x 512
+and 256 x 128 pictures went down to 4 x 4, one level past where the shorter side is 4: the game made room for 0
+blocks there and the 1 block was written past the end. Every one of the game's own textures stops at that side (all
+289 unit textures checked: 0 levels off); ours were the only ones in the archive that didn't fit. Fixed: levels stop
+where the game's do, and the writer refuses any level that doesn't hold exactly the game's room.
+
+**Run 4 (rebuilt 2026-10-04):** every new texture's and stand-in's levels match the game's room exactly (checked in
+the copy). The model's other firsts, not seen in the game yet: 5 draw calls (the game's most is 4; its loader keeps a
+model's draw calls in a list that grows, so no fixed limit was found), plain skinned buffers (the game has 168, its
+animals'). Build M1 Abrams B first, then the M1 Abrams.
+
 ## T30. Iwo Jima groundwork (2026-10-04)
 
 (First written up as T27; that number was also taken by the Blender test above, so this one is T30.)

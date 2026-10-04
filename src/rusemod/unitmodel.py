@@ -279,30 +279,22 @@ def read_mod_glb(path: Path) -> Prepared:
 
 # --- textures ---
 def _levels(px: bytes, w: int, h: int) -> list[tuple[int, int, bytes]]:
-    """The picture and every level below it, halved down to 4 x 4: [(w, h, RGBA)], smallest first."""
+    """The picture and every level below it, each half the one above, until its shorter side is 4: [(w, h, RGBA)],
+    smallest first. The game makes room for level k of a w x h DXT texture as (w * h / 16) >> 2k blocks, rounded
+    down, and writes as many blocks as the level holds: a level past the shorter side's 4 gets no room and its block
+    is written past the end (T35 run 3: a 1024 x 512 texture down to 4 x 4 corrupted the game's memory). Every one of
+    the game's own textures stops there (1024 x 512: 8 levels, the last 8 x 4)."""
     out = [(w, h, px)]
-    while w > 4 or h > 4:
-        nw, nh = max(4, w // 2), max(4, h // 2)
-        if nw == w // 2 and nh == h // 2:
-            px = halve(px, w, h)
-        else:  # one side already 4: halve the other by averaging pairs
-            px = _halve_one(px, w, h, nw, nh)
-        w, h = nw, nh
+    while min(w, h) > 4:
+        px, w, h = halve(px, w, h), w // 2, h // 2
         out.append((w, h, px))
     out.reverse()
     return out
 
 
-def _halve_one(px: bytes, w: int, h: int, nw: int, nh: int) -> bytes:
-    out = bytearray(nw * nh * 4)
-    for y in range(nh):
-        for x in range(nw):
-            sx, sy = x * w // nw, y * h // nh
-            a = (sy * w + sx) * 4
-            b = (min(h - 1, sy + (h // nh) - 1) * w + min(w - 1, sx + (w // nw) - 1)) * 4
-            for c in range(4):
-                out[(y * nw + x) * 4 + c] = (px[a + c] + px[b + c] + 1) // 2
-    return bytes(out)
+def level_room(w: int, h: int, k: int) -> int:
+    """The blocks the game makes room for at level k (0: the full picture) of a w x h DXT texture."""
+    return (w * h // 16) >> (2 * k)
 
 
 def dxt5_blocks(px: bytes, w: int, h: int) -> bytes:
@@ -318,10 +310,17 @@ def dxt5_blocks(px: bytes, w: int, h: int) -> bytes:
 
 def new_texture(px: bytes, w: int, h: int) -> bytes:
     """A unit texture of our own: DXT5, every level a plain TGU1 payload under TGV flag 1 (as the build writes a
-    repainted one: T23), smallest first, down to 4 x 4."""
+    repainted one: T23), smallest first, until the shorter side is 4 (_levels). Each level holds exactly the blocks
+    the game makes room for (level_room), or nothing is written."""
     levels = []
-    for lw, lh, lpx in _levels(px, w, h):
-        head = tgu1.Header(tgu1.VERSION, lw // 4, lh // 4, 80, 40, (lw // 4) * (lh // 4), tgu1.FLAG_ALPHA, 0)
+    chain = _levels(px, w, h)
+    for k, (lw, lh, lpx) in zip(range(len(chain) - 1, -1, -1), chain):
+        blocks = (lw // 4) * (lh // 4)
+        if blocks != level_room(w, h, k):
+            # not a game rule we chose: the game writes a level's blocks into the room it made for them
+            raise UnitModelError(f"a {w} x {h} texture's level {k} ({lw} x {lh}) holds {blocks} blocks; the game makes "
+                                 f"room for {level_room(w, h, k)}")
+        head = tgu1.Header(tgu1.VERSION, lw // 4, lh // 4, 80, 40, blocks, tgu1.FLAG_ALPHA, 0)
         levels.append(head.pack()[:tgu1.PLAIN_HEADER] + dxt5_blocks(lpx, lw, lh))
     return make_tgv(w, h, "DXT5", levels, flag=1)
 

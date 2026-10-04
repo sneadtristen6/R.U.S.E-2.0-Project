@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 from fixtures import make_edat, make_ndf, val
-from rusemod import Edat, modelin, unitmodel
+from rusemod import Edat, modelin, tgu1, unitmodel
 from rusemod.build import build_pack, load_mod
 from rusemod.dxt import decode_rgba
 from rusemod.model import load
@@ -314,7 +314,7 @@ class Packs(unittest.TestCase):
         member = "gen\\ww2\\res3d\\units\\ger\\tank\\tsccomb_panzer_model_01.tgv"
         self.assertEqual(list(w.added), [member])
         g = Tgv(w.added[member])
-        self.assertEqual((g.width, g.height, g.format, len(g.mips)), (8, 4, "DXT5", 2))
+        self.assertEqual((g.width, g.height, g.format, len(g.mips)), (8, 4, "DXT5", 1))  # (its shorter side is 4)
         top = g.payload(len(g.mips) - 1)
         first = decode_rgba(top[32:], 8, 4, "DXT5")[:4]
         self.assertLessEqual(max(abs(a - b) for a, b in zip(first[:3], RED)), 4)  # (5-6-5 colours)
@@ -326,6 +326,22 @@ class Packs(unittest.TestCase):
         self.assertEqual((p.key, p.extra), (unitmodel.standin_key(name), struct.pack("<HHI", 0, 0, 0xAAAAAAAA)))
         self.assertEqual(Tgv(p.data).flag, 0)
         self.assertEqual(proxies.proxies[proxies.names().index(proxy_name(TEX))].data, b"OLD-STANDIN")
+
+    def test_texture_levels_fit_the_room_the_game_makes(self):
+        """T35 run 3: the game makes room for level k of a w x h texture as (w * h / 16) >> 2k blocks and writes what
+        the level holds; a 1024 x 512 texture taken down to 4 x 4 wrote a block past the room and corrupted the game's
+        memory. Levels stop when the shorter side is 4, as every texture of the game's does."""
+        for (w, h), count in (((1024, 512), 8), ((256, 128), 6), ((1024, 1024), 9), ((512, 128), 6), ((8, 4), 1),
+                              ((4, 4), 1), ((128, 512), 6)):
+            g = Tgv(unitmodel.new_texture(bytes(w * h * 4), w, h))
+            self.assertEqual(len(g.mips), count, (w, h))
+            for m in range(len(g.mips)):  # (smallest first)
+                k = len(g.mips) - 1 - m
+                head = tgu1.Header.parse(g.payload(m))
+                self.assertEqual(head.width * head.height, unitmodel.level_room(w, h, k), (w, h, k))
+                self.assertGreater(unitmodel.level_room(w, h, k), 0)
+            stand = Tgv(unitmodel.new_standin(bytes(w * h * 4), w, h))
+            self.assertEqual(len(stand.payload(0)), stand.width * stand.height)  # one level: 16 bytes a 4 x 4 block
 
     def test_refused(self):
         with self.assertRaisesRegex(unitmodel.UnitModelError, "no mesh pack holds"):
