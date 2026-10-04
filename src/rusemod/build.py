@@ -573,7 +573,8 @@ FORCE_LOAD = True  # another nation's models for a unit: that nation's packs loa
 # the cluster maps, unitcheck.load_everywhere, and its skeleton and card picture packs in every nation's loaders,
 # unitcheck.load_with_every_nation). Tested in the game 2026-10-02 (batch 9e). Off, the old way: the models are copied
 # into the packs the unit's own nation loads (rusemod.unitpacks); that broke the US's own construction truck (batches
-# 4 to 7), and the force bit alone crashed (T13: no skeletons).
+# 4 to 7), and the force bit alone crashed (T13: no skeletons). The force bit is for skirmishes only: campaign
+# chapters and Operations get the nation's packs in their own lists (unitcheck.load_in_missions).
 
 
 def _also_loaded(run, nations, result) -> None:
@@ -582,6 +583,11 @@ def _also_loaded(run, nations, result) -> None:
             result.findings.append(Finding("note", f"{unitcheck.NATIONS[n]}'s unit skeletons and card pictures load in "
                                                    f"every nation's matches too ({skel} skeleton pack(s) and {cards} "
                                                    f"card picture pack(s) added to the other nations' loaders)"))
+    for n, (count, maps) in sorted(unitcheck.load_in_missions(run.game, nations).items()):
+        if count:
+            result.findings.append(Finding("note", f"{unitcheck.NATIONS[n]}'s unit models load in campaign chapters and "
+                                                   f"Operations too, which load only the nations they play ({count} "
+                                                   f"loaders in {maps} cluster maps)"))
 
 
 def _pack_names(paths) -> str:

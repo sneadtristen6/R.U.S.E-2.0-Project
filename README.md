@@ -702,7 +702,6 @@ R.U.S.E. 2.0 stands on three people's work. None of it would be here without the
 - **ProLution's code is in ours:** the map terrain codec in
   [`src/ruse_mod_engine/terrain_codec.py`](src/ruse_mod_engine/terrain_codec.py) is built on ProLution's terrain
   format work (released CC0), and its encoder is ported from ProLution's reference encoder.
-- ProLution found that unit flag 63 crashes the game on a unit that isn't a truck. That is one of the build's checks.
 
 ### LittleGroove: the first
 

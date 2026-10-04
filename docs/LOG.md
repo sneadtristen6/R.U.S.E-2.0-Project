@@ -1323,3 +1323,18 @@ merged; suite 859 OK).**
   (64 of 64). A mod's game scripts can't use Python's `exec` statement (the game stops with "exec statement").
 - **Test copies:** a speed cheat that sets every unit to one top speed, combined with our own x3, left trucks unable
   to leave the HQ; test copies use only the x3 from now on.
+
+### 2026-10-03, night: another nation's units in campaign chapters and Operations
+
+- **The report:** a player (Oozaru, Discord) crashed loading Holland's campaign map with a build that spawned US,
+  German, UK and French units on Holland and Italy. His build had 0 errors.
+- **Why:** campaign chapters and Operations load the unit models of only the nations they play. 30 of the 85 cluster
+  maps list them one by one (Holland's three chapters: US, Germany, UK; Colditz: US, Germany), and the build's way of
+  loading another nation's models in every match reached skirmishes only. A French unit on Holland had no model.
+- **Fixed:** a nation a mod needs (a spawned unit, or a unit given to another nation) is now added to every mission's
+  own list too (`unitcheck.load_in_missions`; France: 29 loaders in 14 missions). Lists that already hold one pack of
+  every nation's are left alone, and the US's pack with boats (Italy, D-Day) counts as the US's: it holds all 71 of
+  the plain one's models and five ships.
+- **Tested (T29, first numbered T22):** 4 French B1 Bis and 2 French squads for the player on 1. COLDITZ CASTLE: the mission loads and
+  they're drawn. Holland itself wasn't tried (locked in the tester's campaign); the player's own build is the last
+  check.

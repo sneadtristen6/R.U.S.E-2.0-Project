@@ -348,14 +348,32 @@ PACK_KINDS = ("Proxy", "Mesh", "Animation")
 NATION_TAGS = ("US", "GER", "UK", "FR", "ITA", "URSS", "JAP")
 
 
-def loader(kind, nations=NATION_TAGS, force=None):
+def loader(kind, nations=NATION_TAGS, force=None, missions=None):
     """A cluster map's loader of one kind of per-nation skirmish pack, as in the game (SkirmishPacks in Nationalite
-    order)."""
+    order); `missions`: what it loads outside a skirmish (NotSkirmishPacks), as pack names after "Pack<kind>"."""
     props = {"SkirmishPacks": ListV([Ref(f"$/IA/Cluster/Pack{kind}Skirmish_{n}") for n in nations]),
              "SkirmishCommon": Ref(f"$/IA/Cluster/Pack{kind}Skirmish_Common")}
     if force is not None:
         props["ForceLoadBitFieldIfSkirmish"] = num(force, "uint32")
+    if missions is not None:
+        props["NotSkirmishPacks"] = ListV([Ref(f"$/IA/Cluster/Pack{kind}{n}") for n in missions])
     return Inline(Obj("TClusterLoadSelectifResource", props))
+
+
+def mission(*packs):
+    """A campaign chapter's cluster map: its proxy and mesh loaders load `packs` outside a skirmish (as Holland's,
+    one pack per nation it plays), its animation loader the one pack of every nation's (as every shipped one)."""
+    return cluster_map(*(loader(k, missions=packs) for k in ("Proxy", "Mesh")),
+                       loader("Animation", missions=("_All_ButCommon",)))
+
+
+def listed(game, top):
+    """Each loader of a cluster map: the packs it loads outside a skirmish, by name."""
+    return [[x.target.rsplit("/", 1)[-1] for x in v.obj.props["NotSkirmishPacks"].items]
+            for v in game.objects[top].props["SubClusterList"].items if v.obj.cls == "TClusterLoadSelectifResource"]
+
+
+HOLLAND = ("Skirmish_Common", "Skirmish_US", "Skirmish_GER", "Skirmish_UK")
 
 
 def cluster_map(*parts):
@@ -619,6 +637,26 @@ class LoadedEverywhere(ForceLoadOn, unittest.TestCase):
         self.assertEqual(forced(g), [num(10, "uint32")] * 3)
         self.assertEqual(unitcheck.load_everywhere(Game(objects={}), [0]), {0: (0, 0)})
 
+    def test_campaigns_and_operations_list_the_nation_too(self):
+        # outside a skirmish a loader loads its own list and nothing else: Holland's has no French pack, so French
+        # units spawned there had no model (a player's build, 2026-10-03: the game crashed loading the mission)
+        g = Game(objects={"$/Holland": mission(*HOLLAND),
+                          "$/Italy": mission("Skirmish_Common", "SkirmishWithBoat_US", "Skirmish_GER", "Skirmish_FR"),
+                          "$/Alpha": mission("_All"), "$/Blitz": cluster_map()})
+        self.assertEqual(unitcheck.load_in_missions(g, {3, 0}), {0: (0, 0), 3: (2, 1)})
+        self.assertEqual(listed(g, "$/Holland"), [
+            [f"PackProxySkirmish_{n}" for n in ("Common", "US", "GER", "UK", "FR")],
+            [f"PackMeshSkirmish_{n}" for n in ("Common", "US", "GER", "UK", "FR")],
+            ["PackAnimation_All_ButCommon"]])  # (one pack of every nation's: nothing to add)
+        # the US's pack with boats holds all of the plain one: Italy has the US already, and France
+        self.assertEqual(listed(g, "$/Italy")[1], ["PackMeshSkirmish_Common", "PackMeshSkirmishWithBoat_US",
+                                                   "PackMeshSkirmish_GER", "PackMeshSkirmish_FR"])
+        self.assertEqual(listed(g, "$/Alpha"), [["PackProxy_All"], ["PackMesh_All"], ["PackAnimation_All_ButCommon"]])
+        self.assertEqual(forced(g, "$/Holland"), [None] * 3)  # (the skirmish bit stays as it was)
+        # twice: nothing more
+        self.assertEqual(unitcheck.load_in_missions(g, {3}), {3: (0, 0)})
+        self.assertEqual(len(listed(g, "$/Holland")[1]), 5)
+
 
 # --- the build writes the loaders' bits into the cluster map files ---
 def ref(index, cls):
@@ -720,6 +758,15 @@ class SpawnedUnits(ForceLoadOn, unittest.TestCase):
             "spawner: the spawned Panzer use Germany's unit models, which a skirmish loads only when a player has "
             "Germany: they now load in every skirmish (6 loaders in 2 cluster maps)"])
         self.assertEqual(forced(r.game), [num(2, "uint32")] * 3)
+
+    def test_a_spawned_unit_loads_in_campaign_chapters_too(self):
+        r = self.check("Unit_Panzer", maps=dict(LoadedEverywhere.MAPS, **{"$/Holland": mission(
+            "Skirmish_Common", "Skirmish_US", "Skirmish_UK")}))
+        self.assertEqual(r.errors, [])
+        self.assertIn("Germany's unit models load in campaign chapters and Operations too, which load only the nations "
+                      "they play (2 loaders in 1 cluster maps)", [f.message for f in r.findings])
+        self.assertEqual(listed(r.game, "$/Holland")[1],
+                         [f"PackMeshSkirmish_{n}" for n in ("Common", "US", "UK", "GER")])
 
     def test_common_models_and_unknown_classes_need_nothing(self):
         r = self.check("Unit_Jeep", "Unit_Nobody", maps=LoadedEverywhere.MAPS)
