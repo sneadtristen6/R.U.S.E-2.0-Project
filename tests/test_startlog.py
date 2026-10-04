@@ -1,5 +1,5 @@
 """The apps' start-up log (rusemod.startlog): each start one line of seconds since the program started, written as it
-goes, the last 20 kept, never more than 10 KB, never stopping an app; the window's steps and the page's first calls
+goes, the last 20 kept, never more than 25 KB, never stopping an app; the window's steps and the page's first calls
 (rusemod.webui.open_window, with a stand-in for pywebview); and the troubleshooter's report carrying it."""
 import inspect
 import os
@@ -169,7 +169,7 @@ class OneStart(Base):
 
 
 class TheFile(Base):
-    def test_the_last_20_starts_and_never_more_than_10_kb(self):
+    def test_the_last_20_starts_and_never_more_than_25_kb(self):
         logs = self.home / "logs"
         logs.mkdir()
         (logs / "studio-start.log").write_text("x" * 5000 + "\n" + "\n".join(f"old {n}" for n in range(30)) + "\n",
@@ -177,7 +177,7 @@ class TheFile(Base):
         log = self.log()
         log.go()
         for n in range(200):  # far more calls than a line holds: the latest give way
-            log.call_ended(log.call_started(f"a_rather_long_call_name_{n}"), "x")
+            log.call_ended(log.call_started(f"a_rather_long_call_name_that_goes_on_and_on_and_on_{n}"), "x")
         log.mark("ready")
         log.mark("closed")  # written at once, and the writer thread stops
         lines = self.lines()
@@ -186,7 +186,7 @@ class TheFile(Base):
         self.assertLessEqual(len(lines[-1]), startlog.LINE)
         self.assertTrue(lines[-1].endswith(" ..."), lines[-1])
         self.assertIn("ready", entries(lines[-1]))  # the steps stay
-        self.assertLess((logs / "studio-start.log").stat().st_size, 10_240)
+        self.assertLess((logs / "studio-start.log").stat().st_size, 25_000)
         self.assertEqual([p.name for p in logs.iterdir()], ["studio-start.log"])  # no temporary file left
 
     def test_a_log_that_cant_be_written_never_stops_the_app(self):

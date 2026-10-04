@@ -20,7 +20,7 @@ started at each step, in the order they happened:
 
   2026-10-04 14:02:11 studio 0.9.5: python 0.41, imports 1.32, api 1.33, (...) status 4.58+0.01, (...) ready 4.62
 
-The file keeps the last KEEP starts, each line cut at LINE characters, so it stays under 10 KB. It's written again
+The file keeps the last KEEP starts, each line cut at LINE characters, so it stays under 25 KB. It's written again
 WAIT seconds after each change, by a thread of its own (a write took 7 to 8 ms on the owner's PC, 2026-10-04: the
 page's calls never wait for one), and once more when the window closes; so a start that never finished (the player
 closed the app) still shows how far it got. Writing it never stops an app: a log that can't be written is skipped.
@@ -35,7 +35,8 @@ import time
 from pathlib import Path
 
 KEEP = 20              # starts kept in the file
-LINE = 500             # characters a start's line may take: KEEP lines stay under 10 KB
+LINE = 1200            # characters a start's line may take (a slow start's steps and CALLS calls fit): KEEP lines
+#                        stay under 25 KB
 CALLS = 24             # first calls recorded per start
 AFTER_READY = 120      # seconds after "ready" in which a first call still counts as the start's
 REPORT = 5             # starts the troubleshooter's report carries
@@ -292,16 +293,22 @@ def timed(api, log: StartLog | None = None):
 
 
 def _wrapped(log: StartLog, name: str, method, raw):
+    def noted(what, *args) -> object:
+        try:
+            return what(*args)
+        except Exception:  # noqa: BLE001  (the log never stops the app: that call just isn't noted)
+            return None
+
     def call(*args, **kwargs):
-        if not log.watching():
+        if not noted(log.watching):
             return method(*args, **kwargs)
-        entry = log.call_started(name)
+        entry = noted(log.call_started, name)
         try:
             out = method(*args, **kwargs)
         except BaseException:
-            log.call_ended(entry, name)
+            noted(log.call_ended, entry, name)
             raise
-        log.call_ended(entry, name, out)
+        noted(log.call_ended, entry, name, out)
         return out
 
     call.__name__, call.__qualname__, call.__doc__ = name, name, raw.__doc__

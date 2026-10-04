@@ -3497,7 +3497,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
         def work(say):
             build_index(game, self._path(), say=say)
-            self._units = None
+            # what was read from the index before: the Maps tab can read an old one while this one builds
+            self._units = self._ammo = self._by_class = None
 
         return job.start(work, "The game index is ready.")
 

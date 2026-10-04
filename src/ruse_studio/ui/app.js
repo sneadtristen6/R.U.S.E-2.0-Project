@@ -1520,9 +1520,17 @@ async function showNoIndex(status) {
     const log = $("build-log");
     log.classList.remove("hidden");
     const { job } = await api().build_index();
-    follow(job, log, async (ok) => {
-      if (ok) { $("no-index").classList.add("hidden"); await setLanguage(state.lang); }
-      else button.disabled = false;
+    // the panel shows on the Units tab only: the status line says it's building, and how it ended, on every tab
+    say(state.words.index_building);
+    follow(job, log, async (ok, message) => {
+      if (ok) {
+        $("no-index").classList.add("hidden");
+        await setLanguage(state.lang);
+        say(state.words.index_ready);
+      } else {
+        button.disabled = false;
+        say(message, "error");
+      }
     });
   };
 }
