@@ -193,6 +193,19 @@ class RiverbedsOnlyTest(unittest.TestCase):
         self.assertEqual(beds.box(), whole.box())
         self.assertIsNone(mend.Riverbeds(0.0, 0.0, 100 * m, {}).box())
 
+    def test_the_first_look_far_from_riverbeds_changes_no_answer(self):
+        """Riverbeds.touches answers "no" at once far from every riverbed (its near map): every answer is the same as
+        the Filled's own, close by or far, for reaches up to NEAR and past it."""
+        m = self.m
+        box = (60 * m, 60 * m, 140 * m, 140 * m)
+        trench = lambda depth: FakeMesh(81, 2.5 * m, lambda x, y: 10000.0 - (depth if abs(x - 100 * m) < 10 * m else 0))
+        whole = mend.Filled(trench(2600.0), trench(0.0), box)
+        beds = mend.Riverbeds(-1000 * m, -1000 * m, 4000 * m, {(0, 0): whole})  # one window round all of it
+        for x in range(30, 171, 3):
+            for reach in (0.5, 4.0, 12.0, 29.0, 45.0):
+                self.assertEqual(beds.touches(x * m, 100 * m, reach * m), whole.touches(x * m, 100 * m, reach * m),
+                                 (x, reach))
+
     def test_a_dry_dip_raised_flat_isnt_mended(self):
         """mend_map with no water under the strokes: nothing to mend, nothing read."""
         m = self.m
@@ -204,6 +217,30 @@ class RiverbedsOnlyTest(unittest.TestCase):
         def read(member):
             raise AssertionError(f"nothing to mend, but {member} was read")
         self.assertEqual(mend.mend_map(read, str, {}, before, after, [(100 * m, 100 * m, 40 * m)]), (None, []))
+
+    def test_workers_that_cant_start_are_said(self):
+        """Worker programs that can't start: the same work done in this program, and a note saying so (on one core a
+        big map's riverbeds take many times longer)."""
+        from unittest import mock
+        from rusemod import groundpaint
+        m = self.m
+        box = (60 * m, 60 * m, 140 * m, 140 * m)
+        trench = lambda depth: FakeMesh(81, 2.5 * m, lambda x, y: 10000.0 - (depth if abs(x - 100 * m) < 10 * m else 0))
+        whole = mend.Filled(trench(2600.0), trench(0.0), box)
+        before, after = trench(2600.0), trench(0.0)
+        before.bounds = after.bounds = (0.0, 0.0, 0.0, 200 * m, 200 * m, 0.0)
+        before.to_bytes = after.to_bytes = lambda: b""
+
+        def no_pool(*_args):
+            raise OSError("no programs here")
+        with mock.patch.object(mend, "_windows", lambda b, x, a: [(0, 0, box), (1, 0, box)]), \
+                mock.patch.object(mend, "_mend_window", lambda b, a, wi, wj, core: (wi, wj, whole, None, 0)), \
+                mock.patch.object(mend, "_pool", no_pool), \
+                mock.patch.object(groundpaint, "map_bounds", lambda mesh: (0.0, 0.0, 1.0, 1.0)):
+            beds, notes = mend.mend_map(lambda member: None, str, {}, before, after, [(100 * m, 100 * m, 40 * m)],
+                                        pack_file="pack.dat", workers=4)
+        self.assertEqual(beds.count(), 2 * whole.count())  # both windows mended all the same
+        self.assertIn("one core: the worker programs couldn't start (OSError: no programs here)", notes[1])
 
 
 class QuickEncoderTest(unittest.TestCase):

@@ -262,6 +262,9 @@ class Riverbeds:
     """The riverbeds a build mends, window by window (mend_map): each window's Filled, holding only its own square
     of the map (a window's grid reaches past it, for the banks). Answers as a Filled does, for the build's low cover."""
 
+    NEAR = 30 * METRE   # touches() asked with a reach up to this answers "no" at once far from every riverbed
+    CELL = 8 * METRE    # the squares of that first look
+
     def __init__(self, x0: float, y0: float, side: float, parts: dict):
         self.x0, self.y0, self.side, self.parts = x0, y0, side, parts  # (window column, row) -> Filled
 
@@ -269,7 +272,34 @@ class Riverbeds:
         part = self.parts.get((int((x - self.x0) // self.side), int((y - self.y0) // self.side)))
         return part is not None and part.holds(x, y)
 
+    def _near_map(self):
+        """(x0, y0, nx, ny, bits): the CELL squares within NEAR (and a square) of a riverbed square, made on first use:
+        the build asks touches() of every low object in the riverbeds' box (millions on a big map)."""
+        near = getattr(self, "_near", None)
+        if near is not None:
+            return near
+        box = self.box()
+        c = self.CELL
+        pad = self.NEAR + 2 * c
+        x0, y0 = box[0] - pad, box[1] - pad
+        nx, ny = max(1, math.ceil((box[2] + pad - x0) / c)), max(1, math.ceil((box[3] + pad - y0) / c))
+        rows = [[0] * nx for _ in range(ny)]
+        for part in self.parts.values():
+            s, pnx = part.step, part.nx
+            for k, v in enumerate(part.bits):
+                if v:
+                    x, y = part.x0 + (k % pnx + 0.5) * s, part.y0 + (k // pnx + 0.5) * s
+                    rows[int((y - y0) // c)][int((x - x0) // c)] = 1
+        rows = _filter2(rows, math.ceil(self.NEAR / c) + 1, max)
+        self._near = (x0, y0, nx, ny, bytearray(v for row in rows for v in row))
+        return self._near
+
     def touches(self, x: float, y: float, reach: float) -> bool:
+        if reach <= self.NEAR and self.parts:
+            x0, y0, nx, ny, bits = self._near_map()
+            i, j = int((x - x0) // self.CELL), int((y - y0) // self.CELL)
+            if not (0 <= i < nx and 0 <= j < ny) or not bits[j * nx + i]:
+                return False
         if self.holds(x, y):
             return True
         for f in (0.5, 1.0):
@@ -687,13 +717,14 @@ def mend_map(read, path_of, changed: dict, before, after, areas, cache=None, pac
     jobs = _windows(before, box, areas)
     workers = WORKERS if workers is None else workers
     share = pack_file is not None and workers > 1 and len(jobs) > 1
-    done = []
+    done, alone = [], []  # alone: why the workers couldn't do it (said: the same work then takes one core many times longer)
     if share:
         try:
             with _pool(_start_windows, (before.to_bytes(), after.to_bytes()), min(workers, len(jobs))) as pool:
                 done = list(pool.map(_window_job, jobs))
-        except Exception:  # noqa: BLE001 - workers that can't start: the same work in this program
+        except Exception as exc:  # noqa: BLE001 - workers that can't start: the same work in this program
             share, done = False, []
+            alone.append(f"{type(exc).__name__}: {exc}")
     if not done:
         done = [_mend_window(before, after, *job) for job in jobs]
     parts, filled_parts, dry = [], {}, 0
@@ -726,8 +757,9 @@ def mend_map(read, path_of, changed: dict, before, after, areas, cache=None, pac
                     for got in pool.map(_tile_job, batches):
                         tiles.update(got)
                 tiles = {i: tiles[i] for i in sorted(tiles)}
-            except Exception:  # noqa: BLE001 - workers that can't start: the same work in this program
+            except Exception as exc:  # noqa: BLE001 - workers that can't start: the same work in this program
                 tiles = None
+                alone.append(f"{type(exc).__name__}: {exc}")
         if tiles is None:
             tiles = mend_tiles_parts(own, bounds, parts, cache)
         if tiles:
@@ -744,6 +776,8 @@ def mend_map(read, path_of, changed: dict, before, after, areas, cache=None, pac
     notes.insert(0, f"filled riverbeds (the old ground's, raised flat): {beds.count() * step2 / ha:.1f} ha mended from "
                     f"both banks in {painted} picture tile(s)"
                     + (f"; dry hollows raised flat left as they are ({dry * step2 / ha:.1f} ha)" if dry else ""))
+    if alone:
+        notes.insert(1, f"the riverbeds were mended on one core: the worker programs couldn't start ({alone[0]})")
     return beds, notes
 
 

@@ -399,18 +399,27 @@ def _bed_circles(drained: list[tuple[float, float]], wet=None) -> list[tuple[flo
     """Open zones (x, y, r) over a dried bed's samples (nav.water_blocks), for Graph.open_ground, which puts each new
     circle inside one zone and none smaller than nav.MIN_RADIUS: so each zone is one of BED_RADII, centred on a sample
     no zone holds yet, the largest whose middle and rim (8 points) aren't under water now (`wet(x, y)`; the ends of a
-    bed meet the water left). A bed too narrow for the smallest stays closed."""
+    bed meet the water left). A bed too narrow for the smallest stays closed.
+
+    A zone holds no sample as far away as the largest radius, so each sample is looked at against the zones in its
+    square of that side and the 8 round it only: the same zones as looking at all of them (a map drained across
+    kilometres has a hundred thousand)."""
     zones: list[tuple[float, float, float]] = []
+    side = max(BED_RADII)
+    near: dict[tuple[int, int], list[tuple[float, float, float]]] = {}
 
     def dry(x, y, r) -> bool:
         return wet is None or not any(wet(x + r * c, y + r * s) for c, s in
                                       ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (.7, .7), (.7, -.7), (-.7, .7), (-.7, -.7)))
     for x, y in sorted(drained):
-        if any((x - zx) ** 2 + (y - zy) ** 2 < (zr * 0.7) ** 2 for zx, zy, zr in zones):
+        i, j = int(x // side), int(y // side)
+        if any((x - zx) ** 2 + (y - zy) ** 2 < (zr * 0.7) ** 2
+               for di in (-1, 0, 1) for dj in (-1, 0, 1) for zx, zy, zr in near.get((i + di, j + dj), ())):
             continue
         r = next((r for r in BED_RADII if dry(x, y, r)), None)
         if r is not None:
             zones.append((x, y, r))
+            near.setdefault((i, j), []).append((x, y, r))
     return zones
 
 
