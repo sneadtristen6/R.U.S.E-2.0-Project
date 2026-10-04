@@ -1176,9 +1176,13 @@ the copy). The model's other firsts, not seen in the game yet: 5 draw calls (the
 model's draw calls in a list that grows, so no fixed limit was found), plain skinned buffers (the game has 168, its
 animals'). Build M1 Abrams B first, then the M1 Abrams.
 
-**Run 4 (owner, 2026-10-04 ~12:50): "both of the Abrams built just fine".** M1 Abrams B and the M1 Abrams were both
-built with no crash: run 3's texture levels were the last fault in building one. The rest of the pass list (shape and
-paint up close and far off, size, turret and gun aiming, driving, firing) wasn't reported yet.
+**Run 4 (owner, 2026-10-04 12:46-12:50): PASSED.** "It spawned ... the turret even moved. It seems to be working ...
+this looks good"; "Both the Abrams work ... The right one in the image with two of them is the one that was crashing
+initially"; the game was closed normally ("I didn't crash"; no crash in Windows' records). M1 Abrams B and the M1
+Abrams (its own card) were both built and stood at the base in their desert paint, larger than a Sherman, turret
+turning. The first model from another 3D model in R.U.S.E. Shots: the game's Screenshots folder, 12:47:59-12:49:41
+(12:49:29: the two side by side). Not seen yet: fighting; tracks and wheels (static, expected), the gun flash and the
+wreck (the Sherman's, expected).
 
 ## T30. Iwo Jima groundwork (2026-10-04)
 
