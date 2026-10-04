@@ -856,10 +856,18 @@ class Window(unittest.TestCase):
             server.server_close()
 
     def test_without_pywebview_it_says_how_to_install_it(self):
-        with mock.patch.dict(sys.modules, {"webview": None}):
-            with mock.patch("builtins.print") as out:
-                self.assertEqual(app.main([]), 2)
+        from rusemod import startlog
+        startlog.stop()
+        self.addCleanup(startlog.stop)
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"RUSE_PLATFORM_HOME": d}):
+            with mock.patch.dict(sys.modules, {"webview": None}):
+                with mock.patch("builtins.print") as out:
+                    self.assertEqual(app.main([]), 2)
+            # the start-up log (rusemod.startlog) shows how far it got: the window library was the next step
+            line = startlog.recent("launcher", Path(d))[-1]
         self.assertIn("pip install pywebview", out.call_args[0][0])
+        self.assertIn(f" launcher {__version__}: python ", line)
+        self.assertEqual([p.rpartition(" ")[0] for p in line.split(": ", 1)[1].split(", ")], ["python", "imports", "api"])
 
 
 if __name__ == "__main__":

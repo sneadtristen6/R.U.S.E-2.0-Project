@@ -195,6 +195,30 @@ cz = "Index hry zatím chybí. Sestavte ho jednou (asi minuta)."
 jpn = "ゲーム索引がまだありません。一度作成してください(約1分)。"
 sc = "尚无游戏索引。请建立一次(约一分钟)。"
 
+[index_building]
+us = "Building the game index (about a minute)…"
+fr = "Construction de l'index du jeu (environ une minute)…"
+ger = "Der Spielindex wird erstellt (etwa eine Minute)…"
+ita = "Creazione dell'indice del gioco (circa un minuto)…"
+spa = "Creando el índice del juego (un minuto aprox.)…"
+pol = "Budowanie indeksu gry (około minuty)…"
+ru = "Индекс игры строится (около минуты)…"
+cz = "Sestavuje se index hry (asi minuta)…"
+jpn = "ゲーム索引を作成中(約1分)…"
+sc = "正在建立游戏索引(约一分钟)…"
+
+[index_ready]
+us = "The game index is ready."
+fr = "L'index du jeu est prêt."
+ger = "Der Spielindex ist fertig."
+ita = "L'indice del gioco è pronto."
+spa = "El índice del juego está listo."
+pol = "Indeks gry jest gotowy."
+ru = "Индекс игры готов."
+cz = "Index hry je hotový."
+jpn = "ゲーム索引の準備ができました。"
+sc = "游戏索引已就绪。"
+
 [build_index]
 us = "Build the index"
 fr = "Construire l'index"

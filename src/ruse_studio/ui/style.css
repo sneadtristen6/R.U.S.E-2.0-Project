@@ -233,6 +233,8 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 
 .no-index { position: fixed; inset: 60px 0 0 0; display: flex; flex-direction: column; align-items: center;
             justify-content: center; gap: 14px; background: var(--bg); }
+/* only the Units tab needs the game index: Maps and Settings stay usable while it's missing or being built */
+.no-index.off-tab { display: none; }
 .no-index pre { max-width: 760px; max-height: 240px; overflow: auto; padding: 10px; background: #071120;
                 border: 1px solid var(--line); border-radius: var(--radius); font-size: 12px; }
 

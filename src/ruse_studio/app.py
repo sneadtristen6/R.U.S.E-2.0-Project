@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from rusemod import schema
+from rusemod import schema, startlog
 from rusemod.webui import open_window, self_test
 
 from . import __version__
@@ -15,6 +15,8 @@ UI = Path(__file__).with_name("ui")
 
 
 def main(argv=None) -> int:
+    log = startlog.begin("studio", __version__)  # the start-up log (rusemod.startlog): written once the window is due
+    log.mark("imports")
     ap = argparse.ArgumentParser(prog="ruse_studio", description="RUSE Studio: make mods for R.U.S.E.")
     ap.add_argument("--game", help="the R.U.S.E. folder (default: found through Steam)")
     ap.add_argument("--index", help="the game index file (default: the one for this game build)")
@@ -25,13 +27,17 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     api = StudioApi(index_path=args.index, game_dir=args.game)
     if args.self_test:
+        startlog.stop()  # the build's check, not a start
         return self_test(args.self_test, UI, ["index.html", "app.js", "maps.js", "style.css", "spike3d.html"], [
             ("the Studio answers", lambda: api.status()),
             ("the Studio's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['search']!r}"),
             ("the game's names", lambda: f"ProductionPrice in Chinese is {schema.label('ProductionPrice', 'sc')!r}"),
         ])
+    log.mark("api")
+    log.go()
     from rusemod.update import fix_app_list_version, installed_app
     if installed_app():  # Windows' app list shows this version (issue #15)
         fix_app_list_version("studio", __version__)
+        log.mark("app_list")
     page = "spike3d.html" if args.spike else "index.html"
     return open_window("RUSE Studio", UI, page, api, extra={"cache": api.cache_dir})

@@ -1520,9 +1520,17 @@ async function showNoIndex(status) {
     const log = $("build-log");
     log.classList.remove("hidden");
     const { job } = await api().build_index();
-    follow(job, log, async (ok) => {
-      if (ok) { $("no-index").classList.add("hidden"); await setLanguage(state.lang); }
-      else button.disabled = false;
+    // the panel shows on the Units tab only: the status line says it's building, and how it ended, on every tab
+    say(state.words.index_building);
+    follow(job, log, async (ok, message) => {
+      if (ok) {
+        $("no-index").classList.add("hidden");
+        await setLanguage(state.lang);
+        say(state.words.index_ready);
+      } else {
+        button.disabled = false;
+        say(message, "error");
+      }
     });
   };
 }
@@ -1592,6 +1600,9 @@ function showView(view) {
   $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
   $("pick-mod").classList.toggle("hidden", view === "maps");  // the Units tab edits a mod, the Maps tab a map
   $("pick-map").classList.toggle("hidden", view !== "maps");
+  // "No game index yet" (and the index's build, a minute or more) covers the Units tab only: the Maps tab and
+  // Settings (where the installer's clean backup shows how far it is) can be used meanwhile
+  $("no-index").classList.toggle("off-tab", view !== "units");
   if (view === "settings") { renderSettings(); loadBackup(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
@@ -2040,6 +2051,8 @@ async function start() {
   $("update-now").addEventListener("click", installUpdate);
   $("update-info").addEventListener("click", () => { state.showChanges = !state.showChanges; renderChanges(); });
   await setLanguage(state.lang);
+  // the first screen is drawn: the start-up log (rusemod.startlog) notes it, for the troubleshooter's report
+  Promise.resolve().then(() => api().start_mark("ready")).catch(() => {});  // an older back end: no log
   checkUpdate();
   await openLangPick(true);  // until a language is picked there: "Choose your language", first
   firstBackup(status.ready).catch(problem);

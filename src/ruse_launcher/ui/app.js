@@ -1299,6 +1299,8 @@ async function start() {
   $("update-info").addEventListener("click", () => { state.showChanges = !state.showChanges; renderChanges(); });
   await setLanguage(state.lang);
   await refresh();
+  // the first screen is drawn: the start-up log (rusemod.startlog) notes it, for the troubleshooter's report
+  Promise.resolve().then(() => api().start_mark("ready")).catch(() => {});  // an older back end: no log
   checkUpdate();
   await openLangPick(true);  // until a language is picked there: "Choose your language", first
   await firstBackup();

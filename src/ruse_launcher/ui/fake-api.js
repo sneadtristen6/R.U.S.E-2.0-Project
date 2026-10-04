@@ -320,6 +320,8 @@
           ? { done: 1, left: ["1 in D:\\RUSE-Instances\\.trash: still held, removed on a later test"] } : { done: 1, left: [] };
       },
       app_version: async () => ({ app: "Launcher", version: "0.3.1" }),
+      // the start-up log: here, the page's moment kept in window.fakeStartMarks (ms since the page began loading)
+      start_mark: async (what) => { (window.fakeStartMarks = window.fakeStartMarks || {})[what] = performance.now(); return {}; },
       update_check: async () => mode === "update"
         ? { available: true, version: "9.9.9", current: "0.3.1", installed: true, size: 60000000,
             changes: [

@@ -395,8 +395,21 @@ def build_index(game: Path, out: Path | None = None, say=print) -> Path:
         db.commit()
     finally:
         db.close()
-    os.replace(tmp, out)
+    _replace_when_free(tmp, out)
     return out
+
+
+def _replace_when_free(tmp: Path, out: Path, tries: int = 50, wait: float = 0.1) -> None:
+    """os.replace(tmp, out), waiting up to tries * wait seconds while something reads the old index: Windows won't
+    replace a file another reader has open (the Studio's Maps tab can read an old index while the new one builds)."""
+    for n in range(tries):
+        try:
+            os.replace(tmp, out)
+            return
+        except PermissionError:
+            if n == tries - 1:
+                raise
+            time.sleep(wait)
 
 
 class Index:

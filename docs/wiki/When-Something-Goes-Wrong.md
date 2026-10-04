@@ -32,6 +32,17 @@ and again before **Test in game**, and names each file that has a mistake.
 > Known case: RUSE Studio 0.7.0 and earlier saved **Water** strokes without their water level ("the water brush
 > needs level"). 0.7.1 fixes it; **Set aside** clears an old file.
 
+## The app takes a long time to open
+
+- **The first start after installing** with "Keep a clean copy of my game's files" ticked makes that copy (the whole
+  game folder, about 5.3 GB): Settings shows how far it is, and the app can be used meanwhile.
+- **RUSE Studio's game index** is built once per game version, and again when a Studio update changes it (about a
+  minute; the Studio asks first). Meanwhile the Maps tab and Settings can be used, and the line at the bottom says
+  when it's ready.
+- Anything else: open **Troubleshoot** and **Copy report**. The report lists how long each of the app's last starts
+  took at each step, in seconds: paste it in a [[bug report|Report-a-Bug]]. The same lines are kept in
+  `%LOCALAPPDATA%\RUSE Mod Platform\logs\studio-start.log` (the Launcher's: `launcher-start.log`).
+
 ## "Windows protected your PC"
 
 The apps are new to Windows' reputation check. Click **More info**, then **Run anyway**.
