@@ -1143,6 +1143,22 @@ merged; suite 859 OK).**
 - Two working rules from the day: test copies only for what could break the game, with the test spots beside the
   player's HQ and a top-down map; and a release note claims only what passed in the game.
 
+### 2026-10-04: music, sounds and campaign scenes (research, nothing built)
+
+- **Why:** the owner's idea (PLAN §14 idea 8): new music for R.U.S.E. 2.0 and its Iwo Jima Operation, sounds of
+  their own for units and buildings, new campaign scenes. Read from the game's data and files; the details are in
+  FORMATS §9, the theories and the test that checks them in BIG_PATCH.md ("Music, sounds and campaign scenes").
+- **Found:** music is 34 named tracks; battles switch between three playlists (calm, battle, ruse); missions play
+  any track by name. Every sound is a `.ess` plus a `.sformat` description in a sound bank, read first: we decoded
+  the description field by field. Engines are per unit, shots per effect, voices per nation and type (a Japanese set
+  ships); each map has one background sound. Buildings share one effects table (construction already carries a
+  sound; production, damage, capture are in the same table). Films: all 96 are FFmpeg 7 WebM, VP9 + Vorbis; the
+  player takes one VP9 track at up to 30 fps; full-screen chapter films carry 8 language tracks. Blender 4.5 writes
+  the same layout (test render).
+- **Checked in the game:** the community "Custom Music" mod (the menu music replaced by a longer stereo song, its
+  description left as it was) works (owner, 2026-10-04). Whether the whole song plays isn't recorded yet.
+- **Not built, not tested:** our own sound encoder, new tracks, new films, building sounds.
+
 ### 2026-10-02: units from another nation work in any match
 
 - **Proven in the game:** a German Tiger and a German Ju 87 given to the US, in a match with the US alone (no German

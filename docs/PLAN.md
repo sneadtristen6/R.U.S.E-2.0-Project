@@ -1272,3 +1272,20 @@ not decisions or an order: the map editor comes first.** Map ideas are in §12, 
    that can be pushed later". Goes with "Polish waits" (§10).
 5. **A compass (2026-10-03).** The owner can't tell north from east in the game or the Studio ("I have no way of
    telling which way is north"): a compass in the Studio's map view, and maybe one in the game through a UI mod.
+8. **Sound, music and campaign scenes (2026-10-04).** The owner: new music for R.U.S.E. 2.0 and its Iwo Jima
+   Operation, "just to add variation to the game"; maybe different sounds for buildings and units; and how campaign
+   scenes could be added. What the data shows (read 2026-10-04, nothing tested in game; FORMATS §9):
+   - **Music** is a list of named tracks (`$/Misc/Musics/*`, 34), each one file. The battle music picks from three
+     playlists (calm, battle, ruse) driven by what happens in the fight; a mission can also play any track by name
+     (`PlayMusic`, used 229 times in Eugen's missions). New tracks = a new sound file + a new name + added to a
+     playlist or played by a mission. Needs our own sound encoder (the format is known; a community mod already
+     replaced the menu music with a stereo song).
+   - **Unit sounds:** engines are per unit (run and idle sounds, shared by kind: light, medium, heavy tank, jeep,
+     truck, planes, infantry); a unit can be given its own. Weapon sounds belong to the shot's effect, voices to the
+     nation and unit type (8 voice sets ship, a Japanese one among them).
+   - **Building sounds:** none of their own today (one shared construction loop, capture/loss jingles). The scenery's
+     animals play idle sound loops, a route to try for a building.
+   - **Map ambience** is one setting per map (Swamps has its own swamp ambience, Two Islands a volcano sound).
+   - **Campaign scenes**, three kinds: a full-screen film, a small picture-in-picture film during a mission (both
+     WebM videos played by name), and in-game scenes made of a camera path, black bars, dialogue and music (pure
+     mission data). Blender can make the films in the game's exact video format.

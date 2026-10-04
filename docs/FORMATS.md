@@ -891,12 +891,53 @@ A skirmish loads four packs of `ZZ_Win.dat` per nation in the match (§3), plus 
 - `.apk` (nested EDAT), `.baf` (`0f000000`), `.ppk` (`PRXY` or nested EDAT), `.gpk` (UI, likely Scaleform GFx).
 - Scenery sets are European/African only: africa, allemagne, ardennes, europe, france, givre, hollande, italie. There is no tropical set.
 
-## 9. Sound (`.ess`) 🟡, last priority
+## 9. Sound (`.ess`) and video 🟡
 
 - Big-endian header: `01 00 02 02`, u8 flag, u8 channels (1/2/6), u16 rate (11,025–48,000), u32 samples, u32 0,
   u32 samples, then a u32 table of block offsets.
 - About 1,024 samples per block, variable block sizes, about 4.4 bits/sample: a custom variable-bitrate codec.
-- All 17,462 files are compressed; there is no PCM variant. vgmstream doesn't support it.
+- All 17,462 files are compressed; there is no PCM variant. vgmstream doesn't support it. The codec is known in the
+  community: RugnirViking's moddingSuite (GPL) reads it and writes mono, and a community stereo encoder made the
+  "Custom Music" mod (the menu music replaced by a 48 kHz stereo song). We have no encoder of our own yet.
+- **Names to files (2026-10-04):** the data names a source file and the game loads its built copy:
+  `FileName = WW2\Sons\ATP_Music\Battle1.ogg` is `gen_sound\ww2\sons\atp_music\battle1.ess` in ZZ_Win.dat (same
+  for `.wav` names). Each `.ess` also has a `.sformat` (same path, other extension) that the game reads first: no
+  `.sformat`, no sound. They live in sound banks (edat archives): `gen_sound\pack\gfxdescriptor.mpk` (5,566 entries,
+  loaded at start for everything under `WW2\Sons`) and per map `gen_sound\pack\map\<map>dialogues.mpk` (mission
+  voices) and `<map>ambient.mpk`, loaded with the map.
+- **`.sformat` layout** (little-endian): `06 01`, u8 how it's held (1 for music, 0 for short sounds), u8 channels,
+  u8 0, u8 bytes per frame (channels × 2), u16 rate, u32 samples, u32 (4 for music, 44 for short sounds; meaning
+  unknown), u32 the `.ess` file's size in bytes, u32 loop start, u32 loop end (0 and the sample count in every file
+  seen). Music (`.ogg` names) ends there: 28 bytes. Short sounds (`.wav` names) go on with a loudness track: u32
+  count, u16 2048 (samples per step), u8 10, u8 5 (bytes per step), then 5 rising bytes per 2048 samples (what the
+  game does with it is not known). The `.ess` decodes from its own header, but the read size and the play length come
+  from the `.sformat`. The Custom Music mod replaced `ruse_menu_ref-1.ess` (8,418,462 samples, 6.5 MB) with an
+  11,923,456-sample, 13.8 MB song and left the `.sformat` as it was, and it works in the game (owner, 2026-10-04);
+  whether all 4:08 play or it stops at the old 2:55 isn't recorded yet.
+- **Who uses which sound** (game data, `ruse index where <path>`): music = `TSoundStream` objects `$/Misc/Musics/*`
+  (musics.cpp in ZZ_GladNotPatchableWin.dat); in-battle music = `$/GFX/Everything/musicInGame` (playlists
+  progression 1-5, battle 1-4, mystery 1-5 and 8, driven by gauges and events); missions call `PlayMusic` /
+  `StopMusic` / `InitSoundAndMusic(MusicAuto=…)`. Engines = each unit's `SoundMotorDescriptor` (`Run_Snd`,
+  `IdleAndStop_Snd`, planes also `Dive_Snd`), shared by kind. Shots = `$/VFX_Bank/SFX_Tir__*`. Voices =
+  `$/GFX/Everything/AcknowManager` by nation and `TypeForAcknow` (sets fr, ger, it, jpn, pol, ru, spa, us). Map
+  ambience = `$/MapConstante/MapInstance/Map_SoundConfig` (`AmbianceDecor_MultiPiste`), one per map. Buildings have
+  no sound field; construction is `$/VFX_Bank/SFX_Construction__Batiment_Base`; scenery animals play idle loops.
+  Mission dialogue voices: `gen_sound\test\map\<mission>\scripting\dialog\<lang>\*.ess`.
+- **Video:** every shipped video (96, Data_Common.dat) is WebM written by FFmpeg 7 (muxer `Lavf61.3`/`Lavf61.7`):
+  one VP9 track (profile 0), Vorbis audio at 48 kHz stereo, cues, simple blocks, no lacing. Four shapes: full-screen
+  chapter films `ruse_cs_*` 1280×544 at 25 fps with **8 audio tracks** (one per language); in-mission films 1280×200
+  strips (38) or about 416×720 panels (27) at 30 fps with one audio track; menu loops 1280×720 without sound. The
+  game's player takes exactly one video track, VP9 only, at most 30 frames a second, and Vorbis audio only; with one
+  audio track it plays that track in every language, with several it plays the one for the game's language.
+  Cutscenes are `TActionDescriptorLaunchVideo` objects `$/CutSceneVideos/<name>` (per map,
+  `map\<map>\cutscenevideos.cpp`, with subtitles) played by a mission's `LaunchVideoFXByName(CutScene=…,
+  FullScreen=…)`. Blender 4.5's video output (FFmpeg 7.1, `Lavf61.7.102`) writes the same layout: VP9 profile 0 +
+  Vorbis 48 kHz stereo, cues, simple blocks (checked 2026-10-04 with a test render; not tried in the game).
+- **Building effects:** buildings share one effects table, `$/GFX/Everything/DefaultFxRemapper` (through the shared
+  `Descriptor_Building_Aeroport:GfxDescriptor.LevelBuildGeoDatabaseModification.Descriptor`): construction (with its
+  sound, `SFX_Construction__Batiment_Base`, looping until stopped), damage at 0/33/66 %, destruction (light, medium,
+  heavy), production smoke at 33/66/100 %, the light that turns while producing, capture. Fake buildings use
+  `FakeFxRemapper`.
 
 ## 10. The game's program
 
