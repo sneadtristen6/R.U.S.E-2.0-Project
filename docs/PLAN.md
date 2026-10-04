@@ -609,7 +609,18 @@ one is shorter. Rules:
 - **Polish waits.** "Look like R.U.S.E." (finer tiles up close, the map's lighting and sky, trees, buildings and
   roads) comes after the editor edits terrain, not before.
 
-**Now (updated 2026-10-04): start here.** **Studio 0.9.5 and Launcher 0.4.5: units get a look of their own** (the
+**Now (updated 2026-10-04, afternoon): start here.** **Studio 0.9.6 and Launcher 0.4.6: import your own 3D models**
+(being readied; pushed on the owner's word, with RUSE MAIN's speed work in one release branch). **Import model** on a
+new unit's page fits a .3ds or .glb to the unit it copies (rusemod.modelin, rusemod.unitmodel; MOD_FORMAT §7
+`files/models`); T35 PASSED: an M1 Abrams beside the Sherman, built and turning its turret, after three faults the
+game showed (a card only in the menu packs, pictures outside a texture group, one texture level too many: all
+fixed, FORMATS §8). The Abrams is a mod in Ruse-Mods (model by ags, downloadfree3d.com, credited; pushed after the
+Launcher release). Also: Test in game / Play start at once when nothing changed, Delete map, Erase the whole map,
+and three new ones shipped untested at the owner's word (roads on reshaped ground, riverbed fill, erase's layout).
+Next for models: tracks and wheels on their bones, the gun on its bones (recoil, flash at the new muzzle), its own
+wreck, Bring back of a shape changed in Blender; then the picture-to-model idea (§14 item 14).
+
+**Before (2026-10-04, morning):** **Studio 0.9.5 and Launcher 0.4.5: units get a look of their own** (the
 owner's big update, everything from the sessions of 2026-10-03 and 04 that passed in the game; LOG.md and the release
 notes). Firsts seen in the game: a unit repainted by a mod (T23) and in Blender (T27), a build-menu card made in the
 Studio (T31), a second Sherman with a 3D model of its own (T32, T33: model packs that grow need the id the game

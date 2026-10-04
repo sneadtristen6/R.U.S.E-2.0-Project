@@ -7,6 +7,7 @@
 **Make mods**
 - [[Your first mod|Your-First-Mod]]
 - [[Edit units|Edit-Units]]
+- [[Import a model|Import-a-Model]]
 - [[Shape the ground|Shape-the-Ground]]
 - [[Cover and movement|Cover-and-Movement]]
 - [[Draw roads|Draw-Roads]]

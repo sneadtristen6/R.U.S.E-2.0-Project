@@ -44,6 +44,35 @@ not renew automatically.
 
 You can also [request a feature for a one-time $3](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812).
 
+## Import your own models: an M1 Abrams in R.U.S.E. (Studio 0.9.6)
+
+RUSE Studio can now give a new unit a 3D model of its own, from Blender or any 3D tool. On the new unit's page, pick a
+**.3ds** or **.glb** with **Import model…**: the Studio fits it to the unit it copies (its size, its turret on that
+unit's turret, its pictures as textures of its own) and the game drives and turns it like the original. How:
+[Import a model](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Import-a-Model).
+
+**The first model brought into R.U.S.E. from another 3D program:** an M1 Abrams, a new US tank beside the Sherman.
+Seen in the game: bought at the Armor Base with its own card, built, turning its turret. Get it as a mod in
+[Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods) (model: "Tank Abrams" by ags, free at
+[downloadfree3d.com](https://downloadfree3d.com/3d-models/vehicles/tank/tank-abrams/)). Early: its tracks and wheels
+don't turn yet.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/units-abrams-two-at-base.jpg" alt="R.U.S.E. in game: two M1 Abrams tanks at a US base, imported with RUSE Studio" width="400"><br>
+      <sub>Two M1 Abrams at the base: a model from another 3D program, in the game.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/units-abrams-on-road.jpg" alt="R.U.S.E. in game: an M1 Abrams just built, by a farm track near the base" width="400"><br>
+      <sub>Just built, with its own card in the Armor Base menu.</sub>
+    </td>
+  </tr>
+</table>
+
+Also in 0.9.6: **Test in game** (and the Launcher's **Play**) start at once when nothing changed, builds reuse what
+they made last time, **Delete map** for the maps you make, and **Erase the whole map**.
+
 ## Units get their own look, and our first new unit (Studio 0.9.5)
 
 See any unit in 3D on its page in RUSE Studio, repaint it in Blender, and make its card in the build menu from the
@@ -53,7 +82,7 @@ See any unit in 3D on its page in RUSE Studio, repaint it in Blender, and make i
 - **The first unit painted in Blender** and brought back into the game.
 - **The first build-menu card made in the Studio,** in the game's own Armor Base menu.
 - **The first new unit with a 3D model of its own,** beside the game's: the Tall Sherman, next to the Sherman. Made in
-  testing; making your own models in the Studio comes next.
+  testing; making your own models in the Studio came in 0.9.6 (above).
 - **The first mission of our own** played to a victory: a new Operation with its own goals, units and an artillery
   strike. Made in testing.
 
@@ -374,7 +403,7 @@ Stuck on something? See [Questions? Ask any AI](#questions-ask-any-ai) at the bo
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.5) &middot; **Studio** for modders, a preview (latest: 0.9.5) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.6) &middot; **Studio** for modders, a preview (latest: 0.9.6) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -385,14 +414,19 @@ that tanks, infantry and supply trucks cross, infantry following new roads, a br
 10× standing on the ground, a dried riverbed units walk, and a cleared wood tanks drive into and infantry no longer
 hide in; on 2026-10-03 and 04, units repainted by a mod and in Blender, a build-menu card made in the Studio, a
 second Sherman with a 3D model of its own, a mission of our own played to a victory, a new Operation, another nation's
-units in a campaign map, and erased buildings opening their ground. **Not yet checked in the game:** a new unit
-made in the Studio's window, a new unit's own card, mod sets made in the launcher's window, a mod exported as one file, sharing a load
+units in a campaign map, erased buildings opening their ground, a new unit's own card, and an M1 Abrams imported from
+another 3D program. **Not yet checked in the game:** a new unit made in the Studio's window, mod sets made in the launcher's window, a mod exported as one file, sharing a load
 order, units a skirmish spawns, and Browse mods. The tests, step by step for anyone with the game:
 [docs/TESTS.md](docs/TESTS.md).
 
 <details>
 <summary><b>Current stage (2026-10-04)</b></summary>
 
+- **Studio 0.9.6 and Launcher 0.4.6** (2026-10-04): **Import model** gives a new unit a 3D model of its own from a
+  .3ds or .glb; seen in the game, an M1 Abrams beside the Sherman (in Ruse-Mods). **Test in game** and **Play** start
+  at once when nothing changed, and builds reuse their last copy. **Delete map** for new maps, **Erase the whole map**,
+  roads that follow reshaped ground and riverbeds filled from their banks (the last three new, not yet seen in the game
+  at scale). Fixed: a new unit with its own card crashed the game when built.
 - **Studio 0.9.5 and Launcher 0.4.5** (2026-10-04): units get a look of their own. A unit's page shows it in 3D;
   **Repaint in Blender** opens it in Blender and brings your paint back into your mod (seen in the game); **Use this
   view as the card** makes its build-menu card from the 3D view (seen in the game), and a new unit's card is its own.

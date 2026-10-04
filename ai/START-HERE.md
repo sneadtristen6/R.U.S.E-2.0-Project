@@ -51,7 +51,15 @@ Studio's are marked pre-release). Each app offers its updates when it starts.
   on the model, then **Bring back** puts the paint in the mod. Seen in the game.
 - **Use this view as the card** / **Game's card**: the unit's picture in the build menu, taken from the 3D view inside
   the dashed frame. Seen in the game. A **New unit** gets a card of its own (`files/cards/<the unit's name>.png`), so
-  making it never changes the original's (not yet seen in the game).
+  making it never changes the original's (seen in the game; Studio 0.9.6 fixed a crash when such a unit was built).
+- **Import model…** (a new unit's page, under **Its own model**; Studio 0.9.6): a .3ds (pictures beside it or in the
+  folder above) or a .glb from Blender or any 3D tool becomes the new unit's own 3D model, fitted to the unit it copies
+  (length times **Size**, its turret ring on that unit's turret, parts named turret/barrel turn with the turret).
+  Saved as `files/models/<the unit's name>.glb`; **Use the copied unit's model** removes it. Seen in the game: an M1
+  Abrams beside the Sherman (the M1 Abrams mod in Ruse-Mods). Early: tracks and wheels don't turn, the gun flash and
+  wreck are the copied unit's. How-to: the wiki's Import a model page.
+- **Delete map** (Maps tab, under Duplicate map on a new map; Studio 0.9.6): sends the new map's folder to the Recycle
+  Bin. The game's own maps can't be deleted.
 - **Map Paint** (Maps tab; early): paints the ground's picture with a colour or with the map's own ground copied from
   another spot. **Clear the ground under it** (on by default) takes grass, crops and stones off under the paint so it
   shows up close; seen in the game from high up.
@@ -80,9 +88,10 @@ Studio's are marked pre-release). Each app offers its updates when it starts.
   distance. On an older version, update.
 - **"Can I change how a unit looks?"** Yes, since Studio 0.9.5: its page's **Repaint in Blender** and **Use this view
   as the card** (both seen in the game).
-- **"Can I make my own 3D models or new units with their own model?"** Not in the apps yet. A second Sherman with a
-  model of its own was made in testing and seen in the game; making models in the Studio is what's next
-  ([docs/PLAN.md](../docs/PLAN.md), "Now").
+- **"Can I make my own 3D models or new units with their own model?"** Yes, since Studio 0.9.6: make a **New unit**
+  (a copy of a similar one: a tank for a tank), then **Import model…** on its page with a .3ds or .glb from Blender or
+  any 3D tool. Seen in the game: an M1 Abrams (the M1 Abrams mod in Ruse-Mods). Step by step: the wiki's Import a
+  model page. Early: tracks and wheels don't turn yet.
 - **"What's coming?"** [docs/PLAN.md](../docs/PLAN.md) ("Now"), and for the big patch before 1.0 (RUSE Guard's fair
   play, music and sounds), [docs/BIG_PATCH.md](../docs/BIG_PATCH.md): written up there, not in the apps yet.
 - **"How do I report a bug?"** The apps' **Report a problem** button, or

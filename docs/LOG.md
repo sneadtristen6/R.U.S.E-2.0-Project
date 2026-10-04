@@ -1338,3 +1338,27 @@ merged; suite 859 OK).**
 - **Tested (T29, first numbered T22):** 4 French B1 Bis and 2 French squads for the player on 1. COLDITZ CASTLE: the mission loads and
   they're drawn. Holland itself wasn't tried (locked in the tester's campaign); the player's own build is the last
   check.
+
+### 2026-10-04, afternoon: the model importer, and an M1 Abrams in the game (Studio 0.9.6)
+
+- **The ask:** the owner expected "make your own models in the Studio" after 0.9.5 and asked for it before the
+  post, tested with an Abrams from a free-model site.
+- **Made:** `rusemod.modelin` reads .3ds and .glb, gives each part a role (its name, else where it sits), faces it
+  the game's way, scales it to the copied unit's hull and puts its turret ring on the copied unit's turret point (read
+  from the skeleton: a bone turns round -R^T t of its bind matrix); `rusemod.unitmodel` writes it beside the copied
+  unit's model in every pack that holds it (plain skinned buffers with float UVs, one draw call per picture, the
+  copied skeleton under the new name), its pictures as new DXT5 textures with stand-ins (a stand-in's key is the
+  64-bit CRC of its name: all 2,822 of the game's). The build takes `files/models/<unit>.glb` (MOD_FORMAT §7); the
+  Studio's **Import model**, **Size** and **Use the copied unit's model**; `ruse import-model`.
+- **T35, four runs:** (1) built, then a crash when the unit was built: the card was only in the menu packs, not a
+  loose file like all 450 of the game's (fixed; also in 0.9.5); (2) the same crash with the Sherman's card: a model's
+  picture is found through its texture group, the start of its file name up to the first `_` (`TSCCombCS_`), and ours
+  named none (fixed); (3) heap corruption, found in Windows' own dump as CrashRpt wrote none: the game makes room for
+  texture level k as (w * h / 16) >> 2k blocks and writes what the level holds, and our non-square pictures had one
+  level too many (fixed: levels stop at the shorter side's 4, as all 289 of the game's unit textures do; the writer
+  refuses any mismatch); (4) PASSED, both Abrams built, turret turning.
+- **Also:** the DXT encoder's end colours (a red and blue block came out purple; ends landed too far out), Delete
+  map (to the Recycle Bin), Blender found where it's unzipped.
+- **The Abrams mod** (`m1-abrams` 1.0.0) is in the local Ruse-Mods list, crediting "Tank Abrams" by ags
+  (downloadfree3d.com, free, no license stated; the owner: "just use it document where we got it"), to push after the
+  Launcher 0.4.6 release (0.4.5 would crash on its card and show no model).
