@@ -10,6 +10,7 @@ import argparse
 import json
 from pathlib import Path
 
+from rusemod import startlog
 from rusemod.webui import on_file_drop, open_window, pick_file, pick_folder, self_test
 
 from . import __version__
@@ -30,6 +31,8 @@ def dropped(api: LauncherApi, window, paths) -> None:
 
 
 def main(argv=None) -> int:
+    log = startlog.begin("launcher", __version__)  # the start-up log (rusemod.startlog): written once the window is due
+    log.mark("imports")
     ap = argparse.ArgumentParser(prog="ruse_launcher", description="RUSE Launcher: play R.U.S.E. with mods.")
     ap.add_argument("--game", help="the R.U.S.E. folder (default: found through Steam)")
     ap.add_argument("--self-test", metavar="REPORT", help="check this copy of the app is complete and write REPORT, "
@@ -38,14 +41,18 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     api = LauncherApi(game_dir=args.game)
     if args.self_test:
+        startlog.stop()  # the build's check, not a start
         return self_test(args.self_test, UI, ["index.html", "app.js", "style.css"], [
             ("the launcher answers", lambda: f"{len(api.mod_sets())} mod set(s), {len(api.library())} mod(s) in the "
                                              f"library; {api.status()['message']}"),
             ("the launcher's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['play']!r}"),
         ])
+    log.mark("api")
+    log.go()
     from rusemod.update import fix_app_list_version, installed_app
     if installed_app():  # Windows' app list shows this version (issue #15: it said 0.1.0 when 0.3.1 was installed)
         fix_app_list_version("launcher", __version__)
+        log.mark("app_list")
     api._pick_folder = lambda: pick_folder(api._window)
     api._pick_file = lambda: pick_file(api._window, MOD_FILES)
     return open_window("RUSE Launcher", UI, "index.html", api, width=1120, height=740,

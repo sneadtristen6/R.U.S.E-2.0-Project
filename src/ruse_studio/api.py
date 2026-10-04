@@ -29,7 +29,7 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from rusemod import doctor, identity, missions, mod_index, package, scenario, scenery, schema
+from rusemod import doctor, identity, missions, mod_index, package, scenario, scenery, schema, startlog
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, CommunityCalls, private_paths_out
@@ -325,7 +325,7 @@ def words(lang: str = schema.BASE) -> dict:
     return {key: texts.get(lang) or texts["us"] for key, texts in _words().items()}
 
 
-class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls):
+class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls, startlog.StartCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
 
@@ -3352,10 +3352,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def troubleshoot(self) -> dict:
         """Every finding (rusemod.doctor.checks, with the Studio's own Steam check), and the same as plain text for a
-        bug report, the player's own folders left out (rusemod.community): {"findings": [...], "report": text}."""
+        bug report, the player's own folders left out (rusemod.community), with the Studio's last start-up times
+        (rusemod.startlog): {"findings": [...], "report": text}."""
         game = self._game()
         findings = doctor.checks(game, self._copies(game), steam_running=self._starter.steam_running)
-        report = doctor.report(findings, APP_NAMES[self.UPDATE_APP], self.UPDATE_VERSION)
+        report = doctor.report(findings, APP_NAMES[self.UPDATE_APP], self.UPDATE_VERSION,
+                               startlog.recent(self.UPDATE_APP, self._home))
         return {"findings": findings, "report": private_paths_out(report)}
 
     def troubleshoot_fix(self, action: str) -> dict:

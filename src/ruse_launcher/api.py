@@ -30,7 +30,7 @@ import time
 import tomllib
 from pathlib import Path
 
-from rusemod import doctor, mod_index
+from rusemod import doctor, mod_index, startlog
 from rusemod import play as game_start, schema
 from rusemod.backup import BackupCalls
 from rusemod.community import APP_NAMES, CommunityCalls
@@ -81,7 +81,7 @@ def _kind_of(path) -> str:
     return "mod" if has_more else "map"
 
 
-class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls):
+class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls, startlog.StartCalls):
     """The launcher's back end. The arguments replace the real world in tests: the game folder, the launcher's own
     folder, where modded copies and the game's backups go, how links, the game and Steam get started, and the
     window's dialogs."""
@@ -160,12 +160,14 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
         return game, self._instances or instances_dir(game)
 
     def troubleshoot(self) -> dict:
-        """Every check of the troubleshooter: {"findings": [...], "report": the same as plain text, for a bug report}.
-        A finding's "say" is a word of words.toml, filled with its "data"; its "fix" goes to troubleshoot_fix, apart
-        from "choose_game", which is the screen's own Choose folder…"""
+        """Every check of the troubleshooter: {"findings": [...], "report": the same as plain text, for a bug report,
+        with the launcher's last start-up times (rusemod.startlog)}. A finding's "say" is a word of words.toml, filled
+        with its "data"; its "fix" goes to troubleshoot_fix, apart from "choose_game", which is the screen's own Choose
+        folder…"""
         game, instances = self._doctor_places()
         findings = doctor.checks(game, instances, steam_running=self._starter.steam_running)
-        report = doctor.report(findings, APP_NAMES[self.UPDATE_APP], self.UPDATE_VERSION)
+        report = doctor.report(findings, APP_NAMES[self.UPDATE_APP], self.UPDATE_VERSION,
+                               startlog.recent(self.UPDATE_APP, self._home))
         return {"findings": findings, "report": report}
 
     def troubleshoot_fix(self, action: str) -> dict:

@@ -237,9 +237,10 @@ def fix(action: str, game: Path | None, instances: Path) -> dict:
         return {"done": done, "left": left}
 
 
-def report(findings: list[dict], app: str, version: str) -> str:
+def report(findings: list[dict], app: str, version: str, starts=()) -> str:
     """The findings as plain text for a bug report (English keys and data: the same for every language), with the
-    player's own folders written as %LOCALAPPDATA% and so on: the report is meant to be pasted in public."""
+    player's own folders written as %LOCALAPPDATA% and so on: the report is meant to be pasted in public. `starts`
+    are the app's last start-up log lines (rusemod.startlog.recent), added under the findings."""
     import platform
 
     from .community import private_paths_out
@@ -247,4 +248,7 @@ def report(findings: list[dict], app: str, version: str) -> str:
     for f in findings:
         data = ", ".join(f"{k}={v}" for k, v in f["data"].items())
         lines.append(f"[{f['level']}] {f['key']}: {f['say']}" + (f" ({data})" if data else ""))
+    if starts:
+        lines.append("Start-up times, in seconds since the program started (the last starts, newest last):")
+        lines += [f"  {line}" for line in starts]
     return private_paths_out("\n".join(lines))

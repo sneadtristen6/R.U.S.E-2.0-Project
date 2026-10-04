@@ -1399,6 +1399,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       map_ground: async () => ({ url: null }),
       map_models: async () => ({}),  // no game models in the preview: the shapes stay  // the made-up island has only its colours
       app_version: async () => ({ app: "Studio", version: "0.8.1" }),
+      // the start-up log: here, the page's moment kept in window.fakeStartMarks (ms since the page began loading)
+      start_mark: async (what) => { (window.fakeStartMarks = window.fakeStartMarks || {})[what] = performance.now(); return {}; },
       update_check: async () => mode === "update"
         ? { available: true, version: "9.9.9", current: "0.8.1", installed: true, size: 60000000,
             changes: [

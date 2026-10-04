@@ -13,6 +13,7 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+from . import startlog
 from .home import default_home
 
 WEBVIEW2_DOWNLOAD = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"  # Microsoft's WebView2 Runtime installer
@@ -90,26 +91,44 @@ def open_window(title: str, folder: Path, page: str, api, width=1180, height=760
                 extra: dict[str, Path] | None = None, setup=None) -> int:
     """Open a window showing `folder/page`, with `api` callable from its JavaScript. Needs pywebview. What the screens
     keep (the Studio's language, say) is stored in the platform folder, so it's still there next time. `setup(window)`
-    runs before the window opens, for hooks like on_file_drop."""
+    runs before the window opens, for hooks like on_file_drop. The app's start-up log (rusemod.startlog), when it has
+    one, notes each step up to the page's first calls."""
+    log = startlog.current()
     try:
         import webview
     except ImportError:
         print("This window needs pywebview. Install it once with:  py -3 -m pip install pywebview")
         return 2
+    startlog.mark("pywebview")
     if not web_engine_ok(title):
         return 3
+    startlog.mark("engine")
     server, base = serve(folder, extra)
+    if log is not None:
+        startlog.timed(api, log)  # the page's first calls, each with how long it took
     window = webview.create_window(title, f"{base}/{page}", js_api=api, width=width, height=height,
                                    min_size=(900, 600), background_color="#0a1628")  # the apps' navy, before the page draws
     api._window = window
     if setup is not None:
         setup(window)
+    if log is not None:
+        for event, step in (("shown", "shown"), ("before_load", "page"), ("loaded", "loaded")):
+            handlers = getattr(window.events, event, None)  # pywebview's window events (6.x has all three)
+            if handlers is not None:
+                handlers += _step(log, step)
+        log.mark("window")
     try:
         webview.start(private_mode=False, storage_path=str(default_home() / "webview"))
     finally:
+        startlog.mark("closed")
         server.shutdown()
         server.server_close()
     return 0
+
+
+def _step(log, step: str):
+    """A window event's handler that marks `step` in the start-up log (no parameters: pywebview then passes none)."""
+    return lambda: log.mark(step)
 
 
 def pick_folder(window) -> str | None:
