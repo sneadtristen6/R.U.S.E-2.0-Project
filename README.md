@@ -779,6 +779,20 @@ the code. Side by side since September 2026, in its first weeks they got the gam
 
 It's early, and there's much more to come. Thank you to the three above, without whom none of it would have started.
 
+### (Anonyme) Oozaru: testing and debugging
+
+**(Anonyme) Oozaru tested the early apps on his own campaign mod and sent the log with every bug he found.** His
+reports led to these fixes:
+
+- Placed props that showed only up close are now drawn out to the far distance (Studio 0.9.3).
+- His units for the player in a campaign chapter never appeared; they can now be given to the player.
+- His French units on Holland crashed the game while loading; another nation's units now load in campaign chapters
+  and Operations too (0.9.5).
+- He mapped which of Italy chapter 1's IR names is which side: the US player, France, Italy, the UK and the US
+  computer.
+- His "waiting 30 minutes every time just to add or remove a unit" is why **Play** now starts at once when nothing
+  changed (Launcher 0.4.6).
+
 Thanks also to everyone who has tried the apps, sent screenshots and reported bugs.
 
 ### Supporter credits

@@ -8,12 +8,14 @@ from pathlib import Path
 from rusemod.webui import page_api
 
 
-def exposed(obj, base="", out=None, seen=None):
+def exposed(obj, base="", out=None, seen=None, depth=6):
     """pywebview's walk: every public attribute; a function is handed over with its arguments (self dropped), anything
-    else with a __module__ is walked into."""
+    else with a __module__ is walked into; whatever fails on one attribute is skipped (pywebview logs it and goes on).
+    `depth` stops it where pywebview has no stop: each Path's .parent is a new object, so on Linux the walk never ends
+    on its own (pywebview stops there when Python runs out of depth)."""
     seen = [] if seen is None else seen
     out = {} if out is None else out
-    if id(obj) in seen:
+    if id(obj) in seen or depth < 0:
         return out
     seen.append(id(obj))
     for name in dir(obj):
@@ -22,12 +24,12 @@ def exposed(obj, base="", out=None, seen=None):
         full = f"{base}.{name}" if base else name
         try:
             attr = getattr(obj, name)
+            if inspect.ismethod(attr) or inspect.isfunction(attr):
+                out[full] = list(inspect.getfullargspec(attr).args)[1:]
+            elif inspect.isclass(attr) or (not callable(attr) and hasattr(attr, "__module__")):
+                exposed(attr, full, out, seen, depth - 1)
         except Exception:  # noqa: BLE001 - pywebview logs and goes on
             continue
-        if inspect.ismethod(attr) or inspect.isfunction(attr):
-            out[full] = list(inspect.getfullargspec(attr).args)[1:]
-        elif inspect.isclass(attr) or (not callable(attr) and hasattr(attr, "__module__")):
-            exposed(attr, full, out, seen)
     return out
 
 
