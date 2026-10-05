@@ -1,6 +1,7 @@
 """DXT1 blocks and TGU1 texture payloads, on made-up pictures (no game files)."""
 import struct
 import unittest
+from pathlib import Path
 
 from rusemod import dxt, tgu1
 
@@ -143,6 +144,26 @@ def speckled(w, h, seed):
 @unittest.skipIf(tgu1.whole_arrays() is None, "numpy isn't here: tgu1.decode uses decode_full alone")
 class Tgu1WholeArrays(unittest.TestCase):
     """rusemod.tgu1np: the same blocks as decode_full, byte for byte, or None for what it leaves to it."""
+
+    def test_numpy_1_is_refused_like_no_numpy(self):
+        """Only numpy 2 was checked against the plain code: rusemod.numpy2, which the whole-grid modules take numpy
+        from, refuses an older one with the ImportError a missing numpy gives (whole_arrays then answers None)."""
+        import importlib
+        from unittest import mock
+
+        import numpy
+
+        from rusemod import numpy2
+        try:
+            with mock.patch.object(numpy, "__version__", "1.26.4"), self.assertRaises(ImportError):
+                importlib.reload(numpy2)
+        finally:
+            importlib.reload(numpy2)
+        self.assertIs(numpy2.np, numpy)
+        for name in ("tgu1np", "paintnp", "dxtnp"):  # none of them goes round it
+            text = (Path(tgu1.__file__).with_name(f"{name}.py")).read_text(encoding="utf-8")
+            self.assertIn("from .numpy2 import np", text, name)
+            self.assertNotIn("import numpy", text, name)
 
     def test_the_same_blocks_as_value_by_value(self):
         fast = tgu1.whole_arrays()

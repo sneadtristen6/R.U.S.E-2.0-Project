@@ -3,3 +3,6 @@ nuitka==4.2.2
 ordered-set==4.1.0
 pywebview==6.2.1
 pythonnet==3.1.0
+# What the apps carry for the map sums on whole grids (rusemod.numpy2): a whole map painted in minutes, not hours.
+# The same pin as .github/workflows/tests.yml (tests/test_installers.py WorkflowGuards).
+numpy==2.5.3

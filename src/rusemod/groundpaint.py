@@ -651,6 +651,19 @@ def whole_arrays():
     return _WHOLE[0]
 
 
+def whole_grids() -> str:
+    """For the apps' self-test: the sums on whole grids are there (numpy: rusemod.paintnp, dxtnp and tgu1np). An
+    installed app must carry them (a map painted across kilometres takes hours without, not minutes); from the repo
+    it only says which way the work goes."""
+    if whole_arrays() is None or tgu1.whole_arrays() is None:
+        from .update import installed_app
+        if installed_app():
+            raise RuntimeError("numpy isn't in this copy of the app: maps would be painted pixel by pixel")
+        return "numpy isn't here: the plain sums do the work (the same answers, far slower)"
+    from .numpy2 import np
+    return f"numpy {np.__version__}"
+
+
 def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None) -> dict[int, bytes]:
     """The Map Paint `strokes` laid on every tile of `store` (over `bounds`, map_bounds) they touch, at every level, in
     order; only the 4x4 blocks they touch are encoded again. A block a solid stroke covers whole (_solid_over) takes

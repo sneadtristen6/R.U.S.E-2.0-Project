@@ -53,7 +53,8 @@ uninstaller in Windows' "Installed apps". Uninstalling keeps your mods and setti
 5. With `--test-install` (the GitHub build uses it): the installer runs silently into a scratch folder, the installed
    program checks itself too, and it's uninstalled.
 
-The tool versions are pinned in `requirements.txt`, so every build is the same. To build on your own PC: Python 3.12,
+The tool versions are pinned in `requirements.txt`, so every build is the same. numpy is there for the apps
+themselves, not the build: the map sums on whole grids (`rusemod.numpy2`), and each app's self-test fails without it. To build on your own PC: Python 3.12,
 `py -3 -m pip install -r installers/requirements.txt`, Inno Setup 6, Visual Studio's C++ build tools (Nuitka offers to
 download a compiler otherwise), then `py -3 installers/build_app.py launcher`.
 

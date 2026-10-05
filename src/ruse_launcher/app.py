@@ -35,6 +35,11 @@ def _workers() -> str:
     return workers_start()
 
 
+def _grids() -> str:
+    from rusemod.groundpaint import whole_grids
+    return whole_grids()
+
+
 def main(argv=None) -> int:
     log = startlog.begin("launcher", __version__)  # the start-up log (rusemod.startlog): written once the window is due
     log.mark("imports")
@@ -52,6 +57,7 @@ def main(argv=None) -> int:
                                              f"library; {api.status()['message']}"),
             ("the launcher's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['play']!r}"),
             ("worker programs start (a big map's riverbeds are mended by them)", _workers),
+            ("the map sums on whole grids (a big map is painted by them)", _grids),
         ])
     log.mark("api")
     log.go()

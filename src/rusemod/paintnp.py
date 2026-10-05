@@ -15,10 +15,9 @@ from __future__ import annotations
 
 import math
 
-import numpy as np
-
 from . import dxtnp
 from .brush import HARD_EDGE
+from .numpy2 import np
 
 _I = np.int64
 

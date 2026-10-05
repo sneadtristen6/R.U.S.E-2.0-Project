@@ -99,6 +99,17 @@ class WorkflowGuards(unittest.TestCase):
             guards = len(re.findall(r"^\s+if: github\.repository_id == '1393317090'$", text, re.M))
             self.assertGreaterEqual(guards, jobs, path.name)
 
+    def test_the_tests_run_with_the_numpy_the_apps_carry_and_without(self):
+        # installers/requirements.txt pins the numpy the apps are built with (the map sums on whole grids); tests.yml
+        # installs that same one for its Python 3.12 runs (numpy 2.5 needs 3.12) and keeps its 3.11 runs without
+        # numpy: the plain sums, which every whole-grid module is checked against, must go on working alone
+        pin = re.search(r"^numpy==(\S+)", (ROOT / "installers" / "requirements.txt").read_text(encoding="utf-8"), re.M)
+        self.assertIsNotNone(pin)
+        text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+        self.assertIn(f'"numpy=={pin.group(1)}"', text)
+        self.assertIn('python: ["3.11", "3.12"]', text)
+        self.assertIn("if: matrix.python == '3.12'", text)
+
 
 class BuildCommands(unittest.TestCase):
     def test_versions_come_from_the_apps(self):
@@ -152,6 +163,21 @@ class InstalledApp(unittest.TestCase):
             self.assertIn("FAIL  file missing.html", text)
             self.assertIn("FAIL  broken: ZeroDivisionError", text)
             self.assertIn("FAILED: 2", text)
+
+    def test_an_installed_app_without_numpy_fails_its_self_test(self):
+        from rusemod import groundpaint, tgu1, update
+        said = groundpaint.whole_grids()  # from the repo it only says which way the work goes
+        if groundpaint.whole_arrays() is None or tgu1.whole_arrays() is None:
+            self.assertIn("the plain sums do the work", said)
+        else:
+            self.assertRegex(said, r"^numpy 2\.")
+        with mock.patch.object(groundpaint, "whole_arrays", lambda: None):
+            self.assertIn("the plain sums do the work", groundpaint.whole_grids())
+            with mock.patch.object(update, "installed_app", lambda: True), self.assertRaises(RuntimeError):
+                groundpaint.whole_grids()  # an installed app: its self-test fails, so the build does
+        for app in ("launcher", "studio"):  # both apps build maps, both ask
+            text = (ROOT / "src" / f"ruse_{app}" / "app.py").read_text(encoding="utf-8")
+            self.assertIn('("the map sums on whole grids (a big map is painted by them)", _grids),', text)
 
     def test_log_file(self):
         with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"RUSE_PLATFORM_HOME": d}):

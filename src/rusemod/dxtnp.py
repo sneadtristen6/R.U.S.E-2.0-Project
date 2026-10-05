@@ -7,9 +7,8 @@ block whose colour axis shrank to nothing on the first try (it starts again from
 to dxt.encode_block whole."""
 from __future__ import annotations
 
-import numpy as np
-
 from . import dxt
+from .numpy2 import np
 
 _I = np.int64
 _S = np.int32

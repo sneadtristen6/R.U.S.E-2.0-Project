@@ -10,9 +10,8 @@ from __future__ import annotations
 import struct
 import zlib
 
-import numpy as np
-
 from . import tgu1
+from .numpy2 import np
 
 _I = np.int64
 _QUANT = np.array(tgu1.QUANT, dtype=_I)
