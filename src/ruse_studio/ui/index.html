@@ -106,6 +106,9 @@
         <div id="map-stats" class="muted small"></div>
         <!-- a new map from this one (maps.js openDuplicate) -->
         <button id="map-duplicate" type="button" class="chip map-duplicate"></button>
+        <!-- a new map's own picture in the menus (maps.js pickMapPicture, StudioApi.new_map_picture): new maps only -->
+        <button id="map-picture" type="button" class="chip map-duplicate hidden"></button>
+        <p id="map-picture-note" class="small muted hidden"></p>
         <!-- a new map's folder to the Recycle Bin (maps.js deleteMap, StudioApi.delete_map): shown on new maps only -->
         <button id="map-delete" type="button" class="ghost danger map-delete hidden"></button>
         <div id="map-delete-sure" class="map-delete-sure hidden">

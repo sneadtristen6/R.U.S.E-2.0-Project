@@ -1280,6 +1280,37 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                           lambda data: newmap.parse(data, "map.toml", new))
         return {"pack": new, "maps": self.maps()["maps"]}
 
+    def new_map_picture(self, pack: str) -> dict:
+        """Pick a PNG for new map `pack`'s pictures in the game's menus (map.toml picture, rusemod.menupicture): it's
+        copied into the map's folder as menu.png, and map.toml names it. Returns {"picture": the file map.toml names,
+        or None} and, when the picture can't be used, {"message": why}."""
+        from rusemod import newmap
+        from rusemod.menupicture import PictureError, check
+        copy = self._new_maps().get(str(pack).lower())
+        if copy is None:
+            raise StudioError("Only a new map (made with Duplicate map) gets a picture of its own.")
+        name, spec = copy
+        if self._window is None:
+            return {"picture": spec.picture}
+        chosen = pick_file(self._window, ("PNG picture (*.png)",))
+        if not chosen:
+            return {"picture": spec.picture}
+        data = Path(chosen).read_bytes()
+        try:
+            check(data)
+        except PictureError as exc:
+            return {"picture": spec.picture, "message": f"{Path(chosen).name}: {exc}"}
+        folder = self._map_dir() / "maps" / name
+        players = self._read_players(name)
+        header = (f"A new map: a copy of {spec.copy_of} (MOD_FORMAT §8).\n"
+                  "Made in the RUSE Studio's Duplicate map, which rewrites this file.")
+        with self._saving:
+            (folder / "menu.png").write_bytes(data)
+            _save_checked(folder / "map.toml", newmap.map_toml(replace(spec, picture="menu.png"),
+                                                              players.count if players else None, header),
+                          lambda d: newmap.parse(d, "map.toml", name))
+        return {"picture": "menu.png"}
+
     def delete_map(self, pack: str) -> dict:
         """Delete a new map (one made with Duplicate map) from the current map project: its folder maps/<name>/, with
         every change made to it, goes to the Recycle Bin (it can be put back from there). The game's own maps can't be

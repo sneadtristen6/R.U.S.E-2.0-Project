@@ -4846,6 +4846,10 @@ function showTitle() {
 function renderDelete() {
   const w = mv.words, m = mv.maps.find((x) => x.pack === mv.current);
   const mine = Boolean(m && m.copy_of), asking = mine && mv.deleteAsk === mv.current;
+  $("map-picture").classList.toggle("hidden", !mine);  // its own picture in the menus (pickMapPicture)
+  $("map-picture").textContent = w.map_picture;
+  $("map-picture").title = w.tip_map_picture;
+  if (!mine) $("map-picture-note").classList.add("hidden");
   $("map-delete").classList.toggle("hidden", !mine || asking);
   $("map-delete-sure").classList.toggle("hidden", !asking);
   $("map-delete").textContent = w.delete_map;
@@ -4855,6 +4859,23 @@ function renderDelete() {
   $("map-delete-yes").title = w.tip_delete_map;
   $("map-delete-no").textContent = w.cancel;
   $("map-delete-no").title = w.tip_cancel;
+}
+
+// --- A new map's own picture in the game's menus (map.toml picture; the owner, 2026-10-05: "is there a way to change
+// the in menu picture of D-Day? Through the ocean."): a PNG picked here is copied beside its map.toml; the build cuts
+// it to the menus' two shapes (rusemod.menupicture). ---
+async function pickMapPicture() {
+  const w = mv.words, pack = mv.current, note = $("map-picture-note");
+  if (!pack) return;
+  $("map-picture").disabled = true;
+  try {
+    const res = await mv.api.new_map_picture(pack);
+    note.textContent = res.message || (res.picture ? fill(w.map_picture_set, { file: res.picture }) : "");
+  } catch (err) {
+    note.textContent = (err && err.message) || String(err);
+  }
+  note.classList.toggle("hidden", !note.textContent);
+  $("map-picture").disabled = false;
 }
 
 async function deleteMap() {
@@ -5612,6 +5633,7 @@ function wire() {
   $("check-run").addEventListener("click", () => runCheck());
   $("maps-fold").addEventListener("click", () => { foldMaps(!mv.folded); saveView(); });
   $("map-duplicate").addEventListener("click", openDuplicate);
+  $("map-picture").addEventListener("click", pickMapPicture);
   $("map-delete").addEventListener("click", () => { mv.deleteAsk = mv.current; renderDelete(); $("map-delete-yes").focus(); });
   $("map-delete-no").addEventListener("click", () => { mv.deleteAsk = null; renderDelete(); });
   $("map-delete-yes").addEventListener("click", deleteMap);

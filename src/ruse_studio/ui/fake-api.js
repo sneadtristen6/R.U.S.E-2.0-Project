@@ -1068,6 +1068,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       { name: "M02_Tunisie_chapter2", kind: "campaign", titles: { us: "3. KASSERINE PASS", fr: "3. PASSE DE KASSERINE" } }],
   };
   Object.assign(words.us, {"dup_kind": "What kind of new map", "dup_kind_battles": "Battles map", "dup_kind_battles_what": "Played in BATTLES: skirmish against the computer, and online with players who have it. Listed next to the original. Seen in the game.", "dup_kind_operation": "Operation", "dup_kind_operation_what": "A new Operation, at the end of OPERATIONS: the original's mission, briefing and objectives, on your copy of the map. Seen in the game.", "dup_kind_campaign": "Campaign chapter", "dup_kind_campaign_what": "A new chapter, at the end of the campaign: the original chapter's mission, cutscenes and dialog, on your copy of the map. The game opens a chapter once the one before it is finished. Not yet tried in the game.", "dup_kind_none": "This map has none."});
+  // A new map's menu picture (words.toml map_picture*)
+  Object.assign(words.us, {"map_picture": "Menu picture…", "tip_map_picture": "Pick a PNG picture for this new map in the game's menus (Battles): a screenshot of it works. It's cut to shape from its middle; the map it copies keeps its own. Not tested in the game yet.", "map_picture_set": "{file}: the game's menus show it for this map once it's built (Test in game)."});
   // Duplicate map's start: as it is, Blank Terrain, Blank Ocean (words.toml dup_start_*)
   Object.assign(words.us, {"dup_start": "Start from", "dup_start_copy": "As it is", "dup_start_copy_what": "A full copy, with the changes made to {map} so far.", "dup_start_blank_terrain": "Blank Terrain", "dup_start_blank_terrain_what": "Flat land with no water and nothing on it: only the starting points. Add roads, buildings and the rest yourself. Not tested in the game yet.", "dup_start_blank_ocean": "Blank Ocean", "dup_start_blank_ocean_what": "The sea over the whole map, flat ground under it and nothing on it: only the starting points. Units go under the water, as on a navy map. Not tested in the game yet.", "dup_start_battles_only": "Blank Terrain and Blank Ocean start from a Battles map."});
   // Duplicate map (words.toml duplicate_map, dup_*, map_copy_of)
@@ -1434,6 +1436,11 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           kinds: [kind === "battles" ? "skirmish" : kind], titles: { us: [name], fr: [name], sc: [name] },
           copy_of: m.copy_of || pack });
         return { pack: own, maps: fakeMaps };
+      },
+      new_map_picture: async (pack) => {  // the preview has no file picker: as if menu.png were picked
+        const m = fakeMaps.find((x) => x.pack === pack);
+        if (!m || !m.copy_of) throw new Error("Only a new map (made with Duplicate map) gets a picture of its own.");
+        return { picture: "menu.png" };
       },
       delete_map: async (pack) => {
         const at = fakeMaps.findIndex((x) => x.pack === pack);

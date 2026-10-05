@@ -66,6 +66,23 @@ def dxt5(rgba: bytes | bytearray, w: int, h: int) -> bytes:
     return bytes(out)
 
 
+def check(png: bytes) -> tuple[int, int]:
+    """A PNG's width and height, checked the way pictures() takes it (rusemod.png's kinds, not interlaced, at most
+    LARGEST a side), without reading its pixels: for the Studio, when a picture is picked."""
+    import struct
+    from .png import CHANNELS, SIGNATURE
+    if png[:8] != SIGNATURE or png[12:16] != b"IHDR" or len(png) < 29:
+        raise PictureError("not a PNG picture")
+    w, h, depth, ctype, _comp, _filt, interlace = struct.unpack(">IIBBBBB", png[16:29])
+    if interlace:
+        raise PictureError("interlaced PNGs aren't read: save it without interlacing")
+    if ctype not in CHANNELS or depth not in (8, 16) or (ctype == 3 and depth != 8):
+        raise PictureError(f"PNG of colour type {ctype} at {depth} bits isn't read: save it as 8-bit RGB or RGBA")
+    if not (1 <= w <= LARGEST and 1 <= h <= LARGEST):
+        raise PictureError(f"the picture is {w} x {h}; it can be at most {LARGEST} on a side")
+    return w, h
+
+
 def pictures(png: bytes) -> dict[str, bytes]:
     """{"Minimap": the card's picture file (TGV), "Minimap2": the wide one's} from a PNG's bytes."""
     try:

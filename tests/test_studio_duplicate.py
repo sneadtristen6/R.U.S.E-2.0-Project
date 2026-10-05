@@ -265,6 +265,31 @@ class BlankStart(WithAMapProject):
             self.api.duplicate_map("SuperCrossRoads4", "Moon", preset="blank_moon")
 
 
+class MenuPicture(WithAMapProject):
+    """A new map's own picture in the menus (StudioApi.new_map_picture, map.toml picture): the PNG picked is copied
+    beside its map.toml as menu.png, and map.toml names it, its player count kept; a game map has no such picture."""
+
+    def test_a_picture_picked(self):
+        from rusemod.dxt import png_bytes
+        pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
+        folder = self.api._map_dir() / "maps" / pack
+        (folder / "map.toml").write_text((folder / "map.toml").read_text(encoding="utf-8") + "players = 4\n",
+                                         encoding="utf-8")
+        shot = Path(self.api._map_dir(), "shot.png")
+        shot.write_bytes(png_bytes(bytes(12), 2, 2))
+        self.api._window = object()
+        with mock.patch("ruse_studio.api.pick_file", return_value=str(shot)):
+            self.assertEqual(self.api.new_map_picture(pack), {"picture": "menu.png"})
+        self.assertEqual((folder / "menu.png").read_bytes(), shot.read_bytes())
+        data = tomllib.loads((folder / "map.toml").read_text(encoding="utf-8"))
+        self.assertEqual((data["picture"], data["players"], data["copy_of"]), ("menu.png", 4, "SuperCrossRoads4"))
+        shot.write_bytes(b"not a picture")
+        with mock.patch("ruse_studio.api.pick_file", return_value=str(shot)):
+            self.assertIn("not a PNG", self.api.new_map_picture(pack)["message"])
+        with self.assertRaisesRegex(StudioError, "Only a new map"):
+            self.api.new_map_picture("SuperCrossRoads4")
+
+
 class RecycleBin(unittest.TestCase):
     def test_nothing_there(self):
         from rusemod.recycle import to_recycle_bin

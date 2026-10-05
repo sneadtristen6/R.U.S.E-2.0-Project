@@ -8615,6 +8615,42 @@ cz = "Prázdný terén a Prázdný oceán vycházejí z mapy Bitev."
 jpn = "「空白の地形」と「空白の海」はバトルのマップから作ります。"
 sc = "“空白地形”和“空白海洋”从战役地图开始。"
 
+[map_picture]
+us = "Menu picture…"
+fr = "Image du menu…"
+ger = "Menübild…"
+ita = "Immagine del menu…"
+spa = "Imagen del menú…"
+pol = "Obraz w menu…"
+ru = "Картинка в меню…"
+cz = "Obrázek v nabídce…"
+jpn = "メニューの画像…"
+sc = "菜单图片…"
+
+[tip_map_picture]
+us = "Pick a PNG picture for this new map in the game's menus (Battles): a screenshot of it works. It's cut to shape from its middle; the map it copies keeps its own. Not tested in the game yet."
+fr = "Choisissez une image PNG pour cette nouvelle carte dans les menus du jeu (Batailles) : une capture d'écran convient. Elle est recadrée depuis son centre ; la carte copiée garde la sienne. Pas encore testé en jeu."
+ger = "Wählen Sie ein PNG-Bild für diese neue Karte in den Menüs des Spiels (Schlachten): ein Screenshot geht. Es wird von der Mitte aus zugeschnitten; die kopierte Karte behält ihres. Noch nicht im Spiel getestet."
+ita = "Scegli un'immagine PNG per questa nuova mappa nei menu del gioco (Battaglie): va bene uno screenshot. Viene ritagliata dal centro; la mappa copiata tiene la sua. Non ancora provato in gioco."
+spa = "Elige una imagen PNG para este mapa nuevo en los menús del juego (Batallas): sirve una captura de pantalla. Se recorta desde su centro; el mapa copiado conserva la suya. Aún no probado en el juego."
+pol = "Wybierz obraz PNG dla tej nowej mapy w menu gry (Bitwy): zrzut ekranu wystarczy. Jest kadrowany od środka; skopiowana mapa zachowuje swój. Jeszcze nie sprawdzone w grze."
+ru = "Выберите картинку PNG для этой новой карты в меню игры (Сражения): подойдёт скриншот. Она обрезается от центра; у исходной карты остаётся своя. В игре ещё не проверено."
+cz = "Vyberte obrázek PNG pro tuto novou mapu v nabídkách hry (Bitvy): poslouží snímek obrazovky. Ořízne se od středu; kopírovaná mapa si nechá svůj. Ve hře zatím nevyzkoušeno."
+jpn = "ゲームのメニュー（バトル）に出すこの新しいマップのPNG画像を選びます。スクリーンショットで構いません。中央から切り抜かれ、コピー元のマップは元の画像のままです。ゲーム内ではまだ未確認です。"
+sc = "为这张新地图选择一张在游戏菜单（战役）中显示的PNG图片：截图即可。图片会从中间裁切；被复制的地图保留它自己的图片。尚未在游戏中测试。"
+
+[map_picture_set]
+us = "{file}: the game's menus show it for this map once it's built (Test in game)."
+fr = "{file} : les menus du jeu l'affichent pour cette carte une fois construite (Tester en jeu)."
+ger = "{file}: Die Menüs des Spiels zeigen es für diese Karte, sobald sie gebaut ist (Im Spiel testen)."
+ita = "{file}: i menu del gioco la mostrano per questa mappa una volta costruita (Prova in gioco)."
+spa = "{file}: los menús del juego la muestran para este mapa una vez construido (Probar en el juego)."
+pol = "{file}: menu gry pokaże go dla tej mapy po zbudowaniu (Test w grze)."
+ru = "{file}: меню игры покажет её для этой карты после сборки («Проверить в игре»)."
+cz = "{file}: nabídky hry ho u této mapy ukážou po sestavení (Test ve hře)."
+jpn = "{file}: ビルド後（「ゲームでテスト」）、ゲームのメニューでこのマップに表示されます。"
+sc = "{file}：构建后（“在游戏中测试”），游戏菜单会为这张地图显示它。"
+
 [map_copy_of]
 us = "new map · copy of {map}"
 fr = "nouvelle carte · copie de {map}"
