@@ -1686,6 +1686,14 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 sizes = None  # an erase by size (Map Paint's clearing, filled riverbeds): how far each type reaches
                 strokes = painting.get(name, ([], []))[0]
                 from .scenery import low_cover, model_reach, sticker_reach
+                names_read: list = []
+
+                def map_names() -> list:
+                    """The map's type names, its scenery read once (whole, for them) for the paint, the riverbeds and
+                    the erase: `raw` stays as it is until the erase."""
+                    if not names_read:
+                        names_read.append(Scenery(raw).names)
+                    return names_read[0]
 
                 def reach_of(low):
                     """How far each of the map's low types reaches (measured once a build)."""
@@ -1707,7 +1715,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     from .groundpaint import paint_clearing
                     if descs is None:
                         descs = descriptors(arc)
-                    low = low_cover(descs, set(Scenery(raw).names))
+                    low = low_cover(descs, set(map_names()))
                     under = paint_clearing(strokes, low)
                     if under:
                         areas = list(areas) + under
@@ -1722,7 +1730,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     from .scenery import EraseArea
                     if descs is None:
                         descs = descriptors(arc)
-                    low = low_cover(descs, set(Scenery(raw).names))
+                    low = low_cover(descs, set(map_names()))
                     filled = filled_hollows[name][0]
                     fx0, fy0, fx1, fy1 = filled.box()
                     beds_area = [EraseArea((fx0 + fx1) / 2, (fy0 + fy1) / 2, max(fx1 - fx0, fy1 - fy0) / 2,
@@ -1732,7 +1740,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 if areas or beds_area:  # the map's own scenery out first: the new objects then stay whatever the
                     if descs is None:  # areas cover
                         descs = descriptors(arc)
-                    names = Scenery(raw).names
+                    names = map_names()
                     kinds = {i: descs[n].group for i, n in enumerate(names) if n in descs}
                     bridges = {i for i, n in enumerate(names) if n in descs and descs[n].bridge}
                     try:

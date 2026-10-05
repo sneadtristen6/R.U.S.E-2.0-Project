@@ -1,4 +1,5 @@
 """Mending a filled hollow's pictures (rusemod.mend): on made-up grids and meshes, never proof of what the game shows."""
+import random
 import unittest
 
 from rusemod import mend
@@ -241,6 +242,38 @@ class RiverbedsOnlyTest(unittest.TestCase):
                                         pack_file="pack.dat", workers=4)
         self.assertEqual(beds.count(), 2 * whole.count())  # both windows mended all the same
         self.assertIn("one core: the worker programs couldn't start (OSError: no programs here)", notes[1])
+
+
+class WholeMapTest(unittest.TestCase):
+    """A whole map's riverbeds (18 million squares over the owner's M04_Cotentin, 2026-10-04): their bounds and the
+    squares near them found without looking at each square in Python, the same answers."""
+
+    def test_the_bounds_are_those_of_the_filled_squares(self):
+        rng = random.Random(11)
+        for k in range(200):
+            f = mend.Filled.__new__(mend.Filled)
+            f.nx, f.ny, f.step, f.x0, f.y0 = rng.randint(1, 30), rng.randint(1, 20), 650.0, -1300.0, 2600.0
+            p = rng.choice((0.0, 0.02, 0.3, 1.0))
+            f.bits = bytearray((rng.choice((1, 1, 2)) if rng.random() < p else 0) for _ in range(f.nx * f.ny))
+            at = [(i, j) for j in range(f.ny) for i in range(f.nx) if f.bits[j * f.nx + i]]  # square by square
+            if not at:
+                self.assertIsNone(f.box(), k)
+                continue
+            cols, rows = [i for i, _j in at], [j for _i, j in at]
+            self.assertEqual(f.box(), (f.x0 + min(cols) * f.step, f.y0 + min(rows) * f.step,
+                                       f.x0 + (max(cols) + 1) * f.step, f.y0 + (max(rows) + 1) * f.step), k)
+
+    def test_filled_squares_spread_as_the_running_window_spreads_them(self):
+        """Riverbeds' near map: mend._spread (a row read as one number, a byte a square) against _filter2(rows, r,
+        max), for seeded grids of 0s and 1s, empty and full ones, any reach (past the grid's size too)."""
+        rng = random.Random(7)
+        for _ in range(150):
+            nx, ny = rng.randint(1, 60), rng.randint(1, 40)
+            p = rng.choice((0.0, 0.01, 0.1, 0.5, 1.0))
+            rows = [[1 if rng.random() < p else 0 for _ in range(nx)] for _ in range(ny)]
+            r = rng.randint(0, 70)
+            want = bytearray(v for row in mend._filter2(rows, r, max) for v in row)
+            self.assertEqual(mend._spread(rows, r), want, (nx, ny, r))
 
 
 class QuickEncoderTest(unittest.TestCase):

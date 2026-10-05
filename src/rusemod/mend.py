@@ -192,13 +192,20 @@ class Filled:
         return sum(self.bits)
 
     def box(self) -> tuple[float, float, float, float] | None:
-        """The filled squares' bounds (x0, y0, x1, y1), or None for none."""
-        rows = [j for j in range(self.ny) if any(self.bits[j * self.nx:(j + 1) * self.nx])]
+        """The filled squares' bounds (x0, y0, x1, y1), or None for none (each row's first and last filled square
+        found by stripping its empty ones: a whole map's windows hold 18 million squares)."""
+        nx, rows, first, last = self.nx, [], None, None
+        for j in range(self.ny):
+            row = self.bits[j * nx:(j + 1) * nx]
+            kept = row.rstrip(b"\0")
+            if kept:
+                rows.append(j)
+                lo, hi = len(row) - len(row.lstrip(b"\0")), len(kept) - 1
+                first, last = lo if first is None else min(first, lo), hi if last is None else max(last, hi)
         if not rows:
             return None
-        cols = [i for i in range(self.nx) if any(self.bits[j * self.nx + i] for j in rows)]
         s = self.step
-        return self.x0 + cols[0] * s, self.y0 + rows[0] * s, self.x0 + (cols[-1] + 1) * s, self.y0 + (rows[-1] + 1) * s
+        return self.x0 + first * s, self.y0 + rows[0] * s, self.x0 + (last + 1) * s, self.y0 + (rows[-1] + 1) * s
 
 
 def wet_bits(tms, x0: float, y0: float, nx: int, ny: int, step: float) -> bytearray:
@@ -258,6 +265,30 @@ def riverbeds_only(filled: Filled, wet: bytearray) -> int:
     return gone
 
 
+_FILLED = bytes([0] + [1] * 255)  # bytes.translate: any square set to 1, an empty one 0
+
+
+def _spread(rows: list[list[int]], r: int) -> bytearray:
+    """_filter2(rows, r, max) for a grid of 0s and 1s, as its rows' bytes one after another: each row read as one
+    number, a byte a square, so a 1 spreads r squares either way in a few shifts, then r rows up and down."""
+    nx, ny = len(rows[0]), len(rows)
+    whole = (1 << 8 * nx) - 1
+    across = []
+    for row in rows:
+        v = int.from_bytes(bytes(row), "big")
+        h = v
+        for k in range(1, r + 1):
+            h |= (v << 8 * k) | (v >> 8 * k)
+        across.append(h & whole)
+    out = bytearray()
+    for j in range(ny):
+        v = 0
+        for k in range(max(0, j - r), min(ny, j + r + 1)):
+            v |= across[k]
+        out += v.to_bytes(nx, "big")
+    return out
+
+
 class Riverbeds:
     """The riverbeds a build mends, window by window (mend_map): each window's Filled, holding only its own square
     of the map (a window's grid reaches past it, for the banks). Answers as a Filled does, for the build's low cover."""
@@ -286,12 +317,13 @@ class Riverbeds:
         rows = [[0] * nx for _ in range(ny)]
         for part in self.parts.values():
             s, pnx = part.step, part.nx
-            for k, v in enumerate(part.bits):
-                if v:
-                    x, y = part.x0 + (k % pnx + 0.5) * s, part.y0 + (k // pnx + 0.5) * s
-                    rows[int((y - y0) // c)][int((x - x0) // c)] = 1
-        rows = _filter2(rows, math.ceil(self.NEAR / c) + 1, max)
-        self._near = (x0, y0, nx, ny, bytearray(v for row in rows for v in row))
+            filled = part.bits.translate(_FILLED)  # 1 for a filled square: found one by one, the empty ones skipped
+            k = filled.find(1)
+            while k >= 0:
+                x, y = part.x0 + (k % pnx + 0.5) * s, part.y0 + (k // pnx + 0.5) * s
+                rows[int((y - y0) // c)][int((x - x0) // c)] = 1
+                k = filled.find(1, k + 1)
+        self._near = (x0, y0, nx, ny, _spread(rows, math.ceil(self.NEAR / c) + 1))
         return self._near
 
     def touches(self, x: float, y: float, reach: float) -> bool:
