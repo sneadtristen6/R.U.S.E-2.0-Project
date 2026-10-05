@@ -1,6 +1,25 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.7:** big map mods build in minutes, not hours, and **Export mod…** carries what the build worked out, so a
+player's first build of a big map mod is shorter.
+
+- **The most extreme map mod we have** (BATTLES > D-Day with its sea drained: 154 flatten strokes, 135 paint strokes,
+  33,385 buildings erased) took about four hours to build. Now it builds in **under 7 minutes** (6 min 52 s on half of
+  an 8-core PC, with nothing kept from an earlier build), and the game files come out the same. We're still working
+  on making it faster.
+
+| Before | Now |
+|---|---|
+| A map reshaped across kilometres could take hours to build, run the PC out of memory, or be refused as too big for the map's movement. | Its ground is reshaped in seconds, its riverbeds mended and its ground painted on all of the PC's cores, and its movement worked out on two more while the ground is painted. Each step gives the same files as before. |
+| A drained sea stayed closed to units. | A wide dried bed gets movement zones as big as it has room for. **Not yet tried in the game:** units on the opened sea. |
+| A rebuild after a small change worked a big map out again. | What was made is kept: unchanged paint takes half a second, unchanged movement comes from the build cache, and a new stroke repaints only the tiles it reaches. |
+| A player's first build of a big map mod worked everything out again. | **Export mod…** puts what the build worked out for the map's movement into the mod (`maps/<map>/solved.bin`). It's locked with the game's own file for that map and holds no game files. A player's build takes it, checks every answer, and gives the same files. Ground painting and riverbeds are still made on each PC. |
+| Import model showed only on a new unit's page: hard to find. | The Units tab starts with two buttons: **Change a unit** and **New unit (import a model)**. Pick the unit to start from, name it, Create: its page opens at Import model. A game unit's page has **New unit from this one…**. |
+| The ship flag (76) said a unit with it moves on water. | It says the unit doesn't move at all, like a building (not tested in the game yet). |
+
+Known: **navy maps aren't worked out yet.** A drained or painted sea builds and loads, but the water still shows.
+
 **0.9.6:** a new unit can have a 3D model of its own, from any 3D tool, and **Test in game** starts at once when
 nothing changed. And a first:
 

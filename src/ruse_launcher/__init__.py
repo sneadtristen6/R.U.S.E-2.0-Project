@@ -10,4 +10,4 @@ from the Studio (decision 22); both are built on the platform's engine, `rusemod
 Run it with `py -3 -m ruse_launcher` (after `py -3 -m pip install pywebview`).
 """
 
-__version__ = "0.4.6"
+__version__ = "0.4.7"

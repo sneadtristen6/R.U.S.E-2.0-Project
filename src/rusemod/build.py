@@ -560,6 +560,7 @@ def _given_answers(order: list, mods: list, name: str, shipped: bytes | None) ->
             continue
         try:
             if shipped is None:
+                # not a game rule: our own lock (rusemod.solved) needs the map's movement file as its key
                 raise solved.SolvedError("the game has no movement file for this map")
             given.update(solved.unpack(data, shipped))
         except solved.SolvedError as exc:

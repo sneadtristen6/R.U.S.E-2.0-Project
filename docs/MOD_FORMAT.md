@@ -739,9 +739,9 @@ units = "vehicles"   # or "all" or "infantry": a wood vehicles couldn't drive in
 ### Worked-out answers: `maps/<map pack>/solved.bin` (built: `rusemod.solved`; not seen in the game yet)
 
 A map changed all over asks the build some long questions. On the most extreme map we have (a drained sea), working
-out where units can go took almost six minutes of a fifteen-minute build. The modder waits for that once. Players
-shouldn't: the Studio's **Export mod…** puts what the build worked out into the mod, and a player's build takes it
-from there.
+out where units can go takes two of the PC's cores several minutes, beside the ground being painted. The modder
+waits for that once. Players shouldn't: the Studio's **Export mod…** puts what the build worked out into the mod, and
+a player's build takes it from there.
 
 - **Never written by hand.** The export writes it; delete it any time and the build works everything out again.
 - **No game files in it.** It holds our own numbers only: where the new movement circles go. Nothing in it is a
@@ -755,9 +755,10 @@ from there.
 - **Never trusted as it is.** A build weighs every answer it takes (on the grid, inside the opened ground, off the
   ground units already have, reachable) and works out the ones that fail. A file that doesn't open is left out with
   a note; the build goes on without it.
-- **The same game files either way.** On the extreme map the build with the answers gave the same movement files,
-  byte for byte, as the build that worked them out (movement step: 389 s worked out, 7 s with the answers). So the
-  fingerprint and the join code (§12) don't depend on who had the file.
+- **The same game files either way.** On the extreme map the build with the answers gave the same game files, byte
+  for byte, as the build that worked them out (on half of an 8-core PC, nothing kept: the modder's build 439 s, a
+  player's first build with the answers 389 s). So the fingerprint and the join code (§12) don't depend on who had
+  the file.
 - **Today it carries the movement step only.** The other long map steps (ground painting, riverbeds) are still made
   on each PC from the mod's strokes, then kept in the build cache.
 

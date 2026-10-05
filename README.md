@@ -32,8 +32,8 @@ make works in the game every time, the first time.
 what changing strictly data can do. Anything beyond data is outside what we want to do with it. Your Steam install
 is never changed.
 
-**Big map mods build much faster.** Our most extreme map mod went from four hours to just under 15 minutes to build,
-and we're still working on optimizations. It comes to RUSE Studio with its next update.
+**Big map mods build in minutes, not hours.** Our most extreme map mod went from about four hours to under 7 minutes
+to build, and we're still working on optimizations. It's in RUSE Studio 0.9.7.
 
 **What's in this repository.** The two apps, and what players and modders need to use them. Our working notes on the
 game's own files are kept private until we have an explicit OK from the developers, Eugen Systems.
@@ -452,7 +452,7 @@ Twelve hours, six rounds of testing.
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.6) &middot; **Studio** for modders, a preview (latest: 0.9.6) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.7) &middot; **Studio** for modders, a preview (latest: 0.9.7) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check

@@ -229,6 +229,7 @@ def unpack(data: bytes, game_file: bytes) -> dict:
     k_enc, k_mac = _keys(bytes(game_file), nonce)
     want = hashlib.blake2b(data[:len(MAGIC) + 2 + n + 16] + locked, key=k_mac, digest_size=32).digest()
     if not hmac.compare_digest(want, seal):
+        # not a game rule: our own lock, opened with another game file or changed since it was made
         raise SolvedError("the answers don't open with this game file: they were made with another version of the "
                           "game, or the file was changed")
     try:
