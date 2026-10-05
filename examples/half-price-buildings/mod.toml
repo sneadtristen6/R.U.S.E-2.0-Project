@@ -1,4 +1,4 @@
-# Check C4 (docs/PLAN.md §7): a mod written as text, built by `ruse build`, loaded by the game.
+# Check C4: a mod written as text, built by `ruse build`, loaded by the game.
 [mod]
 id          = "half-price-buildings"
 name        = "Half-price buildings (test)"

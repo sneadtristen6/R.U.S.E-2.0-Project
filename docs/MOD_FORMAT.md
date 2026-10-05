@@ -1,7 +1,6 @@
 # Mod Package Format: Draft Spec v0.1
 
 Status: draft for discussion (2026-09-28). Nothing here is final until M2 proves it in-game.
-Related: [PLAN.md](PLAN.md) · [FORMATS.md](FORMATS.md).
 
 ## 1. Goals
 
@@ -93,7 +92,7 @@ New objects are created in the same NDF file as the object they are cloned from,
 Names must be unique. Convention: include a short mod prefix (`Descriptor_Unit_R2_…`).
 
 Mods can only instantiate classes the engine already knows. New behaviour comes from combining existing
-classes or from scripts; truly new mechanics need the runtime extender.
+classes or from scripts; truly new mechanics would take more than data, which is outside this project.
 
 ## 5. Text patches (`.rndf`)
 
@@ -188,7 +187,7 @@ when mod better-ai
 
 ## 6. Localisation (`text/*.csv`)
 
-Built: `src/rusemod/loc.py`, run by `ruse build` (PLAN.md §7, C6).
+Built: `src/rusemod/loc.py`, run by `ruse build`.
 
 ```csv
 key,game_key,us,fr,ger,ita,spa,pol
@@ -202,14 +201,14 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
 - **Using a text:** `NameInMenuToken = loc('r2.unit.us_marines.name')` in a `.rndf` file becomes that row's game key.
   A `loc()` that no mod in the set defines is an error.
 - **Where it goes:** all texts live in `ZZ_Win.dat`, so a mod with texts also rebuilds that 2.3 GB pack (streamed, in
-  the modded copy) until the game can load a pack of ours for text (PLAN.md L5, M10). Texts are cosmetic: they don't
+  the modded copy) until the game can load a pack of ours for text. Texts are cosmetic: they don't
   change the fingerprint (§10.8). The `dev` folder gets the `us` text.
 
 - **Language columns** use the game's own language folders: `us fr ger ita spa pol cz ru jpn sc` (from
-  RUSE-Mod-Manager's notes; `tools/dic_check.py` confirms them on the game). The usual codes are accepted too:
+  RUSE-Mod-Manager's notes; confirmed on the game). The usual codes are accepted too:
   `en de it es pl cs ja zh`. Missing cells fall back to `us`.
 - **Text keys are readable names.** The game's keys pack a name of up to 10 characters (0-9, A-Z, _, a-z) into a
-  number ([RESEARCH.md](RESEARCH.md) §5). Each row gets one: the `game_key` column sets it (`R2MARINE`), or when it's
+  number. Each row gets one: the `game_key` column sets it (`R2MARINE`), or when it's
   empty, the builder makes one from the manifest's `text_prefix` plus a number, assigned in sorted `key` order so it's
   the same on every PC (`R2000001`, `R2000002`, …). A key the game or another mod in the set already uses is an error
   that names both.
@@ -238,14 +237,14 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   `files/replace/gen/ww2/res2d/texanimationuniticone/eu/m4_sherman.tgv.png`, the card's own size (360 x 184 for most
   units). The build writes it as the game stores all 450 of its cards: one DXT1_LIN level, ZIPO-packed, only the
   changed 4 x 4 blocks encoded again, and replaces it in every menu pack that holds a copy (the build menu shows
-  those: `gen/pack/menuus.ppk` and the like). Proven in the game (TESTS T31).
+  those: `gen/pack/menuus.ppk` and the like). Proven in the game (T31).
 - **A new unit's own card:** a copied unit starts with its source's card file, so the two look alike in the build menu
   (T33). `files/cards/<the new unit's name>.png` (`files/cards/Descriptor_Unit_R2_M4_Sherman_Tall.png`), the source's
   card's size, gives it a card of its own: the build points its `TextureForInterface` at a file beside the source's,
   named after the unit (`...\EU\descriptor_unit_r2_m4_sherman_tall.png`), makes it the way the game stores cards and
   adds it to each menu pack that holds the source's card. The source's card is left as it is. A picture there for a
   unit no mod in the set makes is an error. The Studio writes it there when the card is made on a new unit's page,
-  and removes it with the unit. Not yet seen in the game (TESTS T34).
+  and removes it with the unit. Not yet seen in the game (T34).
 - **A new unit's own model:** `files/models/<the new unit's name>.glb` (`files/models/Descriptor_Unit_R2_M1_Abrams.glb`)
   gives a copied unit a model of its own. The build points its model part (`GfxDescriptor.MeshDescriptor.FileName`) at
   a new model beside its source's (`...\US_M4_Sherman\Descriptor_Unit_R2_M1_Abramslod0.Ase2ndfbin`) and writes it into
@@ -255,7 +254,7 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   .glb from any 3D tool: fitted to the source unit (its length, its turret's turning point, its ground), in the axes
   `ruse export-model` writes, so it opens in Blender and can be changed there and saved over (keep the node names).
   The source's wreck stays its own. A model there for a unit no mod in the set makes is an error. Not yet seen in the
-  game (TESTS T35).
+  game (T35).
 - **The Studio's unit page** shows the unit's 3D model, turning, with the mod's paint on it (a .glb made once per game
   build in the Studio's cache). A dashed frame on it marks the card: *Use this view as the card* saves what's inside
   it, over a backdrop like the game's cards, as the mod's card; *Game's card* removes it. Under it, *Open in Blender* writes the unit's models and pictures to a work folder
@@ -285,7 +284,7 @@ A map's files live in a folder named after its pack (`TwoIslands` for `Maps\PC\D
 shipped one under a name of its own, which its other files then edit like any map (below). Terrain from scratch comes
 later (M8).
 
-### A new map: `maps/<NewName>/map.toml` with `copy_of` (built: `rusemod.newmap`; PLAN §13, level 2)
+### A new map: `maps/<NewName>/map.toml` with `copy_of` (built: `rusemod.newmap`)
 
 ```toml
 copy_of = "SuperCrossRoads4"   # the shipped map it starts from, by its pack name (this one is Blitz)
@@ -301,7 +300,7 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
 - The folder's name is the new map's pack name: a letter, then up to 39 letters, digits and `_` (`BlitzTwin`:
   `Maps\PC\DataMapBlitzTwin_v09.dat`). The mod's other files in that folder (`terrain.toml`, `scenery.toml`,
   `scenario.toml`, `cover.toml`, `movement.toml`, `roads.toml`) edit the copy; the shipped map stays as it was.
-- The build adds (FORMATS §6, "A new map"), each file a copy of the shipped map's pointed at the copy:
+- The build adds, each file a copy of the shipped map's pointed at the copy:
   - the map pack, with an id of its own in its header;
   - in `ZZ_GladPatchableWin.dat`: the map's cluster (which mounts the new pack), its constants (which name the folder
     of its grid), the scenario's cluster (which names the new scenario and map cluster), a map-list entry
@@ -319,28 +318,26 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
   `TChallengeMapInfo` in the shipped one's pack, tracking id from `CH40`), or a new chapter, last in the campaign (a
   `TChapterMapInfo`, from `M24`), with the shipped one's briefing, pictures, bonus times and population caps. Its
   mission script, cutscenes and dialog are the shipped one's: the copied scenario still names the shipped scripting
-  folder. **Seen in the game:** a new Operation (Anzio Twin, `TESTS.md` T17). A new chapter isn't tried yet; the game
+  folder. **Seen in the game:** a new Operation (Anzio Twin, T17). A new chapter isn't tried yet; the game
   opens a chapter only when the one before it in its list is finished, so a copy put last opens after the campaign's
   last chapter.
 - Refused, with the reason: `copy_of` a map the game hasn't got, or one BATTLES doesn't list (campaign and Operation
   maps); a name the game's map list already has, or one starting `flat_` (the game's test maps); a map with several
   BATTLES entries and no `entry`; two mods making maps of one name; `name` without `copy_of` (a shipped map's menu name
   isn't changed here).
-- `tools/verify_newmap.py <modded copy> <new map> <copy_of>` reads a built copy back and checks every registration and
-  file of the new map, and that nothing else of the game changed.
 - **The Studio makes one:** **Duplicate map** (Maps tab, under the open map's name) asks for the name, writes this
   file in the map changes (a new one is made when none is picked) and copies the changes made to the map so far.
   The new map is listed right after the map it copies and opens like any map: the view reads the shipped map's files
   and shows the copy's own edits on top, which go to `maps/<NewName>/`. The folder name comes from the menu name
   ("Blitz at Dusk" → `BlitzAtDusk`, a number added when it's taken).
-- **Seen in the game** (`TESTS.md` T15b, T16): a new map is listed in BATTLES and plays its own ground (Blitz Twin
+- **Seen in the game** (T15b, T16): a new map is listed in BATTLES and plays its own ground (Blitz Twin
   flattened, with a hill in the middle); 101 new maps at once were all listed, the map row scrolling, and played.
   Names over about 35 characters are cut off in the menus. Copies of maps other than Blitz build but weren't tried in
   the game yet. Flattening the mountains at a map's edge left a wall along it (the outermost row of points kept its
   height); the edge now moves with the ground and the curtain hanging from it follows (built, not yet seen in the
-  game: `TESTS.md` T18).
+  game: T18).
 
-### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`; PLAN §7 MT, T2–T3)
+### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`)
 
 ```
 maps/TwoIslands/
@@ -400,7 +397,7 @@ level  = 23500.0     # water: the water surface (world z); the ground under it f
 | `uncover` | the same, taking cover away (also `square = true`) | the cells whose centres are inside |
 | `block`, `block_infantry`, `block_vehicles` | ground units can't use (all of them, infantry or vehicles): a `movement.toml` block after the mod's own; the ground doesn't move | the circle |
 | `open`, `open_infantry`, `open_vehicles` | ground units can use where the map has none (the reverse of block): a `movement.toml` open after the mod's own; the ground doesn't move | the circle, in circles of 5 m or more (towns: 1.2 m) |
-| `paint` | the Studio's Map Paint **Colour**: lays `colour` ("#rrggbb") on the ground's picture at `weight` (its opacity, 0..1, 1 when left out), on every level of both tile sets; the ground doesn't move. With `clear` (true when left out) the build also takes off what hides it up close (below). Seen in the game (TESTS.md T20, T21) | round hump weighting (a hard edge: full nearly to the edge) |
+| `paint` | the Studio's Map Paint **Colour**: lays `colour` ("#rrggbb") on the ground's picture at `weight` (its opacity, 0..1, 1 when left out), on every level of both tile sets; the ground doesn't move. With `clear` (true when left out) the build also takes off what hides it up close (below). Seen in the game (T20, T21) | round hump weighting (a hard edge: full nearly to the edge) |
 | `stamp` | Map Paint's **Texture**: lays the map's own picture from (`x` + `sx`, `y` + `sy`) at `weight`, as the map was before any paint, at every level; the map's close-up picture (`div_map`) takes that spot's values too, so it blends up close as the spot does. `clear` as for `paint`. Seen in the game with `clear` (T26: a light field copied into a riverbed reads as a road; copy from ground like its surroundings) | round hump weighting |
 
 ```toml
@@ -428,7 +425,7 @@ the mod's new roads are painted, so a road drawn over paint shows on top.
 
 **What hides paint up close** (`clear`, `rusemod.groundpaint.paint_clearing`): near the camera the game draws the map's
 ground stickers, low plants (crops, grass, bushes, flowers) and stones over the ground's picture, so paint under them
-shows only from afar (seen in the game, TESTS.md T20). With `clear` the build takes them off wherever the stroke
+shows only from afar (seen in the game, T20). With `clear` the build takes them off wherever the stroke
 paints at least half strength (its opacity times its fall-off): every sticker, low plant and stone that reaches in,
 by its own size (a sticker's descriptor extent, a plant's model; times the size it's placed at), since a sticker
 20 m across centred outside a patch still covers its edge (T26). Trees, buildings, the cover and the movement stay.
@@ -451,20 +448,20 @@ and `cover` strokes over the same circles here; its Undo takes back both.
   water about 150 lower, the textures' depth, tiles and cell flags; `rusemod.water`). A height brush near water
   also keeps the water triangles and textures in step.
 
-- **All four files together.** A map's ground is in four files (FORMATS.md §6): the close-up and far meshes the game
+- **All four files together.** A map's ground is in four files: the close-up and far meshes the game
   draws, the gameplay ground and the camera floor (`.kdt`). Every stroke moves the points of all four inside its
   circle by a function of position and height only, so points they share stay at the same height. The map's outer
   edge moves like the rest: the curtain hanging from it (the map's side when zoomed out) follows, the water's side
   where sea or river met the edge folds away under ground raised above the water, and the camera floor's ring past
   the edge moves with the edge beside it. A stroke that goes toward a height (plateau, flatten, level, ramp, smooth)
   also takes away the drawn meshes' own bumps off the gameplay ground as far as it flattens, so a flattened map is flat
-  from far too; the camera floor keeps its height above the ground (not yet seen in the game: `TESTS.md` T18).
+  from far too; the camera floor keeps its height above the ground (not yet seen in the game: T18).
 - **What was drawn for the old ground follows.** The road model (the white roads seen from high up and in the map
   view) holds the ground's height at every point; it moves with the ground (on flattened Blitz Twin it stood off the
   roads painted on the ground). A riverbed the strokes raise flat (an old hollow, more than 1.5 m deep, that the new
   ground no longer has, in a stretch that reaches the old ground's water; one still a dip is left, and so is a dry
   valley raised flat, whose picture was a field's already) still showed its old banks: up close the river's rock
-  stickers, from high up the banks painted into the picture (`TESTS.md` T27). Its picture (both tile sets) and its
+  stickers, from high up the banks painted into the picture (T27). Its picture (both tile sets) and its
   close-up map are mended from both banks (`rusemod.mend`), and the ground stickers, low plants and stones that reach
   into it are taken off; trees, buildings, cover and movement stay. When taking them off would make the map's
   scenery bigger than a map holds, they stay, with a warning (the pictures are mended all the same). That look passed
@@ -480,8 +477,7 @@ and `cover` strokes over the same circles here; its Undo takes back both.
   same bytes. The reshaped map counts for multiplayer: its files are part of the fingerprint (§12).
 - **Load order:** when several mods reshape one map, their strokes run in load order, one mod's after another's.
 - **Not yet:** raising the ground above the map's highest point or below its lowest (points stop at the file's
-  height range, and the build says how many did), water in the movement data, and cutting the mesh finer. The game's acceptance of moved ground is the next in-game check
-  (`tools/verify_terrain.py --make-test`).
+  height range, and the build says how many did), water in the movement data, and cutting the mesh finer. The game's acceptance of moved ground is the next in-game check.
 
 ### Scenery: `maps/<map pack>/scenery.toml`
 
@@ -509,8 +505,8 @@ lift    = -225.0                        # its height against the ground the game
 - The build adds them to the map's `output\save.boobspc` (`rusemod.scenery.add_objects`) the way DomesticNukes
   proved in the game: one object of a block placed once becomes a same-size reference to a new block at the end,
   which holds that object and the new ones. Nothing else moves; the file's MD5 is set again.
-- **For looks only:** scenery doesn't block units, give cover or change the AI's map (those are other layers, FORMATS
-  §6). Objects stand on the ground wherever the ground is, also after a terrain edit.
+- **For looks only:** scenery doesn't block units, give cover or change the AI's map (those are other layers).
+  Objects stand on the ground wherever the ground is, also after a terrain edit.
 - **Only types the map already uses**: a type from another theatre isn't loaded on that map. Moving shipped objects
   isn't offered yet.
 - Several mods' objects are added in load order.
@@ -537,7 +533,7 @@ types = ["TypeWarrior/Pont_Normandie"]  # and these types, whatever they are (th
   decals only when `what` names them, bridges only when `types` does.
 - **A circle that takes buildings opens its ground**: the build opens the whole circle to every unit, after the mod's
   own movement edits (`rusemod.build.cleared_woods`). A town's movement closes whole blocks (houses, yards, walls),
-  so the circle opens whole, not each house's own ground. Proven in the game 2026-10-04 (TESTS.md T25): tanks and
+  so the circle opens whole, not each house's own ground. Proven in the game 2026-10-04 (T25): tanks and
   infantry drive through where Blitz's town stood, and infantry there no longer act as in a town. Buildings erased by
   name only (`types`, without `"building"` in `what`) keep their ground closed, with a warning.
 - **Bridges are drawn only**: the map's movement still has them, so an erased bridge's deck stays open over the
@@ -555,7 +551,7 @@ types = ["TypeWarrior/Pont_Normandie"]  # and these types, whatever they are (th
 ### Starting points, spawns and names: `maps/<map pack>/scenario.toml`
 
 A map's scenarios (skirmish, challenges, campaign chapters) are its `.scenario` files in `DataMap_Win.dat`
-(`test\map\<map>\`, FORMATS §2). A mod moves their design items, one table each:
+(`test\map\<map>\`). A mod moves their design items, one table each:
 
 ```toml
 [[move]]
@@ -660,7 +656,7 @@ entry = "(6) Cotentin (3v3)"  # optional: which of the map's entries, when it ha
   offered, or gives uneven teams, is untested.
 - Tried in the game on 2026-10-02 (rule test B, Strategists set to 10): the lobby showed "Number of players 10", so
   the count reaches the menus; the lobby still had 8 seats and the match loaded with 8. A count from 2 to 8 on a map
-  that had fewer isn't tried yet (`TESTS.md` T12). The menus show the map's English name ("Strategists"), not the
+  that had fewer isn't tried yet (T12). The menus show the map's English name ("Strategists"), not the
   map-list name, so the "(10)" in that name wasn't seen.
 - A team with fewer starting points than players (rule test A): the team's first lobby slot takes the point and the
   next player starts with no HQ and no units, without a message; the build refuses it for that reason.
@@ -668,7 +664,7 @@ entry = "(6) Cotentin (3v3)"  # optional: which of the map's entries, when it ha
 ### Cover and blocked ground: `maps/<map pack>/cover.toml`
 
 Where units hide is baked into each map: a grid in `datasmap\<map>\mapinfo.win` (`DataMap_Win.dat`; its fourth
-buffer, an SDB quadtree, FORMATS §2). A cell's byte holds layers; the game asks two (LittleGroove's notes): 0x08,
+buffer, an SDB quadtree). A cell's byte holds layers; the game asks two (LittleGroove's notes): 0x08,
 "in forest" (units there are hidden, and ambush), and 0x04, **"AI: blocked"**. Eugen drew them as zones, not from
 the trees: a town or a wood a mod adds gives cover only where cover is painted. A mod paints circles (or squares), in
 order:
@@ -699,7 +695,7 @@ square = true       # optional: a square along the map's axes, `radius` (map uni
 ### Ground units can't use: `maps/<map pack>/movement.toml`
 
 Where units can go is each map's two navigation graphs in `mapinfo.win` (buffers 1 and 2: infantry and vehicles;
-`rusemod.nav`, FORMATS §2): overlapping circles units plan through. A mod takes ground away, one table each:
+`rusemod.nav`): overlapping circles units plan through. A mod takes ground away, one table each:
 
 ```toml
 [[block]]
@@ -727,7 +723,7 @@ radius = 26000.0
 units = "vehicles"   # or "all" or "infantry": a wood vehicles couldn't drive into
 ```
 
-- Ground a map closes has no circle over it at all (FORMATS §6, movement graphs), so opening it adds circles where the graph has
+- Ground a map closes has no circle over it at all, so opening it adds circles where the graph has
   none: on the 320 grid, the largest first, each inside the open, linked to the circles it overlaps, grown out from
   the ground units already use (`rusemod.nav.Graph.open_ground`). The main graph's circles are 1,280 or more (5 m);
   inside a town's or a bridge's own movement (its local map), which decides there, the open adds circles of 320 or
@@ -742,7 +738,7 @@ units = "vehicles"   # or "all" or "infantry": a wood vehicles couldn't drive in
 
 ### New roads: `maps/<map pack>/roads.toml`
 
-The roads units follow are each map's road network in `mapinfo.win` (buffer 0; `rusemod.roadnet`, FORMATS §2): points
+The roads units follow are each map's road network in `mapinfo.win` (buffer 0; `rusemod.roadnet`): points
 on the road curves about 9 m apart, linked (each link's cost the game works out from its length; one flag bit, set
 where the vehicles' movement has ground at the link's middle, as on most shipped links), and a k-d tree over the
 links. A mod
@@ -757,15 +753,15 @@ join = 20000.0       # an end this near a road joins it (a junction); else it's 
 - The line gets points about 2,300 map units apart, linked in a chain; each end is linked to the nearest road point
   within `join`. The network's index is built again the game's way (x then y, at the middle of the links).
 - Proven in the game (Blitz, 2026-09-30): **supply routes follow it** (a depot's route took a new shortcut road).
-- Units plan along a road only through the movement's *crossings* (FORMATS.md, the movement graphs): a stretch of
+- Units plan along a road only through the movement's *crossings*: a stretch of
   road through a circle, from one of its gates to another. The build makes them for the new road in both the
   infantry and the vehicles' movement, the way the shipped maps have theirs (D-Day's own made again: 92% and 95% the
-  same, `tools/verify_crossings.py`), never through a `movement.toml` block or a solid building of that movement's
+  same), never through a `movement.toml` block or a solid building of that movement's
   units, nor across a town's buildings. A road that gets none in a movement (all of it in one circle, or through
   woods vehicles can't enter) is said in the build's notes: units go across country there. Not tried in the game
   yet.
 - `paint = true` (the default) makes it look like the map's own roads, from afar and up close (**proven in the game
-  on D-Day, 2026-10-02**, TESTS.md T12; the story: [ROADS.md](ROADS.md)):
+  on D-Day, 2026-10-02**, T12):
   - **From afar:** it's painted into the ground's texture tiles the way the map's own roads are across: their colour
     in the middle and their shoulders, measured on up to 300 of the map's road pieces, and the same mark in the
     map's close-up ground map. Each map gets its own.
@@ -802,12 +798,12 @@ depends only on the game build, the mods and their order.
 ### 10.1 Steps
 
 1. **Resolve:** pick the mods and versions and put them in load order (§10.6).
-2. **Read:** turn each mod's `.rndf`, `.csv` and `files/` entries into operations (the patch IR, [PLAN.md](PLAN.md) L3).
+2. **Read:** turn each mod's `.rndf`, `.csv` and `files/` entries into operations (the patch IR).
    Every operation remembers its mod, file and line.
 3. **Apply:** start from the base game for this build and apply the operations one at a time: mods in load order;
    inside a mod, files sorted by path; inside a file, top to bottom. Then the `final` operations, in the same order
    (§10.6).
-4. **Check, cook, pack, fingerprint** ([PLAN.md](PLAN.md) L3).
+4. **Check, cook, pack, fingerprint.**
 
 **One rule explains most of what follows:** every operation sees the game exactly as the operations before it left it.
 
@@ -829,9 +825,9 @@ depends only on the game build, the mods and their order.
 | add file | `files/add/mods/<mod id>/…` | nothing yet | a new file | the path is taken |
 
 - `+=` with a number is arithmetic; `+=` with a list `[…]` appends. It's the only operator with two meanings.
-- **Math on an absent property is an error**, because the engine's default isn't stored in the data (FORMATS.md §3:
-  a default `Nationalite` of 0 is simply not written). The fix is to `set` it first.
-- **Deleting is risky.** Game scripts look objects up by name (`Database.GetObject`, [ENGINE_NOTES.md](ENGINE_NOTES.md)),
+- **Math on an absent property is an error**, because the engine's default isn't stored in the data (a default
+  `Nationalite` of 0 is simply not written). The fix is to `set` it first.
+- **Deleting is risky.** Game scripts look objects up by name (`Database.GetObject`),
   which the validator can only partly check. Hiding a unit (`ShowInMenu = [0, 0, 0, 0, 0]`) is usually the safer choice.
 - A target that doesn't exist in this game build is an error that suggests a rebase (§11). It's never skipped silently.
 - **`patch every <class>`** applies its body to every object of that class that exists at that point in the load order,
@@ -910,16 +906,15 @@ A unit is one named object plus unnamed sub-objects (weapon slots, turrets and s
   - Anything the clone sets itself is kept. The build report lists every fresh value, and warns when a new object
     ends up sharing one with another object (after a later patch, say).
   - The name shown in game (`NameInMenuToken`) stays the source's until text mods can supply names (§6).
-  - `tools/identity_check.py` checks these rules against the real game (PLAN.md §7, C5).
 - **A copy of that moment:** a clone copies its source as it is at that point in the load order. Later patches to the
   source don't reach the clone, and patches to the clone never reach the source.
-- **The game's Python unit list** (FORMATS.md §5): R.U.S.E. only uses units that have a class there, so the build
+- **The game's Python unit list:** R.U.S.E. only uses units that have a class there, so the build
   gives every copy of a listed unit its own class (named after the copy's `ClassNameForDebug`, with the source's
   base class). A unit made from scratch, or a copy of an unlisted one, gets a warning: the game ignores it.
   Deleting a listed unit is an error for now (the list would point at nothing).
 - **Mods never contain scripts or programs** (`.py`, `.xyz`, `.ipk`, `.exe`, `.dll`, `.bat`, …): the build refuses
   them. The unit-list classes above are the only script change a build makes, written from one fixed template
-  and checked (PLAN.md decision 23).
+  and checked.
 - **Giving a clone its own weapon:** clone the weapon or ammunition too, and point the clone at the copy:
   `Weapons[0].Ammunition = ~/Ammo_R2_Flamethrower`.
 
@@ -944,7 +939,7 @@ it means:
 3. **Mods that must not combine** (`[conflicts]`) stop the build before anything is applied.
 4. **Final pass:** operations marked `final` (§5) run after every mod's normal operations, again in load order. So a
    balance pass marked `final` reaches the units every other mod adds, without listing those mods. (Factorio's
-   final-fixes stage and ModuleManager's `:FINAL` work the same way; [RESEARCH.md](RESEARCH.md) §5.)
+   final-fixes stage and ModuleManager's `:FINAL` work the same way.)
 5. **Conditional blocks:** `when mod <id> ( … )` applies its contents only if that mod is in the set; `when not mod`
    is the opposite, and a version range can follow the id (`when mod better-ai >=1.2`). A mod named in a `when`
    counts as an optional dependency, so a compatibility patch always runs after the mod it patches. (Like
@@ -952,8 +947,7 @@ it means:
 
 ### 10.7 Worked example
 
-Three mods on build 190852. The prices are invented; the object names come from FORMATS.md and
-`tools/make_test_instance.py`.
+Three mods on build 190852. The prices are invented.
 
 ```ndf
 // mod "econ-half" (loads first)
@@ -998,7 +992,7 @@ The builder sorts every file a mod set changes into one of two groups. Authors n
 - A file whose content ends up identical to the game's own doesn't count as changed.
 - Cautious on purpose: when in doubt, a file is gameplay. A wrong "gameplay" only makes players match when they didn't
   strictly have to; a wrong "cosmetic" causes desyncs.
-- To confirm in the 2-PC tests ([PLAN.md](PLAN.md) L6), models especially: in some games a model's size changes what
+- To confirm in the 2-PC tests, models especially: in some games a model's size changes what
   can be seen or hit.
 
 ### 10.9 Determinism
@@ -1045,7 +1039,7 @@ sha256  = "…"
 source  = "index"      # or a direct URL
 ```
 
-- **Shape follows Modrinth's `.mrpack`** (see [RESEARCH.md](RESEARCH.md)): each resolved file lists `path`,
+- **Shape follows Modrinth's `.mrpack`:** each resolved file lists `path`,
   `hashes` (sha1 + sha512), `downloads` (one or more HTTPS mirrors) and `fileSize`, so packs stay tiny and files can
   live on any host. The TOML above is the human-edited form; the launcher stores the resolved JSON.
 - **A published mod version never changes.** A fix is always a new version. That's what lets a mod id + version stand
@@ -1105,7 +1099,7 @@ v1 needs no server. A join code names the game build, the mods and their exact v
 
 Built: `tools/rmod_to_mod.py` rebuilds an `.rmod` as a mod of ours, for editing (the mods rebuilt that way are kept
 in the private shared repo until their authors agree). Builds and the launcher apply `.rmod` files as they are, with
-LittleGroove's own engine (`src/ruse_mod_engine`, PLAN.md decision 26). The format, as our own reader read it from
+LittleGroove's own engine (`src/ruse_mod_engine`). The format, as our own reader read it from
 37 mods:
 
 - **One JSON file.** `$schema` `ruse-mod/v1`; `id`, `name`, `version`, `author`, `description`, `game_version` (the
@@ -1174,14 +1168,14 @@ LittleGroove's own engine (`src/ruse_mod_engine`, PLAN.md decision 26). The form
    layers). Our build writes the unit-data pack and ZZ_Win.dat so far.
 2. Can a mod add a whole new NDF file, or only objects inside existing ones?
 3. How does the engine react to duplicate export names across files?
-4. ~~Language list~~ **Answered (FORMATS.md §4):** `us`, `fr`, `ger`, `ita`, `spa`, `pol`, `ru`, `cz`, `jpn`, `sc`
+4. ~~Language list~~ **Answered:** `us`, `fr`, `ger`, `ita`, `spa`, `pol`, `ru`, `cz`, `jpn`, `sc`
    (112 `.dic` files each). New text must also update each file's character list (key `0x8000000000000000`).
 5. The exact gameplay/cosmetic split (depends on what the desync checker hashes).
 6. Scenario source format: design it once the binary format is decoded (M6).
 
 ## 15. The mod index (Supported mods)
 
-Built: `src/rusemod/mod_index.py`, the launcher's "Supported mods" tab (TASKS.md D, 2026-09-29; called "Browse
+Built: `src/rusemod/mod_index.py`, the launcher's "Supported mods" tab (2026-09-29; called "Browse
 mods" until Launcher 0.3.0, which added ticking several mods, the cheats' group and the first run's "Choose your
 mods"). No server of ours: a
 small public git repository is the index, GitHub serves its file, and GitHub Releases hold the packages.

@@ -9,10 +9,8 @@ answer lives, the words the apps use, and how to answer (what was tested in the 
 - [ai/START-HERE.md](ai/START-HERE.md): start here
 - [README.md](README.md): the project, downloads, credits
 - [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md): everything a mod can do, file by file
-- [docs/TESTS.md](docs/TESTS.md): what was tested in the game, and how
-- [docs/ROADS.md](docs/ROADS.md): new roads and bridges
 - [Studio release notes](.github/release-notes/studio.md) and [Launcher release notes](.github/release-notes/launcher.md): what changed in each version
-- [docs/PLAN.md](docs/PLAN.md): what's planned ("Now" first); [docs/BIG_PATCH.md](docs/BIG_PATCH.md): the big patch before 1.0 (written up, not in the apps yet)
+- [docs/community/roadmap.md](docs/community/roadmap.md): what's planned; [docs/BIG_PATCH.md](docs/BIG_PATCH.md): the big patch before 1.0 (written up, not in the apps yet)
 - [Known bugs (issue #15)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/15)
 - [Field manual (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki); [Import a model](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Import-a-Model): a new unit's own 3D model from Blender or any 3D tool
 - [Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods): the mod list the Launcher reads (the M1 Abrams mod among them)

@@ -1,4 +1,4 @@
-# Keeps the private shared repo in step with this one (PLAN.md §10 "Two repos"): on every push to main, whoever
+# Keeps the private shared repo in step with this one: on every push to main, whoever
 # pushed (the PC session, a cloud session, a merged pull request), the shared repo's main gets the same commits and
 # its private branch gets them merged in (it's main plus the private/ folder, which this repo never touches). Every
 # release tag (launcher-v*, studio-v*) goes there too, so the shared repo builds the same release.

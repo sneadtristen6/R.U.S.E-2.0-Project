@@ -1,4 +1,4 @@
-// The home screen (PLAN.md L5, screen 6): mod sets on the left with the mod library under them, the active set and
+// The home screen: mod sets on the left with the mod library under them, the active set and
 // Play on the right. Mod sets are made and changed here (new, edit, rename, duplicate, delete); mods come into the
 // library from a file dialog or by dropping them on the window. It talks to LauncherApi (ruse_launcher/api.py)
 // through window.pywebview.api; in a normal browser, open index.html?fake to use the made-up API in fake-api.js.

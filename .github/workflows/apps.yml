@@ -1,4 +1,4 @@
-# Builds the two apps into Windows programs and their installers (PLAN.md ADR 9, installers/README.md):
+# Builds the two apps into Windows programs and their installers (installers/README.md):
 # RUSE Launcher and RUSE Studio, one job each. Every push to main that changes them; or by hand ("Run workflow").
 # The installers are under the run's "Artifacts". Each build checks the program it made, then installs it, checks the
 # installed copy and uninstalls it again.

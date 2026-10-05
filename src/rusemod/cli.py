@@ -8,7 +8,7 @@
   ruse export-model <name>... [--out DIR]    game models as .glb files for Blender (default: extracted/models)
   ruse import-model <file> --like <model> --unit <name> [--mod DIR]   a .3ds/.glb as a new unit's own model
   ruse build <mod>... [--pack P] [--out FILE|DIR] [--instance DIR]   build mods into packs or a modded copy
-  ruse index build                     index the whole game (once per game build; about a minute)
+  ruse index build                     index the data a mod can change (once per game build; about a minute)
   ruse index find|show|where|filter|texts|clone|report ...   ask the index (see `ruse index -h`)
 
 A pack can be a path, or just its name (`ZZ_GladPatchableWin.dat`), found in the game folder. Packs inside packs are
@@ -387,7 +387,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--index", help="the index file (default: the one for this game build, in the platform folder)")
     p.set_defaults(fn=cmd_index)
     isub = p.add_subparsers(dest="action", required=True)
-    isub.add_parser("build", help="index the whole game (read-only; about a minute)")
+    isub.add_parser("build", help="index the data a mod can change (read-only; about a minute)")
     q = isub.add_parser("find", help="objects whose address or class contains these words")
     q.add_argument("words")
     q = isub.add_parser("show", help="one object: its values, owners, what uses it and what it uses")

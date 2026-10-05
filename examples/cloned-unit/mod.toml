@@ -1,4 +1,4 @@
-# Check C5 (docs/PLAN.md §7): a new unit, copied from an existing one, in the game's build menu.
+# Check C5: a new unit, copied from an existing one, in the game's build menu.
 [mod]
 id          = "cloned-unit"
 name        = "Cloned unit (test)"

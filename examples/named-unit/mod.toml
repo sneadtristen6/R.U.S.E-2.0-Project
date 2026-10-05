@@ -1,4 +1,4 @@
-# Check C6 (docs/PLAN.md §7): a new unit with its own name in the game's build menu.
+# Check C6: a new unit with its own name in the game's build menu.
 [mod]
 id          = "named-unit"
 name        = "Named unit (test)"

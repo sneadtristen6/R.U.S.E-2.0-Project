@@ -56,7 +56,7 @@ model of their own.
 | Windows' list of installed apps showed the first version ever installed. | It shows the version you have. |
 
 **0.4.0:** plays mods with new roads the way Studio 0.9 builds them: they look like the map's own roads, from high
-up and right down at the ground (tested in the game on D-Day). [How roads were cracked](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/ROADS.md).
+up and right down at the ground (tested in the game on D-Day).
 
 ![A new road up close on D-Day](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-5-done-close.jpg)
 

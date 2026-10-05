@@ -12,7 +12,7 @@ his goes into this patch, is at the end of this section.
 
 **Where it stands:** our half is written and tested offline, and kept in our private repository, **switched off**,
 until it's tested in the game: the released Launcher and build do none of what follows yet. After that, the
-in-game part (the offline lock and the watcher) still waits for tests F1 and F3 (`docs/TESTS.md`) before it goes into
+in-game part (the offline lock and the watcher) still waits for tests F1 and F3 before it goes into
 builds. His half is built and tested offline (59 tests, verified on real replays) and isn't wired into the Launcher
 yet.
 
@@ -109,9 +109,9 @@ files, the server on his PC, the process scan as he designed it.
 ## Music, sounds and campaign scenes
 
 **Where it stands:** research and theory only (2026-10-04); nothing built, nothing tried in the game. The owner's
-idea (PLAN §14 idea 8): new music for R.U.S.E. 2.0 and its Iwo Jima Operation for variety, different sounds for
+idea: new music for R.U.S.E. 2.0 and its Iwo Jima Operation for variety, different sounds for
 units and buildings, and new campaign scenes. What follows is what the game's data says, and our best theory for each
-open question, to be proved by one test copy. Format details: FORMATS §9.
+open question, to be proved by one test copy.
 
 **How it would work,** as the patch notes would say it:
 

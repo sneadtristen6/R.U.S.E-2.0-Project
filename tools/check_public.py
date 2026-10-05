@@ -1,7 +1,9 @@
-"""Keep the public repo public-safe (PLAN.md §10 "Two repos"; the owner's rule: sensitive files stay in the private
-shared repo). Fails when a tracked file is something that belongs only there:
+"""Keep the public repo public-safe (the owner's rule: sensitive files stay in the private shared repo). Fails when a
+tracked file is something that belongs only there:
 
 - the private folder, the research handover, the community mods (`private/`, `*handover*`, `mods/`);
+- what describes the game's own files rather than the apps: lists of its files, notes on their layout, working notes,
+  and tools that go through its data (`listings/`, `docs/FORMATS.md`, ..., every tool but the four named below);
 - game files or data taken out of the game (packs, NDF, texts, textures, meshes, scenery, scripts; `.rmod` mods);
 - details of the game's program: code addresses (`FUN_14xxxxxx`, `0x14xxxxxxx`) or disassembly-tool notes.
 
@@ -21,6 +23,14 @@ from pathlib import Path, PurePosixPath
 ROOT = Path(__file__).resolve().parents[1]
 PRIVATE_DIRS = ("private/", "mods/", "extracted/")
 PRIVATE_NAMES = re.compile(r"handover", re.I)
+# the owner, 2026-10-05: this repo holds the two apps and what players and modders need to use them. What describes
+# the game's own files instead is kept in the private repo until the game's developers say otherwise: lists of its
+# files, notes on how they are laid out, working notes, and the tools that go through its data. In tools/ only the
+# four named here are public; a new tool is private until it is added to this list on purpose.
+KEPT_PRIVATE = re.compile(r"^(?:listings/|prototypes/|ruse_edat\.py$|"
+                          r"docs/(?:FORMATS|ENGINE_NOTES|RESEARCH[\w-]*|LITTLEGROOVE_STUDY|LESSONS|LOG|TASKS|PLAN|"
+                          r"TESTS|ROADS|IWO_JIMA)\.md$|"
+                          r"tools/(?!(?:check_public|check_commit_msg|post_discussions|rmod_to_mod)\.py$))", re.I)
 GAME_FILES = {".dat", ".ndfbin", ".gladndfbin", ".dic", ".tgv", ".tgv_pc", ".spk", ".spkpc", ".ppk", ".ipk", ".xyz",
               ".boobspc", ".kdt", ".tms", ".tmst", ".tmst_pc", ".tmst_chunk_pc", ".scenario", ".ess", ".win", ".sdb",
               ".rmod", ".ase2ndfbin", ".exe", ".dll", ".pdb", ".idb", ".i64", ".gzf"}
@@ -37,6 +47,17 @@ WORDING = re.compile(r"RUSE\.exe'?s\b|RUSE\.exe (?:does|reads|checks|holds|keeps
                      # and the words and tools that lead to it
                      r"bytecode|opcode|hex-?rays|binary ninja|x64dbg|ollydbg|cheat engine|\bdebugger\b|minidump|"
                      r"crash ?dumps?\b|hex editor", re.I)
+# how public text frames what we do (the owner, 2026-10-04, on "read-only count of everything in the game data"): it
+# says what changing strictly data can do, and that anything beyond data is outside the project; never that we go
+# through the whole of the game's data
+FRAMING = re.compile(r"everything (?:we know )?(?:in|about) the game(?:'s)? (?:data|files)\b|\bwhole-game\b|"
+                     r"\b(?:index|scan|survey|count|dump|walk|verif)\w* (?:of )?the whole game\b|"
+                     r"\bagainst the whole game\b|across every (?:NDF |data )?file in every pack|"
+                     r"\bevery (?:archive|pack|NDF file|data file)(?: and (?:archive|pack|NDF file|data file))? in the "
+                     r"game\b|"
+                     r"\b(?:scan|survey|count|dump) of (?:everything|how the game|the game(?:'s)? (?:data|files))|"
+                     # and nothing public says there is work beyond data somewhere else, or planned
+                     r"runtime extender|\bprogram work\b|program can'?t be edited", re.I)
 # where the words may appear on purpose: this check itself, and code that must refuse such files; the GPL's text
 ALLOWED = {"tools/check_public.py", "tests/test_check_public.py", "tools/check_commit_msg.py"}
 WORDING_ALLOWED = {"LICENSE"}
@@ -58,6 +79,10 @@ def problems(paths: list[str], read=lambda p: (ROOT / p).read_bytes()) -> list[s
         if PRIVATE_NAMES.search(PurePosixPath(low).name):
             out.append(f"{p}: the research handover stays in the private repo")
             continue
+        if KEPT_PRIVATE.search(p):
+            out.append(f"{p}: describes the game's own files (a list of them, notes on them, or a tool that goes "
+                       f"through them); kept in the private repo")
+            continue
         suffix = PurePosixPath(low).suffix
         if suffix in GAME_FILES and not low.startswith("tests/"):
             out.append(f"{p}: a game file (or one made from the game's), never stored here")
@@ -78,6 +103,12 @@ def problems(paths: list[str], read=lambda p: (ROOT / p).read_bytes()) -> list[s
             line = text.count("\n", 0, m.start()) + 1
             out.append(f"{p}:{line}: says what the game's program does or holds ({m.group(0)!r}); public text says "
                        f"what the game does with its data")
+            continue
+        m = FRAMING.search(text) if p not in WORDING_ALLOWED and not p.startswith(WORDING_ALLOWED_DIRS) else None
+        if m:
+            line = text.count("\n", 0, m.start()) + 1
+            out.append(f"{p}:{line}: says we go through the whole of the game's data ({m.group(0)!r}); public text "
+                       f"says what changing strictly data can do, and that anything beyond data is outside the project")
     return out
 
 

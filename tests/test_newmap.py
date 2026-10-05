@@ -457,18 +457,6 @@ class Building(unittest.TestCase):
         self.assertEqual((us.text(name_to_key("M_D_31")), fr.text(name_to_key("M_D_31"))), ("Blitz at Dusk", "Blitz au crépuscule"))
         # the game folder untouched
         self.assertFalse((self.game / "Maps" / "PC" / "DataMapBlitzAtDusk_v09.dat").exists())
-        # and tools/verify_newmap.py, which checks a real build, finds it all where it should be
-        import sys
-        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-        import verify_newmap
-        said = []
-        self.assertEqual(verify_newmap.verify(self.root / "copy", "BlitzAtDusk", "SuperCrossRoads4", self.game, said.append),
-                         0, "\n".join(said))
-        self.assertGreater(len([ln for ln in said if ln.startswith("ok")]), 30)
-        said = []
-        self.assertGreater(verify_newmap.verify(self.root / "copy", "BlitzAtNoon", "SuperCrossRoads4", self.game,
-                                                said.append), 0)
-        self.assertTrue(said[0].startswith("FAIL  the copy has its packs"), said)
 
     def test_a_new_map_alone_and_the_fingerprint(self):
         result, lines = self.build(self.mod("dusk", {  # (the shipped scenario seats team 2 only: a start for team 1)

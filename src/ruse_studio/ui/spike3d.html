@@ -18,7 +18,7 @@
 <body>
   <div id="hud"><b>3D check</b><br>Loading the 3D library…</div>
   <script type="module">
-    // PLAN.md risk "WebGL in the embedded window": can the Studio window draw a map-sized 3D scene smoothly?
+    // WebGL in the embedded window: can the Studio window draw a map-sized 3D scene smoothly?
     // Pass: a rotating island with water, at 30+ frames per second. Record the lines shown in the box.
     const hud = document.getElementById("hud");
     const show = (lines) => { hud.innerHTML = "<b>3D check</b><br>" + lines.join("<br>"); };

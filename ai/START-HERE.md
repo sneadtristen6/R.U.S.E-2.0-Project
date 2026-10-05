@@ -24,13 +24,10 @@ Studio's are marked pre-release). Each app offers its updates when it starts.
 |---|---|
 | How to use the apps, step by step | [the wiki (field manual)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki) |
 | What a mod can do, file by file (`mod.toml`, `scenery.toml`, `roads.toml`, `scenario.toml`, `.rndf`...) | [docs/MOD_FORMAT.md](../docs/MOD_FORMAT.md) |
-| Whether something was tested in the game, and how to test it | [docs/TESTS.md](../docs/TESTS.md) |
-| New roads, bridges and how they look | [docs/ROADS.md](../docs/ROADS.md) |
 | Known bugs, what's fixed, what's coming | [issue #15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/15) |
 | What changed in a version | [Studio release notes](../.github/release-notes/studio.md), [Launcher release notes](../.github/release-notes/launcher.md) |
-| What's planned | [docs/PLAN.md](../docs/PLAN.md) (the "Now" section first); the big patch before 1.0: [docs/BIG_PATCH.md](../docs/BIG_PATCH.md); the Iwo Jima showcase (a plan): [docs/IWO_JIMA.md](../docs/IWO_JIMA.md) |
+| What's planned | [docs/community/roadmap.md](../docs/community/roadmap.md); the big patch before 1.0: [docs/BIG_PATCH.md](../docs/BIG_PATCH.md) |
 | Helping out, reporting a bug, sending code | [CONTRIBUTING.md](../CONTRIBUTING.md) |
-| The game's file formats (for programmers) | [docs/FORMATS.md](../docs/FORMATS.md) |
 | Talking to people | the [Discord](https://discord.gg/DbufY4Jfg), or [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions) |
 
 ## The words the apps use
@@ -92,8 +89,9 @@ Studio's are marked pre-release). Each app offers its updates when it starts.
   (a copy of a similar one: a tank for a tank), then **Import model…** on its page with a .3ds or .glb from Blender or
   any 3D tool. Seen in the game: an M1 Abrams (the M1 Abrams mod in Ruse-Mods). Step by step: the wiki's Import a
   model page. Early: tracks and wheels don't turn yet.
-- **"What's coming?"** [docs/PLAN.md](../docs/PLAN.md) ("Now"), and for the big patch before 1.0 (RUSE Guard's fair
-  play, music and sounds), [docs/BIG_PATCH.md](../docs/BIG_PATCH.md): written up there, not in the apps yet.
+- **"What's coming?"** [docs/community/roadmap.md](../docs/community/roadmap.md), and for the big patch before 1.0
+  (RUSE Guard's fair play, music and sounds), [docs/BIG_PATCH.md](../docs/BIG_PATCH.md): written up there, not in the
+  apps yet.
 - **"How do I report a bug?"** The apps' **Report a problem** button, or
   [Discussions → Bug reports](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions). Check
   [issue #15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/15) first.

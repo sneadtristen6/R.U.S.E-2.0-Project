@@ -65,8 +65,7 @@ venv/
 Thumbs.db
 .DS_Store
 
-# Keep: docs/, *.py source, listings/*.txt (these are archive file *names*, not game content)
-!listings/*.txt
+# Keep: docs/, *.py source
 
 # a code-analysis tool's output (the owner's, local)
 .enola/

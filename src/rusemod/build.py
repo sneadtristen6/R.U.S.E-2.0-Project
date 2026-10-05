@@ -73,7 +73,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
         if bad:
             more = ", …" if len(bad) > 5 else ""
             raise BuildError(f"{path}: mods can't contain scripts or programs ({', '.join(bad[:5])}{more}). The "
-                             f"build writes the only script changes a mod needs itself (PLAN.md decision 23).")
+                             f"build writes the only script changes a mod needs itself (decision 23).")
         try:
             manifest = tomllib.loads(manifest_file.read_text(encoding="utf-8"))
         except tomllib.TOMLDecodeError as exc:
@@ -1842,7 +1842,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if erased.get("building"):
                 if any("building" in a.what and not a.keep_ground for a in areas):
                     say(f"  {erased['building']} of the map's buildings erased: the ground of the erase area(s) that "
-                        f"take buildings is opened to every unit (cleared_woods; seen in the game, T25)")
+                        f"take buildings is opened to every unit (cleared_woods; seen in the game)")
                 if any("building" not in a.what and any(t in descs and descs[t].group == "building"
                                                         and not descs[t].bridge for t in a.types) for a in areas):
                     result.findings.append(Finding("warning", (

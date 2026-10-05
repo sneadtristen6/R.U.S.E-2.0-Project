@@ -14,9 +14,23 @@ def check(files: dict) -> list:
 class Guard(unittest.TestCase):
     def test_private_material_is_refused(self):
         found = check({"private/notes.md": b"x", "mods/cheat/mod.toml": b"x", "docs/private/x.md": b"x",
-                       "docs/RUSE_Research_Handover_2026.md": b"x", "docs/PLAN.md": b"fine"})
+                       "docs/RUSE_Research_Handover_2026.md": b"x", "docs/MOD_FORMAT.md": b"fine"})
         self.assertEqual(len(found), 4)
-        self.assertTrue(all("docs/PLAN.md" not in f for f in found))
+        self.assertTrue(all("docs/MOD_FORMAT.md" not in f for f in found))
+
+    def test_what_describes_the_games_own_files_is_refused(self):
+        """The owner, 2026-10-05: the repo holds the apps and what players and modders need; lists of the game's
+        files, notes on their layout, working notes and the tools that go through its data are kept private."""
+        bad = {"listings/ZZ_Win.dat.txt": b"names", "ruse_edat.py": b"code", "docs/FORMATS.md": b"x",
+               "docs/PLAN.md": b"x", "docs/TESTS.md": b"x", "docs/LOG.md": b"x", "docs/RESEARCH-mod-platforms.md": b"x",
+               "docs/ROADS.md": b"x", "tools/verify_all.py": b"code", "tools/nation_scan.py": b"code",
+               "tools/a_new_tool.py": b"code", "prototypes/spike/ndf.py": b"code"}
+        fine = {"docs/MOD_FORMAT.md": b"x", "docs/BIG_PATCH.md": b"x", "docs/wiki/Home.md": b"x", "README.md": b"x",
+                "tools/check_public.py": b"code", "tools/check_commit_msg.py": b"code", "tools/rmod_to_mod.py": b"code",
+                "tools/post_discussions.py": b"code", "src/rusemod/tools.py": b"code", "tests/test_tools.py": b"code"}
+        found = check({**bad, **fine})
+        self.assertEqual(sorted(f.split(":")[0] for f in found), sorted(bad))
+        self.assertIn("kept in the private repo", found[0])
 
     def test_game_files_are_refused_outside_the_tests(self):
         found = check({"stuff/ZZ_Win.dat": b"edat", "a/save.boobspc": b"x", "b/Cheat.rmod": b"{}",
@@ -46,6 +60,29 @@ class Guard(unittest.TestCase):
                 "src/ruse_mod_engine/script_logic.py": b"decompile -> edit -> recompile (LittleGroove's words)"}
         found = check({**bad, **fine})
         self.assertEqual(sorted(f.split(":")[0] for f in found), sorted(bad))
+
+    def test_text_that_says_we_go_through_the_whole_of_the_games_data_is_refused(self):
+        """The owner, 2026-10-04, on a README line: "Like you literally, exactly say everything in the game data."
+        Public text says what changing strictly data can do; anything beyond data is outside the project."""
+        bad = {"README.md": b"read-only count of everything in the game data built around the 7 nations",
+               "docs/a.md": b"Everything we know about the game's files, with evidence.",
+               "docs/b.md": b"**Whole-game verification:** all 38 archives round-trip",
+               "docs/c.md": b"ruse index build   index the whole game once per game build",
+               "tools/d.py": b'"""Verify the reader/writer against the WHOLE game install."""',
+               "tools/e.py": b"Lists every class, across every NDF file in every pack",
+               "docs/f.md": b"checks that every archive and data file in the game rebuilds",
+               "docs/g.md": b"a read-only survey of how the game mounts packs",
+               "docs/l.md": b"truly new mechanics need the runtime extender",
+               "docs/m.md": b"Program work happens somewhere else",
+               "docs/n.md": b"nobody has said the program can't be edited"}
+        fine = {"docs/h.md": b"what changing strictly data can do; anything beyond data is outside this project",
+                "docs/i.md": b"the data files a mod can change are written back byte-identically",
+                "src/j.py": b"# making a backup copies the whole game, which takes longer",
+                "docs/k.md": b"every map the game ships, drawn in 3D",
+                "src/ruse_mod_engine/edata.py": b"dump of everything in the game data (LittleGroove's words)"}
+        found = check({**bad, **fine})
+        self.assertEqual(sorted(f.split(":")[0] for f in found), sorted(bad))
+        self.assertIn("strictly data", found[0])
 
 
 if __name__ == "__main__":

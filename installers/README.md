@@ -1,7 +1,7 @@
 # Installers for the two apps
 
-RUSE Launcher (players) and RUSE Studio (modders) each become a normal Windows program with its own installer
-(PLAN.md decision 22, ADR 9). Nobody needs Python or Git to use them.
+RUSE Launcher (players) and RUSE Studio (modders) each become a normal Windows program with its own installer.
+Nobody needs Python or Git to use them.
 
 ## Getting them
 
@@ -34,7 +34,7 @@ needed; it installs for your Windows user, adds a Start menu entry (and a deskto
 uninstaller in Windows' "Installed apps". Uninstalling keeps your mods and settings (`%LOCALAPPDATA%\RUSE Mod Platform`).
 
 - **Windows may warn "Windows protected your PC"** the first time: the installers aren't signed yet (signing costs
-  money and waits for the first public release, PLAN.md ADR 9). Click "More info", then "Run anyway".
+  money and waits for the first public release). Click "More info", then "Run anyway".
 - **WebView2:** the apps' screens need Microsoft Edge WebView2 Runtime. Windows 11 has it, and so do most Windows 10
   PCs. If yours doesn't, the installer and the app both say so and offer Microsoft's download.
 - What the installed apps print goes to `%LOCALAPPDATA%\RUSE Mod Platform\logs\` (for bug reports).

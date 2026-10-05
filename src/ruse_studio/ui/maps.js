@@ -1,5 +1,5 @@
-// The Maps view: the game's maps on the left, one map's ground in 3D on the right, and brushes that reshape it
-// (PLAN.md milestone MT, step T4). The ground is the map's own visual mesh, lit by the game's own normals and draped
+// The Maps view: the game's maps on the left, one map's ground in 3D on the right, and brushes that reshape it.
+// The ground is the map's own visual mesh, lit by the game's own normals and draped
 // with the map's overview picture (StudioApi.map_view, rusemod/terrain.py). Brush strokes are saved in the current
 // mod's maps/<map>/terrain.toml (StudioApi.terrain_add); this view draws them on the game's ground with the same
 // maths as the build (rusemod/brush.py), and "Test in game" builds them into all four files that hold the ground.
@@ -48,7 +48,7 @@ const BRUSHES = {
   open_vehicles: ["open", "vehicles", 1, false, 3, 0],
   forest: ["forest", "flat", 1, false, 3, 0],  // trees (as Place, Area scatters them) and cover over them: cover strokes
   erase: ["erase", "flat", 1, false, 3, 0],  // the map's own trees and props taken away: scenery.toml [[erase]] circles
-  // Map Paint (PLAN §15): the ground's picture, not its shape; strength is the opacity (rusemod.groundpaint)
+  // Map Paint: the ground's picture, not its shape; strength is the opacity (rusemod.groundpaint)
   paint: ["paint", "soft", 1, false, 7, 60],  // a colour from the wheel, the map's own colours or the eyedropper
   stamp: ["stamp", "soft", 1, false, 7, 100],  // the map's own ground copied from a spot picked (a clone stamp)
 };
@@ -799,7 +799,7 @@ function overlayDraw(o, r0, r1, c0, c1) {
 
 // --- roads: the map's own road pieces (StudioApi.map_roads: cubic Béziers), drawn in gold on the ground when the
 // Roads box is ticked. Each is sampled into short lines seated on the ground, again after every stroke, so they
-// follow the brushes. (Drawing new roads comes next: PLAN A3.) ---
+// follow the brushes. (Drawing new roads comes next.) ---
 const roads = { pieces: null, line: null, show: false };
 const ROAD_STEP = 8000;  // map units per line (about 30 m): a long piece gets more, so it follows hills
 const ROAD_LIFT = 600;   // map units above the ground (about 2 m), so the ground doesn't hide them
@@ -900,7 +900,7 @@ function forget(mesh) {
   mesh.material.dispose();
 }
 
-// --- Map Paint (PLAN §15; rusemod.groundpaint.paint_strokes): the Colour and Texture brushes paint the ground's
+// --- Map Paint (rusemod.groundpaint.paint_strokes): the Colour and Texture brushes paint the ground's
 // picture. The Studio shows them on its own copy of the map's picture (a canvas laid on the ground), with the build's
 // rules: each stroke at its opacity times its brush's fall-off, in order; a Texture stroke copies the map's own
 // picture from where it was told (sx, sy), as the map was before any paint. The build paints every level of the
@@ -1661,7 +1661,7 @@ async function loadScenarios(pack, ask) {
   loadPlayers(pack, ask);
 }
 
-// --- how many players the map takes (PLAN A10; StudioApi.map_players / set_players, the mod's maps/<map>/map.toml):
+// --- how many players the map takes (StudioApi.map_players / set_players, the mod's maps/<map>/map.toml):
 // the map's online entry, a count from 2 to 8, and the starting points a count still needs (Add starting point) ---
 async function loadPlayers(pack, ask) {
   try {
@@ -3162,7 +3162,7 @@ function renderDock() {
 // where it starts, then where it ends; Curve: the start, the bend, the end; Freeform: click along the way, then
 // double-click or Enter (or Finish). An end near a road snaps onto it (a ring shows where) and joins it. New roads
 // are drawn as blue ribbons, the way the game draws a supply route. Proven in the game (2026-09-30): supply routes
-// follow a road added this way. Not painted on the ground yet (PLAN A6). ---
+// follow a road added this way. Not painted on the ground yet. ---
 const ROAD_TOOLS = ["straight", "curve", "free"];
 const ROAD_SNAP = 15000;    // map units (about 58 m): an end this near a road snaps onto it
 const ROAD_WIDTH = 1800;    // map units drawn (about 7 m)
@@ -4694,7 +4694,7 @@ function dupNameChanged() {
   const w = mv.words, name = $("dup-name").value.trim();
   $("dup-file").textContent = name ? fill(w.dup_file, { file: packName(name) }) : "";
   $("dup-long").textContent = w.dup_long;
-  $("dup-long").classList.toggle("hidden", name.length <= 35);  // TESTS.md T16: longer names get cut off in game
+  $("dup-long").classList.toggle("hidden", name.length <= 35);  // longer names get cut off in game
 }
 
 async function duplicate(e) {

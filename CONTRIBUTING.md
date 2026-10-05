@@ -21,8 +21,9 @@ The bugs we know about are listed in [issue #15](https://github.com/sneadtristen
 ## Test in the game
 
 Many of the build's checks rest on how R.U.S.E. behaves, and each one is only settled once it's seen in a match.
-[docs/TESTS.md](docs/TESTS.md) has the tests step by step for anyone with the game. Running one and reporting what
-you saw, with screenshots, is one of the most useful things you can do.
+Anyone with the game can help: try a feature in a match and report what you saw, with screenshots, in
+[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions). It's one of the most useful things
+you can do.
 
 ## Ideas and questions
 

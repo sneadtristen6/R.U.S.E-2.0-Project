@@ -95,9 +95,9 @@ every unit's type as the game names it.
 | Units were only "Ground" or "Air". | Under Ground, Infantry and Air, the game's own types: Light, Medium and Heavy Tank, Tank Destroyer, Armored Recon, Fighter, Fighter-bomber, Light, Medium and Heavy Bomber, Air Recon... on each unit's line too, in your language. Search finds them ("bomber", "recon"). |
 | Windows' list of installed apps showed the first version ever installed. | It shows the version you have. |
 
-**0.9.0:** roads are cracked. A road you draw now looks like the map's own roads, from high up and right down
+**0.9.0:** roads look right. A road you draw now looks like the map's own roads, from high up and right down
 at the ground. It took a lot of time and a lot of tests to get there, longer than the bridges
-did; [the story of how](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/ROADS.md). Tested in the game on D-Day.
+did. Tested in the game on D-Day.
 
 ![A new road up close on D-Day: asphalt with a dashed centre line and gravel shoulders fading into the grass](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-5-done-close.jpg)
 

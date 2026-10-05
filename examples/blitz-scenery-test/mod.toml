@@ -1,4 +1,4 @@
-# In-game check of placing scenery (docs/MOD_FORMAT.md §8, docs/TESTS.md T1): a ring of 8 water towers (1.5x) and
+# In-game check of placing scenery (docs/MOD_FORMAT.md §8): a ring of 8 water towers (1.5x) and
 # 12 big oaks around the town in the middle of Blitz. Only types Blitz already uses.
 [mod]
 id          = "blitz-scenery-test"

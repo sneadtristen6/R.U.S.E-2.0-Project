@@ -136,7 +136,7 @@ def check(path):
     if bad:
         more = ", …" if len(bad) > 3 else ""
         raise BuildError(f"{path.name} brings files that would run on the PC ({', '.join(bad[:3])}{more}); mods can't "
-                         f"bring programs (PLAN.md decision 23).")
+                         f"bring programs.")
     return mod
 
 

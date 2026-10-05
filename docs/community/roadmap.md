@@ -37,7 +37,7 @@ Where things stand, and what's next. Tested-in-game features are marked ✅. Lat
    Japanese fort or tunnel)
 2. **Water** and how a navy map would work
 3. **A new nation:** China
-4. **Iwo Jima**, the showcase Operation (the plan is in `docs/IWO_JIMA.md`)
+4. **Iwo Jima**, the showcase Operation
 
 ### Also coming
 

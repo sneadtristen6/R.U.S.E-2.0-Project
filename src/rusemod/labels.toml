@@ -1,4 +1,4 @@
-# Display names for the game's data, in the game's own ten languages (schema DB annotations, PLAN.md L2), for any app
+# Display names for the game's data, in the game's own ten languages (schema DB annotations), for any app
 # or tool on the platform. The default everywhere is the game's own names (`base`): mods always use those. A modder can
 # pick a language to read the tools in; anything missing here falls back to the game's name. Starter translations:
 # corrections welcome. Each app keeps its own screen words (the Studio's are in ruse_studio/words.toml).
@@ -16,7 +16,7 @@ cz = "Čeština"
 jpn = "日本語"
 sc = "简体中文"
 
-# Nation numbers (Nationalite; 0 is the default and isn't written). `base` is the game's own table (FORMATS.md §3).
+# Nation numbers (Nationalite; 0 is the default and isn't written). `base` is the game's own table.
 [nations]
 base = ["EU", "Allemagne", "RU", "France", "Italie", "URSS", "Japon"]
 us = ["USA", "Germany", "UK", "France", "Italy", "USSR", "Japan"]

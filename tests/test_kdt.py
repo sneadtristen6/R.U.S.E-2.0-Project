@@ -1,25 +1,17 @@
 """Gameplay ground (.kdt): chunk codecs, container round trip and part replacement on a tiny made-up two-subtree
-file (no game files). The file is laid out by hand from docs/FORMATS.md §6, independently of the writer."""
-import contextlib
-import io
+file (no game files). The file is laid out by hand, independently of the writer."""
 import math
-import os
 import struct
-import sys
-import tempfile
 import unittest
 import zlib
 
-from fixtures import make_edat, make_ndf, val
+from fixtures import make_ndf, val
 from rusemod.kdt import (
     FILL, OFFSETS, Clip, Kdt, Leaf, Split, compress, decode_indices, decode_main_node, decode_normal, decode_normals,
     decode_positions, decode_tree, decode_trilists, encode_indices, encode_main_node, encode_normal, encode_normals,
     encode_positions, encode_tree, encode_trilists, inflate, leaves, main_regions, read_chunk,
 )
 from rusemod.tms import encode_parents
-
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
-import verify_kdt  # noqa: E402
 
 BOUNDS = ((0.0, 0.0, 9.0), (491520.0, 491520.0, 117000.0))
 # subtree 0: four vertices, one stored relative to an earlier vertex; subtree 1: two vertices
@@ -508,36 +500,6 @@ class Parts(unittest.TestCase):
         with self.assertRaises(ValueError):
             k.set_tree(1, Leaf(2), [[0]])                                 # the list must be as long as the leaf
         self.assertEqual(Kdt(raw).to_bytes(), raw)
-
-
-class VerifyTool(unittest.TestCase):
-    def test_runs_on_a_made_up_game_folder(self):
-        good = make_valid_kdt()
-        storage, off = hand_storage()
-        bad = bytearray(good)
-        i = bad.index(storage[:32])                  # break the first chunk's zlib bytes
-        bad[i + 12] ^= 0xFF
-        with tempfile.TemporaryDirectory() as root:
-            maps = os.path.join(root, "Maps", "PC")
-            os.makedirs(maps)
-            for name, camera in (("Good", good), ("Bad", bytes(bad))):
-                pack = make_edat([("dir", "output\\", [("file", "occlusioninfo_terrainonly.kdt", good),
-                                                       ("file", "occlusioninfo_camera.kdt", camera)])])
-                with open(os.path.join(maps, f"DataMap{name}_v09.dat"), "wb") as f:
-                    f.write(pack)
-            out = io.StringIO()
-            with contextlib.redirect_stdout(out):
-                code = verify_kdt.main([root, "--only", "Good"])
-            self.assertEqual(code, 0)
-            self.assertIn("1 packs, 2 files, 0 failures", out.getvalue())
-            self.assertIn("subtrees    2  vertices        6  OK", out.getvalue())
-            out = io.StringIO()
-            with contextlib.redirect_stdout(out):
-                code = verify_kdt.main([root])
-            self.assertEqual(code, 1)
-            self.assertIn("2 packs, 4 files, 1 failures", out.getvalue())
-            self.assertIn("Bad                      camera  subtrees    2  vertices", out.getvalue())
-            self.assertIn("FAIL: subtree 0:", out.getvalue())
 
 
 if __name__ == "__main__":

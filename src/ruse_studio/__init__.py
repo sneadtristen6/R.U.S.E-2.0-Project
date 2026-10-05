@@ -5,7 +5,7 @@ the other.
 v0.3: browse every unit and building by kind, nation and name; see a unit's values grouped (cost, combat,
 movement…), its parts and what uses it, and change its numbers right there, saved in a mod (edits.py); a part several units share changes for one
 of them or for all. Test in game
-builds the mod and starts R.U.S.E. Everything about the game comes from the game index (`ruse index build`). The
+builds the mod and starts R.U.S.E. What it shows of the game's data comes from the game index (`ruse index build`). The
 language selector keeps the game's own names by default and can show the Studio in any of the game's ten languages.
 v0.4: Maps, the start of the terrain editor: every map the game ships, drawn in 3D with its real ground and textures
 (ui/maps.js, rusemod.terrain).
