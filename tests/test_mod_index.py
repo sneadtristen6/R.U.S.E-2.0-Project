@@ -147,6 +147,9 @@ class Reading(unittest.TestCase):
                           m["game_build"], m["fingerprint"], m["tags"], m["cheat"]),
                          ("tank-test", 'Tank "Test"', "1.2.0", "Tristen, Nuke", "Tanks are tougher.\nTwo lines.", 2711,
                           "ab" * 32, "24687178", "K7Q2-M9XD", [], False))
+        self.assertEqual(m["made_with"], "")  # an entry from before the credit: nothing, and older lists still read
+        credited = entry_text(info | {"made_with": "RUSE Studio 0.9.7"}, 2711, "ab" * 32, download="https://x/t.rusemod")
+        self.assertEqual(parse("format = 1\n" + credited)[0][0]["made_with"], "RUSE Studio 0.9.7")
         unfinished = entry_text({"id": "plain", "version": "0.1.0"}, 5, "c" * 64)
         self.assertIn('download = ""  # the https:// link to the .rusemod once it is uploaded', unfinished)
         mods, problems = parse("format = 1\n" + unfinished)

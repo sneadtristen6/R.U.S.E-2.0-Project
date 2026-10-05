@@ -53,6 +53,11 @@ builds        = ["24687178"]        # Steam build ids the mod was tested on
 data_revision = "190852"
 fingerprint   = "K7Q2-M9XD"         # this mod alone on that build (§12); Export mod… writes these three lines
 
+[made_with]                         # the tool that made it: Export mod… writes it; the mod list shows it
+tool    = "RUSE Studio"
+version = "0.9.7"
+page    = "https://github.com/sneadtristen6/R.U.S.E-2.0-Project"
+
 [dependencies]                      # hard dependencies: id = version range
 # "ruse2-assets" = "^0.3"
 
@@ -1175,10 +1180,20 @@ small public git repository is the index, GitHub serves its file, and GitHub Rel
   and only the mods the player ticks are downloaded.
 - **Adding a mod:** export it from the Studio (§2). The export says the file's size and SHA-256, and the Studio's
   "Share your mod" (opened after the export, and from the Mod menu) shows them with the `[[mod]]` entry ready to
-  copy, `download` left empty (an entry left so is skipped). Attach the `.rusemod` to a GitHub Release (of the mod's
-  own repository, or of the index repository), put its link in `download`, and open a pull request to the index
-  repository that adds the entry; or post the mod in the Discussions and it's added for you. A new version is a new
-  entry line: change `version`, `download`, `size`, `sha256` (a published file never changes, §12).
+  copy (`download` left empty: an entry left so is skipped) and the credit line to paste where the mod is shared
+  ("Made with RUSE Studio <version> (<the project's page>)", from the manifest's `[made_with]`). **Publish to the mod
+  list** (`StudioApi.publish_mod`) opens the list repository's **Add my mod** form
+  (`.github/ISSUE_TEMPLATE/add-mod.yml` there) with its boxes filled in from the file (`mod_index.submit_url`: name,
+  version, credit, what it does, the entry, the game build, made with), and saves a `.zip` copy of the file beside
+  it (the same bytes; GitHub takes `.zip` attachments) with its folder open. The modder says what the mod changes and
+  what its code does, attaches the `.zip` and submits. Nothing is sent from the Studio. On the list repository, a
+  workflow (`check-submission.yml`, `tools/check_submission.py`) reads the attached file without running anything in
+  it and comments: programs, files outside the game's data archives and paths that leave the folder are against the
+  list's guidelines (`GUIDELINES.md`); changes to the game's own scripts get a maintainer's look. A maintainer then
+  tries the mod, uploads it to a release and adds the entry. A pull request that adds the entry works too. A new
+  version is a new entry line: change `version`, `download`, `size`, `sha256` (a published file never changes, §12).
+- **Credit:** an entry may carry `made_with = "RUSE Studio 0.9.7"` (the Studio's export writes it into the entry);
+  launchers that don't know the field skip it.
 - **What the launcher does:** fetches the list (10 s timeout), keeps a copy in `<home>/index/` and shows that copy
   when offline, saying from when it is; marks each entry against the library ("new", "update available",
   "installed"); on Install, downloads the package, checks the size and the SHA-256 against the entry (anything else

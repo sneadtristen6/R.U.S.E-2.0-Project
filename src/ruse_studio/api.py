@@ -32,7 +32,7 @@ from pathlib import Path
 from rusemod import doctor, identity, missions, mod_index, package, scenario, scenery, schema, startlog
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
-from rusemod.community import APP_NAMES, CommunityCalls, private_paths_out
+from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
 from rusemod.update import UpdateCalls
 from rusemod.build import MAP_FILES, BuildError, build_and_write, build_cache, load_mod
 from rusemod.lock import fingerprint_text
@@ -328,6 +328,8 @@ def words(lang: str = schema.BASE) -> dict:
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls, startlog.StartCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
+    # What Export writes into every mod's manifest ([made_with]); the mod list and the Launcher show it as the credit
+    MADE_WITH = {"tool": "RUSE Studio", "version": __version__, "page": REPO_URL}
 
     def __init__(self, index_path=None, game_dir=None, find=find_game, home=None, starter=None, instances=None,
                  pick_save=None, backups=None):
@@ -336,6 +338,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._find = find
         self._home = Path(home) if home else default_home()
         self._starter = starter or Starter()
+        self._last_export = None  # the file Export made this session: what Publish sends to the list
         self._instances = Path(instances) if instances else None
         self._backups = Path(backups) if backups else None  # the clean game backup (rusemod.backup): RUSE-Backup
         # on the game's drive
@@ -3567,7 +3570,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 answers = result.solved  # (what the long map steps worked out: players' builds take it from the file)
             with self._saving:
                 path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint,
-                                    solved=answers)
+                                    solved=answers, made_with=self.MADE_WITH)
+            self._last_export = Path(path)
             if answers:
                 say(f"The file carries the worked-out answers for {len(answers)} map(s), locked: a player's build takes "
                     f"them instead of working them out again.")
@@ -3592,17 +3596,41 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     # --- Share your mod: how an exported mod gets onto the supported-mods list (MOD_FORMAT §15) ---
     @staticmethod
     def _share_view(path) -> dict:
-        """An exported file as the list needs it: where it is, its size and SHA-256, and its `[[mod]]` entry for
-        the list's index.toml, ready to paste."""
+        """An exported file as the list needs it: where it is, its size and SHA-256, its `[[mod]]` entry for the
+        list's index.toml, ready to paste, and the credit line ("Made with RUSE Studio ...") its manifest carries."""
         path = Path(path)
         data = path.read_bytes()
         size, sha256 = len(data), hashlib.sha256(data).hexdigest()
+        info = package.check(path)
         return {"path": str(path), "file": path.name, "size": size, "size_text": mod_index.size_text(size),
-                "sha256": sha256, "entry": mod_index.entry_text(package.check(path), size, sha256)}
+                "sha256": sha256, "entry": mod_index.entry_text(info, size, sha256),
+                "made_with": info.get("made_with", ""), "credit": mod_index.credit_line(info.get("made_with", ""))}
 
     def share_info(self) -> dict:
-        """What "Share your mod" shows besides an export's own file: the list's repository and its page."""
-        return {"repo": mod_index.REPO, "page": mod_index.PAGE}
+        """What "Share your mod" shows besides an export's own file: the list's repository and its page, and the
+        credit line for a mod made with this Studio."""
+        made = f"{self.MADE_WITH['tool']} {self.MADE_WITH['version']}"
+        return {"repo": mod_index.REPO, "page": mod_index.PAGE, "credit": mod_index.credit_line(made)}
+
+    def publish_mod(self) -> dict:
+        """Send the last exported mod to the list: the "Add my mod" form opens in the browser with its boxes filled in
+        from the file (name, version, credit, what it does, the list entry, the game build), and a .zip copy of the
+        file (GitHub takes .zip attachments) is put beside it with its folder open, ready to drag into the form.
+        Nothing is sent from here: the modder fills in the rest and submits it. Without an export this session, the
+        empty form. Returns {"opened": the form's address, "zip": the .zip copy or None}."""
+        path = getattr(self, "_last_export", None)
+        if path is None or not Path(path).is_file():
+            url = f"{mod_index.FORM}?template={mod_index.FORM_TEMPLATE}"
+            self._starter.open_url(url)
+            return {"opened": url, "zip": None}
+        view = self._share_view(path)
+        info = package.check(path)
+        zip_copy = Path(path).with_suffix(".zip")
+        shutil.copyfile(path, zip_copy)  # the same bytes: a .rusemod is a plain zip, and the Launcher takes either
+        url = mod_index.submit_url(info, view["entry"], info.get("made_with", ""))
+        self._starter.open_url(url)
+        self._starter.open_url(str(zip_copy.parent))
+        return {"opened": url, "zip": str(zip_copy)}
 
     # --- building the index from the Studio ---
     def build_index(self) -> dict:
