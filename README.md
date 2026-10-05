@@ -48,19 +48,23 @@ games ever, and I just want to make it better.
 <table>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/units-abrams-two-at-base.jpg" alt="R.U.S.E. in game: two M1 Abrams tanks at a US base, imported with RUSE Studio" width="260"><br>
-      <sub><b>A tank of your own.</b> An M1 Abrams, modelled in another 3D program, built at the Armor Base.</sub>
+      <img src="docs/images/units-abrams-closeup.jpg" alt="R.U.S.E. in game: an M1 Abrams tank up close, imported with RUSE Studio" width="260"><br>
+      <sub><b>A tank of your own.</b> An M1 Abrams, modelled in another 3D program, in the game.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/images/units-abrams-farm.jpg" alt="R.U.S.E. in game: two M1 Abrams tanks in the fields beside a farm" width="260"><br>
+      <sub><b>Out in the fields.</b> Two M1 Abrams beside a farm.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/roads-5-done-close.jpg" alt="R.U.S.E. in game on D-Day: a new road up close, asphalt with a dashed centre line and gravel shoulders" width="260"><br>
       <sub><b>Roads you draw.</b> Like the map's own, from high up and right down at the ground.</sub>
     </td>
+  </tr>
+  <tr>
     <td width="33%" valign="top">
       <img src="docs/images/bridge-infantry-at-deck-height.jpg" alt="R.U.S.E. in game: two infantry squads and a supply truck crossing a new bridge" width="260"><br>
       <sub><b>Bridges units cross.</b> Where your road meets water, the build puts the map's own kind of bridge.</sub>
     </td>
-  </tr>
-  <tr>
     <td width="33%" valign="top">
       <img src="docs/images/terrain-ingame-hill.jpg" alt="R.U.S.E. in game on Blitz: a hill raised with the Studio's brushes, units driving up it" width="260"><br>
       <sub><b>Ground you shape.</b> Hills, craters, lakes and dried rivers that units drive and fight on.</sub>
@@ -69,9 +73,44 @@ games ever, and I just want to make it better.
       <img src="docs/images/units-repainted-red.jpg" alt="R.U.S.E. in game: two Shermans repainted red by a mod" width="260"><br>
       <sub><b>Units with their own look.</b> Repaint any unit in Blender and bring it back.</sub>
     </td>
-    <td width="33%" valign="top">
-      <img src="docs/images/studio-maps.jpg" alt="RUSE Studio's Maps view: D-Day in 3D with its towns, zones and starting points, and the map tools along the bottom" width="260"><br>
-      <sub><b>The Studio's map view.</b> Every map in 3D, with the tools along the bottom.</sub>
+  </tr>
+</table>
+
+## Inside the Studio
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/studio-map-blitz.jpg" alt="RUSE Studio's map view: Blitz in 3D with its zones and towns, and the map tools along the bottom" width="400"><br>
+      <sub><b>Every map in 3D.</b> Blitz with its zones and towns; the tools run along the bottom.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/studio-unit-page.jpg" alt="RUSE Studio's Units page: a unit's weapons, its 3D model, its build-menu card and Repaint in Blender" width="400"><br>
+      <sub><b>Units.</b> Change a unit's weapons and numbers, see it in 3D, make its card, repaint it in Blender or give
+      it a model of its own.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/studio-map-paint.jpg" alt="RUSE Studio's Map Paint: a colour wheel, the map's own colours, size and opacity" width="400"><br>
+      <sub><b>Map Paint.</b> Paint the ground's picture with a colour, or with the map's own ground from another
+      spot.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/studio-roads-bridges.jpg" alt="RUSE Studio's Roads and Bridges tools: straight, curve and freeform roads" width="400"><br>
+      <sub><b>Roads and bridges.</b> Straight, curved or freehand; supply trucks follow them, and a road over water gets
+      a bridge.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/studio-ground-water.jpg" alt="RUSE Studio's Ground and Water brushes: hill, raise, lower, crater, plateau, flatten, level, smooth and ramp" width="400"><br>
+      <sub><b>Ground and water.</b> Hills, craters, plateaus, flattened ground and ramps, round or square, soft or
+      hard edged.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/studio-maps.jpg" alt="RUSE Studio's Maps view: D-Day in 3D with its towns, zones and starting points, and the map tools along the bottom" width="400"><br>
+      <sub><b>Any map the game lists.</b> D-Day in the map view, with its towns, zones and starting points.</sub>
     </td>
   </tr>
 </table>
