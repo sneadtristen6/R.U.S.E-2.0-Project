@@ -322,7 +322,7 @@ def _all_texels(jobs: list, max_depth: float, off: float, workers: int) -> tuple
 
 def _shade(red: list[int]) -> int:
     """The depth (R) a cell of still water all over shares a tile by: its texels' mean, to the nearest SHADE, 255 for
-    the deepest; the shallowest keep their own (at least 1: R 0 says dry, and water over "dry" is drawn dark)."""
+    the deepest; the shallowest keep their own (at least 1: 0 is a dry place's)."""
     mean = sum(red) / len(red)
     if mean > 255 - SHADE / 2:
         return 255
@@ -421,11 +421,9 @@ def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, floa
         at_base = sum(1 for i in wet_texels if abs(mean[i] - base) < 2 * step)
         other = at_base <= len(wet_texels) / 2        # rivers and lakes: water not at the base level
         if len(wet_texels) == TILE * TILE and not other:
-            # still water at the base level all over the cell: a tile shared by every such cell of about its depth,
-            # as the shipped sea's is (all 4,158 of D-Day's sea cells on one tile, whatever the sea floor under them;
-            # no cell's place in it, no flow): the sea's own for the deepest, one more per SHADE of depth. A thin
-            # layer over a whole flattened map needs it: the atlas holds 4,096 tiles, D-Day's 13,824 cells would each
-            # want one of their own
+            # still water at the base level all over the cell: one tile shared by every such cell of about its
+            # depth, as the shipped sea shares one (the sea's own for the deepest, one more per SHADE of depth): a
+            # thin layer over a whole flattened map would otherwise want more tiles than the pictures hold
             shade = _shade(red)
             to = sea if sea is not None and shade == 255 else alike.get(shade)
             if to is None and free:

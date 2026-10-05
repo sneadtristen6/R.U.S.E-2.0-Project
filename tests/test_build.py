@@ -380,6 +380,30 @@ class Terrain(unittest.TestCase):
         self.assertNotEqual(fingerprint_text(result.fingerprint), fingerprint_text(other.fingerprint))
         self.assertIn(f"fingerprint: {fingerprint_text(result.fingerprint)}", lines)
 
+    def test_no_floor_notes_on_a_map_whose_bridges_go(self):
+        """A stroke at a bridge's floor is said (terrain_edit.FLOOR_NOTE), except on a map whose own bridges a mod
+        takes out (roads.toml take_out): their floors are sunk with them (the blank D-Day build said 83 such lines)."""
+        from unittest import mock
+
+        import rusemod.build as build
+        from rusemod.terrain_edit import FLOOR_NOTE
+        real = build.edit_map
+
+        def edit_map(*args, **kwargs):
+            changed, notes = real(*args, **kwargs)
+            return changed, notes + [f"Test: stroke 1 (hill at 1500, 1500) {FLOOR_NOTE} at (1500, 1500)"]
+        hill = self.mod("hill")
+        out = write_mod(self.root / "mods", "out", {})   # the map's own bridges out, nothing reshaped
+        (out / "maps" / "Test").mkdir(parents=True)
+        (out / "maps" / "Test" / "roads.toml").write_text('take_out = ["bridges"]\n', encoding="utf-8")
+        with mock.patch.object(build, "edit_map", edit_map):
+            _kept, said = self.build(hill, copy="c1")
+            _quiet, quiet = self.build(hill, out, copy="c2")
+        self.assertTrue(any(FLOOR_NOTE in line for line in said), said)
+        self.assertIn("terrain: Test, from hill", quiet)
+        self.assertTrue(any("Test: 1 stroke(s)" in line for line in quiet), quiet)   # the other notes stay
+        self.assertFalse(any(FLOOR_NOTE in line for line in quiet), quiet)
+
     def test_terrain_and_unit_changes_together_and_two_mods_on_one_map(self):
         a = self.mod("aaa", rndf={"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
         b = self.mod("bbb", HILL.replace('"hill"', '"lower"').replace("400.0", "100.0"))

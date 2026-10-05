@@ -426,12 +426,12 @@ and `cover` strokes over the same circles here; its Undo takes back both.
   water stroke's, or ground a height brush lowered under the water) in both graphs, as `movement.toml` blocks would
   (`rusemod.nav.water_blocks`: circles over it, sampled every 640 map units or more, reaching about half a step past
   the shore at most). Drained ground (a bed the water left) has no ground in the movement, so the build opens it to
-  units (its own opens over the dried bed, the widest stretches in big circles). A water stroke with `block = false` (the Studio's Water over the whole map: a square over
-  all of it, its surface Strength above the ground's middle height) is a thin layer units go under, like a navy
-  map's painted sea: the movement takes its place for dry ground, so it closes nothing, and the old water under it
-  (a river, the sea) is opened as a drained bed is. It is drawn as any water is; not seen in the game yet. What is
-  written follows the rules every shipped map keeps (`rusemod.water`). A height brush near water
-  also keeps the water triangles and textures in step.
+  units (its own opens over the dried bed, the widest stretches in big circles). A water stroke with
+  `block = false` (the Studio's Water over the whole map: a square over all of it, its surface Strength above the
+  ground's middle height) is a thin layer units go under, like a navy map's painted sea: the movement takes its
+  place for dry ground, so it closes nothing, and the old water under it (a river, the sea) is opened as a drained
+  bed is. It is drawn as any water is; not seen in the game yet. What is written follows the rules every shipped
+  map keeps (`rusemod.water`). A height brush near water also keeps the water triangles and textures in step.
 
 - **All four files together.** A map's ground is held four times over: the close-up and far ground
   the game draws, the ground units walk on, and the camera floor. Every stroke moves the points of all four inside its
@@ -586,11 +586,11 @@ whole_map = true   # every scenario of the map: each place its sectors leave out
 - Every scenario of the map with sectors gets them made again: each place a sector held stays in it, and each place
   none held (the sea, the edges) goes to the sector nearest it, so the sectors meet the map's edges all round. The
   sectors keep their numbers, names and labels; neighbours share one border, point for point.
-- Two things are made from the same outlines, so they agree: the sectors the game draws (their outlines, borders
-  and fills, each point at the reshaped ground's height) and the map the game asks which sector a place is in. The
-  borders are traced on a grid of the map (4 m on D-Day): the map's own borders move by a few metres at most.
-- A sector with another inside it has no outline the scenario's file can hold (none of the shipped scenarios has
-  one): that scenario keeps the map's own sectors, and the build warns.
+- The sectors drawn and the sectors played are made from the same outlines, so they agree, each point at the
+  reshaped ground's height. The borders are traced on a grid of the map (4 m on D-Day): the map's own borders move
+  by a few metres at most.
+- A sector with another inside it can't be made (none of the shipped scenarios has one): that scenario keeps the
+  map's own sectors, and the build warns.
 - The last mod that has a `[sectors]` table decides. Not yet seen in the game.
 
 A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
@@ -815,11 +815,10 @@ the map's bridges), a line before the `[[road]]` tables:
 take_out = ["roads", "bridges"]   # either, or both
 ```
 
-- `"roads"`: the map's road network goes, with every link the movement has to it (supply trucks and units then
-  plan their way across country, as on a map with no roads); so do the roads drawn from high up and on the map
-  table (the road model is drawn as nothing; its road pieces in the scenery go), and the road stickers up close
-  (asphalt, cobbles, dirt tracks, their edges and junctions). The mod's own `[[road]]` go in afterwards, in the
-  look the map's own had, and must still make one network between them.
+- `"roads"`: the map's road network goes, with every link the movement has to it (supply trucks and units should
+  then plan their way across country, as on a map with no roads); so do the roads drawn from high up and on the map
+  table, and the road stickers up close (asphalt, cobbles, dirt tracks, their edges and junctions). The mod's own
+  `[[road]]` go in afterwards, in the look the map's own had, and must still make one network between them.
 - `"bridges"`: the map's own bridges are erased, and the floors units stood on are sunk under the ground. The
   movement over their decks stays: units still cross there, on the ground under them. Drain the rivers (the water
   brushes) to cross anywhere.

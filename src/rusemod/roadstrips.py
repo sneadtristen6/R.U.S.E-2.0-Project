@@ -346,11 +346,9 @@ class StaticMeshes:
 
 
 def without_roads(raw: bytes) -> tuple[bytes, int]:
-    """The map's static meshes with its road model drawn as nothing: every vertex of the model's draw call given no
-    width (its strip's width, TexCoord0's second value, and its bend's, PSize, at 0: the strip's three vertices across
-    the road stand on its middle line, so its triangles have no area) and no colour (alpha 0). Only those bytes change:
-    the same size and layout, the header and its hash stay. Returns (the bytes, vertices changed); a map without a road
-    model gives the same bytes. Not seen in the game yet."""
+    """The map's static meshes with its road model drawn as nothing: every vertex of the road given no width and no
+    colour, so its triangles have no area. Only those bytes change. Returns (the bytes, vertices changed); a map
+    without a road model gives the same bytes. Not seen in the game yet."""
     pack = StaticMeshes(raw)
     if pack.model is None:
         return pack.raw, 0
@@ -360,10 +358,10 @@ def without_roads(raw: bytes) -> tuple[bytes, int]:
     count = pack.vbs[vb][1] // STRIDE
     out = bytearray(pack.raw)
     for k in range(count):
-        at = base + STRIDE * k   # _VTX: position 0-11, normals 12-19, PSize 20, colour 24-27, arc lengths 28, uv 36
-        struct.pack_into("<f", out, at + 20, 0.0)
-        out[at + 27] = 0
-        struct.pack_into("<f", out, at + 40, 0.0)
+        at = base + STRIDE * k
+        struct.pack_into("<f", out, at + 20, 0.0)   # the bend's width
+        out[at + 27] = 0                            # the colour's alpha
+        struct.pack_into("<f", out, at + 40, 0.0)   # the strip's width
     return bytes(out), count
 
 

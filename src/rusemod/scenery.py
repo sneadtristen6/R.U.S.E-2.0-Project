@@ -1641,10 +1641,9 @@ def _assembled(sc: Scenery, data: bytes, parts: list[bytes]) -> bytes:
 
 
 def take_out_road_pieces(data: bytes) -> tuple[bytes, list[str]]:
-    """The scenery file with every road piece taken out (the items the game draws the far roads from: Item kind
-    "road", the Route pieces): each block holding any made again without them (_rebuilt, as an erase does: its tree's
-    boxes and road marks stay, a box holding less is still right), every reference pointed at the blocks' new places.
-    Returns (the file, notes); a map with none gives the same bytes. Not seen in the game yet."""
+    """The scenery file with every road piece taken out (Item kind "road", the Route pieces the far roads are drawn
+    with): each block holding any made again without them (_rebuilt, as an erase does), every reference pointed at the
+    blocks' new places. Returns (the file, notes); a map with none gives the same bytes. Not seen in the game yet."""
     sc = Scenery(data)
     removed = [{it.at for it in b.items if it.kind == "road"} for b in sc.blocks]
     n = sum(len(r) for r in removed)

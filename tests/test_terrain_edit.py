@@ -17,7 +17,7 @@ from rusemod.brush import Stroke
 from rusemod.edat import Edat
 from rusemod import kdt_edit
 from rusemod.kdt import Clip, Kdt, leaves
-from rusemod.terrain_edit import FILES, edit_map
+from rusemod.terrain_edit import FILES, edit_map, without_floor_notes
 from rusemod.tms import Q_MAX, Cell, Patch, Tms, VertexBuffer, encode_indices
 
 CAMERA_Z = (-500.0, 5000.0)
@@ -211,8 +211,12 @@ class Together(unittest.TestCase):
         files[floors.MEMBER] = rebuild(Kdt(make_valid_kdt()), strip(Deck.of(1300.0, 1500.0, 1700.0, 1500.0), 0.0, 0.0))
         _changed, notes = edit_map(reader(files), [self.hill], "Test")
         self.assertTrue(any("stroke 1 (hill at 1500, 1500) reaches a bridge's floor" in n for n in notes), notes)
+        # the map's own bridges taken out: their floors sunk, the notes left out, every other note kept
+        self.assertEqual(without_floor_notes(notes), [n for n in notes if "bridge's floor" not in n])
+        self.assertLess(len(without_floor_notes(notes)), len(notes))
         _changed, notes = edit_map(reader(files), [Stroke("hill", 2600.0, 2600.0, 200.0, height=400.0)], "Test")
         self.assertFalse(any("bridge's floor" in n for n in notes), notes)
+        self.assertEqual(without_floor_notes(notes), notes)
 
     def test_a_hill_raises_all_four_files_together(self):
         changed, notes = edit_map(reader(self.files), [self.hill], "Test")

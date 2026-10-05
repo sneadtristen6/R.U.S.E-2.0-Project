@@ -45,6 +45,7 @@ FILES = {"highdef": "output\\highdef.tms", "lowdef": "output\\lowdef.tms",
          "ground": KDT_MEMBERS["ground"], "camera": KDT_MEMBERS["camera"]}
 LABELS = {"highdef": "close-up mesh", "lowdef": "far mesh", "ground": "gameplay ground", "camera": "camera floor"}
 GRID_SAMPLES = 64      # height samples per close-up cell for the smooth brush's local average (at most 1,024 across)
+FLOOR_NOTE = "reaches a bridge's floor"   # in each note on a stroke at a bridge's floor (_near_bridge_floors)
 
 
 @dataclass
@@ -393,11 +394,17 @@ def _near_bridge_floors(read, strokes: list[Stroke], name: str) -> list[str]:
         x, y, r = _area_of(s)
         hit = next(((px, py) for px, py in points if (px - x) ** 2 + (py - y) ** 2 <= r * r), None)
         if hit:
-            out.append(f"{name}: stroke {n} ({s.brush} at {s.x:g}, {s.y:g}) reaches a bridge's floor at "
+            out.append(f"{name}: stroke {n} ({s.brush} at {s.x:g}, {s.y:g}) {FLOOR_NOTE} at "
                        f"({hit[0]:.0f}, {hit[1]:.0f}), which keeps its height: units there stand on the floor's old "
                        f"level (lower ground leaves its end in the air, higher ground buries it); shape the banks "
                        f"clear of the bridge's ends")
     return out
+
+
+def without_floor_notes(lines: list[str]) -> list[str]:
+    """`lines` without the notes on strokes at a bridge's floor (FLOOR_NOTE): for a map whose own bridges are taken
+    out (roads.toml take_out), their floors sunk with them, so the notes don't hold."""
+    return [line for line in lines if FLOOR_NOTE not in line]
 
 
 def _reseat_roads(read, before: Tms, after: Tms, name: str) -> tuple[dict[str, bytes], list[str]]:

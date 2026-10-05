@@ -365,9 +365,8 @@ def found_at(k: K.Kdt, x: float, y: float) -> list[int]:
     return sorted(set(out))
 
 
-SUNK = -100000.0   # where the floor of a bridge taken out goes: far under any ground. A unit stands on the ground or a
-                   # floor, whichever is higher, so a floor under the ground is never stood on; it stays in the file,
-                   # which can't be left without a triangle (all 556 of D-Day's are its bridges' floors)
+SUNK = -100000.0   # where the floor of a bridge taken out goes: far under any ground, out of reach. It stays in the
+                   # file, which can't be left empty (all 556 of D-Day's triangles are its bridges' floors)
 
 
 def sink_floors(k: K.Kdt, height_at, gone: list[Deck]) -> tuple[bytes, list[str]]:

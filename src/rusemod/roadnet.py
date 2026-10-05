@@ -259,9 +259,9 @@ def take_out_of(rows: list) -> TakeOut:
 def take_out_roads(win: bytes) -> tuple[bytes, list[str]]:
     """The movement file (mapinfo.win) with the map's own road network taken out: no point and no link left, and
     every crossing of the two movement graphs and their local maps gone with it (a crossing names road links). With
-    no road network, supply trucks and units plan their way over the ground units walk on, as for a map with no roads
-    (the game turns to that when the network is empty; not seen in the game yet). The mod's own new roads are added
-    after this. Returns (the file, notes); a map whose network is empty already gives the same bytes."""
+    no road network, supply trucks and units should plan their way over the ground units walk on, as on a map with no
+    roads (not seen in the game yet). The mod's own new roads are added after this. Returns (the file, notes); a map
+    whose network is empty already gives the same bytes."""
     from ruse_mod_engine import sdb
     from .nav import Graph, NavError, replace_buffers
     parts = sdb.split_mapinfo(win)
@@ -285,7 +285,7 @@ def take_out_roads(win: bytes) -> tuple[bytes, list[str]]:
             new[k] = g.to_bytes()
     return replace_buffers(win, new), [f"the map's own road network taken out: {len(net.points):,} point(s) and "
                                        f"{len(net.links):,} link(s), and the movement's {dropped:,} crossing(s) of "
-                                       f"them: supply trucks go across country"]
+                                       f"them: supply trucks should go across country (not seen in the game yet)"]
 
 
 def roads_toml(roads: list[Road], header: str = "", take_out: TakeOut | None = None) -> str:

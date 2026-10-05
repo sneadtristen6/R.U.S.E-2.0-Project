@@ -1,31 +1,18 @@
 """Sectors over the whole map (maps/<map pack>/scenario.toml `[sectors] whole_map = true`; docs/MOD_FORMAT.md §8):
 every place of the map in a sector, each place the map's own sectors leave out going to the sector nearest it.
 
-A scenario holds its sectors twice. The game draws them from the scenario's zones (rusemod.scenario.Zone): their
-shapes, borders and names. It asks which sector a place is in through the zone map, a ground tree of its own
-(test\\map\\<map>\\zonebluff\\<scenario>.kdt, rusemod.kdt) whose triangles stand at the sector's number x 10,000: the
-game takes the height of the highest triangle under the place and rounds it divided by 10,000 (no triangle: no
-sector). Both are made again here from one grid of the map, so the drawn sectors and the ones the game plays with
-agree, and two neighbours share one border, point for point.
-
 How it is done, as other map editors make regions (a grid, then outlines traced from it):
-  1. the map on a grid of cells (at most MOST_CELLS along its longer side): each cell in the sector the zone map
-     puts its middle in;
+  1. the map on a grid of cells (at most MOST_CELLS along its longer side): each cell in the sector the scenario's
+     zone map (rusemod.kdt) puts its middle in;
   2. each cell the sectors leave out goes to the sector nearest it, measured exactly to the sectors' outlines on a
      grid COARSE times coarser (a sector's own share of the open map then reaches straight out from its edge);
   3. the borders between sectors (and the map's edge) traced along the cells' sides, as chains from one meeting place
      of three or more to the next, each chain made simpler once (Douglas-Peucker: at most 1.5 cells off on the
      sectors' own borders, 1.5 coarse cells on the new ones) and used by both its sides;
-  4. each sector's outline built from its chains, and its zone and its part of the zone map from that.
-
-How a sector is drawn follows the rules every shipped zone keeps (all 1,313 zones of the 102 shipped scenarios, read
-2026-10-05): its outline counter-clockwise; an inner ring BAND inside it (the shipped median: 20,000), the outline's
-points with a 5th value of 0 and the inner ring's 1; the area inside the outline, the band included, drawn as two
-parts split along the line through the label's y (the part with the smaller y first), the points on that line in
-both parts; then the band again as the border (the outline's points, then the inner ring's, two triangles a side);
-every triangle counter-clockwise; each point at the ground's height, its 4th value the scenario's own. The game
-draws a sector from these numbers alone (the ranges of its parts and border), so these rules are kept, not the
-shipped files' own triangles.
+  4. each sector's outline built from its chains; each sector (rusemod.scenario.Zone) made again from its outline,
+     drawn the way every shipped sector is (checked on all 1,313 of the 102 shipped scenarios, 2026-10-05), and the
+     zone map made again from the same outlines, so the sectors drawn and the ones played agree, and two neighbours
+     share one border, point for point.
 
 Not seen in the game yet (2026-10-05): written for the owner's D-Day map, all of it flattened and painted blue."""
 from __future__ import annotations
@@ -37,7 +24,7 @@ from dataclasses import dataclass
 from .kdt import Kdt, Q_MASK
 from .scenario import Scenario, Zone
 
-LEVEL = 10000.0     # a sector's height in the zone map: its number times this (the game rounds height / 10,000)
+LEVEL = 10000.0     # a sector's height in the zone map: its number times this (every shipped zone map)
 BAND = 20000.0      # the border band: the inner ring this far inside the outline (the shipped zones' median)
 MITER = 2.5         # an inner ring's point at most this many band widths from its outline's point (a sharp corner)
 MOST_CELLS = 4096   # the grid: at most this many cells along the map's longer side (D-Day: 3,840 x 2,560, 4 m each)
@@ -90,8 +77,7 @@ def whole_map_of(rows: list) -> bool:
 
 
 def map_size(win: bytes) -> tuple[float, float]:
-    """A map's width and height (map units) from its movement file's header (mapinfo.win: the game reads them there
-    when it loads the map; D-Day 3,932,160 by 2,621,440)."""
+    """A map's width and height (map units) from its movement file (mapinfo.win; D-Day 3,932,160 by 2,621,440)."""
     if len(win) < 48 or win[:8] != b"INFOIA\r\n":
         raise SectorError("not a movement file (mapinfo.win)")
     return struct.unpack_from("<2f", win, 0x28)
@@ -604,8 +590,8 @@ def _split(tris: list, pts: list, ay: float) -> tuple[list, list]:
 
 def zone_mesh(old: Zone, ring: list, height_at, band: float = BAND) -> tuple[Zone, list]:
     """Zone `old` (number, name, label, the 4th value) with the outline `ring` (counter-clockwise map points): its
-    parts and border by the shipped zones' rules (top of this file), each point at `height_at(x, y)`'s ground.
-    Returns the zone and notes."""
+    parts and border drawn the way the shipped zones are, with a border band `band` wide where it fits, each point
+    at `height_at(x, y)`'s ground. Returns the zone and notes."""
     notes = []
     n = len(ring)
     widths: list = [band] * n
@@ -666,9 +652,8 @@ def zone_mesh(old: Zone, ring: list, height_at, band: float = BAND) -> tuple[Zon
 
 
 def zone_map(template: bytes, rings: dict, width: float, height: float) -> bytes:
-    """The zone map (`template`: the scenario's own, for its file layout) made again over `rings` (number ->
-    counter-clockwise outline): each sector's outline cut into triangles at height number x LEVEL, the bounds the
-    whole map, a tree over them (rusemod.kdt_edit.rebuild) under the six bounding clips the shipped files have."""
+    """The zone map (`template`: the scenario's own) made again over `rings` (number -> counter-clockwise outline):
+    each sector's outline cut into triangles at its number x LEVEL, over the whole map (rusemod.kdt_edit.rebuild)."""
     from . import kdt_edit
     k = Kdt(template)
     k.subtrees = k.subtrees[:1]
@@ -759,8 +744,8 @@ def over_whole_map(s: Scenario, kdt_raw: bytes, width: float, height: float, hei
     for zone, zr in rings.items():
         if len(zr) > 1:
             inside = sorted({chains[k].right if fwd else chains[k].left for r in zr[1:] for k, fwd in r} - {-1})
-            # not a game rule: a zone in the scenario's file has one outline (one range of border points), so a
-            # sector with a hole can't be written down; the build keeps that scenario's own sectors and warns
+            # not a game rule: a zone in the scenario's file has one outline, so a sector with a hole can't be
+            # written down; the build keeps that scenario's own sectors and warns
             raise SectorError(f"sector {zone} has sector(s) {inside} inside it, and a sector's outline in the "
                               f"scenario's file can't have a hole")
     outline = {}

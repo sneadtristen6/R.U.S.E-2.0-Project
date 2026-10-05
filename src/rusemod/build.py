@@ -32,7 +32,7 @@ from .resolve import ModInfo, ResolveError, load_order
 from .rndf import parse
 from .spk import Spk, SpkError
 from .steam import build_of, data_revisions
-from .terrain_edit import edit_map
+from .terrain_edit import edit_map, without_floor_notes
 
 DEFAULT_PACK = "ZZ_GladPatchableWin.dat"  # the unit data
 
@@ -1522,6 +1522,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         flooded: dict = {}  # map pack name -> (nav.Block over each new water, the mods' ids)
         beds: dict = {}     # map pack name -> (nav.Block opens over each dried bed, the mods' ids)
         filled_hollows: dict = {}  # map pack name -> (mend.Filled: riverbeds the edits raised flat, the mods' ids)
+        from .roadnet import take_out_of
+        bridges_out = {name.lower() for name, (rows, _ids) in scenario_edits(result.order, mods, "take_out").items()
+                       if take_out_of(rows).bridges}  # maps whose own bridges go (roads.toml take_out)
         for name, (strokes, ids) in terrain_edits(result.order, mods).items():
             map_path = find_map(name)
             if map_path is None:
@@ -1630,7 +1633,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 if not made["warnings"] and not made.get("failed"):
                     mapkeep.write(cache, keep_key, made)
             say(f"terrain: {name}, from {', '.join(ids)}")
-            for line in made["lines"]:
+            # (a map whose own bridges go: their floors are sunk with them, so a stroke at one leaves nothing in the air)
+            for line in without_floor_notes(made["lines"]) if name.lower() in bridges_out else made["lines"]:
                 say(line)
             if made.get("failed"):
                 continue
@@ -1817,7 +1821,6 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         for name, (_areas, ids) in erasing.items():
             every, who = with_pieces.setdefault(name, ([], []))
             who.extend(i for i in ids if i not in who)
-        from .roadnet import take_out_of
         take_outs = {name: (take_out_of(rows), ids)  # the map's own roads and bridges taken out (roads.toml take_out)
                      for name, (rows, ids) in scenario_edits(result.order, mods, "take_out").items()}
         for name, (_what, ids) in take_outs.items():
