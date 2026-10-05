@@ -1640,6 +1640,7 @@ class SpawnNamesAndSelection(unittest.TestCase):
     def test_a_box_a_click_and_shift_select_and_the_strip_shows_the_map_icons(self):
         self.assertIn("boxStart(ev)", self.function("scenPointerDown("))
         self.assertIn("spawnsInBox(", self.function("boxEnd("))
+        self.assertIn("!it.gone", self.function("spawnsInBox("))  # a taken-out spawn isn't boxed (nor counted)
         self.assertIn("selectSpawn(g.it, add)", self.function("grabStart("))
         strip = self.function("renderSelection(")
         self.assertIn("spawnIconCanvas(it, false)", strip)  # the same icon as on the map
