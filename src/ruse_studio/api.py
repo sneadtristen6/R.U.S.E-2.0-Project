@@ -1209,11 +1209,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             kind = "battles"
         return {"battles": "skirmish"}.get(kind, kind)
 
-    def duplicate_map(self, pack: str, name: str, entry: str | None = None) -> dict:
+    def duplicate_map(self, pack: str, name: str, entry: str | None = None, preset: str | None = None) -> dict:
         """Make a new map: a copy of `pack` called `name` in the menus, in the current map project (one is made when
         none is picked). The map project's changes to `pack` so far are copied with it, so the copy starts as the
-        map view shows it. Returns {"pack": the new map's own name (its folder and files), "maps": maps()}."""
-        from rusemod import newmap
+        map view shows it; with `preset` (rusemod.presets: "blank_terrain", "blank_ocean", a Battles map only) it
+        starts blank instead, its files the preset's, made from the shipped map's own. Returns {"pack": the new map's
+        own name (its folder and files), "maps": maps()}."""
+        from rusemod import newmap, presets, roadnet
+        if preset is not None and preset not in presets.KINDS:
+            raise StudioError(f"There's no {preset!r} to start from.")
         name = " ".join(str(name or "").split())
         if not name:
             raise StudioError("Give the new map a name.")
@@ -1232,6 +1236,20 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError("Pick what to copy: one of this map's BATTLES maps, Operations or campaign chapters.")
         if entry is not None and battles == [entry]:
             entry = None  # the map's one BATTLES map: map.toml needn't say it
+        files: dict = {}
+        if preset is not None:
+            if entry is not None and entry not in battles:
+                # not a game rule: a blank copy takes the scenario's own items out, which a mission's script needs
+                raise StudioError("Blank Terrain and Blank Ocean start from a Battles map.")
+            game = self._game()
+            if game is None:
+                # not a game rule: the game or one of its files isn't found
+                raise StudioError("The game folder isn't found, so the map's own files can't be read.")
+            try:
+                scen = presets.copy_scenario(game, opts["source"], entry)
+                files = presets.preset_files(preset, presets.read_facts(game, opts["source"], scen))
+            except (presets.PresetError, OSError, ValueError, KeyError, struct.error) as exc:
+                raise StudioError(f"{opts['source']} can't start blank: {exc}") from None
         if self._map_dir() is None:
             self.new_mod(name, "map")
         folder = self._map_dir()
@@ -1245,9 +1263,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         target, src_dir = folder / "maps" / new, folder / "maps" / pack
         header = (f"A new map: a copy of {opts['source']} called {name!r} in the menus (MOD_FORMAT §8).\n"
                   "Made in the RUSE Studio's Duplicate map, which rewrites this file.")
+        checks = {"terrain.toml": lambda data: parse_strokes(data.get("stroke", []), "terrain.toml"),
+                  "scenario.toml": _scenario_checked("scenario.toml"),
+                  "roads.toml": lambda data: (roadnet.parse_roads(data.get("road", []), "roads.toml"),
+                                              roadnet.parse_take_out(data.get("take_out"), "roads.toml")),
+                  "scenery.toml": lambda data: (scenery.parse_objects(data.get("object", []), "scenery.toml")
+                                                + scenery.parse_erase(data.get("erase", []), "scenery.toml"))}
         with self._saving:
             target.mkdir(parents=True)
-            for f in sorted(src_dir.iterdir()) if src_dir.is_dir() else []:  # the changes made to it so far
+            for fname, text in files.items():  # a blank start: the preset's files, each checked as the build reads it
+                _save_checked(target / fname, text, checks[fname])
+            for f in sorted(src_dir.iterdir()) if src_dir.is_dir() and not files else []:  # the changes made so far
                 if f.is_file() and f.name in MAP_FILES and f.name != "map.toml":
                     (target / f.name).write_bytes(f.read_bytes())
             _save_checked(target / "map.toml", newmap.map_toml(spec, players.count if players else None, header),

@@ -4891,7 +4891,11 @@ function packName(name) {  // the folder and file name the Studio gives it (api.
 
 // The three kinds of new map, in the order the window shows them (StudioApi._menu_entries' kinds)
 const DUP_KINDS = ["battles", "operation", "campaign"];
-const dup = { entries: [], kind: null, typed: false };
+// What a new map starts from: a full copy, or blank (StudioApi.duplicate_map's preset; rusemod.presets). The owner,
+// 2026-10-05: "a preset, like want to start a Navy map ... D-Day, but ocean" and "a flat basic terrain version";
+// "Blank Terrain, Blank Ocean". Blank ones start from a Battles map only (a mission's script needs its own items).
+const DUP_STARTS = ["copy", "blank_terrain", "blank_ocean"];
+const dup = { entries: [], kind: null, typed: false, start: "copy" };
 
 function entryTitle(e) {  // what the menus call an entry in the Studio's language, else its map-list name
   const t = e.titles || {};
@@ -4908,9 +4912,32 @@ function renderDupKinds() {
       el("span", { className: "kind-what", textContent: has ? w[`dup_kind_${k}_what`] : w.dup_kind_none }));
     b.setAttribute("role", "radio");
     b.setAttribute("aria-checked", String(dup.kind === k));
-    b.addEventListener("click", () => { dup.kind = k; renderDupKinds(); fillDupEntries(); });
+    b.addEventListener("click", () => {
+      dup.kind = k;
+      if (k !== "battles") dup.start = "copy";
+      renderDupKinds();
+      renderDupStarts();
+      fillDupEntries();
+    });
     return b;
   }));
+}
+
+function renderDupStarts() {
+  const w = mv.words, map = mapName(mv.current), battles = dup.kind === "battles";
+  $("dup-start").textContent = w.dup_start;
+  $("dup-starts").replaceChildren(...DUP_STARTS.map((k) => {
+    const b = el("button", { type: "button", className: "dup-kind", disabled: k !== "copy" && !battles },
+      el("span", { className: "kind-name", textContent: w[`dup_start_${k}`] }),
+      el("span", { className: "kind-what", textContent: fill(w[`dup_start_${k}_what`], { map }) }));
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", String(dup.start === k));
+    b.addEventListener("click", () => { dup.start = k; renderDupStarts(); dupSuggestName(); });
+    return b;
+  }));
+  $("dup-start-note").textContent = w.dup_start_battles_only;
+  $("dup-start-note").classList.toggle("hidden", battles || !dup.entries.length);
+  $("dup-how-edits").classList.toggle("hidden", dup.start !== "copy");  // a blank start takes none of them along
 }
 
 function fillDupEntries() {
@@ -4920,10 +4947,11 @@ function fillDupEntries() {
   dupSuggestName();
 }
 
-function dupSuggestName() {  // "<what the copied entry is called> 2", until a name is typed
+function dupSuggestName() {  // "<what the copied entry is called> 2" (or "... Blank Ocean"), until a name is typed
   if (dup.typed) return;
   const e = dup.entries.find((x) => x.name === $("dup-entry").value);
-  $("dup-name").value = e ? `${entryTitle(e).replace(/^\d+\.\s*/, "")} 2` : "";  // a chapter's number left out
+  const tail = dup.start === "copy" ? "2" : mv.words[`dup_start_${dup.start}`];
+  $("dup-name").value = e ? `${entryTitle(e).replace(/^\d+\.\s*/, "")} ${tail}` : "";  // a chapter's number left out
   dupNameChanged();
 }
 
@@ -4934,7 +4962,9 @@ async function openDuplicate() {
   dup.entries = [];
   dup.kind = null;
   dup.typed = false;
+  dup.start = "copy";
   renderDupKinds();
+  renderDupStarts();
   $("dup-title").textContent = w.duplicate_map;
   $("dup-lead").textContent = fill(w.dup_lead, { map });
   $("dup-how").textContent = w.dup_how;
@@ -4965,6 +4995,7 @@ async function openDuplicate() {
   dup.entries = opts.entries || [];
   dup.kind = DUP_KINDS.find((k) => dup.entries.some((e) => e.kind === k)) || null;
   renderDupKinds();
+  renderDupStarts();
   fillDupEntries();
   $("dup-go").disabled = false;
   $("dup-name").focus();
@@ -4987,7 +5018,7 @@ async function duplicate(e) {
   $("dup-note").textContent = "";
   try {
     const map = mapName(pack);
-    const res = await mv.api.duplicate_map(pack, name, entry);
+    const res = await mv.api.duplicate_map(pack, name, entry, dup.start === "copy" ? null : dup.start);
     mv.maps = res.maps;
     $("duplicate").close();
     // the map project may be new: the header's menu shows it (app.js), and the status line says what was made

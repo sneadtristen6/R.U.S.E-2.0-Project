@@ -60,7 +60,9 @@ class CopiedScenarios(unittest.TestCase):
         self.assertEqual(got[0]["entries"][0]["name"], "Anzio Twin")
 
 
-class Duplicate(unittest.TestCase):
+class WithAMapProject(unittest.TestCase):
+    """A Studio whose game has Blitz, its menus' entries made up (OPTIONS)."""
+
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
@@ -80,6 +82,8 @@ class Duplicate(unittest.TestCase):
         d = self.api._map_dir()
         return str(d) if d else None
 
+
+class Duplicate(WithAMapProject):
     def test_a_new_map_project_when_none_is_picked(self):
         res = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")
         self.assertEqual(res["pack"], "BlitzAtDusk")
@@ -221,6 +225,44 @@ class DeleteMap(Duplicate):
             with self.assertRaisesRegex(StudioError, "close anything"):
                 self.api.delete_map(pack)
         self.assertTrue((self.api._map_dir() / "maps" / pack / "map.toml").is_file())
+
+
+class BlankStart(WithAMapProject):
+    """Duplicate map's Start from: Blank Terrain or Blank Ocean (rusemod.presets), the owner's presets (2026-10-05:
+    "a preset, like want to start a Navy map", "Blank Terrain, Blank Ocean"): the new map's files are the preset's,
+    made from the shipped map's own, instead of the changes made to the map so far."""
+
+    def facts(self):
+        from rusemod import presets
+        return presets.Facts((0.0, 0.0, 400000.0, 200000.0), 12623.0, 19233.0, "leveldesign_normal.scenario",
+                             [(0, "LabelVille"), (1, "StartingPoint"), (2, "Spawn")], ["Odd_Type"])
+
+    def test_the_presets_files_instead_of_the_changes_so_far(self):
+        from rusemod import presets
+        self.api.new_mod("My maps", "map")
+        maps = self.api._map_dir() / "maps" / "SuperCrossRoads4"
+        maps.mkdir(parents=True)
+        (maps / "terrain.toml").write_text('[[stroke]]\nbrush = "hill"\nx = 1.0\ny = 2.0\nradius = 3.0\nheight = 4.0\n',
+                                           encoding="utf-8")
+        for kind in presets.KINDS:
+            with mock.patch.object(presets, "copy_scenario", return_value=self.facts().scenario) as scen, \
+                    mock.patch.object(presets, "read_facts", return_value=self.facts()) as read:
+                pack = self.api.duplicate_map("SuperCrossRoads4", f"Blitz {presets.NAMES[kind]}", preset=kind)["pack"]
+            self.assertEqual((scen.call_args.args[1:], read.call_args.args[1:]),
+                             (("SuperCrossRoads4", None), ("SuperCrossRoads4", "leveldesign_normal.scenario")))
+            folder = self.api._map_dir() / "maps" / pack
+            for name, text in presets.preset_files(kind, self.facts()).items():
+                self.assertEqual(tomllib.loads((folder / name).read_text(encoding="utf-8")), tomllib.loads(text))
+            self.assertEqual(tomllib.loads((folder / "map.toml").read_text(encoding="utf-8"))["copy_of"],
+                             "SuperCrossRoads4")
+            self.assertEqual(sorted(f.name for f in folder.iterdir()),
+                             sorted(list(presets.preset_files(kind, self.facts())) + ["map.toml"]))  # no hill
+
+    def test_only_from_a_battles_map(self):
+        with self.assertRaisesRegex(StudioError, "Battles map"):
+            self.api.duplicate_map("SuperCrossRoads4", "Anzio Blank", entry=ANZIO, preset="blank_terrain")
+        with self.assertRaisesRegex(StudioError, "no 'blank_moon'"):
+            self.api.duplicate_map("SuperCrossRoads4", "Moon", preset="blank_moon")
 
 
 class RecycleBin(unittest.TestCase):
