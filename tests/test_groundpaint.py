@@ -2,6 +2,7 @@
 a 256-pixel overview tile like the game's (its size comes from the payload, never assumed) and 512-pixel tiles."""
 import struct
 import unittest
+from pathlib import Path
 
 from test_tmst import make_set
 from rusemod import dxt
@@ -346,6 +347,82 @@ class MapPaint(unittest.TestCase):
             for i in pixels:
                 self.assertEqual(grids[i], pixels[i], (what, i))
 
+    def test_a_run_of_one_colour_worked_out_at_once_paints_the_same_tiles(self):
+        """rusemod.paintnp._by_colour: strokes of one colour one after another leave the product of what each leaves,
+        worked out once for the run, and the pixels too near a rounding edge are laid in turn. The same records as
+        pixel by pixel, as every stroke laid in turn on whole grids (_in_turn), and as with every pixel counted near
+        an edge (each laid in turn by itself): for two colours taking turns, one colour soft and hard edged, lines
+        and squares, and a map painted over until whole tiles are the colour all over (one record for those)."""
+        from unittest import mock
+
+        import rusemod.groundpaint as gp
+        fast = gp.whole_arrays()
+        if fast is None:
+            self.skipTest("numpy isn't here: paint_strokes paints pixel by pixel alone")
+        blue, red = "#0010d2", "#e61e1e"
+        sets = {
+            "soft layers of two colours": LAYERS,
+            "one colour, soft and hard edged, some faint": [
+                {"brush": "paint", "x": 200.0 + 130.0 * k, "y": 300.0 + 37.0 * (k % 5), "radius": 240.0 + 20.0 * (k % 4),
+                 "colour": blue, "weight": 0.6 if k % 4 == 1 else (1.0, 0.35)[k % 2],
+                 "edge": "hard" if k % 4 == 1 else "soft"} for k in range(12)],
+            "lines and squares of one colour, then another": [
+                {"brush": "paint", "x": 150.0, "y": 200.0, "radius": 120.0, "colour": blue, "shape": "line",
+                 "x2": 1800.0, "y2": 700.0},
+                {"brush": "paint", "x": 900.0, "y": 450.0, "radius": 300.0, "colour": blue, "shape": "square",
+                 "dx": 1.0, "dy": 0.4, "weight": 0.8},
+                {"brush": "paint", "x": 500.0, "y": 600.0, "radius": 1.7, "colour": blue},
+                {"brush": "paint", "x": 1000.0, "y": 500.0, "radius": 350.0, "colour": red, "weight": 0.5},
+                {"brush": "paint", "x": 1100.0, "y": 300.0, "radius": 60.0, "colour": red, "shape": "line",
+                 "x2": 300.0, "y2": 900.0, "edge": "hard", "weight": 0.9}],
+            "the whole map painted over": [
+                {"brush": "paint", "x": 250.0 * (k % 9), "y": 250.0 * (k // 9), "radius": 900.0, "colour": blue}
+                for k in range(45)],
+        }
+        sets["painted over, then touched up"] = sets["the whole map painted over"] + [
+            {"brush": "paint", "x": 640.0, "y": 410.0, "radius": 130.0, "colour": red, "weight": 0.7},
+            {"brush": "paint", "x": 1500.0, "y": 300.0, "radius": 35.0, "colour": red, "shape": "line",
+             "x2": 1250.0, "y2": 800.0}]
+        real_at, real_left = fast._in_turn_at, fast._left
+        covered = []
+
+        def counted_left(run, *args, enough=None):
+            left = real_left(run, *args, enough=enough)
+            if left is None and enough == fast.COVERED / 255.0:
+                covered.append(len(run))
+            return left
+        for what, items in sets.items():
+            made = strokes(*items)
+            with mock.patch.object(gp, "whole_arrays", lambda: None):
+                pixels = gp.paint_strokes(two_colour_store(), BOUNDS, made)
+            self.assertTrue(pixels, what)
+            fast._FLAT.clear()
+            del covered[:]
+            with mock.patch.object(fast, "_left", counted_left):
+                ways = {"a run at once": gp.paint_strokes(two_colour_store(), BOUNDS, made)}
+            flat = len(fast._FLAT)
+            alone = []
+
+            def counted(old, *args, alone=alone):
+                alone.append(len(old))
+                return real_at(old, *args)
+            with mock.patch.object(fast, "EDGE", 1.0), mock.patch.object(fast, "_in_turn_at", counted):
+                ways["every pixel near an edge"] = gp.paint_strokes(two_colour_store(), BOUNDS, made)
+            with mock.patch.object(fast, "MOST", -1):
+                ways["in turn"] = gp.paint_strokes(two_colour_store(), BOUNDS, made)
+            for way, got in ways.items():
+                self.assertEqual(sorted(got), sorted(pixels), (what, way))
+                for i in pixels:
+                    self.assertEqual(got[i], pixels[i], (what, way, i))
+            if what == "the whole map painted over":
+                self.assertEqual(flat, 2, what)  # one record for the 512-pixel tiles, one for the overview
+                self.assertEqual(len(set(pixels.values())), 2, what)
+            elif what == "painted over, then touched up":
+                self.assertTrue(covered, what)   # tiles the first colour covered: nothing under it was worked out
+                self.assertGreater(len(set(pixels.values())), 2, what)
+            else:
+                self.assertGreaterEqual(sum(alone), 256 * 256, what)  # whole tiles went one pixel at a time
+
     def test_shared_out_the_tiles_are_the_same_as_one_programs(self):
         """paint_ground's workers: the same tiles as one program, in the set's order; workers that can't start leave
         the work to this program, and a note says so."""
@@ -356,17 +433,86 @@ class MapPaint(unittest.TestCase):
         one = gp.paint_strokes(two_colour_store(), BOUNDS, layers)
         self.assertGreaterEqual(len(one), gp.SHARE_FROM)
         alone: list = []
-        shared = gp._paint_tiles(two_colour_store(), BOUNDS, layers, None, 2, alone)
-        self.assertEqual(alone, [])
-        self.assertEqual(list(shared), list(one))
-        self.assertEqual(shared, one)
 
         def no_pool(*_args):
             raise OSError("no programs here")
-        with mock.patch("rusemod.mend._pool", no_pool):
-            again = gp._paint_tiles(two_colour_store(), BOUNDS, layers, None, 2, alone)
-        self.assertEqual(again, one)
-        self.assertEqual(alone, ["OSError: no programs here"])
+        with mock.patch.object(gp, "SHARE_FROM_GRIDS", gp.SHARE_FROM):  # (shared out from as few tiles on grids too)
+            shared = gp._paint_tiles(two_colour_store(), BOUNDS, layers, None, 2, alone)
+            self.assertEqual(alone, [])
+            self.assertEqual(list(shared), list(one))
+            self.assertEqual(shared, one)
+            with mock.patch("rusemod.mend._pool", no_pool):
+                again = gp._paint_tiles(two_colour_store(), BOUNDS, layers, None, 2, alone)
+            self.assertEqual(again, one)
+            self.assertEqual(alone, ["OSError: no programs here"])
+        if gp.whole_arrays() is not None:  # on whole grids a few tiles are quicker here than starting programs
+            self.assertLess(len(one), gp.SHARE_FROM_GRIDS)
+            with mock.patch("rusemod.mend._pool", no_pool):
+                few = gp._paint_tiles(two_colour_store(), BOUNDS, layers, None, 2, alone)
+            self.assertEqual(few, one)
+            self.assertEqual(len(alone), 1)  # no worker program was asked for
+
+    def test_only_the_tiles_a_changed_stroke_reaches_are_painted_again(self):
+        """With the build's cache each painted tile is kept under a fingerprint of what it is made from (the tile, its
+        place, the strokes whose boxes reach it, the code): painting again with the same strokes paints nothing, a
+        stroke added or taken away paints only the tiles its box reaches, and the tiles are the same as painting them
+        all. A tile a stamp reaches is always painted; a damaged keep is painted over."""
+        import tempfile
+        from unittest import mock
+
+        import rusemod.groundpaint as gp
+        from rusemod import mapkeep
+        layers = LAYERS[:9]
+        small = {"brush": "paint", "x": 1900.0, "y": 900.0, "radius": 40.0, "colour": "#e61e1e"}
+        stamp = {"brush": "stamp", "x": 1850.0, "y": 100.0, "radius": 60.0, "sx": -1500.0, "sy": 300.0}
+        real = gp.paint_strokes
+        asked = []
+
+        def counted(store, bounds, made, cache=None, only=None):
+            asked.append(None if only is None else sorted(only))
+            return real(store, bounds, made, cache, only)
+
+        def reached(s, item):  # the tiles a stroke's box reaches
+            (bx0, bx1, by0, by1), out = strokes(item)[0].box(), []
+            for t in s.tiles:
+                rx0, ry0, rx1, ry1 = gp._tile_rect(s, t, BOUNDS)
+                if bx0 < rx1 and bx1 > rx0 and by0 < ry1 and by1 > ry0:
+                    out.append(t.index)
+            return out
+        with tempfile.TemporaryDirectory() as cache, mock.patch.object(gp, "paint_strokes", counted):
+            def painted(*items):
+                del asked[:]
+                s = two_colour_store()
+                got = gp._paint_tiles(s, BOUNDS, strokes(*items), cache, 1, [])
+                self.assertEqual(got, real(s, BOUNDS, strokes(*items)), len(items))  # as painting them all
+                self.assertEqual(list(got), list(real(s, BOUNDS, strokes(*items))))  # in the set's order
+                return s
+            s = painted(*layers)
+            self.assertEqual(len(asked), 1)                        # everything painted, once
+            self.assertEqual(len(list(Path(cache, mapkeep.FOLDER).glob("tiles-*.bin"))), 1)
+            painted(*layers)
+            self.assertEqual(asked, [])                            # the same strokes: nothing painted
+            painted(*layers, small)
+            self.assertEqual(asked, [reached(s, small)])           # one more stroke: its tiles only
+            self.assertLess(len(asked[0]), len(real(s, BOUNDS, strokes(*layers))))
+            painted(*layers)
+            others = {i for item in layers for i in reached(s, item)}
+            self.assertEqual(asked, [[i for i in reached(s, small) if i in others]])  # taken away again: its tiles
+            self.assertTrue(asked[0])                              # that another stroke still reaches
+            painted(small, *layers)
+            self.assertEqual(asked, [reached(s, small)])           # under the others instead of over them
+            painted(*layers, stamp)
+            first = asked[0]
+            self.assertEqual(first, reached(s, stamp))
+            painted(*layers, stamp)
+            self.assertEqual(asked, [first])                       # a stamp's tiles: painted every time
+            kept = next(Path(cache, mapkeep.FOLDER).glob("tiles-*.bin"))
+            kept.write_bytes(kept.read_bytes()[:-7] + b"damaged")
+            painted(*layers)
+            self.assertEqual(len(asked[0]), len(real(s, BOUNDS, strokes(*layers))))  # nothing taken from it
+            with mock.patch("rusemod.model.code_version", side_effect=OSError("no code to read")):
+                painted(*layers)                                   # the code can't be told: nothing kept or taken
+            self.assertEqual(len(asked[0]), len(real(s, BOUNDS, strokes(*layers))))
 
     def test_what_hides_it_up_close_goes_where_it_is_at_least_half_strength(self):
         """TESTS.md T21: only with the stickers, low plants and stones taken off does paint show near the camera; the

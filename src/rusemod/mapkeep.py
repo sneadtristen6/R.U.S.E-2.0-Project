@@ -91,15 +91,16 @@ class _Unpickler(pickle.Unpickler):
         raise pickle.UnpicklingError(f"a kept map doesn't hold {module}.{name}")
 
 
-def path_of(cache, k: str) -> Path:
-    return Path(cache) / FOLDER / f"map-{k}.bin"
+def path_of(cache, k: str, kind: str = "map") -> Path:
+    return Path(cache) / FOLDER / f"{kind}-{k}.bin"
 
 
-def read(cache, k: str | None) -> dict | None:
-    """The map kept under `k`, or None when there's none, or it's damaged."""
+def read(cache, k: str | None, kind: str = "map") -> dict | None:
+    """The map kept under `k`, or None when there's none, or it's damaged. `kind`: what is kept ("map": a map's
+    ground; "tiles": a tile set's painted tiles, groundpaint._paint_tiles), each kind with its own files."""
     if cache is None or not k:
         return None
-    p = path_of(cache, k)
+    p = path_of(cache, k, kind)
     try:
         data = p.read_bytes()
     except OSError:
@@ -120,11 +121,12 @@ def read(cache, k: str | None) -> dict | None:
     return got
 
 
-def write(cache, k: str | None, value: dict) -> None:
-    """Keep a map's ground under `k`, whole or not at all; then forget the least recently used beyond KEEP_MOST."""
+def write(cache, k: str | None, value: dict, kind: str = "map", most: int = KEEP_MOST) -> None:
+    """Keep a map's ground under `k`, whole or not at all; then forget the least recently used of its `kind` beyond
+    `most`."""
     if cache is None or not k:
         return
-    p = path_of(cache, k)
+    p = path_of(cache, k, kind)
     part = p.with_name(f"{p.name}.{os.getpid()}-{threading.get_ident()}.part")
     try:
         body = zlib.compress(pickle.dumps({"format": KEEP_FORMAT, **value}, protocol=5), 1)
@@ -138,10 +140,10 @@ def write(cache, k: str | None, value: dict) -> None:
             pass
         return
     try:
-        kept = sorted(((f.stat().st_mtime, f) for f in p.parent.glob("map-*.bin")), reverse=True)
+        kept = sorted(((f.stat().st_mtime, f) for f in p.parent.glob(f"{kind}-*.bin")), reverse=True)
     except OSError:
         return
-    for _when, old in kept[KEEP_MOST:]:
+    for _when, old in kept[most:]:
         try:
             old.unlink(missing_ok=True)
         except OSError:

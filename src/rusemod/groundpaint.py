@@ -879,6 +879,8 @@ def paint_inputs(read) -> str:
 # --- Map Paint shared out to worker programs (rusemod.mend's way): each tile's answer is the same as one program's ---
 _WORK: dict = {}  # in a worker: its tile set and strokes (set by _start_paint)
 SHARE_FROM = 5    # tiles to paint before the work is shared out: fewer take seconds in one program
+SHARE_FROM_GRIDS = 64  # the same, painted on whole grids (rusemod.paintnp): a tile takes about a tenth of a second
+                       # there, and worker programs a few seconds to start and to be handed the tile set
 
 
 def _start_paint(index_file: str, chunk_file: str, bounds, strokes: list, cache) -> None:
@@ -894,20 +896,76 @@ def _paint_job(indices: list) -> dict:
     return paint_strokes(_WORK["store"], _WORK["bounds"], _WORK["strokes"], _WORK["cache"], only=set(indices))
 
 
+TILES_KEPT = 8  # tile sets whose painted tiles are kept (two a map), the most recently painted
+
+
+def _tile_names(store: Tmst, bounds, strokes: list) -> tuple[list, dict]:
+    """(the tiles a stroke's box reaches, in the set's order; a fingerprint for each of what its painted record is
+    made from): the tile as packed, its place and size, the strokes whose boxes reach it in their order, and the
+    code. A tile a stamp reaches has none (a stamp copies other tiles' ground), and none has when the code can't be
+    read to tell."""
+    import hashlib
+    from .model import code_version
+    try:
+        code = code_version()
+    except OSError:
+        code = None
+    boxes = [s.box() for s in strokes]
+    said = [repr(s).encode("utf-8", "surrogatepass") for s in strokes]
+    todo, names = [], {}
+    for tile in store.tiles:
+        rect = _tile_rect(store, tile, bounds)
+        rx0, ry0, rx1, ry1 = rect
+        near = [k for k, (bx0, bx1, by0, by1) in enumerate(boxes) if bx0 < rx1 and bx1 > rx0 and by0 < ry1 and by1 > ry0]
+        if not near:
+            continue
+        todo.append(tile.index)
+        if code is None or any(strokes[k].kind.kind != "paint" for k in near):
+            continue
+        tex = store.texture(tile)
+        payload = tex.payload(0)
+        h = hashlib.blake2b(code, digest_size=20)
+        h.update(f"{tex.width} {tex.height} {rect!r} {len(payload)} {len(near)}\0".encode())
+        h.update(payload)
+        for k in near:
+            h.update(struct.pack("<Q", len(said[k])) + said[k])
+        names[tile.index] = h.digest()
+    return todo, names
+
+
 def _paint_tiles(store: Tmst, bounds, strokes: list, cache, workers: int, alone: list) -> dict[int, bytes]:
     """paint_strokes on a tile set, its tiles shared out to `workers` programs when there are SHARE_FROM or more to
     paint, in small runs so none waits on another; put back in the set's order. The workers read the set from a file
     written once (in `cache`, the build's folder, when given). Workers that can't start: the same work in this program,
-    and why goes in `alone`."""
+    and why goes in `alone`.
+
+    With `cache`, each painted tile is kept (rusemod.mapkeep, one file for the tile set: its last painting) under a
+    fingerprint of what it is made from (_tile_names), and a tile whose fingerprint is the same as last time is taken
+    from there: a stroke added, moved or taken away paints again only the tiles its box reaches."""
+    import hashlib
     import tempfile
+    from . import mapkeep
     from .mend import _pool
-    boxes = [s.box() for s in strokes]
-    todo = []
-    for tile in store.tiles:
-        rx0, ry0, rx1, ry1 = _tile_rect(store, tile, bounds)
-        if any(bx0 < rx1 and bx1 > rx0 and by0 < ry1 and by1 > ry0 for bx0, bx1, by0, by1 in boxes):
-            todo.append(tile.index)
-    if workers > 1 and len(todo) >= SHARE_FROM:
+    todo, names = _tile_names(store, bounds, strokes)
+    set_name = hashlib.blake2b(b"painted tiles\0" + bytes(store.index), digest_size=20).hexdigest() if names else None
+    kept = (mapkeep.read(cache, set_name, "tiles") or {}).get("members", {}) if names else {}
+    have = {}  # tile -> its record as kept (b"" for a tile the strokes leave as it is)
+    for i, name in names.items():
+        was = kept.get(i)
+        if isinstance(was, tuple) and len(was) == 2 and was[0] == name and isinstance(was[1], bytes):
+            have[i] = was[1]
+    rest = [i for i in todo if i not in have]
+
+    def whole(got: dict) -> dict:
+        if names and (rest or len(kept) != len(names)):  # this painting's tiles, for the next one
+            mapkeep.write(cache, set_name, {"members": {i: (name, have.get(i, got.get(i, b"")))
+                                                        for i, name in names.items()}}, "tiles", TILES_KEPT)
+        both = {i: have.get(i) or got.get(i) for i in todo}
+        return {i: record for i, record in both.items() if record}
+    if not rest:
+        return whole({})
+    grids = whole_arrays() is not None and all(s.kind.kind == "paint" for s in strokes)  # (a stamp: pixel by pixel)
+    if workers > 1 and len(rest) >= (SHARE_FROM_GRIDS if grids else SHARE_FROM):
         try:
             if cache is not None:
                 Path(cache).mkdir(parents=True, exist_ok=True)
@@ -917,16 +975,16 @@ def _paint_tiles(store: Tmst, bounds, strokes: list, cache, workers: int, alone:
                     f.write(store.index)
                 with open(chunk_file, "wb") as f:
                     f.write(store.chunk)
-                runs = [todo[k:k + 4] for k in range(0, len(todo), 4)]
+                runs = [rest[k:k + 4] for k in range(0, len(rest), 4)]
                 got: dict = {}
                 with _pool(_start_paint, (index_file, chunk_file, bounds, strokes, cache),
                            min(workers, len(runs))) as pool:
                     for part in pool.map(_paint_job, runs):
                         got.update(part)
-            return {i: got[i] for i in todo if i in got}
+            return whole(got)
         except Exception as exc:  # noqa: BLE001 - workers that can't start: the same work in this program
             alone.append(f"{type(exc).__name__}: {exc}")
-    return paint_strokes(store, bounds, strokes, cache)
+    return whole(paint_strokes(store, bounds, strokes, cache, only=set(rest)))
 
 
 def paint_ground(read, path_of, strokes: list, cache=None, workers: int | None = None) -> tuple[dict, list[str]]:
