@@ -9,7 +9,10 @@ part resting on the turret turns with it); everything else is the hull. The mode
 gun points forward; else its longest side), scaled to the length of the unit it copies (times `size`), and moved so its
 turret turns round the spot the copied unit's turret turns round. Pictures keep their colours, made a power of two each
 way and at most `side` across (the game's own unit textures are 1024 at most); their alpha (the game's side colour
-where low, shine where high) a plain 144, as most of the Sherman's body.
+where low, shine where high) is the model's own alpha picture when a .glb material names one (`rusemod_alpha_texture`
+in its extras), else a plain 144, as most of the Sherman's body. Normals: the model's own when the file has them (a
+.glb's NORMAL: its weighted normals and hard edges are its shading, as other engines' importers keep them by default),
+worked out from the triangles only where it has none. The report says which (no data is dropped silently).
 
 `write_glb` saves the result as the mod's files/models/<unit>.glb: one node per bone ("chassis", "tourelle_01"), its
 pictures inside, in the axes `ruse export-model` writes (rusemod.gltf), so it opens in Blender like an exported unit."""
@@ -35,6 +38,7 @@ class Mesh:
     triangles: list               # (a, b, c) per triangle
     uvs: list = field(default_factory=list)        # (u, v) per vertex, v up the picture; or empty
     face_materials: list = field(default_factory=list)  # material number per triangle (-1: none)
+    normals: list = field(default_factory=list)    # the model's own (x, y, z) per vertex, unit length; or empty
 
 
 @dataclass
@@ -43,6 +47,7 @@ class Material:
     picture: str = ""             # the picture file it names (as the file says it), or ""
     colour: tuple = (0.7, 0.7, 0.7)
     data: bytes = b""             # the picture itself, when the model file holds it (.glb)
+    alpha: bytes = b""            # its own alpha picture (side colour / shine), when the .glb names one
 
 
 @dataclass
@@ -228,22 +233,44 @@ def glb_image(doc: dict, binary: bytes, image: int) -> bytes:
     return binary[v.get("byteOffset", 0):v.get("byteOffset", 0) + v["byteLength"]]
 
 
+def _normal_matrix(m: list) -> list:
+    """The 3x3 that turns normals the way the column-major 4x4 `m` turns points: the inverse's transpose (cofactors
+    over the determinant), so normals stay square to their faces even under an uneven scale."""
+    a = [[m[c * 4 + r] for c in range(3)] for r in range(3)]
+    cof = [[a[(r + 1) % 3][(c + 1) % 3] * a[(r + 2) % 3][(c + 2) % 3]
+            - a[(r + 1) % 3][(c + 2) % 3] * a[(r + 2) % 3][(c + 1) % 3] for c in range(3)] for r in range(3)]
+    det = sum(a[0][c] * cof[0][c] for c in range(3))
+    if abs(det) < 1e-12:
+        return [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    return [[cof[r][c] / det for c in range(3)] for r in range(3)]
+
+
+def _unit(v) -> tuple:
+    n = math.sqrt(sum(c * c for c in v))
+    return tuple(c / n for c in v) if n > 1e-12 else (0.0, 0.0, 1.0)
+
+
 def read_glb(path: Path) -> Model:
+    """A .glb's meshes (z up) with their own normals when it has them, and each material's picture and, when the
+    material's extras name one (`rusemod_alpha_texture`, as write_glb and the modelshop write it), its alpha picture."""
     try:
         doc, binary = glb_document(Path(path).read_bytes())
     except (ValueError, struct.error) as exc:
         raise ModelError(f"{Path(path).name}: {exc}") from None
     materials = []
     for m in doc.get("materials", []):
-        pic, data = "", b""
+        pic, data, alpha = "", b"", b""
         tex = (m.get("pbrMetallicRoughness") or {}).get("baseColorTexture")
         if tex is not None:
             source = doc["textures"][tex["index"]]["source"]
             img = doc["images"][source]
             pic = img.get("uri") or img.get("name") or f"image{source}"
             data = glb_image(doc, binary, source)
+        alpha_tex = (m.get("extras") or {}).get("rusemod_alpha_texture")
+        if alpha_tex is not None:
+            alpha = glb_image(doc, binary, doc["textures"][alpha_tex]["source"])
         colour = tuple((m.get("pbrMetallicRoughness") or {}).get("baseColorFactor", (0.7, 0.7, 0.7, 1))[:3])
-        materials.append(Material(m.get("name", ""), pic, colour, data))
+        materials.append(Material(m.get("name", ""), pic, colour, data, alpha))
     meshes = []
 
     def visit(n: int, parent: list) -> None:
@@ -261,11 +288,17 @@ def read_glb(path: Path) -> Model:
                 idx = glb_accessor(doc, binary, prim["indices"]) if "indices" in prim else list(range(len(pos)))
                 uvs = glb_accessor(doc, binary, prim["attributes"]["TEXCOORD_0"]) \
                     if "TEXCOORD_0" in prim["attributes"] else []
+                nrm = []
+                if "NORMAL" in prim["attributes"]:      # the model's own shading (weighted normals, hard edges)
+                    nm = _normal_matrix(matrix)
+                    for n in glb_accessor(doc, binary, prim["attributes"]["NORMAL"]):
+                        x, y, z = (sum(nm[r][c] * n[c] for c in range(3)) for r in range(3))
+                        nrm.append(_unit((x, -z, y)))
                 name = node.get("name") or gm.get("name") or f"mesh{node['mesh']}"
                 tris = [tuple(idx[i:i + 3]) for i in range(0, len(idx) - 2, 3)]
                 meshes.append(Mesh(name if len(gm["primitives"]) == 1 else f"{name}.{k}", pos, tris,
                                    [(u, 1.0 - v) for u, v in uvs],  # glTF's v runs down the picture
-                                   [prim.get("material", -1)] * len(tris)))
+                                   [prim.get("material", -1)] * len(tris), nrm))
         for c in node.get("children", []):
             visit(c, matrix)
 
@@ -467,8 +500,12 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
         x, y, z = p
         return ((x * f[0] + y * f[1]) * scale + shift[0], (x * r[0] + y * r[1]) * scale + shift[1], z * scale + lift)
 
+    def turn(n):      # a normal through place's turn (and its mirror into the game's axes); scale and shift don't apply
+        x, y, z = n
+        return _unit((x * f[0] + y * f[1], x * r[0] + y * r[1], z))
+
     # pictures: one per material that has one (a flat colour for those that don't)
-    pictures, pic_of, missing = [], {}, []
+    pictures, pic_of, missing, alphas = [], {}, [], []
     for k, mat in enumerate(model.materials):
         data, label = mat.data, mat.picture
         if not data and mat.picture:
@@ -485,9 +522,24 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
             px = px * 16
         pic_of[k] = len(pictures)
         pictures.append([label or mat.name or f"material{k}", w, h, px])
-    for pic in pictures:  # colours as the model has them; alpha the game's plain value
+        alphas.append(mat.alpha if data else b"")
+    # colours as the model has them; alpha (side colour where low, shine where high) the model's own alpha picture
+    # when it names one (sized the same way as the colour), else the game's plain value. Said in the report, never
+    # dropped silently (2026-10-05: the modelshop's shine map was lost here before).
+    own_alpha, notes = [], []
+    for pic, alpha in zip(pictures, alphas):
         px = bytearray(pic[3])
-        px[3::4] = bytes([PLAIN_ALPHA]) * (pic[1] * pic[2])
+        values = None
+        if alpha:
+            aw, ah, apx = _sized(*load_picture(alpha, pic[0] + " (alpha)"), side)
+            if (aw, ah) == (pic[1], pic[2]):
+                values = apx[0::4]
+            else:
+                notes.append(f"{pic[0]}: its alpha picture is {aw} x {ah}, the colour {pic[1]} x {pic[2]}; "
+                             f"plain alpha used")
+        px[3::4] = values if values is not None else bytes([PLAIN_ALPHA]) * (pic[1] * pic[2])
+        if values is not None:
+            own_alpha.append(pic[0])
         pic[3] = bytes(px)
 
     out: list[Part] = []
@@ -496,9 +548,11 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
         mats = m.face_materials or [-1] * len(m.triangles)
         for t, mk in zip(m.triangles, mats):
             groups.setdefault((BONES[k], pic_of.get(mk, -1)), []).append((m, t))
+    own_normals = 0
     for (bone, pic), tris in sorted(groups.items(), key=lambda kv: (kv[0][0], kv[0][1])):
         index: dict = {}
         part = Part(bone, pic, [], [], [], [])
+        given: list = []      # per vertex: the model's own normal (game axes), or None
         for m, (a, b, c) in tris:
             corners = []
             for v in (a, b, c):
@@ -508,14 +562,23 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
                     part.positions.append(place(m.positions[v]))
                     u, vv = m.uvs[v] if m.uvs else (0.0, 0.0)
                     part.uvs.append((u, 1.0 - vv))
+                    given.append(turn(m.normals[v]) if v < len(m.normals) else None)
                 corners.append(index[key])
             part.triangles.append((corners[0], corners[2], corners[1]))  # the turn to the game's axes mirrors
-        part.normals = smooth_normals(part.positions, part.triangles)
+        # the model's own normals where it has them (as other engines' importers do by default: its weighted normals
+        # and hard edges are its shading); worked out from the triangles only where it has none
+        computed = smooth_normals(part.positions, part.triangles)
+        part.normals = [g if g is not None else n for g, n in zip(given, computed)]
+        own_normals += sum(g is not None for g in given)
         out.append(part)
     vertices = sum(len(p.positions) for p in out)
     report = {"parts": {m.name: k for m, k in zip(model.meshes, parts)}, "facing": ("x" if axis == 0 else "y",
               sign), "scale": scale, "vertices": vertices, "triangles": sum(len(p.triangles) for p in out),
-              "draws": len(out), "pictures": [(p[0], p[1], p[2]) for p in pictures], "missing": missing}
+              "draws": len(out), "pictures": [(p[0], p[1], p[2]) for p in pictures], "missing": missing,
+              "normals": ("the model's own" if own_normals == vertices else "worked out" if own_normals == 0
+                          else f"the model's own for {own_normals} of {vertices} points, the rest worked out"),
+              "alpha": {p[0]: ("the model's own" if p[0] in own_alpha else f"plain {PLAIN_ALPHA}") for p in pictures},
+              "notes": notes}
     return Prepared(out, pictures, report)
 
 

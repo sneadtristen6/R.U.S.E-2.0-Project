@@ -258,6 +258,38 @@ class ModFile(unittest.TestCase):
         self.assertTrue(model.materials[0].data.startswith(b"\x89PNG"))
         self.assertEqual(unitmodel.mod_models(self.dir), {"Panzer_Model": self.glb})
 
+    def test_a_glb_s_own_normals_and_alpha_are_kept(self):
+        """Imported again, a .glb keeps its own normals (not worked out again) and its own alpha picture (not the
+        plain 144): before 2026-10-05 both were thrown away, so a model's weighted normals and shine map never
+        reached the game."""
+        own = [[_unit_vec((0.3, -0.2 + 0.01 * i, 1.0)) for i in range(len(p.positions))] for p in self.prep.parts]
+        for p, n in zip(self.prep.parts, own):
+            p.normals = n
+        name, w, h, px = self.prep.pictures[0]
+        ramp = bytearray(px)
+        ramp[3::4] = bytes(112 + (i % 80) for i in range(w * h))
+        self.prep.pictures[0][3] = bytes(ramp)
+        modelin.write_glb(self.prep, self.glb, TANK)
+        again = modelin.prepare(modelin.read_model(self.glb), self.dir, LIKE)
+        self.assertEqual(again.report["normals"], "the model's own")
+        self.assertEqual(set(again.report["alpha"].values()), {"the model's own"})
+        self.assertEqual(again.pictures[0][3][3::4], bytes(ramp[3::4]))
+        for a, b in zip(self.prep.parts, again.parts):
+            for p, q in zip(a.positions + a.normals, b.positions + b.normals):
+                for x, y in zip(p, q):
+                    self.assertAlmostEqual(x, y, places=3)
+
+    def test_without_its_own_normals_and_alpha(self):
+        model = modelin.read_model(self.dir / "tank.3ds")
+        prep = modelin.prepare(model, self.dir, LIKE)
+        self.assertEqual(prep.report["normals"], "worked out")
+        self.assertEqual(set(prep.report["alpha"].values()), {f"plain {modelin.PLAIN_ALPHA}"})
+
+
+def _unit_vec(v):
+    n = math.sqrt(sum(c * c for c in v))
+    return tuple(c / n for c in v)
+
 
 class Packs(unittest.TestCase):
     def setUp(self):

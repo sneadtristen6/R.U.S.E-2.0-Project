@@ -229,6 +229,10 @@ def cmd_import_model(args) -> int:
     for name, role in r["parts"].items():
         print(f"  {name}: {role}")
     print("  pictures: " + ", ".join(f"{n} {w}x{h}" for n, w, h in r["pictures"]))
+    print(f"  normals: {r.get('normals', '?')}; alpha (side colour / shine): "
+          + ", ".join(f"{n} {a}" for n, a in (r.get("alpha") or {}).items()))
+    for note in r.get("notes") or ():
+        print(f"  NOTE: {note}")
     if r.get("missing"):
         print("  NOT FOUND (a flat colour instead; point --pictures at their folder): " + ", ".join(r["missing"]))
     return 0
