@@ -279,9 +279,12 @@ class Making(unittest.TestCase):
         zone = "DataDir:" + BS + BS.join(["Test", "map", "SuperCrossRoads4", "ZoneBluff", "LevelDesign_Normal.Kdt"])
         cam = "DataDir:" + BS + BS.join(["Test", "Map", "SuperCrossRoads4", "CamPath", "CamPaths_Normal.ndfbin"])
         ia_member = BS.join(["genglad", "patchable", "scenario", "supercrossroads4", "scenario", "mapia.cpp.gladndfbin"])
-        glad[ia_member] = make_ndf(objects=[(0, [(0, p(0)), (1, p(1))])], classes=["TAreaManager"],
-                                   props=[("StreamedMeshKdTreeFileName", 0), ("CamPath", 0)], strings=[zone, cam],
-                                   compress=True)
+        wide = zone.replace("map", "Map").encode("utf-16-le")   # D-Day's MapIA names its zone map twice
+        glad[ia_member] = make_ndf(objects=[(0, [(0, p(0)), (1, p(1)), (2, val(0x08, struct.pack("<I", len(wide))
+                                                                                + wide))])],
+                                   classes=["TAreaManager"],
+                                   props=[("StreamedMeshKdTreeFileName", 0), ("CamPath", 0), ("Name", 0)],
+                                   strings=[zone, cam], compress=True)
         cluster = Ndf(glad[SCENARIO_CLUSTER])
         cluster.set_string(cluster.strings.index(BS.join(["Patchable", "Scenario", "SuperCrossRoads4", "Scenario",
                                                           "MapIA"])),
@@ -290,8 +293,12 @@ class Making(unittest.TestCase):
         data[BS.join(["test", "map", "supercrossroads4", "zonebluff", "leveldesign_normal.kdt"])] = b"ZONES"
         c = made(glad=glad, data=data)
         new_ia = BS.join(["genglad", "patchable", "scenario", "blitzatdusk", "scenario", "mapia.cpp.gladndfbin"])
-        self.assertEqual(Ndf(c.glad[new_ia]).strings, [
+        nd_ia = Ndf(c.glad[new_ia])
+        self.assertEqual(nd_ia.strings, [
             "DataDir:" + BS + BS.join(["Test", "map", "BlitzAtDusk", "ZoneBluff", "LevelDesign_Normal.Kdt"]), cam])
+        [w] = [bytes(v.payload[4:]).decode("utf-16-le") for o in nd_ia.objects for _pi, v in o.props if v.tc == 0x08]
+        self.assertEqual(w, "DataDir:" + BS + BS.join(["Test", "Map", "BlitzAtDusk", "ZoneBluff",
+                                                        "LevelDesign_Normal.Kdt"]))
         self.assertEqual(c.data[BS.join(["test", "map", "blitzatdusk", "zonebluff", "leveldesign_normal.kdt"])], b"ZONES")
         nd = Ndf(c.glad[BS.join(["genglad", "patchable", "scenario", "blitzatdusk", "scenario",
                                  "clustermap.cpp.gladndfbin"])])

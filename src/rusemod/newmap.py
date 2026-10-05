@@ -423,8 +423,8 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
                              + r")([\\/]ZoneBluff[\\/][^\\/]+\.kdt)$", re.I)
         zones = [zone_at.match(s).group(3)[1:].replace("/", BS).lower() for s in ia.strings if zone_at.match(s)]
         zone_raw = read_data(scen_dir + scen_folder + BS + zones[0]) if len(zones) == 1 else None
-        if zone_raw is not None and _swap_strings(ia, _renamer(zone_at)(new)) == 1:
-            ia_copy = (ia, zones[0], zone_raw)
+        if zone_raw is not None and _swap_strings(ia, _renamer(zone_at)(new)) >= 1:  # (D-Day's names it twice: a
+            ia_copy = (ia, zones[0], zone_raw)                                        # string and a wide string)
     patterns = [
         re.compile(r"^(DataDir:[\\/]Test[\\/]Map[\\/])(" + re.escape(scen_folder) + r")([\\/].+\.scenario)$", re.I),
         re.compile(r"^(Patchable[\\/]map[\\/])(" + mf + r")([\\/]ClusterMap)$", re.I),
