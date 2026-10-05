@@ -9,15 +9,15 @@ How it follows paint_strokes, block for block:
   - a block a full-strength hard-edged stroke covers whole (groundpaint._solid_over) becomes that colour exactly,
     whatever was laid before, and is always written again;
   - at the end each value is rounded (halves to even) and kept in 0..255; a block is written again when one of its
-    pixels differs from what the tile held (or it was covered whole), through dxt.encode_block, once for each
-    different block."""
+    pixels differs from what the tile held (or it was covered whole), as dxt.encode_block packs it (rusemod.dxtnp,
+    all the different blocks at once)."""
 from __future__ import annotations
 
 import math
 
 import numpy as np
 
-from . import dxt
+from . import dxtnp
 from .brush import HARD_EDGE
 
 _I = np.int64
@@ -158,7 +158,7 @@ def paint_tile(gp, store, tile, rect, near: list, strokes: list, boxes: list, co
     rows = new.reshape(ny, 4, nx, 4, 3).transpose(0, 2, 1, 3, 4).reshape(ny * nx, 48)[which].tobytes()
     seen: dict = {}  # a block's 48 bytes -> its place among the different ones (a painted field is mostly one)
     back = [seen.setdefault(rows[at:at + 48], len(seen)) for at in range(0, len(rows), 48)]
-    made = b"".join(dxt.encode_block([tuple(key[3 * i:3 * i + 3]) for i in range(16)]) for key in seen)
+    made = dxtnp.encode_blocks(np.frombuffer(b"".join(seen), dtype=np.uint8).reshape(len(seen), 48))
     out = np.frombuffer(blocks, dtype=np.uint8).reshape(ny * nx, 8).copy()
     out[which] = np.frombuffer(made, dtype=np.uint8).reshape(len(seen), 8)[np.array(back, dtype=_I)]
     return gp.zipo_tile(out.tobytes(), w, h)
