@@ -30,6 +30,10 @@ LOCAL_SPACING = 640.0  # between them along the deck (a link needs an overlap of
 LEAF = 4               # the most circles in a leaf of an index built here (the shipped ones hold 1 to 7)
 MAX_DEPTH = 24         # the deepest an index may go: the game walks it with a fixed stack of 32 entries and no test of
                        # running past it (the deepest shipped index is 18 levels; one built here, balanced, about 14)
+MAX_LINKS = 128        # the most links one circle may have (rule circle-links: a route through a circle with 196
+                       # crashed the game, 2026-10-05; the most on any shipped map is 37)
+NEXT_WAY_IN = (1, 2, 3, 4)  # how many circles along a unit may have to go, at most, to the next way into a circle that
+                            # had too many links (Graph.cap_links): the fewest that brings it down to MAX_LINKS
 
 
 class NavError(ValueError):
@@ -1129,6 +1133,80 @@ class Graph:
                 sizes[lab[i]] = sizes.get(lab[i], 0) + 1
         return lab, sizes
 
+    def cap_links(self, most: int = MAX_LINKS) -> int:
+        """Leave links out until no circle, here or in a local map, has more than `most` (rule circle-links). A big
+        circle over a dried sea meets hundreds of small ones along its shore; it keeps its links to neighbours that
+        have no other link and those a crossing goes through, then one for each run of neighbours that reach each
+        other without it (as few circles along as NEXT_WAY_IN allows), then more spread around its edge up to `most`.
+        So a unit whose way in went walks a few circles along to the next one. Refused (NavError) when a circle can't
+        be brought down to `most`, or the graph would be left in more pieces than it was. Returns how many links
+        went; a graph with no circle over `most` is left as it is."""
+        went = self._cap_links(most)
+        for s in self.subs:
+            went += s.cap_links(most)
+        return went
+
+    def _cap_links(self, most: int) -> int:
+        n = len(self.circles) - 1
+        count = [0] * n
+        near: dict[int, list[tuple[int, int]]] = {}  # circle -> [(link, the circle at its other end)]
+        for k, (a, b, _x, _y) in enumerate(self.links):
+            count[a] += 1
+            count[b] += 1
+            near.setdefault(a, []).append((k, b))
+            near.setdefault(b, []).append((k, a))
+        over = sorted((c for c in range(n) if count[c] > most), key=lambda c: (-count[c], c))
+        if not over:
+            return 0
+        pieces = len(self.parts())
+        used = set()  # links a crossing goes through (its two gates)
+        for i in range(len(self.crossings) // 28):
+            used.update(struct.unpack_from("<2H", self.crossings, 28 * i + 20))
+        gone: set[int] = set()
+        for c in over:
+            mine = [(k, o) for k, o in near[c] if k not in gone]
+            if len(mine) > most:
+                keep = self._keep_links(c, mine, most, near, gone, used)
+                gone.update(k for k, _o in mine if k not in keep)
+        before = (self.circles, self.links, self.lists, self.crossings)
+        self._finish([c[:3] for c in self.circles[:-1]], [(i, lk) for i, lk in enumerate(self.links) if i not in gone],
+                     [], n)
+        if len(self.parts()) > pieces:
+            self.circles, self.links, self.lists, self.crossings = before
+            # rule: circle-links
+            raise NavError(f"a circle of the map's movement meets more than {most} others, and leaving its extra "
+                           f"links out would cut ground off from the rest (a route through such a circle crashes the "
+                           f"game)")
+        return len(gone)
+
+    def _keep_links(self, c: int, mine: list, most: int, near: dict, gone: set, used: set) -> set[int]:
+        """The links of circle `c` (`mine`: (link, neighbour)) that stay when it has more than `most` (cap_links)."""
+        cx, cy = self.circles[c][:2]
+        other = dict(mine)
+        must = {k for k, o in mine if k in used or sum(1 for kk, _d in near[o] if kk not in gone) <= 1}
+        ring = sorted((k for k, _o in mine if k not in must),  # around its edge, by where each link's gate is
+                      key=lambda k: (math.atan2(self.links[k][3] - cy, self.links[k][2] - cx), k))
+        for hops in NEXT_WAY_IN:
+            keep, reached = set(must), {other[k] for k in must}
+            for k in ring:
+                o = other[k]
+                if o not in reached and not _reaches(near, gone, o, reached, c, hops):
+                    keep.add(k)
+                    reached.add(o)
+            if len(keep) <= most:
+                break
+        else:
+            # rule: circle-links
+            raise NavError(f"a circle of the map's movement meets {len(mine)} others, more than the {most} a route "
+                           f"through it can take without crashing the game, and they can't be brought down to {most}")
+        rest = [k for k in ring if k not in keep]
+        room = most - len(keep)
+        if room >= len(rest):
+            keep.update(rest)
+        elif room > 0:
+            keep.update(rest[i * len(rest) // room] for i in range(room))
+        return keep
+
     # --- reading it ---
     def links_of(self, circle: int) -> list[int]:
         """The link numbers of one circle."""
@@ -1291,6 +1369,34 @@ def replace_buffers(win: bytes, new: dict) -> bytes:
     out = bytearray(header48 + b"".join(struct.pack("<I", len(b)) + b for b in bufs) + trailing)
     out[8:24] = hashlib.md5(b"INFOIA\r\n" + b"Eugen Systems" + bytes(out[24:])).digest()
     return bytes(out)
+
+
+def most_links(data: bytes) -> int:
+    """The most links any one circle has in a graph as stored, its local maps included (read from the circles' list
+    starts alone: quick on the biggest graph)."""
+    n_circles, _n_links, _n_cross, n_subs = struct.unpack_from("<4H", data, 12)
+    offsets = struct.unpack_from(f"<{5 + n_subs}I", data, HEADER)
+    ends = list(offsets[5:]) + [len(data)]
+    starts = [s for (s, _cs) in struct.iter_unpack("<12xHH", data[offsets[0]:offsets[0] + 16 * (n_circles + 1)])]
+    top = max((b - a for a, b in zip(starts, starts[1:])), default=0)
+    return max([top] + [most_links(data[o:e]) for o, e in zip(offsets[5:], ends[1:])])
+
+
+def cap_movement(win: bytes) -> tuple[bytes, list[str]]:
+    """A movement file whose graphs have no circle with more than MAX_LINKS links (Graph.cap_links), and notes on
+    what was left out; the very same bytes when no circle has more."""
+    from ruse_mod_engine import sdb
+    bufs = sdb.split_mapinfo(win)[1]
+    new, notes = {}, []
+    for k, what in ((1, "infantry"), (2, "vehicles")):
+        if len(bufs[k]) < HEADER + 20 or most_links(bufs[k]) <= MAX_LINKS:  # (too short to be a graph: nothing to cap)
+            continue
+        g = Graph.read(bufs[k])
+        went = g.cap_links()
+        new[k] = g.to_bytes()
+        notes.append(f"{what}: {went} link(s) left out where a circle met more than {MAX_LINKS} others (a route "
+                     f"through such a circle crashes the game); units go along to the next way in")
+    return (replace_buffers(win, new) if new else win), notes
 
 
 PARALLEL_FROM = 400  # blocks and opens in each graph from which the two graphs go on two cores (a worker program
@@ -2587,6 +2693,26 @@ def _reached(links, start: int) -> set[int]:
                 seen.add(d)
                 todo.append(d)
     return seen
+
+
+def _reaches(near: dict, gone: set, start: int, targets: set, avoid: int, hops: int, most_seen: int = 4096) -> bool:
+    """Whether circle `start` reaches one of `targets` within `hops` links (`near`: circle -> [(link, other)]; links in
+    `gone` don't count) without going through circle `avoid`."""
+    frontier, seen = [start], {start, avoid}
+    for _ in range(hops):
+        step = []
+        for c in frontier:
+            for k, d in near.get(c, ()):
+                if k in gone or d in seen:
+                    continue
+                if d in targets:
+                    return True
+                seen.add(d)
+                step.append(d)
+        if not step or len(seen) > most_seen:
+            return False
+        frontier = step
+    return False
 
 
 def _piece(circles, start: int = 0) -> set[int]:

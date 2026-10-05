@@ -577,6 +577,115 @@ class Crossings(unittest.TestCase):
         self.assertEqual(g.add_crossings(net)["added"], 0)
 
 
+def ring(n=200, crossing_through=None, lone=False):
+    """A big circle (0, r 25,600) with `n` small ones (r 640) round its edge, each meeting it and its two neighbours
+    on the ring (the shore of a drained sea, made into movement); `crossing_through` (two of the small ones): a
+    crossing in the big circle through their gates; `lone`: one more small circle inside the big one, meeting
+    nothing else."""
+    import math
+    small = 25800.0 * math.sin(math.pi / n) + 200.0  # each meets its neighbours on the ring by 400, no others
+    circles = [(32768.0, 32768.0, 25600.0)] + [
+        (32768.0 + 25800.0 * math.cos(2 * math.pi * i / n), 32768.0 + 25800.0 * math.sin(2 * math.pi * i / n), small)
+        for i in range(n)]
+    pairs = [(0, i) for i in range(1, n + 1)] + [(i, i + 1) for i in range(1, n)] + [(1, n)]
+    if lone:
+        circles.append((32768.0, 42768.0, 640.0))
+        pairs.append((0, n + 1))
+    crossings = []
+    if crossing_through:
+        number = {lk[:2]: k for k, lk in enumerate(made(circles, pairs).links)}
+        crossings = [(0, number[(0, crossing_through[0])], number[(0, crossing_through[1])], 3, 4)]
+    return made(circles, pairs, crossings=crossings)
+
+
+def hops_to(g, start):
+    """How many links each circle is from `start`."""
+    near = {}
+    for a, b, _x, _y in g.links:
+        near.setdefault(a, []).append(b)
+        near.setdefault(b, []).append(a)
+    seen, todo = {start: 0}, [start]
+    for c in todo:
+        for d in near.get(c, ()):
+            if d not in seen:
+                seen[d] = seen[c] + 1
+                todo.append(d)
+    return seen
+
+
+class LinkCap(unittest.TestCase):
+    """The owner's drained D-Day sea (2026-10-05): a unit built there crashed the game; its route went through a big
+    circle with 196 links. A circle keeps at most nav.MAX_LINKS (Graph.cap_links, nav.cap_movement)."""
+
+    def test_a_circle_with_too_many_links_keeps_the_most_a_route_can_take(self):
+        g = ring()
+        self.assertEqual(nav.most_links(g.to_bytes()), 200)
+        self.assertEqual(g.cap_links(), 200 - nav.MAX_LINKS)
+        self.assertEqual(len(g.links_of(0)), nav.MAX_LINKS)
+        self.assertEqual(nav.most_links(g.to_bytes()), nav.MAX_LINKS)
+        self.assertEqual(g.parts(), [201])  # still one piece
+        self.assertLessEqual(max(hops_to(g, 0).values()), 2)  # every shore circle a step from the next way in
+        kept = sorted(g.links[k][1] for k in g.links_of(0))
+        self.assertLessEqual(max(b - a for a, b in zip(kept, kept[1:])), 2)  # spread round the edge
+        self.assertEqual(len(g.links), 400 - (200 - nav.MAX_LINKS))  # only the big circle's links went
+        self.assertEqual(nav.Graph.read(g.to_bytes()).to_bytes(), g.to_bytes())
+
+    def test_a_graph_within_the_limit_is_left_as_it_is(self):
+        for g in (row(), ring(nav.MAX_LINKS)):
+            data = g.to_bytes()
+            self.assertEqual(g.cap_links(), 0)
+            self.assertEqual(g.to_bytes(), data)
+
+    def test_a_crossings_gates_and_a_neighbours_only_link_stay(self):
+        g = ring(crossing_through=(1, 2), lone=True)
+        g.cap_links()
+        pairs = {lk[:2]: k for k, lk in enumerate(g.links)}
+        self.assertIn((0, 1), pairs)
+        self.assertIn((0, 2), pairs)
+        self.assertIn((0, 201), pairs)  # the lone circle's only way anywhere
+        self.assertEqual(len(g.crossings), 28)  # the crossing stays, its gates numbered again
+        self.assertEqual(struct.unpack_from("<2H", g.crossings, 20), (pairs[(0, 1)], pairs[(0, 2)]))
+        self.assertEqual(len(g.links_of(0)), nav.MAX_LINKS)
+
+    def test_a_local_map_is_capped_too(self):
+        g = made(LAND, [(0, 1), (1, 2), (2, 3), (3, 4)], subs=[ring()])
+        self.assertEqual(nav.most_links(g.to_bytes()), 200)
+        self.assertEqual(g.cap_links(), 200 - nav.MAX_LINKS)
+        self.assertEqual(nav.most_links(g.to_bytes()), nav.MAX_LINKS)
+
+    def test_refused_when_it_cant_be_brought_down(self):
+        import math
+        circles = [(32768.0, 32768.0, 25600.0)] + [  # 150 small circles round its edge, none meeting another
+            (32768.0 + 25500.0 * math.cos(2 * math.pi * i / 150), 32768.0 + 25500.0 * math.sin(2 * math.pi * i / 150),
+             300.0) for i in range(150)]
+        g = made(circles, [(0, i) for i in range(1, 151)])
+        data = g.to_bytes()
+        with self.assertRaisesRegex(nav.NavError, "meets 150 others"):
+            g.cap_links()
+        self.assertEqual(g.to_bytes(), data)
+
+    def test_the_movement_file(self):
+        head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 32000.0, 32000.0)
+
+        def win(g1, g2):
+            return nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+                b"roads", g1.to_bytes(), g2.to_bytes(), b"cover")) + b"tail", {})
+        plain = win(row(), row())
+        self.assertIs(nav.cap_movement(plain)[0], plain)  # nothing over: the very same bytes, no notes
+        self.assertEqual(nav.cap_movement(plain)[1], [])
+        stand_ins = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+            b"roads", b"graph 1", b"graph 2", b"cover")) + b"tail", {})  # a roads test's movement file
+        self.assertIs(nav.cap_movement(stand_ins)[0], stand_ins)
+        out, notes = nav.cap_movement(win(ring(), row()))
+        from ruse_mod_engine import sdb
+        bufs = sdb.split_mapinfo(out)[1]
+        self.assertEqual((nav.most_links(bufs[1]), bufs[2], bufs[0], bufs[3]),
+                         (nav.MAX_LINKS, row().to_bytes(), b"roads", b"cover"))
+        self.assertEqual(len(notes), 1)
+        self.assertIn("infantry: 72 link(s) left out", notes[0])
+        self.assertEqual(nav.replace_buffers(out, {}), out)  # its check sum made again
+
+
 class Index(unittest.TestCase):
     def test_an_index_built_as_the_games_are(self):
         import random

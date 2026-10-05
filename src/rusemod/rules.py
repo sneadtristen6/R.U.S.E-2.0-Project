@@ -36,6 +36,11 @@ RULES: dict[str, Rule] = {
     "ground-reach": Rule(
         "Movement graphs must be one piece: a move order to ground units can't reach crashes the game.",
         "game", "TESTS.md bridges, owner 2026-09-30 18:43: crashed on a move order (the empty-route crash)"),
+    "circle-links": Rule(
+        "A movement circle may have at most 128 links: a route through one with more crashes the game.",
+        "game", "owner 2026-10-05: a unit built on the drained sea of his D-Day mod (Studio 0.9.7) crashed the game, "
+                "its route through a circle with 196 links (the most on any shipped map is 37). The 128 is from "
+                "studying how the game works; a circle with 129 to 195 links wasn't seen in a match"),
     "spawn-models": Rule(
         "A spawned unit whose nation's models the match doesn't load crashes the game at the start.",
         "game", "TESTS.md, owner 2026-10-01: 57 Japanese units spawned, no Japanese player: crash"),

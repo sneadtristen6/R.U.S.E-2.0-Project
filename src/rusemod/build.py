@@ -2276,6 +2276,22 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     say(f"roads: {name}, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
+                for name in sorted(set(blocks) | set(bridge_spans) | set(new_roads)):  # last: no circle with more
+                    from .cover import member as movement_member                      # links than a route through
+                    from .nav import cap_movement                                     # it can take (nav.MAX_LINKS)
+                    win = changed_members.get(movement_member(name))
+                    if win is None:
+                        continue
+                    try:
+                        capped, notes = cap_movement(win)
+                    except (NavError, ValueError, struct.error) as exc:
+                        result.findings.append(Finding("error", f"{name}: {exc}{_meant(game, name)}"))
+                        continue
+                    if notes:
+                        changed_members[movement_member(name)] = capped
+                        say(f"movement: {name}, every circle's links checked")
+                        for note in notes:
+                            say(f"  {note}")
                 for name, (map_moves, ids) in moves.items():  # the mods' starting points on the final ground
                     from .scenario import start_ground_problems
                     # rule: start-ground
