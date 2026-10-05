@@ -272,6 +272,30 @@ class Making(unittest.TestCase):
         with self.assertRaisesRegex(NewMapError, "already has a map called BlitzAtDusk"):
             made(glad={**self.glad, **c.glad_changed, **c.glad})
 
+    def test_its_own_menu_picture(self):
+        """map.toml picture: the copy's record names menu pictures of its own (its own copy of the shipped picture's
+        record), made from the PNG and added to ZZ_Win.dat; the shipped record keeps its picture."""
+        from rusemod.dxt import png_bytes
+        from rusemod.tmst import Tgv
+        spec = NewMap("SuperCrossRoads4", {"us": "Blitz at Dusk"}, picture="menu.png")
+        spec.picture_data = png_bytes(bytes((10, 40, 200, 255)) * 16, 4, 4, channels=4)
+        c = made(spec=spec, glad=self.glad)
+        self.assertEqual(sorted(c.zz_new), [BS.join(["gen", "test", "map", "blitzatdusk", "minimap.tgv"])])
+        self.assertEqual((Tgv(c.zz_new[BS.join(["gen", "test", "map", "blitzatdusk", "minimap.tgv"])]).width), 640)
+        m = Ndf(c.glad_changed[MAPINFO])
+        loads = [o for o in m.objects if m.classes[o.cls] == "TMapLoadInfo"]
+        shipped, copy = loads[0], loads[-1]
+        pics = [text(m, props(m, m.objects[local_ref(props(m, o)["Icone"])])["FileName"]) for o in (shipped, copy)]
+        self.assertEqual(pics, ["DataDir:" + BS + BS.join(["Test", "map", "SuperCrossRoads4", "Minimap.png"]),
+                                "DataDir:" + BS + BS.join(["Test", "map", "BlitzAtDusk", "Minimap.png"])])
+        self.assertEqual(made(glad=self.glad).zz_new, {})            # no picture: the shipped one, as before
+        self.assertEqual(parse({"copy_of": "SuperCrossRoads4", "picture": "menu.png"}, folder="BlitzAtDusk")[0].picture,
+                         "menu.png")
+        self.assertIn('picture = "menu.png"', map_toml(spec))
+        for bad in ("menu.jpg", "../menu.png", 5, "a\\b.png"):
+            with self.subTest(bad=bad), self.assertRaisesRegex(NewMapError, "picture must name a PNG"):
+                parse({"copy_of": "SuperCrossRoads4", "picture": bad}, folder="BlitzAtDusk")
+
     def test_its_own_zone_map(self):
         """The scenario's MapIA names its zone map: the copy gets its own of both (rusemod.sectors can then make its
         sectors again), and its cluster loads its own MapIA; without a MapIA, everything as before."""
@@ -444,6 +468,23 @@ class Building(unittest.TestCase):
 
     def copy(self, *parts):
         return Edat((self.root / "copy").joinpath(*parts).read_bytes())
+
+    def test_its_own_menu_picture_goes_into_zz_win(self):
+        """map.toml picture: the PNG beside it is read with the mod and its menu picture lands in the copy's ZZ_Win.dat;
+        a picture that isn't there stops the build, naming it."""
+        from rusemod.dxt import png_bytes
+        from rusemod.tmst import Tgv
+        dusk = self.mod("dusk", {"map.toml": 'copy_of = "SuperCrossRoads4"\nname = "Blitz at Dusk"\npicture = "menu.png"\n'})
+        (dusk / "maps" / "BlitzAtDusk" / "menu.png").write_bytes(png_bytes(bytes((10, 40, 200, 255)) * 64, 8, 8,
+                                                                           channels=4))
+        result, lines = self.build(dusk)
+        self.assertEqual(result.errors, [], "\n".join(lines))
+        zz = self.copy("Data", "PC", "190852", "ZZ_Win.dat")
+        pic = Tgv(bytes(zz.read(zz.find(BS.join(["gen", "test", "map", "blitzatdusk", "minimap.tgv"])))))
+        self.assertEqual((pic.width, pic.height, pic.format), (640, 360, "DXT5_LIN"))
+        (dusk / "maps" / "BlitzAtDusk" / "menu.png").unlink()
+        with self.assertRaisesRegex(BuildError, "has no such picture"):
+            load_mod(dusk)
 
     def test_a_new_map_and_its_edits_go_into_the_modded_copy(self):
         from rusemod.cover import member as grid_of

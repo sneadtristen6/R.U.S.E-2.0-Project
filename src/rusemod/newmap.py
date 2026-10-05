@@ -55,6 +55,8 @@ class NewMap:
     copy_of: str                  # the shipped map's pack name
     names: dict                   # language folder (loc.LANGS) -> the map's name in the menus; "us" always there
     entry: str | None = None      # which of the shipped map's BATTLES entries, by its map-list name
+    picture: str | None = None    # its own picture in the menus: a PNG in its folder (rusemod.menupicture)
+    picture_data: bytes | None = field(default=None, compare=False, repr=False)  # that PNG's bytes, read with the mod
 
 
 # --- map.toml -------------------------------------------------------------------------------------------------------
@@ -99,7 +101,10 @@ def parse(data: dict, where: str = "map.toml", folder: str = "") -> list[NewMap]
     if entry is not None and (not isinstance(entry, str) or not entry.strip()):
         raise NewMapError(f"{where}: entry must be the map-list name of one of {src}'s BATTLES entries, like "
                           f"\"(6) Cotentin (3v3)\"")
-    return [NewMap(src, names, entry)]
+    picture = data.get("picture")
+    if picture is not None and (not isinstance(picture, str) or not re.match(r"^[^\\/:*?\"<>|]+\.png$", picture, re.I)):
+        raise NewMapError(f"{where}: picture must name a PNG picture in the map's folder, like \"menu.png\"")
+    return [NewMap(src, names, entry, picture)]
 
 
 def map_toml(spec: NewMap, players: int | None = None, header: str = "") -> str:
@@ -110,6 +115,8 @@ def map_toml(spec: NewMap, players: int | None = None, header: str = "") -> str:
         lines.append(f'entry = "{_toml_text(spec.entry)}"')
     if players is not None:
         lines.append(f"players = {players}")
+    if spec.picture:
+        lines.append(f'picture = "{_toml_text(spec.picture)}"')
     if set(spec.names) == {"us"}:
         lines.append(f'name = "{_toml_text(spec.names["us"])}"')
     else:
@@ -153,6 +160,7 @@ class Clone:
     glad_changed: dict = field(default_factory=dict)  # ZZ_GladPatchableWin.dat: the map list and menus, changed
     data: dict = field(default_factory=dict)        # DataMap_Win.dat: new members
     texts: dict = field(default_factory=dict)       # ZZ_Win.dat: the menus' dictionaries, changed
+    zz_new: dict = field(default_factory=dict)      # ZZ_Win.dat: new members (its own menu pictures)
     scenario: str = ""                              # the scenario file (lower case) the new entry loads
     kind: str = "battles"                           # the menu it's in: battles, operation or campaign (KINDS)
     key: str = ""                                   # the name's text key, e.g. M_D_31
@@ -500,6 +508,22 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
             _set_text(m, o, prop, text)
     _set(m, o, "GUID", Value(0x1A, out.guid))
     m.set_topo(list(m.topo) + [j])
+    # its own pictures in the menus (map.toml picture): the copied record's own copies of the shipped pictures' records
+    # named after files of the copy's own, made from the modder's picture (rusemod.menupicture)
+    if spec.picture_data is not None:
+        from .menupicture import SIZES, PictureError, pictures
+        try:
+            made = pictures(spec.picture_data)
+        except PictureError as exc:
+            raise NewMapError(f"maps/{new}: picture {spec.picture}: {exc}") from None
+        for prop, stem, _w, _h in SIZES:
+            t = local_ref(_props(m, o)[prop]) if prop in _props(m, o) else None
+            if t is None or "FileName" not in _props(m, m.objects[t]):
+                continue
+            _set_text(m, m.objects[t], "FileName", "DataDir:" + BS + BS.join(["Test", "map", new, stem + ".png"]))
+            out.zz_new[BS.join(["gen", "test", "map", low, stem.lower() + ".tgv"])] = made[stem]
+        if not out.zz_new:
+            out.notes.append(f"{new}: {src}'s entry has no picture of its own to replace, so {spec.picture} isn't used")
 
     # 5. the menu: its own entry beside the shipped one's. BATTLES: in the menu pack that lists the shipped map, after
     # the maps of its size. An Operation or a campaign chapter: at the end of its pack's list, the briefing, pictures,

@@ -280,6 +280,7 @@ copy_of = "SuperCrossRoads4"   # the shipped map it starts from, by its pack nam
 entry = "(2) Blitz"            # optional: which of its entries, by the map list's name: a BATTLES map (needed when it
                                # has several), or an Operation's or a campaign chapter's (the copy is then one too)
 players = 4                    # optional: as on any map (below), for the copy
+picture = "menu.png"           # optional: its own picture in the menus, a PNG in this folder
 
 [name]                         # what the menus call it, or one name for every language: name = "Blitz Twin"
 us = "Blitz Twin"              # English, which the languages left out fall back to
@@ -292,9 +293,12 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
 - The build adds the copy's own map, its place in the map list and in BATTLES (after the maps of its size), its
   scenario, its cover and movement, and its name in every language: each a copy of the shipped map's, pointed at the
   copy.
-- Everything else is the shipped map's, only read: its models, sounds, lighting, camera paths, menu picture and
-  in-mission texts. The copy plays the shipped entry's scenario (Blitz: `leveldesign_normal.scenario`), so its
-  `scenario.toml` names that file.
+- Everything else is the shipped map's, only read: its models, sounds, lighting, camera paths, menu pictures (unless
+  `picture` gives its own) and in-mission texts. The copy plays the shipped entry's scenario (Blitz:
+  `leveldesign_normal.scenario`), so its `scenario.toml` names that file; its sectors get a zone map of their own, so
+  `[sectors]` can change them without changing the shipped map's.
+- `picture`: a PNG in the new map's folder becomes its pictures in the menus (the card, 640 x 360, and the wide one,
+  680 x 200), each cut to its shape from the picture's middle. Not seen in the game yet.
 - The ids come from the name, so every PC that builds the mod gets the same files: a multiplayer game needs the mod on
   both PCs, like any mod. The copy isn't offered in ranked games (the shipped map's ladder place stays its own).
 - **An Operation or a campaign chapter:** `entry` names it (`"Challenge - 1v1 39 Blitz_2 (Anzio)"` for Anzio,

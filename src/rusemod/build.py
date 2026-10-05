@@ -170,8 +170,9 @@ def _map_readers() -> dict:
         "roads.toml": (("road", "take_out"), "a roads file holds [[road]] tables and take_out = [\"roads\", \"bridges\"]",
                        lambda d, rel: parse_roads(d.get("road", []), rel) + parse_take_out(d.get("take_out"), rel),
                        RoadNetError),
-        "map.toml": (("players", "entry", "copy_of", "name"),
-                     "a map file holds players = N (and entry = the map-list name), and for a new map copy_of and name",
+        "map.toml": (("players", "entry", "copy_of", "name", "picture"),
+                     "a map file holds players = N (and entry = the map-list name), and for a new map copy_of, name "
+                     "and picture",
                      _map_toml, (PlayersError, NewMapError)),
     }
 
@@ -206,9 +207,16 @@ def read_map_file(folder: Path, f: Path) -> list:
     if extra:
         raise BuildError(f"{rel}: unknown key {extra[0]!r} ({holds})")
     try:
-        return parse_rows(data, rel)
+        rows = parse_rows(data, rel)
     except mistake as exc:
         raise BuildError(str(exc)) from None
+    for r in rows:  # a new map's own menu picture: the PNG beside its map.toml, read with the mod
+        if getattr(r, "picture", None) and getattr(r, "picture_data", 1) is None:
+            pic = f.parent / r.picture
+            if not pic.is_file():
+                raise BuildError(f"{rel}: picture = {r.picture!r}, but maps/{f.parent.name}/ has no such picture")
+            r.picture_data = pic.read_bytes()
+    return rows
 
 
 def _read_maps(folder: Path, file: str) -> dict:
@@ -1513,6 +1521,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 for member, data in clone.texts.items():
                     e = text_arc.entry(member)
                     result.text_changed[e.path if e is not None else member] = data
+                result.new_files.update(clone.zz_new)  # its own menu pictures (map.toml picture)
                 glad_new.update(clone.glad)
                 data_new.update(clone.data)
                 path = Path(game) / "Maps" / "PC" / pack_file(name)
