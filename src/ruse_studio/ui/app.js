@@ -281,10 +281,12 @@ async function exportMod(e) {
 }
 
 // --- Share your mod: how an exported mod gets onto the supported-mods list (MOD_FORMAT §15). After an export it shows
-// the file's size, SHA-256 and its index.toml entry; the buttons open the list's page and the Discussions ---
+// the file's size, SHA-256 and its index.toml entry, and the credit line its manifest carries; Publish opens the list's
+// "Add my mod" form filled in from the file (StudioApi.publish_mod); the other buttons open the list's guidelines, its
+// page and the Discussions ---
 async function openShare(file) {
   const w = state.words;
-  let info = { repo: "sneadtristen6/Ruse-Mods" };
+  let info = { repo: "sneadtristen6/Ruse-Mods", credit: "" };
   try { info = await api().share_info(); } catch { /* an older Studio: the list's usual name */ }
   $("share-title").textContent = w.share_title;
   $("share-lead").textContent = w.share_lead;
@@ -300,6 +302,12 @@ async function openShare(file) {
   }
   $("share-copy").textContent = w.share_copy;
   $("share-note").textContent = "";
+  $("share-credit-label").textContent = w.share_credit;
+  $("share-credit").value = (file && file.credit) || info.credit || "";
+  $("share-credit-copy").textContent = w.share_credit_copy;
+  $("share-published").classList.add("hidden");
+  $("share-publish").textContent = w.share_publish;
+  $("share-guidelines").textContent = w.share_guidelines;
   $("share-open").textContent = w.share_open;
   $("share-discussions").textContent = w.share_discussions;
   $("share-close").textContent = w.close;
@@ -310,6 +318,18 @@ async function copyShareEntry() {
   const area = $("share-entry");
   try { await navigator.clipboard.writeText(area.value); } catch { area.focus(); area.select(); return; }  // selected: Ctrl+C
   $("share-note").textContent = state.words.share_copied;
+}
+
+async function copyShareCredit() {
+  const box = $("share-credit");
+  try { await navigator.clipboard.writeText(box.value); } catch { box.focus(); box.select(); return; }  // selected: Ctrl+C
+  $("share-note").textContent = state.words.share_credit_copied;
+}
+
+async function publishMod() {
+  try { await api().publish_mod(); } catch (err) { problem(err); return; }
+  $("share-published").textContent = state.words.share_published;
+  $("share-published").classList.remove("hidden");
 }
 
 async function refreshMarks() {
@@ -2168,6 +2188,9 @@ async function start() {
   $("share-open").addEventListener("click", () => api().open_help("mods").catch(problem));
   $("share-discussions").addEventListener("click", () => api().open_help("discussions").catch(problem));
   $("share-copy").addEventListener("click", copyShareEntry);
+  $("share-credit-copy").addEventListener("click", copyShareCredit);
+  $("share-publish").addEventListener("click", publishMod);
+  $("share-guidelines").addEventListener("click", () => api().open_help("guidelines").catch(problem));
   $("share-close").addEventListener("click", () => $("share").close());
   $("test").addEventListener("click", testInGame);
   $("test-log-close").addEventListener("click", () => $("test-panel").classList.add("hidden"));

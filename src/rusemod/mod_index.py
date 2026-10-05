@@ -106,7 +106,8 @@ def _entry(e: dict) -> dict:
             "author": str(e.get("author", "")), "description": str(e.get("description", "")),
             "homepage": str(e.get("homepage", "")), "download": str(e["download"]), "size": int(e["size"]),
             "sha256": str(e["sha256"]).lower(), "game_build": str(e.get("game_build", "")),
-            "fingerprint": str(e.get("fingerprint", "")), "tags": tags, "cheat": is_cheat(tags)}
+            "fingerprint": str(e.get("fingerprint", "")), "made_with": str(e.get("made_with", "")), "tags": tags,
+            "cheat": is_cheat(tags)}
 
 
 def entry_text(info: dict, size: int, sha256: str, download: str = "") -> str:
@@ -131,8 +132,38 @@ def entry_text(info: dict, size: int, sha256: str, download: str = "") -> str:
         lines.append(f"game_build = {s(builds[-1])}")
     if info.get("fingerprint"):
         lines.append(f"fingerprint = {s(info['fingerprint'])}")
+    if info.get("made_with"):
+        lines.append(f"made_with = {s(info['made_with'])}")
     lines.append("tags = []  # e.g. [\"gameplay\"]; a cheat or a test tool: [\"cheat\"]")
     return "\n".join(lines) + "\n"
+
+
+# --- sending a mod to the list (the "Add my mod" form on the list's page) ---
+FORM = f"{PAGE}/issues/new"
+FORM_TEMPLATE = "add-mod.yml"      # the list repository's .github/ISSUE_TEMPLATE/add-mod.yml
+FORM_TEXT_MOST = 1500              # characters of one box that go into the link (a long link gets refused)
+
+
+def credit_line(made_with: str) -> str:
+    """The line a modder can paste where they share their mod: 'Made with RUSE Studio 0.9.7 (<the project's page>)'."""
+    from .community import REPO_URL
+    return f"Made with {made_with or 'RUSE Studio'} ({REPO_URL})"
+
+
+def submit_url(info: dict, entry: str, made_with: str = "") -> str:
+    """The "Add my mod" form, its boxes filled in from the package: name, version, credit, the list entry, the game
+    build, what it does and which tool made it (GitHub fills a form's boxes from the link, by their ids). The modder
+    writes the rest (what it changes, what its code does) and attaches the .zip."""
+    from urllib.parse import urlencode
+    name = info.get("name") or info.get("id") or ""
+    fields = {"template": FORM_TEMPLATE, "title": f"Add mod: {name} {info.get('version', '')}".strip(),
+              "mod_name": name, "version": info.get("version", ""),
+              "credit": info.get("author") or ", ".join(info.get("authors") or []),
+              "summary": (info.get("description") or "")[:FORM_TEXT_MOST], "entry": entry[:FORM_TEXT_MOST],
+              "game_build": (info.get("builds") or [""])[-1]}
+    if made_with.startswith("RUSE Studio"):
+        fields["made_with"] = "RUSE Studio"
+    return f"{FORM}?{urlencode({k: v for k, v in fields.items() if v})}"
 
 
 # --- getting it, and keeping a copy ---

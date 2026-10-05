@@ -70,6 +70,8 @@ class Calls(unittest.TestCase):
         app = self.App()
         self.assertEqual(app.open_help("mods"), {"opened": "https://github.com/sneadtristen6/Ruse-Mods"})
         app._update_open_url.assert_called_once_with("https://github.com/sneadtristen6/Ruse-Mods")
+        self.assertEqual(app.open_help("guidelines"),  # what the list accepts (the list's GUIDELINES.md)
+                         {"opened": "https://github.com/sneadtristen6/Ruse-Mods/blob/main/GUIDELINES.md"})
 
 
 if __name__ == "__main__":

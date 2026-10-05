@@ -486,6 +486,11 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
                        color: var(--text); border: 1px solid var(--line); border-radius: var(--radius);
                        font: 12px Consolas, "Cascadia Mono", monospace; }
 .share-file .actions { justify-content: flex-start; margin-top: 4px; }
+.share-credit { display: grid; gap: 4px; margin-top: 12px; }  /* the credit line ("Made with RUSE Studio ...") to copy */
+.share-credit .actions { justify-content: flex-start; flex-wrap: nowrap; }
+.share-credit input { flex: 1; min-width: 0; background: var(--panel); color: var(--text); border: 1px solid var(--line);
+                      border-radius: var(--radius); padding: 4px 6px; font: 12px Consolas, "Cascadia Mono", monospace; }
+#share-published { margin: 10px 0 0; color: var(--shared); }
 
 /* a newer release, offered in the header (rusemod/update.py) */
 .update-bar { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-size: 13px;

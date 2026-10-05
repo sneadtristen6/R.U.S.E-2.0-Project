@@ -54,11 +54,13 @@ def manifest_info(data: dict, folder=None) -> dict:
     authors = m.get("authors", m.get("author", []))
     authors = [authors] if isinstance(authors, str) else [str(a) for a in authors]
     name = Path(folder).name if folder else ""
+    made = data.get("made_with", {}) if isinstance(data.get("made_with"), dict) else {}
     return {"id": str(m.get("id", name)), "name": str(m.get("name") or m.get("id") or name),
             "version": str(m.get("version", "")), "authors": authors, "author": ", ".join(authors),
             "description": str(m.get("description", "")), "builds": [str(b) for b in game.get("builds", [])],
             "data_revision": str(game.get("data_revision", "")), "fingerprint": str(game.get("fingerprint", "")),
             "rmod": str(data.get("rmod", {}).get("file", "")) if isinstance(data.get("rmod"), dict) else "",
+            "made_with": f"{made.get('tool', '')} {made.get('version', '')}".strip(),
             "path": str(folder) if folder else ""}
 
 
@@ -106,11 +108,12 @@ def _toml(v) -> str:
     return '"' + str(v).replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ").replace("\r", "") + '"'
 
 
-def update_manifest(folder, mod: dict | None = None, game: dict | None = None) -> dict:
-    """Set values in a mod folder's mod.toml ([mod] and [game] tables) and return the fresh info."""
+def update_manifest(folder, mod: dict | None = None, game: dict | None = None,
+                    made_with: dict | None = None) -> dict:
+    """Set values in a mod folder's mod.toml ([mod], [game] and [made_with] tables) and return the fresh info."""
     path = Path(folder) / MANIFEST
     text = path.read_text(encoding="utf-8")
-    new = set_values(set_values(text, "mod", mod or {}), "game", game or {})
+    new = set_values(set_values(set_values(text, "mod", mod or {}), "game", game or {}), "made_with", made_with or {})
     try:
         tomllib.loads(new)
     except tomllib.TOMLDecodeError as exc:  # can't happen with our own values, but never write a broken manifest
@@ -143,10 +146,11 @@ def files_of(folder) -> list[Path]:
 
 
 def pack(folder, out, *, build_id: str | None = None, data_revision: str | None = None,
-         fingerprint: str | None = None, solved: dict | None = None) -> Path:
+         fingerprint: str | None = None, solved: dict | None = None, made_with: dict | None = None) -> Path:
     """Zip the mod at `folder` into one file. `out` is the file to write, or a folder to put `<id>-<version>.rusemod`
     in. The mod is checked first (its manifest, and that it reads like a build would); the build it was made on and
-    its fingerprint, when given, are written into the manifest (the folder's and the package's) under [game].
+    its fingerprint, when given, are written into the manifest (the folder's and the package's) under [game], and the
+    tool that made it (`made_with`: {"tool", "version", "page"}: the credit line the list shows) under [made_with].
     `solved`: the answers the mod's build worked out for its maps (BuildResult.solved, §8 "Worked-out answers"),
     written into the folder as maps/<map>/solved.bin first, so the package carries them and players' builds take
     them instead of working them out."""
@@ -167,7 +171,7 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
         game["data_revision"] = str(data_revision)
     if fingerprint:
         game["fingerprint"] = str(fingerprint)
-    info = update_manifest(folder, game=game) if game else info_of(folder)
+    info = update_manifest(folder, game=game, made_with=made_with) if game or made_with else info_of(folder)
     _check_info(info)
     try:
         load_mod(folder)

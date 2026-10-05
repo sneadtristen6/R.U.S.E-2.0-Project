@@ -8,6 +8,7 @@ import threading
 import time
 import tomllib
 import unittest
+import urllib.parse
 from pathlib import Path
 from unittest import mock
 
@@ -516,7 +517,30 @@ class Editing(WithMod):
         self.assertEqual((listed[0]["id"], listed[0]["version"], listed[0]["size"], listed[0]["sha256"], listed[0]["author"],
                           listed[0]["game_build"], listed[0]["fingerprint"]),
                          ("tank-test", "1.2.0", len(data), shared["sha256"], "Tristen", "24687178", info["fingerprint"]))
-        self.assertEqual(api.share_info(), {"repo": "sneadtristen6/Ruse-Mods", "page": "https://github.com/sneadtristen6/Ruse-Mods"})
+        # the credit: every export says it was made with this Studio, the list's entry carries it, and the line to paste
+        from ruse_studio import __version__
+        self.assertEqual(info["made_with"], f"RUSE Studio {__version__}")
+        self.assertEqual(listed[0]["made_with"], f"RUSE Studio {__version__}")
+        credit = f"Made with RUSE Studio {__version__} (https://github.com/sneadtristen6/R.U.S.E-2.0-Project)"
+        self.assertEqual((shared["made_with"], shared["credit"]), (f"RUSE Studio {__version__}", credit))
+        self.assertEqual(api.share_info(), {"repo": "sneadtristen6/Ruse-Mods", "page": "https://github.com/sneadtristen6/Ruse-Mods",
+                                            "credit": credit})
+        # Publish: the list's "Add my mod" form, filled in from the file, and a .zip of it beside it, its folder opened
+        opened = []
+        api._starter.open_url = opened.append
+        sent = api.publish_mod()
+        zipped = dest / "tank-test-1.2.0.zip"
+        self.assertEqual(sent, {"opened": opened[0], "zip": str(zipped)})
+        self.assertEqual(zipped.read_bytes(), data)
+        self.assertEqual(opened[1], str(dest))
+        form = urllib.parse.urlsplit(opened[0])
+        self.assertEqual((form.netloc, form.path), ("github.com", "/sneadtristen6/Ruse-Mods/issues/new"))
+        fields = dict(urllib.parse.parse_qsl(form.query))
+        self.assertEqual((fields["template"], fields["title"], fields["mod_name"], fields["version"], fields["credit"],
+                          fields["summary"], fields["game_build"], fields["made_with"]),
+                         ("add-mod.yml", "Add mod: Tank Test 1.2.0", "Tank Test", "1.2.0", "Tristen", "Tanks are tougher.",
+                          "24687178", "RUSE Studio"))
+        self.assertEqual(fields["entry"], shared["entry"])
         again = api.mod_info()  # the folder's manifest keeps them for next time
         self.assertEqual((again["version"], again["author"], again["fingerprint"]), ("1.2.0", "Tristen", info["fingerprint"]))
         j = export("1.2.1")  # blank author and description: the old ones stay

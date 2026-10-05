@@ -17,7 +17,8 @@ from .mod_index import PAGE as MOD_LIST_PAGE
 REPO_URL = "https://github.com/sneadtristen6/R.U.S.E-2.0-Project"
 LINKS = {"wiki": f"{REPO_URL}/wiki", "discussions": f"{REPO_URL}/discussions",
          "help": f"{REPO_URL}/discussions/categories/help",
-         "mods": MOD_LIST_PAGE}  # the supported-mods list (MOD_FORMAT §15): see it, or add a mod to it
+         "mods": MOD_LIST_PAGE,  # the supported-mods list (MOD_FORMAT §15): see it, or add a mod to it
+         "guidelines": f"{MOD_LIST_PAGE}/blob/main/GUIDELINES.md"}  # what the list accepts
 BUG_CATEGORY = "bug-reports"      # the category's slug: .github/DISCUSSION_TEMPLATE/bug-reports.yml is its form
 APP_NAMES = {"studio": "RUSE Studio", "launcher": "RUSE Launcher"}  # as the form's "Which app?" lists them
 MESSAGE_MOST = 1500               # characters of a message that go into the link (a long URL gets refused)
