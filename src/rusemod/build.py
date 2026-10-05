@@ -142,7 +142,7 @@ def _map_readers() -> dict:
     from .newmap import NewMapError
     from .players import PlayersError
     from .roadnet import RoadNetError, parse_roads
-    from .scenario import ScenarioError, parse_moves, parse_spawns, parse_starts
+    from .scenario import ScenarioError, parse_moves, parse_removes, parse_spawns, parse_starts
     from .scenery import SceneryEditError, parse_erase, parse_objects
     return {
         "terrain.toml": (("stroke",), "a terrain file holds [[stroke]] tables",
@@ -150,10 +150,12 @@ def _map_readers() -> dict:
         "scenery.toml": (("object", "erase"), "a scenery file holds [[object]] and [[erase]] tables",
                          lambda d, rel: parse_objects(d.get("object", []), rel) + parse_erase(d.get("erase", []), rel),
                          SceneryEditError),
-        # moves first: they name the shipped items by their number, which starts and spawns (added at the end)
-        # don't shift
-        "scenario.toml": (("move", "start", "spawn"), "a scenario file holds [[move]], [[start]] and [[spawn]] tables",
-                          lambda d, rel: (parse_moves(d.get("move", []), rel) + parse_starts(d.get("start", []), rel)
+        # moves and removes first: they name the shipped items by their number, which starts and spawns (added at
+        # the end) don't shift, and a removed item keeps its place
+        "scenario.toml": (("move", "remove", "start", "spawn"),
+                          "a scenario file holds [[move]], [[remove]], [[start]] and [[spawn]] tables",
+                          lambda d, rel: (parse_moves(d.get("move", []), rel) + parse_removes(d.get("remove", []), rel)
+                                          + parse_starts(d.get("start", []), rel)
                                           + parse_spawns(d.get("spawn", []), rel)),
                           ScenarioError),
         "cover.toml": (("paint",), "a cover file holds [[paint]] tables",

@@ -263,6 +263,18 @@ def _save_checked(path: Path, text: str, read) -> None:
     ModEdits._write(path, text)
 
 
+def _scenario_tables(data: dict, where: str) -> tuple[list, list, list, list]:
+    """A scenario.toml's (moves, new starting points, spawns, removes), as the build reads them."""
+    return (scenario.parse_moves(data.get("move", []), where), scenario.parse_starts(data.get("start", []), where),
+            scenario.parse_spawns(data.get("spawn", []), where), scenario.parse_removes(data.get("remove", []), where))
+
+
+def _scenario_toml(moves: list, starts: list, spawns: list, removes: list, header: str) -> str:
+    """A scenario.toml holding all four kinds of edit (none is ever left out on a rewrite)."""
+    return (scenario.moves_toml(moves, header) + "\n" + scenario.removes_toml(removes) + "\n"
+            + scenario.starts_toml(starts) + "\n" + scenario.spawns_toml(spawns))
+
+
 def _copied(view: dict, copy) -> dict:
     """A shipped map's scenarios as a new map of it has them (`copy`: (name, newmap.NewMap); None: the map itself):
     only the one its entry loads (the entry map.toml names: a BATTLES map, an Operation or a campaign chapter; else
@@ -1597,13 +1609,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return view
 
     def _with_scenario_edits(self, pack: str, base: dict) -> dict:
-        """The map's scenarios as the current mod leaves them (a copy; the cached ones stay the game's)."""
-        moves, starts, spawns = self._read_scenario_all(pack)
-        if not moves and not spawns and not starts:
+        """The map's scenarios as the current mod leaves them (a copy; the cached ones stay the game's). Items it takes
+        out are marked `gone` (the map view shows them faded, to put back)."""
+        moves, starts, spawns, removes = self._read_scenario_tables(pack)
+        if not moves and not spawns and not starts and not removes:
             return base
         out = []
         for s in base["scenarios"]:
             s = {**s, "items": [dict(it) for it in s["items"]]}
+            for r in removes:
+                if r.file.lower() == s["file"].lower() and r.item < len(s["items"]):
+                    s["items"][r.item]["gone"] = True
             for m in moves:
                 if m.file.lower() == s["file"].lower() and m.item < len(s["items"]):
                     it = s["items"][m.item]
@@ -1726,31 +1742,37 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def _read_scenario_all(self, pack: str) -> tuple[list, list, list]:
         """(moves, new starting points, spawns) the current mod makes on this map's scenarios; none without a mod."""
+        return self._read_scenario_tables(pack)[:3]
+
+    def _read_scenario_removes(self, pack: str) -> list:
+        """The map's own design items the current mod takes out (scenario.Remove); none without a mod."""
+        return self._read_scenario_tables(pack)[3]
+
+    def _read_scenario_tables(self, pack: str) -> tuple[list, list, list, list]:
+        """(moves, new starting points, spawns, removes) of the current mod's scenario.toml for this map."""
         if self._map_dir() is None:
-            return [], [], []
+            return [], [], [], []
         path = self._scenario_file(pack)
         if not path.is_file():
-            return [], [], []
+            return [], [], [], []
         try:
-            data = tomllib.loads(path.read_text(encoding="utf-8"))
-            return (scenario.parse_moves(data.get("move", []), str(path)),
-                    scenario.parse_starts(data.get("start", []), str(path)),
-                    scenario.parse_spawns(data.get("spawn", []), str(path)))
+            return _scenario_tables(tomllib.loads(path.read_text(encoding="utf-8")), str(path))
         except (tomllib.TOMLDecodeError, UnicodeDecodeError, scenario.ScenarioError) as exc:
             raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
                               f"by hand.") from None
 
-    def _write_scenario_edits(self, pack: str, moves: list, spawns: list, starts: list | None = None) -> Path:
-        """Write the mod's scenario edits; `starts` None keeps the file's own new starting points."""
+    def _write_scenario_edits(self, pack: str, moves: list, spawns: list, starts: list | None = None,
+                              removes: list | None = None) -> Path:
+        """Write the mod's scenario edits; `starts` / `removes` None keep the file's own new starting points / the
+        map's items it takes out."""
         path = self._scenario_file(pack)
-        if starts is None:
-            starts = self._read_scenario_all(pack)[1]
-        if moves or spawns or starts:
-            text = (scenario.moves_toml(moves, self.SCENARIO_HEADER) + "\n" + scenario.starts_toml(starts) + "\n"
-                    + scenario.spawns_toml(spawns))
-            _save_checked(path, text, lambda data: (scenario.parse_moves(data.get("move", []), str(path)),
-                                                    scenario.parse_starts(data.get("start", []), str(path)),
-                                                    scenario.parse_spawns(data.get("spawn", []), str(path))))
+        if starts is None or removes is None:
+            _m, own_starts, _s, own_removes = self._read_scenario_tables(pack)
+            starts = own_starts if starts is None else starts
+            removes = own_removes if removes is None else removes
+        if moves or spawns or starts or removes:
+            _save_checked(path, _scenario_toml(moves, starts, spawns, removes, self.SCENARIO_HEADER),
+                          lambda data: _scenario_tables(data, str(path)))
         elif path.is_file():
             path.unlink()
         return path
@@ -1814,11 +1836,37 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return self.map_scenarios(pack)
 
     def scenario_put_back(self, pack: str, file: str, item: int) -> dict:
-        """Undo the current mod's move of item `item` (it goes back where the game has it)."""
+        """Undo the current mod's move of item `item`, or its taking it out (it's back where the game has it)."""
         with self._saving:
-            moves, spawns = self._read_scenario_edits(pack)
+            moves, starts, spawns, removes = self._read_scenario_tables(pack)
             moves = [m for m in moves if not (m.file.lower() == file.lower() and m.item == int(item))]
-            self._write_scenario_edits(pack, moves, spawns)
+            removes = [r for r in removes if not (r.file.lower() == file.lower() and r.item == int(item))]
+            self._write_scenario_edits(pack, moves, spawns, starts, removes)
+        return self.map_scenarios(pack)
+
+    def scenario_remove(self, pack: str, file: str, items) -> dict:
+        """Take the map's own design items `items` (a number, or a list of them) of scenario `file` out in the current
+        mod: the game leaves them out (scenario.Remove; LittleGroove's way, not yet seen in the game). A starting point
+        can only be moved. A move of an item taken out goes with it. Returns the map's scenarios as the mod leaves
+        them."""
+        base = self._base_scenario(pack, file)
+        numbers = sorted({int(i) for i in (items if isinstance(items, (list, tuple)) else [items])})
+        for i in numbers:
+            if not 0 <= i < len(base["items"]):
+                raise StudioError(f"{file} has no item {i}")
+            kind = base["items"][i]["kind"]
+            if kind == "StartingPoint":
+                # rule: seats-per-team
+                raise StudioError("A starting point can't be taken out: every player needs one. Move it instead.")
+            if kind not in scenario.KINDS_REMOVABLE:
+                raise StudioError(f"a {kind or 'plain item'} can't be taken out")
+        with self._saving:
+            moves, starts, spawns, removes = self._read_scenario_tables(pack)
+            taken = {(r.file.lower(), r.item) for r in removes}
+            removes += [scenario.Remove(file, i, base["items"][i]["kind"]) for i in numbers
+                        if (file.lower(), i) not in taken]
+            moves = [m for m in moves if not (m.file.lower() == file.lower() and m.item in numbers)]
+            self._write_scenario_edits(pack, moves, spawns, starts, removes)
         return self.map_scenarios(pack)
 
     def scenario_spawn(self, pack: str, file: str, unit: str, x: float, y: float, camp: int | None = scenario.NEUTRAL,
@@ -3382,9 +3430,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         with self._saving:
             if kind in ("spawn_neutral", "spawn_remove", "spawns_neutral_all", "spawns_remove_all"):
                 data = tomllib.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
-                moves = scenario.parse_moves(data.get("move", []), str(path))
-                starts = scenario.parse_starts(data.get("start", []), str(path))
-                spawns = scenario.parse_spawns(data.get("spawn", []), str(path))
+                moves, starts, spawns, removes = _scenario_tables(data, str(path))
                 if kind.endswith("_all"):  # every team spawn of that setup
                     hit = [i for i, s in enumerate(spawns) if s.file.lower() == str(fix.get("file", "")).lower()
                            and s.camp not in (None, scenario.NEUTRAL)]
@@ -3398,12 +3444,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                         spawns[k] = replace(spawns[k], camp=scenario.NEUTRAL)
                 else:
                     spawns = [s for i, s in enumerate(spawns) if i not in hit]
-                if moves or starts or spawns:
-                    text = (scenario.moves_toml(moves, self.SCENARIO_HEADER) + "\n" + scenario.starts_toml(starts)
-                            + "\n" + scenario.spawns_toml(spawns))
-                    _save_checked(path, text, lambda d: (scenario.parse_moves(d.get("move", []), str(path)),
-                                                         scenario.parse_starts(d.get("start", []), str(path)),
-                                                         scenario.parse_spawns(d.get("spawn", []), str(path))))
+                if moves or starts or spawns or removes:
+                    _save_checked(path, _scenario_toml(moves, starts, spawns, removes, self.SCENARIO_HEADER),
+                                  lambda d: _scenario_tables(d, str(path)))
                 else:
                     path.unlink()
                 done = (f"{len(hit)} team spawn(s) in {fix.get('file')}" if kind.endswith("_all") else fix.get("what")) \

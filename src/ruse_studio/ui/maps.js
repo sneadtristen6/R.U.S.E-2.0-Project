@@ -1537,6 +1537,7 @@ const SPAWN_KINDS = ["buildings", "ground", "infantry", "air"];
 // every start). Only the view changes, never the mod. ---
 const SCEN_LAYERS = ["starts", "cams", "depots", "buildings", "units", "zones", "towns"];
 const ICON_BASE = 0.042;  // an icon's height as a share of the view's, at size 100 %, close up
+const GONE_OPACITY = 0.35;  // a map item the mod takes out: still drawn, faded, so it can be put back
 scen.layers = Object.fromEntries(SCEN_LAYERS.map((k) => [k, true]));
 scen.iconSize = 1;
 try {
@@ -2117,8 +2118,10 @@ function drawScenario() {
         + `${it.what ? " · " + it.what : ""}${nation ? " · " + nation : ""}`
         + (it.camp === -1 || (it.mine && it.camp === null) ? ` · ${mv.words.scen_side_neutral}`
           : it.camp !== undefined && it.camp !== null ? ` · ${fill(mv.words.scen_side_n, { n: it.camp })}` : "")
-        + (it.mine ? ` · ${mv.words.scen_mine}` : it.moved ? ` · ${mv.words.scen_moved}` : "")
-        + (mv.words.scen_drag_tip ? ` · ${mv.words.scen_drag_tip}` : "");
+        + (it.mine ? ` · ${mv.words.scen_mine}` : it.gone ? ` · ${mv.words.scen_taken_out}`
+          : it.moved ? ` · ${mv.words.scen_moved}` : "")
+        + (mv.words.scen_drag_tip && !it.gone ? ` · ${mv.words.scen_drag_tip}` : "");
+      if (it.gone) m.material.opacity = GONE_OPACITY;  // taken out by the mod: faded, to put back
       m.userData.item = it.item;
       group.add(m);
     } else if (it.kind === "CircularZone" && it.radius) {
@@ -2138,8 +2141,12 @@ function drawScenario() {
       line.userData.label = it.name;
       zones.add(line);
     } else if ((it.kind === "LabelVille" || it.kind === "LabelMontagne") && (it.text || it.name) && scen.layers.towns) {
-      const sprite = mapLabel(it.text || it.name, it.kind === "LabelVille" ? "#ffffff" : "#e8d9a8", size * 0.012);
+      const sprite = mapLabel(it.text || it.name, scen.selected === it.item ? "#ffd34d"
+        : it.kind === "LabelVille" ? "#ffffff" : "#e8d9a8", size * 0.012);
       sprite.position.copy(at(it.x, it.y, pillar * 0.4));
+      sprite.userData.label = (it.text || it.name) + (it.gone ? ` · ${mv.words.scen_taken_out}` : "");
+      sprite.userData.item = it.item;  // picked to take it out (or put it back), dragged to move it
+      if (it.gone) sprite.material.opacity = GONE_OPACITY;
       group.add(sprite);
     }
   }
@@ -2345,12 +2352,14 @@ function renderScenTools() {
   $("scen-snap").checked = snapRoads;
   $("scen-snap-label").textContent = w.scen_snap_roads || "Stick to roads";
   snapRow.title = w.tip_scen_snap_roads || "";
+  renderScenClear(s);
   if (!mv.brush.mod && scen.tool) { scenNote(w.no_mod, "error"); return; }
   if (scen.tool === "move") {
     const it = s && scen.selected !== null ? s.items[scen.selected] : null;
     if (!it) { scenNote(w.scen_pick_item + (w.scen_cam_drag ? " " + w.scen_cam_drag : "")); return; }
     const parts = [fill(w.scen_pick_place, { what: it.kind === "StartingPoint"
-      ? fill(w.scen_start_place, { n: it.alliance || "?", p: it.place || 1 }) : w.scen_spawn })];
+      ? fill(w.scen_start_place, { n: it.alliance || "?", p: it.place || 1 })
+      : it.kind === "Spawn" ? w.scen_spawn : it.text || it.name || "" })];
     const n = $("scen-note");
     scenNote(parts[0]);
     if (it.kind === "StartingPoint" && it.cam && it.camera) {  // its camera turned: say how far, and offer it back
@@ -2366,9 +2375,48 @@ function renderScenTools() {
         : scenEdit(() => mv.api.scenario_put_back(mv.current, s.file, it.item)));
       n.append(" ", b);
     }
+    itemTakeOut(s, it, n);
   } else if (scen.tool === "spawn") scenNote(w.scen_spawn_help);
   else if (scen.tool === "start") scenNote(w.scen_start_help);
-  else scenNote(s && w.scen_drag_help ? w.scen_drag_help : "");
+  else {
+    scenNote(s && w.scen_drag_help ? w.scen_drag_help : "");
+    const it = s && scen.selected !== null ? s.items[scen.selected] : null;
+    if (it && mv.brush.mod) itemTakeOut(s, it, $("scen-note"));
+  }
+}
+
+// The picked item of the map's own taken out (the match leaves it out: StudioApi.scenario_remove, LittleGroove's
+// way), or put back: its depots and other spawns, and its town and hill names. Starting points can only be moved.
+function itemTakeOut(s, it, n) {
+  const w = mv.words;
+  if (it.mine || it.kind === "StartingPoint") return;
+  if (it.gone) {
+    const back = el("button", { type: "button", className: "link", textContent: w.scen_put_back, title: w.tip_scen_take_out });
+    back.addEventListener("click", () => scenEdit(() => mv.api.scenario_put_back(mv.current, s.file, it.item)));
+    n.append(" ", back);
+    return;
+  }
+  if (!["Spawn", "LabelVille", "LabelMontagne"].includes(it.kind)) return;
+  const out = el("button", { type: "button", className: "link", textContent: w.scen_take_out, title: w.tip_scen_take_out });
+  out.addEventListener("click", () => scenEdit(() => mv.api.scenario_remove(mv.current, s.file, [it.item])));
+  n.append(" ", out);
+}
+
+// Every depot, or every town and hill name, of the picked scenario taken out at once (the owner's blank D-Day,
+// 2026-10-05: "a blank blue map on the lowest terrain, with nothing on it").
+function renderScenClear(s) {
+  const w = mv.words, box = $("scen-clear");
+  box.replaceChildren();
+  if (!s || !mv.brush.mod) return;
+  const depots = s.items.filter((it) => it.kind === "Spawn" && !it.mine && !it.gone && it.group === "depot");
+  const names = s.items.filter((it) => (it.kind === "LabelVille" || it.kind === "LabelMontagne") && !it.gone);
+  for (const [items, word] of [[depots, w.scen_take_out_depots], [names, w.scen_take_out_names]]) {
+    if (!items.length) continue;
+    const b = el("button", { type: "button", className: "link", textContent: `${word} (${items.length})`,
+      title: w.tip_scen_take_out });
+    b.addEventListener("click", () => scenEdit(() => mv.api.scenario_remove(mv.current, s.file, items.map((it) => it.item))));
+    box.append(b, " ");
+  }
 }
 
 // Save a change, then draw the scenario as the mod leaves it now.
@@ -2432,7 +2480,7 @@ function grabAt(ev) {
     return it && it.cam ? { cam: it, s } : null;
   }
   const it = s.items.find((x) => x.item === hit.object.userData.item);
-  if (!it || !["StartingPoint", "Spawn"].includes(it.kind)) return null;
+  if (!it || !["StartingPoint", "Spawn", "LabelVille", "LabelMontagne"].includes(it.kind)) return null;
   const own = scen.group.children.find((o) => o.isGroup && o.userData.camItem === it.item);  // its camera moves with it
   return { it, s, objs: items.filter((o) => o.userData.item === it.item).concat(own ? [own] : []) };
 }
@@ -2444,6 +2492,12 @@ function grabStart(ev) {
   ev.preventDefault();
   ev.stopPropagation();  // the view doesn't turn under the drag
   if (!mv.brush.mod) { scenNote(mv.words.no_mod, "error"); return true; }
+  if (g.it && g.it.gone) {  // taken out: picked (to put back), never dragged
+    scen.selected = g.it.item;
+    drawScenario();
+    renderScenTools();
+    return true;
+  }
   const host = mv.gl.renderer.domElement.parentElement;
   host.setPointerCapture(ev.pointerId);
   if (g.cam) {

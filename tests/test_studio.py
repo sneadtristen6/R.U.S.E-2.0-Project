@@ -1120,6 +1120,27 @@ class ScenarioEdits(WithMod):
         with self.assertRaisesRegex(StudioError, "no scenario"):
             self.api.scenario_move("Blitz", "other.scenario", 0, 0.0, 0.0)
 
+    def test_the_maps_own_items_taken_out_and_put_back(self):
+        """LittleGroove's delete (the owner's blank D-Day, 2026-10-05): a map's own spawn taken out is kept in the mod
+        as a [[remove]], shown faded (`gone`) at its place and number; a move of it goes with it; Put back undoes it.
+        A starting point can only be moved."""
+        self.api.scenario_move("Blitz", "leveldesign.scenario", 1, 10.0, 20.0)
+        items = self.items(self.api.scenario_remove("Blitz", "leveldesign.scenario", [1, 1]))
+        self.assertEqual([(it["item"], it.get("gone", False), it.get("moved", False)) for it in items],
+                         [(0, False, False), (1, True, False)])  # (its move went with it)
+        data = tomllib.loads(self.file.read_text(encoding="utf-8"))
+        self.assertEqual((data.get("move"), data["remove"]),
+                         (None, [{"file": "leveldesign.scenario", "item": 1, "kind": "Spawn"}]))
+        self.api.scenario_add_start("Blitz", "leveldesign.scenario", 2, 500.0, 600.0)  # other edits keep the remove
+        self.assertEqual(len(tomllib.loads(self.file.read_text(encoding="utf-8"))["remove"]), 1)
+        with self.assertRaisesRegex(StudioError, "every player needs one"):
+            self.api.scenario_remove("Blitz", "leveldesign.scenario", 0)
+        with self.assertRaisesRegex(StudioError, "no item 7"):
+            self.api.scenario_remove("Blitz", "leveldesign.scenario", [7])
+        back = self.items(self.api.scenario_put_back("Blitz", "leveldesign.scenario", 1))
+        self.assertFalse(back[1].get("gone", False))
+        self.assertNotIn("remove", tomllib.loads(self.file.read_text(encoding="utf-8")))
+
     def test_a_start_camera_turned(self):
         """The camera ring: the turn is kept with the start's move (a start not moved gets one where it stands)."""
         start = self.items(self.api.map_scenarios("Blitz"))[0]

@@ -336,6 +336,69 @@ class Starts(unittest.TestCase):
         self.assertIn("2 starting point(s) added", notes[0])
 
 
+class Removes(unittest.TestCase):
+    """The map's own items taken out (LittleGroove's way): off the design item list the game loads, the object kept,
+    so every item keeps its number. Every item of the 102 shipped scenarios is on its list (not yet seen in the
+    game taken off)."""
+    MEMBER = "test\\map\\blitz\\leveldesign.scenario"
+
+    def test_a_spawn_taken_off_the_list(self):
+        from rusemod.ndf import local_ref, sub_values
+        from rusemod.scenario import view
+        s = Scenario.read(scenario())
+        s.remove(1)
+        back = Scenario.read(s.to_bytes())
+        self.assertEqual([(i.kind, i.listed) for i in back.items], [("StartingPoint", True), ("Spawn", False)])
+        self.assertEqual(back.items[1].position, (3000.0, 4000.0, 60.0))  # still there, at its number
+        holder = next(o for o in back.ndf.objects if back.ndf.classes[o.cls] == "TGameDesignItemList")
+        self.assertEqual([local_ref(x) for _pi, v in holder.props for x in sub_values(v)], [back.items[0].obj])
+        self.assertEqual([it.get("gone", False) for it in view(back)["items"]], [False, True])
+        with self.assertRaisesRegex(ScenarioError, "off the scenario's list already"):
+            back.remove(1)
+
+    def test_the_last_item_leaves_no_list(self):
+        """With nothing on it the list is left out, as 11 shipped scenarios have it."""
+        s = Scenario.read(scenario())
+        s.remove(1)
+        s.remove(0)
+        back = Scenario.read(s.to_bytes())
+        holder = next(o for o in back.ndf.objects if back.ndf.classes[o.cls] == "TGameDesignItemList")
+        self.assertEqual(holder.props, [])
+        self.assertEqual([i.listed for i in back.items], [False, False])
+
+    def test_the_mod_file(self):
+        import tomllib
+        from rusemod.scenario import Remove, parse_removes, removes_toml
+        removes = [Remove("leveldesign_3v3_v01.scenario", 41, "Spawn"),
+                   Remove("leveldesign_3v3_v01.scenario", 3, "LabelVille")]
+        self.assertEqual(parse_removes(tomllib.loads(removes_toml(removes))["remove"]), removes)
+        for bad, why in (({"file": "a.scenario", "item": 0, "kind": "StartingPoint"}, "every player needs one"),
+                         ({"file": "a.scenario", "item": 0, "kind": "Tree"}, "kind must be one of"),
+                         ({"file": "a.scenario", "item": -1, "kind": "Spawn"}, "whole number, 0 or more"),
+                         ({"file": "a.scenario", "item": 1.5, "kind": "Spawn"}, "whole number, 0 or more"),
+                         ({"file": "a.txt", "item": 0, "kind": "Spawn"}, "scenario's name"),
+                         ({"file": "a.scenario", "kind": "Spawn"}, "item is missing"),
+                         ({"file": "a.scenario", "item": 0, "kind": "Spawn", "x": 1}, "unknown key 'x'")):
+            with self.assertRaisesRegex(ScenarioError, why):
+                parse_removes([bad])
+
+    def test_applied_with_the_moves(self):
+        from rusemod.scenario import Move, Remove, apply_moves
+        read = {self.MEMBER: scenario()}.get
+        new, notes = apply_moves(read, "Blitz", [Move("leveldesign.scenario", 0, "StartingPoint", 1500.0, 2500.0),
+                                                 Remove("leveldesign.scenario", 1, "Spawn"),
+                                                 Remove("leveldesign.scenario", 1, "Spawn")])  # two mods: once is enough
+        back = Scenario.read(new[self.MEMBER])
+        self.assertEqual([(i.position[:2], i.listed) for i in back.items], [((1500.0, 2500.0), True),
+                                                                             ((3000.0, 4000.0), False)])
+        self.assertIn("1 item(s) moved, 1 of its own item(s) taken out", notes[0])
+        with self.assertRaisesRegex(ScenarioError, "item 0 is a StartingPoint, not a Spawn: the mod was made for "
+                                                   "another version of this map"):
+            apply_moves(read, "Blitz", [Remove("leveldesign.scenario", 0, "Spawn")])
+        with self.assertRaisesRegex(ScenarioError, "has 2 design items, not 6"):
+            apply_moves(read, "Blitz", [Remove("leveldesign.scenario", 5, "Spawn")])
+
+
 class Spawns(unittest.TestCase):
     """New spawns as the game takes them: a skirmish game spawns only neutral items (camp -1), a spawn without a
     Camp reads as camp 0, a depot slab starts with ChampInteger trucks, and every shipped spawn has the ground's z."""

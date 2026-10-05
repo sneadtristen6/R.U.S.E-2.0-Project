@@ -46,6 +46,8 @@ class Item:
     rotation: float      # radians (0 when the item has none)
     values: dict         # the AddOn's own values: name -> number or text
     obj: int = -1        # its object in the scenario's NDF (for moving it)
+    listed: bool = True  # on the scenario's design item list, which is what the game loads (Scenario.remove takes it
+                         # off; every item of the 102 shipped scenarios is on it)
 
 
 class _Reader:
@@ -236,6 +238,35 @@ class Scenario:
         self.changed = True
         return next(i for i, it in enumerate(self.items) if it.obj == item)
 
+    def remove(self, item: int) -> None:
+        """Take design item number `item` off the scenario's design item list, which is what the game loads: the
+        item is left out of the match. Its object stays in the file, named by nothing, so every other item keeps
+        its number (LittleGroove's RUSE-Mod-Manager deletes a placement the same way). No shipped scenario has an
+        item off its list; not yet seen in the game."""
+        from .ndf import Value
+        it = self.items[item]
+        nd = self.ndf
+        lists = [o for o in nd.objects if nd.classes[o.cls] == "TGameDesignItemList"]
+        if len(lists) != 1:
+            raise ScenarioError("this scenario's design items aren't in one list")
+        holder = lists[0]
+        for k, (pi, v) in enumerate(holder.props):
+            if v.tc != 0x11:
+                continue
+            entries = sub_values(v)
+            kept = [x for x in entries if local_ref(x) != it.obj]
+            if len(kept) == len(entries):
+                raise ScenarioError(f"design item {item} ({it.kind}) is off the scenario's list already")
+            if kept:
+                holder.props[k] = (pi, Value(0x11, struct.pack("<I", len(kept)) + b"".join(x.encode() for x in kept)))
+            else:  # no item left: the list is left out, as 11 shipped scenarios have it
+                del holder.props[k]
+            break
+        else:
+            raise ScenarioError(f"design item {item} ({it.kind}) is off the scenario's list already")
+        it.listed = False
+        self.changed = True
+
     def places(self) -> dict[int, set[int]]:
         """Where players can start: {team (AllianceNum): {places (AlliancePriority)}}."""
         out: dict[int, set[int]] = {}
@@ -367,6 +398,8 @@ def with_checksum(data: bytes) -> bytes:
 def _items(nd: Ndf) -> list[Item]:
     names = [p for p, _ in nd.props]
     objs = [{names[pi]: v for pi, v in o.props} for o in nd.objects]
+    listed = {local_ref(x) for o in nd.objects if nd.classes[o.cls] == "TGameDesignItemList"
+              for _pi, v in o.props if v.tc == 0x11 for x in sub_values(v)}
     out = []
     for o, props in zip(nd.objects, objs):
         if nd.classes[o.cls] != "TGameDesignItem" or "Position" not in props:
@@ -379,7 +412,8 @@ def _items(nd: Ndf) -> list[Item]:
             kind = nd.classes[nd.objects[addon].cls].removeprefix("TGameDesignAddOn_")
             for name, v in objs[addon].items():
                 values[name] = _plain(nd, v)
-        out.append(Item(kind, pos, rot, values, nd.objects.index(o)))
+        index = nd.objects.index(o)
+        out.append(Item(kind, pos, rot, values, index, index in listed))
     return out
 
 
@@ -658,6 +692,8 @@ def view(s: "Scenario") -> dict:
         elif it.kind in ("LabelVille", "LabelMontagne"):
             text = v.get("ChampTexte")
             entry["text"] = text if isinstance(text, str) and not all(c in "0123456789abcdef" for c in text) else entry["name"]
+        if not it.listed:
+            entry["gone"] = True  # off the design item list: the game leaves it out (Scenario.remove)
         items.append(entry)
     return {"zones": zones, "items": items}
 
@@ -724,6 +760,52 @@ def _camera_turn(m: dict) -> float | None:
     if not math.isfinite(turn):
         raise ValueError
     return turn
+
+
+KINDS_REMOVABLE = ("Spawn", "LabelVille", "LabelMontagne", "CircularZone", "RectangleZone", "Name")  # not a start:
+# every player needs one (move it instead)
+
+
+@dataclass
+class Remove:
+    """One of the map's own design items taken out: in scenario `file`, item number `item`, which must be a `kind`
+    there (Scenario.remove: off the design item list, so the game leaves it out)."""
+    file: str
+    item: int
+    kind: str
+
+
+def parse_removes(items, where: str = "scenario.toml") -> list[Remove]:
+    out = []
+    for n, m in enumerate(items or [], start=1):
+        at = f"{where}: remove {n}"
+        if not isinstance(m, dict):
+            raise ScenarioError(f"{at} isn't a table")
+        extra = sorted(set(m) - {"file", "item", "kind"})
+        if extra:
+            raise ScenarioError(f"{at}: unknown key {extra[0]!r}")
+        for k in ("file", "item", "kind"):
+            if k not in m:
+                raise ScenarioError(f"{at}: {k} is missing")
+        f = str(m["file"])
+        if not f.lower().endswith(".scenario") or "/" in f or "\\" in f:
+            raise ScenarioError(f"{at}: file must be a scenario's name, like leveldesign.scenario")
+        if m["kind"] == "StartingPoint":
+            # rule: seats-per-team
+            raise ScenarioError(f"{at}: a starting point can't be removed, every player needs one: move it instead")
+        if m["kind"] not in KINDS_REMOVABLE:
+            raise ScenarioError(f"{at}: kind must be one of {', '.join(KINDS_REMOVABLE)}")
+        if isinstance(m["item"], bool) or not isinstance(m["item"], int) or m["item"] < 0:
+            raise ScenarioError(f"{at}: item is a whole number, 0 or more")
+        out.append(Remove(f, m["item"], str(m["kind"])))
+    return out
+
+
+def removes_toml(removes: list[Remove]) -> str:
+    lines = []
+    for m in removes:
+        lines += ["[[remove]]", f'file = "{m.file}"', f"item = {m.item}", f'kind = "{m.kind}"', ""]
+    return "\n".join(lines)
 
 
 def moves_toml(moves: list[Move], header: str = "") -> str:
@@ -974,11 +1056,11 @@ def _to_segment(x: float, y: float, a, b) -> float:
 
 def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
                 mission=None) -> tuple[dict[str, bytes], list[str]]:
-    """Apply a mod's scenario edits (in order: Move and Spawn) to a map's scenarios. `read(member)` gives a
-    DataMap_Win.dat member's bytes, or None. `skirmish`: the map's scenarios (file names, lower case) that its
+    """Apply a mod's scenario edits (in order: Move, Remove, Start and Spawn) to a map's scenarios. `read(member)` gives
+    a DataMap_Win.dat member's bytes, or None. `skirmish`: the map's scenarios (file names, lower case) that its
     skirmish and online entries load (rusemod.players.skirmish_files). Returns ({member: new bytes}, report lines).
-    A move whose file or item isn't there, or whose item is another kind (the file isn't the one the mod was made
-    for), raises ScenarioError; so does a spawn in a scenario that isn't there, and a spawn for a player's camp in a
+    A move or a remove whose file or item isn't there, or whose item is another kind (the file isn't the one the mod
+    was made for), raises ScenarioError; so does a spawn in a scenario that isn't there, and a spawn for a player's camp in a
     skirmish scenario (a skirmish game spawns only neutral items: the game leaves the others out without a word).
     `mission(file)` gives a scenario's camps from its mission script (rusemod.missions.Camp list; [] for none), and
     `warn(message)` is told of a spawn for a camp the mission doesn't list (the game's launch code gives a spawn to its
@@ -1068,6 +1150,10 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
         if s.items[m.item].kind != m.kind:
             raise ScenarioError(f"{map_pack}: {m.file} item {m.item} is a {s.items[m.item].kind or 'plain item'}, "
                                 f"not a {m.kind}: the mod was made for another version of this map")
+        if isinstance(m, Remove):
+            if s.items[m.item].listed:  # (two mods may both take it out: once is enough)
+                s.remove(m.item)
+            continue
         ox, oy = s.items[m.item].position[:2]
         s.move(m.item, m.x, m.y, m.z, rotation=m.rotation)  # an item without a rotation can't be turned: move() says so
         if m.kind == "StartingPoint":  # its warm-up camera comes along (a shared path is copied first)
@@ -1086,8 +1172,10 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
         mine = [m for m in moves if (folder + m.file).lower() == member.lower()]
         moved, spawned = sum(1 for m in mine if isinstance(m, Move)), sum(1 for m in mine if isinstance(m, Spawn))
         started = sum(1 for m in mine if isinstance(m, Start))
+        removed = len({m.item for m in mine if isinstance(m, Remove)})
         notes.append(f"{map_pack}: {member.rsplit(chr(92), 1)[-1]}: " + ", ".join(
-            p for p in (f"{moved} item(s) moved" if moved else "", f"{started} starting point(s) added" if started else "",
+            p for p in (f"{moved} item(s) moved" if moved else "", f"{removed} of its own item(s) taken out" if removed
+                        else "", f"{started} starting point(s) added" if started else "",
                         f"{spawned} spawn(s) added" if spawned else "") if p))
     out = {member: s.to_bytes() for member, s in files.values()}
     out.update({member: cam.to_bytes() for member, cam in cams.values() if cam is not None and cam.changed})

@@ -557,6 +557,21 @@ camera = 1.57                          # radians, optional, a starting point onl
   start as before, from another side. A turn of a start that isn't moved is a move to where it stands. Not yet seen
   in the game.
 
+A mod takes the map's own items out, one table each (the Studio's Take out, or Take out every depot / every map name):
+
+```toml
+[[remove]]
+file = "leveldesign_3v3_v01.scenario"
+item = 41                              # the item's number in that file, as for [[move]]
+kind = "Spawn"                         # Spawn (a depot, a unit, a building), LabelVille, LabelMontagne, Name,
+                                       # CircularZone or RectangleZone: never a StartingPoint, every player needs one
+```
+
+- The match leaves the item out: the build takes it off the list of items the scenario starts with. The item stays
+  in the file, so every other item keeps its number and the mod's other moves still name the right ones
+  (LittleGroove's RUSE-Mod-Manager deletes a placement the same way). Not yet seen in the game.
+- `kind` guards as it does for a move. Two mods taking one item out: once is enough.
+
 A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
 Operations spawn theirs this way; skirmish maps spawn only their supply depots):
 
