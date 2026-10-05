@@ -52,6 +52,7 @@ never expects ground it can't reach from the rest, and an order onto such ground
 from __future__ import annotations
 
 import math
+import os
 import struct
 from array import array
 from dataclasses import dataclass, field
@@ -1275,17 +1276,26 @@ def blocks_toml(blocks: list[Block], header: str = "") -> str:
     return "\n".join(lines)
 
 
-def wet_opens(blocks, water, step: float = 4 * STEP) -> list[tuple[Block, tuple[float, float]]]:
+def wet_opens(blocks, water, step: float = 4 * STEP, many=None) -> list[tuple[Block, tuple[float, float]]]:
     """The opens (Block.open) with water inside them, each with a wet spot (`water(x, y)`: bridges.Water.at), sampled
     every `step`: units given ground there stand on the bed under the water (an opened river puts them on the
-    riverbed), which the build allows with a warning."""
+    riverbed), which the build allows with a warning. `many(xs, ys)`: `water` for many points at once
+    (bridges.Water.at_many), the same answers: an open's samples are then weighed all together."""
     out = []
     for b in blocks:
         if not b.open:
             continue
         k = max(1, int(b.radius // step))
-        wet = [(i * i + j * j, (b.x + i * step, b.y + j * step)) for j in range(-k, k + 1) for i in range(-k, k + 1)
-               if (i * step) ** 2 + (j * step) ** 2 < b.radius ** 2 and water(b.x + i * step, b.y + j * step)]
+        if many is not None:
+            rr = b.radius ** 2
+            ring = [(i, j) for j in range(-k, k + 1) for i in range(-k, k + 1) if (i * step) ** 2 + (j * step) ** 2 < rr]
+            xs = [b.x + i * step for i, _j in ring]
+            ys = [b.y + j * step for _i, j in ring]
+            wet = [(i * i + j * j, (x, y)) for (i, j), x, y, w in zip(ring, xs, ys, many(xs, ys)) if w]
+        else:
+            wet = [(i * i + j * j, (b.x + i * step, b.y + j * step)) for j in range(-k, k + 1)
+                   for i in range(-k, k + 1)
+                   if (i * step) ** 2 + (j * step) ** 2 < b.radius ** 2 and water(b.x + i * step, b.y + j * step)]
         if wet:
             out.append((b, min(wet)[1]))  # the wet spot nearest its middle
     return out
@@ -1305,11 +1315,20 @@ def replace_buffers(win: bytes, new: dict) -> bytes:
     return bytes(out)
 
 
-def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None) -> tuple[dict, list[str]]:
+PARALLEL_FROM = 400  # blocks and opens in each graph from which the two graphs go on two cores (a worker program
+                     # takes about a second to start: a small map's movement is done sooner on one)
+
+
+def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None,
+                 workers: int | None = None) -> tuple[dict, list[str]]:
     """({member: new mapinfo.win}, notes) for one map; `read(member)` gives a DataMap_Win.dat file's bytes or None.
     Blocks and opens (Block.open) apply in order, a run of blocks at once (Graph.block), then a run of opens
     (Graph.open_ground), and so on: where two meet, the later one wins. The opens that opened nothing in any graph
-    they name (the ground was open already, or they reach no ground units use) go into `idle`."""
+    they name (the ground was open already, or they reach no ground units use) go into `idle`.
+
+    The two graphs (infantry, vehicles) share nothing, so on a big map they are worked on at once, the infantry's in a
+    worker program (`workers`: 2 or more lets it, 1 doesn't; None: when each graph has PARALLEL_FROM blocks and opens
+    or more). The bytes, the notes and the answers kept (rusemod.solved) are the same as one after the other."""
     from ruse_mod_engine import sdb
     from .cover import PACK, member
     name = member(pack)
@@ -1317,63 +1336,111 @@ def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None)
     if win is None:
         raise NavError(f"{pack} has no {name} in {PACK}, so its movement can't be changed")
     bufs = sdb.split_mapinfo(win)[1]
-    new, notes, roads = {}, [], []
+    jobs = []
+    for k, what in ((1, "infantry"), (2, "vehicles")):
+        mine = [(i, b) for i, b in enumerate(blocks) if k in UNITS[b.units]]
+        if mine:
+            jobs.append((bufs[k], bufs[0], k, what, mine))
+    big = min((len(j[4]) for j in jobs), default=0) >= PARALLEL_FROM and (os.cpu_count() or 1) > 1
+    both = len(jobs) == 2 and (big if workers is None else workers >= 2)
+    done = _two_graphs(jobs) if both else [_one_graph(*job) for job in jobs]
+    new, notes, opened = {}, [], set()  # opened: the opens (their numbers in `blocks`) that opened something
+    for (_raw, _roads, k, _what, _mine), (data, said, opened_here) in zip(jobs, done):
+        new[k] = data
+        notes += said
+        opened |= opened_here
+    if idle is not None:
+        idle += [b for i, b in enumerate(blocks) if b.open and i not in opened and not b.spare]
+    return {name: replace_buffers(win, new)}, notes
+
+
+def _one_graph(raw: bytes, roads_raw: bytes, k: int, what: str, mine: list) -> tuple[bytes, list[str], set[int]]:
+    """apply_blocks for one graph (buffer `k` of mapinfo.win, `raw`): its new bytes, its notes and the numbers of the
+    opens that opened something in it. `roads_raw`: buffer 0, the road network, read only if a crossing's road needs
+    following."""
+    notes, roads, opened = [], [], set()
 
     def road_net():  # the road network (buffer 0), read once if a crossing's road needs following
         if not roads:
             from .roadnet import RoadNet
-            roads.append(RoadNet.read(bufs[0]))
+            roads.append(RoadNet.read(roads_raw))
         return roads[0]
-    opened = set()  # the opens (their numbers in `blocks`) that opened something in a graph
-    for k, what in ((1, "infantry"), (2, "vehicles")):
-        mine = [(i, b) for i, b in enumerate(blocks) if k in UNITS[b.units]]
-        if not mine:
+    g = Graph.read(raw)
+    runs: list[list] = []  # [open?, [(number, Block)]]: blocks and opens in order, each run applied at once
+    for i, b in mine:
+        if runs and runs[-1][0] == b.open:
+            runs[-1][1].append((i, b))
+        else:
+            runs.append([b.open, [(i, b)]])
+    for is_open, run in runs:
+        zones = [(b.x, b.y, b.radius) for _i, b in run]
+        if is_open:
+            g, c, left, under = _open_what_fits(g, run)
+            idle_here = set(c["idle"])
+            opened |= {run[j][0] for j in range(len(run)) if j not in idle_here}
+            notes.append(f"{what}: {len(zones)} open(s); {c['added']} circle(s) and {c['linked']} link(s) added, "
+                         f"{c['local']} circle(s) in towns' and bridges' own movement")
+            if left:
+                notes.append(f"{what}: the map's movement has no room for all of the dried bed: the {left} "
+                             f"smallest of its zones (under {under / METRE:.0f} m, by its shores) stay closed to "
+                             f"units; the rest is opened")
+            if c["left_out"]:
+                notes.append(f"{what}: {c['left_out']} circle(s) left out: ground no unit could reach from the "
+                             f"rest (an order onto it would crash the game)")
             continue
-        g = Graph.read(bufs[k])
-        runs: list[list] = []  # [open?, [(number, Block)]]: blocks and opens in order, each run applied at once
-        for i, b in mine:
-            if runs and runs[-1][0] == b.open:
-                runs[-1][1].append((i, b))
-            else:
-                runs.append([b.open, [(i, b)]])
-        for is_open, run in runs:
-            zones = [(b.x, b.y, b.radius) for _i, b in run]
-            if is_open:
-                g, c, left, under = _open_what_fits(g, run)
-                idle_here = set(c["idle"])
-                opened |= {run[j][0] for j in range(len(run)) if j not in idle_here}
-                notes.append(f"{what}: {len(zones)} open(s); {c['added']} circle(s) and {c['linked']} link(s) added, "
-                             f"{c['local']} circle(s) in towns' and bridges' own movement")
-                if left:
-                    notes.append(f"{what}: the map's movement has no room for all of the dried bed: the {left} "
-                                 f"smallest of its zones (under {under / METRE:.0f} m, by its shores) stay closed to "
-                                 f"units; the rest is opened")
-                if c["left_out"]:
-                    notes.append(f"{what}: {c['left_out']} circle(s) left out: ground no unit could reach from the "
-                                 f"rest (an order onto it would crash the game)")
-                continue
-            # never shrink a circle that owns a local map (a town, a bridge of the map's): the game decides what is
-            # ground inside such a circle from its local map, so shrinking it opens everything the local map kept
-            # closed, water beside the map's own bridges included (seen in the game, 2026-10-01: an infantry squad
-            # standing in the river beside a bridge of the map's own, on a map where the mod had only placed
-            # buildings). The block goes into those local maps instead (Graph.block walks them).
-            c = g.block(zones, keep_owners=True)
-            notes.append(f"{what}: {len(zones)} block(s); {c['emptied']} circle(s) emptied, {c['shrunk']} shrunk, "
-                         f"{c['links']} link(s) and {c['crossings']} crossing(s) taken out; {c['added']} circle(s) "
-                         f"and {c['linked']} link(s) added to fill the ground back")
-        zones = [(b.x, b.y, b.radius) for _i, b in mine if not b.open]
-        cut = _drop_cut_off(g)
-        if cut:
-            notes.append(f"{what}: {cut} circle(s) the blocks cut off from the rest taken out too (no unit could "
-                         f"reach them, and an order onto them crashes the game)")
-        through = g.drop_crossings_through(road_net, zones) if zones else 0
-        if through:
-            notes.append(f"{what}: {through} crossing(s) whose road ran through a block taken out (units routed "
-                         f"along that road drove through it; the road stays for supply trucks)")
-        new[k] = g.to_bytes()
-    if idle is not None:
-        idle += [b for i, b in enumerate(blocks) if b.open and i not in opened and not b.spare]
-    return {name: replace_buffers(win, new)}, notes
+        # never shrink a circle that owns a local map (a town, a bridge of the map's): the game decides what is
+        # ground inside such a circle from its local map, so shrinking it opens everything the local map kept
+        # closed, water beside the map's own bridges included (seen in the game, 2026-10-01: an infantry squad
+        # standing in the river beside a bridge of the map's own, on a map where the mod had only placed
+        # buildings). The block goes into those local maps instead (Graph.block walks them).
+        c = g.block(zones, keep_owners=True)
+        notes.append(f"{what}: {len(zones)} block(s); {c['emptied']} circle(s) emptied, {c['shrunk']} shrunk, "
+                     f"{c['links']} link(s) and {c['crossings']} crossing(s) taken out; {c['added']} circle(s) "
+                     f"and {c['linked']} link(s) added to fill the ground back")
+    zones = [(b.x, b.y, b.radius) for _i, b in mine if not b.open]
+    cut = _drop_cut_off(g)
+    if cut:
+        notes.append(f"{what}: {cut} circle(s) the blocks cut off from the rest taken out too (no unit could "
+                     f"reach them, and an order onto them crashes the game)")
+    through = g.drop_crossings_through(road_net, zones) if zones else 0
+    if through:
+        notes.append(f"{what}: {through} crossing(s) whose road ran through a block taken out (units routed "
+                     f"along that road drove through it; the road stays for supply trucks)")
+    return g.to_bytes(), notes, opened
+
+
+def _graph_job(job: tuple, given: dict | None) -> tuple:
+    """In a worker program: _one_graph with the answers in use (rusemod.solved), and what it did with them."""
+    store = solved.Solved(given) if given is not None else None
+    with solved.using(store):
+        out = _one_graph(*job)
+    return out, (store.used, store.found, store.taken) if store is not None else None
+
+
+def _two_graphs(jobs: list) -> list:
+    """_one_graph for both graphs at once: the first in a worker program, the second here. A worker program that
+    can't start leaves both to this program, one after the other (the same answer, later)."""
+    from concurrent.futures import ProcessPoolExecutor
+    store = solved._ACTIVE[-1] if solved._ACTIVE else None
+    try:
+        pool = ProcessPoolExecutor(max_workers=1)
+        there = pool.submit(_graph_job, jobs[0], store.given if store is not None else None)
+    except (OSError, RuntimeError):
+        return [_one_graph(*job) for job in jobs]
+    with pool:
+        here = _one_graph(*jobs[1])
+        try:
+            first, kept = there.result()
+        except NavError:
+            raise
+        except Exception:  # noqa: BLE001 - a worker program that died (not a refusal): the graph is worked out here
+            first, kept = _one_graph(*jobs[0]), None
+    if kept is not None and store is not None:
+        used, found, taken = kept
+        store.used.update(used)
+        store.found.update(found)
+        store.taken += taken
+    return [first, here]
 
 
 def _open_what_fits(g: "Graph", run: list) -> tuple["Graph", dict, int, float]:
@@ -1959,6 +2026,21 @@ RING = 24  # with no more room than this on a grid, the places round a new circl
 TILE = 32  # squares whose spots have too little room to reach it
 
 
+_WHOLE: list = []  # [rusemod.navnp, or None without numpy], looked for once
+
+
+def whole_arrays():
+    """rusemod.navnp, the grid of spots (_Spots) on whole grids, when numpy is there (the apps carry it); None without
+    it: the loops below then do it, the same rooms, slower."""
+    if not _WHOLE:
+        try:
+            from . import navnp
+            _WHOLE.append(navnp)
+        except ImportError:
+            _WHOLE.append(None)
+    return _WHOLE[0]
+
+
 class _Spots:
     """The spots new circles may go on when ground is opened (_grow), as a grid: the points of the 2 STEP grid inside
     `box` (x0, y0, x1, y1) that lie `least` or more inside a zone (x, y, r), each with its room: how deep it lies in
@@ -1990,10 +2072,16 @@ class _Spots:
         most = int(max(r for _x, _y, r in zones) // STEP)  # no spot has more room than the largest zone's radius
         # a byte each while the rooms fit one (searched at once for the spots of one room: walk); wider numbers past it
         self.wide = None if most < 2 ** 8 else "H" if most < 2 ** 16 else "I" if most < 2 ** 32 else "Q"
-        room = self.room = bytearray(ni * nj) if self.wide is None else \
-            array(self.wide, bytes(ni * nj * array(self.wide).itemsize))
         self.due = bytearray(ni * nj)
         self._spans, self._rings, self._tiles, self._places, self._zero = {}, {}, None, None, None
+        whole = whole_arrays()
+        if whole is not None:  # (numpy: each zone's spots for its whole square at once; the same rooms and top)
+            raw, self.top = whole.spot_rooms(zones, least, i0, j0, ni, nj, step, STEP,
+                                             {None: "uint8", "H": "uint16", "I": "uint32", "Q": "uint64"}[self.wide])
+            self.room = bytearray(raw) if self.wide is None else array(self.wide, raw)
+            return
+        room = self.room = bytearray(ni * nj) if self.wide is None else \
+            array(self.wide, bytes(ni * nj * array(self.wide).itemsize))
         kinds: dict = {}  # zones of one radius whose middles sit alike in their grid squares hold the same spots
         spare = 400000    # the most spots those lists may hold between them (some tens of megabytes)
         top = 0

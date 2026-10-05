@@ -75,6 +75,47 @@ class Water:
                 return True
         return False
 
+    PART = 4096  # points weighed against a bucket's triangles at once (its arrays stay some tens of megabytes)
+
+    def at_many(self, xs, ys) -> list[bool]:
+        """`at` for many points at once: with numpy (rusemod.numpy2) each bucket's points against all its triangles in
+        one go, the same sums in the same order (+, -, *, / only, so to the last bit), so the same answers; without it,
+        one point after another."""
+        try:
+            from .numpy2 import np
+        except ImportError:
+            return [self.at(x, y) for x, y in zip(xs, ys)]
+        x, y = np.asarray(xs, dtype=np.float64), np.asarray(ys, dtype=np.float64)
+        out = np.zeros(len(x), dtype=bool)
+        if not len(x):
+            return []
+        gx, gy = np.floor_divide(x, self.bucket), np.floor_divide(y, self.bucket)
+        keys = np.stack([gx, gy], axis=1)
+        order = np.lexsort((gy, gx))
+        cut = np.flatnonzero((np.diff(keys[order], axis=0) != 0).any(axis=1)) + 1
+        tris = getattr(self, "_arrays", None)
+        if tris is None:
+            tris = self._arrays = {}
+        for part in np.split(order, cut):
+            key = (int(keys[part[0], 0]), int(keys[part[0], 1]))
+            if key not in self.grid:
+                continue
+            t = tris.get(key)
+            if t is None:
+                t = tris[key] = np.array(self.grid[key], dtype=np.float64)  # (triangles, 3 corners, x y)
+            a0, a1, b0, b1, c0, c1 = t[:, 0, 0], t[:, 0, 1], t[:, 1, 0], t[:, 1, 1], t[:, 2, 0], t[:, 2, 1]
+            den = (b1 - c1) * (a0 - c0) + (c0 - b0) * (a1 - c1)
+            live = den != 0
+            for at in range(0, len(part), self.PART):
+                p = part[at:at + self.PART]
+                px, py = x[p][:, None], y[p][:, None]
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    l1 = ((b1 - c1) * (px - c0) + (c0 - b0) * (py - c1)) / den
+                    l2 = ((c1 - a1) * (px - c0) + (a0 - c0) * (py - c1)) / den
+                    inside = live & (l1 >= -1e-9) & (l2 >= -1e-9) & (1.0 - l1 - l2 >= -1e-9)
+                out[p] = inside.any(axis=1)
+        return out.tolist()
+
 
 class Ground:
     """A map's ground mesh (triangle list 0) bucketed by place: its height at a point, fast. Tms.height_at scans every

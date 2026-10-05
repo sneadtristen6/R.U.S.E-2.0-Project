@@ -519,7 +519,8 @@ def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs, find_map=Non
         map_arc = entry[1] if entry else open_pack(map_path)
         e = map_arc.find("output\\highdef.tms")
         ground = (entry[2].get(e.path) if entry else None) or bytes(map_arc.read(e))
-        return wet_opens(blocks, Water(Tms(ground)).at)
+        water = Water(Tms(ground))
+        return wet_opens(blocks, water.at, many=water.at_many)
     except (KeyError, ValueError, struct.error, zlib.error):
         return []
 

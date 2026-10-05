@@ -60,6 +60,24 @@ def sunk(sym, x, y, z):
 
 
 class Crossings(unittest.TestCase):
+    def test_many_points_at_once_give_what_one_at_a_time_does(self):
+        """Water.at_many (numpy when it's there): the same answer as Water.at for every point, on the water's edges
+        and corners too, and a point in a bucket with no water."""
+        import random
+        water = Water(Tms(MESH))
+        rng = random.Random(5)
+        xs = [rng.uniform(-200.0, 2200.0) for _ in range(3000)] + [0.0, 125.0, 500.0, 1000.0, 62.5, 40000.0]
+        ys = [rng.uniform(-200.0, 600.0) for _ in range(3000)] + [0.0, 125.0, 125.0, 0.0, 62.5, 40000.0]
+        xs += [float(x) for x in range(0, 1001, 25)]
+        ys += [125.0 if k % 2 else 0.0 for k in range(len(range(0, 1001, 25)))]
+        self.assertEqual(water.at_many(xs, ys), [water.at(x, y) for x, y in zip(xs, ys)])
+        self.assertIn(True, water.at_many(xs, ys))
+        self.assertEqual(water.at_many([], []), [])
+        opens = [nav.Block(500.0, 60.0, 3000.0, open=True), nav.Block(30000.0, 30000.0, 3000.0, open=True),
+                 nav.Block(990.0, 130.0, 700.0, open=True)]
+        self.assertEqual(nav.wet_opens(opens, water.at, step=25.0, many=water.at_many),
+                         nav.wet_opens(opens, water.at, step=25.0))
+
     def test_water_found_along_a_road(self):
         water = Water(Tms(MESH))
         self.assertTrue(water.at(500.0, 60.0))

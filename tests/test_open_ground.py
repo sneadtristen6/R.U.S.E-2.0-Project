@@ -92,6 +92,22 @@ class InOrder(unittest.TestCase):
         bufs = sdb.split_mapinfo(new[member("Blitz")])[1]
         return nav.Graph.read(bufs[1]), nav.Graph.read(bufs[2]), idle, notes
 
+    def test_the_two_graphs_on_two_cores_give_the_same_as_one_after_the_other(self):
+        """A big map's two graphs go to two cores at once (a worker program for the infantry's): the same bytes, notes,
+        idle opens and kept answers as one after the other."""
+        from rusemod import solved
+        from rusemod.cover import member
+        blocks = [nav.Block(10000.0, 2000.0, 400.0), nav.Block(10000.0, 2000.0, 2000.0, open=True),
+                  nav.Block(3000.0, 9000.0, 900.0, "vehicles"), nav.Block(30000.0, 30000.0, 900.0, open=True)]
+        out = []
+        for workers in (1, 2):
+            idle, store = [], solved.Solved()
+            with solved.using(store):
+                new, notes = nav.apply_blocks({member("Blitz"): win_of(row())}.get, "Blitz", blocks, idle, workers)
+            out.append((new, notes, [(b.x, b.y) for b in idle], sorted(store.needed()), store.taken))
+        self.assertEqual(out[0], out[1])
+        self.assertTrue(out[0][3])  # (answers were kept, from the worker program's graph too)
+
     def test_an_open_after_a_block_wins(self):
         block = nav.Block(10000.0, 2000.0, 400.0)  # C emptied
         opened = nav.Block(10000.0, 2000.0, 2000.0, open=True)
