@@ -1,6 +1,6 @@
-"""A new map's own pictures in the menus (rusemod.menupicture, map.toml picture): any PNG cut to each picture's shape
-from its middle, scaled, and written as the game's own menu pictures are (D-Day's: 640 x 360 and 680 x 200, one
-level of DXT5, packed)."""
+"""A map's own pictures in the menus (rusemod.menupicture, map.toml picture, wide_picture, start_dots): any PNG cut to
+each picture's shape from its middle, scaled, and written as the game's own menu pictures are (D-Day's: 640 x 360
+and 680 x 200, one level of DXT5, packed)."""
 import unittest
 
 from rusemod import menupicture
@@ -30,6 +30,38 @@ class Fitting(unittest.TestCase):
         out = fitted(picture(1, 1, lambda x, y: (10, 20, 30, 255)), 1, 1, 4, 2)
         self.assertEqual(bytes(out), bytes((10, 20, 30, 255)) * 8)
 
+    def test_see_through_pixels_dont_darken_the_edges_they_meet(self):
+        """A 3D map's background is see-through: its colour (black here) stays out of the slab's edge."""
+        out = fitted(picture(2, 2, lambda x, y: (0, 0, 0, 0) if x == 0 else (250, 200, 100, 255)), 2, 2, 1, 1)
+        self.assertEqual(list(out), [250, 200, 100, 128])
+        self.assertEqual(list(fitted(bytes(16), 2, 2, 1, 1)), [0, 0, 0, 0])
+
+    def test_a_solid_picture_as_the_plain_mean(self):
+        """Every pixel solid: each new pixel the plain mean of the colours it covers, rounded as before the alpha
+        weighting (the pictures already made come out the same)."""
+        import random
+        rnd = random.Random(7)
+        for w, h, tw, th in ((7, 5, 3, 2), (13, 11, 4, 3), (9, 9, 2, 5), (16, 9, 5, 3)):
+            src = bytes(v for _ in range(w * h) for v in (rnd.randrange(256), rnd.randrange(256),
+                                                           rnd.randrange(256), 255))
+            out = fitted(src, w, h, tw, th)
+            if w * th > h * tw:
+                cw, ch = max(1, h * tw // th), h
+            else:
+                cw, ch = w, max(1, w * th // tw)
+            x0, y0 = (w - cw) // 2, (h - ch) // 2
+            for ty in range(th):
+                r0 = y0 + ty * ch // th
+                r1 = max(r0 + 1, y0 + (ty + 1) * ch // th)
+                for tx in range(tw):
+                    c0 = x0 + tx * cw // tw
+                    c1 = max(c0 + 1, x0 + (tx + 1) * cw // tw)
+                    n = (r1 - r0) * (c1 - c0)
+                    for k in range(3):
+                        total = sum(src[(r * w + c) * 4 + k] for r in range(r0, r1) for c in range(c0, c1))
+                        self.assertEqual(out[(ty * tw + tx) * 4 + k], (total + n // 2) // n, (w, h, tx, ty, k))
+                    self.assertEqual(out[(ty * tw + tx) * 4 + 3], 255)
+
 
 class TheGamesPictures(unittest.TestCase):
     def test_both_pictures_in_the_games_form(self):
@@ -54,6 +86,45 @@ class TheGamesPictures(unittest.TestCase):
         big = menupicture.LARGEST + 1
         with self.assertRaisesRegex(PictureError, "at most"):
             pictures(png_bytes(bytes(big * 4), big, 1, channels=4))
+
+    def test_the_wide_one_from_a_picture_of_its_own(self):
+        """map.toml wide_picture: the wide one (the 3D map) from its own PNG; the big one from `picture`."""
+        red = png_bytes(picture(16, 9, lambda x, y: (220, 20, 20, 255)), 16, 9, channels=4)
+        blue = png_bytes(picture(34, 10, lambda x, y: (20, 20, 220, 255)), 34, 10, channels=4)
+        got = pictures(red, blue)
+        for stem, w, h, want in (("Minimap", 640, 360, (220, 20, 20)), ("Minimap2", 680, 200, (20, 20, 220))):
+            px = decode_rgba(zipo_unpack(Tgv(got[stem]).payload(0)), w, h, "DXT5")
+            self.assertLessEqual(max(abs(a - b) for a, b in zip(px[:3], want)), 8, stem)
+        self.assertEqual(set(pictures(None, blue)), {"Minimap2"})   # the big one stays the game's own
+        self.assertEqual(pictures(None, None), {})
+
+    def test_the_starting_points_drawn_on_the_wide_one(self):
+        """start_dots: the build draws a white dot where each starting point is (rusemod.menudraw)."""
+        from rusemod.menudraw import slab_png, to_picture
+        got = menupicture.dotted_wide(slab_png("land"), [(0.3, 0.6)])
+        t = Tgv(got)
+        self.assertEqual((t.width, t.height, t.format), (680, 200, "DXT5_LIN"))
+        px = decode_rgba(zipo_unpack(t.payload(0)), 680, 200, "DXT5")
+        x, y = (int(v) for v in to_picture(0.3, 0.6))
+        self.assertGreaterEqual(min(px[(y * 680 + x) * 4:(y * 680 + x) * 4 + 3]), 240)
+
+    def test_map_toml_says_it(self):
+        from rusemod.menupicture import member_of, picture_names, start_dots_of
+        self.assertEqual(picture_names({"picture": "menu.png", "wide_picture": "Menu-Wide.PNG"}, "m"),
+                         ("menu.png", "Menu-Wide.PNG"))
+        self.assertEqual(picture_names({}, "m"), (None, None))
+        for bad in ({"wide_picture": "x.jpg"}, {"picture": "../x.png"}, {"wide_picture": 3}):
+            with self.subTest(bad=bad), self.assertRaisesRegex(PictureError, "must name a PNG"):
+                picture_names(bad, "m")
+        self.assertTrue(start_dots_of({"start_dots": True}, "m", "menu-wide.png"))
+        self.assertFalse(start_dots_of({}, "m", None))
+        with self.assertRaisesRegex(PictureError, "true or false"):
+            start_dots_of({"start_dots": "yes"}, "m", "menu-wide.png")
+        with self.assertRaisesRegex(PictureError, "the game's own have their dots drawn in"):
+            start_dots_of({"start_dots": True}, "m", None)
+        self.assertEqual(member_of("DataDir:\\Test\\map\\M04_cotentin\\minimap_dday.png"),
+                         "gen\\test\\map\\m04_cotentin\\minimap_dday.tgv")
+        self.assertIsNone(member_of("GameData:\\x.png"))
 
 
 if __name__ == "__main__":

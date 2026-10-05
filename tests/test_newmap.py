@@ -57,21 +57,23 @@ def glad_files() -> dict:
     """The made-up game's map registration in ZZ_GladPatchableWin.dat, laid out like Blitz's."""
     mapinfo = make_ndf(
         objects=[(0, [(0, s(0)), (1, p(1)), (2, s(1)), (3, val(0x1A, GUID_BLITZ)),
-                      (4, val(0x12, struct.pack("<I", 1) + s(8) + ref(1, 1))), (5, ref(3, 3))]),
+                      (4, val(0x12, struct.pack("<I", 1) + s(8) + ref(1, 1))), (5, ref(3, 3)), (10, ref(7, 3))]),
                  (1, [(6, ref(2, 2))]),
                  (2, [(7, p(2)), (8, p(3))]),
                  (3, [(9, p(4))]),
                  (0, [(0, s(5)), (2, s(6)), (3, val(0x1A, GUID_LEIPZIG)),
                       (4, val(0x12, struct.pack("<I", 1) + s(8) + ref(5, 1)))]),
                  (1, [(6, ref(6, 2))]),
-                 (2, [(7, p(7))])],
+                 (2, [(7, p(7))]),
+                 (3, [(9, p(9))])],
         classes=["TMapLoadInfo", "TClusterWithNDFLoadedSubCluster", "TNDFTransaction", "TUIResourceTexture"],
         props=[("Name", 0), ("Path", 0), ("RootDatapackName", 0), ("GUID", 0), ("ClusterLoads", 0), ("Icone", 0),
-               ("NdfTransaction", 1), ("BaseName", 2), ("OutputFileName", 2), ("FileName", 3)],
+               ("NdfTransaction", 1), ("BaseName", 2), ("OutputFileName", 2), ("FileName", 3), ("Icone2", 0)],
         strings=["(2) Blitz", "SuperCrossRoads4", BS.join(["Patchable", "Scenario", "SuperCrossRoads4", "Scenario", "ClusterMap"]),
                  BS.join(["map", "SuperCrossRoads4", "Scenario", "ClusterMap.ndfbin"]),
                  "DataDir:" + BS + BS.join(["Test", "map", "SuperCrossRoads4", "Minimap.png"]), "01. Leipzig", "M01_Leipzig",
-                 BS.join(["Patchable", "Scenario", "M01_Leipzig", "Scenario", "ClusterMap"]), "Std"],
+                 BS.join(["Patchable", "Scenario", "M01_Leipzig", "Scenario", "ClusterMap"]), "Std",
+                 "DataDir:" + BS + BS.join(["Test", "map", "SuperCrossRoads4", "Minimap2.png"])],
         topo=[0, 4], compress=True)
     globals_ = make_ndf(
         objects=[(0, [(0, key("M_D_01")), (1, val(0x1A, GUID_BLITZ)), (2, s(0)), (3, i32(2)), (4, i32(1)), (5, yes()),
@@ -280,8 +282,10 @@ class Making(unittest.TestCase):
         spec = NewMap("SuperCrossRoads4", {"us": "Blitz at Dusk"}, picture="menu.png")
         spec.picture_data = png_bytes(bytes((10, 40, 200, 255)) * 16, 4, 4, channels=4)
         c = made(spec=spec, glad=self.glad)
-        self.assertEqual(sorted(c.zz_new), [BS.join(["gen", "test", "map", "blitzatdusk", "minimap.tgv"])])
+        self.assertEqual(sorted(c.zz_new), [BS.join(["gen", "test", "map", "blitzatdusk", n])   # (the wide one from
+                                            for n in ("minimap.tgv", "minimap2.tgv")])             # it too)
         self.assertEqual((Tgv(c.zz_new[BS.join(["gen", "test", "map", "blitzatdusk", "minimap.tgv"])]).width), 640)
+        self.assertEqual((Tgv(c.zz_new[BS.join(["gen", "test", "map", "blitzatdusk", "minimap2.tgv"])]).width), 680)
         m = Ndf(c.glad_changed[MAPINFO])
         loads = [o for o in m.objects if m.classes[o.cls] == "TMapLoadInfo"]
         shipped, copy = loads[0], loads[-1]
@@ -295,6 +299,27 @@ class Making(unittest.TestCase):
         for bad in ("menu.jpg", "../menu.png", 5, "a\\b.png"):
             with self.subTest(bad=bad), self.assertRaisesRegex(NewMapError, "picture must name a PNG"):
                 parse({"copy_of": "SuperCrossRoads4", "picture": bad}, folder="BlitzAtDusk")
+
+    def test_its_own_wide_picture_alone(self):
+        """map.toml wide_picture: only the wide one (the 3D map) is the copy's own; its big one stays the shipped
+        map's picture file, which the copy's record still names."""
+        from rusemod.dxt import png_bytes
+        spec = NewMap("SuperCrossRoads4", {"us": "Blitz at Dusk"}, wide_picture="wide.png", start_dots=True)
+        spec.wide_picture_data = png_bytes(bytes((10, 140, 20, 255)) * 16, 4, 4, channels=4)
+        c = made(spec=spec, glad=self.glad)
+        self.assertEqual(sorted(c.zz_new), [BS.join(["gen", "test", "map", "blitzatdusk", "minimap2.tgv"])])
+        m = Ndf(c.glad_changed[MAPINFO])
+        copy = props(m, [o for o in m.objects if m.classes[o.cls] == "TMapLoadInfo"][-1])
+        self.assertEqual([text(m, props(m, m.objects[local_ref(copy[k])])["FileName"]) for k in ("Icone", "Icone2")],
+                         ["DataDir:" + BS + BS.join(["Test", "map", "SuperCrossRoads4", "Minimap.png"]),
+                          "DataDir:" + BS + BS.join(["Test", "map", "BlitzAtDusk", "Minimap2.png"])])
+        text_ = map_toml(spec)
+        self.assertIn('wide_picture = "wide.png"', text_)
+        self.assertIn("start_dots = true", text_)
+        back = parse(tomllib.loads(text_), folder="BlitzAtDusk")[0]
+        self.assertEqual((back.picture, back.wide_picture, back.start_dots), (None, "wide.png", True))
+        with self.assertRaisesRegex(NewMapError, "start_dots puts the starting points on the map's own wide picture"):
+            parse({"copy_of": "SuperCrossRoads4", "start_dots": True}, folder="BlitzAtDusk")
 
     def test_its_own_zone_map(self):
         """The scenario's MapIA names its zone map: the copy gets its own of both (rusemod.sectors can then make its
@@ -485,6 +510,64 @@ class Building(unittest.TestCase):
         (dusk / "maps" / "BlitzAtDusk" / "menu.png").unlink()
         with self.assertRaisesRegex(BuildError, "has no such picture"):
             load_mod(dusk)
+
+    def wide_at(self, member, u, v):
+        """The copy's wide picture `member` in ZZ_Win.dat: the colour where map point (u, v) is drawn."""
+        import zlib
+        from rusemod.dxt import decode_rgba
+        from rusemod.menudraw import to_picture
+        from rusemod.tmst import Tgv
+        zz = self.copy("Data", "PC", "190852", "ZZ_Win.dat")
+        t = Tgv(bytes(zz.read(zz.find(member))))
+        px = decode_rgba(zlib.decompressobj().decompress(t.payload(0)[8:]), t.width, t.height, "DXT5")
+        x, y = (int(c) for c in to_picture(u, v))
+        return tuple(px[(y * t.width + x) * 4:(y * t.width + x) * 4 + 3])
+
+    def test_its_starting_points_on_its_3d_map_wherever_they_are(self):
+        """map.toml start_dots: the build draws a white dot on the wide picture where each starting point is once the
+        mod's edits are in: moved, its dot moves (the owner, 2026-10-05: "where that's actually the spawn point")."""
+        from rusemod.menudraw import slab_png
+        from rusemod.tms import Tms
+        from test_terrain_edit import make_map
+        x0, y0, _z0, x1, y1, _z1 = Tms(make_map()["output" + BS + "highdef.tms"]).bounds
+        start = ((1000.0 - x0) / (x1 - x0), (2000.0 - y0) / (y1 - y0))   # the made-up scenario's starting point
+        moved = (0.75, 0.6)
+        wide = BS.join(["gen", "test", "map", "blitzatdusk", "minimap2.tgv"])
+        for move, dot, empty in ((False, start, moved), (True, moved, start)):
+            files = {"map.toml": 'copy_of = "SuperCrossRoads4"\nname = "Blitz at Dusk"\nwide_picture = "wide.png"\n'
+                                 'start_dots = true\n'}
+            if move:
+                files["scenario.toml"] = ('[[move]]\nfile = "leveldesign_normal.scenario"\nitem = 0\n'
+                                          f'kind = "StartingPoint"\nx = {x0 + moved[0] * (x1 - x0)}\n'
+                                          f'y = {y0 + moved[1] * (y1 - y0)}\n')
+            dusk = self.mod(f"dusk{int(move)}", files)
+            (dusk / "maps" / "BlitzAtDusk" / "wide.png").write_bytes(slab_png("land"))
+            result, lines = self.build(dusk, copy="copy")
+            self.assertEqual(result.errors, [], "\n".join(lines))
+            self.assertIn("menu pictures: BlitzAtDusk: 1 start dot(s) on its 3D map picture, where its starting points "
+                          "are", lines)
+            with self.subTest(move=move):
+                self.assertGreaterEqual(min(self.wide_at(wide, *dot)), 235)
+                self.assertLess(min(self.wide_at(wide, *empty)), 200)
+
+    def test_a_shipped_maps_own_pictures(self):
+        """map.toml picture with no copy_of: the picture files the shipped map's BATTLES entry shows are replaced in
+        ZZ_Win.dat, the files themselves kept where they are (the entry still names them)."""
+        from rusemod.dxt import png_bytes
+        from rusemod.tmst import Tgv
+        zz = self.game / "Data" / "PC" / "190852" / "ZZ_Win.dat"
+        big, wide = (BS.join(["gen", "test", "map", "supercrossroads4", n]) for n in ("minimap.tgv", "minimap2.tgv"))
+        zz.write_bytes(flat_pack({**text_files(), big: b"old big", wide: b"old wide"}))
+        themed = self.mod("themed", {"map.toml": 'picture = "menu.png"\n'}, name="SuperCrossRoads4")
+        (themed / "maps" / "SuperCrossRoads4" / "menu.png").write_bytes(
+            png_bytes(bytes((200, 30, 30, 255)) * 64, 8, 8, channels=4))
+        result, lines = self.build(themed)
+        self.assertEqual(result.errors, [], "\n".join(lines))
+        self.assertIn("menu pictures: SuperCrossRoads4, from themed (2 picture file(s))", lines)
+        built = self.copy("Data", "PC", "190852", "ZZ_Win.dat")
+        self.assertEqual([(Tgv(bytes(built.read(built.find(m)))).width) for m in (big, wide)], [640, 680])
+        glad = self.copy("Data", "PC", "190852", "ZZ_GladPatchableWin.dat")
+        self.assertEqual(bytes(glad.read(glad.entry(MAPINFO))), glad_files()[MAPINFO])   # the map list as shipped
 
     def test_a_new_map_and_its_edits_go_into_the_modded_copy(self):
         from rusemod.cover import member as grid_of

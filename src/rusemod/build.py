@@ -140,6 +140,7 @@ def _map_readers() -> dict:
     """Each map file a mod may hold (maps/<map pack>/<file>): the tables it holds, how it says so, how its rows are
     read, and what its reader raises."""
     from .cover import CoverError, parse_paints
+    from .menupicture import PictureError
     from .nav import NavError, parse_blocks
     from .newmap import NewMapError
     from .players import PlayersError
@@ -170,21 +171,31 @@ def _map_readers() -> dict:
         "roads.toml": (("road", "take_out"), "a roads file holds [[road]] tables and take_out = [\"roads\", \"bridges\"]",
                        lambda d, rel: parse_roads(d.get("road", []), rel) + parse_take_out(d.get("take_out"), rel),
                        RoadNetError),
-        "map.toml": (("players", "entry", "copy_of", "name", "picture"),
-                     "a map file holds players = N (and entry = the map-list name), and for a new map copy_of, name "
-                     "and picture",
-                     _map_toml, (PlayersError, NewMapError)),
+        "map.toml": (("players", "entry", "copy_of", "name", "picture", "wide_picture", "start_dots"),
+                     "a map file holds players = N (and entry = the map-list name), picture, wide_picture and "
+                     "start_dots, and for a new map copy_of and name",
+                     _map_toml, (PlayersError, NewMapError, PictureError)),
     }
 
 
 def _map_toml(data: dict, rel: str) -> list:
-    """A map.toml's rows: a new map (newmap.NewMap) when it says copy_of, and its players (players.Players). On a new
-    map, `entry` picks the shipped map's entry to copy, and players = N applies to the copy."""
+    """A map.toml's rows: a new map (newmap.NewMap) when it says copy_of, else a shipped map's own menu pictures
+    (menupicture.MenuPictures) when it names any, and its players (players.Players). On a new map, `entry` picks the
+    shipped map's entry to copy, and players = N applies to the copy; on a shipped map it picks the entry that gets
+    the players or the pictures."""
+    from .menupicture import MenuPictures, picture_names, start_dots_of
     from .newmap import parse
     from .players import parse_map
     parts = rel.replace("\\", "/").split("/")
     made = parse(data, rel, parts[-2] if len(parts) > 1 else "")
-    rest = {k: v for k, v in data.items() if not (made and k == "entry")}
+    if not made:
+        picture, wide = picture_names(data, rel)
+        dots = start_dots_of(data, rel, wide)
+        if picture or wide:
+            made = [MenuPictures(picture, wide, data.get("entry"), dots)]
+            if "players" not in data:  # the entry is the pictures'
+                data = {k: v for k, v in data.items() if k != "entry"}
+    rest = {k: v for k, v in data.items() if not (made and k == "entry" and not isinstance(made[0], MenuPictures))}
     return made + parse_map(rest, rel)
 
 
@@ -210,12 +221,14 @@ def read_map_file(folder: Path, f: Path) -> list:
         rows = parse_rows(data, rel)
     except mistake as exc:
         raise BuildError(str(exc)) from None
-    for r in rows:  # a new map's own menu picture: the PNG beside its map.toml, read with the mod
-        if getattr(r, "picture", None) and getattr(r, "picture_data", 1) is None:
-            pic = f.parent / r.picture
-            if not pic.is_file():
-                raise BuildError(f"{rel}: picture = {r.picture!r}, but maps/{f.parent.name}/ has no such picture")
-            r.picture_data = pic.read_bytes()
+    for r in rows:  # a map's own menu pictures: the PNGs beside its map.toml, read with the mod
+        for key in ("picture", "wide_picture"):
+            name = getattr(r, key, None)
+            if name and getattr(r, key + "_data", 1) is None:
+                pic = f.parent / name
+                if not pic.is_file():
+                    raise BuildError(f"{rel}: {key} = {name!r}, but maps/{f.parent.name}/ has no such picture")
+                setattr(r, key + "_data", pic.read_bytes())
     return rows
 
 
@@ -268,19 +281,21 @@ def _take_outs(info) -> None:
 
 
 def _new_maps(info) -> None:
-    """The new maps of a mod's map.toml files (copy_of) go to `info.new_maps`; their player counts stay in
-    `info.players`."""
+    """The new maps of a mod's map.toml files (copy_of) go to `info.new_maps`, and a shipped map's own menu pictures
+    to `info.menu_pictures`; their player counts stay in `info.players`."""
+    from .menupicture import MenuPictures
     from .newmap import NewMap
-    for pack, rows in list(info.players.items()):
-        made = [r for r in rows if isinstance(r, NewMap)]
-        if not made:
-            continue
-        info.new_maps[pack] = made
-        rest = [r for r in rows if not isinstance(r, NewMap)]
-        if rest:
-            info.players[pack] = rest
-        else:
-            del info.players[pack]
+    for kind, into in ((NewMap, info.new_maps), (MenuPictures, info.menu_pictures)):
+        for pack, rows in list(info.players.items()):
+            made = [r for r in rows if isinstance(r, kind)]
+            if not made:
+                continue
+            into[pack] = made
+            rest = [r for r in rows if not isinstance(r, kind)]
+            if rest:
+                info.players[pack] = rest
+            else:
+                del info.players[pack]
 
 
 def _cover_brushes(info) -> None:
@@ -729,9 +744,10 @@ def load_pack(arc: Edat, cache=None) -> PackModel:
 
 def needs_zz_win(mods: list) -> bool:
     """Whether building `mods` [(ModInfo, ops)] needs ZZ_Win.dat: some mod adds texts or a new map (its name in the
-    menus), repaints a texture (files/replace, rusemod.unitlook), or new objects (a new unit needs a class in the Python unit list, which lives there), or moves a unit to
+    menus), changes a map's menu pictures, repaints a texture (files/replace, rusemod.unitlook), or new objects (a new unit needs a class in the Python unit list, which lives there), or moves a unit to
     another nation or model (the skirmish mesh packs there say whether its models are loaded for it: unit_models)."""
-    return any(m.texts or m.new_maps or getattr(m, "textures", None) for m, _ in mods) or \
+    return any(m.texts or m.new_maps or getattr(m, "menu_pictures", None) or getattr(m, "textures", None)
+               for m, _ in mods) or \
         any(op.kind in ("create", "clone") or _moves(op) for _, ops in mods for op in ops)
 
 
@@ -1276,6 +1292,98 @@ def scenery_edits(order: list[str], mods: list) -> dict[str, tuple[list, list[st
     return out
 
 
+def _shipped_menu_pictures(result, mods: list, arc, text_arc, new_maps: set, say) -> dict:
+    """A shipped map's own pictures in the menus (map.toml picture / wide_picture with no copy_of, MOD_FORMAT §8): the
+    picture files its entries show, replaced in ZZ_Win.dat (result.text_changed). Each picture is the last mod's that
+    gives one. A new map's own come with it (rusemod.newmap.make). Returns, for the start dots (_start_dots), {map:
+    (its pictures as merged, the text_changed key of its wide picture or None, the scenario its entry plays or None,
+    the mods' ids)}."""
+    from dataclasses import replace
+    from .ndf import Ndf
+    from .newmap import NewMapError, entry_scenario, shipped_pictures
+    from .players import GLOBALS, MAPINFO
+    out: dict = {}
+    pictured = {name: rows for name, rows in scenario_edits(result.order, mods, "menu_pictures").items()
+                if name.lower() not in new_maps}
+    if not pictured:
+        return out
+    if text_arc is None:
+        # not a game rule: the game or one of its files isn't found
+        result.findings.append(Finding("error", "ZZ_Win.dat isn't in this game, so no map's menu pictures can change"))
+        return out
+
+    def glad_now(member):
+        """A ZZ_GladPatchableWin.dat member as the build has it so far (any case), or None."""
+        key = member.lower()
+        mine = next((d for m, d in result.changed.items() if m.lower() == key), None)
+        if mine is not None:
+            return mine
+        e = arc.entry(member)
+        return bytes(arc.read(e)) if e is not None else None
+    for name, (specs, ids) in pictured.items():
+        spec = specs[-1]
+        for key in ("picture", "wide_picture"):  # a picture an earlier mod gives stays when a later one gives none
+            if getattr(spec, key) is None:
+                earlier = next((s for s in reversed(specs) if getattr(s, key) is not None), None)
+                if earlier is not None:
+                    spec = replace(spec, **{key: getattr(earlier, key),
+                                            key + "_data": getattr(earlier, key + "_data"),
+                                            **({"start_dots": earlier.start_dots} if key == "wide_picture" else {})})
+        try:
+            m = Ndf(glad_now(MAPINFO))
+            changes, notes, wide, obj = shipped_pictures(m, Ndf(glad_now(GLOBALS)), name, spec,
+                                                         lambda member: text_arc.entry(member) is not None)
+            scen = entry_scenario(m, obj, glad_now) if spec.start_dots else None
+        except (NewMapError, ValueError, KeyError, struct.error) as exc:
+            result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}"))
+            continue
+        keys = {}
+        for member, data in changes.items():
+            e = text_arc.entry(member)
+            keys[member] = e.path if e is not None else member
+            result.text_changed[keys[member]] = data
+        out[name] = (spec, keys.get(wide), scen, ids)
+        say(f"menu pictures: {name}, from {', '.join(ids)} ({len(changes)} picture file(s))")
+        for note in notes:
+            say(f"  {note}")
+    return out
+
+
+def _start_dots(result, making: dict, shipped: dict, read_data, ground_bounds, say) -> None:
+    """The places players start, drawn as white dots on the wide pictures that ask for them (map.toml start_dots,
+    rusemod.menudraw.dotted): where each map's starting points are once the mods' edits are in, so a moved starting
+    point moves its dot. `making`: the new maps (new_maps()); `shipped`: _shipped_menu_pictures' answer;
+    `read_data(member)`: DataMap_Win.dat as the build leaves it; `ground_bounds(map)`: (x0, y0, x1, y1) or None."""
+    from .menudraw import dots, places
+    from .menupicture import PictureError, dotted_wide
+    from .scenario import Scenario, ScenarioError, folder_of
+    jobs = []  # (map, scenario file, wide picture PNG, where its file goes, its key there, the mods' ids)
+    for name, (spec, mod_id) in making.items():
+        clone = result.new_maps.get(name)
+        member = next((m for m in clone.zz_new if m.lower().endswith("\\minimap2.tgv")), None) if clone else None
+        if spec.start_dots and member and spec.wide_picture_data is not None:
+            jobs.append((name, clone.scenario, spec.wide_picture_data, result.new_files, member, [mod_id]))
+    for name, (spec, key, scen, ids) in shipped.items():
+        if spec.start_dots and key and scen and spec.wide_picture_data is not None:
+            jobs.append((name, scen, spec.wide_picture_data, result.text_changed, key, ids))
+    for name, scen, png, into, key, ids in jobs:
+        raw, bounds = read_data(folder_of(name) + scen), ground_bounds(name)
+        try:
+            if raw is None or bounds is None:
+                raise ValueError("its scenario or its ground isn't there")
+            starts = places(bounds, [it.position for it in Scenario.read(raw).items
+                                     if it.kind == "StartingPoint" and it.listed])
+            into[key] = dotted_wide(png, starts)
+        except (ScenarioError, PictureError, ValueError, KeyError, struct.error, zlib.error) as exc:
+            # not a game rule: what our build can draw
+            result.findings.append(Finding("warning", f"{', '.join(ids)}: maps/{name}: start_dots: its starting "
+                                                      f"points couldn't be drawn ({exc}), so its 3D map picture has "
+                                                      f"no dots"))
+            continue
+        say(f"menu pictures: {name}: {len(dots(starts))} start dot(s) on its 3D map picture, where its starting "
+            f"points are")
+
+
 def scenario_edits(order: list[str], mods: list, what: str = "scenario") -> dict[str, tuple[list, list[str]]]:
     """Every map a mod moves design items on: {map pack name: (the moves of all the mods in load order, their ids)}.
     `what` "cover": the circles they paint on its cover instead (a later mod's circle over an earlier one's)."""
@@ -1534,6 +1642,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     say(f"  {note}")
             if glad_new:
                 arc = Grown(arc, glad_new)
+        shipped_pictures = _shipped_menu_pictures(result, mods, arc, text_arc, {n.lower() for n in making}, say)
 
         def find_map(name: str):
             """A map's pack: a new map's (the path its copy gets), else the game's; None when it has none."""
@@ -2556,6 +2665,37 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         for path, pack in new_packs.items():  # a new map's pack is written even when no mod edits its files
             if not any(e[0] == path for e in map_packs):
                 map_packs.append((path, pack, {}))
+        if any(spec.start_dots for spec, _id in making.values()) or \
+                any(v[0].start_dots for v in shipped_pictures.values()):
+            from .scenario import PACK as DOTS_PACK
+
+            def final_data(member):
+                """A DataMap_Win.dat member as the build leaves it (any case), or None."""
+                key = member.replace("/", "\\").lower()
+                for layer in [c for _p, _a, c in data_packs] + [data_new]:
+                    found = next((d for m, d in layer.items() if m.lower() == key), None)
+                    if found is not None:
+                        return found
+                base = data_base if data_base is not None else (
+                    open_pack(find_pack(game, DOTS_PACK)) if find_pack(game, DOTS_PACK) else None)
+                e = base.entry(member) if base is not None else None
+                return bytes(base.read(e)) if e is not None else None
+
+            def ground_bounds(name):
+                """A map's ground bounds (x0, y0, x1, y1), from its pack as the build has it, or None."""
+                from .tms import Tms
+                path = find_map(name)
+                if path is None:
+                    return None
+                entry = next((e for e in map_packs if e[0] == path), None)
+                a = entry[1] if entry else open_pack(path)
+                try:
+                    e = a.find("output\\highdef.tms")
+                    x0, y0, _z0, x1, y1, _z1 = Tms((entry[2].get(e.path) if entry else None) or bytes(a.read(e))).bounds
+                except (KeyError, ValueError, struct.error, zlib.error):
+                    return None
+                return x0, y0, x1, y1
+            _start_dots(result, making, shipped_pictures, final_data, ground_bounds, say)
         late = [f for f in result.findings[reported:] if f.level == "warning" and id(f) not in said]
         for line in report_lines(late, show_all=show_all):  # the maps' warnings (a drained river's was never shown)
             say(line)

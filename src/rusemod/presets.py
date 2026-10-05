@@ -112,6 +112,22 @@ def copy_scenario(game: Path, pack: str, entry: str | None = None) -> str:
     return name
 
 
+PICTURES = {"blank_ocean": "blank_ocean.png", "blank_terrain": "blank_terrain.png"}  # the big ones, in pictures/
+PICTURE, WIDE_PICTURE = "menu.png", "menu-wide.png"  # their names in the new map's folder (map.toml names them)
+
+
+def preset_pictures(kind: str) -> dict[str, bytes]:
+    """The new map's own pictures in the menus for preset `kind` ({file name: PNG}, map.toml picture and
+    wide_picture, with start_dots): the big one ours (pictures/, made in Blender by rusemod.blender_menu: the open
+    sea, or plain grass to the horizon, framed like the game's own), the wide one the map as a slab
+    (rusemod.menudraw), its starting points drawn on it by the build wherever they are then."""
+    from .menudraw import slab_png
+    if kind not in KINDS:
+        raise PresetError(f"no preset {kind!r} (presets: {', '.join(KINDS)})")
+    big = (Path(__file__).with_name("pictures") / PICTURES[kind]).read_bytes()
+    return {PICTURE: big, WIDE_PICTURE: slab_png("ocean" if kind == "blank_ocean" else "land")}
+
+
 def whole_map(f: Facts) -> tuple[float, float, float]:
     """The middle of the map and the half-side of a square reaching past its corners at full strength (a hard
     edge's full strength reaches HARD_EDGE of the way out)."""

@@ -55,8 +55,11 @@ class NewMap:
     copy_of: str                  # the shipped map's pack name
     names: dict                   # language folder (loc.LANGS) -> the map's name in the menus; "us" always there
     entry: str | None = None      # which of the shipped map's BATTLES entries, by its map-list name
-    picture: str | None = None    # its own picture in the menus: a PNG in its folder (rusemod.menupicture)
+    picture: str | None = None    # its own big picture in the menus: a PNG in its folder (rusemod.menupicture)
+    wide_picture: str | None = None  # its own wide one (the 3D map), a PNG there too; else made from `picture`
+    start_dots: bool = False      # the build draws its starting points on the wide one (menupicture.start_dots_of)
     picture_data: bytes | None = field(default=None, compare=False, repr=False)  # that PNG's bytes, read with the mod
+    wide_picture_data: bytes | None = field(default=None, compare=False, repr=False)
 
 
 # --- map.toml -------------------------------------------------------------------------------------------------------
@@ -101,10 +104,13 @@ def parse(data: dict, where: str = "map.toml", folder: str = "") -> list[NewMap]
     if entry is not None and (not isinstance(entry, str) or not entry.strip()):
         raise NewMapError(f"{where}: entry must be the map-list name of one of {src}'s BATTLES entries, like "
                           f"\"(6) Cotentin (3v3)\"")
-    picture = data.get("picture")
-    if picture is not None and (not isinstance(picture, str) or not re.match(r"^[^\\/:*?\"<>|]+\.png$", picture, re.I)):
-        raise NewMapError(f"{where}: picture must name a PNG picture in the map's folder, like \"menu.png\"")
-    return [NewMap(src, names, entry, picture)]
+    from .menupicture import PictureError, picture_names, start_dots_of
+    try:
+        picture, wide = picture_names(data, where)
+        dots = start_dots_of(data, where, wide)
+    except PictureError as exc:
+        raise NewMapError(str(exc)) from None
+    return [NewMap(src, names, entry, picture, wide, dots)]
 
 
 def map_toml(spec: NewMap, players: int | None = None, header: str = "") -> str:
@@ -117,6 +123,10 @@ def map_toml(spec: NewMap, players: int | None = None, header: str = "") -> str:
         lines.append(f"players = {players}")
     if spec.picture:
         lines.append(f'picture = "{_toml_text(spec.picture)}"')
+    if spec.wide_picture:
+        lines.append(f'wide_picture = "{_toml_text(spec.wide_picture)}"')
+    if spec.start_dots:
+        lines.append("start_dots = true")
     if set(spec.names) == {"us"}:
         lines.append(f'name = "{_toml_text(spec.names["us"])}"')
     else:
@@ -310,6 +320,56 @@ def menu_entries(m: Ndf, g: Ndf, pack: str) -> list[tuple[int, int, str, str]]:
         if found is not None and _listed(g, found[0]):
             out.append((i, found[0], _text(m, p["Name"]) if "Name" in p else "", found[1]))
     return out
+
+
+def picture_members(m: Ndf, obj: int) -> dict:
+    """{picture stem ("Minimap", "Minimap2"): ZZ_Win.dat member} of map-list entry `obj`'s pictures in the menus
+    (rusemod.menupicture.member_of)."""
+    from .menupicture import SIZES, member_of
+    p, out = _props(m, m.objects[obj]), {}
+    for prop, stem, _w, _h in SIZES:
+        t = local_ref(p[prop]) if prop in p else None
+        name = _text(m, _props(m, m.objects[t]).get("FileName")) if t is not None else None
+        member = member_of(name) if name else None
+        if member is not None:
+            out[stem] = member
+    return out
+
+
+def shipped_pictures(m: Ndf, g: Ndf, pack: str, spec, has_member) -> tuple[dict, list[str], str | None, int]:
+    """A shipped map's own pictures in the menus (map.toml picture / wide_picture with no copy_of:
+    rusemod.menupicture.MenuPictures `spec`): ({ZZ_Win.dat member: its new picture file}, notes, the member of its
+    wide picture (or None), the first entry's TMapLoadInfo) for the pictures its BATTLES entries show, or the entry
+    spec.entry names. A file another of the map's entries shows too changes there as well (a note says which). `m`,
+    `g`: the map list and the menus (players.MAPINFO, GLOBALS); `has_member`: whether ZZ_Win.dat has a member."""
+    from .menupicture import SIZES, PictureError, member_of, pictures
+    entries = menu_entries(m, g, pack)
+    chosen = [e for e in entries if (e[2] == spec.entry if spec.entry else e[3] == "battles")]
+    if not chosen:
+        raise NewMapError(f"maps/{pack}: {pack} has no entry {spec.entry!r}" if spec.entry else
+                          f"maps/{pack}: {pack} isn't in BATTLES: say which entry's pictures change (entry = ...)")
+    try:
+        made = pictures(spec.picture_data, spec.wide_picture_data)
+    except PictureError as exc:
+        raise NewMapError(f"maps/{pack}: {spec.picture or spec.wide_picture}: {exc}") from None
+    changes, notes, wide = {}, [], None
+    for obj, _menu, name, _kind in chosen:
+        for stem, member in picture_members(m, obj).items():
+            if stem not in made:
+                continue
+            if not has_member(member):
+                notes.append(f"{pack}: {name}'s picture {member} isn't in ZZ_Win.dat, so it stays")
+                continue
+            changes[member] = made[stem]
+            if stem == SIZES[1][1]:
+                wide = wide or member
+    picked = {e[0] for e in chosen}
+    for obj, _menu, name, kind in entries:
+        shared = sorted({mb.rsplit("\\", 1)[-1] for mb in picture_members(m, obj).values() if mb in changes}) \
+            if obj not in picked else []
+        if shared:
+            notes.append(f"{pack}: {name} ({kind}) shows {', '.join(shared)} too, so it changes there as well")
+    return changes, notes, wide, chosen[0][0]
 
 
 def _cluster_base(m: Ndf, load: dict) -> str | None:
@@ -508,22 +568,23 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
             _set_text(m, o, prop, text)
     _set(m, o, "GUID", Value(0x1A, out.guid))
     m.set_topo(list(m.topo) + [j])
-    # its own pictures in the menus (map.toml picture): the copied record's own copies of the shipped pictures' records
-    # named after files of the copy's own, made from the modder's picture (rusemod.menupicture)
-    if spec.picture_data is not None:
+    # its own pictures in the menus (map.toml picture, wide_picture): the copied record's own copies of the shipped
+    # pictures' records named after files of the copy's own, made from the modder's pictures (rusemod.menupicture)
+    if spec.picture_data is not None or spec.wide_picture_data is not None:
         from .menupicture import SIZES, PictureError, pictures
         try:
-            made = pictures(spec.picture_data)
+            made = pictures(spec.picture_data, spec.wide_picture_data)
         except PictureError as exc:
-            raise NewMapError(f"maps/{new}: picture {spec.picture}: {exc}") from None
+            raise NewMapError(f"maps/{new}: {spec.picture or spec.wide_picture}: {exc}") from None
         for prop, stem, _w, _h in SIZES:
             t = local_ref(_props(m, o)[prop]) if prop in _props(m, o) else None
-            if t is None or "FileName" not in _props(m, m.objects[t]):
+            if stem not in made or t is None or "FileName" not in _props(m, m.objects[t]):
                 continue
             _set_text(m, m.objects[t], "FileName", "DataDir:" + BS + BS.join(["Test", "map", new, stem + ".png"]))
             out.zz_new[BS.join(["gen", "test", "map", low, stem.lower() + ".tgv"])] = made[stem]
         if not out.zz_new:
-            out.notes.append(f"{new}: {src}'s entry has no picture of its own to replace, so {spec.picture} isn't used")
+            out.notes.append(f"{new}: {src}'s entry has no picture of its own to replace, so "
+                             f"{spec.picture or spec.wide_picture} isn't used")
 
     # 5. the menu: its own entry beside the shipped one's. BATTLES: in the menu pack that lists the shipped map, after
     # the maps of its size. An Operation or a campaign chapter: at the end of its pack's list, the briefing, pictures,

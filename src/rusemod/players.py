@@ -63,12 +63,22 @@ def parse_map(data: dict, where: str = "map.toml") -> list[Players]:
     return [Players(n, entry)]
 
 
-def map_toml(p: Players | None, header: str = "") -> str:
+def map_toml(p: Players | None, header: str = "", pictures=None) -> str:
+    """A shipped map's map.toml: its player count (and the entry it's for) and its own menu pictures
+    (rusemod.menupicture.MenuPictures), either or both."""
     lines = [f"# {ln}" for ln in header.splitlines()] + ([""] if header else [])
     if p is not None:
         lines.append(f"players = {p.count}")
         if p.entry:
             lines.append(f'entry = "{p.entry}"')
+    if pictures is not None:
+        if pictures.entry and not (p is not None and p.entry):
+            lines.append(f'entry = "{pictures.entry}"')
+        for key in ("picture", "wide_picture"):
+            if getattr(pictures, key):
+                lines.append(f'{key} = "{getattr(pictures, key)}"')
+        if pictures.start_dots:
+            lines.append("start_dots = true")
     return "\n".join(lines) + "\n"
 
 

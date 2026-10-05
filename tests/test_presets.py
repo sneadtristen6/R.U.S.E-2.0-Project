@@ -52,6 +52,21 @@ class Files(unittest.TestCase):
                 self.assertEqual([s.strength_at(x, y) for x, y in CORNERS], [1.0] * len(CORNERS), (kind, s.brush))
                 self.assertTrue(all(s.covers(x, y) for x, y in CORNERS))
 
+    def test_its_own_menu_pictures(self):
+        """The big one ours (the open sea, or grass to the horizon, framed like the game's own), the wide one the map
+        as a slab with no dots: the build draws the starting points on it wherever they are (start_dots)."""
+        from rusemod.menudraw import slab_png
+        from rusemod.png import read_png
+        for kind in presets.KINDS:
+            pics = presets.preset_pictures(kind)
+            self.assertEqual(set(pics), {presets.PICTURE, presets.WIDE_PICTURE})
+            w, h, big = read_png(pics[presets.PICTURE])
+            self.assertEqual((w, h), (640, 360))
+            self.assertEqual(tuple(big[:3]), (132, 134, 132))      # the game's own grey frame
+            self.assertEqual(pics[presets.WIDE_PICTURE], slab_png("ocean" if kind == "blank_ocean" else "land"))
+        with self.assertRaises(PresetError):
+            presets.preset_pictures("blank_moon")
+
     def test_the_ocean_is_the_maps_own_sea_over_flat_ground(self):
         level, water, paint = strokes("blank_ocean", FACTS)
         self.assertEqual((level.brush, level.level, level.weight), ("level", 12623.0 - presets.OCEAN_DEPTH, 1.0))
