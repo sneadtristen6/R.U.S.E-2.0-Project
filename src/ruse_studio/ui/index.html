@@ -149,6 +149,9 @@
            (those that go together on one tile), and above it the picked kind's tray. Brush strokes are saved in the current mod's maps/<map>/terrain.toml, placed
            objects in scenery.toml, scenario edits in scenario.toml. -->
       <div id="map-dock" class="map-dock hidden">
+        <!-- what's selected on the map, as the game shows a selection (maps.js renderSelection): the map's icons with
+             how many of each, and the count by kind -->
+        <div id="scen-selection" class="scen-selection hidden"></div>
         <div id="dock-tray" class="dock-tray hidden">
           <!-- a tile for two kinds (maps.js DOCK_GROUPS) shows a tab for each beside its name -->
           <div class="tray-head"><span id="tray-title" class="tray-title"></span>
