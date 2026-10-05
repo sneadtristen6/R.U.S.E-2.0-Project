@@ -118,6 +118,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
         _block_brushes(info)
         _paint_brushes(info)
         info.roads = _read_maps(path, "roads.toml")
+        _take_outs(info)
         info.players = _read_maps(path, "map.toml")
         _new_maps(info)
         from .unitlook import mod_cards, mod_textures
@@ -141,7 +142,7 @@ def _map_readers() -> dict:
     from .nav import NavError, parse_blocks
     from .newmap import NewMapError
     from .players import PlayersError
-    from .roadnet import RoadNetError, parse_roads
+    from .roadnet import RoadNetError, parse_roads, parse_take_out
     from .scenario import ScenarioError, parse_moves, parse_removes, parse_spawns, parse_starts
     from .scenery import SceneryEditError, parse_erase, parse_objects
     from .sectors import SectorError, parse_sectors
@@ -165,8 +166,9 @@ def _map_readers() -> dict:
         "movement.toml": (("block", "open"), "a movement file holds [[block]] and [[open]] tables",
                           lambda d, rel: (parse_blocks(d.get("block", []), rel)
                                           + parse_blocks(d.get("open", []), rel, "open")), NavError),
-        "roads.toml": (("road",), "a roads file holds [[road]] tables",
-                       lambda d, rel: parse_roads(d.get("road", []), rel), RoadNetError),
+        "roads.toml": (("road", "take_out"), "a roads file holds [[road]] tables and take_out = [\"roads\", \"bridges\"]",
+                       lambda d, rel: parse_roads(d.get("road", []), rel) + parse_take_out(d.get("take_out"), rel),
+                       RoadNetError),
         "map.toml": (("players", "entry", "copy_of", "name"),
                      "a map file holds players = N (and entry = the map-list name), and for a new map copy_of and name",
                      _map_toml, (PlayersError, NewMapError)),
@@ -238,6 +240,22 @@ def _erase_areas(info) -> None:
             info.scenery[pack] = rest
         else:
             del info.scenery[pack]
+
+
+def _take_outs(info) -> None:
+    """A roads.toml's take_out (roadnet.TakeOut: the map's own roads and bridges taken out) goes to `info.take_out`;
+    its roads stay in `info.roads`."""
+    from .roadnet import TakeOut
+    for pack, rows in list(info.roads.items()):
+        taken = [r for r in rows if isinstance(r, TakeOut)]
+        if not taken:
+            continue
+        info.take_out[pack] = taken
+        rest = [r for r in rows if not isinstance(r, TakeOut)]
+        if rest:
+            info.roads[pack] = rest
+        else:
+            del info.roads[pack]
 
 
 def _new_maps(info) -> None:
@@ -1247,7 +1265,7 @@ def scenario_edits(order: list[str], mods: list, what: str = "scenario") -> dict
     return out
 
 
-def draw_new_roads(read_map, path_of, lines: list, shaded=None, cache=None) -> tuple[dict, list[str]]:
+def draw_new_roads(read_map, path_of, lines: list, shaded=None, cache=None, shipped=None) -> tuple[dict, list[str]]:
     """({member: new bytes}, notes): new roads (map points, in order) written into every road file the map's own roads
     are in: painted into the ground's tiles as the map's own roads are across (rusemod.groundpaint.road_profile: what
     shows from afar), marked in the map's close-up map the way its own roads are (paint_detail), and added to the
@@ -1257,11 +1275,13 @@ def draw_new_roads(read_map, path_of, lines: list, shaded=None, cache=None) -> t
     `path_of(member)` its full path. `shaded(x, y, i)`: true where lines[i] runs under trees (a road that keeps its
     trees, in one of the map's woods): painted fainter and greyer there (groundpaint.UNDER_TREES). A road that clears
     its trees is painted through a wood as the map's own roads are (the owner, 2026-10-03). `cache`: a folder where
-    the map's measured road look is kept between builds (groundpaint.map_road_profile)."""
+    the map's measured road look is kept between builds (groundpaint.map_road_profile). `shipped(member)`: the map
+    pack's member as the game ships it, where the map's own roads are looked at when it takes them out (roads.toml
+    take_out): its road pieces, and its road model's look."""
     from .groundpaint import DETAIL, DETAIL_WIDER, ROAD_WIDTH, grid_bounds, map_road_profile, paint_detail, paint_roads
     from .roadstrips import draw_roads
     from .scenery import MEMBER as SCENERY, Scenery
-    raw = read_map(SCENERY)
+    raw = (shipped or read_map)(SCENERY)
     pieces = Scenery(raw).roads() if raw else []
     profile = map_road_profile(read_map, pieces, cache)  # new roads painted as the map's own are across (2026-10-02)
     painted, notes = paint_roads(read_map, path_of, lines, pieces, profile=profile, shaded=shaded, cache=cache)
@@ -1271,7 +1291,7 @@ def draw_new_roads(read_map, path_of, lines: list, shaded=None, cache=None) -> t
         notes += more
         if marked:
             painted[path_of(DETAIL)] = marked
-    strips, more = draw_roads(read_map, path_of, lines)
+    strips, more = draw_roads(read_map, path_of, lines, shipped)
     return {**painted, **strips}, notes + more
 
 
@@ -1784,6 +1804,12 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         for name, (_areas, ids) in erasing.items():
             every, who = with_pieces.setdefault(name, ([], []))
             who.extend(i for i in ids if i not in who)
+        from .roadnet import take_out_of
+        take_outs = {name: (take_out_of(rows), ids)  # the map's own roads and bridges taken out (roads.toml take_out)
+                     for name, (rows, ids) in scenario_edits(result.order, mods, "take_out").items()}
+        for name, (_what, ids) in take_outs.items():
+            every, who = with_pieces.setdefault(name, ([], []))
+            who.extend(i for i in ids if i not in who)
         from .brush import PAINT_KINDS
         painting = scenario_edits(result.order, mods, "paint")  # Map Paint: what hides it up close goes (`clear`)
         for name, (strokes, ids) in painting.items():
@@ -1813,6 +1839,27 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 member = map_arc.find(MEMBER).path
                 raw = changed_members.get(member) or bytes(map_arc.read(map_arc.find(MEMBER)))
                 raw, sunk = bury_objects(raw, bridge_hide.get(name, []))  # before the new blocks move them
+                gone_what = take_outs.get(name, (None, []))[0]
+                if gone_what is not None and (gone_what.roads or gone_what.bridges):
+                    # the map's own roads (their pieces, drawn from far; their stickers, up close) and bridges out,
+                    # before the new objects go in: a new road's stickers and a new bridge stay
+                    from .scenery import ERASE_MAX, EraseArea, road_stickers, take_out_road_pieces
+                    from .tms import Tms
+                    if gone_what.roads:
+                        raw, more = take_out_road_pieces(raw)
+                        sunk = sunk + more
+                    if descs is None:
+                        descs = descriptors(arc)
+                    here = Scenery(raw).names
+                    types = (road_stickers(here, descs) if gone_what.roads else []) + (
+                        [n for n in here if n in descs and descs[n].bridge] if gone_what.bridges else [])
+                    ground_raw = changed_members.get(map_arc.find("output\\highdef.tms").path) \
+                        or bytes(map_arc.read(map_arc.find("output\\highdef.tms")))
+                    gx0, gy0, _gz0, gx1, gy1, _gz1 = Tms(ground_raw).bounds
+                    if types:   # one square over all of the map, as the Studio's Erase the whole map makes it
+                        areas = list(areas) + [EraseArea((gx0 + gx1) / 2, (gy0 + gy1) / 2,
+                                                         min(ERASE_MAX, max(gx1 - gx0, gy1 - gy0) / 2 + 1000), (),
+                                                         tuple(types), shape="square")]
                 dressed: list = []
                 if road_lines.get(name):  # up close: the map's asphalt stickers along the new roads, path cleared
                     sc_now = Scenery(raw)
@@ -1959,7 +2006,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         f"{', '.join(erase_ids)}: {name}: buildings erased by name (an erase area's types) leave their "
                         f"ground closed to units: the map's movement still has them. Name \"building\" in that area's "
                         f"what to open its ground too")))
-            if erased.get("bridge"):
+            taken_bridges = take_outs.get(name, (None, []))[0] is not None and take_outs[name][0].bridges
+            if erased.get("bridge") and taken_bridges:
+                say(f"  the map's own bridges taken out: {erased['bridge']} erased, their floors sunk under the "
+                    f"ground; the movement over their decks stays (units cross there, on the ground under them)")
+            elif erased.get("bridge"):
                 result.findings.append(Finding("warning", (
                     f"{', '.join(erase_ids)}: {name}: {erased['bridge']} of the map's bridges erased: units can still "
                     f"cross the water where they stood (the map's movement still has the decks). Leave the bridges "
@@ -1975,6 +2026,62 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if entry is None:
                 map_packs.append((map_path, map_arc, changed_members))
             result.terrain_changed[map_path.name] = changed_members
+        for name, (gone_what, ids) in take_outs.items():  # the map's own roads drawn as nothing (its road model) and
+            if not (gone_what.roads or gone_what.bridges):  # its bridges' floors sunk: after the scenery, before the new
+                continue                                    # roads are drawn into the same files
+            map_path = find_map(name)
+            if map_path is None:
+                continue  # (said with the scenery: the map isn't in the game)
+            entry = next((e for e in map_packs if e[0] == map_path), None)
+            map_arc = entry[1] if entry else open_pack(map_path)
+            done = entry[2] if entry else {}
+
+            def read_done(member, a=map_arc, done=done):
+                try:
+                    e = a.find(member)
+                except KeyError:
+                    return None
+                return done.get(e.path) or bytes(a.read(e))
+
+            def read_shipped(member, a=map_arc):
+                try:
+                    return bytes(a.read(a.find(member)))
+                except KeyError:
+                    return None
+            from . import floors
+            from .roadstrips import StripError, take_out_roads as model_out
+            notes = []
+            try:
+                if gone_what.roads:
+                    new, more = model_out(read_done, lambda m, a=map_arc: a.find(m).path)
+                    done.update(new)
+                    notes += more
+                if gone_what.bridges:  # their floors sunk under the ground, found on the ground they were made on
+                    from .bridges import Ground, model_length, shipped_bridges
+                    from .kdt import Kdt
+                    from .tms import Tms
+                    if descs is None:
+                        descs = descriptors(arc)
+                    k_raw, shipped_ground = read_done(floors.MEMBER), read_shipped("output\\highdef.tms")
+                    sc_shipped = read_shipped(SCENERY)
+                    if k_raw is not None and shipped_ground is not None and sc_shipped is not None:
+                        decks = [floors.Deck.of(*b.deck) for b in shipped_bridges(
+                            Scenery(sc_shipped), descs, lambda kind: model_length(game, descs, kind))]
+                        data, more = floors.sink_floors(Kdt(k_raw), Ground(Tms(shipped_ground)).height_at, decks)
+                        if data:
+                            done[map_arc.find(floors.MEMBER).path] = data
+                        notes += more
+            except (StripError, floors.FloorError, SceneryError, ValueError, KeyError, struct.error, zlib.error) as exc:
+                result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the map's own "
+                                                        f"{' and '.join(gone_what.names())} can't be taken out ({exc})"))
+                continue
+            if done:
+                if entry is None:
+                    map_packs.append((map_path, map_arc, done))
+                result.terrain_changed[map_path.name] = done
+            say(f"take out: {name}, the map's own {' and '.join(gone_what.names())}, from {', '.join(ids)}")
+            for note in notes:
+                say(f"  {note}")
         # a big map's movement step started now, in worker programs of its own, while its ground is painted: every
         # block and open it takes is known by now (the movement step below takes the answer only when it's the same)
         aheads = {} if result.errors else _movement_ahead(game, open_pack, result.order, mods, cache, erasing, beds,
@@ -2068,7 +2175,15 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             try:
                 wood = woods_of(name) if keep else None
                 shaded = (lambda x, y, i, wood=wood, keep=keep: i in keep and wood(x, y)) if wood else None
-                painted, notes = draw_new_roads(read_map, lambda m, a=map_arc: a.find(m).path, lines, shaded, cache)
+
+                def shipped(member, a=map_arc):
+                    try:
+                        return bytes(a.read(a.find(member)))
+                    except KeyError:
+                        return None
+                taken = name in take_outs and take_outs[name][0].roads   # (the map's own roads out: their look
+                painted, notes = draw_new_roads(read_map, lambda m, a=map_arc: a.find(m).path, lines, shaded, cache,
+                                                shipped if taken else None)   # is read where the map ships them)
             except (PaintError, SceneryError, ValueError, KeyError, struct.error, zlib.error) as exc:
                 result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the new roads can't be drawn ({exc})"))
                 continue
@@ -2105,7 +2220,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             every.extend(walls)                               # buildings last, so units always go around them
             who.extend(i for i in ids if i not in who)
         players = scenario_edits(result.order, mods, "players")
-        if moves or paints or blocks or new_roads or bridge_spans or players or data_new:
+        roads_out = {name: ids for name, (what, ids) in take_outs.items() if what.roads}
+        if moves or paints or blocks or new_roads or bridge_spans or players or data_new or roads_out:
             from .bridges import BridgeError, apply_spans
             from .cover import CoverError, apply_paints
             from .nav import NavError, closing
@@ -2308,6 +2424,23 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     say(f"bridges open: {name}")
                     for note in notes:
                         say(f"  {note}")
+                for name, ids in roads_out.items():  # the map's own road network out, before the new roads go in
+                    from .cover import member as movement_member
+                    from .roadnet import take_out_roads
+                    win = read_data(movement_member(name))
+                    if win is None:
+                        continue  # (a map with no movement file has no road network)
+                    try:
+                        new_win, notes = take_out_roads(win)
+                    except (RoadNetError, NavError, ValueError, struct.error) as exc:
+                        result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the map's own road "
+                                                                f"network can't be taken out ({exc})"))
+                        continue
+                    if notes:
+                        changed_members[movement_member(name)] = new_win
+                        say(f"roads out: {name}, from {', '.join(ids)}")
+                        for note in notes:
+                            say(f"  {note}")
                 for name, (map_roads, ids) in new_roads.items():  # the road network (buffer 0), after movement
                     try:
                         new, notes = apply_roads(read_data, name, map_roads, closing(blocks.get(name, ([], []))[0]))

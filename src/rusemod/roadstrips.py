@@ -345,18 +345,62 @@ class StaticMeshes:
         return bytes(out), n
 
 
-def add_roads(raw: bytes, lines: list, height_at, bounds) -> tuple[bytes, list[str]]:
-    """The map's static meshes (`raw`) with `lines` (each a new road's map points, in order) added to its road model
-    as strips on the ground (`height_at(x, y)`: the ground's height, None off it), in the look of the map's own (its
-    colour and width copied), each piece in the part of the case its middle lies in (`bounds`: the ground's x0, y0,
-    x1, y1). Returns (new bytes, notes)."""
+def without_roads(raw: bytes) -> tuple[bytes, int]:
+    """The map's static meshes with its road model drawn as nothing: every vertex of the model's draw call given no
+    width (its strip's width, TexCoord0's second value, and its bend's, PSize, at 0: the strip's three vertices across
+    the road stand on its middle line, so its triangles have no area) and no colour (alpha 0). Only those bytes change:
+    the same size and layout, the header and its hash stay. Returns (the bytes, vertices changed); a map without a road
+    model gives the same bytes. Not seen in the game yet."""
     pack = StaticMeshes(raw)
+    if pack.model is None:
+        return pack.raw, 0
     d = pack.road_draw()
-    vbytes, _idx = pack.buffers(d)
+    _w, _mat, _ib, vb, _group, _pad = pack.draws[d]
+    base = pack.vb_data[0] + pack.vbs[vb][0]
+    count = pack.vbs[vb][1] // STRIDE
+    out = bytearray(pack.raw)
+    for k in range(count):
+        at = base + STRIDE * k   # _VTX: position 0-11, normals 12-19, PSize 20, colour 24-27, arc lengths 28, uv 36
+        struct.pack_into("<f", out, at + 20, 0.0)
+        out[at + 27] = 0
+        struct.pack_into("<f", out, at + 40, 0.0)
+    return bytes(out), count
+
+
+def take_out_roads(read, path_of) -> tuple[dict, list[str]]:
+    """({member: new bytes}, notes): the map's road model drawn as nothing (without_roads) in every static-mesh file it
+    has (MEMBERS), before any new road is added to it (draw_roads)."""
+    out, notes = {}, []
+    for member in MEMBERS:
+        raw = read(member)
+        if raw is None:
+            continue
+        new, n = without_roads(raw)
+        if n:
+            out[path_of(member)] = new
+            notes.append(f"{member.rsplit(chr(92), 1)[-1]}: the road model's {n:,} vertices drawn as nothing (the "
+                         f"roads seen from high up and on the map table)")
+    return out, notes
+
+
+def road_look(raw: bytes) -> tuple[tuple, float]:
+    """The colour and width of the map's own far roads: its road model's first vertex's."""
+    pack = StaticMeshes(raw)
+    vbytes, _idx = pack.buffers(pack.road_draw())
     if len(vbytes) < STRIDE:
         raise StripError("the map's road model has no vertex to copy its look from")
     look = _VTX.unpack_from(vbytes, 0)
-    colour, width = look[12:16], look[19]
+    return look[12:16], look[19]
+
+
+def add_roads(raw: bytes, lines: list, height_at, bounds, look=None) -> tuple[bytes, list[str]]:
+    """The map's static meshes (`raw`) with `lines` (each a new road's map points, in order) added to its road model
+    as strips on the ground (`height_at(x, y)`: the ground's height, None off it), in the look of the map's own (its
+    colour and width copied: `look`, road_look's, when the model's own are drawn as nothing), each piece in the part
+    of the case its middle lies in (`bounds`: the ground's x0, y0, x1, y1). Returns (new bytes, notes)."""
+    pack = StaticMeshes(raw)
+    pack.road_draw()
+    colour, width = look if look is not None else road_look(raw)
     runs, lost = strips(lines, height_at)
     nx, ny = grid(bounds)
     number = case_numbers(nx, ny)
@@ -384,11 +428,12 @@ def add_roads(raw: bytes, lines: list, height_at, bounds) -> tuple[bytes, list[s
     return new, notes
 
 
-def draw_roads(read, path_of, lines: list) -> tuple[dict, list[str]]:
+def draw_roads(read, path_of, lines: list, look_read=None) -> tuple[dict, list[str]]:
     """({member: new bytes}, notes): `lines` added to the map pack's road model, on its ground (`output\\highdef.tms`),
     in every static-mesh file the map has (MEMBERS: Alpha, Gam_Ostfriesland, Gamma and Robert have only the _v02 one,
     Beta both; which one the game loads when there are two isn't known, so both get the roads). `read(name)` gives a
-    member's bytes (the build's chain: a reshaped ground counts) or None, `path_of(name)` its full path in the pack."""
+    member's bytes (the build's chain: a reshaped ground counts) or None, `path_of(name)` its full path in the pack.
+    `look_read(name)`: the member as the map ships it, for the roads' look when the map's own are taken out."""
     if not lines:
         return {}, []
     found = [(m, raw) for m in MEMBERS if (raw := read(m)) is not None]
@@ -402,8 +447,10 @@ def draw_roads(read, path_of, lines: list) -> tuple[dict, list[str]]:
     tms = Tms(mesh)
     out, notes = {}, []
     for member, raw in found:
+        shipped = look_read(member) if look_read is not None else None
         new, said = add_roads(raw, lines, Ground(tms).height_at, (tms.bounds[0], tms.bounds[1], tms.bounds[3],
-                                                                  tms.bounds[4]))
+                                                                  tms.bounds[4]),
+                              road_look(shipped) if shipped is not None else None)
         if new != raw:
             out[path_of(member)] = new
         notes += [f"{member.rsplit(chr(92), 1)[-1]}: {n}" for n in said] if len(found) > 1 else said

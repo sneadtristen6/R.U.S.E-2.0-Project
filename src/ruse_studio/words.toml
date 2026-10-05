@@ -8023,6 +8023,54 @@ cz = "Zaškrtnuto: silnice, které nakreslíte příště, ponechají stromy a k
 jpn = "チェックすると、次に描く道路は経路上の木や茂みを残し、森を通る道路は木の下を通ります。外すと、両側約 6 m の範囲で取り除かれ、切り開かれた道になります。経路上の柵や壁などの物はどちらの場合も取り除かれます。すでに描いた道路は作ったときのままです。"
 sc = "勾选后，接下来绘制的道路会保留路径上的树木和灌木，穿过树林的道路会从树下经过。不勾选时，会清除两侧约 6 米内的树木，形成一条开阔的通道。路径上的栅栏、墙和其他物件无论哪种情况都会被移除。已经绘制的道路保持原样。"
 
+[road_take_out_roads]
+us = "Take out the map's roads"
+fr = "Retirer les routes de la carte"
+ger = "Straßen der Karte entfernen"
+ita = "Togli le strade della mappa"
+spa = "Quitar las carreteras del mapa"
+pol = "Usuń drogi z mapy"
+ru = "Убрать дороги карты"
+cz = "Odebrat silnice mapy"
+jpn = "マップの道路を取り除く"
+sc = "移除地图上的道路"
+
+[tip_road_take_out_roads]
+us = "The map's own roads go: the road network supply trucks follow (they drive across country instead), the roads drawn from high up and on the map table, and the road stickers up close. Your new roads stay. Not tested in the game yet."
+fr = "Les routes de la carte disparaissent : le réseau que suivent les camions de ravitaillement (ils roulent à travers champs), les routes vues de haut et sur la table, et les autocollants de route de près. Vos nouvelles routes restent. Pas encore testé en jeu."
+ger = "Die Straßen der Karte verschwinden: das Netz, dem die Versorgungslaster folgen (sie fahren dann querfeldein), die Straßen von oben und auf dem Kartentisch und die Straßenaufkleber aus der Nähe. Ihre neuen Straßen bleiben. Noch nicht im Spiel getestet."
+ita = "Le strade della mappa spariscono: la rete che seguono i camion dei rifornimenti (vanno per i campi), le strade viste dall'alto e sul tavolo, e gli adesivi stradali da vicino. Le tue nuove strade restano. Non ancora provato in gioco."
+spa = "Las carreteras del mapa desaparecen: la red que siguen los camiones de suministros (van campo a través), las carreteras vistas desde arriba y en la mesa, y las pegatinas de carretera de cerca. Tus carreteras nuevas se quedan. Aún no probado en el juego."
+pol = "Drogi mapy znikają: sieć, którą jeżdżą ciężarówki zaopatrzenia (pojadą na przełaj), drogi widziane z góry i na stole map oraz naklejki dróg z bliska. Twoje nowe drogi zostają. Jeszcze nie sprawdzone w grze."
+ru = "Дороги карты исчезают: сеть, по которой ездят грузовики снабжения (они поедут напрямик), дороги, видимые сверху и на столе карт, и наклейки дорог вблизи. Ваши новые дороги остаются. В игре ещё не проверено."
+cz = "Silnice mapy zmizí: síť, po které jezdí zásobovací náklaďáky (pojedou terénem), silnice viděné shora a na mapovém stole a nálepky silnic zblízka. Vaše nové silnice zůstanou. Ve hře zatím nevyzkoušeno."
+jpn = "マップ本来の道路がなくなります：補給トラックがたどる道路網（トラックは野を突っ切ります）、上空やマップテーブルから見える道路、近くで見える道路のステッカー。新しく引いた道路は残ります。ゲーム内ではまだ未確認です。"
+sc = "地图自带的道路会消失：补给卡车行驶的道路网（卡车会改为越野行驶）、从高处和地图桌上看到的道路，以及近处的道路贴图。你新画的道路会保留。尚未在游戏中测试。"
+
+[road_take_out_bridges]
+us = "Take out the map's bridges"
+fr = "Retirer les ponts de la carte"
+ger = "Brücken der Karte entfernen"
+ita = "Togli i ponti della mappa"
+spa = "Quitar los puentes del mapa"
+pol = "Usuń mosty z mapy"
+ru = "Убрать мосты карты"
+cz = "Odebrat mosty mapy"
+jpn = "マップの橋を取り除く"
+sc = "移除地图上的桥"
+
+[tip_road_take_out_bridges]
+us = "The map's own bridges go, and the floors units stood on with them. Units still cross where they stood, on the ground under them: dry the rivers up (Water, Drain) to cross anywhere. Your new bridges stay. Not tested in the game yet."
+fr = "Les ponts de la carte disparaissent, avec les sols où se tenaient les unités. Les unités traversent encore à leur place, sur le sol en dessous : asséchez les rivières (Eau, Assécher) pour traverser partout. Vos nouveaux ponts restent. Pas encore testé en jeu."
+ger = "Die Brücken der Karte verschwinden, mit den Böden, auf denen Einheiten standen. Einheiten überqueren dort noch, auf dem Boden darunter: Flüsse trockenlegen (Wasser, Trockenlegen), um überall hinüberzukommen. Ihre neuen Brücken bleiben. Noch nicht im Spiel getestet."
+ita = "I ponti della mappa spariscono, con i pavimenti su cui stavano le unità. Le unità attraversano ancora lì, sul terreno sotto: prosciuga i fiumi (Acqua, Prosciuga) per attraversare ovunque. I tuoi nuovi ponti restano. Non ancora provato in gioco."
+spa = "Los puentes del mapa desaparecen, con los suelos donde se apoyaban las unidades. Las unidades aún cruzan allí, por el suelo de debajo: drena los ríos (Agua, Drenar) para cruzar por cualquier parte. Tus puentes nuevos se quedan. Aún no probado en el juego."
+pol = "Mosty mapy znikają, razem z podłożem, na którym stały jednostki. Jednostki wciąż przechodzą w tych miejscach, po gruncie pod spodem: osusz rzeki (Woda, Osusz), by przechodzić wszędzie. Twoje nowe mosty zostają. Jeszcze nie sprawdzone w grze."
+ru = "Мосты карты исчезают вместе с настилом, на котором стояли войска. Войска по-прежнему переходят там по земле под ними: осушите реки (Вода, Осушить), чтобы переходить где угодно. Ваши новые мосты остаются. В игре ещё не проверено."
+cz = "Mosty mapy zmizí i s podlahou, na které jednotky stály. Jednotky tam dál přecházejí, po zemi pod nimi: vysušte řeky (Voda, Vysušit), aby šly přejít kdekoli. Vaše nové mosty zůstanou. Ve hře zatím nevyzkoušeno."
+jpn = "マップ本来の橋と、部隊が立っていた床がなくなります。部隊はその場所で下の地面を渡れます。どこでも渡れるようにするには川を干上がらせてください（水、排水）。新しく架けた橋は残ります。ゲーム内ではまだ未確認です。"
+sc = "地图自带的桥会消失，部队站立的桥面也一并移除。部队仍可从原桥位置经下方地面通过：要随处过河，请把河流排干（水、排干）。你新建的桥会保留。尚未在游戏中测试。"
+
 # a building or unit the game gives no name (StudioApi.units' game_name): what it's for instead
 [no_game_name]
 us = "{group}: no name in the game"

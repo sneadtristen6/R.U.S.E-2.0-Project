@@ -380,7 +380,8 @@ def _one_map(info, pack: str):
     def only(d):
         return {k: v for k, v in d.items() if k.lower() == pack.lower()}
     return replace(info, texts=[], terrain=only(info.terrain), scenery=only(info.scenery), erase=only(info.erase),
-                   scenario={}, cover=only(info.cover), movement=only(info.movement), roads=only(info.roads), players={})
+                   scenario={}, cover=only(info.cover), movement=only(info.movement), roads=only(info.roads),
+                   take_out=only(info.take_out), players={})
 
 
 def _named(folder: Path, name: str) -> Path | None:

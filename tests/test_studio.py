@@ -1026,8 +1026,26 @@ class Terrain(WithMod):
         with mock.patch("rusemod.terrain.map_list", side_effect=FileNotFoundError):
             self.assertEqual(_meant(Path("game"), "Blitz"), "")
 
+    def test_the_maps_own_roads_and_bridges_taken_out(self):
+        """roads.toml take_out (the Roads dock's two switches): written, kept when roads are added or taken back, and
+        the file goes when nothing is left in it."""
+        folder = Path(self.api.new_mod("x")["current"])
+        file = folder / "maps" / "Blitz" / "roads.toml"
+        got = self.api.road_take_out("Blitz", True, False)
+        self.assertEqual((got["take_out"], got["saved"]), (["roads"], str(file)))
+        self.assertEqual(tomllib.loads(file.read_text(encoding="utf-8"))["take_out"], ["roads"])
+        self.api.road_add("Blitz", [[1, 2], [3000.5, 4]])
+        data = tomllib.loads(file.read_text(encoding="utf-8"))
+        self.assertEqual((data["take_out"], len(data["road"])), (["roads"], 1))
+        self.api.road_undo("Blitz")
+        self.assertEqual(tomllib.loads(file.read_text(encoding="utf-8")), {"take_out": ["roads"]})
+        self.assertEqual(self.api.road_take_out("Blitz", True, True)["take_out"], ["roads", "bridges"])
+        self.assertEqual(self.api.road_take_out("Blitz", False, False)["take_out"], [])
+        self.assertFalse(file.exists())
+
     def test_new_roads_added_and_taken_back(self):
-        self.assertEqual(self.api.roads("Blitz"), {"roads": [], "bridge": None, "saved": None, "mod": None})
+        self.assertEqual(self.api.roads("Blitz"), {"roads": [], "bridge": None, "saved": None, "mod": None,
+                                                   "take_out": []})
         folder = Path(self.api.new_mod("x")["current"])
         file = folder / "maps" / "Blitz" / "roads.toml"
         self.assertEqual(self.api.road_add("Blitz", [[1, 2], [3000.5, 4]])["count"], 1)

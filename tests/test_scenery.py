@@ -622,6 +622,33 @@ class RoadStickers(unittest.TestCase):
         self.assertEqual((new, notes), (raw, ["this map has no road stickers to copy: its new roads show from afar only"]))
 
 
+class TakingOutRoads(unittest.TestCase):
+    """roads.toml take_out = ["roads"]: the map's own road pieces out of its scenery, everything else where it was."""
+
+    def test_every_road_piece_goes_and_the_objects_stay(self):
+        raw = two_woods()
+        before = Scenery(raw)
+        self.assertEqual(len(before.roads()), 2)   # the wood's piece, placed twice
+        new, notes = scenery.take_out_road_pieces(raw)
+        after = Scenery(new)                       # (its sum written again: it reads)
+        self.assertEqual(after.roads(), [])
+        self.assertEqual(notes, ["1 road piece(s) taken out (the roads drawn from far)"])
+        self.assertEqual(sorted((sym, round(m[3]), round(m[7])) for sym, m in after.walk()),
+                         sorted((sym, round(m[3]), round(m[7])) for sym, m in before.walk()))  # same places
+        self.assertEqual(len(after.blocks), len(before.blocks))
+        self.assertLess(len(new), len(raw))
+        self.assertEqual(scenery.take_out_road_pieces(new), (new, []))   # none left: the same bytes
+
+    def test_the_road_stickers_are_the_road_decals(self):
+        def d(name, category, group="decal"):
+            return scenery.Descriptor("TypeWarrior/" + name, "TSceneryDescriptorSticker", category, group, None, "")
+        descs = {x.name: x for x in (d("Route_Bitume", "STICKERS/Allemagne"), d("Chemin_Terre_culture", "STICKERS"),
+                                     d("Bitume_Base", "STICKERS/Tunisie/Roads"), d("TirBunker_Chemin_traces", "STICKERS"),
+                                     d("Cratere", "STICKERS"), d("German_Canon_Fact_Cheminee", "Props", "prop"))}
+        self.assertEqual(scenery.road_stickers(list(descs) + ["TypeWarrior/Unknown_Route"], descs),
+                         ["TypeWarrior/Route_Bitume", "TypeWarrior/Chemin_Terre_culture", "TypeWarrior/Bitume_Base"])
+
+
 class Sinking(unittest.TestCase):
     """An object the map ships, sunk out of sight where it's stored (a bridge a new road replaces)."""
 

@@ -227,8 +227,72 @@ def parse_roads(items, where: str = "roads.toml") -> list[Road]:
     return out
 
 
-def roads_toml(roads: list[Road], header: str = "") -> str:
+TAKE_OUT = ("roads", "bridges")
+
+
+@dataclass(frozen=True)
+class TakeOut:
+    """The map's own roads and bridges a mod takes out (roads.toml `take_out`; docs/MOD_FORMAT.md §8)."""
+    roads: bool = False
+    bridges: bool = False
+
+    def names(self) -> list[str]:
+        return [n for n in TAKE_OUT if getattr(self, n)]
+
+
+def parse_take_out(value, where: str = "roads.toml") -> list[TakeOut]:
+    """A roads.toml's `take_out` (a list naming "roads", "bridges" or both) as a row for the build ([] when absent)."""
+    if value is None:
+        return []
+    if not isinstance(value, list) or any(v not in TAKE_OUT for v in value):
+        raise RoadNetError(f"{where}: take_out lists what of the map's own goes: \"roads\", \"bridges\" or both "
+                           f"(got {value!r})")
+    return [TakeOut("roads" in value, "bridges" in value)]
+
+
+def take_out_of(rows: list) -> TakeOut:
+    """What a map's mods take out between them (every mod's take_out, in load order: each adds to the others)."""
+    found = [r for r in rows if isinstance(r, TakeOut)]
+    return TakeOut(any(r.roads for r in found), any(r.bridges for r in found))
+
+
+def take_out_roads(win: bytes) -> tuple[bytes, list[str]]:
+    """The movement file (mapinfo.win) with the map's own road network taken out: no point and no link left, and
+    every crossing of the two movement graphs and their local maps gone with it (a crossing names road links). With
+    no road network, supply trucks and units plan their way over the ground units walk on, as for a map with no roads
+    (the game turns to that when the network is empty; not seen in the game yet). The mod's own new roads are added
+    after this. Returns (the file, notes); a map whose network is empty already gives the same bytes."""
+    from ruse_mod_engine import sdb
+    from .nav import Graph, NavError, replace_buffers
+    parts = sdb.split_mapinfo(win)
+    if not parts:
+        raise RoadNetError("not a movement file (mapinfo.win)")
+    bufs = parts[1]
+    net = RoadNet.read(bufs[0])
+    if not net.points and not net.links:
+        return win, []
+    new = {0: RoadNet([], [], ["leaf", []]).to_bytes()}
+    gone = {i: None for i in range(len(net.links))}
+    dropped = 0
+    for k in (1, 2):
+        try:
+            g = Graph.read(bufs[k])
+        except (NavError, struct.error):
+            continue  # (no movement graph: no crossing to take out)
+        n = g.renumber_roads(gone)
+        if n:
+            dropped += n
+            new[k] = g.to_bytes()
+    return replace_buffers(win, new), [f"the map's own road network taken out: {len(net.points):,} point(s) and "
+                                       f"{len(net.links):,} link(s), and the movement's {dropped:,} crossing(s) of "
+                                       f"them: supply trucks go across country"]
+
+
+def roads_toml(roads: list[Road], header: str = "", take_out: TakeOut | None = None) -> str:
     lines = [f"# {line}" for line in header.splitlines()] + ([""] if header else [])
+    if take_out is not None and take_out.names():  # (a key before the tables, as TOML has it)
+        named = ", ".join('"' + n + '"' for n in take_out.names())
+        lines += [f"take_out = [{named}]", ""]
     for r in roads:
         pts = ", ".join(f"[{x!r}, {y!r}]" for x, y in r.points)
         lines += (["[[road]]", f"points = [{pts}]", f"join = {r.join!r}"] + ([] if r.paint else ["paint = false"])

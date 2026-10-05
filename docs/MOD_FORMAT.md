@@ -805,6 +805,24 @@ join = 20000.0       # an end this near a road joins it (a junction); else it's 
   onto the new banks (rusemod.floors). A bridge placed by hand in
   `scenery.toml` gets one the same way.
 
+A mod also takes the map's own roads and bridges out (the Studio's Roads dock: Take out the map's roads, Take out
+the map's bridges), a line before the `[[road]]` tables:
+
+```toml
+take_out = ["roads", "bridges"]   # either, or both
+```
+
+- `"roads"`: the map's road network goes, with every link the movement has to it (supply trucks and units then
+  plan their way across country, as on a map with no roads); so do the roads drawn from high up and on the map
+  table (the road model is drawn as nothing; its road pieces in the scenery go), and the road stickers up close
+  (asphalt, cobbles, dirt tracks, their edges and junctions). The mod's own `[[road]]` go in afterwards, in the
+  look the map's own had, and must still make one network between them.
+- `"bridges"`: the map's own bridges are erased, and the floors units stood on are sunk under the ground. The
+  movement over their decks stays: units still cross there, on the ground under them. Drain the rivers (the water
+  brushes) to cross anywhere.
+- Every mod's `take_out` counts: one taking the roads out and another the bridges takes both. Not seen in the game
+  yet.
+
 ## 9. Scripts
 
 - A mod in our own format never brings scripts or programs: the build refuses them (below). New units get their

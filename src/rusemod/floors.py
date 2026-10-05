@@ -365,6 +365,30 @@ def found_at(k: K.Kdt, x: float, y: float) -> list[int]:
     return sorted(set(out))
 
 
+SUNK = -100000.0   # where the floor of a bridge taken out goes: far under any ground. A unit stands on the ground or a
+                   # floor, whichever is higher, so a floor under the ground is never stood on; it stays in the file,
+                   # which can't be left without a triangle (all 556 of D-Day's are its bridges' floors)
+
+
+def sink_floors(k: K.Kdt, height_at, gone: list[Deck]) -> tuple[bytes, list[str]]:
+    """The objects-only file with the floors (and aprons) of the decks `gone` sunk to SUNK, flat: the map's own bridges
+    taken out (roads.toml take_out). `height_at(x, y)`: the map's ground as shipped, where the floors were made (a
+    wide floor is found at the height between its ends' ground). Returns (the file, notes); none found: (b"", [])."""
+    shipped = triangles(k)
+
+    def ground(deck):
+        (x0, y0), (x1, y1) = deck.ends()
+        g0, g1 = height_at(x0, y0), height_at(x1, y1)
+        return None if g0 is None or g1 is None else (g0, g1)
+    out = {id(t) for d in gone for t in deck_floor(shipped, d, ground(d))[0]}
+    out |= {id(t) for t in shipped if any(beside_deck(t, d) for d in gone)}
+    if not out:
+        return b"", []
+    tris = [tuple((x, y, SUNK) for x, y, _z in t) if id(t) in out else t for t in shipped]
+    return rebuild(k, tris), [f"floors: {len(out):,} triangle(s) of the {len(gone)} bridge(s) taken out sunk under the "
+                              f"ground, out of reach"]
+
+
 def floors_for(k: K.Kdt, height_at, new: list, gone: list[Deck], water=None) -> tuple[bytes, list[str]]:
     """The objects-only file with a floor for each new bridge and none for the sunk ones. `new`: [(the new deck,
     [the decks of the shipped bridges of its kind on this map])]; `height_at(x, y)`: the ground (None off the mesh);

@@ -7,6 +7,7 @@ import bisect
 import hashlib
 import json
 import math
+import re
 import struct
 from dataclasses import dataclass, field
 
@@ -1596,21 +1597,7 @@ def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
         for it, t in targets(k):
             struct.pack_into("<I", raw, start + maps[k][it.at], (it.word & ~0x00FFFFFC) | offset_of[t])
         parts.append(bytes(raw))
-    body_data = b"".join(parts)
-    f = list(sc.fields)
-    tab_off, tab_n, data_off, data_len = f[0], f[1], f[2], f[3]
-    if tab_off != 124 or data_off != tab_off + 4 * tab_n:
-        raise SceneryError("the scenery file's tables aren't in the order this writer knows")
-    end = data_off + data_len
-    new_n = len(kept) + 1
-    shift = (124 + 4 * new_n + len(body_data)) - end
-    for k in (4, 6, 8, 10, 12, 20, 22, 24):  # the tables after the data move with its end
-        if f[k] < end:
-            raise SceneryError("the scenery file's tables aren't in the order this writer knows")
-        f[k] += shift
-    f[1], f[2], f[3] = new_n, 124 + 4 * new_n, len(body_data)
-    table = [offset_of[k] for k in kept] + [len(body_data)]
-    body = VERSION + struct.pack("<26I", *f) + struct.pack(f"<{len(table)}I", *table) + body_data + data[end:]
+    body = _assembled(sc, data, parts)
     by_group: dict[str, int] = {}
     for s, n in cut.gone.items():
         g = "bridge" if s in bridges else kinds.get(s, "other")
@@ -1626,6 +1613,80 @@ def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
                      + (f": the scenery grew by {grew:,} bytes" if grew >= 0 else
                         f": the scenery shrank by {-grew:,} bytes"))
     return hashlib.md5(body).digest() + body, notes + said, by_group
+
+
+def _assembled(sc: Scenery, data: bytes, parts: list[bytes]) -> bytes:
+    """The scenery file (without its MD5) holding the blocks `parts` (each as stored, in order, its references
+    already pointing at the others' new offsets) in place of `sc`'s: the block table made again, and the tables after
+    the data moved with its end."""
+    body_data = b"".join(parts)
+    f = list(sc.fields)
+    tab_off, tab_n, data_off, data_len = f[0], f[1], f[2], f[3]
+    if tab_off != 124 or data_off != tab_off + 4 * tab_n:
+        raise SceneryError("the scenery file's tables aren't in the order this writer knows")
+    end = data_off + data_len
+    new_n = len(parts) + 1
+    shift = (124 + 4 * new_n + len(body_data)) - end
+    for k in (4, 6, 8, 10, 12, 20, 22, 24):  # the tables after the data move with its end
+        if f[k] < end:
+            raise SceneryError("the scenery file's tables aren't in the order this writer knows")
+        f[k] += shift
+    f[1], f[2], f[3] = new_n, 124 + 4 * new_n, len(body_data)
+    table, at = [], 0
+    for p in parts:
+        table.append(at)
+        at += len(p)
+    table.append(len(body_data))
+    return VERSION + struct.pack("<26I", *f) + struct.pack(f"<{len(table)}I", *table) + body_data + data[end:]
+
+
+def take_out_road_pieces(data: bytes) -> tuple[bytes, list[str]]:
+    """The scenery file with every road piece taken out (the items the game draws the far roads from: Item kind
+    "road", the Route pieces): each block holding any made again without them (_rebuilt, as an erase does: its tree's
+    boxes and road marks stay, a box holding less is still right), every reference pointed at the blocks' new places.
+    Returns (the file, notes); a map with none gives the same bytes. Not seen in the game yet."""
+    sc = Scenery(data)
+    removed = [{it.at for it in b.items if it.kind == "road"} for b in sc.blocks]
+    n = sum(len(r) for r in removed)
+    if not n:
+        return bytes(data), []
+    raws, maps, offset_of, pos = [], [], [], 0
+    for b in sc.blocks:
+        raw, moved = _rebuilt(b, removed[b.index])
+        raws.append(raw)
+        maps.append(moved)
+        offset_of.append(pos)
+        pos += len(raw)
+    parts = []
+    for b in sc.blocks:
+        raw = bytearray(raws[b.index])
+        start = (0x20 if b.long else 0x1C) + 4 * (struct.unpack_from("<I", raw)[0] & 0x7FFFFFFF) + len(b.nodes)
+        for it in b.items:
+            if it.kind == "child":
+                to = sc._by_offset[it.child_offset]
+                struct.pack_into("<I", raw, start + maps[b.index][it.at], (it.word & ~0x00FFFFFC) | offset_of[to])
+        parts.append(bytes(raw))
+    body = _assembled(sc, data, parts)
+    return hashlib.md5(body).digest() + body, [f"{n:,} road piece(s) taken out (the roads drawn from far)"]
+
+
+# the names of the map's road stickers (the close-up road: asphalt, cobbles, dirt tracks, their edges and junctions),
+# by the kinds the shipped maps use; a crater's or a shelling's tracks (Chemin_traces) aren't a road
+ROAD_STICKER = re.compile(r"(?i)route|bitum|bitu_|rte_bitu|asphalte_ruelle|chemin_terre|chemin_petit|cheminculture"
+                          r"|paves|under_road")
+
+
+def road_stickers(names, descs: dict) -> list[str]:
+    """Of `names` (a map's scenery type names), its road stickers: decals whose category is a road's or whose name
+    says it (ROAD_STICKER), never a crater's tracks."""
+    out = []
+    for n in names:
+        d = descs.get(n)
+        if d is None or d.group != "decal" or "chemin_traces" in n.lower():
+            continue
+        if "roads" in (d.category or "").lower() or ROAD_STICKER.search(n.rsplit("/", 1)[-1]):
+            out.append(n)
+    return out
 
 
 def erase_count(data: bytes, areas: list[EraseArea], descs: dict[str, Descriptor], cancel=None) -> dict[str, int]:

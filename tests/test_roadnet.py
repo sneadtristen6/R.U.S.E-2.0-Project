@@ -228,6 +228,54 @@ class ModRoads(unittest.TestCase):
         self.assertIn("infantry: road 2 has no crossing (it runs through no circle of the movement from one gate to "
                       "another on open ground): units go across country there, not along it", notes)
 
+    def test_the_maps_own_roads_taken_out(self):
+        """take_out = ["roads"]: the map's road network left with no point and no link, and every crossing of both
+        movement graphs gone with it (a crossing names road links); the rest of the file as it was. A road the mod
+        adds then goes into the empty network, one piece."""
+        from test_nav import crossings, made
+        from rusemod import nav
+        from rusemod.cover import member
+        from rusemod.roadnet import Road, RoadNet, apply_roads, take_out_roads
+        from ruse_mod_engine import sdb
+        row = [(400000.0 + 50000.0 * i, 500000.0, 25600.0) for i in range(5)]
+        g = made(row, [(i, i + 1) for i in range(4)])
+        head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 1000000.0, 1000000.0)
+        net = ring()
+        win = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+            net.to_bytes(), g.to_bytes(), g.to_bytes(), b"cover")) + b"tail", {})
+        east, west = net.points[0], net.points[12]
+        across = Road([(east[0] - 3000, east[1] + 100), (west[0] + 3000, west[1] + 100)])
+        roads = apply_roads({member("Blitz"): win}.get, "Blitz", [across])[0][member("Blitz")]
+        self.assertTrue(crossings(nav.Graph.read(sdb.split_mapinfo(roads)[1][1])))
+        out, notes = take_out_roads(roads)
+        bufs = sdb.split_mapinfo(out)[1]
+        empty = RoadNet.read(bufs[0])
+        self.assertEqual((empty.points, empty.links), ([], []))
+        for k in (1, 2):
+            after = nav.Graph.read(bufs[k])
+            self.assertEqual(crossings(after), {})
+            self.assertEqual(after.circles[:-1], [c[:4] + (0,) for c in nav.Graph.read(
+                sdb.split_mapinfo(roads)[1][k]).circles[:-1]])  # the circles stay, none with a crossing
+        self.assertEqual((bufs[3], sdb.split_mapinfo(out)[2]), (b"cover", sdb.split_mapinfo(roads)[2]))
+        self.assertIn("crossing(s) of them", notes[0])
+        self.assertEqual(take_out_roads(out), (out, []))          # nothing left to take out: the same bytes
+        new, _notes = apply_roads({member("Blitz"): out}.get, "Blitz", [Road([(0.0, 0.0), (90000.0, 0.0)])])
+        self.assertEqual(len(RoadNet.read(sdb.split_mapinfo(new[member("Blitz")])[1][0]).parts()), 1)
+
+    def test_take_out_in_the_file(self):
+        import tomllib
+        from rusemod.roadnet import Road, TakeOut, parse_take_out, roads_toml, take_out_of
+        text = roads_toml([Road([(1.0, 2.0), (3.0, 4.0)])], "made by hand", TakeOut(True, True))
+        data = tomllib.loads(text)
+        self.assertEqual((parse_take_out(data["take_out"]), len(data["road"])), ([TakeOut(True, True)], 1))
+        self.assertEqual(parse_take_out(["bridges"]), [TakeOut(False, True)])
+        self.assertEqual(parse_take_out(None), [])
+        for bad in ("roads", ["road"], [1]):
+            with self.assertRaises(RoadNetError):
+                parse_take_out(bad)
+        self.assertEqual(take_out_of([TakeOut(True, False), "a road", TakeOut(False, True)]), TakeOut(True, True))
+        self.assertNotIn("take_out", roads_toml([], "", TakeOut()))
+
     def test_the_file(self):
         from rusemod.roadnet import Road, parse_roads, roads_toml
         import tomllib

@@ -32,6 +32,23 @@ def base_file() -> bytes:
     return rebuild(Kdt(make_valid_kdt()), strip(SHIPPED, FLAT, FLAT))
 
 
+class TakenOut(unittest.TestCase):
+    """roads.toml take_out = ["bridges"]: the map's own bridges' floors sunk under the ground (the file can't be left
+    without a triangle: all 556 of D-Day's are its bridges' floors), found on the ground the map ships."""
+
+    def test_the_floors_of_the_bridges_taken_out_sink(self):
+        other = Deck.of(300000.0, 300000.0, 310000.0, 300000.0)
+        k = Kdt(rebuild(Kdt(make_valid_kdt()), strip(SHIPPED, FLAT, FLAT) + strip(other, FLAT, FLAT)))
+        data, notes = floors.sink_floors(k, lambda x, y: FLAT, [SHIPPED])
+        tris = triangles(Kdt(data))
+        sunk = [t for t in tris if all(p[2] == floors.SUNK for p in t)]
+        self.assertEqual((len(tris), len(sunk)), (16, 8))   # the other bridge's floor stays where it was
+        step = (Kdt(data).bounds_max[2] - floors.SUNK) / 0x7FFF   # (the file's heights now span down to SUNK)
+        self.assertTrue(all(abs(p[2] - (FLAT + 50.0)) <= step for t in tris if t not in sunk for p in t))
+        self.assertIn("8 triangle(s) of the 1 bridge(s) taken out sunk under the ground", notes[0])
+        self.assertEqual(floors.sink_floors(k, lambda x, y: FLAT, [Deck.of(0.0, 0.0, 10.0, 0.0)]), (b"", []))
+
+
 class Decks(unittest.TestCase):
     def test_along_and_across(self):
         d = Deck.of(0.0, 0.0, 0.0, 2000.0)  # along y

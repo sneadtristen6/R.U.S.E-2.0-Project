@@ -158,6 +158,34 @@ class FollowingTheGround(unittest.TestCase):
         self.assertEqual(StaticMeshes(raw).with_heights(lambda x, y: 0.0), (raw, 0))
 
 
+class TakingOut(unittest.TestCase):
+    """roads.toml take_out = ["roads"]: the map's road model drawn as nothing, and new roads still in its own look."""
+
+    def test_every_road_vertex_has_no_width_and_no_colour(self):
+        from rusemod.roadstrips import road_look, without_roads
+        raw = static_pack()
+        new, n = without_roads(raw)
+        self.assertEqual((n, len(new)), (12, len(raw)))
+        for v in road_vertices(new):
+            self.assertEqual((v[11], v[15], v[19]), (0.0, 0, 0.0))     # bend, alpha, width
+        old = road_vertices(raw)
+        self.assertEqual([v[:11] + v[12:15] + v[16:19] for v in road_vertices(new)],
+                         [v[:11] + v[12:15] + v[16:19] for v in old])  # every other value as it was
+        self.assertEqual(new[:0x30], raw[:0x30])                         # same layout: the header and its hash stay
+        self.assertEqual(StaticMeshes(new).parts, StaticMeshes(raw).parts)
+        self.assertEqual(road_look(raw), (old[0][12:16], old[0][19]))
+
+    def test_a_new_road_takes_the_shipped_look(self):
+        from rusemod.roadstrips import add_roads, road_look, without_roads
+        raw = static_pack()
+        gone, _n = without_roads(raw)
+        line = [(1000.0, 1000.0), (40000.0, 1000.0)]
+        added, _notes = add_roads(gone, [line], slope, (0.0, 0.0, 163840.0, 163840.0), road_look(raw))
+        new = [v for v in road_vertices(added) if v[19] != 0.0]
+        self.assertTrue(new)
+        self.assertTrue(all((v[12:16], v[19]) == road_look(raw) for v in new))
+
+
 class Adding(unittest.TestCase):
     def setUp(self):
         self.raw = static_pack()

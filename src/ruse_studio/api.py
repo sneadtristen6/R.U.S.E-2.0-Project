@@ -2356,11 +2356,28 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError(f"{path} can't be read ({exc}). The mod check at the top can set it aside, or fix it by "
                               f"hand: the Studio won't write over it.") from None
 
-    def _write_roads(self, path: Path, roads: list) -> None:
+    @staticmethod
+    def _read_take_out(path: Path):
+        """The map's own roads and bridges the file takes out (rusemod.roadnet.TakeOut; nothing without the file)."""
         from rusemod import roadnet
-        if roads:
-            _save_checked(path, roadnet.roads_toml(roads, self.ROADS_HEADER),
-                          lambda data: roadnet.parse_roads(data.get("road", []), str(path)))
+        if not path.is_file():
+            return roadnet.TakeOut()
+        try:
+            return roadnet.take_out_of(roadnet.parse_take_out(tomllib.loads(path.read_text(encoding="utf-8"))
+                                                              .get("take_out"), str(path)))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, roadnet.RoadNetError) as exc:
+            raise StudioError(f"{path} can't be read ({exc}). The mod check at the top can set it aside, or fix it by "
+                              f"hand: the Studio won't write over it.") from None
+
+    def _write_roads(self, path: Path, roads: list, take_out=None) -> None:
+        """Write the mod's new roads; `take_out` None keeps what the file takes out of the map's own."""
+        from rusemod import roadnet
+        if take_out is None:
+            take_out = self._read_take_out(path)
+        if roads or take_out.names():
+            _save_checked(path, roadnet.roads_toml(roads, self.ROADS_HEADER, take_out),
+                          lambda data: (roadnet.parse_roads(data.get("road", []), str(path)),
+                                        roadnet.parse_take_out(data.get("take_out"), str(path))))
             return
         if path.is_file():
             path.unlink()
@@ -2377,16 +2394,30 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         when none is picked}."""
         folder = self._map_dir()
         if folder is None:
-            return {"roads": [], "bridge": None, "saved": None, "mod": None}
+            return {"roads": [], "bridge": None, "saved": None, "mod": None, "take_out": []}
         path = self._roads_file(pack)
         with self._saving:
             roads = self._read_roads(path)
+            taken = self._read_take_out(path)
         water, kind = self._water(pack) if roads else (None, None)
         from rusemod.bridges import crossings
         return {"roads": [{"points": [list(p) for p in r.points], "join": r.join, "keep_trees": r.keep_trees,
                            "crossings": [list(map(round, c)) for c in crossings(water, r.points)] if water and r.bridges else []}
                           for r in roads],
-                "bridge": kind, "saved": str(path) if roads else None, "mod": str(folder)}
+                "bridge": kind, "saved": str(path) if roads or taken.names() else None, "mod": str(folder),
+                "take_out": taken.names()}
+
+    def road_take_out(self, pack: str, roads: bool, bridges: bool) -> dict:
+        """Take the map's own roads (its road network, the roads drawn from high up and on the map table, its road
+        stickers) and its own bridges (their models, their floors sunk under the ground) out in the current mod, or
+        keep them: roads.toml take_out (rusemod.roadnet.TakeOut). The mod's own new roads stay. Returns roads(pack)."""
+        from rusemod import roadnet
+        if self._map_dir() is None:
+            raise StudioError("Pick or make a mod first: the change is saved in it.")
+        path = self._roads_file(pack)
+        with self._saving:
+            self._write_roads(path, self._read_roads(path), roadnet.TakeOut(bool(roads), bool(bridges)))
+        return self.roads(pack)
 
     def map_road_graph(self, pack: str) -> dict:
         """The roads a depot or a starting point sticks to (the map view's Stick to roads): {"nodes": [[x, y], ...],
