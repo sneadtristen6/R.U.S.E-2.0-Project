@@ -272,6 +272,34 @@ class Making(unittest.TestCase):
         with self.assertRaisesRegex(NewMapError, "already has a map called BlitzAtDusk"):
             made(glad={**self.glad, **c.glad_changed, **c.glad})
 
+    def test_its_own_zone_map(self):
+        """The scenario's MapIA names its zone map: the copy gets its own of both (rusemod.sectors can then make its
+        sectors again), and its cluster loads its own MapIA; without a MapIA, everything as before."""
+        glad = dict(self.glad)
+        zone = "DataDir:" + BS + BS.join(["Test", "map", "SuperCrossRoads4", "ZoneBluff", "LevelDesign_Normal.Kdt"])
+        cam = "DataDir:" + BS + BS.join(["Test", "Map", "SuperCrossRoads4", "CamPath", "CamPaths_Normal.ndfbin"])
+        ia_member = BS.join(["genglad", "patchable", "scenario", "supercrossroads4", "scenario", "mapia.cpp.gladndfbin"])
+        glad[ia_member] = make_ndf(objects=[(0, [(0, p(0)), (1, p(1))])], classes=["TAreaManager"],
+                                   props=[("StreamedMeshKdTreeFileName", 0), ("CamPath", 0)], strings=[zone, cam],
+                                   compress=True)
+        cluster = Ndf(glad[SCENARIO_CLUSTER])
+        cluster.set_string(cluster.strings.index(BS.join(["Patchable", "Scenario", "SuperCrossRoads4", "Scenario",
+                                                          "MapIA"])),
+                           BS.join(["Patchable", "Scenario", "SuperCrossRoads4", "Scenario", "MapIA"]))
+        data = dict(data_files())
+        data[BS.join(["test", "map", "supercrossroads4", "zonebluff", "leveldesign_normal.kdt"])] = b"ZONES"
+        c = made(glad=glad, data=data)
+        new_ia = BS.join(["genglad", "patchable", "scenario", "blitzatdusk", "scenario", "mapia.cpp.gladndfbin"])
+        self.assertEqual(Ndf(c.glad[new_ia]).strings, [
+            "DataDir:" + BS + BS.join(["Test", "map", "BlitzAtDusk", "ZoneBluff", "LevelDesign_Normal.Kdt"]), cam])
+        self.assertEqual(c.data[BS.join(["test", "map", "blitzatdusk", "zonebluff", "leveldesign_normal.kdt"])], b"ZONES")
+        nd = Ndf(c.glad[BS.join(["genglad", "patchable", "scenario", "blitzatdusk", "scenario",
+                                 "clustermap.cpp.gladndfbin"])])
+        self.assertIn(BS.join(["Patchable", "Scenario", "BlitzAtDusk", "Scenario", "MapIA"]), nd.strings)
+        self.assertEqual(Ndf(glad[ia_member]).strings, [zone, cam])               # the shipped one as it was
+        no_zone = dict(data_files())                                               # its zone map missing: as before
+        self.assertEqual(sorted(made(glad=glad, data=no_zone).data), sorted(self.c.data))
+
     def test_what_cant_be_copied(self):
         for name, spec, why in (
                 ("BlitzAtDusk", NewMap("Nowhere", {"us": "x"}), "isn't a map of this game"),

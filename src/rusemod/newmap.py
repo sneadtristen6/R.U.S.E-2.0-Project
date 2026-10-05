@@ -411,17 +411,42 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
     (scen_folder, out.scenario), = scen
     out.map_folder = next(iter(maps.values()))
     mf = re.escape(out.map_folder)
-    n = _swap_strings(cluster, _renamer(
+    scen_dir = "test" + BS + "map" + BS
+    # the scenario's MapIA names its zone map (which sector a place is in: rusemod.sectors), and the copy gets its own
+    # of both, so its sectors can be made again without touching the shipped map's (Blank Ocean, 2026-10-05: the
+    # copy read the shipped zone map, and its sectors over the whole map were left out)
+    ia_base = "Patchable" + BS + "Scenario" + BS + folder + BS + sub + BS + "MapIA"
+    ia_raw, ia_copy = read_glad(_member(ia_base)), None
+    if ia_raw is not None:
+        ia = Ndf(ia_raw)
+        zone_at = re.compile(r"^(DataDir:[\\/]Test[\\/]Map[\\/])(" + re.escape(scen_folder)
+                             + r")([\\/]ZoneBluff[\\/][^\\/]+\.kdt)$", re.I)
+        zones = [zone_at.match(s).group(3)[1:].replace("/", BS).lower() for s in ia.strings if zone_at.match(s)]
+        zone_raw = read_data(scen_dir + scen_folder + BS + zones[0]) if len(zones) == 1 else None
+        if zone_raw is not None and _swap_strings(ia, _renamer(zone_at)(new)) == 1:
+            ia_copy = (ia, zones[0], zone_raw)
+    patterns = [
         re.compile(r"^(DataDir:[\\/]Test[\\/]Map[\\/])(" + re.escape(scen_folder) + r")([\\/].+\.scenario)$", re.I),
         re.compile(r"^(Patchable[\\/]map[\\/])(" + mf + r")([\\/]ClusterMap)$", re.I),
-        re.compile(r"^(map[\\/])(" + mf + r")([\\/]ClusterMap\.ndfbin)$", re.I))(new))
+        re.compile(r"^(map[\\/])(" + mf + r")([\\/]ClusterMap\.ndfbin)$", re.I)]
+    if ia_copy is not None:
+        patterns += [
+            re.compile(r"^(Patchable[\\/]Scenario[\\/])(" + re.escape(folder) + r")([\\/]" + re.escape(sub)
+                       + r"[\\/]MapIA)$", re.I),
+            re.compile(r"^(Scenario[\\/])(" + re.escape(folder) + r")([\\/]" + re.escape(sub) + r"[\\/]MapIA\.ndfbin)$",
+                       re.I)]
+    n = _swap_strings(cluster, _renamer(*patterns)(new))
     if n < 2:
         raise NewMapError(f"maps/{new}: {src}'s scenario cluster couldn't be pointed at the new map")
     new_base = "Patchable" + BS + "Scenario" + BS + new + BS + sub + BS + "ClusterMap"
     adding(out.glad, read_glad, _member(new_base), cluster.to_member(compress=bool(cluster.flags & 0x80)))
-    scen_dir = "test" + BS + "map" + BS
     adding(out.data, read_data, scen_dir + low + BS + out.scenario,
            must(read_data, scen_dir + scen_folder + BS + out.scenario, "scenario"))
+    if ia_copy is not None:
+        ia, zone_file, zone_raw = ia_copy
+        adding(out.glad, read_glad, _member("Patchable" + BS + "Scenario" + BS + new + BS + sub + BS + "MapIA"),
+               ia.to_member(compress=bool(ia.flags & 0x80)))
+        adding(out.data, read_data, scen_dir + low + BS + zone_file, zone_raw)
 
     # 2. the map's cluster: it mounts the new pack, and loads the new constants
     map_member = _member("Patchable" + BS + "map" + BS + out.map_folder + BS + "ClusterMap")
