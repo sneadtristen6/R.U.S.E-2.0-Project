@@ -178,6 +178,52 @@ class Blocking(unittest.TestCase):
         self.assertEqual(g.links, [(0, 1, 4980.0, 2000.0)])  # the gate moves to where they still meet: A and B stay one
         self.assertEqual(g.parts(), [2])
 
+    def test_the_refill_is_the_plain_sums(self):
+        """nav._fill looks the circles and zones up by place, the covered spots first and the nearest zones first:
+        the same circles as weighing every spot against every source circle, zone and live circle."""
+        import random
+
+        def plain(sources, zones, now, least=nav.MIN_RADIUS):
+            step, spots, seen = 2 * nav.STEP, [], set()
+            for sx, sy, sr in sources:
+                for i in range(int((sx - sr) // step), int((sx + sr) // step) + 1):
+                    for j in range(int((sy - sr) // step), int((sy + sr) // step) + 1):
+                        if (i, j) in seen:
+                            continue
+                        seen.add((i, j))
+                        x, y = i * step, j * step
+                        deep, source = max((r - ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5, k)
+                                           for k, (cx, cy, r) in enumerate(sources))
+                        if deep < least:
+                            continue
+                        room = min([deep] + [((x - zx) ** 2 + (y - zy) ** 2) ** 0.5 - zr for zx, zy, zr in zones if zr > 0])
+                        room = (room // nav.STEP) * nav.STEP
+                        if room >= least and not any((x - cx) ** 2 + (y - cy) ** 2 < r ** 2 for cx, cy, r in now if r > 0):
+                            spots.append((room, x, y, source))
+            spots.sort(key=lambda s: (-s[0], s[1], s[2]))
+            out = []
+            for r, x, y, source in spots:
+                if not any((x - cx) ** 2 + (y - cy) ** 2 < cr ** 2 for cx, cy, cr, _s in out):
+                    out.append((float(x), float(y), float(r), source))
+            return out
+        rng = random.Random(1)
+        added = 0
+        for k in range(40):
+            def spot():
+                return float(320 * rng.randint(0, 250)) if k % 2 else rng.uniform(0.0, 80000.0)
+            sources = [(spot(), spot(), rng.choice((2560.0, 4800.0, 9600.0, 28800.0, rng.uniform(1300.0, 30000.0))))
+                       for _ in range(rng.randint(1, 5))]
+            zones = [(spot(), spot(), rng.uniform(300.0, 9000.0)) for _ in range(rng.randint(1, 12))]
+            zones += [(spot() + 300000.0, spot(), 5000.0), (spot(), spot() - 90000.0, 800.0)]  # (far ones)
+            now = [(x, y, float(320 * rng.randint(0, int(r // 320)))) for x, y, r in sources] \
+                + [(spot(), spot(), rng.uniform(1000.0, 6000.0)) for _ in range(rng.randint(0, 4))]
+            got = nav._fill(sources, zones, now)
+            self.assertEqual(got, plain(sources, zones, now))
+            # (and told what each source keeps, as Graph.block tells it: its spots under that are passed over)
+            self.assertEqual(nav._fill(sources, zones, now, kept=[c[2] for c in now[:len(sources)]]), got)
+            added += len(got)
+        self.assertGreater(added, 400)
+
     def test_the_ground_given_up_is_filled_back(self):
         """A big circle with a small block at its edge: it shrinks a lot, and new circles fill what it gave up,
         right up to the block, linked in, and listed in the index as one more tree."""

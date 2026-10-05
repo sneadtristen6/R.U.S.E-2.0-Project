@@ -53,7 +53,9 @@ from __future__ import annotations
 
 import math
 import struct
+from array import array
 from dataclasses import dataclass, field
+from heapq import heapify, heappop, heappush
 
 HEADER = 84
 STEP = 320.0         # circle centres and radii are on this grid
@@ -159,8 +161,13 @@ class Graph:
         n = len(self.circles) - 1
         old = [c[:3] for c in self.circles[:-1]]
         radius = []
+        # the zones by place (thousands over a map's new water): a circle is looked at against those that may reach
+        # within a unit of it only. Any other is over a unit clear of it, so it never decides whether the circle
+        # shrinks, nor by how much; the same for a point in a zone. (All by hand when a zone has no size.)
+        zoned = _Buckets(list(zones)) if all(zr > 0 for _x, _y, zr in zones) else None
         for i, (x, y, r) in enumerate(old):
-            clear = min(((x - zx) ** 2 + (y - zy) ** 2) ** 0.5 - zr for zx, zy, zr in zones)
+            by = zones if zoned is None else [zones[k] for k in zoned.near(x, y, r + 1.0)]
+            clear = min((((x - zx) ** 2 + (y - zy) ** 2) ** 0.5 - zr for zx, zy, zr in by), default=math.inf)
             if clear >= r or i < keep:
                 radius.append(r)
                 continue
@@ -174,10 +181,11 @@ class Graph:
             return
 
         def in_zone(px, py):
-            return any((px - zx) ** 2 + (py - zy) ** 2 <= zr * zr for zx, zy, zr in zones)
+            return any((px - zx) ** 2 + (py - zy) ** 2 <= zr * zr
+                       for zx, zy, zr in (zones if zoned is None else (zones[k] for k in zoned.near(px, py, 1.0))))
 
         now = [(x, y, radius[i]) for i, (x, y, _r) in enumerate(old)]
-        filled = _fill([old[i] for i in changed], zones, now) if refill else []
+        filled = _fill([old[i] for i in changed], zones, now, kept=[radius[i] for i in changed]) if refill else []
         added = [c[:3] for c in filled]
         allc = now + added
         counts["added"] += len(added)
@@ -589,8 +597,8 @@ class Graph:
         Graph.block. Ground a shipped map closes to units has no circle over it at all (no shipped graph has a circle
         without links, or an emptied one: FORMATS.md §6, movement graphs), so opening it is adding circles there.
 
-        The main graph gets new circles over the zones where no live circle is (Graph.block's refill, _fill: centres
-        on the STEP grid, the largest first, each inside a zone, down to MIN_RADIUS, their middles on the map and never
+        The main graph gets new circles over the zones where no live circle is (_grow: centres on the 2 STEP grid,
+        the largest first, each inside a zone, down to MIN_RADIUS, their middles on the map and never
         in a circle that owns a local map), linked to every circle they overlap by STEP or more (to an owner only where
         its local map has ground at the meeting point). Inside an owner the game decides from its local map, so the
         zones that reach an owner get new circles in its local map too (down to STEP, the smallest a shipped local map
@@ -609,36 +617,35 @@ class Graph:
         size = float(self.box[2])
         nx = len(self.subs)
         middles = []
-
-        def on_map(x, y) -> bool:
-            return 0.0 <= x <= size and 0.0 <= y <= size
-        new, linked, out = self._open_here(live, MIN_RADIUS, on_map, nx)
+        new, linked, out = self._open_here(live, MIN_RADIUS, (0.0, 0.0, size, size), None, nx)  # (middles on the map)
         counts["added"], counts["linked"], counts["left_out"] = len(new), linked, out
         middles += new
+        by_place = _Buckets(list(live)) if nx else None  # (a map drained across has a quarter of a million zones)
         for k in range(nx):
             ox, oy, orad = self.circles[k][:3]
             if orad <= 0:
                 continue
-            here = [z for z in live if math.hypot(z[0] - ox, z[1] - oy) < z[2] + orad]
+            here = [live[z] for z in sorted(by_place.near(ox, oy, orad + 1.0))
+                    if math.hypot(live[z][0] - ox, live[z][1] - oy) < live[z][2] + orad]
             if not here:
                 continue
 
             def inside(x, y, ox=ox, oy=oy, orad=orad) -> bool:
                 return math.hypot(x - ox, y - oy) < orad
-            got, _linked, out = self.subs[k]._open_here(here, STEP, inside)
+            got, _linked, out = self.subs[k]._open_here(here, STEP, (ox - orad, oy - orad, ox + orad, oy + orad),
+                                                        inside)
             counts["local"] += len(got)
             counts["left_out"] += out
             middles += got
-        counts["idle"] = [i for i, (zx, zy, zr) in enumerate(zones)
-                          if not any(math.hypot(x - zx, y - zy) < zr for x, y, _r in middles)]
+        counts["idle"] = _without(zones, middles)
         return counts
 
-    def _open_here(self, zones, least: float, where, nx: int = 0) -> tuple[list, int, int]:
+    def _open_here(self, zones, least: float, box, where=None, nx: int = 0) -> tuple[list, int, int]:
         """Graph.open_ground on this graph alone (no local maps): (the circles added, links added, circles left
-        out). The first `nx` circles own local maps: a link to one only where its local map has ground."""
+        out). The new circles' middles are inside `box` (x0, y0, x1, y1) and where `where(x, y)` allows, when given.
+        The first `nx` circles own local maps: a link to one only where its local map has ground."""
         n = len(self.circles) - 1
         old = [c[:3] for c in self.circles[:-1]]
-        ground = _Buckets(list(old))
 
         def meets(c, d):
             """Where new circle c meets old circle d, for a link (an owner only where its local map has ground)."""
@@ -646,13 +653,15 @@ class Graph:
             if point is None or (d < nx and self.subs[d].find(*point) is None):
                 return None
             return point
-
-        def joins(c) -> bool:
-            return any(meets(c, d) is not None for d in ground.near(*c))
-        rest: list = []
-        new = [c[:3] for c in _fill(list(zones), [], old, least, where, joins, rest)]
+        # every new circle comes with a link of its own or more (to the circle it was reached from), and _finish
+        # refuses a graph of more than 65,535 circles, or whose links listed twice pass 65,535: from this many new
+        # circles on it can only refuse, so the growing stops there (a sea drained would go on for a million)
+        most = min(32768 - len(self.links), 65535 - n)
+        new, left_out, full = _grow(list(zones), old, least, box, where, meets, most)
+        if full:
+            raise NavError("the graph would be too big for its 16-bit numbers")
         if not new:
-            return [], 0, len(rest)
+            return [], 0, left_out
         parts_before = len(self._labels()[1])
         allc = old + new
         near = _Buckets(list(allc))
@@ -669,7 +678,7 @@ class Graph:
         if len(self._labels()[1]) > parts_before:  # a guard: never write ground units can't reach
             # rule: ground-reach
             raise NavError("opening ground would leave ground units can't reach, which crashes the game")
-        return new, len(links), len(rest)
+        return new, len(links), left_out
 
     def _owner_for(self, span, deck, every, nx: int, anchors, chains, owners, extra=()) -> dict | None:
         """The owner circle for a deck (its circles `deck`, along `span`): centred at the deck's middle on the STEP
@@ -889,7 +898,10 @@ class Graph:
             for c in range(len(g.circles) - 1):
                 starts.append(len(recs))
                 cx, cy, cr = g.circles[c][:3]
-                near = [z for z in zones if math.hypot(z[0] - cx, z[1] - cy) < cr + z[2]]
+                # (the zones near it are looked for only when it has a crossing: few circles do, and a map's new
+                # water is thousands of zones)
+                near = [z for z in zones if math.hypot(z[0] - cx, z[1] - cy) < cr + z[2]] \
+                    if g.circles[c][4] < g.circles[c + 1][4] else []
                 for k in range(g.circles[c][4], g.circles[c + 1][4]):
                     rec = g.crossings[28 * k:28 * k + 28]
                     if near:
@@ -1285,7 +1297,8 @@ def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None)
             zones = [(b.x, b.y, b.radius) for _i, b in run]
             if is_open:
                 c = g.open_ground(zones)
-                opened |= {run[j][0] for j in range(len(run)) if j not in c["idle"]}
+                idle_here = set(c["idle"])
+                opened |= {run[j][0] for j in range(len(run)) if j not in idle_here}
                 notes.append(f"{what}: {len(zones)} open(s); {c['added']} circle(s) and {c['linked']} link(s) added, "
                              f"{c['local']} circle(s) in towns' and bridges' own movement")
                 if c["left_out"]:
@@ -1435,6 +1448,12 @@ class _Buckets:
                 if d not in seen:
                     seen.add(d)
                     yield d
+
+
+def _side(radii: list) -> float:
+    """A bucket side for circles of these radii: twice the middle one, between 4 STEP and _Buckets' own 20480."""
+    live = sorted(r for r in radii if r > 0)
+    return max(4 * STEP, min(20480.0, 2 * live[len(live) // 2])) if live else 20480.0
 
 
 def _meeting(p, q) -> tuple[float, float] | None:
@@ -1641,20 +1660,19 @@ def _walk_out(at, out, roads, step: float, reach: float, away=None):
         walked += seg
 
 
-def _fill(sources, zones, now, least: float = MIN_RADIUS, where=None, joins=None, rest=None) -> list:
+def _fill(sources, zones, now, least: float = MIN_RADIUS, kept=None) -> list:
     """New circles over the ground `sources` (the old circles that were emptied or shrunk) covered and no circle
     in `now` covers any more, outside the zones: each inside one source circle and clear of every zone, centres on
-    the STEP grid, the largest first, each on ground no circle covers yet, down to `least` (MIN_RADIUS); with
-    `where(x, y)`, only middles it allows. (x, y, r, the source it lies deepest in) each.
-
-    With `joins(circle)` (whether a circle meets ground units can reach, for a link), grown from that ground instead
-    (Graph.open_ground): a circle is taken only when it joins, or overlaps one taken before it by STEP or more, in
-    passes over the spots left (the largest first in each) until one takes none; so every circle taken is reached
-    from the ground, and a big one in the middle of a stroke that wouldn't reach it leaves room for smaller ones that
-    do. How many circles the ground no circle reached would have had goes in `rest` (a list) when given."""
+    the STEP grid, the largest first, each on ground no circle covers yet, down to `least` (MIN_RADIUS).
+    (x, y, r, the source it lies deepest in) each. `kept`: the radius each source has now, when it is still in `now`
+    with it (0 for an emptied one): its spots inside that are covered, and passed over at once. (Ground opened where
+    the graph had none is grown from the ground units can reach instead: _grow.)"""
     live = [c for c in now if c[2] > 0]
-    near = _Buckets(live)
-    placed = _Buckets([])  # the new circles so far
+    # buckets about as big as the circles (a circle that holds a spot is in the spot's bucket whatever their size,
+    # and fewer others are): the few nearby, not the many in a big square, looked at for each spot
+    side = _side([c[2] for c in live])
+    near = _Buckets(live, side)
+    placed = _Buckets([], side)  # the new circles so far
 
     def covered(x, y, extra=None):
         key = (int(x // near.size), int(y // near.size))
@@ -1662,58 +1680,521 @@ def _fill(sources, zones, now, least: float = MIN_RADIUS, where=None, joins=None
             or extra is not None and any((x - extra.circles[i][0]) ** 2 + (y - extra.circles[i][1]) ** 2
                                          < extra.circles[i][2] ** 2 for i in extra.cells.get(key, ()))
 
-    # each spot is weighed once, against the sources that hold it and the zones that can bound it (a spot is never
-    # deeper in a source than the largest source's radius): many zones (a new lake's blocks) stay quick
+    # square by square of the sources' buckets: the spots in a square are those of the sources it holds, and their
+    # holders are those sources, so only one square's spots are remembered at a time; a spot no source holds is never
+    # deep enough to take. Their order is the sort's below.
+    # A spot is taken when it lies `least` deep or more in a source, has that much room clear of every zone, and no
+    # live circle covers it: the tests in the order that drops the most spots the soonest (most lie under a zone or
+    # under what their own circle keeps), each spot weighed against the few circles and zones near it
     step = 2 * STEP
-    spots, seen = [], set()
-    most = max((sr for _x, _y, sr in sources), default=0.0)
-    holders, bounds = _Buckets(list(sources)), _Buckets(list(zones))
-    for sx, sy, sr in sources:
-        for i in range(int((sx - sr) // step), int((sx + sr) // step) + 1):
-            for j in range(int((sy - sr) // step), int((sy + sr) // step) + 1):
-                if (i, j) in seen:
-                    continue
-                seen.add((i, j))
-                x, y = i * step, j * step
-                deep, source = max(((sources[k][2] - ((x - sources[k][0]) ** 2 + (y - sources[k][1]) ** 2) ** 0.5, k)
-                                    for k in holders.near(x, y, 0.0)), default=(-1.0, 0))
-                if deep < least or (where is not None and not where(x, y)):
-                    continue
-                room = min([deep] + [((x - zones[k][0]) ** 2 + (y - zones[k][1]) ** 2) ** 0.5 - zones[k][2]
-                                     for k in bounds.near(x, y, most)])
-                room = (room // STEP) * STEP
-                if room >= least and not covered(x, y):
-                    spots.append((room, x, y, source))
+    spots = []
+    holders, bounds = _Buckets(list(sources), _side([sr for _x, _y, sr in sources])), _Buckets(list(zones))
+    size, wide = holders.size, bounds.size
+
+    def span(lo: int, hi: int, c: int) -> range:
+        """The grid indices lo..hi whose spots (index * step) lie in bucket row or column c (int(spot // size))."""
+        a, b = max(lo, int(c * size // step) - 1), min(hi, int((c + 1) * size // step) + 1)
+        while a <= b and int(a * step // size) < c:
+            a += 1
+        while b >= a and int(b * step // size) > c:
+            b -= 1
+        return range(a, b + 1)
+    for (ci, cj), mine in holders.cells.items():
+        seen = set()
+        for own in mine:
+            sx, sy, sr = sources[own]
+            keeps = kept[own] ** 2 if kept is not None else 0.0
+            for i in span(int((sx - sr) // step), int((sx + sr) // step), ci):
+                x = i * step
+                for j in span(int((sy - sr) // step), int((sy + sr) // step), cj):
+                    y = j * step
+                    if (x - sx) ** 2 + (y - sy) ** 2 < keeps or (i, j) in seen:
+                        continue  # under what its own circle keeps (a live circle: covered), or weighed already
+                    seen.add((i, j))
+                    # the zones in its own square first: under one, or too near one, it has no room
+                    room = min((((x - zones[k][0]) ** 2 + (y - zones[k][1]) ** 2) ** 0.5 - zones[k][2]
+                                for k in bounds.cells.get((int(x // wide), int(y // wide)), ())), default=math.inf)
+                    if room < least or covered(x, y):
+                        continue
+                    deep, source = max(((sources[k][2] - ((x - sources[k][0]) ** 2 + (y - sources[k][1]) ** 2) ** 0.5,
+                                         k) for k in mine), default=(-1.0, 0))
+                    if deep < least:
+                        continue
+                    # its room: how far the nearest zone's rim is, when nearer than it lies deep. A zone farther
+                    # than that can't make it less: so only as far out as the least found so far leaves to look
+                    room, reach = min(room, deep), 1.0
+                    while reach < room + 1.0:
+                        reach = min(room + 1.0, 2 * reach + wide)
+                        room = min([room] + [((x - zones[k][0]) ** 2 + (y - zones[k][1]) ** 2) ** 0.5 - zones[k][2]
+                                             for k in bounds.near(x, y, reach)])
+                    room = (room // STEP) * STEP
+                    if room >= least:
+                        spots.append((room, x, y, source))
     spots.sort(key=lambda s: (-s[0], s[1], s[2]))
     out = []  # (x, y, r, the source circle it lies deepest in)
-    if joins is None:
-        for r, x, y, source in spots:
-            if not covered(x, y, placed):
-                out.append((float(x), float(y), float(r), source))
-                placed.add((float(x), float(y), float(r)))
-        return out
-    left = spots
-    while left:
-        later, took = [], len(out)
-        for spot in left:
-            r, x, y, source = spot
-            if covered(x, y, placed):
+    for r, x, y, source in spots:
+        if not covered(x, y, placed):
+            out.append((float(x), float(y), float(r), source))
+            placed.add((float(x), float(y), float(r)))
+    return out
+
+
+# --- opening ground (Graph.open_ground) ---------------------------------------------------------------------------
+NEAR = 16  # spots with up to this many STEPs of room are looked for round each old circle (which of them meet it);
+           # one with more looks round itself for the old circles, when its turn comes
+RING = 24  # with no more room than this on a grid, the places round a new circle where a spot could meet it are
+           # listed once for its size; with more, they are gone through square by square of TILE spots, past the
+TILE = 32  # squares whose spots have too little room to reach it
+
+
+class _Spots:
+    """The spots new circles may go on when ground is opened (_grow), as a grid: the points of the 2 STEP grid inside
+    `box` (x0, y0, x1, y1) that lie `least` or more inside a zone (x, y, r), each with its room: how deep it lies in
+    the zone it lies deepest in, in whole STEPs (`room`: 0 where there is no spot, or no more: one inside a circle is
+    dropped), and whether it has a turn coming (`due`). A place is a spot's number on the grid (row by row along y,
+    the rows along x): the order of two spots with the same room is the order of their places.
+
+    A number and a byte for each point, whatever the zones: a whole map drained across (a quarter of a million zones,
+    thirteen million spots) takes tens of megabytes, where a list of the spots took gigabytes."""
+
+    def __init__(self, zones, least: float, box):
+        step = self.step = 2 * STEP
+        zones = [z for z in zones if z[2] >= least]  # (a smaller one has no spot with that much room)
+        self.ni = self.nj = self.top = 0
+
+        def first(v):  # the first grid line at v or past it
+            k = int(v // step)
+            return k if k * step >= v else k + 1
+        if not zones:
+            return
+        i0 = max(first(box[0]), min(int((x - r) // step) for x, _y, r in zones))
+        j0 = max(first(box[1]), min(int((y - r) // step) for _x, y, r in zones))
+        i1 = min(int(box[2] // step), max(int((x + r) // step) for x, _y, r in zones))
+        j1 = min(int(box[3] // step), max(int((y + r) // step) for _x, y, r in zones))
+        if i1 < i0 or j1 < j0:
+            return
+        self.i0, self.j0, self.ni, self.nj = i0, j0, i1 - i0 + 1, j1 - j0 + 1
+        ni, nj = self.ni, self.nj
+        most = int(max(r for _x, _y, r in zones) // STEP)  # no spot has more room than the largest zone's radius
+        # a byte each while the rooms fit one (searched at once for the spots of one room: walk); wider numbers past it
+        self.wide = None if most < 2 ** 8 else "H" if most < 2 ** 16 else "I" if most < 2 ** 32 else "Q"
+        room = self.room = bytearray(ni * nj) if self.wide is None else \
+            array(self.wide, bytes(ni * nj * array(self.wide).itemsize))
+        self.due = bytearray(ni * nj)
+        self._spans, self._rings, self._tiles, self._places, self._zero = {}, {}, None, None, None
+        kinds: dict = {}  # zones of one radius whose middles sit alike in their grid squares hold the same spots
+        spare = 400000    # the most spots those lists may hold between them (some tens of megabytes)
+        top = 0
+        for sx, sy, sr in zones:
+            kind = None
+            if sr <= 64 * step and sx % 1 == 0 and sy % 1 == 0 and abs(sx) < 2.0 ** 40 and abs(sy) < 2.0 ** 40:
+                # a middle on whole units: every spot's distance to it is worked out from whole numbers, the same
+                # whichever grid square the middle is in, so the spots are listed once for all such zones
+                ox, oy = sx % step, sy % step
+                kind = kinds.get((sr, ox, oy))
+                if kind is None and (2 * sr / step + 2) ** 2 <= spare:
+                    cells = []
+                    for di in range(int((ox - sr) // step), int((ox + sr) // step) + 1):
+                        for dj in range(int((oy - sr) // step), int((oy + sr) // step) + 1):
+                            deep = sr - ((di * step - ox) ** 2 + (dj * step - oy) ** 2) ** 0.5
+                            if deep >= least and (deep // STEP) * STEP >= least:
+                                cells.append((di, dj, int(deep // STEP)))
+                    kind = kinds[sr, ox, oy] = (cells, [(di * nj + dj, lv) for di, dj, lv in cells],
+                                                min((c[0] for c in cells), default=0),
+                                                max((c[0] for c in cells), default=0),
+                                                min((c[1] for c in cells), default=0),
+                                                max((c[1] for c in cells), default=0))
+                    top = max([top] + [lv for _di, _dj, lv in cells])
+                    spare -= len(cells)
+            if kind is not None:
+                cells, flat, da, db, ea, eb = kind
+                if not cells:
+                    continue
+                ci, cj = int(sx // step) - i0, int(sy // step) - j0
+                if ci + da >= 0 and ci + db < ni and cj + ea >= 0 and cj + eb < nj:
+                    base = ci * nj + cj
+                    for off, lv in flat:
+                        if room[base + off] < lv:
+                            room[base + off] = lv
+                else:
+                    for di, dj, lv in cells:
+                        if 0 <= ci + di < ni and 0 <= cj + dj < nj and room[(ci + di) * nj + cj + dj] < lv:
+                            room[(ci + di) * nj + cj + dj] = lv
                 continue
-            c = (float(x), float(y), float(r))
-            if joins(c) or any(_meeting(c, placed.circles[i]) is not None for i in placed.near(*c)):
-                out.append(c + (source,))
-                placed.add(c)
+            reach = sr - least + 1.0  # a spot farther from the middle hasn't the room
+            for i in range(max(i0, int((sx - sr) // step)), min(i1, int((sx + sr) // step)) + 1):
+                x = i * step
+                dx2 = (x - sx) ** 2
+                if dx2 > reach * reach:
+                    continue
+                h = math.sqrt(reach * reach - dx2)
+                ja, jb = max(j0, int((sy - h) // step)), min(j1, int((sy + h) // step) + 1)
+                k = (i - i0) * nj + ja - j0
+                for j in range(ja, jb + 1):
+                    deep = sr - (dx2 + (j * step - sy) ** 2) ** 0.5
+                    if deep >= least and (deep // STEP) * STEP >= least:
+                        lv = int(deep // STEP)
+                        if room[k] < lv:
+                            room[k] = lv
+                            if lv > top:
+                                top = lv
+                    k += 1
+        self.top = top  # no spot has more room than this
+
+    def at(self, place: int) -> tuple[float, float]:
+        """A spot's point on the map."""
+        i, j = divmod(place, self.nj)
+        return (self.i0 + i) * self.step, (self.j0 + j) * self.step
+
+    def _none(self, count: int):
+        """`count` places with no spot, to write over a run of them."""
+        return bytes(count) if self.wide is None else array(self.wide, bytes(count * self.room.itemsize))
+
+    def empty(self) -> bool:
+        return self.room.count(0) == len(self.room)
+
+    def only(self, where) -> None:
+        """Spots `where(x, y)` doesn't allow are no spots."""
+        room, nj, step = self.room, self.nj, self.step
+        for i in range(self.ni):
+            x = (self.i0 + i) * step
+            for j, lv in enumerate(room[i * nj:(i + 1) * nj]):
+                if lv and not where(x, (self.j0 + j) * step):
+                    room[i * nj + j] = 0
+
+    def uncover(self, circles) -> None:
+        """Spots inside a circle (x, y, r), its rim apart, are no spots: ground units have already."""
+        room, step, i0, j0, nj = self.room, self.step, self.i0, self.j0, self.nj
+        i1, j1 = i0 + self.ni - 1, j0 + nj - 1
+        none = self._none(nj)
+        for cx, cy, r in circles:
+            if r <= 0 or cy + r < j0 * step or cy - r > j1 * step:
+                continue
+            rr = r ** 2
+            for i in range(max(i0, int((cx - r) // step)), min(i1, int((cx + r) // step)) + 1):
+                dx2 = (i * step - cx) ** 2
+                if not dx2 < rr:  # (no point of this row is nearer)
+                    continue
+                # the row's spots inside it are one run: about these, then to the very ones by the test itself
+                h = math.sqrt(rr - dx2)
+                a, b = int((cy - h) // step) + 1, int((cy + h) // step)
+                while dx2 + ((a - 1) * step - cy) ** 2 < rr:
+                    a -= 1
+                while dx2 + ((b + 1) * step - cy) ** 2 < rr:
+                    b += 1
+                while a <= b and not dx2 + (a * step - cy) ** 2 < rr:
+                    a += 1
+                while b >= a and not dx2 + (b * step - cy) ** 2 < rr:
+                    b -= 1
+                a, b = max(a, j0), min(b, j1)
+                if a <= b:
+                    k = (i - i0) * nj - j0
+                    room[k + a:k + b + 1] = none[:b - a + 1]
+
+    def rooms(self, low: int = 1) -> list[int]:
+        """The rooms the spots left have, from `low` up, the most first."""
+        if self.wide is None:
+            return [lv for lv in range(self.top, low - 1, -1) if self.room.find(lv) >= 0]
+        return sorted((lv for lv in self._listed() if lv >= low), reverse=True)
+
+    def walk(self, lv: int):
+        """The spots with `lv` STEPs of room, in order, each as it stands when it is come to (one dropped by then is
+        passed over)."""
+        room = self.room
+        if self.wide is None:
+            place = room.find(lv)
+            while place >= 0:
+                yield place
+                place = room.find(lv, place + 1)
+            return
+        for place in self._listed().get(lv, ()):
+            if room[place] == lv:
+                yield place
+
+    def _listed(self) -> dict:
+        """(Rooms kept in wider numbers than a byte.) The spots there were when first asked: {room: their places, in
+        order}."""
+        if self._places is None:
+            room, nj = self.room, self.nj
+            got = self._places = {}
+            code = "I" if len(room) < 2 ** 32 else "Q"
+            for k in range(0, len(room), nj):
+                row = room[k:k + nj]
+                if row.count(0) == nj:
+                    continue
+                for j, lv in enumerate(row):
+                    if lv:
+                        if lv not in got:
+                            got[lv] = array(code)
+                        got[lv].append(k + j)
+        return self._places
+
+    def cover(self, place: int, lv: int) -> None:
+        """A new circle with `lv` STEPs of room at `place`: the spots inside it (its rim apart, itself too) are spots
+        no more."""
+        room, nj, ni = self.room, self.nj, self.ni
+        i, j = divmod(place, nj)
+        reach = lv // 2 + 1
+        if lv <= 64:  # a small circle's rows are kept for the next of its size (a dried bed has a million of them)
+            spans = self._spans.get(lv)
+            if spans is None:
+                spans = self._spans[lv] = [(di, a, b, self._none(b - a + 1))
+                                           for di, a, b in self._rows(lv, -reach, reach)]
+            for di, a, b, none in spans:
+                if 0 <= i + di < ni:
+                    k = (i + di) * nj + j
+                    if j + a >= 0 and j + b < nj:
+                        room[k + a:k + b + 1] = none
+                    else:
+                        a, b = max(a, -j), min(b, nj - 1 - j)
+                        room[k + a:k + b + 1] = none[:b - a + 1]
+            return
+        if self._zero is None:
+            self._zero = self._none(nj)
+        for di, a, b in self._rows(lv, max(-reach, -i), min(reach, ni - 1 - i)):  # (only its rows on the grid)
+            a, b = max(a, -j), min(b, nj - 1 - j)
+            room[(i + di) * nj + j + a:(i + di) * nj + j + b + 1] = self._zero[:b - a + 1]
+
+    def _rows(self, lv: int, lo: int, hi: int):
+        """Row by row of a circle with `lv` STEPs of room (rows `lo` to `hi`, counted from its middle's), the run of
+        spots inside it, counted from its middle's column: (row, first, last). About these by a square root, then to
+        the very ones by the test itself (as for an old circle, in uncover)."""
+        step, rr = self.step, (lv * STEP) ** 2
+        for di in range(lo, hi + 1):
+            dx2 = (step * di) ** 2
+            if not dx2 < rr:
+                continue
+            b = int(math.sqrt(max(lv * lv / 4.0 - di * di, 0.0)))
+            a = -b
+            while dx2 + (step * (a - 1)) ** 2 < rr:
+                a -= 1
+            while a < 0 and not dx2 + (step * a) ** 2 < rr:
+                a += 1
+            while dx2 + (step * (b + 1)) ** 2 < rr:
+                b += 1
+            while b > 0 and not dx2 + (step * b) ** 2 < rr:
+                b -= 1
+            yield di, a, b
+
+    def met(self, place: int, lv: int) -> list:
+        """The spots with no turn coming yet that meet a new circle with `lv` STEPs of room at `place`, for a link
+        (_meeting: an overlap of STEP or more): [(place, room)]. (After cover: the spots inside it are gone.)"""
+        room, due, nj, ni, step = self.room, self.due, self.nj, self.ni, self.step
+        i, j = divmod(place, nj)
+        r = lv * STEP
+        got = []
+        if self.top <= RING:
+            ring = self._rings.get(lv)
+            if ring is None:
+                # every place a spot could meet it from, with the least room that does, by _meeting's own sums
+                reach, cells = (lv + self.top) // 2 + 1, []
+                for di in range(-reach, reach + 1):
+                    for dj in range(-reach, reach + 1):
+                        if (step * di) ** 2 + (step * dj) ** 2 < r ** 2:
+                            continue  # inside it
+                        d = ((step * -di) ** 2 + (step * -dj) ** 2) ** 0.5
+                        need = max(1, int((d - r) // STEP) + 1)
+                        while need > 1 and not (need - 1) * STEP + r - d < STEP:
+                            need -= 1
+                        while need <= self.top and need * STEP + r - d < STEP:
+                            need += 1
+                        if need <= self.top:
+                            cells.append((di, dj, di * nj + dj, need))
+                ring = self._rings[lv] = (reach, cells)
+            reach, cells = ring
+            if reach <= i < ni - reach and reach <= j < nj - reach:
+                for _di, _dj, off, need in cells:
+                    if room[place + off] >= need and not due[place + off]:
+                        got.append((place + off, room[place + off]))
             else:
-                later.append(spot)
-        left = later
-        if len(out) == took:
-            break
-    if rest is not None:  # the ground left closed, as circles
-        unreached = _Buckets(list(placed.circles))
-        for r, x, y, _source in left:
-            if not covered(x, y, unreached):
-                rest.append((float(x), float(y), float(r)))
-                unreached.add((float(x), float(y), float(r)))
+                for di, dj, off, need in cells:
+                    if 0 <= i + di < ni and 0 <= j + dj < nj and room[place + off] >= need and not due[place + off]:
+                        got.append((place + off, room[place + off]))
+            return got
+        tiles, tw = self._tiles or self._tile()
+        reach = (lv + self.most) // 2 + 1
+        lowered = False
+        for ti in range(max(0, i - reach) // TILE, min(ni - 1, i + reach) // TILE + 1):
+            a0, a1 = ti * TILE, min(ni, (ti + 1) * TILE) - 1
+            far_i = a0 - i if i < a0 else i - a1 if i > a1 else 0
+            for tj in range(max(0, j - reach) // TILE, min(nj - 1, j + reach) // TILE + 1):
+                most = tiles[ti * tw + tj]
+                b0, b1 = tj * TILE, min(nj, (tj + 1) * TILE) - 1
+                far_j = b0 - j if j < b0 else j - b1 if j > b1 else 0
+                if not most or 4 * (far_i * far_i + far_j * far_j) > (lv + most) ** 2:
+                    continue  # no spot left in this square, or none with the room to reach
+                w = (lv + most) // 2 + 1
+                ia, ib, ja, jb = max(a0, i - w), min(a1, i + w), max(b0, j - w), min(b1, j + w)
+                best = 0
+                for ii in range(ia, ib + 1):
+                    di = ii - i
+                    k = ii * nj + ja
+                    for jj in range(ja, jb + 1):
+                        l2 = room[k]
+                        if l2 and not due[k]:
+                            dj = jj - j
+                            if 4 * (di * di + dj * dj) <= (lv + l2) ** 2 and (di or dj) \
+                                    and not l2 * STEP + r - ((step * -di) ** 2 + (step * -dj) ** 2) ** 0.5 < STEP:
+                                got.append((k, l2))
+                            elif l2 > best:
+                                best = l2
+                        k += 1
+                if best < most and (ia, ib, ja, jb) == (a0, a1, b0, b1):  # all of it seen: its most room now
+                    tiles[ti * tw + tj] = best
+                    lowered = lowered or most == self.most
+        if lowered:
+            self.most = max(tiles)
+        return got
+
+    def _tile(self):
+        """The most room of a spot in each square of TILE by TILE spots (never less than a spot with no turn coming
+        has there): (the squares row by row, how many a row)."""
+        room, nj, ni = self.room, self.nj, self.ni
+        tw = (nj + TILE - 1) // TILE
+        tiles = [0] * (((ni + TILE - 1) // TILE) * tw)
+        for i in range(ni):
+            row = room[i * nj:(i + 1) * nj]
+            if row.count(0) == nj:
+                continue
+            t = (i // TILE) * tw
+            for tj in range(tw):
+                most = max(row[tj * TILE:(tj + 1) * TILE])
+                if most > tiles[t + tj]:
+                    tiles[t + tj] = most
+        self._tiles = (tiles, tw)
+        self.most = max(tiles)
+        return self._tiles
+
+
+def _grow(zones, old, least: float, box, where, meets, most: int) -> tuple[list, int, bool]:
+    """New circles over the zones (x, y, r) where a graph has none, grown from the ground units can reach
+    (Graph.open_ground): (the circles (x, y, r) in the order they were taken, how many more the ground no circle
+    reached would have had, whether it stopped at `most` circles).
+
+    A spot (_Spots) is a point of the 2 STEP grid inside `box` that `where(x, y)` allows (when given) and no live
+    circle of `old` covers, with `least` or more of room in the zones; a spot taken becomes a circle of its room. The
+    spots are gone through in passes, the most room first in each (then by x, then y): a spot inside a circle taken
+    before it is dropped; one that meets an old circle (`meets(circle, the old one's number)` gives where, or None) or
+    one taken before it (_meeting: an overlap of STEP or more) is taken; any other waits for the next pass; until a
+    pass takes none. So every circle taken is reached from the ground, and a big one in the middle of a stroke that
+    wouldn't reach it leaves room for smaller ones that do. The spots left are then covered the same way, with no
+    test of reach, to count the circles left out.
+
+    The passes aren't walked spot by spot (a whole map drained has thirteen million, and a pass may take one circle):
+    a spot is taken on its first turn after a circle it meets was taken, unless a circle taken by then holds it, so
+    only those turns are kept, in a queue by pass and by the spots' order. The spots that meet an old circle have
+    theirs in the first pass; when a circle is taken, the spots inside it are dropped and those that meet it get
+    their turn: later in the same pass when they come after it, in the next when before. The same circles, in the
+    same order, as walking every pass.
+
+    `most`: with this many circles taken the caller can't use them (the graph would be too big to write), so it stops
+    there and says so."""
+    spots = _Spots(zones, least, box)
+    if not spots.ni:
+        return [], 0, False
+    if where is not None:
+        spots.only(where)
+    # a spot's circle lies inside its zone, so only the old circles that reach into a zone can hold a spot or meet
+    # one: with a few zones on a big map, the few near them (with thousands of zones, as well all of them)
+    reaching = [d for d, c in enumerate(old) if c[2] > 0]
+    if len(zones) <= 5000:
+        by_place = _Buckets(list(zones))
+        reaching = [d for d in reaching if any(
+            math.hypot(old[d][0] - zones[z][0], old[d][1] - zones[z][1]) < old[d][2] + zones[z][2] + 1.0
+            for z in by_place.near(old[d][0], old[d][1], old[d][2] + 1.0))]
+    spots.uncover([old[d] for d in reaching])
+    if spots.empty():
+        return [], 0, False  # no spot: the ground is open already
+    room, due, step, nj, top = spots.room, spots.due, spots.step, spots.nj, spots.top
+    i0, j0, i1, j1, n = spots.i0, spots.j0, spots.i0 + spots.ni - 1, spots.j0 + nj - 1, len(spots.due)
+    span = top + 1  # a turn's number: (pass * span + top - room) * n + place, so turns sort by pass, room, place
+    turns = []
+    near = min(top, NEAR)
+    for d in reaching:  # the spots that meet an old circle: a turn in the first pass
+        bx, by, br = old[d]
+        reach = br + near * STEP  # (no spot with that room meets it from this far: a STEP to spare)
+        ia, ib = max(i0, int((bx - reach) // step)), min(i1, int((bx + reach) // step))
+        ja, jb = max(j0, int((by - reach) // step)), min(j1, int((by + reach) // step) + 1)
+        if ja > jb:
+            continue
+        for i in range(ia, ib + 1):
+            x = i * step
+            dx2 = (x - bx) ** 2
+            if dx2 > reach * reach:
+                continue
+            h = math.sqrt(reach * reach - dx2)
+            runs = [(max(ja, int((by - h) // step)), min(jb, int((by + h) // step) + 1))]
+            if br * br - dx2 > 4 * step * step:  # the row goes through the circle: no spot is left inside it
+                g = math.sqrt(br * br - dx2) - step
+                runs = [(runs[0][0], min(jb, int((by - g) // step) + 1)), (max(ja, int((by + g) // step)), runs[0][1])]
+            k = (i - i0) * nj - j0
+            for a, b in runs:
+                for j in range(a, b + 1):
+                    lv = room[k + j]
+                    if lv and lv <= near and not due[k + j]:
+                        y = j * step
+                        if dx2 + (y - by) ** 2 <= (lv * STEP + br - STEP + 1.0) ** 2 \
+                                and meets((x, y, lv * STEP), d) is not None:
+                            due[k + j] = 1
+                            turns.append((span + top - lv) * n + k + j)
+    heapify(turns)
+    out = []
+
+    def take(place, lv, turn):
+        out.append(spots.at(place) + (lv * STEP,))
+        spots.cover(place, lv)
+        for k, l2 in spots.met(place, lv):
+            due[k] = 1
+            when = turn if l2 < lv or (l2 == lv and k > place) else turn + 1
+            if when > 1 or l2 <= near:  # (a spot with more room than `near` has its first turn in the walk below)
+                heappush(turns, (when * span + top - l2) * n + k)
+    if top > near:
+        # the spots with the most room come first in every pass: in the first, each looks for the old circles round
+        # itself (a few spots when the ones before them are taken: a big circle holds all the spots near it)
+        ground = _Buckets(list(old))
+        for lv in spots.rooms(near + 1):
+            for place in spots.walk(lv):
+                if not due[place]:
+                    c = spots.at(place) + (lv * STEP,)
+                    if not any(meets(c, d) is not None for d in ground.near(*c)):
+                        continue
+                take(place, lv, 1)
+                if len(out) >= most:
+                    return out, 0, True
+    while turns:
+        turn, place = divmod(heappop(turns), n)
+        if room[place]:  # (not inside a circle taken since)
+            take(place, room[place], turn // span)
+            if len(out) >= most:
+                return out, 0, True
+    left = 0
+    for lv in spots.rooms():  # what is left: no turn ever came (every spot that had one is taken, or dropped)
+        for place in spots.walk(lv):
+            left += 1
+            spots.cover(place, lv)
+    return out, left, False
+
+
+def _without(zones, circles, side: float = 20480.0) -> list[int]:
+    """The zones (x, y, r), by their numbers, with no circle's middle inside them. The middles are looked up by
+    place (squares of `side`): each zone against those in the squares it reaches, and one more all round."""
+    if not circles:
+        return list(range(len(zones)))
+    squares: dict = {}
+    for x, y, _r in circles:
+        squares.setdefault((int(x // side), int(y // side)), []).append((x, y))
+    out = []
+    for i, (zx, zy, zr) in enumerate(zones):
+        if zr > 0:
+            a0, a1 = int((zx - zr) // side) - 1, int((zx + zr) // side) + 1
+            b0, b1 = int((zy - zr) // side) - 1, int((zy + zr) // side) + 1
+            if (a1 - a0 + 1) * (b1 - b0 + 1) > len(squares):  # a zone that big: every square there is
+                near = (p for points in squares.values() for p in points)
+            else:
+                near = (p for a in range(a0, a1 + 1) for b in range(b0, b1 + 1) for p in squares.get((a, b), ()))
+            if any(math.hypot(x - zx, y - zy) < zr for x, y in near):
+                continue
+        out.append(i)
     return out
 
 
@@ -1888,16 +2369,64 @@ def _index_more(points: bytes, old, new, number=lambda i: i) -> bytes:
     branches on the way widened to reach it (_index_add)."""
     live = [i for i, c in enumerate(old) if c[2] > 0]
     where = _Buckets([old[i] for i in live])
+    far = None  # for a new circle with no old one near it (out on a drained sea): the nearest of them all
     into: dict[int, list[int]] = {}
     boxes: dict[int, tuple] = {}
     for j, (x, y, r) in new:
-        ids = list(where.near(x, y, r + 20480.0)) or range(len(live))
-        bank = number(live[min(ids, key=lambda k: ((old[live[k]][0] - x) ** 2 + (old[live[k]][1] - y) ** 2) ** 0.5
-                                - old[live[k]][2])]) if live else -1
+        ids = list(where.near(x, y, r + 20480.0))
+        if ids:
+            bank = number(live[min(ids, key=lambda k: ((old[live[k]][0] - x) ** 2 + (old[live[k]][1] - y) ** 2) ** 0.5
+                                    - old[live[k]][2])])
+        elif live:
+            far = far or _Nearest([old[i] for i in live])
+            bank = number(live[far.find(x, y)])
+        else:
+            bank = -1
         into.setdefault(bank, []).append(j)
         bx0, by0, bx1, by1 = boxes.get(bank, (x, y, x, y))
         boxes[bank] = (min(bx0, x - r), min(by0, y - r), max(bx1, x + r), max(by1, y + r))
     return _index_add(points, into, boxes)
+
+
+class _Nearest:
+    """Which of some circles (x, y, r) a point is nearest to: the one whose rim is the least far from it (or that it
+    lies deepest in), the first of them among equals; what going through them all gives. The circles are halved by
+    turns along x and y into a tree, each part with the box of its middles and its largest radius: a part whose every
+    rim is farther than the best found is passed over."""
+
+    def __init__(self, circles):
+        self.circles = circles
+        self.top = self._part(list(range(len(circles))), 0)
+
+    def _part(self, ids, depth: int):
+        xs, ys = [self.circles[i][0] for i in ids], [self.circles[i][1] for i in ids]
+        box = (min(xs), min(ys), max(xs), max(ys), max(self.circles[i][2] for i in ids))
+        if len(ids) <= 8:
+            return box + (ids, None)
+        ids = sorted(ids, key=lambda i: self.circles[i][depth % 2])
+        return box + (self._part(ids[:len(ids) // 2], depth + 1), self._part(ids[len(ids) // 2:], depth + 1))
+
+    def find(self, x: float, y: float) -> int:
+        circles = self.circles
+
+        def least(part) -> float:  # no rim in this part is nearer than this
+            x0, y0, x1, y1, most = part[:5]
+            return math.hypot(x0 - x if x < x0 else x - x1 if x > x1 else 0.0,
+                              y0 - y if y < y0 else y - y1 if y > y1 else 0.0) - most
+        best, at = math.inf, -1
+        todo = [(least(self.top), self.top)]
+        while todo:
+            bound, (_x0, _y0, _x1, _y1, _most, a, b) = todo.pop()
+            if bound - 1.0 > best:  # (a unit to spare: the sums below are rounded)
+                continue
+            if b is None:
+                for k in a:
+                    gap = ((circles[k][0] - x) ** 2 + (circles[k][1] - y) ** 2) ** 0.5 - circles[k][2]
+                    if gap < best or (gap == best and k < at):
+                        best, at = gap, k
+            else:
+                todo += sorted(((least(a), a), (least(b), b)), key=lambda part: -part[0])  # the nearer half first
+        return at
 
 
 def _index_renumber(points: bytes, number) -> bytes:
