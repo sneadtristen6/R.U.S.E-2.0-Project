@@ -42,7 +42,7 @@ import struct
 from dataclasses import dataclass, field
 
 from . import kdt_edit
-from .brush import HeightGrid, Stroke
+from .brush import GROUND_UNCHANGED, HeightGrid, Stroke
 from .kdt import MEMBERS as KDT_MEMBERS, Kdt
 from .tms import Q_MAX, Tms
 
@@ -226,6 +226,19 @@ class _Surface:
     def old(self, x: float, y: float) -> float | None:
         return self._at(x, y, 3)
 
+    def change_and_old(self, x: float, y: float) -> tuple[float, float | None]:
+        """(change(x, y), old(x, y)) from one search: both come from the same triangle."""
+        x, y = min(max(x, self.x0), self.x1), min(max(y, self.y0), self.y1)
+        for n in self.buckets.get((self._b(x, self.x0), self._b(y, self.y0)), ()):
+            (c0, c1, c2), det = self.tris[n]
+            (x0, y0), (x1, y1), (x2, y2) = c0[:2], c1[:2], c2[:2]
+            l0 = ((y1 - y2) * (x - x2) + (x2 - x1) * (y - y2)) / det
+            l1 = ((y2 - y0) * (x - x2) + (x0 - x2) * (y - y2)) / det
+            l2 = 1.0 - l0 - l1
+            if l0 >= -1e-9 and l1 >= -1e-9 and l2 >= -1e-9:
+                return l0 * c0[2] + l1 * c1[2] + l2 * c2[2] or 0.0, l0 * c0[3] + l1 * c1[3] + l2 * c2[3]
+        return 0.0, None
+
 
 def _kept(strokes: list[Stroke], x: float, y: float) -> float:
     """How much of the ground's old shape at (x, y) is left after all the strokes (Stroke.kept, one after another)."""
@@ -233,6 +246,44 @@ def _kept(strokes: list[Stroke], x: float, y: float) -> float:
     for s in strokes:
         kept *= s.kept(x, y)
     return kept
+
+
+class _Kept:
+    """_kept for many points: each point looks only at the strokes whose box reaches its square of the map (strokes
+    indexed by place). Every other stroke keeps all of the old shape there (1.0), and so do the strokes that add or
+    take away; a product is the same without its ones, so the answer is exactly _kept's. A point off the map's
+    squares (none of the meshes' points) asks every stroke."""
+
+    def __init__(self, strokes: list[Stroke], area):
+        x0, y0, x1, y1 = area
+        self.strokes = strokes
+        self.x0, self.y0 = x0, y0
+        self.step = max(x1 - x0, y1 - y0, 1.0) / 128.0
+        self.cols = (self._b(x0, x0) - 1, self._b(x1, x0) + 1)   # the squares indexed, a ring beyond the map's
+        self.rows = (self._b(y0, y0) - 1, self._b(y1, y0) + 1)
+        self.buckets: dict[tuple[int, int], list] = {}
+        for s in strokes:
+            if s.kind.kind in GROUND_UNCHANGED or s.kind.kind == "add":
+                continue
+            kept = s.kept_function()
+            bx0, bx1, by0, by1 = s.box()
+            pad = self.step  # a whole square more on every side: rounding at the box's edge can't leave a point out
+            for bx in range(max(self._b(bx0 - pad, x0), self.cols[0]), min(self._b(bx1 + pad, x0), self.cols[1]) + 1):
+                for by in range(max(self._b(by0 - pad, y0), self.rows[0]),
+                                min(self._b(by1 + pad, y0), self.rows[1]) + 1):
+                    self.buckets.setdefault((bx, by), []).append(kept)
+
+    def _b(self, v: float, origin: float) -> int:
+        return int((v - origin) // self.step)
+
+    def at(self, x: float, y: float) -> float:
+        bx, by = self._b(x, self.x0), self._b(y, self.y0)
+        if not (self.cols[0] <= bx <= self.cols[1] and self.rows[0] <= by <= self.rows[1]):
+            return _kept(self.strokes, x, y)
+        kept = 1.0
+        for k in self.buckets.get((bx, by), ()):
+            kept *= k(x, y)
+        return kept
 
 
 def _refit(kdt: Kdt, moved: dict) -> str:
@@ -250,15 +301,46 @@ def _normal_lookup(tms: Tms, pts: _Points):
     """The normal of the close-up mesh point nearest to (x, y), as a unit vector, or None when no point is within
     two index squares (the tree point then keeps its own normal). The mesh can hold several points at one x, y (a
     cliff's top and its foot; every shipped close-up mesh has hundreds): among those, the one whose height is
-    nearest to z, so a tree point takes the normal of the mesh point it sits on."""
-    def at(x: float, y: float, z: float):
+    nearest to z, so a tree point takes the normal of the mesh point it sits on.
+
+    The answer is the least (distance, height difference, point number) among the points of the index squares
+    within two squares. The point's own square is looked through first: when one of its points is nearer than the
+    square's nearest side, no point of another square can come before it (a tree point on a mesh point: distance
+    0). Then the squares next to it: when one of their points lies within half a square, no point of a farther
+    square (at least a square away) can come before it. Only then all of them. Each side is taken a millionth of a
+    square nearer (`slack`), so rounding at the squares' edges can't matter."""
+    xs, ys, zs, buckets, s = pts.x, pts.y, pts.z, pts.buckets, pts.step
+    near = (0.5 * s) ** 2
+    slack = max(s * 1e-6, 1e-12 * (abs(pts.x0) + abs(pts.y0) + 256 * s))   # far above the rounding of x, y there
+
+    def best_in(x, y, z, cols, rows):
         best, best_d = None, None
-        s = pts.step
-        for n in pts.near(x - 2 * s, x + 2 * s, y - 2 * s, y + 2 * s):
-            dx, dy = pts.x[n] - x, pts.y[n] - y
-            d = (dx * dx + dy * dy, abs(pts.z[n] - z))
-            if best_d is None or d < best_d or (d == best_d and n < best):
-                best, best_d = n, d
+        for bx in cols:
+            for by in rows:
+                for n in buckets.get((bx, by), ()):
+                    dx, dy = xs[n] - x, ys[n] - y
+                    d = (dx * dx + dy * dy, abs(zs[n] - z))
+                    if best_d is None or d < best_d or (d == best_d and n < best):
+                        best, best_d = n, d
+        return best, best_d
+
+    def at(x: float, y: float, z: float):
+        b0, b1 = int((x - 2 * s - pts.x0) // s), int((x + 2 * s - pts.x0) // s)   # the squares pts.near looks in
+        c0, c1 = int((y - 2 * s - pts.y0) // s), int((y + 2 * s - pts.y0) // s)
+        bx, by = int((x - pts.x0) // s), int((y - pts.y0) // s)                   # the point's own square
+        best = None
+        if b0 <= bx <= b1 and c0 <= by <= c1:
+            side = min(x - (pts.x0 + bx * s), pts.x0 + (bx + 1) * s - x,
+                       y - (pts.y0 + by * s), pts.y0 + (by + 1) * s - y) - slack
+            if side > 0.0:
+                best, best_d = best_in(x, y, z, (bx,), (by,))
+                if best is not None and not best_d[0] < side * side:
+                    best = None
+        if best is None:
+            best, best_d = best_in(x, y, z, range(max(b0, bx - 1), min(b1, bx + 1) + 1),
+                                   range(max(c0, by - 1), min(c1, by + 1) + 1))
+            if best is None or best_d[0] > near:
+                best, best_d = best_in(x, y, z, range(b0, b1 + 1), range(c0, c1 + 1))
         if best is None:
             return None
         bx, by, bz, _ = tms.cells[pts.part[best]].normals()[pts.index[best]]
@@ -327,13 +409,9 @@ def _reseat_roads(read, before: Tms, after: Tms, name: str) -> tuple[dict[str, b
     """The map's road model (rusemod.roadstrips: the white roads seen from high up) moved with its close-up mesh: each
     vertex by the ground's change of height under it, in every static-mesh file the map has. Left, the model kept the
     old heights and stood off the roads painted on the ground (flattened Blitz Twin, 2026-10-04)."""
-    from .bridges import Ground
+    from .bridges import GroundChange
     from .roadstrips import MEMBERS, StaticMeshes, StripError
-    old, new = Ground(before).height_at, Ground(after).height_at
-
-    def moved(x, y):
-        a, b = old(x, y), new(x, y)
-        return None if a is None or b is None else b - a
+    moved = GroundChange(before, after).at   # the ground's height there after, less before (None off either)
     out, notes = {}, []
     for member in MEMBERS:
         try:
@@ -413,18 +491,20 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
     if "ground" in points:  # the others follow the gameplay ground's surface, sampled inside its triangles
         surface = _Surface(trees["ground"], points["ground"])
         if surface:
+            kept_at = _Kept(applied, area).at
             for key, pts in points.items():
                 if key == "ground":
                     continue
-                for k in range(len(pts.z)):
-                    x, y = pts.x[k], pts.y[k]
-                    dz = surface.change(x, y)
-                    kept = _kept(applied, x, y) if key in meshes else 1.0
+                xs, ys, zs = pts.x, pts.y, pts.z
+                mesh = key in meshes
+                for k in range(len(zs)):
+                    x, y = xs[k], ys[k]
+                    dz, g = surface.change_and_old(x, y)
+                    kept = kept_at(x, y) if mesh else 1.0
                     if kept < 1.0:   # a drawn mesh's own bumps off the ground go as far as the strokes flatten
-                        g = surface.old(x, y)
                         if g is not None:
-                            dz -= (pts.z[k] - g) * (1.0 - kept)
-                    pts.z[k] += dz
+                            dz -= (zs[k] - g) * (1.0 - kept)
+                    zs[k] += dz
 
     changed: dict[str, bytes] = {}
     counts = []
@@ -441,10 +521,11 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
         if key in meshes and (moved_mesh[key] or water_strokes):
             changed[FILES[key]] = meshes[key].to_bytes()
     if "highdef" in meshes and FILES["highdef"] in changed:
+        before = Tms(read(FILES["highdef"]))   # the close-up mesh as it was (only read from, below)
         depth = max_depth_of() if max_depth_of else None
         if depth:
             far = "lowdef" in meshes
-            new_tex, tex_notes = update_textures(read, Tms(read(FILES["highdef"])), meshes["highdef"],
+            new_tex, tex_notes = update_textures(read, before, meshes["highdef"],
                                                  [_area_of(s) for s in strokes + water_strokes], depth, name,
                                                  far_before=Tms(read(FILES["lowdef"])) if far else None,
                                                  far_after=meshes["lowdef"] if far else None)
@@ -453,7 +534,7 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
         elif water_strokes:
             water_notes.append(f"{name}: the map's water depth scale couldn't be read, so its water textures were "
                                f"left as they are")
-        roads, road_notes = _reseat_roads(read, Tms(read(FILES["highdef"])), meshes["highdef"], name)
+        roads, road_notes = _reseat_roads(read, before, meshes["highdef"], name)
         changed.update(roads)
         water_notes += road_notes
     normal_at = _normal_lookup(meshes["highdef"], points["highdef"]) if "highdef" in meshes else None

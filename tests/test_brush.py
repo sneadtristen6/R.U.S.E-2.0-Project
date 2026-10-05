@@ -224,6 +224,29 @@ class BrushTypes(unittest.TestCase):
         level = Stroke("level", 0.0, 0.0, 50.0, level=5.0, shape="line", x2=0.0, y2=500.0)
         self.assertEqual(level.kept(0.0, 250.0), 0.0)                          # flattened along it: none of the old shape
 
+    def test_kept_made_once_gives_kept_to_the_bit(self):
+        """Stroke.kept_function, for asking at many points, gives exactly what Stroke.kept gives, every brush, shape
+        and edge, inside, on and past the footprint's edge."""
+        import struct
+        strokes = []
+        for brush in ("hill", "lower", "crater", "plateau", "flatten", "level", "smooth", "ramp", "water", "cover"):
+            for shape in ("round", "square", "line"):
+                for edge in ("soft", "hard"):
+                    if brush == "ramp" and shape == "square":
+                        continue
+                    extra = {"x2": 140.0, "y2": -60.0} if shape == "line" or brush == "ramp" else {}
+                    if shape == "square":
+                        extra.update(dx=0.6, dy=0.8)
+                    strokes.append(Stroke(brush, 10.0, 20.0, 75.0, height=30.0, level=5.0, level2=9.0, weight=0.7,
+                                          shape=shape, edge=edge, **extra))
+        points = [(10.0 + dx, 20.0 + dy) for dx in (-90.0, -75.0, -40.3, 0.0, 12.5, 53.0, 74.999, 75.0, 75.001)
+                  for dy in (-80.0, -1.0, 0.0, 33.3, 70.0, 75.0)] + [(1e7, -1e7), (85.0, 20.0)]
+        for s in strokes:
+            fast = s.kept_function()
+            for x, y in points:
+                with self.subTest(brush=s.brush, shape=s.shape, edge=s.edge, x=x, y=y):
+                    self.assertEqual(struct.pack("<d", fast(x, y)), struct.pack("<d", s.kept(x, y)))
+
     def test_written_and_read_back(self):
         strokes = [Stroke("hill", 1.0, 2.0, 3.0, height=4.0, shape="square", dx=0.6, dy=0.8, edge="hard"),
                    Stroke("cover", 1.0, 2.0, 3.0, shape="line", x2=9.0, y2=10.0),

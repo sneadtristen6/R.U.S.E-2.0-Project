@@ -489,5 +489,53 @@ class Opening(unittest.TestCase):
         self.assertEqual(struct.unpack("<2f", nav._tree_read(untouched)[2]), (10200.0, 8400.0))
 
 
+class GroundRise(unittest.TestCase):
+    """GroundChange: how much the ground rose or fell, from one index when only heights moved, exactly what two
+    Grounds give (to the bit), and from two Grounds when the triangles differ."""
+
+    def probes(self):
+        return [(x * 47.3 - 100.0, y * 53.9 - 100.0) for x in range(48) for y in range(44)] + \
+               [(500.0, 500.0), (1000.0, 1000.0), (0.0, 0.0), (2000.0, 2000.0), (2000.0, 0.0)]
+
+    def plain(self, before, after):
+        from rusemod.bridges import Ground
+        old, new = Ground(before).height_at, Ground(after).height_at
+
+        def at(x, y):
+            a, b = old(x, y), new(x, y)
+            return None if a is None or b is None else b - a
+        return at
+
+    def same_bits(self, got, want, where):
+        self.assertEqual(None if got is None else struct.pack("<d", got),
+                         None if want is None else struct.pack("<d", want), where)
+
+    def test_heights_moved_one_index(self):
+        from rusemod.bridges import GroundChange
+        before = Tms(make_tms(gw=2, gh=2, n=9, zf=lambda x, y: 1000 + (x * 7 + y * 3) % 211))
+        after = Tms(before.to_bytes())
+        for k, c in enumerate(after.cells):
+            after.set_heights(k, {i: (p[2] * 3 + i) % 30000 for i, p in enumerate(c.positions()) if i % 3})
+        after = Tms(after.to_bytes())
+        change = GroundChange(before, after)
+        self.assertIsNone(change.grounds)                     # the one index
+        plain, moved = self.plain(before, after), 0
+        for x, y in self.probes():
+            got = change.at(x, y)
+            self.same_bits(got, plain(x, y), (x, y))
+            moved += bool(got)
+        self.assertGreater(moved, 500)
+
+    def test_other_triangles_two_grounds(self):
+        from rusemod.bridges import GroundChange
+        before = Tms(make_tms(gw=2, gh=2, n=9, zf=lambda x, y: 1000))
+        after = Tms(make_tms(gw=2, gh=2, n=5, zf=lambda x, y: 1500))   # other points and triangles
+        change = GroundChange(before, after)
+        self.assertIsNotNone(change.grounds)
+        plain = self.plain(before, after)
+        for x, y in self.probes():
+            self.same_bits(change.at(x, y), plain(x, y), (x, y))
+
+
 if __name__ == "__main__":
     unittest.main()
