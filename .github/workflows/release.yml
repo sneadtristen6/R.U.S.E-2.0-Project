@@ -52,8 +52,14 @@ jobs:
           if (-not $setup) { throw "no installer for version ${{ steps.tag.outputs.version }}: the tag must match the app's __version__" }
           $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLower()
           $about = Get-Content -Raw ".github/release-notes/${{ steps.tag.outputs.app }}.md"
+          # every language's notes in one file beside the installer: the apps show what's new in their own language
+          # (installers/notes_json.py, rusemod.update NOTES_ASSET); the page links each language's notes
+          $langs = python installers/notes_json.py ${{ steps.tag.outputs.app }} dist "${{ github.ref_name }}"
+          if ($LASTEXITCODE -ne 0) { throw "the release notes in other languages can't be read (installers/notes_json.py)" }
+          $book = Get-ChildItem "dist/RUSE-*-notes.json"
+          $read = if ($langs) { "Read these notes in: $langs`n`n" } else { "" }
           $notes = @"
-          $about
+          $read$about
           Download **$($setup.Name)** below and run it. It installs for your Windows user, with no admin rights needed.
 
           Windows or your browser may warn about it: it's a new program they haven't seen many downloads of yet.
@@ -65,4 +71,4 @@ jobs:
           # character limit and gh couldn't start (studio-v0.9.5, 2026-10-04)
           $notesFile = Join-Path $env:RUNNER_TEMP "release-notes.md"
           Set-Content -Path $notesFile -Value $notes -Encoding utf8
-          gh release create "${{ github.ref_name }}" $setup.FullName --title (($setup.BaseName -replace '-Setup-', ' ') -replace '-', ' ') --notes-file $notesFile $pre
+          gh release create "${{ github.ref_name }}" $setup.FullName $book.FullName --title (($setup.BaseName -replace '-Setup-', ' ') -replace '-', ' ') --notes-file $notesFile $pre

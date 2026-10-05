@@ -48,9 +48,23 @@ class Release:
     size: int
     sha256: str          # the checked-against hash (lowercase hex)
     changes: list = None  # before and after, per version newer than the running one (changes_since)
+    notes_url: str = ""   # every language's notes (NOTES_ASSET), when the release has them
 
+
+# Every language's release notes, published beside the installer (.github/workflows/release.yml, installers/
+# notes_json.py): {language code: the notes in it, written as the English ones are}. The apps show the changes in
+# their own language, and in English for a language that has none (the owner, 2026-10-05: the update panel was in
+# English in a French player's Studio).
+NOTES_ASSET = "RUSE-{app}-notes.json"
+NOTES_MAX = 2_000_000
 
 ROW = re.compile(r"^\s*\|(.+?)\|(.+?)\|\s*$")
+
+
+def _rule(line: str) -> bool:
+    """A table's rule (|---|---|)."""
+    m = ROW.match(line)
+    return bool(m) and set(m.group(1).strip()) <= set("-: ")
 
 
 def changes_since(body: str, current: str, newest: str) -> list[dict]:
@@ -64,13 +78,14 @@ def changes_since(body: str, current: str, newest: str) -> list[dict]:
         if not version_tuple(current) < version_tuple(version) <= version_tuple(newest):
             continue
         rows = []
-        for line in text.splitlines():
+        lines = text.splitlines()
+        for i, line in enumerate(lines):
             m = ROW.match(line)
             if not m:
                 continue
             before, now = m.group(1).strip(), m.group(2).strip()
-            if set(before) <= set("-: ") or before.lower() == "before":
-                continue  # the header and its rule
+            if (_rule(line) or before.lower() == "before" or (i + 1 < len(lines) and _rule(lines[i + 1]))):
+                continue  # the header (in any language: the row over the rule) and its rule
             rows.append({"version": version, "before": before, "now": now})
         if not rows:
             first = text.strip().splitlines()[0].strip() if text.strip() else ""
@@ -159,6 +174,9 @@ def feed_releases(text: str) -> list[dict]:
             name = f"RUSE-{APPS[m.group(1)]}-Setup-{m.group(2)}.exe"
             assets.append({"name": name, "browser_download_url": f"https://github.com/{REPO}/releases/download/{tag}/{name}",
                            "size": 0})
+            book = NOTES_ASSET.format(app=APPS[m.group(1)])  # (an older release hasn't one: English then)
+            assets.append({"name": book, "browser_download_url": f"https://github.com/{REPO}/releases/download/{tag}/{book}",
+                           "size": 0})
         out.append({"tag_name": tag, "html_url": link.group(1), "draft": False, "assets": assets,
                     "body": html.unescape(content.group(1)) if content else ""})
     return out
@@ -204,8 +222,40 @@ def latest(app: str, current: str, fetch=_get_json, fetch_text=_get_text) -> Rel
     if len(hashes) != 1:
         raise UpdateError(f"{APPS[app]} {version} can't be checked (its SHA-256 is missing or differs between GitHub "
                           f"and the release notes), so it isn't installed.")
+    book = next((a for a in rel.get("assets", []) if a.get("name") == NOTES_ASSET.format(app=APPS[app])), None)
+    book_url = str((book or {}).get("browser_download_url", ""))
     return Release(app, version, rel["tag_name"], str(rel.get("html_url", "")), name, url, int(asset.get("size", 0)),
-                   hashes.pop(), changes_since(str(rel.get("body") or ""), current, version))
+                   hashes.pop(), changes_since(str(rel.get("body") or ""), current, version),
+                   book_url if book_url.startswith("https://github.com/") else "")
+
+
+def changes_in(rel: Release, lang: str, current: str, opener=None) -> list:
+    """The release's changes since `current` in language `lang` (the apps' codes: fr, ger, ...), from its notes asset
+    (NOTES_ASSET, downloaded from GitHub only); the English ones (rel.changes) for English, for a language the notes
+    haven't got, or when they can't be had."""
+    if not lang or lang in ("us", "base") or not rel.notes_url:
+        return rel.changes or []
+    try:
+        with (opener or _open)(rel.notes_url) as resp:
+            data = resp.read(NOTES_MAX + 1)
+        if len(data) > NOTES_MAX:
+            return rel.changes or []
+        text = json.loads(data.decode("utf-8-sig")).get(lang)
+    except (UpdateError, OSError, ValueError, AttributeError):
+        return rel.changes or []
+    local = changes_since(text, current, rel.version) if isinstance(text, str) else []
+    mine = {r["version"] for r in local}
+    # version by version: in the language where its notes have that version, else in English (someone two versions
+    # behind sees both, the older one in English when it was never translated)
+    out, done = [], set()
+    for r in rel.changes or []:
+        v = r["version"]
+        if v not in mine:
+            out.append(r)
+        elif v not in done:
+            out += [x for x in local if x["version"] == v]
+            done.add(v)
+    return out or local
 
 
 def _open(url: str):
@@ -274,10 +324,11 @@ class UpdateCalls:
         """This app and the version running, shown beside its name."""
         return {"app": APPS.get(self.UPDATE_APP, ""), "version": self.UPDATE_VERSION}
 
-    def update_check(self) -> dict:
+    def update_check(self, lang: str = "us") -> dict:
         """Is there a newer release of this app? {"available", "version", "current" (the running one), "changes"
-        (before and after, per version since the running one: changes_since), "page", "size", "installed" (False
-        when running from the repo), "error"}. Asked once per start."""
+        (before and after, per version since the running one: changes_since; in `lang` when the release's notes
+        have it: changes_in), "page", "size", "installed" (False when running from the repo), "error"}. Asked once
+        per start, and again when the language changes."""
         try:
             rel = latest(self.UPDATE_APP, self.UPDATE_VERSION, fetch=self._update_fetch, fetch_text=self._update_fetch_text)
         except UpdateError as exc:
@@ -285,7 +336,8 @@ class UpdateCalls:
         self._update_found = rel
         if rel is None:
             return {"available": False, "version": self.UPDATE_VERSION, "current": self.UPDATE_VERSION}
-        return {"available": True, "version": rel.version, "current": self.UPDATE_VERSION, "changes": rel.changes or [],
+        changes = changes_in(rel, lang, self.UPDATE_VERSION, opener=self._update_opener)
+        return {"available": True, "version": rel.version, "current": self.UPDATE_VERSION, "changes": changes,
                 "page": rel.page, "size": rel.size, "installed": bool(self._update_installed())}
 
     def update_page(self) -> dict:

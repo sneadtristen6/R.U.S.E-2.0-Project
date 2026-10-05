@@ -1653,6 +1653,27 @@ class SpawnNamesAndSelection(unittest.TestCase):
             self.assertIn("scen_sel_" + kind, _words())
 
 
+class PanelSizes(unittest.TestCase):
+    """Every floating panel shrinks and grows by its size handle (the owner, 2026-10-05: "make it all shrinkable and
+    make it look nice at every shrinkable level ... customizable for the user"), its grip row staying full size."""
+    maps = staticmethod(SpawnNamesAndSelection.maps)
+    function = SpawnNamesAndSelection.function
+
+    def test_the_size_handle(self):
+        place = self.function("placePanel(")
+        self.assertIn("st.zoom = ", place)  # the whole panel, its text drawn again at the new size
+        self.assertIn("row.style.zoom = k === 1 ? \"\" : String(1 / k)", place)  # the grip row keeps its size
+        self.assertIn("s.left / k", place)  # a moved panel stays where it was put
+        self.assertIn('classList.toggle("compact", k < 0.7)', place)  # small: pictures only
+        self.assertIn("const PANEL_SCALE = [0.4, 1.25];", self.maps())
+        make = self.function("makePanels(")
+        for what in ('"panel-size"', '"dblclick"', '"wheel"', '"pointerdown"', "savePanel(key)"):
+            self.assertIn(what, make)
+        css = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "style.css").read_text(encoding="utf-8")
+        self.assertIn(".map-dock.compact .dock-tile span", css)
+        self.assertIn("{n}", _words()["tip_panel_size"]["us"])
+
+
 class Labels(unittest.TestCase):
     """Every display name has all ten languages, so no modder gets a half-translated tool."""
 

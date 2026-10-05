@@ -534,7 +534,7 @@ tr.edited .flag { border-color: var(--accent); }
 /* panels the modder arranges (maps.js makePanels): a grip to drag, a button to fold */
 .panel-grip { display: flex; align-items: center; gap: 4px; pointer-events: auto; }
 .map-hud > .panel-grip { position: absolute; top: 4px; right: 6px; }
-.map-hud { padding-right: 52px; }
+.map-hud { padding-right: 70px; }  /* room for the grip, the fold and the size handle */
 .map-dock > .panel-grip { align-self: flex-start; padding: 2px 4px; background: var(--hud); border: 1px solid var(--hud-line); }
 .grip { cursor: grab; padding: 0 4px; color: var(--muted); user-select: none; font-size: 15px; line-height: 1; }
 .grip:active { cursor: grabbing; }
@@ -543,3 +543,14 @@ tr.edited .flag { border-color: var(--accent); }
 .map-hud.folded > :not(.panel-grip):not(.map-title):not(.map-duplicate) { display: none; }
 .map-dock.folded .dock-tray { display: none; }
 .map-dock.moved { transform: none; }
+/* a panel's size handle (maps.js placePanel): drag down smaller, up bigger, double-click normal size */
+.panel-size { cursor: ns-resize; padding: 0 4px; color: var(--muted); user-select: none; font-size: 12px; line-height: 1;
+              touch-action: none; }
+.panel-size:hover { color: #fff; }
+/* small (under 70%): the tools show their pictures only, their names on hover; the selection its icons and counts */
+.map-dock.compact .dock-tile span, .map-dock.compact .tool-tile span { display: none; }
+.map-dock.compact .dock-tile, .map-dock.compact .tool-tile { min-width: 44px; padding: 8px 6px; }
+.map-dock.compact .dock-tile svg, .map-dock.compact .tool-tile svg { width: 30px; height: 30px; }
+.map-dock.compact #tray-tip { display: none; }
+.map-dock.compact .scen-selection .sel-name, .map-dock.compact .scen-selection .muted { display: none; }
+.map-dock.compact .scen-selection .sel-unit { width: 56px; }

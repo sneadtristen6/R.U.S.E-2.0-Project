@@ -1,6 +1,7 @@
 """Updating the installed apps from GitHub Releases (rusemod.update), on made-up releases: no network is used."""
 import hashlib
 import io
+import json
 import tempfile
 import time
 import unittest
@@ -152,6 +153,79 @@ class Changes(unittest.TestCase):
             u = app.update_check()
             self.assertEqual((u["current"], u["version"]), ("0.1.0", "0.2.0"))
             self.assertIsInstance(u["changes"], list)
+
+
+FRENCH = """**Studio RUSE, un aperçu.** Intro.
+
+**0.8.1 :** pas un titre de version (l'espace avant les deux-points).
+
+**0.8.1:** des unités de toutes les nations.
+| Avant | Maintenant |
+|---|---|
+| Une unité d'une autre nation faisait planter le jeu. | Elle marche dans toutes les parties. |
+"""
+
+
+class Languages(unittest.TestCase):
+    """The update panel in the app's own language (the owner, 2026-10-05: a French player's panel was in English):
+    every language's notes in one file published beside the installer; English when a language has none."""
+    BOOK = "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/download/launcher-v0.2.0/RUSE-Launcher-notes.json"
+
+    def rel(self, notes_url=BOOK):
+        return Release("launcher", "0.8.1", "launcher-v0.8.1", "", "x.exe", "https://github.com/x", 1, SHA,
+                       update.changes_since(NOTES, "0.8.0", "0.8.1"), notes_url)
+
+    def test_a_translated_table_s_header_is_no_change(self):
+        self.assertEqual([(r["before"], r["now"]) for r in update.changes_since(FRENCH, "0.8.0", "0.8.1")],
+                         [("Une unité d'une autre nation faisait planter le jeu.", "Elle marche dans toutes les parties.")])
+
+    def test_the_language_asked_for_else_english(self):
+        book = json.dumps({"us": NOTES, "fr": FRENCH}).encode("utf-8")
+        fr = update.changes_in(self.rel(), "fr", "0.8.0", opener=lambda url: Response(book))
+        self.assertEqual(fr[0]["now"], "Elle marche dans toutes les parties.")
+        english = [r["now"] for r in self.rel().changes]
+        for lang, opener in (("ger", lambda url: Response(book)),  # no German notes
+                             ("us", None), ("base", None),  # English, and the game's own names
+                             ("fr", mock.Mock(side_effect=OSError("offline"))),
+                             ("fr", lambda url: Response(b"not json")),
+                             ("fr", lambda url: Response(b" " * (update.NOTES_MAX + 1)))):
+            with self.subTest(lang=lang):
+                self.assertEqual([r["now"] for r in update.changes_in(self.rel(), lang, "0.8.0", opener=opener)], english)
+        self.assertEqual([r["now"] for r in update.changes_in(self.rel(""), "fr", "0.8.0", opener=lambda url: Response(book))],
+                         english)  # a release without the file
+
+    def test_a_version_never_translated_stays_english_beside_the_translated_one(self):
+        rel = Release("launcher", "0.8.1", "launcher-v0.8.1", "", "x.exe", "https://github.com/x", 1, SHA,
+                      update.changes_since(NOTES, "0.7.6", "0.8.1"), self.BOOK)  # someone on 0.7.6: 0.8.1 and 0.8.0
+        book = json.dumps({"fr": FRENCH}).encode("utf-8")  # 0.8.1 only, in French
+        got = update.changes_in(rel, "fr", "0.7.6", opener=lambda url: Response(book))
+        self.assertEqual([(r["version"], r["now"]) for r in got], [
+            ("0.8.1", "Elle marche dans toutes les parties."), ("0.8.0", "**New brushes**"), ("0.8.0", "**Check this map**")])
+
+    def test_the_file_is_found_beside_the_installer_on_github_only(self):
+        rel = release("launcher-v0.2.0")
+        rel["assets"].append({"name": "RUSE-Launcher-notes.json", "browser_download_url": self.BOOK})
+        self.assertEqual(latest("launcher", "0.1.0", fetch=lambda url: [rel]).notes_url, self.BOOK)
+        rel["assets"][-1]["browser_download_url"] = "https://evil.example/notes.json"
+        self.assertEqual(latest("launcher", "0.1.0", fetch=lambda url: [rel]).notes_url, "")
+        self.assertEqual(latest("launcher", "0.1.0", fetch=lambda url: [release("launcher-v0.2.0")]).notes_url, "")
+        # the release feed (when the API refuses) names it at its download address
+        feed = ("<feed><entry><link rel=\"alternate\" href=\"https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases"
+                "/tag/studio-v0.6.1\"/><content type=\"html\">SHA-256 `" + SHA + "`</content></entry></feed>")
+        got = latest("studio", "0.6.0", fetch=mock.Mock(side_effect=OSError("403")), fetch_text=lambda url: feed)
+        self.assertTrue(got.notes_url.endswith("/releases/download/studio-v0.6.1/RUSE-Studio-notes.json"))
+
+    def test_the_check_takes_the_language(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = App(d)
+            rel = release("launcher-v0.2.0")
+            rel["body"] += "\n\n**0.2.0:** new.\n| Before | Now |\n|---|---|\n| Old. | New. |\n"
+            rel["assets"].append({"name": "RUSE-Launcher-notes.json", "browser_download_url": self.BOOK})
+            app._update_fetch = lambda url: [rel]
+            book = json.dumps({"fr": "**0.2.0:** nouveau.\n| Avant | Maintenant |\n|---|---|\n| Ancien. | Nouveau. |\n"})
+            app._update_opener = lambda url: Response(book.encode("utf-8"))
+            self.assertEqual(app.update_check("fr")["changes"], [{"version": "0.2.0", "before": "Ancien.", "now": "Nouveau."}])
+            self.assertEqual(app.update_check()["changes"], [{"version": "0.2.0", "before": "Old.", "now": "New."}])
 
 
 class App(UpdateCalls):
