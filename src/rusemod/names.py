@@ -1,13 +1,6 @@
-"""NDF name trees (EXPR: the file's own object names; IMPR: names it uses from other files). docs/FORMATS.md §2.
-
-A tree is nodes of `u32 tranIndex, s32 leaf (-1 = none), u32 childCount, u32 childOffset[childCount]`, each offset
-relative to the start of that offset array. A node's path is its parents' fragments (TRAN strings) joined with "/",
-e.g. `$/GFX/Everything/Descriptor_Unit_X`; `leaf` is the object index (EXPR) or the import index (IMPR).
-
-`to_bytes` writes nodes depth-first, each followed by its children in order, which is how `tools/names_check.py`
-checks the shipped files are laid out. New children go in name order if a node's children are already in name
-order, otherwise at the end.
-"""
+"""Object names in the game's data files: the names a file gives its own objects and the ones it uses from other
+files (`$/GFX/Everything/Descriptor_Unit_X`), read and written. New names go in name order where a file's names are
+already in name order, otherwise at the end."""
 from __future__ import annotations
 
 import struct

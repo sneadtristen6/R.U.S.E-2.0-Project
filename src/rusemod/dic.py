@@ -1,14 +1,8 @@
-"""Localisation tables (.dic, magic 'TRA'): reading, and the text-key codec. See docs/FORMATS.md §4.
+"""The game's text tables: reading, and the text-key codec.
 
-Layout: b"TRA" + u8 version, u32 count, then count x (u64 key, u32 byte offset, u32 length in UTF-16 characters)
-sorted by key, then the UTF-16LE texts, with no terminating null. Offsets count from the start of the file, and
-several entries can share one text. Each shipped file also has one entry with key 0x8000000000000000 (`GLYPH_KEY`)
-listing every character the file uses. (All checked on the 1,232 shipped files with `tools/dic_check.py`.)
-
-Keys are not hashes: like Wargame's (moddingSuite `Utils.CreateLocalisationHash`, MIT), a key packs a name, 6 bits a
-character (0-9, A-Z, _, a-z), as many as fit in the 64 bits: 10 characters (an 11th only if it starts with 0-9 or
-A-E). R.U.S.E. uses up to 10: its multiplayer map-name keys decode to M_D_01 .. M_D_30, unit names to N_UNI_137.
-"""
+Keys are not hashes: like Wargame's (moddingSuite `Utils.CreateLocalisationHash`, MIT), a key packs a name of up to
+10 characters (0-9, A-Z, _, a-z) into a number. R.U.S.E.'s multiplayer map names are M_D_01 .. M_D_30, unit names
+N_UNI_137 and the like."""
 from __future__ import annotations
 
 import struct

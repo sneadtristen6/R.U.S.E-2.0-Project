@@ -1,34 +1,16 @@
 """Unit looks: painted textures from a mod into the game (MOD_FORMAT §7), and the work folder the Studio's
 "Open in Blender" / "Bring back" buttons use.
 
-A mod repaints a texture with `files/replace/<game path>.png`, where <game path> is the texture's path in
-ZZ_Win.dat: `files/replace/gen/ww2/res3d/units/urss/char/urss_t-26/tsccombcs_combineddsctexture01.tgv.png` is the
-T-26's colour. Its alpha (on vehicles: the player's side colour where low, shine where high; TESTS T23) stays the
-game's, byte for byte, unless `<game path>.alpha.png` (grey) is there too; a colour picture's own alpha channel is
-never used (Blender saves 255 there). A picture must be the texture's own size (the size `ruse export-model` writes).
+A mod repaints a texture with `files/replace/<game path>.png`. Its alpha (on vehicles: the player's side colour where
+low, shine where high) stays the game's, byte for byte, unless a grey `<game path>.alpha.png` is there too; a colour
+picture's own alpha channel is never used (Blender saves 255 there). A picture must be the texture's own size (the size
+`ruse export-model` writes). Every level of the picture is written, each the one above halved; a part nobody painted
+keeps the game's own, byte for byte. Seen in the game.
 
-The build writes the texture the way the game stores its own small levels: every level a plain TGU1 payload (its
-32-byte header, then the blocks as they are) under TGV flag 1, as proven in the game (T23). Each level's picture is
-the one above halved (2 x 2 average). A 4 x 4 block nobody painted keeps the game's own block, byte for byte, in
-every level; a painted one is encoded again (rusemod.dxt). The texture's 64 x 64 stand-in, in every stand-in pack
-that has one, gets the same, in place (its TGV flag 0: raw blocks), unless other textures' stand-ins share its
-picture: then it's left as the game has it (T27).
-
-A unit's card, its picture in the build menu (`TextureForInterface`, e.g. `files/replace/gen/ww2/res2d/
-texanimationuniticone/eu/m4_sherman.tgv.png`), is replaced the same way: all 450 of the game's are one DXT1_LIN
-level packed as ZIPO (410 of them 360 x 184), with no stand-ins; the changed blocks are encoded again and the level
-packed again (make_picture). The game shows a card from the menu packs, archives of their own inside ZZ_Win.dat that
-hold copies of the cards (gen\\pack\\menuus.ppk for the US build menus, outgame.ppk, ...): replacing only the loose
-.tgv left the game's card in the build menu (T31, 2026-10-04). So every changed texture is replaced in each nested
-pack that has a copy too (in_nested_packs); all 64 of them rebuild byte for byte. With that, the card showed in the
-game's build menu (T31 passed).
-
-A new unit (a clone) starts with its source's card, the same picture file (T33: the Sherman and the Tall Sherman
-looked the same in the menu). Its own card is `files/cards/<the unit's name>.png` (`Descriptor_Unit_R2_X.png`): the
-build gives the clone's TextureForInterface a file of its own beside its source's (own_card_name), made from the
-source's card the way make_picture writes one, and adds it to each menu pack that holds the source's card
-(own_cards), laid out the way the game's packs are (unitpacks.archive_with gives all 64 back byte for byte).
-"""
+A unit's card, its picture in the build menu (`TextureForInterface`), is replaced the same way, everywhere the build
+menu shows it (seen in the game). A new unit (a clone) starts with its source's card; its own card is
+`files/cards/<the unit's name>.png`: the build gives the clone a card of its own beside its source's and adds it
+wherever the build menu shows the source's."""
 from __future__ import annotations
 
 import hashlib

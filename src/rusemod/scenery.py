@@ -1,17 +1,6 @@
-"""A map's scenery (docs/FORMATS.md §6): every tree, house, field, road piece and ground decal the game draws, in
-`output\\save.boobspc` of its map pack. The layout follows the notes of DomesticNukes and his Claude (checked here on
-every shipped map).
-
-    [0:16]    MD5 of everything after it (the game refuses a file whose sum is wrong)
-    [16:124]  "0.6\\0", then (offset, size or count) pairs, offsets from the file's start: the block table (count),
-              the block data, the per-name flags (count), the name table, an optional table, a second name table,
-              the layer boundaries (u32s), then the three grids' sizes (Low, Mid, Hi) and (offset, size) of each
-    blocks    block table: one u32 per block (from the data's start), then the data size (an end marker)
-
-A block is a list of items with a small search tree over them; an item is an object (a scenery type from the name
-table, placed with a transform), a road piece, or another block placed with a transform (a child, always stored
-after its parent). Objects are stored at height 0: the game puts them on the ground when it loads the map.
-"""
+"""A map's scenery: every tree, house, field, road piece and ground decal the game draws, read, added to (a mod's
+objects) and erased from (a mod's erase areas), following the notes of DomesticNukes and his Claude (checked on
+every shipped map). Objects stand on the ground wherever it is: the game puts them there when it loads the map."""
 from __future__ import annotations
 
 import bisect
@@ -22,7 +11,7 @@ import struct
 from dataclasses import dataclass, field
 
 VERSION = b"0.6\0"
-_HEAD = struct.Struct("<4s26I")  # the version, then 26 u32 fields (bytes 16..124)
+_HEAD = struct.Struct("<4s26I")
 SCALE16 = 3 / 32767              # the compact transform's int16 scale (so it tops out at 3.0)
 IDENTITY = (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 T_COMPACT, T_IDENTITY, T_MOVE, T_FULL = 0, 1, 2, 3
@@ -247,10 +236,8 @@ class Scenery:
                         yield b.index, it, compose(where[b.index], it.matrix())
 
     def roads(self) -> list[tuple]:
-        """Every road piece, in map coordinates: a cubic Bézier as (x0, y0, x1, y1, x2, y2, x3, y3). A piece's 15
-        words are its start (x, y, z), the start's handle as an offset from it, its end, the end's handle as an offset
-        from the end, then three words (3 and two codes on every piece seen); pieces join end to start, handles in
-        line. Roads lie on the ground, so their z (0) isn't kept. A few long far-view pieces of the top block repeat
+        """Every road piece, in map coordinates: a cubic Bézier as (x0, y0, x1, y1, x2, y2, x3, y3); pieces join end to
+        start. Roads lie on the ground, so their height isn't kept. A few long far-view pieces of the top block repeat
         roads the close pieces already draw."""
         out = []
         todo = [(r, IDENTITY) for r in reversed(self.roots())]

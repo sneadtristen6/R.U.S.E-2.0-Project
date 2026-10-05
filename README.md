@@ -32,12 +32,13 @@ make works in the game every time, the first time.
 what changing strictly data can do. Anything beyond data is outside what we want to do with it. Your Steam install
 is never changed.
 
-**Big map mods build in minutes, not hours.** Our most extreme map mod went from about four hours to under 10 minutes
-to build, and we're still working on optimizations. It's in RUSE Studio 0.9.7, and how we got there is under
-[How we got here](#how-we-got-here).
+**Very large map mods now build in minutes.** Before, they took a very long time to build, and that's why this
+update was needed: our most extreme map mod went from about four hours to under 10 minutes. It's in RUSE Studio
+0.9.7, we're still working on optimizations, and how we got there is under [How we got here](#how-we-got-here).
 
 **What's in this repository.** The two apps, and what players and modders need to use them. Our working notes on the
-game's own files are kept private until we have an explicit OK from the developers, Eugen Systems.
+game's own files are kept private until we have an explicit OK from the developers, Eugen Systems. I've reached out
+to them in hopes of working with them, and of making sure there's maximum security on this project.
 
 Everything we do here is to help the community and bring this game to a better place. R.U.S.E. is one of my favorite
 games ever, and I just want to make it better.
@@ -315,7 +316,7 @@ Stuck on something? See [Questions? Ask any AI](#questions-ask-any-ai) at the bo
 The big steps so far, newest first. Each one was played in the game before it went out.
 
 <details>
-<summary><b>Big map mods in minutes, not hours (Studio 0.9.7)</b></summary>
+<summary><b>Very large map mods now build in minutes (Studio 0.9.7)</b></summary>
 
 The most extreme map mod we have drains the whole sea off BATTLES > D-Day: 154 flatten strokes, 135 paint strokes
 and 33,385 buildings erased. Its first build took about four hours. Now it builds in **under 10 minutes**, with the

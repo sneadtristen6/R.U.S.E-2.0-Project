@@ -1,43 +1,8 @@
-"""The road model of a map pack's static meshes (`output\\staticmeshes.spkpc`, or `staticmeshes_v02.spkpc` on Alpha,
-Gam_Ostfriesland, Gamma and Robert, Beta both: MEMBERS; a mesh pack like FORMATS.md §8, model `road`). The map's terrain
-settings (`mapterrain` in ZZ_GladPatchableWin.dat) name it on every map: a static mesh `Road`, mode 128 (the strip of
-the `Route` road pieces: width 400, colour dcdcdc64, stored B, G, R, A), from `DatasMap:\\Output\\StaticMeshes`. The
-scenery's `Route` pieces (rusemod.scenery.RoadPiece) are what the map's tools built the model from.
-
-What it draws in the game is NOT known yet (the record, 2026-10-02, owner): batch 11 set the Route strip's colour in
-the terrain settings to red and the roads came out blue from high up, the close-up road unchanged; batch 12 recoloured
-and lifted this model's vertices, and no red road was ever seen (a first note credited batch 11's blue to batch 12:
-wrong). What draws the close-up road (textured asphalt, a dashed centre line) isn't known (TESTS.md T12). This module
-writes new roads into the model, checked against the file's layout only (tests/test_roadstrips.py), never as proof
-that the game shows them.
-
-The model is one draw call over the whole map, cut into parts by cases of CASE map units, one part per case:
-
-    vertex    44 bytes: position (x, y, the ground's height), the road's direction (4 bytes, b / 255 x 2 - 1), the
-              side it widens to (the same, flat), a width factor (f32: 1 where the road runs on, wider at a bend),
-              colour (4 bytes), two f32 0, and (u, v): u -0.5, 0 or 0.5 across the road, v its width
-    piece     each road piece is its own strip: two points, three vertices at each (u -0.5, 0, 0.5), 12 indices
-              (SEGMENT) over the 6; a curved piece has more points (4,678 strips for D-Day's 4,693 pieces)
-    part      48 bytes in the pack's fourth section: its box (6 f32: the vertices' bounds, its top TOP higher), u16
-              case, u16 pad,
-              u32 first vertex, vertex count, first index, index count, u32 pad; a draw call's parts are listed by
-              case, one each, its vertices and indices in that order with no gap; indices count from the buffer's
-              start (u16, so the model holds at most 65,536 vertices)
-    groups    the fifth section: u16 first part, u16 count, per draw call (the draw call's fifth word picks one)
-    case      the cases are numbered along a curve (case_numbers) over the map's grid of CASE squares, skipping
-              those off the map (checked on every part of the 28 maps that have the file)
-
-The model's own box (in its record) is its parts' boxes and the map's corner (0, 0, 0) together. Both box rules hold
-on every part and model of the 33 shipped files (4,701 parts, 2026-10-04).
-
-The pack's header hash is MD5 of its first 16 bytes and bytes 0x20-0x2F. Rebuilt with nothing added, every shipped
-file comes back byte for byte.
-
-The model holds the ground's height at every vertex, so it doesn't follow a reshaped ground by itself: on Blitz Twin
-flattened 27 to 54 m higher, the white roads seen from high up (the map view's too) stood off the roads painted on the
-ground, by as much as an old height projected at that camera angle (the owner's shots of 2026-10-04 02:15, the
-model's vertices projected with the shot's camera: on the white roads at their stored height, on the painted ones on
-the new ground). reseat moves them with the ground."""
+"""The road model a map draws from high up. It holds the ground's height at every point, so the build moves it with
+reshaped ground (`reseat`: on flattened Blitz Twin the white roads seen from high up stood off the roads painted on
+the ground until it did), and new roads are added to it. Written back unchanged, every shipped map's comes back byte
+for byte. What the model draws in the game isn't fully known yet (the record, 2026-10-02): this module is checked
+against the file only, never taken as proof that the game shows a road."""
 from __future__ import annotations
 
 import hashlib

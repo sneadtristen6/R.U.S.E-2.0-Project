@@ -1,16 +1,5 @@
-"""Terrain texture tiles: the .tmst_pc index and its .tmst_chunk_pc tile store (read and write, lossless).
-
-Every map pack carries two tile sets, output\\highdef.* and output\\lowdef.*. Each set is an index (.tmst_pc) plus
-a store (.tmst_chunk_pc) of 512x512 DXT1 tiles, each tile being a complete one-mip TGV texture. The tiles form a
-pyramid over a grid of cells: one whole-map overview tile, then per cell 1, 2x2 and 4x4 tiles (for the shipped
-depth of 3). See docs/FORMATS.md.
-
-The writer keeps the index header and the tiles' storage order and only re-lays the store and patches the
-(offset, size) table and the two size fields, so an unchanged rebuild is byte-identical to the original.
-
-Also here: a minimal TGV header reader/builder and the plain 'ZIPO' mip payload (zlib-packed raw texel data)
-that ordinary .tgv textures use, to build replacement tiles without the terrain's own TGU1 codec.
-"""
+"""A map's ground pictures, tile by tile (a close-up set and a far set): read and written, lossless; an unchanged
+rebuild gives the same bytes back. Also here: the plain pictures the build writes as replacement tiles."""
 from __future__ import annotations
 
 import struct

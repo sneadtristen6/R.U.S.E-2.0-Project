@@ -1,23 +1,9 @@
-"""The game's compiled Python scripts (`.xyz` inside `.ipk` packs) and its Python unit list (docs/FORMATS.md §5).
+"""The game's unit list: R.U.S.E. only uses the units it lists, so `add_classes` lists every copied unit the way its
+source is listed.
 
-R.U.S.E. only uses units that have a class in `ZZ_Win.dat!genpython\\eugenpatchable.ipk` ->
-`parametres\\classes.xyz` (checks C5 to C6d, PLAN.md §7):
-
-    class Unit_M3_Lee(front.unit.TankUnit):
-        descriptor = _ndf.Database.GetObject('$/GFX/Everything/Descriptor_Unit_M3_Lee')
-    ...
-    Unit_M3_Lee.descriptor.base_class = Unit_M3_Lee
-
-`add_classes` gives a copied unit the same two statements, without a Python 2.5 compiler.
-
-This is code the game runs, so PLAN.md decision 23 applies. The only thing ever written is that one fixed template,
-filled in from checked values: a class name of letters, digits and `_`, and a `$/...` object path. `check_added`
-proves the new module is the old one plus exactly those statements before anything is used. Mods never bring scripts
-of their own (`build.load_mod` refuses them).
-
-A `.xyz` file is `XYZ0`, Python 2.5's magic number (big-endian), a big-endian u32 size, the 16-byte MD5 of the `.py`
-source, then the zlib-compressed marshal data of the module's code object (no `.pyc` header).
-"""
+This is code the game runs. The only thing ever written is one fixed template, filled in from checked values: a class
+name of letters, digits and `_`, and a `$/...` object path. `check_added` proves the new list is the old one plus
+exactly those lines before anything is used. Mods never bring scripts of their own (`build.load_mod` refuses them)."""
 from __future__ import annotations
 
 import re

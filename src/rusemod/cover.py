@@ -1,20 +1,5 @@
-"""Where units hide, and the ground the AI treats as blocked: a map's cover grid, painted by a mod.
-
-Each map has a baked grid in DataMap_Win.dat, `datasmap\\<map>\\mapinfo.win` (its fourth buffer, an SDB quadtree:
-LittleGroove's `ruse_mod_engine.sdb` reads and writes it). A cell's byte holds layers; the game asks two of them
-(LittleGroove's notes): 0x08, "in forest" (units there are hidden, and ambush), and 0x04, "AI: blocked": the AI's
-sight lines, its placing of buildings and its defence ask it, and it goes into the AI grid's clearance, but units
-move by the movement graphs alone (rusemod.nav), so they walk on it (on shipped maps infantry can stand on 3% to
-half of the "blocked" cells). Ground units must keep off needs a movement.toml block too (unpaired_blocked).
-Eugen's designers drew these as zones in their editor (forest, obstacle), not from the trees, so a town or a wood
-made in a mod gives cover only once cover is painted over it. On Blitz, the trees' cells are 0x08 twice as often as the map's, and two
-thirds of the buildings stand on 0x04 cells.
-
-The grid is a square of square cells, stored as its two corners (x0, y0, x1, y1). On a square map it is the map,
-(0, 0, W, W). On the 8 shipped maps that aren't square it is as wide as the map's long side and reaches past the
-short one, the map in its middle: D-Day's is (0, -655360, 3932160, 3276800) on a map 2621440 tall. (Read as a
-corner and a size, a paint there landed up to a kilometre off: a wood cleared on D-Day kept hiding infantry in the
-game, 2026-10-01.)
+"""Where units hide, and the ground the AI treats as blocked: a map's cover grid, painted by a mod (LittleGroove's
+engine, ruse_mod_engine.sdb, reads and writes the grid).
 
 A mod paints circles (or squares) in maps/<map>/cover.toml (MOD_FORMAT §8), in order, each setting or clearing one
 layer:
@@ -24,12 +9,16 @@ layer:
     y = 640000.0
     radius = 20000.0
     layer = "cover"   # or "blocked" (for the AI only: units still walk there without a movement.toml block)
-    erase = false    # true clears it (a wood's cover taken away)
+    erase = false     # true clears it (a wood's cover taken away)
     square = false    # true: a square along the map's axes, `radius` (map units) from its middle to each side (the
                       # owner asked for a square brush, 2026-09-30; its edges follow the grid's rows and columns)
 
-A cell is painted when its centre is in the circle (or square). The tree is edited in place: leaves the paints don't
-touch keep their bytes and place, so painting nothing gives the same file back."""
+A cell is painted when its centre is in the circle (or square), and only those cells change: painting nothing gives
+the same file back. The designers drew cover as zones, not from the trees, so a town or a wood made in a mod gives
+cover only once cover is painted over it. "Blocked" is for the AI only: units move by the map's movement
+(rusemod.nav), so ground units must keep off needs a movement.toml block too (unpaired_blocked). On a map that isn't
+square the grid reaches past its short side, the map in its middle (taken as the map's own size, a paint landed up to
+a kilometre off: a wood cleared on D-Day kept hiding infantry in the game, 2026-10-01)."""
 from __future__ import annotations
 
 import struct

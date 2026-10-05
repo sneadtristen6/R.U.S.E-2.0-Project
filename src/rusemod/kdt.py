@@ -1,16 +1,6 @@
-"""Gameplay ground (.kdt): the streamed kd-tree mesh of a map's ground and camera floor, read and written.
-
-Every map pack holds two, output\\occlusioninfo_terrainonly.kdt (the ground gameplay runs on) and
-output\\occlusioninfo_camera.kdt (the camera floor). Each is an NDF binary with one TStreamedMeshKdTree object: the
-bounds, a triangle count, eight OffsetOf* offsets into Storage, and Storage itself, a blob that holds one mesh per
-subtree (a positions chunk, a normals chunk, an index buffer, a triangle list, the subtree's own node data) plus
-the MainNode bytes and the index tables that point at all of it. Layout in docs/FORMATS.md §6.
-
-Every part decodes and re-encodes: positions and normals; the index buffers, the triangle lists and the subtrees'
-k-d trees, and the MainNode (the tree over the subtrees), whose encodings follow the notes of DomesticNukes and his
-Claude. Unchanged chunks keep their original compressed bytes, so an unchanged file re-serializes byte-for-byte; the
-writer rebuilds every table, the padding and the offset properties from the parts.
-"""
+"""The ground units walk on and the camera floor: read and written, lossless. Every part is read and encoded again
+the way the notes of DomesticNukes and his Claude found; unchanged parts keep their bytes, so an unchanged file gives
+the same bytes back."""
 from __future__ import annotations
 
 import math
@@ -28,10 +18,10 @@ FILL = 0xAA            # the byte the writer pads a positions chunk with (the ga
 OFFSETS = ("OffsetOfVertexBufferIndexes", "OffsetOfIndexBuffer", "OffsetOfIndexBufferIndexes",
            "OffsetOfTriangleIndexLists", "OffsetOfTriangleIndexBufferIndexes", "OffsetOfMainNode",
            "OffsetOfCompressedSubtreeIndexBuffer", "OffsetOfCompressedSubtrees")
-BLOB = 0x14            # NDF type code of Storage: u32 length + bytes
+BLOB = 0x14            # the type the stored data has
 
 # ---------------------------------------------------------------------------------------------------------------
-# Chunks: u32 L, u32 inflated size, then a zlib stream of L - 4 bytes ended by a sync flush (no final block).
+# --- the stored parts, each packed on its own
 
 
 def read_chunk(blob: bytes, off: int) -> tuple[bytes, int]:
@@ -67,9 +57,7 @@ def chunk_size(chunk: bytes) -> int:
 
 
 # ---------------------------------------------------------------------------------------------------------------
-# Positions chunk: u32 n, u32 mask 0x7FFF, 3n u16 residuals, the parent codes (as in the .tms predictor: 0 = the
-# previous vertex, 0x80|hi then lo = that many vertices back; vertices 0 and 1 have parent 0), then fill bytes up
-# to 8 + 12n. A coordinate is (residual + the parent's coordinate) & 0x7FFF.
+# --- the points
 
 
 def decode_positions(data: bytes) -> tuple[list[tuple[int, int, int]], list[int]]:
@@ -116,9 +104,7 @@ def encode_positions(positions: list, parents: list[int] | None = None) -> bytes
 
 
 # ---------------------------------------------------------------------------------------------------------------
-# Normals chunk: one u32 per vertex. Bits 0-3: the dominant axis k and its sign (0 -x, 1 +x, 2 -y, 3 +y, 4 -z, 5 +z).
-# The two other components divided by |n[k]|: a = n[(k+1)%3] / |n[k]| in bits 16-31 as round(a * 32768) + 32768,
-# b = n[(k+2)%3] / |n[k]| in bits 4-15 as round(b * 8192) as 12-bit two's complement, which wraps when |b| > 0.25.
+# --- the normals
 
 
 def decode_normal(word: int) -> tuple[float, float, float]:
@@ -168,8 +154,7 @@ def encode_normals(normals: list) -> bytes:
 
 
 # ---------------------------------------------------------------------------------------------------------------
-# The index buffer, the triangle lists, the subtree trees and the MainNode. These encodings follow the notes of
-# DomesticNukes and his Claude (2026-09-29), checked here on every shipped file (tools/verify_kdt.py).
+# --- the rest of each part, as the notes of DomesticNukes and his Claude found (2026-09-29)
 
 def _nibbles(data: bytes) -> list[int]:
     out = []

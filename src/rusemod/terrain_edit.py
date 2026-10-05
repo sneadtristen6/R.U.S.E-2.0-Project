@@ -1,10 +1,5 @@
-"""Terrain edits on a map's ground (PLAN.md §7 MT, step T2; docs/MOD_FORMAT.md §8): brush strokes applied to all
-four files that hold a map's ground, together (FORMATS.md §6):
-
-  output\\highdef.tms                    the close-up mesh the game draws
-  output\\lowdef.tms                     the far mesh (coarser, its own points)
-  output\\occlusioninfo_terrainonly.kdt  the gameplay ground (its points sit on highdef's)
-  output\\occlusioninfo_camera.kdt       the camera floor
+"""Terrain edits on a map's ground (docs/MOD_FORMAT.md §8): brush strokes applied to the four forms a map's ground
+takes, together: the close-up mesh the game draws, the far mesh, the ground units walk on, and the camera floor.
 
 The gameplay ground leads (the recipe of DomesticNukes and his Claude, checked in the game on Blitz, 2026-09-28):
 1. The strokes (rusemod.brush) move the gameplay ground's points only.

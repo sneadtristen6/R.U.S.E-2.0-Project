@@ -1,25 +1,5 @@
-"""3D models (.spk mesh packs, magic MESHPCPC, version 4): read the models of buildings, trees and units, for drawing.
-
-The layout is from the notes of DomesticNukes and his Claude (2026-09-29), checked here on every mesh pack the game
-ships (tools/verify_spk.py; FORMATS.md §8). A pack (`gen_5\\pack\\*.spk` in ZZ_Win.dat) holds many models:
-
-  header     `MESH` `PCPC`, u32 version 4, u32 file size, 16-byte hash; at 0x34 eight sections (u32 offset, size,
-             count): names, vertex formats, materials, two empty ones, meshes, draw calls, the index-buffer table;
-             at 0x94 the index-buffer data (offset, size), at 0x9C the vertex-buffer table (offset, size, count),
-             at 0xA8 the vertex-buffer data (offset, size)
-  names      a trie like an EDAT archive's (u32 header length, u32 next sibling; header length 0 = a model: its
-             bounding box, flags, mesh number and skeleton record, then the last piece of its name)
-  formats    u32 256, then one 256-byte name per vertex format, spelling the layout (TVertex__Position_3f__...)
-  materials  an NDF holding one TMeshMaterial per material, in order: its textures (diffuseTexture: an atlas)
-  mesh       u16 first draw call, u16 draw-call count
-  draw call  u16, u16 material, u16 index buffer, u16 vertex buffer, u16 0xFFFF, u16 0xCDCD
-  IB, VB     16-byte table rows: u32 offset (from the data start), u32 size, u32 count, u16 (1 / vertex format),
-             u16 flags: 0xC000 = compressed, 0 = stored as is (most scenery)
-
-A compressed index buffer is u32 size + zlib (sync flush): u16 differences, summed. A compressed vertex buffer is a
-VBUF chunk like the terrain's (rusemod.tms): a predictor, then one SUBP stream per vertex component, each quantized
-and stored relative to its parent vertex. Models are drawn as they are: scenery has no skeletons.
-"""
+"""3D models of buildings, trees and units, read for drawing in the Studio (following the notes of DomesticNukes and his
+Claude, 2026-09-29, and checked on every model pack the game ships). Scenery models are drawn as they are."""
 from __future__ import annotations
 
 import re

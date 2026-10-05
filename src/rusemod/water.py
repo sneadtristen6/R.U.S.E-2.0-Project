@@ -1,26 +1,8 @@
-"""Water that follows the terrain editor (PLAN.md §7 MT; docs/MOD_FORMAT.md §8): the water brushes on the drawn meshes,
-and the three water textures the game's water shader reads, kept in step with the water triangles.
+"""Water that follows the terrain editor (docs/MOD_FORMAT.md §8): the water brushes on the drawn ground, and the
+water pictures the game's water reads, kept in step with it by the rules every shipped map follows.
 
-The rules are the ones every shipped map follows (private notes water-and-trees-2026-09-29; private/tools/check_water.py
-checks them rule by rule):
-
-  meshes    a vertex's 4th value w is the water surface over it; list 1 = the water triangles (Tms._water_lists);
-            the far mesh's water sits about 150 world units below the close-up mesh's (each mesh's base level, the w
-            most vertices carry, says by how much)
-  textures  one water cell = 27,306.67 world units, one 16 x 16 tile per cell; rows run north to south; the maps
-            aren't all square (D-Day: 144 x 96 cells)
-    riverindirectionsurface  per cell (B, G, R, A): (G, R) = the cell's tile, row G and column R of the waterinputs
-                             atlas (16, 32 or 64 tiles across, by map: all 32 maps checked); B = 255 when the cell's
-                             water is NOT at the map's base level (rivers, lakes); A = 255 only on all-water cells at
-                             the base level that use the shared all-sea tile; a dry cell uses the shared dry tile
-    waterinputs              R = the water DEPTH: 255 * (w - z) / MaxDepthForSimulationDepthMap, capped at 255 (the
-                             map's own value in map\\<name>\\mapwaterconstante: 1,000 on Blitz); G = foam; in a cell's
-                             own tile B / A = the cell's column / row
-    wateracceleration        G / R = the flow (128 = still water)
-
-Only texels whose water changed are rewritten, so Eugen's own shading stays everywhere else. A dry cell that gains
-water gets a free tile (all zero, used by no cell); the shared dry and sea tiles are never edited.
-"""
+Only what changed is rewritten, so the game's own shading stays everywhere else; a dry place that gains water gets a
+picture of its own, and the shared dry and sea pictures are never edited."""
 from __future__ import annotations
 
 import struct

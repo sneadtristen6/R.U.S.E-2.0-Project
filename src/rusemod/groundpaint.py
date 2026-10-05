@@ -1,12 +1,9 @@
-"""Painting on a map's ground picture: its highdef and lowdef texture tiles (rusemod.tmst; FORMATS.md §6), a pyramid
-of 512x512 DXT1 tiles over the map's cells. A painted tile is written back as a plain ZIPO DXT1 tile, which the game
-draws (proven with plain tiles, 2026-09-29); only the 4x4 blocks the paint touches are encoded again, the rest keep
-their bytes. First use: the roads a mod draws, painted in the colour of the map's own roads, so a new road shows
+"""Painting on a map's ground picture, tile by tile (rusemod.tmst), close up and from far. A painted tile is written
+back as a plain tile, which the game draws (proven 2026-09-29); only the parts the paint touches are encoded again,
+the rest keep their bytes. First use: the roads a mod draws, painted in the colour of the map's own roads, so a new road shows
 where supply trucks already drive it (the roads a player sees from afar are painted into these tiles, 2026-09-30).
 
-The map's close-up map (`output\\div_map.tgv_pc`, the "texture diversity", one DXT5 picture over the whole grid of
-cells) marks every map's own roads (alpha higher, red lower than the ground beside: all 31 maps with roads), and
-paint_detail gives a new road the same mark. The mark alone doesn't draw a road up close (batch 5, 2026-10-01): the
+The map's close-up map marks every map's own roads, and paint_detail gives a new road the same mark. The mark alone doesn't draw a road up close (batch 5, 2026-10-01): the
 map's asphalt stickers do (scenery.road_decals, TESTS.md T12, proven 2026-10-02); measured as the map's own roads
 make it (road_profile), it lets them blend in. The checks here are on the files' bytes only
 (tests/test_groundpaint.py), never proof of what the game shows.

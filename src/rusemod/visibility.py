@@ -1,25 +1,11 @@
-"""Placed objects drawn from further away. The game draws a scenery type only at the distances its descriptor
-has a mode for (a TSceneryDescriptorMultiModeEntry's ModeMask: 1 and 2 close, 4 and 0x10 middle, 8 far), and
-many props have a close mode alone: every rock, pebble and stony field of the Italy and Normandy sets
-(RocherNormandie_*, Caillou_*, ChampsPierres*) and most stone walls, whose close mode a graphics option can even
-switch off (GraphicOptionDeactivated). A mod's object of such a type vanished as soon as the camera left close
-range (a tester's rocks, 2026-10-03; the map's own patches do the same).
+"""Placed objects drawn from further away. The game draws a scenery type only at the distances its own data gives it,
+and many props (rocks, pebbles, stony fields, most stone walls) are drawn close up only: a mod's object of such a type
+vanished as soon as the camera left close range (a tester's rocks, 2026-10-03; the map's own patches do the same).
 
-How far each pass reaches from the camera: the map's decor levels (mapterrain.cpp, TDecorsHabilleurCaseLevelConfig)
-take their Range from $/GraphicOption/LevelBuild_High, _Mid and _Low (clustergraphicvalues.cpp, mutable floats the
-graphics settings set): close (HarvestMask 3) 20,000, middle (4, optionally 0x10) 100,000, far (8) 500,000 (the
-Low_Range_HiQ and _ExQ values beside it are 1,000,000 and 2,000,000). So middle alone isn't enough: from the usual play height
-(about 76,000 up) only what lies within about 65,000 across is that near, and a mod's rocks with a middle mode came
-and went as the camera turned (the owner, 2026-10-03). A new block lists every object for far view (scenery
-_add_block), so a type with a far mode is drawn out to the far range.
-
-The owner chose (2026-10-03): only what a mod places changes; the map's own objects stay as they are. So for each
-type a mod places with no far mode, the build makes a copy of its descriptor named <type>_R2Seen (widened: the
-close mode also serves the middle passes when it has none, and its farthest mode serves the far pass too, none
-switched off by the graphics option), in every game file that defines the type (the summer and winter prop sets
-both have the Italy stones), and the mod's objects of that type use the copy: its name is added to the map's
-scenery name table (rusemod.scenery.add_names). Seen in the game with the middle passes (2026-10-03: the game
-loads the copies and draws them); the far pass not yet tried."""
+The owner chose (2026-10-03): only what a mod places changes; the map's own objects stay as they are. So for each type
+a mod places that isn't drawn from far, the build makes a copy of the type named <type>_R2Seen, drawn at every
+distance, and the mod's objects of that type use the copy (rusemod.scenery.add_names). Seen in the game at middle
+distances (2026-10-03: the game loads the copies and draws them); the far distance not yet tried."""
 from __future__ import annotations
 
 from .patch import Inline, ListV, Num, Ref, Text

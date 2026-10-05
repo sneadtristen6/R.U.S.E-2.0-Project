@@ -1,14 +1,14 @@
 ---
-title: "Studio 0.9.7 and Launcher 0.4.7: big map mods build in minutes"
+title: "Studio 0.9.7 and Launcher 0.4.7: very large map mods now build in minutes"
 category: Announcements
 order: 5
 ---
 **RUSE Studio 0.9.7** and **RUSE Launcher 0.4.7** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.
 
-**Big map mods build in minutes, not hours.** The most extreme map mod we have, BATTLES > D-Day with its whole sea
-drained, took about four hours to build. Now it builds in under 10 minutes, with the same result, and we're still
-working on making it faster.
+**Very large map mods now build in minutes.** Before, they took a very long time to build, and that's why this
+update was needed. The most extreme map mod we have, BATTLES > D-Day with its whole sea drained, took about four
+hours. Now it builds in under 10 minutes, with the same result, and we're still working on making it faster.
 
 **How we got there.** It took us roughly 15 hours. One cause was behind three problems: the build opened a
 drained sea to units in zones 15 m wide, the size that suits a river, and a sea is a quarter of a million of them,

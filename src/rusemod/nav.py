@@ -1,54 +1,9 @@
-"""Where units can go: the navigation graphs in a map's `mapinfo.win` (DataMap_Win.dat, `datasmap\\<map>\\
-mapinfo.win`, buffers 1 and 2; read with `ruse_mod_engine.sdb.split_mapinfo`).
+"""Where units can go on a map: its movement for infantry and for vehicles, read and written as the game has it (read
+and written back unchanged, every shipped map's gives the same bytes), and the mods' blocks and opens applied to it
+(apply_blocks).
 
-A graph is a set of overlapping circles of ground units can use, linked where two meet: units plan from circle to
-circle through the meeting points. Circle centres sit on a 320-unit grid and radii are multiples of 320 (1280 to
-81920 on Blitz), the largest first. Checked on Blitz (2026-09-30):
-
-- **Two levels.** The main graph covers the play area coarsely: water (the river, lakes) and the land outside the
-  play area are what no circle covers; towns are inside it (80% of building spots). Its local graphs (22 on Blitz,
-  none sharing a circle with it) each cover one town-sized patch (1 km or 200 m) finely, and their circles keep
-  off the buildings: 3% of the building spots in their areas are inside them, against 52% of random spots and 64%
-  of trees. So buildings are obstacles only where a local graph is; a building placed in open ground is not.
-  Most bridges have a local graph too (D-Day: 16 of its 21), whose circles of radius 320 to 1,280 line the deck and
-  reach no more than about 1,600 off its line, so units keep to it; the main graph passes over with one big circle.
-  A few bridges have a chain of main-graph circles along the deck instead (D-Day: 3), reaching onto the land.
-- **Buffer 1 is for infantry, buffer 2 for vehicles:** buffer 1 covers 79% of the woods' cells, buffer 2 14%
-  (open ground: 85% and 83%). Vehicles can't enter woods.
-
-    header       84 bytes: f32 x0, y0 (0, 0) and size (the map's side), then u16 circles, links, crossings, and
-                 sub-graphs; the rest zeros
-    offsets      u32 per section, from the graph's start: circles, links, lists, crossings, points, then one per
-                 sub-graph
-    circles      (circles + 1) × 16 bytes: f32 x, y, radius; u16 where its list starts (in the list section); u16
-                 where its crossings start. The last record is (0, 0, 0, the lists' total, the crossings' total)
-    links        links × 12 bytes: u16 circle a < circle b, f32 x, y (a point where they meet); sorted by b
-    lists        u16 link numbers: each circle's links, the circles one after another (every link twice)
-    crossings    crossings × 28 bytes: the road through a circle: f32 x, y where it comes in and x, y where it leaves
-                 (points on road links r0 and r1, each where the road crosses its gate's line), f32 its length along
-                 the road (the shortest way), u16 the two links (gates) it goes between, the lower first, u16 r0, r1:
-                 road network links (buffer 0; 7,862 of 7,862 checked on 4 maps, 2026-09-30), so a road link
-                 renumbered must be renumbered here too (Graph.renumber_roads). Units plan along roads only through
-                 these; new roads get theirs from Graph.add_crossings
-    points       a spatial index of the circles, up to the first sub-graph: branch records (u16 1, u16 how far
-                 to skip, f32 x, y: a split point) and leaf records (u16 count, then that many circle numbers);
-                 see _tree_read
-    sub-graphs   the same layout again, without sub-graphs of their own (22 on Blitz)
-
-**Local maps (the sub-graphs).** Sub-graph k belongs to main circle k, for every k below the header's count: nothing
-else ties them, so the owners are always the first circles (the largest first on every shipped graph, then the rest
-largest first). Inside an owner, units can stand only where its local map has a circle, a route is searched again
-inside the local map between the points where it comes in and goes out (a search that fails there fails the whole
-route), and an order into the owner is moved to the nearest circle of its local map. So a local map is one piece and
-has a circle at every point where a main link meets its owner (11,830 of 12,007 shipped ones do), and no other main
-circle's middle lies inside an owner (none on any shipped map). A local map shares its main graph's box, has no local
-maps of its own, and its header after the counts is zeros, like the main graph's.
-
-Every shipped graph is one connected piece (66 of 66 main graphs on 33 maps, and all their sub-graphs): the game
-never expects ground it can't reach from the rest, and an order onto such ground crashes it (seen in the game,
-2026-09-30). Changes here keep a graph in one piece (Graph.parts).
-
-`Graph.read(data).to_bytes() == data` on every shipped map (tools/verify_nav.py)."""
+Every shipped map's movement is one connected piece: the game never expects ground it can't reach from the rest, and
+an order onto such ground crashes it (seen in the game, 2026-09-30). Changes here keep it in one piece (Graph.parts)."""
 from __future__ import annotations
 
 import math
@@ -86,7 +41,7 @@ class Graph:
     box: tuple                         # x0, y0 (words as stored), size
     circles: list                      # (x, y, radius, list start, crossings start), the closing record included
     links: list                        # (a, b, x, y)
-    lists: list                        # u16 link numbers
+    lists: list                        # link numbers
     crossings: bytes                   # crossings × 28 bytes, as stored
     points: bytes                      # as stored
     subs: list = field(default_factory=list)
@@ -867,8 +822,7 @@ class Graph:
     def renumber_roads(self, number: dict[int, int]) -> int:
         """Point every crossing, here and in the sub-graphs, at the road network's links as numbered again (`number`:
         old link -> new, or None for a link that went: its crossings go too; a number it doesn't name stays as it
-        is). A crossing's last two u16 are road network links (buffer 0): its two points lie on them (7,862 of 7,862
-        crossings on 4 maps, 2026-09-30). Returns how many crossings went."""
+        is). Returns how many crossings went."""
         gone = 0
         for g in [self] + self.subs:
             recs, starts = [], []
@@ -1326,7 +1280,7 @@ def _numpy():
 
 
 def replace_buffers(win: bytes, new: dict) -> bytes:
-    """mapinfo.win with buffers replaced ({number: bytes}) and its salted MD5 made again (sdb.replace_buffer4's rule)."""
+    """The movement file with the given parts replaced ({number: bytes}), ready for the game."""
     import hashlib
     from ruse_mod_engine import sdb
     parts = sdb.split_mapinfo(win)
@@ -2704,15 +2658,7 @@ def _local_graph(box, circles) -> Graph:
 
 
 # --- the spatial index (a graph's `points`) ---------------------------------------------------------------------------
-# One bounding-interval tree, its root at the start (checked on all 1,307 shipped graphs: walked from the root it
-# reaches every circle exactly once, and written back with the rules below it gives the same bytes).
-#   branch  u16 tag (bit 0 set; tag & ~1, shifted 16 left, is the jump's high part), u16 word (word & ~1, times 2, is
-#           the jump's low part; bit 0 is set on every shipped branch), f32 the left half's far edge, f32 the right
-#           half's near edge, on the branch's axis (x and y by turns down the tree). The left half starts right after
-#           the branch; the right half starts `jump` bytes after the left half's start, the left half padded to a
-#           multiple of 4 bytes to get there.
-#   leaf    u16 byte length (even), then that many bytes of circle numbers (u16).
-# A point is looked for down both halves where the two edges overlap. The whole section is padded to 4 bytes.
+# Written back by the code below, every shipped graph's index gives the same bytes.
 def _tree_read(points: bytes, q: int = 0):
     """The index as nested lists: ["leaf", [circle numbers]] or ["branch", word bit 0, 8 bytes of edges, left, right]."""
     tag = struct.unpack_from("<H", points, q)[0]

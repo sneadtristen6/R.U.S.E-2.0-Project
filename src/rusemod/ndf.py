@@ -1,9 +1,5 @@
-"""NDF binary: read and write, with an editable object model.
-
-Layout in docs/FORMATS.md. Values are stored as (type_code, raw_payload) spans so an unchanged file
-re-serializes byte-for-byte; scalar values can be decoded and re-encoded for editing. Adding objects or
-strings (which would touch TOPO/STRG/TRAN/IMPR/EXPR) is intentionally NOT supported yet.
-"""
+"""The game's data files: read and write, with an editable object model. Values are kept as they were stored, so an
+unchanged file gives the same bytes back; scalar values can be read and written for editing."""
 from __future__ import annotations
 
 import struct
@@ -80,10 +76,10 @@ def _read_value(b: bytes, p: int) -> tuple[Value, int]:
         n = _FIXED[tc]
         return Value(tc, b[p:p + n]), p + n
     start = p
-    if tc in (0x08, 0x14):  # wide string (UTF-16) / blob (raw bytes, e.g. zlib data in .kdt): u32 length + bytes
+    if tc in (0x08, 0x14):  # wide string / blob
         ln = struct.unpack_from("<I", b, p)[0]
         end = p + 4 + ln
-    elif tc == 0x1E:  # zip blob (seen only in the shader cache): u32 length + u8 flag + length bytes (u32 size + zlib)
+    elif tc == 0x1E:  # packed blob
         ln = struct.unpack_from("<I", b, p)[0]
         end = p + 5 + ln
     elif tc == 0x09:  # reference
@@ -120,7 +116,7 @@ class Obj:
 
 
 def _name_tree(section: bytes, trans: list[str]) -> dict[int, str]:
-    """IMPR/EXPR node = u32 tranIndex, s32 leaf(-1 none), u32 childCount, u32 childOffset[] (rel to array)."""
+    """A file's name tree: object or import number -> its path."""
     out: dict[int, str] = {}
 
     def node(off: int, prefix: str) -> None:

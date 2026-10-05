@@ -1,23 +1,8 @@
-"""Terrain mesh (.tms, magic TMSG): read, edit heights, write.
+"""A map's ground mesh: read, heights edited, written. Every map has a close-up and a far mesh; the curtain hanging
+from the map's edge follows when edge points move (Tms._fit_skirt), and so does the water over the ground.
 
-Every map pack holds two of these, output\\highdef.tms and output\\lowdef.tms (a coarser mesh with half the
-cells per side). The map is cut into a grid of cells. Each cell is one irregular triangle mesh with its own
-compressed vertex buffer, a triangle list for the whole ground (list 0), an optional second list that repeats
-the triangles covered by water (list 1), and a table of 8 x 8 culling patches with height bounds. A "skirt" mesh
-(a curtain hanging from the map edge) follows the cells; when edge points move, it follows them (Tms._fit_skirt).
-Layout in docs/FORMATS.md.
-
-Every vertex holds a quantized position (x, y, z, water) as four u16 and a normal as four u8. All three axes use
-the file's bounding box: world = min + q * (max - min) / 32767. `water` is the water-surface height on the same
-scale as z; most vertices carry the map's base water level, and list 1 holds the triangles whose ground lies
-below it. Normal bytes are round((n + 1) * 127.5) with the 4th byte always 128; the shipped normals follow the
-mesh closely but not exactly (they were baked from finer data), so edits recompute them as area-weighted face
-normals only around the vertices that moved.
-
-Cells that were not edited keep their original bytes, so an unchanged file re-serializes byte-for-byte. An
-edited cell gets its position and normal streams re-encoded with our own LZ encoder (same stream format the game
-ships; the predictor and triangle lists stay as they were) and the bounds of the patches it touched recomputed.
-"""
+Edits work the normals out again only around the points that moved. Cells that weren't edited keep their bytes, so an
+unchanged file gives the same bytes back; an edited cell's points are packed again the way the game packs its own."""
 from __future__ import annotations
 
 import bisect
@@ -38,10 +23,7 @@ SKIRT_BOTTOM = -3000.0    # the curtain's foot (its q 0); its top heights run fr
 # ---------------------------------------------------------------------------------------------------------------
 # LZ stream codec (the payload of every vertex-buffer stream).
 #
-# 20-byte header: u8 version=1, u8 header_len=0x14, u8 method (8 = byte units, 16 = u16 units), u8 shift-2,
-# u32 unit_count, u32 literal_count, u32 token_count, u16 literal_base, u16 token_base (both << shift).
-# Then u32 control words (read LSB first; 0 = copy one literal unit, 1 = one back-reference token, then a single
-# 1 bit that ends the stream), the literal units, and the tokens. Lengths and distances count units.
+# Our own encoder writes the same kind of stream the game ships.
 
 _LZ_HDR = struct.Struct("<BBBBIIIHH")
 _MAX_DIST = 8192
@@ -246,11 +228,7 @@ def encode_parents(parents: list[int]) -> bytes:
 
 
 # ---------------------------------------------------------------------------------------------------------------
-# Vertex buffer ("VBUF"): 12-byte header, the predictor stream, then one "SUBP" stream per vertex element.
-# VBUF header: magic, u16 8 (bytes that follow), u8 0xA1 (unknown), u16 stride 12, u16 element count 2, u8 flags
-# (2 = a predictor stream follows as u32 length + LZ stream). SUBP header: magic, u16 12 (bytes that follow),
-# u8 kind, u8 3 (unknown), u8 mode 2, u16 bytes per vertex, u16 offset in the vertex, 3 zero bytes; then u32
-# length + LZ stream.
+# Vertex buffers: the predictor stream, then one stream per vertex element.
 
 _VBUF_HEAD = b"VBUF" + struct.pack("<HBHHB", 8, 0xA1, 12, 2, 2)   # identical in all 1390 shipped cells
 _SUBP_HEAD = {POSITION: b"SUBP" + struct.pack("<HBBBHH3x", 12, POSITION, 3, 2, 8, 0),

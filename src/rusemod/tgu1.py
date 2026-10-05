@@ -1,38 +1,8 @@
-"""TGU1: the game's own compressed-DXT texture payload (terrain tiles, model textures). Read, and write DXT1.
+"""The game's compressed texture pictures (the ground's tiles, model textures): read, and written.
 
-A TGU1 payload replaces the raw DXT1 or DXT5 bytes of a TGV mip. Its header is 32 bytes; flags bit 0x001 says DXT5
-(units, the leaves of some trees), 0x100 says coded. A payload that isn't coded holds its blocks as they are right
-after the header (the small mips of model textures). A coded one has a u32 body size at 0x20 and a zlib stream
-(flushed with a sync flush, no final block). The inflated body describes the DXT1 surface in three parts:
-
-* endpoint colours: every 4x4-pixel block has two RGB565 endpoints, stored as six small images (Y, Cb, Cr of
-  endpoint 0, then of endpoint 1) with one sample per DXT1 block. Each image is cut into 4x4 tiles, each tile
-  is a 4x4 integer DCT, and the DC is predicted from the previous tile of the same image;
-* palette indices (selectors): a full-resolution image (one sample per pixel), DCT-coded per DXT1 block; the
-  decoded value v maps to palette position clamp(v + 2, 0, 3), i.e. the index order 0, 2, 3, 1;
-* optional raw selector words and an endpoint-order list (both empty in every shipped terrain tile).
-
-A DXT5 body goes on with the alpha half of each block, after the colour selectors:
-
-* alpha endpoints: two small images (one sample per block, 4x4 tiles of 4x4 DCTs, DC predicted, dequantised like
-  the Y images): the first is alpha 0, the second how far alpha 1 lies below it (alpha 1 = alpha 0 - it, both
-  clamped to 0..255); an equal pair becomes (a, a - 1), or (1, 0) when a is 0, so every block has 8 alpha steps;
-* alpha selectors: one bank like the colour selectors' (raw-word count included), at 4 times the selector
-  quality, always the full transform; value v gives the palette position clamp(v + 4, 0, 7), from alpha 0 to
-  alpha 1, i.e. the DXT5 index order 0, 2, 3, 4, 5, 6, 7, 1.
-
-Only the header's block count of blocks (in rows from the top) carry selectors; the blocks after them come out
-zero. Model atlases use that for an empty bottom; terrain tiles always fill every block.
-
-Coefficients are stored "sub-band major": a bank holds 17 bit streams, stream 0 the per-block coefficient
-counts (delta-coded), stream j the j-th coefficient (zigzag order) of every block that has at least j.
-Each stream uses Rice or Exp-Golomb coding with a per-stream parameter, bits LSB-first in u32 words.
-
-`decode` turns a payload into plain DXT1 blocks; decoded tiles match each map's own overview picture
-(`output\\terrain.png`), and the Studio's map view draws the ground with them. `encode` is experimental (lossy, and
-a second pass isn't guaranteed to give the same blocks); writing terrain doesn't need it, since the game accepts
-plain ZIPO tiles (FORMATS.md §6). See docs/FORMATS.md for the byte layout.
-"""
+`decode` gives a picture's plain blocks; decoded tiles match each map's own overview picture, and the Studio's map
+view draws the ground with them. `encode` is experimental (lossy, and a second pass isn't guaranteed to give the same
+blocks); writing the ground doesn't need it, since the game takes plain tiles."""
 from __future__ import annotations
 
 import struct

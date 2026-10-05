@@ -1,35 +1,10 @@
-"""The AI's map grid: the end of a map's `mapinfo.win` (after the four buffers), kept up to date with a mod's edits.
+"""The AI's map grid, kept up to date with a mod's edits: where the AI sees woods and tree lines, the ground it treats
+as blocked, and how far each place is from it follow the mod's cover, blocks, bridges and water. Without this the AI
+kept defending the old tree lines and ignored new woods.
 
-Layout of the tail (little-endian): u32 record size (28), u32 count, count × 28-byte records (empty on every shipped
-map but testia), u32 the grid's length, then the grid: u32 W, u32 H, W × H cells of 2 bytes (row by row, y growing
-with the map's y; a cell is 26,000 map units square from the map's corner at (0, 0)), padded to 4 bytes; anything
-after it is kept. A cell's bytes:
-
-- byte 1, bits 0-6: clearance, 0-127: how far the cell is from ground the AI treats as blocked (127 reads as 8 cells,
-  but the shipped values reach it about 4 cells out);
-- byte 1, bit 7: forest;
-- byte 0, bit 7: a tree-line spot (a forest cell at a wood's edge): where the AI sends its defenders and hides its
-  recon. Other bits are 0.
-
-The game reads the grid as it is, so after a mod's cover paints, blocks, bridges or water the AI kept defending the
-old tree lines and ignored new woods. Eugen's grids came from a tool that isn't in the game; the rules here were fitted
-to the 34 shipped grids by DomesticNukes and his Claude (2026-09-30), and a grid rebuilt by them played the same as
-the shipped one in the game:
-
-1. lay the AI grid over the cover grid's finest cells (square cells, `max(width, height) / R` from the cover grid's
-   corner) and count each AI cell's share of cover cells with each layer, and how many there are;
-2. forest: more than 25% of its cells have the cover layer (0x08);
-3. blocked: more than 70% have the "AI: blocked" layer (0x04), or the cover grid doesn't reach it (off the map);
-   and, after a change to the vehicles' movement graph, a cell whose share of ground vehicles can stand on (4 × 4
-   points) fell below half counts as blocked, one whose share rose to half or more as not blocked;
-4. clearance: the distance in cells to the nearest blocked cell, at most 4, as round(d / 4 × 127);
-5. tree line: a forest cell with a cell that isn't forest among its 8 neighbours.
-
-Rebuilding a whole grid adds up to 1.8 times Eugen's tree-line spots (his are a stricter subset), so `refresh` keeps
-the shipped values everywhere the edits didn't reach: a cell's forest bit where the rule's answer for it changed with
-its cover share, tree lines where a forest bit that changed moves the rule's answer for a cell or its neighbours,
-clearance where the rule's answer changed because the blocked cells did. An unchanged map keeps its grid byte for
-byte."""
+The rules were worked out with DomesticNukes and his Claude (2026-09-30), and a grid rebuilt with them played the same
+as the shipped one in the game. `refresh` keeps the shipped values everywhere the edits didn't reach, so an unchanged
+map keeps its grid byte for byte."""
 from __future__ import annotations
 
 import hashlib

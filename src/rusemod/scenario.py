@@ -1,37 +1,7 @@
-"""A map's scenario file (`test\\map\\<map>\\leveldesign*.scenario` in DataMap_Win.dat): its zones and its design
-items (where players start, where reinforcements arrive, the names on the map). Read-only.
-
-The layout was first worked out for Wargame by enohka's moddingSuite (and RugnirViking's RUSE fork of it); R.U.S.E.'s
-files are the same except for the list at the end of each zone (Wargame writes it empty). Read from those notes and
-checked on every scenario R.U.S.E. ships (102 files, every byte accounted for).
-
-    "SCENARIO\\r\\n"            10 bytes
-    16 bytes                    MD5 of bytes 0-9 and of byte 28 to the end (LittleGroove's rule; the game checks it)
-    2 bytes                     0
-    u32 version                 4
-    u32 1
-    u32 n, n bytes              the zones (below)
-    u32 n, n bytes              an NDF (EUG0/CNDF): the design items
-
-The zones: u32 count, then per zone (every `AREA` is those 4 bytes):
-    AREA, u32 2, u32 number, u32 name length, the name (UTF-8, zero-padded to a multiple of 4: `zone_<guid>`)
-    AREA, 3 f32: the point the zone hangs from (x, y, z)
-    AREA, u32 n, n x (u32 first triangle, u32 triangles, u32 first vertex, u32 vertices): the zone cut into parts
-    AREA, 4 u32: the border's triangles (first, count, first vertex, count)
-    AREA, 2 u32: the border's vertices (first, count)
-    AREA, u32 vertices, u32 triangles, per vertex 5 f32 (x, y, z, w, and a 0/1 "centre" flag), AREA,
-        per triangle 3 u32 (vertex numbers)
-    AREA, u32 n, n u32 (R.U.S.E.: which border vertices close the outline; Wargame: n = 0), AREA, "END0"
-
-The design items (TGameDesignItem, listed by the one TGameDesignItemList): a Position (3 f32, world units), an
-optional Rotation (f32, radians) and an AddOn saying what it is: TGameDesignAddOn_StartingPoint (a player's start),
-_Spawn (where reinforcements arrive), _LabelVille and _LabelMontagne (a town's or a mountain's name on the map), and
-others on some maps.
-
-Writing: `Scenario.to_bytes()` gives the file back; unchanged, byte for byte (all 102). `move()` puts a design item
-somewhere else (its Position, and its Rotation when it has one); the NDF is then written again by rusemod.ndf, and
-the checksum made again.
-"""
+"""A map's scenarios: their design items (where players start, where reinforcements arrive, the names on the map),
+read, moved and added, and written back with everything else unchanged (byte for byte on every shipped scenario).
+Reading them follows enohka's moddingSuite (made for Wargame), RugnirViking's R.U.S.E. fork of it, and LittleGroove's
+RUSE-Mod-Manager."""
 from __future__ import annotations
 
 import hashlib

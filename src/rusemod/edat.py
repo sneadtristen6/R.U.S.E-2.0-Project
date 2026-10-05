@@ -1,9 +1,5 @@
-"""EDAT v1 archive: read and write (lossless).
-
-The container is a header, a trie of path fragments (the "dictionary"), then the raw file data.
-See docs/FORMATS.md. The writer keeps the trie bytes intact and only re-lays the data section and
-patches each file entry's (offset, size) fields, so an unchanged rebuild is byte-identical to the original.
-"""
+"""The game's packs: read and write (lossless). The writer keeps a pack's own list of its files as it is and only lays
+the files out again, so an unchanged rebuild gives the same bytes back."""
 from __future__ import annotations
 
 import mmap

@@ -1,22 +1,6 @@
-"""The road network: `mapinfo.win`'s buffer 0 (docs/FORMATS.md, the mapinfo row), the graph units follow along a
-map's roads. Read and written byte-identical on all 32 maps (tools/verify_roadnet.py); a new road is added as points
-along its curve, linked in a chain and to the nearest road at each end, with the index built again.
-
-Layout (little-endian):
-- header: u16 point count, u16 link count, then u32 offsets of the points (20), the links, the lists and the index;
-- points: u32 (start of its links in the lists << 8 | how many), f32 x, f32 y; on the road curves, about 9 m apart;
-- links: u16 a, u16 b, u16 word, padded to 4. The game works bits 1-15 out again from the points when it loads the
-  map (the distance between them / 20, at most 0x7FFF); only bit 0 is kept from the file, a flag the game's own
-  road finder tests. On the shipped maps it is set on 87% of the open links where vehicles can go, about half the
-  links in towns and 10% of the links where vehicles can't go, so a new link has it where the vehicles' graph has
-  ground at the link's middle (cost_word);
-- lists: every point's links in turn, ascending (u16 link numbers); padded to 4;
-- index: a k-d tree over the links. A branch is u16 tag (bit 0 set; the jump's high bits), u16 word ((word & ~1) *
-  2 = the jump's low part, bit 0 set), f32 split: x at even depths, y at odd ones; its left half follows it, the right
-  half starts `jump` bytes after the left. A leaf is u16 byte length, then its links (u16; a link crossing a split is
-  in both halves), padded to 4. The same jump rule as the navigation graphs' index (rusemod.nav). The game walks it
-  with a fixed stack of 32 entries, so it is never deeper than MAX_DEPTH (the deepest shipped one is 12).
-"""
+"""The road network supply trucks and units follow along a map's roads: read and written back unchanged on every
+shipped map, and a mod's new roads added to it (points along the road's curve, linked in a chain and to the nearest
+road at each end)."""
 from __future__ import annotations
 
 import math
@@ -35,8 +19,7 @@ class RoadNetError(ValueError):
 
 
 def cost_word(dist: float, flag: bool = True) -> int:
-    """A link's u16 word as the game keeps it once loaded: the distance / 20 (at most 0x7FFF) in bits 1-15, and the
-    flag bit 0 (see the module's notes)."""
+    """A link's cost and flag, as the game keeps them once loaded."""
     return min(int(dist / 20), 0x7FFF) << 1 | (1 if flag else 0)
 
 

@@ -1,6 +1,6 @@
-"""New maps: a shipped map copied under a name of its own, listed in BATTLES beside it (PLAN §13, level 2), or, when
-map.toml's `entry` names one, as a new Operation (last in OPERATIONS) or a new campaign chapter (last in the
-campaign) running the shipped one's mission script.
+"""New maps: a shipped map copied under a name of its own, listed in BATTLES beside it, or, when map.toml's `entry`
+names one, as a new Operation (last in OPERATIONS) or a new campaign chapter (last in the campaign) running the
+shipped one's mission script.
 
 A mod makes one with `maps/<NewName>/map.toml` (MOD_FORMAT §8):
 
@@ -9,26 +9,13 @@ A mod makes one with `maps/<NewName>/map.toml` (MOD_FORMAT §8):
     entry = "(2) Blitz"            # optional: which of the shipped map's BATTLES entries, when it has several
     players = 4                    # optional: as on any map (rusemod.players), for the copy
 
-The folder's name is the new map's pack name (BlitzAtDusk: Maps\\PC\\DataMapBlitzAtDusk_v09.dat), and the mod's other
-files in that folder (terrain.toml, scenery.toml, scenario.toml, cover.toml, movement.toml, roads.toml) edit the copy
-like any map, while the shipped map stays as it was.
-
-What the build adds (FORMATS §6 "A new map"), each file a copy of the shipped map's pointed at the copy:
-- `Maps\\PC\\DataMap<New>_v09.dat`: the map pack, with an id of its own;
-- in ZZ_GladPatchableWin.dat: the map's cluster (`genglad\\patchable\\map\\<new>\\clustermap`, which mounts that
-  pack) and its constants (`mapconstante`, whose TCurrentMapInfo names the folder of the map's grid), the scenario's
-  cluster (`genglad\\patchable\\scenario\\<new>\\<folder>\\clustermap`, which names the scenario and the map's
-  cluster), a map-list entry (TMapLoadInfo in mapinfo.cpp, a top object like every other) and a BATTLES entry
-  (TMultiMapInfo in globals.cpp, in the menu pack that lists the shipped map, after the maps of its size), the two
-  tied by a GUID of their own;
-- in DataMap_Win.dat: the scenario (`test\\map\\<new>\\`) and the grid (`datasmap\\<new>\\mapinfo.win`);
-- in ZZ_Win.dat: its name in the menus' dictionary (`flash_txt.dic`, a key from M_D_31 on), in the ten languages.
-Everything else (the scenery's models, the sounds, lighting, camera paths and bluff zones, the menu picture, the
-in-mission texts) stays the shipped map's: those files are only read, and two maps never load at once.
+The folder's name is the new map's pack name, and the mod's other files in that folder edit the copy like any map,
+while the shipped map stays as it was. The build adds the copy's own map, its place in the map list and in BATTLES,
+its scenario, cover and movement, and its name in the ten languages: each a copy of the shipped map's, pointed at the
+copy. Everything else stays the shipped map's, only read.
 
 Nothing is random: the ids come from the new map's name, so every PC builds the same files (a multiplayer game needs
-both sides to have the same map list).
-"""
+both sides to have the same map list)."""
 from __future__ import annotations
 
 import hashlib
@@ -651,7 +638,7 @@ class Grown:
 
 class NewPack:
     """A new map's pack: the shipped map's (as the build has it, .rmod changes included), written under the new name
-    with an id of its own in its header (bytes 8-23, a GUID per map pack: FORMATS §6)."""
+    with an id of its own."""
 
     is_changed = True   # always written: the game has no such file
 

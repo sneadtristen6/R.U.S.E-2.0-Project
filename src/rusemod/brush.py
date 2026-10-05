@@ -1,4 +1,4 @@
-"""Terrain brushes (PLAN.md §7 MT, steps T2-T4; docs/MOD_FORMAT.md §8): the height changes a modder paints on a map.
+"""Terrain brushes (docs/MOD_FORMAT.md §8): the height changes a modder paints on a map.
 
 A stroke is one dab of a brush: which brush, where (world x, y), how wide (radius) and how much. The Studio turns a
 drag into dabs along its path. A dab changes the ground inside its circle only (a ramp: inside the band along its
@@ -40,8 +40,8 @@ brushes change neither: the build turns them into cover.Paint circles on the map
 Block and open brushes become nav.Block circles on the map's navigation graphs (in the same file), in order: where a
 block and an open meet, the later stroke wins.
 
-Every map's ground lives in four files that must change together (FORMATS.md §6): the two drawn meshes and the two
-.kdt trees. rusemod.terrain_edit applies every stroke to all four through `Stroke.height_at`, a function of the
+Every map's ground is held four times over, and they must change together: the two drawn meshes, the ground units
+walk on and the camera floor. rusemod.terrain_edit applies every stroke to all four through `Stroke.height_at`, a function of the
 position and the current height only, so points the files share get the same new height.
 
 Determinism: only + - * / and square roots, which IEEE 754 rounds the same on every PC, so every PC builds the same

@@ -1,46 +1,9 @@
 """Unit model packs, written: a unit's models copied into another nation's skirmish packs, or the common ones.
 
-A skirmish loads a nation's unit models only when a player has that nation (rusemod.unitcheck). They are in four
-packs of ZZ_Win.dat per nation (<tag>: us, ger, uk, fr, ita, urss, japan; `common` ones load in every skirmish):
-
-  gen_5\\pack\\gfxdescriptor\\meshskirmish_<tag>.spk        the meshes (the US has a second set: ...witboat_us)
-  gen_5\\pack\\gfxdescriptor\\skeleton_<tag>.spk            their skeletons, under the same names
-  gentexproxy\\pack\\gfxdescriptor\\proxyskirmish_<tag>.ppk  small stand-ins of their textures (the US: two again)
-  genanim_15\\pack\\gfxdescriptor_<tag>.apk                 their animations (.baf), an EDAT archive
-
-The game's own packs already carry other nations' models where its units need them (Germany's carry the US Long
-Tom's mesh, skeleton and texture stand-in), so a unit given to another nation gets its models copied into that
-nation's packs the same way, and a spawned unit's go into the common ones. The full textures are loose files of
-ZZ_Win.dat, the same for every nation.
-
-Mesh packs (MESHPCPC, version 4), little-endian:
-  0x00  magic, u32 4, u32 file size, 16 bytes: the MD5 of bytes 0x00-0x0F and 0x20-0x2F (`header_id`)
-  0x20  (u32 0, u32 size) of the part read first (everything but the buffers); 0x28 (offset, size) of the buffers
-  0x30  u32 model count
-  0x34  8 x (offset, size, count): names, vertex formats, materials, two empty, meshes, draw calls, index-buffer table
-  0x94  index buffers (offset, size); 0x9C vertex-buffer table (offset, size, count); 0xA8 vertex buffers
-  0xB0  skeleton table (offset, size, count): u32 offset (in the skeleton data), u32 size per skeleton
-  0xBC  skeleton data (offset, size)
-  0xC4  the sections in the order names, formats, materials, the two empty ones, meshes, draw calls, skeleton table,
-        skeleton data, index-buffer table, vertex-buffer table, index buffers, vertex buffers. A section that isn't
-        empty starts on a multiple of 4, and so does every index buffer; the bytes between are 0x7E.
-  names a trie: u32 10, 6 bytes, then nodes of u32 header length (0: a model), u32 offset to the next sibling (0: the
-        last); a folder's piece of the name follows (its children at the header length), a model's box (6 f32),
-        u32 flags, u16 mesh, u16 skeleton (0xCDCD: none) and the last piece. Pieces end with a 0 and a node takes an
-        even number of bytes. Names are sorted with the folder separator first (us_1\\x before us_10\\x), siblings
-        split on their first character, a folder holds what its names share.
-  The materials are an NDF: its root object lists one TMeshMaterial per material number. A skeleton pack is the same
-  container without meshes or buffers: its names are its mesh pack's, each with its skeleton's number (shared: a gun
-  and its idle pose have one). Meshes are numbered in name order and their draw calls follow each other in mesh
-  order; buffers, materials and skeletons are shared by number.
-
-Texture stand-in packs (PRXYPCPC, version 4):
-  0x00  magic, u32 4, u32 file size, 16 bytes: the MD5 of bytes 0x00-0x0F and 0x20-0x2F (`header_id`)
-  0x20  table (offset, size), data (offset, size), u32 count, names (offset, size), u32 count
-        table: 24 bytes per texture: 8-byte key (the game registers stand-ins by it; the first pack to bring one wins),
-        u32 offset in the data, u32 size, 8 bytes; names: 256 bytes (the texture under gentexproxy\\, as .tgv) and the
-        key again. Sorted by name; each stand-in is a small .tgv, and textures with the same picture share one.
-"""
+A skirmish loads a nation's unit models only when a player has that nation (rusemod.unitcheck). The game's own packs
+already carry other nations' models where its units need them, so a unit given to another nation gets its models
+copied into that nation's packs the same way, and a spawned unit's go into the common ones. Packs written back
+unchanged come back byte for byte."""
 from __future__ import annotations
 
 import hashlib

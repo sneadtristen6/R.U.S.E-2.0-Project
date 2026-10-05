@@ -1,15 +1,13 @@
-"""Text mods (docs/MOD_FORMAT.md §6): a mod's text/*.csv rows become entries in the game's .dic files.
+"""Text mods (docs/MOD_FORMAT.md §6): a mod's text/*.csv rows become entries in the game's text tables.
 
-A mod's `text/<dictionary>.csv` adds texts to that game dictionary, in every language folder: `text/baseunite.csv`
-goes into every `baseunite.dic` (the unit names). Columns: `key`, `game_key`, then one per language, with the game's
-folder names (us fr ger ita spa pol ru cz jpn sc) or the usual codes (en de it es pl cs ja zh). An empty cell falls
-back to `us`, and the `dev` folder gets the `us` text.
+A mod's `text/<table>.csv` adds texts to that table, in every language: `text/baseunite.csv` goes into the unit names.
+Columns: `key`, `game_key`, then one per language, with the game's names (us fr ger ita spa pol ru cz jpn sc) or the
+usual codes (en de it es pl cs ja zh). An empty cell falls back to `us`, and the `dev` language gets the `us` text.
 
-Mod data refers to a row by its key: `NameInMenuToken = loc('r2.unit.x.name')`. Each row gets a game key (the packed
-8-character name the game's own keys use, FORMATS.md §4): its `game_key` cell, or else the mod's `text_prefix` plus a
-number, handed out in sorted key order so every PC gets the same. A key the game or another mod already uses is an
-error that names both. A row whose key is `game:NAME` or `game:0x...` changes an existing game text instead.
-"""
+Mod data refers to a row by its key: `NameInMenuToken = loc('r2.unit.x.name')`. Each row gets a game key (a name of up
+to 10 characters, as the game's own keys are): its `game_key` cell, or else the mod's `text_prefix` plus a number,
+handed out in sorted key order so every PC gets the same. A key the game or another mod already uses is an error that
+names both. A row whose key is `game:NAME` or `game:0x...` changes an existing game text instead."""
 from __future__ import annotations
 
 import csv

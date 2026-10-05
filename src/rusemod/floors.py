@@ -1,28 +1,14 @@
-"""Bridge floors: what units stand on at a bridge, in each map pack's `output\\occlusioninfo_objectsonly.kdt`.
+"""Bridge floors: what units stand on at a bridge.
 
-The gameplay ground (`occlusioninfo_terrainonly.kdt`) dips into the river under a bridge just like the visible
-ground; units cross on the bridge because the map pack holds a third tree, "objects only", with each bridge's floor:
-on D-Day 556 triangles in clusters exactly at its 21 bridges (Pont_Metallique_02: 8 triangles in four sections along
-the deck; _03: 24; the stone Pont_TangeantFloor: 12, arched). A floor runs from end to end 5 to 60 units above the
-ground at the deck's ends (the game sets a "TangeantFloor" bridge on the ground under its ends). A new bridge
-without one is drawn, but units ordered across walk the riverbed under it (seen in the game, 2026-09-30).
+The ground units walk on dips into the river under a bridge just like the visible ground; units cross on a bridge
+because the map holds a floor for each of its bridges. A new bridge without one is drawn, but units ordered across
+walk the riverbed under it (seen in the game, 2026-09-30). So a new bridge gets the floor of a shipped bridge of its
+kind, carried along the new deck to the new banks' ground; a bridge sunk out of sight loses its floor.
 
-So a new bridge gets the floor of a shipped bridge of its kind: each point taken as (how far along the deck, how
-far across it, its height above the line between the ground at the deck's ends), then put back along the new deck,
-at the new ends' ground. A bridge sunk out of sight loses its floor. The file is then built again as one subtree,
-as the shipped ones are: the vertices (shared by the triangles that meet there), their normals, the triangles, and a
-k-d tree whose leaves list every triangle that reaches into their box (rusemod.kdt has the codecs).
-
-A floor is wider than the deck (2026-10-01). Where a unit is comes from the movement graph, how high it stands from
-the floor under it, and nothing ties the two: an infantry squad is five men on an arc 2,828 wide around the squad's
-own place (the game data's Dispersion 500 for 5 men), each man standing on the floor under his own feet. So beside a
-deck whose movement is 640 either side of its line two of the five are 2,054 out, and a man who has drifted to the
-squad's limit (DispersionMax 620 for 5 men: 2,480) is 3,120 out. The game's metal bridges have, beside the deck's
-band, two flat aprons as long as the band reaching 12,000 to 17,000 either side, so its infantry stand at the deck's
-height over the river ("vanilla ruse they float"); its stone bridges have none, and infantry stand in the river
-beside them. A new bridge with the band alone put every man beside the deck on the riverbed ("ours are in water").
-So a new bridge gets an apron too (`apron`): in its band's plane, out to APRON either side, over water only.
-"""
+A floor is wider than the deck (2026-10-01): an infantry squad's men each stand on the floor under their own feet,
+spread round the squad's place, so beside a narrow floor they stood in the river ("ours are in water"), where the
+game's metal bridges keep them at the deck's height ("vanilla ruse they float"). So a new bridge gets an apron too
+(`apron`): in its band's plane, out to APRON either side, over water only."""
 from __future__ import annotations
 
 import math

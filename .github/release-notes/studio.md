@@ -1,8 +1,9 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
-**0.9.7:** big map mods build in minutes, not hours, and **Export mod…** carries what the build worked out, so a
-player's first build of a big map mod is shorter.
+**0.9.7:** very large map mods now build in minutes. Before, they took a very long time to build, and that's why
+this update was needed. And **Export mod…** carries what the build worked out, so a player's first build of one
+is shorter.
 
 - **The most extreme map mod we have** (BATTLES > D-Day with its sea drained: 154 flatten strokes, 135 paint strokes,
   33,385 buildings erased) took about four hours to build. Now it builds in **under 10 minutes**, with nothing kept

@@ -1,7 +1,8 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
-**0.4.7:** builds big map mods in minutes, not hours, and plays mods made with Studio 0.9.7.
+**0.4.7:** very large map mods now build in minutes (before, they took a very long time), and it plays mods made
+with Studio 0.9.7.
 
 | Before | Now |
 |---|---|

@@ -13,7 +13,6 @@ the clone's own lines run, the engine gives it fresh ones, except for any the cl
                             that menu, else the clone goes after the last unit of the same row.
 
 The name shown in game (NameInMenuToken) stays the source's until text mods can supply new names.
-tools/identity_check.py checks these rules against the real game.
 """
 from __future__ import annotations
 

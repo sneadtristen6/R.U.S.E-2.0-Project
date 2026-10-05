@@ -1,10 +1,9 @@
 """Maps and their ground, for the Studio's map view: the game's own map list, and one map's terrain as flat buffers
 ready to draw. Read-only: nothing here writes anything.
 
-The ground is the map's visual mesh (`output\\highdef.tms`, or the coarser `output\\lowdef.tms`; FORMATS.md §6
-"Terrain") with every cell merged: cell vertices are whole-map coordinates, so the cells simply stack. The picture
-draped on it is the map's own overview texture (`output\\terrain.png`), north up like the minimap: world y grows
-toward the south, so image row = y / map size, with no flip.
+The ground is the map's close-up mesh (or its coarser far one) with every cell merged. The picture draped on it is
+the map's own overview picture, north up like the minimap: world y grows toward the south, so image row = y / map
+size, with no flip.
 """
 from __future__ import annotations
 
@@ -31,11 +30,11 @@ MENU_TEXTS = "flash_txt"  # the dictionary those names are in, one per language 
 LODS = {"highdef": "output\\highdef.tms", "lowdef": "output\\lowdef.tms"}
 PICTURE = "output\\terrain.png"
 _TEXT = (0x07, 0x1C)  # a string or a path: an index into the file's string table
-_GUID, _TEXT_KEY = 0x1A, 0x1D  # 16 bytes; a text key (u64) into a .dic
+_GUID, _TEXT_KEY = 0x1A, 0x1D  # an id; a text key
 
 
 def pack_file(root: str) -> str:
-    """The map pack a map's `RootDatapackName` stands for (the name the game mounts it by, FORMATS.md §6)."""
+    """The map pack a map's `RootDatapackName` stands for."""
     return f"DataMap{root}_v09.dat"
 
 
@@ -185,7 +184,7 @@ def mesh_buffers(tms: Tms) -> dict:
 
 
 def _tile_rgb(tex) -> bytes:
-    """One terrain tile (a one-mip DXT1 TGV) as RGB pixels: its TGU1 or ZIPO payload decoded (FORMATS.md §6)."""
+    """One ground tile as RGB pixels."""
     from . import dxt, tgu1
     payload = tex.payload(0)
     if payload[:4] == b"TGU1":

@@ -2,7 +2,7 @@
 movement probes, made for players). The map is built as Test in game builds it, into a folder that's removed
 afterwards; the game's own folder is only read.
 
-Checked on the built map's movement graphs (mapinfo.win buffers 1 and 2, rusemod.nav), for infantry and vehicles:
+Checked on the built map's movement (rusemod.nav), for infantry and vehicles:
 
 - pieces: every graph, and each of its local graphs, is one piece, as every shipped graph is; ground cut off from the
   rest crashes the game when a unit is ordered onto it;
@@ -13,7 +13,7 @@ Checked on the built map's movement graphs (mapinfo.win buffers 1 and 2, rusemod
 
 and on the rest of the map:
 
-- joins: the ends of new roads that aren't joined to the road network (buffer 0), which supply trucks use;
+- joins: the ends of new roads that aren't joined to the road network, which supply trucks use;
 - objects: buildings and props, the map's and the mod's, standing on a new road (within ON_ROAD of its line).
 
 A finding is shaped like rusemod.doctor's: {"key", "level": "ok" | "info" | "warn" | "fail", "say": a word in WORDS
