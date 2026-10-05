@@ -171,6 +171,33 @@ class TextureTiles(unittest.TestCase):
         self.assertEqual((new_inp[corner], new_inp[corner + 3]), (1, 2))
         self.assertEqual(new_inp[corner + 2], 5)          # its depth: 255 * 20 / 1000
 
+    def test_water_over_the_whole_map_shares_one_tile(self):
+        """A thin layer over all of a flat map (Water over the whole map): every cell still water at the base level,
+        one depth all over, so one tile serves them all, as the shipped sea's does (D-Day's atlas holds 4,096 tiles
+        for 13,824 cells): no cell's place in it, no flow."""
+        t = Tms(make_tms(gw=2, gh=3, n=5, zf=lambda x, y: 1000))
+        t.bounds = [0.0, 0.0, -100.0, 2 * CASE, 3 * CASE, 3176.7]
+        before = Tms(t.to_bytes())
+        after = Tms(t.to_bytes())
+        for k, c in enumerate(after.cells):  # every point under 20 of water: that level is now the map's base
+            after.set_water(k, {i: 1200 for i in range(len(c.positions()))})
+        after = Tms(after.to_bytes())
+        cols, rows = 16, 2
+        inp = bytearray(cols * TILE * rows * TILE * 4)
+        inp[0] = 1                                    # tile 0 holds something (the dry tile every cell is on)
+        raws = {TEXTURES["indirection"]: texture(4, 4, bytearray(4 * 4 * 4)),
+                TEXTURES["inputs"]: texture(cols * TILE, rows * TILE, inp),
+                TEXTURES["flow"]: texture(cols * TILE, rows * TILE, bytearray(len(inp)))}
+        out, notes = update_textures(raws.get, before, after, [(CASE, 1.5 * CASE, 2 * CASE)], 1000.0, "test")
+        self.assertIn("6 cell(s) updated, 1 new tile(s)", notes[0])
+        _t, ind = _pixels(out[TEXTURES["indirection"]])
+        self.assertEqual({tuple(ind[(y * 4 + x) * 4:(y * 4 + x) * 4 + 4]) for y in range(3) for x in range(2)},
+                         {(0, 0, 1, 0)})          # all on tile 1, still water (not a river's)
+        _t, new_inp = _pixels(out[TEXTURES["inputs"]])
+        tile = {bytes(new_inp[(y * cols * TILE + TILE + x) * 4:(y * cols * TILE + TILE + x) * 4 + 4])
+                for y in range(TILE) for x in range(TILE)}
+        self.assertEqual(tile, {bytes((0, 0, 5, 0))})
+
 
 # --- the texels as they were worked out sample by sample, kept here to check the quicker way against, to the bit ---
 def plain_cell(tris, col, row, max_depth):

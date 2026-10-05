@@ -375,6 +375,7 @@ def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, floa
     far_old = _water_triangles(far_before, cases) if far_before is not None else None
     off = base - far_after.to_world(2, far_after.base_water()) if far_after is not None else 0.0
     stats = {"updated": 0, "new tiles": 0, "dried": 0}
+    alike: dict[int, int] = {}   # one depth all over (R) -> the shared tile made for it
     jobs = []
     for cx, cy in sorted(cells):
         near, near0 = new_tris.get((cx, cy), []), old_tris.get((cx, cy), [])
@@ -408,6 +409,27 @@ def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, floa
         wet_texels = [i for i in range(TILE * TILE) if share[i] >= 0.5]
         at_base = sum(1 for i in wet_texels if abs(mean[i] - base) < 2 * step)
         other = at_base <= len(wet_texels) / 2        # rivers and lakes: water not at the base level
+        if len(wet_texels) == TILE * TILE and not other and len(set(red)) == 1:
+            # still water at the base level, one depth all over: a tile shared by every such cell, as the shipped
+            # sea's is (no cell's place in it): the sea's own for the deepest, one more per depth (a thin layer over
+            # a flattened map: the atlas holds 4,096 tiles, D-Day's 13,824 cells would each want one)
+            to = sea if sea is not None and red[0] == 255 else alike.get(red[0])
+            if to is None and free:
+                to = alike[red[0]] = free.pop(0)
+                for y in range(TILE):
+                    for x in range(TILE):
+                        do, fd = texel(inp, tw.width, to, x, y), texel(flow, tf.width, to, x, y)
+                        inp[do:do + 4] = bytes((0, 0, red[0], 0))
+                        flow[fd:fd + 4] = bytes(4)
+                users[to] = 0
+                stats["new tiles"] += 1
+            if to is not None:
+                if t != to:
+                    users[t] -= 1
+                    users[to] = users.get(to, 0) + 1
+                    ind[o:o + 4] = bytes((0, *gr(to), 0))
+                    stats["updated"] += 1
+                continue
         if t == sea and len(wet_texels) == TILE * TILE and not other:
             continue                                  # still open sea at the base level: the shared sea tile stays
         if users.get(t, 0) > 1 or t in (dry, sea):
