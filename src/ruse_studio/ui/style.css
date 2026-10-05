@@ -325,6 +325,26 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .dock-tray .sure { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .dock-tray .place-search, .dock-tray .place-list { border-radius: 0; background: var(--bg); border-color: #2d527d; }
 .dock-tray .place-list option:checked { background: var(--accent-dark); color: #fff; }
+/* what's selected on the map (maps.js renderSelection), above the tray as the game shows a selection above its build
+   bar: the map's own icons, how many of each, the count by kind */
+.scen-selection { align-self: stretch; display: flex; flex-direction: column; gap: 6px; padding: 6px 12px 8px;
+                  background: var(--hud); border: 1px solid var(--hud-line); border-top: 2px solid #ffd34d;
+                  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); }
+.scen-selection .sel-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 13px; }
+.scen-selection .sel-head strong { color: #ffd34d; letter-spacing: 0.04em; }
+.scen-selection .sel-head .chip { margin-left: auto; border-radius: 0; padding: 2px 10px; font-size: 12px; }
+.scen-selection .sel-row { display: flex; flex-wrap: wrap; gap: 4px; max-height: 150px; overflow-y: auto; }
+.scen-selection .sel-unit { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+                            width: 84px; padding: 4px 4px 3px; color: #e8f0fa; background: var(--panel);
+                            border: 1px solid #2d527d; border-radius: 0; cursor: pointer; }
+.scen-selection .sel-unit:hover { border-color: #ffd34d; }
+.scen-selection .sel-unit img { width: 40px; height: 50px; object-fit: contain; }
+.scen-selection .sel-n { position: absolute; top: 3px; right: 5px; color: #fff; font-size: 13px; font-weight: 700;
+                         text-shadow: 0 1px 2px #000; }
+.scen-selection .sel-name { max-width: 100%; overflow: hidden; font-size: 11px; line-height: 1.2; text-align: center;
+                            text-overflow: ellipsis; white-space: nowrap; }
+.scen-box { position: fixed; z-index: 50; pointer-events: none; border: 1px solid #ffd34d;
+            background: rgba(255, 211, 77, 0.12); }
 .check-row { display: flex; align-items: center; gap: 6px; }
 /* the Bridges tray: the map's own bridge kinds as steel-blue rows, the one picked in the game's blue */
 .kind-list { display: flex; flex-direction: column; gap: 3px; max-height: 150px; overflow-y: auto; }

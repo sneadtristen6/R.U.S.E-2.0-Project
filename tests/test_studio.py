@@ -1603,6 +1603,55 @@ class MapIcons(unittest.TestCase):
         self.assertEqual(icon_of("ground", "$/GFX/Descriptor_Unit_Flak88", "artillery"), ("aa_gun", False))
 
 
+class SpawnNamesAndSelection(unittest.TestCase):
+    """The map's spawns are told by the names players know, and selected as the game selects units (the owner,
+    2026-10-05: a player asked how to tell what units he'd selected, and the hover line gave a code name like
+    Unit_Super_Pershing; "make this stuff way more intuitive so it can make sense to a toddler ... drag, selectable,
+    and then tell you like Ruse does what's the breakdown ... it should look like the icon on the map")."""
+
+    @staticmethod
+    def maps():
+        return (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "maps.js").read_text(encoding="utf-8")
+
+    def function(self, head):
+        text = self.maps()
+        body = text[text.index("function " + head):]
+        return body[:body.index("\n}\n")]
+
+    def test_no_code_name_in_what_a_spawn_is_called(self):
+        label = self.function("spawnLabel(")
+        self.assertNotIn("it.what", label)  # the class name (Unit_Super_Pershing) is never shown
+        self.assertNotIn("it.name", label)  # nor the scenario's own name for the item (J_Pershing_01)
+        self.assertIn("spawnTitle(it)", label)
+        title = self.function("spawnTitle(")
+        self.assertEqual(re.findall(r"it\.what\b[^=]*", title), ["it.what "])  # only to tell a depot spot
+        self.assertIn("spawnName(u)", title)  # the Add unit list's name: the game's, in the Studio's language
+        draw = self.function("drawScenario(")
+        self.assertIn("m.userData.label = spawnLabel(it)", draw)
+        self.assertNotRegex(draw, r"userData\.label[^;]*it\.what")
+
+    def test_pointing_at_a_unit_icon_says_what_it_is(self):
+        # the spawns' icons are sprites: the hover line once took meshes only, so a unit's icon said nothing
+        self.assertIn("THREE.Sprite(", self.function("spawnIcon("))
+        at = self.function("scenarioAt(")
+        self.assertIn("o.isSprite", at)
+        self.assertIn("h.object.isSprite", at)  # an icon counts before a zone under it
+
+    def test_a_box_a_click_and_shift_select_and_the_strip_shows_the_map_icons(self):
+        self.assertIn("boxStart(ev)", self.function("scenPointerDown("))
+        self.assertIn("spawnsInBox(", self.function("boxEnd("))
+        self.assertIn("selectSpawn(g.it, add)", self.function("grabStart("))
+        strip = self.function("renderSelection(")
+        self.assertIn("spawnIconCanvas(it, false)", strip)  # the same icon as on the map
+        self.assertIn("spawnTitle(it)", strip)
+        self.assertIn('"scen_sel_" + k', strip)  # the count by kind: vehicles, infantry, aircraft, buildings
+        self.assertIn("c = spawnIconCanvas(it, selected)", self.function("spawnIcon("))
+        page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
+        self.assertLess(page.index('id="scen-selection"'), page.index('id="dock-tray"'))  # above the tray, as in the game
+        for kind in ("ground", "infantry", "air", "buildings", "other"):
+            self.assertIn("scen_sel_" + kind, _words())
+
+
 class Labels(unittest.TestCase):
     """Every display name has all ten languages, so no modder gets a half-translated tool."""
 

@@ -1525,9 +1525,11 @@ function showSceneryStats() {
 // over the ground for the scenario picked. Read-only for now: the first step toward making maps of one's own.
 const ALLIANCE = [0x3f7fe0, 0xe0503f, 0x49b85a, 0xe0c33f, 0xa35ee0, 0x3fc8d8];
 // tool: "move" or "spawn" (or null); selected: the item being moved; units: what can be spawned (StudioApi.units);
-// kind, type: the Spawn tool's first two dropdowns (the third is the unit, by nation)
+// kind, type: the Spawn tool's first two dropdowns (the third is the unit, by nation); sel: the spawns selected (their
+// item numbers: renderSelection shows them as the game shows a selection); box: a selection box being dragged
 const scen = { data: null, pick: 0, show: true, group: null, tool: null, selected: null, units: null, kind: "ground",
-  type: null, camp: "-1", count: 1, formation: "line", gap: {}, team: 1, players: null };
+  type: null, camp: "-1", count: 1, formation: "line", gap: {}, team: 1, players: null, sel: new Set(), box: null,
+  unitByAddress: null, unitsLoading: null };
 const SPAWN_KINDS = ["buildings", "ground", "infantry", "air"];
 
 // --- What the scenario shows, kind by kind, and how big its icons are. The owner, 2026-10-03: "why can't you just
@@ -1656,6 +1658,7 @@ async function loadScenarios(pack, ask) {
   scen.data = data;
   scen.pick = 0;
   scen.selected = null;
+  scen.sel.clear();
   renderScenarioPick();
   drawScenario();
   renderScenTools();
@@ -1882,7 +1885,22 @@ function sideColour(camp) {
 }
 
 function spawnIcon(it, size, selected) {
-  const { THREE } = mv.gl, c = document.createElement("canvas"), g = c.getContext("2d");
+  const { THREE } = mv.gl, c = spawnIconCanvas(it, selected);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true,
+    sizeAttenuation: false }));  // its size on screen is set by fitIcons: the icon-size slider and the zoom
+  sprite.center.set(0.5, 0);  // standing on its spot
+  sprite.renderOrder = 11;
+  sprite.userData.icon = true;
+  fitIcon(sprite);
+  return sprite;
+}
+
+// A spawn's icon as the map draws it (the selection strip shows the same one): its side's colour, round for a unit and
+// square for a building, its role's picture and its country's roundel.
+function spawnIconCanvas(it, selected) {
+  const c = document.createElement("canvas"), g = c.getContext("2d");
   c.width = 96; c.height = 120;
   const hex = "#" + sideColour(it.camp).toString(16).padStart(6, "0");
   const building = it.unit_kind === "buildings";
@@ -1899,15 +1917,7 @@ function spawnIcon(it, size, selected) {
   drawIconArt(g, MAP_ICONS[it.icon] || MAP_ICONS[KIND_ICON[it.unit_kind]] || MAP_ICONS.unit, hex);
   // its country: a roundel on the badge's corner (a depot spot and an unknown unit have none)
   if (it.nation !== undefined && it.nation !== null && it.group !== "depot") drawRoundel(g, it.nation, 80, 18, 14);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true,
-    sizeAttenuation: false }));  // its size on screen is set by fitIcons: the icon-size slider and the zoom
-  sprite.center.set(0.5, 0);  // standing on its spot
-  sprite.renderOrder = 11;
-  sprite.userData.icon = true;
-  fitIcon(sprite);
-  return sprite;
+  return c;
 }
 
 // A zone's triangles split until no edge is longer than `step`, each new corner a point the caller sets on the
@@ -2078,7 +2088,7 @@ function drawZone(z, k, zones, at, step) {
 function drawScenario() {
   clearScenario();
   const gl = mv.gl, s = ((scen.data || {}).scenarios || [])[scen.pick];
-  if (!gl || !mv.edit || !s) { if (gl) gl.draw(); return; }
+  if (!gl || !mv.edit || !s) { if (gl) gl.draw(); renderSelection(); return; }
   const { THREE } = gl, grid = makeGrid(mv.edit), group = new THREE.Group(), size = mv.size || 1000;
   const lift = size * 0.0015, at = (x, y, up = 0) => new THREE.Vector3(x * SCALE, groundAt(grid, x, y) * SCALE + lift + up, y * SCALE);
   const step = 1.5 * Math.max(grid.sx, grid.sy);  // about a ground cell and a half: the zone follows hills and pits
@@ -2110,17 +2120,9 @@ function drawScenario() {
       group.add(m);
     } else if (it.kind === "Spawn") {  // an icon where a unit or building appears: what it is, its side, its country
       if (!scen.layers[spawnLayer(it)]) continue;
-      const m = spawnIcon(it, ICON_BASE, scen.selected === it.item);
+      const m = spawnIcon(it, ICON_BASE, scen.selected === it.item || scen.sel.has(it.item));
       m.position.copy(at(it.x, it.y, 0));
-      const kindWord = mv.words["scen_kind_word_" + (it.unit_kind || "")] || "";
-      const nation = it.nation !== undefined ? (mv.nationNames || [])[it.nation] || NATION_CODES[it.nation] : "";
-      m.userData.label = `${mv.words.scen_spawn}${kindWord ? " · " + kindWord : ""}${it.name ? " · " + it.name : ""}`
-        + `${it.what ? " · " + it.what : ""}${nation ? " · " + nation : ""}`
-        + (it.camp === -1 || (it.mine && it.camp === null) ? ` · ${mv.words.scen_side_neutral}`
-          : it.camp !== undefined && it.camp !== null ? ` · ${fill(mv.words.scen_side_n, { n: it.camp })}` : "")
-        + (it.mine ? ` · ${mv.words.scen_mine}` : it.gone ? ` · ${mv.words.scen_taken_out}`
-          : it.moved ? ` · ${mv.words.scen_moved}` : "")
-        + (mv.words.scen_drag_tip && !it.gone ? ` · ${mv.words.scen_drag_tip}` : "");
+      m.userData.label = spawnLabel(it) + (mv.words.scen_drag_tip && !it.gone ? ` · ${mv.words.scen_drag_tip}` : "");
       if (it.gone) m.material.opacity = GONE_OPACITY;  // taken out by the mod: faded, to put back
       m.userData.item = it.item;
       group.add(m);
@@ -2155,6 +2157,7 @@ function drawScenario() {
   gl.scene.add(group);
   renderLegend();
   gl.draw();
+  renderSelection();
 }
 
 // --- editing the picked scenario (saved in the mod's maps/<map>/scenario.toml: StudioApi.scenario_*) ---
@@ -2180,12 +2183,193 @@ function setScenTool(tool) {
 
 async function loadSpawnUnits() {
   if (scen.units) return;
-  const res = await mv.api.units(mv.lang || "base", "all", -1, "", "all");
-  scen.units = res.units.filter((u) => !u.new);  // a mod's new unit isn't in the game's files yet
-  // a map's supply depot spot (the slab a player builds a depot on): not a unit of the list, offered first in Money
-  scen.units.unshift({ address: DEPOT_SLAB, kind: "buildings", group: "money", name: mv.words.scen_depot_slab || "Supply depot spot",
-    base_name: DEPOT_SLAB, nation_name: mv.words.scen_depot_any || "Any side" });
+  if (scen.unitsLoading) return scen.unitsLoading;  // asked for by the labels and the Spawn tool at once: one call
+  scen.unitsLoading = (async () => {
+    const res = await mv.api.units(mv.lang || "base", "all", -1, "", "all");
+    const units = res.units.filter((u) => !u.new);  // a mod's new unit isn't in the game's files yet
+    // a map's supply depot spot (the slab a player builds a depot on): not a unit of the list, offered first in Money
+    units.unshift({ address: DEPOT_SLAB, kind: "buildings", group: "money", name: mv.words.scen_depot_slab || "Supply depot spot",
+      base_name: DEPOT_SLAB, nation_name: mv.words.scen_depot_any || "Any side" });
+    scen.units = units;
+    scen.unitByAddress = new Map(units.map((u) => [u.address, u]));
+    renderScenTools();
+  })();
+  try { await scen.unitsLoading; } finally { scen.unitsLoading = null; }
+}
+
+// What a player calls a spawned unit or building: its name in the game, in the Studio's language (the Add unit list's
+// names), never its code name (the owner, 2026-10-05: "make this stuff way more intuitive so it can make sense to a
+// toddler"). Until the list is loaded, or for a mod's new unit, its kind.
+function spawnTitle(it) {
+  if (it.what === DEPOT_SLAB) return mv.words.scen_depot_slab || "Supply depot spot";
+  const u = it.unit && scen.unitByAddress ? scen.unitByAddress.get(it.unit) : null;
+  if (u) return spawnName(u);
+  if (!scen.units && !scen.unitsLoading && !scen.unitsFailed && it.unit) {
+    loadSpawnUnits().then(() => { drawScenario(); renderSelection(); })
+      .catch(() => { scen.unitsFailed = true; });  // the kind words stay; not asked again on every redraw
+  }
+  return mv.words["scen_kind_word_" + (it.unit_kind || "")] || mv.words.scen_spawn;
+}
+
+// A spawn said in words, for the map's hover line and the selection strip: what it is, its country, whose side.
+function spawnLabel(it) {
+  const w = mv.words, title = spawnTitle(it), kindWord = w["scen_kind_word_" + (it.unit_kind || "")] || "";
+  const nation = it.nation !== undefined && it.group !== "depot" ? (mv.nationNames || [])[it.nation] || NATION_CODES[it.nation] : "";
+  return [title, kindWord !== title ? kindWord : "", nation,
+    it.camp === -1 || (it.mine && it.camp === null) ? w.scen_side_neutral
+      : it.camp !== undefined && it.camp !== null ? fill(w.scen_side_n, { n: it.camp }) : "",
+    it.mine ? w.scen_mine : it.gone ? w.scen_taken_out : it.moved ? w.scen_moved : ""].filter(Boolean).join(" · ");
+}
+
+// --- Selecting spawns as the game selects units (the owner, 2026-10-05: "drag, selectable, and then tell you like
+// Ruse does what's the breakdown of the unit ... four tanks, five infantry, four aircraft ... just above where the
+// build section is ... it should look like the icon on the map"): a click picks one, Shift+click adds or takes one
+// off, a box dragged on the ground with Move picks every spawn in it; above the tray, the map's own icons with how
+// many of each, and the count by kind. ---
+function selectSpawn(it, add) {
+  if (it.kind !== "Spawn") { scen.sel.clear(); scen.selected = it.item; }
+  else if (add) {
+    if (scen.sel.has(it.item)) scen.sel.delete(it.item); else scen.sel.add(it.item);
+    scen.selected = scen.sel.size === 1 ? [...scen.sel][0] : null;
+  } else { scen.sel = new Set([it.item]); scen.selected = it.item; }
+  drawScenario();
   renderScenTools();
+}
+
+function clearSelection() {
+  if (!scen.sel.size && scen.selected === null) return;
+  scen.sel.clear();
+  scen.selected = null;
+  drawScenario();
+  renderScenTools();
+}
+
+// The spawns inside a box dragged on the screen (x0, y0, x1, y1 in the page's pixels): the icons drawn now, by
+// where they stand on the screen.
+function spawnsInBox(x0, y0, x1, y1) {
+  const gl = mv.gl, s = ((scen.data || {}).scenarios || [])[scen.pick];
+  if (!s || !scen.group) return [];
+  const rect = gl.renderer.domElement.getBoundingClientRect(), v = new gl.THREE.Vector3();
+  const [l, r, t, b] = [Math.min(x0, x1), Math.max(x0, x1), Math.min(y0, y1), Math.max(y0, y1)];
+  const spawns = new Set(s.items.filter((it) => it.kind === "Spawn").map((it) => it.item)), out = new Set();
+  for (const o of scen.group.children) {
+    if (!o.userData.icon || !spawns.has(o.userData.item)) continue;
+    v.copy(o.position).project(gl.camera);
+    if (v.z > 1) continue;  // behind the camera
+    const sx = rect.left + (v.x + 1) / 2 * rect.width, sy = rect.top + (1 - v.y) / 2 * rect.height;
+    if (sx >= l && sx <= r && sy >= t && sy <= b) out.add(o.userData.item);
+  }
+  return [...out];
+}
+
+function boxStart(ev) {
+  scen.box = { x0: ev.clientX, y0: ev.clientY, x1: ev.clientX, y1: ev.clientY, add: ev.shiftKey || ev.ctrlKey,
+    shown: false, ev };
+  try { mv.gl.renderer.domElement.parentElement.setPointerCapture(ev.pointerId); } catch { /* the box still works over the map */ }
+}
+
+function boxMove(ev) {
+  const b = scen.box;
+  b.x1 = ev.clientX;
+  b.y1 = ev.clientY;
+  if (!b.shown && Math.abs(b.x1 - b.x0) + Math.abs(b.y1 - b.y0) < 6) return;  // a click, not a box (yet)
+  b.shown = true;
+  let el = $("scen-box");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "scen-box";
+    el.className = "scen-box";
+    document.body.append(el);
+  }
+  el.style.left = `${Math.min(b.x0, b.x1)}px`;
+  el.style.top = `${Math.min(b.y0, b.y1)}px`;
+  el.style.width = `${Math.abs(b.x1 - b.x0)}px`;
+  el.style.height = `${Math.abs(b.y1 - b.y0)}px`;
+}
+
+function boxEnd() {
+  const b = scen.box;
+  scen.box = null;
+  const el = $("scen-box");
+  if (el) el.remove();
+  if (!b) return;
+  const s = ((scen.data || {}).scenarios || [])[scen.pick];
+  if (!b.shown) {  // a click on the ground: Move's second click puts the item picked there; else it clears
+    if (scen.selected !== null && s && mv.brush.mod) {
+      const p = hitGround(b.ev);
+      if (p) scenPlaceAt(s, p.x / SCALE, p.z / SCALE);
+      return;
+    }
+    clearSelection();
+    scenNote(mv.words.scen_sel_hint);
+    return;
+  }
+  const got = spawnsInBox(b.x0, b.y0, b.x1, b.y1);
+  scen.sel = new Set(b.add ? [...scen.sel, ...got] : got);
+  scen.selected = scen.sel.size === 1 ? [...scen.sel][0] : null;
+  drawScenario();
+  renderScenTools();
+}
+
+function renderSelection() {
+  const box = $("scen-selection");
+  if (!box) return;
+  const s = ((scen.data || {}).scenarios || [])[scen.pick];
+  const items = s && scen.show ? s.items.filter((it) => it.kind === "Spawn" && scen.sel.has(it.item)) : [];
+  if (s && items.length !== scen.sel.size) scen.sel = new Set(items.map((it) => it.item));  // gone since (an edit)
+  box.classList.toggle("hidden", !items.length);
+  box.replaceChildren();
+  if (!items.length) return;
+  const w = mv.words, groups = new Map(), kinds = {};
+  for (const it of items) {
+    const key = `${it.unit || it.what}|${it.camp}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(it);
+    const k = SPAWN_KINDS.includes(it.unit_kind) ? it.unit_kind : "other";
+    kinds[k] = (kinds[k] || 0) + 1;
+  }
+  const head = document.createElement("div");
+  head.className = "sel-head";
+  const count = document.createElement("strong");
+  count.textContent = fill(w.scen_sel_count, { n: items.length });
+  const split = document.createElement("span");
+  split.textContent = ["ground", "infantry", "air", "buildings", "other"].filter((k) => kinds[k])
+    .map((k) => `${kinds[k]} ${w["scen_sel_" + k]}`).join(" · ");
+  const clear = document.createElement("button");
+  clear.type = "button";
+  clear.className = "chip";
+  clear.textContent = w.scen_sel_clear;
+  clear.addEventListener("click", clearSelection);
+  head.append(count, split, clear);
+  const row = document.createElement("div");
+  row.className = "sel-row";
+  for (const list of groups.values()) {
+    const it = list[0], b = document.createElement("button");
+    b.type = "button";
+    b.className = "sel-unit";
+    b.title = `${spawnLabel(it)}\n${w.scen_sel_only}`;
+    const img = new Image();
+    img.src = spawnIconCanvas(it, false).toDataURL();
+    img.alt = "";
+    const n = document.createElement("span");
+    n.className = "sel-n";
+    n.textContent = list.length > 1 ? `×${list.length}` : "";
+    const name = document.createElement("span");
+    name.className = "sel-name";
+    name.textContent = spawnTitle(it);
+    b.append(img, n, name);
+    b.addEventListener("click", () => {
+      scen.sel = new Set(list.map((x) => x.item));
+      scen.selected = list.length === 1 ? it.item : null;
+      drawScenario();
+      renderScenTools();
+    });
+    row.append(b);
+  }
+  const hint = document.createElement("div");
+  hint.className = "muted small";
+  hint.textContent = w.scen_sel_hint;
+  box.append(head, row, hint);
 }
 
 // --- Stick to roads (LittleGroove's RUSE-Mod-Manager map editor, its _snap_to_road and _ROAD_SNAP_OFFSET, GPL-3.0):
@@ -2445,18 +2629,10 @@ function scenPointerDown(ev) {
   const gl = mv.gl, s = ((scen.data || {}).scenarios || [])[scen.pick];
   if (!scen.tool || ev.button !== 0 || !gl.ground || !mv.edit || !s) return;
   ev.preventDefault();
+  // Move, pressed on the ground (a press on an item is grabStart's): a box dragged selects every spawn in it (no mod
+  // needed); a click puts the item picked there, or clears what's selected (boxEnd)
+  if (scen.tool === "move") { boxStart(ev); return; }
   if (!mv.brush.mod) { scenNote(mv.words.no_mod, "error"); return; }
-  if (scen.tool === "move" && scen.selected === null) {  // first click: which item
-    const rect = gl.renderer.domElement.getBoundingClientRect();
-    gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
-    gl.raycaster.setFromCamera(gl.ndc, gl.camera);
-    const hit = scen.group ? gl.raycaster.intersectObjects(scen.group.children.filter((o) => o.userData.item !== undefined), false)[0] : null;
-    if (!hit) { scenNote(mv.words.scen_pick_item, "error"); return; }
-    scen.selected = hit.object.userData.item;
-    drawScenario();
-    renderScenTools();
-    return;
-  }
   const p = hitGround(ev);
   if (!p) return;
   scenPlaceAt(s, p.x / SCALE, p.z / SCALE);
@@ -2499,11 +2675,11 @@ function grabStart(ev) {
   if (!g) return false;
   ev.preventDefault();
   ev.stopPropagation();  // the view doesn't turn under the drag
-  if (!mv.brush.mod) { scenNote(mv.words.no_mod, "error"); return true; }
-  if (g.it && g.it.gone) {  // taken out: picked (to put back), never dragged
-    scen.selected = g.it.item;
-    drawScenario();
-    renderScenTools();
+  const add = ev.shiftKey || ev.ctrlKey;
+  // selecting needs no mod (moving does); Shift+click only selects; one taken out is picked (to put back), never dragged
+  if (!mv.brush.mod || (add && !g.cam) || (g.it && g.it.gone)) {
+    if (g.it) selectSpawn(g.it, add);
+    if (!mv.brush.mod && !add) scenNote(mv.words.no_mod);  // why it won't move: a hint, not an error
     return true;
   }
   const host = mv.gl.renderer.domElement.parentElement;
@@ -2539,7 +2715,7 @@ async function itemDragEnd() {
   const d = scen.itemDrag;
   scen.itemDrag = null;
   pointerMode();
-  if (!d || !d.moved) { if (d) { scen.selected = d.it.item; drawScenario(); renderScenTools(); } return; }
+  if (!d || !d.moved) { if (d) selectSpawn(d.it, false); return; }  // a click: that one's selected
   const it = d.it, kind = snapKind(it, null);
   const [x, y] = kind ? await snapToRoad(kind, d.x, d.y) : [d.x, d.y];
   if (it.mine && it.start !== undefined) scenEdit(() => mv.api.scenario_move_start(mv.current, it.start, x, y));
@@ -2618,10 +2794,12 @@ function scenarioAt(ev) {
   const rect = gl.renderer.domElement.getBoundingClientRect();
   gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
   gl.raycaster.setFromCamera(gl.ndc, gl.camera);
+  // the spawns' icons are sprites, not meshes: left out, pointing at a unit said nothing (a French player, 2026-10-05)
   const shown = [...scen.group.children, ...(scen.zones && scen.zones.visible ? scen.zones.children : [])]  // their own group
-    .filter((o) => o.isMesh && o.userData.label);
+    .filter((o) => (o.isMesh || o.isSprite) && o.userData.label);
   const hits = gl.raycaster.intersectObjects(shown, false);
-  const solid = hits.find((h) => h.object.geometry.type !== "BufferGeometry");  // a pillar or a diamond before a zone
+  // an icon, a pillar or a diamond before a zone
+  const solid = hits.find((h) => h.object.isSprite || h.object.geometry.type !== "BufferGeometry");
   return ((solid || hits[0]) || { object: { userData: {} } }).object.userData.label || "";
 }
 
@@ -4485,6 +4663,7 @@ function watchPointer() {
   host.addEventListener("pointerdown", (ev) => { grabStart(ev); }, { capture: true });
   let dragEv = null, dragFrame = 0;
   host.addEventListener("pointermove", (ev) => {
+    if (scen.box) { boxMove(ev); return; }  // a selection box being dragged (Move, on the ground)
     if (!scen.camDrag && !scen.itemDrag) {  // over something it could grab: the hand
       if (canGrab() && !ev.buttons) canvas.style.cursor = grabAt(ev) ? "grab" : (scen.tool ? "crosshair" : "");
       return;
@@ -4498,7 +4677,8 @@ function watchPointer() {
   });
   for (const type of ["pointerup", "pointercancel"]) {
     host.addEventListener(type, () => {
-      if (scen.camDrag) camDragEnd();
+      if (scen.box) boxEnd();
+      else if (scen.camDrag) camDragEnd();
       else if (scen.itemDrag) itemDragEnd();
     });
   }
@@ -5101,6 +5281,7 @@ function onKey(e) {
       drawRoadPreview();
       return;
     }
+    if (scen.sel.size) { clearSelection(); return; }  // then what's selected, as in the game
     lookAround();
     return;
   }
@@ -5235,10 +5416,12 @@ function wire() {
     scen.show = e.target.checked;
     if (scen.group) { scen.group.visible = scen.show; mv.gl.draw(); }
     renderLegend();
+    renderSelection();
   });
   $("scen-pick").addEventListener("change", (e) => {
     scen.pick = Number(e.target.value) || 0;
     scen.selected = null;
+    scen.sel.clear();
     renderScenarioPick();
     drawScenario();
     renderScenTools();
@@ -5423,12 +5606,15 @@ window.MapView = {
   setWords(words, lang) {
     mv.words = words;
     if ((lang || "base") !== mv.lang) {
-      scen.units = null;  // the Add unit tool's names: loaded again in the new language
+      scen.units = null;  // the Add unit tool's names (and the map's spawn names): loaded again in the new language
+      scen.unitByAddress = null;
+      scen.unitsFailed = false;
       if (mv.api) mv.api.nations(lang || "base").then((n) => { mv.nationNames = n; }).catch(() => {});
     }
     mv.lang = lang || "base";
     renderWords();
     renderScenTools();
+    if (scen.data) drawScenario();  // the spawns' names (hover line, selection strip) in the new language
     renderList();
     if (mv.scenery.data) placeOptions();  // the props, trees and buildings to place, named in the new language
     showTitle();
