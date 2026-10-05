@@ -198,6 +198,12 @@ class TextureTiles(unittest.TestCase):
                 for y in range(TILE) for x in range(TILE)}
         self.assertEqual(tile, {bytes((0, 0, 5, 0))})
 
+    def test_the_depth_still_water_shares_a_tile_by(self):
+        from rusemod.water import _shade
+        self.assertEqual([_shade([v] * 4) for v in (255, 250, 247, 70, 69, 8, 7, 1, 0)],
+                         [255, 255, 240, 64, 64, 16, 7, 1, 1])
+        self.assertEqual(_shade([60, 80, 70, 70]), 64)     # the texels' mean
+
 
 # --- the texels as they were worked out sample by sample, kept here to check the quicker way against, to the bit ---
 def plain_cell(tris, col, row, max_depth):

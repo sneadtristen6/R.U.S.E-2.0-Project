@@ -12,6 +12,7 @@ from .tmst import Tgv, make_tgv, zipo_pack, zipo_unpack
 
 CASE = 1310720 / 48          # world units per water cell, the same on every map
 TILE = 16                    # texels per tile side
+SHADE = 16                   # still water at the base level shares a tile per this many steps of depth (R, 0..255)
 SAMPLES = 4                  # samples per texel side (shores fade over about a texel, as in the shipped maps)
 TEXTURES = {"indirection": "output\\riverindirectionsurface.tgv_pc", "inputs": "output\\waterinputs.tgv_pc",
             "flow": "output\\wateracceleration.tgv_pc"}
@@ -319,6 +320,16 @@ def _all_texels(jobs: list, max_depth: float, off: float, workers: int) -> tuple
     return [_texels(job, max_depth, off) for job in jobs], alone
 
 
+def _shade(red: list[int]) -> int:
+    """The depth (R) a cell of still water all over shares a tile by: its texels' mean, to the nearest SHADE, 255 for
+    the deepest; the shallowest keep their own (at least 1: R 0 says dry, and water over "dry" is drawn dark)."""
+    mean = sum(red) / len(red)
+    if mean > 255 - SHADE / 2:
+        return 255
+    shade = int(mean / SHADE + 0.5) * SHADE
+    return shade if shade else max(1, int(mean + 0.5))
+
+
 def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, float, float]], max_depth: float,
                     name: str = "the map", far_before: Tms | None = None,
                     far_after: Tms | None = None, workers: int | None = None) -> tuple[dict[str, bytes], list[str]]:
@@ -375,7 +386,7 @@ def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, floa
     far_old = _water_triangles(far_before, cases) if far_before is not None else None
     off = base - far_after.to_world(2, far_after.base_water()) if far_after is not None else 0.0
     stats = {"updated": 0, "new tiles": 0, "dried": 0}
-    alike: dict[int, int] = {}   # one depth all over (R) -> the shared tile made for it
+    alike: dict[int, int] = {}   # a depth (R, in SHADE steps) -> the shared tile made for it
     jobs = []
     for cx, cy in sorted(cells):
         near, near0 = new_tris.get((cx, cy), []), old_tris.get((cx, cy), [])
@@ -409,17 +420,20 @@ def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, floa
         wet_texels = [i for i in range(TILE * TILE) if share[i] >= 0.5]
         at_base = sum(1 for i in wet_texels if abs(mean[i] - base) < 2 * step)
         other = at_base <= len(wet_texels) / 2        # rivers and lakes: water not at the base level
-        if len(wet_texels) == TILE * TILE and not other and len(set(red)) == 1:
-            # still water at the base level, one depth all over: a tile shared by every such cell, as the shipped
-            # sea's is (no cell's place in it): the sea's own for the deepest, one more per depth (a thin layer over
-            # a flattened map: the atlas holds 4,096 tiles, D-Day's 13,824 cells would each want one)
-            to = sea if sea is not None and red[0] == 255 else alike.get(red[0])
+        if len(wet_texels) == TILE * TILE and not other:
+            # still water at the base level all over the cell: a tile shared by every such cell of about its depth,
+            # as the shipped sea's is (all 4,158 of D-Day's sea cells on one tile, whatever the sea floor under them;
+            # no cell's place in it, no flow): the sea's own for the deepest, one more per SHADE of depth. A thin
+            # layer over a whole flattened map needs it: the atlas holds 4,096 tiles, D-Day's 13,824 cells would each
+            # want one of their own
+            shade = _shade(red)
+            to = sea if sea is not None and shade == 255 else alike.get(shade)
             if to is None and free:
-                to = alike[red[0]] = free.pop(0)
+                to = alike[shade] = free.pop(0)
                 for y in range(TILE):
                     for x in range(TILE):
                         do, fd = texel(inp, tw.width, to, x, y), texel(flow, tf.width, to, x, y)
-                        inp[do:do + 4] = bytes((0, 0, red[0], 0))
+                        inp[do:do + 4] = bytes((0, 0, shade, 0))
                         flow[fd:fd + 4] = bytes(4)
                 users[to] = 0
                 stats["new tiles"] += 1
