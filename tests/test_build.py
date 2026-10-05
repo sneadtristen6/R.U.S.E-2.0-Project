@@ -729,3 +729,21 @@ class ClearedWoods(unittest.TestCase):
         self.assertEqual((b.x, b.y, b.radius, b.open), (1.0, 2.0, 300.0, True))
         [p] = uncover["Map"][0]
         self.assertEqual((p.x, p.y, p.radius, p.layer, p.erase), (1.0, 2.0, 300.0, "cover", True))
+
+    def test_a_whole_map_square_opens_in_a_few_thousand_circles(self):
+        """Erase the whole map on M04_Cotentin (a square 3.9 million across) went in as 13 million circles of 1,280 and
+        ran out of memory (2026-10-05): a big square's cells grow, at most BLOCK_SIDE of them along a side, no circle
+        wider than BED_MOST, and the circles still cover the whole square; a small square keeps BLOCK_CELL."""
+        import math as m
+        from rusemod.build import BED_MOST, BLOCK_CELL, BLOCK_SIDE, cleared_woods
+        from rusemod.scenery import EraseArea
+        big = EraseArea(1966080.0, 1310720.0, 1967080.0, what=("vegetation", "prop", "building"), shape="square")
+        small = EraseArea(5000.0, 5000.0, 6400.0, what=("vegetation",), shape="square")
+        opens, _uncover = cleared_woods({"Map": ([big], ["m"]), "Small": ([small], ["m"])})
+        circles = opens["Map"][0]
+        self.assertEqual(len(circles), BLOCK_SIDE * BLOCK_SIDE)
+        self.assertTrue(all(c.radius <= BED_MOST and c.open for c in circles))
+        for x, y in ((-1000.0, -655360.0), (3933160.0, 3276800.0), (1966080.0, 1310720.0), (3933160.0, -655360.0)):
+            self.assertTrue(any(m.hypot(c.x - x, c.y - y) <= c.radius + 1e-6 for c in circles), (x, y))
+        cell = 2 * 6400.0 / len({round(c.x) for c in opens["Small"][0]})
+        self.assertAlmostEqual(cell, 2 * 6400.0 / m.ceil(2 * 6400.0 / BLOCK_CELL))   # small squares as before

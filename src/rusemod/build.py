@@ -12,6 +12,7 @@ rusemod.pyscript adds from its one fixed template (PLAN.md decision 23). Mods ne
 """
 from __future__ import annotations
 
+import math
 import os
 import re
 import struct
@@ -313,7 +314,8 @@ def _block_brushes(info) -> None:
             continue
         # the movement graphs are made of circles: a square or a line goes in as circles covering it
         info.movement.setdefault(pack, []).extend(Block(x, y, r, s.kind.shape, s.kind.kind == "open")
-                                                  for s in blocks for x, y, r in s.footprint().circles(BLOCK_CELL))
+                                                  for s in blocks for x, y, r in s.footprint().circles(
+                                                      _block_cell(s.footprint())))
         rest = [s for s in strokes if s.kind.kind not in moving]
         if rest:
             info.terrain[pack] = rest
@@ -340,6 +342,15 @@ def _paint_brushes(info) -> None:
 BED_RADII = (3840.0, 2560.0, 1920.0, 1280.0)  # down to nav.MIN_RADIUS: a new movement circle fits in one of these
 BED_MOST = 81600.0  # the widest zone over a wide dried bed (nav.water_blocks's `wide`): 255 nav.STEPs. The shipped
                     # maps' own circles go up to 135,040 (M04_Cotentin), and 81,600 is on that map twice
+BLOCK_SIDE = 64     # a square block or open goes in as at most this many cells along its side: a bigger square gets
+                    # bigger cells (a whole-map erase on M04_Cotentin made 13 million circles and ran out of memory,
+                    # 2026-10-05), never a circle wider than BED_MOST
+
+
+def _block_cell(f) -> float:
+    """The cell size a footprint's circles are laid on (brush.Footprint.circles): BLOCK_CELL, bigger for a square
+    with more than BLOCK_SIDE of those along its side, never so big that a circle is wider than BED_MOST."""
+    return min(max(BLOCK_CELL, 2.0 * f.r / BLOCK_SIDE), BED_MOST * math.sqrt(2.0))
 
 
 def cleared_woods(erasing: dict) -> tuple[dict, dict]:
@@ -361,7 +372,7 @@ def cleared_woods(erasing: dict) -> tuple[dict, dict]:
         if cleared:
             # a square or a line opens as circles covering it (the movement graphs are circles), and uncovers itself
             opens[name] = ([Block(x, y, r, "all", True) for a in cleared
-                            for x, y, r in a.footprint().circles(BLOCK_CELL)], list(ids))
+                            for x, y, r in a.footprint().circles(_block_cell(a.footprint()))], list(ids))
         if woods:
             uncover[name] = ([Paint(a.x, a.y, a.radius, "cover", True, False, a.shape, a.dx, a.dy, a.x2, a.y2)
                               for a in woods], list(ids))
