@@ -1580,16 +1580,16 @@ jpn = "歩兵の死体：プレイ中にゲームが設定する。部隊のフ�
 sc = "步兵尸体：游戏在对局中设置；放在单位的标志位里无效 (cadavre_infanterie)"
 
 [flags.76]
-us = "Ship: moves on water; without it and with a tank's chassis a ship drives on land, tested (bateau)"
-fr = "Navire : se déplace sur l'eau ; sans lui et avec un châssis de char, un navire roule sur terre, testé (bateau)"
-ger = "Schiff: fährt auf dem Wasser; ohne es und mit Panzerfahrgestell fährt ein Schiff an Land, getestet (bateau)"
-ita = "Nave: si muove sull'acqua; senza questo flag e con il telaio di un carro armato una nave va su terra, testato (bateau)"
-spa = "Barco: se mueve por el agua; sin él y con el chasis de un tanque, un barco va por tierra, probado (bateau)"
-pol = "Okręt: pływa po wodzie; bez tej flagi i z podwoziem czołgu okręt jeździ po lądzie, sprawdzone (bateau)"
-ru = "Корабль: ходит по воде; без него и с шасси танка корабль ездит по суше, проверено (bateau)"
-cz = "Loď: pluje po vodě; bez něj a s podvozkem tanku loď jezdí po souši, ověřeno (bateau)"
-jpn = "艦船：水上を移動する。外して戦車の車体を使うと艦船が陸を走る、検証済み (bateau)"
-sc = "舰船：在水上移动；去掉它并换用坦克底盘后，舰船能在陆地行驶，已实测 (bateau)"
+us = "Ship: the unit doesn't move at all, like a building (not tested in game); without it and with a tank's chassis a ship drives on land, tested (bateau)"
+fr = "Navire : l'unité ne se déplace pas du tout, comme un bâtiment (pas testé en jeu) ; sans lui et avec un châssis de char, un navire roule sur terre, testé (bateau)"
+ger = "Schiff: die Einheit bewegt sich gar nicht, wie ein Gebäude (im Spiel nicht getestet); ohne es und mit Panzerfahrgestell fährt ein Schiff an Land, getestet (bateau)"
+ita = "Nave: l'unità non si muove affatto, come un edificio (non testato in gioco); senza questo flag e con il telaio di un carro armato una nave va su terra, testato (bateau)"
+spa = "Barco: la unidad no se mueve en absoluto, como un edificio (no probado en el juego); sin él y con el chasis de un tanque, un barco va por tierra, probado (bateau)"
+pol = "Okręt: jednostka w ogóle się nie porusza, jak budynek (nie sprawdzone w grze); bez tej flagi i z podwoziem czołgu okręt jeździ po lądzie, sprawdzone (bateau)"
+ru = "Корабль: юнит совсем не двигается, как здание (в игре не проверено); без него и с шасси танка корабль ездит по суше, проверено (bateau)"
+cz = "Loď: jednotka se vůbec nepohybuje, jako budova (ve hře neověřeno); bez něj a s podvozkem tanku loď jezdí po souši, ověřeno (bateau)"
+jpn = "艦船：部隊はまったく移動しない、建物と同じ（ゲーム内では未検証）。外して戦車の車体を使うと艦船が陸を走る、検証済み (bateau)"
+sc = "舰船：单位完全不能移动，如同建筑（未在游戏中实测）；去掉它并换用坦克底盘后，舰船能在陆地行驶，已实测 (bateau)"
 
 [flags.77]
 us = "Never fires by reflex, only when ordered, tested; not for buildings (cannot_attack_en_reflexe)"
