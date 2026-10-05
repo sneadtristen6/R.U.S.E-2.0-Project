@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import math
 import os
+import sys
 from array import array
 from collections import deque
 
@@ -38,6 +39,22 @@ CROSS = 0.5            # the share of a hollow's width, about its middle, where 
 WINDOW = 2000 * METRE  # the side of the squares the map is mended in, one after another (mend_map)
 NEAR_WATER = 2 * REACH + WIDER + 2 * STEP  # how far from the old water a riverbed's hollow can reach
 COARSE = 10 * METRE    # the grid the old water is first looked for on, to pick the windows
+
+_WHOLE = []  # [rusemod.mendnp, or None without numpy], looked for once
+
+
+def whole_arrays():
+    """rusemod.mendnp, the mend on whole grids, when numpy is there (the apps carry it); None without it. With it,
+    the hollows, the plans and the tiles' pixels are worked out for a whole grid at once: the same sums in the same
+    order, so the same bytes, many times sooner. The loops in this file are what that is checked against, and what
+    runs without numpy."""
+    if not _WHOLE:
+        try:
+            from . import mendnp
+            _WHOLE.append(mendnp)
+        except ImportError:
+            _WHOLE.append(None)
+    return _WHOLE[0]
 
 
 def _slide(values: list, r: int, pick) -> list:
@@ -138,14 +155,19 @@ class Gorge:
         self.step = step
         self.nx = max(1, math.ceil((box[2] + pad - self.x0) / step))
         self.ny = max(1, math.ceil((box[3] + pad - self.y0) / step))
+        r, w = max(1, round(reach / step)), round(wider / step)
+        arrays = whole_arrays()
+        if arrays is not None:
+            bits = arrays.gorge_bits(tms, self.x0, self.y0, self.nx, self.ny, step, r, deep, w)
+            if bits is not None:
+                self.bits = bits
+                return
         z = heights(tms, self.x0, self.y0, self.nx, self.ny, step)
         low = min((v for row in z for v in row if v is not None), default=0.0)
         z = [[low if v is None else v for v in row] for row in z]
-        r = max(1, round(reach / step))
         filled = _filter2(_filter2(z, r, max), r, min)
         hollow = [[1 if f - h > deep else 0 for f, h in zip(frow, zrow)] for frow, zrow in zip(filled, z)]
         del filled, z  # a whole map's grid is millions of numbers: only the answer is kept
-        w = round(wider / step)
         if w:
             hollow = _filter2(hollow, w, max)
         self.bits = bytearray(1 if v else 0 for row in hollow for v in row)
@@ -168,6 +190,10 @@ class Filled:
         self.old = Gorge(before, box, **kw)
         new = Gorge(after, box, **kw)
         self.x0, self.y0, self.step, self.nx, self.ny = self.old.x0, self.old.y0, self.old.step, self.old.nx, self.old.ny
+        arrays = whole_arrays()
+        if arrays is not None:
+            self.bits = arrays.filled_bits(self.old.bits, new.bits)
+            return
         self.bits = bytearray(a & (1 - b) for a, b in zip(self.old.bits, new.bits))
 
     def holds(self, x: float, y: float) -> bool:
@@ -192,11 +218,19 @@ class Filled:
         return sum(self.bits)
 
     def box(self) -> tuple[float, float, float, float] | None:
-        """The filled squares' bounds (x0, y0, x1, y1), or None for none (each row's first and last filled square
-        found by stripping its empty ones: a whole map's windows hold 18 million squares)."""
+        """The filled squares' bounds (x0, y0, x1, y1), or None for none (without numpy, each row's first and last
+        filled square found by stripping its empty ones: a whole map's windows hold 18 million squares)."""
+        s = self.step
+        arrays = whole_arrays()
+        if arrays is not None:
+            ends = arrays.bits_box(self.bits, self.nx, self.ny)
+            if ends is None:
+                return None
+            c0, r0, c1, r1 = ends
+            return self.x0 + c0 * s, self.y0 + r0 * s, self.x0 + (c1 + 1) * s, self.y0 + (r1 + 1) * s
         nx, rows, first, last = self.nx, [], None, None
         for j in range(self.ny):
-            row = self.bits[j * nx:(j + 1) * nx]
+            row = bytes(self.bits[j * nx:(j + 1) * nx])
             kept = row.rstrip(b"\0")
             if kept:
                 rows.append(j)
@@ -204,13 +238,17 @@ class Filled:
                 first, last = lo if first is None else min(first, lo), hi if last is None else max(last, hi)
         if not rows:
             return None
-        s = self.step
         return self.x0 + first * s, self.y0 + rows[0] * s, self.x0 + (last + 1) * s, self.y0 + (rows[-1] + 1) * s
 
 
 def wet_bits(tms, x0: float, y0: float, nx: int, ny: int, step: float) -> bytearray:
     """Where the mesh `tms` (rusemod.tms.Tms) has water (its water triangles, list 1) on an nx x ny grid from
     (x0, y0), `step` apart: 1 for a square whose middle is under water."""
+    arrays = whole_arrays()
+    if arrays is not None:
+        wet = arrays.wet_bits(tms, x0, y0, nx, ny, step)
+        if wet is not None:
+            return wet
     wet = bytearray(nx * ny)
     for c in tms.cells:
         tri = c.triangles(1)
@@ -240,6 +278,11 @@ def riverbeds_only(filled: Filled, wet: bytearray) -> int:
     is one now; mending it cost most of the time on a whole flattened map (all of Blitz: 3.16 km2 filled, 1.33 km2 of
     it reaching the water, 2026-10-04). Returns how many squares were let go."""
     nx, ny, bits = filled.nx, filled.ny, filled.bits
+    arrays = whole_arrays()
+    if arrays is not None:
+        gone = arrays.riverbeds_only(bits, wet, nx, ny)
+        if gone is not None:
+            return gone
     seen = bytearray(nx * ny)
     gone = 0
     for k in range(nx * ny):
@@ -314,6 +357,11 @@ class Riverbeds:
         pad = self.NEAR + 2 * c
         x0, y0 = box[0] - pad, box[1] - pad
         nx, ny = max(1, math.ceil((box[2] + pad - x0) / c)), max(1, math.ceil((box[3] + pad - y0) / c))
+        arrays = whole_arrays()
+        if arrays is not None:
+            self._near = (x0, y0, nx, ny, arrays.near_bits(self.parts.values(), x0, y0, nx, ny, c,
+                                                           math.ceil(self.NEAR / c) + 1))
+            return self._near
         rows = [[0] * nx for _ in range(ny)]
         for part in self.parts.values():
             s, pnx = part.step, part.nx
@@ -365,7 +413,11 @@ def _windows(before, box, areas) -> list[tuple[int, int, tuple[float, float, flo
     if not any(wet):
         return []
     r = max(1, math.ceil(NEAR_WATER / s))
-    near = _filter2([list(wet[j * nx:(j + 1) * nx]) for j in range(ny)], r, max)
+    arrays = whole_arrays()
+    if arrays is not None:
+        near = arrays.widened_rows(wet, nx, ny, r)
+    else:
+        near = _filter2([list(wet[j * nx:(j + 1) * nx]) for j in range(ny)], r, max)
     out = []
     cols, rows = math.ceil((box[2] - box[0]) / WINDOW), math.ceil((box[3] - box[1]) / WINDOW)
     for wj in range(rows):
@@ -413,6 +465,11 @@ class Plan:
         self.nx, self.ny, self.x0, self.y0, self.step = nx, ny, x0, y0, step
         n = nx * ny
         self.bad = bad
+        arrays = whole_arrays()
+        got = arrays.plan(nx, ny, fill, bad, smooth) if arrays is not None else None
+        if got is not None:
+            self.index, self.ux, self.uy, self.d1, self.width = got
+            return
         big = float("inf")
         sx, sy = array("i", [-1]) * n, array("i", [-1]) * n
         d2 = array("d", [big]) * n
@@ -625,6 +682,11 @@ def _mend_tile(store, tile, bounds, parts, samplers: dict, source, cache, quick:
     mine = _touches(store, tile, bounds, parts)
     if not mine:
         return None
+    arrays = whole_arrays()
+    if arrays is not None:  # all of its pixels at once: the same record (None: something only the loops below do)
+        record = arrays.mend_tile(sys.modules[__name__], store, tile, bounds, mine, samplers, source, cache, quick)
+        if record is not None:
+            return record or None
     rx0, ry0, rx1, ry1 = _tile_rect(store, tile, bounds)
     blocks, w, h = _blocks(store, tile, cache)
     pw, ph = (rx1 - rx0) / w, (ry1 - ry0) / h
@@ -659,11 +721,15 @@ def _mend_window(before, after, wi: int, wj: int, core) -> tuple:
         return wi, wj, None, None, 0
     dry = riverbeds_only(filled, wet_bits(before, filled.x0, filled.y0, filled.nx, filled.ny, filled.step))
     s, nx = filled.step, filled.nx
-    for k in range(nx * filled.ny):  # its own square only: the next window's squares are that window's
-        if filled.bits[k]:
-            x, y = filled.x0 + (k % nx + 0.5) * s, filled.y0 + (k // nx + 0.5) * s
-            if not (core[0] <= x < core[2] and core[1] <= y < core[3]):
-                filled.bits[k] = 0
+    arrays = whole_arrays()
+    if arrays is not None:  # its own square only: the next window's squares are that window's
+        arrays.keep_within(filled.bits, nx, filled.x0, filled.y0, s, core)
+    else:
+        for k in range(nx * filled.ny):
+            if filled.bits[k]:
+                x, y = filled.x0 + (k % nx + 0.5) * s, filled.y0 + (k // nx + 0.5) * s
+                if not (core[0] <= x < core[2] and core[1] <= y < core[3]):
+                    filled.bits[k] = 0
     if not filled.count():
         return wi, wj, None, None, dry
     return wi, wj, filled, plan_filled(filled), dry
@@ -674,9 +740,14 @@ WORKERS = max(1, min(8, (os.cpu_count() or 1) - 1))
 _WORK: dict = {}  # in a worker: what its jobs share (set by its starter)
 
 
-def _start_windows(before_raw: bytes, after_raw: bytes) -> None:
+def _start_windows(before_raw: bytes, after_raw: bytes, corners=None) -> None:
+    """`corners`: the two meshes' triangles as mendnp.corners_to_share read them (on whole grids), so no worker reads
+    them again."""
     from .tms import Tms
     _WORK["before"], _WORK["after"] = Tms(before_raw), Tms(after_raw)
+    arrays = whole_arrays()
+    if corners is not None and arrays is not None:
+        arrays.corners_shared(_WORK["before"], _WORK["after"], corners)
 
 
 def _window_job(job: tuple) -> tuple:
@@ -751,8 +822,11 @@ def mend_map(read, path_of, changed: dict, before, after, areas, cache=None, pac
     share = pack_file is not None and workers > 1 and len(jobs) > 1
     done, alone = [], []  # alone: why the workers couldn't do it (said: the same work then takes one core many times longer)
     if share:
+        arrays = whole_arrays()
+        corners = arrays.corners_to_share(before, after) if arrays is not None else None
         try:
-            with _pool(_start_windows, (before.to_bytes(), after.to_bytes()), min(workers, len(jobs))) as pool:
+            with _pool(_start_windows, (before.to_bytes(), after.to_bytes(), corners),
+                       min(workers, len(jobs))) as pool:
                 done = list(pool.map(_window_job, jobs))
         except Exception as exc:  # noqa: BLE001 - workers that can't start: the same work in this program
             share, done = False, []
@@ -832,6 +906,13 @@ def mend_detail_parts(raw: bytes, bounds, parts, source: bytes | None = None) ->
     if len(blocks) != w * h or len(old) != len(blocks):
         raise PaintError(f"the close-up map holds {len(blocks)} bytes, not {w}x{h} DXT5")
     x0, y0, x1, y1 = bounds
+    arrays = whole_arrays()
+    if arrays is not None:  # all of its pixels at once: the same blocks (None: something only the loops below do)
+        got = arrays.mend_detail(sys.modules[__name__], bytes(blocks), bytes(old), w, h, bounds, parts)
+        if got is not None:
+            if not got[1]:
+                return b"", []
+            return _tgv_with_payload(raw, zipo_pack(got[0])), [f"close-up map: {got[1]} block(s) mended"]
     pw, ph = (x1 - x0) / w, (y1 - y0) / h
     nbx = w // 4
     decoded: dict = {}

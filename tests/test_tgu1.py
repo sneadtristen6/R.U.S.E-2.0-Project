@@ -160,7 +160,7 @@ class Tgu1WholeArrays(unittest.TestCase):
         finally:
             importlib.reload(numpy2)
         self.assertIs(numpy2.np, numpy)
-        for name in ("tgu1np", "paintnp", "dxtnp"):  # none of them goes round it
+        for name in ("tgu1np", "paintnp", "dxtnp", "mendnp"):  # none of them goes round it
             text = (Path(tgu1.__file__).with_name(f"{name}.py")).read_text(encoding="utf-8")
             self.assertIn("from .numpy2 import np", text, name)
             self.assertNotIn("import numpy", text, name)

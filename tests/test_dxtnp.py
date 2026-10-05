@@ -63,6 +63,19 @@ class ManyBlocks(unittest.TestCase):
         self.assertEqual(dxtnp.encode_blocks(np.array([row], dtype=np.uint8)),
                          dxt.encode_block([(9, 200, 77)] * 16))
 
+    def test_each_block_as_encode_block_quick_packs_it(self):
+        """The quick packer (the riverbed mend's: the first pair of end colours only), many blocks at once."""
+        rows = made_up(random.Random(11), 5400)
+        together = dxtnp.encode_blocks_quick(np.array(rows, dtype=np.uint8))
+        self.assertEqual(len(together), 8 * len(rows))
+        differ = 0
+        for i, row in enumerate(rows):
+            pixels = [tuple(row[3 * k:3 * k + 3]) for k in range(16)]
+            self.assertEqual(together[8 * i:8 * i + 8], dxt.encode_block_quick(pixels), (i, i % 9, row))
+            differ += together[8 * i:8 * i + 8] != dxt.encode_block(pixels)
+        self.assertGreater(differ, 100)  # (not the full packer's blocks: the quick one's own)
+        self.assertEqual(dxtnp.encode_blocks_quick(np.zeros((0, 48), dtype=np.uint8)), b"")
+
 
 if __name__ == "__main__":
     unittest.main()

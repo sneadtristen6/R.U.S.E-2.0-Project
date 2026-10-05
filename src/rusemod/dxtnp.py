@@ -4,7 +4,9 @@
 Where two different pairs of end colours come out equally good, dxt.encode_block keeps the first it tried, in the
 order its set of pairs gives them: that order is asked of the same set here, block by block (a few steps each). A
 block whose colour axis shrank to nothing on the first try (it starts again from its farthest pixel there) is handed
-to dxt.encode_block whole."""
+to dxt.encode_block whole.
+
+encode_blocks_quick is dxt.encode_block_quick the same way: each block's first pair of end colours only."""
 from __future__ import annotations
 
 from . import dxt
@@ -46,9 +48,10 @@ def _first_tried(a: int, b: int, good: list) -> int:
     raise AssertionError("no pair of the set is marked")
 
 
-def _some(px):
-    """(c0, c1, word, left) for blocks that aren't one flat colour: px (n, 16, 3) int64. `left` marks the blocks to
-    give to dxt.encode_block whole."""
+def _ends(px):
+    """The two end colours (565) of blocks that aren't one flat colour, as dxt._endpoints and dxt._to565 give them:
+    px (n, 16, 3) int64. And `left`: the blocks whose colour axis shrank to nothing on the first try (dxt starts
+    those again from their farthest pixel: they are given to dxt's own packer whole)."""
     n = len(px)
     r, g, b = px[:, :, 0], px[:, :, 1], px[:, :, 2]
     mr, mg, mb = r.sum(axis=1) / 16, g.sum(axis=1) / 16, b.sum(axis=1) / 16
@@ -74,19 +77,34 @@ def _some(px):
     hi, lo = t.max(axis=1) / square, t.min(axis=1) / square
     a = _to565(mr + hi * ax, mg + hi * ay, mb + hi * az)
     b0 = _to565(mr + lo * ax, mg + lo * ay, mb + lo * az)
+    return a, b0, left
+
+
+def _tried(px, c0, c1):
+    """dxt.best_indices for each block with each of its pairs of end colours (c0 over c1, (n, pairs) each): (the
+    index words, the squared errors), (n, pairs) each."""
+    e = 0
+    for ch, (p0, p1) in enumerate(zip(_unpack565(c0), _unpack565(c1))):  # a channel at a time: (n, pairs, 16, 4)
+        pal = np.stack([p0, p1, (2 * p0 + p1 + 1) // 3, (p0 + 2 * p1 + 1) // 3], axis=2).astype(_S)
+        d = px[:, None, :, None, ch].astype(_S) - pal[:, :, None, :]
+        e = e + d * d
+    best = e.argmin(axis=3)  # (the first of equals, as there)
+    err = e.min(axis=3).sum(axis=2, dtype=_I)
+    word = (best.astype(_I) << _SHIFTS[None, None, :]).sum(axis=2)
+    return word, err
+
+
+def _some(px):
+    """(c0, c1, word, left) for blocks that aren't one flat colour: px (n, 16, 3) int64. `left` marks the blocks to
+    give to dxt.encode_block whole."""
+    n = len(px)
+    a, b0, left = _ends(px)
     # the pairs tried: the two ends as they are, and each nudged a step either way
     ca = np.stack([a + da for da, _db in _NUDGES], axis=1)
     cb = np.stack([b0 + db for _da, db in _NUDGES], axis=1)
     tried = (ca >= 0) & (ca <= 0xFFFF) & (cb >= 0) & (cb <= 0xFFFF) & (ca != cb)
     c0, c1 = np.maximum(ca, cb), np.minimum(ca, cb)  # (n, 9)
-    e = 0
-    for ch, (p0, p1) in enumerate(zip(_unpack565(c0), _unpack565(c1))):  # a channel at a time: (n, 9, 16, 4)
-        pal = np.stack([p0, p1, (2 * p0 + p1 + 1) // 3, (p0 + 2 * p1 + 1) // 3], axis=2).astype(_S)
-        d = px[:, None, :, None, ch].astype(_S) - pal[:, :, None, :]
-        e = e + d * d
-    best = e.argmin(axis=3)  # (the first of equals, as there)
-    err = e.min(axis=3).sum(axis=2, dtype=_I)  # (n, 9)
-    word = (best.astype(_I) << _SHIFTS[None, None, :]).sum(axis=2)
+    word, err = _tried(px, c0, c1)
     err = np.where(tried, err, np.iinfo(_I).max)
     least = err.min(axis=1)
     pick = err.argmin(axis=1)
@@ -103,8 +121,28 @@ def _some(px):
     return oc0, oc1, ow, left
 
 
+def _some_quick(px):
+    """_some for dxt.encode_block_quick: each block's first pair of end colours only, no nudging."""
+    a, b0, left = _ends(px)
+    c0, c1 = np.maximum(a, b0), np.minimum(a, b0)
+    word, _err = _tried(px, c0[:, None], c1[:, None])
+    return c0, c1, np.where(a == b0, 0, word[:, 0]), left  # (both ends one colour: that colour, flat)
+
+
 def encode_blocks(rows) -> bytes:
     """dxt.encode_block for each row of `rows` ((n, 48) uint8: 16 RGB pixels, row-major): n x 8 bytes."""
+    return _packed(rows, _some, dxt.encode_block)
+
+
+def encode_blocks_quick(rows) -> bytes:
+    """dxt.encode_block_quick for each row of `rows`, as encode_blocks: the same 8 bytes each (for the riverbed mend,
+    rusemod.mendnp)."""
+    return _packed(rows, _some_quick, dxt.encode_block_quick)
+
+
+def _packed(rows, some, one) -> bytes:
+    """Each row's block: the flat ones at once, the others through `some` (many together), the ones it leaves through
+    `one` (dxt's own packer, a block at a time)."""
     n = len(rows)
     px = np.asarray(rows, dtype=np.uint8).reshape(n, 16, 3).astype(_I)
     out = np.zeros(n, dtype=[("c0", "<u2"), ("c1", "<u2"), ("word", "<u4")])
@@ -115,10 +153,10 @@ def encode_blocks(rows) -> bytes:
     own = []
     for at in range(0, len(todo), CHUNK):
         part = todo[at:at + CHUNK]
-        c0, c1, word, left = _some(px[part])
+        c0, c1, word, left = some(px[part])
         out["c0"][part], out["c1"][part], out["word"][part] = c0, c1, word
         own += part[left].tolist()
     raw = bytearray(out.tobytes())
     for i in own:
-        raw[8 * i:8 * i + 8] = dxt.encode_block([tuple(p) for p in px[i].tolist()])
+        raw[8 * i:8 * i + 8] = one([tuple(p) for p in px[i].tolist()])
     return bytes(raw)

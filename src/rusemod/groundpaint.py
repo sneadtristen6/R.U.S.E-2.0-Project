@@ -652,10 +652,11 @@ def whole_arrays():
 
 
 def whole_grids() -> str:
-    """For the apps' self-test: the sums on whole grids are there (numpy: rusemod.paintnp, dxtnp and tgu1np). An
-    installed app must carry them (a map painted across kilometres takes hours without, not minutes); from the repo
-    it only says which way the work goes."""
-    if whole_arrays() is None or tgu1.whole_arrays() is None:
+    """For the apps' self-test: the sums on whole grids are there (numpy: rusemod.paintnp, dxtnp, tgu1np and mendnp).
+    An installed app must carry them (a map painted across kilometres takes hours without, not minutes); from the
+    repo it only says which way the work goes."""
+    from . import mend
+    if whole_arrays() is None or tgu1.whole_arrays() is None or mend.whole_arrays() is None:
         from .update import installed_app
         if installed_app():
             raise RuntimeError("numpy isn't in this copy of the app: maps would be painted pixel by pixel")
