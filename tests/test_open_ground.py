@@ -1,6 +1,7 @@
 """The open brushes (rusemod.nav, Graph.open_ground): ground given back to units where a made-up map's movement has
 none, the reverse of a block, in the main graph and in a town's own local map; blocks and opens in order; the warning
 for water; the files; the AI grid following."""
+import math
 import struct
 import tomllib
 import unittest
@@ -100,6 +101,46 @@ class InOrder(unittest.TestCase):
             self.assertEqual(len(g.parts()), 1)
         self.assertEqual(idle, [])
         self.assertTrue(any("1 open(s)" in n for n in notes), notes)
+
+    def test_spare_opens_give_way_when_the_graph_is_full(self):
+        """The build's own opens over a dried bed (Block.spare): when the map's movement can't hold every open of a
+        run, the smallest spare ones are left out (those under twice the smallest's radius, then four times), the
+        opens a modder drew stay, and a note says what was left closed; a spare open isn't told of one by one."""
+        from unittest import mock
+        drawn = nav.Block(12500.0, 2000.0, 2560.0, open=True)  # past the row's end: a modder's own
+        beds = [nav.Block(7000.0, 8000.0, 5120.0, "all", True, True), nav.Block(14000.0, 14000.0, 1280.0, "all", True, True),
+                nav.Block(3000.0, 13000.0, 2560.0, "all", True, True)]
+        real = nav.Graph.open_ground
+        asked = []
+
+        def room_for(most):
+            def open_ground(graph, zones):
+                live = sorted(z[2] for z in zones if z[2] > 0)
+                asked.append(live)
+                if len(live) > most:
+                    raise nav.NavError("the graph would be too big for its 16-bit numbers")
+                return real(graph, zones)
+            return open_ground
+        with mock.patch.object(nav.Graph, "open_ground", room_for(2)):
+            inf, veh, idle, notes = self.graphs([drawn] + beds)
+        self.assertEqual(asked[:3], [[1280.0, 2560.0, 2560.0, 5120.0], [2560.0, 2560.0, 5120.0], [2560.0, 5120.0]])
+        self.assertEqual(len(asked), 6)  # the same three tries for the vehicles' graph
+        for g in (inf, veh):
+            self.assertTrue(g.walkable(13500.0, 2000.0))  # the modder's open
+            self.assertTrue(g.walkable(7000.0, 8000.0))   # the widest of the bed
+            self.assertFalse(g.walkable(14000.0, 14000.0))
+            self.assertEqual(len(g.parts()), 1)
+        self.assertEqual(idle, [])  # (the spare opens left out aren't told of one by one)
+        said = [n for n in notes if "no room for all of the dried bed" in n]
+        self.assertEqual(len(said), 2, notes)
+        self.assertIn("the 2 smallest of its zones (under 20 m", said[0])
+        del asked[:]
+        with mock.patch.object(nav.Graph, "open_ground", room_for(0)), self.assertRaises(nav.NavError):
+            self.graphs([drawn] + beds)  # not even the modder's own fits: the refusal stands
+        self.assertEqual(asked[-1], [2560.0])  # after trying without every spare one
+        with mock.patch.object(nav.Graph, "open_ground", room_for(0)), self.assertRaises(nav.NavError):
+            self.graphs([drawn])  # no spare open: refused at once
+        self.assertEqual(asked[-1], [2560.0])
 
     def test_a_block_after_an_open_wins(self):
         opened = nav.Block(10000.0, 2000.0, 2000.0, open=True)  # open already: nothing to do
@@ -252,6 +293,62 @@ class AiGrid(unittest.TestCase):
         self.assertTrue(notes and "clearance on" in notes[0])
 
 
+class KeptMovement(unittest.TestCase):
+    """build._kept_movement: a map's movement is kept between builds (rusemod.mapkeep, kind "movement"), so a build
+    whose blocks and opens are the same as an earlier one's doesn't make it again (opening a drained sea takes
+    minutes)."""
+
+    def test_the_same_blocks_and_opens_take_the_movement_from_the_keep(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from rusemod import build, mapkeep
+        from rusemod.cover import member
+        read = {member("Blitz"): win_of(row())}.get
+        nothing = nav.Block(2000.0, 2000.0, 1500.0, open=True)  # open already: it opens nothing
+        blocks = [nav.Block(10000.0, 2000.0, 400.0), nav.Block(12500.0, 2000.0, 2560.0, open=True), nothing]
+        real = nav.apply_blocks
+        made = []
+
+        def counted(*args, **kwargs):
+            made.append(1)
+            return real(*args, **kwargs)
+        want_idle: list = []
+        want = real(read, "Blitz", blocks, want_idle)
+        self.assertIn(nothing, want_idle)
+        with tempfile.TemporaryDirectory() as cache, mock.patch.object(nav, "apply_blocks", counted):
+            idle: list = []
+            self.assertEqual(build._kept_movement(read, "Blitz", blocks, idle, cache), want)
+            self.assertEqual((len(made), idle), (1, want_idle))
+            self.assertEqual(len(list(Path(cache, mapkeep.FOLDER).glob("movement-*.bin"))), 1)
+            same = [nav.Block(b.x, b.y, b.radius, b.units, b.open) for b in blocks]  # the same, read again
+            idle = []
+            self.assertEqual(build._kept_movement(read, "Blitz", same, idle, cache), want)
+            self.assertEqual(len(made), 1)             # taken from the keep
+            self.assertEqual(idle, [same[blocks.index(b)] for b in want_idle])  # with the opens that opened nothing
+            build._kept_movement(read, "Blitz", blocks + [nav.Block(7000.0, 2000.0, 300.0)], [], cache)
+            self.assertEqual(len(made), 2)             # one block more: made again
+            build._kept_movement(read, "Blitz", blocks[::-1], [], cache)
+            self.assertEqual(len(made), 3)             # another order: made again (the later one wins)
+            other = {member("Blitz"): win_of(row(), size=16320.0)}.get
+            build._kept_movement(other, "Blitz", blocks, [], cache)
+            self.assertEqual(len(made), 4)             # another movement file: made again
+            build._kept_movement(read, "Blitz", blocks, [], None)
+            self.assertEqual(len(made), 5)             # no cache: made every time
+            kept = sorted(Path(cache, mapkeep.FOLDER).glob("movement-*.bin"))
+            for f in kept:
+                f.write_bytes(f.read_bytes()[:-5] + b"wrong")
+            self.assertEqual(build._kept_movement(read, "Blitz", blocks, [], cache), want)
+            self.assertEqual(len(made), 6)             # a damaged keep: made again
+
+            def refuses(*_args, **_kwargs):
+                raise nav.NavError("the graph would be too big for its 16-bit numbers")
+            before = len(list(Path(cache, mapkeep.FOLDER).glob("movement-*.bin")))
+            with mock.patch.object(nav, "apply_blocks", refuses), self.assertRaises(nav.NavError):
+                build._kept_movement(read, "Blitz", [nav.Block(9000.0, 2000.0, 350.0)], [], cache)
+            self.assertEqual(len(list(Path(cache, mapkeep.FOLDER).glob("movement-*.bin"))), before)  # not kept
+
+
 class DriedBeds(unittest.TestCase):
     """A river the terrain edits dried (raised ground) is opened to units: the build's zones over its samples (a D-Day
     test: tanks couldn't cross a dried stretch of river)."""
@@ -270,6 +367,34 @@ class DriedBeds(unittest.TestCase):
         self.assertTrue(all(x + r <= 20480 for x, _y, r in near_water))
         self.assertTrue(all(r in BED_RADII for _x, _y, r in near_water))
         self.assertEqual(_bed_circles([(0.0, 0.0)], lambda x, y: True), [])  # all water around: nothing to open
+
+    def test_a_wide_bed_takes_the_wide_zones_first_and_small_ones_only_at_its_edges(self):
+        """A lake or a sea drained (nav.water_blocks's `wide` zones): a sample inside a wide zone gets no zone of its
+        own, the rest get theirs as before, and on a graph the bed opens with a circle as big as the zone, linked to
+        the ground beside it, where zones of 15 m at most took hundreds."""
+        from rusemod.build import BED_MOST, BED_RADII, _bed_circles
+        bed = [(float(x), float(y)) for x in range(0, 128000, 3200) for y in range(0, 128000, 3200)]  # 1,600 samples
+        wide = [(64000.0, 64000.0, 60000.0), (9600.0, 9600.0, 9600.0)]
+        self.assertLessEqual(max(r for _x, _y, r in wide), BED_MOST)
+        zones = _bed_circles(bed, None, wide)
+        self.assertEqual(zones[:2], wide)  # the wide ones first, as given
+        small = zones[2:]
+        self.assertTrue(small and all(r in BED_RADII for _x, _y, r in small))
+        self.assertFalse(any(math.hypot(x - a, y - b) < c for x, y, _r in small for a, b, c in wide))  # at the edges
+        held = [p for p in bed if any((p[0] - x) ** 2 + (p[1] - y) ** 2 <= r * r for x, y, r in zones)]
+        self.assertEqual(len(held), len(bed))  # every sample is in a zone
+        self.assertLess(len(zones), len(_bed_circles(bed)) // 3)
+        self.assertEqual(_bed_circles(bed, None, []), _bed_circles(bed))  # no wide stretch: as before
+        g = made([(-20000.0, 64000.0, 26000.0)], [])  # a field west of the bed
+        counts = g.open_ground(zones)
+        self.assertGreater(counts["added"], 0)
+        self.assertTrue(any(r >= 57600.0 for _x, _y, r in (c[:3] for c in g.circles[:-1])))  # one circle for the middle
+        self.assertTrue(g.walkable(64000.0, 64000.0) and g.walkable(100000.0, 64000.0))
+        self.assertEqual(len(g.parts()), 1)
+        few = sum(1 for c in g.circles[:-1] if c[2] > 0)
+        h = made([(-20000.0, 64000.0, 26000.0)], [])
+        h.open_ground(_bed_circles(bed))
+        self.assertLess(few, sum(1 for c in h.circles[:-1] if c[2] > 0) // 2)  # (the corners keep small zones here)
 
     def test_opened_on_a_graph(self):
         from rusemod.build import _bed_circles

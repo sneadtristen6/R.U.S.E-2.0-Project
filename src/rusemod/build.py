@@ -314,6 +314,8 @@ def _paint_brushes(info) -> None:
 
 
 BED_RADII = (3840.0, 2560.0, 1920.0, 1280.0)  # down to nav.MIN_RADIUS: a new movement circle fits in one of these
+BED_MOST = 81600.0  # the widest zone over a wide dried bed (nav.water_blocks's `wide`): 255 nav.STEPs. The shipped
+                    # maps' own circles go up to 135,040 (M04_Cotentin), and 81,600 is on that map twice
 
 
 def cleared_woods(erasing: dict) -> tuple[dict, dict]:
@@ -395,23 +397,72 @@ class _LowestPoints:
             self.lib = None
 
 
-def _bed_circles(drained: list[tuple[float, float]], wet=None) -> list[tuple[float, float, float]]:
+def _bed_circles(drained: list[tuple[float, float]], wet=None, wide=None) -> list[tuple[float, float, float]]:
     """Open zones (x, y, r) over a dried bed's samples (nav.water_blocks), for Graph.open_ground, which puts each new
     circle inside one zone and none smaller than nav.MIN_RADIUS: so each zone is one of BED_RADII, centred on a sample
     no zone holds yet, the largest whose middle and rim (8 points) aren't under water now (`wet(x, y)`; the ends of a
-    bed meet the water left). A bed too narrow for the smallest stays closed."""
+    bed meet the water left). A bed too narrow for the smallest stays closed.
+
+    A zone holds no sample as far away as the largest radius, so each sample is looked at against the zones in its
+    square of that side and the 8 round it only: the same zones as looking at all of them (a map drained across
+    kilometres has a hundred thousand).
+
+    `wide`: water_blocks's zones over the wide stretches (up to BED_MOST), which come first: a sample inside one needs
+    no zone of its own. A sea drained (the owner's M04_Cotentin, 2026-10-04: 255,466 samples) is then 2,790 zones,
+    which the map's movement holds; as zones of BED_RADII alone it was 255,117, a hundred times what it holds."""
     zones: list[tuple[float, float, float]] = []
+    side = max(BED_RADII)
+    near: dict[tuple[int, int], list[tuple[float, float, float]]] = {}
+    wide = list(wide or [])
+    over: dict[tuple[int, int], list[tuple[float, float, float]]] = {}  # the wide zones, by where their middles are
+    for zone in wide:
+        over.setdefault((int(zone[0] // BED_MOST), int(zone[1] // BED_MOST)), []).append(zone)
 
     def dry(x, y, r) -> bool:
         return wet is None or not any(wet(x + r * c, y + r * s) for c, s in
                                       ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (.7, .7), (.7, -.7), (-.7, .7), (-.7, -.7)))
     for x, y in sorted(drained):
-        if any((x - zx) ** 2 + (y - zy) ** 2 < (zr * 0.7) ** 2 for zx, zy, zr in zones):
+        if over:
+            a, b = int(x // BED_MOST), int(y // BED_MOST)
+            if any((x - zx) ** 2 + (y - zy) ** 2 < zr * zr
+                   for da in (-1, 0, 1) for db in (-1, 0, 1) for zx, zy, zr in over.get((a + da, b + db), ())):
+                continue
+        i, j = int(x // side), int(y // side)
+        if any((x - zx) ** 2 + (y - zy) ** 2 < (zr * 0.7) ** 2
+               for di in (-1, 0, 1) for dj in (-1, 0, 1) for zx, zy, zr in near.get((i + di, j + dj), ())):
             continue
         r = next((r for r in BED_RADII if dry(x, y, r)), None)
         if r is not None:
             zones.append((x, y, r))
-    return zones
+            near.setdefault((i, j), []).append((x, y, r))
+    return wide + zones
+
+
+def _kept_movement(read_data, name: str, blocks: list, idle: list, cache) -> tuple[dict, list[str]]:
+    """nav.apply_blocks for a map, its answer kept between builds (rusemod.mapkeep, kind "movement"): named by a
+    fingerprint of the map's movement file as the build has it, its blocks and opens in their order, and the code. A
+    map whose blocks and opens are the same as an earlier build's takes its movement from there: opening a drained
+    sea takes minutes (the owner's M04_Cotentin, 2026-10-04), and every build made it again. A refusal isn't kept."""
+    import hashlib
+    from . import mapkeep
+    from .cover import member
+    from .nav import apply_blocks
+    k = None
+    if cache is not None:
+        win = read_data(member(name))
+        if win is not None:
+            k = mapkeep.key(name, ["movement", hashlib.blake2b(win, digest_size=20).hexdigest()], blocks, None)
+    kept = mapkeep.read(cache, k, "movement")
+    if kept is not None and isinstance(kept.get("notes"), list) and isinstance(kept.get("idle"), list) \
+            and all(type(i) is int and 0 <= i < len(blocks) for i in kept["idle"]):
+        idle += [blocks[i] for i in kept["idle"]]
+        return kept["members"], list(kept["notes"])
+    mine: list = []
+    new, notes = apply_blocks(read_data, name, blocks, mine)
+    idle += mine
+    places = {id(b): i for i, b in enumerate(blocks)}
+    mapkeep.write(cache, k, {"members": new, "notes": list(notes), "idle": [places[id(b)] for b in mine]}, "movement")
+    return new, notes
 
 
 def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs, find_map=None) -> list:
@@ -1364,53 +1415,91 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     return Ndf(bytes(a.read(e))) if e is not None else None
                 return max_depth(nd)
 
-            try:
-                changed_members, notes = edit_map(read, strokes, name, max_depth_of=depth_of)
-            except (ValueError, struct.error, zlib.error) as exc:
-                result.findings.append(Finding("error", f"{map_path.name}: its ground files can't be read ({exc})"))
-                continue
-            say(f"terrain: {name}, from {', '.join(ids)}")
-            for note in notes:
-                say(f"  {note}")
-            from .terrain_edit import FILES as GROUND, _area_of
-            before = read(GROUND["highdef"]) if GROUND["highdef"] in changed_members else None
-            if before is not None:  # ground under water is never walkable on a shipped map: new water is blocked
+            def make_ground(read=read, depth=depth_of, map_arc=map_arc, map_path=map_path, name=name, strokes=strokes,
+                            ids=ids) -> dict | None:
+                """The map's new ground: its files, the lines said about it, the new water's blocks and the drained
+                beds' circles, the filled hollows, warnings. None after an error (said in the findings)."""
+                try:
+                    changed_members, notes = edit_map(read, strokes, name, max_depth_of=depth)
+                except (ValueError, struct.error, zlib.error) as exc:
+                    result.findings.append(Finding("error", f"{map_path.name}: its ground files can't be read ({exc})"))
+                    return None
+                made = {"members": changed_members, "lines": [f"  {note}" for note in notes], "zones": [],
+                        "beds": [], "filled": None, "warnings": []}
+                from .terrain_edit import FILES as GROUND, _area_of
+                before = read(GROUND["highdef"]) if GROUND["highdef"] in changed_members else None
+                if before is None:
+                    return made
+                # ground under water is never walkable on a shipped map: new water is blocked
                 from .bridges import Water
-                from .nav import Block, water_blocks
+                from .nav import water_blocks
                 from .tms import Tms
                 try:
                     now_at = Water(Tms(changed_members[GROUND["highdef"]])).at
-                    zones, drained = water_blocks(Water(Tms(before)).at, now_at, [_area_of(s) for s in strokes])
+                    wide: list = []  # zones over the wide stretches of a dried bed (a lake, a sea)
+                    zones, drained = water_blocks(Water(Tms(before)).at, now_at, [_area_of(s) for s in strokes],
+                                                  wide, max(BED_RADII), BED_MOST)
                 except (ValueError, struct.error, zlib.error) as exc:
                     result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: where the terrain edits put "
                                                             f"water can't be worked out ({exc}), so units could walk "
                                                             f"on the bed of new water"))
-                    continue
+                    return {**made, "failed": True}  # its lines are said, as before; the map isn't changed
                 if zones:
-                    flooded[name] = ([Block(x, y, r, "all") for x, y, r in zones], ids)
-                    say(f"  {name}: {len(zones)} block(s) over the new water, so units keep out of it")
+                    made["zones"] = list(zones)
+                    made["lines"].append(f"  {name}: {len(zones)} block(s) over the new water, so units keep out of it")
                 if drained:  # a dried bed: the map's movement has no ground there, so it's opened to units
-                    beds[name] = ([Block(x, y, r, "all", True) for x, y, r in _bed_circles(drained, now_at)], ids)
+                    made["beds"] = list(_bed_circles(drained, now_at, wide))
                     mx, my = (sum(p[k] for p in drained) / len(drained) for k in (0, 1))
-                    say(f"  {name}: water drained around ({mx:.0f}, {my:.0f}): its bed opened to units "
-                        f"({len(beds[name][0])} circle(s))")
+                    made["lines"].append(f"  {name}: water drained around ({mx:.0f}, {my:.0f}): its bed opened to "
+                                         f"units ({len(made['beds'])} circle(s))")
                 # a riverbed raised flat still shows its old banks: up close the river's rock stickers and the low
                 # cover laid for it, from high up the banks painted in the picture (TESTS.md T27). Its pictures are
                 # mended from both banks here, its low cover taken off with the scenery below (T28: "purple wins")
+                from .mapkeep import plain_file
                 from .mend import mend_map
                 try:
                     filled, more = mend_map(read, lambda m, a=map_arc: a.find(m).path, changed_members, Tms(before),
                                             Tms(changed_members[GROUND["highdef"]]), [_area_of(s) for s in strokes],
-                                            cache)
+                                            cache, pack_file=plain_file(map_arc))
                 except (ValueError, KeyError, struct.error, zlib.error) as exc:
-                    result.findings.append(Finding("warning", f"{', '.join(ids)}: {name}: the riverbeds the terrain "
-                                                              f"edits fill can't be mended ({exc}): they keep their old "
-                                                              f"banks' look"))
+                    made["warnings"].append(f"{', '.join(ids)}: {name}: the riverbeds the terrain edits fill can't "
+                                            f"be mended ({exc}): they keep their old banks' look")
                     filled, more = None, []
-                for note in more:
-                    say(f"  {name}: {note}")
-                if filled is not None:
-                    filled_hollows[name] = (filled, ids)
+                made["lines"] += [f"  {name}: {note}" for note in more]
+                made["filled"] = filled
+                return made
+
+            # a map reshaped the same way as in an earlier build: its ground as that build made it (rusemod.mapkeep;
+            # a map flattened across kilometres takes many minutes to make)
+            from . import mapkeep
+            keep_key = None
+            if cache is not None:
+                try:
+                    depth = depth_of()
+                    keep_key = mapkeep.key(name, mapkeep.pack_identity(map_arc, map_path), strokes, depth)
+                except Exception:  # noqa: BLE001 - nothing to tell it by: the map is made as before, and not kept
+                    keep_key = None
+            made = mapkeep.read(cache, keep_key)
+            if made is None:
+                made = make_ground()
+                if made is None:
+                    continue
+                if not made["warnings"] and not made.get("failed"):
+                    mapkeep.write(cache, keep_key, made)
+            say(f"terrain: {name}, from {', '.join(ids)}")
+            for line in made["lines"]:
+                say(line)
+            if made.get("failed"):
+                continue
+            result.findings += [Finding("warning", w) for w in made["warnings"]]
+            from .nav import Block
+            if made["zones"]:
+                flooded[name] = ([Block(x, y, r, "all") for x, y, r in made["zones"]], ids)
+            if made["beds"]:
+                beds[name] = ([Block(x, y, r, "all", True, True) for x, y, r in made["beds"]], ids)
+            if made["filled"] is not None:
+                filled_hollows[name] = (made["filled"], ids)
+            changed_members = made["members"]
             if changed_members:
                 map_packs.append((map_path, map_arc, changed_members))
                 result.terrain_changed[map_path.name] = changed_members
@@ -1641,6 +1730,14 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 sizes = None  # an erase by size (Map Paint's clearing, filled riverbeds): how far each type reaches
                 strokes = painting.get(name, ([], []))[0]
                 from .scenery import low_cover, model_reach, sticker_reach
+                names_read: list = []
+
+                def map_names() -> list:
+                    """The map's type names, its scenery read once (whole, for them) for the paint, the riverbeds and
+                    the erase: `raw` stays as it is until the erase."""
+                    if not names_read:
+                        names_read.append(Scenery(raw).names)
+                    return names_read[0]
 
                 def reach_of(low):
                     """How far each of the map's low types reaches (measured once a build)."""
@@ -1662,7 +1759,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     from .groundpaint import paint_clearing
                     if descs is None:
                         descs = descriptors(arc)
-                    low = low_cover(descs, set(Scenery(raw).names))
+                    low = low_cover(descs, set(map_names()))
                     under = paint_clearing(strokes, low)
                     if under:
                         areas = list(areas) + under
@@ -1670,29 +1767,45 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         sunk = sunk + [f"Map Paint: what hides it up close taken off under {len(under)} stroke(s) "
                                        f"(ground stickers, low plants and stones reaching where it is at least half "
                                        f"strength; trees, buildings, cover and movement unchanged)"]
+                beds_area = []  # the filled riverbeds' clearing: the build's own, so it gives way when the map is full
                 if name in filled_hollows:
                     # a riverbed raised flat: the river's rock stickers make jagged rock on it up close (T27), and
                     # the field it becomes shows only with all its low cover gone (T28: "purple wins")
                     from .scenery import EraseArea
                     if descs is None:
                         descs = descriptors(arc)
-                    low = low_cover(descs, set(Scenery(raw).names))
+                    low = low_cover(descs, set(map_names()))
                     filled = filled_hollows[name][0]
                     fx0, fy0, fx1, fy1 = filled.box()
-                    areas = list(areas) + [EraseArea((fx0 + fx1) / 2, (fy0 + fy1) / 2, max(fx1 - fx0, fy1 - fy0) / 2,
-                                                     ("decal",), tuple(low), shape="square", by_size=True,
-                                                     mask=filled.touches)]
+                    beds_area = [EraseArea((fx0 + fx1) / 2, (fy0 + fy1) / 2, max(fx1 - fx0, fy1 - fy0) / 2,
+                                           ("decal",), tuple(low), shape="square", by_size=True, mask=filled.touches)]
                     sizes = reach_of(low)
-                    sunk = sunk + ["filled riverbeds: the ground stickers, low plants and stones reaching into them "
-                                   "taken off (trees, buildings, cover and movement unchanged)"]
                 erased_notes, erased = [], {}
-                if areas:  # the map's own scenery out first: the new objects then stay whatever the areas cover
-                    if descs is None:
+                if areas or beds_area:  # the map's own scenery out first: the new objects then stay whatever the
+                    if descs is None:  # areas cover
                         descs = descriptors(arc)
-                    names = Scenery(raw).names
+                    names = map_names()
                     kinds = {i: descs[n].group for i, n in enumerate(names) if n in descs}
                     bridges = {i for i, n in enumerate(names) if n in descs and descs[n].bridge}
-                    raw, erased_notes, erased = erase_objects(raw, areas, kinds, bridges, sizes)
+                    try:
+                        raw_after, erased_notes, erased = erase_objects(raw, list(areas) + beds_area, kinds, bridges,
+                                                                        sizes)
+                        if beds_area:
+                            sunk = sunk + ["filled riverbeds: the ground stickers, low plants and stones reaching "
+                                           "into them taken off (trees, buildings, cover and movement unchanged)"]
+                    except SceneryEditError:
+                        if not beds_area:
+                            raise
+                        # the clearing would make the map's scenery too big (all of Blitz Twin flattened: 20.8 MB of
+                        # a 16.7 MB most, 2026-10-04): the riverbeds keep their low cover, the rest is erased as asked
+                        result.findings.append(Finding("warning", f"{', '.join(ids)}: {name}: the filled riverbeds' "
+                                                                  f"ground stickers, low plants and stones stay: taking "
+                                                                  f"them off would make the map's scenery bigger than a "
+                                                                  f"map can hold. Their pictures are mended all the "
+                                                                  f"same"))
+                        raw_after, erased_notes, erased = (erase_objects(raw, areas, kinds, bridges, sizes)
+                                                           if areas else (raw, [], {}))
+                    raw = raw_after
                 if descs is None:
                     descs = descriptors(arc)
                 lowest = _LowestPoints(game, descs)
@@ -1783,12 +1896,22 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 except KeyError:
                     return None
                 return done.get(e.path) or bytes(a.read(e))
-            from .groundpaint import DETAIL, PaintError, paint_ground
-            try:
-                painted, notes = paint_ground(read_map, lambda m, a=map_arc: a.find(m).path, strokes, cache)
-            except (PaintError, ValueError, KeyError, struct.error, zlib.error) as exc:
-                result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the paint can't be laid ({exc})"))
-                continue
+            from . import mapkeep
+            from .groundpaint import DETAIL, PaintError, paint_ground, paint_inputs
+            # the same paint on the same ground as an earlier build: its pictures from the build cache (a map painted
+            # all over takes many minutes), kept like a reshaped map (rusemod.mapkeep)
+            paint_k = mapkeep.key(name, ["paint", paint_inputs(read_map)], strokes, None) if cache is not None else None
+            kept = mapkeep.read(cache, paint_k)
+            if kept is not None and isinstance(kept.get("notes"), list):
+                painted, notes = kept["members"], kept["notes"]
+            else:
+                try:
+                    painted, notes = paint_ground(read_map, lambda m, a=map_arc: a.find(m).path, strokes, cache)
+                except (PaintError, ValueError, KeyError, struct.error, zlib.error) as exc:
+                    result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the paint can't be laid "
+                                                            f"({exc})"))
+                    continue
+                mapkeep.write(cache, paint_k, {"members": painted, "notes": notes})
             changed_members.update(painted)
             say(f"paint: {name}, from {', '.join(ids)}: {len(strokes)} stroke(s) on the ground's picture")
             for note in notes:
@@ -1869,7 +1992,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         if moves or paints or blocks or new_roads or bridge_spans or players or data_new:
             from .bridges import BridgeError, apply_spans
             from .cover import CoverError, apply_paints
-            from .nav import NavError, apply_blocks, closing
+            from .nav import NavError, closing
             from .roadnet import RoadNetError, apply_roads
             from .scenario import PACK as SCENARIO_PACK, ScenarioError, apply_moves
             data_path = find_pack(game, SCENARIO_PACK)
@@ -1984,7 +2107,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 for name, (map_blocks, ids) in blocks.items():
                     idle: list = []
                     try:
-                        new, notes = apply_blocks(read_data, name, map_blocks, idle)
+                        new, notes = _kept_movement(read_data, name, map_blocks, idle, cache)
                     except (NavError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
@@ -1997,7 +2120,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                             f"{', '.join(ids)}: {name}: the open at ({b.x:.0f}, {b.y:.0f}) opened nothing: units "
                             f"could already go there, or it is too small (an open needs a radius of 5 m or more) or "
                             f"out of reach of the ground they use")))
-                    for b, (wx, wy) in _wet_opens(open_pack, game, name, map_blocks, map_packs, find_map):
+                    drawn = [b for b in map_blocks if not b.spare]  # (the build's own bed opens keep off the water)
+                    for b, (wx, wy) in _wet_opens(open_pack, game, name, drawn, map_packs, find_map):
                         result.findings.append(Finding("warning", (
                             f"{', '.join(ids)}: {name}: the open at ({b.x:.0f}, {b.y:.0f}) takes in water (at "
                             f"({wx:.0f}, {wy:.0f})): units there stand on the ground under it, on the riverbed or "

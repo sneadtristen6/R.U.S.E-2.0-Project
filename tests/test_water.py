@@ -3,9 +3,10 @@ on made-up meshes (tests/test_tms.py builds them)."""
 import unittest
 
 from rusemod.brush import BrushError, parse_strokes
-from rusemod.tms import Tms
+from rusemod.tms import Q_MAX, Tms
 from rusemod.tmst import make_tgv, zipo_pack
-from rusemod.water import CASE, TEXTURES, TILE, _both, _cell, _pixels, apply_water, update_textures
+from rusemod.water import (CASE, SAMPLES, TEXTURES, TILE, _both, _cell, _pixels, _texels, apply_water,
+                           update_textures)
 
 from test_tms import make_tms
 
@@ -169,6 +170,191 @@ class TextureTiles(unittest.TestCase):
         corner = (1 * TILE * cols * TILE + 2 * TILE) * 4  # that tile's first texel: the cell's column and row
         self.assertEqual((new_inp[corner], new_inp[corner + 3]), (1, 2))
         self.assertEqual(new_inp[corner + 2], 5)          # its depth: 255 * 20 / 1000
+
+
+# --- the texels as they were worked out sample by sample, kept here to check the quicker way against, to the bit ---
+def plain_cell(tris, col, row, max_depth):
+    n = TILE * SAMPLES
+    h = CASE / n
+    depth = [[0.0] * n for _ in range(n)]
+    level = [[0.0] * n for _ in range(n)]
+    wet = [[False] * n for _ in range(n)]
+    x0, y0 = col * CASE, row * CASE
+    for (a, b, c), d, w in tris:
+        den = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1])
+        if den == 0:
+            continue
+        i0 = max(int((min(a[0], b[0], c[0]) - x0) / h - 0.5), 0)
+        i1 = min(int((max(a[0], b[0], c[0]) - x0) / h + 0.5), n - 1)
+        j0 = max(int((min(a[1], b[1], c[1]) - y0) / h - 0.5), 0)
+        j1 = min(int((max(a[1], b[1], c[1]) - y0) / h + 0.5), n - 1)
+        for j in range(j0, j1 + 1):
+            py = y0 + (j + 0.5) * h
+            for i in range(i0, i1 + 1):
+                if wet[j][i]:
+                    continue
+                px = x0 + (i + 0.5) * h
+                l1 = ((b[1] - c[1]) * (px - c[0]) + (c[0] - b[0]) * (py - c[1])) / den
+                l2 = ((c[1] - a[1]) * (px - c[0]) + (a[0] - c[0]) * (py - c[1])) / den
+                l3 = 1.0 - l1 - l2
+                if l1 >= -1e-9 and l2 >= -1e-9 and l3 >= -1e-9:
+                    wet[j][i] = True
+                    depth[j][i] = l1 * d[0] + l2 * d[1] + l3 * d[2]
+                    level[j][i] = l1 * w[0] + l2 * w[1] + l3 * w[2]
+    red, share, mean = [], [], []
+    for ty in range(TILE):
+        for tx in range(TILE):
+            r = k = 0
+            lv = 0.0
+            for j in range(ty * SAMPLES, ty * SAMPLES + SAMPLES):
+                for i in range(tx * SAMPLES, tx * SAMPLES + SAMPLES):
+                    if wet[j][i]:
+                        k += 1
+                        lv += level[j][i]
+                        r += 255.0 * min(max(depth[j][i] / max_depth, 0.0), 1.0)
+            red.append(int(r / (SAMPLES * SAMPLES) + 0.5))
+            share.append(k / (SAMPLES * SAMPLES))
+            mean.append(lv / k if k else 0.0)
+    return red, share, mean
+
+
+def plain_both(near, far, far_offset=0.0):
+    red, share, mean = (list(v) for v in near)
+    if far is not None:
+        for i in range(TILE * TILE):
+            if not share[i] and far[1][i]:
+                red[i], share[i], mean[i] = far[0][i], far[1][i], far[2][i] + far_offset
+    spill = list(red)
+    for i in range(TILE * TILE):
+        if share[i]:
+            continue
+        x, y = i % TILE, i // TILE
+        around = [red[yy * TILE + xx] for yy in range(max(y - 1, 0), min(y + 2, TILE))
+                  for xx in range(max(x - 1, 0), min(x + 2, TILE)) if share[yy * TILE + xx]]
+        if around:
+            spill[i] = max(around)
+    return spill, share, mean
+
+
+def random_water(rng, col, row, count):
+    """Water triangles over and around a cell: big and small, slivers, flat ones, depths below 0 and past the scale."""
+    out = []
+    for _ in range(count):
+        cx, cy = (col + rng.uniform(-0.3, 1.3)) * CASE, (row + rng.uniform(-0.3, 1.3)) * CASE
+        size = CASE * rng.choice((0.02, 0.1, 0.4, 1.5))
+        corners = tuple((cx + rng.uniform(-size, size), cy + rng.uniform(-size, size)) for _ in range(3))
+        if rng.random() < 0.1:   # a sliver: its third corner on (or next to) the line of the other two
+            (ax, ay), (bx, by), _c = corners
+            corners = ((ax, ay), (bx, by), ((ax + bx) / 2, (ay + by) / 2 + rng.choice((0.0, 1e-7))))
+        out.append((corners, tuple(rng.uniform(-300.0, 7000.0) for _ in range(3)),
+                    tuple(rng.uniform(8000.0, 9000.0) for _ in range(3))))
+    return out
+
+
+class QuickTexels(unittest.TestCase):
+    """The water texels worked out the quicker way are the very same as sample by sample: every R, share and level, to
+    the bit (repr tells -0.0 from 0.0), and the cells' texels shared out to worker programs are the same as one
+    program's."""
+
+    def test_a_cell_is_the_same_as_sample_by_sample(self):
+        import random
+        rng = random.Random(7)
+        for k in range(40):
+            col, row = rng.randrange(3), rng.randrange(3)
+            tris = random_water(rng, col, row, rng.choice((0, 1, 3, 12, 40)))
+            depth = rng.choice((1000.0, 5000.0))
+            with self.subTest(k=k):
+                self.assertEqual(repr(_cell(tris, col, row, depth)), repr(plain_cell(tris, col, row, depth)))
+
+    def test_now_and_before_as_sample_by_sample(self):
+        """_texels: the texels now as _both of the cells; before as well, except a cell dry now that had water (said as
+        None): sample by sample, some texel of it changed then."""
+        import random
+        rng = random.Random(11)
+        dried = full = 0
+        for k in range(60):
+            col, row = rng.randrange(3), rng.randrange(3)
+            pick = lambda: rng.choice(([], [], random_water(rng, col, row, 4), random_water(rng, col, row, 30)))
+            near, far, near0, far0 = pick(), pick(), pick(), pick()
+            if k % 5 == 0:
+                far = far0 = None   # no far mesh
+            if k % 7 == 0:          # a cell wholly under the close-up mesh's water
+                big = (((col - 1) * CASE, (row - 1) * CASE), ((col + 3) * CASE, (row - 1) * CASE),
+                       ((col - 1) * CASE, (row + 3) * CASE))
+                near = [(big, (40.0, 50.0, 60.0), (8500.0,) * 3)]
+            red, share, mean, old = _texels((col, row, near, far, near0, far0), 1000.0, 152.0)
+            want = plain_both(plain_cell(near, col, row, 1000.0),
+                              plain_cell(far, col, row, 1000.0) if far is not None else None, 152.0)
+            want0 = plain_both(plain_cell(near0, col, row, 1000.0),
+                               plain_cell(far0, col, row, 1000.0) if far0 is not None else None, 152.0)
+            with self.subTest(k=k):
+                self.assertEqual(repr((red, share, mean)), repr(want))
+                if old is None:
+                    dried += 1
+                    self.assertFalse(any(share))
+                    self.assertTrue(any(abs(a - b) > 0.01 for a, b in zip(share, want0[1])))
+                else:
+                    full += any(share)
+                    self.assertEqual(repr(old), repr(want0))
+        self.assertGreater(dried, 3)
+        self.assertGreater(full, 3)
+
+    def shore_map(self):
+        """A map 3 water cells square (one mesh cell each) half under the sea, then (after) partly raised dry, partly
+        deepened, and a lake in the east; its three textures with the sea and dry tiles shared."""
+        half = Q_MAX // 2
+        t = Tms(make_tms(gw=3, gh=3, n=9, zf=lambda x, y: 800 if x < half else 1000))
+        t.bounds = [0.0, 0.0, -100.0, 3 * CASE, 3 * CASE, 3176.7]
+        for k, c in enumerate(t.cells):
+            t.set_water(k, {i: 900 for i in range(len(c.positions()))})
+        before = Tms(t.to_bytes())
+        after = Tms(t.to_bytes())
+        for k in (0, 3):          # the north-west and west cells raised dry
+            after.set_heights(k, {i: 1000 for i in range(len(after.cells[k].positions()))})
+        after.set_heights(6, {i: 500 for i, p in enumerate(after.cells[6].positions()) if p[0] < half})  # deeper
+        after.set_water(5, {i: 1100 for i in range(len(after.cells[5].positions()))})                   # a lake
+        after = Tms(after.to_bytes())
+        far_before, far_after = Tms(before.to_bytes()), Tms(after.to_bytes())
+        cols, rows = 16, 2
+        ind = bytearray(4 * 4 * 4)
+        inp = bytearray(cols * TILE * rows * TILE * 4)
+        for cy in range(3):
+            for cx in range(3):
+                ind[(cy * 4 + cx) * 4 + 2] = 1 if cx < 2 else 0     # the west two columns on the sea tile (1)
+        inp[((8 * cols * TILE) + TILE + 8) * 4 + 2] = 255            # the sea tile's middle texel: full depth
+        flow = bytearray(len(inp))
+        raws = {TEXTURES["indirection"]: texture(4, 4, ind), TEXTURES["inputs"]: texture(cols * TILE, rows * TILE, inp),
+                TEXTURES["flow"]: texture(cols * TILE, rows * TILE, flow)}
+        return raws, before, after, far_before, far_after
+
+    def textures(self, workers):
+        raws, before, after, far_before, far_after = self.shore_map()
+        return update_textures(raws.get, before, after, [(1.5 * CASE, 1.5 * CASE, 2 * CASE)], 1000.0, "test",
+                               far_before=far_before, far_after=far_after, workers=workers)
+
+    def test_the_cells_shared_out_give_the_same_textures(self):
+        from unittest import mock
+        from rusemod import water
+        one = self.textures(1)
+        self.assertTrue(one[0], one[1])
+        self.assertIn("cell(s) updated", one[1][0])
+        with mock.patch.object(water, "SHARE_FROM", 1):
+            self.assertEqual(self.textures(2), one)     # two worker programs: the same bytes, the same notes
+
+    def test_workers_that_cant_start_are_said(self):
+        """Worker programs that can't start: the same work done in this program, and a note saying so."""
+        from unittest import mock
+        from rusemod import water
+
+        def no_pool(*_args):
+            raise OSError("no programs here")
+        one = self.textures(1)
+        with mock.patch.object(water, "SHARE_FROM", 1), mock.patch.object(water, "_pool", no_pool):
+            out, notes = self.textures(4)
+        self.assertEqual(out, one[0])
+        self.assertEqual(notes[:-1], one[1])
+        self.assertEqual(notes[-1], "test: the water textures were worked out on one core: the worker programs "
+                                    "couldn't start (OSError: no programs here)")
 
 
 if __name__ == "__main__":

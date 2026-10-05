@@ -621,9 +621,10 @@ class Tms:
         return _f32(z0 + _f32(_f32(q * _f32(1 / Q_MAX)) * _f32(z1 - z0)))
 
     def world_vertices(self, k: int) -> list[tuple[float, float, float]]:
-        """World (x, y, z) of every vertex of cell `k`."""
-        return [(self.to_world(0, p[0]), self.to_world(1, p[1]), self.to_world(2, p[2]))
-                for p in self.cells[k].positions()]
+        """World (x, y, z) of every vertex of cell `k` (to_world's sums, the bounds looked up once)."""
+        (x0, y0, z0, x1, y1, z1), q = self.bounds, Q_MAX
+        sx, sy, sz = x1 - x0, y1 - y0, z1 - z0
+        return [(x0 + p[0] * sx / q, y0 + p[1] * sy / q, z0 + p[2] * sz / q) for p in self.cells[k].positions()]
 
     def height_at(self, x: float, y: float) -> float | None:
         """The ground's height (world z) at map point x, y: the ground triangle (list 0) under it, interpolated; None
@@ -921,23 +922,26 @@ class Tms:
 
     def _normals(self, pos: list, tri: list[int], which: set[int]) -> dict[int, list[int]]:
         """Byte normals for the vertices in `which`: sum of the (upward) area-weighted normals of their faces."""
-        P = [(self.to_world(0, p[0]), self.to_world(1, p[1]), self.to_world(2, p[2])) for p in pos]
+        (x0, y0, z0, x1, y1, z1), q = self.bounds, Q_MAX   # to_world's sums, the bounds looked up once
+        sx, sy, sz = x1 - x0, y1 - y0, z1 - z0
+        P = [(x0 + p[0] * sx / q, y0 + p[1] * sy / q, z0 + p[2] * sz / q) for p in pos]
         acc = {i: [0.0, 0.0, 0.0] for i in which}
         for t in range(0, len(tri), 3):
             a, b, d = tri[t], tri[t + 1], tri[t + 2]
             if a not in acc and b not in acc and d not in acc:
                 continue
-            ux, uy, uz = (P[b][k] - P[a][k] for k in range(3))
-            vx, vy, vz = (P[d][k] - P[a][k] for k in range(3))
-            n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx]
-            if n[2] < 0:
-                n = [-n[0], -n[1], -n[2]]
+            pa, pb, pd = P[a], P[b], P[d]
+            ux, uy, uz = pb[0] - pa[0], pb[1] - pa[1], pb[2] - pa[2]
+            vx, vy, vz = pd[0] - pa[0], pd[1] - pa[1], pd[2] - pa[2]
+            n0, n1, n2 = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
+            if n2 < 0:
+                n0, n1, n2 = -n0, -n1, -n2
             for v in (a, b, d):
                 if v in acc:
                     s = acc[v]
-                    s[0] += n[0]
-                    s[1] += n[1]
-                    s[2] += n[2]
+                    s[0] += n0
+                    s[1] += n1
+                    s[2] += n2
         out = {}
         for i, s in acc.items():
             ln = math.sqrt(s[0] * s[0] + s[1] * s[1] + s[2] * s[2])

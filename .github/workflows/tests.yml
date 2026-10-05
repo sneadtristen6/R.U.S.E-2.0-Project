@@ -16,12 +16,18 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest]
+        # 3.11 without numpy: the plain sums, which must go on working alone. 3.12 with the numpy the apps carry
+        # (installers/requirements.txt; numpy 2.5 needs 3.12): the same answers on whole grids, checked against them.
+        python: ["3.11", "3.12"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python }}
+      - name: The numpy the apps carry (installers/requirements.txt)
+        if: matrix.python == '3.12'
+        run: python -m pip install "numpy==2.5.3"
       - name: Nothing private in the public repo (tools/check_public.py)
         if: github.repository_id == '1393317090'
         run: python tools/check_public.py

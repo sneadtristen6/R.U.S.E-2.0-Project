@@ -2,6 +2,7 @@
 Studio shows, and the scenery types from made-up descriptor NDFs (no game files needed)."""
 import hashlib
 import math
+import random
 import struct
 import tempfile
 import tomllib
@@ -749,6 +750,156 @@ class Erasing(unittest.TestCase):
         near = [p[0] for p in g.query(5000.0, 0.0, 5000.0, 0.0)]  # candidates: the circles of that cell only
         self.assertEqual(near, [areas[0], areas[-1]])
         self.assertEqual(g.query(-1e9, -1e9, 1e9, 1e9), g.pairs)  # a huge box: the whole list
+
+    def test_an_area_over_many_cells_is_found_as_a_small_one_is(self):
+        """Map Paint's clearing by size reaches a kilometre past its strokes (136 of those filled 2.3 million cells
+        on M04_Cotentin): an area over more than _AreaGrid.BIG cells is kept by the span of cells it covers, and a
+        query finds it exactly when its cells meet the query's, in the areas' order, like the ones kept cell by cell."""
+        rng = random.Random(4)
+        pairs = [(scenery.EraseArea(rng.uniform(-2e6, 2e6), rng.uniform(-2e6, 2e6),
+                                    rng.choice((2e4, 3e5, 2e6)) * rng.random() + 1.0,
+                                    shape=rng.choice(("round", "square", "line")), x2=rng.uniform(-2e6, 2e6),
+                                    y2=rng.uniform(-2e6, 2e6)), set()) for _ in range(120)]
+        g = scenery._AreaGrid(pairs)
+        self.assertTrue(g.big)                                # some are kept by their span,
+        self.assertLess(len(g.big), len(pairs))               # some cell by cell
+        c = g.cell
+
+        def cells(x0, y0, x1, y1):
+            return int(x0 // c), int(y0 // c), int(x1 // c), int(y1 // c)
+        for _ in range(400):
+            x, y = rng.uniform(-2.5e6, 2.5e6), rng.uniform(-2.5e6, 2.5e6)
+            w, h = rng.choice((0.0, 1e3, 5e4)), rng.choice((0.0, 1e3, 5e4))
+            qx0, qy0, qx1, qy1 = cells(x, y, x + w, y + h)
+            want = []
+            for p in pairs:
+                ax0, ay0, ax1, ay1 = cells(*p[0].box())
+                if ax0 <= qx1 and qx0 <= ax1 and ay0 <= qy1 and qy0 <= ay1:
+                    want.append(p)
+            self.assertEqual([id(p) for p in g.query(x, y, x + w, y + h)], [id(p) for p in want])
+
+    def test_an_area_a_placement_lies_well_inside_takes_what_testing_each_object_takes(self):
+        """Most of a big map erased (the owner's M04_Cotentin, 2026-10-04): an area a placement lies inside with room
+        to spare (scenery._room) takes the objects of its names under it at once. The same file, notes and counts as
+        with every object tested (no room: no area is ever sure, and with a second area of other names over the wood
+        the erase tests each oak), for each shape and by size, beside a wood only one oak of which goes."""
+        from unittest import mock
+        raw = forest()
+        reach = {"TypeWarrior/Chene_02": 50.0}
+        hall = scenery.EraseArea(100.0, 500.0, 2500.0, what=(), types=("TypeWarrior/MairieNormande",))  # over the
+        part = scenery.EraseArea(10100.0, 0.0, 50.0)   # first wood too, taking no oak; one oak of the second wood
+        over = {  # each holds the first wood whole (its oaks at x 0, 100, 200 and y 0, 1000), far inside it
+            "round": scenery.EraseArea(100.0, 500.0, 3000.0),
+            "square": scenery.EraseArea(100.0, 500.0, 3000.0, shape="square", dx=1.0, dy=0.3),
+            "line": scenery.EraseArea(-2000.0, 500.0, 3000.0, shape="line", x2=2000.0, y2=500.0),
+            "by size": scenery.EraseArea(100.0, 500.0, 3000.0, by_size=True),
+        }
+        real_sure, real_takes = scenery._sure_test, scenery._takes_test
+        gone = Counter({(1, float(x), float(y)): 1 for x in (0, 100, 200) for y in (0, 1000)})
+        gone[(1, 10100.0, 0.0)] = 1
+        for name, area in over.items():
+            sure, tested = [], []
+
+            def counted_sure(a, by_size, reach, sure=sure):
+                inside = real_sure(a, by_size, reach)
+                if inside is None:
+                    return None
+
+                def asked(*box):
+                    sure.append(inside(*box))
+                    return sure[-1]
+                return asked
+
+            def counted_takes(a, by_size, tested=tested):
+                by_reach, test = real_takes(a, by_size)
+
+                def asked(*args):
+                    tested.append(a)
+                    return test(*args)
+                return by_reach, asked
+            areas = [area, hall, part]
+            with mock.patch.object(scenery, "_sure_test", counted_sure), \
+                    mock.patch.object(scenery, "_takes_test", counted_takes):
+                fast = scenery.erase_objects(raw, areas, E_KINDS, {2}, sizes=reach)
+            self.assertIn(True, sure, name)             # the area was sure for the first wood,
+            self.assertNotIn(area, tested, name)        # so none of its oaks was asked about
+            with mock.patch.object(scenery, "_room", lambda *a: None), \
+                    mock.patch.object(scenery, "_takes_test", counted_takes):
+                del tested[:]
+                slow = scenery.erase_objects(raw, areas, E_KINDS, {2}, sizes=reach)
+            self.assertGreaterEqual(tested.count(area), 6, name)  # each of the wood's six oaks tested
+            self.assertEqual(fast, slow, name)
+            self.assertEqual(spots(raw) - spots(fast[0]), gone, name)
+            self.check(raw, fast[0])
+
+    def test_the_areas_questions_made_once_answer_as_the_areas_do(self):
+        """An erase over most of a big map asks its areas about millions of objects, so each area's questions are made
+        once as small functions (scenery._takes_test, _meets_test, _t2_test). They answer exactly as EraseArea.contains
+        and .meets and Footprint.t2 do (the same True or False, the same float, the same refusal) for seeded random
+        areas of every shape: points on and about their edges, corners and ends, zero sizes, huge and tiny numbers,
+        infinities and NaN."""
+        rng = random.Random(20261004)
+        odd = [0.0, -0.0, 1e-300, -1e-300, 1e300, -1e300, float("inf"), float("-inf"), float("nan"), 1e-160, 5e-324]
+
+        def num(scale=1e6):
+            r = rng.random()
+            if r < 0.03:
+                return rng.choice(odd)
+            if r < 0.1:
+                return float(rng.randint(-5, 5)) * scale / 4
+            return rng.uniform(-scale, scale)
+
+        def outcome(f, *args):
+            try:
+                got = f(*args)
+            except Exception as exc:  # noqa: BLE001 - a refusal must be the same refusal
+                return "raised", type(exc).__name__, str(exc)
+            return "ok", type(got).__name__, struct.pack("<d", got) if isinstance(got, float) else got
+
+        def area():
+            shape = rng.choice(("round", "square", "line", "blob"))
+            r = rng.random()
+            radius = rng.choice(odd) if r < 0.03 else (0.0 if r < 0.05 else abs(num()) + (0.0 if r < 0.1 else 1.0))
+            kw = {}
+            if shape == "square":
+                kw = {"dx": num(1.0) if rng.random() < 0.9 else 0.0, "dy": num(1.0) if rng.random() < 0.9 else 0.0}
+            if shape == "line":
+                kw = {"x2": num(), "y2": num()} if rng.random() < 0.9 else {"x2": 0.0, "y2": 0.0}
+            return scenery.EraseArea(num(), num(), radius, shape=shape, by_size=True, **kw)
+
+        def near_points(a, f):  # on and about the area's edge, corners, ends and middle
+            pts = [(a.x, a.y), (a.x + a.radius, a.y), (a.x, a.y - a.radius), (a.x2, a.y2)]
+            if f.shape == "square":
+                pts += f.corners()
+            bx0, bx1, by0, by1 = f.box()
+            pts += [(bx0, by0), (bx1, by1), (bx0, by1), (bx1, by0)]
+            out = []
+            for x, y in pts:
+                out.append((x, y))
+                out.append((math.nextafter(x, math.inf), math.nextafter(y, -math.inf)))
+                out.append((x + rng.uniform(-1, 1) * a.radius * 0.01, y + rng.uniform(-1, 1) * a.radius * 0.01))
+            return out + [(num(), num()) for _ in range(6)]
+        asked = 0
+        for _ in range(250):
+            a = area()
+            f = a.footprint()
+            meets, t2 = scenery._meets_test(a), scenery._t2_test(f)
+            plain, sized = scenery._takes_test(a, False)[1], scenery._takes_test(a, True)[1]
+
+            def old_sized(x, y, rs, a=a, f=f):  # erase_plan's own sum for an area by size, as it was
+                r = a.radius + rs
+                return f.t2(x, y) * a.radius * a.radius <= r * r
+            pts = near_points(a, f)
+            for x, y in pts:
+                rs = rng.choice((0.0, abs(num(1e5)), rng.choice(odd)))
+                self.assertEqual(outcome(plain, x, y), outcome(a.contains, x, y), (a, x, y))
+                self.assertEqual(outcome(t2, x, y), outcome(f.t2, x, y), (a, x, y))
+                self.assertEqual(outcome(sized, x, y, rs), outcome(old_sized, x, y, rs), (a, x, y, rs))
+                for p, q in pts[:6]:
+                    for box in ((min(x, p), min(y, q), max(x, p), max(y, q)), (x, y, p, q), (x, y, x, y)):
+                        self.assertEqual(outcome(meets, *box), outcome(a.meets, *box), (a, box))
+                        asked += 1
+        self.assertGreater(asked, 50000)
 
     def test_a_turned_square_and_a_line_erase_what_they_hold(self):
         """The brush types (2026-10-03): an erase area can be a square turned any way or a line; it takes what stands

@@ -14,6 +14,16 @@ from .api import StudioApi, words
 UI = Path(__file__).with_name("ui")
 
 
+def _workers() -> str:
+    from rusemod.mend import workers_start
+    return workers_start()
+
+
+def _grids() -> str:
+    from rusemod.groundpaint import whole_grids
+    return whole_grids()
+
+
 def main(argv=None) -> int:
     log = startlog.begin("studio", __version__)  # the start-up log (rusemod.startlog): written once the window is due
     log.mark("imports")
@@ -32,6 +42,8 @@ def main(argv=None) -> int:
             ("the Studio answers", lambda: api.status()),
             ("the Studio's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['search']!r}"),
             ("the game's names", lambda: f"ProductionPrice in Chinese is {schema.label('ProductionPrice', 'sc')!r}"),
+            ("worker programs start (a big map's riverbeds are mended by them)", _workers),
+            ("the map sums on whole grids (a big map is painted by them)", _grids),
         ])
     log.mark("api")
     log.go()

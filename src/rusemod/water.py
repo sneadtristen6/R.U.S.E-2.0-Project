@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import struct
 
-from .tms import Tms
+from .tms import Q_MAX, Tms
 from .tmst import Tgv, make_tgv, zipo_pack, zipo_unpack
 
 CASE = 1310720 / 48          # world units per water cell, the same on every map
@@ -126,32 +126,46 @@ def _water_triangles(tms: Tms, cases: tuple[int, int]) -> dict:
     (corners in world x, y; depth w - z and water level w per corner in world units)."""
     across, down = cases
     step = (tms.bounds[5] - tms.bounds[2]) / 32767
+    (x0, y0, z0, x1, y1, z1), q = tms.bounds, Q_MAX   # Tms.to_world's sums, the bounds looked up once
+    sx, sy, sz = x1 - x0, y1 - y0, z1 - z0
     out: dict[tuple[int, int], list] = {}
     for c in tms.cells:
         tri = c.triangles(1)
         if not tri:
             continue
         pos = c.positions()
+        used = set(tri)   # each corner's world x, y, depth and level, worked out once
+        where = {v: (x0 + pos[v][0] * sx / q, y0 + pos[v][1] * sy / q) for v in used}
+        dep = {v: (pos[v][3] - pos[v][2]) * step for v in used}
+        lvl = {v: z0 + pos[v][3] * sz / q for v in used}
         for t in range(0, len(tri), 3):
-            v = [pos[tri[t + j]] for j in range(3)]
-            xy = [(tms.to_world(0, p[0]), tms.to_world(1, p[1])) for p in v]
-            dep = [(p[3] - p[2]) * step for p in v]
-            lvl = [tms.to_world(2, p[3]) for p in v]
-            xs, ys = [q[0] for q in xy], [q[1] for q in xy]
-            for cx in range(max(int(min(xs) // CASE), 0), min(int(max(xs) // CASE), across - 1) + 1):
-                for cy in range(max(int(min(ys) // CASE), 0), min(int(max(ys) // CASE), down - 1) + 1):
-                    out.setdefault((cx, cy), []).append((xy, dep, lvl))
+            a, b, d = tri[t], tri[t + 1], tri[t + 2]
+            xy = [where[a], where[b], where[d]]
+            entry = (xy, [dep[a], dep[b], dep[d]], [lvl[a], lvl[b], lvl[d]])
+            ax, ay, bx, by, dx, dy = xy[0][0], xy[0][1], xy[1][0], xy[1][1], xy[2][0], xy[2][1]
+            for cx in range(max(int(min(ax, bx, dx) // CASE), 0), min(int(max(ax, bx, dx) // CASE), across - 1) + 1):
+                for cy in range(max(int(min(ay, by, dy) // CASE), 0), min(int(max(ay, by, dy) // CASE), down - 1) + 1):
+                    out.setdefault((cx, cy), []).append(entry)
     return out
 
 
-def _cell(tris: list, col: int, row: int, max_depth: float):
-    """One cell's 16 x 16 texels: (R per texel, wet share per texel, mean water level of the wet samples)."""
+def _samples(tris: list, col: int, row: int, first: bool = False):
+    """Which of one cell's 64 x 64 samples lie in a water triangle (the first that holds a sample gives it its depth
+    and level). Returns (wet, depth, level) per sample, row by row, or None when no sample is wet; `first`: True as
+    soon as one sample is found (the rest isn't worked out)."""
     n = TILE * SAMPLES
+    if not tris:
+        return None
     h = CASE / n
-    depth = [[0.0] * n for _ in range(n)]
-    level = [[0.0] * n for _ in range(n)]
     wet = [[False] * n for _ in range(n)]
+    depth = level = None
+    if not first:
+        depth = [[0.0] * n for _ in range(n)]
+        level = [[0.0] * n for _ in range(n)]
     x0, y0 = col * CASE, row * CASE
+    xs = [x0 + (i + 0.5) * h for i in range(n)]   # the samples' x and y
+    ys = [y0 + (j + 0.5) * h for j in range(n)]
+    found = False
     for (a, b, c), d, w in tris:
         den = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1])
         if den == 0:
@@ -160,30 +174,68 @@ def _cell(tris: list, col: int, row: int, max_depth: float):
         i1 = min(int((max(a[0], b[0], c[0]) - x0) / h + 0.5), n - 1)
         j0 = max(int((min(a[1], b[1], c[1]) - y0) / h - 0.5), 0)
         j1 = min(int((max(a[1], b[1], c[1]) - y0) / h + 0.5), n - 1)
+        # l1 = ((b.y - c.y) * (px - c.x) + (c.x - b.x) * (py - c.y)) / den, and l2 likewise: the same steps, with
+        # what doesn't change along a row worked out once for it
+        e1, f1, e2, f2, cx, cy = b[1] - c[1], c[0] - b[0], c[1] - a[1], a[0] - c[0], c[0], c[1]
+        d0, d1, d2, w0, w1, w2 = d[0], d[1], d[2], w[0], w[1], w[2]
         for j in range(j0, j1 + 1):
-            py = y0 + (j + 0.5) * h
+            dy = ys[j] - cy
+            g1, g2 = f1 * dy, f2 * dy
+            wet_row = wet[j]
             for i in range(i0, i1 + 1):
-                if wet[j][i]:
+                if wet_row[i]:
                     continue
-                px = x0 + (i + 0.5) * h
-                l1 = ((b[1] - c[1]) * (px - c[0]) + (c[0] - b[0]) * (py - c[1])) / den
-                l2 = ((c[1] - a[1]) * (px - c[0]) + (a[0] - c[0]) * (py - c[1])) / den
+                dx = xs[i] - cx
+                l1 = (e1 * dx + g1) / den
+                l2 = (e2 * dx + g2) / den
                 l3 = 1.0 - l1 - l2
                 if l1 >= -1e-9 and l2 >= -1e-9 and l3 >= -1e-9:
-                    wet[j][i] = True
-                    depth[j][i] = l1 * d[0] + l2 * d[1] + l3 * d[2]
-                    level[j][i] = l1 * w[0] + l2 * w[1] + l3 * w[2]
+                    if first:
+                        return True
+                    wet_row[i] = found = True
+                    depth[j][i] = l1 * d0 + l2 * d1 + l3 * d2
+                    level[j][i] = l1 * w0 + l2 * w1 + l3 * w2
+    return (wet, depth, level) if found else None
+
+
+def _wet(tris: list, col: int, row: int) -> bool:
+    """Whether any sample of the cell lies in a water triangle (as _cell finds them)."""
+    return _samples(tris, col, row, first=True) is not None
+
+
+def _cell(tris: list, col: int, row: int, max_depth: float):
+    """One cell's 16 x 16 texels: (R per texel, wet share per texel, mean water level of the wet samples).
+
+    The sums are taken in the same order, with the same steps, as sample by sample over the whole cell; only what
+    can't change them is skipped (a dry cell, a dry texel: R 0, share 0.0, level 0.0)."""
+    got = _samples(tris, col, row)
+    if got is None:
+        return [0] * (TILE * TILE), [0.0] * (TILE * TILE), [0.0] * (TILE * TILE)
+    wet, depth, level = got
     red, share, mean = [], [], []
     for ty in range(TILE):
+        rows = range(ty * SAMPLES, ty * SAMPLES + SAMPLES)
         for tx in range(TILE):
+            c0 = tx * SAMPLES
+            if not any(True in wet[j][c0:c0 + SAMPLES] for j in rows):
+                red.append(0)
+                share.append(0.0)
+                mean.append(0.0)
+                continue
             r = k = 0
             lv = 0.0
-            for j in range(ty * SAMPLES, ty * SAMPLES + SAMPLES):
-                for i in range(tx * SAMPLES, tx * SAMPLES + SAMPLES):
-                    if wet[j][i]:
+            for j in rows:
+                wet_row, depth_row, level_row = wet[j], depth[j], level[j]
+                for i in range(c0, c0 + SAMPLES):
+                    if wet_row[i]:
                         k += 1
-                        lv += level[j][i]
-                        r += 255.0 * min(max(depth[j][i] / max_depth, 0.0), 1.0)
+                        lv += level_row[i]
+                        v = depth_row[i] / max_depth   # 255 x v held to 0..1, as min(max(v, 0.0), 1.0) holds it
+                        if v < 0.0:
+                            v = 0.0
+                        if v > 1.0:
+                            v = 1.0
+                        r += 255.0 * v
             red.append(int(r / (SAMPLES * SAMPLES) + 0.5))
             share.append(k / (SAMPLES * SAMPLES))
             mean.append(lv / k if k else 0.0)
@@ -201,6 +253,8 @@ def _both(near: tuple, far: tuple | None, far_offset: float = 0.0) -> tuple[list
             if not share[i] and far[1][i]:
                 red[i], share[i], mean[i] = far[0][i], far[1][i], far[2][i] + far_offset
     spill = list(red)
+    if not any(share):
+        return spill, share, mean     # no wet texel: nothing spills
     for i in range(TILE * TILE):
         if share[i]:
             continue
@@ -212,12 +266,84 @@ def _both(near: tuple, far: tuple | None, far_offset: float = 0.0) -> tuple[list
     return spill, share, mean
 
 
+def _texels(job: tuple, max_depth: float, off: float) -> tuple:
+    """One cell's texels now and before, from its water triangles now and before (`job`: col, row, close-up now, far
+    now, close-up before, far before; the far ones None without a far mesh): (red, share, mean, before), `before` =
+    (red, share, mean) as they were, or None when the cell is dry now and had water before (it changed then: a texel
+    that had any water has a share of 1/16 or more, 0 now; the rest of before isn't needed)."""
+    cx, cy, near, far, near0, far0 = job
+    TT = TILE * TILE
+
+    def merged(close, far_tris):
+        """_both of the close-up and far texels; the far ones aren't worked out when every texel has close-up water
+        (_both takes the far mesh's only where the close-up mesh has none)."""
+        got = _cell(close, cx, cy, max_depth)
+        if far_tris is None or all(got[1]):
+            return _both(got, None, off)
+        return _both(got, _cell(far_tris, cx, cy, max_depth), off)
+    red, share, mean = merged(near, far)
+    if any(share):
+        old = merged(near0, far0)
+    elif _wet(near0, cx, cy) or (far0 is not None and _wet(far0, cx, cy)):
+        old = None
+    else:             # dry before too: every texel was 0, as now
+        old = [0] * TT, [0.0] * TT, [0.0] * TT
+    return red, share, mean, old
+
+
+# --- the cells' texels shared out to worker programs, one per core but one (each answer is the same as one program's;
+# as rusemod.mend shares out the riverbeds) ---
+SHARE_FROM = 256   # cells with water now, at least, before the work is shared out: each takes a few thousandths of a
+                   # second, and the worker programs about a second to start
+_WORK: dict = {}   # in a worker: what its jobs share (set by its starter)
+
+
+def _start_texels(max_depth: float, off: float) -> None:
+    _WORK["max_depth"], _WORK["off"] = max_depth, off
+
+
+def _texels_job(jobs: list) -> list:
+    return [_texels(job, _WORK["max_depth"], _WORK["off"]) for job in jobs]
+
+
+def _pool(start, args, workers: int):
+    from concurrent.futures import ProcessPoolExecutor
+    return ProcessPoolExecutor(max_workers=workers, initializer=start, initargs=args)
+
+
+def _all_texels(jobs: list, max_depth: float, off: float, workers: int) -> tuple[list, str | None]:
+    """_texels for every job, in the jobs' order, and why the worker programs couldn't do their share (None when they
+    did, or weren't needed). The cells with water now (most of the work) go to `workers` programs, every n-th to each,
+    while this program does the dry ones."""
+    heavy = [k for k, job in enumerate(jobs) if job[2] or job[3]]
+    done: list = [None] * len(jobs)
+    alone = None
+    if workers > 1 and len(heavy) >= SHARE_FROM:
+        n = min(workers, len(heavy))
+        batches = [heavy[k::n] for k in range(n)]
+        try:
+            with _pool(_start_texels, (max_depth, off), n) as pool:
+                got = pool.map(_texels_job, [[jobs[k] for k in batch] for batch in batches])
+                shared = set(heavy)
+                for k, job in enumerate(jobs):   # the dry ones here, while the workers do theirs
+                    if k not in shared:
+                        done[k] = _texels(job, max_depth, off)
+                for batch, results in zip(batches, got):
+                    for k, result in zip(batch, results):
+                        done[k] = result
+            return done, None
+        except Exception as exc:  # noqa: BLE001 - workers that can't start: the same work in this program
+            alone = f"{type(exc).__name__}: {exc}"
+    return [_texels(job, max_depth, off) for job in jobs], alone
+
+
 def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, float, float]], max_depth: float,
                     name: str = "the map", far_before: Tms | None = None,
-                    far_after: Tms | None = None) -> tuple[dict[str, bytes], list[str]]:
+                    far_after: Tms | None = None, workers: int | None = None) -> tuple[dict[str, bytes], list[str]]:
     """The three water textures for the edited close-up mesh `after` (`before` = the mesh as shipped; `far_before` /
     `far_after` the far mesh, whose water the textures must cover too), for every water cell within one cell of an
-    edited area [(x, y, radius)]. Returns ({member: new bytes}, notes)."""
+    edited area [(x, y, radius)]. Returns ({member: new bytes}, notes). The cells' texels are worked out by `workers`
+    programs (default rusemod.mend.WORKERS) when many cells have water now, each answer the same as one program's."""
     raws = {key: read(member) for key, member in TEXTURES.items()}
     if any(v is None for v in raws.values()):
         return {}, [f"{name} has no water textures; only the meshes' water was changed"]
@@ -252,8 +378,8 @@ def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, floa
     shared = [t for t in sorted(users, key=lambda t: (-users[t], t))[:2] if users[t] > 1]
     dry = next((t for t in shared if inp[texel(inp, tw.width, t, 8, 8) + 2] == 0), None)
     sea = next((t for t in shared if inp[texel(inp, tw.width, t, 8, 8) + 2] == 255), None)
-    free = [t for t in range(ntiles) if t not in users
-            and not any(inp[texel(inp, tw.width, t, x, y) + ch] for y in range(TILE) for x in range(TILE) for ch in range(4))]
+    free = [t for t in range(ntiles) if t not in users       # unused, every byte 0 (a tile's row: 4 x TILE bytes)
+            and not any(any(inp[o:o + 4 * TILE]) for o in (texel(inp, tw.width, t, 0, y) for y in range(TILE)))]
     base = after.to_world(2, after.base_water())
     step = (after.bounds[5] - after.bounds[2]) / 32767
     cells = set()
@@ -267,17 +393,25 @@ def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, floa
     far_old = _water_triangles(far_before, cases) if far_before is not None else None
     off = base - far_after.to_world(2, far_after.base_water()) if far_after is not None else 0.0
     stats = {"updated": 0, "new tiles": 0, "dried": 0}
+    jobs = []
     for cx, cy in sorted(cells):
-        red, share, mean = _both(_cell(new_tris.get((cx, cy), []), cx, cy, max_depth),
-                                 _cell(far_new.get((cx, cy), []), cx, cy, max_depth) if far_new is not None else None,
-                                 off)
-        red0, share0, mean0 = _both(_cell(old_tris.get((cx, cy), []), cx, cy, max_depth),
-                                    _cell(far_old.get((cx, cy), []), cx, cy, max_depth) if far_old is not None else None,
-                                    off)
-        changed = [abs(red[i] - red0[i]) > 2 or abs(share[i] - share0[i]) > 0.01 or abs(mean[i] - mean0[i]) > 2 * step
-                   for i in range(TILE * TILE)]
-        if not any(changed):
-            continue
+        near, near0 = new_tris.get((cx, cy), []), old_tris.get((cx, cy), [])
+        far = far_new.get((cx, cy), []) if far_new is not None else None
+        far0 = far_old.get((cx, cy), []) if far_old is not None else None
+        if near == near0 and far == far0:
+            continue                                  # the same water triangles as before: the same texels
+        jobs.append((cx, cy, near, far, near0, far0))
+    if workers is None:
+        from .mend import WORKERS
+        workers = WORKERS
+    done, alone = _all_texels(jobs, max_depth, off, workers)
+    for (cx, cy, *_lists), (red, share, mean, old) in zip(jobs, done):   # in the cells' order, as one program
+        if old is not None:                           # (None: dry now, water before; it changed)
+            red0, share0, mean0 = old
+            changed = [abs(red[i] - red0[i]) > 2 or abs(share[i] - share0[i]) > 0.01
+                       or abs(mean[i] - mean0[i]) > 2 * step for i in range(TILE * TILE)]
+            if not any(changed):
+                continue
         b, g, r, a = ipx(cx, cy)
         t = tile_of(g, r)
         o = (cy * ti.width + cx) * 4
@@ -318,12 +452,14 @@ def update_textures(read, before: Tms, after: Tms, areas: list[tuple[float, floa
                 inp[texel(inp, tw.width, t, i % TILE, i // TILE) + 2] = red[i]
         ind[o:o + 4] = bytes((255 if other else 0, *gr(t), 0))
         stats["updated"] += 1
+    one_core = [f"{name}: the water textures were worked out on one core: the worker programs couldn't start "
+                f"({alone})"] if alone else []
     if not stats["updated"]:
-        return {}, []
+        return {}, one_core
     out = {TEXTURES["indirection"]: _repack(ti, ind), TEXTURES["inputs"]: _repack(tw, inp),
            TEXTURES["flow"]: _repack(tf, flow)}
     return out, [f"{name}: water textures: {stats['updated']} cell(s) updated, {stats['new tiles']} new tile(s), "
-                 f"{stats['dried']} cell(s) dry again (depth scale {max_depth:g})"]
+                 f"{stats['dried']} cell(s) dry again (depth scale {max_depth:g})"] + one_core
 
 
 def max_depth(read_ndf) -> float | None:

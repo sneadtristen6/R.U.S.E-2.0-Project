@@ -473,8 +473,29 @@ def decode_full(payload: bytes) -> Decoded:
                    alpha_ends, alpha_selectors)
 
 
+_WHOLE = []  # [rusemod.tgu1np, or None without numpy], looked for once
+
+
+def whole_arrays():
+    """rusemod.tgu1np, the decoder on whole arrays, when numpy is there (the apps carry it); None without it."""
+    if not _WHOLE:
+        try:
+            from . import tgu1np
+            _WHOLE.append(tgu1np)
+        except ImportError:
+            _WHOLE.append(None)
+    return _WHOLE[0]
+
+
 def decode(payload: bytes) -> bytes:
-    """TGU1 payload -> raw DXT1 or DXT5 blocks (8 or 16 bytes per 4x4 block, rows of blocks top to bottom)."""
+    """TGU1 payload -> raw DXT1 or DXT5 blocks (8 or 16 bytes per 4x4 block, rows of blocks top to bottom). A ground
+    tile goes through rusemod.tgu1np when numpy is there (the same blocks, several times sooner); anything else, and
+    everything without numpy, through decode_full."""
+    fast = whole_arrays()
+    if fast is not None:
+        blocks = fast.decode(payload)
+        if blocks is not None:
+            return blocks
     return decode_full(payload).dxt
 
 

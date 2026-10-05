@@ -379,6 +379,33 @@ class Stroke:
             return 1.0
         return 1.0 - self.weight * self.strength_at(x, y)
 
+    def kept_function(self):
+        """`kept` as a function of (x, y), made once for asking at many points: the same value as `kept` gives, every
+        bit, with fewer steps for a round footprint (the same sums in the same order, the stroke's own numbers looked
+        up once)."""
+        b = self.kind
+        if b.kind in GROUND_UNCHANGED or b.kind == "add":
+            return lambda x, y: 1.0
+        fp = self.footprint()
+        if fp.shape != "round":
+            return self.kept
+        cx, cy, rr, weight, edge, shape = fp.x, fp.y, fp.r * fp.r, self.weight, self.edge, b.shape
+        soft = shape == "soft" and edge != "hard"   # edge_weight is shape_weight's (1 - t²)² then
+
+        def kept(x: float, y: float) -> float:
+            ox, oy = x - cx, y - cy
+            t2 = (ox * ox + oy * oy) / rr
+            if t2 < 1.0:
+                if soft:
+                    u = 1.0 - t2
+                    p = u * u
+                else:
+                    p = edge_weight(edge, shape, t2)
+            else:
+                p = 0.0
+            return 1.0 - weight * p
+        return kept
+
 
 # --- the mod file: maps/<map pack>/terrain.toml -------------------------------------------------------------------
 _NEEDS = {"add": ("height",), "level": ("level",), "smooth": (), "ramp": ("x2", "y2", "level", "level2"),

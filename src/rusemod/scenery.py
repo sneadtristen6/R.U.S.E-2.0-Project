@@ -62,18 +62,6 @@ class Item:
         return decode_transform(self.tform, self.data)
 
 
-def _translation(kind: int, data: bytes) -> tuple:
-    """Where decode_transform's matrix moves the origin to, (tx, ty, tz), without the rest of it."""
-    if kind == T_IDENTITY:
-        return 0.0, 0.0, 0.0
-    if kind == T_MOVE:
-        return struct.unpack_from("<3f", data)
-    if kind == T_FULL:
-        return struct.unpack_from("<f", data, 12)[0], struct.unpack_from("<f", data, 28)[0], \
-            struct.unpack_from("<f", data, 44)[0]
-    return struct.unpack_from("<3f", data, 8)
-
-
 def decode_transform(kind: int, data: bytes) -> tuple:
     if kind == T_IDENTITY:
         return IDENTITY
@@ -1010,40 +998,59 @@ class _Cut:
     empty: bool = False                          # nothing would be left in it: its reference goes instead
 
 
-def _object_boxes(sc: Scenery) -> list:
-    """Per block, the box (x0, y0, x1, y1) in its own coordinates of every object under it, children included, or
-    None for a block with none (children are stored after their parents: one pass from the end)."""
-    out: list = [None] * len(sc.blocks)
+def _placed_items(sc: Scenery) -> tuple[list, list]:
+    """Each block's transforms read once, for erase_plan: per block, its objects (at, name index, x, y, z, and its
+    transform's first column: its size) and its children holding objects (at, -1, the child's block, its transform),
+    in order; and per block the box (x0, y0, x1, y1) in its own coordinates of every object under it, children
+    included, or None for a block with none (children are stored after their parents: one pass from the end)."""
+    items: list = [None] * len(sc.blocks)
+    boxes: list = [None] * len(sc.blocks)
     for b in reversed(sc.blocks):
-        xs, ys = [], []
+        out, xs, ys = [], [], []
         for it in b.items:
             if it.kind == "object":
                 m = it.matrix()
+                out.append((it.at, it.symbol, m[3], m[7], m[11], m[0], m[4], m[8]))
                 xs.append(m[3])
                 ys.append(m[7])
             elif it.kind == "child":
-                cb = out[sc._by_offset[it.child_offset]]
+                j = sc._by_offset[it.child_offset]
+                cb = boxes[j]
                 if cb is not None:
                     m = it.matrix()
+                    out.append((it.at, -1, j, m))
                     for x, y in ((cb[0], cb[1]), (cb[2], cb[1]), (cb[0], cb[3]), (cb[2], cb[3])):
                         xs.append(m[0] * x + m[1] * y + m[3])
                         ys.append(m[4] * x + m[5] * y + m[7])
+        items[b.index] = out
         if xs:
-            out[b.index] = (min(xs), min(ys), max(xs), max(ys))
-    return out
+            boxes[b.index] = (min(xs), min(ys), max(xs), max(ys))
+    return items, boxes
 
 
 class _AreaGrid:
     """The (area, names) pairs bucketed on a grid of `cell` map units by their circles' boxes, so a placement far
     from most areas looks at only the few near it (a new road's clearing makes thousands of small circles: 2,141 for
-    the owner's D-Day roads, which took 25 minutes when every placement was tested against every circle)."""
+    the owner's D-Day roads, which took 25 minutes when every placement was tested against every circle). An area
+    over more than BIG cells is kept with the span of cells it covers instead (Map Paint's clearing by size reaches
+    a kilometre past its strokes: 136 of those filled 2.3 million cells on M04_Cotentin); a query finds it the same."""
+    BIG = 256
 
     def __init__(self, pairs: list, cell: float = 16000.0):
-        self.cell, self.cells = cell, {}
+        self.cell, self.cells, self.big = cell, {}, []
         for k, pair in enumerate(pairs):
             ax0, ay0, ax1, ay1 = pair[0].box()
-            for gx in range(int(ax0 // cell), int(ax1 // cell) + 1):
-                for gy in range(int(ay0 // cell), int(ay1 // cell) + 1):
+            gx0, gx1 = int(ax0 // cell), int(ax1 // cell)
+            if gx1 < gx0:
+                continue
+            gy0, gy1 = int(ay0 // cell), int(ay1 // cell)
+            if gy1 < gy0:
+                continue
+            if (gx1 - gx0 + 1) * (gy1 - gy0 + 1) > self.BIG:
+                self.big.append((k, gx0, gx1, gy0, gy1))
+                continue
+            for gx in range(gx0, gx1 + 1):
+                for gy in range(gy0, gy1 + 1):
                     self.cells.setdefault((gx, gy), []).append(k)
         self.pairs = pairs
 
@@ -1051,35 +1058,214 @@ class _AreaGrid:
         c = self.cell
         if (x1 - x0) * (y1 - y0) > 400 * c * c:  # a huge box (the top block): the cells would cost more than the list
             return self.pairs
+        gx0, gx1 = int(x0 // c), int(x1 // c)
+        if gx1 < gx0:
+            return []
+        gy0, gy1 = int(y0 // c), int(y1 // c)
+        if gy1 < gy0:
+            return []
         found = set()
-        for gx in range(int(x0 // c), int(x1 // c) + 1):
-            for gy in range(int(y0 // c), int(y1 // c) + 1):
+        for gx in range(gx0, gx1 + 1):
+            for gy in range(gy0, gy1 + 1):
                 found.update(self.cells.get((gx, gy), ()))
+        found.update(k for k, ax0, ax1, ay0, ay1 in self.big if ax0 <= gx1 and gx0 <= ax1 and ay0 <= gy1 and gy0 <= ay1)
         return [self.pairs[k] for k in sorted(found)]
-
-
-def _meeting(box: tuple, m: tuple, areas: list, grid: "_AreaGrid | None" = None) -> list:
-    """The (area, its names) of `areas` whose circle meets the box (in a placement's coordinates, placed with `m`);
-    `grid` (over exactly `areas`) narrows the search first."""
-    xs, ys = [], []
-    for x, y in ((box[0], box[1]), (box[2], box[1]), (box[0], box[3]), (box[2], box[3])):
-        xs.append(m[0] * x + m[1] * y + m[3])
-        ys.append(m[4] * x + m[5] * y + m[7])
-    x0, y0, x1, y1 = min(xs), min(ys), max(xs), max(ys)
-    if grid is not None:
-        areas = grid.query(x0, y0, x1, y1)
-    return [p for p in areas if p[0].meets(x0, y0, x1, y1)]
 
 
 SIZE_MOST = 8.0  # the largest size an erase by size allows for when it narrows its search (Blitz places none past 5.3)
 
 
-def _size_of(m: tuple, local: tuple) -> float:
-    """How big an object is placed: the length of its x axis once its own transform and its placement's are joined."""
-    a = m[0] * local[0] + m[1] * local[4] + m[2] * local[8]
-    c = m[4] * local[0] + m[5] * local[4] + m[6] * local[8]
-    e = m[8] * local[0] + m[9] * local[4] + m[10] * local[8]
-    return math.sqrt(a * a + c * c + e * e)
+# An erase asks its areas about millions of objects and placements (most of M04_Cotentin: 15 million objects in
+# 750,000 placements), so each area's questions are made once as small functions: the same sums in the same order as
+# EraseArea.contains and .meets and rusemod.brush.Footprint.t2 and .meets, with what is the same for every question
+# (a square's corners and sides, a line's run, a radius squared) worked out once. The answers are the same numbers.
+
+def _t2_test(f):
+    """Footprint `f`'s t2(px, py) (rusemod.brush.Footprint.t2)."""
+    fx, fy, r = f.x, f.y, f.r
+    if f.shape == "square":
+        dx, dy = f.dx, f.dy
+        n = math.sqrt(dx * dx + dy * dy) or 1.0
+
+        def t2(px, py):
+            ox, oy = px - fx, py - fy
+            u = abs(ox * dx + oy * dy) / n
+            v = abs(oy * dx - ox * dy) / n
+            return ((u if u > v else v) / r) ** 2
+        return t2
+    rr = r * r
+    if f.shape == "line":
+        sx, sy = f.x2 - fx, f.y2 - fy
+        len2 = sx * sx + sy * sy
+
+        def t2(px, py):
+            ox, oy = px - fx, py - fy
+            t = 0.0
+            if len2 > 0.0:
+                t = (ox * sx + oy * sy) / len2
+                t = 0.0 if t < 0.0 else 1.0 if t > 1.0 else t
+            qx, qy = ox - sx * t, oy - sy * t
+            return (qx * qx + qy * qy) / rr
+        return t2
+
+    def t2(px, py):
+        ox, oy = px - fx, py - fy
+        return (ox * ox + oy * oy) / rr
+    return t2
+
+
+def _takes_test(a: EraseArea, by_size: bool) -> tuple:
+    """(whether it needs the object's reach, test): whether area `a` takes an object at (x, y), test(x, y), as
+    a.contains says; or, reaching `rs` from there, test(x, y, rs), for an area by size (`by_size`: its footprint's t2
+    grown by the reach) or with a mask (the mask itself)."""
+    if a.mask is not None:
+        return True, a.mask
+    if by_size:
+        t2, ar = _t2_test(a.footprint()), a.radius
+
+        def takes(x, y, rs):
+            r = ar + rs  # (how far out / r)² grown by the object's reach
+            return t2(x, y) * ar * ar <= r * r
+        return True, takes
+    if a.shape == "round":
+        try:
+            ax, ay, rr = a.x, a.y, a.radius ** 2
+        except OverflowError:  # a radius no map holds: asked as before, so it fails where it did
+            return False, a.contains
+        return False, lambda x, y: (x - ax) ** 2 + (y - ay) ** 2 <= rr
+    t2 = _t2_test(a.footprint())
+    return False, lambda x, y: t2(x, y) <= 1.0
+
+
+def _meets_test(a: EraseArea):
+    """a.meets(x0, y0, x1, y1): whether area `a` reaches into the box."""
+    if a.shape == "round":
+        try:
+            ax, ay, rr = a.x, a.y, a.radius ** 2
+        except OverflowError:
+            return a.meets
+        return lambda x0, y0, x1, y1: max(x0 - ax, 0.0, ax - x1) ** 2 + max(y0 - ay, 0.0, ay - y1) ** 2 <= rr
+    f = a.footprint()
+    if f.shape not in ("square", "line"):
+        return a.meets
+    bx0, bx1, by0, by1 = f.box()
+    if f.shape == "square":
+        cs = f.corners()
+        n = math.sqrt(f.dx * f.dx + f.dy * f.dy) or 1.0
+        sides = []
+        for ux, uy in ((f.dx / n, f.dy / n), (-f.dy / n, f.dx / n)):
+            ps = [cx * ux + cy * uy for cx, cy in cs]
+            sides.append((ux, uy, min(ps), max(ps)))
+
+        def meets(x0, y0, x1, y1):
+            if bx1 < x0 or bx0 > x1 or by1 < y0 or by0 > y1:
+                return False
+            for ux, uy, lo, hi in sides:
+                qs = [px * ux + py * uy for px in (x0, x1) for py in (y0, y1)]
+                if max(qs) < lo or min(qs) > hi:
+                    return False
+            return True
+        return meets
+    ax, ay, bx, by, rr = f.x, f.y, f.x2, f.y2, f.r * f.r
+    sx, sy = bx - ax, by - ay
+    len2 = sx * sx + sy * sy
+
+    def sign(v):
+        return (v > 0) - (v < 0)
+
+    def crosses(r0, r1, s0, s1, d1, d2):  # brush._segments_cross(the line, the box's side from r to s)
+        if d1 == d2 or d1 == 0 or d2 == 0:
+            return False
+        d3 = sign((s0 - r0) * (ay - r1) - (s1 - r1) * (ax - r0))
+        d4 = sign((s0 - r0) * (by - r1) - (s1 - r1) * (bx - r0))
+        return d3 != d4 and d3 != 0 and d4 != 0
+
+    def apart2(px, py):  # brush._point_segment2
+        t = 0.0 if len2 == 0.0 else max(0.0, min(1.0, ((px - ax) * sx + (py - ay) * sy) / len2))
+        return (px - ax - sx * t) ** 2 + (py - ay - sy * t) ** 2
+
+    def meets(x0, y0, x1, y1):  # brush._segment_box_distance2 of the line and the box, within its radius
+        if bx1 < x0 or bx0 > x1 or by1 < y0 or by0 > y1:
+            return False
+        if x0 <= ax <= x1 and y0 <= ay <= y1 or x0 <= bx <= x1 and y0 <= by <= y1:
+            return 0.0 <= rr
+        d00, d10 = sign(sx * (y0 - ay) - sy * (x0 - ax)), sign(sx * (y0 - ay) - sy * (x1 - ax))
+        d11, d01 = sign(sx * (y1 - ay) - sy * (x1 - ax)), sign(sx * (y1 - ay) - sy * (x0 - ax))
+        if (crosses(x0, y0, x1, y0, d00, d10) or crosses(x1, y0, x1, y1, d10, d11)
+                or crosses(x1, y1, x0, y1, d11, d01) or crosses(x0, y1, x0, y0, d01, d00)):
+            return 0.0 <= rr
+        best = min(apart2(x0, y0), apart2(x0, y1), apart2(x1, y0), apart2(x1, y1))
+        for px, py in ((ax, ay), (bx, by)):
+            nx, ny = min(max(px, x0), x1), min(max(py, y0), y1)
+            best = min(best, (nx - px) ** 2 + (ny - py) ** 2)
+        return best <= rr
+    return meets
+
+
+_FAR = 1e100  # map units no map comes near: a placement's corners inside it, a tame area's covers() can't fail
+_MAP = 1e12   # map units past any map (M04_Cotentin is 3,932,160 wide): erase_plan's sure areas work within it
+
+
+def _tame_cover(a: EraseArea) -> bool:
+    """Whether a.covers can't fail (raise) for corners within _FAR, whatever order it's asked in: its numbers finite
+    and within _FAR (squaring them stays a float), and a radius well above 0 where it divides by it."""
+    vals = (a.x, a.y, a.radius) + ((a.dx, a.dy) if a.shape == "square" else ()) \
+        + ((a.x2, a.y2) if a.shape == "line" else ())
+    if not all(type(v) in (int, float) and math.isfinite(v) and abs(v) <= _FAR for v in vals):
+        return False
+    return a.shape == "round" or a.radius >= 1e-40
+
+
+def _sure_test(a: EraseArea, by_size: bool, reach: dict):
+    """inside(x0, y0, x1, y1): whether a box lies inside area `a` (its four corners do: each shape is convex), for
+    erase_plan's sure areas; None for an area that can't be one: with a mask, numbers past _MAP, a radius under a map
+    unit, a square without a direction, or by size with a reach that isn't a plain distance."""
+    if a.mask is not None or a.shape not in ("round", "square", "line"):
+        return None
+    if not all(type(v) in (int, float) and math.isfinite(v) and abs(v) <= _MAP
+               for v in (a.x, a.y, a.radius, a.dx, a.dy, a.x2, a.y2)) or a.radius < 1.0:
+        return None
+    if a.shape == "square" and not 1e-12 <= a.dx * a.dx + a.dy * a.dy <= 1e24:
+        return None
+    if by_size and not all(type(v) in (int, float) and math.isfinite(v) and v >= 0.0 for v in reach.values()):
+        return None
+    t2 = _t2_test(a.footprint())
+    return lambda x0, y0, x1, y1: t2(x0, y0) <= 1.0 and t2(x1, y0) <= 1.0 and t2(x0, y1) <= 1.0 and t2(x1, y1) <= 1.0
+
+
+def _room(blocks: list, boxes: list) -> float | None:
+    """How far inside an area a placement's box must lie for erase_plan to call the area sure for it (map units): a
+    millionth of the farthest anything placed can be from the map's corner, and a unit more. That is far past what
+    the sums can stray by (a few billionths of it at most), so every object under the box tests inside the area as
+    surely as the box does. None when that bound passes _MAP, a number isn't finite, the blocks aren't stored
+    parents first, a placement stretches things a million times, or they nest past 64 deep. `blocks`: per block,
+    _placed_items."""
+    n = len(blocks)
+    # per block, over its placements: the most they stretch (the largest row sum of a transform's turning part), the
+    # farthest they move it, how deep it nests
+    stretch, move, deep = [0.0] * n, [0.0] * n, [0] * n
+    stretch[0] = 1.0
+    far = 0.0
+    for bi, items in enumerate(blocks):
+        own = max(map(abs, boxes[bi])) if boxes[bi] is not None else 0.0
+        for e in items:
+            if e[1] >= 0:
+                if not math.isfinite(sum(map(abs, e[2:]))):
+                    return None
+                own = max(own, abs(e[2]), abs(e[3]), abs(e[4]))
+                continue
+            j, c = e[2], e[3]
+            if j <= bi or not math.isfinite(sum(map(abs, c))):
+                return None
+            turn = max(abs(c[0]) + abs(c[1]) + abs(c[2]), abs(c[4]) + abs(c[5]) + abs(c[6]),
+                       abs(c[8]) + abs(c[9]) + abs(c[10]))
+            stretch[j] = max(stretch[j], stretch[bi] * turn)
+            move[j] = max(move[j], stretch[bi] * max(abs(c[3]), abs(c[7]), abs(c[11])) + move[bi])
+            deep[j] = max(deep[j], deep[bi] + 1)
+            if not (stretch[j] <= 1e6 and move[j] <= _MAP) or deep[j] > 64:  # (an object's size stays a number)
+                return None
+        far = max(far, stretch[bi] * own + move[bi])
+    return 1.0 + far * 1e-6 if math.isfinite(far) and far <= _MAP else None
 
 
 def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridges=frozenset(),
@@ -1092,41 +1278,68 @@ def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridg
 
     A placement lying wholly inside one area, with no area meeting it that takes other names, loses every object of
     that area's names at once (bulk), worked out once per block: erasing most of a big map (the owner's whole-map erase
-    on M04_Cotentin, 2026-10-04) no longer tests every object of every placement. `cancel()`, asked now and then,
-    stops the plan with EraseCancelled when it says so."""
+    on M04_Cotentin, 2026-10-04) no longer tests every object of every placement. And an area a placement lies inside
+    with room to spare (_room) is sure for it and for everything under it, while they are placed flat (their x and y
+    don't hang on their z, as the boxes take it): the objects of its names there go without a test, since each test
+    would say so, and a placement whose every name is sure goes whole. The owner's 175 areas over most of M04_Cotentin
+    (2026-10-04) took 3 minutes when every object was tested. `cancel()`, asked now and then, stops the plan with
+    EraseCancelled when it says so."""
     roots = sc.roots()
     if roots != [0]:
         raise SceneryError("the scenery file's blocks aren't in the order this writer knows")
     reach = {s: sizes[n] for s, n in enumerate(sc.names[:len(sc.flags)]) if n in sizes} if sizes else {}
     most = max(reach.values(), default=0.0) * SIZE_MOST
-    pairs, takes = [], {}  # (area as searched, the name indexes it takes, the area); areas asking the same share one set
-    feet: dict = {}        # id(area) -> its footprint, for an area by size (made once)
+    # (area as searched, the name indexes it takes, the area, whether its test needs the object's reach, its test,
+    # whether the searched area meets a box, whether a box lies inside the area: _takes_test, _meets_test,
+    # _sure_test); areas asking the same share one set
+    pairs, takes = [], {}
     for a in areas:
         key = (tuple(a.what), tuple(a.types))
         if key not in takes:
             named = set(a.types)
             takes[key] = {s for s, n in enumerate(sc.names[:len(sc.flags)])
                           if n in named or (kinds.get(s) in a.what and s not in bridges)}
-        if a.by_size and most:
+        by_size = bool(a.by_size and most)
+        if by_size:  # searched as far as the farthest reach, asked by each object's own
             from dataclasses import replace
-            feet[id(a)] = a.footprint()
-            pairs.append((replace(a, radius=a.radius + most), takes[key], a))
+            searched = replace(a, radius=a.radius + most)
         else:
-            pairs.append((a, takes[key], a))
-
-    def takes_it(a: EraseArea, x: float, y: float, symbol: int, m: tuple, local: tuple) -> bool:
-        if a.mask is not None:
-            return a.mask(x, y, reach.get(symbol, 0.0) * _size_of(m, local))
-        f = feet.get(id(a))
-        if f is None:
-            return a.contains(x, y)
-        r = a.radius + reach.get(symbol, 0.0) * _size_of(m, local)  # (how far out / r)² grown by the object's reach
-        return f.t2(x, y) * a.radius * a.radius <= r * r
-    boxes = _object_boxes(sc)
+            searched = a
+        pairs.append((searched, takes[key], a) + _takes_test(a, by_size)
+                     + (_meets_test(searched), _sure_test(a, by_size, reach)))
+    flat, boxes = _placed_items(sc)
     grid = _AreaGrid(pairs) if len(pairs) > 64 else None
-    sized = any(a.mask is not None or id(a) in feet for _s, _ok, a in pairs)  # an object's size counts somewhere
     whole: dict = {}  # (block, id(its names)) -> what taking every object of those names under it takes (bulk)
     seen = [0]
+    n_blocks = len(sc.blocks)
+    tame = all(_tame_cover(a) for a in areas)
+    held: dict = {}  # the name sets (by id) of the areas meeting a placement -> those holding all the others
+
+    def holding(inner: list):
+        ids = {id(p[1]): p[1] for p in inner}
+        if len(ids) == 1:
+            return ids
+        key = frozenset(ids)
+        got = held.get(key)
+        if got is None:
+            got = held[key] = {i for i, ok in ids.items() if all(o <= ok for o in ids.values())}
+        return got
+    nothing = frozenset()
+    room = _room(flat, boxes) if any(p[6] for p in pairs) else None
+    if room is not None:
+        under = [nothing] * n_blocks  # the names under each block, however deep
+        level = [True] * n_blocks     # whether every block under it is placed flat (x and y not hanging on z)
+        for bi in range(n_blocks - 1, -1, -1):
+            names, even = set(), True
+            for e in flat[bi]:
+                if e[1] >= 0:
+                    names.add(e[1])
+                else:
+                    names |= under[e[2]]
+                    even = even and level[e[2]] and e[3][2] == 0.0 and e[3][6] == 0.0
+            under[bi], level[bi] = frozenset(names), even
+    every = set(range(len(sc.names)))  # bulk with every name: the whole placement goes
+    unions: dict = {}  # (sure names, id(an area's names)) -> both together
 
     def bulk(j: int, ok: set) -> _Cut | None:
         """What a placement of block j loses when every object under it lies in an area taking the names `ok` and no
@@ -1159,54 +1372,105 @@ def erase_plan(sc: Scenery, areas: list[EraseArea], kinds: dict[int, str], bridg
                 _Cut(j, removed, changes, gone, len(removed) == len(b.items) and j != 0)
         return _copy_cut(whole[key])
 
-    def visit(bi: int, m: tuple, near: list) -> _Cut | None:
-        """`near`: the areas that meet this placement (only they can take anything from it)."""
+    def visit(bi: int, m: tuple, near: list, sure: frozenset) -> _Cut | None:
+        """`near`: the areas that meet this placement (only they can take anything from it); `sure`: the names areas
+        sure for it take (only while it's placed flat)."""
         seen[0] += 1
         if cancel is not None and seen[0] % 4096 == 0 and cancel():
             raise EraseCancelled("a newer erase was asked for")
-        b = sc.blocks[bi]
         removed, changes, gone = set(), {}, {}
         g = grid if near is pairs else None  # the grid holds exactly every area: only for the top placement
-        for it in b.items:
-            if it.kind == "object":
-                if sized:
-                    local = it.matrix()
-                    tx, ty, tz = local[3], local[7], local[11]
-                else:  # only where it stands counts: its place, without the rest of its transform
-                    local = None
-                    tx, ty, tz = _translation(it.tform, it.data)
-                x = m[0] * tx + m[1] * ty + m[2] * tz + m[3]
-                y = m[4] * tx + m[5] * ty + m[6] * tz + m[7]
-                here = g.query(x, y, x, y) if g is not None else near
-                if any(it.symbol in ok and takes_it(a, x, y, it.symbol, m, local) for _searched, ok, a in here):
-                    removed.add(it.at)
-                    gone[it.symbol] = gone.get(it.symbol, 0) + 1
-            elif it.kind == "child":
-                j = sc._by_offset[it.child_offset]
-                if boxes[j] is None:
+        m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, _m11 = m
+        even = room is not None and m2 == 0.0 and m6 == 0.0  # placed flat: an area can be sure for what's under it
+        asks: dict = {}  # name index -> the tests of the areas in `near` that take it, in their order
+        for e in flat[bi]:
+            s = e[1]
+            if s >= 0:  # an object: it goes when the first area (in order) taking its name says so
+                if s in sure:
+                    removed.add(e[0])
+                    gone[s] = gone.get(s, 0) + 1
                     continue
-                cm = compose(m, it.matrix())
-                inner = _meeting(boxes[j], cm, near, g)
+                tx, ty, tz = e[2], e[3], e[4]
+                x = m0 * tx + m1 * ty + m2 * tz + m3
+                y = m4 * tx + m5 * ty + m6 * tz + m7
+                if g is not None:
+                    tests = [p[3:5] for p in g.query(x, y, x, y) if s in p[1]]
+                else:
+                    tests = asks.get(s)
+                    if tests is None:
+                        tests = asks[s] = [p[3:5] for p in near if s in p[1]]
+                rs = None  # how far it reaches: its type's reach times its size (the length of its placed x axis)
+                for by_reach, test in tests:
+                    if by_reach:
+                        if rs is None:
+                            l0, l4, l8 = e[5], e[6], e[7]
+                            ax = m0 * l0 + m1 * l4 + m2 * l8
+                            ay = m4 * l0 + m5 * l4 + m6 * l8
+                            az = m8 * l0 + m9 * l4 + m10 * l8
+                            rs = reach.get(s, 0.0) * math.sqrt(ax * ax + ay * ay + az * az)
+                        if test(x, y, rs):
+                            break
+                    elif test(x, y):
+                        break
+                else:
+                    continue
+                removed.add(e[0])
+                gone[s] = gone.get(s, 0) + 1
+                continue
+            at, _s, j, local = e
+            flat_here = even and local[2] == 0.0 and local[6] == 0.0  # what's sure here is sure for it too
+            if flat_here and level[j] and under[j] <= sure:
+                c = bulk(j, every)
+            else:
+                cm = compose(m, local)
+                bx0, by0, bx1, by1 = boxes[j]  # its box's corners, placed
+                c0, c1, c3, c4, c5, c7 = cm[0], cm[1], cm[3], cm[4], cm[5], cm[7]
+                xa, ya = c0 * bx0 + c1 * by0 + c3, c4 * bx0 + c5 * by0 + c7
+                xb, yb = c0 * bx1 + c1 * by0 + c3, c4 * bx1 + c5 * by0 + c7
+                xc, yc = c0 * bx0 + c1 * by1 + c3, c4 * bx0 + c5 * by1 + c7
+                xd, yd = c0 * bx1 + c1 * by1 + c3, c4 * bx1 + c5 * by1 + c7
+                x0, y0, x1, y1 = min(xa, xb, xc, xd), min(ya, yb, yc, yd), max(xa, xb, xc, xd), max(ya, yb, yc, yd)
+                inner = [p for p in (g.query(x0, y0, x1, y1) if g is not None else near) if p[5](x0, y0, x1, y1)]
                 if not inner:
                     continue
-                bx = boxes[j]
-                corners = [(cm[0] * x + cm[1] * y + cm[3], cm[4] * x + cm[5] * y + cm[7])
-                           for x, y in ((bx[0], bx[1]), (bx[2], bx[1]), (bx[0], bx[3]), (bx[2], bx[3]))]
-                over = next((ok for _s, ok, a in inner if a.mask is None and a.covers(corners)
-                             and all(other <= ok for _s2, other, _a2 in inner)), None)
-                c = bulk(j, over) if over is not None else visit(j, cm, inner)
-                if c is None:
-                    continue
-                for s, n in c.gone.items():
-                    gone[s] = gone.get(s, 0) + n
-                if c.empty:
-                    removed.add(it.at)
+                held_there, need = nothing, None
+                if flat_here:  # the areas it lies inside with room to spare join those sure for this placement
+                    held_there, need = sure, under[j] - sure
+                    gx0, gy0, gx1, gy1 = x0 - room, y0 - room, x1 + room, y1 + room
+                    for p in inner:
+                        if p[6] is not None and not p[1].isdisjoint(need) and p[6](gx0, gy0, gx1, gy1):
+                            k = (held_there, id(p[1]))
+                            u = unions.get(k)
+                            if u is None:
+                                u = unions[k] = held_there | p[1]
+                            held_there, need = u, need - p[1]
+                            if not need:
+                                break
+                if flat_here and level[j] and not need:
+                    c = bulk(j, every)
                 else:
-                    changes[it.at] = c
+                    corners = ((xa, ya), (xb, yb), (xc, yc), (xd, yd))
+                    if tame and -_FAR <= x0 and x1 <= _FAR and -_FAR <= y0 and y1 <= _FAR:
+                        # covers() can't fail here (_tame_cover): asked only of an area whose names hold the others'
+                        sup = holding(inner)
+                        over = next((p[1] for p in inner if id(p[1]) in sup and p[2].mask is None
+                                     and p[2].covers(corners)), None) if sup else None
+                    else:
+                        over = next((p[1] for p in inner if p[2].mask is None and p[2].covers(corners)
+                                     and all(q[1] <= p[1] for q in inner)), None)
+                    c = bulk(j, over) if over is not None else visit(j, cm, inner, held_there)
+            if c is None:
+                continue
+            for s, n in c.gone.items():
+                gone[s] = gone.get(s, 0) + n
+            if c.empty:
+                removed.add(at)
+            else:
+                changes[at] = c
         if not removed and not changes:
             return None
-        return _Cut(bi, removed, changes, gone, len(removed) == len(b.items) and bi != 0)
-    return visit(0, IDENTITY, pairs)
+        return _Cut(bi, removed, changes, gone, len(removed) == len(sc.blocks[bi].items) and bi != 0)
+    return visit(0, IDENTITY, pairs, nothing)
 
 
 class EraseCancelled(Exception):

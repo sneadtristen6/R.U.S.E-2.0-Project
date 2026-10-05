@@ -479,5 +479,86 @@ class Cliffs(unittest.TestCase):
         self.assertEqual(found, 1)
 
 
+def bits(v):
+    """A float's exact bits (or None), so -0.0 and 0.0 count as different."""
+    return None if v is None else struct.pack("<d", v)
+
+
+class QuickLookups(unittest.TestCase):
+    """The terrain step's lookups made for many points give exactly what the plain ones give, to the bit: each stroke's
+    share of the old shape (looked up by place), the gameplay ground's change and old height (one search), and the
+    nearest close-up mesh point's normal (the nearest squares first)."""
+
+    def setUp(self):
+        from rusemod import terrain_edit
+        self.te = terrain_edit
+        self.files = make_map(cliff=True)
+        self.hd = Tms(self.files[FILES["highdef"]])
+        self.area = (0.0, 0.0, 3000.0, 3000.0)
+
+    def probe_points(self, step):
+        """Points all over the map and past it, on the squares' edges and on every close-up mesh point."""
+        out = [(x * 37.3 - 200.0, y * 41.9 - 300.0) for x in range(95) for y in range(90)]
+        out += [(k * step, j * step) for k in range(0, 260, 7) for j in range(0, 260, 11)]
+        out += [(self.hd.to_world(0, p[0]), self.hd.to_world(1, p[1])) for c in self.hd.cells for p in c.positions()]
+        return out
+
+    def test_the_strokes_share_of_the_old_shape_by_place(self):
+        strokes = [Stroke("plateau", 1500.0, 1500.0, 600.0, level=200.0, weight=0.8),
+                   Stroke("flatten", 400.0, 2600.0, 900.0, level=0.0, weight=0.5, edge="hard"),
+                   Stroke("hill", 1500.0, 1500.0, 600.0, height=400.0),
+                   Stroke("level", 2900.0, 100.0, 300.0, level=50.0, shape="square", dx=1.0, dy=2.0),
+                   Stroke("ramp", 100.0, 100.0, 250.0, x2=2800.0, y2=2900.0, level=0.0, level2=900.0),
+                   Stroke("smooth", -50.0, 1500.0, 400.0, weight=0.3),
+                   Stroke("flatten", 3200.0, 3300.0, 700.0, level=10.0, weight=1.0, shape="line", x2=2000.0,
+                          y2=3100.0),
+                   Stroke("plateau", 50000.0, 50000.0, 100.0, level=1.0)]   # far off the map
+        quick = self.te._Kept(strokes, self.area)
+        for x, y in self.probe_points(quick.step) + [(1e6, 1e6), (-1e6, 20.0)]:
+            self.assertEqual(bits(quick.at(x, y)), bits(self.te._kept(strokes, x, y)), (x, y))
+
+    def test_the_grounds_change_and_old_height_from_one_search(self):
+        files = make_map(cliff=True)
+        kdt = Kdt(files[FILES["ground"]])
+        pts = self.te._tree_points("ground", kdt)
+        pts.apply(Stroke("hill", 1500.0, 1500.0, 900.0, height=400.0))
+        pts.apply(Stroke("plateau", 600.0, 2500.0, 500.0, level=900.0))
+        surface = self.te._Surface(kdt, pts)
+        self.assertTrue(surface)
+        for x, y in self.probe_points(surface.step):
+            change, old = surface.change_and_old(x, y)
+            self.assertEqual((bits(change), bits(old)), (bits(surface.change(x, y)), bits(surface.old(x, y))), (x, y))
+
+    def test_the_nearest_mesh_points_normal(self):
+        pts = self.te._mesh_points("highdef", self.hd)
+        quick = self.te._normal_lookup(self.hd, pts)
+
+        def plain(x, y, z):   # the lookup as it was: every point of the squares within two of it
+            best, best_d = None, None
+            s = pts.step
+            for n in pts.near(x - 2 * s, x + 2 * s, y - 2 * s, y + 2 * s):
+                dx, dy = pts.x[n] - x, pts.y[n] - y
+                d = (dx * dx + dy * dy, abs(pts.z[n] - z))
+                if best_d is None or d < best_d or (d == best_d and n < best):
+                    best, best_d = n, d
+            if best is None:
+                return None
+            bx, by, bz, _ = self.hd.cells[pts.part[best]].normals()[pts.index[best]]
+            v = (bx / 127.5 - 1.0, by / 127.5 - 1.0, bz / 127.5 - 1.0)
+            length = math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
+            if length == 0.0 or v[2] <= 0.0:
+                return None
+            return (v[0] / length, v[1] / length, v[2] / length)
+        zs = (-100.0, 900.0, 1013.0, 1040.0, 3000.0)
+        probes = self.probe_points(pts.step) + [(x, y) for x in (-700.0, 3700.0) for y in (-700.0, 1500.0)]
+        for k, (x, y) in enumerate(probes):
+            z = zs[k % len(zs)]
+            self.assertEqual(quick(x, y, z), plain(x, y, z), (x, y, z))
+        for c in self.hd.cells:   # the cliff's top and foot share an x, y: the height picks the one sat on
+            for p in c.positions():
+                x, y, z = (self.hd.to_world(a, p[a]) for a in range(3))
+                self.assertEqual(quick(x, y, z), plain(x, y, z), (x, y, z))
+
+
 if __name__ == "__main__":
     unittest.main()

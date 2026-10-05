@@ -3,4 +3,5 @@ import sys
 
 from .cli import main
 
-sys.exit(main())
+if __name__ == "__main__":  # not in a worker program the build starts (rusemod.mend), which runs this file again
+    sys.exit(main())

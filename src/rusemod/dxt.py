@@ -165,6 +165,23 @@ def encode_block(pixels: list[tuple[int, int, int]]) -> bytes:
     return struct.pack("<HHI", c0, c1, word)
 
 
+def encode_block_quick(pixels: list[tuple[int, int, int]]) -> bytes:
+    """16 RGB pixels -> one DXT1 block, as encode_block but from its first pair of end colours only (no nudging): about
+    nine times fewer tries, for the large areas the riverbed mend fills (rusemod.mend), where a few units of error in a
+    field's grain don't show."""
+    if all(p == pixels[0] for p in pixels):
+        c = pack565(*pixels[0])
+        return struct.pack("<HHI", c, c, 0)
+    hi, lo = _endpoints(pixels)
+    c0, c1 = _to565(hi), _to565(lo)
+    if c0 == c1:
+        return struct.pack("<HHI", c0, c0, 0)
+    if c0 < c1:
+        c0, c1 = c1, c0
+    word, _err = best_indices(pixels, c0, c1)
+    return struct.pack("<HHI", c0, c1, word)
+
+
 def encode(rgb: bytes, width: int, height: int) -> bytes:
     """RGB pixels (3 bytes per pixel, rows top to bottom) -> DXT1 blocks. width/height multiples of 4."""
     if width % 4 or height % 4:

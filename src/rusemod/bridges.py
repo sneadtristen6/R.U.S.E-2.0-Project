@@ -18,6 +18,7 @@ network.
 from __future__ import annotations
 
 import math
+import struct
 
 from dataclasses import dataclass, field
 
@@ -87,13 +88,19 @@ class Ground:
             if not tri:
                 continue
             pts = mesh.world_vertices(k)
+            grid = self.grid
             for t in range(0, len(tri) - 2, 3):
-                p = [pts[v] for v in tri[t:t + 3]]
-                x0, x1 = min(q[0] for q in p), max(q[0] for q in p)
-                y0, y1 = min(q[1] for q in p), max(q[1] for q in p)
+                a, b, c = pts[tri[t]], pts[tri[t + 1]], pts[tri[t + 2]]
+                p = [a, b, c]
+                x0, x1 = min(a[0], b[0], c[0]), max(a[0], b[0], c[0])
+                y0, y1 = min(a[1], b[1], c[1]), max(a[1], b[1], c[1])
                 for gx in range(int(x0 // bucket), int(x1 // bucket) + 1):
                     for gy in range(int(y0 // bucket), int(y1 // bucket) + 1):
-                        self.grid.setdefault((gx, gy), []).append(p)
+                        cell = grid.get((gx, gy))
+                        if cell is None:
+                            grid[(gx, gy)] = [p]
+                        else:
+                            cell.append(p)
 
     def height_at(self, x: float, y: float) -> float | None:
         """The ground's height at (x, y), as Tms.height_at gives it (None off the mesh)."""
@@ -106,6 +113,66 @@ class Ground:
             l3 = 1.0 - l1 - l2
             if min(l1, l2, l3) >= -1e-9:
                 return l1 * a[2] + l2 * b[2] + l3 * c[2]
+        return None
+
+
+class GroundChange:
+    """How much a mesh's ground rose or fell at a point between two versions of it (`before`, `after`): Ground(after)'s
+    height there less Ground(before)'s, None where either has none. When the two have the same triangles and their
+    points the same x and y (heights moved, nothing else: the terrain editor's meshes), one index serves both: the same
+    triangle holds the point in both, found by the same sums, so each height is the one its own Ground gives.
+    Otherwise two Grounds."""
+
+    def __init__(self, before: Tms, after: Tms, bucket: float = 8192.0):
+        self.bucket = bucket
+        self.grounds = None
+
+        def xy_bounds(mesh):   # the bounds that give x and y, to the bit: the same q gives the same x and y then
+            return struct.pack("<4d", mesh.bounds[0], mesh.bounds[1], mesh.bounds[3], mesh.bounds[4])
+        same =(len(before.cells) == len(after.cells) and xy_bounds(before) == xy_bounds(after)
+                and all((c0.flags & 1) == (c1.flags & 1) and (not c0.flags & 1 or c0.ib[0] == c1.ib[0])
+                        and len(c0.positions()) == len(c1.positions())
+                        and all(p[0] == q[0] and p[1] == q[1] for p, q in zip(c0.positions(), c1.positions()))
+                        for c0, c1 in zip(before.cells, after.cells)))
+        if not same:
+            self.grounds = (Ground(before, bucket), Ground(after, bucket))
+            return
+        old = [before.world_vertices(k) for k in range(len(before.cells))]
+        new = [after.world_vertices(k) for k in range(len(after.cells))]
+        self.grid: dict[tuple[int, int], list] = {}
+        grid = self.grid
+        for k, c in enumerate(after.cells):
+            tri = c.triangles(0)
+            if not tri:
+                continue
+            pts = [(a[0], a[1], a[2], b[2]) for a, b in zip(old[k], new[k])]  # x, y, height before, height after
+            for t in range(0, len(tri) - 2, 3):
+                a, b, c3 = pts[tri[t]], pts[tri[t + 1]], pts[tri[t + 2]]
+                p = (a, b, c3)
+                x0, x1 = min(a[0], b[0], c3[0]), max(a[0], b[0], c3[0])
+                y0, y1 = min(a[1], b[1], c3[1]), max(a[1], b[1], c3[1])
+                for gx in range(int(x0 // bucket), int(x1 // bucket) + 1):
+                    for gy in range(int(y0 // bucket), int(y1 // bucket) + 1):
+                        cell = grid.get((gx, gy))
+                        if cell is None:
+                            grid[(gx, gy)] = [p]
+                        else:
+                            cell.append(p)
+
+    def at(self, x: float, y: float) -> float | None:
+        """Ground(after).height_at(x, y) - Ground(before).height_at(x, y), or None when either is None."""
+        if self.grounds is not None:
+            a, b = self.grounds[0].height_at(x, y), self.grounds[1].height_at(x, y)
+            return None if a is None or b is None else b - a
+        for a, b, c in self.grid.get((int(x // self.bucket), int(y // self.bucket)), ()):
+            den = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1])
+            if den == 0:
+                continue
+            l1 = ((b[1] - c[1]) * (x - c[0]) + (c[0] - b[0]) * (y - c[1])) / den
+            l2 = ((c[1] - a[1]) * (x - c[0]) + (a[0] - c[0]) * (y - c[1])) / den
+            l3 = 1.0 - l1 - l2
+            if min(l1, l2, l3) >= -1e-9:
+                return (l1 * a[3] + l2 * b[3] + l3 * c[3]) - (l1 * a[2] + l2 * b[2] + l3 * c[2])
         return None
 
 

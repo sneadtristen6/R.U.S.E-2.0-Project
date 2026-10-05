@@ -178,6 +178,52 @@ class Blocking(unittest.TestCase):
         self.assertEqual(g.links, [(0, 1, 4980.0, 2000.0)])  # the gate moves to where they still meet: A and B stay one
         self.assertEqual(g.parts(), [2])
 
+    def test_the_refill_is_the_plain_sums(self):
+        """nav._fill looks the circles and zones up by place, the covered spots first and the nearest zones first:
+        the same circles as weighing every spot against every source circle, zone and live circle."""
+        import random
+
+        def plain(sources, zones, now, least=nav.MIN_RADIUS):
+            step, spots, seen = 2 * nav.STEP, [], set()
+            for sx, sy, sr in sources:
+                for i in range(int((sx - sr) // step), int((sx + sr) // step) + 1):
+                    for j in range(int((sy - sr) // step), int((sy + sr) // step) + 1):
+                        if (i, j) in seen:
+                            continue
+                        seen.add((i, j))
+                        x, y = i * step, j * step
+                        deep, source = max((r - ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5, k)
+                                           for k, (cx, cy, r) in enumerate(sources))
+                        if deep < least:
+                            continue
+                        room = min([deep] + [((x - zx) ** 2 + (y - zy) ** 2) ** 0.5 - zr for zx, zy, zr in zones if zr > 0])
+                        room = (room // nav.STEP) * nav.STEP
+                        if room >= least and not any((x - cx) ** 2 + (y - cy) ** 2 < r ** 2 for cx, cy, r in now if r > 0):
+                            spots.append((room, x, y, source))
+            spots.sort(key=lambda s: (-s[0], s[1], s[2]))
+            out = []
+            for r, x, y, source in spots:
+                if not any((x - cx) ** 2 + (y - cy) ** 2 < cr ** 2 for cx, cy, cr, _s in out):
+                    out.append((float(x), float(y), float(r), source))
+            return out
+        rng = random.Random(1)
+        added = 0
+        for k in range(40):
+            def spot():
+                return float(320 * rng.randint(0, 250)) if k % 2 else rng.uniform(0.0, 80000.0)
+            sources = [(spot(), spot(), rng.choice((2560.0, 4800.0, 9600.0, 28800.0, rng.uniform(1300.0, 30000.0))))
+                       for _ in range(rng.randint(1, 5))]
+            zones = [(spot(), spot(), rng.uniform(300.0, 9000.0)) for _ in range(rng.randint(1, 12))]
+            zones += [(spot() + 300000.0, spot(), 5000.0), (spot(), spot() - 90000.0, 800.0)]  # (far ones)
+            now = [(x, y, float(320 * rng.randint(0, int(r // 320)))) for x, y, r in sources] \
+                + [(spot(), spot(), rng.uniform(1000.0, 6000.0)) for _ in range(rng.randint(0, 4))]
+            got = nav._fill(sources, zones, now)
+            self.assertEqual(got, plain(sources, zones, now))
+            # (and told what each source keeps, as Graph.block tells it: its spots under that are passed over)
+            self.assertEqual(nav._fill(sources, zones, now, kept=[c[2] for c in now[:len(sources)]]), got)
+            added += len(got)
+        self.assertGreater(added, 400)
+
     def test_the_ground_given_up_is_filled_back(self):
         """A big circle with a small block at its edge: it shrinks a lot, and new circles fill what it gave up,
         right up to the block, linked in, and listed in the index as one more tree."""
@@ -586,6 +632,40 @@ class NewWater(unittest.TestCase):
     """Ground under water is never walkable on a shipped map, but the water and height brushes change only the ground
     files: the build blocks the new water (nav.water_blocks)."""
 
+    def test_a_wide_dried_bed_gets_zones_as_big_as_it_has_room_for(self):
+        """A lake drained (a sea, on the owner's M04_Cotentin, 2026-10-04: zones of 15 m over all of it asked for ten
+        times the circles a graph holds): the wide stretches get zones as big as the bed has room for, the largest
+        first, none holding anything but dried bed, half a step off the water that is left."""
+        import math
+
+        def old(x, y):  # a lake 120,000 across, and a river running out of it to the east
+            return math.hypot(x - 100000.0, y - 100000.0) < 60000.0 or (x >= 100000.0 and abs(y - 100000.0) < 6000.0)
+
+        def new(x, y):  # the lake is drained, and the river as far as x = 190,000
+            return x > 190000.0 and abs(y - 100000.0) < 6000.0
+        areas = [(120000.0, 100000.0, 110000.0)]
+        wide: list = []
+        zones, drained = nav.water_blocks(old, new, areas, wide, 3840.0, 81600.0)
+        self.assertEqual((zones, drained), nav.water_blocks(old, new, areas))  # the blocks and samples as without
+        self.assertEqual(zones, [])
+        s = 960.0  # the samples' step for an area of this size
+        radii = [r for _x, _y, r in wide]
+        self.assertEqual(radii, sorted(radii, reverse=True))  # the largest first
+        self.assertTrue(all(3840.0 < r <= 81600.0 for r in radii))
+        x, y, r = wide[0]  # the lake's middle: as far as its shore
+        self.assertLess(math.hypot(x - 100000.0, y - 100000.0), 2 * s)
+        self.assertTrue(60000.0 - 2 * s < r <= 60000.0 + s, r)
+        self.assertLess(len(wide), 400)  # (the 15 m zones over these samples: thousands)
+        self.assertGreater(len(drained), 10000)
+        for k, (x, y, r) in enumerate(wide):
+            self.assertFalse(any(math.hypot(x - a, y - b) < c for a, b, c in wide[:k]), k)  # its middle in no earlier one
+            for n in range(72):  # its rim, a step in: dried bed all the way round, none of it water now
+                px, py = x + (r - s) * math.cos(n * math.pi / 36), y + (r - s) * math.sin(n * math.pi / 36)
+                self.assertTrue(old(px, py) and not new(px, py), (k, x, y, r, n))
+            self.assertTrue(x + r <= 190000.0 - s / 2 + 1e-6 or abs(y - 100000.0) - r >= 6000.0 - s, (x, y, r))
+        inside = sum(1 for x, y in drained if any(math.hypot(x - a, y - b) < c for a, b, c in wide))
+        self.assertGreater(inside, 0.9 * len(drained))  # nearly all the bed; its narrow edges are the small zones'
+
     def test_new_water_is_covered_and_the_shore_kept(self):
         def old(x, y):  # a river, and a pond the stroke drains
             return 0.0 <= x <= 10000.0 or math.hypot(x - 60000.0, y - 30000.0) < 3000.0
@@ -608,6 +688,10 @@ class NewWater(unittest.TestCase):
                     self.assertFalse(inside, (x, y))  # dry ground more than a step from the water stays open
         self.assertTrue(drained)
         self.assertTrue(all(math.hypot(x - 60000.0, y - 30000.0) < 3000.0 for x, y in drained))
+        wide: list = []  # the pond is 3,000 across at most: no stretch of it is wide
+        self.assertEqual(nav.water_blocks(old, new, [(30000.0, 30000.0, 21000.0), (60000.0, 30000.0, 5000.0)], wide,
+                                          3840.0, 81600.0), (zones, drained))
+        self.assertEqual(wide, [])
         self.assertLess(len(zones), 200)  # (about two a step of shore: the graphs' blocking stays quick)
         self.assertEqual(nav.water_blocks(old, old, [(30000.0, 30000.0, 21000.0)]), ([], []))
         # blocked in the graphs: no point of the lake is walkable afterwards, ground well off it still is

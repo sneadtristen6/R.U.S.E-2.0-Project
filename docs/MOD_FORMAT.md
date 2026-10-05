@@ -461,14 +461,21 @@ and `cover` strokes over the same circles here; its Undo takes back both.
   from far too; the camera floor keeps its height above the ground (not yet seen in the game: `TESTS.md` T18).
 - **What was drawn for the old ground follows.** The road model (the white roads seen from high up and in the map
   view) holds the ground's height at every point; it moves with the ground (on flattened Blitz Twin it stood off the
-  roads painted on the ground). A riverbed or other hollow the strokes raise flat (an old hollow, more than 1.5 m
-  deep, that the new ground no longer has; one still a dip is left) still showed its old banks: up close the river's
-  rock stickers, from high up the banks painted into the picture (`TESTS.md` T27). Its picture (both tile sets) and
-  its close-up map are mended from both banks (`rusemod.mend`), and the ground stickers, low plants and stones that
-  reach into it are taken off; trees, buildings, cover and movement stay. That look passed in the game, laid on a test
-  copy (T28: "purple wins"); the build doing it itself is not seen yet, nor the road model moving. A whole flattened
-  map adds minutes to its first build (Blitz flattened: finding the filled hollows 33 s, working out the fill 23 s,
-  the finest picture level 5½ minutes while its tiles were unpacked for the first time; they're kept unpacked after).
+  roads painted on the ground). A riverbed the strokes raise flat (an old hollow, more than 1.5 m deep, that the new
+  ground no longer has, in a stretch that reaches the old ground's water; one still a dip is left, and so is a dry
+  valley raised flat, whose picture was a field's already) still showed its old banks: up close the river's rock
+  stickers, from high up the banks painted into the picture (`TESTS.md` T27). Its picture (both tile sets) and its
+  close-up map are mended from both banks (`rusemod.mend`), and the ground stickers, low plants and stones that reach
+  into it are taken off; trees, buildings, cover and movement stay. When taking them off would make the map's
+  scenery bigger than a map holds, they stay, with a warning (the pictures are mended all the same). That look passed
+  in the game, laid on a test copy (T28: "purple wins"); the build doing it itself is not seen yet, nor the road model
+  moving.
+- **Big maps: kept, and shared across the cores.** The mend looks only where the old ground had water under the
+  strokes, in squares of 2 km, and shares them and the picture tiles out to worker programs (one per core but one;
+  the same bytes as one program). A reshaped map is kept in the build cache (`rusemod.mapkeep`, named by its pack,
+  the strokes, its water depth and the app's code), so the next build with the same strokes on it takes its ground
+  from there. Measured, all of Blitz Twin flattened: the mend about 7 minutes in 0.9.6, now 65 s with 7 workers; the
+  whole build 239 s the first time, 121 s the next (the map from the cache in 3 s).
 - **The same on every PC.** Only arithmetic and square roots, which every PC rounds the same way, so two PCs build the
   same bytes. The reshaped map counts for multiplayer: its files are part of the fingerprint (§12).
 - **Load order:** when several mods reshape one map, their strokes run in load order, one mod's after another's.
