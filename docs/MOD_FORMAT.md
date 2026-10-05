@@ -740,6 +740,31 @@ units = "vehicles"   # or "all" or "infantry": a wood vehicles couldn't drive in
 - An open that opens nothing (the ground was open already, it is smaller than 5 m, or it touches no ground units
   use) gets a note. The AI's grid follows the vehicles' movement (`rusemod.aigrid`).
 
+### Worked-out answers: `maps/<map pack>/solved.bin` (built: `rusemod.solved`; not seen in the game yet)
+
+A map changed all over asks the build some long questions. On the most extreme map we have (a drained sea), working
+out where units can go took almost six minutes of a fifteen-minute build. The modder waits for that once. Players
+shouldn't: the Studio's **Export mod…** puts what the build worked out into the mod, and a player's build takes it
+from there.
+
+- **Never written by hand.** The export writes it; delete it any time and the build works everything out again.
+- **No game files in it.** It holds our own numbers only: where the new movement circles go. Nothing in it is a
+  file of the game's or a piece of one, and a mod with this file still changes data only.
+- **Locked with the game.** The file is locked with a key made from the game's own movement file for that map, as
+  shipped. Without the game it can't be read, the key is in no code of ours, and a file somebody changed without the
+  game doesn't open. It isn't hidden from someone who has the game: their copy has to read it.
+- **Only for the exact same question.** Every answer is named by a fingerprint of everything it was worked out from
+  (the map's movement as the build has it, the zones, the limits). Another version of the game, another version of
+  the mod or another mod changing the same map asks another question, gets no answer and works it out.
+- **Never trusted as it is.** A build weighs every answer it takes (on the grid, inside the opened ground, off the
+  ground units already have, reachable) and works out the ones that fail. A file that doesn't open is left out with
+  a note; the build goes on without it.
+- **The same game files either way.** On the extreme map the build with the answers gave the same movement files,
+  byte for byte, as the build that worked them out (movement step: 389 s worked out, 7 s with the answers). So the
+  fingerprint and the join code (§12) don't depend on who had the file.
+- **Today it carries the movement step only.** The other long map steps (ground painting, riverbeds) are still made
+  on each PC from the mod's strokes, then kept in the build cache.
+
 ### New roads: `maps/<map pack>/roads.toml`
 
 The roads units follow are each map's road network in `mapinfo.win` (buffer 0; `rusemod.roadnet`, FORMATS §2): points

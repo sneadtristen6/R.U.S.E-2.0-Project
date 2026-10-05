@@ -3551,7 +3551,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             with self._saving:
                 package.update_manifest(folder, mod=manifest)
             game = self._game()
-            build_id = revision = fingerprint = None
+            build_id = revision = fingerprint = answers = None
             if game is None:
                 say("R.U.S.E. wasn't found, so the file carries no game build or fingerprint.")
             else:
@@ -3564,8 +3564,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 revisions = data_revisions(game)
                 revision = revisions[0] if len(revisions) == 1 else None
                 fingerprint = fingerprint_text(result.fingerprint) if result.fingerprint else None
+                answers = result.solved  # (what the long map steps worked out: players' builds take it from the file)
             with self._saving:
-                path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint)
+                path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint,
+                                    solved=answers)
+            if answers:
+                say(f"The file carries the worked-out answers for {len(answers)} map(s), locked: a player's build takes "
+                    f"them instead of working them out again.")
             say(f"Saved as {path}")
             job.result = self._share_view(path)
             say(f"Size: {job.result['size']} bytes")
