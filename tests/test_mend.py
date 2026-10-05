@@ -507,7 +507,7 @@ class WholeGrids(unittest.TestCase):
                         if (abs(i - cx) < r / 2) if band else ((i - cx) ** 2 + (j - cy) ** 2 < r * r):
                             bad[j * nx + i] = 1
             if k % 7 == 0:
-                bad = bytearray(b"\1") * (nx * ny)  # no bank anywhere: nothing to fill from
+                bad = bytearray([1]) * (nx * ny)  # no bank anywhere: nothing to fill from
             fill = bytearray(b if rnd.random() < 0.8 else 1 - b if rnd.random() < 0.1 else 0 for b in bad)
             for smooth in (0.0, 3.2, 1.0):
                 grids = mend.Plan(nx, ny, fill, bad, 30.0, -70.0, 2.5, smooth)

@@ -438,6 +438,33 @@ def _bed_circles(drained: list[tuple[float, float]], wet=None, wide=None) -> lis
     return wide + zones
 
 
+def _kept_movement(read_data, name: str, blocks: list, idle: list, cache) -> tuple[dict, list[str]]:
+    """nav.apply_blocks for a map, its answer kept between builds (rusemod.mapkeep, kind "movement"): named by a
+    fingerprint of the map's movement file as the build has it, its blocks and opens in their order, and the code. A
+    map whose blocks and opens are the same as an earlier build's takes its movement from there: opening a drained
+    sea takes minutes (the owner's M04_Cotentin, 2026-10-04), and every build made it again. A refusal isn't kept."""
+    import hashlib
+    from . import mapkeep
+    from .cover import member
+    from .nav import apply_blocks
+    k = None
+    if cache is not None:
+        win = read_data(member(name))
+        if win is not None:
+            k = mapkeep.key(name, ["movement", hashlib.blake2b(win, digest_size=20).hexdigest()], blocks, None)
+    kept = mapkeep.read(cache, k, "movement")
+    if kept is not None and isinstance(kept.get("notes"), list) and isinstance(kept.get("idle"), list) \
+            and all(type(i) is int and 0 <= i < len(blocks) for i in kept["idle"]):
+        idle += [blocks[i] for i in kept["idle"]]
+        return kept["members"], list(kept["notes"])
+    mine: list = []
+    new, notes = apply_blocks(read_data, name, blocks, mine)
+    idle += mine
+    places = {id(b): i for i, b in enumerate(blocks)}
+    mapkeep.write(cache, k, {"members": new, "notes": list(notes), "idle": [places[id(b)] for b in mine]}, "movement")
+    return new, notes
+
+
 def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs, find_map=None) -> list:
     """nav.wet_opens for a map's opens, on its ground as the terrain edits left it (map_packs: (pack path, archive,
     changed members); `open_pack(path)` opens a map pack, `find_map(name)` finds it, a new map's too); none when the
@@ -1965,7 +1992,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         if moves or paints or blocks or new_roads or bridge_spans or players or data_new:
             from .bridges import BridgeError, apply_spans
             from .cover import CoverError, apply_paints
-            from .nav import NavError, apply_blocks, closing
+            from .nav import NavError, closing
             from .roadnet import RoadNetError, apply_roads
             from .scenario import PACK as SCENARIO_PACK, ScenarioError, apply_moves
             data_path = find_pack(game, SCENARIO_PACK)
@@ -2080,7 +2107,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 for name, (map_blocks, ids) in blocks.items():
                     idle: list = []
                     try:
-                        new, notes = apply_blocks(read_data, name, map_blocks, idle)
+                        new, notes = _kept_movement(read_data, name, map_blocks, idle, cache)
                     except (NavError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
@@ -2093,7 +2120,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                             f"{', '.join(ids)}: {name}: the open at ({b.x:.0f}, {b.y:.0f}) opened nothing: units "
                             f"could already go there, or it is too small (an open needs a radius of 5 m or more) or "
                             f"out of reach of the ground they use")))
-                    for b, (wx, wy) in _wet_opens(open_pack, game, name, map_blocks, map_packs, find_map):
+                    drawn = [b for b in map_blocks if not b.spare]  # (the build's own bed opens keep off the water)
+                    for b, (wx, wy) in _wet_opens(open_pack, game, name, drawn, map_packs, find_map):
                         result.findings.append(Finding("warning", (
                             f"{', '.join(ids)}: {name}: the open at ({b.x:.0f}, {b.y:.0f}) takes in water (at "
                             f"({wx:.0f}, {wy:.0f})): units there stand on the ground under it, on the riverbed or "
