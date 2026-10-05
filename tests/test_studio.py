@@ -1081,6 +1081,62 @@ class Terrain(WithMod):
                 self.api.set_aside(bad)
 
 
+class SectorsSwitch(WithMod):
+    """Sectors over the whole map in the map view (rusemod.sectors): the switch is kept in the mod's scenario.toml
+    ([sectors] whole_map), the other scenario edits keep it, and the map view draws the sectors as the build makes
+    them."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from test_scenario import scenario
+        from test_sectors import H, W, made_up
+        from rusemod.scenario import Scenario
+        zoned, kdt = made_up()
+        s = Scenario.read(scenario())        # its design items, with the two squares of test_sectors as its sectors
+        s.zones = zoned.zones
+        win = b"INFOIA\r\n" + bytes(32) + struct.pack("<2f", W, H) + bytes(16)
+        cls.size = (W, H)
+        (cls.game / "Data" / "PC" / "190852" / "DataMap_Win.dat").write_bytes(make_edat([
+            ("dir", "test\\map\\blitz\\", [("file", "leveldesign.scenario", s.to_bytes()),
+                                           ("dir", "zonebluff\\", [("file", "leveldesign.kdt", kdt)])]),
+            ("dir", "datasmap\\blitz\\", [("file", "mapinfo.win", win)])]))
+
+    def setUp(self):
+        super().setUp()
+        menus = mock.patch("rusemod.scenario.kinds_of", return_value={})
+        menus.start()
+        self.addCleanup(menus.stop)
+        self.mod = Path(self.api.new_mod("Sectors")["current"])
+        self.file = self.mod / "maps" / "Blitz" / "scenario.toml"
+
+    def test_the_switch_is_kept_and_the_sectors_drawn_over_the_whole_map(self):
+        try:
+            from rusemod.numpy2 import np  # noqa: F401
+        except ImportError:
+            self.skipTest("numpy (the apps carry it) isn't here")
+        before = self.api.map_scenarios("Blitz")
+        self.assertFalse(before.get("sectors_whole", False))
+        res = self.api.scenario_sectors("Blitz", True)
+        self.assertTrue(res["sectors_whole"])
+        s = next(x for x in res["scenarios"] if x["file"] == "leveldesign.scenario")
+        self.assertTrue(s.get("sectors_whole"))
+        xs = [p for z in s["zones"] for p in z["points"][0::2]]
+        ys = [p for z in s["zones"] for p in z["points"][1::2]]
+        self.assertEqual((min(xs), max(xs), min(ys), max(ys)), (0.0, self.size[0], 0.0, self.size[1]))
+        self.assertEqual(tomllib.loads(self.file.read_text(encoding="utf-8"))["sectors"], {"whole_map": True})
+        self.api.scenario_move("Blitz", "leveldesign.scenario", 0, 111.0, 222.0)   # another edit keeps it
+        data = tomllib.loads(self.file.read_text(encoding="utf-8"))
+        self.assertEqual((data["sectors"], len(data["move"])), ({"whole_map": True}, 1))
+        off = self.api.scenario_sectors("Blitz", False)
+        self.assertFalse(off["sectors_whole"])
+        self.assertNotIn("sectors", tomllib.loads(self.file.read_text(encoding="utf-8")))
+        self.api.scenario_put_back("Blitz", "leveldesign.scenario", 0)
+        self.assertFalse(self.file.exists())                                       # nothing left: no file
+        self.api.scenario_sectors("Blitz", True)
+        self.assertEqual(set(tomllib.loads(self.file.read_text(encoding="utf-8"))), {"sectors"})
+
+
 class ScenarioEdits(WithMod):
     """The map view's Move and Add unit tools: a starting point moved, units spawned, saved in the mod's
     maps/<map>/scenario.toml and shown on the map as the mod leaves it."""

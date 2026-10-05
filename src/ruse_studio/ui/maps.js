@@ -2417,6 +2417,14 @@ function renderScenClear(s) {
     b.addEventListener("click", () => scenEdit(() => mv.api.scenario_remove(mv.current, s.file, items.map((it) => it.item))));
     box.append(b, " ");
   }
+  // Sectors over the whole map: every scenario of the map, each place its sectors leave out to the nearest one
+  // (StudioApi.scenario_sectors, rusemod.sectors); drawn as the build will make them
+  if ((s.zones || []).length) {
+    const whole = Boolean((scen.data || {}).sectors_whole);
+    box.append(chipOf(w.scen_sectors_whole, w.tip_scen_sectors_whole, whole,
+      () => scenEdit(() => mv.api.scenario_sectors(mv.current, !whole))), " ");
+    if (whole && s.sectors_note) box.append(el("span", { className: "muted", textContent: s.sectors_note }));
+  }
 }
 
 // Save a change, then draw the scenario as the mod leaves it now.

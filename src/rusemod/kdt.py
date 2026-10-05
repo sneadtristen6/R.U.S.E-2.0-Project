@@ -671,6 +671,22 @@ class Kdt:
         t = self.subtrees[s]
         t.index_count, t.indices = len(values), compress(encode_indices(values))
 
+    def set_mesh(self, s: int, positions: list, values: list[int], normals: list) -> None:
+        """Replace subtree `s`'s points (quantized), their normals and its triangles (vertex numbers, 3 per triangle) at
+        once, any number of them (rusemod.sectors' zone map). Its tree is then out of date: build it again
+        (kdt_edit.rebuild). The file's triangle count becomes the subtrees' sum."""
+        if len(normals) != len(positions):
+            raise ValueError("one normal per point")
+        if len(values) % 3:
+            raise ValueError("triangles need 3 vertex numbers each")
+        if any(not 0 <= v < len(positions) for v in values):
+            raise ValueError(f"a vertex number is outside subtree {s}'s {len(positions)} points")
+        t = self.subtrees[s]
+        t.positions = compress(encode_positions(positions))
+        t.normals = compress(encode_normals(normals))
+        t.index_count, t.indices = len(values), compress(encode_indices(values))
+        self.triangle_count = sum(st.index_count // 3 for st in self.subtrees)
+
     def set_tree(self, s: int, root, lists: list[list[int]]) -> None:
         """Replace subtree `s`'s k-d tree and its leaves' triangle lists (one list per leaf, in leaf order)."""
         found = leaves(root)

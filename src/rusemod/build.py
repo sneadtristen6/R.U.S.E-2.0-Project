@@ -144,6 +144,7 @@ def _map_readers() -> dict:
     from .roadnet import RoadNetError, parse_roads
     from .scenario import ScenarioError, parse_moves, parse_removes, parse_spawns, parse_starts
     from .scenery import SceneryEditError, parse_erase, parse_objects
+    from .sectors import SectorError, parse_sectors
     return {
         "terrain.toml": (("stroke",), "a terrain file holds [[stroke]] tables",
                          lambda d, rel: parse_strokes(d.get("stroke", []), rel), BrushError),
@@ -151,13 +152,14 @@ def _map_readers() -> dict:
                          lambda d, rel: parse_objects(d.get("object", []), rel) + parse_erase(d.get("erase", []), rel),
                          SceneryEditError),
         # moves and removes first: they name the shipped items by their number, which starts and spawns (added at
-        # the end) don't shift, and a removed item keeps its place
-        "scenario.toml": (("move", "remove", "start", "spawn"),
-                          "a scenario file holds [[move]], [[remove]], [[start]] and [[spawn]] tables",
+        # the end) don't shift, and a removed item keeps its place; the sectors' setting last (rusemod.sectors)
+        "scenario.toml": (("move", "remove", "start", "spawn", "sectors"),
+                          "a scenario file holds [[move]], [[remove]], [[start]] and [[spawn]] tables and [sectors]",
                           lambda d, rel: (parse_moves(d.get("move", []), rel) + parse_removes(d.get("remove", []), rel)
                                           + parse_starts(d.get("start", []), rel)
-                                          + parse_spawns(d.get("spawn", []), rel)),
-                          ScenarioError),
+                                          + parse_spawns(d.get("spawn", []), rel)
+                                          + parse_sectors(d.get("sectors"), rel)),
+                          (ScenarioError, SectorError)),
         "cover.toml": (("paint",), "a cover file holds [[paint]] tables",
                        lambda d, rel: parse_paints(d.get("paint", []), rel), CoverError),
         "movement.toml": (("block", "open"), "a movement file holds [[block]] and [[open]] tables",
@@ -2169,6 +2171,10 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 for name, (map_moves, ids) in moves.items():
                     from .players import skirmish_files
                     from .scenario import Move, Spawn, spawn_class_problems
+                    from .sectors import Sectors
+                    map_moves = [m for m in map_moves if not isinstance(m, Sectors)]  # (the sectors: after these)
+                    if not map_moves:
+                        continue
                     new_spawns = [m for m in map_moves if isinstance(m, Spawn)]
                     wrong = spawn_class_problems(name, new_spawns, registered_classes(), shipped_paths) if new_spawns else []
                     # rule: spawn-class
@@ -2199,6 +2205,40 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         continue
                     changed_members.update(new)
                     say(f"scenario: {name}, from {', '.join(ids)}")
+                    for note in notes:
+                        say(f"  {note}")
+                for name, (rows, ids) in moves.items():  # sectors over the whole map (rusemod.sectors), after the
+                    from .scenario import folder_of       # design items: every scenario's zones and zone map, their
+                    from .sectors import SectorError, apply_sectors, whole_map_of  # points on the final ground
+                    if not whole_map_of(rows):
+                        continue
+                    height_at = None
+                    map_path = find_map(name)
+                    if map_path is not None:
+                        from .bridges import Ground
+                        from .tms import Tms
+                        entry = next((e for e in map_packs if e[0] == map_path), None)
+                        map_arc = entry[1] if entry else open_pack(map_path)
+                        try:
+                            e = map_arc.find("output\\highdef.tms")
+                            height_at = Ground(Tms((entry[2].get(e.path) if entry else None)
+                                                   or bytes(map_arc.read(e)))).height_at
+                        except (KeyError, ValueError, struct.error, zlib.error):
+                            pass  # without the ground, the sectors' points sit at height 0 (the shapes are the same)
+                    folder = folder_of(name)
+                    files = sorted(e.path[len(folder):] for e in data_arc.entries
+                                   if e.path.lower().startswith(folder) and e.path.lower().endswith(".scenario")
+                                   and "\\" not in e.path[len(folder):])
+                    skipped: list = []
+                    try:
+                        new, notes = apply_sectors(read_data, name, files, height_at, skipped=skipped)
+                    except (SectorError, ValueError, struct.error) as exc:
+                        result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
+                        continue
+                    for why in skipped:
+                        warn(f"{', '.join(ids)}: {why}")
+                    changed_members.update(new)
+                    say(f"sectors: {name}, over the whole map, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
                 for name, (map_paints, ids) in paints.items():

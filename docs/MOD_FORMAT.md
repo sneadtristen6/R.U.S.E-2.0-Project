@@ -569,8 +569,26 @@ kind = "Spawn"                         # Spawn (a depot, a unit, a building), La
 
 - The match leaves the item out: the build takes it off the list of items the scenario starts with. The item stays
   in the file, so every other item keeps its number and the mod's other moves still name the right ones
-  (LittleGroove's RUSE-Mod-Manager deletes a placement the same way). Not yet seen in the game.
+  (LittleGroove's RUSE-Mod-Manager deletes a placement the same way). Seen in the game: every supply depot and town
+  name of D-Day taken out, the match played without them.
 - `kind` guards as it does for a move. Two mods taking one item out: once is enough.
+
+A mod makes the map's sectors reach over the whole map (the Studio's Sectors over the whole map):
+
+```toml
+[sectors]
+whole_map = true   # every scenario of the map: each place its sectors leave out goes to the sector nearest it
+```
+
+- Every scenario of the map with sectors gets them made again: each place a sector held stays in it, and each place
+  none held (the sea, the edges) goes to the sector nearest it, so the sectors meet the map's edges all round. The
+  sectors keep their numbers, names and labels; neighbours share one border, point for point.
+- Two things are made from the same outlines, so they agree: the sectors the game draws (their outlines, borders
+  and fills, each point at the reshaped ground's height) and the map the game asks which sector a place is in. The
+  borders are traced on a grid of the map (4 m on D-Day): the map's own borders move by a few metres at most.
+- A sector with another inside it has no outline the scenario's file can hold (none of the shipped scenarios has
+  one): that scenario keeps the map's own sectors, and the build warns.
+- The last mod that has a `[sectors]` table decides. Not yet seen in the game.
 
 A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
 Operations spawn theirs this way; skirmish maps spawn only their supply depots):

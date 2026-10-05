@@ -269,10 +269,27 @@ def _scenario_tables(data: dict, where: str) -> tuple[list, list, list, list]:
             scenario.parse_spawns(data.get("spawn", []), where), scenario.parse_removes(data.get("remove", []), where))
 
 
-def _scenario_toml(moves: list, starts: list, spawns: list, removes: list, header: str) -> str:
-    """A scenario.toml holding all four kinds of edit (none is ever left out on a rewrite)."""
+def _scenario_sectors(data: dict, where: str):
+    """A scenario.toml's [sectors] setting (rusemod.sectors.Sectors), or None."""
+    from rusemod.sectors import parse_sectors
+    found = parse_sectors(data.get("sectors"), where)
+    return found[0] if found else None
+
+
+def _scenario_checked(where: str):
+    """The check a rewritten scenario.toml must pass (_save_checked): every table read back as the build reads it."""
+    return lambda data: (_scenario_tables(data, where), _scenario_sectors(data, where))
+
+
+def _scenario_toml(moves: list, starts: list, spawns: list, removes: list, header: str, sectors=None) -> str:
+    """A scenario.toml holding all four kinds of edit and the sectors' setting (none is ever left out on a rewrite)."""
+    from rusemod.sectors import sectors_toml
+    table = sectors_toml(sectors)
     return (scenario.moves_toml(moves, header) + "\n" + scenario.removes_toml(removes) + "\n"
-            + scenario.starts_toml(starts) + "\n" + scenario.spawns_toml(spawns))
+            + scenario.starts_toml(starts) + "\n" + scenario.spawns_toml(spawns) + ("\n" + table if table else ""))
+
+
+_KEEP = object()  # (a rewrite keeps what the file has)
 
 
 def _copied(view: dict, copy) -> dict:
@@ -1612,11 +1629,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """The map's scenarios as the current mod leaves them (a copy; the cached ones stay the game's). Items it takes
         out are marked `gone` (the map view shows them faded, to put back)."""
         moves, starts, spawns, removes = self._read_scenario_tables(pack)
-        if not moves and not spawns and not starts and not removes:
+        whole = self._read_scenario_sectors(pack)
+        whole = whole is not None and whole.whole_map
+        if not moves and not spawns and not starts and not removes and not whole:
             return base
         out = []
         for s in base["scenarios"]:
             s = {**s, "items": [dict(it) for it in s["items"]]}
+            if whole and s.get("zones"):  # sectors over the whole map: drawn as the build will make them
+                zones, why = self._whole_map_zones(pack, s["file"])
+                if zones is not None:
+                    s["zones"], s["sectors_whole"] = zones, True
+                else:
+                    s["sectors_note"] = why
             for r in removes:
                 if r.file.lower() == s["file"].lower() and r.item < len(s["items"]):
                     s["items"][r.item]["gone"] = True
@@ -1656,7 +1681,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                                        "camp": sp.camp, "what": sp.what, "mine": True, "spawn": n,
                                        "item": len(s["items"])})
             out.append(s)
-        return {"scenarios": out}
+        return {"scenarios": out, "sectors_whole": whole}
 
     @property
     def cache_dir(self) -> Path:
@@ -1750,29 +1775,54 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def _read_scenario_tables(self, pack: str) -> tuple[list, list, list, list]:
         """(moves, new starting points, spawns, removes) of the current mod's scenario.toml for this map."""
-        if self._map_dir() is None:
-            return [], [], [], []
-        path = self._scenario_file(pack)
-        if not path.is_file():
+        data, path = self._scenario_data(pack)
+        if data is None:
             return [], [], [], []
         try:
-            return _scenario_tables(tomllib.loads(path.read_text(encoding="utf-8")), str(path))
-        except (tomllib.TOMLDecodeError, UnicodeDecodeError, scenario.ScenarioError) as exc:
+            return _scenario_tables(data, str(path))
+        except scenario.ScenarioError as exc:
+            raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
+                              f"by hand.") from None
+
+    def _read_scenario_sectors(self, pack: str):
+        """The current mod's [sectors] setting for this map (rusemod.sectors.Sectors), or None."""
+        from rusemod.sectors import SectorError
+        data, path = self._scenario_data(pack)
+        if data is None:
+            return None
+        try:
+            return _scenario_sectors(data, str(path))
+        except SectorError as exc:
+            raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
+                              f"by hand.") from None
+
+    def _scenario_data(self, pack: str) -> tuple[dict | None, Path | None]:
+        """The current mod's scenario.toml for this map, read (None without a mod or the file)."""
+        if self._map_dir() is None:
+            return None, None
+        path = self._scenario_file(pack)
+        if not path.is_file():
+            return None, path
+        try:
+            return tomllib.loads(path.read_text(encoding="utf-8")), path
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
             raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
                               f"by hand.") from None
 
     def _write_scenario_edits(self, pack: str, moves: list, spawns: list, starts: list | None = None,
-                              removes: list | None = None) -> Path:
+                              removes: list | None = None, sectors=_KEEP) -> Path:
         """Write the mod's scenario edits; `starts` / `removes` None keep the file's own new starting points / the
-        map's items it takes out."""
+        map's items it takes out, and its sectors' setting is kept unless `sectors` is given."""
         path = self._scenario_file(pack)
         if starts is None or removes is None:
             _m, own_starts, _s, own_removes = self._read_scenario_tables(pack)
             starts = own_starts if starts is None else starts
             removes = own_removes if removes is None else removes
-        if moves or spawns or starts or removes:
-            _save_checked(path, _scenario_toml(moves, starts, spawns, removes, self.SCENARIO_HEADER),
-                          lambda data: _scenario_tables(data, str(path)))
+        if sectors is _KEEP:
+            sectors = self._read_scenario_sectors(pack)
+        if moves or spawns or starts or removes or (sectors is not None and sectors.whole_map):
+            _save_checked(path, _scenario_toml(moves, starts, spawns, removes, self.SCENARIO_HEADER, sectors),
+                          _scenario_checked(str(path)))
         elif path.is_file():
             path.unlink()
         return path
@@ -1846,7 +1896,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def scenario_remove(self, pack: str, file: str, items) -> dict:
         """Take the map's own design items `items` (a number, or a list of them) of scenario `file` out in the current
-        mod: the game leaves them out (scenario.Remove; LittleGroove's way, not yet seen in the game). A starting point
+        mod: the game leaves them out (scenario.Remove; LittleGroove's way, seen in the game 2026-10-05). A starting point
         can only be moved. A move of an item taken out goes with it. Returns the map's scenarios as the mod leaves
         them."""
         base = self._base_scenario(pack, file)
@@ -1868,6 +1918,54 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             moves = [m for m in moves if not (m.file.lower() == file.lower() and m.item in numbers)]
             self._write_scenario_edits(pack, moves, spawns, starts, removes)
         return self.map_scenarios(pack)
+
+    def scenario_sectors(self, pack: str, whole_map: bool) -> dict:
+        """Sectors over the whole map on (every scenario of the map: each place its sectors leave out goes to the
+        sector nearest it, rusemod.sectors) or off, in the current mod. Returns the map's scenarios, drawn with the
+        sectors as the build will make them."""
+        from rusemod.sectors import Sectors
+        if self._map_dir() is None:
+            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+        with self._saving:
+            moves, starts, spawns, removes = self._read_scenario_tables(pack)
+            self._write_scenario_edits(pack, moves, spawns, starts, removes, Sectors(bool(whole_map)))
+        return self.map_scenarios(pack)
+
+    PREVIEW_CELLS = 1024  # the map view's sectors over the whole map: a coarser grid than the build's (quicker)
+
+    def _whole_map_zones(self, pack: str, file: str):
+        """Scenario `file`'s sectors over the whole map as the map view draws zones (the build's way on a coarser
+        grid), or (None, why) when they can't be made. Worked out once per scenario."""
+        from rusemod import sectors
+        from rusemod.cover import member as movement_member
+        game = self._game()
+        shipped = self._game_pack(pack)
+        path = find_pack(game, scenario.PACK) if game is not None else None
+        if path is None:
+            return None, "the game's scenarios aren't found"
+        key = ("whole-map-sectors", str(path), path.stat().st_mtime, shipped.lower(), file.lower())
+        with self._grounds_lock:
+            hit = self._sceneries.get(key)
+        if hit is not None:
+            return hit
+        folder = scenario.folder_of(shipped)
+        stem = file[:-len(".scenario")] if file.lower().endswith(".scenario") else file
+        try:
+            with Edat.open(str(path)) as arc:
+                s = scenario.Scenario.read(bytes(arc.read(arc.find(folder + file))))
+                kdt = arc.entry(f"{folder}zonebluff\\{stem}.kdt")
+                if kdt is None:
+                    out = (None, "it has no zone map: its sectors stay as they are")
+                else:
+                    width, height = sectors.map_size(bytes(arc.read(arc.find(movement_member(shipped)))))
+                    res = sectors.over_whole_map(s, bytes(arc.read(kdt)), width, height, None, self.PREVIEW_CELLS)
+                    s.zones = res.zones
+                    out = (scenario.view(s)["zones"], "")
+        except (KeyError, ValueError, struct.error) as exc:   # (SectorError and ScenarioError are ValueErrors)
+            out = (None, str(exc))
+        with self._grounds_lock:
+            self._sceneries[key] = out
+        return out
 
     def scenario_spawn(self, pack: str, file: str, unit: str, x: float, y: float, camp: int | None = scenario.NEUTRAL,
                        rotation: float = 0.0) -> dict:
@@ -3431,6 +3529,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if kind in ("spawn_neutral", "spawn_remove", "spawns_neutral_all", "spawns_remove_all"):
                 data = tomllib.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
                 moves, starts, spawns, removes = _scenario_tables(data, str(path))
+                sectors = _scenario_sectors(data, str(path))
                 if kind.endswith("_all"):  # every team spawn of that setup
                     hit = [i for i, s in enumerate(spawns) if s.file.lower() == str(fix.get("file", "")).lower()
                            and s.camp not in (None, scenario.NEUTRAL)]
@@ -3444,9 +3543,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                         spawns[k] = replace(spawns[k], camp=scenario.NEUTRAL)
                 else:
                     spawns = [s for i, s in enumerate(spawns) if i not in hit]
-                if moves or starts or spawns or removes:
-                    _save_checked(path, _scenario_toml(moves, starts, spawns, removes, self.SCENARIO_HEADER),
-                                  lambda d: _scenario_tables(d, str(path)))
+                if moves or starts or spawns or removes or (sectors is not None and sectors.whole_map):
+                    _save_checked(path, _scenario_toml(moves, starts, spawns, removes, self.SCENARIO_HEADER, sectors),
+                                  _scenario_checked(str(path)))
                 else:
                     path.unlink()
                 done = (f"{len(hit)} team spawn(s) in {fix.get('file')}" if kind.endswith("_all") else fix.get("what")) \
