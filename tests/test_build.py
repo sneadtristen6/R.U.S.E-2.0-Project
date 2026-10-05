@@ -426,6 +426,43 @@ class Terrain(unittest.TestCase):
                               for dy in (-300.0, 0.0, 300.0)], [False] * 9)
             self.assertTrue(after.walkable(6000.0, 1500.0))  # ground off the lake stays
 
+    def test_a_big_maps_movement_started_ahead_gives_the_same_copy(self):
+        """A big map's movement step starts in worker programs before the ground is painted (build._movement_ahead,
+        nav.Ahead); the movement step takes that answer. The copy is the same, byte for byte, as with the movement
+        worked out when the build comes to it."""
+        import struct
+        from unittest import mock
+        from test_nav import made
+        from rusemod import build, nav
+        g = made([(1500.0, 1500.0, 1280.0), (3000.0, 1500.0, 1280.0), (5000.0, 1500.0, 1280.0), (7000.0, 1500.0, 1280.0)],
+                 [(0, 1), (1, 2), (2, 3)])
+        head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 8000.0, 8000.0)
+        win = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+            b"roads", g.to_bytes(), g.to_bytes(), b"cover")) + b"tail", {})
+        rev = self.game / "Data" / "PC" / "190852"
+        (rev / "DataMap_Win.dat").write_bytes(make_edat([("dir", "datasmap\\test\\", [("file", "mapinfo.win", win)])]))
+        lake = '[[stroke]]\nbrush = "water"\nx = 1500.0\ny = 1500.0\nradius = 1000.0\nlevel = 1200.0\n'
+        folder = self.mod("lake", lake)
+        (folder / "maps" / "Test" / "movement.toml").write_text(
+            '[[open]]\nx = 6000.0\ny = 1500.0\nradius = 900.0\n[[block]]\nx = 7000.0\ny = 1500.0\nradius = 300.0\n',
+            encoding="utf-8")
+        taken = []
+        real_take = nav.Ahead.take
+
+        def take(self_, jobs):
+            taken.append(len(jobs))
+            return real_take(self_, jobs)
+        with mock.patch.object(nav, "PARALLEL_FROM", 1), mock.patch.object(nav.Ahead, "take", take):
+            ahead, lines = self.build(folder, copy="ahead")
+        self.assertEqual(ahead.errors, [], lines)
+        self.assertEqual(taken, [2])  # both graphs, from the worker programs
+        with mock.patch.object(build, "_movement_ahead", lambda *a, **k: {}):
+            plain, lines = self.build(folder, copy="plain")
+        self.assertEqual(plain.errors, [], lines)
+        self.assertEqual(ahead.fingerprint, plain.fingerprint)
+        data = Path("Data", "PC", "190852", "DataMap_Win.dat")
+        self.assertEqual((self.root / "ahead" / data).read_bytes(), (self.root / "plain" / data).read_bytes())
+
     def test_mistakes(self):
         result, lines = self.build(self.mod("elsewhere", map_name="Nope"))
         self.assertIn("elsewhere: the map Nope isn't in this game (DataMapNope_v09.dat is missing)",

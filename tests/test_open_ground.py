@@ -108,6 +108,37 @@ class InOrder(unittest.TestCase):
         self.assertEqual(out[0], out[1])
         self.assertTrue(out[0][3])  # (answers were kept, from the worker program's graph too)
 
+    def test_movement_started_ahead_is_taken_only_for_the_same_question(self):
+        """nav.Ahead: both graphs started in worker programs before the build comes to them (while a big map's ground
+        is painted). The same blocks and opens on the same graphs, a cover grid changed in between: its answer, put into
+        the file as it is then. Other blocks, other graphs or other answers given: worked out as before."""
+        from rusemod import solved
+        from rusemod.cover import member
+        blocks = [nav.Block(10000.0, 2000.0, 400.0), nav.Block(10000.0, 2000.0, 2000.0, open=True),
+                  nav.Block(3000.0, 9000.0, 900.0, "vehicles"), nav.Block(30000.0, 30000.0, 900.0, open=True)]
+        win = win_of(row())
+        later = nav.replace_buffers(win, {3: b"painted cover"})  # (the cover step ran in between)
+
+        def run(blocks_now, win_now, ahead):
+            idle, store = [], solved.Solved({})
+            with solved.using(store):
+                new, notes = nav.apply_blocks({member("Blitz"): win_now}.get, "Blitz", blocks_now, idle, 1, ahead)
+            return new, notes, [(b.x, b.y) for b in idle], sorted(store.needed())
+        want = run(blocks, later, None)
+        ahead = nav.Ahead(win, blocks, {})
+        self.assertTrue(ahead.futures)
+        self.assertEqual(run(blocks, later, ahead), want)
+        self.assertIsNone(ahead.pool)  # (taken, and its worker programs let go)
+        moved = row()
+        moved.circles[2] = (10320.0, 2000.0, 1600.0, 3, 1)
+        for blocks_now, win_now, given in ((blocks[:2], later, {}),       # other blocks and opens
+                                           (blocks, win_of(moved), {}),    # another graph
+                                           (blocks, later, None)):         # other answers given
+            ahead = nav.Ahead(win, blocks, given)
+            self.assertEqual(run(blocks_now, win_now, ahead), run(blocks_now, win_now, None))
+            self.assertIsNotNone(ahead.pool)  # (not taken: worked out as before)
+            ahead.close()
+
     def test_an_open_after_a_block_wins(self):
         block = nav.Block(10000.0, 2000.0, 400.0)  # C emptied
         opened = nav.Block(10000.0, 2000.0, 2000.0, open=True)
@@ -346,9 +377,16 @@ class KeptMovement(unittest.TestCase):
             self.assertEqual(len(made), 2)             # one block more: made again
             build._kept_movement(read, "Blitz", blocks[::-1], [], cache)
             self.assertEqual(len(made), 3)             # another order: made again (the later one wins)
-            other = {member("Blitz"): win_of(row(), size=16320.0)}.get
-            build._kept_movement(other, "Blitz", blocks, [], cache)
-            self.assertEqual(len(made), 4)             # another movement file: made again
+            # the same roads and graphs in another file (another head, another cover grid: what the cover step
+            # changes before the movement step): taken from the keep, and put into that file
+            covered = nav.replace_buffers(win_of(row(), size=16320.0), {3: b"another cover"})
+            other = {member("Blitz"): covered}.get
+            self.assertEqual(build._kept_movement(other, "Blitz", blocks, [], cache), real(other, "Blitz", blocks, []))
+            self.assertEqual(len(made), 3)
+            moved = row()
+            moved.circles[2] = (10320.0, 2000.0, 1600.0, 3, 1)
+            build._kept_movement({member("Blitz"): win_of(moved)}.get, "Blitz", blocks, [], cache)
+            self.assertEqual(len(made), 4)             # another graph: made again
             build._kept_movement(read, "Blitz", blocks, [], None)
             self.assertEqual(len(made), 5)             # no cache: made every time
             kept = sorted(Path(cache, mapkeep.FOLDER).glob("movement-*.bin"))

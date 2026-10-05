@@ -1286,6 +1286,21 @@ def wet_opens(blocks, water, step: float = 4 * STEP, many=None) -> list[tuple[Bl
         if not b.open:
             continue
         k = max(1, int(b.radius // step))
+        whole = _numpy() if many is not None else None
+        if whole is not None:  # (numpy: the samples laid out at once; whole numbers of `step`, so the same sums)
+            np = whole
+            r = np.arange(-k, k + 1)
+            jj, ii = np.meshgrid(r, r, indexing="ij")  # (row by row of j, as the loops below go)
+            ii, jj = ii.ravel(), jj.ravel()
+            inside = (ii * step) ** 2 + (jj * step) ** 2 < b.radius ** 2
+            ii, jj = ii[inside], jj[inside]
+            xs, ys = b.x + ii * step, b.y + jj * step
+            w = np.asarray(many(xs, ys), dtype=bool)
+            if w.any():
+                d, wx, wy = (ii * ii + jj * jj)[w], xs[w], ys[w]
+                first = np.lexsort((wy, wx, d))[0]  # the wet spot nearest its middle (then the lowest x, y)
+                out.append((b, (float(wx[first]), float(wy[first]))))
+            continue
         if many is not None:
             rr = b.radius ** 2
             ring = [(i, j) for j in range(-k, k + 1) for i in range(-k, k + 1) if (i * step) ** 2 + (j * step) ** 2 < rr]
@@ -1299,6 +1314,15 @@ def wet_opens(blocks, water, step: float = 4 * STEP, many=None) -> list[tuple[Bl
         if wet:
             out.append((b, min(wet)[1]))  # the wet spot nearest its middle
     return out
+
+
+def _numpy():
+    """numpy (rusemod.numpy2), or None without it."""
+    try:
+        from .numpy2 import np
+    except ImportError:
+        return None
+    return np
 
 
 def replace_buffers(win: bytes, new: dict) -> bytes:
@@ -1320,7 +1344,7 @@ PARALLEL_FROM = 400  # blocks and opens in each graph from which the two graphs 
 
 
 def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None,
-                 workers: int | None = None) -> tuple[dict, list[str]]:
+                 workers: int | None = None, ahead: "Ahead | None" = None) -> tuple[dict, list[str]]:
     """({member: new mapinfo.win}, notes) for one map; `read(member)` gives a DataMap_Win.dat file's bytes or None.
     Blocks and opens (Block.open) apply in order, a run of blocks at once (Graph.block), then a run of opens
     (Graph.open_ground), and so on: where two meet, the later one wins. The opens that opened nothing in any graph
@@ -1328,7 +1352,8 @@ def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None,
 
     The two graphs (infantry, vehicles) share nothing, so on a big map they are worked on at once, the infantry's in a
     worker program (`workers`: 2 or more lets it, 1 doesn't; None: when each graph has PARALLEL_FROM blocks and opens
-    or more). The bytes, the notes and the answers kept (rusemod.solved) are the same as one after the other."""
+    or more). The bytes, the notes and the answers kept (rusemod.solved) are the same as one after the other.
+    `ahead`: the same question started earlier (Ahead), whose answer is taken when it is the same question."""
     from ruse_mod_engine import sdb
     from .cover import PACK, member
     name = member(pack)
@@ -1336,14 +1361,14 @@ def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None,
     if win is None:
         raise NavError(f"{pack} has no {name} in {PACK}, so its movement can't be changed")
     bufs = sdb.split_mapinfo(win)[1]
-    jobs = []
-    for k, what in ((1, "infantry"), (2, "vehicles")):
-        mine = [(i, b) for i, b in enumerate(blocks) if k in UNITS[b.units]]
-        if mine:
-            jobs.append((bufs[k], bufs[0], k, what, mine))
+    jobs = _jobs(bufs, blocks)
     big = min((len(j[4]) for j in jobs), default=0) >= PARALLEL_FROM and (os.cpu_count() or 1) > 1
     both = len(jobs) == 2 and (big if workers is None else workers >= 2)
-    done = _two_graphs(jobs) if both else [_one_graph(*job) for job in jobs]
+    store = solved._ACTIVE[-1] if solved._ACTIVE else None
+    if ahead is not None and ahead.fits(bufs, blocks, store.given if store is not None else None):
+        done = ahead.take(jobs)
+    else:
+        done = _two_graphs(jobs) if both else [_one_graph(*job) for job in jobs]
     new, notes, opened = {}, [], set()  # opened: the opens (their numbers in `blocks`) that opened something
     for (_raw, _roads, k, _what, _mine), (data, said, opened_here) in zip(jobs, done):
         new[k] = data
@@ -1352,6 +1377,72 @@ def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None,
     if idle is not None:
         idle += [b for i, b in enumerate(blocks) if b.open and i not in opened and not b.spare]
     return {name: replace_buffers(win, new)}, notes
+
+
+def _jobs(bufs, blocks: list) -> list[tuple]:
+    """_one_graph's work for each graph the blocks and opens name: (its buffer, the roads' buffer, its number, who
+    uses it, [(number, Block)] in order)."""
+    jobs = []
+    for k, what in ((1, "infantry"), (2, "vehicles")):
+        mine = [(i, b) for i, b in enumerate(blocks) if k in UNITS[b.units]]
+        if mine:
+            jobs.append((bufs[k], bufs[0], k, what, mine))
+    return jobs
+
+
+class Ahead:
+    """apply_blocks for a map started before the build comes to it: each graph in a worker program of its own, while
+    the build does other work (the ground painted). apply_blocks takes the answer when it is asked the same question:
+    the same blocks and opens, on graphs and a road network that are the same bytes (what else the movement file
+    holds, its cover grid, may have changed since: it isn't asked), with the same answers given (rusemod.solved).
+    Asked anything else, the build works it out as before. `close` lets the worker programs go."""
+
+    def __init__(self, win: bytes, blocks: list, given: dict | None):
+        from concurrent.futures import ProcessPoolExecutor
+        from ruse_mod_engine import sdb
+        bufs = sdb.split_mapinfo(win)[1]
+        self.blocks, self.given = list(blocks), (dict(given) if given is not None else None)
+        self.bufs = tuple(bufs[:3])
+        self.jobs = _jobs(bufs, self.blocks)
+        self.pool, self.futures = None, []
+        try:
+            self.pool = ProcessPoolExecutor(max_workers=max(1, len(self.jobs)))
+            self.futures = [self.pool.submit(_graph_job, job, self.given) for job in self.jobs]
+        except (OSError, RuntimeError):  # worker programs that can't start: the build works it out when it comes to it
+            self.close()
+
+    def fits(self, bufs, blocks: list, given: dict | None) -> bool:
+        return bool(self.futures) and tuple(bufs[:3]) == self.bufs and list(blocks) == self.blocks \
+            and given == self.given
+
+    def take(self, jobs: list) -> list:
+        """_one_graph's answers for `jobs` (the same as this was started with), from the worker programs; the answers
+        they used and worked out go to the answers in use. A worker program that died leaves its graph to this one."""
+        store = solved._ACTIVE[-1] if solved._ACTIVE else None
+        done = []
+        try:
+            for job, future in zip(jobs, self.futures):
+                try:
+                    out, kept = future.result()
+                except NavError:
+                    raise
+                except Exception:  # noqa: BLE001 - a worker program that died (not a refusal): worked out here
+                    out, kept = _one_graph(*job), None
+                if kept is not None and store is not None:
+                    used, found, taken = kept
+                    store.used.update(used)
+                    store.found.update(found)
+                    store.taken += taken
+                done.append(out)
+        finally:
+            self.close()
+        return done
+
+    def close(self) -> None:
+        if self.pool is not None:
+            self.pool.shutdown(wait=False, cancel_futures=True)
+            self.pool = None
+        self.futures = []
 
 
 def _one_graph(raw: bytes, roads_raw: bytes, k: int, what: str, mine: list) -> tuple[bytes, list[str], set[int]]:

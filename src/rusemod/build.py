@@ -441,42 +441,109 @@ def _bed_circles(drained: list[tuple[float, float]], wet=None, wide=None) -> lis
 
 
 def _kept_movement(read_data, name: str, blocks: list, idle: list, cache, given: dict | None = None,
-                   answers: dict | None = None) -> tuple[dict, list[str]]:
-    """nav.apply_blocks for a map, its answer kept between builds (rusemod.mapkeep, kind "movement"): named by a
-    fingerprint of the map's movement file as the build has it, its blocks and opens in their order, and the code. A
-    map whose blocks and opens are the same as an earlier build's takes its movement from there: opening a drained
-    sea takes minutes (the owner's M04_Cotentin, 2026-10-04), and every build made it again. A refusal isn't kept.
+                   answers: dict | None = None, ahead=None) -> tuple[dict, list[str]]:
+    """nav.apply_blocks for a map, its answer kept between builds (rusemod.mapkeep, kind "movement"): named by
+    _movement_key (what the step reads of the movement file, its blocks and opens in their order, the answers given,
+    the code), the new graphs kept and put back into the movement file as the build has it then. A map whose blocks
+    and opens are the same as an earlier build's takes its movement from there: opening a drained sea takes minutes
+    (the owner's M04_Cotentin, 2026-10-04), and every build made it again. A refusal isn't kept.
     `given`: the answers the mods brought for this map (rusemod.solved), taken where they hold; `answers` is filled
-    with the ones this map's movement asked for (taken and worked out): what an export carries."""
-    import hashlib
+    with the ones this map's movement asked for (taken and worked out): what an export carries. `ahead`: the step
+    started earlier (nav.Ahead, _movement_ahead), taken when it was asked the same."""
     from . import mapkeep, solved
     from .cover import member
-    from .nav import apply_blocks
-    k = None
-    if cache is not None:
-        win = read_data(member(name))
-        if win is not None:
-            about = ["movement", hashlib.blake2b(win, digest_size=20).hexdigest()]
-            k = mapkeep.key(name, about + ([solved.digest(given)] if given else []), blocks, None)
+    from .nav import apply_blocks, replace_buffers
+    from ruse_mod_engine import sdb
+    win = read_data(member(name))
+    k = _movement_key(cache, name, win, blocks, given)
     kept = mapkeep.read(cache, k, "movement")
     if kept is not None and isinstance(kept.get("notes"), list) and isinstance(kept.get("idle"), list) \
             and all(type(i) is int and 0 <= i < len(blocks) for i in kept["idle"]) \
-            and isinstance(kept.get("solved"), dict):
+            and isinstance(kept.get("solved"), dict) \
+            and all(i in (1, 2) and isinstance(b, bytes) for i, b in kept["members"].items()):
+        if ahead is not None:
+            ahead.close()
         idle += [blocks[i] for i in kept["idle"]]
         if answers is not None:
             answers.update(kept["solved"])
-        return kept["members"], list(kept["notes"])
+        return {member(name): replace_buffers(win, kept["members"])}, list(kept["notes"])
     mine: list = []
     store = solved.Solved(given)
     with solved.using(store):
-        new, notes = apply_blocks(read_data, name, blocks, mine)
+        new, notes = apply_blocks(read_data, name, blocks, mine, ahead=ahead)
     idle += mine
     if answers is not None:
         answers.update(store.needed())
     places = {id(b): i for i, b in enumerate(blocks)}
-    mapkeep.write(cache, k, {"members": new, "notes": list(notes), "idle": [places[id(b)] for b in mine],
-                             "solved": store.needed()}, "movement")
+    made = sdb.split_mapinfo(new[member(name)])[1]
+    mapkeep.write(cache, k, {"members": {1: made[1], 2: made[2]}, "notes": list(notes),  # (its two new graphs)
+                             "idle": [places[id(b)] for b in mine], "solved": store.needed()}, "movement")
     return new, notes
+
+
+def _movement_key(cache, name: str, win: bytes | None, blocks: list, given: dict | None) -> str | None:
+    """The build cache's name for a map's movement (rusemod.mapkeep, kind "movement"): a fingerprint of what the
+    movement step reads of the movement file (its road network and its two graphs, not the cover grid the cover step
+    may have changed before), its blocks and opens in their order, the answers given, and the code. None without a
+    cache or a movement file."""
+    import hashlib
+    from . import mapkeep, solved
+    from ruse_mod_engine import sdb
+    if cache is None or win is None:
+        return None
+    parts = sdb.split_mapinfo(win)
+    if not parts:
+        return None
+    h = hashlib.blake2b(digest_size=20)
+    for b in parts[1][:3]:
+        h.update(len(b).to_bytes(8, "little") + b)
+    about = ["movement graphs", h.hexdigest()]
+    return mapkeep.key(name, about + ([solved.digest(given)] if given else []), blocks, None)
+
+
+def _movement_ahead(game: Path, open_pack, order: list, mods: list, cache, erasing: dict, beds: dict, flooded: dict,
+                    solid: dict, data_base, data_new: dict) -> dict:
+    """{map pack name: nav.Ahead}: the movement step of each big map, started in worker programs now, before the
+    ground is painted, with the blocks and opens the build will give it then (the mods' own, cleared woods, dried
+    beds, new water, placed buildings: as build_and_write puts them together) and the answers the mods brought. The
+    movement step takes the answer only when it is asked exactly that (nav.Ahead.fits); a map whose movement is in
+    the build cache isn't started. On a PC with one or two cores, nothing is started."""
+    from .nav import PARALLEL_FROM, Ahead, NavError
+    from .cover import member
+    from .scenario import PACK as MOVEMENT_PACK
+    if (os.cpu_count() or 1) <= 2:
+        return {}
+    data_path = find_pack(game, MOVEMENT_PACK)
+    if data_path is None:
+        return {}
+    blocks = scenario_edits(order, mods, "movement")
+    cleared, _uncover = cleared_woods(erasing)
+    for name, (walls, ids) in (list(cleared.items()) + list(beds.items()) + list(flooded.items())
+                               + list(solid.items())):
+        every, who = blocks.setdefault(name, ([], []))
+        every.extend(walls)
+        who.extend(i for i in ids if i not in who)
+    out = {}
+    if not any(len(b) >= PARALLEL_FROM for b, _ids in blocks.values()):
+        return out
+    from .newmap import Grown
+    arc = Grown(data_base, data_new) if data_new else open_pack(data_path)
+    for name, (map_blocks, _ids) in blocks.items():
+        if len(map_blocks) < PARALLEL_FROM:
+            continue
+        try:
+            win = bytes(arc.read(arc.find(member(name))))
+        except KeyError:
+            continue
+        given, _unused = _given_answers(order, mods, name, win)
+        from . import mapkeep
+        if mapkeep.read(cache, _movement_key(cache, name, win, map_blocks, given), "movement") is not None:
+            continue
+        try:
+            out[name] = Ahead(win, map_blocks, given)
+        except (NavError, ValueError, struct.error):
+            continue
+    return out
 
 
 def _given_answers(order: list, mods: list, name: str, shipped: bytes | None) -> tuple[dict, list[str]]:
@@ -1903,6 +1970,12 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if entry is None:
                 map_packs.append((map_path, map_arc, changed_members))
             result.terrain_changed[map_path.name] = changed_members
+        # a big map's movement step started now, in worker programs of its own, while its ground is painted: every
+        # block and open it takes is known by now (the movement step below takes the answer only when it's the same)
+        aheads = {} if result.errors else _movement_ahead(game, open_pack, result.order, mods, cache, erasing, beds,
+                                                          flooded, solid, data_base, data_new)
+        stack.callback(lambda: [a.close() for a in aheads.values()])
+
         def woods_of(name):
             """The map's woods (its grid's "in forest" cells, as shipped), or None when its grid can't be read."""
             from .cover import CoverError, in_forest, member
@@ -2155,7 +2228,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         result.findings.append(Finding("note", note))
                     answers: dict = {}
                     try:
-                        new, notes = _kept_movement(read_data, name, map_blocks, idle, cache, given, answers)
+                        new, notes = _kept_movement(read_data, name, map_blocks, idle, cache, given, answers,
+                                                    aheads.get(name))
                     except (NavError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
