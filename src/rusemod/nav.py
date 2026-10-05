@@ -1185,12 +1185,15 @@ UNITS = {"all": (1, 2), "infantry": (1,), "vehicles": (2,)}  # which of mapinfo.
 class Block:
     """Ground units can't use: a circle (map units) taken out of the infantry graph, the vehicles' or both. With
     `open`, the reverse: ground given to them where the graph has none (Graph.open_ground). Blocks and opens apply in
-    order, so where two meet the later one wins."""
+    order, so where two meet the later one wins. `spare`: an open the build made itself over a dried bed, which may
+    be left out when the map's movement has no room for every open of its run (apply_blocks: the smallest first),
+    and isn't told of one by one when it opens nothing."""
     x: float
     y: float
     radius: float
     units: str = "all"
     open: bool = False
+    spare: bool = False
 
 
 def closing(blocks) -> list[Block]:
@@ -1296,11 +1299,15 @@ def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None)
         for is_open, run in runs:
             zones = [(b.x, b.y, b.radius) for _i, b in run]
             if is_open:
-                c = g.open_ground(zones)
+                g, c, left, under = _open_what_fits(g, run)
                 idle_here = set(c["idle"])
                 opened |= {run[j][0] for j in range(len(run)) if j not in idle_here}
                 notes.append(f"{what}: {len(zones)} open(s); {c['added']} circle(s) and {c['linked']} link(s) added, "
                              f"{c['local']} circle(s) in towns' and bridges' own movement")
+                if left:
+                    notes.append(f"{what}: the map's movement has no room for all of the dried bed: the {left} "
+                                 f"smallest of its zones (under {under / METRE:.0f} m, by its shores) stay closed to "
+                                 f"units; the rest is opened")
                 if c["left_out"]:
                     notes.append(f"{what}: {c['left_out']} circle(s) left out: ground no unit could reach from the "
                                  f"rest (an order onto it would crash the game)")
@@ -1325,11 +1332,104 @@ def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None)
                          f"along that road drove through it; the road stays for supply trucks)")
         new[k] = g.to_bytes()
     if idle is not None:
-        idle += [b for i, b in enumerate(blocks) if b.open and i not in opened]
+        idle += [b for i, b in enumerate(blocks) if b.open and i not in opened and not b.spare]
     return {name: replace_buffers(win, new)}, notes
 
 
-def water_blocks(old_at, new_at, areas) -> tuple[list[tuple[float, float, float]], list[tuple[float, float]]]:
+def _open_what_fits(g: "Graph", run: list) -> tuple["Graph", dict, int, float]:
+    """Graph.open_ground for a run of opens [(number, Block)], leaving out as few of the spare ones (Block.spare) as
+    it takes for the graph to hold the rest: (the graph, open_ground's counts, how many spare opens were left out,
+    the radius under which they were). A graph that can't hold the opens refuses them (NavError); the run is then
+    tried again on the graph as it was, without the spare opens under twice the smallest's radius, then four times,
+    and so on: the narrow ends of a dried bed go before its wide middle. With no spare open in the run, or when the
+    rest doesn't fit even without any of them, the refusal stands."""
+    import copy
+    zones = [(b.x, b.y, b.radius) for _i, b in run]
+    radii = sorted(b.radius for _i, b in run if b.spare and b.radius > 0)
+    if not radii:
+        return g, g.open_ground(zones), 0, 0.0
+    before = copy.deepcopy(g)
+    under = 0.0
+    while True:
+        try:
+            counts = g.open_ground([z if not b.spare or b.radius >= under else (z[0], z[1], 0.0)
+                                    for z, (_i, b) in zip(zones, run)])
+            return g, counts, sum(1 for r in radii if r < under), under
+        except NavError:
+            if under > radii[-1]:
+                raise  # (not even without any of them)
+            g = copy.deepcopy(before)
+            under = max(2 * under, 2 * radii[0])
+
+
+def _wide_zones(kind: bytearray, nx: int, ny: int, x0: float, y0: float, s: float, over: float, most: float) -> list:
+    """Zones (x, y, r) over the wide stretches of a dried bed, the largest first, for water_blocks: `kind` says what
+    each sample of its grid (nx x ny, `s` apart from x0, y0) is: 1 dried bed, 2 under water now or outside the areas
+    (not known), 0 other ground. Each zone is centred on a dried sample no earlier zone holds and reaches the nearest
+    sample that isn't dried bed (half a step short of a kind 2 one: the water left stays out), `most` at most; only
+    zones over `over` are made. No sample inside a zone is anything but dried bed: each zone is measured against
+    every sample within its reach before it is taken (the sweeps before that only say where the room is)."""
+    if 1 not in kind:
+        return []
+    near = [k if kind[k] != 1 else -1 for k in range(nx * ny)]  # the nearest sample that isn't dried bed (its place)
+    for rows, steps in ((range(ny), ((-1, -1), (0, -1), (1, -1), (-1, 0))),
+                        (range(ny - 1, -1, -1), ((1, 1), (0, 1), (-1, 1), (1, 0)))):
+        columns = range(nx) if steps[0][1] < 0 else range(nx - 1, -1, -1)
+        for j in rows:
+            for i in columns:
+                at = j * nx + i
+                if kind[at] != 1:
+                    continue
+                best, far = near[at], -1
+                if best >= 0:
+                    far = (i - best % nx) ** 2 + (j - best // nx) ** 2
+                for di, dj in steps:
+                    a, b = i + di, j + dj
+                    if 0 <= a < nx and 0 <= b < ny:
+                        k = near[b * nx + a]
+                        if k >= 0:
+                            d = (i - k % nx) ** 2 + (j - k // nx) ** 2
+                            if far < 0 or d < far:
+                                best, far = k, d
+                near[at] = best
+    order = []
+    for at in range(nx * ny):
+        if kind[at] == 1 and near[at] >= 0:
+            i, j = at % nx, at // nx
+            r = min(math.sqrt((i - near[at] % nx) ** 2 + (j - near[at] // nx) ** 2) * s, most)
+            if r > over:
+                order.append((-r, i, j))
+    order.sort()
+    held = bytearray(nx * ny)
+    zones = []
+    for r, i, j in order:
+        if held[j * nx + i]:
+            continue
+        r = -r
+        reach = int(r / s) + 1
+        a0, a1, b0, b1 = max(i - reach, 0), min(i + reach, nx - 1), max(j - reach, 0), min(j + reach, ny - 1)
+        for b in range(b0, b1 + 1):  # measured: every sample within reach that isn't dried bed holds it back
+            row, dj2 = b * nx, (b - j) ** 2
+            for a in range(a0, a1 + 1):
+                k = kind[row + a]
+                if k != 1:
+                    d = math.sqrt((a - i) ** 2 + dj2) * s - (s / 2 if k == 2 else 0.0)
+                    if d < r:
+                        r = d
+        if r <= over:
+            continue
+        zones.append((x0 + i * s, y0 + j * s, r))
+        inside = (r / s) ** 2
+        for b in range(b0, b1 + 1):
+            row, dj2 = b * nx, (b - j) ** 2
+            for a in range(a0, a1 + 1):
+                if (a - i) ** 2 + dj2 < inside:
+                    held[row + a] = 1
+    return zones
+
+
+def water_blocks(old_at, new_at, areas, wide: list | None = None, wide_over: float = 0.0,
+                 wide_most: float = math.inf) -> tuple[list[tuple[float, float, float]], list[tuple[float, float]]]:
     """Blocks (x, y, r) over the water terrain edits made, and the places they drained. On every shipped map ground
     under water is never walkable (0.1% of wet samples at most, on both graphs), but the water and height brushes
     change only the ground files: units would walk the bed of a new lake. `old_at(x, y)` and `new_at(x, y)` say where
@@ -1342,7 +1442,12 @@ def water_blocks(old_at, new_at, areas) -> tuple[list[tuple[float, float, float]
     sample that is neither new nor old water (the shore), at least 3/4 of a step (its own square): every new water
     sample's square is blocked, and dry ground at most about half a step past the shore. Returns (the blocks, the
     drained samples: wet before, dry now). Units can't walk a drained bed either until it's opened (the graphs have no
-    ground there)."""
+    ground there).
+
+    `wide`: a list, filled with zones (x, y, r) over the wide stretches of the dried beds for the build to open
+    (_wide_zones: each as big as the bed has room for, over `wide_over`, `wide_most` at most). A sea drained is a
+    quarter of a million samples: small zones over all of it ask for more circles than a graph holds (65,535), while
+    the shipped maps cover their open ground with a few thousand, up to 135,040 across on M04_Cotentin."""
     groups: list[list[tuple[float, float, float]]] = []
     for a in areas:  # areas that overlap go together
         into = [g for g in groups if any(math.hypot(a[0] - b[0], a[1] - b[1]) < a[2] + b[2] for b in g)]
@@ -1357,11 +1462,14 @@ def water_blocks(old_at, new_at, areas) -> tuple[list[tuple[float, float, float]
         ny = int(math.ceil((max(y + r for _x, y, r in g) - y0) / s)) + 2
         fresh = set()       # new water samples (i, j)
         seed = {}           # the nearest sample that is neither new nor old water, for every sample: (i, j)
+        kind = bytearray(nx * ny) if wide is not None else None  # for _wide_zones: what each sample is
         for j in range(ny):
             for i in range(nx):
                 x, y = x0 + i * s, y0 + j * s
                 if not any((x - ax) ** 2 + (y - ay) ** 2 <= ar * ar for ax, ay, ar in g):
                     seed[i, j] = (i, j)
+                    if kind is not None:
+                        kind[j * nx + i] = 2  # outside the areas: water or not, it wasn't asked
                     continue
                 now, before = bool(new_at(x, y)), bool(old_at(x, y))
                 if now and not before:
@@ -1370,6 +1478,10 @@ def water_blocks(old_at, new_at, areas) -> tuple[list[tuple[float, float, float]
                     drained.append((x, y))
                 if not (now or before):
                     seed[i, j] = (i, j)
+                if kind is not None and (now or before):
+                    kind[j * nx + i] = 2 if now else 1
+        if kind is not None:
+            wide += _wide_zones(kind, nx, ny, x0, y0, s, wide_over, wide_most)
         if not fresh:
             continue
 
@@ -2066,6 +2178,30 @@ class _Spots:
         return self._tiles
 
 
+GAP_SIDE = 10240.0  # _gaps' squares
+
+
+def _gaps(circles, reach: float, side: float = GAP_SIDE) -> dict:
+    """For _grow: how far every point of a square of `side` is, at least, from the nearest live circle's rim (under 0
+    inside one), for the squares with a circle within `reach` of them: {(square): that}. A square that isn't there has
+    no circle's rim within `reach` of any of its points. (For each circle and each square near it: from the square's
+    middle to the circle's middle, less its radius, less the square's half diagonal; the least of those.) A new
+    circle of radius r in a square that says r or more overlaps no old circle, so it meets none."""
+    half = side * 0.7072  # (a hair over half the diagonal)
+    out: dict = {}
+    for x, y, r in circles:
+        if r <= 0:
+            continue
+        far = r + reach + 2 * side  # (a square past this is farther than `reach` from the rim at every point)
+        for a in range(int((x - far) // side), int((x + far) // side) + 1):
+            qx = (a + 0.5) * side - x
+            for b in range(int((y - far) // side), int((y + far) // side) + 1):
+                g = math.hypot(qx, (b + 0.5) * side - y) - r - half
+                if g < out.get((a, b), math.inf):
+                    out[a, b] = g
+    return out
+
+
 def _grow(zones, old, least: float, box, where, meets, most: int) -> tuple[list, int, bool]:
     """New circles over the zones (x, y, r) where a graph has none, grown from the ground units can reach
     (Graph.open_ground): (the circles (x, y, r) in the order they were taken, how many more the ground no circle
@@ -2150,12 +2286,18 @@ def _grow(zones, old, least: float, box, where, meets, most: int) -> tuple[list,
                 heappush(turns, (when * span + top - l2) * n + k)
     if top > near:
         # the spots with the most room come first in every pass: in the first, each looks for the old circles round
-        # itself (a few spots when the ones before them are taken: a big circle holds all the spots near it)
+        # itself (a few spots when the ones before them are taken: a big circle holds all the spots near it). A spot
+        # whose circle no old circle's rim comes within (_gaps: most of them, in the middle of a wide dried bed)
+        # meets none, and doesn't look
         ground = _Buckets(list(old))
+        gaps, side = _gaps(old, top * STEP), GAP_SIDE
         for lv in spots.rooms(near + 1):
+            r = lv * STEP
             for place in spots.walk(lv):
                 if not due[place]:
-                    c = spots.at(place) + (lv * STEP,)
+                    c = spots.at(place) + (r,)
+                    if r <= gaps.get((int(c[0] // side), int(c[1] // side)), r):
+                        continue
                     if not any(meets(c, d) is not None for d in ground.near(*c)):
                         continue
                 take(place, lv, 1)

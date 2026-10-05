@@ -314,6 +314,8 @@ def _paint_brushes(info) -> None:
 
 
 BED_RADII = (3840.0, 2560.0, 1920.0, 1280.0)  # down to nav.MIN_RADIUS: a new movement circle fits in one of these
+BED_MOST = 81600.0  # the widest zone over a wide dried bed (nav.water_blocks's `wide`): 255 nav.STEPs. The shipped
+                    # maps' own circles go up to 135,040 (M04_Cotentin), and 81,600 is on that map twice
 
 
 def cleared_woods(erasing: dict) -> tuple[dict, dict]:
@@ -395,7 +397,7 @@ class _LowestPoints:
             self.lib = None
 
 
-def _bed_circles(drained: list[tuple[float, float]], wet=None) -> list[tuple[float, float, float]]:
+def _bed_circles(drained: list[tuple[float, float]], wet=None, wide=None) -> list[tuple[float, float, float]]:
     """Open zones (x, y, r) over a dried bed's samples (nav.water_blocks), for Graph.open_ground, which puts each new
     circle inside one zone and none smaller than nav.MIN_RADIUS: so each zone is one of BED_RADII, centred on a sample
     no zone holds yet, the largest whose middle and rim (8 points) aren't under water now (`wet(x, y)`; the ends of a
@@ -403,15 +405,28 @@ def _bed_circles(drained: list[tuple[float, float]], wet=None) -> list[tuple[flo
 
     A zone holds no sample as far away as the largest radius, so each sample is looked at against the zones in its
     square of that side and the 8 round it only: the same zones as looking at all of them (a map drained across
-    kilometres has a hundred thousand)."""
+    kilometres has a hundred thousand).
+
+    `wide`: water_blocks's zones over the wide stretches (up to BED_MOST), which come first: a sample inside one needs
+    no zone of its own. A sea drained (the owner's M04_Cotentin, 2026-10-04: 255,466 samples) is then 2,790 zones,
+    which the map's movement holds; as zones of BED_RADII alone it was 255,117, a hundred times what it holds."""
     zones: list[tuple[float, float, float]] = []
     side = max(BED_RADII)
     near: dict[tuple[int, int], list[tuple[float, float, float]]] = {}
+    wide = list(wide or [])
+    over: dict[tuple[int, int], list[tuple[float, float, float]]] = {}  # the wide zones, by where their middles are
+    for zone in wide:
+        over.setdefault((int(zone[0] // BED_MOST), int(zone[1] // BED_MOST)), []).append(zone)
 
     def dry(x, y, r) -> bool:
         return wet is None or not any(wet(x + r * c, y + r * s) for c, s in
                                       ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (.7, .7), (.7, -.7), (-.7, .7), (-.7, -.7)))
     for x, y in sorted(drained):
+        if over:
+            a, b = int(x // BED_MOST), int(y // BED_MOST)
+            if any((x - zx) ** 2 + (y - zy) ** 2 < zr * zr
+                   for da in (-1, 0, 1) for db in (-1, 0, 1) for zx, zy, zr in over.get((a + da, b + db), ())):
+                continue
         i, j = int(x // side), int(y // side)
         if any((x - zx) ** 2 + (y - zy) ** 2 < (zr * 0.7) ** 2
                for di in (-1, 0, 1) for dj in (-1, 0, 1) for zx, zy, zr in near.get((i + di, j + dj), ())):
@@ -420,7 +435,7 @@ def _bed_circles(drained: list[tuple[float, float]], wet=None) -> list[tuple[flo
         if r is not None:
             zones.append((x, y, r))
             near.setdefault((i, j), []).append((x, y, r))
-    return zones
+    return wide + zones
 
 
 def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs, find_map=None) -> list:
@@ -1394,7 +1409,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 from .tms import Tms
                 try:
                     now_at = Water(Tms(changed_members[GROUND["highdef"]])).at
-                    zones, drained = water_blocks(Water(Tms(before)).at, now_at, [_area_of(s) for s in strokes])
+                    wide: list = []  # zones over the wide stretches of a dried bed (a lake, a sea)
+                    zones, drained = water_blocks(Water(Tms(before)).at, now_at, [_area_of(s) for s in strokes],
+                                                  wide, max(BED_RADII), BED_MOST)
                 except (ValueError, struct.error, zlib.error) as exc:
                     result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: where the terrain edits put "
                                                             f"water can't be worked out ({exc}), so units could walk "
@@ -1404,7 +1421,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     made["zones"] = list(zones)
                     made["lines"].append(f"  {name}: {len(zones)} block(s) over the new water, so units keep out of it")
                 if drained:  # a dried bed: the map's movement has no ground there, so it's opened to units
-                    made["beds"] = list(_bed_circles(drained, now_at))
+                    made["beds"] = list(_bed_circles(drained, now_at, wide))
                     mx, my = (sum(p[k] for p in drained) / len(drained) for k in (0, 1))
                     made["lines"].append(f"  {name}: water drained around ({mx:.0f}, {my:.0f}): its bed opened to "
                                          f"units ({len(made['beds'])} circle(s))")
@@ -1452,7 +1469,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if made["zones"]:
                 flooded[name] = ([Block(x, y, r, "all") for x, y, r in made["zones"]], ids)
             if made["beds"]:
-                beds[name] = ([Block(x, y, r, "all", True) for x, y, r in made["beds"]], ids)
+                beds[name] = ([Block(x, y, r, "all", True, True) for x, y, r in made["beds"]], ids)
             if made["filled"] is not None:
                 filled_hollows[name] = (made["filled"], ids)
             changed_members = made["members"]

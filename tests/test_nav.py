@@ -632,6 +632,40 @@ class NewWater(unittest.TestCase):
     """Ground under water is never walkable on a shipped map, but the water and height brushes change only the ground
     files: the build blocks the new water (nav.water_blocks)."""
 
+    def test_a_wide_dried_bed_gets_zones_as_big_as_it_has_room_for(self):
+        """A lake drained (a sea, on the owner's M04_Cotentin, 2026-10-04: zones of 15 m over all of it asked for ten
+        times the circles a graph holds): the wide stretches get zones as big as the bed has room for, the largest
+        first, none holding anything but dried bed, half a step off the water that is left."""
+        import math
+
+        def old(x, y):  # a lake 120,000 across, and a river running out of it to the east
+            return math.hypot(x - 100000.0, y - 100000.0) < 60000.0 or (x >= 100000.0 and abs(y - 100000.0) < 6000.0)
+
+        def new(x, y):  # the lake is drained, and the river as far as x = 190,000
+            return x > 190000.0 and abs(y - 100000.0) < 6000.0
+        areas = [(120000.0, 100000.0, 110000.0)]
+        wide: list = []
+        zones, drained = nav.water_blocks(old, new, areas, wide, 3840.0, 81600.0)
+        self.assertEqual((zones, drained), nav.water_blocks(old, new, areas))  # the blocks and samples as without
+        self.assertEqual(zones, [])
+        s = 960.0  # the samples' step for an area of this size
+        radii = [r for _x, _y, r in wide]
+        self.assertEqual(radii, sorted(radii, reverse=True))  # the largest first
+        self.assertTrue(all(3840.0 < r <= 81600.0 for r in radii))
+        x, y, r = wide[0]  # the lake's middle: as far as its shore
+        self.assertLess(math.hypot(x - 100000.0, y - 100000.0), 2 * s)
+        self.assertTrue(60000.0 - 2 * s < r <= 60000.0 + s, r)
+        self.assertLess(len(wide), 400)  # (the 15 m zones over these samples: thousands)
+        self.assertGreater(len(drained), 10000)
+        for k, (x, y, r) in enumerate(wide):
+            self.assertFalse(any(math.hypot(x - a, y - b) < c for a, b, c in wide[:k]), k)  # its middle in no earlier one
+            for n in range(72):  # its rim, a step in: dried bed all the way round, none of it water now
+                px, py = x + (r - s) * math.cos(n * math.pi / 36), y + (r - s) * math.sin(n * math.pi / 36)
+                self.assertTrue(old(px, py) and not new(px, py), (k, x, y, r, n))
+            self.assertTrue(x + r <= 190000.0 - s / 2 + 1e-6 or abs(y - 100000.0) - r >= 6000.0 - s, (x, y, r))
+        inside = sum(1 for x, y in drained if any(math.hypot(x - a, y - b) < c for a, b, c in wide))
+        self.assertGreater(inside, 0.9 * len(drained))  # nearly all the bed; its narrow edges are the small zones'
+
     def test_new_water_is_covered_and_the_shore_kept(self):
         def old(x, y):  # a river, and a pond the stroke drains
             return 0.0 <= x <= 10000.0 or math.hypot(x - 60000.0, y - 30000.0) < 3000.0
@@ -654,6 +688,10 @@ class NewWater(unittest.TestCase):
                     self.assertFalse(inside, (x, y))  # dry ground more than a step from the water stays open
         self.assertTrue(drained)
         self.assertTrue(all(math.hypot(x - 60000.0, y - 30000.0) < 3000.0 for x, y in drained))
+        wide: list = []  # the pond is 3,000 across at most: no stretch of it is wide
+        self.assertEqual(nav.water_blocks(old, new, [(30000.0, 30000.0, 21000.0), (60000.0, 30000.0, 5000.0)], wide,
+                                          3840.0, 81600.0), (zones, drained))
+        self.assertEqual(wide, [])
         self.assertLess(len(zones), 200)  # (about two a step of shore: the graphs' blocking stays quick)
         self.assertEqual(nav.water_blocks(old, old, [(30000.0, 30000.0, 21000.0)]), ([], []))
         # blocked in the graphs: no point of the lake is walkable afterwards, ground well off it still is
