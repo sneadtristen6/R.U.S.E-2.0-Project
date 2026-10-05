@@ -9665,3 +9665,16 @@ ru = "Снять выбор"
 cz = "Zrušit"
 jpn = "選択解除"
 sc = "清除"
+
+# A panel's size handle (maps.js placePanel): drag down smaller, up bigger
+[tip_panel_size]
+us = "Size {n}%: drag down to make this panel smaller, up to make it bigger (the mouse wheel works too). Double-click: normal size."
+fr = "Taille {n} % : glissez vers le bas pour réduire ce panneau, vers le haut pour l'agrandir (la molette marche aussi). Double-clic : taille normale."
+ger = "Größe {n} %: nach unten ziehen macht dieses Feld kleiner, nach oben größer (das Mausrad geht auch). Doppelklick: normale Größe."
+ita = "Dimensione {n}%: trascina in basso per rimpicciolire questo pannello, in alto per ingrandirlo (funziona anche la rotellina). Doppio clic: dimensione normale."
+spa = "Tamaño {n} %: arrastra hacia abajo para hacer este panel más pequeño, hacia arriba para agrandarlo (la rueda del ratón también sirve). Doble clic: tamaño normal."
+pol = "Rozmiar {n}%: przeciągnij w dół, aby zmniejszyć ten panel, w górę, aby go powiększyć (działa też kółko myszy). Podwójne kliknięcie: normalny rozmiar."
+ru = "Размер {n}%: потяните вниз, чтобы уменьшить эту панель, вверх, чтобы увеличить (колесо мыши тоже работает). Двойной щелчок: обычный размер."
+cz = "Velikost {n} %: tažením dolů panel zmenšíte, nahoru zvětšíte (funguje i kolečko myši). Dvojklik: normální velikost."
+jpn = "サイズ {n}%：下にドラッグでこのパネルを小さく、上で大きく（マウスホイールでも可）。ダブルクリックで標準サイズ。"
+sc = "大小 {n}%：向下拖动缩小此面板，向上拖动放大（鼠标滚轮也可以）。双击：恢复正常大小。"

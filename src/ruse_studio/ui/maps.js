@@ -5227,19 +5227,31 @@ function savePanel(key) {
   try { localStorage.setItem("studio.panel." + key, JSON.stringify(panels[key].state)); } catch { /* not kept: fine */ }
 }
 
+// A panel's size (the owner, 2026-10-05: "make it all shrinkable and make it look nice at every shrinkable level ...
+// customizable for the user"): its size handle drags it from 40% to 125%, everything in it with it (CSS zoom, so the
+// text is drawn again at its new size, not blurred); its grip row stays full size, always easy to reach. Small, the
+// tools show their pictures only (their names on hover).
+const PANEL_SCALE = [0.4, 1.25];
+const panelScale = (s) => Math.min(PANEL_SCALE[1], Math.max(PANEL_SCALE[0], Number(s.scale) || 1));
+
 function placePanel(key) {
-  const { el: panel, state: s, fold } = panels[key], st = panel.style;
+  const { el: panel, state: s, fold, size, row } = panels[key], st = panel.style, k = panelScale(s);
+  st.zoom = k === 1 ? "" : String(k);
+  row.style.zoom = k === 1 ? "" : String(1 / k);  // the grip, the fold and the size handle keep their size
+  if (key === "hud") st.paddingRight = k === 1 ? "" : `${70 / k}px`;  // so does the room kept for them (style.css)
   if (s.left == null) {
     st.left = st.top = st.right = st.bottom = st.transform = "";
     panel.classList.remove("moved");
-  } else {
+  } else {  // kept in screen pixels: a zoomed panel's own left and top are scaled by its zoom
     panel.classList.add("moved");
-    Object.assign(st, { left: s.left + "px", top: s.top + "px", right: "auto", bottom: "auto", transform: "none" });
+    Object.assign(st, { left: s.left / k + "px", top: s.top / k + "px", right: "auto", bottom: "auto", transform: "none" });
   }
   panel.classList.toggle("folded", Boolean(s.folded));
+  panel.classList.toggle("compact", k < 0.7);
   const w = mv.words;
   fold.textContent = s.folded ? "▸" : "▾";
   fold.title = (s.folded ? w.tip_panel_unfold : w.tip_panel_fold) || "";
+  size.title = `${fill(w.tip_panel_size || "{n}%", { n: Math.round(k * 100) })}`;
 }
 
 function makePanels() {
@@ -5247,18 +5259,45 @@ function makePanels() {
     const panel = $(id), stage = panel.parentElement;
     const grip = el("span", { className: "grip", textContent: "⠿" });
     const fold = el("button", { type: "button", className: "panel-fold" });
-    panel.prepend(el("div", { className: "panel-grip" }, grip, fold));
-    panels[key] = { el: panel, grip, fold, state: panelState(key) };
+    const size = el("span", { className: "panel-size", textContent: "◢" });
+    const row = el("div", { className: "panel-grip" }, grip, fold, size);
+    panel.prepend(row);
+    panels[key] = { el: panel, grip, fold, size, row, state: panelState(key) };
     placePanel(key);
     fold.addEventListener("click", () => {
       panels[key].state.folded = !panels[key].state.folded;
       placePanel(key);
       savePanel(key);
     });
-    grip.addEventListener("dblclick", () => {  // back where it started
-      panels[key].state = { folded: panels[key].state.folded };
+    grip.addEventListener("dblclick", () => {  // back where it started (its fold and size stay)
+      panels[key].state = { folded: panels[key].state.folded, scale: panels[key].state.scale };
       placePanel(key);
       savePanel(key);
+    });
+    // the size handle: drag down to make the panel smaller, up to make it bigger; the wheel over it too; a
+    // double-click puts it back to its normal size
+    const setScale = (k) => {
+      panels[key].state.scale = Math.round(Math.min(PANEL_SCALE[1], Math.max(PANEL_SCALE[0], k)) * 100) / 100;
+      placePanel(key);
+    };
+    size.addEventListener("dblclick", () => { setScale(1); savePanel(key); });
+    size.addEventListener("wheel", (ev) => {
+      ev.preventDefault();
+      setScale(panelScale(panels[key].state) + (ev.deltaY > 0 ? -0.05 : 0.05));
+      savePanel(key);
+    }, { passive: false });
+    size.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault();
+      try { size.setPointerCapture(ev.pointerId); } catch { /* the drag still follows the handle without it */ }
+      const y0 = ev.clientY, k0 = panelScale(panels[key].state);
+      const move = (e) => setScale(k0 - (e.clientY - y0) / 300);  // 300 px down: from full size to 0
+      const up = () => {
+        size.removeEventListener("pointermove", move);
+        size.removeEventListener("pointerup", up);
+        savePanel(key);
+      };
+      size.addEventListener("pointermove", move);
+      size.addEventListener("pointerup", up);
     });
     grip.addEventListener("pointerdown", (ev) => {
       ev.preventDefault();
