@@ -194,6 +194,14 @@ class Languages(unittest.TestCase):
         self.assertEqual([r["now"] for r in update.changes_in(self.rel(""), "fr", "0.8.0", opener=lambda url: Response(book))],
                          english)  # a release without the file
 
+    def test_a_version_never_translated_stays_english_beside_the_translated_one(self):
+        rel = Release("launcher", "0.8.1", "launcher-v0.8.1", "", "x.exe", "https://github.com/x", 1, SHA,
+                      update.changes_since(NOTES, "0.7.6", "0.8.1"), self.BOOK)  # someone on 0.7.6: 0.8.1 and 0.8.0
+        book = json.dumps({"fr": FRENCH}).encode("utf-8")  # 0.8.1 only, in French
+        got = update.changes_in(rel, "fr", "0.7.6", opener=lambda url: Response(book))
+        self.assertEqual([(r["version"], r["now"]) for r in got], [
+            ("0.8.1", "Elle marche dans toutes les parties."), ("0.8.0", "**New brushes**"), ("0.8.0", "**Check this map**")])
+
     def test_the_file_is_found_beside_the_installer_on_github_only(self):
         rel = release("launcher-v0.2.0")
         rel["assets"].append({"name": "RUSE-Launcher-notes.json", "browser_download_url": self.BOOK})

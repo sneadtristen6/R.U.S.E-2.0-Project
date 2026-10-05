@@ -244,7 +244,18 @@ def changes_in(rel: Release, lang: str, current: str, opener=None) -> list:
     except (UpdateError, OSError, ValueError, AttributeError):
         return rel.changes or []
     local = changes_since(text, current, rel.version) if isinstance(text, str) else []
-    return local or rel.changes or []
+    mine = {r["version"] for r in local}
+    # version by version: in the language where its notes have that version, else in English (someone two versions
+    # behind sees both, the older one in English when it was never translated)
+    out, done = [], set()
+    for r in rel.changes or []:
+        v = r["version"]
+        if v not in mine:
+            out.append(r)
+        elif v not in done:
+            out += [x for x in local if x["version"] == v]
+            done.add(v)
+    return out or local
 
 
 def _open(url: str):
