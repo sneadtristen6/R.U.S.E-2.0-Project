@@ -425,8 +425,8 @@ and `cover` strokes over the same circles here; its Undo takes back both.
   movement graphs (ground under water is never walkable on a shipped map), so the build blocks every new water (a
   water stroke's, or ground a height brush lowered under the water) in both graphs, as `movement.toml` blocks would
   (`rusemod.nav.water_blocks`: circles over it, sampled every 640 map units or more, reaching about half a step past
-  the shore at most). Drained ground stays closed to units, as it was under the water: the build warns; an `open`
-  stroke over it opens it. A water stroke with `block = false` (the Studio's Water over the whole map: a square over
+  the shore at most). Drained ground (a bed the water left) has no ground in the movement, so the build opens it to
+  units (its own opens over the dried bed, the widest stretches in big circles). A water stroke with `block = false` (the Studio's Water over the whole map: a square over
   all of it, its surface Strength above the ground's middle height) is a thin layer units go under, like a navy
   map's painted sea: the movement takes its place for dry ground, so it closes nothing, and the old water under it
   (a river, the sea) is opened as a drained bed is. It is drawn as any water is; not seen in the game yet. What is
