@@ -43,7 +43,7 @@ can do anything it can. The library now marks those mods **Runs scripts**, and P
 this author** for each one. The tick is for that version: an update asks again. Cheats show a **Cheat** badge.
 
 **The RUSE Guard watcher, in every modded game.** Skirmish, multiplayer and co-op matches say on screen when something
-happens that only a cheat does: a unit made out of nowhere, or a player's money jumping by 400 or more at once.
+happens that only a cheat does: a unit made out of nowhere, or a player's money jumping far more at once than a match ever gives.
 Orders in a match run on every player's PC, so a cheat sent by one player shows on the others' screens too. It
 changes nothing in the match, and there's no switch to turn it off. It rides in the maps' own small script pack
 (about 2 MB written per Play), so Play stays as fast as before. *(Not tested in the game yet: test F3, which also
@@ -143,18 +143,14 @@ or a tall panel. Films are made in Blender, which writes the game's exact video 
 
 **The theories, and why we think so** (the one test copy checks all of them):
 
-1. **A new track needs its sound file and a small description file beside it.** The game reads the description
-   (sample rate, channels, length, file size) before the sound, and a name without one stays silent rather than
-   crashing. We know every field of it, so the Studio writes both. Expected: the new track plays in full.
-2. **A replaced song may need its description updated too.** The song itself plays from its own header, but the
-   description gives a read size and a length. The community song that replaced the menu music kept the old
+1. **A new track needs a small description beside its sound.** A track without one stays silent rather than
+   crashing, so the Studio writes both. Expected: the new track plays in full.
+2. **A replaced song may need its description updated too.** The community song that replaced the menu music kept the old
    description and **works in the game** (owner, 2026-10-04). Still open: does it play to its end (4:08) or stop at
    the old track's length (about 2:55)? If it plays to the end, replaced songs need no description update. The
    Studio updates it anyway.
-3. **A film from Blender plays.** The game's own films were made with FFmpeg 7, the same video library Blender uses,
-   and our test film has the same layout. The game's player takes one VP9 video track, at most 30 frames a second,
-   and Vorbis sound; one sound track plays in every language. Expected: plays, as long as the film keeps one of the
-   game's shapes (1280×544 full screen, 1280×200 strip, about 416×720 panel) and 30 frames a second or fewer.
+3. **A film from Blender plays.** Blender's video output matches what the game plays. Expected: plays, as long as
+   the film keeps the game's own sizes and frame rate (the Studio will check them).
 4. **A building's effects can carry a sound.** Construction does it already, through the same effects table that
    holds production, damage and capture. Expected: a sound added to the production effect plays while a factory
    works, and only for buildings given their own copy of the table.

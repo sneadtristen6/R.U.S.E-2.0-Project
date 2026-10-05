@@ -311,7 +311,7 @@ def _load(files: dict[str, bytes]) -> tuple[Game, dict[str, NdfFile]]:
     game = Game()
     for nf in loaded.values():
         for i, name in list(nf.names.items()):
-            if name in owner:  # MOD_FORMAT §14 q3: which copy the game uses is unknown, so say so
+            if name in owner:  # which copy the game uses is unknown, so say so
                 alt = f"{nf.path}#{i}"
                 if not _per_scenario(owner[name], nf.path):  # each scenario's own copy of a file: expected
                     game.notes.append(f"{name} is named in both {owner[name]} and {nf.path}; mods reach the first, "

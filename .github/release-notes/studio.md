@@ -5,9 +5,10 @@ your own, and test it in the game. Your Steam install is never changed.
 player's first build of a big map mod is shorter.
 
 - **The most extreme map mod we have** (BATTLES > D-Day with its sea drained: 154 flatten strokes, 135 paint strokes,
-  33,385 buildings erased) took about four hours to build. Now it builds in **under 7 minutes** (6 min 52 s on half of
-  an 8-core PC, with nothing kept from an earlier build), and the game files come out the same. We're still working
-  on making it faster.
+  33,385 buildings erased) took about four hours to build. Now it builds in **under 10 minutes**, with nothing kept
+  from an earlier build, and the game files come out the same. It took us roughly 15 hours; where it was stuck and
+  why: [How we got here](https://github.com/sneadtristen6/R.U.S.E-2.0-Project#how-we-got-here). We're still working on
+  making it faster.
 
 | Before | Now |
 |---|---|
@@ -367,7 +368,7 @@ spawn units and buildings in a scenario (`[[spawn]]` in `maps/<map>/scenario.tom
   comes from is shown) or its own copy of it. Flag lists (what a unit is and does) can be edited, like in RUSE Mod
   Manager's units editor.
 - **Maps:** each map shows its in-game name, in your language, next to its code name. Buildings, props and trees are
-  drawn with **the game's real 3D models and textures**, thanks to the .spk notes from DomesticNukes and his Claude.
+  drawn with **the game's real 3D models and textures**, thanks to DomesticNukes and his Claude.
 - **Terrain brushes:** raise, lower, smooth and ramp the ground, saved in the mod. **Start over** clears a map.
 - **Place tool:** one click places a building, prop or tree. Paint an area, or click twice for a line (a hedge, a
   street). Undo takes back a whole area or line. Scenery is only for looks for now: units drive through it.

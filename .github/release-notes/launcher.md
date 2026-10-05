@@ -5,7 +5,7 @@ with your mods and starts it. Your Steam install is never changed.
 
 | Before | Now |
 |---|---|
-| **Play** could take hours to build a big map mod. | The most extreme one we have (BATTLES > D-Day with its sea drained) took about four hours; now under 7 minutes on half of an 8-core PC, with the same result. |
+| **Play** could take hours to build a big map mod. | The most extreme one we have (BATTLES > D-Day with its sea drained) took about four hours; now under 10 minutes, with the same result. |
 | A big map mod's first build worked everything out on your PC. | A mod exported with Studio 0.9.7 carries what its build worked out for the map's movement: your first build of it is shorter. Every answer is checked, and the game files come out the same. |
 
 Known: **navy maps aren't worked out yet.** A drained or painted sea builds and loads, but the water still shows.

@@ -32,8 +32,9 @@ make works in the game every time, the first time.
 what changing strictly data can do. Anything beyond data is outside what we want to do with it. Your Steam install
 is never changed.
 
-**Big map mods build in minutes, not hours.** Our most extreme map mod went from about four hours to under 7 minutes
-to build, and we're still working on optimizations. It's in RUSE Studio 0.9.7.
+**Big map mods build in minutes, not hours.** Our most extreme map mod went from about four hours to under 10 minutes
+to build, and we're still working on optimizations. It's in RUSE Studio 0.9.7, and how we got there is under
+[How we got here](#how-we-got-here).
 
 **What's in this repository.** The two apps, and what players and modders need to use them. Our working notes on the
 game's own files are kept private until we have an explicit OK from the developers, Eugen Systems.
@@ -314,6 +315,39 @@ Stuck on something? See [Questions? Ask any AI](#questions-ask-any-ai) at the bo
 The big steps so far, newest first. Each one was played in the game before it went out.
 
 <details>
+<summary><b>Big map mods in minutes, not hours (Studio 0.9.7)</b></summary>
+
+The most extreme map mod we have drains the whole sea off BATTLES > D-Day: 154 flatten strokes, 135 paint strokes
+and 33,385 buildings erased. Its first build took about four hours. Now it builds in **under 10 minutes**, with the
+same game files as before: every step was checked byte for byte against the old one on that map. It took us roughly
+15 hours.
+
+Where it was stuck, and why:
+
+- **One cause for three problems.** The build opens dried ground to units in zones, and it made them 15 m wide, the
+  size that suits a river. A drained sea is a quarter of a million of those: more than a map's movement can hold, so
+  the build was refused as too big, or ran for hours, or used up 14 GB of memory and stopped the PC. A wide dried bed
+  now gets zones as big as it has room for.
+- **Where units can go, worked out in parallel.** Infantry and vehicles each have their own movement, and nothing ties
+  the two, so they're worked out on two cores at once, while the ground is being painted. Their heaviest sums now run
+  on whole grids at once instead of point by point.
+- **Painting the ground.** That mod's paint strokes reach about 2,500 of the ground's picture tiles, and each tile was
+  worked out pixel by pixel. Now a run of strokes of one colour is worked out at once, a tile painted over completely
+  forgets what was under it, the tiles are shared across the PC's cores, and painted tiles are kept between builds:
+  an unchanged map repaints in half a second.
+- **Mending riverbeds.** A dried riverbed's banks get painted over from both sides. That used to search the whole
+  map; now it looks only where the old water was, on whole grids, across the cores.
+- **The rest.** Reshaping the ground went from over three minutes to about 25 s, erasing most of a map's scenery from
+  about four minutes to seconds, and the check that warns when an open takes in water from 34 s to 7.5 s.
+
+Everything the build works out is kept between builds, so a rebuild after a small change takes a fraction of the first
+one. And the Studio's **Export mod…** puts what the build worked out for a map's movement into the mod, so a player's
+first build of it is shorter. Not tried in the game yet: units on a drained sea. And navy maps aren't worked out yet:
+a drained or painted sea builds and loads, but the water still shows. We're still working on making it faster.
+
+</details>
+
+<details>
 <summary><b>Import your own models: an M1 Abrams in R.U.S.E. (Studio 0.9.6)</b></summary>
 
 RUSE Studio can now give a new unit a 3D model of its own, from Blender or any 3D tool. On the new unit's page, pick a
@@ -580,17 +614,15 @@ R.U.S.E. 2.0 stands on three people's work. None of it would be here without the
   why the whole program is GPL-3.0.
 - **LittleGroove's map editor led the way for ours:** supply depots and HQs sticking to roads (LittleGroove's
   measured distances), the opening camera each match starts on, and turning it round the HQ all come from that work.
-  So does the scenario file's checksum, without which the game won't load a changed scenario, and the units editor's
-  ammo types and flag lists.
+  So does saving a changed scenario so the game loads it, and the units editor's ammo types and flag lists.
 
 ### DomesticNukes: the map maker's groundwork
 
-- **DomesticNukes worked out the map files** that the map editor writes: the ground units walk on (`.kdt`), where
-  every building, tree and prop stands (the scenery file), and the recipe the terrain brushes follow so a reshaped
-  map loads and plays.
+- **DomesticNukes laid the map maker's groundwork:** the ground units walk on, where every building, tree and prop
+  stands, and the recipe the terrain brushes follow so a reshaped map loads and plays.
 - **DomesticNukes wrote the water brushes:** lakes and drained rivers, merged from DomesticNukes' own pull request.
-- **DomesticNukes' notes on the model files (`.spk`)** put the game's real 3D models in the Studio's map view, and
-  helped make units from another nation work.
+- **DomesticNukes' work on the game's models** put the game's real 3D models in the Studio's map view, and helped
+  make units from another nation work.
 - The notes on unit flags, bridge floors and how units stand on the ground went into the build's checks and the
   bridges units now drive over. DomesticNukes tests the releases in the game, too.
 
