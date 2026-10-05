@@ -73,6 +73,7 @@ async function setLanguage(lang) {
   saveLang(lang);
   state.words = await api().strings(lang);
   renderUpdate();
+  recheckUpdate();
   state.nationNames = await api().nations(lang);
   const w = state.words;
   $("tab-units").textContent = w.units_tab;
@@ -2035,8 +2036,26 @@ const APP_NAME = "RUSE Studio";
 
 async function checkUpdate() {
   try { $("app-version").textContent = `v${(await api().app_version()).version}`; } catch { /* an older back end */ }
-  try { state.update = await api().update_check(); } catch { state.update = null; }
+  try { state.update = await api().update_check(state.lang); } catch { state.update = null; }
   renderUpdate();
+}
+
+// The language changed: what's new again, in it (the release's notes in every language, English for one they lack)
+function recheckUpdate() {
+  if (!state.update || !state.update.available) return;
+  api().update_check(state.lang).then((u) => { state.update = u; renderUpdate(); }).catch(() => {});
+}
+
+// A release note's line with its **bold** and `code` shown as such (nothing of the notes is taken as HTML)
+function richText(s) {
+  const out = document.createDocumentFragment();
+  for (const part of String(s || "").split(/(\*\*[^*]+\*\*|`[^`]+`)/)) {
+    if (!part) continue;
+    if (part.length > 4 && part.startsWith("**") && part.endsWith("**")) out.append(el("strong", { textContent: part.slice(2, -2) }));
+    else if (part.length > 2 && part.startsWith("`") && part.endsWith("`")) out.append(el("code", { textContent: part.slice(1, -1) }));
+    else out.append(part);
+  }
+  return out;
 }
 
 function renderUpdate() {
@@ -2065,7 +2084,7 @@ function renderChanges() {
       el("th", { textContent: fill(w.changes_before, { version: u.current || "" }) }),
       el("th", { textContent: fill(w.changes_now, { version: u.version }) }))),
     el("tbody", {}, ...rows.map((r) => el("tr", {}, el("td", { className: "ver", textContent: r.version }),
-      el("td", { className: "before", textContent: r.before || "\u2014" }), el("td", { textContent: r.now })))))
+      el("td", { className: "before" }, r.before ? richText(r.before) : "\u2014"), el("td", {}, richText(r.now))))))
     : el("p", { textContent: w.changes_none }), page);
   box.classList.remove("hidden");
 }

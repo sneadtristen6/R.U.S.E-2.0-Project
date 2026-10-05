@@ -46,7 +46,19 @@ WORDING = re.compile(r"RUSE\.exe'?s\b|RUSE\.exe (?:does|reads|checks|holds|keeps
                      r"decompil|reverse[- ]?engineer|uncompyle|\bxdis\b|ghidra|\bIDA\b|\bvfunc|"
                      # and the words and tools that lead to it
                      r"bytecode|opcode|hex-?rays|binary ninja|x64dbg|ollydbg|cheat engine|\bdebugger\b|minidump|"
-                     r"crash ?dumps?\b|hex editor", re.I)
+                     r"crash ?dumps?\b|hex[- ]?editor|"
+                     # the same in the other nine languages the apps and their pages speak (the owner, 2026-10-05:
+                     # "translated every language on the GitHub"): a translation mustn't say what the English can't
+                     r"d[ée]compil|dekompil|descompil|декомпил|逆コンパイル|反编译|"
+                     r"r[ée]tro-?ing[ée]nierie|ing[ée]nierie inverse|ingegneria inversa|ingenier[ií]a inversa|"
+                     r"in[żz]ynieri\w* wsteczn|обратн\w* (?:разработк|инжиниринг)|реверс-?инжиниринг|zp[ěe]tn\w* in[žz]en[ýy]r|"
+                     r"リバースエンジニアリング|逆向工程|"
+                     r"d[ée]sassembl|desensambl|deasembl|дизассембл|逆アセンブル|反汇编|"
+                     r"d[ée]bogueur|depurador|debuger|отладчик|デバッガ|调试器|"
+                     r"байт-?код|バイトコード|字节码|"
+                     r"vidage (?:m[ée]moire|sur incident)|speicherabbild|absturzabbild|дамп\w*|クラッシュダンプ|崩溃转储|"
+                     r"[ée]diteur hexad[ée]cimal|editor hexadecimal|шестнадцатеричн\w* редактор|16進エディタ|十六进制编辑器",
+                     re.I)
 # how public text frames what we do (the owner, 2026-10-04, on "read-only count of everything in the game data"): it
 # says what changing strictly data can do, and that anything beyond data is outside the project; never that we go
 # through the whole of the game's data

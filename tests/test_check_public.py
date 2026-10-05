@@ -61,6 +61,19 @@ class Guard(unittest.TestCase):
         found = check({**bad, **fine})
         self.assertEqual(sorted(f.split(":")[0] for f in found), sorted(bad))
 
+    def test_the_same_words_in_the_other_languages_are_refused(self):
+        """The apps' notes and pages are translated (the owner, 2026-10-05): a translation says no more than the
+        English may."""
+        bad = {"a.fr.md": "nous avons décompilé les scripts", "b.fr.md": "le format, par rétro-ingénierie",
+               "c.ger.md": "mit einem Hex-Editor geöffnet", "d.ita.md": "con l'ingegneria inversa",
+               "e.spa.md": "lo descompilamos", "f.pol.md": "dzięki inżynierii wstecznej", "g.ru.md": "декомпилировали скрипты",
+               "h.ru.md": "из дампа памяти", "i.cz.md": "zpětným inženýrstvím", "j.jpn.md": "逆コンパイルした",
+               "k.sc.md": "通过反编译", "l.fr.md": "dans le débogueur", "m.sc.md": "用调试器"}
+        fine = {"n.fr.md": "les scripts du jeu, lus ; la structure du fichier, décodée",
+                "o.ru.md": "скрипты игры прочитаны; формат файла расшифрован", "p.jpn.md": "ゲームのスクリプトを読み、ファイルの形式を解読"}
+        found = check({f"docs/{k}": v.encode("utf-8") for k, v in {**bad, **fine}.items()})
+        self.assertEqual(sorted(f.split(":")[0] for f in found), sorted(f"docs/{k}" for k in bad))
+
     def test_text_that_says_we_go_through_the_whole_of_the_games_data_is_refused(self):
         """The owner, 2026-10-04, on a README line: "Like you literally, exactly say everything in the game data."
         Public text says what changing strictly data can do; anything beyond data is outside the project."""
