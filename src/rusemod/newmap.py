@@ -316,6 +316,18 @@ def _cluster_base(m: Ndf, load: dict) -> str | None:
     return None
 
 
+def entry_scenario(m: Ndf, mi: int, read_glad) -> str | None:
+    """The scenario file map-list entry `mi` plays, as its cluster names it, in lower case (D-Day's BATTLES map:
+    leveldesign_3v3_v01.scenario), the one a copy of it plays; None when its cluster names none or several."""
+    base = _cluster_base(m, _props(m, m.objects[mi]))
+    raw = read_glad(_member(base)) if base else None
+    if raw is None:
+        return None
+    scen_at = re.compile(r"^DataDir:[\\/]Test[\\/]Map[\\/][^\\/]+[\\/](.+\.scenario)$", re.I)
+    found = {scen_at.match(s).group(1).replace("/", BS).lower() for s in Ndf(raw).strings if scen_at.match(s)}
+    return found.pop() if len(found) == 1 else None
+
+
 def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
     """The files that add the new map `new`, a copy of `spec.copy_of`. `read_glad`, `read_data` and `read_zz` give a
     member of ZZ_GladPatchableWin.dat, DataMap_Win.dat and ZZ_Win.dat as the build has it so far (any case), or None.

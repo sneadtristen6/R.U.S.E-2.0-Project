@@ -2065,14 +2065,18 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 except KeyError:
                     return None
             from . import floors
-            from .roadstrips import StripError, take_out_roads as model_out
+            from .roadstrips import StripError, take_out_bridges as bridges_out, take_out_roads as model_out
             notes = []
             try:
                 if gone_what.roads:
                     new, more = model_out(read_done, lambda m, a=map_arc: a.find(m).path)
                     done.update(new)
                     notes += more
-                if gone_what.bridges:  # their floors sunk under the ground, found on the ground they were made on
+                if gone_what.bridges:  # the bridges model drawn as nothing (it floated over the flattened blank
+                    # D-Day, 2026-10-05), their floors sunk under the ground, found on the ground they were made on
+                    new, more = bridges_out(read_done, lambda m, a=map_arc: a.find(m).path)
+                    done.update(new)
+                    notes += more
                     from .bridges import Ground, model_length, shipped_bridges
                     from .kdt import Kdt
                     from .tms import Tms

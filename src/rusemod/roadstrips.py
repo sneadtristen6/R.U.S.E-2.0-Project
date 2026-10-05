@@ -13,6 +13,7 @@ MEMBER = "output\\staticmeshes.spkpc"
 # every name a map's static meshes go by, same layout (all 33 shipped files read and rebuild byte for byte, 2026-10-02)
 MEMBERS = (MEMBER, "output\\staticmeshes_v02.spkpc")
 MODEL = "road"
+BRIDGES = "bridges"     # the map's own bridges, drawn as one model too (D-Day: 21 pieces in two draw calls)
 CASE = 81920.0          # map units a case of the static meshes is across (every map's `CaseSize`)
 VERTEX = "TVertex__Position_3f__NormalIn01_4ubn__Normal2In01_4ubn__PSize_1f__Color0_col32__ArcLengths_2f__TexCoord0_2f"
 STRIDE = 44
@@ -365,6 +366,31 @@ def without_roads(raw: bytes) -> tuple[bytes, int]:
     return bytes(out), count
 
 
+def without_bridges(raw: bytes) -> tuple[bytes, int]:
+    """The map's static meshes with its bridges model drawn as nothing: every vertex of each of its draw calls moved
+    onto that call's first vertex, so its triangles have no area. Only those bytes change. Returns (the bytes,
+    vertices changed); a map without a bridges model gives the same bytes."""
+    pack = StaticMeshes(raw)
+    found = pack._find_model(BRIDGES)
+    if found is None:
+        return pack.raw, 0
+    first, count = pack.meshes[found[1]]
+    out = bytearray(pack.raw)
+    changed = 0
+    for d in range(first, first + count):
+        _w, _mat, _ib, vb, _group, _pad = pack.draws[d]
+        voff, vsize, n = pack.vbs[vb][:3]
+        if not n or vsize % n or not pack.formats[pack.vbs[vb][3]].rsplit("/", 1)[-1].startswith(
+                "TVertex__Position_3f"):
+            raise StripError("the map's bridges model is stored in a way this writer doesn't know")
+        stride, base = vsize // n, pack.vb_data[0] + voff
+        point = bytes(out[base:base + 12])
+        for k in range(1, n):
+            out[base + stride * k:base + stride * k + 12] = point
+        changed += n
+    return bytes(out), changed
+
+
 def take_out_roads(read, path_of) -> tuple[dict, list[str]]:
     """({member: new bytes}, notes): the map's road model drawn as nothing (without_roads) in every static-mesh file it
     has (MEMBERS), before any new road is added to it (draw_roads)."""
@@ -378,6 +404,21 @@ def take_out_roads(read, path_of) -> tuple[dict, list[str]]:
             out[path_of(member)] = new
             notes.append(f"{member.rsplit(chr(92), 1)[-1]}: the road model's {n:,} vertices drawn as nothing (the "
                          f"roads seen from high up and on the map table)")
+    return out, notes
+
+
+def take_out_bridges(read, path_of) -> tuple[dict, list[str]]:
+    """({member: new bytes}, notes): the map's bridges model drawn as nothing (without_bridges) in every static-mesh
+    file it has (MEMBERS)."""
+    out, notes = {}, []
+    for member in MEMBERS:
+        raw = read(member)
+        if raw is None:
+            continue
+        new, n = without_bridges(raw)
+        if n:
+            out[path_of(member)] = new
+            notes.append(f"{member.rsplit(chr(92), 1)[-1]}: the bridges model's {n:,} vertices drawn as nothing")
     return out, notes
 
 

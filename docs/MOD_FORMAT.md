@@ -819,9 +819,9 @@ take_out = ["roads", "bridges"]   # either, or both
   then plan their way across country, as on a map with no roads); so do the roads drawn from high up and on the map
   table, and the road stickers up close (asphalt, cobbles, dirt tracks, their edges and junctions). The mod's own
   `[[road]]` go in afterwards, in the look the map's own had, and must still make one network between them.
-- `"bridges"`: the map's own bridges are erased, and the floors units stood on are sunk under the ground. The
-  movement over their decks stays: units still cross there, on the ground under them. Drain the rivers (the water
-  brushes) to cross anywhere.
+- `"bridges"`: the map's own bridges are erased, both the objects and the model the map draws them with, and the
+  floors units stood on are sunk under the ground. The movement over their decks stays: units still cross there, on
+  the ground under them. Drain the rivers (the water brushes) to cross anywhere.
 - Every mod's `take_out` counts: one taking the roads out and another the bridges takes both. Not seen in the game
   yet.
 

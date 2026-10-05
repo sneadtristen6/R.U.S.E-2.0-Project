@@ -175,6 +175,31 @@ class TakingOut(unittest.TestCase):
         self.assertEqual(StaticMeshes(new).parts, StaticMeshes(raw).parts)
         self.assertEqual(road_look(raw), (old[0][12:16], old[0][19]))
 
+    def test_the_bridges_model_drawn_as_nothing(self):
+        """take_out = ["bridges"]: every vertex of the map's bridges model on its draw call's first one (no area), the
+        road model and the file's layout as they were; a map without one gives the same bytes."""
+        from rusemod.roadstrips import take_out_bridges, without_bridges
+        raw = static_pack()
+        new, n = without_bridges(raw)
+        self.assertEqual((n, len(new)), (3, len(raw)))
+        pack, old = StaticMeshes(new), StaticMeshes(raw)
+        vb = pack.draws[pack.meshes[pack._find_model("bridges")[1]][0]][3]
+        base, size, count = pack.vb_data[0] + pack.vbs[vb][0], pack.vbs[vb][1], pack.vbs[vb][2]
+        stride = size // count
+        firsts = {new[base + stride * k:base + stride * k + 12] for k in range(count)}
+        self.assertEqual(firsts, {raw[base:base + 12]})                       # every point on the first
+        self.assertEqual([new[base + stride * k + 12:base + stride * (k + 1)] for k in range(count)],
+                         [raw[base + stride * k + 12:base + stride * (k + 1)] for k in range(count)])  # the rest kept
+        self.assertEqual(road_vertices(new), road_vertices(raw))
+        self.assertEqual((new[:0x30], pack.parts), (raw[:0x30], old.parts))
+        self.assertEqual(sum(a != b for a, b in zip(new, raw)), sum(a != b for a, b in zip(
+            new[base:base + size], raw[base:base + size])))                    # only the bridges' points changed
+        files = {MEMBER: raw}
+        out, notes = take_out_bridges(files.get, lambda m: "map\\" + m)
+        self.assertEqual((list(out), out["map\\" + MEMBER]), (["map\\" + MEMBER], new))
+        self.assertIn("the bridges model's 3 vertices drawn as nothing", notes[0])
+        self.assertEqual(without_bridges(new)[0], new)                         # already nothing: the same bytes again
+
     def test_a_new_road_takes_the_shipped_look(self):
         from rusemod.roadstrips import add_roads, road_look, without_roads
         raw = static_pack()

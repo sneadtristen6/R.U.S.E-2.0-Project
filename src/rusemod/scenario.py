@@ -801,6 +801,14 @@ def parse_removes(items, where: str = "scenario.toml") -> list[Remove]:
     return out
 
 
+def scenario_toml(moves: list, starts: list, spawns: list, removes: list, header: str = "", sectors=None) -> str:
+    """A scenario.toml holding all four kinds of edit and the sectors' setting (none is ever left out on a rewrite)."""
+    from .sectors import sectors_toml
+    table = sectors_toml(sectors)
+    return (moves_toml(moves, header) + "\n" + removes_toml(removes) + "\n" + starts_toml(starts) + "\n"
+            + spawns_toml(spawns) + ("\n" + table if table else ""))
+
+
 def removes_toml(removes: list[Remove]) -> str:
     lines = []
     for m in removes:

@@ -283,10 +283,7 @@ def _scenario_checked(where: str):
 
 def _scenario_toml(moves: list, starts: list, spawns: list, removes: list, header: str, sectors=None) -> str:
     """A scenario.toml holding all four kinds of edit and the sectors' setting (none is ever left out on a rewrite)."""
-    from rusemod.sectors import sectors_toml
-    table = sectors_toml(sectors)
-    return (scenario.moves_toml(moves, header) + "\n" + scenario.removes_toml(removes) + "\n"
-            + scenario.starts_toml(starts) + "\n" + scenario.spawns_toml(spawns) + ("\n" + table if table else ""))
+    return scenario.scenario_toml(moves, starts, spawns, removes, header, sectors)
 
 
 _KEEP = object()  # (a rewrite keeps what the file has)
