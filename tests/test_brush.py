@@ -127,6 +127,20 @@ class TerrainFile(unittest.TestCase):
         with self.assertRaisesRegex(BrushError, "stroke 1: clear .* is for the paint and stamp brushes"):
             parse_strokes([{"brush": "hill", "x": 1, "y": 2, "radius": 3, "height": 4, "clear": True}])
 
+    def test_a_thin_layer_of_water_units_go_under(self):
+        """Water over the whole map (the owner's navy, 2026-10-05): `block = false` keeps its water out of the
+        movement; written only when off, and only the water brush has it."""
+        lake = {"brush": "water", "x": 1, "y": 2, "radius": 3, "level": 4}
+        self.assertEqual([s.block for s in parse_strokes([lake, dict(lake, block=False)])], [True, False])
+        thin = parse_strokes([dict(lake, block=False, shape="square")])
+        text = strokes_toml(thin + parse_strokes([lake]))
+        self.assertEqual(text.count("block = false"), 1)
+        self.assertEqual(parse_strokes(tomllib.loads(text)["stroke"]), thin + parse_strokes([lake]))
+        with self.assertRaisesRegex(BrushError, "stroke 1: block must be true or false"):
+            parse_strokes([dict(lake, block="no")])
+        with self.assertRaisesRegex(BrushError, "stroke 1: block .* is for the water brush"):
+            parse_strokes([{"brush": "drain", "x": 1, "y": 2, "radius": 3, "block": False}])
+
     def test_brushes_and_their_values(self):
         self.assertEqual(set(BRUSHES), {"hill", "raise", "lower", "crater", "plateau", "flatten", "level", "smooth", "ramp",
                                         "water", "drain", "cover", "town", "uncover", "block", "block_infantry", "block_vehicles",

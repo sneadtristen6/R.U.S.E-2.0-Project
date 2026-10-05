@@ -4039,6 +4039,10 @@ function renderBrushes() {
     $("brush-erase-buildings").textContent = w.erase_buildings_note;
     $("brush-erase-buildings").classList.toggle("hidden", !b.eraseWhat.building);
   }
+  $("brush-water").classList.toggle("hidden", b.name !== "water");  // Water: a thin layer over the whole map
+  $("brush-water-whole").textContent = w.water_whole;
+  $("brush-water-whole").title = w.tip_water_whole;
+  $("brush-water-whole").disabled = !b.mod;
   $("brush-undo").title = erase ? w.tip_erase_undo : w.tip_brush_undo;
   $("brush-clear").title = erase ? w.tip_erase_clear : w.tip_brush_clear;
   renderBrushTip();
@@ -4294,6 +4298,24 @@ async function eraseWhole() {
   eraseDab(a);
   tintSoon();
   await finishErase({ erase: [a] });
+}
+
+// "Water over the whole map": one square of water over all of it, its surface Strength above the ground's middle
+// height (the median of the ground as the view has it, the mod's strokes on it), a thin layer units go under (block =
+// false: the build takes its place for dry ground). The owner's navy, 2026-10-05: "spread the water across the whole
+// map". Saved like a drag's stroke, so Undo takes it back.
+async function waterWhole() {
+  const b = mv.brush, ed = mv.edit;
+  if (!b.mod || b.painting || !ed) return;
+  const [x0, y0, z0, x1, y1, z1] = ed.bounds;
+  const zs = Float64Array.from(ed.z).sort();
+  const level = zs[Math.floor(zs.length / 2)] + lift(settingsOf("water").strength, z0, z1);
+  const s = { brush: "water", x: Math.round((x0 + x1) / 2), y: Math.round((y0 + y1) / 2),
+    radius: Math.ceil(Math.max(x1 - x0, y1 - y0) / 2) + 1000, shape: "square", dx: 1, dy: 0, level, block: false };
+  b.painting = { strokes: [s], last: null, start: b.strokes.length };
+  b.strokes.push(s);
+  reapply();
+  await finishStroke();
 }
 
 // Undo under the Erase brush: the last drag's circles (one circle, for those saved before this session).
@@ -5322,6 +5344,7 @@ function wire() {
   $("place-area").addEventListener("input", (e) => { mv.place.area = Number(e.target.value); renderPlace(); });
   $("brush-undo").addEventListener("click", () => undoStroke());
   $("brush-erase-whole").addEventListener("click", () => eraseWhole());
+  $("brush-water-whole").addEventListener("click", () => waterWhole());
   $("road-finish").addEventListener("click", () => finishRoad());
   $("road-undo").addEventListener("click", () => undoRoad());
   $("bridge-undo").addEventListener("click", () => undoBridge());

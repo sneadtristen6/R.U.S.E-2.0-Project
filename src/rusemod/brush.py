@@ -304,6 +304,8 @@ class Stroke:
     sy: float = 0.0
     clear: bool = True    # paint, stamp: take off what hides it up close (stickers, low plants, stones) where it is
                           # at least half strength (groundpaint.paint_clearing; TESTS.md T21)
+    block: bool = True    # water: its water closes the ground under it to units, as a shipped map's does; false: a
+                          # thin layer units go under, the movement taking all of the stroke's place for dry ground
 
     @property
     def kind(self) -> Brush:
@@ -504,6 +506,12 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
             if not isinstance(item["clear"], bool):
                 raise BrushError(f"{at}: clear must be true or false")
             values["clear"] = item["clear"]
+        if "block" in item:
+            if brush != "water":
+                raise BrushError(f"{at}: block (whether its water keeps units out) is for the water brush")
+            if not isinstance(item["block"], bool):
+                raise BrushError(f"{at}: block must be true or false")
+            values["block"] = item["block"]
         out.append(Stroke(brush, **values))
     return out
 
@@ -535,6 +543,8 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
             lines.append(f"weight = {_num_text(s.weight)}")
         if kind in PAINT_KINDS and not s.clear:
             lines.append("clear = false")
+        if s.brush == "water" and not s.block:
+            lines.append("block = false")
         if s.square:
             lines.append("square = true")
         if s.shape != "round":

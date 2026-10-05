@@ -929,7 +929,7 @@ class Terrain(WithMod):
         self.assertEqual(view["strokes"][0], {"brush": "hill", "x": 500.0, "y": 600.0, "radius": 120.0, "height": 30.0,
                                               "level": 0.0, "weight": 1.0, "x2": 0.0, "y2": 0.0, "level2": 0.0,
                                               "square": False, "shape": "round", "edge": "soft", "dx": 1.0, "dy": 0.0,
-                                              "colour": "", "sx": 0.0, "sy": 0.0, "clear": True})
+                                              "colour": "", "sx": 0.0, "sy": 0.0, "clear": True, "block": True})
         # the brush types (2026-10-03): a square turned any way and a line, with a hard edge, saved and read back
         turned = {"brush": "raise", "x": 1, "y": 2, "radius": 30, "height": 5.0, "shape": "square", "dx": 0.6,
                   "dy": 0.8, "edge": "hard"}

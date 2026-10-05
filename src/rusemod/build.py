@@ -591,10 +591,11 @@ def _given_answers(order: list, mods: list, name: str, shipped: bytes | None) ->
     return given, notes
 
 
-def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs, find_map=None) -> list:
+def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs, find_map=None, thin=()) -> list:
     """nav.wet_opens for a map's opens, on its ground as the terrain edits left it (map_packs: (pack path, archive,
     changed members); `open_pack(path)` opens a map pack, `find_map(name)` finds it, a new map's too); none when the
-    map has no opens or its ground can't be read."""
+    map has no opens or its ground can't be read. `thin`: water strokes units go under (block = false): their place
+    counts as dry."""
     from .bridges import Water
     from .nav import wet_opens
     from .terrain import pack_file
@@ -610,7 +611,13 @@ def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs, find_map=Non
         e = map_arc.find("output\\highdef.tms")
         ground = (entry[2].get(e.path) if entry else None) or bytes(map_arc.read(e))
         water = Water(Tms(ground))
-        return wet_opens(blocks, water.at, many=water.at_many)
+        if not thin:
+            return wet_opens(blocks, water.at, many=water.at_many)
+
+        def dry(x, y):
+            return any(s.covers(x, y) for s in thin)
+        return wet_opens(blocks, lambda x, y: water.at(x, y) and not dry(x, y),
+                         many=lambda xs, ys: [w and not dry(x, y) for w, x, y in zip(water.at_many(xs, ys), xs, ys)])
     except (KeyError, ValueError, struct.error, zlib.error):
         return []
 
@@ -1566,6 +1573,12 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 from .tms import Tms
                 try:
                     now_at = Water(Tms(changed_members[GROUND["highdef"]])).at
+                    thin = [s for s in strokes if s.brush == "water" and not s.block]
+                    if thin:  # a thin layer (block = false): its place is dry ground to units, under the water drawn
+                        now_at = (lambda x, y, wet=now_at, thin=thin:
+                                  wet(x, y) and not any(s.covers(x, y) for s in thin))
+                        made["lines"].append(f"  {name}: {len(thin)} water stroke(s) units go under (block = false): "
+                                             f"the movement takes their place for dry ground")
                     wide: list = []  # zones over the wide stretches of a dried bed (a lake, a sea)
                     zones, drained = water_blocks(Water(Tms(before)).at, now_at, [_area_of(s) for s in strokes],
                                                   wide, max(BED_RADII), BED_MOST)
@@ -2407,7 +2420,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                             f"could already go there, or it is too small (an open needs a radius of 5 m or more) or "
                             f"out of reach of the ground they use")))
                     drawn = [b for b in map_blocks if not b.spare]  # (the build's own bed opens keep off the water)
-                    for b, (wx, wy) in _wet_opens(open_pack, game, name, drawn, map_packs, find_map):
+                    thin = [s for s in terrain_edits(result.order, mods).get(name, ([], []))[0]
+                            if s.brush == "water" and not s.block]
+                    for b, (wx, wy) in _wet_opens(open_pack, game, name, drawn, map_packs, find_map, thin):
                         result.findings.append(Finding("warning", (
                             f"{', '.join(ids)}: {name}: the open at ({b.x:.0f}, {b.y:.0f}) takes in water (at "
                             f"({wx:.0f}, {wy:.0f})): units there stand on the ground under it, on the riverbed or "

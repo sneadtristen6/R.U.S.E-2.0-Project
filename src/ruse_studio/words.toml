@@ -7132,6 +7132,30 @@ cz = "Jedna oblast přes celou mapu, odstraní, co je vybráno výše. Zpět ji 
 jpn = "マップ全体に1つの範囲を置き、上で選んだものを消します。元に戻すで取り消せます。"
 sc = "在整张地图上放一个区域，清除上面选中的内容。撤销可将其撤回。"
 
+[water_whole]
+us = "Water over the whole map"
+fr = "Eau sur toute la carte"
+ger = "Wasser über die ganze Karte"
+ita = "Acqua su tutta la mappa"
+spa = "Agua en todo el mapa"
+pol = "Woda na całej mapie"
+ru = "Вода на всю карту"
+cz = "Voda přes celou mapu"
+jpn = "マップ全体に水"
+sc = "整张地图铺水"
+
+[tip_water_whole]
+us = "A thin layer of water over all of the map: its surface Strength above the ground's middle height, so lower ground is under water and higher ground stays dry. Units go under it (their movement takes it for dry ground), like the painted sea of a navy map. Undo takes it back. Not tested in the game yet."
+fr = "Une fine couche d'eau sur toute la carte : sa surface à Force au-dessus de la hauteur moyenne du sol, le sol plus bas sous l'eau, le plus haut au sec. Les unités passent dessous (leurs déplacements la prennent pour du sol sec), comme la mer peinte d'une carte navale. Annuler la retire. Pas encore testé en jeu."
+ger = "Eine dünne Wasserschicht über die ganze Karte: ihre Oberfläche um Stärke über der mittleren Bodenhöhe, tieferer Boden unter Wasser, höherer bleibt trocken. Einheiten bewegen sich darunter (ihre Bewegung behandelt sie als trockenen Boden), wie das gemalte Meer einer Marinekarte. Rückgängig nimmt sie zurück. Noch nicht im Spiel getestet."
+ita = "Un sottile strato d'acqua su tutta la mappa: la superficie a Intensità sopra l'altezza media del terreno, il terreno più basso sott'acqua, quello più alto all'asciutto. Le unità ci passano sotto (il loro movimento lo considera terreno asciutto), come il mare dipinto di una mappa navale. Annulla lo toglie. Non ancora provato in gioco."
+spa = "Una fina capa de agua en todo el mapa: su superficie a Fuerza por encima de la altura media del suelo, el suelo más bajo bajo el agua, el más alto seco. Las unidades pasan por debajo (su movimiento la toma por suelo seco), como el mar pintado de un mapa naval. Deshacer la quita. Aún no probado en el juego."
+pol = "Cienka warstwa wody na całej mapie: jej powierzchnia o Siłę wyżej niż średnia wysokość gruntu, niższy grunt pod wodą, wyższy suchy. Jednostki przechodzą pod nią (ich ruch traktuje ją jak suchy grunt), jak namalowane morze na mapie morskiej. Cofnij ją usuwa. Jeszcze nie sprawdzone w grze."
+ru = "Тонкий слой воды на всю карту: её поверхность на Силу выше средней высоты земли, низкая земля под водой, высокая остаётся сухой. Войска проходят под ней (их движение считает её сухой землёй), как нарисованное море на морской карте. «Отменить» убирает её. В игре ещё не проверено."
+cz = "Tenká vrstva vody přes celou mapu: její hladina o Sílu nad střední výškou terénu, nižší terén pod vodou, vyšší zůstane suchý. Jednotky jí procházejí (jejich pohyb ji bere jako suchý terén), jako namalované moře námořní mapy. Zpět ji odebere. Ve hře zatím nevyzkoušeno."
+jpn = "マップ全体に薄い水の層：水面は地面の中央の高さより「強さ」だけ上。低い地面は水の下、高い地面は乾いたまま。部隊はその下を進めます（移動では乾いた地面として扱います）。海軍マップの塗った海のように。元に戻すで取り消せます。ゲーム内ではまだ未確認です。"
+sc = "在整张地图上铺一层薄水：水面比地面中间高度高出“强度”，较低的地面在水下，较高的保持干燥。部队可以在水下通行（移动按干地处理），就像海战地图上画出的海。撤销可将其撤回。尚未在游戏中测试。"
+
 [erase_trees_note]
 us = "Where trees go, the ground opens to every unit and loses its forest cover (proven in the game)."
 fr = "Là où les arbres disparaissent, le sol s'ouvre à toutes les unités et perd son couvert forestier (vérifié en jeu)."
