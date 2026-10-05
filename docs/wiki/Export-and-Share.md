@@ -12,6 +12,11 @@
 
 That file is all a player needs: they add it in RUSE Launcher ([[Install and play|Install-and-Play]]).
 
+**Big map mods:** a map changed all over can take the build minutes to work out (where units can go on ground you
+opened, for one). You wait for that once. The export puts what the build worked out into the file, so a player's
+first build is shorter. It holds our own numbers only, never a file of the game's, and it's locked with the game's
+own file for that map: it opens only on a PC that has the game. Movement only so far; not seen in the game yet.
+
 When the export is done, the Studio opens **Share your mod** with the file's size, its SHA-256 checksum and its entry
 for the list, ready to copy. You can open it again any time from the **Mod** menu (**Share your mod...**).
 

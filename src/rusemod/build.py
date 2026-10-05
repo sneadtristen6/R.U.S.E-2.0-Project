@@ -125,6 +125,8 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.textures = mod_textures(path)
         info.cards = mod_cards(path)
         info.models = mod_models(path)
+        from .solved import read_mod
+        info.solved = read_mod(path)
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -438,31 +440,65 @@ def _bed_circles(drained: list[tuple[float, float]], wet=None, wide=None) -> lis
     return wide + zones
 
 
-def _kept_movement(read_data, name: str, blocks: list, idle: list, cache) -> tuple[dict, list[str]]:
+def _kept_movement(read_data, name: str, blocks: list, idle: list, cache, given: dict | None = None,
+                   answers: dict | None = None) -> tuple[dict, list[str]]:
     """nav.apply_blocks for a map, its answer kept between builds (rusemod.mapkeep, kind "movement"): named by a
     fingerprint of the map's movement file as the build has it, its blocks and opens in their order, and the code. A
     map whose blocks and opens are the same as an earlier build's takes its movement from there: opening a drained
-    sea takes minutes (the owner's M04_Cotentin, 2026-10-04), and every build made it again. A refusal isn't kept."""
+    sea takes minutes (the owner's M04_Cotentin, 2026-10-04), and every build made it again. A refusal isn't kept.
+    `given`: the answers the mods brought for this map (rusemod.solved), taken where they hold; `answers` is filled
+    with the ones this map's movement asked for (taken and worked out): what an export carries."""
     import hashlib
-    from . import mapkeep
+    from . import mapkeep, solved
     from .cover import member
     from .nav import apply_blocks
     k = None
     if cache is not None:
         win = read_data(member(name))
         if win is not None:
-            k = mapkeep.key(name, ["movement", hashlib.blake2b(win, digest_size=20).hexdigest()], blocks, None)
+            about = ["movement", hashlib.blake2b(win, digest_size=20).hexdigest()]
+            k = mapkeep.key(name, about + ([solved.digest(given)] if given else []), blocks, None)
     kept = mapkeep.read(cache, k, "movement")
     if kept is not None and isinstance(kept.get("notes"), list) and isinstance(kept.get("idle"), list) \
-            and all(type(i) is int and 0 <= i < len(blocks) for i in kept["idle"]):
+            and all(type(i) is int and 0 <= i < len(blocks) for i in kept["idle"]) \
+            and isinstance(kept.get("solved"), dict):
         idle += [blocks[i] for i in kept["idle"]]
+        if answers is not None:
+            answers.update(kept["solved"])
         return kept["members"], list(kept["notes"])
     mine: list = []
-    new, notes = apply_blocks(read_data, name, blocks, mine)
+    store = solved.Solved(given)
+    with solved.using(store):
+        new, notes = apply_blocks(read_data, name, blocks, mine)
     idle += mine
+    if answers is not None:
+        answers.update(store.needed())
     places = {id(b): i for i, b in enumerate(blocks)}
-    mapkeep.write(cache, k, {"members": new, "notes": list(notes), "idle": [places[id(b)] for b in mine]}, "movement")
+    mapkeep.write(cache, k, {"members": new, "notes": list(notes), "idle": [places[id(b)] for b in mine],
+                             "solved": store.needed()}, "movement")
     return new, notes
+
+
+def _given_answers(order: list, mods: list, name: str, shipped: bytes | None) -> tuple[dict, list[str]]:
+    """(the answers the mods brought for a map, notes): each mod's maps/<map>/solved.bin (rusemod.solved) opened with
+    the game's own movement file for the map, as shipped. A file that doesn't open (made on another version of the
+    game, or changed) is left out with a note: the build works its answers out instead."""
+    from . import solved
+    by_id = {m.id: m for m, _ in mods}
+    given: dict = {}
+    notes = []
+    for mod_id in order:
+        data = getattr(by_id.get(mod_id), "solved", {}).get(name)
+        if data is None:
+            continue
+        try:
+            if shipped is None:
+                raise solved.SolvedError("the game has no movement file for this map")
+            given.update(solved.unpack(data, shipped))
+        except solved.SolvedError as exc:
+            notes.append(f"{mod_id}: the worked-out answers that came with the mod for {name} weren't used ({exc}): "
+                         f"the build works them out here instead, which takes longer")
+    return given, notes
 
 
 def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs, find_map=None) -> list:
@@ -540,6 +576,7 @@ class BuildResult:
     model_imports: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (packs the new models go in) -> bytes
     new_files: dict = field(default_factory=dict)  # new members of ZZ_Win.dat (new cards, new models' textures) -> bytes
     visibility: dict = field(default_factory=dict)  # a placed type drawn up close only -> its copy (rusemod.visibility)
+    solved: dict = field(default_factory=dict)  # map pack name -> its answers, a locked file (rusemod.solved)
     fingerprint: bytes | None = None
 
     @property
@@ -2106,8 +2143,18 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {note}")
                 for name, (map_blocks, ids) in blocks.items():
                     idle: list = []
+                    from . import solved
+                    from .cover import member as movement_member
+                    try:  # the game's own movement file for the map, as shipped: the key of the answers' lock
+                        shipped = bytes(data_arc.read(data_arc.find(movement_member(name))))
+                    except KeyError:
+                        shipped = None
+                    given, unused = _given_answers(result.order, mods, name, shipped)
+                    for note in unused:
+                        result.findings.append(Finding("note", note))
+                    answers: dict = {}
                     try:
-                        new, notes = _kept_movement(read_data, name, map_blocks, idle, cache)
+                        new, notes = _kept_movement(read_data, name, map_blocks, idle, cache, given, answers)
                     except (NavError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
@@ -2115,6 +2162,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     say(f"movement: {name}, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
+                    took = sum(1 for k in answers if k in given)
+                    if took:
+                        say(f"  {took} of its {len(answers)} worked-out answers came with the mod")
+                    if answers and shipped is not None:
+                        result.solved[name] = solved.pack(answers, shipped, name)
                     for b in idle:
                         result.findings.append(Finding("note", (
                             f"{', '.join(ids)}: {name}: the open at ({b.x:.0f}, {b.y:.0f}) opened nothing: units "

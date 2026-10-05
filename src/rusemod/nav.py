@@ -57,6 +57,8 @@ from array import array
 from dataclasses import dataclass, field
 from heapq import heapify, heappop, heappush
 
+from . import solved
+
 HEADER = 84
 STEP = 320.0         # circle centres and radii are on this grid
 MIN_RADIUS = 1280.0  # the smallest circle on any shipped map
@@ -185,7 +187,15 @@ class Graph:
                        for zx, zy, zr in (zones if zoned is None else (zones[k] for k in zoned.near(px, py, 1.0))))
 
         now = [(x, y, radius[i]) for i, (x, y, _r) in enumerate(old)]
-        filled = _fill([old[i] for i in changed], zones, now, kept=[radius[i] for i in changed]) if refill else []
+        filled = []
+        if refill:
+            # the circles that fill the ground back are an answer a mod may bring with it (rusemod.solved), weighed
+            # as our own would be (_fits_fill); what a block cuts off from the rest is taken out below either way
+            sources, keeps = [old[i] for i in changed], [radius[i] for i in changed]
+            zones = list(zones)
+            filled = solved.answer(solved.name("fill", sources, zones, now, keeps),
+                                   lambda: _fill(sources, zones, now, kept=keeps),
+                                   lambda a: _fits_fill(a, sources, zones, now))
         added = [c[:3] for c in filled]
         allc = now + added
         counts["added"] += len(added)
@@ -657,22 +667,52 @@ class Graph:
         # refuses a graph of more than 65,535 circles, or whose links listed twice pass 65,535: from this many new
         # circles on it can only refuse, so the growing stops there (a sea drained would go on for a million)
         most = min(32768 - len(self.links), 65535 - n)
-        new, left_out, full = _grow(list(zones), old, least, box, where, meets, most)
+        zones = list(zones)
+
+        def grown():
+            new, left_out, full = _grow(list(zones), old, least, box, where, meets, most)
+            return [new, left_out, full]
+
+        def linked(new):
+            """The links of the new circles, and whether each is reached from the old ground through them."""
+            allc = old + new
+            near = _Buckets(list(allc))
+            links, reached, mine = [], set(), {}
+            for c in range(n, len(allc)):
+                for d in near.around(c):
+                    if d == c or allc[d][2] <= 0 or n <= d < c:  # (two new circles: once, from the later one)
+                        continue
+                    point = meets(allc[c], d) if d < n else _meeting(allc[c], allc[d])
+                    if point is not None:
+                        links.append((min(c, d), max(c, d)) + point)
+                        if d < n:
+                            reached.add(c)
+                        else:
+                            mine.setdefault(c, []).append(d)
+                            mine.setdefault(d, []).append(c)
+            todo = list(reached)
+            while todo:
+                for d in mine.get(todo.pop(), ()):
+                    if d not in reached:
+                        reached.add(d)
+                        todo.append(d)
+            return allc, links, len(reached) == len(new)
+        # where the new circles go is an answer a mod may bring with it (rusemod.solved: its own numbers, worked out
+        # by the modder's build from these same inputs). One brought is weighed as our own would be (_fits_open) and
+        # must be reached from the old ground, or it is worked out here after all
+        key = solved.name("open", old, zones, least, box, where is not None, nx, most,
+                          [s.circles for s in self.subs[:nx]])
+        new, left_out, full = solved.answer(key, grown, lambda a: _fits_open(a, old, zones, least, box, where, most))
+        allc, links, whole = linked(new) if new and not full else (old, [], True)
+        if not whole:
+            solved.drop(key)
+            new, left_out, full = grown()
+            allc, links, whole = linked(new) if new and not full else (old, [], True)
         if full:
             raise NavError("the graph would be too big for its 16-bit numbers")
         if not new:
             return [], 0, left_out
         parts_before = len(self._labels()[1])
-        allc = old + new
-        near = _Buckets(list(allc))
-        links = []
-        for c in range(n, len(allc)):
-            for d in near.around(c):
-                if d == c or allc[d][2] <= 0 or n <= d < c:  # (two new circles: once, from the later one)
-                    continue
-                point = meets(allc[c], d) if d < n else _meeting(allc[c], allc[d])
-                if point is not None:
-                    links.append((min(c, d), max(c, d)) + point)
         self._finish(allc, list(enumerate(self.links)), [(None, lk) for lk in links], n)
         self.points = _index_more(self.points, old, [(n + j, c) for j, c in enumerate(new)])
         if len(self._labels()[1]) > parts_before:  # a guard: never write ground units can't reach
@@ -1770,6 +1810,66 @@ def _walk_out(at, out, roads, step: float, reach: float, away=None):
             yield target, (ax + (bx - ax) * t, ay + (by - ay) * t)
             target += step
         walked += seg
+
+
+def _plain_circle(c, n: int) -> bool:
+    """Whether `c` is a circle as _grow and _fill give them: a tuple of `n` values, three whole-grid numbers first."""
+    return type(c) is tuple and len(c) == n and all(type(v) is float and math.isfinite(v) for v in c[:3]) \
+        and c[0] % (2 * STEP) == 0 and c[1] % (2 * STEP) == 0 and c[2] % STEP == 0 and c[2] > 0
+
+
+def _fits_open(answer, old, zones, least: float, box, where, most: int) -> bool:
+    """Whether an answer a mod brought for Graph._open_here ([the new circles, how many were left out, whether it
+    stopped as too many]) could be our own: every circle on the 2 STEP grid, `least` or more across and whole STEPs,
+    its middle in `box` and where `where` allows, lying inside one of the zones, on ground no live old circle covers
+    and outside every circle before it; fewer than `most` of them. (That each is reached from the old ground is
+    weighed by the caller, with their links.) One that says the graph is too big is never taken on its word: it is
+    worked out here, and the refusal is then our own."""
+    if type(answer) is not list or len(answer) != 3:
+        return False
+    new, left_out, full = answer
+    if full is not False or type(left_out) is not int or left_out < 0 or type(new) is not list or len(new) >= most:
+        return False
+    zoned, live, taken = _Buckets(list(zones)), _Buckets([c for c in old if c[2] > 0]), _Buckets([])
+    for c in new:
+        if not _plain_circle(c, 3):
+            return False
+        x, y, r = c
+        if r < least or not (box[0] <= x <= box[2] and box[1] <= y <= box[3]):
+            return False
+        if where is not None and not where(x, y):
+            return False
+        if not any(math.hypot(x - zones[k][0], y - zones[k][1]) + r <= zones[k][2] + 1e-6
+                   for k in zoned.near(x, y, 0.0)):
+            return False
+        if any(math.hypot(x - b.circles[k][0], y - b.circles[k][1]) < b.circles[k][2]
+               for b in (live, taken) for k in b.near(x, y, 0.0)):
+            return False
+        taken.add(c)
+    return True
+
+
+def _fits_fill(answer, sources, zones, now, least: float = MIN_RADIUS) -> bool:
+    """Whether an answer a mod brought for _fill could be our own: every circle (x, y, r, its source) on the 2 STEP
+    grid, `least` or more across and whole STEPs, inside its source circle, clear of every zone, on ground no live
+    circle of `now` covers and outside every circle before it."""
+    if type(answer) is not list:
+        return False
+    zoned, live, taken = _Buckets(list(zones)), _Buckets([c for c in now if c[2] > 0]), _Buckets([])
+    for c in answer:
+        if not _plain_circle(c, 4) or type(c[3]) is not int or not 0 <= c[3] < len(sources):
+            return False
+        x, y, r, k = c
+        sx, sy, sr = sources[k]
+        if r < least or math.hypot(x - sx, y - sy) + r > sr + 1e-6:
+            return False
+        if any(math.hypot(x - zones[z][0], y - zones[z][1]) - zones[z][2] < r - 1e-6 for z in zoned.near(x, y, r)):
+            return False
+        if any(math.hypot(x - b.circles[i][0], y - b.circles[i][1]) < b.circles[i][2]
+               for b in (live, taken) for i in b.near(x, y, 0.0)):
+            return False
+        taken.add((x, y, r))
+    return True
 
 
 def _fill(sources, zones, now, least: float = MIN_RADIUS, kept=None) -> list:

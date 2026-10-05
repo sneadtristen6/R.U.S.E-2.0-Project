@@ -96,6 +96,11 @@ files, the server on his PC, the process scan as he designed it.
   server or keeps it until one is set; the **process scan** runs only while a multiplayer match is live and only if the
   player allowed it; the Launcher keeps the player's agreement to the terms, the scan's choice and the server's address.
   The owner's public keys go in with it (none made yet).
+- **A map mod's worked-out answers** (`maps/<map>/solved.bin`, MOD_FORMAT §8) are part of this picture: the file is
+  one of the mod's files, so a signed mod manifest lists it with its hash and a changed one fails the manifest like
+  any other file. It is locked with a key made from the game's own file for the map, a build weighs every answer it
+  takes, and answers that pass and still differ give other game files, so another fingerprint and another join code
+  than everyone else's.
 - **For his repository** (pull request #2 on RUSE-Guard, opened 2026-10-04, new files only, his files unchanged): the **server**
   (takes the Launchers' bundles, groups a match's players, runs his detectors, opens reviews only from detectors set to
   flag), the **reviewers' screen**, a **keys tool** (the real key pairs, dev keys, signed mods), the process scan's

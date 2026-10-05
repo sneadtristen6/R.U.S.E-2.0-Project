@@ -143,13 +143,19 @@ def files_of(folder) -> list[Path]:
 
 
 def pack(folder, out, *, build_id: str | None = None, data_revision: str | None = None,
-         fingerprint: str | None = None) -> Path:
+         fingerprint: str | None = None, solved: dict | None = None) -> Path:
     """Zip the mod at `folder` into one file. `out` is the file to write, or a folder to put `<id>-<version>.rusemod`
     in. The mod is checked first (its manifest, and that it reads like a build would); the build it was made on and
-    its fingerprint, when given, are written into the manifest (the folder's and the package's) under [game]."""
+    its fingerprint, when given, are written into the manifest (the folder's and the package's) under [game].
+    `solved`: the answers the mod's build worked out for its maps (BuildResult.solved, §8 "Worked-out answers"),
+    written into the folder as maps/<map>/solved.bin first, so the package carries them and players' builds take
+    them instead of working them out."""
     folder = Path(folder)
     if not (folder / MANIFEST).is_file():
         raise PackageError(f"{folder} isn't a mod: it has no {MANIFEST} in it.")
+    if solved:
+        from .solved import write_mod
+        write_mod(folder, solved)
     bad = [f for f in folder.rglob("*") if f.is_file() and f.suffix.lower() in NOT_IN_MODS]
     if bad:
         raise PackageError(f"This mod can't be packed: mods can't contain scripts or programs "
