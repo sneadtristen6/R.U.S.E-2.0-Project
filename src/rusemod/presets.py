@@ -78,6 +78,7 @@ def read_facts(game: Path, pack: str, scenario_name: str) -> Facts:
         def read(arc, member):
             e = arc.entry(member)
             if e is None:
+                # not a game rule: the game or one of its files isn't found
                 raise PresetError(f"{pack}: {member} isn't in the game's files")
             return bytes(arc.read(e))
         return facts_of(read(m, "output\\highdef.tms"), read(m, MEMBER), scenario_name,

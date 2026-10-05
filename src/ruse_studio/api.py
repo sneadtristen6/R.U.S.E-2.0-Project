@@ -1499,6 +1499,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         starting points are when the map is built. Returns menu_pictures()."""
         name, spec, shipped = self._menu_owner(pack)
         if not getattr(spec or shipped, "wide_picture", None):
+            # not a game rule: our build draws the dots on a 3D map picture of the mod's own
             raise StudioError("The start dots go on the map's own 3D map picture: pick one or make it in Blender "
                               "first. The game's own have their dots drawn in.")
         with self._saving:

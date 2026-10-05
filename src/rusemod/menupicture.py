@@ -45,6 +45,7 @@ def start_dots_of(data: dict, where: str, wide: str | None) -> bool:
     if not isinstance(dots, bool):
         raise PictureError(f"{where}: start_dots must be true or false")
     if dots and not wide:
+        # not a game rule: our build draws the dots on a 3D map picture of the mod's own
         raise PictureError(f"{where}: start_dots puts the starting points on the map's own wide picture: name it "
                            f'(wide_picture = "menu-wide.png"); the game\'s own have their dots drawn in')
     return dots
