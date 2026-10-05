@@ -2245,7 +2245,8 @@ function spawnsInBox(x0, y0, x1, y1) {
   if (!s || !scen.group) return [];
   const rect = gl.renderer.domElement.getBoundingClientRect(), v = new gl.THREE.Vector3();
   const [l, r, t, b] = [Math.min(x0, x1), Math.max(x0, x1), Math.min(y0, y1), Math.max(y0, y1)];
-  const spawns = new Set(s.items.filter((it) => it.kind === "Spawn").map((it) => it.item)), out = new Set();
+  // a spawn the mod took out (drawn faded, "gone") isn't on the map: a box leaves it, a click still picks it to put back
+  const spawns = new Set(s.items.filter((it) => it.kind === "Spawn" && !it.gone).map((it) => it.item)), out = new Set();
   for (const o of scen.group.children) {
     if (!o.userData.icon || !spawns.has(o.userData.item)) continue;
     v.copy(o.position).project(gl.camera);
