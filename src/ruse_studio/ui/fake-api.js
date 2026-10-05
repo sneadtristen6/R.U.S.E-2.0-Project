@@ -1068,8 +1068,27 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       { name: "M02_Tunisie_chapter2", kind: "campaign", titles: { us: "3. KASSERINE PASS", fr: "3. PASSE DE KASSERINE" } }],
   };
   Object.assign(words.us, {"dup_kind": "What kind of new map", "dup_kind_battles": "Battles map", "dup_kind_battles_what": "Played in BATTLES: skirmish against the computer, and online with players who have it. Listed next to the original. Seen in the game.", "dup_kind_operation": "Operation", "dup_kind_operation_what": "A new Operation, at the end of OPERATIONS: the original's mission, briefing and objectives, on your copy of the map. Seen in the game.", "dup_kind_campaign": "Campaign chapter", "dup_kind_campaign_what": "A new chapter, at the end of the campaign: the original chapter's mission, cutscenes and dialog, on your copy of the map. The game opens a chapter once the one before it is finished. Not yet tried in the game.", "dup_kind_none": "This map has none."});
-  // A new map's menu picture (words.toml map_picture*)
-  Object.assign(words.us, {"map_picture": "Menu picture…", "tip_map_picture": "Pick a PNG picture for this new map in the game's menus (Battles): a screenshot of it works. It's cut to shape from its middle; the map it copies keeps its own. Not tested in the game yet.", "map_picture_set": "{file}: the game's menus show it for this map once it's built (Test in game)."});
+  // A map's menu pictures (words.toml map_picture, tip_map_picture, menu_*)
+  Object.assign(words.us, {"map_picture": "Menu pictures…", "tip_map_picture": "This map's two pictures in the game's menus: pick your own, make them in Blender, or keep the game's own.", "menu_pics_title": "Menu pictures", "menu_pics_lead": "What the game's menus show for {map}: a big picture, and a 3D map with a white dot where each player starts.", "menu_big": "Big picture", "menu_wide": "3D map", "menu_own_file": "This map's own: {file}", "menu_game_own": "The game's own picture", "menu_pick": "Pick a PNG…", "tip_menu_pick": "Any PNG: a screenshot, or a picture made anywhere. It's cut to shape from its middle and scaled.", "menu_back": "Back to the game's own", "tip_menu_back": "Takes this map's own picture away (to the Recycle Bin): the game's own shows again.", "menu_dots": "White dots on the start points", "tip_menu_dots": "The build draws a white dot where each player starts, wherever the start points are when you build, so a moved start moves its dot. Leave it off for a picture with dots of its own.", "menu_blender_title": "Make your own in Blender", "menu_blender_how": "Blender opens with this map's own 3D model, both pictures' cameras set like the game's. Change anything you like, click Save menu pictures at the top of Blender, then Bring back here.", "menu_blender": "Make in Blender…", "tip_menu_blender": "Opens this map's scene in Blender (the first time takes a little while: the map's ground picture is made first).", "menu_no_blender": "Blender isn't found on this PC: get it free from blender.org.", "menu_bring_back": "Bring back", "tip_menu_bring_back": "Takes the pictures saved in Blender into this map.", "menu_fresh": "New scene", "tip_menu_fresh": "Makes this map's Blender scene again from the start; the old one goes to the Recycle Bin.", "menu_shared": "The game also shows these pictures for: {entries}. They change there too."});
+  // each map's menu pictures in the preview (StudioApi.menu_pictures): drawn shapes for the pictures
+  const fakeMenus = {};
+  const fakeMenuState = (pack) => (fakeMenus[pack] = fakeMenus[pack] || { picture: null, wide_picture: null, start_dots: false,
+    scene: false, saved: false });
+  const svgUrl = (svg) => "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+  const fakeMenu = (pack) => {
+    const s = fakeMenuState(pack), m = fakeMaps.find((x) => x.pack === pack) || {};
+    const sky = s.picture ? "#8fb3d9" : "#b9c4cc", land = s.picture ? "#2f6db0" : "#6f8a4a";
+    const big = svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="110" fill="${sky}"/>`
+      + `<rect y="110" width="320" height="70" fill="${land}"/><rect x="1" y="1" width="318" height="178" fill="none" stroke="#848684" stroke-width="2"/></svg>`);
+    const dots = s.start_dots ? [[157, 28], [184, 42], [214, 51], [231, 56], [189, 77]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.5" ry="1.3" fill="#fff"/>`).join("") : "";
+    const top = s.wide_picture ? "#0d3a52" : "#5f7a3c";
+    const wide = svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="340" height="100"><polygon points="82,5 257,5 315,85 25,85" fill="${top}"/>`
+      + `<rect x="25" y="85" width="290" height="10" fill="#3a2b1c"/>${s.wide_picture ? dots : '<ellipse cx="170" cy="45" rx="2.5" ry="1.3" fill="#fff"/>'}</svg>`);
+    return { pictures: [{ key: "picture", file: s.picture, own: Boolean(s.picture), url: big, width: 640, height: 360 },
+      { key: "wide_picture", file: s.wide_picture, own: Boolean(s.wide_picture), url: wide, width: 680, height: 200 }],
+    start_dots: s.start_dots, new: Boolean(m.copy_of), shared: m.copy_of ? [] : ["Challenge - 1v1 39 Blitz_2 (Anzio) (operation)"],
+    blender: "C:\\Program Files\\Blender Foundation\\Blender 4.5\\blender.exe", scene: s.scene, saved: s.saved };
+  };
   // Duplicate map's start: as it is, Blank Terrain, Blank Ocean (words.toml dup_start_*)
   Object.assign(words.us, {"dup_start": "Start from", "dup_start_copy": "As it is", "dup_start_copy_what": "A full copy, with the changes made to {map} so far.", "dup_start_blank_terrain": "Blank Terrain", "dup_start_blank_terrain_what": "Flat land with no water and nothing on it: only the starting points. Add roads, buildings and the rest yourself. Not tested in the game yet.", "dup_start_blank_ocean": "Blank Ocean", "dup_start_blank_ocean_what": "The sea over the whole map, flat ground under it and nothing on it: only the starting points. Units go under the water, as on a navy map. Not tested in the game yet.", "dup_start_battles_only": "Blank Terrain and Blank Ocean start from a Battles map."});
   // Duplicate map (words.toml duplicate_map, dup_*, map_copy_of)
@@ -1437,10 +1456,36 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           copy_of: m.copy_of || pack });
         return { pack: own, maps: fakeMaps };
       },
-      new_map_picture: async (pack) => {  // the preview has no file picker: as if menu.png were picked
-        const m = fakeMaps.find((x) => x.pack === pack);
-        if (!m || !m.copy_of) throw new Error("Only a new map (made with Duplicate map) gets a picture of its own.");
-        return { picture: "menu.png" };
+      // a map's menu pictures (StudioApi.menu_pictures and its window's calls); no file picker here: as if menu.png /
+      // menu-wide.png were picked, and Blender saved its pictures as soon as it opened
+      menu_pictures: async (pack) => fakeMenu(pack),
+      pick_menu_picture: async (pack, key) => {
+        const s = fakeMenuState(pack);
+        s[key] = key === "picture" ? "menu.png" : "menu-wide.png";
+        if (key === "wide_picture") s.start_dots = false;
+        return fakeMenu(pack);
+      },
+      clear_menu_picture: async (pack, key) => {
+        const s = fakeMenuState(pack);
+        s[key] = null;
+        if (key === "wide_picture") s.start_dots = false;
+        return fakeMenu(pack);
+      },
+      set_start_dots: async (pack, on) => {
+        const s = fakeMenuState(pack);
+        if (!s.wide_picture) throw new Error("The start dots go on the map's own 3D map picture: pick one or make it in Blender first. The game's own have their dots drawn in.");
+        s.start_dots = Boolean(on);
+        return fakeMenu(pack);
+      },
+      menu_pictures_blender: async (pack) => {
+        Object.assign(fakeMenuState(pack), { scene: true, saved: true });
+        return { ...fakeMenu(pack), message: "Opening Blender. Change anything you like, click Save menu pictures at the top of Blender's 3D view, then Bring back here." };
+      },
+      menu_pictures_bring_back: async (pack) => {
+        const s = fakeMenuState(pack);
+        if (!s.saved) return { ...fakeMenu(pack), message: "Nothing saved in Blender yet: click Save menu pictures at the top of Blender's 3D view first (it takes a minute or two), then Bring back." };
+        Object.assign(s, { picture: "menu.png", wide_picture: "menu-wide.png", start_dots: true, saved: false });
+        return { ...fakeMenu(pack), message: "Brought back both pictures. Click Test in game to see them in the menus." };
       },
       delete_map: async (pack) => {
         const at = fakeMaps.findIndex((x) => x.pack === pack);

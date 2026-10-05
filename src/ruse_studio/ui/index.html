@@ -106,9 +106,9 @@
         <div id="map-stats" class="muted small"></div>
         <!-- a new map from this one (maps.js openDuplicate) -->
         <button id="map-duplicate" type="button" class="chip map-duplicate"></button>
-        <!-- a new map's own picture in the menus (maps.js pickMapPicture, StudioApi.new_map_picture): new maps only -->
+        <!-- the map's own pictures in the game's menus (maps.js openMenuPictures, StudioApi.menu_pictures): any map,
+             with a map project to keep them in -->
         <button id="map-picture" type="button" class="chip map-duplicate hidden"></button>
-        <p id="map-picture-note" class="small muted hidden"></p>
         <!-- a new map's folder to the Recycle Bin (maps.js deleteMap, StudioApi.delete_map): shown on new maps only -->
         <button id="map-delete" type="button" class="ghost danger map-delete hidden"></button>
         <div id="map-delete-sure" class="map-delete-sure hidden">
@@ -454,6 +454,46 @@
         <button id="dup-cancel" type="button" class="small ghost"></button>
       </div>
     </form>
+  </dialog>
+
+  <!-- Menu pictures (maps.js openMenuPictures, StudioApi.menu_pictures): the map's two pictures in the game's menus, as
+       they'll be; a PNG picked for either, both made in Blender from the map's own 3D model, or the game's own -->
+  <dialog id="menu-pics" class="doctor" aria-labelledby="mp-title">
+    <h2 id="mp-title"></h2>
+    <p id="mp-lead" class="small"></p>
+    <div class="mp-row">
+      <div class="mp-frame mp-big"><img id="mp-big-img" alt=""></div>
+      <div class="mp-side">
+        <h3 id="mp-big-title" class="dup-how-title"></h3>
+        <p id="mp-big-file" class="muted small"></p>
+        <div class="mp-buttons">
+          <button id="mp-big-pick" type="button" class="small"></button>
+          <button id="mp-big-game" type="button" class="small ghost"></button>
+        </div>
+      </div>
+    </div>
+    <div class="mp-row">
+      <div class="mp-frame mp-wide"><img id="mp-wide-img" alt=""></div>
+      <div class="mp-side">
+        <h3 id="mp-wide-title" class="dup-how-title"></h3>
+        <p id="mp-wide-file" class="muted small"></p>
+        <label class="small mp-dots"><input id="mp-dots" type="checkbox"> <span id="mp-dots-label"></span></label>
+        <div class="mp-buttons">
+          <button id="mp-wide-pick" type="button" class="small"></button>
+          <button id="mp-wide-game" type="button" class="small ghost"></button>
+        </div>
+      </div>
+    </div>
+    <h3 id="mp-blender-title" class="dup-how-title"></h3>
+    <p id="mp-blender-how" class="small"></p>
+    <div class="mp-buttons mp-blender-row">
+      <button id="mp-blender" type="button" class="small primary"></button>
+      <button id="mp-bring" type="button" class="small"></button>
+      <button id="mp-fresh" type="button" class="small ghost"></button>
+    </div>
+    <p id="mp-shared" class="muted small"></p>
+    <p id="mp-note" class="small" role="status"></p>
+    <div class="actions"><button id="mp-close" type="button" class="small ghost"></button></div>
   </dialog>
 
   <footer id="status" class="status" role="status"></footer>

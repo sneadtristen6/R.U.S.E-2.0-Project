@@ -253,10 +253,14 @@ class BlankStart(WithAMapProject):
             folder = self.api._map_dir() / "maps" / pack
             for name, text in presets.preset_files(kind, self.facts()).items():
                 self.assertEqual(tomllib.loads((folder / name).read_text(encoding="utf-8")), tomllib.loads(text))
-            self.assertEqual(tomllib.loads((folder / "map.toml").read_text(encoding="utf-8"))["copy_of"],
-                             "SuperCrossRoads4")
+            toml = tomllib.loads((folder / "map.toml").read_text(encoding="utf-8"))
+            self.assertEqual((toml["copy_of"], toml["picture"], toml["wide_picture"], toml["start_dots"]),
+                             ("SuperCrossRoads4", "menu.png", "menu-wide.png", True))  # its own menu pictures,
+            for name, data in presets.preset_pictures(kind).items():                 # the build drawing its starts
+                self.assertEqual((folder / name).read_bytes(), data)
             self.assertEqual(sorted(f.name for f in folder.iterdir()),
-                             sorted(list(presets.preset_files(kind, self.facts())) + ["map.toml"]))  # no hill
+                             sorted(list(presets.preset_files(kind, self.facts())) + ["map.toml", "menu.png",
+                                                                                     "menu-wide.png"]))  # no hill
 
     def test_only_from_a_battles_map(self):
         with self.assertRaisesRegex(StudioError, "Battles map"):
@@ -265,29 +269,125 @@ class BlankStart(WithAMapProject):
             self.api.duplicate_map("SuperCrossRoads4", "Moon", preset="blank_moon")
 
 
-class MenuPicture(WithAMapProject):
-    """A new map's own picture in the menus (StudioApi.new_map_picture, map.toml picture): the PNG picked is copied
-    beside its map.toml as menu.png, and map.toml names it, its player count kept; a game map has no such picture."""
+class MenuPictures(WithAMapProject):
+    """A map's own pictures in the menus (StudioApi.menu_pictures and the calls of its window; map.toml picture,
+    wide_picture, start_dots): a PNG picked for either, the game's own back, the start dots, and the pictures made in
+    Blender brought back; a new map's and a shipped map's alike (the owner, 2026-10-05: "the option for a custom PNG
+    or model and then also being able to make your own")."""
 
-    def test_a_picture_picked(self):
+    def setUp(self):
+        super().setUp()
+        patch = mock.patch.object(StudioApi, "_menu_starts", return_value=[(0.25, 0.5)])
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.api._window = object()
+
+    def shot(self, w=4, h=4, colour=(200, 40, 40, 255)):
         from rusemod.dxt import png_bytes
+        path = Path(self.api._map_dir(), f"shot-{w}x{h}.png")
+        path.write_bytes(png_bytes(bytes(colour) * (w * h), w, h, channels=4))
+        return path
+
+    def pick(self, pack, key, path):
+        with mock.patch("ruse_studio.api.pick_file", return_value=str(path)):
+            return self.api.pick_menu_picture(pack, key)
+
+    def toml(self, pack):
+        return tomllib.loads((self.api._map_dir() / "maps" / pack / "map.toml").read_text(encoding="utf-8"))
+
+    def test_a_new_maps_pictures_picked_and_given_back(self):
         pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
         folder = self.api._map_dir() / "maps" / pack
         (folder / "map.toml").write_text((folder / "map.toml").read_text(encoding="utf-8") + "players = 4\n",
                                          encoding="utf-8")
-        shot = Path(self.api._map_dir(), "shot.png")
-        shot.write_bytes(png_bytes(bytes(12), 2, 2))
-        self.api._window = object()
-        with mock.patch("ruse_studio.api.pick_file", return_value=str(shot)):
-            self.assertEqual(self.api.new_map_picture(pack), {"picture": "menu.png"})
-        self.assertEqual((folder / "menu.png").read_bytes(), shot.read_bytes())
-        data = tomllib.loads((folder / "map.toml").read_text(encoding="utf-8"))
-        self.assertEqual((data["picture"], data["players"], data["copy_of"]), ("menu.png", 4, "SuperCrossRoads4"))
-        shot.write_bytes(b"not a picture")
-        with mock.patch("ruse_studio.api.pick_file", return_value=str(shot)):
-            self.assertIn("not a PNG", self.api.new_map_picture(pack)["message"])
-        with self.assertRaisesRegex(StudioError, "Only a new map"):
-            self.api.new_map_picture("SuperCrossRoads4")
+        got = self.api.menu_pictures(pack)
+        self.assertEqual([(p["key"], p["file"], p["own"]) for p in got["pictures"]],
+                         [("picture", None, False), ("wide_picture", None, False)])   # the copied map's own
+        self.assertTrue(got["new"])
+        big = self.shot()
+        got = self.pick(pack, "picture", big)
+        self.assertEqual((folder / "menu.png").read_bytes(), big.read_bytes())
+        self.assertTrue(got["pictures"][0]["own"])
+        self.assertTrue(got["pictures"][0]["url"].startswith("data:image/png;base64,"))
+        self.pick(pack, "wide_picture", self.shot(34, 10, (20, 20, 220, 255)))
+        data = self.toml(pack)
+        self.assertEqual((data["picture"], data["wide_picture"], data["players"], data["copy_of"],
+                          data.get("start_dots", False)), ("menu.png", "menu-wide.png", 4, "SuperCrossRoads4", False))
+        self.assertTrue(self.api.set_start_dots(pack, True)["start_dots"])
+        self.assertTrue(self.toml(pack)["start_dots"])
+        with mock.patch("rusemod.recycle.to_recycle_bin") as bin_:
+            got = self.api.clear_menu_picture(pack, "wide_picture")
+        self.assertEqual(bin_.call_args.args[0], folder / "menu-wide.png")
+        data = self.toml(pack)
+        self.assertNotIn("wide_picture", data)
+        self.assertNotIn("start_dots", data)              # no dots without a 3D map of its own
+        self.assertEqual(data["picture"], "menu.png")
+        with self.assertRaisesRegex(StudioError, "pick one or make it in Blender first"):
+            self.api.set_start_dots(pack, True)
+
+    def test_not_a_picture(self):
+        pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
+        bad = Path(self.api._map_dir(), "shot.png")
+        bad.write_bytes(b"not a picture")
+        self.assertIn("not a PNG", self.pick(pack, "picture", bad)["message"])
+        self.assertNotIn("picture", self.toml(pack))
+        with self.assertRaisesRegex(StudioError, "No menu picture called"):
+            self.api.pick_menu_picture(pack, "icon")
+
+    def test_a_shipped_maps_own_pictures_beside_its_player_count(self):
+        """A themed mod pictures a map of the game's own: its map.toml names the pictures (no copy_of), and the
+        player count set there stays with them."""
+        self.api.new_mod("Themed", "map")
+        self.pick("SuperCrossRoads4", "picture", self.shot())
+        self.assertEqual(self.toml("SuperCrossRoads4"), {"picture": "menu.png"})
+        with mock.patch.object(StudioApi, "map_players", return_value={}):  # (the made-up game has no map list)
+            self.api.set_players("SuperCrossRoads4", 4)
+            self.assertEqual(self.toml("SuperCrossRoads4"), {"players": 4, "picture": "menu.png"})
+            self.api.set_players("SuperCrossRoads4", None)
+        self.assertEqual(self.toml("SuperCrossRoads4"), {"picture": "menu.png"})
+        self.assertFalse(self.api.menu_pictures("SuperCrossRoads4")["new"])
+        with mock.patch("rusemod.recycle.to_recycle_bin"):
+            self.api.clear_menu_picture("SuperCrossRoads4", "picture")
+        self.assertFalse((self.api._map_dir() / "maps" / "SuperCrossRoads4" / "map.toml").exists())
+
+    def test_made_in_blender_and_brought_back(self):
+        """Save menu pictures in Blender leaves picture.png, wide.png and saved.json in the map's scene folder;
+        Bring back cuts the big one to 640 x 360 with the game's frame, keeps the 3D map as rendered, and turns the
+        start dots on (the scene's camera puts the map where the build draws them)."""
+        from rusemod.png import read_png
+        pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
+        self.assertIn("Nothing saved in Blender yet", self.api.menu_pictures_bring_back(pack)["message"])
+        work = self.api._menu_work(pack)
+        work.mkdir(parents=True)
+        shutil.copyfile(self.shot(128, 72), work / "picture.png")
+        shutil.copyfile(self.shot(136, 40, (20, 60, 80, 255)), work / "wide.png")
+        (work / "saved.json").write_text('{"saved": [], "time": 0}', encoding="utf-8")
+        got = self.api.menu_pictures_bring_back(pack)
+        self.assertIn("Brought back both pictures", got["message"])
+        folder = self.api._map_dir() / "maps" / pack
+        w, h, px = read_png((folder / "menu.png").read_bytes())
+        self.assertEqual(((w, h), tuple(px[:3])), ((640, 360), (132, 134, 132)))      # framed as the game's own
+        self.assertEqual((folder / "menu-wide.png").read_bytes(), (work / "wide.png").read_bytes())
+        data = self.toml(pack)
+        self.assertEqual((data["picture"], data["wide_picture"], data["start_dots"]), ("menu.png", "menu-wide.png", True))
+
+    def test_a_blank_maps_scene_is_its_sea_or_its_grass(self):
+        from rusemod import presets
+        facts = presets.Facts((0.0, 0.0, 400000.0, 200000.0), 12623.0, 19233.0, "leveldesign_normal.scenario",
+                              [(0, "StartingPoint")], [])
+        for kind, want in (("blank_ocean", ("ocean", 12623.0)), ("blank_terrain", ("land", 19233.0))):
+            with mock.patch.object(presets, "copy_scenario", return_value=facts.scenario), \
+                    mock.patch.object(presets, "read_facts", return_value=facts):
+                pack = self.api.duplicate_map("SuperCrossRoads4", presets.NAMES[kind], preset=kind)["pack"]
+            self.assertEqual(self.api._menu_scene_kind(pack), want)
+        pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
+        self.assertEqual(self.api._menu_scene_kind(pack), ("map", None))
+
+    def test_blender_needed(self):
+        pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
+        with mock.patch.object(StudioApi, "_blender", return_value=None), \
+                self.assertRaisesRegex(StudioError, "Blender isn't found"):
+            self.api.menu_pictures_blender(pack)
 
 
 class RecycleBin(unittest.TestCase):

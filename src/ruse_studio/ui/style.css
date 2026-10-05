@@ -461,6 +461,22 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .dup-kind:disabled { opacity: 0.45; cursor: default; }
 @media (max-width: 640px) { .dup-kinds { grid-template-columns: 1fr; } }
 
+/* Menu pictures (maps.js openMenuPictures): each of the map's two pictures as the menus will show it, at half size,
+   beside what can be done with it */
+.mp-row { display: flex; gap: 12px; align-items: flex-start; margin-top: 12px; }
+.mp-frame { flex: none; display: grid; place-items: center; background: #26282b; border: 1px solid var(--line);
+            border-radius: var(--radius); overflow: hidden; }
+.mp-frame img { display: block; max-width: 100%; }
+.mp-frame img:not([src]), .mp-frame img[src=""] { visibility: hidden; }
+.mp-big { width: 320px; height: 180px; }
+.mp-wide { width: 340px; height: 100px; }
+.mp-side { flex: 1; min-width: 0; display: grid; gap: 6px; align-content: start; }
+.mp-side .dup-how-title { margin-top: 0; }
+.mp-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.mp-blender-row { margin-top: 8px; }
+.mp-dots { display: flex; align-items: center; gap: 6px; }
+@media (max-width: 640px) { .mp-row { flex-direction: column; } .mp-big, .mp-wide { width: 100%; height: auto; } }
+
 /* Share your mod (app.js openShare): how an exported mod gets onto the supported-mods list */
 .share-steps { margin: 12px 0 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.45; }
 .share-file { display: grid; gap: 4px; margin-top: 12px; padding: 10px 12px; background: var(--panel-hi);

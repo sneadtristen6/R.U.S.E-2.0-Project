@@ -45,7 +45,10 @@ from rusemod.steam import build_of, data_revisions, find_game
 from rusemod.uilang import LanguageCalls
 from rusemod.build import find_pack
 from rusemod.edat import Edat
+from rusemod.menupicture import PictureError
 from rusemod.modcheck import check_mod_folder
+from rusemod.newmap import NewMapError
+from rusemod.players import PlayersError
 from rusemod.roadnet import RoadNetError
 from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_file, pick_folder, pick_save
@@ -241,7 +244,7 @@ class StudioError(Exception):
 
 # the ways a mod's map files can be wrong, as their readers say it
 _FILE_MISTAKES = (tomllib.TOMLDecodeError, UnicodeDecodeError, BrushError, scenario.ScenarioError,
-                  scenery.SceneryEditError, RoadNetError)
+                  scenery.SceneryEditError, RoadNetError, NewMapError, PictureError, PlayersError)
 
 
 def _erase_dict(a) -> dict:
@@ -381,7 +384,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._models_done: dict[str, dict] = {}  # map -> the index of its 3D models (map_models), once made
         self._check_jobs: dict[str, str] = {}  # map -> its "Check this map" job, so asking twice runs it once
         self._blenders: dict[str, object] = {}  # a unit's work folder -> the Blender opened on it (Bring back asks
-        # it to save)
+        # it to save); a map's menu-picture scene too
+        self._menu_game: dict = {}  # (game, map, entry) -> the game's own menu pictures it shows (_game_menu_pictures)
         self._previews_lock = threading.Lock()  # one unit model made for the preview at a time
         # the Erase tool's count (scenery_erased): one at a time, and a newer ask stops the one running, so painting
         # many circles never piles up counts (the owner's whole-map erase on M04_Cotentin, 2026-10-04: one count took
@@ -1237,6 +1241,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if entry is not None and battles == [entry]:
             entry = None  # the map's one BATTLES map: map.toml needn't say it
         files: dict = {}
+        pictures: dict = {}  # a blank start's own menu pictures (rusemod.presets.preset_pictures): {file: PNG}
         if preset is not None:
             if entry is not None and entry not in battles:
                 # not a game rule: a blank copy takes the scenario's own items out, which a mission's script needs
@@ -1248,6 +1253,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             try:
                 scen = presets.copy_scenario(game, opts["source"], entry)
                 files = presets.preset_files(preset, presets.read_facts(game, opts["source"], scen))
+                pictures = presets.preset_pictures(preset)
             except (presets.PresetError, OSError, ValueError, KeyError, struct.error) as exc:
                 raise StudioError(f"{opts['source']} can't start blank: {exc}") from None
         if self._map_dir() is None:
@@ -1261,6 +1267,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             entry = players.entry
         spec = newmap.NewMap(opts["source"], {"us": name}, entry)
         target, src_dir = folder / "maps" / new, folder / "maps" / pack
+        if pictures:  # a blank start's own pictures, its starting points drawn on the wide one by the build
+            spec = replace(spec, picture=presets.PICTURE, wide_picture=presets.WIDE_PICTURE, start_dots=True)
+        elif old_copy is not None:  # a copy of a copy keeps its own menu pictures
+            for key in ("picture", "wide_picture"):
+                own = getattr(old_copy[1], key)
+                if own and (src_dir / own).is_file():
+                    pictures[own] = (src_dir / own).read_bytes()
+                    spec = replace(spec, **{key: own})
+            spec = replace(spec, start_dots=bool(spec.wide_picture and old_copy[1].start_dots))
         header = (f"A new map: a copy of {opts['source']} called {name!r} in the menus (MOD_FORMAT §8).\n"
                   "Made in the RUSE Studio's Duplicate map, which rewrites this file.")
         checks = {"terrain.toml": lambda data: parse_strokes(data.get("stroke", []), "terrain.toml"),
@@ -1273,6 +1288,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             target.mkdir(parents=True)
             for fname, text in files.items():  # a blank start: the preset's files, each checked as the build reads it
                 _save_checked(target / fname, text, checks[fname])
+            for fname, data in pictures.items():  # its own menu pictures (map.toml picture, wide_picture)
+                (target / fname).write_bytes(data)
             for f in sorted(src_dir.iterdir()) if src_dir.is_dir() and not files else []:  # the changes made so far
                 if f.is_file() and f.name in MAP_FILES and f.name != "map.toml":
                     (target / f.name).write_bytes(f.read_bytes())
@@ -1280,36 +1297,321 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                           lambda data: newmap.parse(data, "map.toml", new))
         return {"pack": new, "maps": self.maps()["maps"]}
 
-    def new_map_picture(self, pack: str) -> dict:
-        """Pick a PNG for new map `pack`'s pictures in the game's menus (map.toml picture, rusemod.menupicture): it's
-        copied into the map's folder as menu.png, and map.toml names it. Returns {"picture": the file map.toml names,
-        or None} and, when the picture can't be used, {"message": why}."""
-        from rusemod import newmap
-        from rusemod.menupicture import PictureError, check
+    # --- a map's own pictures in the game's menus (map.toml picture, wide_picture, start_dots; rusemod.menupicture,
+    # MOD_FORMAT §8): any map's, a shipped one's too, so a themed mod can picture every map its own way. The owner,
+    # 2026-10-05: "Having the option for a custom PNG or model and then also being able to make your own": a PNG
+    # picked, or the map's own 3D model in Blender (rusemod.menuscene, rusemod.blender_menu), or anything made
+    # elsewhere and picked. ---
+    MENU_FILES = {"picture": "menu.png", "wide_picture": "menu-wide.png"}
+    MENU_SIZES = {"picture": (640, 360), "wide_picture": (680, 200)}  # the menus' (rusemod.menupicture.SIZES)
+
+    def _menu_owner(self, pack: str):
+        """(the map's folder name, its new-map settings (newmap.NewMap) or None, a shipped map's own pictures
+        (menupicture.MenuPictures) or None)."""
+        if self._map_dir() is None:
+            raise StudioError("Pick or make a map project first: a map's pictures are saved in it.")
         copy = self._new_maps().get(str(pack).lower())
-        if copy is None:
-            raise StudioError("Only a new map (made with Duplicate map) gets a picture of its own.")
-        name, spec = copy
+        if copy is not None:
+            return copy[0], copy[1], None
+        if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
+            raise StudioError(f"{pack!r} isn't a map's pack name")
+        return pack, None, self._shipped_pictures(pack)
+
+    def _set_menu_pictures(self, pack: str, **changes) -> None:
+        """map.toml's picture, wide_picture and start_dots changed, the rest of it kept (no dots without a wide
+        picture of the map's own). Call holding self._saving."""
+        from rusemod import newmap
+        from rusemod.menupicture import MenuPictures
+        name, spec, shipped = self._menu_owner(pack)
+        players = self._read_players(name)
+        if spec is not None:
+            spec = replace(spec, **changes)
+            spec = replace(spec, start_dots=bool(spec.start_dots and spec.wide_picture))
+            header = (f"A new map: a copy of {spec.copy_of} called {spec.names['us']!r} in the menus "
+                      "(MOD_FORMAT §8).\nMade in the RUSE Studio, which rewrites this file.")
+            _save_checked(self._map_dir() / "maps" / name / "map.toml",
+                          newmap.map_toml(spec, players.count if players else None, header),
+                          lambda d: newmap.parse(d, "map.toml", name))
+            return
+        pics = replace(shipped or MenuPictures(), **changes)
+        pics = replace(pics, start_dots=bool(pics.start_dots and pics.wide_picture))
+        (self._map_dir() / "maps" / name).mkdir(parents=True, exist_ok=True)
+        self._save_shipped_map_toml(name, players, pics if pics.picture or pics.wide_picture else None)
+
+    def _menu_entry(self, pack: str):
+        """(the game's map whose entry a map's menu pictures stand in for, that entry's map-list name or None for its
+        BATTLES entry)."""
+        name, spec, shipped = self._menu_owner(pack)
+        if spec is not None:
+            return spec.copy_of, spec.entry
+        players = self._read_players(name)
+        return name, (shipped.entry if shipped else None) or (players.entry if players else None)
+
+    def _game_menu_pictures(self, pack: str) -> dict:
+        """The game's own pictures a map's entry shows (a new map's: those of the entry it copies): {"picture" /
+        "wide_picture": (its ZZ_Win.dat member, its RGBA at the menus' size)}, and "shared": the map's other entries
+        that show the same files (a shipped map's own pictures change there too)."""
+        from rusemod.dxt import decode_rgba
+        from rusemod.menupicture import SIZES
+        from rusemod.ndf import Ndf
+        from rusemod.newmap import menu_entries, picture_members
+        from rusemod.players import GLOBALS, MAPINFO
+        from rusemod.tmst import Tgv, zipo_unpack
+        game = self._game()
+        source, entry = self._menu_entry(pack)
+        key = (str(game), source.lower(), entry)
+        cached = self._menu_game.get(key)
+        if cached is not None:
+            return cached
+        out: dict = {"shared": []}
+        glad, zz = (find_pack(game, n) if game else None for n in ("ZZ_GladPatchableWin.dat", "ZZ_Win.dat"))
+        if glad is None or zz is None:
+            return out
+        with Edat.open(str(glad)) as g, Edat.open(str(zz)) as z:
+            m, menus = Ndf(bytes(g.read(g.entry(MAPINFO)))), Ndf(bytes(g.read(g.entry(GLOBALS))))
+            entries = menu_entries(m, menus, source)
+            chosen = [e for e in entries if (e[2] == entry if entry else e[3] == "battles")][:1]
+            mine = picture_members(m, chosen[0][0]) if chosen else {}
+            for prop, stem, w, h in SIZES:
+                e = z.entry(mine[stem]) if stem in mine else None
+                if e is None:
+                    continue
+                t = Tgv(bytes(z.read(e)))
+                if (t.width, t.height) != (w, h):
+                    continue
+                out["picture" if prop == "Icone" else "wide_picture"] = (
+                    mine[stem], bytes(decode_rgba(zipo_unpack(t.payload(0)), w, h, "DXT5")))
+            for obj, _menu, name, kind in entries:
+                if chosen and obj != chosen[0][0] and set(picture_members(m, obj).values()) & set(mine.values()):
+                    out["shared"].append(f"{name} ({kind})")
+        self._menu_game[key] = out
+        return out
+
+    def _menu_starts(self, pack: str) -> list:
+        """The places players start on a map, as map fractions (rusemod.menudraw.places), with the current mod's
+        changes: what the build will draw the start dots on."""
+        from rusemod import presets
+        from rusemod.menudraw import places
+        game = self._game()
+        source, entry = self._menu_entry(pack)
+        try:
+            scen = presets.copy_scenario(game, source, entry) if game else None
+        except presets.PresetError:
+            scen = None
+        s = next((x for x in self.map_scenarios(pack)["scenarios"] if scen and x["file"].lower() == scen.lower()), None)
+        b = self.map_view(pack, "lowdef")["bounds"]
+        points = [(it["x"], it["y"]) for it in (s["items"] if s else [])
+                  if it["kind"] == "StartingPoint" and not it.get("gone")]
+        return places((b[0], b[1], b[3], b[4]), points)
+
+    def menu_pictures(self, pack: str) -> dict:
+        """A map's two pictures in the game's menus, as the Menu pictures window shows them: {"pictures": [{"key":
+        "picture" (the big one) or "wide_picture" (the 3D map), "file": the map's own PNG map.toml names or None,
+        "own": whether that file is there, "url": the picture the menus will show (a data: address; the 3D map with
+        its start dots where the starting points are now, when start_dots), "width", "height"}], "start_dots",
+        "new": a new map, "shared": the map's other entries that show the same picture files (a shipped map's own
+        change there too), "blender": Blender's path or "", "scene": whether a Blender scene was made for it,
+        "saved": whether pictures were saved from it since the last Bring back}."""
+        import base64
+        from rusemod.dxt import png_bytes
+        from rusemod.menudraw import dotted
+        from rusemod.menupicture import fitted, wide_rgba
+        from rusemod.png import read_png
+        name, spec, shipped = self._menu_owner(pack)
+        own = spec or shipped
+        folder = self._map_dir() / "maps" / name
+        game_pics = self._game_menu_pictures(pack)
+        out = []
+        for key, (w, h) in self.MENU_SIZES.items():
+            file = getattr(own, key, None) if own is not None else None
+            path = folder / file if file else None
+            rgba = None
+            if path is not None and path.is_file():
+                try:
+                    if key == "wide_picture":
+                        rgba = wide_rgba(path.read_bytes())
+                    else:
+                        pw, ph, px = read_png(path.read_bytes())
+                        rgba = fitted(px, pw, ph, w, h)
+                except (PictureError, ValueError):
+                    rgba = None
+            if rgba is not None and key == "wide_picture" and own.start_dots:
+                rgba = dotted(rgba, self._menu_starts(pack))
+            if rgba is None and key in game_pics:
+                rgba = game_pics[key][1]
+            small = fitted(rgba, w, h, w // 2, h // 2) if rgba is not None else None
+            url = ("data:image/png;base64," + base64.b64encode(png_bytes(bytes(small), w // 2, h // 2, 4)).decode()
+                   if small is not None else "")
+            out.append({"key": key, "file": file, "own": bool(path and path.is_file()), "url": url, "width": w,
+                        "height": h})
+        work = self._menu_work(name)
+        saved = work / "saved.json"
+        return {"pictures": out, "start_dots": bool(own is not None and own.start_dots), "new": spec is not None,
+                "shared": [] if spec is not None else game_pics.get("shared", []),
+                "blender": str(self._blender() or ""), "scene": (work / "scene.blend").is_file(),
+                "saved": saved.is_file() and (not (folder / "map.toml").is_file()
+                                              or saved.stat().st_mtime > (folder / "map.toml").stat().st_mtime)}
+
+    def pick_menu_picture(self, pack: str, key: str) -> dict:
+        """Pick a PNG for one of a map's pictures in the menus (`key` "picture": the big one; "wide_picture": the 3D
+        map): copied into the map's folder (menu.png, menu-wide.png) and named in its map.toml; a picked 3D map gets
+        no start dots of the build's (it may have its own). Returns menu_pictures(), with "message" when the picture
+        can't be used."""
+        from rusemod.menupicture import check
+        if key not in self.MENU_FILES:
+            raise StudioError(f"No menu picture called {key!r}")
+        name, _spec, _shipped = self._menu_owner(pack)
         if self._window is None:
-            return {"picture": spec.picture}
+            return self.menu_pictures(pack)
         chosen = pick_file(self._window, ("PNG picture (*.png)",))
         if not chosen:
-            return {"picture": spec.picture}
+            return self.menu_pictures(pack)
         data = Path(chosen).read_bytes()
         try:
             check(data)
         except PictureError as exc:
-            return {"picture": spec.picture, "message": f"{Path(chosen).name}: {exc}"}
+            return {**self.menu_pictures(pack), "message": f"{Path(chosen).name}: {exc}"}
         folder = self._map_dir() / "maps" / name
-        players = self._read_players(name)
-        header = (f"A new map: a copy of {spec.copy_of} (MOD_FORMAT §8).\n"
-                  "Made in the RUSE Studio's Duplicate map, which rewrites this file.")
         with self._saving:
-            (folder / "menu.png").write_bytes(data)
-            _save_checked(folder / "map.toml", newmap.map_toml(replace(spec, picture="menu.png"),
-                                                              players.count if players else None, header),
-                          lambda d: newmap.parse(d, "map.toml", name))
-        return {"picture": "menu.png"}
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / self.MENU_FILES[key]).write_bytes(data)
+            self._set_menu_pictures(pack, **{key: self.MENU_FILES[key]},
+                                    **({"start_dots": False} if key == "wide_picture" else {}))
+        return self.menu_pictures(pack)
+
+    def clear_menu_picture(self, pack: str, key: str) -> dict:
+        """One of a map's pictures back to the game's own (a new map's: those of the map it copies): map.toml stops
+        naming the map's own, and its file goes to the Recycle Bin. Returns menu_pictures()."""
+        from rusemod.recycle import to_recycle_bin
+        if key not in self.MENU_FILES:
+            raise StudioError(f"No menu picture called {key!r}")
+        name, spec, shipped = self._menu_owner(pack)
+        own = getattr(spec or shipped, key, None) if (spec or shipped) else None
+        with self._saving:
+            self._set_menu_pictures(pack, **{key: None})
+            path = self._map_dir() / "maps" / name / own if own else None
+            if path is not None and path.is_file():
+                to_recycle_bin(path)
+        return self.menu_pictures(pack)
+
+    def set_start_dots(self, pack: str, on: bool) -> dict:
+        """Whether the build draws the start dots on the map's own 3D map picture (map.toml start_dots), where the
+        starting points are when the map is built. Returns menu_pictures()."""
+        name, spec, shipped = self._menu_owner(pack)
+        if not getattr(spec or shipped, "wide_picture", None):
+            raise StudioError("The start dots go on the map's own 3D map picture: pick one or make it in Blender "
+                              "first. The game's own have their dots drawn in.")
+        with self._saving:
+            self._set_menu_pictures(pack, start_dots=bool(on))
+        return self.menu_pictures(pack)
+
+    def _menu_work(self, name: str) -> Path:
+        """Where a map's menu-picture scene for Blender lives (rusemod.menuscene): outside the mod, like the units'."""
+        return self._home / "blender" / "menus" / name
+
+    def menu_pictures_blender(self, pack: str, fresh: bool = False) -> dict:
+        """Open a map's menu pictures in Blender: the scene made for it the last time as it was left, else a new one
+        (rusemod.menuscene: the map's own ground and water with its ground picture, or a blank map's flat sea or
+        grass; both pictures' cameras; its starting points as markers). `fresh`: a new scene, the old one to the
+        Recycle Bin. Returns menu_pictures() with "message", or {"job": id} while the map's ground picture is still
+        being made (ask again when it's done)."""
+        from rusemod.menuscene import SceneError, write_scene
+        from rusemod.recycle import to_recycle_bin
+        from rusemod.tms import Tms
+        blender = self._blender()
+        if blender is None:
+            raise StudioError("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use "
+                              "Choose Blender… to show the Studio where blender.exe is.")
+        name, spec, _shipped = self._menu_owner(pack)
+        work = self._menu_work(name)
+        if fresh and work.exists():
+            to_recycle_bin(work)
+        blend = work / "scene.blend"
+        if not blend.is_file():
+            game = self._game()
+            if game is None:
+                # not a game rule: the game or one of its files isn't found
+                raise StudioError("The game folder isn't found, so the map's own files can't be read.")
+            kind, middle = self._menu_scene_kind(name)
+            ground = None
+            if kind == "map":
+                got = self.map_ground(pack)
+                if "job" in got:
+                    return got
+                ground = self.cache_dir / Path(got["url"]).relative_to("cache")
+            source = self._game_pack(pack)
+            map_path = find_pack(game, pack_file(source))
+            if map_path is None:
+                # not a game rule: the game or one of its files isn't found
+                raise StudioError(f"{pack_file(source)} isn't in the game folder.")
+            with Edat.open(str(map_path)) as arc:
+                tms = Tms(bytes(arc.read(arc.find("output\\highdef.tms"))))
+            x0, y0, _z0, x1, y1, _z1 = tms.bounds
+            starts = [(x0 + u * (x1 - x0), y0 + v * (y1 - y0)) for u, v in self._menu_starts(pack)]
+            try:
+                write_scene(work, kind, (x0, y0, x1, y1), starts, work / "picture.png", work / "wide.png",
+                            tms=tms if kind == "map" else None, ground_picture=ground,
+                            middle=middle if kind != "map" else None)
+            except (SceneError, OSError, ValueError) as exc:
+                raise StudioError(f"The scene for Blender couldn't be made ({exc}).") from None
+        from rusemod.blender import open_menu_scene
+        self._blenders[str(work)] = open_menu_scene(blender, work)
+        return {**self.menu_pictures(pack),
+                "message": "Opening Blender. Change anything you like, click Save menu pictures at the top of "
+                           "Blender's 3D view, then Bring back here."}
+
+    def _menu_scene_kind(self, name: str) -> tuple[str, float | None]:
+        """("ocean" or "land", its height) for a blank map (Duplicate map's Blank Ocean or Blank Terrain: its
+        terrain.toml's first stroke flattens the whole map, then the sea goes over it or every water is drained), else
+        ("map", None): the map's own ground."""
+        path = self._map_dir() / "maps" / name / "terrain.toml"
+        try:
+            strokes = parse_strokes(tomllib.loads(path.read_text(encoding="utf-8")).get("stroke", []), str(path)) \
+                if path.is_file() else []
+        except (OSError, *_FILE_MISTAKES):
+            strokes = []
+        if len(strokes) >= 2:  # as rusemod.presets.strokes writes them: one square over the whole map, twice
+            first, second = strokes[0], strokes[1]
+            if first.brush == "level" and first.shape == second.shape == "square" and \
+                    (first.x, first.y, first.radius) == (second.x, second.y, second.radius):
+                if second.brush == "water":
+                    return "ocean", second.level
+                if second.brush == "drain":
+                    return "land", first.level
+        return "map", None
+
+    def menu_pictures_bring_back(self, pack: str) -> dict:
+        """Take the pictures saved from Blender (Save menu pictures) into the map: the big one cut and scaled to the
+        menus' 640 x 360 and framed like the game's own (menu.png), the 3D map as rendered (menu-wide.png), and the
+        build's start dots on it (its camera puts the map where rusemod.menudraw draws the dots). Returns
+        menu_pictures() with "message"."""
+        from rusemod.dxt import png_bytes
+        from rusemod.menudraw import framed
+        from rusemod.menupicture import check, fitted
+        from rusemod.png import read_png
+        name, _spec, _shipped = self._menu_owner(pack)
+        work = self._menu_work(name)
+        big, wide = work / "picture.png", work / "wide.png"
+        if not (work / "saved.json").is_file() or not big.is_file() or not wide.is_file():
+            return {**self.menu_pictures(pack),
+                    "message": "Nothing saved in Blender yet: click Save menu pictures at the top of Blender's 3D "
+                               "view first (it takes a minute or two), then Bring back."}
+        try:
+            check(big.read_bytes())
+            check(wide.read_bytes())
+            w, h, px = read_png(big.read_bytes())
+        except (PictureError, ValueError) as exc:
+            raise StudioError(f"Blender's pictures couldn't be read ({exc}).") from None
+        folder = self._map_dir() / "maps" / name
+        with self._saving:
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / self.MENU_FILES["picture"]).write_bytes(png_bytes(bytes(framed(fitted(px, w, h, 640, 360),
+                                                                                       640, 360)), 640, 360, 4))
+            (folder / self.MENU_FILES["wide_picture"]).write_bytes(wide.read_bytes())
+            self._set_menu_pictures(pack, picture=self.MENU_FILES["picture"],
+                                    wide_picture=self.MENU_FILES["wide_picture"], start_dots=True)
+        return {**self.menu_pictures(pack),
+                "message": "Brought back both pictures. Click Test in game to see them in the menus."}
 
     def delete_map(self, pack: str) -> dict:
         """Delete a new map (one made with Duplicate map) from the current map project: its folder maps/<name>/, with
@@ -2120,8 +2422,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return self.map_scenarios(pack)
 
     # --- how many players a map takes: maps/<pack>/map.toml in the current mod (MOD_FORMAT §8, rusemod.players) ---
-    MAP_HEADER = ("How many players this map takes in this mod (docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio, "
-                  "which rewrites this file.")
+    MAP_HEADER = ("How many players this map takes in this mod, and its own pictures in the menus (docs/MOD_FORMAT.md "
+                  "§8).\nMade in the RUSE Studio, which rewrites this file.")
 
     def _map_file(self, pack: str) -> Path:
         return self._scenario_file(pack).with_name("map.toml")
@@ -2174,8 +2476,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             return None
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8"))
-            if "copy_of" in data and "players" not in data:
-                return None  # a new map's file: its entry is the one it copies, not a player count's
+            if "players" not in data:
+                return None  # a new map's file (its entry is the one it copies), or only menu pictures
             got = pl.parse_map(data, str(path))
         except (tomllib.TOMLDecodeError, UnicodeDecodeError, pl.PlayersError) as exc:
             raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
@@ -2198,15 +2500,43 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             with self._saving:
                 _save_checked(path, text, lambda data: newmap.parse(data, str(path), copy[0]))
             return self.map_players(pack)
+        pictures = self._shipped_pictures(pack)  # the map's own menu pictures stay as they are
         with self._saving:
-            if count is None:
-                if path.is_file():
-                    path.unlink()
-            else:
-                setting = pl.parse_map({"players": int(count), **({"entry": entry} if entry else {})}, "the count")[0]
-                _save_checked(path, pl.map_toml(setting, self.MAP_HEADER),
-                              lambda data: pl.parse_map(data, str(path)))
+            setting = None if count is None else \
+                pl.parse_map({"players": int(count), **({"entry": entry} if entry else {})}, "the count")[0]
+            self._save_shipped_map_toml(pack, setting, pictures)
         return self.map_players(pack)
+
+    def _shipped_pictures(self, pack: str):
+        """A shipped map's own menu pictures in the current map project's map.toml (menupicture.MenuPictures), or
+        None."""
+        from rusemod.menupicture import MenuPictures, PictureError, picture_names, start_dots_of
+        if self._map_dir() is None or not self._map_file(pack).is_file():
+            return None
+        path = self._map_file(pack)
+        try:
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+            if "copy_of" in data:
+                return None
+            picture, wide = picture_names(data, str(path))
+            dots = start_dots_of(data, str(path), wide)
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, PictureError) as exc:
+            raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
+                              f"by hand.") from None
+        return MenuPictures(picture, wide, data.get("entry"), dots) if picture or wide else None
+
+    def _save_shipped_map_toml(self, pack: str, players, pictures) -> None:
+        """A shipped map's map.toml with its player count and its menu pictures, either or both; with neither it
+        goes (the map as the game has it). Call holding self._saving."""
+        from rusemod import players as pl
+        from rusemod.build import _map_toml
+        path = self._map_file(pack)
+        if players is None and pictures is None:
+            if path.is_file():
+                path.unlink()
+            return
+        _save_checked(path, pl.map_toml(players, self.MAP_HEADER, pictures),
+                      lambda data: _map_toml(data, f"maps/{pack}/map.toml"))
 
     # --- placing objects on a map: maps/<pack>/scenery.toml in the current mod (MOD_FORMAT §8, rusemod.scenery) ---
     SCENERY_HEADER = ("The objects this mod adds to this map, in order, and the circles where it takes the map's own "

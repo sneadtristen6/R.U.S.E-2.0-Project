@@ -65,6 +65,21 @@ def installer_command(app: str, program: Path, icon: Path, dist: Path) -> list[s
             str(ROOT / "installers" / "installer.iss")]
 
 
+# Run by Blender from files of their own (rusemod.blender: blender --python <file>), so they go beside the compiled
+# code as they are: Nuitka compiles every .py into the program, and the built app had none to give Blender
+# (Studio 0.9.7's install folder: rusemod\labels.toml only, 2026-10-05).
+BLENDER_SCRIPTS = ("blender_open.py", "blender_menu.py")
+
+
+def blender_scripts(app_dir: Path) -> None:
+    """Copy the scripts Blender runs into the built app's rusemod folder, where rusemod.blender looks for them (beside
+    its own module, as rusemod.schema finds labels.toml)."""
+    target = app_dir / "rusemod"
+    target.mkdir(parents=True, exist_ok=True)
+    for name in BLENDER_SCRIPTS:
+        shutil.copy2(ROOT / "src" / "rusemod" / name, target / name)
+
+
 def run(cmd: list[str]) -> None:
     print("> " + " ".join(f'"{c}"' if " " in c else c for c in cmd), flush=True)
     subprocess.run(cmd, check=True, cwd=ROOT, env=dict(os.environ, PYTHONPATH=str(ROOT / "src")))
@@ -104,6 +119,7 @@ def main(argv=None) -> int:
     icon = ROOT / "build" / "icons" / f"{app}.ico"
     run(nuitka_command(app, icon, build))
     program = next(build.rglob(exe_name(app)))
+    blender_scripts(program.parent)
     self_test(program, "built app")
     run(installer_command(app, program.parent, icon, dist))
     setup = dist / f"{APPS[app]['name'].replace(' ', '-')}-Setup-{version(app)}.exe"

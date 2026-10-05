@@ -84,6 +84,18 @@ def open_models(blender: Path, files: list) -> subprocess.Popen:
     return subprocess.Popen([str(blender), "--python", str(OPENER), "--"] + [str(f) for f in files])
 
 
+MENU_SCENE = Path(__file__).with_name("blender_menu.py")
+
+
+def open_menu_scene(blender: Path, folder: Path) -> subprocess.Popen:
+    """Start Blender on a map's menu-picture scene in `folder` (blender_menu.py, rusemod.menuscene): its scene.blend
+    as it was left, else a new scene made from its scene.json; returns at once, with Blender's process."""
+    folder = Path(folder)
+    blend = folder / "scene.blend"
+    return subprocess.Popen([str(blender)] + ([str(blend)] if blend.is_file() else [])
+                            + ["--python", str(MENU_SCENE), "--", str(folder / "scene.json")])
+
+
 def ask_to_save(folder: Path, timeout: float) -> list | None:
     """Ask the Blender painting the models in `folder` to save its paint, and wait for it: the names of the pictures
     it saved ([] when everything was saved already), or None when no Blender answered within `timeout` seconds

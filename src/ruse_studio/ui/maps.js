@@ -4846,10 +4846,9 @@ function showTitle() {
 function renderDelete() {
   const w = mv.words, m = mv.maps.find((x) => x.pack === mv.current);
   const mine = Boolean(m && m.copy_of), asking = mine && mv.deleteAsk === mv.current;
-  $("map-picture").classList.toggle("hidden", !mine);  // its own picture in the menus (pickMapPicture)
+  $("map-picture").classList.toggle("hidden", !mv.current);  // its pictures in the menus (openMenuPictures)
   $("map-picture").textContent = w.map_picture;
   $("map-picture").title = w.tip_map_picture;
-  if (!mine) $("map-picture-note").classList.add("hidden");
   $("map-delete").classList.toggle("hidden", !mine || asking);
   $("map-delete-sure").classList.toggle("hidden", !asking);
   $("map-delete").textContent = w.delete_map;
@@ -4861,21 +4860,113 @@ function renderDelete() {
   $("map-delete-no").title = w.tip_cancel;
 }
 
-// --- A new map's own picture in the game's menus (map.toml picture; the owner, 2026-10-05: "is there a way to change
-// the in menu picture of D-Day? Through the ocean."): a PNG picked here is copied beside its map.toml; the build cuts
-// it to the menus' two shapes (rusemod.menupicture). ---
-async function pickMapPicture() {
-  const w = mv.words, pack = mv.current, note = $("map-picture-note");
+// --- Menu pictures: the map's two pictures in the game's menus (map.toml picture, wide_picture, start_dots;
+// rusemod.menupicture): the big one, and the 3D map with a white dot where each player starts, which the build draws
+// where the starting points are. A PNG picked for either, both made in Blender from the map's own 3D model, or the
+// game's own; any map's, a shipped one's too (a themed mod). The owner, 2026-10-05: "the option for a custom PNG or
+// model and then also being able to make your own". ---
+const mp = { pack: null, busy: false };
+
+async function openMenuPictures() {
+  const w = mv.words, pack = mv.current;
   if (!pack) return;
-  $("map-picture").disabled = true;
-  try {
-    const res = await mv.api.new_map_picture(pack);
-    note.textContent = res.message || (res.picture ? fill(w.map_picture_set, { file: res.picture }) : "");
-  } catch (err) {
-    note.textContent = (err && err.message) || String(err);
+  mp.pack = pack;
+  $("mp-title").textContent = w.menu_pics_title;
+  $("mp-lead").textContent = fill(w.menu_pics_lead, { map: mapName(pack) });
+  $("mp-big-title").textContent = w.menu_big;
+  $("mp-wide-title").textContent = w.menu_wide;
+  for (const k of ["big", "wide"]) {
+    $(`mp-${k}-pick`).textContent = w.menu_pick;
+    $(`mp-${k}-pick`).title = w.tip_menu_pick;
+    $(`mp-${k}-game`).textContent = w.menu_back;
+    $(`mp-${k}-game`).title = w.tip_menu_back;
   }
-  note.classList.toggle("hidden", !note.textContent);
-  $("map-picture").disabled = false;
+  $("mp-dots-label").textContent = w.menu_dots;
+  $("mp-dots").parentElement.title = w.tip_menu_dots;
+  $("mp-blender-title").textContent = w.menu_blender_title;
+  $("mp-blender-how").textContent = w.menu_blender_how;
+  $("mp-blender").textContent = w.menu_blender;
+  $("mp-bring").textContent = w.menu_bring_back;
+  $("mp-bring").title = w.tip_menu_bring_back;
+  $("mp-fresh").textContent = w.menu_fresh;
+  $("mp-fresh").title = w.tip_menu_fresh;
+  $("mp-close").textContent = w.close;
+  $("mp-note").textContent = "";
+  $("mp-shared").textContent = "";
+  for (const id of ["mp-big-img", "mp-wide-img"]) $(id).removeAttribute("src");
+  $("menu-pics").showModal();
+  await menuPicturesCall(() => mv.api.menu_pictures(pack));
+}
+
+// One call of the window's (StudioApi.menu_pictures and the calls that change the pictures), the buttons held while
+// it runs, its answer shown; a ground picture still being made for Blender is waited for, then asked again.
+async function menuPicturesCall(call, again) {
+  const w = mv.words, pack = mp.pack;
+  if (mp.busy) return;
+  mp.busy = true;
+  renderMenuPicturesBusy(true);
+  try {
+    let res = await call();
+    while (res && res.job && again) {  // the map's ground picture for Blender, made once (about half a minute)
+      let view, since = 0;
+      do {
+        await wait(700);
+        view = await mv.api.job(res.job, since);
+        since = view.count;
+        if (view.lines.length) $("mp-note").textContent = fill(w.ground_loading, { progress: view.lines[view.lines.length - 1] });
+      } while (view.state === "running");
+      if (view.state !== "done") throw new Error(view.message);
+      res = await again();
+    }
+    if (pack === mp.pack && res && res.pictures) renderMenuPictures(res);
+    $("mp-note").textContent = (res && res.message) || "";
+  } catch (err) {
+    $("mp-note").textContent = (err && err.message) || String(err);
+  }
+  mp.busy = false;
+  renderMenuPicturesBusy(false);
+}
+
+function renderMenuPicturesBusy(busy) {
+  for (const id of ["mp-big-pick", "mp-big-game", "mp-wide-pick", "mp-wide-game", "mp-dots", "mp-blender", "mp-bring",
+    "mp-fresh"]) $(id).disabled = busy || $(id).dataset.off === "1";
+}
+
+function renderMenuPictures(res) {
+  const w = mv.words;
+  mp.res = res;
+  for (const p of res.pictures) {
+    const k = p.key === "picture" ? "big" : "wide";
+    if (p.url) $(`mp-${k}-img`).src = p.url; else $(`mp-${k}-img`).removeAttribute("src");
+    $(`mp-${k}-img`).alt = k === "big" ? w.menu_big : w.menu_wide;
+    $(`mp-${k}-file`).textContent = p.own ? fill(w.menu_own_file, { file: p.file }) : w.menu_game_own;
+    $(`mp-${k}-game`).dataset.off = p.own ? "0" : "1";
+  }
+  const wide = res.pictures.find((p) => p.key === "wide_picture");
+  $("mp-dots").checked = Boolean(res.start_dots);
+  $("mp-dots").dataset.off = wide && wide.own ? "0" : "1";
+  $("mp-blender").dataset.off = res.blender ? "0" : "1";
+  $("mp-blender").title = res.blender ? w.tip_menu_blender : w.menu_no_blender;
+  $("mp-bring").dataset.off = res.saved ? "0" : "1";
+  $("mp-fresh").dataset.off = res.scene && res.blender ? "0" : "1";
+  $("mp-shared").textContent = res.shared && res.shared.length ? fill(w.menu_shared, { entries: res.shared.join(", ") }) : "";
+  renderMenuPicturesBusy(false);
+}
+
+function wireMenuPictures() {
+  const pack = () => mp.pack;
+  $("mp-big-pick").addEventListener("click", () => menuPicturesCall(() => mv.api.pick_menu_picture(pack(), "picture")));
+  $("mp-wide-pick").addEventListener("click", () => menuPicturesCall(() => mv.api.pick_menu_picture(pack(), "wide_picture")));
+  $("mp-big-game").addEventListener("click", () => menuPicturesCall(() => mv.api.clear_menu_picture(pack(), "picture")));
+  $("mp-wide-game").addEventListener("click", () => menuPicturesCall(() => mv.api.clear_menu_picture(pack(), "wide_picture")));
+  $("mp-dots").addEventListener("change", (e) => menuPicturesCall(() => mv.api.set_start_dots(pack(), e.target.checked)));
+  const blender = (fresh) => menuPicturesCall(() => mv.api.menu_pictures_blender(pack(), fresh),
+    () => mv.api.menu_pictures_blender(pack(), false));
+  $("mp-blender").addEventListener("click", () => blender(false));
+  $("mp-fresh").addEventListener("click", () => blender(true));
+  $("mp-bring").addEventListener("click", () => menuPicturesCall(() => mv.api.menu_pictures_bring_back(pack())));
+  $("mp-close").addEventListener("click", () => $("menu-pics").close());
+  $("menu-pics").addEventListener("keydown", (e) => e.stopPropagation());  // keys never move the map behind it
 }
 
 async function deleteMap() {
@@ -5633,7 +5724,8 @@ function wire() {
   $("check-run").addEventListener("click", () => runCheck());
   $("maps-fold").addEventListener("click", () => { foldMaps(!mv.folded); saveView(); });
   $("map-duplicate").addEventListener("click", openDuplicate);
-  $("map-picture").addEventListener("click", pickMapPicture);
+  $("map-picture").addEventListener("click", openMenuPictures);
+  wireMenuPictures();
   $("map-delete").addEventListener("click", () => { mv.deleteAsk = mv.current; renderDelete(); $("map-delete-yes").focus(); });
   $("map-delete-no").addEventListener("click", () => { mv.deleteAsk = null; renderDelete(); });
   $("map-delete-yes").addEventListener("click", deleteMap);

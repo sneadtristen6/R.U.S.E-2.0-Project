@@ -280,7 +280,9 @@ copy_of = "SuperCrossRoads4"   # the shipped map it starts from, by its pack nam
 entry = "(2) Blitz"            # optional: which of its entries, by the map list's name: a BATTLES map (needed when it
                                # has several), or an Operation's or a campaign chapter's (the copy is then one too)
 players = 4                    # optional: as on any map (below), for the copy
-picture = "menu.png"           # optional: its own picture in the menus, a PNG in this folder
+picture = "menu.png"           # optional: its own pictures in the menus, PNGs in this folder (below; any map can)
+wide_picture = "menu-wide.png"
+start_dots = true
 
 [name]                         # what the menus call it, or one name for every language: name = "Blitz Twin"
 us = "Blitz Twin"              # English, which the languages left out fall back to
@@ -294,11 +296,9 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
   scenario, its cover and movement, and its name in every language: each a copy of the shipped map's, pointed at the
   copy.
 - Everything else is the shipped map's, only read: its models, sounds, lighting, camera paths, menu pictures (unless
-  `picture` gives its own) and in-mission texts. The copy plays the shipped entry's scenario (Blitz:
-  `leveldesign_normal.scenario`), so its `scenario.toml` names that file; its sectors get a zone map of their own, so
-  `[sectors]` can change them without changing the shipped map's.
-- `picture`: a PNG in the new map's folder becomes its pictures in the menus (the card, 640 x 360, and the wide one,
-  680 x 200), each cut to its shape from the picture's middle. Not seen in the game yet.
+  `picture` or `wide_picture` gives its own: below) and in-mission texts. The copy plays the shipped entry's scenario
+  (Blitz: `leveldesign_normal.scenario`), so its `scenario.toml` names that file; its sectors get a zone map of their
+  own, so `[sectors]` can change them without changing the shipped map's.
 - The ids come from the name, so every PC that builds the mod gets the same files: a multiplayer game needs the mod on
   both PCs, like any mod. The copy isn't offered in ranked games (the shipped map's ladder place stays its own).
 - **An Operation or a campaign chapter:** `entry` names it (`"Challenge - 1v1 39 Blitz_2 (Anzio)"` for Anzio,
@@ -323,6 +323,42 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
   the game yet. Flattening the mountains at a map's edge left a wall along it (the outermost row of points kept its
   height); the edge now moves with the ground and the curtain hanging from it follows (built, not yet seen in the
   game).
+- **Start blank:** Duplicate map's *Start from* Blank Terrain or Blank Ocean (a Battles map's copy; `rusemod.presets`)
+  writes the copy's files from the shipped map's own: the whole map flat (land, or the sea over it), everything on it
+  erased, its roads and bridges taken out, only the starting points kept, the sectors over the whole map, and its own
+  menu pictures with `start_dots` (below). Seen in the game (both, 2026-10-05).
+
+### A map's pictures in the menus: `picture`, `wide_picture`, `start_dots` in `map.toml` (built: `rusemod.menupicture`)
+
+Every map shows two pictures in the game's menus: a **big picture** (640 x 360, a view of its land or sea) and a **3D
+map** (680 x 200, the map as a slab with a white dot where each player starts). A mod gives a map its own:
+
+```toml
+picture = "menu.png"           # the big picture: a PNG in the map's folder
+wide_picture = "menu-wide.png" # the 3D map: a PNG there too (left out: made from `picture`)
+start_dots = true              # the build draws the start dots on the 3D map (needs `wide_picture`)
+```
+
+- Any PNG, any size up to 8192 a side: each is cut to its shape from its middle and scaled (see-through pixels, as
+  round a 3D map, keep the edges they meet clean).
+- **A new map** (`copy_of`) gets picture files of its own; the map it copies keeps its pictures. **A shipped map**
+  (`map.toml` without `copy_of`) has the pictures its BATTLES entry shows replaced (or the entry `entry` names): a
+  themed mod can picture every map its own way. A picture another of the map's entries shows too changes there as
+  well; the build and the Studio say which.
+- `start_dots`: the white dots aren't part of the picture: the build draws one on each place players start, where the
+  map's starting points are once the mods' edits are in (`rusemod.menudraw`), so moving a starting point moves its
+  dot. The 3D map must be drawn the way the Studio draws one: a blank map's, or one made in Blender from the Studio's
+  scene. The game's own 3D maps have their dots drawn in, so `start_dots` needs `wide_picture`.
+- **The Studio:** **Menu pictures…** (Maps tab, under the open map's name) shows both as the menus will, with **Pick a
+  PNG…**, **Back to the game's own** and the start dots for each map, and **Make in Blender…**: Blender opens the
+  map's own 3D model (its ground and water with its ground picture, or a blank map's flat sea or grass) as two scenes,
+  *Big picture* and *3D map*, their cameras set like the game's; the modder changes anything, clicks *Save menu
+  pictures* in Blender, then **Bring back** (the big picture framed like the game's own, start dots on). The scene is
+  kept outside the mod and opens as it was left (**New scene** starts again). `rusemod.menuscene` writes it,
+  `rusemod.blender_menu` builds it in Blender.
+- **Not seen in the game yet (2026-10-05):** Blank Ocean's and Blank Terrain's own pictures, their start dots drawn
+  by the build, are built into test copies and waiting for a look in the game. A shipped map's pictures, and pictures
+  made in Blender, are built but not tried in the game.
 
 ### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`)
 

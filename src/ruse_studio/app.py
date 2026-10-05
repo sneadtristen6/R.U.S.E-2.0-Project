@@ -24,6 +24,20 @@ def _grids() -> str:
     return whole_grids()
 
 
+def _beside_the_code() -> str:
+    """The files the app hands to others as files: the scripts Blender runs (Open in Blender, Make in Blender) and
+    the blank maps' pictures (rusemod.presets): Studio 0.9.7's install had no Blender script beside its code."""
+    from pathlib import Path
+    from rusemod import presets
+    from rusemod.blender import MENU_SCENE, OPENER
+    files = [OPENER, MENU_SCENE] + [Path(presets.__file__).with_name("pictures") / name
+                                    for name in presets.PICTURES.values()]
+    missing = [f.name for f in files if not f.is_file()]
+    if missing:
+        raise RuntimeError(f"not beside the app's code: {', '.join(missing)}")
+    return ", ".join(f.name for f in files)
+
+
 def main(argv=None) -> int:
     log = startlog.begin("studio", __version__)  # the start-up log (rusemod.startlog): written once the window is due
     log.mark("imports")
@@ -44,6 +58,7 @@ def main(argv=None) -> int:
             ("the game's names", lambda: f"ProductionPrice in Chinese is {schema.label('ProductionPrice', 'sc')!r}"),
             ("worker programs start (a big map's riverbeds are mended by them)", _workers),
             ("the map sums on whole grids (a big map is painted by them)", _grids),
+            ("Blender's scripts and the blank maps' pictures beside the code", _beside_the_code),
         ])
     log.mark("api")
     log.go()
