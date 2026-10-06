@@ -418,6 +418,46 @@ class EdgeAndSkirt(unittest.TestCase):
         self.assertEqual((back.skirt, back.skirt_data), (Tms(self.raw).skirt, Tms(self.raw).skirt_data))
         self.assertNotEqual(back.cells[4].vb, Tms(self.raw).cells[4].vb)
 
+    def test_a_new_water_level_at_the_edge_moves_the_water_sides_top(self):
+        """The edge's points kept an old river's water under a new sea, and the water's side stood up to it: walls of
+        water round Blank Ocean (seen in the game, 2026-10-05). Lower or higher, the side's top follows the water."""
+        for level in (1100, 1500):
+            with self.subTest(level=level):
+                t = Tms(self.raw)
+                t.set_water(1, {i: level for i in range(len(t.cells[1].positions()))})
+                back = Tms(t.to_bytes())
+                _idx, verts, bounds, parts = skirt_meshes(back)[1]
+                self.assertEqual(sorted({v[2] for v in verts}), [1000, level])
+                self.assertEqual(sum(v[2] == 1000 for v in verts), len(verts) // 2)   # the feet stay on the ground
+                part = next(k for k, p in enumerate(parts) if p[1])
+                self.assertAlmostEqual(bounds[part][2], back.to_world(2, 1000), 2)
+                self.assertAlmostEqual(bounds[part][5], back.to_world(2, level), 2)
+                self.assertEqual(skirt_meshes(back)[0], skirt_meshes(Tms(self.raw))[0])   # the curtain stays
+
+    def test_drained_water_at_the_edge_folds_the_water_side_flat(self):
+        t = self.tms
+        t.set_water(1, {i: 100 for i in range(len(t.cells[1].positions()))})   # under the ground, as beside it
+        _idx, verts, bounds, parts = skirt_meshes(Tms(t.to_bytes()))[1]
+        self.assertEqual({v[2] for v in verts}, {1000})
+        for b, p in zip(bounds, parts):
+            if p[1]:
+                self.assertEqual(b[2], b[5])
+
+    def test_new_ground_and_new_water_at_the_edge_together(self):
+        t = self.tms
+        t.edit_heights(lambda x, y, z: z - 30.0)            # ground 700
+        t.set_water(1, {i: 900 for i in range(len(t.cells[1].positions()))})
+        _idx, verts, _bounds, _parts = skirt_meshes(Tms(t.to_bytes()))[1]
+        self.assertEqual(sorted({v[2] for v in verts}), [700, 900])
+        self.assertEqual(sum(v[2] == 700 for v in verts), len(verts) // 2)
+
+    def test_a_water_edit_off_the_edge_keeps_the_skirt_bytes(self):
+        t = self.tms
+        t.set_water(4, {i: 1300 for i in range(len(t.cells[4].positions()))})   # the middle cell: no edge point
+        back = Tms(t.to_bytes())
+        self.assertEqual((back.skirt, back.skirt_data), (Tms(self.raw).skirt, Tms(self.raw).skirt_data))
+        self.assertEqual(back.cells[4].flags & 2, 2)
+
     def test_a_map_without_water_at_its_edge_has_only_the_curtain(self):
         t = Tms(make_tms(gw=2, gh=2, n=5, skirt=True))
         self.assertEqual(struct.unpack_from("<I", t.skirt)[0], 1)

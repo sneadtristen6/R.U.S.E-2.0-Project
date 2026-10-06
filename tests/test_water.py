@@ -8,7 +8,7 @@ from rusemod.tmst import make_tgv, zipo_pack
 from rusemod.water import (CASE, SAMPLES, TEXTURES, TILE, _both, _cell, _pixels, _texels, apply_water,
                            update_textures)
 
-from test_tms import make_tms
+from test_tms import make_tms, skirt_meshes
 
 
 def flat(level_q):
@@ -107,6 +107,39 @@ class FarMesh(unittest.TestCase):
         apply_water({"highdef": near, "lowdef": far}, strokes)
         self.assertEqual({p[3] for c in far.cells for p in c.positions()}, {400})
         self.assertTrue(all(not c.flags & 2 for c in near.cells))
+
+
+class Edge(unittest.TestCase):
+    """The map's outer edge takes the water like the rest: left at an old river's level under a new sea, its points
+    and the water's side hanging from them stood as walls of water round Blank Ocean (seen in the game, 2026-10-05)."""
+
+    def test_a_stroke_over_the_whole_map_sets_its_edge_too(self):
+        near, far = flat(500), flat(400)
+        strokes = parse_strokes([{"brush": "water", "x": 1500, "y": 1500, "radius": 3000, "level": 20.0}])
+        apply_water({"highdef": near, "lowdef": far}, strokes)
+        self.assertEqual({p[3] for c in near.cells for p in c.positions()}, {near.to_quant(2, 20.0)})
+        self.assertEqual({p[3] for c in far.cells for p in c.positions()}, {far.to_quant(2, 10.0)})
+
+    def test_draining_the_whole_map_drains_its_edge_too(self):
+        """A lake at q 1,200 in the top middle cell, on the edge; the map's base level is q 100."""
+        near = Tms(make_tms(gw=3, gh=3, n=11, water_cell=(1, 0), water=1200, skirt=True))
+        apply_water({"highdef": near}, parse_strokes([{"brush": "drain", "x": 1500, "y": 1500, "radius": 3000}]))
+        back = Tms(near.to_bytes())
+        self.assertEqual({p[3] for c in back.cells for p in c.positions()}, {100})
+        _idx, verts, _bounds, _parts = skirt_meshes(back)[1]
+        self.assertEqual({v[2] for v in verts}, {1000})       # the water side folded flat on the ground
+
+    def test_the_water_side_at_the_edge_follows_the_stroke(self):
+        """The close-up mesh's water side, from the ground (q 1,000) up to an old river's water (q 1,200) in the top
+        middle cell, goes to the stroke's level: a sea over the whole map at q 1,100."""
+        near = Tms(make_tms(gw=3, gh=3, n=11, water_cell=(1, 0), water=1200, skirt=True))
+        strokes = parse_strokes([{"brush": "water", "x": 1500, "y": 1500, "radius": 3000,
+                                  "level": near.to_world(2, 1100)}])
+        apply_water({"highdef": near}, strokes)
+        back = Tms(near.to_bytes())
+        self.assertEqual({p[3] for c in back.cells for p in c.positions()}, {1100})
+        _idx, verts, _bounds, _parts = skirt_meshes(back)[1]
+        self.assertEqual(sorted({v[2] for v in verts}), [1000, 1100])
 
 
 class TextureDepth(unittest.TestCase):

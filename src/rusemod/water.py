@@ -54,7 +54,9 @@ def apply_water(meshes: dict[str, Tms], strokes: list) -> list[str]:
     circle, `drain` puts the map's base level back. The far mesh gets every level 150-ish units lower, by the
     difference between the two meshes' base levels, and floods only where the close-up mesh's ground is under the
     level: its triangles are much bigger, so otherwise a lake spreads over the ground around it in the far view
-    (seen in the game, 2026-09-29). Points on the map's outer edge are left alone."""
+    (seen in the game, 2026-09-29). Points on the map's outer edge take the level like the rest, and the water's side
+    hanging from the edge follows (Tms._fit_skirt): left at an old river's level, they stood as walls of water round
+    the sea of Blank Ocean (seen in the game, 2026-10-05)."""
     water = [s for s in strokes if s.brush in ("water", "drain")]
     if not water or not meshes:
         return []
@@ -69,12 +71,9 @@ def apply_water(meshes: dict[str, Tms], strokes: list) -> list[str]:
     for key, m in meshes.items():
         offset = ref - world_base[key]
         changed = 0
-        top = 32767
         for k, c in enumerate(m.cells):
             levels = {}
             for i, (qx, qy, _qz, _qw) in enumerate(c.positions()):
-                if qx in (0, top) or qy in (0, top):
-                    continue
                 x, y = m.to_world(0, qx), m.to_world(1, qy)
                 for s in water:
                     if not s.covers(x, y):

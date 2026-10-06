@@ -8,8 +8,10 @@ being able to make your own".
   meshes (x, y, z and the ground picture's u, v per point; three point numbers per triangle), with the ground
   picture beside them (the Studio's own, made from the map's texture tiles: rusemod.terrain.ground_png).
 
-Blender's axes: x east, y north, z up, in metres (a map unit is a centimetre), the map's middle at 0, 0. The game's
-y grows toward the south, so y is turned round (and every triangle with it, to keep its top side up).
+Blender's axes: x east, y north, z up, a Blender metre to every 100 map units, the map's middle at 0, 0. That isn't
+to scale (a map unit is about 1/260 of a metre: rusemod.nav.METRE); only the framing counts, and the scene's look (eye
+heights, haze) was set by eye at this scale. The game's y grows toward the south, so y is turned round (and every
+triangle with it, to keep its top side up).
 
 The 3D map's camera is worked out from the map's size so the map's top lands where rusemod.menudraw draws a slab
 (its back edge 349 pixels wide at row 10, its front 580 at row 170): the build's start dots (map.toml start_dots)
@@ -23,7 +25,7 @@ from pathlib import Path
 
 from . import menudraw
 
-SCALE = 0.01            # map units -> metres
+SCALE = 0.01            # map units -> Blender metres (not to scale: see above)
 BIG = (1280, 720)       # the big picture's render (the menus' 640 x 360, halved by the build)
 WIDE = (1360, 400)      # the 3D map's render (680 x 200)
 SEA_SHARE = 0.05        # a map with more of its ground under its sea than this gets the sea round it, else land

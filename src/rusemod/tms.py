@@ -1,5 +1,6 @@
 """A map's ground mesh: read, heights edited, written. Every map has a close-up and a far mesh; the curtain hanging
-from the map's edge follows when edge points move (Tms._fit_skirt), and so does the water over the ground.
+from the map's edge follows when edge points move or their water changes (Tms._fit_skirt), and so does the water over
+the ground.
 
 Edits work the normals out again only around the points that moved. Cells that weren't edited keep their bytes, so an
 unchanged file gives the same bytes back; an edited cell's points are packed again the way the game packs its own."""
@@ -493,6 +494,8 @@ class Tms:
 
     # edge vertices whose height changed since the skirt last followed them: (cell, vertex) -> (x, y, z before)
     _edge_old: dict | None = None
+    # edge vertices whose water level changed since then: (cell, vertex) -> (x, y, w before)
+    _edge_water_old: dict | None = None
 
     def __init__(self, raw: bytes):
         if raw[:4] != MAGIC or raw[-4:] != MAGIC:
@@ -550,7 +553,7 @@ class Tms:
     def to_bytes(self) -> bytes:
         """Serialize: header, cell table, patch tables, geometry (per cell: vertex buffer then its triangle
         lists, each 4-byte aligned with zero padding), skirt descriptor, skirt meshes, closing magic."""
-        if self._edge_old:
+        if self._edge_old or self._edge_water_old:
             self._fit_skirt()
         table = bytearray()
         geo = bytearray()
@@ -753,22 +756,31 @@ class Tms:
         return out
 
     def _fit_skirt(self) -> None:
-        """Make the skirt follow the edge points whose height changed: the curtain's tops go to the edge's new height,
-        and the water's side runs from the edge's new height up to the water, folding flat where the ground now stands
-        above it. The parts holding a moved vertex get new height bounds; everything else keeps its bytes."""
+        """Make the skirt follow the edge points whose height or water changed: the curtain's tops go to the edge's
+        new height, and the water's side runs from the edge's new height up to its water, folding flat where the
+        ground now stands above it. Where the edge's water changed, the side's top goes to the new level (left at
+        an old river's level, it stood as a wall of water round Blank Ocean, 2026-10-05). The parts holding a moved
+        vertex get new height bounds; everything else keeps its bytes."""
         old, self._edge_old = self._edge_old or {}, None
-        if not old or not any(self.skirt):
+        old_w, self._edge_water_old = self._edge_water_old or {}, None
+        if not (old or old_w) or not any(self.skirt):
             return
         now: dict[tuple[int, int], int] = {}      # the edge's height at each of its x, y: now and before the edits
         before: dict[tuple[int, int], int] = {}
+        water: dict[tuple[int, int], int] = {}    # and its water level, now and before
+        water_before: dict[tuple[int, int], int] = {}
         for k, c in enumerate(self.cells):   # an x, y can hold several points (cells meet there; a cliff's top, foot)
-            for i, (x, y, z, _w) in enumerate(c.positions()):
+            for i, (x, y, z, w) in enumerate(c.positions()):
                 if x in (0, Q_MAX) or y in (0, Q_MAX):
                     was = old.get((k, i), (x, y, z))[2]
                     now[(x, y)] = max(now.get((x, y), z), z)
                     before[(x, y)] = max(before.get((x, y), was), was)
+                    was = old_w.get((k, i), (x, y, w))[2]
+                    water[(x, y)] = max(water.get((x, y), w), w)
+                    water_before[(x, y)] = max(water_before.get((x, y), was), was)
         cols = {xy: (before[xy], now[xy]) for xy in now if now[xy] != before[xy]}
-        if not cols:
+        levels = {xy: water[xy] for xy in water if water[xy] != water_before[xy]}
+        if not cols and not levels:
             return
         sides: dict[int, list] = {}   # per edge, (how far along it, height before, height now), in order
         for (x, y), z in now.items():
@@ -803,15 +815,18 @@ class Tms:
             touched = set()
             for j, (x, y, z) in enumerate(verts):
                 moved = column(x, y)
-                if moved is None:
+                level = levels.get((x, y)) if m else None
+                if moved is None and level is None:
                     continue
-                new = moved[1]
+                new = moved[1] if moved is not None else now[(x, y)]
                 if m == 0:   # the curtain: its foot stays, its top goes to the edge's new height
                     if z == 0:
                         continue
                     nz = min(max(round((self.to_world(2, new) - SKIRT_BOTTOM) / scale), 1), Q_MAX)
-                else:        # the water's side: its foot on the ground, its top at the water or flat on the ground
-                    nz = new if z == foot[(x, y)] else max(z, new)
+                elif z == foot[(x, y)]:   # the water's side: its foot on the ground,
+                    nz = new if moved is not None else z
+                else:                     # its top at the water, or flat on the ground standing above it
+                    nz = max(level if level is not None else z, new)
                 if nz != z:
                     struct.pack_into("<H", data, voff + 8 * j + 4, nz)
                     touched.add(j)
@@ -843,13 +858,19 @@ class Tms:
 
     def set_water(self, k: int, levels: dict[int, int]) -> int:
         """Give vertices of cell `k` new quantized water levels ({vertex index: w, 0..32767}), then rebuild the
-        cell's water triangles, its water flag and all its patch bounds. Returns how many levels changed."""
+        cell's water triangles, its water flag and all its patch bounds. Returns how many levels changed. A new level
+        on the map's outer edge moves the skirt's water side there too (written by to_bytes)."""
         c = self.cells[k]
         pos = [list(p) for p in c.positions()]
         changed = 0
         for i, q in sorted(levels.items()):
             q = min(max(int(q), 0), Q_MAX)
             if pos[i][3] != q:
+                x, y, _z, w = pos[i]
+                if x in (0, Q_MAX) or y in (0, Q_MAX):
+                    if self._edge_water_old is None:
+                        self._edge_water_old = {}
+                    self._edge_water_old.setdefault((k, i), (x, y, w))
                 pos[i][3] = q
                 changed += 1
         if changed:

@@ -361,9 +361,10 @@ start_dots = true              # the build draws the start dots on the 3D map (n
   pictures* in Blender, then **Bring back** (the big picture framed like the game's own, start dots on). The scene is
   kept outside the mod and opens as it was left (**New scene** starts again). `rusemod.menuscene` writes it,
   `rusemod.blender_menu` builds it in Blender.
-- **Not seen in the game yet (2026-10-05):** Blank Ocean's and Blank Terrain's own pictures, their start dots drawn
-  by the build, are built into test copies and waiting for a look in the game. A shipped map's pictures, and pictures
-  made in Blender, are built but not tried in the game.
+- **Seen in the game (2026-10-05):** Blank Ocean's and Blank Terrain's own pictures with the start dots the build
+  drew, and a copy of D-Day with pictures made in Blender (**Make in Blender…**, **Bring back**) beside D-Day's own,
+  on the Choose map screen: the big picture is the card in the middle, the 3D map the slab under the map's name. A
+  shipped map's own pictures replaced (no `copy_of`) are built but not tried in the game yet.
 
 ### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`)
 
@@ -476,7 +477,10 @@ and `cover` strokes over the same circles here; its Undo takes back both.
   ground's middle height) is a thin layer units go under, like a navy map's painted sea: the movement takes its
   place for dry ground, so it closes nothing, and the old water under it (a river, the sea) is opened as a drained
   bed is. It is drawn as any water is; not seen in the game yet. What is written follows the rules every shipped
-  map keeps (`rusemod.water`). A height brush near water also keeps the water triangles and textures in step.
+  map keeps (`rusemod.water`). A height brush near water also keeps the water triangles and textures in step. A
+  water stroke sets the water at the map's outer edge too, and the water's side hanging from the edge follows it:
+  left at the old rivers' levels, the edge stood as walls of water round Blank Ocean's sea (seen in the game,
+  2026-10-05; the fix is built, not yet seen in the game).
 
 - **All four files together.** A map's ground is held four times over: the close-up and far ground
   the game draws, the ground units walk on, and the camera floor. Every stroke moves the points of all four inside its
