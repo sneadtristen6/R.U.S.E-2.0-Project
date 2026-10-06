@@ -328,7 +328,10 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
   the game yet. Flattening the mountains at a map's edge left a wall along it (the outermost row of points kept its
   height); the edge now moves with the ground and the curtain hanging from it follows (built, not yet seen in the
   game).
-- **Start blank:** Duplicate map's *Start from* Blank Terrain or Blank Ocean (a Battles map's copy; `rusemod.presets`)
+- **Start blank:** **New map: start from scratch…** (Maps tab, before a map is open, and on the open map's panel) or
+  Duplicate map's *Start from* Blank Terrain or Blank Ocean (a Battles map's copy; `rusemod.presets`). The window
+  says why a new map sits on a game map (the game can't load one made from nothing) and asks which one it's *Built
+  on*: that map gives it its size, its player count and its starting points, nothing else. It
   writes the copy's files from the shipped map's own: the whole map flat (land, or the sea over it), everything on it
   erased, its roads and bridges taken out, only the starting points kept, the sectors over the whole map, and its own
   menu pictures with `start_dots` (below). Seen in the game (both, 2026-10-05).

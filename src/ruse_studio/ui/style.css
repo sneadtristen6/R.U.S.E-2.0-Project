@@ -269,6 +269,10 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .map-canvas canvas { display: block; }
 .map-pick { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 24px;
             text-align: center; pointer-events: none; }
+/* New map from scratch (maps.js openDuplicate(true)): under the "pick a map" line, before any map is open */
+.map-scratch { position: absolute; left: 50%; top: 60%; transform: translateX(-50%); display: grid; gap: 6px;
+               justify-items: center; max-width: 440px; text-align: center; }
+.map-scratch p { margin: 0; }
 .map-hud { position: absolute; left: 14px; top: 12px; display: flex; flex-direction: column; gap: 6px;
            max-width: 420px; padding: 10px 14px; background: rgba(21, 24, 27, 0.78); border: 1px solid var(--line);
            border-radius: var(--radius); }
@@ -459,6 +463,7 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .dup-kind .kind-what { font-size: 12px; line-height: 1.4; color: var(--muted); }
 .dup-kind[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .dup-kind:disabled { opacity: 0.45; cursor: default; }
+.dup-base { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 0; }
 @media (max-width: 640px) { .dup-kinds { grid-template-columns: 1fr; } }
 
 /* Menu pictures (maps.js openMenuPictures): each of the map's two pictures as the menus will show it, at half size,

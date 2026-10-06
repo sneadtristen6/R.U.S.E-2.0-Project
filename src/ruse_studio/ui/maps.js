@@ -3135,6 +3135,7 @@ async function show(pack, keepCamera) {
   renderList();
   $("map-pick").textContent = w.map_loading;
   $("map-pick").classList.remove("hidden");
+  $("map-scratch").classList.add("hidden");  // a map is open: the panel's own "start from scratch" takes over
   try {
     await scene3d();
   } catch (err) {
@@ -4821,6 +4822,8 @@ function renderKindPick() {
 
 function renderList() {
   renderKindPick();
+  // "New map: start from scratch…" shows once the game's maps are known and no map is open (its words: renderWords)
+  $("map-scratch").classList.toggle("hidden", Boolean(mv.current) || !shippedMaps().length);
   const shown = mv.kind && mv.kind !== "all" ? mv.maps.filter((m) => (m.kinds || []).includes(mv.kind)) : mv.maps;
   $("map-list").replaceChildren(...shown.map((m) => {
     const names = menuNames(m);
@@ -5007,7 +5010,28 @@ const DUP_KINDS = ["battles", "operation", "campaign"];
 // 2026-10-05: "a preset, like want to start a Navy map ... D-Day, but ocean" and "a flat basic terrain version";
 // "Blank Terrain, Blank Ocean". Blank ones start from a Battles map only (a mission's script needs its own items).
 const DUP_STARTS = ["copy", "blank_terrain", "blank_ocean"];
-const dup = { entries: [], kind: null, typed: false, start: "copy" };
+// scratch: opened from "New map: start from scratch…" before any map is open (2026-10-06, the owner: a blank map had
+// to be found under Duplicate map, "it needs to explicitly say that"); base: the game map it then sits on
+const dup = { entries: [], kind: null, typed: false, start: "copy", scratch: false, base: null };
+
+function dupPack() {  // the map the new one is made from: the open one, or from scratch the chosen game map
+  return dup.scratch ? dup.base : mv.current;
+}
+
+function shippedMaps() {  // the game's own maps (a new map can't sit on another new map)
+  return (mv.maps || []).filter((m) => !m.copy_of);
+}
+
+function mapTitle(m) {  // what the menus call a map in the Studio's language, else its map-list name
+  const t = m.titles || {};
+  const names = (mv.lang !== "base" && (t[mv.lang] || t.us)) || m.names || [];
+  return names[0] || m.pack;
+}
+
+function defaultBase() {  // D-Day when the game has it (the blank presets were tested on it), else the first map
+  const maps = shippedMaps();
+  return ((maps.find((m) => /cotentin/i.test(m.pack)) || maps[0] || {}).pack) || null;
+}
 
 function entryTitle(e) {  // what the menus call an entry in the Studio's language, else its map-list name
   const t = e.titles || {};
@@ -5017,6 +5041,8 @@ function entryTitle(e) {  // what the menus call an entry in the Studio's langua
 function renderDupKinds() {
   const w = mv.words;
   $("dup-kind").textContent = w.dup_kind;
+  $("dup-kind").classList.toggle("hidden", dup.scratch);  // from scratch it's a Battles map: nothing to choose
+  $("dup-kinds").classList.toggle("hidden", dup.scratch);
   $("dup-kinds").replaceChildren(...DUP_KINDS.map((k) => {
     const has = dup.entries.some((e) => e.kind === k);
     const b = el("button", { type: "button", className: "dup-kind", disabled: !has },
@@ -5036,9 +5062,10 @@ function renderDupKinds() {
 }
 
 function renderDupStarts() {
-  const w = mv.words, map = mapName(mv.current), battles = dup.kind === "battles";
+  const w = mv.words, map = mapName(dupPack()), battles = dup.kind === "battles";
+  const starts = dup.scratch ? DUP_STARTS.filter((k) => k !== "copy") : DUP_STARTS;  // from scratch: blank only
   $("dup-start").textContent = w.dup_start;
-  $("dup-starts").replaceChildren(...DUP_STARTS.map((k) => {
+  $("dup-starts").replaceChildren(...starts.map((k) => {
     const b = el("button", { type: "button", className: "dup-kind", disabled: k !== "copy" && !battles },
       el("span", { className: "kind-name", textContent: w[`dup_start_${k}`] }),
       el("span", { className: "kind-what", textContent: fill(w[`dup_start_${k}_what`], { map }) }));
@@ -5050,6 +5077,39 @@ function renderDupStarts() {
   $("dup-start-note").textContent = w.dup_start_battles_only;
   $("dup-start-note").classList.toggle("hidden", battles || !dup.entries.length);
   $("dup-how-edits").classList.toggle("hidden", dup.start !== "copy");  // a blank start takes none of them along
+}
+
+function renderDupBase() {  // from scratch: the game map the new one sits on (its size, players, starting points)
+  const w = mv.words;
+  $("dup-base-label").textContent = w.dup_base;
+  $("dup-base-what").textContent = w.dup_base_what;
+  $("dup-base").replaceChildren(...shippedMaps().map((m) => el("option", { value: m.pack, textContent: mapTitle(m),
+                                                                            title: m.pack })));
+  $("dup-base").value = dup.base || "";
+  $("dup-base-row").classList.toggle("hidden", !dup.scratch);
+}
+
+async function loadDupOptions() {  // what the chosen map offers: its menu entries, where the copy goes, or why not
+  const w = mv.words, pack = dupPack();
+  $("dup-go").disabled = true;
+  $("dup-note").textContent = "";
+  let opts;
+  try {
+    opts = await mv.api.duplicate_options(pack);
+  } catch (err) {
+    $("dup-note").textContent = (err && err.message) || String(err);
+    return;
+  }
+  $("dup-how-where").textContent = opts.folder ? fill(w.dup_how_where, { folder: opts.folder }) : w.dup_how_new;
+  if (opts.why) { $("dup-note").textContent = opts.why; return; }
+  dup.entries = opts.entries || [];
+  const battles = dup.entries.some((e) => e.kind === "battles");
+  dup.kind = dup.scratch ? (battles ? "battles" : null) : (DUP_KINDS.find((k) => dup.entries.some((e) => e.kind === k)) || null);
+  renderDupKinds();
+  renderDupStarts();
+  fillDupEntries();
+  if (dup.scratch && !battles) { $("dup-note").textContent = w.dup_start_battles_only; return; }  // pick another base
+  $("dup-go").disabled = false;
 }
 
 function fillDupEntries() {
@@ -5067,18 +5127,22 @@ function dupSuggestName() {  // "<what the copied entry is called> 2" (or "... B
   dupNameChanged();
 }
 
-async function openDuplicate() {
-  const w = mv.words, pack = mv.current;
+async function openDuplicate(scratch = false) {
+  const w = mv.words;
+  dup.scratch = Boolean(scratch);
+  dup.base = dup.scratch ? defaultBase() : null;
+  const pack = dupPack();
   if (!pack) return;
   const map = mapName(pack);
   dup.entries = [];
-  dup.kind = null;
+  dup.kind = dup.scratch ? "battles" : null;
   dup.typed = false;
-  dup.start = "copy";
+  dup.start = dup.scratch ? "blank_terrain" : "copy";
   renderDupKinds();
   renderDupStarts();
-  $("dup-title").textContent = w.duplicate_map;
-  $("dup-lead").textContent = fill(w.dup_lead, { map });
+  renderDupBase();
+  $("dup-title").textContent = dup.scratch ? w.dup_scratch_title : w.duplicate_map;
+  $("dup-lead").textContent = dup.scratch ? w.dup_scratch_lead : fill(w.dup_lead, { map });
   $("dup-how").textContent = w.dup_how;
   $("dup-how-own").textContent = w.dup_how_own;
   $("dup-how-edits").textContent = fill(w.dup_how_edits, { map });
@@ -5086,7 +5150,7 @@ async function openDuplicate() {
   $("dup-how-tested").textContent = w.dup_how_tested;
   $("dup-name-label").textContent = w.dup_name;
   $("dup-entry-label").textContent = w.dup_entry;
-  $("dup-go").textContent = w.dup_go;
+  $("dup-go").textContent = dup.scratch ? w.dup_scratch_go : w.dup_go;
   $("dup-cancel").textContent = w.cancel;
   $("dup-note").textContent = "";
   $("dup-name").value = "";
@@ -5095,23 +5159,15 @@ async function openDuplicate() {
   $("dup-entry-row").classList.add("hidden");
   $("dup-go").disabled = true;
   $("duplicate").showModal();
-  let opts;
-  try {
-    opts = await mv.api.duplicate_options(pack);
-  } catch (err) {
-    $("dup-note").textContent = (err && err.message) || String(err);
-    return;
-  }
-  $("dup-how-where").textContent = opts.folder ? fill(w.dup_how_where, { folder: opts.folder }) : w.dup_how_new;
-  if (opts.why) { $("dup-note").textContent = opts.why; return; }
-  dup.entries = opts.entries || [];
-  dup.kind = DUP_KINDS.find((k) => dup.entries.some((e) => e.kind === k)) || null;
-  renderDupKinds();
-  renderDupStarts();
-  fillDupEntries();
-  $("dup-go").disabled = false;
+  await loadDupOptions();
   $("dup-name").focus();
   $("dup-name").select();
+}
+
+function dupBaseChanged() {  // another game map to sit on: its entries, its suggested name
+  dup.base = $("dup-base").value || null;
+  dup.typed = false;
+  loadDupOptions();
 }
 
 function dupNameChanged() {
@@ -5123,7 +5179,7 @@ function dupNameChanged() {
 
 async function duplicate(e) {
   e.preventDefault();
-  const w = mv.words, pack = mv.current, name = $("dup-name").value.trim();
+  const w = mv.words, pack = dupPack(), name = $("dup-name").value.trim();
   if (!name || !pack) return;
   const entry = $("dup-entry").value || null;  // the server leaves the map's one BATTLES map out of map.toml
   $("dup-go").disabled = true;
@@ -5134,7 +5190,9 @@ async function duplicate(e) {
     mv.maps = res.maps;
     $("duplicate").close();
     // the map project may be new: the header's menu shows it (app.js), and the status line says what was made
-    window.dispatchEvent(new CustomEvent("map-duplicated", { detail: { text: fill(w.dup_done, { name, map }) } }));
+    const done = dup.start === "copy" ? fill(w.dup_done, { name, map })  // a blank start isn't "a copy of"
+      : fill(w.dup_done_blank, { name, map, start: w[`dup_start_${dup.start}`] });
+    window.dispatchEvent(new CustomEvent("map-duplicated", { detail: { text: done } }));
     await show(res.pack);
   } catch (err) {
     $("dup-note").textContent = (err && err.message) || String(err);
@@ -5180,6 +5238,12 @@ function renderWords() {
   $("brush-clear-no").textContent = w.cancel;
   $("brush-clear-no").title = w.tip_cancel;
   if (!mv.current) $("map-pick").textContent = w.pick_map;
+  $("map-new-scratch").textContent = w.new_map_scratch;
+  $("map-new-scratch").title = w.tip_new_map_scratch;
+  $("map-scratch-what").textContent = w.scratch_what;
+  $("map-scratch").classList.toggle("hidden", Boolean(mv.current) || !shippedMaps().length);
+  $("map-scratch-hud").textContent = w.new_map_scratch;
+  $("map-scratch-hud").title = w.tip_new_map_scratch;
   $("map-duplicate").textContent = w.duplicate_map;
   $("map-duplicate").title = w.tip_duplicate_map;
   renderDelete();
@@ -5723,7 +5787,10 @@ function wire() {
   $("bridge-turn").addEventListener("input", (e) => { bridge.turn = Number(e.target.value); renderBridgeTray(); drawBridges(); });
   $("check-run").addEventListener("click", () => runCheck());
   $("maps-fold").addEventListener("click", () => { foldMaps(!mv.folded); saveView(); });
-  $("map-duplicate").addEventListener("click", openDuplicate);
+  $("map-duplicate").addEventListener("click", () => openDuplicate(false));
+  $("map-new-scratch").addEventListener("click", () => openDuplicate(true));
+  $("map-scratch-hud").addEventListener("click", () => openDuplicate(true));
+  $("dup-base").addEventListener("change", dupBaseChanged);
   $("map-picture").addEventListener("click", openMenuPictures);
   wireMenuPictures();
   $("map-delete").addEventListener("click", () => { mv.deleteAsk = mv.current; renderDelete(); $("map-delete-yes").focus(); });

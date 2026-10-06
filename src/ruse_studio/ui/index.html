@@ -101,11 +101,20 @@
       <!-- how long the road being drawn is, beside the pointer (maps.js showRoadLength) -->
       <div id="road-length" class="road-length hidden"></div>
       <p id="map-pick" class="map-pick muted"></p>
+      <!-- a new map from scratch, before any map is open (maps.js openDuplicate(true)): Blank Terrain or Blank Ocean on
+           a game map's size and starting points. The owner, 2026-10-06: a blank map had to be found under Duplicate
+           map; "it needs to explicitly say that ... a toddler should be able to use this" -->
+      <div id="map-scratch" class="map-scratch hidden">
+        <button id="map-new-scratch" type="button" class="primary"></button>
+        <p id="map-scratch-what" class="muted small"></p>
+      </div>
       <div id="map-hud" class="map-hud hidden">
         <div id="map-title" class="map-title"></div>
         <div id="map-stats" class="muted small"></div>
         <!-- a new map from this one (maps.js openDuplicate) -->
         <button id="map-duplicate" type="button" class="chip map-duplicate"></button>
+        <!-- the same from-scratch start with a map open (maps.js openDuplicate(true)) -->
+        <button id="map-scratch-hud" type="button" class="chip map-duplicate"></button>
         <!-- the map's own pictures in the game's menus (maps.js openMenuPictures, StudioApi.menu_pictures): any map,
              with a map project to keep them in -->
         <button id="map-picture" type="button" class="chip map-duplicate hidden"></button>
@@ -448,6 +457,9 @@
     <h3 id="dup-start" class="dup-how-title"></h3>
     <div id="dup-starts" class="dup-kinds" role="radiogroup"></div>
     <p id="dup-start-note" class="muted small hidden"></p>
+    <!-- from scratch: the game map it sits on, for its size, player count and starting points (maps.js renderDupBase) -->
+    <label id="dup-base-row" class="dup-base hidden"><span id="dup-base-label"></span> <select id="dup-base"></select>
+      <span id="dup-base-what" class="muted small"></span></label>
     <h3 id="dup-how" class="dup-how-title"></h3>
     <ul class="dup-how small"><li id="dup-how-own"></li><li id="dup-how-edits"></li><li id="dup-how-where"></li>
       <li id="dup-how-tested"></li></ul>

@@ -8279,16 +8279,16 @@ jpn = "マップを複製"
 sc = "复制地图"
 
 [tip_duplicate_map]
-us = "Make a new map from this one: a full copy with a name of its own, as a Battles map, an Operation or a campaign chapter. You then change the copy like any map."
-fr = "Créer une nouvelle carte à partir de celle-ci : une copie complète avec son propre nom, en carte de Batailles, en Opération ou en chapitre de campagne. Vous modifiez ensuite la copie comme n'importe quelle carte."
-ger = "Aus dieser Karte eine neue machen: eine vollständige Kopie mit eigenem Namen, als Schlachten-Karte, Operation oder Kampagnenkapitel. Danach ändern Sie die Kopie wie jede Karte."
-ita = "Crea una nuova mappa da questa: una copia completa con un nome tutto suo, come mappa di Battaglie, Operazione o capitolo della campagna. Poi modifichi la copia come qualsiasi mappa."
-spa = "Crear un mapa nuevo a partir de este: una copia completa con nombre propio, como mapa de Batallas, Operación o capítulo de campaña. Luego cambias la copia como cualquier mapa."
-pol = "Utwórz nową mapę z tej: pełną kopię z własną nazwą, jako mapę Bitew, Operację lub rozdział kampanii. Potem zmieniasz kopię jak każdą mapę."
-ru = "Сделать новую карту из этой: полную копию со своим названием — карту для Битв, Операцию или главу кампании. Затем копию можно менять, как любую карту."
-cz = "Vytvořit z této mapy novou: úplnou kopii s vlastním názvem, jako mapu Bitev, Operaci nebo kapitolu kampaně. Kopii pak měníte jako každou mapu."
-jpn = "このマップから新しいマップを作ります。独自の名前を持つ完全なコピーを、BATTLESのマップ、オペレーション、キャンペーンの章として作れます。あとは普通のマップと同じようにコピーを変更できます。"
-sc = "用这张地图做一张新地图：一份有自己名字的完整副本，可作为“战役”地图、行动或战役章节。之后可以像任何地图一样修改副本。"
+us = "Make a new map from this one: a full copy with a name of its own, as a Battles map, an Operation or a campaign chapter. You then change the copy like any map. Or start it blank: Blank Terrain or Blank Ocean."
+fr = "Créer une nouvelle carte à partir de celle-ci : une copie complète avec son propre nom, en carte de Batailles, en Opération ou en chapitre de campagne. Vous modifiez ensuite la copie comme n'importe quelle carte. Ou partez d'une carte vierge : Terrain vierge ou Océan vierge."
+ger = "Aus dieser Karte eine neue machen: eine vollständige Kopie mit eigenem Namen, als Schlachten-Karte, Operation oder Kampagnenkapitel. Danach ändern Sie die Kopie wie jede Karte. Oder leer anfangen: Leeres Gelände oder Leerer Ozean."
+ita = "Crea una nuova mappa da questa: una copia completa con un nome tutto suo, come mappa di Battaglie, Operazione o capitolo della campagna. Poi modifichi la copia come qualsiasi mappa. Oppure parti da vuoto: Terreno vuoto o Oceano vuoto."
+spa = "Crear un mapa nuevo a partir de este: una copia completa con nombre propio, como mapa de Batallas, Operación o capítulo de campaña. Luego cambias la copia como cualquier mapa. O empieza en blanco: Terreno en blanco u Océano en blanco."
+pol = "Utwórz nową mapę z tej: pełną kopię z własną nazwą, jako mapę Bitew, Operację lub rozdział kampanii. Potem zmieniasz kopię jak każdą mapę. Albo zacznij od pustej: Pusty teren lub Pusty ocean."
+ru = "Сделать новую карту из этой: полную копию со своим названием — карту для Битв, Операцию или главу кампании. Затем копию можно менять, как любую карту. Или начните с пустой: «Пустая земля» или «Пустой океан»."
+cz = "Vytvořit z této mapy novou: úplnou kopii s vlastním názvem, jako mapu Bitev, Operaci nebo kapitolu kampaně. Kopii pak měníte jako každou mapu. Nebo začněte prázdnou: Prázdný terén nebo Prázdný oceán."
+jpn = "このマップから新しいマップを作ります。独自の名前を持つ完全なコピーを、BATTLESのマップ、オペレーション、キャンペーンの章として作れます。あとは普通のマップと同じようにコピーを変更できます。空白から始めることもできます（「空白の地形」「空白の海」）。"
+sc = "用这张地图做一张新地图：一份有自己名字的完整副本，可作为“战役”地图、行动或战役章节。之后可以像任何地图一样修改副本。也可以从空白开始：“空白地形”或“空白海洋”。"
 
 # --- Delete map (maps.js renderDelete, StudioApi.delete_map): a new map's folder to the Recycle Bin ---
 [delete_map]
@@ -8591,6 +8591,18 @@ cz = "{name}: nová mapa, kopie {map}. Měňte ji jako každou mapu; Test ve hř
 jpn = "{name}: {map}のコピーである新しいマップです。普通のマップと同じように変更でき、「ゲームでテスト」でプレイできます。"
 sc = "{name}：一张新地图，{map}的副本。像任何地图一样修改它；“在游戏中测试”会运行它。"
 
+[dup_done_blank]
+us = "{name}: a new map, {start} built on {map}. Change it like any map; Test in game plays it."
+fr = "{name} : une nouvelle carte, {start} sur la base de {map}. Modifiez-la comme n'importe quelle carte ; Tester en jeu la lance."
+ger = "{name}: eine neue Karte, {start} auf der Grundlage von {map}. Ändern Sie sie wie jede Karte; Im Spiel testen spielt sie."
+ita = "{name}: una nuova mappa, {start} sulla base di {map}. Modificala come qualsiasi mappa; Prova in gioco la avvia."
+spa = "{name}: un mapa nuevo, {start} sobre la base de {map}. Cámbialo como cualquier mapa; Probar en el juego lo abre."
+pol = "{name}: nowa mapa, {start} na bazie {map}. Zmieniaj ją jak każdą mapę; Test w grze ją uruchamia."
+ru = "{name}: новая карта — {start} на основе «{map}». Меняйте её, как любую карту; «Проверить в игре» запускает её."
+cz = "{name}: nová mapa, {start} na základě {map}. Měňte ji jako každou mapu; Test ve hře ji spustí."
+jpn = "{name}: {map}を土台にした新しいマップ（{start}）です。普通のマップと同じように変更でき、「ゲームでテスト」でプレイできます。"
+sc = "{name}：一张新地图，以{map}为基础的{start}。像任何地图一样修改它；“在游戏中测试”会运行它。"
+
 [dup_start]
 us = "Start from"
 fr = "Partir de"
@@ -8686,6 +8698,104 @@ ru = "«Пустая земля» и «Пустой океан» делаютс�
 cz = "Prázdný terén a Prázdný oceán vycházejí z mapy Bitev."
 jpn = "「空白の地形」と「空白の海」はバトルのマップから作ります。"
 sc = "“空白地形”和“空白海洋”从战役地图开始。"
+
+# --- New map from scratch (2026-10-06, the owner: "a toddler should be able to use this"; a blank map had to be found
+# under Duplicate map): a button before any map is open, and the window says why a new map sits on a game map ---
+[new_map_scratch]
+us = "New map: start from scratch…"
+fr = "Nouvelle carte : partir de zéro…"
+ger = "Neue Karte: von Grund auf…"
+ita = "Nuova mappa: partire da zero…"
+spa = "Mapa nuevo: empezar desde cero…"
+pol = "Nowa mapa: od zera…"
+ru = "Новая карта: с нуля…"
+cz = "Nová mapa: od nuly…"
+jpn = "新しいマップ：ゼロから作る…"
+sc = "新地图：从零开始…"
+
+[tip_new_map_scratch]
+us = "Make a new map that starts blank: flat land or open sea, with only the starting points. You pick which game map it's built on."
+fr = "Créer une nouvelle carte vierge : un sol plat ou la pleine mer, avec seulement les points de départ. Vous choisissez la carte du jeu sur laquelle elle repose."
+ger = "Eine neue Karte, die leer beginnt: flaches Land oder offenes Meer, nur mit den Startpunkten. Sie wählen, auf welcher Karte des Spiels sie aufbaut."
+ita = "Crea una nuova mappa che parte vuota: terreno piatto o mare aperto, con i soli punti di partenza. Scegli tu su quale mappa del gioco poggia."
+spa = "Crear un mapa nuevo que empieza en blanco: tierra plana o mar abierto, solo con los puntos de inicio. Tú eliges en qué mapa del juego se apoya."
+pol = "Utwórz nową mapę, która zaczyna się pusta: płaski teren albo otwarte morze, tylko z punktami startowymi. Wybierasz, na której mapie gry się opiera."
+ru = "Создать новую карту, которая начинается пустой: ровная земля или открытое море, только с точками старта. Вы выбираете, на какой карте игры она основана."
+cz = "Vytvořit novou mapu, která začíná prázdná: rovný terén nebo otevřené moře, jen se startovními body. Vy vyberete, na které mapě hry stojí."
+jpn = "空白から始まる新しいマップを作ります。平らな土地または海だけで、開始地点しかありません。土台にするゲームのマップは自分で選びます。"
+sc = "创建一张从空白开始的新地图：平地或开阔海面，只有出生点。由你选择它基于游戏中的哪张地图。"
+
+[scratch_what]
+us = "Blank Terrain or Blank Ocean, with nothing on it but the starting points."
+fr = "Terrain vierge ou Océan vierge, avec rien d'autre que les points de départ."
+ger = "Leeres Gelände oder Leerer Ozean, mit nichts darauf außer den Startpunkten."
+ita = "Terreno vuoto o Oceano vuoto, con nient'altro che i punti di partenza."
+spa = "Terreno en blanco u Océano en blanco, sin nada más que los puntos de inicio."
+pol = "Pusty teren albo Pusty ocean, bez niczego poza punktami startowymi."
+ru = "«Пустая земля» или «Пустой океан», где нет ничего, кроме точек старта."
+cz = "Prázdný terén nebo Prázdný oceán, na kterém není nic než startovní body."
+jpn = "「空白の地形」または「空白の海」。開始地点以外には何もありません。"
+sc = "“空白地形”或“空白海洋”，除了出生点什么都没有。"
+
+[dup_scratch_title]
+us = "New map from scratch"
+fr = "Nouvelle carte à partir de zéro"
+ger = "Neue Karte von Grund auf"
+ita = "Nuova mappa da zero"
+spa = "Mapa nuevo desde cero"
+pol = "Nowa mapa od zera"
+ru = "Новая карта с нуля"
+cz = "Nová mapa od nuly"
+jpn = "ゼロから作る新しいマップ"
+sc = "从零开始的新地图"
+
+[dup_scratch_lead]
+us = "Want to start from scratch? Pick Blank Terrain or Blank Ocean below. Every new map sits on one of the game's maps, because the game can't load a map made from nothing: that map gives yours its size, its player count and its starting points, and nothing else. Pick which one under Built on."
+fr = "Envie de partir de zéro ? Choisissez Terrain vierge ou Océan vierge ci-dessous. Toute nouvelle carte repose sur une carte du jeu, car le jeu ne peut pas charger une carte faite de rien : cette carte donne à la vôtre sa taille, son nombre de joueurs et ses points de départ, et rien d'autre. Choisissez laquelle sous Repose sur."
+ger = "Von Grund auf anfangen? Wählen Sie unten Leeres Gelände oder Leerer Ozean. Jede neue Karte baut auf einer Karte des Spiels auf, denn das Spiel kann keine Karte aus dem Nichts laden: diese Karte gibt Ihrer die Größe, die Spielerzahl und die Startpunkte, sonst nichts. Welche, wählen Sie unter Aufgebaut auf."
+ita = "Vuoi partire da zero? Scegli Terreno vuoto o Oceano vuoto qui sotto. Ogni nuova mappa poggia su una mappa del gioco, perché il gioco non può caricare una mappa fatta dal nulla: quella mappa dà alla tua le dimensioni, il numero di giocatori e i punti di partenza, e nient'altro. Scegli quale sotto Poggia su."
+spa = "¿Quieres empezar desde cero? Elige Terreno en blanco u Océano en blanco abajo. Todo mapa nuevo se apoya en un mapa del juego, porque el juego no puede cargar un mapa hecho de la nada: ese mapa le da al tuyo su tamaño, su número de jugadores y sus puntos de inicio, y nada más. Elige cuál en Se apoya en."
+pol = "Chcesz zacząć od zera? Wybierz poniżej Pusty teren albo Pusty ocean. Każda nowa mapa opiera się na jednej z map gry, bo gra nie wczyta mapy zrobionej z niczego: ta mapa daje twojej rozmiar, liczbę graczy i punkty startowe, nic więcej. Którą, wybierasz pod Oparta na."
+ru = "Хотите начать с нуля? Выберите ниже «Пустую землю» или «Пустой океан». Любая новая карта основана на одной из карт игры, потому что игра не может загрузить карту, сделанную из ничего: та карта даёт вашей размер, число игроков и точки старта — и больше ничего. Какую — выберите в поле «Основана на»."
+cz = "Chcete začít od nuly? Vyberte níže Prázdný terén nebo Prázdný oceán. Každá nová mapa stojí na některé mapě hry, protože hra nenačte mapu udělanou z ničeho: ta mapa dá vaší velikost, počet hráčů a startovní body, nic víc. Kterou, vyberete pod Stojí na."
+jpn = "ゼロから作りますか？下の「空白の地形」か「空白の海」を選んでください。新しいマップは必ずゲームのいずれかのマップの上に作られます。ゲームは何もないところからマップを読み込めないためです。そのマップから引き継ぐのは大きさ、プレイヤー数、開始地点だけです。どのマップにするかは「土台のマップ」で選びます。"
+sc = "想从零开始？在下面选择“空白地形”或“空白海洋”。每张新地图都建立在游戏的某张地图之上，因为游戏无法加载凭空做出的地图：那张地图只为你的地图提供大小、玩家数量和出生点，别无其他。在“基于地图”中选择用哪一张。"
+
+[dup_base]
+us = "Built on"
+fr = "Repose sur"
+ger = "Aufgebaut auf"
+ita = "Poggia su"
+spa = "Se apoya en"
+pol = "Oparta na"
+ru = "Основана на"
+cz = "Stojí na"
+jpn = "土台のマップ"
+sc = "基于地图"
+
+[dup_base_what]
+us = "Only its size, its player count and its starting points are kept."
+fr = "Seuls sa taille, son nombre de joueurs et ses points de départ sont gardés."
+ger = "Nur ihre Größe, ihre Spielerzahl und ihre Startpunkte bleiben."
+ita = "Restano solo le sue dimensioni, il numero di giocatori e i punti di partenza."
+spa = "Solo se conservan su tamaño, su número de jugadores y sus puntos de inicio."
+pol = "Zostają tylko jej rozmiar, liczba graczy i punkty startowe."
+ru = "Остаются только её размер, число игроков и точки старта."
+cz = "Zůstane jen její velikost, počet hráčů a startovní body."
+jpn = "引き継ぐのは大きさ、プレイヤー数、開始地点だけです。"
+sc = "只保留它的大小、玩家数量和出生点。"
+
+[dup_scratch_go]
+us = "Make the map"
+fr = "Créer la carte"
+ger = "Karte erstellen"
+ita = "Crea la mappa"
+spa = "Crear el mapa"
+pol = "Utwórz mapę"
+ru = "Создать карту"
+cz = "Vytvořit mapu"
+jpn = "マップを作る"
+sc = "创建地图"
 
 [map_picture]
 us = "Menu pictures…"

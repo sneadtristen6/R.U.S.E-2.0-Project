@@ -1388,6 +1388,28 @@ class MapDocks(WithMod):
         self.assertEqual({k: words[k]["us"] for k in mapcheck.WORDS}, mapcheck.WORDS)  # the findings' own words
         self.assertEqual(words["bridges_none"]["us"].replace("{n}", "2"), no_kind_note(2))  # the build's own note
 
+    def test_a_new_map_from_scratch_is_offered_in_plain_words(self):
+        # the owner, 2026-10-06, after finding Blank Terrain only under Duplicate map: "it needs to explicitly say
+        # that ... wanna start from scratch? Click here ... a toddler should be able to use this". A button before any
+        # map is open and on the open map's panel, a window that says why a new map sits on a game map, in every language
+        from pathlib import Path
+        import ruse_studio
+        words = _words()
+        for key in ("new_map_scratch", "tip_new_map_scratch", "scratch_what", "dup_scratch_title", "dup_scratch_lead",
+                    "dup_base", "dup_base_what", "dup_scratch_go", "dup_done_blank"):
+            self.assertEqual([lang for lang in schema.LANGS if not words[key].get(lang)], [], key)
+        self.assertIn("start from scratch", words["new_map_scratch"]["us"])
+        self.assertIn("can't load a map made from nothing", words["dup_scratch_lead"]["us"])
+        self.assertIn("Blank", words["tip_duplicate_map"]["us"])  # Duplicate map's tip names the blank starts too
+        ui = Path(ruse_studio.__file__).parent / "ui"
+        html = (ui / "index.html").read_text(encoding="utf-8")
+        for an_id in ("map-new-scratch", "map-scratch-hud", "dup-base", "dup-base-row"):
+            self.assertIn(f'id="{an_id}"', html)
+        js = (ui / "maps.js").read_text(encoding="utf-8")
+        self.assertIn('$("map-new-scratch").addEventListener("click", () => openDuplicate(true))', js)
+        self.assertIn('$("map-scratch-hud").addEventListener("click", () => openDuplicate(true))', js)
+        self.assertIn('DUP_STARTS.filter((k) => k !== "copy")', js)  # from scratch: the blank starts only
+
 
 class Troubleshooter(WithMod):
     """The troubleshooter's two calls (what it checks is rusemod.doctor's: tests/test_doctor.py)."""
