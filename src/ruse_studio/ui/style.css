@@ -175,6 +175,15 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .boxes input[aria-invalid="true"] { border-color: var(--error); outline-color: var(--error); }
 .was { margin-top: 3px; font-size: 12px; color: var(--muted); }
 .was:empty { display: none; }
+/* the AI tab (app.js renderAI): its sets of values to pick, and the ruse cards' table, a value per cell */
+.ai-pick { display: grid; gap: 6px; margin: 10px 0 4px; }
+.ai-pick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ai-pick-row > span { min-width: 6.5em; }
+.ai-pick-row > span:empty { display: none; }
+.group table.ai-cards th { width: 34%; }
+.ai-cards th small.about { font-family: inherit; font-size: 12px; line-height: 1.35; color: var(--muted); }
+.group td.edited .boxes input[type="number"] { border-color: var(--accent); }
+.group tr:has(> td.edited) th { box-shadow: inset 3px 0 0 var(--accent); }
 /* a range: its slider beside the box, and about how far that is in metres (app.js rangeSlider, weaponRange) */
 .range { display: inline-flex; align-items: center; gap: 8px; flex: 1 1 180px; min-width: 0; }
 .range input[type="range"] { flex: 1 1 auto; min-width: 100px; max-width: 260px; accent-color: var(--accent); }

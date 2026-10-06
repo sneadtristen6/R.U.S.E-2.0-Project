@@ -556,6 +556,20 @@ class Index:
         return [{"address": a, "id": None if i is None else int(i), "name_key": k, "type_key": t,
                  "users": sorted(users[oid])} for oid, a, i, k, t in rows]
 
+    def named_by(self, path: str, numbers) -> dict:
+        """{number: address} of the named objects whose `path` holds one of `numbers`: a unit by its DescriptorId, as
+        a list of unit numbers names them (the computer players' bonus, rusemod.ai)."""
+        numbers = [float(n) for n in numbers]
+        if not numbers:
+            return {}
+        marks = ",".join("?" * len(numbers))
+        out = {}
+        for num, address in self.db.execute(f"""SELECT v.num, o.address FROM value v JOIN object o ON o.id = v.object
+                                                WHERE v.path = ? AND v.num IN ({marks}) AND o.shadow = 0
+                                                AND o.export IS NOT NULL ORDER BY o.address""", [path] + numbers):
+            out.setdefault(int(num), address)
+        return out
+
     def prop_types(self, cls: str) -> dict:
         """Property -> the value type objects of `cls` use for it ("int32", "float32", "list"…), the most common one."""
         return dict(self.db.execute("SELECT prop, type FROM prop_seen WHERE class = ? ORDER BY count, type", (cls,)))

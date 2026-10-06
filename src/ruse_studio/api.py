@@ -29,7 +29,7 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from rusemod import doctor, economy, identity, missions, mod_index, package, scenario, scenery, schema, startlog
+from rusemod import ai, doctor, economy, identity, missions, mod_index, package, scenario, scenery, schema, startlog
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -3419,6 +3419,196 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             for target in economy.TARGETS.values():
                 edits.reset(target, prop)
         return {"saved": str(edits.file)}
+
+    # --- the computer players (rusemod.ai; LittleGroove's AI editor brought over): their profiles, the units they're
+    # keener to build, and the ruse cards (every player's) ---
+    @staticmethod
+    def _ai_allowed(what: str, o: dict) -> dict[str, dict]:
+        """prop -> its values (_props) for each value the AI tab changes on one of its objects: a profile's numbers, a
+        ruse card's or a bonus's own values (rusemod.ai.CARD_PROPS, BONUS_PROPS)."""
+        keep = {"card": ai.CARD_PROPS, "bonus": ai.BONUS_PROPS}.get(what)
+        return {prop: p for prop, p in _props(o).items()
+                if _can_edit(prop, p) and (prop in keep if keep else not p["list"])}
+
+    @staticmethod
+    def _ai_find(ix: Index, address: str):
+        """(what it is: "profile", "card" or "bonus"; the object as the index shows it) for an address the AI tab
+        offers, else None."""
+        for p in ai.profiles(ix):
+            if p["address"] == address:
+                return "profile", ix.show(address)
+        for what, cls in (("card", ai.CARD), ("bonus", ai.BONUS)):
+            for o in ix.of_class(cls):
+                if o["address"] == address:
+                    return what, o
+        return None
+
+    def _ai_base(self, ix: Index, edits: ModEdits | None) -> dict:
+        """Default's values as the current mod has them (a value it doesn't list counts as 0, rusemod.ai): a
+        difficulty's or profile's value that is the same doesn't count."""
+        default = next((p["address"] for p in ai.profiles(ix) if p["kind"] == "default"), None)
+        if default is None:
+            return {}
+        out = {}
+        for prop, p in self._ai_allowed("profile", ix.show(default)).items():
+            v = edits.get(default, prop) if edits is not None else None
+            out[prop] = p["numbers"][0] if v is None else v
+        return out
+
+    @staticmethod
+    def _ai_row(prop: str, p: dict, types: dict, lang: str, mine) -> dict:
+        return {"prop": prop, "label": schema.label(prop, lang), "list": p["list"],
+                "type": types.get(prop + "[]" if p["list"] else prop, ""),
+                "game": p["numbers"] if p["list"] else p["numbers"][0], "value": mine}
+
+    def ai(self, lang: str = schema.BASE) -> dict:
+        """What the AI tab shows. `profiles`: Default, the difficulties and the personalities, each with its name and
+        (a personality) its line in the game's lobby, and per group each value's name in `lang`, the game's value and
+        the current mod's change (None: no change); a difficulty's or personality's value also says whether it is
+        Default's (`same_default`: then it doesn't count, rusemod.ai). `bonuses`: what makes the computer players
+        keener to build certain units, each list's numbers also by name. `cards`: the ruse cards that have a name in
+        the game, in its menu's order, each with its line. `words`: the game's own words for its lobby. `ready` is
+        False when the game index has none of them."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+
+        def mine(address, prop):
+            return edits.get(address, prop) if edits is not None else None
+
+        text_lang = "us" if lang == schema.BASE else lang
+        ix = self._open()
+        try:
+            configs = ai.configurations(ix)
+            objects = {c["address"]: ix.show(c["address"]) for c in configs if c["address"]}
+            cards = sorted(ix.of_class(ai.CARD), key=ai.card_key)
+            bonuses = ix.of_class(ai.BONUS)
+            types = {cls: ix.prop_types(cls) for cls in (ai.PROFILE, ai.CARD, ai.BONUS)}
+            card_keys = {o["address"]: {path: t for path, _n, t in o["values"] if path in ("Title", "Description")}
+                         for o in cards}
+            bonus_rows = []
+            for o in bonuses:
+                allowed = self._ai_allowed("bonus", o)
+                bonus_rows.append((o["address"], [self._ai_row(prop, allowed[prop], types[ai.BONUS], lang,
+                                                               mine(o["address"], prop))
+                                                  for prop in ai.BONUS_PROPS if prop in allowed]))
+            now = {(a, r["prop"]): r["game"] if r["value"] is None else r["value"] for a, rows in bonus_rows for r in rows}
+            units = ix.named_by("DescriptorId", {n for (_a, prop), v in now.items() if prop == "UnitIDs" for n in v})
+            unit_names = self._names(ix, list(units.values()), lang)
+            keys = ([c["key"] for c in configs] + list(ai.WORDS.values())
+                    + [ai.HINT.format(c["index"]) for c in configs if c["kind"] == "personality"]
+                    + [k for v in card_keys.values() for k in v.values()])
+            texts = ix.names(keys, text_lang)
+            base = self._ai_base(ix, edits)
+        finally:
+            ix.close()
+
+        profiles = []
+        for c in configs:
+            if not c["address"]:
+                continue
+            allowed = self._ai_allowed("profile", objects[c["address"]])
+            others = tuple(sorted(p for p in allowed if p not in ai.PROFILE_PROPS))
+            groups = []
+            for group, props in ai.PROFILE_GROUPS + (("other", others),):
+                rows = []
+                for prop in props:
+                    if prop not in allowed:
+                        continue
+                    row = self._ai_row(prop, allowed[prop], types[ai.PROFILE], lang, mine(c["address"], prop))
+                    if c["kind"] != "default":
+                        row["same_default"] = (row["game"] if row["value"] is None else row["value"]) == base.get(prop, 0)
+                    rows.append(row)
+                groups.append({"id": group, "rows": rows})
+            profiles.append({"id": c["address"], "kind": c["kind"], "index": c["index"],
+                             "name": texts.get(c["key"]) if c["kind"] != "default" else None,
+                             "hint": texts.get(ai.HINT.format(c["index"])) if c["kind"] == "personality" else None,
+                             "groups": groups})
+
+        named = {kind: {c["index"]: texts.get(c["key"]) for c in configs if c["kind"] == kind}
+                 for kind in ("difficulty", "personality")}
+        nuclear = texts.get(ai.WORDS["nuclear"])
+        out_bonuses = []
+        for address, rows in bonus_rows:
+            for r in rows:
+                v = now[(address, r["prop"])]
+                if r["prop"] == "UnitIDs":
+                    r["names"] = [unit_names.get(units.get(int(n))) or str(n) for n in v]
+                elif r["prop"] == "WarModes":
+                    r["names"] = [nuclear if n == ai.NUCLEAR_MODE and nuclear else str(n) for n in v]
+                elif r["prop"] in ("AIDifficulties", "AIProfiles"):
+                    kind = "difficulty" if r["prop"] == "AIDifficulties" else "personality"
+                    r["names"] = [named[kind].get(int(n)) or str(n) for n in v]
+            out_bonuses.append({"id": address, "rows": rows})
+        out_cards = []
+        for o in cards:
+            name = texts.get(card_keys[o["address"]].get("Title"))
+            if not name:  # one the game's texts don't name: not in its menus
+                continue
+            allowed = self._ai_allowed("card", o)
+            out_cards.append({"id": o["address"], "name": name,
+                              "about": texts.get(card_keys[o["address"]].get("Description")),
+                              "in_menu": "ShowInMenu" in allowed,
+                              "rows": [self._ai_row(prop, allowed[prop], types[ai.CARD], lang, mine(o["address"], prop))
+                                       for prop in ai.CARD_PROPS if prop in allowed]})
+        return {"ready": bool(profiles or out_cards or out_bonuses),
+                "words": {k: texts.get(key) for k, key in ai.WORDS.items()},
+                "profiles": profiles, "bonuses": out_bonuses, "cards": out_cards}
+
+    def ai_edit(self, address: str, prop: str, value) -> dict:
+        """Change one value of a computer players' profile, bonus or ruse card (rusemod.ai) in the current mod. Saved
+        at once; the game's own value again takes the change out. `same_default`, for a difficulty's or profile's
+        value: whether it is now Default's (then it doesn't count)."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        ix = self._open()
+        try:
+            found = self._ai_find(ix, address)
+            if found is None:
+                raise StudioError(f"{address} isn't one of the AI tab's")
+            p = self._ai_allowed(*found).get(prop)
+            if p is None:
+                raise StudioError(f"{prop} of {address} can't be changed here")
+            values = value if isinstance(value, list) else [value]
+            if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in values):
+                raise StudioError(f"{prop}: numbers only")
+            if p["list"] != isinstance(value, list) or len(values) != len(p["numbers"]):
+                raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
+            kind = ix.prop_types(found[1]["class"]).get(prop + "[]" if p["list"] else prop, "")
+            got = [_whole(v, kind, prop) for v in values] if kind in INT_RANGES else list(values)
+            new, game = (got, p["numbers"]) if p["list"] else (got[0], p["numbers"][0])
+            with self._saving:
+                edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
+                if new == game:
+                    edits.reset(address, prop)
+                else:
+                    edits.set(address, prop, new)
+            mixed = any(q["address"] == address and q["kind"] != "default" for q in ai.profiles(ix))
+            same = new == self._ai_base(ix, edits).get(prop, 0) if mixed else None
+        finally:
+            ix.close()
+        return {"saved": str(edits.file), "value": new, "same_default": same}
+
+    def ai_reset(self, address: str, prop: str) -> dict:
+        """Take one change of the AI tab's out of the current mod; `same_default` as ai_edit gives it, for the game's
+        value."""
+        edits = self._edits()
+        if edits is None:
+            return {"saved": None, "same_default": None}
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            edits.reset(address, prop)
+        ix = self._open()
+        try:
+            same = None
+            if any(q["address"] == address and q["kind"] != "default" for q in ai.profiles(ix)):
+                p = self._ai_allowed("profile", ix.show(address)).get(prop)
+                same = p is not None and p["numbers"][0] == self._ai_base(ix, edits).get(prop, 0)
+        finally:
+            ix.close()
+        return {"saved": str(edits.file), "same_default": same}
 
     # --- a unit's look: its models out to Blender, its paint back into the mod (rusemod.unitlook, rusemod.blender) ---
     @staticmethod

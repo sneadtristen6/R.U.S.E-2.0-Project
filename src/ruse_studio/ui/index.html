@@ -19,6 +19,7 @@
     <div class="tabs" role="tablist">
       <button id="tab-units" type="button" role="tab" aria-selected="true"></button>
       <button id="tab-economy" type="button" role="tab" aria-selected="false"></button>
+      <button id="tab-ai" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-maps" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-settings" type="button" role="tab" aria-selected="false"></button>
     </div>
@@ -369,6 +370,31 @@
       <p id="economy-help" class="muted small"></p>
       <div id="economy-groups"></div>
       <p id="economy-buildings" class="muted small"></p>
+    </div>
+  </main>
+  <!-- the AI tab (app.js renderAI, StudioApi.ai, rusemod.ai; LittleGroove's AI editor): how the computer players
+       play (their sets of values), the units they're keener to build, and the ruse cards (every player's) -->
+  <main id="ai-view" class="settings-view hidden">
+    <div class="settings">
+      <h1 id="ai-title"></h1>
+      <p id="ai-help" class="muted small"></p>
+      <section class="setting">
+        <h2 id="ai-how-title"></h2>
+        <p id="ai-mix" class="muted small"></p>
+        <div id="ai-pick" class="ai-pick"></div>
+        <p id="ai-hint" class="muted small"></p>
+        <div id="ai-groups"></div>
+      </section>
+      <section class="setting">
+        <h2 id="ai-bonus-title"></h2>
+        <p id="ai-bonus-help" class="muted small"></p>
+        <div id="ai-bonuses"></div>
+      </section>
+      <section class="setting">
+        <h2 id="ai-cards-title"></h2>
+        <p id="ai-cards-help" class="muted small"></p>
+        <div id="ai-cards"></div>
+      </section>
     </div>
   </main>
 

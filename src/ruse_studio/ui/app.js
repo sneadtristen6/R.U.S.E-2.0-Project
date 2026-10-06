@@ -11,6 +11,7 @@ const state = { lang: "base", kind: "all", nation: -1, search: "", group: "all",
   view: "units",  // the tab: "units" or "maps" (maps.js)
   start: "change",     // the Units tab's way in (renderStart): "change" a unit, or start a "new" one from it
   focusModel: null,    // a new unit just made: its page opens at Import model (lookBox)
+  aiProfile: null,     // the AI tab's set of values shown (its address: Default, a difficulty or a profile)
   lastEdit: null };  // the last value changed this session, for Ctrl+Z: { address, prop, mode, via, label }
 const KINDS = ["all", "ground", "infantry", "air", "buildings", "ammo"];  // ammo: what weapons fire (its own list)
 const WHOLE = new Set(["int8", "int16", "uint16", "int32", "uint32", "int64"]);
@@ -78,10 +79,12 @@ async function setLanguage(lang) {
   const w = state.words;
   $("tab-units").textContent = w.units_tab;
   $("tab-economy").textContent = w.economy_tab;
+  $("tab-ai").textContent = w.ai_tab;
   $("tab-maps").textContent = w.maps_tab;
   $("tab-settings").textContent = w.settings_tab;
   if (state.view === "maps" && window.MapView) window.MapView.setWords(w, lang);
   if (state.view === "economy") renderEconomy();
+  if (state.view === "ai") renderAI();
   $("lang-name").textContent = lang === "base" ? w.game_names
     : (state.languages.find((l) => l.code === lang) || {}).name || "";
   renderLangPick();
@@ -102,7 +105,7 @@ async function setLanguage(lang) {
   $("test-log-close").textContent = w.close;
   $("test-log-copy").textContent = w.doc_copy;
   // tooltips: one sentence on every control, from words.toml (tip_*)
-  const tips = { "tab-units": "tip_tab_units", "tab-economy": "tip_tab_economy", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
+  const tips = { "tab-units": "tip_tab_units", "tab-economy": "tip_tab_economy", "tab-ai": "tip_tab_ai", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close", "test-log-copy": "tip_copy_log",
     "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
@@ -217,6 +220,7 @@ async function modChanged() {
   if (state.page) await showUnit(state.page.address, state.page.via);
   if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // a map's strokes are the mod's
   if (state.view === "economy") await renderEconomy();  // the economy shown is the mod's
+  if (state.view === "ai") await renderAI();  // and so are the computer players
 }
 
 async function pickMod(e, kind = "mod") {
@@ -1742,18 +1746,21 @@ function showView(view) {
   state.view = view;
   $("units-view").classList.toggle("hidden", view !== "units");
   $("economy-view").classList.toggle("hidden", view !== "economy");
+  $("ai-view").classList.toggle("hidden", view !== "ai");
   $("maps-view").classList.toggle("hidden", view !== "maps");
   $("settings-view").classList.toggle("hidden", view !== "settings");
   $("tab-units").setAttribute("aria-selected", String(view === "units"));
   $("tab-economy").setAttribute("aria-selected", String(view === "economy"));
+  $("tab-ai").setAttribute("aria-selected", String(view === "ai"));
   $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
   $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
-  $("pick-mod").classList.toggle("hidden", view === "maps");  // the Units and Economy tabs edit a mod, Maps a map
+  $("pick-mod").classList.toggle("hidden", view === "maps");  // the Units, Economy and AI tabs edit a mod, Maps a map
   $("pick-map").classList.toggle("hidden", view !== "maps");
-  // "No game index yet" (and the index's build, a minute or more) covers the tabs that read it, Units and Economy:
+  // "No game index yet" (and the index's build, a minute or more) covers the tabs that read it, Units, Economy and AI:
   // the Maps tab and Settings (where the installer's clean backup shows how far it is) can be used meanwhile
-  $("no-index").classList.toggle("off-tab", view !== "units" && view !== "economy");
+  $("no-index").classList.toggle("off-tab", !["units", "economy", "ai"].includes(view));
   if (view === "economy") { renderEconomy(); return; }
+  if (view === "ai") { renderAI(); return; }
   if (view === "settings") { renderSettings(); loadBackup(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
@@ -1830,6 +1837,156 @@ function economyRow(r) {
   for (const box of boxes) box.addEventListener("change", () => save(box));
   showWas();
   return tr;
+}
+
+// --- the AI tab (StudioApi.ai, rusemod.ai; LittleGroove's AI editor brought over): how the computer players play
+// (Default, the difficulties and the profiles the game's lobby picks: a set of values each, mixed in a battle), the
+// units they're keener to build, and the ruse cards (every player's). A change is saved in the current mod at once ---
+async function renderAI() {
+  const w = state.words;
+  $("ai-title").textContent = w.ai_title;
+  $("ai-help").textContent = state.mod ? w.ai_help : w.no_mod;
+  $("ai-how-title").textContent = w.ai_how_title;
+  $("ai-mix").textContent = w.ai_mix;
+  $("ai-bonus-title").textContent = w.ai_bonus_title;
+  $("ai-bonus-help").textContent = w.ai_bonus_help;
+  $("ai-cards-title").textContent = w.ai_cards_title;
+  $("ai-cards-help").textContent = w.ai_cards_help;
+  let data;
+  try { data = await api().ai(state.lang); } catch (err) { problem(err); return; }
+  if (state.view !== "ai") return;  // another tab was picked meanwhile
+  if (!data.ready) {
+    $("ai-pick").replaceChildren();
+    $("ai-hint").textContent = "";
+    $("ai-groups").replaceChildren(el("p", { className: "muted", textContent: w.ai_none }));
+    $("ai-bonuses").replaceChildren();
+    $("ai-cards").replaceChildren();
+    return;
+  }
+  if (!data.profiles.some((p) => p.id === state.aiProfile)) state.aiProfile = data.profiles.length ? data.profiles[0].id : null;
+  renderAIPick(data);
+  renderAIProfile(data);
+  $("ai-bonuses").replaceChildren(...data.bonuses.map((b) => {
+    const table = el("table");
+    for (const r of b.rows) table.append(aiRow(b.id, r, r.list ? renderAI : null));
+    return el("div", { className: "group" }, table);
+  }));
+  renderAICards(data);
+}
+
+function renderAIPick(data) {
+  const w = state.words, words = data.words || {};
+  const button = (p) => {
+    const b = el("button", { type: "button", className: "chip", textContent: p.kind === "default" ? w.ai_default : p.name || p.index });
+    b.setAttribute("aria-pressed", String(p.id === state.aiProfile));
+    b.addEventListener("click", () => { state.aiProfile = p.id; renderAI(); });  // fresh: another set may have changed
+    return b;
+  };
+  const row = (label, kind) => {
+    const ps = data.profiles.filter((p) => p.kind === kind);
+    if (!ps.length) return null;
+    return el("div", { className: "ai-pick-row" }, el("span", { className: "muted small", textContent: label }),
+      el("div", { className: "chips" }, ...ps.map(button)));
+  };
+  $("ai-pick").replaceChildren(...[row("", "default"), row(words.difficulty || "", "difficulty"),
+    row(words.profile || "", "personality")].filter(Boolean));
+}
+
+function renderAIProfile(data) {
+  const w = state.words;
+  const p = data.profiles.find((x) => x.id === state.aiProfile);
+  $("ai-hint").textContent = (p && p.hint) || "";
+  if (!p) { $("ai-groups").replaceChildren(); return; }
+  $("ai-groups").replaceChildren(...p.groups.filter((g) => g.rows.length).map((g) => {
+    const table = el("table");
+    for (const r of g.rows) table.append(aiRow(p.id, r));
+    return el("div", { className: "group" }, el("h2", { textContent: w[`ai_group_${g.id}`] || g.id }), table);
+  }));
+}
+
+function renderAICards(data) {
+  const w = state.words, cards = data.cards;
+  if (!cards.length) { $("ai-cards").replaceChildren(); return; }
+  const props = ["LifeDuration", "ShowInMenu", "PositionInMenu"];
+  const label = (prop) => (cards.flatMap((c) => c.rows).find((r) => r.prop === prop) || {}).label || prop;
+  const head = el("tr", {}, el("th"), ...props.map((prop) => el("th", { textContent: label(prop) })));
+  const table = el("table", { className: "ai-cards" }, head);
+  for (const c of cards) {
+    const th = el("th", { textContent: c.name });
+    if (c.about) th.append(el("small", { className: "about", textContent: c.about }));
+    const tr = el("tr", {}, th);
+    for (const prop of props) {
+      const r = c.rows.find((x) => x.prop === prop);
+      if (r) tr.append(aiValue(c.id, r).cell);
+      else tr.append(el("td", { className: "muted small", textContent: prop === "ShowInMenu" ? w.ai_not_in_menu : "" }));
+    }
+    table.append(tr);
+  }
+  $("ai-cards").replaceChildren(el("div", { className: "group" }, table));
+}
+
+// One value of the AI tab, in its own cell: its box (or boxes, for a list), "was … Undo" once changed, the names of a
+// list's numbers (units, game modes, difficulties, profiles), and for a difficulty's or profile's value whether it is
+// Default's (then it doesn't count: StudioApi.ai). `after`: called once a change is saved (a list's names come from
+// the game index again).
+function aiValue(target, r, after = null) {
+  const w = state.words;
+  const game = r.list ? r.game : [r.game];
+  let mine = r.value === null ? null : r.list ? r.value : [r.value];
+  const boxes = (mine || game).map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+  const was = el("div", { className: "was" });
+  const note = el("div", { className: "muted small" });
+  const cell = el("td", {}, el("div", { className: "boxes" }, ...boxes), was, note);
+  const showNote = (same) => {
+    note.textContent = [r.names ? r.names.join(" · ") : "", same ? w.ai_same_default : ""].filter(Boolean).join(" — ");
+  };
+  const show = (numbers) => boxes.forEach((b, i) => {
+    if (b.type === "checkbox") b.checked = Boolean(numbers[i]); else b.value = String(numbers[i]);
+    b.setAttribute("aria-invalid", "false");
+  });
+  const showWas = () => {
+    cell.classList.toggle("edited", mine !== null);
+    if (mine === null) { was.replaceChildren(); return; }
+    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_ai_reset });
+    undo.addEventListener("click", async () => {
+      try {
+        const res = await api().ai_reset(target, r.prop);
+        mine = null;
+        show(game);
+        showWas();
+        showNote(res.same_default);
+        say("");
+        if (after) after();
+      } catch (err) { problem(err); }
+    });
+    was.replaceChildren(el("span", { textContent: w.was.replace("{v}", game.join(" · ")) }), undo);
+  };
+  const save = async (box) => {
+    const numbers = boxes.map(readBox);
+    const bad = numbers.findIndex((n) => !Number.isFinite(n));
+    boxes.forEach((b, i) => b.setAttribute("aria-invalid", String(i === bad)));
+    if (bad >= 0) { box.focus(); return; }
+    try {
+      const res = await api().ai_edit(target, r.prop, r.list ? numbers : numbers[0]);
+      const value = r.list ? res.value : [res.value];
+      show(value);
+      mine = sameNumbers(value, game) ? null : value;
+      showWas();
+      showNote(res.same_default);
+      say(w.saved.replace("{file}", res.saved), "ok");
+      if (after) after();
+    } catch (err) { problem(err); }
+  };
+  for (const box of boxes) box.addEventListener("change", () => save(box));
+  showWas();
+  showNote(r.same_default);
+  return { cell };
+}
+
+function aiRow(target, r, after = null) {
+  const th = el("th", { textContent: r.label });
+  if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
+  return el("tr", {}, th, aiValue(target, r, after).cell);
 }
 
 // Duplicate map (maps.js) made a new map: it may have made a map project for it too, which the header's menu shows
@@ -2219,6 +2376,7 @@ async function installUpdate() {
 async function start() {
   $("tab-units").addEventListener("click", () => showView("units"));
   $("tab-economy").addEventListener("click", () => showView("economy"));
+  $("tab-ai").addEventListener("click", () => showView("ai"));
   $("tab-maps").addEventListener("click", () => showView("maps"));
   $("tab-settings").addEventListener("click", () => showView("settings"));
   $("set-game-change").addEventListener("click", () => chooseGame().catch(problem));

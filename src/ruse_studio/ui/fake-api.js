@@ -1130,6 +1130,83 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ["decoys", [["ConstructionDelayForFakeBuildingsMin", "Decoy buildings: seconds before building (least)", "int32", 5]]],
   ];
   const economyEdits = new Map();  // prop -> the mod's value (StudioApi.economy_edit)
+  // the AI tab (words.toml ai_*, tip_tab_ai, tip_ai_reset)
+  Object.assign(words.us, { ai_tab: "AI", ai_title: "AI: the computer players",
+    tip_tab_ai: "How the computer players play, the units they like to build, and the ruse cards, for every battle with this mod.",
+    ai_help: "A change here is saved in the current mod at once. From LittleGroove's AI editor in RUSE Mod Manager. Not tried in the game yet.",
+    ai_how_title: "How they play",
+    ai_mix: "A computer player mixes three sets of values: Default, its difficulty and its profile (both picked in the game's lobby). For each value the game takes the profile's when it isn't Default's, else the difficulty's when it isn't Default's, else Default's; a value a set doesn't list counts as 0. Only the values a set lists can be changed here.",
+    ai_default: "Default", ai_same_default: "Same as Default: doesn't count",
+    ai_none: "The game index has none of the computer players' values. Build it again in Settings.",
+    ai_bonus_title: "Units they're keener to build",
+    ai_bonus_help: "The computer players like these units more, by the number below, in the game modes, difficulties and profiles listed.",
+    ai_cards_title: "Ruse cards (every player's)",
+    ai_cards_help: "How long each ruse lasts, whether it is in the ruse menu and its place there: for every player, not only the computer.",
+    ai_not_in_menu: "Not in the ruse menu", tip_ai_reset: "Put the value back as the game has it.",
+    ai_group_attack: "Attacking", ai_group_defense: "Defending", ai_group_harass: "Harassing", ai_group_money: "Money",
+    ai_group_depots: "Depots and trucks", ai_group_production: "Building units", ai_group_weights: "What it likes to build",
+    ai_group_ruses: "Ruses", ai_group_retaliation: "Retaliation", ai_group_intel: "Intelligence", ai_group_other: "Other" });
+  Object.assign(words.fr, { ai_tab: "IA", ai_title: "IA : les joueurs ordinateur", ai_default: "Défaut",
+    ai_group_attack: "Attaque", ai_group_money: "Argent", ai_not_in_menu: "Pas dans le menu des ruses" });
+  Object.assign(words.sc, { ai_tab: "AI", ai_title: "AI：电脑玩家", ai_default: "默认", ai_group_attack: "进攻",
+    ai_group_money: "资金", ai_not_in_menu: "不在计谋菜单中" });
+  // [address, kind, number in the lobby, name, lobby line, [[group, [[prop, its name, type, the game's value]]]]]: some of
+  // the game's sets of values, as the real index has them (rusemod.ai)
+  const AI_SETS = "$/GFX/Everything/AIConfiguration";
+  const AI = [
+    [`${AI_SETS}:DefaultAndDifficultyAndProfil[0].Items[class=TAIConfiguration].OverridenParams`, "default", 0, null, null,
+      [["attack", [["AttaqueTempsActivation", "Seconds before it starts attacking", "float32", 30],
+        ["OffensiveNbMissionMax", "Most attacks at once (-1: no limit)", "int32", -1]]],
+       ["harass", [["HarcelementActif", "Harasses the enemy", "bool", 1]]],
+       ["money", [["PercentMoneyToReserveForBatimentAdmin", "% of money kept for admin buildings", "int32", 20]]]]],
+    [`${AI_SETS}/AIDifficultyList:Items[0].OverridenParams`, "difficulty", 0, "Easy", null,
+      [["attack", [["AttaqueTempsActivation", "Seconds before it starts attacking", "float32", 300],
+        ["OffensiveNbMissionMax", "Most attacks at once (-1: no limit)", "int32", -1]]],
+       ["money", [["PercentMoneyToReserveForBatimentAdmin", "% of money kept for admin buildings", "int32", 20]]]]],
+    [`${AI_SETS}/AIDifficultyList:Items[2].OverridenParams`, "difficulty", 2, "Hard", null,
+      [["money", [["DeviseBonusIA", "Extra money (cheat)", "int32", 150], ["IncomeBonusIA", "Extra income (cheat)", "int32", 1],
+        ["PercentMoneyToReserveForBatimentAdmin", "% of money kept for admin buildings", "int32", 25]]]]],
+    [`${AI_SETS}/AIDescriptorList:Items[0].OverridenParams`, "personality", 0, "Regular", "This AI will behave as a standard general",
+      [["attack", [["AttaqueTempsActivation", "Seconds before it starts attacking", "float32", 30]]],
+       ["production", [["NbProdIdleTank", "Built when idle: tanks", "int32", 3]]]]],
+    [`${AI_SETS}/AIDescriptorList:Items[4].OverridenParams`, "personality", 4, "Blitzkrieg", "This AI will use rush tactics to defeat you",
+      [["production", [["NbProdIdleTank", "Built when idle: tanks", "int32", 4]]]]],
+  ];
+  const AI_BONUS = "$/GFX/Everything/AISpecificBonusList:SpecificBonusList[class=TAISpecificBonus]";
+  // [address, name, line, [[prop, its name, type, the game's value]]]: some of the ruse cards, in the menu's order
+  const AI_CARDS = [
+    ["$/GFX/Everything/BluffZoneManager:BluffCardDescriptors[9]", "BLITZ", "Increases your units' speed in the sector by 50%.",
+      [["LifeDuration", "How long it lasts (seconds)", "float32", 120], ["ShowInMenu", "Shown in menu", "bool", 1],
+       ["PositionInMenu", "Menu slot", "int32", 5]]],
+    ["$/GFX/Everything/BluffZoneManager:BluffCardDescriptors[14]", "DECOY AT BASE", "Allows you to deploy dummy anti-tank base.",
+      [["LifeDuration", "How long it lasts (seconds)", "float32", 360], ["PositionInMenu", "Menu slot", "int32", 10]]],
+    ["$/GFX/Everything/BluffZoneManager:BluffCardDescriptors[5]", "SPY", "Reveals all unidentified units in the sector.",
+      [["LifeDuration", "How long it lasts (seconds)", "float32", 60], ["ShowInMenu", "Shown in menu", "bool", 1],
+       ["PositionInMenu", "Menu slot", "int32", 60]]],
+  ];
+  const aiEdits = new Map();  // `${address}|${prop}` -> the mod's value (StudioApi.ai_edit)
+  const aiGame = (address, prop) => {
+    for (const [a, , , , , groups] of AI) if (a === address) for (const [, rows] of groups) for (const r of rows) if (r[0] === prop) return r;
+    if (address === AI_BONUS) return [["BonusValue", "Extra preference for these units", "int32", 400],
+      ["UnitIDs", "Units (by number)", "int32", [3008, 3009]]].find((r) => r[0] === prop);
+    const card = AI_CARDS.find((c) => c[0] === address);
+    return card ? card[3].find((r) => r[0] === prop) : undefined;
+  };
+  const aiNow = (address, prop) => {
+    const key = `${address}|${prop}`;
+    if (aiEdits.has(key)) return aiEdits.get(key);
+    const r = aiGame(address, prop);
+    return r ? r[3] : 0;  // a value a set doesn't list counts as 0
+  };
+  const aiSame = (address, prop) => {
+    const set = AI.find((s) => s[0] === address);
+    return set && set[1] !== "default" ? aiNow(address, prop) === aiNow(AI[0][0], prop) : null;
+  };
+  const aiRowOf = (address, lang, [prop, label, type, game]) => {
+    const key = `${address}|${prop}`;
+    return { prop, label: lang === "base" ? prop : label, type, list: Array.isArray(game), game,
+      value: aiEdits.has(key) ? aiEdits.get(key) : null, same_default: aiSame(address, prop) };
+  };
   // Delete map (words.toml delete_map, tip_delete_map, really_delete_map, map_deleted)
   Object.assign(words.us, {"delete_map": "Delete map", "tip_delete_map": "Take this new map out of your map changes, with everything changed on it. Its folder goes to the Recycle Bin, so it can be put back from there. The game's own maps can't be deleted.", "really_delete_map": "Delete {name}? Everything changed on it goes to the Recycle Bin with it.", "map_deleted": "{name} was deleted: its folder is in the Recycle Bin, if you want it back."});
   const exported = { path: "C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod", file: "sherman-test-0.1.0.rusemod",
@@ -1455,6 +1532,30 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { saved: current + "/src/studio.rndf", value: v };
       },
       economy_reset: async (prop) => { economyEdits.delete(prop); return { saved: current + "/src/studio.rndf" }; },
+      // the AI tab (StudioApi.ai): a few of the game's sets of values, the bonus and some ruse cards
+      ai: async (lang) => ({ ready: mode !== "noindex",
+        words: { ai: "AI", difficulty: "Difficulty", profile: "Profile", nuclear: "Nuclear mode" },
+        profiles: AI.map(([id, kind, index, name, hint, groups]) => ({ id, kind, index, name, hint,
+          groups: groups.map(([gid, rows]) => ({ id: gid, rows: rows.map((r) => aiRowOf(id, lang, r)) })) })),
+        bonuses: [{ id: AI_BONUS, rows: [
+          aiRowOf(AI_BONUS, lang, ["BonusValue", "Extra preference for these units", "int32", 400]),
+          { ...aiRowOf(AI_BONUS, lang, ["UnitIDs", "Units (by number)", "int32", [3008, 3009]]),
+            names: aiNow(AI_BONUS, "UnitIDs").map((n) => ({ 3008: "NUCLEAR LONG TOM", 3009: "NUCLEAR HOWITZER" })[n] || String(n)) }] }],
+        cards: AI_CARDS.map(([id, name, about, rows]) => ({ id, name, about, in_menu: rows.some((r) => r[0] === "ShowInMenu"),
+          rows: rows.map((r) => aiRowOf(id, lang, r)) })) }),
+      ai_edit: async (address, prop, value) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        const row = aiGame(address, prop);
+        const whole = (v) => row[2] === "float32" ? v : Math.round(v);
+        const v = Array.isArray(value) ? value.map(whole) : whole(value);
+        if (JSON.stringify(v) === JSON.stringify(row[3])) aiEdits.delete(`${address}|${prop}`);
+        else aiEdits.set(`${address}|${prop}`, v);
+        return { saved: current + "/src/studio.rndf", value: v, same_default: aiSame(address, prop) };
+      },
+      ai_reset: async (address, prop) => {
+        aiEdits.delete(`${address}|${prop}`);
+        return { saved: current + "/src/studio.rndf", same_default: aiSame(address, prop) };
+      },
       test_in_game: async () => ({ job: "test" }),
       // a made-up road network: one road east-west across the island, one north-south (Stick to roads)
       map_road_graph: async () => ({ nodes: [[300000, 600000], [1000000, 600000], [655000, 350000], [655000, 900000]],

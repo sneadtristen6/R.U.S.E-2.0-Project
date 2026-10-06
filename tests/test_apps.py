@@ -67,15 +67,15 @@ class TwoApps(unittest.TestCase):
 
     def test_the_studio_without_its_game_index_still_has_maps_and_settings(self):
         """"No game index yet" and the index's build (a minute or more, the first start after an update of the game
-        or of the index's format) cover only the tabs that need the index, Units and (since 2026-10-06) Economy: Maps
-        and Settings, where the installer's clean backup shows how far it is, can be used meanwhile (seen in the page
-        with index.html?fake=noindex, 2026-10-04; there's no JavaScript test runner here, so this checks the two
+        or of the index's format) cover only the tabs that need the index, Units and (since 2026-10-06) Economy and AI:
+        Maps and Settings, where the installer's clean backup shows how far it is, can be used meanwhile (seen in the
+        page with index.html?fake=noindex, 2026-10-04; there's no JavaScript test runner here, so this checks the two
         lines)."""
         ui = SRC / "ruse_studio" / "ui"
         self.assertIn(".no-index.off-tab { display: none; }", (ui / "style.css").read_text(encoding="utf-8"))
         script = (ui / "app.js").read_text(encoding="utf-8")
         show_view = script[script.index("function showView(view) {"):script.index("\n}\n", script.index("function showView"))]
-        self.assertIn('$("no-index").classList.toggle("off-tab", view !== "units" && view !== "economy");', show_view)
+        self.assertIn('$("no-index").classList.toggle("off-tab", !["units", "economy", "ai"].includes(view));', show_view)
 
 
 if __name__ == "__main__":
