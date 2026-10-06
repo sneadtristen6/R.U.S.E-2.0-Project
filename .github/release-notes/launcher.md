@@ -1,6 +1,19 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8:** it plays mods made with Studio 0.9.8, new maps that start blank among them, and shows what's new in your
+own language.
+
+| Before | Now |
+|---|---|
+| A new map showed the menu pictures of the map it copied. | Its own pictures, as its maker made them, with the start dots where its players start. |
+| A unit built on a drained sea could crash the game. | Fixed (seen in the game). |
+| Old river water stood as walls along a map's edge, and erased lighthouses still shone over the sea. | Fixed (seen in the game). |
+| A mod that erases a whole map could run the PC out of memory while it was built. | It builds. |
+| What's new was in English only. | It's in the Launcher's own language. |
+
+Known: **navy maps aren't finished.** Blank Ocean builds and plays, but units under its water haven't been tried yet.
+
 **0.4.7:** very large map mods now build in minutes (before, they took a very long time), and it plays mods made
 with Studio 0.9.7.
 

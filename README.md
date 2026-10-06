@@ -32,6 +32,9 @@ make works in the game every time, the first time.
 what changing strictly data can do. Anything beyond data is outside what we want to do with it. Your Steam install
 is never changed.
 
+**New maps can start blank.** RUSE Studio 0.9.8 starts a new map as flat land or open sea, and gives any map its own
+pictures in the game's menus, from a PNG or made in Blender from the map itself.
+
 **Very large map mods now build in minutes.** Before, they took a very long time to build, and that's why this
 update was needed: our most extreme map mod went from about four hours to under 10 minutes. It's in RUSE Studio
 0.9.7, we're still working on optimizations, and how we got there is under [How we got here](#how-we-got-here).
@@ -160,6 +163,8 @@ criticism are welcome in [the name discussion](https://github.com/sneadtristen6/
       <sub>A river drained by a mod. Units walk its bed.</sub>
     </td>
     <td width="33%" valign="top">
+      <img src="docs/images/blank-ocean-menu.jpg" alt="R.U.S.E. choose map screen: Blank Ocean, a new map that starts as open sea, with its own menu picture and its 3D map showing six start dots" width="260"><br>
+      <sub>A new map started blank, with its own menu pictures.</sub>
     </td>
   </tr>
 </table>
@@ -173,6 +178,7 @@ criticism are welcome in [the name discussion](https://github.com/sneadtristen6/
 | New versions install themselves | Place buildings, cover, and starting points |
 | Tick mods from our supported list | Clear the map's own woods and props |
 | Troubleshoot finds what stops Play, and fixes it | Check a map before you test it |
+| Play new maps that start blank | Start a new map as flat land or open sea, with its own menu pictures |
 
 <details>
 <summary><b>Everything the apps can do</b></summary>
@@ -241,6 +247,11 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
   test; Open and Forest brushes (2026-10-01, Studio 0.8.0).
 - **More players on a map, up to 8:** a Players count and an Add starting point tool (D-Day as a 4v4; built, the
   in-game check is next).
+- **Start a new map blank** (Studio 0.9.8): **Duplicate map** starts it as **Blank Terrain** (flat land with nothing
+  on it but the starting points) or **Blank Ocean** (the sea over the whole map). Under them: **take out** the map's
+  own roads, bridges, depots, units and names, **sectors over the whole map**, and a thin layer of **water over the
+  whole map**. **Menu pictures…** gives any map its own pictures in the game's menus, from a PNG of yours or made in
+  Blender from the map's own 3D model, with the start dots where its players start. Seen in the game (2026-10-05).
 - **Add units in formations:** 1 to 10 at once, in a line, column, wedge, box or circle (Studio 0.7.1).
 - A **mod check** reads every file of your mod the way the game build does, names each problem and offers the fix
   (set a broken file aside, rename a map folder to the map's pack name) (Studio 0.7.1).
@@ -353,6 +364,24 @@ Stuck on something? See [Questions? Ask any AI](#questions-ask-any-ai) at the bo
 ## How we got here
 
 The big steps so far, newest first. Each one was played in the game before it went out.
+
+<details>
+<summary><b>New maps start blank, with their own menu pictures (Studio 0.9.8)</b></summary>
+
+A new map no longer has to start as a full copy of a game map. **Duplicate map** can start it as **Blank Terrain**,
+flat land with nothing on it but the starting points, or as **Blank Ocean**, the sea over the whole map. The tools
+under them work on any map: take out the map's own roads, bridges, depots, units and names, let its sectors cover the
+whole map so all of it can be taken, and lay a thin layer of water over all of it.
+
+And every map can have its own pictures in the game's menus: a PNG of yours, or a picture made in Blender from the
+map's own 3D model, with the white start dots drawn where its players start. Seen in the game on BATTLES > Blank
+Ocean, Blank Terrain, and a copy of D-Day with pictures made in Blender beside the game's own D-Day.
+
+Fixed on the way, each seen in the game: a unit built on a drained sea crashed the game, old river water stood as
+walls along a map's edge, and erased lighthouses still shone over the sea. Not tried yet: units under Blank Ocean's
+water. Next: navy maps.
+
+</details>
 
 <details>
 <summary><b>Very large map mods now build in minutes (Studio 0.9.7)</b></summary>
@@ -526,7 +555,7 @@ Twelve hours, six rounds of testing.
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.7) &middot; **Studio** for modders, a preview (latest: 0.9.7) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.8) &middot; **Studio** for modders, a preview (latest: 0.9.8) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -538,7 +567,9 @@ that tanks, infantry and supply trucks cross, infantry following new roads, a br
 hide in; on 2026-10-03 and 04, units repainted by a mod and in Blender, a build-menu card made in the Studio, a
 second Sherman with a 3D model of its own, a mission of our own played to a victory, a new Operation, another nation's
 units in a campaign map, erased buildings opening their ground, a new unit's own card, and an M1 Abrams imported from
-another 3D program. **Not yet checked in the game:** a new unit made in the Studio's window, mod sets made in the launcher's window, a mod exported as one file, sharing a load
+another 3D program; on 2026-10-05, a drained sea units are built and move on, new maps that start blank (Blank
+Terrain, Blank Ocean) with sectors over the whole map, and a map's own pictures in the game's menus, made in Blender
+or from a PNG, with the start dots where its players start. **Not yet checked in the game:** a new unit made in the Studio's window, mod sets made in the launcher's window, a mod exported as one file, sharing a load
 order, units a skirmish spawns, and Browse mods.
 
 </details>

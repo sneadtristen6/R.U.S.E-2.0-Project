@@ -1,6 +1,33 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8:** nowa mapa może zacząć się pusta, jako płaski ląd albo otwarte morze, a każda mapa może mieć własne obrazy w
+menu gry.
+
+- **Zacznij mapę od pustej.** **Duplikuj mapę** ma nowy wybór, **Zacznij od**: **Pusty teren** (płaski ląd, na którym
+  nie ma nic poza punktami startowymi) albo **Pusty ocean** (morze na całej mapie). Sprawdzone w grze.
+- **Obrazy w menu dla każdej mapy.** Wybierz plik PNG na obraz mapy i jej mapę 3D w menu albo wróć do tych z gry;
+  białe punkty startowe są rysowane tam, gdzie zaczynają gracze mapy. **Zrób w Blenderze…** otwiera własny model 3D
+  mapy, żeby je zrobić, a **Przenieś** umieszcza je w twoim modzie. Sprawdzone w grze.
+
+| Wcześniej | Teraz |
+|---|---|
+| Nowa mapa zaczynała się jako pełna kopia mapy z gry. | **Duplikuj mapę** może zacząć ją od pustej: Pusty teren albo Pusty ocean. |
+| Nowa mapa pokazywała obrazy w menu kopiowanej mapy. | **Obrazy w menu…** daje jej własne: twój plik PNG albo obraz zrobiony w Blenderze, z punktami startowymi tam, gdzie zaczynają jej gracze. |
+| Składy, jednostki, budynki i nazwy mapy zostawały. | **Usuń** usuwa jeden element albo wszystkie składy lub wszystkie nazwy naraz (sprawdzone w grze). |
+| Drogi i mosty mapy zostawały. | Panel Drogi je usuwa (linie dróg znikają: sprawdzone w grze). |
+| Sektory pomijały morze i krawędzie mapy. | **Sektory na całej mapie**: można zająć całą mapę (sprawdzone w grze). |
+| Woda na mapie pochodziła tylko z jej rzek i morza. | **Woda na całej mapie**: cienka warstwa, jak namalowane morze na mapie morskiej (sprawdzone w grze; jednostki pod nią jeszcze nie sprawdzone). |
+| Edytor mapy wybierał miejsca pojawiania pojedynczo, po nazwach kodowych. | Przeciągnij ramkę, żeby zaznaczyć je jak w grze; własne ikony mapy pokazują, co jest zaznaczone i ile. |
+| Panele edytora mapy miały jeden rozmiar. | Każdy pływający panel zmienia rozmiar, od 40% do 125%. |
+| Nowości były tylko po angielsku. | Są w języku Studia. |
+| Wysłanie moda na listę modów oznaczało ręczne pisanie jego wpisu. | **Opublikuj na liście modów** otwiera formularz listy, już wypełniony, z kopią .zip gotową do przeciągnięcia; każdy eksport mówi, że zrobiono go w RUSE Studio. |
+| Importuj model gubił własne cieniowanie i przezroczyste części modelu. | Zachowuje je i mówi, co zachował (jeszcze nie sprawdzone w grze). |
+| Jednostka zbudowana na osuszonym morzu mogła zawiesić grę; stara woda rzek stała jak ściany wzdłuż krawędzi mapy; usunięte latarnie morskie wciąż świeciły nad morzem. | Naprawione, każde sprawdzone w grze. |
+
+Znane: **mapy morskie nie są skończone.** Pusty ocean buduje się i działa w grze, ale jednostki pod jego wodą nie
+zostały jeszcze sprawdzone.
+
 **0.9.7:** bardzo duże mody map budują się teraz w kilka minut. Wcześniej ich budowanie trwało bardzo długo i dlatego
 ta aktualizacja była potrzebna. A **Eksportuj mod…** zabiera ze sobą to, co wyliczyło budowanie, więc pierwsze
 budowanie takiego moda u gracza jest krótsze.

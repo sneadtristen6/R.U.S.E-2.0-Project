@@ -1,6 +1,32 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8:** a new map can start blank, as flat land or open sea, and every map can have its own pictures in the
+game's menus.
+
+- **Start a map blank.** **Duplicate map** has a new choice, **Start from**: **Blank Terrain** (flat land with
+  nothing on it but the starting points) or **Blank Ocean** (the sea over the whole map). Seen in the game.
+- **Menu pictures for any map.** Pick a PNG for the map's picture and its 3D map in the menus, or go back to the
+  game's own; the white start dots are drawn where the map's players start. **Make in Blender…** opens the map's own
+  3D model to make them, and **Bring back** puts them in your mod. Seen in the game.
+
+| Before | Now |
+|---|---|
+| A new map started as a full copy of a game map. | **Duplicate map** can start it blank: Blank Terrain or Blank Ocean. |
+| A new map showed the menu pictures of the map it copied. | **Menu pictures…** gives it its own: a PNG of yours or a picture made in Blender, with the start dots where its players start. |
+| The map's own depots, units, buildings and names stayed. | **Take out** one, or every depot or name at once (seen in the game). |
+| The map's own roads and bridges stayed. | The Roads dock takes them out (the road lines gone: seen in the game). |
+| Sectors left the sea and the map's edges out. | **Sectors over the whole map**: all of it can be taken (seen in the game). |
+| A map's water came from its rivers and its sea only. | **Water over the whole map**: a thin layer, like a navy map's painted sea (seen in the game; units under it not tried yet). |
+| The map editor picked spawns one at a time, by code names. | Drag a box to select them as the game does; above the tray, the map's own icons show what's selected and how many. |
+| The map editor's panels had one size. | Each floating panel resizes, from 40% to 125%. |
+| What's new was in English only. | It's in the Studio's own language. |
+| Sending a mod to the mod list meant writing its entry by hand. | **Publish to the mod list** opens the list's form, filled in, with a .zip copy ready to drag in; every export says it was made with RUSE Studio. |
+| Import model dropped a model's own shading and see-through parts. | It keeps them, and says what it kept (not seen in the game yet). |
+| A unit built on a drained sea could crash the game; old river water stood as walls along a map's edge; erased lighthouses still shone over the sea. | Fixed, each seen in the game. |
+
+Known: **navy maps aren't finished.** Blank Ocean builds and plays, but units under its water haven't been tried yet.
+
 **0.9.7:** very large map mods now build in minutes. Before, they took a very long time to build, and that's why
 this update was needed. And **Export mod…** carries what the build worked out, so a player's first build of one
 is shorter.

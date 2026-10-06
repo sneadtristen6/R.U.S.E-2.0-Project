@@ -1,6 +1,35 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8:** eine neue Karte kann leer beginnen, als flaches Land oder offenes Meer, und jede Karte kann eigene Bilder
+in den Menüs des Spiels haben.
+
+- **Eine Karte leer beginnen.** **Karte duplizieren** hat eine neue Wahl, **Ausgangspunkt**: **Leeres Gelände**
+  (flaches Land, auf dem nichts steht außer den Startpunkten) oder **Leerer Ozean** (das Meer über die ganze Karte).
+  Im Spiel gesehen.
+- **Menübilder für jede Karte.** Wähle ein PNG für das Bild der Karte und ihre 3D-Karte in den Menüs, oder geh zurück
+  zu denen des Spiels; die weißen Startpunkte werden dort gezeichnet, wo die Spieler der Karte starten. **In Blender
+  machen…** öffnet das eigene 3D-Modell der Karte, um sie zu machen, und **Zurückholen** bringt sie in deinen Mod. Im
+  Spiel gesehen.
+
+| Vorher | Jetzt |
+|---|---|
+| Eine neue Karte begann als vollständige Kopie einer Karte des Spiels. | **Karte duplizieren** kann sie leer beginnen lassen: Leeres Gelände oder Leerer Ozean. |
+| Eine neue Karte zeigte die Menübilder der kopierten Karte. | **Menübilder…** gibt ihr eigene: ein PNG von dir oder ein in Blender gemachtes Bild, mit den Startpunkten dort, wo ihre Spieler starten. |
+| Die Depots, Einheiten, Gebäude und Namen der Karte blieben. | **Entfernen** nimmt eins heraus, oder alle Depots oder alle Namen auf einmal (im Spiel gesehen). |
+| Die Straßen und Brücken der Karte blieben. | Das Dock Straßen entfernt sie (die Straßenlinien weg: im Spiel gesehen). |
+| Die Sektoren ließen das Meer und die Ränder der Karte aus. | **Sektoren über die ganze Karte**: die ganze Karte lässt sich einnehmen (im Spiel gesehen). |
+| Das Wasser einer Karte kam nur aus ihren Flüssen und ihrem Meer. | **Wasser über die ganze Karte**: eine dünne Schicht, wie das gemalte Meer einer Marinekarte (im Spiel gesehen; Einheiten darunter noch nicht ausprobiert). |
+| Der Karteneditor wählte Spawnpunkte einzeln aus, unter Codenamen. | Zieh einen Rahmen, um sie wie im Spiel auszuwählen; die eigenen Symbole der Karte zeigen, was ausgewählt ist und wie viele. |
+| Die Felder des Karteneditors hatten eine Größe. | Jedes schwebende Feld ändert seine Größe, von 40 % bis 125 %. |
+| Die Neuigkeiten gab es nur auf Englisch. | Sie sind in der Sprache des Studios. |
+| Einen Mod an die Mod-Liste zu schicken hieß, seinen Eintrag von Hand zu schreiben. | **In der Mod-Liste veröffentlichen** öffnet das Formular der Liste, schon ausgefüllt, mit einer .zip-Kopie zum Hineinziehen; jeder Export sagt, dass er mit RUSE Studio gemacht wurde. |
+| Modell importieren verlor die eigene Schattierung und die durchsichtigen Teile eines Modells. | Es behält sie und sagt, was es behalten hat (noch nicht im Spiel gesehen). |
+| Eine auf einem trockengelegten Meer gebaute Einheit konnte das Spiel abstürzen lassen; altes Flusswasser stand als Wände am Rand einer Karte; gelöschte Leuchttürme leuchteten noch über dem Meer. | Behoben, jedes im Spiel gesehen. |
+
+Bekannt: **Marinekarten sind noch nicht fertig.** Leerer Ozean wird gebaut und gespielt, aber Einheiten unter seinem
+Wasser sind noch nicht ausprobiert.
+
 **0.9.7:** sehr große Karten-Mods werden jetzt in Minuten gebaut. Vorher dauerte ihr Bau sehr lange, und deshalb war
 dieses Update nötig. Und **Mod exportieren…** nimmt mit, was der Bau ausgerechnet hat: der erste Bau eines solchen Mods
 bei einem Spieler geht schneller.

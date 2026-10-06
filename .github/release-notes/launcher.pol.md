@@ -1,6 +1,20 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.4.8:** uruchamia mody zrobione w Studio 0.9.8, w tym nowe mapy zaczynające się od pustej, i pokazuje nowości w
+twoim języku.
+
+| Wcześniej | Teraz |
+|---|---|
+| Nowa mapa pokazywała obrazy w menu kopiowanej mapy. | Własne obrazy, takie, jakie zrobił jej autor, z punktami startowymi tam, gdzie zaczynają jej gracze. |
+| Jednostka zbudowana na osuszonym morzu mogła zawiesić grę. | Naprawione (sprawdzone w grze). |
+| Stara woda rzek stała jak ściany wzdłuż krawędzi mapy, a usunięte latarnie morskie wciąż świeciły nad morzem. | Naprawione (sprawdzone w grze). |
+| Mod, który czyści całą mapę, mógł podczas budowania wyczerpać pamięć komputera. | Buduje się. |
+| Nowości były tylko po angielsku. | Są w języku Launchera. |
+
+Znane: **mapy morskie nie są skończone.** Pusty ocean buduje się i działa w grze, ale jednostki pod jego wodą nie
+zostały jeszcze sprawdzone.
+
 **0.4.7:** bardzo duże mody map budują się teraz w kilka minut (wcześniej trwało to bardzo długo), i uruchamia mody
 zrobione w Studio 0.9.7.
 

@@ -55,7 +55,7 @@ fingerprint   = "K7Q2-M9XD"         # this mod alone on that build (§12); Expor
 
 [made_with]                         # the tool that made it: Export mod… writes it; the mod list shows it
 tool    = "RUSE Studio"
-version = "0.9.7"
+version = "0.9.8"
 page    = "https://github.com/sneadtristen6/R.U.S.E-2.0-Project"
 
 [dependencies]                      # hard dependencies: id = version range
@@ -476,7 +476,8 @@ and `cover` strokes over the same circles here; its Undo takes back both.
   `block = false` (the Studio's Water over the whole map: a square over all of it, its surface Strength above the
   ground's middle height) is a thin layer units go under, like a navy map's painted sea: the movement takes its
   place for dry ground, so it closes nothing, and the old water under it (a river, the sea) is opened as a drained
-  bed is. It is drawn as any water is; not seen in the game yet. What is written follows the rules every shipped
+  bed is. It is drawn as any water is (seen in the game on Blank Ocean, 2026-10-05; units going under it not tried
+  yet). What is written follows the rules every shipped
   map keeps (`rusemod.water`). A height brush near water also keeps the water triangles and textures in step. A
   water stroke sets the water at the map's outer edge too, and the water's side hanging from the edge follows it:
   left at the old rivers' levels, the edge stood as walls of water round Blank Ocean's sea (seen in the game,
@@ -646,7 +647,9 @@ whole_map = true   # every scenario of the map: each place its sectors leave out
   by a few metres at most.
 - A sector with another inside it can't be made (none of the shipped scenarios has one): that scenario keeps the
   map's own sectors, and the build warns.
-- The last mod that has a `[sectors]` table decides. Not yet seen in the game.
+- The last mod that has a `[sectors]` table decides.
+- Seen in the game (2026-10-05, a drained D-Day, then Blank Ocean and Blank Terrain): the sectors meet the map's
+  edges all round, and a ruse card takes on a sector that was sea.
 
 A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
 Operations spawn theirs this way; skirmish maps spawn only their supply depots):
@@ -877,8 +880,9 @@ take_out = ["roads", "bridges"]   # either, or both
 - `"bridges"`: the map's own bridges are erased, both the objects and the model the map draws them with, and the
   floors units stood on are sunk under the ground. The movement over their decks stays: units still cross there, on
   the ground under them. Drain the rivers (the water brushes) to cross anywhere.
-- Every mod's `take_out` counts: one taking the roads out and another the bridges takes both. Not seen in the game
-  yet.
+- Every mod's `take_out` counts: one taking the roads out and another the bridges takes both.
+- Seen in the game (2026-10-05, a drained D-Day): the map's road lines gone. Not tried yet: supply trucks and units
+  planning across country without them, and the bridges checked one by one.
 
 ## 9. Scripts
 
@@ -1295,7 +1299,7 @@ small public git repository is the index, GitHub serves its file, and GitHub Rel
   list's guidelines (`GUIDELINES.md`); changes to the game's own scripts get a maintainer's look. A maintainer then
   tries the mod, uploads it to a release and adds the entry. A pull request that adds the entry works too. A new
   version is a new entry line: change `version`, `download`, `size`, `sha256` (a published file never changes, §12).
-- **Credit:** an entry may carry `made_with = "RUSE Studio 0.9.7"` (the Studio's export writes it into the entry);
+- **Credit:** an entry may carry `made_with = "RUSE Studio 0.9.8"` (the Studio's export writes it into the entry);
   launchers that don't know the field skip it.
 - **What the launcher does:** fetches the list (10 s timeout), keeps a copy in `<home>/index/` and shows that copy
   when offline, saying from when it is; marks each entry against the library ("new", "update available",

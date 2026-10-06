@@ -1,6 +1,33 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8:** nová mapa může začít prázdná, jako rovná souš nebo otevřené moře, a každá mapa může mít vlastní obrázky v
+nabídkách hry.
+
+- **Začněte mapu prázdnou.** **Duplikovat mapu** má novou volbu, **Začít z**: **Prázdný terén** (rovná souš, na které
+  není nic kromě startovních bodů) nebo **Prázdný oceán** (moře přes celou mapu). Ověřeno ve hře.
+- **Obrázky v nabídce pro každou mapu.** Vyberte PNG pro obrázek mapy a její 3D mapu v nabídkách, nebo se vraťte k těm
+  ze hry; bílé startovní body se kreslí tam, kde začínají hráči mapy. **Udělat v Blenderu…** otevře vlastní 3D model
+  mapy, abyste je udělali, a **Přenést zpět** je dá do vašeho módu. Ověřeno ve hře.
+
+| Dřív | Teď |
+|---|---|
+| Nová mapa začínala jako úplná kopie mapy ze hry. | **Duplikovat mapu** ji může nechat začít prázdnou: Prázdný terén nebo Prázdný oceán. |
+| Nová mapa ukazovala obrázky v nabídce kopírované mapy. | **Obrázky v nabídce…** jí dají vlastní: vaše PNG nebo obrázek udělaný v Blenderu, se startovními body tam, kde začínají její hráči. |
+| Sklady, jednotky, budovy a názvy mapy zůstávaly. | **Odebrat** odebere jeden, nebo všechny sklady či všechny názvy naráz (ověřeno ve hře). |
+| Silnice a mosty mapy zůstávaly. | Panel Silnice je odebere (čáry silnic zmizely: ověřeno ve hře). |
+| Sektory vynechávaly moře a okraje mapy. | **Sektory přes celou mapu**: lze obsadit celou mapu (ověřeno ve hře). |
+| Voda na mapě byla jen v jejích řekách a moři. | **Voda přes celou mapu**: tenká vrstva jako namalované moře námořní mapy (ověřeno ve hře; jednotky pod ní zatím nevyzkoušeny). |
+| Editor mapy vybíral místa příchodu po jednom, podle kódových jmen. | Táhněte rámeček a vyberte je jako ve hře; vlastní ikony mapy ukazují, co je vybráno a kolik. |
+| Panely editoru mapy měly jednu velikost. | Každý plovoucí panel mění velikost, od 40 % do 125 %. |
+| Novinky byly jen anglicky. | Jsou v jazyce Studia. |
+| Poslat mód do seznamu módů znamenalo psát jeho záznam ručně. | **Zveřejnit v seznamu módů** otevře formulář seznamu, už vyplněný, s kopií .zip připravenou k přetažení; každý export uvádí, že byl udělán v RUSE Studio. |
+| Importovat model ztrácel vlastní stínování a průhledné části modelu. | Zachová je a řekne, co zachoval (ve hře zatím nevyzkoušeno). |
+| Jednotka postavená na vysušeném moři mohla shodit hru; stará říční voda stála jako zdi podél okraje mapy; smazané majáky dál svítily nad mořem. | Opraveno, vše ověřeno ve hře. |
+
+Známé: **námořní mapy nejsou hotové.** Prázdný oceán se sestaví a hraje, ale jednotky pod jeho vodou zatím nebyly
+vyzkoušeny.
+
 **0.9.7:** velmi velké módy map se teď sestaví za několik minut. Dřív jejich sestavení trvalo velmi dlouho, a proto
 byla tato aktualizace potřeba. A **Exportovat mód…** si s sebou nese to, co sestavení spočítalo, takže první sestavení
 takového módu u hráče je kratší.

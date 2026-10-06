@@ -1,6 +1,20 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8:** er spielt Mods, die mit Studio 0.9.8 gemacht wurden, darunter neue Karten, die leer beginnen, und zeigt
+die Neuigkeiten in deiner Sprache.
+
+| Vorher | Jetzt |
+|---|---|
+| Eine neue Karte zeigte die Menübilder der kopierten Karte. | Ihre eigenen Bilder, so wie ihr Macher sie gemacht hat, mit den Startpunkten dort, wo ihre Spieler starten. |
+| Eine auf einem trockengelegten Meer gebaute Einheit konnte das Spiel abstürzen lassen. | Behoben (im Spiel gesehen). |
+| Altes Flusswasser stand als Wände am Rand einer Karte, und gelöschte Leuchttürme leuchteten noch über dem Meer. | Behoben (im Spiel gesehen). |
+| Ein Mod, der eine ganze Karte löscht, konnte beim Bauen den Speicher des PCs aufbrauchen. | Er wird gebaut. |
+| Die Neuigkeiten gab es nur auf Englisch. | Sie sind in der Sprache des Launchers. |
+
+Bekannt: **Marinekarten sind noch nicht fertig.** Leerer Ozean wird gebaut und gespielt, aber Einheiten unter seinem
+Wasser sind noch nicht ausprobiert.
+
 **0.4.7:** sehr große Karten-Mods werden jetzt in Minuten gebaut (vorher dauerte das sehr lange), und er spielt Mods,
 die mit Studio 0.9.7 gemacht wurden.
 
