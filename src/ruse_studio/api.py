@@ -29,7 +29,8 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from rusemod import ai, doctor, economy, identity, missions, mod_index, package, scenario, scenery, schema, startlog
+from rusemod import (ai, doctor, economy, identity, mapscripts, missions, mod_index, package, scenario, scenery, schema,
+                     startlog)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -396,6 +397,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._erased_lock = threading.Lock()
         self._erased_ask = threading.Lock()
         self._erased_gen = 0
+        self._scripts_shown: dict[str, str] = {}  # the game's scripts turned into text this session (ai_script)
+        self._scripts_lock = threading.Lock()  # one at a time: a big one takes seconds of a core
 
     # --- where things are ---
     def _game(self) -> Path | None:
@@ -3609,6 +3612,52 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         finally:
             ix.close()
         return {"saved": str(edits.file), "same_default": same}
+
+    # the game's map and mission scripts, shown as Python to read (rusemod.mapscripts; LittleGroove's script viewer)
+    def ai_scripts(self, lang: str = schema.BASE) -> dict:
+        """The scripts the AI tab can show: [{path, map, part, file, detail}] by map, `map` the names the game's menus
+        give the map's entries in `lang`, up to three (its folder's name in the code names, or when no menu shows it:
+        which chapter of a campaign map a script is for isn't read yet), `part` the folder of scripts without its
+        "scripting" ("chapter1"), `detail` where it is in the game's file. `missing`: why this copy of the Studio can't
+        show them (a library isn't there), else None."""
+        game = self._game()
+        if game is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("We couldn't find R.U.S.E., so there are no scripts to show.")
+        try:
+            titles = {m["pack"].lower(): m["titles"] for m in map_list(game)} if lang != schema.BASE else {}
+        except (OSError, ValueError, KeyError):  # no map list (a made-up game): each map by its folder's name
+            titles = {}
+        out = []
+        for s in mapscripts.scripts(game):
+            t = titles.get(s["map"].lower(), {})
+            names = t.get(lang) or t.get("us") or [s["map"]]
+            out.append({"path": s["path"], "map": " / ".join(names[:3]) + (" …" if len(names) > 3 else ""),
+                        "part": re.sub(r"^scripting_?", "", s["part"], flags=re.I),
+                        "file": s["file"], "detail": f"{s['map']}/{s['part']}/{s['file']}"})
+        return {"scripts": out, "missing": mapscripts.missing()}
+
+    def ai_script(self, path: str) -> dict:
+        """One of the game's scripts as Python source text, read only (rusemod.mapscripts.text), with its number of
+        lines. Kept for the session: opening it again is at once."""
+        game = self._game()
+        if game is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("We couldn't find R.U.S.E., so there are no scripts to show.")
+        with self._scripts_lock:
+            shown = self._scripts_shown.get(path)
+            if shown is None:
+                try:
+                    raw = mapscripts.read(game, path)
+                except KeyError as exc:
+                    # not a game rule: the page asked for a script the game's file doesn't have
+                    raise StudioError(str(exc).strip("'\"")) from None
+                why = mapscripts.missing()
+                if why:
+                    # not a game rule: what this copy of the Studio carries
+                    raise StudioError(f"This copy of the Studio can't show scripts ({why}).")
+                shown = self._scripts_shown[path] = mapscripts.text(raw)
+        return {"path": path, "text": shown, "lines": shown.count("\n")}
 
     # --- a unit's look: its models out to Blender, its paint back into the mod (rusemod.unitlook, rusemod.blender) ---
     @staticmethod

@@ -6,3 +6,11 @@ pythonnet==3.1.0
 # What the apps carry for the map sums on whole grids (rusemod.numpy2): a whole map painted in minutes, not hours.
 # The same pin as .github/workflows/tests.yml (tests/test_installers.py WorkflowGuards).
 numpy==2.5.3
+# What the Studio carries to show the game's scripts as Python (the AI tab, rusemod.mapscripts): the two libraries
+# LittleGroove's engine uses for it, at the versions his RUSE Mod Manager pins, and the three they need. Licences:
+# THIRD_PARTY_NOTICES.md. The same pins as .github/workflows/tests.yml (tests/test_installers.py WorkflowGuards).
+uncompyle6==3.9.3
+xdis==6.1.8
+spark_parser==1.9.0
+six==1.17.0
+click==8.5.0

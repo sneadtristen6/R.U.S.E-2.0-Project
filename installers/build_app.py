@@ -22,8 +22,13 @@ APPS = {
     "launcher": {"name": "RUSE Launcher", "package": "ruse_launcher", "description": "Play R.U.S.E. with mods",
                  "id": "96F731B1-F85A-48E8-A810-49128DF99706"},
     "studio": {"name": "RUSE Studio", "package": "ruse_studio", "description": "Make mods for R.U.S.E.",
-               "id": "89731BD4-5E55-415F-970E-F6CBBB8CFD51"},
+               "id": "89731BD4-5E55-415F-970E-F6CBBB8CFD51",
+               # the two libraries LittleGroove's engine shows the game's scripts with (the AI tab, rusemod.mapscripts):
+               # they load parts of themselves by name, which Nuitka can't follow from the code
+               "include": ("uncompyle6", "xdis")},
 }  # the ids never change: they let a new installer replace the old version
+# Beside the built program: the apps' licence (GPL-3.0) and the libraries they carry, with theirs
+LICENCE_FILES = ("LICENSE", "THIRD_PARTY_NOTICES.md")
 
 
 def version(app: str) -> str:
@@ -44,6 +49,7 @@ def nuitka_command(app: str, icon: Path, out: Path) -> list[str]:
             f"--windows-icon-from-ico={icon}", "--company-name=RUSE Mod Platform",
             f"--product-name={a['name']}", f"--file-version={v}", f"--product-version={v}",
             f"--file-description={a['description']}", "--copyright=GPL-3.0 (C) 2026 sneadtristen6 and the RUSE Mod Platform contributors", f"--report={out / 'report.xml'}",
+            *(f"--include-package={p}" for p in a.get("include", ())),
             str(ROOT / "installers" / f"{app}.py")]
 
 
@@ -78,6 +84,13 @@ def blender_scripts(app_dir: Path) -> None:
     target.mkdir(parents=True, exist_ok=True)
     for name in BLENDER_SCRIPTS:
         shutil.copy2(ROOT / "src" / "rusemod" / name, target / name)
+
+
+def licence_files(app_dir: Path) -> None:
+    """Copy the licence files beside the built program, so every install carries them (the GPL asks it of a program
+    given out, and of the GPL libraries in it)."""
+    for name in LICENCE_FILES:
+        shutil.copy2(ROOT / name, app_dir / name)
 
 
 def run(cmd: list[str]) -> None:
@@ -120,6 +133,7 @@ def main(argv=None) -> int:
     run(nuitka_command(app, icon, build))
     program = next(build.rglob(exe_name(app)))
     blender_scripts(program.parent)
+    licence_files(program.parent)
     self_test(program, "built app")
     run(installer_command(app, program.parent, icon, dist))
     setup = dist / f"{APPS[app]['name'].replace(' ', '-')}-Setup-{version(app)}.exe"

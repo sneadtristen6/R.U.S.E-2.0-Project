@@ -28,6 +28,9 @@ jobs:
       - name: The numpy the apps carry (installers/requirements.txt)
         if: matrix.python == '3.12'
         run: python -m pip install "numpy==2.5.3"
+      - name: The libraries the Studio carries to show the game's scripts (installers/requirements.txt)
+        if: matrix.python == '3.12'
+        run: python -m pip install "uncompyle6==3.9.3" "xdis==6.1.8" "spark_parser==1.9.0" "six==1.17.0" "click==8.5.0"
       - name: Nothing private in the public repo (tools/check_public.py)
         if: github.repository_id == '1393317090'
         run: python tools/check_public.py

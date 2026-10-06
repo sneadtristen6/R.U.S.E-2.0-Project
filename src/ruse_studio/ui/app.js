@@ -12,6 +12,8 @@ const state = { lang: "base", kind: "all", nation: -1, search: "", group: "all",
   start: "change",     // the Units tab's way in (renderStart): "change" a unit, or start a "new" one from it
   focusModel: null,    // a new unit just made: its page opens at Import model (lookBox)
   aiProfile: null,     // the AI tab's set of values shown (its address: Default, a difficulty or a profile)
+  aiScripts: null,     // the AI tab's list of the game's scripts, for one language: { lang, scripts, missing }
+  aiScriptPath: null,  // the script shown there (its path in the game's file)
   lastEdit: null };  // the last value changed this session, for Ctrl+Z: { address, prop, mode, via, label }
 const KINDS = ["all", "ground", "infantry", "air", "buildings", "ammo"];  // ammo: what weapons fire (its own list)
 const WHOLE = new Set(["int8", "int16", "uint16", "int32", "uint32", "int64"]);
@@ -1549,18 +1551,24 @@ async function showTestProblems() {
   box.classList.remove("hidden");
 }
 
-// The test's log and its message, for a bug report or Discord
-async function copyTestLog() {
-  const text = $("test-log").textContent + ($("status").firstChild ? "\n" + $("status").firstChild.textContent : "");
+// Text to the clipboard: the window's clipboard call, else the old way from a hidden box. False (and says so) when
+// neither works.
+async function copyText(text) {
   try { await navigator.clipboard.writeText(text); } catch {
     const box = el("textarea", { value: text, readOnly: true, className: "sr-only" });
     document.body.append(box);
     box.select();
     const copied = document.execCommand("copy");
     box.remove();
-    if (!copied) { say(state.words.test_copy_failed, "error"); return; }
+    if (!copied) { say(state.words.test_copy_failed, "error"); return false; }
   }
-  say(state.words.doc_copied, "ok");
+  return true;
+}
+
+// The test's log and its message, for a bug report or Discord
+async function copyTestLog() {
+  const text = $("test-log").textContent + ($("status").firstChild ? "\n" + $("status").firstChild.textContent : "");
+  if (await copyText(text)) say(state.words.doc_copied, "ok");
 }
 
 // --- the troubleshooter (StudioApi.troubleshoot, rusemod.doctor): what can stop a test, checked in one go, each
@@ -1852,6 +1860,7 @@ async function renderAI() {
   $("ai-bonus-help").textContent = w.ai_bonus_help;
   $("ai-cards-title").textContent = w.ai_cards_title;
   $("ai-cards-help").textContent = w.ai_cards_help;
+  renderAIScripts();  // its own list, read once per language
   let data;
   try { data = await api().ai(state.lang); } catch (err) { problem(err); return; }
   if (state.view !== "ai") return;  // another tab was picked meanwhile
@@ -1987,6 +1996,60 @@ function aiRow(target, r, after = null) {
   const th = el("th", { textContent: r.label });
   if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
   return el("tr", {}, th, aiValue(target, r, after).cell);
+}
+
+// The game's map and mission scripts, shown as Python to read (StudioApi.ai_scripts / ai_script; LittleGroove's
+// script viewer): picked from a list grouped by map, one turned into text at a time (a big one takes seconds)
+async function renderAIScripts() {
+  const w = state.words;
+  $("ai-scripts-title").textContent = w.ai_scripts_title;
+  $("ai-scripts-help").textContent = w.ai_scripts_help;
+  $("ai-script-copy").textContent = w.ai_scripts_copy;
+  $("ai-script-copy").title = w.tip_ai_scripts_copy;
+  const pick = $("ai-script");
+  if (pick.dataset.lang === state.lang) return;  // built for this language already: the script shown stays as it is
+  if (!state.aiScripts || state.aiScripts.lang !== state.lang) {
+    try { state.aiScripts = { lang: state.lang, ...(await api().ai_scripts(state.lang)) }; } catch (err) { problem(err); return; }
+  }
+  pick.dataset.lang = state.lang;
+  const { scripts, missing } = state.aiScripts;
+  pick.disabled = Boolean(missing);
+  if (missing) {
+    pick.replaceChildren();
+    $("ai-script-about").textContent = fillText(w.ai_scripts_missing, { why: missing });
+    return;
+  }
+  const groups = new Map();
+  for (const s of scripts) {
+    if (!groups.has(s.map)) groups.set(s.map, el("optgroup", { label: s.map }));
+    groups.get(s.map).append(el("option", { value: s.path, textContent: [s.part, s.file].filter(Boolean).join(" · "),
+      title: s.detail, selected: s.path === state.aiScriptPath }));
+  }
+  pick.replaceChildren(el("option", { value: "", textContent: w.ai_scripts_pick, disabled: true,
+    selected: !state.aiScriptPath }), ...groups.values());
+  if (state.aiScriptPath) showAIScript(state.aiScriptPath);
+}
+
+async function showAIScript(path) {
+  const w = state.words, s = (state.aiScripts.scripts || []).find((x) => x.path === path);
+  if (!s) return;
+  state.aiScriptPath = path;
+  const name = `${s.map} · ${[s.part, s.file].filter(Boolean).join(" · ")}`;
+  $("ai-script-about").textContent = fillText(w.ai_scripts_opening, { name });
+  $("ai-script-copy").disabled = true;
+  $("ai-script").disabled = true;  // one at a time
+  try {
+    const res = await api().ai_script(path);
+    if (state.aiScriptPath !== path) return;
+    $("ai-script-text").textContent = res.text;
+    $("ai-script-text").classList.remove("hidden");
+    $("ai-script-about").textContent = fillText(w.ai_scripts_shown, { name, n: res.lines, file: s.detail });
+    $("ai-script-copy").disabled = false;
+  } catch (err) { problem(err); $("ai-script-about").textContent = ""; } finally { $("ai-script").disabled = false; }
+}
+
+async function copyAIScript() {
+  if (await copyText($("ai-script-text").textContent)) say(state.words.ai_scripts_copied, "ok");
 }
 
 // Duplicate map (maps.js) made a new map: it may have made a map project for it too, which the header's menu shows
@@ -2377,6 +2440,8 @@ async function start() {
   $("tab-units").addEventListener("click", () => showView("units"));
   $("tab-economy").addEventListener("click", () => showView("economy"));
   $("tab-ai").addEventListener("click", () => showView("ai"));
+  $("ai-script").addEventListener("change", (e) => { if (e.target.value) showAIScript(e.target.value); });
+  $("ai-script-copy").addEventListener("click", copyAIScript);
   $("tab-maps").addEventListener("click", () => showView("maps"));
   $("tab-settings").addEventListener("click", () => showView("settings"));
   $("set-game-change").addEventListener("click", () => chooseGame().catch(problem));

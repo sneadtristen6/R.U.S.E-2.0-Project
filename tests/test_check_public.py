@@ -61,6 +61,22 @@ class Guard(unittest.TestCase):
         found = check({**bad, **fine})
         self.assertEqual(sorted(f.split(":")[0] for f in found), sorted(bad))
 
+    def test_the_script_libraries_names_stand_only_in_their_spots(self):
+        """The owner, 2026-10-06 ("Yes, just those spots"): the Studio carries the two libraries LittleGroove's engine
+        shows the game's scripts with; their names may stand where they are pinned, built in and credited, and his
+        engine's function name in our one call of it. Anywhere else, or any other such word in those files: refused."""
+        fine = {"installers/requirements.txt": b"uncompyle6==3.9.3\nxdis==6.1.8\n",
+                ".github/workflows/tests.yml": b'run: python -m pip install "uncompyle6==3.9.3" "xdis==6.1.8"',
+                "installers/build_app.py": b'"include": ("uncompyle6", "xdis")',
+                "THIRD_PARTY_NOTICES.md": b"| uncompyle6 | 3.9.3 | https://github.com/rocky/python-xdis |",
+                "src/rusemod/mapscripts.py": b"lines = xyz_compile.decompile_xyz(xyz).splitlines()"}
+        self.assertEqual(check(fine), [])
+        bad = {"docs/a.md": b"uncompyle6==3.9.3", "src/rusemod/other.py": b"xyz_compile.decompile_xyz(xyz)",
+               "installers/README.md": b"pip install xdis",
+               "installers/requirements.txt": b"# for the scripts' bytecode\nxdis==6.1.8\n",
+               "src/rusemod/mapscripts.py": b"# uncompyle6 turns them into text"}
+        self.assertEqual(sorted(f.split(":")[0] for f in check(bad)), sorted(bad))
+
     def test_the_same_words_in_the_other_languages_are_refused(self):
         """The apps' notes and pages are translated (the owner, 2026-10-05): a translation says no more than the
         English may."""

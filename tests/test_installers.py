@@ -110,6 +110,18 @@ class WorkflowGuards(unittest.TestCase):
         self.assertIn('python: ["3.11", "3.12"]', text)
         self.assertIn("if: matrix.python == '3.12'", text)
 
+    def test_the_tests_install_every_library_the_apps_carry_at_its_pin(self):
+        # what the apps carry is pinned in installers/requirements.txt from numpy on (above it: the build's tools and
+        # the window library); the Python 3.12 test runs install each at that same version, so the tests check what
+        # the apps ship (the Studio's script viewer, 2026-10-06: its libraries and the three they need)
+        req = (ROOT / "installers" / "requirements.txt").read_text(encoding="utf-8")
+        pins = re.findall(r"^([A-Za-z0-9_.-]+==\S+)$", req[req.index("\nnumpy=="):], re.M)
+        self.assertGreater(len(pins), 1)
+        text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+        for pin in pins:
+            with self.subTest(pin=pin):
+                self.assertIn(f'"{pin}"', text)
+
     def test_the_release_page_is_made_in_utf8(self):
         # the page's links name each language in its own script; GitHub's Windows runner prints in a Western code
         # page, and the first release with notes in ten languages stopped on a UnicodeEncodeError in notes_json's
@@ -151,6 +163,26 @@ class BuildCommands(unittest.TestCase):
             self.assertIn(option, cmd)
         self.assertTrue(Path(cmd[-1]).is_file())  # installers/studio.py
         self.assertNotIn("ruse_launcher", " ".join(cmd))  # the other app never goes in
+
+    def test_the_studio_takes_its_script_libraries_whole(self):
+        # the libraries the Studio shows the game's scripts with load parts of themselves by name, which Nuitka
+        # can't follow from the code: the Studio's build takes each whole (its self-test shows a script); the
+        # Launcher doesn't carry them
+        include = build_app.APPS["studio"]["include"]
+        self.assertTrue(include)
+        studio = build_app.nuitka_command("studio", Path("studio.ico"), Path("out"))
+        launcher = build_app.nuitka_command("launcher", Path("launcher.ico"), Path("out"))
+        for package in include:
+            with self.subTest(package=package):
+                self.assertIn(f"--include-package={package}", studio)
+                self.assertNotIn(f"--include-package={package}", launcher)
+
+    def test_the_licence_files_go_beside_the_program(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            build_app.licence_files(Path(tmp))
+            for name in build_app.LICENCE_FILES:
+                with self.subTest(name=name):
+                    self.assertEqual(Path(tmp, name).read_bytes(), (ROOT / name).read_bytes())
 
     def test_installer(self):
         with mock.patch.object(build_app, "iscc", lambda: "ISCC.exe"):

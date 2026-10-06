@@ -395,6 +395,15 @@
         <p id="ai-cards-help" class="muted small"></p>
         <div id="ai-cards"></div>
       </section>
+      <!-- the game's map and mission scripts, read only (app.js renderAIScripts, StudioApi.ai_scripts / ai_script) -->
+      <section class="setting">
+        <h2 id="ai-scripts-title"></h2>
+        <p id="ai-scripts-help" class="muted small"></p>
+        <div class="ai-scripts-bar"><select id="ai-script"></select>
+          <button id="ai-script-copy" type="button" class="ghost small" disabled></button></div>
+        <p id="ai-script-about" class="muted small"></p>
+        <pre id="ai-script-text" class="ai-script-text hidden"></pre>
+      </section>
     </div>
   </main>
 

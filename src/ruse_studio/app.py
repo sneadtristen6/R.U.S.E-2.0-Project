@@ -24,6 +24,16 @@ def _grids() -> str:
     return whole_grids()
 
 
+def _scripts() -> str:
+    """The AI tab's script viewer works: a script of our own is shown as Python (rusemod.mapscripts), so the two
+    libraries LittleGroove's engine uses for it are in the build, every part they load by name included."""
+    from rusemod import mapscripts
+    why = mapscripts.missing()
+    if why:
+        raise RuntimeError(why)
+    return f"a script of ours ({len(mapscripts.sample())} bytes) shown"
+
+
 def _beside_the_code() -> str:
     """The files the app hands to others as files: the scripts Blender runs (Open in Blender, Make in Blender) and
     the blank maps' pictures (rusemod.presets): Studio 0.9.7's install had no Blender script beside its code."""
@@ -59,6 +69,7 @@ def main(argv=None) -> int:
             ("worker programs start (a big map's riverbeds are mended by them)", _workers),
             ("the map sums on whole grids (a big map is painted by them)", _grids),
             ("Blender's scripts and the blank maps' pictures beside the code", _beside_the_code),
+            ("the game's scripts shown as Python (the AI tab)", _scripts),
         ])
     log.mark("api")
     log.go()

@@ -75,6 +75,24 @@ ALLOWED = {"tools/check_public.py", "tests/test_check_public.py", "tools/check_c
 WORDING_ALLOWED = {"LICENSE"}
 # LittleGroove's engine as he wrote and published it (PLAN decision 26): his words are his, left as they are
 WORDING_ALLOWED_DIRS = ("src/ruse_mod_engine/",)
+# The owner, 2026-10-06 ("Yes, just those spots"): the Studio carries the two libraries his engine shows the game's
+# scripts with (rusemod.mapscripts). Their names may stand where they are pinned, built in and credited, and his
+# engine's function name in our one call of it; those exact words, in those files only: anything else there is still
+# checked
+WORDING_SPOTS = {
+    "installers/requirements.txt": ("uncompyle6", "xdis"),
+    "installers/build_app.py": ("uncompyle6", "xdis"),
+    ".github/workflows/tests.yml": ("uncompyle6", "xdis"),
+    "THIRD_PARTY_NOTICES.md": ("uncompyle6", "xdis"),
+    "src/rusemod/mapscripts.py": ("decompile_xyz",),
+}
+
+
+def _without_spots(path: str, text: str) -> str:
+    """The text with the words its file may hold (WORDING_SPOTS) blanked out, the lines kept where they are."""
+    for word in WORDING_SPOTS.get(path, ()):
+        text = text.replace(word, " " * len(word))
+    return text
 TEXT_LIMIT = 4_000_000
 
 
@@ -105,7 +123,7 @@ def problems(paths: list[str], read=lambda p: (ROOT / p).read_bytes()) -> list[s
             continue
         if len(data) > TEXT_LIMIT or b"\0" in data[:8192]:
             continue
-        text = data.decode("utf-8", "replace")
+        text = _without_spots(p, data.decode("utf-8", "replace"))
         m = PROGRAM.search(text)
         if m:
             out.append(f"{p}: names a place in the game's program ({m.group(0)}); program details stay private")

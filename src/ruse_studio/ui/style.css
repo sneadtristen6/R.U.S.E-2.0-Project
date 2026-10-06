@@ -184,6 +184,11 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .ai-cards th small.about { font-family: inherit; font-size: 12px; line-height: 1.35; color: var(--muted); }
 .group td.edited .boxes input[type="number"] { border-color: var(--accent); }
 .group tr:has(> td.edited) th { box-shadow: inset 3px 0 0 var(--accent); }
+.ai-scripts-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.ai-scripts-bar select { max-width: 100%; }
+.ai-script-text { max-height: 60vh; overflow: auto; margin: 6px 0 0; padding: 8px 10px; background: var(--panel-hi);
+                  border: 1px solid var(--line); border-radius: 6px; font: 12px/1.45 Consolas, monospace;
+                  white-space: pre; tab-size: 4; }
 /* a range: its slider beside the box, and about how far that is in metres (app.js rangeSlider, weaponRange) */
 .range { display: inline-flex; align-items: center; gap: 8px; flex: 1 1 180px; min-width: 0; }
 .range input[type="range"] { flex: 1 1 auto; min-width: 100px; max-width: 260px; accent-color: var(--accent); }

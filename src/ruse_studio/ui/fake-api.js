@@ -1145,7 +1145,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ai_not_in_menu: "Not in the ruse menu", tip_ai_reset: "Put the value back as the game has it.",
     ai_group_attack: "Attacking", ai_group_defense: "Defending", ai_group_harass: "Harassing", ai_group_money: "Money",
     ai_group_depots: "Depots and trucks", ai_group_production: "Building units", ai_group_weights: "What it likes to build",
-    ai_group_ruses: "Ruses", ai_group_retaliation: "Retaliation", ai_group_intel: "Intelligence", ai_group_other: "Other" });
+    ai_group_ruses: "Ruses", ai_group_retaliation: "Retaliation", ai_group_intel: "Intelligence", ai_group_other: "Other",
+    ai_scripts_title: "Map and mission scripts (read only)",
+    ai_scripts_help: "The scripts the game runs on its maps: the campaign's chapters, challenges, Operations and its own tests (IA_Common.dat), shown as Python to read. A big one takes a few seconds to open. From LittleGroove's AI editor; changing a script isn't here yet.",
+    ai_scripts_pick: "Pick a script…", ai_scripts_opening: "Opening {name}… (a big script takes a few seconds)",
+    ai_scripts_shown: "{name}: {n} lines ({file})", ai_scripts_missing: "This copy of the Studio can't show the scripts: {why}",
+    ai_scripts_copy: "Copy", tip_ai_scripts_copy: "Copy the whole script.", ai_scripts_copied: "Script copied." });
   Object.assign(words.fr, { ai_tab: "IA", ai_title: "IA : les joueurs ordinateur", ai_default: "Défaut",
     ai_group_attack: "Attaque", ai_group_money: "Argent", ai_not_in_menu: "Pas dans le menu des ruses" });
   Object.assign(words.sc, { ai_tab: "AI", ai_title: "AI：电脑玩家", ai_default: "默认", ai_group_attack: "进攻",
@@ -1556,6 +1561,20 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       ai_reset: async (address, prop) => {
         aiEdits.delete(`${address}|${prop}`);
         return { saved: current + "/src/studio.rndf", same_default: aiSame(address, prop) };
+      },
+      // the AI tab's scripts (StudioApi.ai_scripts / ai_script): a made-up list, and a made-up script (never the game's)
+      ai_scripts: async () => ({ missing: mode === "noindex" ? "ImportError: a library isn't there" : null, scripts: [
+        { path: "genpython\\1000\\test\\map\\m01_leipzig\\scripting\\effetmap.xyz", map: "1. COLDITZ CASTLE", part: "",
+          file: "effetmap.xyz", detail: "m01_leipzig/scripting/effetmap.xyz" },
+        { path: "genpython\\1000\\test\\map\\m04_cotentin\\scripting_chapter1\\effetmap.xyz",
+          map: "D-Day / 10. UTAH BEACH / 11. THE HEDGEROW WAR …", part: "chapter1", file: "effetmap.xyz",
+          detail: "m04_cotentin/scripting_chapter1/effetmap.xyz" },
+        { path: "genpython\\1000\\test\\map\\supercrossroads4\\scripting_challenge\\effetmap.xyz", map: "Blitz / Anzio",
+          part: "challenge", file: "effetmap.xyz", detail: "supercrossroads4/scripting_challenge/effetmap.xyz" }] }),
+      ai_script: async (path) => {
+        await new Promise((r) => setTimeout(r, 600));  // a big one takes seconds
+        const text = "# a made-up script for the preview\nGOAL = 'Hold the bridge'\n\ndef start(camp):\n    camp.say(GOAL)\n";
+        return { path, text, lines: text.split("\n").length - 1 };
       },
       test_in_game: async () => ({ job: "test" }),
       // a made-up road network: one road east-west across the island, one north-south (Stick to roads)
