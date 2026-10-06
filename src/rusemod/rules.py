@@ -52,6 +52,11 @@ RULES: dict[str, Rule] = {
         "game", "62: rule test C (2026-10-02): flag 62 on the US Stuart stopped the game as the match started; the "
                 "game's script puts every unit with flag 62 in the truck list as it builds the tech tree, and that "
                 "step failed (DomesticNukes saw the same). 63: ProLution's report, not tested by us"),
+    "ruses-per-sector": Rule(
+        "More than two ruse cards on one sector crashes the game: a sector has room for two.",
+        "game", "T37 (owner, 2026-10-06): with the most ruse cards per sector (MaxNbCardsPerZoneByAlliance) at 4, the "
+                "game let him put a third on a sector and crashed; other modders' mods for more ruses per sector "
+                "crashed too (the owner). Two was seen working; one and none weren't tried"),
     "skirmish-neutral-spawns": Rule(
         "A BATTLES (skirmish) scenario places only neutral spawns; a team's would not appear.",
         "studied", "the game's BATTLES script starts every map with no team list, so only neutral spawns are placed "

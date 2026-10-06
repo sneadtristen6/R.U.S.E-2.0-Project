@@ -45,12 +45,13 @@ def floats(v) -> list[float]:
 
 
 PROPS = ["QteDeviseInitiale", "QteDeviseParCamion", "CheckAndCancelWaitingRequest",
-         "PaliersTempsToChooseNewCardForAllianceTaille_1", "MaxProductionQueueSize", "UsePopCap"]
+         "PaliersTempsToChooseNewCardForAllianceTaille_1", "MaxProductionQueueSize", "UsePopCap",
+         "MaxNbCardsPerZoneByAlliance"]
 
 
 def constants(per_truck: int, card_times) -> bytes:
     """One copy of the constants as the game has it: one named object, a few of its values."""
-    values = [i32(200), i32(per_truck), flag(1), lst(*(f32(t) for t in card_times)), u32(30), flag(0)]
+    values = [i32(200), i32(per_truck), flag(1), lst(*(f32(t) for t in card_times)), u32(30), flag(0), i32(2)]
     return make_ndf(objects=[(0, list(enumerate(values)))], classes=["TTunableConstante"],
                     props=[(p, 0) for p in PROPS], exports={0: "GFX/Everything/Constantes"}, topo=[0])
 
@@ -181,6 +182,7 @@ class Tab(unittest.TestCase):
     def test_what_is_refused(self):
         self.api.new_mod("Rich")
         for prop, value, why in (("UsePopCap", 1, "isn't one of the economy's values"),
+                                 ("MaxNbCardsPerZoneByAlliance", 2, "isn't one of the economy's values"),
                                  ("NoSuchValue", 1, "isn't one of the economy's values"),
                                  ("QteDeviseInitiale", "lots", "numbers only"),
                                  ("QteDeviseInitiale", [1, 2], "one number"),
@@ -189,6 +191,23 @@ class Tab(unittest.TestCase):
             with self.subTest(prop=prop, value=value), self.assertRaisesRegex(StudioError, why):
                 self.api.economy_edit(prop, value)
         self.assertFalse((self.home / "mods" / "rich" / "src" / "studio.rndf").is_file())  # nothing half-saved
+
+    def test_more_than_two_ruses_per_sector_is_refused_in_the_build(self):
+        """T37 (owner, 2026-10-06): a third ruse on one sector crashed the game; "dont want ppl messing w it yet". The
+        Economy tab doesn't offer it, and the build refuses more than two from any mod (rusemod.rules ruses-per-sector)."""
+        self.api.new_mod("Ruses")
+        folder = self.home / "mods" / "ruses"
+        arc = Edat((self.game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes())
+        for most, errors in ((3, 1), (2, 0), (1, 0)):
+            with self.subTest(most=most):
+                (folder / "src").mkdir(exist_ok=True)
+                (folder / "src" / "hand.rndf").write_text(
+                    f"patch {NORMAL} ( MaxNbCardsPerZoneByAlliance = {most} )\n", encoding="utf-8")
+                found = [f.message for f in build_pack(arc, [load_mod(folder)]).errors]
+                self.assertEqual(len(found), errors, found)
+                if errors:
+                    self.assertIn("hand.rndf", found[0])
+                    self.assertIn("more than 2 ruse cards on one sector crashes the game", found[0])
 
 
 if __name__ == "__main__":

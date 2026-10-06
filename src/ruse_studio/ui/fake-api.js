@@ -1122,7 +1122,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       ["TempsENtreDeuxConvois", "Seconds between supply convoys", "int32", 30], ["RatioForDepotNearlyDepleted", "A depot is nearly empty at (share left)", "float32", 0.25]]],
     ["production", [["MinProductionTime", "Shortest build time (seconds)", "float32", 1], ["MaxProductionQueueSize", "Production queue length (most)", "uint32", 30],
       ["NbAvionsParAeroport", "Planes per airfield", "int32", 8]]],
-    ["cards", [["MaxNbCardsPerZoneByAlliance", "Ruse cards per sector for each side (most)", "int32", 2],
+    ["cards", [["NbMaxCardsInPool", "Ruse cards in the pool (most)", "int32", 99],
       ["NbInitialCardsInPoolForAllianceTaille_1", "Ruse cards at the start: 1 player per side", "int32", 2, 4],
       ["PaliersTempsToChooseNewCardForAllianceTaille_1", "New ruse cards after (seconds): 1 player per side", "float32", [105, 210, 315], [80, 160, 240]]]],
     ["computer", [["ArmyValueForceLaunchAttack", "Army worth that makes the computer attack", "uint32", 600],

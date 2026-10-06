@@ -5,6 +5,8 @@ the Studio changes both copies from one value, each reached by the file it's in,
 
 Depots, admin buildings and truck factories themselves (price, build time, strength) are buildings: the Studio's
 Units page changes them. The population cap isn't offered: it is a console setting, off in the PC game (not tested).
+Nor are the most ruse cards on one sector: more than two crashes the game (rusemod.rules, ruses-per-sector, which the
+build refuses from any mod), and the owner wants it left as the game has it for now (2026-10-06).
 """
 from __future__ import annotations
 
@@ -20,7 +22,7 @@ GROUPS = (
     ("production", ("MinProductionTime", "MaximumBatimentProduction", "MaxProductionQueueSize",
                     "MaxBatimentAndTechnoProductionSimultaneous", "VirtualFactoryQueueMaximumSlot",
                     "NbAvionsParAeroport")),
-    ("cards", ("NbMaxCardsInPool", "MaxNbCardsPerZoneByAlliance",
+    ("cards", ("NbMaxCardsInPool",
                *(f"NbInitialCardsInPoolForAllianceTaille_{n}" for n in _SIZES),
                *(f"PaliersTempsToChooseNewCardForAllianceTaille_{n}" for n in _SIZES))),
     ("computer", ("ArmyValueForceLaunchAttack", "MinArmyValueToUseManipulationCard", "MaxWaitingRequest",
@@ -32,6 +34,7 @@ GROUPS = (
                 "ConstructionDelayForFakeBuildingsMin", "ConstructionDelayForFakeBuildingsMax")),
 )
 PROPS = tuple(p for _group, props in GROUPS for p in props)
+RUSES_PER_SECTOR, RUSES_PER_SECTOR_MOST = "MaxNbCardsPerZoneByAlliance", 2  # each sector has room for two ruses
 
 
 def copies(objects: list[dict]) -> dict[str, dict]:

@@ -776,6 +776,22 @@ class Engine:
                 self._find("warning", message, self.created[name])
         self._truck_flags(new)
         self._unit_rules(new)
+        self._ruses_per_sector()
+
+    def _ruses_per_sector(self) -> None:
+        """More than two ruses on one sector crashes the game (rusemod.economy): an error for every copy of the game's
+        constants holding more, naming the last operation that set it; a .rmod mod's change (made before these
+        operations ran) has none, so the message says where else it came from."""
+        from .economy import CLASS, RUSES_PER_SECTOR as PROP, RUSES_PER_SECTOR_MOST as MOST
+        for name, obj in self.game.objects.items():
+            v = obj.props.get(PROP) if obj.cls == CLASS else None
+            if not isinstance(v, Num) or v.value <= MOST:
+                continue
+            op = self._blame(lambda o, p, n=name: o == n and _root(p) == PROP)
+            why = f"{PROP} = {v.value}: more than {MOST} ruse cards on one sector crashes the game (a sector has room " \
+                  f"for {MOST}); leave it at {MOST} or lower"
+            # rule: ruses-per-sector
+            self._find("error", f"{op.at()}: {why}" if op else f"{name}: {why} (a .rmod mod in the set sets it)", op)
 
     def _finish_obj(self, name: str, obj: Obj, write: bool) -> list[str] | None:
         """Round the numbers of the top-level object `name` once (in place) and check its references: the errors, in
