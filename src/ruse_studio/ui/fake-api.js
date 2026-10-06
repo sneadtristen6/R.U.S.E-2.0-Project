@@ -1102,7 +1102,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   // the Economy tab (words.toml economy_*, tip_tab_economy, tip_economy_reset)
   Object.assign(words.us, { economy_tab: "Economy", economy_title: "Economy",
     tip_tab_economy: "Money, income, supply trucks, production limits and ruse cards, for every battle with this mod.",
-    economy_help: "A change here is saved in the current mod at once, for every game mode (the game keeps these values twice: for its usual modes and for the Nuclear mode). From LittleGroove's Economy editor in RUSE Mod Manager. Not tried in the game yet.",
+    economy_help: "A change here is saved in the current mod at once, for every game mode (the game keeps these values twice: for its usual modes and for the Nuclear mode). From LittleGroove's Economy editor in RUSE Mod Manager. Tried in the game: the starting money and the ruse cards at the start; the rest not yet.",
     economy_buildings: "Supply depots and administration buildings are buildings: change their price, build time and strength on the Units tab, under Buildings.",
     economy_none: "The game index has none of the economy's values. Build it again in Settings.",
     economy_atomic: "Nuclear mode: {v} as the game has it (a change sets both)",
