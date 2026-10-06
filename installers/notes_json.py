@@ -70,6 +70,8 @@ def main(argv: list[str]) -> int:
         print(__doc__)
         return 2
     app, where = argv[0], argv[1]
+    if hasattr(sys.stdout, "reconfigure"):  # the links name each language in its own script: 日本語, Русский...
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # (a Western console stopped launcher-v0.4.8)
     try:
         notes = book(app)
     except (NotesError, OSError) as exc:

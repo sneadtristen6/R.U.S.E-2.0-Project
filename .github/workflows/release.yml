@@ -51,9 +51,13 @@ jobs:
           $setup = Get-ChildItem "dist/*-Setup-${{ steps.tag.outputs.version }}.exe"
           if (-not $setup) { throw "no installer for version ${{ steps.tag.outputs.version }}: the tag must match the app's __version__" }
           $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLower()
-          $about = Get-Content -Raw ".github/release-notes/${{ steps.tag.outputs.app }}.md"
+          $about = Get-Content -Raw -Encoding utf8 ".github/release-notes/${{ steps.tag.outputs.app }}.md"
           # every language's notes in one file beside the installer: the apps show what's new in their own language
-          # (installers/notes_json.py, rusemod.update NOTES_ASSET); the page links each language's notes
+          # (installers/notes_json.py, rusemod.update NOTES_ASSET); the page links each language's notes. The links
+          # name each language in its own script, so Python's output and PowerShell's reading of it are both UTF-8:
+          # the runner's Western code page stopped the first release with ten languages (launcher-v0.4.8, 2026-10-06)
+          $env:PYTHONIOENCODING = "utf-8"
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           $langs = python installers/notes_json.py ${{ steps.tag.outputs.app }} dist "${{ github.ref_name }}"
           if ($LASTEXITCODE -ne 0) { throw "the release notes in other languages can't be read (installers/notes_json.py)" }
           $book = Get-ChildItem "dist/RUSE-*-notes.json"

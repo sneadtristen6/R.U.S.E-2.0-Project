@@ -110,6 +110,33 @@ class WorkflowGuards(unittest.TestCase):
         self.assertIn('python: ["3.11", "3.12"]', text)
         self.assertIn("if: matrix.python == '3.12'", text)
 
+    def test_the_release_page_is_made_in_utf8(self):
+        # the page's links name each language in its own script; GitHub's Windows runner prints in a Western code
+        # page, and the first release with notes in ten languages stopped on a UnicodeEncodeError in notes_json's
+        # print (launcher-v0.4.8, 2026-10-06). Before that print: Python's output and PowerShell's reading of it UTF-8,
+        # and the English notes read as UTF-8 too
+        text = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+        publish = text[text.index("name: Publish the release"):]
+        before = publish[:publish.index("python installers/notes_json.py")]
+        self.assertIn('$env:PYTHONIOENCODING = "utf-8"', before)
+        self.assertIn("[Console]::OutputEncoding = [System.Text.Encoding]::UTF8", before)
+        self.assertIn("Get-Content -Raw -Encoding utf8", before)
+
+
+class ReleaseNotesLinks(unittest.TestCase):
+    def test_the_links_print_on_a_western_console(self):
+        # what the runner did: a stdout in cp1252. notes_json makes its own output UTF-8 whatever the console is
+        notes_json = load("notes_json")
+        raw = io.BytesIO()
+        out = io.TextIOWrapper(raw, encoding="cp1252", write_through=True)
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(sys, "stdout", out):
+            code = notes_json.main(["launcher", tmp, "launcher-v0.4.8"])
+            sys.stdout.flush()
+        self.assertEqual(code, 0)
+        expected = notes_json.links("launcher", "launcher-v0.4.8", notes_json.book("launcher"))
+        self.assertEqual(raw.getvalue().decode("utf-8").strip(), expected)
+        self.assertFalse(expected.isascii(), "the links should hold a language's own name (the case that broke)")
+
 
 class BuildCommands(unittest.TestCase):
     def test_versions_come_from_the_apps(self):
