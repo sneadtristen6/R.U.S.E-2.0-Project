@@ -29,7 +29,7 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from rusemod import doctor, identity, missions, mod_index, package, scenario, scenery, schema, startlog
+from rusemod import doctor, economy, identity, missions, mod_index, package, scenario, scenery, schema, startlog
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -3333,6 +3333,91 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         with self._saving:
             edits = ModEdits(edits.folder)
             edits.reset(where, prop, how)
+        return {"saved": str(edits.file)}
+
+    # --- the economy (rusemod.economy): the game's constants, changed in both of their copies at once ---
+    def _economy_copies(self) -> tuple[dict, dict]:
+        """({game mode: its constants object}, the class's value types), from the game index."""
+        ix = self._open()
+        try:
+            return economy.copies(ix.of_class(economy.CLASS)), ix.prop_types(economy.CLASS)
+        finally:
+            ix.close()
+
+    def economy(self, lang: str = schema.BASE) -> dict:
+        """The economy's values (rusemod.economy.GROUPS) as the Economy tab shows them: per group, each value's name
+        in `lang`, the game's value for its usual modes, the Nuclear mode's when it differs, and the current mod's
+        change (None: no change). `ready` is False when the game index has none of them."""
+        found, types = self._economy_copies()
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        copy = {mode: _props(o) for mode, o in found.items()}
+        groups = []
+        for group, props in economy.GROUPS:
+            rows = []
+            for prop in props:
+                p = copy.get("normal", {}).get(prop) or copy.get("atomic", {}).get(prop)
+                if p is None or not _can_edit(prop, p):
+                    continue
+                game = p["numbers"] if p["list"] else p["numbers"][0]
+                a = copy.get("atomic", {}).get(prop)
+                atomic = (a["numbers"] if a["list"] else a["numbers"][0]) if a else None
+                mine = None
+                if edits is not None:
+                    mine = edits.get(economy.TARGETS["normal"], prop)
+                    if mine is None:
+                        mine = edits.get(economy.TARGETS["atomic"], prop)
+                rows.append({"prop": prop, "label": schema.label(prop, lang), "list": p["list"],
+                             "type": types.get(prop + "[]" if p["list"] else prop, ""), "game": game,
+                             "atomic": atomic if atomic != game else None, "value": mine})
+            groups.append({"id": group, "rows": rows})
+        return {"ready": bool(found), "groups": groups}
+
+    def economy_edit(self, prop: str, value) -> dict:
+        """Change one economy value in the current mod: in both copies of the game's constants, so it holds in every
+        game mode. Saved at once; a copy given its own value back loses its change."""
+        if prop not in economy.PROPS:
+            raise StudioError(f"{prop} isn't one of the economy's values")
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        found, types = self._economy_copies()
+        if not found:  # not a game rule: our index of the game has no copy of the constants (an older index)
+            raise StudioError("The game index has none of the economy's values: build it again in Settings.")
+        values = value if isinstance(value, list) else [value]
+        if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in values):
+            raise StudioError(f"{prop}: numbers only")
+        new = {}
+        for mode, o in found.items():  # every copy checked before anything is saved
+            p = _props(o).get(prop)
+            if p is None or not _can_edit(prop, p):
+                raise StudioError(f"{prop} can't be changed here")
+            if p["list"] != isinstance(value, list) or len(values) != len(p["numbers"]):
+                raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
+            kind = types.get(prop + "[]" if p["list"] else prop, "")
+            got = [_whole(v, kind, prop) for v in values] if kind in INT_RANGES else list(values)
+            new[mode] = (got if p["list"] else got[0], p["numbers"] if p["list"] else p["numbers"][0])
+        with self._saving:
+            edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
+            for mode, (value_, game) in new.items():
+                if value_ == game:
+                    edits.reset(economy.TARGETS[mode], prop)
+                else:
+                    edits.set(economy.TARGETS[mode], prop, value_)
+        shown = new.get("normal", next(iter(new.values())))[0]
+        return {"saved": str(edits.file), "value": shown}
+
+    def economy_reset(self, prop: str) -> dict:
+        """Take one economy value's change out of the current mod (both copies)."""
+        edits = self._edits()
+        if edits is None:
+            return {"saved": None}
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            for target in economy.TARGETS.values():
+                edits.reset(target, prop)
         return {"saved": str(edits.file)}
 
     # --- a unit's look: its models out to Blender, its paint back into the mod (rusemod.unitlook, rusemod.blender) ---

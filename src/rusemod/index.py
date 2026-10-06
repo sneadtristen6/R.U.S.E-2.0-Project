@@ -440,9 +440,18 @@ class Index:
         return self.db.execute("""SELECT address, class FROM object WHERE (address LIKE ? OR class LIKE ?) AND shadow = 0
                                   ORDER BY stable DESC, export IS NULL, address LIMIT ?""", (like, like, limit)).fetchall()
 
+    def of_class(self, cls: str) -> list[dict]:
+        """Every object of `cls` as show() gives it, each with the game file it's in: for objects that share one name
+        in several files (rusemod.economy's two copies), where an address reaches only the first."""
+        rows = self.db.execute("""SELECT o.id FROM object o JOIN file f ON f.id = o.file
+                                  WHERE o.class = ? AND o.shadow = 0 ORDER BY f.location, o.idx""", (cls,)).fetchall()
+        return [self._shown(oid) for (oid,) in rows]
+
     def show(self, address: str) -> dict:
         """One object: where it lives, its class, its numbers and texts, who owns it."""
-        oid = self._object(address)
+        return self._shown(self._object(address))
+
+    def _shown(self, oid: int) -> dict:
         o = self.db.execute("""SELECT o.address, o.class, o.export, o.stable, o.shared, o.idx, f.location
                                FROM object o JOIN file f ON f.id = o.file WHERE o.id = ?""", (oid,)).fetchone()
         values = self.db.execute("SELECT path, num, text FROM value WHERE object = ? ORDER BY rowid", (oid,)).fetchall()

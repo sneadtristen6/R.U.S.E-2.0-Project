@@ -1099,6 +1099,37 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"model_title": "Its own model", "model_how": "It uses the model of the unit it copies. Import a 3D model (.3ds, or .glb from Blender and most 3D tools) to give it one of its own: it's fitted to that unit's length (times Size), its turret on that unit's turret, and turns and drives the same way.", "model_import": "Import model…", "model_import_again": "Import another…", "tip_model_import": "Pick a .3ds (with its pictures beside it, or in the folder above) or a .glb. It's fitted to the copied unit and saved in your mod; Test in game shows it.", "model_size": "Size", "tip_model_size": "Its length over the copied unit's: 1 is as long; an M1 Abrams over a Sherman is 1.36.", "model_importing": "Fitting the model to the unit…", "model_done": "{file} is now this unit's model. Click Test in game to see it.", "model_own": "From {file}: {points} points, {triangles} triangles.", "model_turret": "Turning with the turret: {parts}. The rest moves with the hull.", "model_missing": "Pictures not found: {names}. Those parts show one flat colour. Put the pictures beside the model (or the folder above it) and import it again.", "model_remove": "Use the copied unit's model", "tip_model_remove": "Take its own model out of the mod: it looks like the unit it copies again."});
   // the Units tab's two ways in (words.toml start_*, pick_unit_new, tip_start_from, new_unit_next, model_want*)
   Object.assign(words.us, {"start_change": "Change a unit", "tip_start_change": "Pick a unit to change its values, or open it in Blender to repaint it.", "start_new": "New unit (import a model)", "tip_start_new": "Start a new unit from a game unit: it copies its values and moves the same way. Then import your own 3D model and change the rest.", "start_new_help": "Pick the unit to start from: your new unit copies its values, and your model turns and drives the way its model does. Tested with tanks so far.", "pick_unit_new": "Pick the unit your new one starts from, on the left.", "tip_start_from": "Start a new unit from this one.", "new_unit_next": "Your new unit starts as a copy of {name}. Give it a name, a price and a build menu, then Create: its page opens at Import model.", "model_want": "A model of your own goes on a new unit: make one from this unit, then Import model on its page. This unit stays as it is.", "model_want_button": "New unit from this one…", "tip_model_want": "Opens New unit on this page: a name, a price and a build menu. The new unit's page has Import model."});
+  // the Economy tab (words.toml economy_*, tip_tab_economy, tip_economy_reset)
+  Object.assign(words.us, { economy_tab: "Economy", economy_title: "Economy",
+    tip_tab_economy: "Money, income, supply trucks, production limits and ruse cards, for every battle with this mod.",
+    economy_help: "A change here is saved in the current mod at once, for every game mode (the game keeps these values twice: for its usual modes and for the Nuclear mode). From LittleGroove's Economy editor in RUSE Mod Manager. Not tried in the game yet.",
+    economy_buildings: "Supply depots and administration buildings are buildings: change their price, build time and strength on the Units tab, under Buildings.",
+    economy_none: "The game index has none of the economy's values. Build it again in Settings.",
+    economy_atomic: "Nuclear mode: {v} as the game has it (a change sets both)",
+    tip_economy_reset: "Put the value back as the game has it, in every game mode.",
+    economy_group_money: "Money and income", economy_group_supply: "Supply depots", economy_group_production: "Production",
+    economy_group_cards: "Ruse cards", economy_group_computer: "Computer players", economy_group_decoys: "Decoys" });
+  Object.assign(words.fr, { economy_tab: "Économie", economy_title: "Économie", economy_group_money: "Argent et revenus",
+    economy_group_supply: "Dépôts de ravitaillement", economy_group_cards: "Cartes de ruse",
+    economy_atomic: "Mode Nucléaire : {v} dans le jeu (un changement règle les deux)" });
+  Object.assign(words.sc, { economy_tab: "经济", economy_title: "经济", economy_group_money: "资金与收入",
+    economy_group_supply: "补给站", economy_group_cards: "计谋卡", economy_atomic: "核战争模式：游戏中为 {v}（更改会同时设置两者）" });
+  // [prop, its name, type, the game's value, the Nuclear mode's when it differs]: some of rusemod.economy's values
+  const ECONOMY = [
+    ["money", [["QteDeviseInitiale", "Starting money", "int32", 200], ["TempsGenAutoDevises", "Income: seconds between payments", "int32", 4],
+      ["QuantiteGenAutoDevises", "Income: money each payment", "int32", 1], ["StockDeviseSupplementaireFacile", "Extra money on Easy", "int32", 72]]],
+    ["supply", [["QteDeviseParCamion", "Money each supply truck brings", "int32", 3, 6], ["NbCamionParConvoi", "Trucks in a supply convoy", "int32", 3],
+      ["TempsENtreDeuxConvois", "Seconds between supply convoys", "int32", 30], ["RatioForDepotNearlyDepleted", "A depot is nearly empty at (share left)", "float32", 0.25]]],
+    ["production", [["MinProductionTime", "Shortest build time (seconds)", "float32", 1], ["MaxProductionQueueSize", "Production queue length (most)", "uint32", 30],
+      ["NbAvionsParAeroport", "Planes per airfield", "int32", 8]]],
+    ["cards", [["MaxNbCardsPerZoneByAlliance", "Ruse cards per sector for each side (most)", "int32", 2],
+      ["NbInitialCardsInPoolForAllianceTaille_1", "Ruse cards at the start: 1 player per side", "int32", 2, 4],
+      ["PaliersTempsToChooseNewCardForAllianceTaille_1", "New ruse cards after (seconds): 1 player per side", "float32", [105, 210, 315], [80, 160, 240]]]],
+    ["computer", [["ArmyValueForceLaunchAttack", "Army worth that makes the computer attack", "uint32", 600],
+      ["CheckAndCancelWaitingRequest", "The computer cancels orders that waited too long", "bool", 1]]],
+    ["decoys", [["ConstructionDelayForFakeBuildingsMin", "Decoy buildings: seconds before building (least)", "int32", 5]]],
+  ];
+  const economyEdits = new Map();  // prop -> the mod's value (StudioApi.economy_edit)
   // Delete map (words.toml delete_map, tip_delete_map, really_delete_map, map_deleted)
   Object.assign(words.us, {"delete_map": "Delete map", "tip_delete_map": "Take this new map out of your map changes, with everything changed on it. Its folder goes to the Recycle Bin, so it can be put back from there. The game's own maps can't be deleted.", "really_delete_map": "Delete {name}? Everything changed on it goes to the Recycle Bin with it.", "map_deleted": "{name} was deleted: its folder is in the Recycle Bin, if you want it back."});
   const exported = { path: "C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod", file: "sherman-test-0.1.0.rusemod",
@@ -1411,6 +1442,19 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         edits.delete(editKey(address, prop, how, via));
         return { saved: current + "/src/studio.rndf" };
       },
+      // the Economy tab (StudioApi.economy): a few of the game's values, as the real index has them
+      economy: async (lang) => ({ ready: mode !== "noindex", groups: ECONOMY.map(([id, rows]) => ({ id, rows: rows.map(
+        ([prop, label, type, game, atomic]) => ({ prop, label: lang === "base" ? prop : label, type, list: Array.isArray(game),
+          game, atomic: atomic === undefined ? null : atomic, value: economyEdits.has(prop) ? economyEdits.get(prop) : null })) })) }),
+      economy_edit: async (prop, value) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        const row = ECONOMY.flatMap(([, rows]) => rows).find((r) => r[0] === prop);
+        const whole = (v) => row[2] === "float32" ? v : Math.round(v);
+        const v = Array.isArray(value) ? value.map(whole) : whole(value);
+        if (JSON.stringify(v) === JSON.stringify(row[3])) economyEdits.delete(prop); else economyEdits.set(prop, v);
+        return { saved: current + "/src/studio.rndf", value: v };
+      },
+      economy_reset: async (prop) => { economyEdits.delete(prop); return { saved: current + "/src/studio.rndf" }; },
       test_in_game: async () => ({ job: "test" }),
       // a made-up road network: one road east-west across the island, one north-south (Stick to roads)
       map_road_graph: async () => ({ nodes: [[300000, 600000], [1000000, 600000], [655000, 350000], [655000, 900000]],

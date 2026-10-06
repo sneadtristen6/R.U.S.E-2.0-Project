@@ -77,9 +77,11 @@ async function setLanguage(lang) {
   state.nationNames = await api().nations(lang);
   const w = state.words;
   $("tab-units").textContent = w.units_tab;
+  $("tab-economy").textContent = w.economy_tab;
   $("tab-maps").textContent = w.maps_tab;
   $("tab-settings").textContent = w.settings_tab;
   if (state.view === "maps" && window.MapView) window.MapView.setWords(w, lang);
+  if (state.view === "economy") renderEconomy();
   $("lang-name").textContent = lang === "base" ? w.game_names
     : (state.languages.find((l) => l.code === lang) || {}).name || "";
   renderLangPick();
@@ -100,7 +102,7 @@ async function setLanguage(lang) {
   $("test-log-close").textContent = w.close;
   $("test-log-copy").textContent = w.doc_copy;
   // tooltips: one sentence on every control, from words.toml (tip_*)
-  const tips = { "tab-units": "tip_tab_units", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
+  const tips = { "tab-units": "tip_tab_units", "tab-economy": "tip_tab_economy", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close", "test-log-copy": "tip_copy_log",
     "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
@@ -214,6 +216,7 @@ async function modChanged() {
   await refreshMarks();
   if (state.page) await showUnit(state.page.address, state.page.via);
   if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // a map's strokes are the mod's
+  if (state.view === "economy") await renderEconomy();  // the economy shown is the mod's
 }
 
 async function pickMod(e, kind = "mod") {
@@ -1738,21 +1741,95 @@ function unitKeys(e) {
 function showView(view) {
   state.view = view;
   $("units-view").classList.toggle("hidden", view !== "units");
+  $("economy-view").classList.toggle("hidden", view !== "economy");
   $("maps-view").classList.toggle("hidden", view !== "maps");
   $("settings-view").classList.toggle("hidden", view !== "settings");
   $("tab-units").setAttribute("aria-selected", String(view === "units"));
+  $("tab-economy").setAttribute("aria-selected", String(view === "economy"));
   $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
   $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
-  $("pick-mod").classList.toggle("hidden", view === "maps");  // the Units tab edits a mod, the Maps tab a map
+  $("pick-mod").classList.toggle("hidden", view === "maps");  // the Units and Economy tabs edit a mod, Maps a map
   $("pick-map").classList.toggle("hidden", view !== "maps");
-  // "No game index yet" (and the index's build, a minute or more) covers the Units tab only: the Maps tab and
-  // Settings (where the installer's clean backup shows how far it is) can be used meanwhile
-  $("no-index").classList.toggle("off-tab", view !== "units");
+  // "No game index yet" (and the index's build, a minute or more) covers the tabs that read it, Units and Economy:
+  // the Maps tab and Settings (where the installer's clean backup shows how far it is) can be used meanwhile
+  $("no-index").classList.toggle("off-tab", view !== "units" && view !== "economy");
+  if (view === "economy") { renderEconomy(); return; }
   if (view === "settings") { renderSettings(); loadBackup(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
   if (window.MapView) open();
   else window.addEventListener("mapview-ready", open, { once: true });
+}
+
+// --- the Economy tab (StudioApi.economy, rusemod.economy; LittleGroove's Economy editor brought over): starting money,
+// income, supply depots, production limits, ruse cards and the computer players'. A change is saved in the current
+// mod at once, for every game mode (the game has these values twice: its usual modes and the Nuclear mode) ---
+async function renderEconomy() {
+  const w = state.words;
+  $("economy-title").textContent = w.economy_title;
+  $("economy-help").textContent = state.mod ? w.economy_help : w.no_mod;
+  $("economy-buildings").textContent = w.economy_buildings;
+  let data;
+  try { data = await api().economy(state.lang); } catch (err) { problem(err); return; }
+  if (state.view !== "economy") return;  // another tab was picked meanwhile
+  const groups = data.groups.filter((g) => g.rows.length);
+  $("economy-groups").replaceChildren(...(data.ready && groups.length ? groups.map((g) => {
+    const table = el("table");
+    for (const r of g.rows) table.append(economyRow(r));
+    return el("div", { className: "group" }, el("h2", { textContent: w[`economy_group_${g.id}`] || g.id }), table);
+  }) : [el("p", { className: "muted", textContent: w.economy_none })]));
+}
+
+function economyRow(r) {
+  const w = state.words;
+  const th = el("th", { textContent: r.label });
+  if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
+  const game = r.list ? r.game : [r.game];
+  let mine = r.value === null ? null : r.list ? r.value : [r.value];
+  const boxes = (mine || game).map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+  const was = el("div", { className: "was" });
+  const cell = el("td", {}, el("div", { className: "boxes" }, ...boxes), was);
+  if (r.atomic !== null) {  // the Nuclear mode's own value, as the game has it: a change sets both
+    cell.append(el("div", { className: "muted small",
+      textContent: w.economy_atomic.replace("{v}", (r.list ? r.atomic : [r.atomic]).join(" · ")) }));
+  }
+  const tr = el("tr", {}, th, cell);
+  const show = (numbers) => boxes.forEach((b, i) => {
+    if (b.type === "checkbox") b.checked = Boolean(numbers[i]); else b.value = String(numbers[i]);
+    b.setAttribute("aria-invalid", "false");
+  });
+  const showWas = () => {
+    tr.classList.toggle("edited", mine !== null);
+    if (mine === null) { was.replaceChildren(); return; }
+    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_economy_reset });
+    undo.addEventListener("click", async () => {
+      try {
+        await api().economy_reset(r.prop);
+        mine = null;
+        show(game);
+        showWas();
+        say("");
+      } catch (err) { problem(err); }
+    });
+    was.replaceChildren(el("span", { textContent: w.was.replace("{v}", game.join(" · ")) }), undo);
+  };
+  const save = async (box) => {
+    const numbers = boxes.map(readBox);
+    const bad = numbers.findIndex((n) => !Number.isFinite(n));
+    boxes.forEach((b, i) => b.setAttribute("aria-invalid", String(i === bad)));
+    if (bad >= 0) { box.focus(); return; }
+    try {
+      const res = await api().economy_edit(r.prop, r.list ? numbers : numbers[0]);
+      const value = r.list ? res.value : [res.value];
+      show(value);
+      mine = sameNumbers(value, game) ? null : value;
+      showWas();
+      say(w.saved.replace("{file}", res.saved), "ok");
+    } catch (err) { problem(err); }
+  };
+  for (const box of boxes) box.addEventListener("change", () => save(box));
+  showWas();
+  return tr;
 }
 
 // Duplicate map (maps.js) made a new map: it may have made a map project for it too, which the header's menu shows
@@ -2141,6 +2218,7 @@ async function installUpdate() {
 
 async function start() {
   $("tab-units").addEventListener("click", () => showView("units"));
+  $("tab-economy").addEventListener("click", () => showView("economy"));
   $("tab-maps").addEventListener("click", () => showView("maps"));
   $("tab-settings").addEventListener("click", () => showView("settings"));
   $("set-game-change").addEventListener("click", () => chooseGame().catch(problem));
