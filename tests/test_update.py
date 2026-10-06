@@ -146,6 +146,17 @@ class Changes(unittest.TestCase):
         self.assertEqual(update.changes_since(NOTES, "0.9.0", "0.9.0"), [])
         self.assertEqual(update.changes_since("", "0.1.0", "0.2.0"), [])
 
+    def test_a_version_with_a_fourth_number(self):
+        """The owner, 2026-10-06: "make releases go another digit longer until 1.0" (0.9.8.1): its notes are read."""
+        notes = ("**0.9.9:** next.\n| Before | Now |\n|---|---|\n| Old. | Newer. |\n\n"
+                 "**0.9.8.1:** small.\n| Before | Now |\n|---|---|\n| Slow. | Fast. |\n\n"
+                 "**0.9.8:** older.\n- **A thing**\n")
+        self.assertEqual([(r["version"], r["before"], r["now"]) for r in update.changes_since(notes, "0.9.8", "0.9.8.1")],
+                         [("0.9.8.1", "Slow.", "Fast.")])
+        self.assertEqual([r["version"] for r in update.changes_since(notes, "0.9.7", "0.9.9")],
+                         ["0.9.9", "0.9.8.1", "0.9.8"])
+        self.assertEqual(update.changes_since(notes, "0.9.8.1", "0.9.8.1"), [])
+
     def test_the_check_says_both_versions(self):
         with tempfile.TemporaryDirectory() as d:
             app = App(d)

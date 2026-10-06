@@ -36,11 +36,26 @@ class Book(unittest.TestCase):
 
     def test_what_the_apps_would_misread_is_refused(self):
         for name, text, why in (("studio.fr.md", FRENCH.replace("**0.9.7:**", "**0.9.7 :**"), "space before its colon"),
+                                ("studio.fr.md", FRENCH.replace("**0.9.7:**", "**0.9.7.1 :**"), "space before its colon"),
                                 ("studio.fr.md", "Pas de version.\n", "no version's notes"),
                                 ("studio.fr.md", FRENCH.replace("0.9.7", "0.9.9"), "0.9.9 isn't in the English"),
                                 ("studio.xx.md", FRENCH, "isn't one of the apps' languages")):
             with self.subTest(why=why), self.assertRaisesRegex(notes_json.NotesError, why):
                 notes_json.book("studio", self.notes({"studio.md": ENGLISH, name: text}))
+
+    def test_a_fourth_number(self):
+        """The owner, 2026-10-06: "make releases go another digit longer until 1.0": **0.9.8.1:** is a version too."""
+        english = ENGLISH.replace("**0.9.7:**", "**0.9.8.1:** small.\n| Before | Now |\n|---|---|\n| Old. | New. |\n\n"
+                                  "**0.9.7:**")
+        french = FRENCH.replace("**0.9.7:**", "**0.9.8.1:** petit.\n| Avant | Maintenant |\n|---|---|\n"
+                                "| Vieux. | Neuf. |\n\n**0.9.7:**")
+        book = notes_json.book("studio", self.notes({"studio.md": english, "studio.fr.md": french}))
+        self.assertEqual(notes_json.versions(book["us"]), ["0.9.8.1", "0.9.7", "0.9.6"])
+        rows = update.changes_since(book["fr"], "0.9.7", "0.9.8.1")
+        self.assertEqual([(r["version"], r["before"], r["now"]) for r in rows], [("0.9.8.1", "Vieux.", "Neuf.")])
+        with self.assertRaisesRegex(notes_json.NotesError, "0.9.8.2 isn't in the English"):
+            notes_json.book("studio", self.notes({"studio.md": english,
+                                                  "studio.fr.md": french.replace("0.9.8.1", "0.9.8.2")}))
 
     def test_the_file_written(self):
         root = self.notes({"studio.md": ENGLISH, "studio.fr.md": FRENCH})

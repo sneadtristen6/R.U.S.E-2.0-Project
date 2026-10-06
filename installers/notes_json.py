@@ -6,7 +6,8 @@ the apps show what's new in their own language, English for a language that has 
 
 The English notes are .github/release-notes/<app>.md; a language's are <app>.<code>.md beside them, with the Studio's
 language codes (fr, ger, ita, spa, pol, ru, cz, jpn, sc), written as the English ones are: a version's notes start
-`**0.9.7:**` (no space before the colon: the apps look for exactly that), its changes in a two-column table. A
+`**0.9.7:**` or, with a fourth number, `**0.9.8.1:**` (no space before the colon: the apps look for exactly that),
+its changes in a two-column table. A
 language's file may have fewer versions than the English (the apps fall back to English for the rest), never one
 the English hasn't got. Also prints a line of links to each language's notes, for the release page.
 """
@@ -23,8 +24,8 @@ APPS = {"launcher": "Launcher", "studio": "Studio"}
 # the apps' languages (src/ruse_studio/words.toml), and each one's own name for the release page's links
 LANGS = {"fr": "Français", "ger": "Deutsch", "ita": "Italiano", "spa": "Español", "pol": "Polski", "ru": "Русский",
          "cz": "Čeština", "jpn": "日本語", "sc": "简体中文"}
-VERSION = re.compile(r"^\*\*(\d+\.\d+\.\d+):\*\*", re.M)
-SPACED = re.compile(r"^\*\*\d+\.\d+\.\d+\s+:\*\*", re.M)  # French typing's space before the colon: not seen
+VERSION = re.compile(r"^\*\*(\d+\.\d+\.\d+(?:\.\d+)?):\*\*", re.M)  # three numbers, or four (0.9.8.1)
+SPACED = re.compile(r"^\*\*\d+\.\d+\.\d+(?:\.\d+)?\s+:\*\*", re.M)  # French typing's space before the colon: not seen
 
 
 class NotesError(ValueError):

@@ -69,10 +69,10 @@ def _rule(line: str) -> bool:
 
 def changes_since(body: str, current: str, newest: str) -> list[dict]:
     """What changes between the running version and `newest`, from a release's notes (`body`, every version's notes,
-    newest first: `**0.8.1:** ...`): for each version after `current` up to `newest`, the rows of its before/after
-    table (`| Before | Now |`), or, with no table, its bullets as "now" with nothing before. [{version, before, now}],
-    newest first."""
-    parts = re.split(r"^\*\*(\d+\.\d+\.\d+):\*\*", body or "", flags=re.M)
+    newest first: `**0.8.1:** ...`, or `**0.9.8.1:** ...` with a fourth number): for each version after `current` up
+    to `newest`, the rows of its before/after table (`| Before | Now |`), or, with no table, its bullets as "now" with
+    nothing before. [{version, before, now}], newest first."""
+    parts = re.split(rf"^\*\*({TAG_VERSION}):\*\*", body or "", flags=re.M)
     out = []
     for version, text in zip(parts[1::2], parts[2::2]):
         if not version_tuple(current) < version_tuple(version) <= version_tuple(newest):
@@ -95,7 +95,7 @@ def changes_since(body: str, current: str, newest: str) -> list[dict]:
     return out
 
 
-TAG_VERSION = r"\d+\.\d+\.\d+(?:\.\d+)?"  # a release tag's version: three numbers, or four for a small fix (0.9.4.1)
+TAG_VERSION = r"\d+\.\d+\.\d+(?:\.\d+)?"  # a release's version: three numbers, or four (0.9.4.1, 0.9.8.1)
 
 
 def version_tuple(v: str) -> tuple:
