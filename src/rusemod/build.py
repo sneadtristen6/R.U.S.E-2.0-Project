@@ -1966,6 +1966,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             who.extend(i for i in ids if i not in who)
         low_sizes: dict = {}  # type name -> how far it reaches at size 1 (stickers, low plants, stones), once a build
         solid: dict = {}  # map pack name -> (nav.Block for each placed building, the mods' ids)
+        lights_out: dict = {}  # map pack name -> (where its erased lighthouses stood, the mods' ids)
         for name, (objects, ids) in with_pieces.items():
             map_path = find_map(name)
             if map_path is None:
@@ -2083,6 +2084,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                                            ("decal",), tuple(low), shape="square", by_size=True, mask=filled.touches)]
                     sizes = reach_of(low)
                 erased_notes, erased = [], {}
+                from .lighthouses import LIGHTHOUSE, gone, lighthouses
+                towers = lighthouses(raw) if areas and any(LIGHTHOUSE.search(n) for n in map_names()) else []
                 if areas or beds_area:  # the map's own scenery out first: the new objects then stay whatever the
                     if descs is None:  # areas cover
                         descs = descriptors(arc)
@@ -2108,6 +2111,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         raw_after, erased_notes, erased = (erase_objects(raw, areas, kinds, bridges, sizes)
                                                            if areas else (raw, [], {}))
                     raw = raw_after
+                    erased_towers = gone(towers, lighthouses(raw)) if towers else []
+                    if erased_towers:  # their lights go with them (rusemod.lighthouses), once every map's scenery
+                        lights_out[name] = (erased_towers, ids)  # is done
                 if descs is None:
                     descs = descriptors(arc)
                 lowest = _LowestPoints(game, descs)
@@ -2171,6 +2177,33 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if entry is None:
                 map_packs.append((map_path, map_arc, changed_members))
             result.terrain_changed[map_path.name] = changed_members
+        from .lighthouses import take_out as lights_taken_out
+
+        def glad_member(member):
+            """A ZZ_GladPatchableWin.dat member as the build has it so far (any case), or None."""
+            key = member.lower()
+            mine = next((d for m, d in result.changed.items() if m.lower() == key), None)
+            if mine is not None:
+                return mine
+            e = arc.entry(member)
+            return bytes(arc.read(e)) if e is not None else None
+        for name, (places, ids) in lights_out.items():  # an erased lighthouse's light goes too (rusemod.lighthouses)
+            try:
+                changes, notes = lights_taken_out(glad_member, name, places)
+            except (ValueError, KeyError, IndexError, struct.error) as exc:
+                result.findings.append(Finding("warning", f"{', '.join(ids)}: {name}: the light of its erased "
+                                                          f"lighthouse(s) stays: the map's effects couldn't be "
+                                                          f"read ({exc})"))
+                continue
+            for member, data in changes.items():
+                e = arc.entry(member)
+                for old in [m for m in result.changed if m.lower() == member.lower()]:
+                    del result.changed[old]
+                result.changed[e.path if e is not None else member] = data
+            if notes:
+                say(f"lighthouses: {name}, from {', '.join(ids)}")
+                for note in notes:
+                    say(f"  {note}")
         for name, (gone_what, ids) in take_outs.items():  # the map's own roads drawn as nothing (its road model) and
             if not (gone_what.roads or gone_what.bridges):  # its bridges' floors sunk: after the scenery, before the new
                 continue                                    # roads are drawn into the same files

@@ -56,7 +56,7 @@ def apply_water(meshes: dict[str, Tms], strokes: list) -> list[str]:
     level: its triangles are much bigger, so otherwise a lake spreads over the ground around it in the far view
     (seen in the game, 2026-09-29). Points on the map's outer edge take the level like the rest, and the water's side
     hanging from the edge follows (Tms._fit_skirt): left at an old river's level, they stood as walls of water round
-    the sea of Blank Ocean (seen in the game, 2026-10-05)."""
+    the sea of Blank Ocean (seen in the game, 2026-10-05; gone with this the same day)."""
     water = [s for s in strokes if s.brush in ("water", "drain")]
     if not water or not meshes:
         return []

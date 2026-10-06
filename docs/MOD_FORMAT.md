@@ -480,7 +480,7 @@ and `cover` strokes over the same circles here; its Undo takes back both.
   map keeps (`rusemod.water`). A height brush near water also keeps the water triangles and textures in step. A
   water stroke sets the water at the map's outer edge too, and the water's side hanging from the edge follows it:
   left at the old rivers' levels, the edge stood as walls of water round Blank Ocean's sea (seen in the game,
-  2026-10-05; the fix is built, not yet seen in the game).
+  2026-10-05, and gone in the game the same day with this fix).
 
 - **All four files together.** A map's ground is held four times over: the close-up and far ground
   the game draws, the ground units walk on, and the camera floor. Every stroke moves the points of all four inside its
@@ -571,6 +571,12 @@ types = ["TypeWarrior/Pont_Normandie"]  # and these types, whatever they are (th
   name only (`types`, without `"building"` in `what`) keep their ground closed, with a warning.
 - **Bridges are drawn only**: the map's movement still has them, so an erased bridge's deck stays open over the
   water. The build says so as a warning.
+- **A lighthouse takes its light with it**: a lighthouse's turning light belongs to the map's effects (beside its
+  rain, seagulls and sounds), not to the lighthouse, so erased lighthouses left their lights turning over Blank
+  Ocean's empty sea (seen in the game 2026-10-05). The build gives such a map its own copy of its effects without
+  those lights, and its scenarios start the copy; the game's own effects keep them for every map that keeps its
+  lighthouses (`rusemod.lighthouses`; D-Day has two, Swamps and Blitz one each). Seen in the game 2026-10-05: Blank
+  Ocean's lights gone.
 - **A circle that takes trees clears a wood**: the build also opens its ground to every unit and takes the forest
   cover away there, after the mod's own movement and cover edits (`rusemod.build.cleared_woods`; proven in the game
   2026-10-01: tanks drive in, infantry there are seen).
