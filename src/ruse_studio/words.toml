@@ -10608,16 +10608,16 @@ jpn = "このMODでのすべての戦いの、コンピューターの戦い方�
 sc = "使用此模组的每场战斗中电脑玩家的打法、喜欢建造的单位和计谋卡。"
 
 [ai_help]
-us = "A change here is saved in the current mod at once. From LittleGroove's AI editor in RUSE Mod Manager. Not tried in the game yet."
-fr = "Un changement fait ici est enregistré tout de suite dans le mod actuel. Repris de l'éditeur d'IA de LittleGroove dans RUSE Mod Manager. Pas encore essayé en jeu."
-ger = "Eine Änderung hier wird sofort im aktuellen Mod gespeichert. Aus LittleGrooves KI-Editor in RUSE Mod Manager. Noch nicht im Spiel ausprobiert."
-ita = "Una modifica fatta qui viene salvata subito nella mod attuale. Dall'editor dell'IA di LittleGroove in RUSE Mod Manager. Non ancora provato in gioco."
-spa = "Un cambio hecho aquí se guarda al momento en el mod actual. Del editor de IA de LittleGroove en RUSE Mod Manager. Aún no probado en el juego."
-pol = "Zmiana tutaj jest od razu zapisywana w bieżącym modzie. Z edytora SI LittleGroove'a w RUSE Mod Manager. Jeszcze niesprawdzone w grze."
-ru = "Изменение здесь сразу сохраняется в текущем моде. Из редактора ИИ LittleGroove в RUSE Mod Manager. Ещё не проверено в игре."
-cz = "Změna zde se hned uloží do aktuálního modu. Z editoru AI od LittleGroove v RUSE Mod Manageru. Ve hře zatím nevyzkoušeno."
-jpn = "ここでの変更はすぐ現在のMODに保存されます。RUSE Mod Manager の LittleGroove のAIエディターより。ゲーム内ではまだ試していません。"
-sc = "此处的更改会立即保存到当前模组中。来自 RUSE Mod Manager 中 LittleGroove 的 AI 编辑器。尚未在游戏中试过。"
+us = "A change here is saved in the current mod at once. From LittleGroove's AI editor in RUSE Mod Manager. Tried in the game: a ruse card taken out of the menu, a card moved in it, a card's length and when Easy starts attacking; the rest not yet."
+fr = "Un changement fait ici est enregistré tout de suite dans le mod actuel. Repris de l'éditeur d'IA de LittleGroove dans RUSE Mod Manager. Essayé en jeu : une carte de ruse retirée du menu, une carte déplacée dans le menu, la durée d'une carte et le moment où Facile commence à attaquer ; le reste pas encore."
+ger = "Eine Änderung hier wird sofort im aktuellen Mod gespeichert. Aus LittleGrooves KI-Editor in RUSE Mod Manager. Im Spiel ausprobiert: eine Täuschungskarte aus dem Menü genommen, eine im Menü verschoben, die Dauer einer Karte und wann Leicht angreift; der Rest noch nicht."
+ita = "Una modifica fatta qui viene salvata subito nella mod attuale. Dall'editor dell'IA di LittleGroove in RUSE Mod Manager. Provato in gioco: una carta d'inganno tolta dal menu, una spostata nel menu, la durata di una carta e quando Facile inizia ad attaccare; il resto non ancora."
+spa = "Un cambio hecho aquí se guarda al momento en el mod actual. Del editor de IA de LittleGroove en RUSE Mod Manager. Probado en el juego: una carta de engaño quitada del menú, una movida en el menú, la duración de una carta y cuándo empieza a atacar Fácil; el resto aún no."
+pol = "Zmiana tutaj jest od razu zapisywana w bieżącym modzie. Z edytora SI LittleGroove'a w RUSE Mod Manager. Sprawdzone w grze: karta podstępu usunięta z menu, karta przesunięta w menu, czas trwania karty i to, kiedy komputer na poziomie Łatwa zaczyna atakować; reszta jeszcze nie."
+ru = "Изменение здесь сразу сохраняется в текущем моде. Из редактора ИИ LittleGroove в RUSE Mod Manager. Проверено в игре: карта уловки убрана из меню, карта перемещена в меню, длительность карты и когда «Простой» начинает атаковать; остальное ещё нет."
+cz = "Změna zde se hned uloží do aktuálního modu. Z editoru AI od LittleGroove v RUSE Mod Manageru. Vyzkoušeno ve hře: karta lsti odebraná z nabídky, karta přesunutá v nabídce, trvání karty a kdy začne útočit obtížnost Nízká; zbytek zatím ne."
+jpn = "ここでの変更はすぐ現在のMODに保存されます。RUSE Mod Manager の LittleGroove のAIエディターより。ゲーム内で試したもの：メニューから外した計略カード、メニュー内で動かしたカード、カードの効果時間、イージーが攻撃を始める時間。ほかはまだです。"
+sc = "此处的更改会立即保存到当前模组中。来自 RUSE Mod Manager 中 LittleGroove 的 AI 编辑器。已在游戏中试过：从菜单移除的计谋卡、在菜单中移动的卡、卡的持续时间，以及简单难度何时开始进攻；其余尚未试过。"
 
 [ai_how_title]
 us = "How they play"

@@ -1133,7 +1133,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   // the AI tab (words.toml ai_*, tip_tab_ai, tip_ai_reset)
   Object.assign(words.us, { ai_tab: "AI", ai_title: "AI: the computer players",
     tip_tab_ai: "How the computer players play, the units they like to build, and the ruse cards, for every battle with this mod.",
-    ai_help: "A change here is saved in the current mod at once. From LittleGroove's AI editor in RUSE Mod Manager. Not tried in the game yet.",
+    ai_help: "A change here is saved in the current mod at once. From LittleGroove's AI editor in RUSE Mod Manager. Tried in the game: a ruse card taken out of the menu, a card moved in it, a card's length and when Easy starts attacking; the rest not yet.",
     ai_how_title: "How they play",
     ai_mix: "A computer player mixes three sets of values: Default, its difficulty and its profile (both picked in the game's lobby). For each value the game takes the profile's when it isn't Default's, else the difficulty's when it isn't Default's, else Default's; a value a set doesn't list counts as 0. Only the values a set lists can be changed here.",
     ai_default: "Default", ai_same_default: "Same as Default: doesn't count",
