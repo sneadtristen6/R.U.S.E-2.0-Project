@@ -20,6 +20,7 @@
       <button id="tab-units" type="button" role="tab" aria-selected="true"></button>
       <button id="tab-economy" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-ai" type="button" role="tab" aria-selected="false"></button>
+      <button id="tab-music" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-maps" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-settings" type="button" role="tab" aria-selected="false"></button>
     </div>
@@ -374,6 +375,17 @@
   </main>
   <!-- the AI tab (app.js renderAI, StudioApi.ai, rusemod.ai; LittleGroove's AI editor): how the computer players
        play (their sets of values), the units they're keener to build, and the ruse cards (every player's) -->
+  <!-- the Music tab (sound.js, StudioApi.music, rusemod.sound): every song the game plays, by where it plays, each heard
+       and replaced in the small editor below; saved in the current mod as files/replace/<the song>.wav -->
+  <main id="music-view" class="settings-view hidden">
+    <div class="settings">
+      <h1 id="music-title"></h1>
+      <p id="music-help" class="muted small"></p>
+      <p id="music-nomod" class="small"></p>
+      <div id="music-groups"></div>
+    </div>
+  </main>
+
   <main id="ai-view" class="settings-view hidden">
     <div class="settings">
       <h1 id="ai-title"></h1>
@@ -571,8 +583,44 @@
     <pre id="build-log" class="hidden"></pre>
   </section>
 
+  <!-- the Music tab's editor (sound.js openEditor): a sound file dropped or chosen, cut with two handles, faded,
+       its volume set, heard, then Use this: made the game song's own format and saved in the mod -->
+  <dialog id="music-editor" class="doctor music-editor" aria-labelledby="me-title">
+    <h2 id="me-title"></h2>
+    <p id="me-lead" class="small"></p>
+    <div id="me-drop" class="me-drop">
+      <span id="me-drop-text"></span>
+      <button id="me-choose" type="button" class="small"></button>
+      <input id="me-file-input" type="file" accept="audio/*,.wav,.mp3,.ogg,.flac,.m4a" hidden>
+      <p id="me-file" class="muted small"></p>
+    </div>
+    <div id="me-wave-box" class="me-wave-box hidden"><canvas id="me-wave" width="640" height="110"></canvas></div>
+    <div id="me-cut" class="me-row hidden">
+      <label><span id="me-start-label"></span> <input id="me-start" type="number" step="0.1" min="0"> s</label>
+      <label><span id="me-end-label"></span> <input id="me-end" type="number" step="0.1" min="0"> s</label>
+      <span id="me-length" class="muted small"></span>
+    </div>
+    <div id="me-shape" class="me-shape hidden">
+      <label><span id="me-fadein-label"></span> <input id="me-fadein" type="range" min="0" max="10" step="0.1">
+        <span id="me-fadein-value" class="muted small"></span></label>
+      <label><span id="me-fadeout-label"></span> <input id="me-fadeout" type="range" min="0" max="10" step="0.1">
+        <span id="me-fadeout-value" class="muted small"></span></label>
+      <label><span id="me-volume-label"></span> <input id="me-volume" type="range" min="-20" max="10" step="0.5">
+        <span id="me-volume-value" class="muted small"></span></label>
+    </div>
+    <p id="me-note" class="small" role="status"></p>
+    <div class="actions">
+      <button id="me-game" type="button" class="small"></button>
+      <button id="me-match" type="button" class="small hidden"></button>
+      <button id="me-play" type="button" class="small hidden"></button>
+      <button id="me-use" type="button" class="small primary hidden"></button>
+      <button id="me-cancel" type="button" class="small ghost"></button>
+    </div>
+  </dialog>
+
   <script src="fake-api.js"></script>
   <script src="app.js"></script>
+  <script src="sound.js"></script>
   <script type="module" src="maps.js"></script>
 </body>
 </html>

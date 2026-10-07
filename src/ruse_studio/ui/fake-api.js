@@ -1131,6 +1131,96 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     economy_atomic: "Mode Nucléaire : {v} dans le jeu (un changement règle les deux)" });
   Object.assign(words.sc, { economy_tab: "经济", economy_title: "经济", economy_group_money: "资金与收入",
     economy_group_supply: "补给站", economy_group_cards: "计谋卡", economy_atomic: "核战争模式：游戏中为 {v}（更改会同时设置两者）" });
+  // the Music tab (words.toml music_*, tip_tab_music, tip_music_*)
+  Object.assign(words.us, {
+    music_tab: "Music", tip_tab_music: "The game's songs: hear each one, and put your own in its place",
+    music_title: "Music",
+    music_help: "Every song the game plays, by where it plays. Replace one with your own: drop a sound file on it (WAV, MP3, OGG or FLAC), cut it, fade it, then Use this. It's saved in the current mod, and the next build puts it in the game. Not tried in the game yet.",
+    music_none: "No songs found in the game index: build it again in Settings.", music_group_menu: "Main menu",
+    music_group_credits: "Credits", music_group_playlist: "In battle: list {n}",
+    music_help_playlist: "In every battle the game plays from three lists and switches between them as the fight goes.",
+    music_group_end: "End of a match", music_group_goals: "Mission goals",
+    music_group_missions: "Campaign chapters and Operations",
+    music_help_missions: "Only the missions that name these play them.", music_group_other: "Other moments",
+    music_group_unused: "Not played by the game", music_help_unused: "Nothing in the game plays these songs.",
+    music_also_menu: "also the main menu", music_also_credits: "also the credits",
+    music_also_playlist: "also in battle, list {n}", music_also_end: "also at the end of a match",
+    music_also_goals: "also for mission goals", music_also_other: "also at other moments",
+    music_in_missions: "played by the missions of {n} map(s)", music_which_missions: "Which?", music_play: "Play",
+    music_stop: "Stop", music_reading: "Reading…", music_replace: "Replace…", music_change: "Change…",
+    music_yours: "Yours", music_play_yours: "Play yours", music_reset: "Back to the game's",
+    music_back_done: "{name}: the game's song again.", tip_music_play: "Hear the game's song",
+    tip_music_replace: "Put your own song here: drop a file, cut it, fade it, then Use this",
+    tip_music_reset: "Take your song out of the mod: the game's plays again",
+    music_editor_title: "Your song for {name}",
+    music_editor_lead: "The game's song is {len} long. Yours can be any length: the Studio makes it the game's format.",
+    music_drop: "Drop a sound file here (WAV, MP3, OGG or FLAC)", music_choose: "Choose a sound file…",
+    music_file: "{name}, {len}",
+    music_cant_read: "This file can't be read here. Save it as WAV or MP3 and try again.", music_start: "Start",
+    music_end: "End", music_length: "Length {len}", music_fade_in: "Fade in", music_fade_out: "Fade out",
+    music_volume: "Volume", music_match: "As loud as the game's",
+    tip_music_match: "Set the volume so your song is as loud as the game's",
+    music_matched: "Volume set to {db} dB, as loud as the game's song.", music_play_cut: "Play",
+    music_play_game: "The game's", music_use: "Use this", tip_music_use: "Save your song in the current mod",
+    music_making: "Making your song…", music_saving: "Saving… {n} %",
+    music_saved: "{name}: your song is saved in the mod ({file})."
+  });
+  Object.assign(words.fr, {
+    music_tab: "Musique", tip_tab_music: "Les morceaux du jeu : écoutez-les, et mettez les vôtres à leur place",
+    music_title: "Musique",
+    music_help: "Tous les morceaux que joue le jeu, selon l'endroit où ils passent. Remplacez-en un par le vôtre : déposez-y un fichier son (WAV, MP3, OGG ou FLAC), coupez-le, ajoutez un fondu, puis Utiliser. Il est enregistré dans le mod actuel, et la prochaine construction le met dans le jeu. Pas encore essayé en jeu.",
+    music_none: "Aucun morceau dans l'index du jeu : reconstruisez-le dans Paramètres.",
+    music_group_menu: "Menu principal", music_group_credits: "Crédits",
+    music_group_playlist: "En bataille : liste {n}",
+    music_help_playlist: "Dans chaque bataille, le jeu puise dans trois listes et passe de l'une à l'autre selon le combat.",
+    music_group_end: "Fin de partie", music_group_goals: "Objectifs de mission",
+    music_group_missions: "Chapitres de campagne et Opérations",
+    music_help_missions: "Seules les missions qui les nomment les jouent.", music_group_other: "Autres moments",
+    music_group_unused: "Jamais joués par le jeu", music_help_unused: "Rien dans le jeu ne joue ces morceaux.",
+    music_also_menu: "aussi le menu principal", music_also_credits: "aussi les crédits",
+    music_also_playlist: "aussi en bataille, liste {n}", music_also_end: "aussi en fin de partie",
+    music_also_goals: "aussi pour les objectifs de mission", music_also_other: "aussi à d'autres moments",
+    music_in_missions: "joué par les missions de {n} carte(s)", music_which_missions: "Lesquelles ?",
+    music_play: "Écouter", music_stop: "Arrêter", music_reading: "Lecture…", music_replace: "Remplacer…",
+    music_change: "Modifier…", music_yours: "Le vôtre", music_play_yours: "Écouter le vôtre",
+    music_reset: "Revenir à celui du jeu", music_back_done: "{name} : de nouveau le morceau du jeu.",
+    tip_music_play: "Écouter le morceau du jeu",
+    tip_music_replace: "Mettez votre morceau ici : déposez un fichier, coupez-le, ajoutez un fondu, puis Utiliser",
+    tip_music_reset: "Retirer votre morceau du mod : celui du jeu revient",
+    music_editor_title: "Votre morceau pour {name}",
+    music_editor_lead: "Le morceau du jeu dure {len}. Le vôtre peut avoir n'importe quelle durée : le Studio le met au format du jeu.",
+    music_drop: "Déposez un fichier son ici (WAV, MP3, OGG ou FLAC)", music_choose: "Choisir un fichier son…",
+    music_file: "{name}, {len}",
+    music_cant_read: "Ce fichier ne peut pas être lu ici. Enregistrez-le en WAV ou MP3 et réessayez.",
+    music_start: "Début", music_end: "Fin", music_length: "Durée {len}", music_fade_in: "Fondu d'entrée",
+    music_fade_out: "Fondu de sortie", music_volume: "Volume", music_match: "Aussi fort que celui du jeu",
+    tip_music_match: "Régler le volume pour que votre morceau soit aussi fort que celui du jeu",
+    music_matched: "Volume réglé à {db} dB, aussi fort que le morceau du jeu.", music_play_cut: "Écouter",
+    music_play_game: "Celui du jeu", music_use: "Utiliser",
+    tip_music_use: "Enregistrer votre morceau dans le mod actuel", music_making: "Préparation de votre morceau…",
+    music_saving: "Enregistrement… {n} %", music_saved: "{name} : votre morceau est enregistré dans le mod ({file})."
+  });
+  Object.assign(words.sc, {
+    music_tab: "音乐", tip_tab_music: "游戏的音乐：试听每一首，并换成你自己的", music_title: "音乐",
+    music_help: "游戏播放的每一首音乐，按播放场合分组。用你自己的替换：拖入一个声音文件（WAV、MP3、OGG 或 FLAC），剪切、淡入淡出，然后点“使用”。它保存在当前模组中，下次构建会放进游戏。尚未在游戏中试过。",
+    music_none: "游戏索引里没有音乐：请在设置中重新建立。", music_group_menu: "主菜单", music_group_credits: "制作人员",
+    music_group_playlist: "战斗中：列表 {n}", music_help_playlist: "每场战斗中，游戏从三个列表播放音乐，并随战况在它们之间切换。",
+    music_group_end: "比赛结束", music_group_goals: "任务目标", music_group_missions: "战役章节和行动",
+    music_help_missions: "只有指定了这些音乐的任务才会播放它们。", music_group_other: "其他时刻", music_group_unused: "游戏中不播放",
+    music_help_unused: "游戏中没有任何地方播放这些音乐。", music_also_menu: "也用于主菜单", music_also_credits: "也用于制作人员名单",
+    music_also_playlist: "也在战斗列表 {n} 中", music_also_end: "也在比赛结束时", music_also_goals: "也用于任务目标",
+    music_also_other: "也在其他时刻", music_in_missions: "在 {n} 张地图的任务中播放", music_which_missions: "哪些？", music_play: "播放",
+    music_stop: "停止", music_reading: "读取中…", music_replace: "替换…", music_change: "更改…", music_yours: "你的",
+    music_play_yours: "播放你的", music_reset: "恢复游戏原曲", music_back_done: "{name}：已恢复为游戏原曲。", tip_music_play: "试听游戏原曲",
+    tip_music_replace: "在这里放入你自己的音乐：拖入文件、剪切、淡入淡出，然后点“使用”", tip_music_reset: "从模组中移除你的音乐：重新播放游戏原曲",
+    music_editor_title: "替换 {name} 的音乐", music_editor_lead: "游戏原曲长 {len}。你的可以是任意长度：Studio 会把它转成游戏的格式。",
+    music_drop: "把声音文件拖到这里（WAV、MP3、OGG 或 FLAC）", music_choose: "选择声音文件…", music_file: "{name}，{len}",
+    music_cant_read: "这里无法读取这个文件。请另存为 WAV 或 MP3 后再试。", music_start: "开始", music_end: "结束", music_length: "长度 {len}",
+    music_fade_in: "淡入", music_fade_out: "淡出", music_volume: "音量", music_match: "与游戏原曲一样响",
+    tip_music_match: "调整音量，使你的音乐和游戏原曲一样响", music_matched: "音量已设为 {db} dB，与游戏原曲一样响。", music_play_cut: "播放",
+    music_play_game: "游戏原曲", music_use: "使用", tip_music_use: "把你的音乐保存到当前模组", music_making: "正在制作你的音乐…",
+    music_saving: "保存中… {n} %", music_saved: "{name}：你的音乐已保存到模组（{file}）。"
+  });
   // [prop, its name, type, the game's value, the Nuclear mode's when it differs]: some of rusemod.economy's values
   const ECONOMY = [
     ["money", [["QteDeviseInitiale", "Starting money", "int32", 200], ["TempsGenAutoDevises", "Income: seconds between payments", "int32", 4],
@@ -1147,6 +1237,34 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ["decoys", [["ConstructionDelayForFakeBuildingsMin", "Decoy buildings: seconds before building (least)", "int32", 5]]],
   ];
   const economyEdits = new Map();  // prop -> the mod's value (StudioApi.economy_edit)
+  // the Music tab: [group, [[member, name, seconds, also, maps]]], as StudioApi.music groups the real game's songs
+  const MUSIC_DIR = "gen_sound\\ww2\\sons\\atp_music\\";
+  const MUSIC = [
+    ["menu", [[MUSIC_DIR + "ruse_menu_ref-1.ess", "Outgame", 175.4, [], []]]],
+    ["playlist0", [[MUSIC_DIR + "progression_1-v.1.ess", "Progression 1", 66.0, ["missions"],
+      [{ map: "2. TAKING COMMAND!", parts: ["chapter1"] }, { map: "6. FROM BAIT TO PREY", parts: ["chapter1", "chapter2"] }]]]],
+    ["playlist1", [[MUSIC_DIR + "battle1.ess", "Battle 1", 38.1, ["missions"], [{ map: "D-Day", parts: ["chapter1"] }]],
+      [MUSIC_DIR + "battle-2_ref_1.ess", "Battle 2", 39.7, ["missions"], [{ map: "Face-to-Face", parts: ["challenge"] }]]]],
+    ["end", [["gen_sound\\ww2\\sons\\jingles\\jingle-bigvictory.ess", "Big victory", 8.1, [], []]]],
+    ["missions", [[MUSIC_DIR + "tunisie.ess", "Tunisie", 60.1, [], [{ map: "2. TAKING COMMAND!", parts: ["chapter1", "chapter3"] }]]]],
+    ["unused", [[MUSIC_DIR + "lose1.ess", "Lose", 11.8, [], []]]]];
+  const musicMine = new Map();  // member -> the mod's song (an address the page can fetch)
+  const musicUpload = [];
+  // a made-up "game song": a soft chord of `seconds` as a WAV the page can fetch
+  function fakeTone(seconds, freq) {
+    const rate = 22050, n = Math.round(seconds * rate), bytes = new Uint8Array(44 + n * 4), dv = new DataView(bytes.buffer);
+    const put = (o, t) => { for (let i = 0; i < t.length; i++) bytes[o + i] = t.charCodeAt(i); };
+    put(0, "RIFF"); dv.setUint32(4, 36 + n * 4, true); put(8, "WAVEfmt "); dv.setUint32(16, 16, true);
+    dv.setUint16(20, 1, true); dv.setUint16(22, 2, true); dv.setUint32(24, rate, true); dv.setUint32(28, rate * 4, true);
+    dv.setUint16(32, 4, true); dv.setUint16(34, 16, true); put(36, "data"); dv.setUint32(40, n * 4, true);
+    for (let i = 0; i < n; i++) {
+      const t = i / rate, env = Math.min(1, t * 4, (seconds - t) * 4);
+      const v = env * 0.25 * (Math.sin(2 * Math.PI * freq * t) + 0.5 * Math.sin(2 * Math.PI * freq * 1.5 * t));
+      dv.setInt16(44 + i * 4, v * 32767, true);
+      dv.setInt16(46 + i * 4, v * 32767, true);
+    }
+    return URL.createObjectURL(new Blob([bytes], { type: "audio/wav" }));
+  }
   // the AI tab (words.toml ai_*, tip_tab_ai, tip_ai_reset)
   Object.assign(words.us, { ai_tab: "AI", ai_title: "AI: the computer players",
     tip_tab_ai: "How the computer players play, the units they like to build, and the ruse cards, for every battle with this mod.",
@@ -1574,6 +1692,31 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { saved: current + "/src/studio.rndf", value: v };
       },
       economy_reset: async (prop) => { economyEdits.delete(prop); return { saved: current + "/src/studio.rndf" }; },
+      // the Music tab (StudioApi.music, ruse_studio.music): a few of the game's songs; each "game song" is a made-up
+      // tone (the real Studio hands the page the game's own file)
+      music: async () => ({ mod: Boolean(current), groups: MUSIC.map(([id, songs]) => ({ id, songs: songs.map(
+        ([member, name, seconds, also, maps]) => ({ member, name, seconds, channels: 2, rate: 48000, also, maps,
+          mine: musicMine.has(member) })) })) }),
+      music_sound: async (member, which = "game") => {
+        const song = MUSIC.flatMap(([, s]) => s).find((s) => s[0] === member);
+        if (!song) throw new Error(`${member} isn't one of the game's songs`);
+        if (which === "mod") {
+          if (!musicMine.has(member)) throw new Error("This mod has no song of its own here.");
+          return { url: musicMine.get(member), kind: "wav" };
+        }
+        return { url: fakeTone(Math.min(song[2], 12), 220 + 40 * (song[1].length % 7)), kind: "wav" };
+      },
+      music_save: async (member, part, index, count) => {
+        if (!current) throw new Error("Pick or make a mod first: songs are saved in a mod.");
+        if (index === 0) musicUpload.length = 0;
+        musicUpload.push(part);
+        if (index < count - 1) return { part: index };
+        const bytes = musicUpload.map((p) => Uint8Array.from(atob(p), (c) => c.charCodeAt(0)));
+        const blob = new Blob(bytes, { type: "audio/wav" });
+        musicMine.set(member, URL.createObjectURL(blob));
+        return { saved: `${current}/files/replace/${member.split("\\").join("/")}.wav`, seconds: 0 };
+      },
+      music_reset: async (member) => { musicMine.delete(member); return { saved: current }; },
       // the AI tab (StudioApi.ai): a few of the game's sets of values, the bonus and some ruse cards
       ai: async (lang) => ({ ready: mode !== "noindex",
         words: { ai: "AI", difficulty: "Difficulty", profile: "Profile", nuclear: "Nuclear mode" },
