@@ -3,6 +3,14 @@ nuitka==4.2.2
 ordered-set==4.1.0
 pywebview==6.2.1
 pythonnet==3.1.0
+# What pywebview and pythonnet need, at the versions the Studio 0.9.8 / Launcher 0.4.8 build got (the owner,
+# 2026-10-06: pinned, so THIRD_PARTY_NOTICES.md names what every build carries)
+bottle==0.13.4
+proxy_tools==0.1.0
+typing_extensions==4.16.0
+clr_loader==0.3.1
+cffi==2.1.1
+pycparser==3.0
 # What the apps carry for the map sums on whole grids (rusemod.numpy2): a whole map painted in minutes, not hours.
 # The same pin as .github/workflows/tests.yml (tests/test_installers.py WorkflowGuards).
 numpy==2.5.3
