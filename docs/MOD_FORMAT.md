@@ -725,23 +725,57 @@ This item's values; LittleGroove's Details panel):
 [[set]]
 file = "leveldesign_normal.scenario"   # which of the map's scenarios, as for [[move]]
 item = 41                              # the item's number in that file, as for [[move]]
-kind = "Spawn"                         # Spawn, CircularZone or RectangleZone: what it must be there
+kind = "Spawn"                         # Spawn, CircularZone, RectangleZone, Name, LabelVille or LabelMontagne
 camp = 2                               # a spawn: who gets it, -1 neutral or one of the scenario's camps (0 up)
 trucks = 40                            # a supply depot: its trucks, 0 to 1000 (the shipped depots have 15 to 72)
 # radius = 75000.0                     # a circle zone: its radius, in map units
 # width = 120000.0                     # a rectangle zone: its width and height, in map units
 # height = 80000.0
+# name = "zone_beach"                  # a spawn, named point or zone: the name the mission scripts find it by
+# text = "BirelGoubi"                  # a town's or hill's name: the game text it shows (below)
 ```
 
 - A file of its own beside `scenario.toml`: the build applies it after that file's moves, removes, starting points
-  and spawns, to the map's own items only (numbered as for `[[move]]`).
+  and spawns and after `places.toml`, to the map's own items only (numbered as for `[[move]]`).
 - Each value is written in the type the item already has it in. A spawn without a camp gets one, and a supply depot
-  without trucks gets them, as new spawns get them; any other value an item hasn't got is refused.
+  without trucks gets them, as new spawns get them; a spawn, named point or zone without a name gets one; any other
+  value an item hasn't got is refused. A name is one line of up to 200 letters a scenario file keeps in one byte each.
 - `kind` guards as it does for a move. A skirmish scenario's items stay neutral: a camp other than -1 there is
   refused, as it is for a new spawn.
-- Zones are used by the scenario's mission (where things happen): a size changed here changes where that happens.
-- A town's name on the map is one of the game's texts: the Studio changes its words in every language with a
+- Zones and names are used by the scenario's mission script (§9): a size changed here changes where things happen,
+  and a name changed here is lost to a script that still uses the old one.
+- A town's or hill's name on the map is one of the game's texts, in its `ville_multi` table: the label's text names
+  the key by its first 10 letters (the shipped scenarios, 2026-10-07: every town's and 31 of the 42 hills'; the other
+  hills' texts, like "Hill 111", have a space and name no key). The Studio changes its words in every language with a
   `game:<key>` row (§6) in the map project's `text/studio-words.<table>.csv`.
+- An item's turn is kept with its move (`rotation` in its `[[move]]`), for an item that has one (most named points,
+  spawns and starting points, some zones; labels have none).
+
+### New names, named points and zones: `maps/<map pack>/places.toml` (built: `rusemod.scenario`; not yet seen in the game)
+
+A mod adds town and hill names, named points and zones to a map's scenarios, one table each (the Studio's Maps tab:
+Add a name or zone; LittleGroove's + Placement):
+
+```toml
+[[place]]
+file = "leveldesign_normal.scenario"   # which of the map's scenarios
+kind = "Name"                          # LabelVille, LabelMontagne, Name, CircularZone or RectangleZone
+x = 655000.0                           # where, in map units (the build puts it at the ground's height)
+y = 500000.0
+name = "landing_spot"                  # a named point (needed) or a zone: what the mission scripts find it by
+rotation = 0.5                         # a named point or zone: its turn, in radians (a label has none)
+# radius = 50000.0                     # a circle zone (needed)
+# width = 50000.0                      # a rectangle zone (both needed)
+# height = 50000.0
+# text = "Spring_k3x"                  # a town's or hill's name (needed): the game text it shows
+```
+
+- Each is written as most of the game's own of its kind are (checked byte for byte against shipped ones,
+  2026-10-07), added at the end of the scenario's items like a spawn, so the map's own items keep their numbers.
+- A new town's or hill's name shows a game text of the mod's own: the Studio adds a row with a `game_key` of its own
+  (a key of up to 10 letters, `Spring_k3x`) to the map project's `text/studio-words.ville_multi.csv` (§6), its words
+  the same in every language until the words panel changes one; taking the label back takes the row with it.
+- Named points and zones matter only to a mission script that uses their names (§9: the Studio's script editor).
 
 ### How many players: `maps/<map pack>/map.toml`
 

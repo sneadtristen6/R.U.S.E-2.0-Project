@@ -120,8 +120,9 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.scenery = read_scenery(path)
         _erase_areas(info)
         info.scenario = read_scenario(path)
-        for pack, rows in _read_maps(path, "items.toml").items():  # the map's own items changed: after its moves
-            info.scenario.setdefault(pack, []).extend(rows)
+        for name in ("places.toml", "items.toml"):  # new labels, points and zones (after the spawns), then the map's
+            for pack, rows in _read_maps(path, name).items():  # own items changed: after its moves
+                info.scenario.setdefault(pack, []).extend(rows)
         info.cover = read_cover(path)
         _cover_brushes(info)
         info.movement = read_movement(path)
@@ -156,7 +157,8 @@ def _map_readers() -> dict:
     from .newmap import NewMapError
     from .players import PlayersError
     from .roadnet import RoadNetError, parse_roads, parse_take_out
-    from .scenario import ScenarioError, parse_changes, parse_moves, parse_removes, parse_spawns, parse_starts
+    from .scenario import (ScenarioError, parse_changes, parse_moves, parse_places, parse_removes, parse_spawns,
+                           parse_starts)
     from .scenery import SceneryEditError, parse_erase, parse_objects
     from .sectors import SectorError, parse_sectors
     return {
@@ -174,8 +176,11 @@ def _map_readers() -> dict:
                                           + parse_spawns(d.get("spawn", []), rel)
                                           + parse_sectors(d.get("sectors"), rel)),
                           (ScenarioError, SectorError)),
-        # the map's own items with some of their values changed (a depot's trucks, a spawn's side, a zone's size):
-        # applied after the scenario.toml edits (load_mod puts them last)
+        # new town and hill names, named points and zones: added after the scenario.toml edits (load_mod)
+        "places.toml": (("place",), "a places file holds [[place]] tables",
+                        lambda d, rel: parse_places(d.get("place", []), rel), ScenarioError),
+        # the map's own items with some of their values changed (a depot's trucks, a spawn's side, a zone's size, a
+        # name): applied after the scenario.toml and places.toml edits (load_mod puts them last)
         "items.toml": (("set",), "an items file holds [[set]] tables",
                        lambda d, rel: parse_changes(d.get("set", []), rel), ScenarioError),
         "cover.toml": (("paint",), "a cover file holds [[paint]] tables",
@@ -214,8 +219,8 @@ def _map_toml(data: dict, rel: str) -> list:
     return made + parse_map(rest, rel)
 
 
-MAP_FILES = ("terrain.toml", "scenery.toml", "scenario.toml", "items.toml", "cover.toml", "movement.toml", "roads.toml",
-             "map.toml")
+MAP_FILES = ("terrain.toml", "scenery.toml", "scenario.toml", "places.toml", "items.toml", "cover.toml", "movement.toml",
+             "roads.toml", "map.toml")
 
 
 def read_map_file(folder: Path, f: Path) -> list:

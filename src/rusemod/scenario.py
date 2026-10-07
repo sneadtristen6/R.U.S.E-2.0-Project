@@ -5,6 +5,7 @@ RUSE-Mod-Manager."""
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 import struct
 from dataclasses import dataclass, field
@@ -48,6 +49,7 @@ class Item:
     obj: int = -1        # its object in the scenario's NDF (for moving it)
     listed: bool = True  # on the scenario's design item list, which is what the game loads (Scenario.remove takes it
                          # off; every item of the 102 shipped scenarios is on it)
+    turns: bool = False  # it has a Rotation (only such an item can be turned: Scenario.move)
 
 
 class _Reader:
@@ -225,7 +227,13 @@ class Scenario:
             (prop("Position", item_cls), Value(0x0B, struct.pack("<3f", x, y, z))),
             (prop("Rotation", item_cls), Value(0x05, struct.pack("<f", rotation))),
             (prop("AddOn", item_cls), Value(0x09, struct.pack("<III", 0xBBBBBBBB, addon, spawn_cls)))])
-        holder = lists[0]
+        return self._list_item(lists[0], item, item_cls)
+
+    def _list_item(self, holder, item: int, item_cls: int) -> int:
+        """Put new design item object `item` at the end of the scenario's design item list `holder` (what the game
+        loads); returns its number in `items`."""
+        from .ndf import Value
+        nd = self.ndf
         ref = Value(0x09, struct.pack("<III", 0xBBBBBBBB, item, item_cls)).encode()
         for k, (pi, v) in enumerate(holder.props):
             if v.tc == 0x11:
@@ -233,10 +241,70 @@ class Scenario:
                 holder.props[k] = (pi, Value(0x11, struct.pack("<I", count + 1) + v.payload[4:] + ref))
                 break
         else:  # an empty list is left out of the file (11 shipped scenarios): it gets its first item
-            holder.props.append((prop("GameDesignItemList", holder.cls), Value(0x11, struct.pack("<I", 1) + ref)))
+            holder.props.append((self._prop("GameDesignItemList", holder.cls), Value(0x11, struct.pack("<I", 1) + ref)))
         self.items = _items(nd)
         self.changed = True
         return next(i for i, it in enumerate(self.items) if it.obj == item)
+
+    def _prop(self, name: str, cls: int) -> int:
+        """The PROP entry for property `name` of class `cls`, added if the file doesn't have it."""
+        nd = self.ndf
+        for i, (n, c) in enumerate(nd.props):
+            if n == name and c == cls:
+                return i
+        return nd.add_prop(name, cls)
+
+    def _string(self, text: str) -> int:
+        """The STRG entry holding `text`, added if the file doesn't have it."""
+        i = self.ndf.string_index(text)
+        return self.ndf.add_string(text) if i is None else i
+
+    def _text_value(self, tc: int, text: str):
+        """`text` as a value of type `tc`: a name (0x07, a STRG entry, which other values may share: never changed
+        in place) or a label's text (0x08, its own UTF-16 text)."""
+        from .ndf import Value
+        if tc == 0x07:
+            return Value(0x07, struct.pack("<I", self._string(text)))
+        if tc == 0x08:
+            return Value(0x08, _wide(text))
+        raise ScenarioError(f"a text of type {tc:#x} can't be written")
+
+    def add_place(self, kind: str, x: float, y: float, z: float = 0.0, *, name: str = "", text: str = "",
+                  rotation: float | None = None, radius: float | None = None, width: float | None = None,
+                  height: float | None = None) -> int:
+        """A new design item of PLACE_KINDS at x, y, z (world units; z the ground's height, as every shipped one has
+        it): a town's or a hill's name on the map (LabelVille, LabelMontagne: `text`, the game text its words are
+        under), a named point the mission scripts find by its `name` (Name), or a circle (`radius`) or rectangle
+        (`width`, `height`) zone they watch, named `name`. Written as most of the shipped ones are (the 102 shipped
+        scenarios, 2026-10-07): a label's text alone, a named point's name, a circle zone's name then radius, a
+        rectangle zone's name, height then width; the item's turn only when `rotation` is given (a label has none).
+        Returns the new item's number in `items`. Not yet seen in the game."""
+        from .ndf import Value
+        nd = self.ndf
+        if nd is None:
+            raise ScenarioError("this scenario has no design items to add to")
+        if kind not in PLACE_KINDS:
+            raise ScenarioError(f"a {kind} can't be added here (only {', '.join(PLACE_KINDS)})")
+        lists = [o for o in nd.objects if nd.classes[o.cls] == "TGameDesignItemList"]
+        if len(lists) != 1:
+            raise ScenarioError("this scenario's design items aren't in one list")
+        item_cls = nd.class_index("TGameDesignItem")
+        addon_cls = nd.class_index("TGameDesignAddOn_" + kind)
+        props = []
+        if kind in LABEL_KINDS:
+            props.append((self._prop("ChampTexte", addon_cls), self._text_value(0x08, text)))
+        else:
+            if name:
+                props.append((self._prop("Name", addon_cls), self._text_value(0x07, name)))
+            sizes = {"CircularZone": (("Radius", radius),), "RectangleZone": (("Height", height), ("Width", width))}
+            for prop_name, v in sizes.get(kind, ()):
+                props.append((self._prop(prop_name, addon_cls), Value(0x05, struct.pack("<f", float(v)))))
+        addon = nd.add_object(addon_cls, props)
+        item_props = [(self._prop("Position", item_cls), Value(0x0B, struct.pack("<3f", x, y, z)))]
+        if rotation is not None and kind not in LABEL_KINDS:
+            item_props.append((self._prop("Rotation", item_cls), Value(0x05, struct.pack("<f", rotation))))
+        item_props.append((self._prop("AddOn", item_cls), Value(0x09, struct.pack("<III", 0xBBBBBBBB, addon, addon_cls))))
+        return self._list_item(lists[0], nd.add_object(item_cls, item_props), item_cls)
 
     def remove(self, item: int) -> None:
         """Take design item number `item` off the scenario's design item list, which is what the game loads: the
@@ -269,9 +337,10 @@ class Scenario:
 
     def set_value(self, item: int, field: str, value) -> None:
         """Change one of design item `item`'s own values (a field of CHANGES: a spawn's camp, a depot's trucks, a
-        zone's radius, width or height), in the type the item has it in. A spawn without a Camp (the game reads it as
-        camp 0) gets one, and a supply depot without trucks gets them, as add_spawn writes both; any other value the
-        item hasn't got can't be changed. Not yet seen in the game."""
+        zone's radius, width or height, the name the mission scripts find an item by, a label's text), in the type
+        the item has it in. A spawn without a Camp (the game reads it as camp 0) gets one, and a supply depot without
+        trucks gets them, as add_spawn writes both; a spawn, named point or zone without a name gets one (first, as
+        add_spawn writes it); any other value the item hasn't got can't be changed. Not yet seen in the game."""
         from .ndf import Value
         name = CHANGES[field]
         it = self.items[item]
@@ -281,6 +350,18 @@ class Scenario:
         if addon is None:
             raise ScenarioError(f"design item {item} ({it.kind or 'plain item'}) has no values of its own to change")
         a = nd.objects[addon]
+        if field in TEXT_CHANGES:
+            at = next((k for k, (pi, _v) in enumerate(a.props) if nd.prop_name(pi) == name), None)
+            if at is not None:
+                pi, v = a.props[at]
+                a.props[at] = (pi, self._text_value(v.tc, str(value)))
+            elif field == "name" and it.kind in NAMED_KINDS:
+                a.props.insert(0, (self._prop(name, a.cls), self._text_value(0x07, str(value))))
+            else:
+                raise ScenarioError(f"design item {item} ({it.kind or 'plain item'}) has no {name} to change")
+            it.values[name] = _plain(nd, next(v for pi, v in a.props if nd.prop_name(pi) == name))
+            self.changed = True
+            return
         for k, (pi, v) in enumerate(a.props):
             if nd.prop_name(pi) != name:
                 continue
@@ -451,7 +532,7 @@ def _items(nd: Ndf) -> list[Item]:
             for name, v in objs[addon].items():
                 values[name] = _plain(nd, v)
         index = nd.objects.index(o)
-        out.append(Item(kind, pos, rot, values, index, index in listed))
+        out.append(Item(kind, pos, rot, values, index, index in listed, "Rotation" in props))
     return out
 
 
@@ -466,6 +547,28 @@ def _plain(nd: Ndf, v):
     if len(p) >= 4 and struct.unpack_from("<I", p)[0] == len(p) - 4 and len(p) % 2 == 0:  # a label's own text
         return p[4:].decode("utf-16-le", "replace")
     return p.hex()
+
+
+def _wide(text: str) -> bytes:
+    """A label's own text as the scenarios keep it (type 0x08): its length in bytes, then UTF-16, no end mark."""
+    raw = text.encode("utf-16-le")
+    return struct.pack("<I", len(raw)) + raw
+
+
+_KEY_LETTERS = set("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz")
+
+
+def text_key(text) -> str | None:
+    """The game text a town's or a hill's label shows the words of: the key named by the label's text's first 10
+    letters (the game's keys pack a name of up to 10 of these letters: rusemod.loc), in the game's ville_multi table
+    (the 102 shipped scenarios, 2026-10-07: 291 of 291 town texts, 31 of 42 hill texts; the 11 others, "Hill 111"
+    and so on, have a space, so they name no key). None when the text can't name one."""
+    if not isinstance(text, str) or not text or not set(text[:10]) <= _KEY_LETTERS:
+        return None
+    return text[:10]
+
+
+LABEL_TABLE = "ville_multi"  # the game's text table of the towns' and hills' names on its maps
 
 
 PACK = "DataMap_Win.dat"
@@ -715,7 +818,7 @@ def view(s: "Scenario") -> dict:
     for it in s.items:
         v = it.values
         entry = {"kind": it.kind, "x": round(it.position[0], 1), "y": round(it.position[1], 1),
-                 "turn": round(it.rotation, 3), "name": str(v.get("Name", "") or "")}
+                 "turn": round(it.rotation, 3), "turns": it.turns, "name": str(v.get("Name", "") or "")}
         if it.kind == "StartingPoint":
             entry["alliance"] = v.get("AllianceNum")
             entry["place"] = v.get("AlliancePriority") or 1
@@ -732,6 +835,7 @@ def view(s: "Scenario") -> dict:
         elif it.kind in ("LabelVille", "LabelMontagne"):
             text = v.get("ChampTexte")
             entry["text"] = text if isinstance(text, str) and not all(c in "0123456789abcdef" for c in text) else entry["name"]
+            entry["key"] = text_key(text)  # the game text its words are under (None: it names none)
         if not it.listed:
             entry["gone"] = True  # off the design item list: the game leaves it out (Scenario.remove)
         items.append(entry)
@@ -860,8 +964,32 @@ def removes_toml(removes: list[Remove]) -> str:
 # LittleGroove's map editor's Details panel). Each value is written in the type the item already has it in (the 102
 # shipped scenarios: Camp and ChampInteger whole numbers, Radius, Width and Height float32s); a spawn's Camp, and a
 # supply depot's trucks, are added when the item hasn't got one, as add_spawn writes them ---
-CHANGES = {"camp": "Camp", "trucks": "ChampInteger", "radius": "Radius", "width": "Width", "height": "Height"}
-KIND_CHANGES = {"Spawn": ("camp", "trucks"), "CircularZone": ("radius",), "RectangleZone": ("width", "height")}
+CHANGES = {"camp": "Camp", "trucks": "ChampInteger", "radius": "Radius", "width": "Width", "height": "Height",
+           "name": "Name", "text": "ChampTexte"}
+KIND_CHANGES = {"Spawn": ("camp", "trucks", "name"), "CircularZone": ("radius", "name"),
+                "RectangleZone": ("width", "height", "name"), "Name": ("name",), "LabelVille": ("text",),
+                "LabelMontagne": ("text",)}
+TEXT_CHANGES = ("name", "text")   # the fields that are texts: the name scripts find an item by, a label's text
+NAMED_KINDS = ("Spawn", "Name", "CircularZone", "RectangleZone")  # the kinds the shipped scenarios name (and so may
+# get a name: set_value)
+TEXT_MOST = 200   # the longest name or label text taken (the shipped ones: 2 to 40 letters)
+
+
+def _check_text(v, at: str, field: str) -> str:
+    """A name or a label's text from a mod's file: one line of text the scenario file can hold."""
+    if not isinstance(v, str):
+        raise ScenarioError(f"{at}: {field} is a text, in quotes")
+    if not v.strip() or len(v) > TEXT_MOST or any(c in v for c in "\r\n\t\0"):
+        # not a game rule: one line of 1 to TEXT_MOST letters, as the Studio writes it
+        raise ScenarioError(f"{at}: {field} is one line of 1 to {TEXT_MOST} letters")
+    if field == "name":
+        try:
+            v.encode("latin-1")
+        except UnicodeEncodeError:
+            # not a game rule: a scenario file keeps names in one byte per letter (its STRG table)
+            raise ScenarioError(f"{at}: name has a letter a scenario file can't keep (use letters, digits and _)") \
+                from None
+    return v
 
 
 @dataclass
@@ -901,6 +1029,9 @@ def parse_changes(items, where: str = "items.toml") -> list[Change]:
             if k not in m:
                 continue
             v = m[k]
+            if k in TEXT_CHANGES:
+                values[k] = _check_text(v, at, k)
+                continue
             if isinstance(v, bool) or not isinstance(v, (int, float)):
                 raise ScenarioError(f"{at}: {k} is a number")
             if k == "camp":  # as a spawn's camp is checked (parse_spawns)
@@ -922,7 +1053,95 @@ def changes_toml(changes: list[Change], header: str = "") -> str:
     lines = [f"# {line}" for line in header.splitlines()] + ([""] if header else [])
     for c in changes:
         lines += ["[[set]]", f'file = "{c.file}"', f"item = {c.item}", f'kind = "{c.kind}"']
-        lines += [f"{k} = {c.values[k]!r}" for k in KIND_CHANGES[c.kind] if k in c.values]
+        lines += [f"{k} = {_toml_value(c.values[k])}" for k in KIND_CHANGES[c.kind] if k in c.values]
+        lines.append("")
+    return "\n".join(lines)
+
+
+def _toml_value(v) -> str:
+    """A number or a text as TOML writes it (a text in double quotes, its quotes and backslashes escaped)."""
+    return json.dumps(v, ensure_ascii=False) if isinstance(v, str) else repr(v)
+
+
+# --- mods: new labels, named points and zones (maps/<map pack>/places.toml, MOD_FORMAT §8; LittleGroove's map editor's
+# + Placement for city and mountain labels, named points and circle and rectangle zones). A file of its own, as
+# items.toml: none of the many rewrites of scenario.toml can drop them. Added at the end of a scenario's items, like
+# spawns, so the shipped items keep their numbers ---
+PLACE_KINDS = ("LabelVille", "LabelMontagne", "Name", "CircularZone", "RectangleZone")
+LABEL_KINDS = ("LabelVille", "LabelMontagne")
+PLACE_KEYS = {"LabelVille": ("text",), "LabelMontagne": ("text",), "Name": ("name", "rotation"),
+              "CircularZone": ("name", "radius", "rotation"), "RectangleZone": ("name", "width", "height", "rotation")}
+
+
+@dataclass
+class Place:
+    """A new design item of scenario `file` that isn't a unit (PLACE_KINDS), at x, y: a town's or a hill's name on
+    the map (`text`: the game text its words are under, a key of LABEL_TABLE), a named point the mission scripts find
+    by its `name`, or a circle (`radius`) or rectangle (`width`, `height`, world units) zone they watch, named `name`;
+    a named point or a zone turned `rotation` radians when given (Scenario.add_place)."""
+    file: str
+    kind: str
+    x: float
+    y: float
+    name: str = ""
+    text: str = ""
+    rotation: float | None = None
+    radius: float | None = None
+    width: float | None = None
+    height: float | None = None
+    z: float | None = None   # the ground's height there: the build fills it from the map (the shipped ones match it)
+
+
+def parse_places(items, where: str = "places.toml") -> list[Place]:
+    out = []
+    for n, m in enumerate(items or [], start=1):
+        at = f"{where}: place {n}"
+        if not isinstance(m, dict):
+            raise ScenarioError(f"{at} isn't a table")
+        for k in ("file", "kind", "x", "y"):
+            if k not in m:
+                raise ScenarioError(f"{at}: {k} is missing")
+        kind = m["kind"]
+        if kind not in PLACE_KINDS:
+            raise ScenarioError(f"{at}: kind must be one of {', '.join(PLACE_KINDS)}")
+        extra = sorted(set(m) - {"file", "kind", "x", "y"} - set(PLACE_KEYS[kind]))
+        if extra:
+            raise ScenarioError(f"{at}: unknown key {extra[0]!r} (a {kind} has {', '.join(PLACE_KEYS[kind])})")
+        f = str(m["file"])
+        if not f.lower().endswith(".scenario") or "/" in f or "\\" in f:
+            raise ScenarioError(f"{at}: file must be a scenario's name, like leveldesign.scenario")
+        numbers = {}
+        for k in ("x", "y", "rotation", "radius", "width", "height"):
+            if k not in m:
+                continue
+            v = m[k]
+            if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+                raise ScenarioError(f"{at}: {k} is a number")
+            if k in ("radius", "width", "height") and not v > 0:
+                raise ScenarioError(f"{at}: {k} is a size, more than 0")
+            numbers[k] = float(v)
+        for k in {"CircularZone": ("radius",), "RectangleZone": ("width", "height")}.get(kind, ()):
+            if k not in numbers:
+                raise ScenarioError(f"{at}: a {kind} needs its {k}")
+        if kind in LABEL_KINDS and "text" not in m:
+            # not a game rule: what the file must say to write a label as the game's are (its text alone)
+            raise ScenarioError(f"{at}: a {kind} needs its text (the game text its words are under)")
+        if kind == "Name" and "name" not in m:
+            raise ScenarioError(f"{at}: a named point needs its name (what the mission scripts find it by)")
+        texts = {k: _check_text(m[k], at, k) for k in ("name", "text") if k in m}
+        out.append(Place(f, str(kind), numbers["x"], numbers["y"], texts.get("name", ""), texts.get("text", ""),
+                         numbers.get("rotation"), numbers.get("radius"), numbers.get("width"), numbers.get("height")))
+    return out
+
+
+def places_toml(places: list[Place], header: str = "") -> str:
+    lines = [f"# {line}" for line in header.splitlines()] + ([""] if header else [])
+    for p in places:
+        lines += ["[[place]]", f'file = "{p.file}"', f'kind = "{p.kind}"', f"x = {p.x!r}", f"y = {p.y!r}"]
+        for k in PLACE_KEYS[p.kind]:
+            v = getattr(p, k)
+            if v is not None and v != "":
+                lines.append(f"{k} = {_toml_value(v)}")
         lines.append("")
     return "\n".join(lines)
 
@@ -1175,7 +1394,8 @@ def _to_segment(x: float, y: float, a, b) -> float:
 
 def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
                 mission=None) -> tuple[dict[str, bytes], list[str]]:
-    """Apply a mod's scenario edits (in order: Move, Remove, Start, Spawn, then the items.toml Changes) to a map's
+    """Apply a mod's scenario edits (in order: Move, Remove, Start, Spawn, the places.toml Places, then the items.toml
+    Changes) to a map's
     scenarios. `read(member)` gives a DataMap_Win.dat member's bytes, or None. `skirmish`: the map's scenarios (file
     names, lower case) that its
     skirmish and online entries load (rusemod.players.skirmish_files). Returns ({member: new bytes}, report lines).
@@ -1265,6 +1485,15 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
                 if m.camera:
                     cam.turn(name, m.x, m.y, m.camera)
             continue
+        if isinstance(m, Place):
+            z = m.z
+            if z is None:  # no ground to read: the height of the nearest design item, never 0 under a hill
+                near = min(s.items, key=lambda it: (it.position[0] - m.x) ** 2 + (it.position[1] - m.y) ** 2,
+                           default=None)
+                z = near.position[2] if near is not None else 0.0
+            s.add_place(m.kind, m.x, m.y, z, name=m.name, text=m.text, rotation=m.rotation, radius=m.radius,
+                        width=m.width, height=m.height)
+            continue
         if m.item >= len(s.items):
             raise ScenarioError(f"{map_pack}: {m.file} has {len(s.items)} design items, not {m.item + 1}")
         if s.items[m.item].kind != m.kind:
@@ -1305,11 +1534,13 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
         started = sum(1 for m in mine if isinstance(m, Start))
         removed = len({m.item for m in mine if isinstance(m, Remove)})
         changed = len({m.item for m in mine if isinstance(m, Change)})
+        placed = sum(1 for m in mine if isinstance(m, Place))
         notes.append(f"{map_pack}: {member.rsplit(chr(92), 1)[-1]}: " + ", ".join(
             p for p in (f"{moved} item(s) moved" if moved else "", f"{removed} of its own item(s) taken out" if removed
                         else "", f"{changed} of its own item(s) changed" if changed else "",
                         f"{started} starting point(s) added" if started else "",
-                        f"{spawned} spawn(s) added" if spawned else "") if p))
+                        f"{spawned} spawn(s) added" if spawned else "",
+                        f"{placed} name(s), named point(s) or zone(s) added" if placed else "") if p))
     out = {member: s.to_bytes() for member, s in files.values()}
     out.update({member: cam.to_bytes() for member, cam in cams.values() if cam is not None and cam.changed})
     return out, notes + later

@@ -532,6 +532,126 @@ class Changes(unittest.TestCase):
         self.assertEqual(info.scenario["Blitz"], [Remove("leveldesign.scenario", 2, "Spawn"),
                                                   Change("leveldesign.scenario", 0, "Spawn", {"trucks": 50})])
 
+    def test_names_the_mission_scripts_use(self):
+        """A spawn's, a named point's or a zone's name changed in place (a name another value shares stays its own);
+        one without a name gets one, first; a starting point's can't be changed here."""
+        import tomllib
+        from rusemod.scenario import Change, changes_toml, parse_changes
+        s = Scenario.read(detail_scenario())
+        s.set_value(3, "name", "zone_évac")   # the circle zone
+        s.set_value(2, "name", "Tank's \"one\"")  # the unit had no name
+        back = Scenario.read(s.to_bytes())
+        self.assertEqual((back.items[3].values["Name"], back.items[2].values["Name"]), ("zone_évac", "Tank's \"one\""))
+        nd = back.ndf
+        self.assertEqual([nd.prop_name(pi) for pi, _v in nd.objects[7].props], ["Name", "PythonClassName"])
+        self.assertIn("zone_a", nd.strings)  # (the shared string itself is never changed)
+        changes = [Change("a.scenario", 3, "CircularZone", {"name": "zone_évac", "radius": 2.0}),
+                   Change("a.scenario", 2, "Spawn", {"name": "Tank's \"one\""})]
+        self.assertEqual(parse_changes(tomllib.loads(changes_toml(changes))["set"]), changes)
+        for bad, why in (({"kind": "Name", "name": 5}, "name is a text"), ({"kind": "Name", "name": " "}, "one line"),
+                         ({"kind": "Name", "name": "a\nb"}, "one line"), ({"kind": "Name", "name": "名前"}, "can't keep"),
+                         ({"kind": "StartingPoint", "name": "x"}, "kind must be one of")):
+            with self.subTest(bad=bad), self.assertRaisesRegex(ScenarioError, why):
+                parse_changes([{"file": "a.scenario", "item": 0, **bad}])
+
+
+class Places(unittest.TestCase):
+    """New town and hill names, named points and zones (maps/<map>/places.toml; LittleGroove's + Placement), written
+    as most of the game's own are (checked byte for byte against shipped ones of each kind, 2026-10-07). Not yet seen
+    in the game."""
+    MEMBER = "test\\map\\blitz\\leveldesign.scenario"
+
+    def test_each_kind_written_as_the_game_s_own(self):
+        from rusemod.scenario import _plain, text_key, view
+        s = Scenario.read(scenario())
+        n = len(s.items)
+        s.add_place("LabelVille", 1.0, 2.0, 3.0, text="Spring_k3x")
+        s.add_place("LabelMontagne", 4.0, 5.0, 6.0, text="Hill 111", rotation=1.0)  # (a label has no turn)
+        s.add_place("Name", 7.0, 8.0, 9.0, name="point_1", rotation=0.5)
+        s.add_place("CircularZone", 10.0, 11.0, 12.0, name="zone_1", radius=50000.0)
+        s.add_place("RectangleZone", 13.0, 14.0, 15.0, name="zone_2", width=2000.0, height=3000.0)
+        with self.assertRaisesRegex(ScenarioError, "can't be added here"):
+            s.add_place("Spawn", 0.0, 0.0)
+        back = Scenario.read(s.to_bytes())
+        nd = back.ndf
+        got = []
+        for it in back.items[n:]:
+            o = nd.objects[it.obj]
+            props = {nd.prop_name(pi): v for pi, v in o.props}
+            addon = nd.objects[struct.unpack("<III", props["AddOn"].payload)[1]]
+            got.append((it.kind, it.position, [nd.prop_name(pi) for pi, _v in o.props],
+                        [(nd.prop_name(pi), v.tc, _plain(nd, v)) for pi, v in addon.props]))
+        self.assertEqual(got, [
+            ("LabelVille", (1.0, 2.0, 3.0), ["Position", "AddOn"], [("ChampTexte", 0x08, "Spring_k3x")]),
+            ("LabelMontagne", (4.0, 5.0, 6.0), ["Position", "AddOn"], [("ChampTexte", 0x08, "Hill 111")]),
+            ("Name", (7.0, 8.0, 9.0), ["Position", "Rotation", "AddOn"], [("Name", 0x07, "point_1")]),
+            ("CircularZone", (10.0, 11.0, 12.0), ["Position", "AddOn"], [("Name", 0x07, "zone_1"), ("Radius", 0x05, 50000.0)]),
+            ("RectangleZone", (13.0, 14.0, 15.0), ["Position", "AddOn"],
+             [("Name", 0x07, "zone_2"), ("Height", 0x05, 3000.0), ("Width", 0x05, 2000.0)])])
+        label = nd.objects[struct.unpack("<III", {nd.prop_name(pi): v for pi, v in nd.objects[back.items[n].obj].props}
+                                         ["AddOn"].payload)[1]]
+        self.assertEqual(label.props[0][1].payload, struct.pack("<I", 20) + "Spring_k3x".encode("utf-16-le"))
+        self.assertEqual([(x["kind"], x.get("key")) for x in view(back)["items"][n:n + 2]],
+                         [("LabelVille", "Spring_k3x"), ("LabelMontagne", None)])
+        self.assertEqual((text_key("BlackpoolBridge"), text_key("Hill 111"), text_key(""), text_key(None)),
+                         ("BlackpoolB", None, None, None))
+
+    def test_the_mod_file(self):
+        import tomllib
+        from rusemod.scenario import Place, parse_places, places_toml
+        places = [Place("a.scenario", "LabelVille", 1.0, 2.0, text="Spring_k3x"),
+                  Place("a.scenario", "Name", 3.0, 4.0, name="point \"1\"", rotation=0.5),
+                  Place("a.scenario", "CircularZone", 5.0, 6.0, name="zone_1", radius=50000.0),
+                  Place("a.scenario", "RectangleZone", 7.0, 8.0, name="zone_2", width=2.0, height=3.0)]
+        text = places_toml(places, "a header")
+        self.assertTrue(text.startswith("# a header\n"))
+        self.assertEqual(parse_places(tomllib.loads(text)["place"]), places)
+        ok = {"file": "a.scenario", "x": 1, "y": 2}
+        for bad, why in (({"kind": "Spawn"}, "kind must be one of"),
+                         ({"kind": "LabelVille"}, "needs its text"),
+                         ({"kind": "LabelVille", "text": "a", "rotation": 1.0}, "unknown key 'rotation'"),
+                         ({"kind": "Name"}, "needs its name"),
+                         ({"kind": "CircularZone", "name": "z"}, "needs its radius"),
+                         ({"kind": "CircularZone", "radius": -1}, "more than 0"),
+                         ({"kind": "RectangleZone", "width": 1}, "needs its height"),
+                         ({"kind": "Name", "name": "p", "x": "a"}, "x is a number"),
+                         ({"kind": "Name", "name": "p", "file": "x.txt"}, "scenario's name"),
+                         ({"kind": "Name", "name": "p", "radius": 5}, "unknown key 'radius'")):
+            with self.subTest(bad=bad), self.assertRaisesRegex(ScenarioError, why):
+                parse_places([{**ok, **bad}])
+
+    def test_added_after_the_spawns_at_the_ground_s_height(self):
+        from rusemod.scenario import Place, apply_moves
+        new, notes = apply_moves({self.MEMBER: scenario()}.get, "Blitz", [
+            Place("leveldesign.scenario", "Name", 1000.0, 2000.0, name="point_1"),
+            Place("leveldesign.scenario", "CircularZone", 5.0, 6.0, name="zone_1", radius=9.0, z=77.0)])
+        back = Scenario.read(new[self.MEMBER])
+        self.assertEqual([(it.kind, it.position[2]) for it in back.items[-2:]], [("Name", 50.0), ("CircularZone", 77.0)])
+        self.assertIn("2 name(s), named point(s) or zone(s) added", notes[0])
+        with self.assertRaisesRegex(ScenarioError, "it has no scenario nothing.scenario"):
+            apply_moves({}.get, "Blitz", [Place("nothing.scenario", "Name", 1.0, 2.0, name="p")])
+
+    def test_the_build_reads_them_between_the_scenario_files_and_the_items_files(self):
+        import tempfile
+        from pathlib import Path
+        from rusemod.build import load_mod
+        from rusemod.scenario import Change, Place, Remove
+        with tempfile.TemporaryDirectory() as tmp:
+            mod = Path(tmp, "places-test")
+            (mod / "maps" / "Blitz").mkdir(parents=True)
+            (mod / "mod.toml").write_text('[mod]\nid = "places-test"\nversion = "0.1.0"\n', encoding="utf-8")
+            (mod / "maps" / "Blitz" / "scenario.toml").write_text(
+                '[[remove]]\nfile = "leveldesign.scenario"\nitem = 2\nkind = "Spawn"\n', encoding="utf-8")
+            (mod / "maps" / "Blitz" / "items.toml").write_text(
+                '[[set]]\nfile = "leveldesign.scenario"\nitem = 0\nkind = "Name"\nname = "renamed"\n', encoding="utf-8")
+            (mod / "maps" / "Blitz" / "places.toml").write_text(
+                '[[place]]\nfile = "leveldesign.scenario"\nkind = "Name"\nx = 1.0\ny = 2.0\nname = "point_1"\n',
+                encoding="utf-8")
+            info, _ops = load_mod(mod)
+        self.assertEqual(info.scenario["Blitz"], [Remove("leveldesign.scenario", 2, "Spawn"),
+                                                  Place("leveldesign.scenario", "Name", 1.0, 2.0, name="point_1"),
+                                                  Change("leveldesign.scenario", 0, "Name", {"name": "renamed"})])
+
 
 class Spawns(unittest.TestCase):
     """New spawns as the game takes them: a skirmish game spawns only neutral items (camp -1), a spawn without a

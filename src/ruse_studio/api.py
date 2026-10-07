@@ -2174,10 +2174,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         out are marked `gone` (the map view shows them faded, to put back)."""
         moves, starts, spawns, removes = self._read_scenario_tables(pack)
         changes = self._read_item_changes(pack)
+        added = self._read_places(pack)  # (not `places`: a starting point's places, below)
         whole = self._read_scenario_sectors(pack)
         whole = whole is not None and whole.whole_map
-        if not moves and not spawns and not starts and not removes and not whole and not changes:
+        if not moves and not spawns and not starts and not removes and not whole and not changes and not added:
             return base
+        label_words = self._mod_words("map") if any(p.kind in scenario.LABEL_KINDS for p in added) else {}
         out = []
         for s in base["scenarios"]:
             s = {**s, "items": [dict(it) for it in s["items"]]}
@@ -2195,6 +2197,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     it = s["items"][c.item]
                     it["game"] = {k: it.get(k) for k in c.values}
                     it.update(c.values)
+                    if "text" in c.values:  # a label pointed at another game text
+                        it["key"] = scenario.text_key(c.values["text"])
             for m in moves:
                 if m.file.lower() == s["file"].lower() and m.item < len(s["items"]):
                     it = s["items"][m.item]
@@ -2203,6 +2207,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                                                 m.camera or 0.0)
                     it.update(x=m.x, y=m.y, moved=(m.x, m.y) != (it["x"], it["y"]) or it.get("moved", False),
                               camera=m.camera or 0.0)
+                    if m.rotation is not None:  # turned in the mod (scenario_turn); `game_turn`: the game's
+                        it.update(game_turn=it["turn"], turn=m.rotation)
             places: dict = {}
             shipped = [it for it in s["items"] if it["kind"] == "StartingPoint"]
             for it in shipped:
@@ -2230,6 +2236,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     s["items"].append({"kind": "Spawn", "x": sp.x, "y": sp.y, "turn": sp.rotation, "name": "",
                                        "camp": sp.camp, "what": sp.what, "mine": True, "spawn": n,
                                        "item": len(s["items"])})
+            for n, p in enumerate(added):  # new names on the map, named points and zones (places.toml)
+                if p.file.lower() == s["file"].lower():
+                    new = {"kind": p.kind, "x": p.x, "y": p.y, "turn": p.rotation or 0.0, "name": p.name,
+                           "mine": True, "place": n, "item": len(s["items"])}
+                    if p.kind in scenario.LABEL_KINDS:  # with the words the map project gives its new text
+                        new.update(text=p.text, key=scenario.text_key(p.text),
+                                   words=label_words.get(scenario.text_key(p.text) or "", (None, {}))[1])
+                    new.update({k: getattr(p, k) for k in ("radius", "width", "height") if getattr(p, k) is not None})
+                    s["items"].append(new)
             out.append(s)
         return {"scenarios": out, "sectors_whole": whole}
 
@@ -2397,7 +2412,37 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             old = next((m for m in moves if m.file.lower() == file.lower() and m.item == int(item)), None)
             moves = [m for m in moves if m is not old]
             moves.append(scenario.Move(file, int(item), kind, float(x), float(y),
+                                       rotation=old.rotation if old is not None else None,
                                        camera=old.camera if old is not None else None))
+            self._write_scenario_edits(pack, moves, spawns)
+        return self.map_scenarios(pack)
+
+    def scenario_turn(self, pack: str, file: str, item: int, turn: float) -> dict:
+        """Turn design item `item` of scenario `file` to `turn` radians in the current mod (kept with its move; one
+        not moved gets a move to where it stands). Only an item that has a turn of its own can be turned (most named
+        points, spawns and starting points, some zones; the labels have none). The game's turn again, where it
+        stands, takes the move out."""
+        base = self._base_scenario(pack, file)
+        if not 0 <= int(item) < len(base["items"]):
+            raise StudioError(f"{file} has no item {item}")
+        it = base["items"][int(item)]
+        if it["kind"] not in scenario.KINDS_MOVABLE or not it.get("turns"):
+            # not a game rule: the item is written without a turn (Scenario.move turns only one that has it)
+            raise StudioError(f"this {it['kind'] or 'plain item'} has no turn of its own to change")
+        turn = float(turn)
+        if not math.isfinite(turn):
+            raise StudioError("the turn must be a number")
+        turn = math.remainder(turn, math.tau)
+        with self._saving:
+            moves, spawns = self._read_scenario_edits(pack)
+            old = next((m for m in moves if m.file.lower() == file.lower() and m.item == int(item)), None)
+            moves = [m for m in moves if m is not old]
+            if old is None:
+                old = scenario.Move(file, int(item), it["kind"], float(it["x"]), float(it["y"]))
+            same = abs(math.remainder(turn - it["turn"], math.tau)) < 1e-4
+            new = replace(old, rotation=None if same else turn)
+            if new.rotation is not None or new.camera or (new.x, new.y) != (it["x"], it["y"]):
+                moves.append(new)
             self._write_scenario_edits(pack, moves, spawns)
         return self.map_scenarios(pack)
 
@@ -2418,7 +2463,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             moves = [m for m in moves if m is not old]
             if old is None:
                 old = scenario.Move(file, int(item), "StartingPoint", float(it["x"]), float(it["y"]))
-            if turn is not None or (old.x, old.y) != (it["x"], it["y"]):
+            if turn is not None or old.rotation is not None or (old.x, old.y) != (it["x"], it["y"]):
                 moves.append(replace(old, camera=turn))
             self._write_scenario_edits(pack, moves, spawns)
         return self.map_scenarios(pack)
@@ -2473,7 +2518,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     # Details panel): a spawn's side, a supply depot's trucks, a zone's size. A file of its own, so none of the many
     # rewrites of scenario.toml can drop them ---
     ITEMS_HEADER = ("The map's own items this mod changes a value of: a spawn's side, a supply depot's trucks, a zone's "
-                    "size (docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio, which rewrites this file.")
+                    "size, a name the mission scripts use (docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio, which "
+                    "rewrites this file.")
 
     def _items_file(self, pack: str) -> Path:
         return self._scenario_file(pack).with_name("items.toml")
@@ -2494,8 +2540,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def scenario_change(self, pack: str, file: str, item: int, field: str, value) -> dict:
         """Change one value of one of the map's own design items in the current map project: a spawn's side
         (`camp`: -1 neutral, or one of the scenario's camps), a supply depot's `trucks`, a circle zone's `radius`, a
-        rectangle zone's `width` or `height` (world units). The game's value again takes the change out. Returns the
-        map's scenarios as the mod leaves them."""
+        rectangle zone's `width` or `height` (world units), the `name` the mission scripts find a spawn, a named point
+        or a zone by, a label's `text` (the game text it shows). The game's value again takes the change out. Returns
+        the map's scenarios as the mod leaves them."""
         if self._map_dir() is None:
             raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
         base = self._base_scenario(pack, file)
@@ -2508,6 +2555,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError(f"a {kind or 'plain item'}'s {field} can't be changed here")
         if field == "trucks" and it.get("trucks") is None and it.get("what") != "DalleBatimentDepot":
             raise StudioError("Only a supply depot has trucks.")
+        if field in scenario.TEXT_CHANGES:  # a name the mission scripts find the item by, or a label's text
+            game = it.get(field) or ""
+            text = str(value).strip()
+            if text != game:  # (the game's again, even none, takes the change out)
+                try:
+                    text = scenario._check_text(text, "it", field)
+                except scenario.ScenarioError as exc:
+                    raise StudioError(str(exc).removeprefix("it: ").capitalize() + ".") from None
+            return self._save_item_change(pack, file, item, kind, field, text, game)
         try:
             number = float(value)
         except (TypeError, ValueError):
@@ -2521,6 +2577,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError("A skirmish map's items stay neutral: a skirmish game spawns only neutral items, so the "
                               "game would leave it out.")
         game = {"camp": it.get("camp") if it.get("camp") is not None else 0}.get(field, it.get(field))
+        return self._save_item_change(pack, file, item, kind, field, number, game)
+
+    def _save_item_change(self, pack: str, file: str, item: int, kind: str, field: str, number, game) -> dict:
+        """Keep one value of one of the map's own items in items.toml (the game's value again takes it out)."""
         with self._saving:
             changes = self._read_item_changes(pack)
             old = next((c for c in changes if c.file.lower() == file.lower() and c.item == item), None)
@@ -2540,6 +2600,165 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             elif path.is_file():
                 path.unlink()
         return self.map_scenarios(pack)
+
+    # --- new names on the map, named points and zones (maps/<pack>/places.toml, scenario.Place; LittleGroove's
+    # + Placement for city and mountain labels, named points and circle and rectangle zones). A file of its own, as
+    # items.toml ---
+    PLACES_HEADER = ("The town and hill names, named points and zones this mod adds to this map's scenarios "
+                     "(docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio, which rewrites this file.")
+    ZONE_SIZE = 50000.0  # a new zone's radius, width and height (world units, about 190 m): LittleGroove's editor's
+
+    def _places_file(self, pack: str) -> Path:
+        return self._scenario_file(pack).with_name("places.toml")
+
+    def _read_places(self, pack: str) -> list:
+        """The current map project's new labels, named points and zones on this map (scenario.Place)."""
+        if self._map_dir() is None:
+            return []
+        path = self._places_file(pack)
+        if not path.is_file():
+            return []
+        try:
+            return scenario.parse_places(tomllib.loads(path.read_text(encoding="utf-8")).get("place", []), str(path))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, scenario.ScenarioError) as exc:
+            raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
+                              f"by hand.") from None
+
+    def _write_places(self, pack: str, places: list) -> None:
+        path = self._places_file(pack)
+        if places:
+            _save_checked(path, scenario.places_toml(places, self.PLACES_HEADER),
+                          lambda data: scenario.parse_places(data.get("place", []), str(path)))
+        elif path.is_file():
+            path.unlink()
+
+    def _free_name(self, pack: str, file: str, stem: str) -> str:
+        """`stem`_1, _2, ...: the first name no item of scenario `file` (the game's or the project's) has."""
+        names = {it.get("name") for it in self._base_scenario(pack, file)["items"]}
+        names |= {p.name for p in self._read_places(pack) if p.file.lower() == file.lower()}
+        n = 1
+        while f"{stem}_{n}" in names:
+            n += 1
+        return f"{stem}_{n}"
+
+    def scenario_place(self, pack: str, file: str, kind: str, x: float, y: float, words: str = "") -> dict:
+        """Add a new `kind` (scenario.PLACE_KINDS) to scenario `file` at x, y in the current map project: a town's or a
+        hill's name on the map, showing `words` (a new game text of the project's, the same words in every language
+        until the words panel changes one), or a named point or a circle or rectangle zone, named point_1, zone_1, ...
+        (the first name the scenario hasn't got), a zone ZONE_SIZE across. Returns the map's scenarios."""
+        if self._map_dir() is None:
+            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+        if kind not in scenario.PLACE_KINDS:
+            raise StudioError(f"a {kind or 'plain item'} can't be added here")
+        self._base_scenario(pack, file)
+        x, y = float(x), float(y)
+        if not (math.isfinite(x) and math.isfinite(y)):
+            raise StudioError("the place must be two finite numbers")
+        with self._saving:
+            if kind in scenario.LABEL_KINDS:
+                place = scenario.Place(file, kind, x, y, text=self._new_label_text(words))
+            elif kind == "Name":
+                place = scenario.Place(file, kind, x, y, name=self._free_name(pack, file, "point"))
+            else:
+                size = self.ZONE_SIZE
+                place = scenario.Place(file, kind, x, y, name=self._free_name(pack, file, "zone"),
+                                       radius=size if kind == "CircularZone" else None,
+                                       width=size if kind == "RectangleZone" else None,
+                                       height=size if kind == "RectangleZone" else None)
+            self._write_places(pack, self._read_places(pack) + [place])
+        return self.map_scenarios(pack)
+
+    def _place(self, pack: str, number: int) -> tuple[list, int]:
+        places = self._read_places(pack)
+        if not 0 <= int(number) < len(places):
+            raise StudioError("that name, point or zone isn't in the mod any more")
+        return places, int(number)
+
+    def scenario_move_place(self, pack: str, number: int, x: float, y: float) -> dict:
+        """Put the current map project's new label, named point or zone number `number` (its place in places.toml)
+        at x, y."""
+        x, y = float(x), float(y)
+        if not (math.isfinite(x) and math.isfinite(y)):
+            raise StudioError("the place must be two finite numbers")
+        with self._saving:
+            places, n = self._place(pack, number)
+            places[n] = replace(places[n], x=x, y=y)
+            self._write_places(pack, places)
+        return self.map_scenarios(pack)
+
+    def scenario_place_set(self, pack: str, number: int, field: str, value) -> dict:
+        """Change one value of the current map project's new named point or zone number `number`: its `name` (what
+        the mission scripts find it by), a circle's `radius`, a rectangle's `width` or `height` (world units), its
+        `rotation` (radians; a label has none). A label's words change in the words panel."""
+        with self._saving:
+            places, n = self._place(pack, number)
+            p = places[n]
+            if field not in scenario.PLACE_KEYS[p.kind] or field == "text":
+                raise StudioError(f"a {p.kind}'s {field} can't be changed here")
+            if field == "name":
+                try:
+                    value = scenario._check_text(str(value).strip(), "it", "name")
+                except scenario.ScenarioError as exc:
+                    raise StudioError(str(exc).removeprefix("it: ").capitalize() + ".") from None
+            else:
+                try:
+                    value = float(value)
+                except (TypeError, ValueError):
+                    raise StudioError(f"{field}: {value!r} isn't a number") from None
+                if not math.isfinite(value) or (field != "rotation" and value <= 0):
+                    raise StudioError(f"{field} must be a number more than 0" if field != "rotation"
+                                      else "the turn must be a number")
+            places[n] = replace(p, **{field: value})
+            self._write_places(pack, places)
+        return self.map_scenarios(pack)
+
+    def scenario_remove_place(self, pack: str, number: int) -> dict:
+        """Take back the current map project's new label, named point or zone number `number`; a label's own new
+        text goes with it when no other label uses it."""
+        with self._saving:
+            places, n = self._place(pack, number)
+            gone = places.pop(n)
+            self._write_places(pack, places)
+            if gone.kind in scenario.LABEL_KINDS and not any(p.text == gone.text for p in places):
+                self._drop_label_text(gone.text)
+        return self.map_scenarios(pack)
+
+    # a label's own new text: a row of text/studio-words.ville_multi.csv in the map project with a game key of its own
+    # (MOD_FORMAT §6), the label's text naming that key (scenario.text_key)
+    LABEL_ROW = "label."  # the row's key: label.<its game key>
+
+    def _new_label_text(self, words: str) -> str:
+        """A new game text in the map project for a new label showing `words` (every language the same words): its
+        key, made of the words' first letters and three letters of its own (Spring_k3x), one the game's texts and
+        the project's haven't got. The build adds it to the game's town and hill names (rusemod.loc)."""
+        words = str(words).strip()
+        if not words or any(c in words for c in "\r\n\t"):
+            raise StudioError("Type the name to show on the map first (one line).")
+        if len(words) > scenario.TEXT_MOST:
+            raise StudioError(f"The name is too long: at most {scenario.TEXT_MOST} letters.")
+        folder = self._map_dir()
+        ix = self._open()
+        try:
+            taken = {r[0] for r in ix.db.execute("SELECT DISTINCT name FROM text WHERE dictionary = ?",
+                                                 (scenario.LABEL_TABLE,)) if r[0]}
+        finally:
+            ix.close()
+        taken |= set(self._mod_words("map"))
+        plain = unicodedata.normalize("NFKD", words.title())
+        base = "".join(c for c in plain if c.isascii() and c.isalnum())[:6] or "Name"
+        for n in range(10000):
+            tag = int(hashlib.sha1(f"{folder.name}/{words}/{n}".encode("utf-8")).hexdigest(), 16)
+            key = base + "_" + "".join("0123456789abcdefghijklmnopqrstuvwxyz"[(tag >> (6 * i)) % 36] for i in range(3))
+            if key not in taken:
+                break
+        else:
+            raise StudioError("No new text key was free for this name; try other words.")
+        self._words_rows_set(scenario.LABEL_TABLE, {self.LABEL_ROW + key: (key, {lang_: words for lang_ in loc.LANGS})},
+                             "map")
+        return key
+
+    def _drop_label_text(self, key: str) -> None:
+        self._words_rows_set(scenario.LABEL_TABLE, {self.LABEL_ROW + key: None}, "map")
 
     def scenario_sectors(self, pack: str, whole_map: bool) -> dict:
         """Sectors over the whole map on (every scenario of the map: each place its sectors leave out goes to the
@@ -4295,9 +4514,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     # in a file of the Studio's own, apart from the new units' names (edits.NAMES_FILE, which ModEdits rewrites)
     WORDS_FILE = "studio-words"  # text/studio-words.<the key's table>.csv
 
-    def _mod_words(self, kind: str = "mod") -> dict:
+    def _mod_words(self, kind: str = "mod", new: bool = True) -> dict:
         """{key: (table, {language: words})} for the game texts the current mod (`kind` "map": the map project, where
-        the Maps tab puts a town's new name) changes."""
+        the Maps tab puts a town's new name) changes, and (`new`) the ones it adds with a game key of their own (a
+        new label's: _new_label_text)."""
         mod = self._mod_dir(self._kind(kind))
         out = {}
         if mod is None or not (mod / "text").is_dir():
@@ -4311,7 +4531,41 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             for r in rows:
                 if r.key.startswith("game:"):
                     out[r.key[len("game:"):]] = (table, r.texts)
+                elif new and r.game_key:
+                    out[r.game_key] = (table, r.texts)
         return out
+
+    def _words_rows_set(self, table: str, updates: dict, kind: str = "mod") -> Path:
+        """Rewrite the current mod's (`kind` "map": the map project's) text/studio-words.<table>.csv with `updates`
+        {row key: (game key, {language: words}), or None to take the row out}; the other rows stay. Only a file the
+        build reads back is saved (MOD_FORMAT §6); no row left, no file. Call it holding _saving."""
+        mod = self._mod_dir(self._kind(kind))
+        path = mod / "text" / f"{self.WORDS_FILE}.{table}.csv"
+        rows = {}
+        if path.is_file():
+            try:
+                rows = {r.key: (r.game_key, r.texts) for r in loc.read_csv(path.read_text(encoding="utf-8"), table)}
+            except (loc.TextError, UnicodeDecodeError) as exc:
+                raise StudioError(f"{path} has a mistake ({exc}). Fix it, or delete it to start over.") from None
+        for k, row in updates.items():
+            if row is None:
+                rows.pop(k, None)
+            else:
+                rows[k] = row
+        if rows:
+            keyed = any(game_key for game_key, _t in rows.values())  # (the game_key column only when a row has one)
+            out = io.StringIO()
+            writer = csv.writer(out, lineterminator="\n")
+            writer.writerow(["key", *(["game_key"] if keyed else []), *loc.LANGS])
+            for k in sorted(rows):
+                game_key, texts = rows[k]
+                writer.writerow([k, *([game_key] if keyed else []), *(texts.get(lang_, "") for lang_ in loc.LANGS)])
+            text = out.getvalue()
+            loc.read_csv(text, table)  # only a file the build can read back is ever saved
+            ModEdits._write(path, text)
+        elif path.is_file():
+            path.unlink()
+        return path
 
     def value_words(self, key: str, kind: str = "mod") -> dict:
         """The words game text key `key` shows, in every language: [{lang, game, mine}] (`mine`: the current mod's
@@ -4326,11 +4580,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         tables = {}
         for table, lang_, text in found:
             tables.setdefault(table, {})[lang_] = text
+        mod_words = self._mod_words(kind)
         if not tables:
+            if key in mod_words:  # a text the mod adds (a new label's): no game words
+                table, mine = mod_words[key]
+                return {"key": key, "table": table, "new": True,
+                        "words": [{"lang": lang_, "game": None, "mine": mine.get(lang_) or mine.get("us")}
+                                  for lang_ in loc.LANGS]}
             return {"key": key, "table": None, "words": []}
         table = max(tables, key=lambda t: len(tables[t]))  # the table that has it in the most languages
         game = tables[table]
-        mine = self._mod_words(kind).get(key, (None, {}))[1]
+        mine = mod_words.get(key, (None, {}))[1]
         return {"key": key, "table": table,
                 "words": [{"lang": lang_, "game": game.get(lang_), "mine": mine.get(lang_) if mine else None}
                           for lang_ in loc.LANGS]}
@@ -4339,7 +4599,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """Change the words game text key `key` shows, in the current mod (`kind` "map": the map project): `texts`
         {language: words} (a language left out, or given the game's words, keeps the game's). Every language goes
         into the row, so the build doesn't give the others the English words (rusemod.loc: a missing cell falls back
-        to English); a row that changes nothing is taken out. Returns value_words(key, kind) again."""
+        to English); a row that changes nothing is taken out. A text the mod adds (a new label's) keeps its row, with
+        a language left empty given the English words. Returns value_words(key, kind) again."""
         mod = self._mod_dir(self._kind(kind))
         if mod is None:
             raise StudioError("Pick or make a mod first: changes are saved in a mod.")
@@ -4355,31 +4616,27 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             row[w["lang"]] = text if text.strip() else (w["game"] or "")
         if not row.get("us"):
             raise StudioError("The English words can't be empty: the other languages fall back to them.")
-        changed = any(row[w["lang"]] != (w["game"] or "") for w in now["words"])
-        path = mod / "text" / f"{self.WORDS_FILE}.{now['table']}.csv"
         with self._saving:
-            rows = {}
-            if path.is_file():
-                try:
-                    rows = {r.key: r.texts for r in loc.read_csv(path.read_text(encoding="utf-8"), now["table"])}
-                except (loc.TextError, UnicodeDecodeError) as exc:
-                    raise StudioError(f"{path} has a mistake ({exc}). Fix it, or delete it to start over.") from None
-            if changed:
-                rows[f"game:{key}"] = row
+            if now.get("new"):  # the mod's own text: its row keeps its game key
+                row = {lang_: words or row["us"] for lang_, words in row.items()}
+                row_key = self.LABEL_ROW + key
+                if not self._words_row_there(now["table"], row_key, kind):
+                    # not a game rule: the row was made by hand (another key name): it's changed in its file
+                    raise StudioError(f"{key} is a text of this mod's own file text/{self.WORDS_FILE}.{now['table']}"
+                                      f".csv under another name: change it there.")
+                self._words_rows_set(now["table"], {row_key: (key, row)}, kind)
             else:
-                rows.pop(f"game:{key}", None)
-            if rows:
-                out = io.StringIO()
-                writer = csv.writer(out, lineterminator="\n")
-                writer.writerow(["key", *loc.LANGS])
-                for k in sorted(rows):
-                    writer.writerow([k, *(rows[k].get(lang_, "") for lang_ in loc.LANGS)])
-                text = out.getvalue()
-                loc.read_csv(text, now["table"])  # only a file the build can read back is ever saved
-                ModEdits._write(path, text)
-            elif path.is_file():
-                path.unlink()
+                changed = any(row[w["lang"]] != (w["game"] or "") for w in now["words"])
+                self._words_rows_set(now["table"], {f"game:{key}": ("", row) if changed else None}, kind)
         return self.value_words(key, kind)
+
+    def _words_row_there(self, table: str, row_key: str, kind: str) -> bool:
+        mod = self._mod_dir(self._kind(kind))
+        path = mod / "text" / f"{self.WORDS_FILE}.{table}.csv"
+        try:
+            return any(r.key == row_key for r in loc.read_csv(path.read_text(encoding="utf-8"), table))
+        except (OSError, loc.TextError, UnicodeDecodeError):
+            return False
 
     def value_links(self, address: str, prop: str, words: str = "", lang: str = schema.BASE) -> dict:
         """What a link of the All values tab could point at (_value_target): objects of the kind the game's link

@@ -2680,6 +2680,7 @@ function wordsPanel(key, saved, kind = "mod") {
     el("p", { className: "muted small", textContent: w.values_words_help }));
   api().value_words(key, kind).then((res) => {
     if (!res.table) { box.append(el("p", { className: "muted small", textContent: w.values_words_no_text })); return; }
+    if (res.new) box.firstChild.textContent = w.values_words_help_new;  // the mod's own text (a new label's): no game words
     const inputs = {}, grid = el("div", { className: "values-words-grid" });
     for (const x of res.words) {
       const name = (state.languages.find((l) => l.code === x.lang) || {}).name || x.lang;
@@ -2703,7 +2704,7 @@ function wordsPanel(key, saved, kind = "mod") {
       title: w.tip_values_words_reset, disabled: !has || !res.words.some((x) => x.mine !== null && x.mine !== undefined) });
     back.addEventListener("click", () => send(Object.fromEntries(res.words.map((x) => [x.lang, x.game || ""])),
       w.values_words_back));
-    box.append(grid, el("div", { className: "actions" }, save, back));
+    box.append(grid, el("div", { className: "actions" }, save, ...(res.new ? [] : [back])));
     if (!has) box.append(el("p", { className: "muted small", textContent: w.no_mod }));
   }).catch(problem);
   return box;

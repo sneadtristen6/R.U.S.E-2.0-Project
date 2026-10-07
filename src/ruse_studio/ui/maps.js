@@ -1529,7 +1529,13 @@ const ALLIANCE = [0x3f7fe0, 0xe0503f, 0x49b85a, 0xe0c33f, 0xa35ee0, 0x3fc8d8];
 // item numbers: renderSelection shows them as the game shows a selection); box: a selection box being dragged
 const scen = { data: null, pick: 0, show: true, group: null, tool: null, selected: null, units: null, kind: "ground",
   type: null, camp: "-1", count: 1, formation: "line", gap: {}, team: 1, players: null, sel: new Set(), box: null,
-  unitByAddress: null, unitsLoading: null };
+  unitByAddress: null, unitsLoading: null, markKind: "LabelVille" };
+// What the Add a name or zone tool adds (StudioApi.scenario_place; LittleGroove's + Placement): a town's or a hill's
+// name on the map, a named point or a round or square zone the mission scripts use
+const MARK_KINDS = ["LabelVille", "LabelMontagne", "Name", "CircularZone", "RectangleZone"];
+const MARK_WORD = { LabelVille: "scen_mark_town", LabelMontagne: "scen_mark_hill", Name: "scen_mark_point",
+  CircularZone: "scen_mark_circle", RectangleZone: "scen_mark_rect" };
+const POINT_COLOUR = 0x7fe0f0;  // named points and trigger zones
 const SPAWN_KINDS = ["buildings", "ground", "infantry", "air"];
 
 // --- What the scenario shows, kind by kind, and how big its icons are. The owner, 2026-10-03: "why can't you just
@@ -1537,10 +1543,12 @@ const SPAWN_KINDS = ["buildings", "ground", "infantry", "air"];
 // map" when zoomed out, all of it "CUSTOMIZABLE", and nothing more in the top left: switches and a size slider in the
 // Scenario tray, kept by the Studio (prefs "view": saveView; the window's own storage is only a fallback, it's lost
 // every start). Only the view changes, never the mod. ---
-const SCEN_LAYERS = ["starts", "cams", "depots", "buildings", "units", "zones", "towns"];
+// "points": the named points and trigger zones the mission scripts use (a campaign chapter has hundreds): off until
+// asked for, and shown while the Add a name or zone tool is picked
+const SCEN_LAYERS = ["starts", "cams", "depots", "buildings", "units", "zones", "towns", "points"];
 const ICON_BASE = 0.042;  // an icon's height as a share of the view's, at size 100 %, close up
 const GONE_OPACITY = 0.35;  // a map item the mod takes out: still drawn, faded, so it can be put back
-scen.layers = Object.fromEntries(SCEN_LAYERS.map((k) => [k, true]));
+scen.layers = Object.fromEntries(SCEN_LAYERS.map((k) => [k, k !== "points"]));
 scen.iconSize = 1;
 try {
   const kept = JSON.parse(localStorage.getItem("studio.scenview") || "{}");
@@ -2126,27 +2134,46 @@ function drawScenario() {
       if (it.gone) m.material.opacity = GONE_OPACITY;  // taken out by the mod: faded, to put back
       m.userData.item = it.item;
       group.add(m);
-    } else if (it.kind === "CircularZone" && it.radius) {
-      const pts = [];
-      for (let a = 0; a <= 64; a++) {
-        const r = a / 64 * Math.PI * 2;
-        pts.push(at(it.x + Math.cos(r) * it.radius, it.y + Math.sin(r) * it.radius));
+    } else if (["Name", "CircularZone", "RectangleZone"].includes(it.kind)) {
+      // a named point or a trigger zone the mission scripts use: shown with the Points layer, while adding one, or
+      // when the mod adds it; a zone's outline and a diamond at its middle to pick it and drag it by
+      if (!(scen.layers.points || scen.tool === "mark" || it.mine || scen.selected === it.item)) continue;
+      const picked = scen.selected === it.item, colour = picked ? 0xffffff : POINT_COLOUR;
+      const label = `${mv.words[MARK_WORD[it.kind]] || it.kind}${it.name ? " · " + it.name : ""}`
+        + (it.mine ? ` · ${mv.words.scen_mine}` : "") + (it.gone ? ` · ${mv.words.scen_taken_out}` : "")
+        + (mv.words.scen_drag_tip && !it.gone ? ` · ${mv.words.scen_drag_tip}` : "");
+      let pts = null;
+      if (it.kind === "CircularZone" && it.radius) {
+        pts = [];
+        for (let a = 0; a <= 64; a++) {
+          const r = a / 64 * Math.PI * 2;
+          pts.push(at(it.x + Math.cos(r) * it.radius, it.y + Math.sin(r) * it.radius));
+        }
+      } else if (it.kind === "RectangleZone" && it.width && it.height) {
+        const c = Math.cos(it.turn), sn = Math.sin(it.turn), hw = it.width / 2, hh = it.height / 2;
+        pts = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh], [-hw, -hh]].map(([dx, dy]) =>
+          at(it.x + dx * c - dy * sn, it.y + dx * sn + dy * c));
       }
-      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x7fe0f0 }));
-      line.userData.label = it.name;
-      zones.add(line);
-    } else if (it.kind === "RectangleZone" && it.width && it.height) {
-      const c = Math.cos(it.turn), sn = Math.sin(it.turn), hw = it.width / 2, hh = it.height / 2;
-      const pts = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh], [-hw, -hh]].map(([dx, dy]) =>
-        at(it.x + dx * c - dy * sn, it.y + dx * sn + dy * c));
-      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x7fe0f0 }));
-      line.userData.label = it.name;
-      zones.add(line);
+      if (pts) {
+        const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+          new THREE.LineBasicMaterial({ color: colour, transparent: true, opacity: it.gone ? GONE_OPACITY : 1 }));
+        line.userData = { label, item: it.item };
+        group.add(line);
+      }
+      const diamond = new THREE.Mesh(new THREE.OctahedronGeometry(pillar * (it.kind === "Name" ? 0.3 : 0.22)),
+        new THREE.MeshLambertMaterial({ color: colour, transparent: true, opacity: it.gone ? GONE_OPACITY : 1 }));
+      diamond.position.copy(at(it.x, it.y, pillar * 0.35));
+      diamond.userData = { label, item: it.item };
+      group.add(diamond);
     } else if ((it.kind === "LabelVille" || it.kind === "LabelMontagne") && (it.text || it.name) && scen.layers.towns) {
-      const sprite = mapLabel(it.text || it.name, scen.selected === it.item ? "#ffd34d"
+      // a new label shows its own words (the map project's new text), in the language the Studio is in
+      const own = it.words && (it.words[mv.lang === "base" ? "us" : mv.lang] || it.words.us);
+      const text = own || it.text || it.name;
+      const sprite = mapLabel(text, scen.selected === it.item ? "#ffd34d"
         : it.kind === "LabelVille" ? "#ffffff" : "#e8d9a8", size * 0.012);
       sprite.position.copy(at(it.x, it.y, pillar * 0.4));
-      sprite.userData.label = (it.text || it.name) + (it.gone ? ` · ${mv.words.scen_taken_out}` : "");
+      sprite.userData.label = text + (it.mine ? ` · ${mv.words.scen_mine}` : "")
+        + (it.gone ? ` · ${mv.words.scen_taken_out}` : "");
       sprite.userData.item = it.item;  // picked to take it out (or put it back), dragged to move it
       if (it.gone) sprite.material.opacity = GONE_OPACITY;
       group.add(sprite);
@@ -2439,7 +2466,21 @@ function renderScenTools() {
   $("scen-spawn").setAttribute("aria-pressed", String(scen.tool === "spawn"));
   iconTile($("scen-start"), "start", w.scen_start_tool).title = w.tip_scen_start;
   $("scen-start").setAttribute("aria-pressed", String(scen.tool === "start"));
-  $("scen-move").disabled = $("scen-spawn").disabled = $("scen-start").disabled = !s;
+  iconTile($("scen-mark"), "mark", w.scen_mark_tool).title = w.tip_scen_mark;
+  $("scen-mark").setAttribute("aria-pressed", String(scen.tool === "mark"));
+  $("scen-move").disabled = $("scen-spawn").disabled = $("scen-start").disabled = $("scen-mark").disabled = !s;
+  // Add a name or zone: what to add (each chip says what it is for), and a town's or hill's words to show
+  const markPick = $("scen-mark-kind"), wordsRow = $("scen-mark-words-row");
+  markPick.classList.toggle("hidden", scen.tool !== "mark");
+  const labelKind = scen.markKind === "LabelVille" || scen.markKind === "LabelMontagne";
+  wordsRow.classList.toggle("hidden", scen.tool !== "mark" || !labelKind);
+  if (scen.tool === "mark") {
+    markPick.replaceChildren(...MARK_KINDS.map((k) => chipOf(w[MARK_WORD[k]] || k, w["tip_" + MARK_WORD[k]],
+      scen.markKind === k, () => { scen.markKind = k; renderScenTools(); })));
+    $("scen-mark-words-label").textContent = w.scen_mark_words;
+    $("scen-mark-words").placeholder = w.scen_mark_words_hint;
+    wordsRow.title = w.tip_scen_mark_words;
+  }
   const team = $("scen-team");
   team.classList.toggle("hidden", scen.tool !== "start");
   if (scen.tool === "start") {
@@ -2554,10 +2595,12 @@ function renderScenTools() {
       n.append(" ", fill(w.scen_cam_turned || "Camera turned {deg}°", { deg: Math.round(degOf(it.camera)) }), " ", back);
     }
     if (it.mine || it.moved) {
-      const b = el("button", { type: "button", className: "link", textContent: it.mine ? w.scen_remove : w.scen_put_back });
+      const b = el("button", { type: "button", className: "link", textContent: it.mine ? w.scen_remove : w.scen_put_back,
+        title: !it.mine ? w.tip_scen_put_back : it.place !== undefined ? w.tip_scen_remove_place : w.tip_scen_remove_mine });
       b.addEventListener("click", () => it.mine
         ? scenEdit(() => it.start !== undefined ? mv.api.scenario_remove_start(mv.current, it.start)
-          : mv.api.scenario_remove_spawn(mv.current, it.spawn)).then(() => loadPlayers(mv.current))
+          : it.place !== undefined ? mv.api.scenario_remove_place(mv.current, it.place)
+            : mv.api.scenario_remove_spawn(mv.current, it.spawn)).then(() => loadPlayers(mv.current))
         : scenEdit(() => mv.api.scenario_put_back(mv.current, s.file, it.item)));
       n.append(" ", b);
     }
@@ -2565,9 +2608,15 @@ function renderScenTools() {
     renderItemDetails(s, it);
   } else if (scen.tool === "spawn") { scenNote(w.scen_spawn_help); renderItemDetails(null, null); }
   else if (scen.tool === "start") { scenNote(w.scen_start_help); renderItemDetails(null, null); }
+  else if (scen.tool === "mark") { scenNote(w[MARK_WORD[scen.markKind] + "_help"]); renderItemDetails(null, null); }
   else {
     scenNote(s && w.scen_drag_help ? w.scen_drag_help : "");
     const it = s && scen.selected !== null ? s.items[scen.selected] : null;
+    if (it && mv.brush.mod && it.mine && it.place !== undefined) {  // a name, point or zone the mod adds: taken back
+      const b = el("button", { type: "button", className: "link", textContent: w.scen_remove, title: w.tip_scen_remove_place });
+      b.addEventListener("click", () => scenEdit(() => mv.api.scenario_remove_place(mv.current, it.place)));
+      $("scen-note").append(" ", b);
+    }
     if (it && mv.brush.mod) itemTakeOut(s, it, $("scen-note"));
     renderItemDetails(s, it);
   }
@@ -2584,8 +2633,9 @@ function itemTakeOut(s, it, n) {
     n.append(" ", back);
     return;
   }
-  if (!["Spawn", "LabelVille", "LabelMontagne"].includes(it.kind)) return;
-  const out = el("button", { type: "button", className: "link", textContent: w.scen_take_out, title: w.tip_scen_take_out });
+  if (!["Spawn", "LabelVille", "LabelMontagne", "Name", "CircularZone", "RectangleZone"].includes(it.kind)) return;
+  const out = el("button", { type: "button", className: "link", textContent: w.scen_take_out,
+    title: ["Name", "CircularZone", "RectangleZone"].includes(it.kind) ? w.tip_scen_take_out_point : w.tip_scen_take_out });
   out.addEventListener("click", () => scenEdit(() => mv.api.scenario_remove(mv.current, s.file, [it.item])));
   n.append(" ", out);
 }
@@ -2594,16 +2644,18 @@ function itemTakeOut(s, it, n) {
 // LittleGroove's Details panel): a spawn's side and a supply depot's trucks, a zone's size in metres, and a town
 // name's words in every language (the label holds a key of the game's texts: app.js wordsPanel). Each control says
 // in its tooltip what it is and what changing it does.
-const DETAIL_KINDS = ["Spawn", "CircularZone", "RectangleZone", "LabelVille"];
+const DETAIL_KINDS = ["Spawn", "CircularZone", "RectangleZone", "LabelVille", "LabelMontagne", "Name"];
 
 function renderItemDetails(s, it) {
   const w = mv.words, box = $("scen-details");
-  const show = Boolean(s && it && !it.mine && !it.gone && DETAIL_KINDS.includes(it.kind));
+  // the map's own items, and the names, points and zones the mod adds (its own spawns and starts have none here)
+  const show = Boolean(s && it && !it.gone && DETAIL_KINDS.includes(it.kind) && (!it.mine || it.place !== undefined));
   box.classList.toggle("hidden", !show);
   box.replaceChildren();
   if (!show) return;
   const can = Boolean(mv.brush.mod);
-  const save = (field, value) => scenEdit(() => mv.api.scenario_change(mv.current, s.file, it.item, field, value), true);
+  const save = (field, value) => scenEdit(() => it.mine ? mv.api.scenario_place_set(mv.current, it.place, field, value)
+    : mv.api.scenario_change(mv.current, s.file, it.item, field, value), true);
   const gameLine = (field, text, back) => {
     if (!it.game || !(field in it.game)) return null;
     const reset = el("button", { type: "button", className: "link", textContent: w.scen_item_reset,
@@ -2657,24 +2709,63 @@ function renderItemDetails(s, it) {
         gameLine(field, g ? fill(w.scen_item_metres, { m: Math.round(g / METRE * 10) / 10 }) : "", g)));
     }
     box.append(el("div", { className: "muted", textContent: w.scen_item_zone_note }));
-  } else if (it.kind === "LabelVille" && it.text) {
-    // a town's name: the label holds a key of the game's texts; its words change in every language
+  } else if ((it.kind === "LabelVille" || it.kind === "LabelMontagne") && it.key) {
+    // a town's or a hill's name: the label names a key of the game's texts (its first 10 letters); its words change
+    // in every language (a new label's are the map project's own text)
     const said = el("span", { className: "muted", textContent: "…" });
     const edit = el("button", { type: "button", className: "link", textContent: w.values_words_edit,
       title: w.tip_scen_item_words, disabled: !can || typeof window.wordsPanel !== "function" });
     let panel = null;
     edit.addEventListener("click", () => {
       if (panel) { panel.remove(); panel = null; return; }
-      panel = window.wordsPanel(it.text, () => renderItemDetails(s, it), "map");  // kept in the map project
+      panel = window.wordsPanel(it.key, () => it.mine ? scenEdit(() => mv.api.map_scenarios(mv.current), true)
+        : renderItemDetails(s, it), "map");  // kept in the map project
       box.append(panel);
     });
-    mv.api.value_words(it.text, "map").then((res) => {
+    mv.api.value_words(it.key, "map").then((res) => {
       const mine = (res.words || []).find((x) => x.lang === (mv.lang === "base" ? "us" : mv.lang));
       const words = mine ? (mine.mine || mine.game) : null;
       said.textContent = words ? `“${words}”` : w.values_words_none;
       if (!res.table) edit.disabled = true;
     }).catch(() => { said.textContent = w.values_words_none; edit.disabled = true; });
-    box.append(row(w.scen_item_town, w.tip_scen_item_words, said, " ", edit));
+    box.append(row(it.kind === "LabelVille" ? w.scen_item_town : w.scen_item_hill, w.tip_scen_item_words, said, " ", edit));
+  } else if (it.kind === "LabelVille" || it.kind === "LabelMontagne") {
+    box.append(row(it.kind === "LabelVille" ? w.scen_item_town : w.scen_item_hill, w.tip_scen_item_no_key,
+      el("span", { className: "muted", textContent: `“${it.text || it.name}”` })));
+  }
+  // the name the mission scripts find it by (a unit, a named point, a zone): changing it can break a script
+  if (["Spawn", "Name", "CircularZone", "RectangleZone"].includes(it.kind)) {
+    const name = el("input", { type: "text", maxLength: 200, className: "scen-detail-text", value: it.name || "",
+      placeholder: w.scen_item_no_name, disabled: !can, title: w.tip_scen_item_name });
+    name.addEventListener("change", () => {
+      const v = name.value.trim();
+      if (!v && !(it.game && "name" in it.game && !it.game.name)) { name.value = it.name || ""; return; }
+      save("name", v);
+    });
+    box.append(row(w.scen_item_name, w.tip_scen_item_name, name,
+      gameLine("name", it.game && it.game.name ? it.game.name : w.scen_item_no_name, it.game ? it.game.name || "" : "")));
+  }
+  // its turn, in degrees: only an item that has one (a label has none); a new point or zone gets one when set
+  if (it.turns || (it.mine && it.place !== undefined && it.kind !== "LabelVille" && it.kind !== "LabelMontagne")) {
+    const deg = (r) => Math.round(r * 180 / Math.PI * 10) / 10;
+    const turn = el("input", { type: "number", step: "1", className: "scen-detail-number", value: String(deg(it.turn || 0)),
+      disabled: !can, title: w.tip_scen_item_turn });
+    const turnTo = (radians) => scenEdit(() => it.mine
+      ? mv.api.scenario_place_set(mv.current, it.place, "rotation", radians)
+      : mv.api.scenario_turn(mv.current, s.file, it.item, radians), true);
+    turn.addEventListener("change", () => {
+      const d = Number(turn.value);
+      if (turn.value.trim() === "" || !Number.isFinite(d)) { turn.value = String(deg(it.turn || 0)); return; }
+      turnTo(d * Math.PI / 180);
+    });
+    let back = null;
+    if (it.game_turn !== undefined) {
+      const reset = el("button", { type: "button", className: "link", textContent: w.scen_item_reset,
+        title: w.tip_scen_item_reset, disabled: !can });
+      reset.addEventListener("click", () => turnTo(it.game_turn));
+      back = el("div", { className: "muted" }, fill(w.scen_item_game, { value: `${deg(it.game_turn)}°` }), " ", reset);
+    }
+    box.append(row(w.scen_item_turn, w.tip_scen_item_turn, turn, el("span", { className: "muted", textContent: " °" }), back));
   }
   if (!can) box.append(el("div", { className: "muted", textContent: w.no_mod }));
   else box.append(el("div", { className: "muted", textContent: w.scen_item_untested }));
@@ -2687,7 +2778,7 @@ function renderScenClear(s) {
   box.replaceChildren();
   if (!s || !mv.brush.mod) return;
   const depots = s.items.filter((it) => it.kind === "Spawn" && !it.mine && !it.gone && it.group === "depot");
-  const names = s.items.filter((it) => (it.kind === "LabelVille" || it.kind === "LabelMontagne") && !it.gone);
+  const names = s.items.filter((it) => (it.kind === "LabelVille" || it.kind === "LabelMontagne") && !it.gone && !it.mine);
   for (const [items, word] of [[depots, w.scen_take_out_depots], [names, w.scen_take_out_names]]) {
     if (!items.length) continue;
     const b = el("button", { type: "button", className: "link", textContent: `${word} (${items.length})`,
@@ -2737,6 +2828,8 @@ function scenPointerDown(ev) {
 // map's supply depots too) or a start's camera and drag; let go and it's saved in the mod, as the Move tool saves it.
 // A camera goes round its HQ (the camera ring); a depot spot and a starting point stick to roads when that's on.
 // Pressing on empty ground still turns the view. ---
+const GRABBABLE = ["StartingPoint", "Spawn", "LabelVille", "LabelMontagne", "Name", "CircularZone", "RectangleZone"];
+
 function canGrab() {
   return Boolean(mv.gl && mv.edit && scen.group && scen.group.visible && !mv.brush.on && !mv.place.on && !road.on
     && !bridge.on && (!scen.tool || scen.tool === "move"));
@@ -2758,7 +2851,7 @@ function grabAt(ev) {
     return it && it.cam ? { cam: it, s } : null;
   }
   const it = s.items.find((x) => x.item === hit.object.userData.item);
-  if (!it || !["StartingPoint", "Spawn", "LabelVille", "LabelMontagne"].includes(it.kind)) return null;
+  if (!it || !GRABBABLE.includes(it.kind)) return null;
   const own = scen.group.children.find((o) => o.isGroup && o.userData.camItem === it.item);  // its camera moves with it
   return { it, s, objs: items.filter((o) => o.userData.item === it.item).concat(own ? [own] : []) };
 }
@@ -2812,9 +2905,15 @@ async function itemDragEnd() {
   if (!d || !d.moved) { if (d) selectSpawn(d.it, false); return; }  // a click: that one's selected
   const it = d.it, kind = snapKind(it, null);
   const [x, y] = kind ? await snapToRoad(kind, d.x, d.y) : [d.x, d.y];
+  moveItem(d.s, it, x, y);
+}
+
+// Save item `it` of scenario `s` at x, y: the mod's own starting point, spawn or name/point/zone, or the map's own
+function moveItem(s, it, x, y) {
   if (it.mine && it.start !== undefined) scenEdit(() => mv.api.scenario_move_start(mv.current, it.start, x, y));
+  else if (it.mine && it.place !== undefined) scenEdit(() => mv.api.scenario_move_place(mv.current, it.place, x, y));
   else if (it.mine) scenEdit(() => mv.api.scenario_move_spawn(mv.current, it.spawn, x, y));
-  else scenEdit(() => mv.api.scenario_move(mv.current, d.s.file, it.item, x, y));
+  else scenEdit(() => mv.api.scenario_move(mv.current, s.file, it.item, x, y));
 }
 
 // A start's warm-up camera turned `a` radians about the start, as the build turns it (scenario.CamPaths.turn): the
@@ -2863,9 +2962,17 @@ async function scenPlaceAt(s, cx, cy) {
   if (scen.tool === "move") {
     const it = s.items[scen.selected], kind = snapKind(it, null);
     const [x, y] = kind ? await snapToRoad(kind, cx, cy) : [cx, cy];
-    if (it.mine && it.start !== undefined) scenEdit(() => mv.api.scenario_move_start(mv.current, it.start, x, y));
-    else if (it.mine) scenEdit(() => mv.api.scenario_move_spawn(mv.current, it.spawn, x, y));  // the mod's own spawn
-    else scenEdit(() => mv.api.scenario_move(mv.current, s.file, it.item, x, y));
+    moveItem(s, it, x, y);
+    return;
+  }
+  if (scen.tool === "mark") {  // a new name on the map, named point or zone where clicked
+    const kind = scen.markKind, words = $("scen-mark-words").value.trim();
+    if ((kind === "LabelVille" || kind === "LabelMontagne") && !words) {
+      scenNote(mv.words.scen_mark_words_first, "error");
+      $("scen-mark-words").focus();
+      return;
+    }
+    scenEdit(() => mv.api.scenario_place(mv.current, s.file, kind, cx, cy, words));
     return;
   }
   if (scen.tool === "start") {  // a new starting point: the team's next place, beside a road unless the toggle's off
@@ -3368,6 +3475,7 @@ const ICONS = {
   move: "M12 3v18 M3 12h18 M9 6l3-3 3 3 M9 18l3 3 3-3 M6 9l-3 3 3 3 M18 9l3 3-3 3",
   spawn: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8v8 M8 12h8",
   start: "M6 21V3 M6 4h11l-3 4 3 4H6",
+  mark: "M12 21s-6-6.5-6-11a6 6 0 0 1 12 0c0 4.5-6 11-6 11z M12 7.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z",
 };
 const BRUSH_ICON = { water: "drop", cover: "cover", block: "movement" };
 for (const f of FORMATIONS) {
@@ -5770,6 +5878,7 @@ function wire() {
   $("scen-gap").addEventListener("input", (e) => { scen.gap[scen.kind] = Number(e.target.value); renderScenTools(); });
   $("scen-spawn").addEventListener("click", () => setScenTool("spawn"));
   $("scen-start").addEventListener("click", () => setScenTool("start"));
+  $("scen-mark").addEventListener("click", () => setScenTool("mark"));
   $("scen-size").addEventListener("input", (e) => {  // the icons' size, live
     scen.iconSize = Number(e.target.value) / 100;
     saveScenView();

@@ -1,4 +1,5 @@
 """The Studio app's back end (ruse_studio.api) and the display names (rusemod.schema), on a made-up game."""
+import csv
 import hashlib
 import os
 import re
@@ -1262,6 +1263,87 @@ class ScenarioEdits(WithMod):
         self.assertEqual((back["camp"], "game" in back), (None, False))
         self.assertFalse(items_file.exists())
 
+    def test_names_points_and_zones_added(self):
+        """LittleGroove's + Placement: a named point, a zone and a town's name added in the map project's
+        maps/<map>/places.toml (a file of its own); the town's words a new game text of the project's, the same in every
+        language until the words panel changes one; each changed, moved and taken back."""
+        places_file = self.file.with_name("places.toml")
+        words_file = self.mod / "text" / "studio-words.ville_multi.csv"
+        before = len(self.items(self.api.map_scenarios("Blitz")))
+        point = self.items(self.api.scenario_place("Blitz", "leveldesign.scenario", "Name", 5.0, 6.0))[-1]
+        self.assertEqual({k: point.get(k) for k in ("kind", "x", "y", "name", "mine", "place", "item")},
+                         {"kind": "Name", "x": 5.0, "y": 6.0, "name": "point_1", "mine": True, "place": 0, "item": before})
+        zone = self.items(self.api.scenario_place("Blitz", "leveldesign.scenario", "CircularZone", 7.0, 8.0))[-1]
+        self.assertEqual((zone["name"], zone["radius"], zone["place"]), ("zone_1", StudioApi.ZONE_SIZE, 1))
+        with self.assertRaisesRegex(StudioError, "Type the name to show on the map first"):
+            self.api.scenario_place("Blitz", "leveldesign.scenario", "LabelVille", 9.0, 10.0, "  ")
+        town = self.items(self.api.scenario_place("Blitz", "leveldesign.scenario", "LabelVille", 9.0, 10.0,
+                                                  "Springfield"))[-1]
+        key = town["key"]
+        self.assertRegex(key, r"^Spring_[0-9a-z]{3}$")
+        self.assertEqual((town["text"], town["words"]["us"], town["words"]["jpn"]), (key, "Springfield", "Springfield"))
+        words = self.api.value_words(key, "map")
+        self.assertEqual((words["table"], words["new"], words["words"][0]),
+                         ("ville_multi", True, {"lang": "us", "game": None, "mine": "Springfield"}))
+        self.api.value_words_set(key, {"fr": "Champsprings", "ger": ""}, "map")  # (an empty one: the English words)
+        with words_file.open(encoding="utf-8", newline="") as f:
+            rows = list(csv.DictReader(f))
+        self.assertEqual([(r["key"], r["game_key"], r["us"], r["fr"], r["ger"]) for r in rows],
+                         [(f"label.{key}", key, "Springfield", "Champsprings", "Springfield")])
+        info, _ops = load_mod(self.mod)  # the build reads all of it
+        self.assertEqual([(t.dictionary, t.game_key, t.texts["fr"]) for t in info.texts],
+                         [("ville_multi", key, "Champsprings")])
+        self.assertEqual([type(r).__name__ for r in info.scenario["Blitz"]], ["Place", "Place", "Place"])
+        # changed and moved; a scenario.toml rewrite keeps them (a file of their own)
+        self.api.scenario_place_set("Blitz", 0, "name", "evac_point")
+        self.api.scenario_place_set("Blitz", 0, "rotation", 1.5)
+        self.api.scenario_place_set("Blitz", 1, "radius", 9000)
+        for n, field, value, why in ((2, "rotation", 1.0, "can't be changed here"), (0, "radius", 5, "can't be changed"),
+                                     (0, "name", " ", "one line"), (1, "radius", 0, "more than 0"),
+                                     (9, "name", "x", "isn't in the mod any more")):
+            with self.subTest(field=field, value=value), self.assertRaisesRegex(StudioError, why):
+                self.api.scenario_place_set("Blitz", n, field, value)
+        self.api.scenario_move_place("Blitz", 0, 11.0, 12.0)
+        self.api.scenario_move("Blitz", "leveldesign.scenario", 0, 111.0, 222.0)
+        data = tomllib.loads(places_file.read_text(encoding="utf-8"))["place"]
+        self.assertEqual(data, [
+            {"file": "leveldesign.scenario", "kind": "Name", "x": 11.0, "y": 12.0, "name": "evac_point", "rotation": 1.5},
+            {"file": "leveldesign.scenario", "kind": "CircularZone", "x": 7.0, "y": 8.0, "name": "zone_1", "radius": 9000.0},
+            {"file": "leveldesign.scenario", "kind": "LabelVille", "x": 9.0, "y": 10.0, "text": key}])
+        # taken back: the town's own text goes with it, the last one takes the file
+        self.api.scenario_remove_place("Blitz", 2)
+        self.assertFalse(words_file.exists())
+        self.api.scenario_remove_place("Blitz", 0)
+        self.assertEqual(len(self.items(self.api.scenario_remove_place("Blitz", 0))), before)
+        self.assertFalse(places_file.exists())
+        # a name of the map's own: kept in items.toml
+        it = self.items(self.api.scenario_change("Blitz", "leveldesign.scenario", 1, "name", "my_tank"))[1]
+        self.assertEqual((it["name"], it["game"]), ("my_tank", {"name": ""}))
+        with self.assertRaisesRegex(StudioError, "can't keep"):
+            self.api.scenario_change("Blitz", "leveldesign.scenario", 1, "name", "戦車")
+        back = self.items(self.api.scenario_change("Blitz", "leveldesign.scenario", 1, "name", ""))[1]  # the game's: none
+        self.assertEqual((back["name"], "game" in back), ("", False))
+        self.assertFalse(self.file.with_name("items.toml").exists())
+
+    def test_an_item_turned(self):
+        """The Details panel's turn: kept with the item's move (one not moved gets a move where it stands); a later move
+        or a camera turn keeps it; the game's turn again, where it stands, takes the move out."""
+        start = self.items(self.api.map_scenarios("Blitz"))[0]
+        self.assertEqual((start["turn"], start["turns"]), (1.5, True))
+        turned = self.items(self.api.scenario_turn("Blitz", "leveldesign.scenario", 0, 2.0))[0]
+        self.assertEqual((turned["turn"], turned["game_turn"], turned["moved"]), (2.0, 1.5, False))
+        self.api.scenario_move("Blitz", "leveldesign.scenario", 0, 111.0, 222.0)
+        self.api.scenario_turn_camera("Blitz", "leveldesign.scenario", 0, 0.5)
+        data = tomllib.loads(self.file.read_text(encoding="utf-8"))["move"]
+        self.assertEqual([(m["x"], m["rotation"], m["camera"]) for m in data], [(111.0, 2.0, 0.5)])
+        self.api.scenario_put_back("Blitz", "leveldesign.scenario", 0)
+        self.api.scenario_turn("Blitz", "leveldesign.scenario", 0, 2.0)
+        self.api.scenario_turn("Blitz", "leveldesign.scenario", 0, 1.5 + 2 * 3.141592653589793)  # the game's again
+        self.assertFalse(self.file.exists())
+        for item, why in ((9, "no item 9"),):
+            with self.assertRaisesRegex(StudioError, why):
+                self.api.scenario_turn("Blitz", "leveldesign.scenario", item, 1.0)
+
     def test_a_start_camera_turned(self):
         """The camera ring: the turn is kept with the start's move (a start not moved gets one where it stands)."""
         start = self.items(self.api.map_scenarios("Blitz"))[0]
@@ -1770,6 +1852,10 @@ class Labels(unittest.TestCase):
         maps = (ui / "maps.js").read_text(encoding="utf-8")  # each brush's name is looked up by key
         used |= {"brush_" + name for name in re.findall(r'^  (\w+): \["\w+", "\w+", -?1, (?:true|false),', maps, re.M)}
         self.assertEqual(len(used & {"brush_hill", "brush_ramp", "brush_cover", "brush_town", "brush_block_vehicles"}), 5)
+        # Add a name or zone: each kind's chip, its tooltip ("tip_" + it) and its help line (it + "_help")
+        marks = re.findall(r'"(scen_mark_\w+)"', re.search(r"const MARK_WORD = \{(.*?)\};", maps, re.S).group(1))
+        self.assertEqual(len(marks), 5)
+        used |= {k for m in marks for k in (m, "tip_" + m, m + "_help")}
         self.assertGreater(len(used), 25)
         self.assertEqual(sorted(used - set(_words())), [])
 

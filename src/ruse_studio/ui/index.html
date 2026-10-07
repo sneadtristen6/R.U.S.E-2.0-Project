@@ -316,8 +316,13 @@
                 <button id="scen-move" type="button" class="tool-tile"></button>
                 <button id="scen-spawn" type="button" class="tool-tile"></button>
                 <button id="scen-start" type="button" class="tool-tile"></button>
+                <button id="scen-mark" type="button" class="tool-tile"></button>
               </div>
               <div id="scen-team" class="chips hidden" role="group"></div>
+              <!-- Add a name or zone (maps.js MARK_KINDS): a town's or hill's name, a named point, a round or square zone -->
+              <div id="scen-mark-kind" class="chips hidden" role="group"></div>
+              <label id="scen-mark-words-row" class="small hidden"><span id="scen-mark-words-label"></span>
+                <input id="scen-mark-words" type="text" maxlength="200"></label>
               <div id="scen-kind" class="chips hidden" role="group"></div>
               <div id="scen-group" class="chips hidden" role="group"></div>
               <div id="scen-count" class="chips hidden" role="group"></div>

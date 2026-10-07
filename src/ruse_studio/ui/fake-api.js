@@ -410,7 +410,7 @@
   Object.assign(words.us, {"scen_cam_what": "Opening camera · team {n}, place {p}", "scen_cam_rest": "the match opens looking from here, after its warm-up flight (the dotted line)", "scen_cam_view": "what the screen shows when the match opens"});
   Object.assign(words.fr, {"scen_cam_what": "Caméra d'ouverture · équipe {n}, place {p}", "scen_cam_rest": "la partie s'ouvre en regardant d'ici, après le vol d'introduction (la ligne pointillée)", "scen_cam_view": "ce que montre l'écran à l'ouverture de la partie"});
   Object.assign(words.sc, {"scen_cam_what": "开局镜头 · 队伍 {n}，位置 {p}", "scen_cam_rest": "对局在预热飞行（虚线）之后，从这里的视角开始", "scen_cam_view": "对局开始时屏幕显示的范围"});
-  Object.assign(words.us, {"scen_cam_drag": "Or drag a start's camera round its HQ to open the match from another side.", "scen_cam_drag_tip": "drag it round the HQ to open the match from another side", "scen_drag_tip": "drag to move it", "scen_drag_help": "Drag any starting point, spawn, supply depot or camera on the map to move it: it's saved in the mod when you let go.", "scen_cam_turned": "Camera turned {deg}°.", "scen_cam_back": "Camera back"});
+  Object.assign(words.us, {"scen_cam_drag": "Or drag a start's camera round its HQ to open the match from another side.", "scen_cam_drag_tip": "drag it round the HQ to open the match from another side", "scen_drag_tip": "drag to move it", "scen_drag_help": "Drag any starting point, spawn, supply depot, camera, name, named point or zone on the map to move it: it's saved in the mod when you let go.", "scen_cam_turned": "Camera turned {deg}°.", "scen_cam_back": "Camera back"});
   Object.assign(words.us, {"scen_layers_show": "Show", "scen_layer_starts": "Starts", "scen_layer_cams": "Cameras", "scen_layer_depots": "Depots", "scen_layer_buildings": "Buildings", "scen_layer_units": "Units", "scen_layer_zones": "Zones", "scen_layer_towns": "Towns", "tip_scen_layers": "Show or hide this kind on the map. Only the view changes, never the mod.", "scen_icon_size": "Icon size {pct} %", "tip_scen_icon_size": "How big the icons are on the map. They also get smaller as you zoom out."});
   const nations = {
     base: ["EU", "Allemagne", "RU", "France", "Italie", "URSS", "Japon"],
@@ -699,11 +699,14 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       .map((icon, k) => ({ kind: "Spawn", x: 520000 + (k % 10) * 30000, y: 760000 + Math.floor(k / 10) * 40000, turn: 0,
         name: icon, camp: 1 + (k % 2), what: "X_" + icon, nation: k % 7, icon, decoy: icon === "airfield",
         unit_kind: ["soldier", "truck", "at_gun", "howitzer", "aa_gun"].includes(icon) ? "ground" : "buildings" })),
-            { kind: "LabelVille", x: 655000, y: 700000, turn: 0, name: "", text: "Port Island" }] },
+            { kind: "LabelVille", x: 655000, y: 700000, turn: 0, name: "", text: "PortIsland", key: "PortIsland" }] },
         { file: "leveldesign_challenge.scenario", kind: "operation", entries: [{ name: "Challenge - Island", kind: "operation", titles: { us: "Harbour raid", fr: "Raid sur le port" } }], zones: [], items: [{ kind: "StartingPoint", x: 655000, y: 620000, turn: 0, name: "", alliance: 1 },
           // a depot a side holds and a zone its mission uses (the item details box: StudioApi.scenario_change)
           { kind: "Spawn", x: 720000, y: 600000, turn: 0, name: "depot_port", camp: 1, what: "DalleBatimentDepot", trucks: 30, unit_kind: "buildings", group: "depot", icon: "depot" },
-          { kind: "CircularZone", x: 655000, y: 500000, turn: 0, name: "zone_harbour", radius: 52000 }],
+          { kind: "CircularZone", x: 655000, y: 500000, turn: 0, name: "zone_harbour", radius: 52000 },
+          // a named point and a square zone its mission script uses (Add a name or zone, the Named spots layer)
+          { kind: "Name", x: 600000, y: 560000, turn: 0.5, turns: true, name: "WP_Landing_01" },
+          { kind: "RectangleZone", x: 700000, y: 470000, turn: 0.3, turns: true, name: "zone_beach", width: 90000, height: 40000 }],
           // its mission's camps (StudioApi._scenario_owners_of, rusemod.missions), as M03_Italie's first chapter has them
           owners: [{ camp: -1, kind: "neutral" }, { camp: 0, kind: "player", nation: 0, team: 1 },
             { camp: 1, kind: "ai", nation: 1, team: 2 }, { camp: 2, kind: "ai", nation: 3, team: 1 },
@@ -762,7 +765,13 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (!it) continue;
         if (it.cam) it.cam = turnCam({ ...it.cam, path: it.cam.path.map(([x, y, z]) => [x + m.x - it.x, y + m.y - it.y, z]) }, m.x, m.y, m.camera || 0);
         Object.assign(it, { x: m.x, y: m.y, moved: m.x !== it.x || m.y !== it.y || it.moved, camera: m.camera || 0 });
+        if (m.rotation !== undefined && m.rotation !== null) Object.assign(it, { game_turn: it.turn, turn: m.rotation });
       }
+      (e.places || []).forEach((p, n) => {  // new names, points and zones (StudioApi.scenario_place)
+        if (p.file !== s.file) return;
+        s.items.push({ ...p, turn: p.rotation || 0, mine: true, place: n, item: s.items.length,
+          words: p.key ? newWords.get(p.key) : undefined });
+      });
       (e.starts || []).forEach((st, n) => {
         if (st.file !== s.file) return;
         const place = 1 + Math.max(0, ...s.items.filter((it) => it.kind === "StartingPoint" && it.alliance === st.team).map((it) => it.place || 1));
@@ -1252,6 +1261,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"ai_script_edit": "Change this script", "tip_ai_script_edit": "Change this mission's script in your mod: its whole text, checked with the game's own Python before it's saved.", "ai_script_editing_help": "Change the text, then Check and Save in the mod. A script runs inside the game for everyone who plays your mod, and a mistake can stop the mission: test it in the game. The steps and the reference on the right help find your way. Not tried in the game yet.", "ai_script_check": "Check", "tip_ai_script_check": "Have the game's own Python read the text, without saving: it says the line of the first mistake.", "ai_script_save": "Save in the mod", "tip_ai_script_save": "Check the text and, when the game's Python reads it, save it in the current mod with the form the game runs.", "ai_script_reset": "Game's script", "tip_ai_script_reset": "Take your change of this script out of the mod: the game runs its own script again.", "ai_script_close": "Stop changing", "tip_ai_script_close": "Close the editor and show the script again. Text not saved yet stays only until you open another script.", "tip_ai_script_area": "The script's text, as Python 2.5 (the game's). Tab puts 4 spaces.", "ai_outline_title": "The mission's steps", "tip_ai_outline": "What the mission does, in order (LittleGroove's outline): click a step to go to where it is written.", "tip_ai_outline_step": "Go to line {line}, where this step is written.", "ai_outline_none": "No steps found here (a helper script, or a mission written another way).", "ai_ref_title": "Reference: the game's script parts (in English)", "tip_ai_ref": "LittleGroove's catalogue of the 1,133 parts the game's scripts are built from: what each does, its values, and a line to insert.", "ai_ref_find": "Find a part: Victory, Spawn, Camera…", "tip_ai_ref_find": "Type part of a name (the catalogue is in English): the list shows the parts the game uses most first.", "tip_ai_ref_kind": "Show only one kind of part: actions, conditions, objectives, the AI, camps, variables…", "ai_ref_kind_all": "Every kind", "ai_ref_insert": "Insert", "tip_ai_ref_insert": "Put this part in the script on a line of its own, above the cursor, named IR_NEW: rename it, then use it in a step.", "ai_ref_used": "Used {n} times in the game's missions", "ai_ref_params": "Its values (* needed)", "ai_ref_none": "Nothing found. Try fewer letters.", "ai_scripts_changed": "changed", "ai_script_mine": "Your mod changes this script: this is its text.", "ai_script_no_compiler": "This copy of the Studio can't make scripts the game runs ({why}).", "ai_script_unsaved": "Not saved yet", "ai_script_checking": "Checking…", "ai_script_ok": "The game's Python reads it: no mistakes found.", "ai_script_bad": "Line {line}: {error}", "ai_script_saved_here": "Saved in the mod.", "ai_script_game_again": "The game's own script again.", "ai_script_saved": "Saved in the mod: the script of {name}.", "ai_script_back": "{name}: the game's own script again."});
   Object.assign(words.us, {"tip_ai_script_pick": "Pick one of the game's scripts, by map: it shows below, and Change this script changes it in your mod."});
   Object.assign(words.us, {"ai_outline_more": "Only the first {n} steps are listed here; {more} more are further down in the script."});
+  Object.assign(words.us, {"scen_mark_tool": "Add a name or zone", "tip_scen_mark": "Put a town or hill name, a named point or a zone on the map: pick what, then click the map where it goes.", "scen_mark_town": "Town name", "tip_scen_mark_town": "A town's name written on the map, as the game shows its towns. You type the name; it's the same in every language until you change one.", "scen_mark_hill": "Hill name", "tip_scen_mark_hill": "A hill's name written on the map, as the game shows its hills. You type the name; it's the same in every language until you change one.", "scen_mark_point": "Named point", "tip_scen_mark_point": "An invisible spot with a name. Mission scripts use these names to send units somewhere or to check where they are.", "scen_mark_circle": "Round zone", "tip_scen_mark_circle": "An invisible round area with a name. Mission scripts use it to notice when units go in or out.", "scen_mark_rect": "Square zone", "tip_scen_mark_rect": "An invisible rectangle with a name. Mission scripts use it to notice when units go in or out.", "scen_mark_town_help": "Type the town's name below, then click the map where it goes.", "scen_mark_hill_help": "Type the hill's name below, then click the map where it goes.", "scen_mark_point_help": "Click the map where the named point goes. It gets a name you can change after (point_1, point_2…).", "scen_mark_circle_help": "Click the map where the zone's middle goes. You can change its size and name after.", "scen_mark_rect_help": "Click the map where the zone's middle goes. You can change its size, turn and name after.", "scen_mark_words": "Name to show", "scen_mark_words_hint": "e.g. Springfield", "tip_scen_mark_words": "The words written on the map, in every language. To give one language other words, pick the name on the map after and use Change the words…", "scen_mark_words_first": "Type the name to show first, then click the map.", "scen_layer_points": "Named spots", "tip_scen_take_out_point": "Take it out of the match. A mission script that uses its name may stop working. You can put it back.", "scen_item_hill": "Hill name", "tip_scen_item_no_key": "This name isn't one of the game's texts, so its words can't be changed here.", "scen_item_name": "Name", "tip_scen_item_name": "The name mission scripts find it by. Changing it can break a script that uses the old name.", "scen_item_no_name": "(no name)", "scen_item_turn": "Turn", "tip_scen_item_turn": "Which way it faces, in degrees."});
+  Object.assign(words.us, {"values_words_help_new": "This is your map's own name, one box per language. A box you leave empty gets the English words. Not tried in the game yet."});
+  Object.assign(words.us, {"tip_scen_remove_place": "Take this name, point or zone back out of your map changes: the game's map is as before.", "tip_scen_remove_mine": "Take what you added back out of your map changes.", "tip_scen_put_back": "Put it back where the game has it (your move is undone)."});
   // the All values tab (StudioApi.values_files / values_find / value_object...): a few objects of the unit data, each
   // row as rusemod.values.row makes it: [prop, label, kind, type, value, text, to, extra]
   const EV = "$/GFX/Everything/";
@@ -1316,7 +1328,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       words_mine: kind === "key" && valueWords.has(value) ? valueWords.get(value)[lang === "base" ? "us" : lang] || null : null,
       count: extra && extra.count, items: extra && extra.items, edited: valueEdits.get(key) || null };
   };
-  const valueGameWords = (key) => ({ N_UNI_137: "SHERMAN", AP_shell: "AP shell" })[key] || null;
+  const valueGameWords = (key) => ({ N_UNI_137: "SHERMAN", AP_shell: "AP shell", PortIsland: "Port Island" })[key] || null;
+  const newWords = new Map();  // a new label's own text key -> { lang: words } (StudioApi._new_label_text)
   const valuePage = (address, lang) => {
     const o = VALUE_OBJECTS[address];
     if (!o) throw new Error(`There's nothing at ${address} in this game build.`);
@@ -1740,11 +1753,20 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         valueEdits.delete(`${address}|${prop}`);
         return { saved: current ? current + "/src/studio.rndf" : null, page: valuePage(address, lang) };
       },
-      value_words: async (key) => ({ key, table: valueGameWords(key) ? "baseunite" : null,
-        words: valueGameWords(key) ? VALUE_LANGS.map((lang) => ({ lang, game: valueGameWords(key),
-          mine: valueWords.has(key) ? valueWords.get(key)[lang] ?? null : null })) : [] }),
+      value_words: async (key) => newWords.has(key)
+        ? { key, table: "ville_multi", new: true, words: VALUE_LANGS.map((lang) => ({ lang, game: null, mine: newWords.get(key)[lang] })) }
+        : ({ key, table: valueGameWords(key) ? "baseunite" : null,
+          words: valueGameWords(key) ? VALUE_LANGS.map((lang) => ({ lang, game: valueGameWords(key),
+            mine: valueWords.has(key) ? valueWords.get(key)[lang] ?? null : null })) : [] }),
       value_words_set: async (key, texts) => {
         if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (newWords.has(key)) {  // a new label's own text: every language kept, an empty one given the English
+          const old = newWords.get(key), row = Object.fromEntries(VALUE_LANGS.map((lang) => [lang, (texts[lang] ?? old[lang]) || ""]));
+          if (!row.us) throw new Error("The English words can't be empty: the other languages fall back to them.");
+          for (const lang of VALUE_LANGS) row[lang] = row[lang] || row.us;
+          newWords.set(key, row);
+          return { key, table: "ville_multi", new: true, words: VALUE_LANGS.map((lang) => ({ lang, game: null, mine: row[lang] })) };
+        }
         const row = Object.fromEntries(VALUE_LANGS.map((lang) => [lang, texts[lang] || valueGameWords(key) || ""]));
         if (VALUE_LANGS.every((lang) => row[lang] === valueGameWords(key))) valueWords.delete(key);
         else valueWords.set(key, row);
@@ -2018,7 +2040,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       scenario_move: async (pack, file, item, x, y) => {
         const e = scenEdits(pack);
         const old = e.moves.find((m) => m.file === file && m.item === item);
-        e.moves = e.moves.filter((m) => m !== old).concat([{ file, item, x, y, camera: old && old.camera }]);
+        e.moves = e.moves.filter((m) => m !== old).concat([{ file, item, x, y, camera: old && old.camera, rotation: old && old.rotation }]);
         return withScenarioEdits(pack);
       },
       scenario_turn_camera: async (pack, file, item, turn) => {
@@ -2094,6 +2116,45 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       scenario_add_start: async (pack, file, team, x, y) => {
         scenEdits(pack).starts.push({ file, team, x, y });
+        return withScenarioEdits(pack);
+      },
+      // Add a name or zone (StudioApi.scenario_place and its move, change and take back), and a turn (scenario_turn)
+      scenario_place: async (pack, file, kind, x, y, words = "") => {
+        const e = scenEdits(pack);
+        e.places = e.places || [];
+        const s = withScenarioEdits(pack).scenarios.find((q) => q.file === file);
+        const free = (stem) => { let n = 1; while (s.items.some((it) => it.name === `${stem}_${n}`)) n += 1; return `${stem}_${n}`; };
+        if (kind === "LabelVille" || kind === "LabelMontagne") {
+          if (!words.trim()) throw new Error("Type the name to show on the map first (one line).");
+          const key = (words.replace(/[^A-Za-z0-9]/g, "").slice(0, 6) || "Name") + "_" + Math.random().toString(36).slice(2, 5);
+          newWords.set(key, Object.fromEntries(VALUE_LANGS.map((lang) => [lang, words.trim()])));
+          e.places.push({ file, kind, x, y, name: "", text: key, key });
+        } else if (kind === "Name") e.places.push({ file, kind, x, y, name: free("point") });
+        else e.places.push({ file, kind, x, y, name: free("zone"), ...(kind === "CircularZone" ? { radius: 50000 } : { width: 50000, height: 50000 }) });
+        return withScenarioEdits(pack);
+      },
+      scenario_move_place: async (pack, number, x, y) => {
+        Object.assign(scenEdits(pack).places[number], { x, y });
+        return withScenarioEdits(pack);
+      },
+      scenario_place_set: async (pack, number, field, value) => {
+        const p = scenEdits(pack).places[number];
+        if (field === "name" && !String(value).trim()) throw new Error("Name is one line of 1 to 200 letters.");
+        p[field] = field === "name" ? String(value).trim() : Number(value);
+        return withScenarioEdits(pack);
+      },
+      scenario_remove_place: async (pack, number) => {
+        const [gone] = scenEdits(pack).places.splice(number, 1);
+        if (gone && gone.key) newWords.delete(gone.key);
+        return withScenarioEdits(pack);
+      },
+      scenario_turn: async (pack, file, item, turn) => {
+        const e = scenEdits(pack), old = e.moves.find((m) => m.file === file && m.item === item);
+        const it = baseScenarios().scenarios.find((x) => x.file === file).items[item];
+        if (!it.turns) throw new Error(`this ${it.kind} has no turn of its own to change`);
+        const same = Math.abs(turn - it.turn) < 1e-4;
+        const m = { ...(old || { file, item, x: it.x, y: it.y }), rotation: same ? null : turn };
+        e.moves = e.moves.filter((q) => q !== old).concat(m.rotation !== null || m.camera || m.x !== it.x || m.y !== it.y ? [m] : []);
         return withScenarioEdits(pack);
       },
       scenario_move_start: async (pack, number, x, y) => {
