@@ -267,6 +267,44 @@ class Scenario:
         it.listed = False
         self.changed = True
 
+    def set_value(self, item: int, field: str, value) -> None:
+        """Change one of design item `item`'s own values (a field of CHANGES: a spawn's camp, a depot's trucks, a
+        zone's radius, width or height), in the type the item has it in. A spawn without a Camp (the game reads it as
+        camp 0) gets one, and a supply depot without trucks gets them, as add_spawn writes both; any other value the
+        item hasn't got can't be changed. Not yet seen in the game."""
+        from .ndf import Value
+        name = CHANGES[field]
+        it = self.items[item]
+        nd = self.ndf
+        props = {nd.prop_name(pi): v for pi, v in nd.objects[it.obj].props}
+        addon = local_ref(props["AddOn"]) if "AddOn" in props else None
+        if addon is None:
+            raise ScenarioError(f"design item {item} ({it.kind or 'plain item'}) has no values of its own to change")
+        a = nd.objects[addon]
+        for k, (pi, v) in enumerate(a.props):
+            if nd.prop_name(pi) != name:
+                continue
+            fmt = {0x02: "<i", 0x03: "<I", 0x05: "<f", 0x06: "<d"}.get(v.tc)
+            if fmt is None:
+                raise ScenarioError(f"design item {item} ({it.kind}) keeps its {name} in a way that can't be changed")
+            number = float(value) if fmt in ("<f", "<d") else int(value)
+            a.props[k] = (pi, Value(v.tc, struct.pack(fmt, number)))
+            break
+        else:
+            depot = str(it.values.get("PythonClassName", "")).endswith(DEPOT.rsplit(".", 1)[-1])
+            if not (it.kind == "Spawn" and (field == "camp" or (field == "trucks" and depot))):
+                raise ScenarioError(f"design item {item} ({it.kind or 'plain item'}) has no {name} to change")
+            pi = next((i for i, (n, c) in enumerate(nd.props) if n == name and c == a.cls), None)
+            pi = nd.add_prop(name, a.cls) if pi is None else pi
+            new = (pi, Value(0x02, struct.pack("<i", int(value))))
+            camp_at = next((k for k, (q, _v) in enumerate(a.props) if nd.prop_name(q) == "Camp"), None)
+            if field == "trucks" and camp_at is not None:  # the shipped depots' order: ..., ChampInteger, Camp
+                a.props.insert(camp_at, new)
+            else:
+                a.props.append(new)
+        it.values[name] = _plain(nd, next(v for pi, v in a.props if nd.prop_name(pi) == name))
+        self.changed = True
+
     def places(self) -> dict[int, set[int]]:
         """Where players can start: {team (AllianceNum): {places (AlliancePriority)}}."""
         out: dict[int, set[int]] = {}
@@ -685,6 +723,8 @@ def view(s: "Scenario") -> dict:
         elif it.kind == "Spawn":
             entry["camp"] = v.get("Camp")
             entry["what"] = str(v.get("PythonClassName", "") or "").rsplit(".", 1)[-1]
+            if isinstance(v.get("ChampInteger"), int):  # a supply depot's trucks
+                entry["trucks"] = v["ChampInteger"]
         elif it.kind == "CircularZone":
             entry["radius"] = v.get("Radius")
         elif it.kind == "RectangleZone":
@@ -813,6 +853,77 @@ def removes_toml(removes: list[Remove]) -> str:
     lines = []
     for m in removes:
         lines += ["[[remove]]", f'file = "{m.file}"', f"item = {m.item}", f'kind = "{m.kind}"', ""]
+    return "\n".join(lines)
+
+
+# --- mods: the map's own design items with some of their values changed (maps/<map pack>/items.toml, MOD_FORMAT §8;
+# LittleGroove's map editor's Details panel). Each value is written in the type the item already has it in (the 102
+# shipped scenarios: Camp and ChampInteger whole numbers, Radius, Width and Height float32s); a spawn's Camp, and a
+# supply depot's trucks, are added when the item hasn't got one, as add_spawn writes them ---
+CHANGES = {"camp": "Camp", "trucks": "ChampInteger", "radius": "Radius", "width": "Width", "height": "Height"}
+KIND_CHANGES = {"Spawn": ("camp", "trucks"), "CircularZone": ("radius",), "RectangleZone": ("width", "height")}
+
+
+@dataclass
+class Change:
+    """One of the map's own design items with some of its values changed: in scenario `file`, item number `item`
+    (as for [[move]]), which must be a `kind` there; `values` {field: value}, the fields of CHANGES its kind has
+    (KIND_CHANGES): a spawn's side (`camp`) and a supply depot's `trucks`, a circle zone's `radius`, a rectangle zone's
+    `width` and `height` (world units)."""
+    file: str
+    item: int
+    kind: str
+    values: dict
+
+
+def parse_changes(items, where: str = "items.toml") -> list[Change]:
+    out = []
+    for n, m in enumerate(items or [], start=1):
+        at = f"{where}: set {n}"
+        if not isinstance(m, dict):
+            raise ScenarioError(f"{at} isn't a table")
+        for k in ("file", "item", "kind"):
+            if k not in m:
+                raise ScenarioError(f"{at}: {k} is missing")
+        kind = m["kind"]
+        if kind not in KIND_CHANGES:
+            raise ScenarioError(f"{at}: kind must be one of {', '.join(KIND_CHANGES)}")
+        extra = sorted(set(m) - {"file", "item", "kind"} - set(KIND_CHANGES[kind]))
+        if extra:
+            raise ScenarioError(f"{at}: unknown key {extra[0]!r} (a {kind} has {', '.join(KIND_CHANGES[kind])})")
+        f = str(m["file"])
+        if not f.lower().endswith(".scenario") or "/" in f or "\\" in f:
+            raise ScenarioError(f"{at}: file must be a scenario's name, like leveldesign.scenario")
+        if isinstance(m["item"], bool) or not isinstance(m["item"], int) or m["item"] < 0:
+            raise ScenarioError(f"{at}: item is a whole number, 0 or more")
+        values = {}
+        for k in KIND_CHANGES[kind]:
+            if k not in m:
+                continue
+            v = m[k]
+            if isinstance(v, bool) or not isinstance(v, (int, float)):
+                raise ScenarioError(f"{at}: {k} is a number")
+            if k == "camp":  # as a spawn's camp is checked (parse_spawns)
+                if not isinstance(v, int) or not (v == NEUTRAL or 0 <= v <= 16):
+                    raise ScenarioError(f"{at}: camp is -1 (neutral) or a scenario camp from 0 up")
+            elif k == "trucks":  # as a new depot's trucks are checked (parse_spawns)
+                if not isinstance(v, int) or not 0 <= v <= 1000:
+                    raise ScenarioError(f"{at}: trucks goes from 0 to 1000 (the shipped depots have 15 to 72)")
+            elif not (math.isfinite(v) and v > 0):
+                raise ScenarioError(f"{at}: {k} is a size, more than 0")
+            values[k] = v
+        if not values:
+            raise ScenarioError(f"{at}: it changes nothing (a {kind} has {', '.join(KIND_CHANGES[kind])})")
+        out.append(Change(f, m["item"], str(kind), values))
+    return out
+
+
+def changes_toml(changes: list[Change], header: str = "") -> str:
+    lines = [f"# {line}" for line in header.splitlines()] + ([""] if header else [])
+    for c in changes:
+        lines += ["[[set]]", f'file = "{c.file}"', f"item = {c.item}", f'kind = "{c.kind}"']
+        lines += [f"{k} = {c.values[k]!r}" for k in KIND_CHANGES[c.kind] if k in c.values]
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -1064,8 +1175,9 @@ def _to_segment(x: float, y: float, a, b) -> float:
 
 def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
                 mission=None) -> tuple[dict[str, bytes], list[str]]:
-    """Apply a mod's scenario edits (in order: Move, Remove, Start and Spawn) to a map's scenarios. `read(member)` gives
-    a DataMap_Win.dat member's bytes, or None. `skirmish`: the map's scenarios (file names, lower case) that its
+    """Apply a mod's scenario edits (in order: Move, Remove, Start, Spawn, then the items.toml Changes) to a map's
+    scenarios. `read(member)` gives a DataMap_Win.dat member's bytes, or None. `skirmish`: the map's scenarios (file
+    names, lower case) that its
     skirmish and online entries load (rusemod.players.skirmish_files). Returns ({member: new bytes}, report lines).
     A move or a remove whose file or item isn't there, or whose item is another kind (the file isn't the one the mod
     was made for), raises ScenarioError; so does a spawn in a scenario that isn't there, and a spawn for a player's camp in a
@@ -1162,6 +1274,17 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
             if s.items[m.item].listed:  # (two mods may both take it out: once is enough)
                 s.remove(m.item)
             continue
+        if isinstance(m, Change):
+            camp = m.values.get("camp")
+            if camp is not None and camp != NEUTRAL and m.file.lower() in skirmish:
+                # rule: skirmish-neutral-spawns
+                raise ScenarioError(f"{map_pack}: items.toml: item {m.item} of {m.file} is given camp {camp}, but "
+                                    f"{m.file} is a skirmish map's scenario, and a skirmish game spawns only neutral "
+                                    f"items: the game would leave it out without a word. Keep camp = -1, or change it "
+                                    f"in an Operation's scenario")
+            for field, value in m.values.items():
+                s.set_value(m.item, field, value)
+            continue
         ox, oy = s.items[m.item].position[:2]
         s.move(m.item, m.x, m.y, m.z, rotation=m.rotation)  # an item without a rotation can't be turned: move() says so
         if m.kind == "StartingPoint":  # its warm-up camera comes along (a shared path is copied first)
@@ -1181,9 +1304,11 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
         moved, spawned = sum(1 for m in mine if isinstance(m, Move)), sum(1 for m in mine if isinstance(m, Spawn))
         started = sum(1 for m in mine if isinstance(m, Start))
         removed = len({m.item for m in mine if isinstance(m, Remove)})
+        changed = len({m.item for m in mine if isinstance(m, Change)})
         notes.append(f"{map_pack}: {member.rsplit(chr(92), 1)[-1]}: " + ", ".join(
             p for p in (f"{moved} item(s) moved" if moved else "", f"{removed} of its own item(s) taken out" if removed
-                        else "", f"{started} starting point(s) added" if started else "",
+                        else "", f"{changed} of its own item(s) changed" if changed else "",
+                        f"{started} starting point(s) added" if started else "",
                         f"{spawned} spawn(s) added" if spawned else "") if p))
     out = {member: s.to_bytes() for member, s in files.values()}
     out.update({member: cam.to_bytes() for member, cam in cams.values() if cam is not None and cam.changed})

@@ -12,9 +12,11 @@ Studio writes into the game's own folder, and only when the modder asks for a re
 from __future__ import annotations
 
 import base64
+import csv
 import hashlib
 import functools
 import html
+import io
 import json
 import math
 import re
@@ -29,8 +31,8 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from rusemod import (ai, doctor, economy, identity, mapscripts, missions, mod_index, package, scenario, scenery, schema,
-                     startlog)
+from rusemod import (ai, doctor, economy, identity, loc, mapscripts, missions, mod_index, package, scenario, scenery,
+                     schema, startlog, values as every_value)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -41,7 +43,7 @@ from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
 from rusemod.patch import INT_RANGES
 from rusemod.play import SHARED, Starter, instances_dir
-from rusemod.rndf import RndfError
+from rusemod.rndf import RndfError, parse_value
 from rusemod.steam import build_of, data_revisions, find_game
 from rusemod.uilang import LanguageCalls
 from rusemod.build import find_pack
@@ -54,7 +56,7 @@ from rusemod.roadnet import RoadNetError
 from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_file, pick_folder, pick_save
 
-from .edits import REMOVED, EditsFileError, Link, ModEdits, NewUnit, plain_name
+from .edits import REMOVED, EditsFileError, Link, Literal, ModEdits, NewUnit, plain_name
 from . import __version__
 
 KINDS = {"ground": ("TUniteAuSolDescriptor",), "infantry": ("TInfanterieDescriptor",),
@@ -402,6 +404,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._erased_gen = 0
         self._scripts_shown: dict[str, str] = {}  # the game's scripts turned into text this session (ai_script)
         self._scripts_lock = threading.Lock()  # one at a time: a big one takes seconds of a core
+        self._value_files: dict[tuple, object] = {}  # the All values tab's last data files read (_value_file)
+        self._value_files_lock = threading.Lock()
 
     # --- where things are ---
     def _game(self) -> Path | None:
@@ -1058,13 +1062,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 else:
                     values.append(text if num is None else str(num))
             mine = edits.get(prop)
+            written = isinstance(mine, Literal)  # changed in the All values tab (a text, an emptied list...): shown
+            # as the mod has it, and changed there
             rows[prop] = {"prop": prop, "label": schema.label(prop, lang), "group": schema.group(prop),
-                          "values": values, "numbers": p["numbers"], "list": p["list"],
+                          "values": [str(mine)] if written else values, "numbers": p["numbers"], "list": p["list"],
                           "type": types.get(prop + "[]" if p["list"] else prop, ""),
                           # an upgrade's flag goes with its link, and research price and time with both: changed in
                           # the page's Upgrade box (set_upgrade, set_research)
-                          "editable": editable and _can_edit(prop, p) and prop != UPGRADE_FLAG and prop not in RESEARCH,
-                          "locked": prop in NOT_EDITABLE, "edited": 0 if mine is REMOVED else mine,
+                          "editable": editable and not written and _can_edit(prop, p) and prop != UPGRADE_FLAG
+                          and prop not in RESEARCH,
+                          "locked": prop in NOT_EDITABLE, "edited": None if written else 0 if mine is REMOVED else mine,
                           "edited_own": own.get(prop)}
         if "Nationalite" not in rows and o["class"] in KIND_OF:  # 0 isn't written
             n = edits.get("Nationalite", 0) if top else 0
@@ -1088,7 +1095,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 "has_weapons": o["class"] in KIND_OF,  # the page then asks for weapons(address)
                 # a kind of unit the game has upgrades of: the page then asks for upgrade(address)
                 "can_upgrade": (bool(o["export"]) or top) and UPGRADE in types,
-                "new": {"source": new.source, "source_name": source_name} if top else None}
+                "new": {"source": new.source, "source_name": source_name} if top else None,
+                "in_game": new is None}  # one of the game's own objects: the All values tab shows it too
 
     # --- upgrades (LittleGroove's "Upgrade chain" brought over): the unit a unit is researched from ---
     @staticmethod
@@ -2145,9 +2153,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """The map's scenarios as the current mod leaves them (a copy; the cached ones stay the game's). Items it takes
         out are marked `gone` (the map view shows them faded, to put back)."""
         moves, starts, spawns, removes = self._read_scenario_tables(pack)
+        changes = self._read_item_changes(pack)
         whole = self._read_scenario_sectors(pack)
         whole = whole is not None and whole.whole_map
-        if not moves and not spawns and not starts and not removes and not whole:
+        if not moves and not spawns and not starts and not removes and not whole and not changes:
             return base
         out = []
         for s in base["scenarios"]:
@@ -2161,6 +2170,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             for r in removes:
                 if r.file.lower() == s["file"].lower() and r.item < len(s["items"]):
                     s["items"][r.item]["gone"] = True
+            for c in changes:  # its values as the mod has them; `game`: the game's, for the ones it changes
+                if c.file.lower() == s["file"].lower() and c.item < len(s["items"]):
+                    it = s["items"][c.item]
+                    it["game"] = {k: it.get(k) for k in c.values}
+                    it.update(c.values)
             for m in moves:
                 if m.file.lower() == s["file"].lower() and m.item < len(s["items"]):
                     it = s["items"][m.item]
@@ -2433,6 +2447,78 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                         if (file.lower(), i) not in taken]
             moves = [m for m in moves if not (m.file.lower() == file.lower() and m.item in numbers)]
             self._write_scenario_edits(pack, moves, spawns, starts, removes)
+        return self.map_scenarios(pack)
+
+    # --- the map's own items with some of their values changed (maps/<pack>/items.toml, scenario.Change; LittleGroove's
+    # Details panel): a spawn's side, a supply depot's trucks, a zone's size. A file of its own, so none of the many
+    # rewrites of scenario.toml can drop them ---
+    ITEMS_HEADER = ("The map's own items this mod changes a value of: a spawn's side, a supply depot's trucks, a zone's "
+                    "size (docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio, which rewrites this file.")
+
+    def _items_file(self, pack: str) -> Path:
+        return self._scenario_file(pack).with_name("items.toml")
+
+    def _read_item_changes(self, pack: str) -> list:
+        """The current mod's changes to this map's own items (scenario.Change); none without a map project or file."""
+        if self._map_dir() is None:
+            return []
+        path = self._items_file(pack)
+        if not path.is_file():
+            return []
+        try:
+            return scenario.parse_changes(tomllib.loads(path.read_text(encoding="utf-8")).get("set", []), str(path))
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, scenario.ScenarioError) as exc:
+            raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
+                              f"by hand.") from None
+
+    def scenario_change(self, pack: str, file: str, item: int, field: str, value) -> dict:
+        """Change one value of one of the map's own design items in the current map project: a spawn's side
+        (`camp`: -1 neutral, or one of the scenario's camps), a supply depot's `trucks`, a circle zone's `radius`, a
+        rectangle zone's `width` or `height` (world units). The game's value again takes the change out. Returns the
+        map's scenarios as the mod leaves them."""
+        if self._map_dir() is None:
+            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+        base = self._base_scenario(pack, file)
+        item = int(item)
+        if not 0 <= item < len(base["items"]):
+            raise StudioError(f"{file} has no item {item}")
+        it = base["items"][item]
+        kind = it["kind"]
+        if field not in scenario.KIND_CHANGES.get(kind, ()):
+            raise StudioError(f"a {kind or 'plain item'}'s {field} can't be changed here")
+        if field == "trucks" and it.get("trucks") is None and it.get("what") != "DalleBatimentDepot":
+            raise StudioError("Only a supply depot has trucks.")
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            raise StudioError(f"{field}: {value!r} isn't a number") from None
+        if field in ("camp", "trucks"):
+            if not number.is_integer():
+                raise StudioError(f"{field} is a whole number")
+            number = int(number)
+        if field == "camp" and number != scenario.NEUTRAL and base.get("kind") == "skirmish":
+            # rule: skirmish-neutral-spawns
+            raise StudioError("A skirmish map's items stay neutral: a skirmish game spawns only neutral items, so the "
+                              "game would leave it out.")
+        game = {"camp": it.get("camp") if it.get("camp") is not None else 0}.get(field, it.get(field))
+        with self._saving:
+            changes = self._read_item_changes(pack)
+            old = next((c for c in changes if c.file.lower() == file.lower() and c.item == item), None)
+            values = dict(old.values) if old is not None else {}
+            if game is not None and number == game:
+                values.pop(field, None)
+            else:
+                values[field] = number
+            changes = [c for c in changes if c is not old]
+            if values:
+                changes.append(scenario.Change(file, item, kind, values))
+            path = self._items_file(pack)
+            if changes:
+                changes.sort(key=lambda c: (c.file.lower(), c.item))
+                _save_checked(path, scenario.changes_toml(changes, self.ITEMS_HEADER),
+                              lambda data: scenario.parse_changes(data.get("set", []), str(path)))
+            elif path.is_file():
+                path.unlink()
         return self.map_scenarios(pack)
 
     def scenario_sectors(self, pack: str, whole_map: bool) -> dict:
@@ -3811,6 +3897,352 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     raise StudioError(f"This copy of the Studio can't show scripts ({why}).")
                 shown = self._scripts_shown[path] = mapscripts.text(raw)
         return {"path": path, "text": shown, "lines": shown.count("\n")}
+
+    # --- the All values tab (rusemod.values; LittleGroove's raw value editor brought over): any object of the unit
+    # data, every value it has as the game's file has it, each changed in the current mod ---
+    NAME_KEYS = ("NameInMenuToken", "Title", "TypeName", "Name")  # a text key naming an object in game, first found
+    VALUES_SHOWN = 300  # the most objects a look-up lists (the count says how many there are in all)
+    VALUE_USERS = 40    # the most users an object's page lists
+
+    def _value_file(self, location: str):
+        """(the data file at `location` (pack!file, as the game index has it) as the build's model reads it, whether
+        a mod can change it: only the unit data's files). The last few read are kept."""
+        game = self._game()
+        pack_name, _, member = location.partition("!")
+        if game is None or not member or "!" in member:
+            # not a game rule: the game isn't found, or the file is inside a pack inside a pack (not read here)
+            raise StudioError(f"The Studio can't read {location.replace(chr(92), '/')} here.")
+        path = find_pack(game, pack_name)
+        if path is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError(f"{pack_name} isn't in the game folder ({game}).")
+        st = path.stat()
+        key = (str(path), st.st_mtime_ns, st.st_size, member.lower())
+        with self._value_files_lock:
+            found = self._value_files.pop(key, None)
+            if found is None:
+                with Edat.open(str(path)) as arc:
+                    try:
+                        found = every_value.read(arc, member)
+                    except KeyError:
+                        # not a game rule: the game index is older than the game's files
+                        raise StudioError(f"{member} isn't in {pack_name} any more: build the game index again in "
+                                          f"Settings.") from None
+                    found.ndf  # read now, while the pack is open
+            self._value_files[key] = found  # the most recent last
+            while len(self._value_files) > 4:
+                self._value_files.pop(next(iter(self._value_files)))
+        return found, pack_name.lower() == every_value.PACK.lower()
+
+    def _object_names(self, ix: Index, addresses, lang: str) -> dict:
+        """address -> what the game's texts call it in `lang` (a unit's name, a ruse card's title...), for objects that
+        have a name in the game; none in the code names (`base`)."""
+        if lang == schema.BASE or not addresses:
+            return {}
+        keys: dict[str, str] = {}
+        addresses = list(dict.fromkeys(addresses))
+        for start in range(0, len(addresses), 400):
+            chunk = addresses[start:start + 400]
+            marks, props = ",".join("?" * len(chunk)), ",".join("?" * len(self.NAME_KEYS))
+            found = ix.db.execute(f"""SELECT o.address, v.path, v.text FROM object o JOIN value v ON v.object = o.id
+                                     WHERE o.address IN ({marks}) AND o.shadow = 0 AND v.path IN ({props})
+                                     AND v.text IS NOT NULL""", chunk + list(self.NAME_KEYS)).fetchall()
+            for address, path, text in sorted(found, key=lambda r: self.NAME_KEYS.index(r[1])):
+                keys.setdefault(address, text)
+        texts = ix.names(list(keys.values()), lang)
+        return {a: (texts.get(k) or "").strip() or None for a, k in keys.items()}
+
+    def values_files(self) -> dict:
+        """The All values tab's files: the unit data's data files, the ones a mod changes ([{path, objects}])."""
+        ix = self._open()
+        try:
+            return {"files": every_value.files(ix), "pack": every_value.PACK}
+        finally:
+            ix.close()
+
+    def values_find(self, file: str = "", words: str = "", prop: str = "", value: str = "",
+                    lang: str = schema.BASE) -> dict:
+        """Objects of the unit data (rusemod.values.find): in one file or all, by name or kind, and by a value they
+        hold. Each with `name`, what the game calls it in `lang` (None without one). `total`: how many fit in all; at
+        most VALUES_SHOWN are listed."""
+        ix = self._open()
+        try:
+            found, total = every_value.find(ix, file, words, prop, value, self.VALUES_SHOWN)
+            names = self._object_names(ix, [f["address"] for f in found], lang)
+        finally:
+            ix.close()
+        for f in found:
+            f["name"] = names.get(f["address"])
+        return {"objects": found, "total": total}
+
+    @staticmethod
+    def _value_shown(v) -> dict:
+        """A change the mod makes, as a row of the All values tab shows it: {value, text}, or {removed: True} for a
+        value the mod takes out."""
+        if v is REMOVED:
+            return {"value": None, "text": None, "removed": True}
+        if isinstance(v, Link):
+            return {"value": str(v), "text": str(v)}
+        if isinstance(v, Literal):
+            try:
+                shown = every_value.row("", parse_value(v), {})
+            except RndfError:
+                return {"value": None, "text": str(v)}
+            return {"value": shown["value"], "text": str(v)}
+        return {"value": v, "text": "[" + ", ".join(map(str, v)) + "]" if isinstance(v, list) else str(v)}
+
+    def value_object(self, address: str, lang: str = schema.BASE) -> dict:
+        """One object of the game's data as the All values tab shows it: every value it has, read from the game's
+        file (rusemod.values.rows), each with its name in `lang` (`label`), whether it can be changed here (`can`;
+        `locked`: an id the Studio keeps unique), the words a text key shows (`words`) and the current mod's change
+        (`edited`). Also where it is, what uses it (`used_by`, at most VALUE_USERS; `users` in all), the named object
+        it's a part of (`owner`), and whether a mod can change it (`editable`, else `why_not`: "outside" the unit data,
+        "not_stable": no named object leads to it, "no_mod", or the mod file's mistake)."""
+        try:
+            mod, broken = self._edits(), ""
+        except EditsFileError as exc:  # looking still works; changing waits until the file is fixed
+            mod, broken = None, str(exc)
+        text_lang = "us" if lang == schema.BASE else lang
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(address)
+            except KeyError:
+                # not a game rule: the page asked for something this game build doesn't have
+                raise StudioError(f"There's nothing at {address} in this game build.") from None
+            links = {p: w for p, k, w in ix.uses(o["address"]) if k in ("object", "import")}
+            users = ix.used_by(o["address"])
+            owner = o["address"].partition(":")[0] if ":" in o["address"] else None
+            shown_users = [{"address": a, "path": p} for a, p in users[:self.VALUE_USERS]]
+            names = self._object_names(ix, [o["address"]] + ([owner] if owner else [])
+                                       + [u["address"] for u in shown_users], lang)
+            nd, changeable = self._value_file(o["file"])
+            rows = every_value.rows(nd.obj(o["index"]), links)
+            share = "shared" if o["shared"] and not o["export"] else None
+            mine = {prop: self._value_shown(v) for prop, v in (mod.of(o["address"], share) if mod else {}).items()}
+            keys = [r["value"] for r in rows if r["kind"] == "key"] + [
+                mine[r["prop"]]["value"] for r in rows if r["kind"] == "key" and r["prop"] in mine]
+            words = ix.names([k for k in keys if isinstance(k, str)], text_lang)
+        finally:
+            ix.close()
+        why = ("outside" if not changeable else "not_stable" if not o["stable"] else broken if broken
+               else "no_mod" if mod is None else "")
+        mod_words = self._mod_words() if mod is not None else {}
+        for r in rows:
+            r["label"] = schema.label(r["prop"], lang)
+            r["locked"] = r["prop"] in NOT_EDITABLE
+            # a link can always be pointed elsewhere; anything else only when a mod file can spell it
+            r["can"] = not why and not r["locked"] and r["kind"] not in ("part", "fixed") and (
+                r["text"] is not None or r["kind"] == "link")
+            r["words"] = words.get(r["value"]) if r["kind"] == "key" else None
+            # the words the mod gives the key instead (value_words_set), in this language, when they differ
+            said = mod_words.get(r["value"], (None, {}))[1].get(text_lang) if r["kind"] == "key" else None
+            r["words_mine"] = said if said and said != r["words"] else None
+            r["edited"] = mine.get(r["prop"])
+            if r["edited"] and r["kind"] == "key":
+                r["edited"]["words"] = words.get(r["edited"]["value"])
+        for u in shown_users:
+            u["name"] = names.get(u["address"])
+        return {"address": o["address"], "class": o["class"], "named": bool(o["export"]),
+                "name": names.get(o["address"]), "file": o["file"].partition("!")[2].replace("\\", "/"),
+                "pack": o["file"].partition("!")[0], "index": o["index"], "shared": share is not None,
+                "owners": len(o["owners"]), "owner": {"address": owner, "name": names.get(owner)} if owner else None,
+                "editable": not why, "why_not": why, "rows": rows, "used_by": shown_users,
+                "users": len({a for a, _p in users})}
+
+    def _value_target(self, edits: ModEdits | None, location: str):
+        """Whether an address may be linked to from the All values tab, from an object in the file at `location`: a
+        named object of the game's data, a part of one in the same file (the build can't link to a part in another
+        file), or a new unit of the current mod."""
+        def named(address: str) -> bool:
+            if edits is not None and address in edits.new_units:
+                return True
+            ix = self._open()
+            try:
+                return ix.db.execute("""SELECT 1 FROM object o JOIN file f ON f.id = o.file WHERE o.shadow = 0 AND
+                                        (o.export = ? OR (o.address = ? AND o.stable = 1 AND f.location = ?)) LIMIT 1""",
+                                     (address, address, location)).fetchone() is not None
+            finally:
+                ix.close()
+        return named
+
+    def value_edit(self, address: str, prop: str, value, lang: str = schema.BASE) -> dict:
+        """Change one value of an object in the current mod, from the All values tab: `value` is what the modder typed
+        (a number, a yes/no, a text, a list of numbers, an address, or a value spelled as mod files spell it),
+        checked against the game's value (rusemod.values.typed). The game's own value again takes the change out.
+        Returns the object's page again (value_object)."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        if prop in NOT_EDITABLE:
+            raise StudioError(f"{prop} isn't changed here: the Studio keeps each of these numbers unique")
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(address)
+            except KeyError:
+                # not a game rule: the page asked for something this game build's index doesn't have
+                raise StudioError(f"There's nothing at {address} in this game build.") from None
+            game_to = next((w for p, k, w in ix.uses(o["address"]) if p == prop and k in ("object", "import")), None)
+        finally:
+            ix.close()
+        nd, changeable = self._value_file(o["file"])
+        if not changeable:
+            raise StudioError(f"{address} isn't in the unit data, so a mod can't change it")
+        if not o["stable"]:
+            raise StudioError(f"No named object leads to {address}, so a mod can't find it to change it")
+        old = nd.obj(o["index"]).props.get(prop)
+        if old is None:
+            raise StudioError(f"{address} has no {prop}")
+        try:
+            new, same = every_value.typed(old, value, prop, self._value_target(edits, o["file"]), game_to)
+        except every_value.TypedError as exc:
+            raise StudioError(str(exc)) from None
+        if isinstance(new, every_value.Spelled):
+            new = Literal(new)
+        elif isinstance(new, every_value.Linked):
+            new = Link(new)
+        share = "shared" if o["shared"] and not o["export"] else None
+        with self._saving:
+            edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
+            if same:
+                edits.reset(o["address"], prop, share)
+            else:
+                edits.set(o["address"], prop, new, share)
+        return {"saved": str(edits.file), "page": self.value_object(address, lang)}
+
+    def value_reset(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
+        """Take the current mod's change of one value out (the All values tab's "Game's value")."""
+        edits = self._edits()
+        if edits is None:
+            return {"saved": None, "page": self.value_object(address, lang)}
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(address)
+            except KeyError:
+                # not a game rule: the page asked for something this game build's index doesn't have
+                raise StudioError(f"There's nothing at {address} in this game build.") from None
+        finally:
+            ix.close()
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            edits.reset(o["address"], prop, "shared" if o["shared"] and not o["export"] else None)
+        return {"saved": str(edits.file), "page": self.value_object(address, lang)}
+
+    # the words a game text key shows, changed in the mod (MOD_FORMAT §6: a `game:KEY` row in text/<table>.csv), kept
+    # in a file of the Studio's own, apart from the new units' names (edits.NAMES_FILE, which ModEdits rewrites)
+    WORDS_FILE = "studio-words"  # text/studio-words.<the key's table>.csv
+
+    def _mod_words(self, kind: str = "mod") -> dict:
+        """{key: (table, {language: words})} for the game texts the current mod (`kind` "map": the map project, where
+        the Maps tab puts a town's new name) changes."""
+        mod = self._mod_dir(self._kind(kind))
+        out = {}
+        if mod is None or not (mod / "text").is_dir():
+            return out
+        for f in sorted((mod / "text").glob(f"{self.WORDS_FILE}.*.csv")):
+            table = f.name[len(self.WORDS_FILE) + 1:-len(".csv")]
+            try:
+                rows = loc.read_csv(f.read_text(encoding="utf-8"), table, mod.name, f"text/{f.name}")
+            except (loc.TextError, UnicodeDecodeError, OSError):
+                continue  # the mod check names the mistake (rusemod.modcheck); nothing is written over it here
+            for r in rows:
+                if r.key.startswith("game:"):
+                    out[r.key[len("game:"):]] = (table, r.texts)
+        return out
+
+    def value_words(self, key: str, kind: str = "mod") -> dict:
+        """The words game text key `key` shows, in every language: [{lang, game, mine}] (`mine`: the current mod's
+        words, or the map project's with `kind` "map"; None when it doesn't change them), and the game's table it's in
+        (None: the game has no such text)."""
+        ix = self._open()
+        try:
+            found = ix.db.execute("""SELECT dictionary, lang, text FROM text WHERE name = ? OR ('0x' || key) = ?
+                                     ORDER BY dictionary""", (key, key.upper().replace("0X", "0x"))).fetchall()
+        finally:
+            ix.close()
+        tables = {}
+        for table, lang_, text in found:
+            tables.setdefault(table, {})[lang_] = text
+        if not tables:
+            return {"key": key, "table": None, "words": []}
+        table = max(tables, key=lambda t: len(tables[t]))  # the table that has it in the most languages
+        game = tables[table]
+        mine = self._mod_words(kind).get(key, (None, {}))[1]
+        return {"key": key, "table": table,
+                "words": [{"lang": lang_, "game": game.get(lang_), "mine": mine.get(lang_) if mine else None}
+                          for lang_ in loc.LANGS]}
+
+    def value_words_set(self, key: str, texts: dict, kind: str = "mod") -> dict:
+        """Change the words game text key `key` shows, in the current mod (`kind` "map": the map project): `texts`
+        {language: words} (a language left out, or given the game's words, keeps the game's). Every language goes
+        into the row, so the build doesn't give the others the English words (rusemod.loc: a missing cell falls back
+        to English); a row that changes nothing is taken out. Returns value_words(key, kind) again."""
+        mod = self._mod_dir(self._kind(kind))
+        if mod is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        now = self.value_words(key, kind)
+        if not now["table"]:
+            # not a game rule: the game's texts (the index) have no such key
+            raise StudioError(f"The game has no text {key} to change.")
+        row = {}
+        for w in now["words"]:
+            text = str(texts.get(w["lang"], w["mine"] if w["mine"] is not None else w["game"]) or "")
+            if "\n" in text and "\n" not in (w["game"] or ""):
+                raise StudioError("A line break can't be typed here; the words stay on one line.")
+            row[w["lang"]] = text if text.strip() else (w["game"] or "")
+        if not row.get("us"):
+            raise StudioError("The English words can't be empty: the other languages fall back to them.")
+        changed = any(row[w["lang"]] != (w["game"] or "") for w in now["words"])
+        path = mod / "text" / f"{self.WORDS_FILE}.{now['table']}.csv"
+        with self._saving:
+            rows = {}
+            if path.is_file():
+                try:
+                    rows = {r.key: r.texts for r in loc.read_csv(path.read_text(encoding="utf-8"), now["table"])}
+                except (loc.TextError, UnicodeDecodeError) as exc:
+                    raise StudioError(f"{path} has a mistake ({exc}). Fix it, or delete it to start over.") from None
+            if changed:
+                rows[f"game:{key}"] = row
+            else:
+                rows.pop(f"game:{key}", None)
+            if rows:
+                out = io.StringIO()
+                writer = csv.writer(out, lineterminator="\n")
+                writer.writerow(["key", *loc.LANGS])
+                for k in sorted(rows):
+                    writer.writerow([k, *(rows[k].get(lang_, "") for lang_ in loc.LANGS)])
+                text = out.getvalue()
+                loc.read_csv(text, now["table"])  # only a file the build can read back is ever saved
+                ModEdits._write(path, text)
+            elif path.is_file():
+                path.unlink()
+        return self.value_words(key, kind)
+
+    def value_links(self, address: str, prop: str, words: str = "", lang: str = schema.BASE) -> dict:
+        """What a link of the All values tab could point at (_value_target): objects of the kind the game's link
+        points at (named ones of any kind when it points at nothing) whose address has `words`, named ones first; at
+        most 60, each with what the game calls it."""
+        ix = self._open()
+        try:
+            o = ix.show(address)
+            target = next((w for p, k, w in ix.uses(o["address"]) if p == prop and k in ("object", "import")), None)
+            cls = None
+            if target:
+                try:
+                    cls = ix.show(target)["class"]
+                except KeyError:
+                    pass
+            found = ix.db.execute("""SELECT o.address, o.class FROM object o JOIN file f ON f.id = o.file
+                                     WHERE o.shadow = 0 AND (? IS NULL OR o.class = ?) AND o.address LIKE ?
+                                     AND (o.export IS NOT NULL OR (? IS NOT NULL AND o.stable = 1 AND f.location = ?))
+                                     ORDER BY o.export IS NULL, o.address LIMIT 60""",
+                                  (cls, cls, f"%{words.strip()}%", cls, o["file"])).fetchall()
+            names = self._object_names(ix, [a for a, _c in found], lang)
+        finally:
+            ix.close()
+        return {"class": cls, "objects": [{"address": a, "class": c, "name": names.get(a)} for a, c in found]}
 
     # --- a unit's look: its models out to Blender, its paint back into the mod (rusemod.unitlook, rusemod.blender) ---
     @staticmethod

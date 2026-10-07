@@ -4,9 +4,10 @@ changes and the new units, and `text/studio.baseunite.csv` for the new units' na
 The files are the only record: the Studio reads them back to show what's been changed, and rewrites them after every
 change: the new units first (one `clone` block each, holding that unit's own values), then one `patch` block per
 object in address order. They only hold plain values (`Prop = 12` or `Prop = [30, 30, 30, 30, 30]`), links to named
-objects (`Ammunition = $/GFX/Everything/Ammo_X`: which ammo a weapon fires) and the new units' names; hand-written
-changes belong in other `.rndf` and `.csv` files of the same mod, which the Studio never touches. A copy that keeps
-its source's name in game (an ammunition) has no names row.
+objects (`Ammunition = $/GFX/Everything/Ammo_X`: which ammo a weapon fires), any other value the Values tab sets, kept
+as its own text (`Literal`: `Position = Float3[0.0, 0.0, 1.0]`), and the new units' names; hand-written changes belong
+in other `.rndf` and `.csv` files of the same mod, which the Studio never touches. A copy that keeps its source's name
+in game (an ammunition) has no names row.
 """
 from __future__ import annotations
 
@@ -22,7 +23,7 @@ from pathlib import Path
 
 from rusemod import loc
 from rusemod.patch import ListV, Num, Ref, Text
-from rusemod.rndf import RndfError, parse
+from rusemod.rndf import RndfError, literal as value_text, parse
 
 FILE = Path("src") / "studio.rndf"
 NAMES_FILE = Path("text") / "studio.baseunite.csv"  # into baseunite.dic, the game's unit names (MOD_FORMAT §6)
@@ -33,6 +34,11 @@ NAME_PROP = "NameInMenuToken"
 
 class Link(str):
     """A value that points at a named object, by its address ($/GFX/Everything/Ammo_X)."""
+
+
+class Literal(str):
+    """Any other value, as the mod file spells it (`'a text'`, `Float3[0.0, 0.0, 1.0]`, `[$/GFX/Everything/A, nil]`,
+    `MAP [(1, 2)]`, `true`): what the Values tab sets beyond numbers and links (rusemod.rndf.literal writes it)."""
 
 
 class _Removed:
@@ -47,7 +53,7 @@ REMOVED = _Removed()  # a property taken out of the object (`delete Prop`): an u
 class Edit:
     target: str             # the named object: $/GFX/Everything/Descriptor_Unit_X
     path: str               # inside it: "SeuilMort", or "Weapons[class=TWeapon].Puissance" for a part
-    value: object           # a number, a list of numbers, a Link, or REMOVED
+    value: object           # a number, a list of numbers, a Link, a Literal (any other value), or REMOVED
     share: str | None = None
 
 
@@ -71,13 +77,16 @@ def split(address: str) -> tuple[str, str]:
 
 
 def _plain(value):
-    if isinstance(value, Ref):
-        return Link(value.target) if value.target else None
+    if isinstance(value, Ref) and value.target:
+        return Link(value.target)
     if isinstance(value, Num):
         return int(value.value) if value.value == value.value.to_integral() else float(value.value)
     if isinstance(value, ListV) and value.items and all(isinstance(x, Num) for x in value.items):
         return [_plain(x) for x in value.items]
-    return None
+    try:  # any other value the Values tab set: kept as its text
+        return Literal(value_text(value))
+    except ValueError:
+        return None
 
 
 def number(x) -> str:
@@ -90,7 +99,7 @@ def number(x) -> str:
 
 
 def literal(value) -> str:
-    if isinstance(value, Link):
+    if isinstance(value, (Link, Literal)):
         return str(value)
     return "[" + ", ".join(number(v) for v in value) + "]" if isinstance(value, list) else number(value)
 

@@ -20,6 +20,7 @@
       <button id="tab-units" type="button" role="tab" aria-selected="true"></button>
       <button id="tab-economy" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-ai" type="button" role="tab" aria-selected="false"></button>
+      <button id="tab-values" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-maps" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-settings" type="button" role="tab" aria-selected="false"></button>
     </div>
@@ -340,6 +341,9 @@
               <!-- the map's own depots and names, all taken out of the picked scenario at once (maps.js renderScenClear) -->
               <div id="scen-clear" class="small"></div>
               <div id="scen-note" class="small"></div>
+              <!-- the picked item's own values (maps.js renderItemDetails, StudioApi.scenario_change): its side, a
+                   depot's trucks, a zone's size, a town's name -->
+              <div id="scen-details" class="scen-details small hidden"></div>
             </div>
           </div>
         </div>
@@ -405,6 +409,31 @@
         <pre id="ai-script-text" class="ai-script-text hidden"></pre>
       </section>
     </div>
+  </main>
+  <!-- the All values tab (app.js renderValues, StudioApi.values_find / value_object / value_edit, rusemod.values;
+       LittleGroove's raw value editor): any object of the unit data, every value it has, each changed in the mod -->
+  <main id="values-view" class="layout hidden">
+    <aside class="browser values-browser">
+      <p id="values-intro" class="muted small"></p>
+      <label class="values-field"><span id="values-file-label" class="small"></span>
+        <select id="values-file"></select></label>
+      <label class="values-field"><span id="values-find-label" class="small"></span>
+        <input id="values-find" type="search" autocomplete="off"></label>
+      <details id="values-by" class="values-by">
+        <summary id="values-by-title"></summary>
+        <p id="values-by-help" class="muted small"></p>
+        <label class="values-field"><span id="values-prop-label" class="small"></span>
+          <input id="values-prop" type="search" autocomplete="off"></label>
+        <label class="values-field"><span id="values-value-label" class="small"></span>
+          <input id="values-value" type="search" autocomplete="off"></label>
+      </details>
+      <button id="values-go" type="button" class="primary"></button>
+      <div id="values-count" class="muted small"></div>
+      <ul id="values-list" class="unit-list"></ul>
+    </aside>
+    <section id="values-detail" class="detail" aria-live="polite">
+      <p id="values-pick" class="muted"></p>
+    </section>
   </main>
 
   <main id="settings-view" class="settings-view hidden">

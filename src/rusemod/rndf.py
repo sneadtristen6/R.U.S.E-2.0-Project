@@ -11,6 +11,7 @@ Values are spelled like Eugen's own text NDF (WARNO) where it has a spelling. Er
 """
 from __future__ import annotations
 
+import math
 import re
 import struct
 import uuid
@@ -432,3 +433,100 @@ def _resolve_locals(ops: list[Op], declared: dict[str, str], file: str) -> list[
 
 def parse(text: str, file: str = "<text>", mod: str = "") -> list[Op]:
     return Parser(text, file, mod).parse()
+
+
+def parse_value(text: str) -> object:
+    """One value as a `.rndf` file spells it (`[1, 2]`, `Float3[0, 0, 1]`, `$/GFX/Everything/X`, `MAP [(1, 2)]`), with
+    nothing after it. The Studio's Values tab reads what the modder types with it."""
+    p = Parser(text, "the value")
+    v = p.value()
+    if p.peek().kind != "end":
+        raise p.error("expected the end of the value")
+    return v
+
+
+# --- writing values back as text (the Studio's Values tab keeps any value in the mod this way) ---
+_NAME = re.compile(r"[A-Za-z_]\w*")
+_WRAPPED = {"int8", "int16", "uint16", "uint32", "int64"}  # whole numbers a bare number wouldn't read back as
+_VECTOR_OF = {tc: (word, fmt, n) for word, (tc, fmt, n) in _VECTORS.items()}
+
+
+def float32_text(x: float) -> str:
+    """The shortest decimal a float32 reads back from exactly (0.1, not 0.100000001490116)."""
+    for digits in range(6, 10):
+        text = f"{x:.{digits}g}"
+        if struct.unpack("<f", struct.pack("<f", float(text)))[0] == x:
+            return text
+    return repr(x)
+
+
+def _float_text(text: str) -> str:
+    """A float's text that the reader takes for a float: 30 -> 30.0 (a bare 30 would be a whole number)."""
+    if not math.isfinite(float(text)):
+        _no(f"the number {text}")
+    return text if re.search(r"[.eE]", text) else text + ".0"
+
+
+def _quoted(s: str, what: str) -> str:
+    if "\n" in s or "\r" in s:
+        raise ValueError(f"{what} with a line break can't be written in a mod file")
+    if "'" not in s:
+        return f"'{s}'"
+    if '"' not in s:
+        return f'"{s}"'
+    raise ValueError(f"{what} holding both ' and \" can't be written in a mod file")
+
+
+def literal(v) -> str:
+    """A value of the model (rusemod.patch) as `.rndf` text that parse_value reads back to the same value, each number
+    with its own type (`int8(3)`, `f64(0.5)`, `2.0` for a float32). ValueError for what a mod file can't spell: a part
+    of an object (Inline), raw bytes, an unnamed object of another file."""
+    if isinstance(v, Num):
+        if v.kind == "bool":
+            if v.value not in (0, 1):
+                raise ValueError(f"a yes/no holding {v.value} can't be written in a mod file")
+            return "true" if v.value else "false"
+        if v.kind == "float32":
+            return _float_text(float32_text(float(v.value)))
+        if v.kind == "float64":
+            return f"f64({_float_text(repr(float(v.value)))})"
+        whole = str(int(v.value))
+        return f"{v.kind}({whole})" if v.kind in _WRAPPED else whole
+    if isinstance(v, Text):
+        if v.kind == "key":
+            if _NAME.fullmatch(v.value) or re.fullmatch(r"0x[0-9A-Fa-f]+", v.value):
+                return f"key({v.value})"
+            from .dic import name_to_key
+            return f"key(0x{name_to_key(v.value):016X})"
+        quoted = _quoted(v.value, "a text")
+        return {"string": quoted, "path": f"path({quoted})", "wstr": f"wstr({quoted})",
+                "loc": f"loc({quoted})"}.get(v.kind) or _no(f"a {v.kind} text")
+    if isinstance(v, Ref):
+        if v.target is None:
+            return "nil"
+        if re.fullmatch(_TOKENS[3][1] + "|" + _TOKENS[2][1] + "|" + _TOKENS[4][1], v.target):
+            return v.target
+        raise ValueError(f"a link to {v.target} can't be written in a mod file (only named objects can be linked)")
+    if isinstance(v, ListV):
+        return "[" + ", ".join(literal(x) for x in v.items) + "]"
+    if isinstance(v, MapV):
+        return "MAP [" + ", ".join(f"({literal(k)}, {literal(x)})" for k, x in v.pairs) + "]"
+    if isinstance(v, PairV):
+        return f"({literal(v.a)}, {literal(v.b)})"
+    if isinstance(v, Raw):
+        if v.tc == 0x1A and len(v.payload) == 16:
+            return f"GUID:{{{uuid.UUID(bytes_le=bytes(v.payload))}}}"
+        if v.tc in _VECTOR_OF:
+            word, fmt, n = _VECTOR_OF[v.tc]
+            if len(v.payload) == struct.calcsize(fmt):
+                items = struct.unpack(fmt, v.payload)
+                shown = [_float_text(float32_text(x)) if "f" in fmt else str(x) for x in items]
+                return f"{word}[{', '.join(shown)}]"
+        return _no(f"{len(v.payload)} bytes of raw data")
+    if isinstance(v, Inline):
+        return _no(f"a {v.obj.cls} part")
+    return _no(type(v).__name__)
+
+
+def _no(what: str):
+    raise ValueError(f"{what} can't be written in a mod file")

@@ -2538,6 +2538,7 @@ function renderScenTools() {
   $("scen-snap-label").textContent = w.scen_snap_roads || "Stick to roads";
   snapRow.title = w.tip_scen_snap_roads || "";
   renderScenClear(s);
+  renderItemDetails(null, null);  // the picked item's values: shown again below when there is one
   if (!mv.brush.mod && scen.tool) { scenNote(w.no_mod, "error"); return; }
   if (scen.tool === "move") {
     const it = s && scen.selected !== null ? s.items[scen.selected] : null;
@@ -2561,12 +2562,14 @@ function renderScenTools() {
       n.append(" ", b);
     }
     itemTakeOut(s, it, n);
-  } else if (scen.tool === "spawn") scenNote(w.scen_spawn_help);
-  else if (scen.tool === "start") scenNote(w.scen_start_help);
+    renderItemDetails(s, it);
+  } else if (scen.tool === "spawn") { scenNote(w.scen_spawn_help); renderItemDetails(null, null); }
+  else if (scen.tool === "start") { scenNote(w.scen_start_help); renderItemDetails(null, null); }
   else {
     scenNote(s && w.scen_drag_help ? w.scen_drag_help : "");
     const it = s && scen.selected !== null ? s.items[scen.selected] : null;
     if (it && mv.brush.mod) itemTakeOut(s, it, $("scen-note"));
+    renderItemDetails(s, it);
   }
 }
 
@@ -2585,6 +2588,96 @@ function itemTakeOut(s, it, n) {
   const out = el("button", { type: "button", className: "link", textContent: w.scen_take_out, title: w.tip_scen_take_out });
   out.addEventListener("click", () => scenEdit(() => mv.api.scenario_remove(mv.current, s.file, [it.item])));
   n.append(" ", out);
+}
+
+// The picked item's own values, changed in the map project (StudioApi.scenario_change, maps/<map>/items.toml;
+// LittleGroove's Details panel): a spawn's side and a supply depot's trucks, a zone's size in metres, and a town
+// name's words in every language (the label holds a key of the game's texts: app.js wordsPanel). Each control says
+// in its tooltip what it is and what changing it does.
+const DETAIL_KINDS = ["Spawn", "CircularZone", "RectangleZone", "LabelVille"];
+
+function renderItemDetails(s, it) {
+  const w = mv.words, box = $("scen-details");
+  const show = Boolean(s && it && !it.mine && !it.gone && DETAIL_KINDS.includes(it.kind));
+  box.classList.toggle("hidden", !show);
+  box.replaceChildren();
+  if (!show) return;
+  const can = Boolean(mv.brush.mod);
+  const save = (field, value) => scenEdit(() => mv.api.scenario_change(mv.current, s.file, it.item, field, value), true);
+  const gameLine = (field, text, back) => {
+    if (!it.game || !(field in it.game)) return null;
+    const reset = el("button", { type: "button", className: "link", textContent: w.scen_item_reset,
+      title: w.tip_scen_item_reset, disabled: !can });
+    reset.addEventListener("click", () => save(field, back));
+    return el("div", { className: "muted" }, fill(w.scen_item_game, { value: text }), " ", reset);
+  };
+  const row = (label, tip, control, ...more) => el("div", { className: "scen-detail-row", title: tip },
+    el("span", { textContent: label }), control, ...more.filter(Boolean));
+  box.append(el("div", { className: "scen-details-title", textContent: w.scen_item_title, title: w.tip_scen_item_title }));
+  if (it.kind === "Spawn") {
+    const skirmish = s.kind === "skirmish";
+    const now = it.camp === null || it.camp === undefined ? 0 : it.camp;
+    const owners = (s.owners || [{ camp: -1, kind: "neutral" }]).slice();
+    if (!owners.some((o) => o.camp === now)) owners.push({ camp: now, kind: "camp" });
+    const label = (o) => o.kind === "neutral" ? w.scen_side_neutral
+      : o.kind === "camp" ? fill(w.scen_owner_unknown, { camp: o.camp })
+        : `${o.kind === "player" ? w.scen_owner_player : w.scen_owner_ai}${o.nation !== null && o.nation !== undefined
+          && (mv.nationNames || [])[o.nation] ? " · " + mv.nationNames[o.nation] : ""} (${fill(w.scen_owner_camp, { camp: o.camp })})`;
+    const tip = skirmish ? w.tip_scen_item_camp_skirmish : w.tip_scen_item_camp;
+    const side = el("select", { className: "small", disabled: !can || (skirmish && now === -1), title: tip },
+      ...owners.map((o) => el("option", { value: String(o.camp), textContent: label(o), selected: o.camp === now })));
+    side.addEventListener("change", () => save("camp", Number(side.value)));
+    const gameCamp = it.game && "camp" in it.game ? (it.game.camp === null || it.game.camp === undefined ? 0 : it.game.camp) : null;
+    box.append(row(w.scen_item_camp, tip, side,
+      gameLine("camp", gameCamp === null ? "" : label(owners.find((o) => o.camp === gameCamp) || { camp: gameCamp, kind: "camp" }), gameCamp)));
+    if (it.trucks !== undefined || it.what === "DalleBatimentDepot") {
+      const trucks = el("input", { type: "number", min: "0", max: "1000", step: "1", className: "scen-detail-number",
+        value: it.trucks === undefined || it.trucks === null ? "" : String(it.trucks), disabled: !can, title: w.tip_scen_item_trucks });
+      trucks.addEventListener("change", () => {
+        const n = Number(trucks.value);
+        if (trucks.value.trim() === "" || !Number.isInteger(n) || n < 0 || n > 1000) { trucks.value = it.trucks ?? ""; return; }
+        save("trucks", n);
+      });
+      box.append(row(w.scen_item_trucks, w.tip_scen_item_trucks, trucks,
+        gameLine("trucks", it.game && it.game.trucks !== null && it.game.trucks !== undefined ? String(it.game.trucks) : "", it.game ? it.game.trucks : null)));
+    }
+  } else if (it.kind === "CircularZone" || it.kind === "RectangleZone") {
+    const fields = it.kind === "CircularZone" ? [["radius", w.scen_item_radius]] : [["width", w.scen_item_width], ["height", w.scen_item_height]];
+    for (const [field, name] of fields) {
+      const units = it[field];
+      const metres = el("input", { type: "number", min: "1", step: "1", className: "scen-detail-number", disabled: !can,
+        value: units ? String(Math.round(units / METRE * 10) / 10) : "", title: w.tip_scen_item_size });
+      metres.addEventListener("change", () => {
+        const m = Number(metres.value);
+        if (metres.value.trim() === "" || !(m > 0)) { metres.value = units ? String(Math.round(units / METRE * 10) / 10) : ""; return; }
+        save(field, Math.round(m * METRE));
+      });
+      const g = it.game && it.game[field];
+      box.append(row(name, w.tip_scen_item_size, metres, el("span", { className: "muted", textContent: " m" }),
+        gameLine(field, g ? fill(w.scen_item_metres, { m: Math.round(g / METRE * 10) / 10 }) : "", g)));
+    }
+    box.append(el("div", { className: "muted", textContent: w.scen_item_zone_note }));
+  } else if (it.kind === "LabelVille" && it.text) {
+    // a town's name: the label holds a key of the game's texts; its words change in every language
+    const said = el("span", { className: "muted", textContent: "…" });
+    const edit = el("button", { type: "button", className: "link", textContent: w.values_words_edit,
+      title: w.tip_scen_item_words, disabled: !can || typeof window.wordsPanel !== "function" });
+    let panel = null;
+    edit.addEventListener("click", () => {
+      if (panel) { panel.remove(); panel = null; return; }
+      panel = window.wordsPanel(it.text, () => renderItemDetails(s, it), "map");  // kept in the map project
+      box.append(panel);
+    });
+    mv.api.value_words(it.text, "map").then((res) => {
+      const mine = (res.words || []).find((x) => x.lang === (mv.lang === "base" ? "us" : mv.lang));
+      const words = mine ? (mine.mine || mine.game) : null;
+      said.textContent = words ? `“${words}”` : w.values_words_none;
+      if (!res.table) edit.disabled = true;
+    }).catch(() => { said.textContent = w.values_words_none; edit.disabled = true; });
+    box.append(row(w.scen_item_town, w.tip_scen_item_words, said, " ", edit));
+  }
+  if (!can) box.append(el("div", { className: "muted", textContent: w.no_mod }));
+  else box.append(el("div", { className: "muted", textContent: w.scen_item_untested }));
 }
 
 // Every depot, or every town and hill name, of the picked scenario taken out at once (the owner's blank D-Day,
@@ -2613,13 +2706,13 @@ function renderScenClear(s) {
 }
 
 // Save a change, then draw the scenario as the mod leaves it now.
-async function scenEdit(call) {
+async function scenEdit(call, keepPicked = false) {
   try {
     const keepFile = ((scen.data || {}).scenarios || [])[scen.pick];
     scen.data = await call();
     const i = scen.data.scenarios.findIndex((x) => keepFile && x.file === keepFile.file);
     if (i >= 0) scen.pick = i;
-    scen.selected = null;
+    if (!keepPicked) scen.selected = null;  // a value of the picked item changed (renderItemDetails): it stays picked
     renderScenarioPick();
     drawScenario();
     renderScenTools();

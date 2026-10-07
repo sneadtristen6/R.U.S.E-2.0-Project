@@ -189,6 +189,40 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .ai-script-text { max-height: 60vh; overflow: auto; margin: 6px 0 0; padding: 8px 10px; background: var(--panel-hi);
                   border: 1px solid var(--line); border-radius: 6px; font: 12px/1.45 Consolas, monospace;
                   white-space: pre; tab-size: 4; }
+/* the All values tab (app.js renderValues, renderValuePage) */
+.values-browser .values-field { display: grid; gap: 3px; }
+.values-browser select { width: 100%; padding: 6px 8px; background: var(--panel); border: 1px solid var(--line);
+                         border-radius: var(--radius); color: inherit; }
+.values-by { display: grid; gap: 6px; padding: 6px 8px; background: var(--panel); border: 1px solid var(--line);
+             border-radius: var(--radius); }
+.values-by summary { cursor: pointer; font-size: 13px; }
+.values-by p { margin: 4px 0 0; }
+.values-nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.group table.values-table { max-width: 900px; }
+.group table.values-table th { width: 34%; }
+.values-table input.values-text, .values-table input.values-key { width: 100%; max-width: 520px; padding: 3px 7px;
+  background: var(--panel-hi); border: 1px solid var(--line); border-radius: 6px; font: 12px Consolas, monospace; }
+.values-table input:disabled, .values-table textarea:disabled { opacity: 0.6; }
+.values-table td.edited input.values-text, .values-table td.edited input.values-key,
+.values-table td.edited textarea { border-color: var(--accent); }
+.values-words { margin-top: 3px; font-size: 12px; color: var(--muted); font-style: italic; }
+.values-mine { color: var(--accent); font-style: normal; }
+.values-words-box { max-width: 620px; margin-top: 6px; padding: 8px 10px; background: var(--panel); border: 1px solid var(--line);
+                    border-radius: var(--radius); }
+.values-words-box p { margin: 0 0 6px; }
+.values-words-grid { display: grid; grid-template-columns: max-content 1fr; gap: 4px 10px; align-items: center; }
+.values-words-grid input.changed { border-color: var(--accent); }
+.values-words-box .actions { display: flex; gap: 8px; margin-top: 8px; }
+.values-yes { display: inline-flex; align-items: center; gap: 4px; }
+.values-yes input { width: 16px; height: 16px; accent-color: var(--accent); }
+.values-swatch { display: inline-block; width: 22px; height: 22px; border: 1px solid var(--line); border-radius: 4px; }
+.values-link { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.values-link input { flex: 1 1 260px; }
+.values-items { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.values-items .chip { font: 11px Consolas, monospace; }
+.values-written { width: 100%; max-width: 720px; margin-top: 4px; padding: 4px 7px; background: var(--panel-hi);
+                  border: 1px solid var(--line); border-radius: 6px; font: 12px/1.4 Consolas, monospace; color: inherit;
+                  resize: vertical; }
 /* a range: its slider beside the box, and about how far that is in metres (app.js rangeSlider, weaponRange) */
 .range { display: inline-flex; align-items: center; gap: 8px; flex: 1 1 180px; min-width: 0; }
 .range input[type="range"] { flex: 1 1 auto; min-width: 100px; max-width: 260px; accent-color: var(--accent); }
@@ -345,6 +379,15 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .dock-tray .place-list option:checked { background: var(--accent-dark); color: #fff; }
 /* what's selected on the map (maps.js renderSelection), above the tray as the game shows a selection above its build
    bar: the map's own icons, how many of each, the count by kind */
+/* the picked item's own values (maps.js renderItemDetails) */
+.scen-details { display: grid; gap: 5px; margin-top: 6px; padding: 6px 8px; background: var(--panel); border: 1px solid var(--line);
+                border-radius: var(--radius); }
+.scen-details-title { font-weight: 600; color: var(--accent); }
+.scen-detail-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.scen-detail-row > span:first-child { min-width: 7em; }
+.scen-detail-row select { max-width: 100%; }
+.scen-detail-number { width: 6.5em; padding: 2px 6px; background: var(--panel-hi); border: 1px solid var(--line); border-radius: 6px; }
+.scen-details .values-words-box { max-width: none; }
 .scen-selection { align-self: stretch; display: flex; flex-direction: column; gap: 6px; padding: 6px 12px 8px;
                   background: var(--hud); border: 1px solid var(--hud-line); border-top: 2px solid #ffd34d;
                   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); }

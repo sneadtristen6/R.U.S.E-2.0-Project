@@ -399,6 +399,140 @@ class Removes(unittest.TestCase):
             apply_moves(read, "Blitz", [Remove("leveldesign.scenario", 5, "Spawn")])
 
 
+def detail_items() -> bytes:
+    """Items with values to change, as the 102 shipped scenarios keep them: a supply depot with its trucks
+    (ChampInteger) and side (Camp), a depot without trucks, a unit spawn without a Camp (read as camp 0), a circle zone
+    (Radius) and a rectangle zone (Width, Height), all float32s and whole numbers as the game has them."""
+    def s(i):
+        return val(0x07, struct.pack("<I", i))
+
+    def i32(v):
+        return val(0x02, struct.pack("<i", v))
+
+    def f32(v):
+        return val(0x05, struct.pack("<f", v))
+
+    def ref(i, cls):
+        return val(0x09, struct.pack("<III", 0xBBBBBBBB, i, cls))
+
+    def item(k, addon, cls):
+        return (0, [(0, val(0x0B, struct.pack("<3f", 100.0 * k, 200.0, 10.0))), (1, f32(0.0)), (2, ref(addon, cls))])
+    return make_ndf(
+        objects=[item(0, 5, 1), item(1, 6, 1), item(2, 7, 1), item(3, 8, 2), item(4, 9, 3),
+                 (1, [(3, s(0)), (4, i32(25)), (5, i32(-1))]),       # 5 a depot: trucks, then its side
+                 (1, [(3, s(0)), (5, i32(1))]),                       # 6 a depot without trucks
+                 (1, [(3, s(1))]),                                    # 7 a unit without a Camp
+                 (2, [(6, s(2)), (7, f32(50000.0))]),                 # 8 a circle zone
+                 (3, [(8, s(3)), (9, f32(2000.0)), (10, f32(3000.0))]),  # 9 a rectangle zone
+                 (4, [(11, val(0x11, struct.pack("<I", 5) + b"".join(ref(i, 0) for i in range(5))))])],
+        classes=["TGameDesignItem", "TGameDesignAddOn_Spawn", "TGameDesignAddOn_CircularZone",
+                 "TGameDesignAddOn_RectangleZone", "TGameDesignItemList"],
+        props=[("Position", 0), ("Rotation", 0), ("AddOn", 0), ("PythonClassName", 1), ("ChampInteger", 1), ("Camp", 1),
+               ("Name", 2), ("Radius", 2), ("Name", 3), ("Width", 3), ("Height", 3), ("GameDesignItemList", 4)],
+        strings=["front.batiment_depot.DalleBatimentDepot", "front.parametres.Classes.Unit_M4_Sherman", "zone_a",
+                 "zone_b"], topo=[10])
+
+
+def detail_scenario() -> bytes:
+    nd = detail_items()
+    return with_checksum(MAGIC + bytes(16) + bytes(2) + u32(4, 1) + u32(4) + u32(0) + u32(len(nd)) + nd)
+
+
+class Changes(unittest.TestCase):
+    """The map's own items with some of their values changed (maps/<map>/items.toml, LittleGroove's Details panel):
+    a spawn's side, a supply depot's trucks, a zone's size, each written in the type the item has it in. Not yet seen
+    in the game."""
+    MEMBER = "test\\map\\blitz\\leveldesign.scenario"
+
+    def test_values_written_in_the_items_own_types(self):
+        s = Scenario.read(detail_scenario())
+        self.assertEqual([i.kind for i in s.items], ["Spawn", "Spawn", "Spawn", "CircularZone", "RectangleZone"])
+        s.set_value(0, "trucks", 40)
+        s.set_value(0, "camp", 2)
+        s.set_value(1, "trucks", 30)    # a depot without trucks gets them, before its Camp as the shipped ones have it
+        s.set_value(2, "camp", 3)       # a spawn without a Camp gets one
+        s.set_value(3, "radius", 75000.5)
+        s.set_value(4, "width", 2500)
+        s.set_value(4, "height", 3500.25)
+        for i, field in ((2, "trucks"), (0, "radius"), (3, "width")):
+            with self.subTest(item=i, field=field), self.assertRaisesRegex(ScenarioError, "has no"):
+                s.set_value(i, field, 1)
+        back = Scenario.read(s.to_bytes())
+        self.assertEqual([i.values for i in back.items], [
+            {"PythonClassName": "front.batiment_depot.DalleBatimentDepot", "ChampInteger": 40, "Camp": 2},
+            {"PythonClassName": "front.batiment_depot.DalleBatimentDepot", "ChampInteger": 30, "Camp": 1},
+            {"PythonClassName": "front.parametres.Classes.Unit_M4_Sherman", "Camp": 3},
+            {"Name": "zone_a", "Radius": 75000.5}, {"Name": "zone_b", "Width": 2500.0, "Height": 3500.25}])
+        nd = back.ndf
+        depot = nd.objects[6]  # the depot that had no trucks: PythonClassName, ChampInteger, Camp
+        self.assertEqual([(nd.prop_name(pi), v.tc) for pi, v in depot.props],
+                         [("PythonClassName", 0x07), ("ChampInteger", 0x02), ("Camp", 0x02)])
+        self.assertEqual([(nd.prop_name(pi), v.tc) for pi, v in nd.objects[8].props], [("Name", 0x07), ("Radius", 0x05)])
+        from rusemod.scenario import view
+        self.assertEqual([(it.get("camp"), it.get("trucks")) for it in view(back)["items"][:3]],
+                         [(2, 40), (1, 30), (3, None)])
+
+    def test_the_mod_file(self):
+        import tomllib
+        from rusemod.scenario import Change, changes_toml, parse_changes
+        changes = [Change("a.scenario", 0, "Spawn", {"camp": -1, "trucks": 40}),
+                   Change("a.scenario", 3, "CircularZone", {"radius": 75000.0}),
+                   Change("a.scenario", 4, "RectangleZone", {"width": 2500, "height": 3500.5})]
+        text = changes_toml(changes, "a header\nof two lines")
+        self.assertTrue(text.startswith("# a header\n# of two lines\n"))
+        self.assertEqual(parse_changes(tomllib.loads(text)["set"]), changes)
+        for bad, why in (({"kind": "StartingPoint"}, "kind must be one of"),
+                         ({"kind": "Spawn", "radius": 5}, "unknown key 'radius'"),
+                         ({"kind": "Spawn", "camp": -2}, "camp is -1"),
+                         ({"kind": "Spawn", "camp": 1.5}, "camp is -1"),
+                         ({"kind": "Spawn", "camp": True}, "camp is a number"),
+                         ({"kind": "Spawn", "trucks": 1001}, "0 to 1000"),
+                         ({"kind": "CircularZone", "radius": 0}, "more than 0"),
+                         ({"kind": "CircularZone", "radius": float("nan")}, "more than 0"),
+                         ({"kind": "Spawn"}, "changes nothing"),
+                         ({"kind": "Spawn", "item": -1, "camp": 1}, "whole number, 0 or more"),
+                         ({"kind": "Spawn", "file": "a.txt", "camp": 1}, "scenario's name")):
+            with self.subTest(bad=bad), self.assertRaisesRegex(ScenarioError, why):
+                parse_changes([{"file": "a.scenario", "item": 0, **bad}])
+
+    def test_applied_after_the_moves(self):
+        from rusemod.scenario import Change, Move, apply_moves
+        read = {self.MEMBER: detail_scenario()}.get
+        new, notes = apply_moves(read, "Blitz", [Move("leveldesign.scenario", 0, "Spawn", 10.0, 20.0),
+                                                 Change("leveldesign.scenario", 0, "Spawn", {"trucks": 60}),
+                                                 Change("leveldesign.scenario", 3, "CircularZone", {"radius": 9000})])
+        back = Scenario.read(new[self.MEMBER])
+        self.assertEqual((back.items[0].position[:2], back.items[0].values["ChampInteger"], back.items[3].values["Radius"]),
+                         ((10.0, 20.0), 60, 9000.0))
+        self.assertIn("1 item(s) moved, 2 of its own item(s) changed", notes[0])
+        with self.assertRaisesRegex(ScenarioError, "item 3 is a CircularZone, not a Spawn"):
+            apply_moves(read, "Blitz", [Change("leveldesign.scenario", 3, "Spawn", {"camp": 1})])
+        # a skirmish scenario's items stay neutral, as its spawns do (the game leaves the others out)
+        with self.assertRaisesRegex(ScenarioError, "item 1 of leveldesign.scenario is given camp 2, but "
+                                                   "leveldesign.scenario is a skirmish map's scenario"):
+            apply_moves(read, "Blitz", [Change("leveldesign.scenario", 1, "Spawn", {"camp": 2})], {"leveldesign.scenario"})
+        new, _notes = apply_moves(read, "Blitz", [Change("leveldesign.scenario", 1, "Spawn", {"camp": -1})],
+                                  {"leveldesign.scenario"})
+        self.assertEqual(Scenario.read(new[self.MEMBER]).items[1].values["Camp"], -1)
+
+    def test_the_build_reads_them_after_the_scenario_files_edits(self):
+        import tempfile
+        from pathlib import Path
+        from rusemod.build import load_mod
+        from rusemod.scenario import Change, Remove
+        with tempfile.TemporaryDirectory() as tmp:
+            mod = Path(tmp, "items-test")
+            (mod / "maps" / "Blitz").mkdir(parents=True)
+            (mod / "mod.toml").write_text('[mod]\nid = "items-test"\nversion = "0.1.0"\n', encoding="utf-8")
+            (mod / "maps" / "Blitz" / "scenario.toml").write_text(
+                '[[remove]]\nfile = "leveldesign.scenario"\nitem = 2\nkind = "Spawn"\n', encoding="utf-8")
+            (mod / "maps" / "Blitz" / "items.toml").write_text(
+                '[[set]]\nfile = "leveldesign.scenario"\nitem = 0\nkind = "Spawn"\ntrucks = 50\n', encoding="utf-8")
+            info, _ops = load_mod(mod)
+        self.assertEqual(info.scenario["Blitz"], [Remove("leveldesign.scenario", 2, "Spawn"),
+                                                  Change("leveldesign.scenario", 0, "Spawn", {"trucks": 50})])
+
+
 class Spawns(unittest.TestCase):
     """New spawns as the game takes them: a skirmish game spawns only neutral items (camp -1), a spawn without a
     Camp reads as camp 0, a depot slab starts with ChampInteger trucks, and every shipped spawn has the ground's z."""

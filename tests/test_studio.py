@@ -1239,6 +1239,29 @@ class ScenarioEdits(WithMod):
         self.assertFalse(back[1].get("gone", False))
         self.assertNotIn("remove", tomllib.loads(self.file.read_text(encoding="utf-8")))
 
+    def test_an_items_values_changed(self):
+        """LittleGroove's Details panel: a spawn's side changed, kept in the map project's maps/<map>/items.toml (a file
+        of its own, which scenario.toml's rewrites can't drop) and shown with the game's value beside it; the game's
+        value again takes it out, and the file goes with the last change."""
+        items_file = self.file.with_name("items.toml")
+        it = self.items(self.api.scenario_change("Blitz", "leveldesign.scenario", 1, "camp", 2))[1]
+        self.assertEqual((it["camp"], it["game"]), (2, {"camp": None}))  # (the made-up spawn has no Camp: camp 0)
+        data = tomllib.loads(items_file.read_text(encoding="utf-8"))
+        self.assertEqual(data["set"], [{"file": "leveldesign.scenario", "item": 1, "kind": "Spawn", "camp": 2}])
+        self.api.scenario_move("Blitz", "leveldesign.scenario", 0, 111.0, 222.0)  # scenario.toml rewritten: kept
+        self.assertEqual(tomllib.loads(items_file.read_text(encoding="utf-8"))["set"][0]["camp"], 2)
+        with self.assertRaisesRegex(StudioError, "Only a supply depot has trucks"):
+            self.api.scenario_change("Blitz", "leveldesign.scenario", 1, "trucks", 30)
+        with self.assertRaisesRegex(StudioError, "can't be changed here"):
+            self.api.scenario_change("Blitz", "leveldesign.scenario", 0, "camp", 1)  # a starting point
+        with self.assertRaisesRegex(StudioError, "whole number"):
+            self.api.scenario_change("Blitz", "leveldesign.scenario", 1, "camp", 1.5)
+        with self.assertRaisesRegex(StudioError, "camp is -1"):  # the file's own check: never saved unreadable
+            self.api.scenario_change("Blitz", "leveldesign.scenario", 1, "camp", 40)
+        back = self.items(self.api.scenario_change("Blitz", "leveldesign.scenario", 1, "camp", 0))[1]  # the game's
+        self.assertEqual((back["camp"], "game" in back), (None, False))
+        self.assertFalse(items_file.exists())
+
     def test_a_start_camera_turned(self):
         """The camera ring: the turn is kept with the start's move (a start not moved gets one where it stands)."""
         start = self.items(self.api.map_scenarios("Blitz"))[0]

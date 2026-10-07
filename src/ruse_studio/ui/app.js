@@ -82,11 +82,13 @@ async function setLanguage(lang) {
   $("tab-units").textContent = w.units_tab;
   $("tab-economy").textContent = w.economy_tab;
   $("tab-ai").textContent = w.ai_tab;
+  $("tab-values").textContent = w.values_tab;
   $("tab-maps").textContent = w.maps_tab;
   $("tab-settings").textContent = w.settings_tab;
   if (state.view === "maps" && window.MapView) window.MapView.setWords(w, lang);
   if (state.view === "economy") renderEconomy();
   if (state.view === "ai") renderAI();
+  if (state.view === "values") renderValues();
   $("lang-name").textContent = lang === "base" ? w.game_names
     : (state.languages.find((l) => l.code === lang) || {}).name || "";
   renderLangPick();
@@ -107,7 +109,7 @@ async function setLanguage(lang) {
   $("test-log-close").textContent = w.close;
   $("test-log-copy").textContent = w.doc_copy;
   // tooltips: one sentence on every control, from words.toml (tip_*)
-  const tips = { "tab-units": "tip_tab_units", "tab-economy": "tip_tab_economy", "tab-ai": "tip_tab_ai", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
+  const tips = { "tab-units": "tip_tab_units", "tab-economy": "tip_tab_economy", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close", "test-log-copy": "tip_copy_log",
     "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
@@ -223,6 +225,7 @@ async function modChanged() {
   if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // a map's strokes are the mod's
   if (state.view === "economy") await renderEconomy();  // the economy shown is the mod's
   if (state.view === "ai") await renderAI();  // and so are the computer players
+  if (state.view === "values" && state.valuePage) await showValueObject(state.valuePage.address, { keep: true });  // and its changes
 }
 
 async function pickMod(e, kind = "mod") {
@@ -1477,12 +1480,15 @@ async function showUnit(address, via) {
   const w = state.words;
   const copy = el("button", { type: "button", textContent: w.copy_address, title: w.tip_copy_address });
   copy.addEventListener("click", () => navigator.clipboard && navigator.clipboard.writeText(u.address));
+  const allValues = el("button", { type: "button", textContent: w.values_open_all, title: w.tip_values_open_all,
+    className: u.in_game ? "" : "hidden" });  // the All values tab shows the game's objects (a mod's new unit isn't one)
+  allValues.addEventListener("click", () => openAllValues(u.address));
   const parts = [el("h1", { textContent: u.name }),
     // with the code names, the name a player knows; and the game's own line for it, as on its card in the game
     ...(state.lang === "base" && u.game_name && u.game_name !== u.name
       ? [el("div", { className: "game-name", textContent: u.game_name })] : []),
     ...(u.desc ? [el("p", { className: "unit-desc", textContent: u.desc })] : []),
-    el("div", { className: "address" }, el("code", { textContent: u.address }), copy),
+    el("div", { className: "address" }, el("code", { textContent: u.address }), copy, allValues),
     el("div", { className: "meta", textContent: u.class })];
   const head = parts.length;  // the name, address and class: above the page's columns
   if (u.new) parts.push(copyNotice(u));
@@ -1828,20 +1834,23 @@ function showView(view) {
   $("units-view").classList.toggle("hidden", view !== "units");
   $("economy-view").classList.toggle("hidden", view !== "economy");
   $("ai-view").classList.toggle("hidden", view !== "ai");
+  $("values-view").classList.toggle("hidden", view !== "values");
   $("maps-view").classList.toggle("hidden", view !== "maps");
   $("settings-view").classList.toggle("hidden", view !== "settings");
   $("tab-units").setAttribute("aria-selected", String(view === "units"));
   $("tab-economy").setAttribute("aria-selected", String(view === "economy"));
   $("tab-ai").setAttribute("aria-selected", String(view === "ai"));
+  $("tab-values").setAttribute("aria-selected", String(view === "values"));
   $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
   $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
-  $("pick-mod").classList.toggle("hidden", view === "maps");  // the Units, Economy and AI tabs edit a mod, Maps a map
+  $("pick-mod").classList.toggle("hidden", view === "maps");  // Units, Economy, AI and All values edit a mod, Maps a map
   $("pick-map").classList.toggle("hidden", view !== "maps");
-  // "No game index yet" (and the index's build, a minute or more) covers the tabs that read it, Units, Economy and AI:
-  // the Maps tab and Settings (where the installer's clean backup shows how far it is) can be used meanwhile
-  $("no-index").classList.toggle("off-tab", !["units", "economy", "ai"].includes(view));
+  // "No game index yet" (and the index's build, a minute or more) covers the tabs that read it, Units, Economy, AI and
+  // All values: the Maps tab and Settings (where the installer's clean backup shows how far it is) can be used meanwhile
+  $("no-index").classList.toggle("off-tab", !["units", "economy", "ai", "values"].includes(view));
   if (view === "economy") { renderEconomy(); return; }
   if (view === "ai") { renderAI(); return; }
+  if (view === "values") { renderValues(); return; }
   if (view === "settings") { renderSettings(); loadBackup(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
@@ -2123,6 +2132,421 @@ async function showAIScript(path) {
 
 async function copyAIScript() {
   if (await copyText($("ai-script-text").textContent)) say(state.words.ai_scripts_copied, "ok");
+}
+
+// --- the All values tab (StudioApi.values_files / values_find / value_object / value_edit / value_reset / value_links,
+// rusemod.values; LittleGroove's raw value editor brought over): any object of the unit data and every value it has,
+// as the game's file has it, each changed in the current mod at once. For whatever the other tabs don't show. Every
+// control says in its tooltip what it is and what changing it does (the owner, 2026-10-07: "everything needs to work
+// as if someone not very smart was playing, lots of tooltips") ---
+const VALUE_KIND_TIPS = { number: "values_kind_number", bool: "values_kind_bool", text: "values_kind_text",
+  key: "values_kind_key", vector: "values_kind_vector", guid: "values_kind_guid", numbers: "values_kind_numbers",
+  link: "values_kind_link", part: "values_kind_part", list: "values_kind_written", map: "values_kind_written",
+  pair: "values_kind_written", fixed: "values_kind_fixed" };
+const VALUE_ITEMS_SHOWN = 30;  // the links and parts a list shows as buttons (the rest: "…")
+const VALUE_BOXES = 12;  // a list of numbers up to this long gets a box for each number; a longer one, one text box
+let valuesAsk = 0;      // the newest look-up: an older answer that comes back later is dropped
+let valuesTimer = null;
+let valueLinksAsk = 0;
+
+function valuesEvents() {
+  const later = () => { clearTimeout(valuesTimer); valuesTimer = setTimeout(findValues, 400); };
+  const now = () => { clearTimeout(valuesTimer); findValues(); };
+  for (const id of ["values-find", "values-prop", "values-value"]) {
+    $(id).addEventListener("input", later);
+    $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); now(); } });
+  }
+  $("values-file").addEventListener("change", now);
+  $("values-go").addEventListener("click", now);
+}
+
+// $/GFX/Everything/Descriptor_Unit_M4_Sherman:WeaponDescriptor -> Descriptor_Unit_M4_Sherman:WeaponDescriptor
+function shortAddress(a) {
+  const at = a.indexOf(":"), head = at < 0 ? a : a.slice(0, at);
+  return head.split("/").pop() + (at < 0 ? "" : a.slice(at));
+}
+
+async function renderValues() {
+  const w = state.words;
+  $("values-intro").textContent = w.values_help;
+  $("values-file-label").textContent = w.values_file_label;
+  $("values-find-label").textContent = w.values_find_label;
+  $("values-find").placeholder = w.values_find_hint;
+  $("values-by-title").textContent = w.values_by_title;
+  $("values-by-help").textContent = w.values_by_help;
+  $("values-prop-label").textContent = w.values_prop_label;
+  $("values-prop").placeholder = w.values_prop_hint;
+  $("values-value-label").textContent = w.values_value_label;
+  $("values-value").placeholder = w.values_value_hint;
+  $("values-go").textContent = w.values_go;
+  const tips = { "values-file": "tip_values_file", "values-find": "tip_values_find", "values-by-title": "tip_values_by",
+    "values-prop": "tip_values_prop", "values-value": "tip_values_value", "values-go": "tip_values_go" };
+  for (const [id, key] of Object.entries(tips)) $(id).title = w[key] || "";
+  if (!state.valueFiles) {
+    try { state.valueFiles = (await api().values_files()).files; } catch (err) { problem(err); return; }
+  }
+  const picked = $("values-file").value;
+  $("values-file").replaceChildren(el("option", { value: "", textContent: w.values_file_all }),
+    ...state.valueFiles.map((f) => el("option", { value: f.path, title: f.path,
+      textContent: `${f.path.split("/").slice(-2).join("/")} (${f.objects})` })));
+  $("values-file").value = picked;
+  if (state.valuesFound) listValues(state.valuesFound);
+  else $("values-count").textContent = w.values_start;
+  if (state.valuePage) showValueObject(state.valuePage.address, { keep: true });
+  else $("values-detail").replaceChildren(el("p", { id: "values-pick", className: "muted", textContent: w.values_pick }));
+}
+
+async function findValues() {
+  const w = state.words, ask = ++valuesAsk;
+  const file = $("values-file").value, words = $("values-find").value.trim();
+  const prop = $("values-prop").value.trim(), value = $("values-value").value.trim();
+  if (!file && !words && !prop && !value) {  // nothing asked yet: no list of 100,000 objects
+    state.valuesFound = null;
+    $("values-list").replaceChildren();
+    $("values-count").textContent = w.values_start;
+    return;
+  }
+  $("values-count").textContent = w.values_looking;
+  let res;
+  try { res = await api().values_find(file, words, prop, value, state.lang); } catch (err) {
+    if (ask === valuesAsk) { $("values-count").textContent = ""; problem(err); }
+    return;
+  }
+  if (ask !== valuesAsk) return;
+  state.valuesFound = res;
+  listValues(res);
+}
+
+function listValues(res) {
+  const w = state.words;
+  $("values-count").textContent = !res.total ? w.values_none
+    : fill(res.total > res.objects.length ? w.values_some : w.values_count, { shown: res.objects.length, n: res.total });
+  $("values-list").replaceChildren(...res.objects.map((o) => {
+    const sub = [o.name ? shortAddress(o.address) : null, o.class, o.match].filter(Boolean).join(" · ");
+    const b = el("button", { type: "button", title: `${fill(w.tip_values_object, { kind: o.class, file: o.file })}\n${o.address}` },
+      el("span", { className: "name", textContent: o.name || shortAddress(o.address) }),
+      el("span", { className: "sub", textContent: sub }));
+    b.dataset.address = o.address;
+    b.setAttribute("aria-current", String(!!state.valuePage && state.valuePage.address === o.address));
+    b.addEventListener("click", () => openValue(o.address, true));
+    return el("li", {}, b);
+  }));
+}
+
+// Open an object's page; `push`: the page shown now goes on the Back list
+function openValue(address, push) {
+  if (push && state.valuePage && state.valuePage.address !== address) {
+    (state.valueBack = state.valueBack || []).push(state.valuePage.address);
+  }
+  return showValueObject(address);
+}
+
+// From a unit's page on the Units tab: the same object, with every value it has
+function openAllValues(address) {
+  if (state.valuePage && state.valuePage.address !== address) (state.valueBack = state.valueBack || []).push(state.valuePage.address);
+  state.valuePage = { address };
+  showView("values");
+}
+
+async function showValueObject(address, opts) {
+  let p;
+  try { p = await api().value_object(address, state.lang); } catch (err) { problem(err); return; }
+  state.valuePage = { address: p.address };
+  if (state.view !== "values") return;  // another tab was picked meanwhile
+  renderValuePage(p);
+  if (!(opts && opts.keep)) $("values-detail").scrollTop = 0;
+}
+
+function valuesWhy(p) {
+  const w = state.words;
+  return { outside: w.values_why_outside, not_stable: w.values_why_not_stable, no_mod: w.no_mod }[p.why_not] || p.why_not;
+}
+
+function renderValuePage(p) {
+  const w = state.words;
+  state.valuePage = { address: p.address };
+  for (const b of $("values-list").querySelectorAll("button")) b.setAttribute("aria-current", String(b.dataset.address === p.address));
+  const nav = el("div", { className: "values-nav" });
+  if ((state.valueBack || []).length) {
+    const back = el("button", { type: "button", className: "ghost", textContent: w.values_back, title: w.tip_values_back });
+    back.addEventListener("click", () => showValueObject(state.valueBack.pop()));
+    nav.append(back);
+  }
+  if (p.owner) {
+    const up = el("button", { type: "button", className: "ghost",
+      textContent: fill(w.values_part_of, { name: p.owner.name || shortAddress(p.owner.address) }), title: w.tip_values_part_of });
+    up.addEventListener("click", () => openValue(p.owner.address, true));
+    nav.append(up);
+  }
+  const copy = el("button", { type: "button", textContent: w.copy_address, title: w.tip_values_copy });
+  copy.addEventListener("click", async () => { if (await copyText(p.address)) say(w.values_copied, "ok"); });
+  const parts = [el("h1", { textContent: p.name || shortAddress(p.address) })];
+  if (nav.childNodes.length) parts.unshift(nav);
+  if (p.name) parts.push(el("div", { className: "game-name", textContent: shortAddress(p.address), title: w.tip_values_code_name }));
+  parts.push(el("div", { className: "address" }, el("code", { textContent: p.address }), copy),
+    el("div", { className: "meta", title: w.tip_values_meta, textContent: fill(w.values_meta, { kind: p.class, file: p.file, n: p.index }) }));
+  if (!p.editable) parts.push(el("p", { className: "notice", textContent: valuesWhy(p) }));
+  else {
+    parts.push(el("p", { className: "notice", textContent: w.values_how }));
+    if (p.shared) parts.push(el("p", { className: "notice warn", textContent: fill(w.values_shared, { n: p.owners }) }));
+    else if (p.named && p.users > 1) parts.push(el("p", { className: "notice warn", textContent: fill(w.values_users_warn, { n: p.users }) }));
+  }
+  const table = el("table", { className: "values-table" });
+  for (const r of p.rows) table.append(valueRow(p, r));
+  const group = el("div", { className: "group" }, el("h2", { textContent: fill(w.values_rows, { n: p.rows.length }) }), table);
+  if (p.rows.some((r) => r.locked)) group.append(el("p", { className: "muted small", textContent: w.locked }));
+  parts.push(group);
+  if (p.used_by.length) {
+    const list = el("ul", { className: "parts" });
+    for (const u of p.used_by) {
+      const b = el("button", { type: "button", title: `${w.tip_values_user}\n${u.address}` },
+        `${u.name || shortAddress(u.address)}  ·  ${u.path}`);
+      b.addEventListener("click", () => openValue(u.address, true));
+      list.append(el("li", {}, b));
+    }
+    const more = p.users > p.used_by.length ? [el("p", { className: "muted small", textContent: fill(w.values_users_more, { n: p.users - p.used_by.length }) })] : [];
+    parts.push(el("div", { className: "group" }, el("h2", { textContent: fill(w.values_used_by, { n: p.users }) }), list, ...more));
+  }
+  $("values-detail").replaceChildren(...parts);
+}
+
+// What the game's value is, in words, for the line under a changed value
+function valueGameText(r) {
+  const w = state.words;
+  if (r.kind === "bool") return r.value ? w.values_yes : w.values_no;
+  if (r.kind === "link") return r.to ? shortAddress(r.to) : w.values_link_none;
+  if (Array.isArray(r.value)) return r.value.join(", ");
+  if (r.value !== null && r.value !== undefined) return String(r.value);
+  return r.text || "";
+}
+
+function valueRow(p, r) {
+  const w = state.words;
+  const kindTip = w[VALUE_KIND_TIPS[r.kind] || "values_kind_fixed"] || "";
+  const th = el("th", { textContent: r.label, title: `${kindTip}\n(${r.prop} · ${r.type})` });
+  if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
+  const now = r.edited && !r.edited.removed ? r.edited : null;  // the mod's value: what the box shows
+  const shown = now ? now.value : r.value;
+  const text = now ? now.text : r.text;
+  const can = r.can && !!state.mod;
+  // a box that can't be changed says why: an id, the object (outside the unit data, no mod picked...), or the value
+  const tip = can ? kindTip : r.locked ? w.locked : !p.editable ? valuesWhy(p) : !state.mod ? w.no_mod : w.values_cant_row;
+  const save = (value) => saveValue(p, r, value);
+  const td = el("td");
+  const box = (props) => el("input", Object.assign({ disabled: !can, title: tip }, props));
+  if (r.kind === "number") {
+    const b = box({ type: "number", value: String(shown), step: WHOLE.has(r.type) ? "1" : "any" });
+    b.setAttribute("aria-label", r.label);
+    b.addEventListener("change", () => { if (b.value.trim() === "") { b.value = String(shown); return; } save(Number(b.value)); });
+    td.append(el("div", { className: "boxes" }, b));
+  } else if (r.kind === "bool") {
+    const b = box({ type: "checkbox", checked: Boolean(shown) });
+    b.setAttribute("aria-label", r.label);
+    b.addEventListener("change", () => save(b.checked));
+    td.append(el("label", { className: "values-yes", title: tip }, b, " ", w.values_yes));
+  } else if (r.kind === "text" || r.kind === "guid") {
+    const b = box({ type: "text", value: shown ?? "", className: "values-text" });
+    b.setAttribute("aria-label", r.label);
+    b.addEventListener("change", () => save(b.value));
+    td.append(b);
+  } else if (r.kind === "key") {
+    const b = box({ type: "text", value: shown ?? "", className: "values-key" });
+    b.setAttribute("aria-label", r.label);
+    b.addEventListener("change", () => save(b.value.trim()));
+    const words = now ? now.words : r.words_mine || r.words;  // the words the key shows: the mod's when it changes them
+    const said = el("div", { className: "values-words", title: w.tip_values_words,
+      textContent: words ? `“${words}”` : w.values_words_none });
+    if (!now && r.words_mine) said.append(" ", el("span", { className: "values-mine", textContent: w.values_words_mine }));
+    td.append(b, said);
+    if (!now) {  // the words of the key the game has (a key the mod puts there instead: on its own row once saved)
+      const edit = el("button", { type: "button", className: "link", textContent: w.values_words_edit,
+        title: w.tip_values_words_edit });
+      let panel = null;
+      edit.addEventListener("click", () => {
+        if (panel) { panel.remove(); panel = null; return; }
+        panel = wordsPanel(r.value, () => showValueObject(p.address, { keep: true }));
+        td.append(panel);
+      });
+      td.append(edit);
+    }
+  } else if (r.kind === "vector") {
+    const items = Array.isArray(shown) ? shown : [];
+    const color = r.type === "RGBA";
+    const boxes = items.map((x, i) => {
+      const b = box({ type: "number", value: String(x), step: color || r.type === "Int2" ? "1" : "any",
+        title: `${tip}\n${(color ? ["R", "G", "B", "A"] : ["x", "y", "z", "w"])[i]}` });
+      if (color) { b.min = "0"; b.max = "255"; }
+      b.setAttribute("aria-label", `${r.label} [${i}]`);
+      return b;
+    });
+    for (const b of boxes) b.addEventListener("change", () => save(boxes.map((x) => x.value.trim() || "0").join(", ")));
+    const holder = el("div", { className: "boxes" }, ...boxes);
+    if (color && items.length === 4) holder.append(el("span", { className: "values-swatch", title: w.tip_values_swatch,
+      style: `background: rgba(${items[0]}, ${items[1]}, ${items[2]}, ${items[3] / 255})` }));
+    td.append(holder);
+  } else if (r.kind === "numbers") {
+    const items = Array.isArray(shown) ? shown : [];
+    const key = `${p.address}|${r.prop}`;
+    if (!Array.isArray(shown) || items.length > VALUE_BOXES || (state.valuesAsText && state.valuesAsText.has(key))) {
+      // the whole list as text, numbers with commas between: to make it longer or shorter
+      const b = box({ type: "text", value: Array.isArray(shown) ? shown.join(", ") : (text || ""), className: "values-text" });
+      b.setAttribute("aria-label", r.label);
+      b.addEventListener("change", () => save(b.value));
+      td.append(b, el("div", { className: "muted small", textContent: fill(w.values_items, { n: items.length }) }));
+    } else {  // a short list: a box for each number (a tick box for each yes/no), as the Units tab shows a price
+      const bool = r.type === "bool";
+      const boxes = items.map((x, i) => {
+        const b = box(bool ? { type: "checkbox", checked: Boolean(x) }
+          : { type: "number", value: String(x), step: WHOLE.has(r.type) ? "1" : "any" });
+        b.title = `${tip}\n${fill(w.values_item_n, { n: i + 1 })}`;
+        b.setAttribute("aria-label", `${r.label} [${i}]`);
+        return b;
+      });
+      const read = () => boxes.map((b) => bool ? (b.checked ? 1 : 0) : b.value.trim() === "" ? NaN : Number(b.value));
+      for (const b of boxes) {
+        b.addEventListener("change", () => {
+          const now = read();
+          if (now.some((n) => !Number.isFinite(n))) { showValueObject(p.address, { keep: true }); return; }  // emptied: put it back
+          save(now);
+        });
+      }
+      const asText = el("button", { type: "button", className: "link", textContent: w.values_as_text,
+        title: w.tip_values_as_text, disabled: !can });
+      asText.addEventListener("click", () => {
+        (state.valuesAsText = state.valuesAsText || new Set()).add(key);
+        showValueObject(p.address, { keep: true });
+      });
+      td.append(el("div", { className: "boxes" }, ...boxes), asText);
+    }
+  } else if (r.kind === "link") {
+    td.append(valueLink(p, r, shown, can, tip, save));
+  } else if (r.kind === "part") {
+    const b = el("button", { type: "button", className: "chip", disabled: !r.to, title: w.tip_values_part,
+      textContent: `${w.values_open_part} · ${r.type}` });
+    b.addEventListener("click", () => openValue(r.to, true));
+    td.append(b);
+  } else if (r.kind === "list" || r.kind === "map" || r.kind === "pair") {
+    td.append(el("div", { className: "muted small", textContent: fill(w.values_items, { n: r.count }) }));
+    const items = (r.items || []).filter((x) => x.to);
+    if (items.length) {
+      const list = el("div", { className: "values-items" });
+      for (const x of items.slice(0, VALUE_ITEMS_SHOWN)) {
+        const b = el("button", { type: "button", className: "chip", title: x.part ? w.tip_values_part : w.tip_values_open,
+          textContent: `${x.path.slice(r.prop.length)}  ${x.part ? x.class : shortAddress(x.to)}` });
+        b.addEventListener("click", () => openValue(x.to, true));
+        list.append(b);
+      }
+      if (items.length > VALUE_ITEMS_SHOWN) list.append(el("span", { className: "muted small", textContent: "…" }));
+      td.append(list);
+    }
+    if (text !== null && text !== undefined) {
+      const area = el("textarea", { className: "values-written", value: text, disabled: !can, title: tip, spellcheck: false,
+        rows: Math.min(8, Math.max(2, Math.ceil(text.length / 90))) });
+      area.setAttribute("aria-label", r.label);
+      area.addEventListener("change", () => save(area.value));
+      td.append(area);
+    }
+  } else {
+    td.append(el("span", { className: "muted", title: w.values_kind_fixed, textContent: r.value || w.values_kind_fixed }));
+  }
+  if (r.edited) {
+    td.classList.add("edited");
+    const reset = el("button", { type: "button", className: "link", textContent: w.values_reset, title: w.tip_values_reset,
+      disabled: !state.mod });
+    reset.addEventListener("click", () => resetValue(p, r));
+    td.append(el("div", { className: "was" }, r.edited.removed ? w.values_removed : fill(w.values_game, { value: valueGameText(r) }), " ", reset));
+  }
+  return el("tr", {}, th, td);
+}
+
+// The words a game text key shows, one box per language, each named in its own words (StudioApi.value_words /
+// value_words_set, LittleGroove's "Save text": rename a unit in every language). Languages left as they are keep the
+// game's words. `saved()`: what to show again once saved (the All values page; the Maps tab's town name). `kind`
+// "map": kept in the map project, as the Maps tab's changes are (a town's name), else in the unit mod.
+function wordsPanel(key, saved, kind = "mod") {
+  const w = state.words, has = kind === "map" ? Boolean(state.map || state.mod) : Boolean(state.mod);
+  const box = el("div", { className: "values-words-box" },
+    el("p", { className: "muted small", textContent: w.values_words_help }));
+  api().value_words(key, kind).then((res) => {
+    if (!res.table) { box.append(el("p", { className: "muted small", textContent: w.values_words_no_text })); return; }
+    const inputs = {}, grid = el("div", { className: "values-words-grid" });
+    for (const x of res.words) {
+      const name = (state.languages.find((l) => l.code === x.lang) || {}).name || x.lang;
+      const input = el("input", { type: "text", value: x.mine ?? x.game ?? "", className: "values-text",
+        title: fill(w.tip_values_words_lang, { lang: name }), disabled: !has });
+      input.setAttribute("aria-label", name);
+      if (x.mine !== null && x.mine !== undefined && x.mine !== x.game) input.classList.add("changed");
+      inputs[x.lang] = input;
+      grid.append(el("span", { className: "small", textContent: name, title: fill(w.tip_values_words_lang, { lang: name }) }), input);
+    }
+    const send = async (texts, word) => {
+      try { await api().value_words_set(key, texts, kind); } catch (err) { problem(err); return; }
+      say(fill(word, { key }), "ok");
+      if (saved) saved();
+    };
+    const save = el("button", { type: "button", className: "small primary", textContent: w.values_words_save,
+      title: w.tip_values_words_save, disabled: !has });
+    save.addEventListener("click", () => send(Object.fromEntries(Object.entries(inputs).map(([k, i]) => [k, i.value])),
+      w.values_words_saved));
+    const back = el("button", { type: "button", className: "small ghost", textContent: w.values_words_reset,
+      title: w.tip_values_words_reset, disabled: !has || !res.words.some((x) => x.mine !== null && x.mine !== undefined) });
+    back.addEventListener("click", () => send(Object.fromEntries(res.words.map((x) => [x.lang, x.game || ""])),
+      w.values_words_back));
+    box.append(grid, el("div", { className: "actions" }, save, back));
+    if (!has) box.append(el("p", { className: "muted small", textContent: w.no_mod }));
+  }).catch(problem);
+  return box;
+}
+
+// A link: the address it points at, a list to pick another from (StudioApi.value_links, filled as you type), and Open
+function valueLink(p, r, shown, can, tip, save) {
+  const w = state.words;
+  const id = `values-links-${++valueLinksAsk}`;
+  const options = el("datalist", { id });
+  const b = el("input", { type: "text", value: shown || "", className: "values-text", disabled: !can, title: tip,
+    placeholder: w.values_link_none });
+  b.setAttribute("list", id);
+  b.setAttribute("aria-label", r.label);
+  let timer = null, asked = 0;
+  const suggest = () => {
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const ask = ++asked;
+      let res;
+      try { res = await api().value_links(p.address, r.prop, b.value.trim().split("/").pop(), state.lang); } catch { return; }
+      if (ask !== asked) return;
+      options.replaceChildren(...res.objects.map((o) => el("option", { value: o.address,
+        label: [o.name, o.class].filter(Boolean).join(" · ") })));
+    }, 250);
+  };
+  b.addEventListener("focus", suggest);
+  b.addEventListener("input", suggest);
+  b.addEventListener("change", () => save(b.value.trim()));
+  const target = shown || r.to;
+  const open = el("button", { type: "button", className: "ghost", textContent: w.values_open, title: w.tip_values_open,
+    disabled: !target });
+  open.addEventListener("click", () => openValue(target, true));
+  return el("div", { className: "values-link" }, b, options, open);
+}
+
+async function saveValue(p, r, value) {
+  const w = state.words;
+  let res;
+  try { res = await api().value_edit(p.address, r.prop, value, state.lang); } catch (err) {
+    problem(err);
+    showValueObject(p.address, { keep: true });  // the box shows what's saved again
+    return;
+  }
+  renderValuePage(res.page);
+  const after = res.page.rows.find((x) => x.prop === r.prop);
+  say(fill(after && after.edited ? w.values_saved : w.values_same, { name: r.label }), "ok");
+}
+
+async function resetValue(p, r) {
+  let res;
+  try { res = await api().value_reset(p.address, r.prop, state.lang); } catch (err) { problem(err); return; }
+  renderValuePage(res.page);
+  say(fill(state.words.values_same, { name: r.label }), "ok");
 }
 
 // Duplicate map (maps.js) made a new map: it may have made a map project for it too, which the header's menu shows
@@ -2513,6 +2937,8 @@ async function start() {
   $("tab-units").addEventListener("click", () => showView("units"));
   $("tab-economy").addEventListener("click", () => showView("economy"));
   $("tab-ai").addEventListener("click", () => showView("ai"));
+  $("tab-values").addEventListener("click", () => showView("values"));
+  valuesEvents();
   $("ai-script").addEventListener("change", (e) => { if (e.target.value) showAIScript(e.target.value); });
   $("ai-script-copy").addEventListener("click", copyAIScript);
   $("tab-maps").addEventListener("click", () => showView("maps"));

@@ -216,6 +216,9 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   the same on every PC (`R2000001`, `R2000002`, …). A key the game or another mod in the set already uses is an error
   that names both.
 - Existing game texts can be overridden by name, `game:M_D_01`, or by number, `game:0x…`, for a key that isn't a name.
+- The Studio keeps the game texts it changes (the All values tab's "Change the words…", a town's name on the Maps tab)
+  in `text/studio-words.<table>.csv`, a `game:<key>` row each with every language written: a missing cell would give
+  that language the English words.
 
 ## 7. Assets
 
@@ -711,6 +714,33 @@ camera = -0.5         # radians, optional: its warm-up camera turned round it, a
   fine (the owner, 2026-10-02: an HQ there works, and supply trucks drive through woods; only tanks and other
   vehicles with flags 11/21/55 are kept out). One more than about 30,000 map units from a road gets a warning: 95% of
   the shipped starting points are that close, a pattern, not a rule.
+
+### The map's own items' values: `maps/<map pack>/items.toml` (built: `rusemod.scenario`; not yet seen in the game)
+
+A mod changes some values of the map's own design items, one table each (the Studio's Maps tab: pick an item, then
+This item's values; LittleGroove's Details panel):
+
+```toml
+[[set]]
+file = "leveldesign_normal.scenario"   # which of the map's scenarios, as for [[move]]
+item = 41                              # the item's number in that file, as for [[move]]
+kind = "Spawn"                         # Spawn, CircularZone or RectangleZone: what it must be there
+camp = 2                               # a spawn: who gets it, -1 neutral or one of the scenario's camps (0 up)
+trucks = 40                            # a supply depot: its trucks, 0 to 1000 (the shipped depots have 15 to 72)
+# radius = 75000.0                     # a circle zone: its radius, in map units
+# width = 120000.0                     # a rectangle zone: its width and height, in map units
+# height = 80000.0
+```
+
+- A file of its own beside `scenario.toml`: the build applies it after that file's moves, removes, starting points
+  and spawns, to the map's own items only (numbered as for `[[move]]`).
+- Each value is written in the type the item already has it in. A spawn without a camp gets one, and a supply depot
+  without trucks gets them, as new spawns get them; any other value an item hasn't got is refused.
+- `kind` guards as it does for a move. A skirmish scenario's items stay neutral: a camp other than -1 there is
+  refused, as it is for a new spawn.
+- Zones are used by the scenario's mission (where things happen): a size changed here changes where that happens.
+- A town's name on the map is one of the game's texts: the Studio changes its words in every language with a
+  `game:<key>` row (§6) in the map project's `text/studio-words.<table>.csv`.
 
 ### How many players: `maps/<map pack>/map.toml`
 
