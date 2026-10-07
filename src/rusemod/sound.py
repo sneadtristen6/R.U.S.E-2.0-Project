@@ -7,8 +7,9 @@ build makes the game's kind of file from it, and the small description the game 
 that has one for that sound.
 
 Reading follows RugnirViking's moddingSuite (GPL-2.0-or-later: its EssReader), widened to any number of channels;
-the writer is ours. What `encode` makes, `decode` plays back sample for sample (tests/test_sound.py). Not heard in the
-game yet (2026-10-07).
+the writer is ours. What `encode` makes, `decode` plays back sample for sample (tests/test_sound.py). Heard in the game
+(the sound test, 2026-10-07): the main menu song, the songs of battle lists 1 and 2 and the Sherman's move lines,
+each replaced this way; the rest (the third list, missions' songs, jingles, other voices) not tried yet.
 """
 from __future__ import annotations
 

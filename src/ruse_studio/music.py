@@ -1,7 +1,8 @@
 """The Music tab's calls (StudioApi's MusicCalls; rusemod.sound): the game's songs by where they play, each song's
 sound for the page to play, and the current mod's own songs, saved from the page's editor as
 files/replace/<the song's path in ZZ_Win.dat>.wav. The page makes the WAV (the window reads MP3, OGG, FLAC and WAV
-itself, and cuts, fades and sets the volume): nothing to install. Not tried in the game yet (2026-10-07)."""
+itself, and cuts, fades and sets the volume): nothing to install. Tried in the game (2026-10-07): songs replaced
+this way in the main menu and battle lists 1 and 2 play (rusemod.sound)."""
 from __future__ import annotations
 
 import base64

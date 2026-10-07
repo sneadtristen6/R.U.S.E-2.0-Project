@@ -258,7 +258,8 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   *Bring back* asks that Blender to save the paint (it also saves on Ctrl+S, on its "Save paint" button and every
   10 seconds) and copies the pictures painted since into the mod's `files/replace`. The game's models never go into
   a mod.
-- **Songs and sounds (2026-10-07, `rusemod.sound`; not tried in the game yet):** `files/replace/<the sound's path in
+- **Songs and sounds (2026-10-07, `rusemod.sound`; heard in the game: the main menu song, the songs of battle lists
+  1 and 2 and a unit's voice lines, each replaced this way; the rest not tried yet):** `files/replace/<the sound's path in
   ZZ_Win.dat>.wav` plays in place of the game's sound, e.g.
   `files/replace/gen_sound/ww2/sons/atp_music/battle1.ess.wav` for the battle song "Battle 1". A 16-bit WAV, any
   length; one channel, two or six (as the game's own sounds have), at its own rate. The build makes the game's kind
