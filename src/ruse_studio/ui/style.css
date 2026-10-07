@@ -616,3 +616,8 @@ tr.edited .flag { border-color: var(--accent); }
 .me-row, .me-shape { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 10px 0; }
 .me-row input[type="number"] { width: 80px; }
 .me-shape label { display: flex; gap: 6px; align-items: center; }
+/* a unit's voice lines on its page (sound.js voicesGroup): one folded section per moment */
+.voices details.voice-moment { margin: 4px 0; max-width: 820px; }
+.voices details.voice-moment > summary { cursor: pointer; padding: 6px 10px; border: 1px solid var(--line);
+  border-radius: var(--radius); background: var(--panel); display: flex; gap: 8px; align-items: center; }
+.voices details.voice-moment[open] > summary { margin-bottom: 6px; }

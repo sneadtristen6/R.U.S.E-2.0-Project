@@ -50,7 +50,7 @@ class Calls(MusicCalls):
         return self.game
 
     def _open(self):
-        return mock.Mock(close=lambda: None)
+        return mock.Mock(close=lambda: None, of_class=lambda cls: [])  # no voice lines in this made-up game
 
     def _mod_dir(self, kind="mod"):
         return self.mod
@@ -144,6 +144,109 @@ class Music(unittest.TestCase):
         from ruse_studio.api import StudioApi
         names = set(dir(type(page_api(StudioApi(home=self.d.name)))))
         self.assertLessEqual({"music", "music_sound", "music_save", "music_reset"}, names)
+
+
+V = "gen_sound\\ww2\\sons\\generated\\acknows\\"
+AT = "$/GFX/Everything/AcknowManager:AcknowUnitContainer.Content["
+U = "$/GFX/Everything/Descriptor_Unit_"
+LINES = [  # (nation, kind, file stem); nation 0 and kind 0 are left out of the data, as the game's data does
+    (0, 1, "EU_MediumTank_Move_1"), (0, 1, "EU_MediumTank_Move_2"), (0, 1, "EU_MediumTank_Spawn_1"),
+    (1, 1, "Allemagne_MediumTank_Move_1"), (0, 0, "EU_LightTank_Move_1")]
+UNITS = {U + "M4_Sherman": ("TUniteAuSolDescriptor", 0, 1), U + "M3_Lee": ("TUniteAuSolDescriptor", 0, 1),
+         U + "Panzer_IV": ("TUniteAuSolDescriptor", 1, 1), U + "M3A1_Stuart": ("TUniteAuSolDescriptor", 0, 0),
+         U + "Caserne_US": ("TBatimentDescriptor", 0, 0), U + "M3_Lee_cinematique": ("TUniteAuSolDescriptor", 0, 1)}
+HIDDEN = {U + "M3_Lee_cinematique"}  # in no build menu (all ShowInMenu 0), as the game's cutscene copy
+
+
+class VoiceIndex:
+    """The few things unit_voices asks the game index."""
+
+    def of_class(self, cls):
+        if cls == "TAcknowUnitDescriptor":
+            return [{"address": f"{AT}{i}]", "values": [(p, n, None) for p, n in (
+                ("Nationalite", nation), ("TypeSpecific", kind), ("Version", int(stem[-1]))) if n]}
+                for i, (nation, kind, stem) in enumerate(LINES)]
+        if cls == "TSoundStream":
+            return [{"address": f"{AT}{i}].FXName.TheSoundStream",
+                     "values": [("FileName", None, f"WW2\\Sons\\Generated\\Acknows\\{stem}.ogg")]}
+                    for i, (_n, _k, stem) in enumerate(LINES)]
+        return [{"address": a, "values": [(p, n, None) for p, n in (
+            ("Nationalite", nation), ("AcknowUnitType", kind), ("ShowInMenu[0]", 0.0 if a in HIDDEN else 1.0),
+            ("ShowInMenu[1]", 0.0)) if n is not None and (n or p.startswith("Show"))]}
+            for a, (c, nation, kind) in UNITS.items() if c == cls]
+
+    def show(self, address):
+        if address not in UNITS:
+            raise KeyError(address)
+        c, nation, kind = UNITS[address]
+        return {"class": c, "values": [(p, n, None) for p, n in (("Nationalite", nation),
+                                                                 ("AcknowUnitType", kind)) if n]}
+
+    def close(self):
+        pass
+
+
+class VoiceCalls(Calls):
+    def __init__(self, d):
+        from fixtures import make_edat
+        super().__init__(d)
+        zz = self.game / "Data" / "PC" / "190852" / "ZZ_Win.dat"
+        self.raw.update({V + stem.lower() + ".ess": song(0.3, 1, 44100) for _n, _k, stem in LINES})
+        songs = [("file", m[len(D):], b) for m, b in self.raw.items() if m.startswith(D)]
+        voices = [("file", m[len(V):], b) for m, b in self.raw.items() if m.startswith(V)]
+        zz.write_bytes(make_edat([("dir", D, songs), ("dir", V, voices)]))
+
+    def _open(self):
+        return VoiceIndex()
+
+    def _edits(self):
+        return None
+
+    @staticmethod
+    def _resolve(edits, address):
+        return address, None
+
+    def _names(self, ix, addresses, lang):
+        return {a: a.rsplit("_", 1)[-1].upper() for a in addresses}
+
+
+class Voices(unittest.TestCase):
+    def setUp(self):
+        self.d = tempfile.TemporaryDirectory()
+        self.addCleanup(self.d.cleanup)
+        for p in patched():
+            p.start()
+            self.addCleanup(p.stop)
+        self.calls = VoiceCalls(self.d.name)
+
+    def test_a_units_lines_by_moment(self):
+        got = self.calls.unit_voices(U + "M4_Sherman", "us")
+        self.assertEqual([(m["id"], [x["name"] for x in m["lines"]]) for m in got["moments"]],
+                         [("Move", ["Move 1", "Move 2"]), ("Spawn", ["Spawn 1"])])  # the US medium tanks' only
+        self.assertEqual((got["shared"], got["hidden"]), (["LEE"], 1))  # the cutscene's copy: counted, not named
+        self.assertFalse(got["copy"])
+        line = got["moments"][0]["lines"][1]
+        self.assertEqual((line["member"], line["channels"], line["rate"], line["seconds"], line["mine"]),
+                         (V + "eu_mediumtank_move_2.ess", 1, 44100, 0.3, False))
+        self.assertEqual([m["id"] for m in self.calls.unit_voices(U + "Panzer_IV")["moments"]], ["Move"])
+        self.assertEqual(self.calls.unit_voices(U + "M3A1_Stuart")["moments"][0]["lines"][0]["member"],
+                         V + "eu_lighttank_move_1.ess")  # kind 0, nation 0: both left out of the data
+        self.assertEqual(self.calls.unit_voices(U + "Caserne_US")["moments"], [])  # a building: no voice
+        self.assertEqual(self.calls.unit_voices(U + "Nope")["moments"], [])
+
+    def test_a_line_saved_and_put_back(self):
+        member = V + "eu_mediumtank_move_2.ess"
+        self.assertEqual(self.calls.music_sound(member)["kind"], "ess")
+        wav = sound.write_wav([((i * 7) % 900) - 450 for i in range(44100)], 1, 44100)
+        res = self.calls.music_save(member, base64.b64encode(wav).decode(), 0, 1)
+        self.assertEqual(res["seconds"], 1.0)
+        self.assertEqual(sound.mod_sounds(self.calls.mod), {member: Path(res["saved"])})
+        line = self.calls.unit_voices(U + "M4_Sherman")["moments"][0]["lines"][1]
+        self.assertTrue(line["mine"])
+        self.calls.music_reset(member)
+        self.assertFalse(self.calls.unit_voices(U + "M4_Sherman")["moments"][0]["lines"][1]["mine"])
+        with self.assertRaises(MusicError):  # not a song nor a voice line of the game's
+            self.calls.music_save(V + "nope.ess", base64.b64encode(wav).decode(), 0, 1)
 
 
 if __name__ == "__main__":

@@ -1506,6 +1506,7 @@ async function showUnit(address, via) {
   }
   if (u.has_weapons && u.editable) parts.push(weaponsGroup(u));
   if (u.can_upgrade) parts.push(upgradeGroup(u));
+  if (u.named || u.new) parts.push(window.SoundView.voicesGroup(u, w, state.lang));  // what it says (sound.js)
   if (u.parts.length) {
     const list = el("ul", { className: "parts" });
     for (const p of u.parts) {

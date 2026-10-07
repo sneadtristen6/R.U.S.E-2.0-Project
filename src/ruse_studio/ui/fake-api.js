@@ -1221,6 +1221,62 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     music_play_game: "游戏原曲", music_use: "使用", tip_music_use: "把你的音乐保存到当前模组", music_making: "正在制作你的音乐…",
     music_saving: "保存中… {n} %", music_saved: "{name}：你的音乐已保存到模组（{file}）。"
   });
+  // a unit's voice lines (words.toml voice_*)
+  Object.assign(words.us, { voice_hidden: "{n} unit(s) no build menu shows" });
+  Object.assign(words.us, { voice_saved: "{name}: your line is saved in the mod ({file}).",
+    voice_back_done: "{name}: the game's line again." });
+  Object.assign(words.us, {
+    voice_title: "Voice", voice_own: "What this unit says in the game.",
+    voice_shared: "What this unit says in the game. Units of its nation and kind share these lines, so a line changed here is heard from them too: {units}.",
+    voice_copy: "A copy speaks with the lines of the unit it copies; a line changed here is heard from that unit too.",
+    voice_editor_title: "Your line for {name}",
+    voice_editor_lead: "The game's line is {len} long. Yours can be any length: the Studio makes it the game's format.",
+    voice_moment_stop: "Stop", voice_moment_move: "Move", voice_moment_impossiblemove: "Can't move there",
+    voice_moment_attack: "Attack", voice_moment_impossibleattack: "Can't attack that",
+    voice_moment_attacked: "Attacked", voice_moment_heavysplash: "Heavy splash", voice_moment_revealed: "Revealed",
+    voice_moment_fire: "Fire", voice_moment_targetdestroyed: "Target destroyed",
+    voice_moment_uberstressed: "Very stressed", voice_moment_spawn: "Spawn", voice_moment_fighting: "Fighting",
+    voice_moment_decroche: "Break off", voice_moment_gohome: "Go home", voice_moment_abort: "Abort",
+    voice_moment_outofammo: "Out of ammo", voice_moment_blind: "Blind",
+    voice_moment_attackground: "Attack the ground", voice_moment_ambush: "Ambush", voice_moment_capture: "Capture",
+    voice_moment_recon: "Recon"
+  });
+  Object.assign(words.fr, { voice_hidden: "{n} unité(s) absente(s) des menus de production" });
+  Object.assign(words.fr, { voice_saved: "{name} : votre réplique est enregistrée dans le mod ({file}).",
+    voice_back_done: "{name} : de nouveau la réplique du jeu." });
+  Object.assign(words.fr, {
+    voice_title: "Voix", voice_own: "Ce que dit cette unité dans le jeu.",
+    voice_shared: "Ce que dit cette unité dans le jeu. Les unités de sa nation et de son type partagent ces répliques : une réplique changée ici s'entend aussi chez elles : {units}.",
+    voice_copy: "Une copie parle avec les répliques de l'unité qu'elle copie ; une réplique changée ici s'entend aussi chez cette unité.",
+    voice_editor_title: "Votre réplique pour {name}",
+    voice_editor_lead: "La réplique du jeu dure {len}. La vôtre peut avoir n'importe quelle durée : le Studio la met au format du jeu.",
+    voice_moment_stop: "Arrêt", voice_moment_move: "Déplacement",
+    voice_moment_impossiblemove: "Déplacement impossible", voice_moment_attack: "Attaque",
+    voice_moment_impossibleattack: "Attaque impossible", voice_moment_attacked: "Attaqué",
+    voice_moment_heavysplash: "Gros impact", voice_moment_revealed: "Repéré", voice_moment_fire: "Feu",
+    voice_moment_targetdestroyed: "Cible détruite", voice_moment_uberstressed: "Très stressé",
+    voice_moment_spawn: "Apparition", voice_moment_fighting: "Combat", voice_moment_decroche: "Décrochage",
+    voice_moment_gohome: "Retour à la base", voice_moment_abort: "Annulation",
+    voice_moment_outofammo: "Plus de munitions", voice_moment_blind: "Aveugle",
+    voice_moment_attackground: "Attaque au sol", voice_moment_ambush: "Embuscade", voice_moment_capture: "Capture",
+    voice_moment_recon: "Reconnaissance"
+  });
+  Object.assign(words.sc, { voice_hidden: "{n} 个不在任何生产菜单中的单位" });
+  Object.assign(words.sc, { voice_saved: "{name}：你的台词已保存到模组（{file}）。",
+    voice_back_done: "{name}：已恢复为游戏原台词。" });
+  Object.assign(words.sc, {
+    voice_title: "语音", voice_own: "这个单位在游戏中说的话。",
+    voice_shared: "这个单位在游戏中说的话。同国家、同类型的单位共用这些台词，所以在这里改掉的台词在它们身上也会听到：{units}。",
+    voice_copy: "复制的单位使用原单位的台词；在这里改掉的台词在原单位身上也会听到。", voice_editor_title: "替换 {name} 的台词",
+    voice_editor_lead: "游戏原台词长 {len}。你的可以是任意长度：Studio 会把它转成游戏的格式。", voice_moment_stop: "停止", voice_moment_move: "移动",
+    voice_moment_impossiblemove: "无法移动到那里", voice_moment_attack: "攻击", voice_moment_impossibleattack: "无法攻击",
+    voice_moment_attacked: "遭到攻击", voice_moment_heavysplash: "重型爆炸", voice_moment_revealed: "被发现",
+    voice_moment_fire: "开火", voice_moment_targetdestroyed: "目标摧毁", voice_moment_uberstressed: "高度紧张",
+    voice_moment_spawn: "出现", voice_moment_fighting: "交战", voice_moment_decroche: "脱离", voice_moment_gohome: "返航",
+    voice_moment_abort: "中止", voice_moment_outofammo: "弹药耗尽", voice_moment_blind: "盲目",
+    voice_moment_attackground: "对地攻击", voice_moment_ambush: "伏击", voice_moment_capture: "占领",
+    voice_moment_recon: "侦察"
+  });
   // [prop, its name, type, the game's value, the Nuclear mode's when it differs]: some of rusemod.economy's values
   const ECONOMY = [
     ["money", [["QteDeviseInitiale", "Starting money", "int32", 200], ["TempsGenAutoDevises", "Income: seconds between payments", "int32", 4],
@@ -1248,6 +1304,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ["end", [["gen_sound\\ww2\\sons\\jingles\\jingle-bigvictory.ess", "Big victory", 8.1, [], []]]],
     ["missions", [[MUSIC_DIR + "tunisie.ess", "Tunisie", 60.1, [], [{ map: "2. TAKING COMMAND!", parts: ["chapter1", "chapter3"] }]]]],
     ["unused", [[MUSIC_DIR + "lose1.ess", "Lose", 11.8, [], []]]]];
+  const VOICE_DIR = "gen_sound\\ww2\\sons\\generated\\acknows\\";
+  const VOICES = [["Stop", 1, 1.2], ["Move", 4, 1.6], ["Attack", 4, 1.8], ["Fire", 4, 1.1], ["Spawn", 3, 2.0]];
   const musicMine = new Map();  // member -> the mod's song (an address the page can fetch)
   const musicUpload = [];
   // a made-up "game song": a soft chord of `seconds` as a WAV the page can fetch
@@ -1697,8 +1755,17 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       music: async () => ({ mod: Boolean(current), groups: MUSIC.map(([id, songs]) => ({ id, songs: songs.map(
         ([member, name, seconds, also, maps]) => ({ member, name, seconds, channels: 2, rate: 48000, also, maps,
           mine: musicMine.has(member) })) })) }),
+      // a unit's voice lines (StudioApi.unit_voices): the US medium tanks' set, for any tank; none for the rest
+      unit_voices: async (address) => {
+        if (!/Sherman|Lee|M4|M3/.test(address)) return { moments: [], shared: [], copy: false };
+        return { copy: false, shared: ["LEE"], hidden: 3, moments: VOICES.map(([id, n, seconds]) => ({ id, lines: Array.from(
+          { length: n }, (_, i) => { const member = `${VOICE_DIR}eu_mediumtank_${id.toLowerCase()}_${i + 1}.ess`;
+            return { member, name: `${id} ${i + 1}`, version: i + 1, seconds, channels: 1, rate: 44100,
+              mine: musicMine.has(member), also: [], maps: [] }; }) })) };
+      },
       music_sound: async (member, which = "game") => {
-        const song = MUSIC.flatMap(([, s]) => s).find((s) => s[0] === member);
+        const song = MUSIC.flatMap(([, s]) => s).find((s) => s[0] === member)
+          || (member.startsWith(VOICE_DIR) ? [member, member.slice(VOICE_DIR.length), 2] : null);
         if (!song) throw new Error(`${member} isn't one of the game's songs`);
         if (which === "mod") {
           if (!musicMine.has(member)) throw new Error("This mod has no song of its own here.");

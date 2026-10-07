@@ -19,6 +19,9 @@ from rusemod.terrain import map_list
 
 # where a song plays, in the order the tab shows them (a song shows under the first that fits, the rest as "also")
 GROUPS = ("menu", "credits", "playlist0", "playlist1", "playlist2", "end", "goals", "missions", "other", "unused")
+VOICES_AT = "$/GFX/Everything/AcknowManager:AcknowUnitContainer.Content["  # the units' voice lines
+UNITS_AT = "$/GFX/Everything/Descriptor_Unit_"
+VOICE_CLASSES = ("TUniteAuSolDescriptor", "TInfanterieDescriptor", "TAvionDescriptor")  # what has AcknowUnitType
 
 
 class MusicError(Exception):
@@ -102,12 +105,67 @@ class MusicCalls:
             self._music_kept = (key, out)
             return out
 
+    def _voice_table(self) -> dict:
+        """The units' voice lines, once per game build: {"lines": [{member, nation, kind, moment, version}] in the
+        data's order, "units": {(nation, kind): [unit address, ...]}}. A unit speaks the lines of its nation
+        (Nationalite) and kind (AcknowUnitType = a line's TypeSpecific); a line's moment is the word in its file's
+        name (EU_MediumTank_Move_1: Move), as the game names them."""
+        _game, _zz, key = self._music_game()
+        with self._music_lock:
+            kept = getattr(self, "_voices_kept", None)
+            if kept is not None and kept[0] == key:
+                return kept[1]
+            ix = self._open()
+            try:
+                found: dict = {}
+                for o in ix.of_class("TAcknowUnitDescriptor"):
+                    if o["address"].startswith(VOICES_AT):
+                        v = {p: n for p, n, _t in o["values"]}
+                        found[o["address"]] = {"nation": int(v.get("Nationalite") or 0),
+                                               "kind": int(v.get("TypeSpecific") or 0),
+                                               "version": int(v.get("Version") or 0)}
+                lines = []
+                for o in ix.of_class("TSoundStream"):
+                    owner = o["address"].rsplit(".FXName.", 1)[0]
+                    file = next((t for p, _n, t in o["values"] if p == "FileName" and t), None)
+                    if owner in found and file:
+                        stem = file.replace("/", "\\").rsplit("\\", 1)[-1].rsplit(".", 1)[0]
+                        bits = stem.rsplit("_", 2)
+                        lines.append({**found[owner], "member": sound.member_of(file),
+                                      "moment": bits[1] if len(bits) == 3 else stem})
+                units: dict = {}
+                for cls in VOICE_CLASSES:
+                    for o in ix.of_class(cls):
+                        a = o["address"]
+                        if a.startswith(UNITS_AT) and ":" not in a:
+                            v = {p: n for p, n, _t in o["values"]}
+                            shown = any(n for p, n in v.items() if p.startswith("ShowInMenu") and n)  # a menu shows it
+                            units.setdefault((int(v.get("Nationalite") or 0), int(v.get("AcknowUnitType") or 0)),
+                                             []).append((a, shown))
+            finally:
+                ix.close()
+            table = {"lines": lines, "units": units}
+            self._voices_kept = (key, table)
+            return table
+
     def _music_song(self, member: str) -> dict:
-        song = self._music_songs().get(str(member).lower())
-        if song is None:
+        """One of the game's songs or voice lines, with its format: what the page may play, replace or put back."""
+        member = str(member).lower()
+        song = self._music_songs().get(member)
+        if song is not None:
+            return song
+        line = next((x for x in self._voice_table()["lines"] if x["member"] == member), None)
+        if line is None:
             # not a game rule: the page asked for a song the game hasn't got
             raise MusicError(f"{member} isn't one of the game's songs")
-        return song
+        _game, zz, _key = self._music_game()
+        with Edat.open(str(zz)) as arc:
+            e = arc.entry(member)
+            if e is None:  # not a game rule: the data names a sound this game build hasn't got
+                raise MusicError(f"{member} isn't in this game build")
+            h = sound.header(bytes(arc.raw[arc.data_offset + e.offset:arc.data_offset + e.offset + 20]))
+        return {**line, "name": f"{line['moment']} {line['version']}", "channels": h["channels"], "rate": h["rate"],
+                "frames": h["frames"]}
 
     def _music_file(self, member: str) -> Path | None:
         """The current mod's own song for `member` (files/replace/<member>.wav), whether made yet or not."""
@@ -207,6 +265,53 @@ class MusicCalls:
             tmp.replace(target)
         up.unlink(missing_ok=True)
         return {"saved": str(target), "seconds": round(len(pcm) / channels / rate, 1)}
+
+    def unit_voices(self, address: str, lang: str = "base") -> dict:
+        """A unit's voice lines for its page: by moment (the game's own word for it: Move, Attack, Spawn...), each
+        line with its length, format and whether the current mod has its own; `shared`: the other units that speak the
+        same lines and that a build menu shows (in `lang`), `hidden`: how many others share them that no build menu
+        shows (a cutscene's copy, placeholders: missions may still use them), `copy`: True for a modder's copied unit
+        (it speaks its source's lines). Empty `moments` for what has no voice (buildings)."""
+        try:
+            edits = self._edits()
+        except Exception:  # a mod file that can't be read: the game's own unit is still shown
+            edits = None
+        real, new = self._resolve(edits, address)
+        real = real.split(":", 1)[0]
+        ix = self._open()
+        try:
+            try:
+                u = ix.show(real)
+            except KeyError:
+                return {"moments": [], "shared": [], "copy": new is not None}
+            if u["class"] not in VOICE_CLASSES:
+                return {"moments": [], "shared": [], "copy": new is not None}
+            v = {p: n for p, n, _t in u["values"]}
+            key = (int(v.get("Nationalite") or 0), int(v.get("AcknowUnitType") or 0))
+            table = self._voice_table()
+            others = [a for a, shown in table["units"].get(key, []) if a != real and shown]
+            hidden = sum(1 for a, shown in table["units"].get(key, []) if a != real and not shown)
+            names = self._names(ix, others, lang) if others else {}
+        finally:
+            ix.close()
+        _game, zz, _key = self._music_game()
+        moments: dict = {}
+        with Edat.open(str(zz)) as arc:
+            for line in table["lines"]:
+                if (line["nation"], line["kind"]) != key:
+                    continue
+                e = arc.entry(line["member"])
+                if e is None:  # not a game rule: the data names a sound this game build hasn't got
+                    continue
+                h = sound.header(bytes(arc.raw[arc.data_offset + e.offset:arc.data_offset + e.offset + 20]))
+                mine = self._music_file(line["member"])
+                moments.setdefault(line["moment"], []).append({
+                    "member": line["member"], "name": f"{line['moment']} {line['version']}", "version": line["version"],
+                    "seconds": round(h["frames"] / h["rate"], 1), "channels": h["channels"], "rate": h["rate"],
+                    "mine": mine is not None and mine.is_file(), "also": [], "maps": []})
+        return {"moments": [{"id": m, "lines": lines} for m, lines in moments.items()],
+                "shared": sorted({names.get(a, a.rsplit("/", 1)[-1]) for a in others}), "hidden": hidden,
+                "copy": new is not None}
 
     def music_reset(self, member: str) -> dict:
         """Take the current mod's own song out: the game's plays again."""

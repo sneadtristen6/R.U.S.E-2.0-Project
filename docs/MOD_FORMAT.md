@@ -270,7 +270,11 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   the campaign chapters and Operations that name them, and the few no part of the game plays), plays each one, and
   replaces it in a small editor of its own: a sound file dropped or chosen (the Studio's window reads WAV, MP3, OGG
   and FLAC itself), cut with two handles, faded in and out, made louder or quieter (or as loud as the game's), heard,
-  then *Use this* saves it in the mod as above, in the game song's own format. Nothing to install.
+  then *Use this* saves it in the mod as above, in the game song's own format. Nothing to install. A unit's page has
+  a **Voice** section the same way: what the unit says in the game, by moment (the game's own words for them: Move,
+  Attack, Spawn...), each line heard and replaced in the same editor. A unit speaks the lines of its nation and kind,
+  so the page names the units that share them (a line changed there is heard from all of them); a copied unit speaks
+  its source's.
 - `files/add/mods/<mod id>/<name>.<source ext>` adds a new file, referenced from `.rndf` by its game path.
 
 ## 8. Maps

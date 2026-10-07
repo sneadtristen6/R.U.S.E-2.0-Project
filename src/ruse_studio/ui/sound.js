@@ -181,7 +181,41 @@
     return { line: bits.join(" · "), maps };
   }
 
-  function row(s) {
+  // --- a unit's voice lines, on its page (app.js showUnit; StudioApi.unit_voices): by moment, folded, each line
+  // played and replaced like a song (the same editor) ---
+  function voicesGroup(u, words, lang) {
+    S.words = words;
+    S.lang = lang;
+    const group = el("div", { className: "group voices" });
+    const fillIn = async () => {
+      const w = W();
+      let v;
+      try { v = await api().unit_voices(u.address, lang); } catch (err) { problem(err); return; }
+      if (!v.moments.length) { group.replaceChildren(); return; }
+      const open = new Set([...group.querySelectorAll("details[open]")].map((d) => d.dataset.moment));
+      const parts = [el("h2", { textContent: w.voice_title })];
+      const sharing = [...v.shared, ...(v.hidden ? [fill(w.voice_hidden, { n: v.hidden })] : [])];
+      parts.push(el("p", { className: "muted small", textContent: v.copy ? w.voice_copy
+        : sharing.length ? fill(w.voice_shared, { units: sharing.join(", ") }) : w.voice_own }));
+      for (const m of v.moments) {
+        const list = el("div", { className: "music-list" });
+        for (const line of m.lines) {
+          line.name = `${w[`voice_moment_${m.id.toLowerCase()}`] || m.id} ${line.version}`;
+          list.append(row(line, fillIn));
+        }
+        const mine = m.lines.filter((l) => l.mine).length;
+        const head = el("summary", {}, `${w[`voice_moment_${m.id.toLowerCase()}`] || m.id} (${m.lines.length})`,
+          ...(mine ? [el("span", { className: "music-mine small", textContent: w.music_yours })] : []));
+        parts.push(el("details", { className: "voice-moment", open: open.has(m.id) }, head, list));
+        parts[parts.length - 1].dataset.moment = m.id;
+      }
+      group.replaceChildren(...parts);
+    };
+    fillIn();
+    return group;
+  }
+
+  function row(s, refresh = render) {
     const w = W();
     const playBtn = el("button", { type: "button", className: "small", textContent: "▶ " + w.music_play, title: w.tip_music_play });
     const name = el("span", { className: "music-name", textContent: s.name });
@@ -204,13 +238,17 @@
       mine.addEventListener("click", () => toggle(mine, "▶ " + w.music_play_yours, () => modBuffer(s.member)));
       back.addEventListener("click", async () => {
         stop();
-        try { await api().music_reset(s.member); say(fill(w.music_back_done, { name: s.name }), "ok"); render(); }
+        try {
+          await api().music_reset(s.member);
+          say(fill(s.version !== undefined ? w.voice_back_done : w.music_back_done, { name: s.name }), "ok");
+          refresh();
+        }
         catch (err) { problem(err); }
       });
       actions.append(mine, back);
     }
     playBtn.addEventListener("click", () => toggle(playBtn, "▶ " + w.music_play, () => gameBuffer(s.member)));
-    edit.addEventListener("click", () => openEditor(s));
+    edit.addEventListener("click", () => openEditor(s, refresh));
     return el("div", { className: "music-row" + (s.mine ? " edited" : "") },
       el("div", { className: "music-head" }, name, len, mark), sub, actions);
   }
@@ -230,12 +268,13 @@
   }
 
   // --- the editor ---
-  function openEditor(s) {
+  function openEditor(s, after = render) {
     const w = W();
     stop();
-    S.ed = { song: s, src: null, start: 0, end: 0, fadeIn: 0, fadeOut: 0, db: 0, game: null, drag: null };
-    $("me-title").textContent = fill(w.music_editor_title, { name: s.name });
-    $("me-lead").textContent = fill(w.music_editor_lead, { len: clock(s.seconds) });
+    S.ed = { song: s, src: null, start: 0, end: 0, fadeIn: 0, fadeOut: 0, db: 0, game: null, drag: null, after };
+    const voice = s.version !== undefined;  // a unit's voice line (voicesGroup), not a song
+    $("me-title").textContent = fill(voice ? w.voice_editor_title : w.music_editor_title, { name: s.name });
+    $("me-lead").textContent = fill(voice ? w.voice_editor_lead : w.music_editor_lead, { len: clock(s.seconds, true) });
     $("me-drop-text").textContent = w.music_drop;
     $("me-choose").textContent = w.music_choose;
     $("me-start-label").textContent = w.music_start;
@@ -423,8 +462,8 @@
         res = await api().music_save(ed.song.member, base64(wav.subarray(i * size, (i + 1) * size)), i, count);
       }
       $("music-editor").close();
-      say(fill(w.music_saved, { name: ed.song.name, file: res.saved }), "ok");
-      render();
+      say(fill(ed.song.version !== undefined ? w.voice_saved : w.music_saved, { name: ed.song.name, file: res.saved }), "ok");
+      ed.after();
     } catch (err) {
       $("me-note").textContent = (err && err.message) || String(err);
     } finally {
@@ -487,6 +526,7 @@
 
   window.SoundView = {
     decodeEss,
+    voicesGroup,
     open(words, lang) { S.words = words; S.lang = lang; render(); },
     setWords(words, lang) { S.words = words; S.lang = lang; render(); },
     modChanged() { render(); },
