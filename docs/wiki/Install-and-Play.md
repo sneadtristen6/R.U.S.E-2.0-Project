@@ -21,6 +21,10 @@
 2. The launcher takes `.rusemod` (made with RUSE Studio), `.rmod` (made for RUSE-Mod-Manager) and `.zip` (a zipped
    mod folder).
 3. It checks the file first. A file that isn't a mod, or that holds a program, is refused with the reason.
+4. An old mod that comes as the game's own files (`.dat` packs you were meant to copy into the game folder): click
+   **Convert an old mod...**, pick its folder, give it a name and click **Convert and add to the library**. The
+   launcher compares each pack with your game's clean files (your clean backup, when you've made one in Settings) and
+   keeps only what the mod changes. Your game folder isn't touched. It uses LittleGroove's converter.
 
 ## 3. Make a mod set
 
