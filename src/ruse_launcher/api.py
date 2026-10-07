@@ -244,6 +244,102 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
             raise LauncherError(str(exc)) from None
         return self._lists(mod=info)
 
+    # --- Convert an old mod: one that comes as the game's packs with its changes in them, to drop into the game folder,
+    # made into a mod the Launcher plays beside others (LittleGroove's Convert tab: his engine compares each of the
+    # mod's packs with the game's clean one and keeps only what changed, as a .rmod) ---
+    def _convert_reference(self) -> tuple[Path, str]:
+        """The clean game files an old mod's packs are compared with: the clean backup of this Steam build when there
+        is one (a game folder other mods were copied into would hide their changes), else the game folder itself.
+        (folder, "backup" or "game")."""
+        from rusemod.backup import MANIFEST as BACKUP_MANIFEST, backup_path, backups_dir
+        game, _found = self._game()
+        if game is None:
+            # not a game rule: the game or one of its files isn't found
+            raise LauncherError("We couldn't find R.U.S.E. Choose its folder first.")
+        build = build_of(game)
+        backup = backup_path(self._backups or backups_dir(game), build) if build else None
+        if backup is not None and (backup / BACKUP_MANIFEST).is_file() and (backup / "Data").is_dir():
+            return backup, "backup"
+        return game, "game"
+
+    def convert_pick(self) -> dict:
+        """Ask for an old mod's folder (the window's dialog), then convert_scan it. Nothing picked: {"folder": None}."""
+        if self._pick_folder is None:
+            return {"folder": None}
+        chosen = self._pick_folder()
+        return self.convert_scan(chosen) if chosen else {"folder": None}
+
+    def convert_scan(self, folder: str) -> dict:
+        """The game packs an old mod's folder holds (as Data/PC/<build>/X.dat, PC/<build>/X.dat, a loose X.dat, or a
+        map's Maps/PC/X.dat): [{"path", "kb"}], what they'll be compared with (`reference`: "backup" or "game", and
+        its folder), and a name to start from (the folder's)."""
+        from ruse_mod_engine.converter import scan_mod_folder
+        folder = Path(str(folder))
+        if not folder.is_dir():
+            raise LauncherError(f"{folder} isn't a folder. Pick the folder the old mod came in.")
+        ref, kind = self._convert_reference()
+        try:
+            pairs = scan_mod_folder(str(folder), str(ref))
+        except OSError as exc:
+            raise LauncherError(f"The folder can't be read: {exc}") from None
+        files = []
+        for mod_dat, _orig, rel in pairs:
+            try:
+                kb = mod_dat.stat().st_size // 1024
+            except OSError:
+                kb = 0
+            files.append({"path": rel, "kb": kb})
+        return {"folder": str(folder), "files": files, "reference": kind, "reference_path": str(ref),
+                "name": folder.name}
+
+    def convert(self, folder: str, name: str, version: str = "1.0.0", author: str = "", description: str = "") -> dict:
+        """Convert the old mod in `folder` (convert_scan) into a mod and add it to the library, in the background:
+        {"job": id}; the job's result is the fresh lists with the mod (as add_mod's) once it's done. A mod whose packs
+        are the same as the game's (already copied into the game folder, say) changes nothing, and is refused."""
+        import tempfile
+        from ruse_mod_engine.converter import name_to_id, run_conversion
+        name, version = (name or "").strip(), (version or "").strip() or "1.0.0"
+        if not name:
+            raise LauncherError("Give the mod a name first.")
+        if not re.fullmatch(r"\d+(\.\d+){0,2}", version):
+            raise LauncherError("The version is numbers with dots, like 1.0.0.")
+        scan = self.convert_scan(folder)
+        if not scan["files"]:
+            # not a game rule: the folder holds no pack the game has
+            raise LauncherError("There's no game pack in that folder (a .dat file the game has too). Pick the folder "
+                                "the old mod came in.")
+        game, _found = self._game()
+        build = build_of(game) or ""
+        job = Job()
+        self._jobs[job.id] = job
+
+        def work(say):
+            self._home.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory(prefix="convert-", dir=self._home) as tmp:
+                out = Path(tmp) / f"{name_to_id(name)}.rmod"
+                said: list[str] = []
+                ok = run_conversion(str(folder), scan["reference_path"], str(out), name, name_to_id(name), version,
+                                    author.strip(), description.strip(), log_fn=say,
+                                    warn_fn=lambda line: (said.append(line), say(line)), game_version=build)
+                if not ok or not out.is_file():
+                    raise LauncherError("The mod couldn't be converted: " + (said[-1].strip() if said else "see the "
+                                                                                                         "lines above"))
+                made = json.loads(out.read_text(encoding="utf-8"))
+                if not any(made.get(k) for k in ("patches", "loc_patches", "sdb_patches", "scenario_patches",
+                                                 "file_patches")):
+                    # not a game rule: the mod's packs hold nothing the game's don't
+                    raise LauncherError("Its packs are the same as your game's, so there's nothing to convert. If you "
+                                        "copied this mod into the game folder before, restore the game (Settings, "
+                                        "Clean backup) and convert it again.")
+                try:
+                    info, replaced = self._library.add(out)
+                except LibraryError as exc:
+                    raise LauncherError(str(exc)) from None
+            job.result = self._lists(mod=info, replaced=replaced, problems=[])
+
+        job.start(work, "The old mod was converted and added to your library.", plain=(LauncherError, OSError))
+        return {"job": job.id}
+
     # --- Supported mods: the mod index (MOD_FORMAT §15), installed one or several at a time ---
     def _index_url(self) -> str:
         return self._index_url_given or settings(self._home).get("index_url") or DEFAULT_URL

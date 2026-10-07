@@ -126,6 +126,7 @@
     { id: "clashing", name: "Sample set with clashing mods", description: "", mods: ["anchored-ships", "harbour-pack", "ardennes-rescripted", "ardennes-endless"] },
   ];
   // "Choose your language" (?fake=lang: the game set to French in Steam; it also opens on the first-run modes)
+  Object.assign(words.us, {"convert_mod": "Convert an old mod…", "tip_convert_mod": "For an old mod that comes as the game's own files (.dat packs) to copy into the game folder: makes it a mod the library can play beside others.", "convert_title": "Convert an old mod", "convert_help": "Some older mods come as the game's own packs (.dat files) with the changes inside, made to be copied into the game folder. Pick the folder the mod came in: the Launcher compares each pack with your game's clean one, keeps only what the mod changes, and adds it to your library. Your game folder isn't touched. Uses LittleGroove's converter.", "convert_pick": "Pick the mod's folder…", "tip_convert_pick": "Choose the folder the old mod came in (the one holding its .dat files, or a Data or PC folder with them inside).", "tip_convert_cancel": "Close this without converting anything.", "convert_found": "{n} game pack(s) found in {folder}:", "convert_none": "There's no game pack in {folder} (a .dat file the game has too). Pick the folder the old mod came in.", "convert_ref_backup": "Compared with your clean backup of the game, so mods already copied into the game folder don't get mixed in.", "convert_ref_game": "Compared with your game folder, as there's no clean backup. If you ever copied mods into the game folder, make a clean backup first (Settings) after letting Steam repair the game, or their changes end up in this mod too.", "convert_name": "Name", "tip_convert_name": "The mod's name in your library and in mod sets.", "convert_version": "Version", "tip_convert_version": "Numbers with dots, like 1.0.0. Converting it again with a higher one replaces the old copy.", "convert_author": "Author", "tip_convert_author": "Who made the old mod (shown in your library, to give them credit).", "convert_description": "Description", "tip_convert_description": "A line about what the mod does (shown in your library).", "convert_go": "Convert and add to the library", "tip_convert_go": "Compare the packs and make the mod. A big mod takes a minute or two; the lines below say how far it is.", "convert_running": "Converting…", "convert_failed": "The mod couldn't be converted."});
   Object.assign(words.us, { lang_pick_title: "Choose your language", lang_from_steam: "Your game's language in Steam",
     lang_from_pc: "Your PC's language", lang_pick_close: "Close", tip_lang_open: "Change the language.",
     set_in_this: "In this set ({n})", set_none_yet: "No mods yet: tick them below.", set_add_mods: "Add mods from your library",
@@ -296,6 +297,9 @@
       ...(state === "done" ? { result: j.result } : {}) };
   };
   let playing = null;
+  const fakeConvertScan = () => ({ folder: "D:\\Mods\\Old Pacific Mod", name: "Old Pacific Mod",
+    files: [{ path: "Data/PC/190852/ZZ_GladPatchableWin.dat", kb: 23810 }, { path: "Data/PC/190852/ZZ_Win.dat", kb: 412000 }],
+    reference: mode === "firstbackup" ? "game" : "backup", reference_path: "D:\\RUSE-Backup\\24687178" });
   window.pywebview = {
     api: {
       languages: async () => [{ code: "us", name: "English" }, { code: "fr", name: "Français" }, { code: "ger", name: "Deutsch" },
@@ -338,6 +342,23 @@
       mod_sets: async () => modSets(),
       add_mod: async (path) => fakeMod(path.split(/[\\/]/).pop()),
       add_mod_file: async () => fakeMod("Pacific Maps.zip"),
+      // Convert an old mod (LauncherApi.convert_pick / convert_scan / convert): a made-up old mod's two packs
+      convert_pick: async () => fakeConvertScan(),
+      convert_scan: async () => fakeConvertScan(),
+      convert: async (folder, name, version) => {
+        if (!String(name || "").trim()) throw new Error("Give the mod a name first.");
+        if (!/^\d+(\.\d+){0,2}$/.test(String(version || "").trim())) throw new Error("The version is numbers with dots, like 1.0.0.");
+        const result = {}, id = slug(name);
+        return backupJob(["── Data/PC/190852/ZZ_GladPatchableWin.dat ──", "  12 NDF change(s)",
+          "── Data/PC/190852/ZZ_Win.dat ──", "  3 loc entry change(s)",
+          "Total: 12 NDF change(s), 0 scenario NDF change(s), 3 loc entry change(s), 0 SDB layer(s), 0 raw file patch(es)"],
+        "The old mod was converted and added to your library.", result, () => {
+          library = library.filter((x) => x.id !== id);
+          library.push({ id, name: name.trim(), version, authors: [], author: "", description: "", builds: [], used_in: 0 });
+          library.sort((a, b) => a.name.localeCompare(b.name));
+          Object.assign(result, lists({ mod: known(id), replaced: false, problems: [] }));
+        });
+      },
       remove_mod: async (id) => {
         const mod = known(id);
         if (!mod) throw new Error(`There's no mod called '${id}' in the library.`);

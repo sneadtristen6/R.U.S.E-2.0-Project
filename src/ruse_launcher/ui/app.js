@@ -85,6 +85,11 @@ async function setLanguage(lang) {
   text($("library-title"), w.library);
   sideTabs();
   text($("add-mod"), w.add_mod);
+  text($("convert-mod"), w.convert_mod);
+  text($("convert-title"), w.convert_title);
+  text($("convert-help"), w.convert_help);
+  text($("convert-pick"), w.convert_pick);
+  text($("convert-cancel"), w.cancel);
   text($("drop-hint"), w.drop_hint);
   text($("library-empty"), w.library_empty);
   text($("details"), w.details);
@@ -105,6 +110,7 @@ async function setLanguage(lang) {
   const tips = { "settings-open": "tip_settings_open", "side-sets": "tip_side_sets", "side-library": "tip_side_library",
     "new-set": "tip_new_set", "import-set": "tip_import_set", play: "tip_play", browse: "tip_browse", "doc-open": "tip_doc_open",
     "add-mod": "tip_add_mod", "settings-back": "tip_settings_back", lang: "tip_lang", "set-game-change": "tip_game_change",
+    "convert-mod": "tip_convert_mod", "convert-pick": "tip_convert_pick", "convert-cancel": "tip_convert_cancel",
     "backup-make": "tip_backup_make", "backup-check": "tip_backup_check", "backup-restore": "tip_backup_restore",
     "backup-deep": "tip_backup_deep", "set-updates-check": "tip_updates_check" };
   for (const [id, key] of Object.entries(tips)) if ($(id)) $(id).title = w[key] || "";
@@ -147,8 +153,10 @@ function render() {
   renderLibrary();
   $("settings-view").classList.add("hidden");
   $("welcome-view").classList.add("hidden");
+  $("convert-view").classList.add("hidden");
   if (state.welcome) renderWelcome();
   else if (state.settings) renderSettings();
+  else if (state.converting) renderConvert();
   else if (state.browse) renderBrowse(); else if (state.importing) renderImport(); else if (state.editing) renderEditor();
   else renderActive();
   if (state.doctor) renderDoctor();  // its words, and its fixes on or off as Play starts and ends
@@ -396,6 +404,7 @@ function renderSets() {
       state.editing = null;
       state.browse = null;
       state.importing = null;
+      if (state.converting && !state.converting.running) state.converting = null;  // (one running stays on screen)
       state.settings = false;
       render();
     });
@@ -596,6 +605,7 @@ function openImport() {
   state.editing = null;
   state.browse = null;
   state.settings = false;
+  state.converting = null;
   state.importing = { text: "", check: null, name: "" };
   render();
   $("import-text").value = "";
@@ -657,9 +667,101 @@ async function checkImport() {
   }
 }
 
+// --- Convert an old mod (LauncherApi.convert_pick / convert): one that comes as the game's own packs with its changes
+// in them, made into a mod the library plays beside others (LittleGroove's Convert tab) ---
+function openConvert() {
+  state.editing = null;
+  state.browse = null;
+  state.importing = null;
+  state.settings = false;
+  state.converting = { scan: null, name: "", version: "1.0.0", author: "", description: "", running: false, lines: [],
+    error: "" };
+  render();
+}
+
+function renderConvert() {
+  const w = state.words, cv = state.converting;
+  for (const id of ["set-view", "editor", "import-view", "browse-view"]) $(id).classList.add("hidden");
+  $("convert-view").classList.remove("hidden");
+  $("convert-pick").disabled = cv.running || state.playing;
+  $("convert-cancel").disabled = cv.running;
+  const out = $("convert-result");
+  out.replaceChildren();
+  if (cv.error) out.append(el("p", { className: "bad", textContent: cv.error }));
+  const s = cv.scan;
+  if (!s) return;
+  const kb = (n) => n >= 1024 ? `${(n / 1024).toFixed(1)} MB` : `${n} KB`;
+  out.append(el("p", { className: s.files.length ? "good" : "bad", textContent: s.files.length
+    ? fill(w.convert_found, { n: s.files.length, folder: s.folder }) : fill(w.convert_none, { folder: s.folder }) }));
+  if (!s.files.length) return;
+  out.append(el("ul", { className: "mods" }, ...s.files.map((f) => el("li", { textContent: `${f.path} · ${kb(f.kb)}` }))));
+  out.append(el("p", { className: s.reference === "backup" ? "muted" : "warn",
+    textContent: s.reference === "backup" ? w.convert_ref_backup : w.convert_ref_game }));
+  const field = (key, value, set, tip, attrs = {}) => {
+    const input = el(attrs.tag || "input", { value, maxLength: attrs.max || 60, autocomplete: "off", title: tip,
+      disabled: cv.running, rows: attrs.rows });
+    if (attrs.tag) input.value = value;
+    input.setAttribute("aria-label", w[key]);
+    input.addEventListener("input", () => set(input.value));
+    return el("label", { className: "field", title: tip }, el("span", { textContent: w[key] }), input);
+  };
+  out.append(field("convert_name", cv.name, (v) => { cv.name = v; }, w.tip_convert_name),
+    field("convert_version", cv.version, (v) => { cv.version = v; }, w.tip_convert_version, { max: 20 }),
+    field("convert_author", cv.author, (v) => { cv.author = v; }, w.tip_convert_author),
+    field("convert_description", cv.description, (v) => { cv.description = v; }, w.tip_convert_description,
+      { tag: "textarea", max: 400, rows: 2 }));
+  const go = el("button", { type: "button", className: "small", textContent: cv.running ? w.convert_running : w.convert_go,
+    title: w.tip_convert_go, disabled: cv.running || state.playing });
+  go.addEventListener("click", runConvert);
+  out.append(el("div", { className: "actions" }, go));
+  if (cv.lines.length) out.append(el("pre", { className: "log", textContent: cv.lines.join("\n") }));
+}
+
+async function pickConvert() {
+  const cv = state.converting;
+  cv.error = "";
+  try {
+    const res = await api().convert_pick();
+    if (!res.folder) return;
+    cv.scan = res;
+    if (!cv.name.trim()) cv.name = res.name || "";
+    cv.lines = [];
+  } catch (err) { cv.error = (err && err.message) || String(err); }
+  renderConvert();
+}
+
+async function runConvert() {
+  const w = state.words, cv = state.converting;
+  cv.error = "";
+  cv.lines = [];
+  let job;
+  try { ({ job } = await api().convert(cv.scan.folder, cv.name, cv.version, cv.author, cv.description)); }
+  catch (err) { cv.error = (err && err.message) || String(err); renderConvert(); return; }
+  cv.running = true;
+  renderConvert();
+  let seen = 0;
+  const tick = async () => {
+    let j;
+    try { j = await api().job(job, seen); } catch (err) { j = { state: "failed", message: err.message, lines: [] }; }
+    seen = j.count || seen;
+    cv.lines.push(...(j.lines || []));
+    if (j.state === "running") { renderConvert(); setTimeout(tick, 400); return; }
+    cv.running = false;
+    if (j.state === "done" && j.result) {
+      state.converting = null;
+      added(j.result);
+      return;
+    }
+    cv.error = j.message || w.convert_failed;
+    renderConvert();
+  };
+  tick();
+}
+
 // --- the editor: a new mod set, or a set's mods and their order ---
 function openEditor(set) {
   state.settings = false;
+  state.converting = null;
   state.editing = set ? { id: set.id, name: set.name, mods: set.mods.slice(), names: set.mod_names.slice() }
     : { id: null, name: "", mods: [], names: [] };
   render();
@@ -774,6 +876,7 @@ async function openBrowse(fresh) {
   state.settings = false;
   state.editing = null;
   state.importing = null;
+  state.converting = null;
   state.browse = state.browse || emptyList();
   state.browse.loading = true;
   render();
@@ -1074,6 +1177,7 @@ function renderLibrary() {
     return li;
   }));
   $("add-mod").disabled = state.playing;
+  $("convert-mod").disabled = state.playing;
 }
 
 function added(res) {
@@ -1264,6 +1368,9 @@ async function start() {
   $("share-copy").addEventListener("click", copyShared);
   $("share-close").addEventListener("click", () => $("share-box").classList.add("hidden"));
   $("add-mod").addEventListener("click", addModFile);
+  $("convert-mod").addEventListener("click", openConvert);
+  $("convert-pick").addEventListener("click", pickConvert);
+  $("convert-cancel").addEventListener("click", () => { state.converting = null; render(); });
   $("browse").addEventListener("click", () => { state.welcome = null; openBrowse(true); });
   $("browse-install").addEventListener("click", () => state.browse && installTicked(state.browse));
   for (const id of ["browse-page", "welcome-page"]) $(id).addEventListener("click", () => api().open_help("mods").catch(problem));

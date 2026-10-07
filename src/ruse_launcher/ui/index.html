@@ -54,6 +54,7 @@
         <p id="library-empty" class="muted note hidden"></p>
         <div class="library-foot">
           <button id="add-mod" class="small" type="button"></button>
+          <button id="convert-mod" class="small ghost" type="button"></button>
           <p id="drop-hint" class="muted note"></p>
         </div>
       </section>
@@ -100,6 +101,16 @@
           <button id="import-cancel" class="small ghost" type="button"></button>
         </div>
         <div id="import-result"></div>
+      </div>
+      <!-- Convert an old mod (app.js renderConvert, LauncherApi.convert_*): LittleGroove's Convert tab -->
+      <div id="convert-view" class="editor hidden">
+        <h1 id="convert-title"></h1>
+        <p id="convert-help" class="muted"></p>
+        <div class="actions">
+          <button id="convert-pick" class="small" type="button"></button>
+          <button id="convert-cancel" class="small ghost" type="button"></button>
+        </div>
+        <div id="convert-result"></div>
       </div>
       <!-- Settings (app.js SETTINGS: one section per setting, so a new one is one more entry) -->
       <div id="settings-view" class="browse hidden">

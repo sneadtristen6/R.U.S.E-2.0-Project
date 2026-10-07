@@ -703,6 +703,60 @@ class Troubleshooter(Base):
             self.api(game_dir=None, find=lambda: None).troubleshoot_fix("clear_leftovers")
 
 
+class Convert(Base):
+    """Convert an old mod (LittleGroove's Convert tab): a folder of the game's packs with a mod's changes in them,
+    compared with the clean files (the backup when there is one, else the game folder) by his engine, made into a mod
+    and added to the library."""
+
+    def setUp(self):
+        super().setUp()
+        from fixtures import make_edat
+        self.make_edat = make_edat
+        (self.game / "Data" / "PC" / "190852" / "Extra.dat").write_bytes(
+            make_edat([("file", "readme.txt", b"the game's words")]))
+        self.old = Path(self.tmp.name) / "Old Mod v2"
+        (self.old / "PC" / "190852").mkdir(parents=True)
+        (self.old / "PC" / "190852" / "Extra.dat").write_bytes(make_edat([("file", "readme.txt", b"the mod's words")]))
+        (self.old / "readme.txt").write_text("how to install it by hand", encoding="utf-8")
+
+    def test_scanned_converted_and_added(self):
+        api = self.api(pick_folder=lambda: str(self.old))
+        scan = api.convert_pick()
+        self.assertEqual((scan["files"], scan["reference"], scan["name"]),
+                         ([{"path": "Data/PC/190852/Extra.dat", "kb": scan["files"][0]["kb"]}], "game", "Old Mod v2"))
+        with self.assertRaisesRegex(LauncherError, "Give the mod a name"):
+            api.convert(str(self.old), " ")
+        with self.assertRaisesRegex(LauncherError, "numbers with dots"):
+            api.convert(str(self.old), "Old Mod", "v2")
+        j = wait_for(api, api.convert(str(self.old), "Old Mod", "2.0.0", "Someone", "An old one")["job"], timeout=60)
+        self.assertEqual(j["state"], "done", j)
+        mod = j["result"]["mod"]
+        self.assertEqual((mod["id"], mod["name"], mod["version"]), ("old-mod", "Old Mod", "2.0.0"))
+        self.assertEqual([m["id"] for m in api.library()], ["old-mod"])
+        self.assertFalse(any(p.name.startswith("convert-") for p in self.home.iterdir()))  # (its temporary folder)
+
+    def test_nothing_to_convert(self):
+        api = self.api()
+        same = Path(self.tmp.name) / "Same"
+        (same / "PC" / "190852").mkdir(parents=True)
+        (same / "PC" / "190852" / "Extra.dat").write_bytes((self.game / "Data" / "PC" / "190852" / "Extra.dat").read_bytes())
+        j = wait_for(api, api.convert(str(same), "Same")["job"], timeout=60)
+        self.assertEqual(j["state"], "failed")
+        self.assertIn("the same as your game's", j["message"])
+        empty = Path(self.tmp.name) / "Empty"
+        empty.mkdir()
+        with self.assertRaisesRegex(LauncherError, "no game pack in that folder"):
+            api.convert(str(empty), "Empty")
+        self.assertEqual(self.api(pick_folder=lambda: None).convert_pick(), {"folder": None})
+
+    def test_the_clean_backup_first(self):
+        backups = Path(self.tmp.name) / "backups"
+        api = self.api(backups=backups)
+        self.assertEqual(wait_for(api, api.backup_make()["job"])["state"], "done")
+        self.assertEqual(api.convert_scan(str(self.old))["reference"], "backup")
+        self.assertEqual(api.convert_scan(str(self.old))["reference_path"], str(backups / "24687178"))
+
+
 class CleanBackup(Base):
     """The clean game backup in Settings, as the window asks for it (what it does is rusemod.backup's:
     tests/test_backup.py)."""
