@@ -22,7 +22,7 @@ import copy
 import re
 import struct
 from bisect import bisect_left
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from operator import itemgetter
@@ -264,6 +264,7 @@ class Engine:
         self._had_ids = unitcheck.ids(self.game)
         self._had_salvos = {(top, path, why) for top, path, _named, why in unitcheck.salvo_problems(self.game)}
         self._done: list = []  # (owner, path, op) of every property operation, in the order they ran
+        self._kinds: dict | None = None  # (class, property) -> the number type the game gives it (_kind_in_class)
 
     def run(self, mods) -> Result:
         """`mods`: [(ModInfo, [Op])] already in load order (resolve.load_order)."""
@@ -454,6 +455,8 @@ class Engine:
         elif op.kind == "set":
             self._no_deleted_refs(op, op.value)
             new = _convert(op.value, target_val)
+            if target_val is None and idx is None:  # a property the object doesn't have yet: the type its class has
+                new = self._typed(obj.cls, prop, new)
         elif op.kind in ("mul", "add"):
             if target_val is None:
                 if every:
@@ -477,6 +480,35 @@ class Engine:
         self.touch[key].append((op, category, op.value))
         self.trail[key].append((op, copy.deepcopy(new)))
         self._done.append((owner, path, op))
+
+    def _kind_in_class(self, cls: str, prop: str) -> tuple[str, bool] | None:
+        """(number type, a list of them or not) the game's objects of class `cls` give `prop`, the most common;
+        None when none of them has it as numbers. Read once, from the game as loaded, the first time it's needed."""
+        if self._kinds is None:
+            seen: dict = defaultdict(Counter)
+            for top in self.game.objects.values():
+                for _path, part in _parts(top):
+                    for name, v in part.props.items():
+                        if isinstance(v, Num):
+                            seen[(part.cls, name)][(v.kind, False)] += 1
+                        elif isinstance(v, ListV) and v.items and all(isinstance(x, Num) for x in v.items):
+                            seen[(part.cls, name)][(v.items[0].kind, True)] += 1
+            self._kinds = {key: c.most_common(1)[0][0] for key, c in seen.items()}
+        return self._kinds.get((cls, prop))
+
+    def _typed(self, cls: str, prop: str, new):
+        """A number (or list of numbers) given to a property its object doesn't have yet, in the type the class has it
+        elsewhere ("type follows the schema"): `IsUpgrade = 1` on a unit that isn't an upgrade yet is a yes/no, as on
+        the game's upgrades, not a whole number. Anything else, or a property no object of the class has, as written."""
+        found = self._kind_in_class(cls, prop)
+        if found is None:
+            return new
+        kind, is_list = found
+        if isinstance(new, Num) and not is_list:
+            return Num(kind, new.value)
+        if isinstance(new, ListV) and is_list and all(isinstance(x, Num) for x in new.items):
+            return ListV([Num(kind, x.value) for x in new.items])
+        return new
 
     def _locate(self, op: Op, name: str):
         """Walk the property path. Returns (owner name, Obj holding the property, property, list index or None, path

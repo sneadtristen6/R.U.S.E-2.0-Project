@@ -35,11 +35,19 @@ class Link(str):
     """A value that points at a named object, by its address ($/GFX/Everything/Ammo_X)."""
 
 
+class _Removed:
+    def __repr__(self) -> str:
+        return "REMOVED"
+
+
+REMOVED = _Removed()  # a property taken out of the object (`delete Prop`): an upgrade made a unit of its own again
+
+
 @dataclass
 class Edit:
     target: str             # the named object: $/GFX/Everything/Descriptor_Unit_X
     path: str               # inside it: "SeuilMort", or "Weapons[class=TWeapon].Puissance" for a part
-    value: object           # a number, a list of numbers, or a Link
+    value: object           # a number, a list of numbers, a Link, or REMOVED
     share: str | None = None
 
 
@@ -88,6 +96,11 @@ def literal(value) -> str:
 
 
 _KEY_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"
+
+
+def _line(prop: str, value) -> str:
+    """One change as a line of a block: `Prop = value`, or `delete Prop` for one taken out."""
+    return f"    delete {prop}\n" if value is REMOVED else f"    {prop} = {literal(value)}\n"
 
 
 def game_key(target: str) -> str:
@@ -139,6 +152,9 @@ class ModEdits:
                 if op.kind == "clone" and op.target and op.source:
                     self._read_clone(op, names)
                     continue
+                if op.kind == "delprop" and op.target:
+                    self.edits[(op.target, op.path, op.share or "")] = Edit(op.target, op.path, REMOVED, op.share)
+                    continue
                 value = _plain(op.value)
                 if op.kind == "set" and value is not None and op.target:
                     self.edits[(op.target, op.path, op.share or "")] = Edit(op.target, op.path, value, op.share)
@@ -157,6 +173,9 @@ class ModEdits:
     def _read_clone(self, op, names: dict[str, str]) -> None:
         unit = NewUnit(op.target, op.source, plain_name(op.target), named=False)
         for b in op.body:
+            if b.kind == "delprop":
+                self.edits[(op.target, b.path, "")] = Edit(op.target, b.path, REMOVED)
+                continue
             if b.kind != "set":
                 continue
             if b.path == NAME_PROP and isinstance(b.value, Text) and b.value.kind == "loc":
@@ -242,7 +261,7 @@ class ModEdits:
             own = [(path, e.value) for (t, path, how), e in self.edits.items()
                    if t == target and how == "" and "." not in path]
             for prop, value in sorted(own, key=lambda pv: _natural(pv[0])):
-                out.append(f"    {prop} = {literal(value)}\n")
+                out.append(_line(prop, value))
             out.append(")\n")
         blocks: dict[tuple, list] = {}
         for (target, path, how), e in self.edits.items():
@@ -255,7 +274,7 @@ class ModEdits:
             where = f"{target}:{head}" if head else target
             out.append(f"\npatch {how + ' ' if how else ''}{where}\n(\n")
             for prop, value in sorted(blocks[block], key=lambda pv: _natural(pv[0])):
-                out.append(f"    {prop} = {literal(value)}\n")
+                out.append(_line(prop, value))
             out.append(")\n")
         text = "".join(out)
         try:  # only a file the build can read back is ever saved

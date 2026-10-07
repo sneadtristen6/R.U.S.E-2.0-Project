@@ -54,7 +54,7 @@ from rusemod.roadnet import RoadNetError
 from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_file, pick_folder, pick_save
 
-from .edits import EditsFileError, Link, ModEdits, NewUnit, plain_name
+from .edits import REMOVED, EditsFileError, Link, ModEdits, NewUnit, plain_name
 from . import __version__
 
 KINDS = {"ground": ("TUniteAuSolDescriptor",), "infantry": ("TInfanterieDescriptor",),
@@ -66,6 +66,9 @@ SHOT_TAG = "weapon_effet_tag"  # a weapon's EffectTag names the part of the unit
 RANGE = "PorteeMaximale"  # a weapon's range: a value of the ammo it fires (set_range)
 RANGE_COPY = "Ammo_Range_"  # the start of the name of an ammo copy set_range makes for one weapon
 FLAG_LISTS = set(WHOLE_LISTS)  # lists edited as a set of flags, any length (a unit's InitialFlagSet)
+# Upgrades (LittleGroove's "Upgrade chain"): an upgrade names the unit it's researched from and carries the flag; its
+# research price and time (also on units that are researched without being upgrades) start at his 50 and 50
+UPGRADE, UPGRADE_FLAG, RESEARCH = "UpgradeRequire", "IsUpgrade", {"UpgradePrice": 50, "UpgradeTime": 50}
 NOT_EDITABLE = {"DescriptorId", "TrackingId", "AmmunitionId", "Nationalite"}  # ids stay unique (rusemod.identity);
 # moving a unit to another nation needs more than one number (its menus, and the new nation's add-on for China), so it
 # comes later
@@ -1054,11 +1057,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     values.append(f"{text} ({shown})")
                 else:
                     values.append(text if num is None else str(num))
+            mine = edits.get(prop)
             rows[prop] = {"prop": prop, "label": schema.label(prop, lang), "group": schema.group(prop),
                           "values": values, "numbers": p["numbers"], "list": p["list"],
                           "type": types.get(prop + "[]" if p["list"] else prop, ""),
-                          "editable": editable and _can_edit(prop, p),
-                          "locked": prop in NOT_EDITABLE, "edited": edits.get(prop), "edited_own": own.get(prop)}
+                          # an upgrade's flag goes with its link, and research price and time with both: changed in
+                          # the page's Upgrade box (set_upgrade, set_research)
+                          "editable": editable and _can_edit(prop, p) and prop != UPGRADE_FLAG and prop not in RESEARCH,
+                          "locked": prop in NOT_EDITABLE, "edited": 0 if mine is REMOVED else mine,
+                          "edited_own": own.get(prop)}
         if "Nationalite" not in rows and o["class"] in KIND_OF:  # 0 isn't written
             n = edits.get("Nationalite", 0) if top else 0
             rows["Nationalite"] = {"prop": "Nationalite", "label": schema.label("Nationalite", lang),
@@ -1079,7 +1086,153 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 "can_copy": bool(o["export"]) and o["class"] in KIND_OF and editable and new is None,
                 "can_copy_ammo": bool(o["export"]) and o["class"] == AMMO and editable and new is None,
                 "has_weapons": o["class"] in KIND_OF,  # the page then asks for weapons(address)
+                # a kind of unit the game has upgrades of: the page then asks for upgrade(address)
+                "can_upgrade": (bool(o["export"]) or top) and UPGRADE in types,
                 "new": {"source": new.source, "source_name": source_name} if top else None}
+
+    # --- upgrades (LittleGroove's "Upgrade chain" brought over): the unit a unit is researched from ---
+    @staticmethod
+    def _upgrade_links(ix: Index, edits: ModEdits | None) -> dict:
+        """{unit: the unit it's researched from} as the current mod has it: the game's links, a new unit starting with
+        its source's, the mod's changes on top."""
+        links = ix.links(UPGRADE)
+        if edits is None:
+            return links
+        for unit in edits.new_units.values():
+            if unit.source in links:
+                links[unit.target] = links[unit.source]
+        for (target, path, how), e in edits.edits.items():
+            if path == UPGRADE and how == "":
+                if e.value is REMOVED:
+                    links.pop(target, None)
+                elif isinstance(e.value, Link):
+                    links[target] = str(e.value)
+        return links
+
+    def upgrade(self, address: str, lang: str = schema.BASE) -> dict:
+        """A unit's place in the upgrade chains. `parent`: the unit it's researched from as the current mod has it
+        (None: a unit of its own); `game_parent`: as the game has it; `choices`: the units it may be researched from,
+        the same nation's in the same build menu, none researched from it (directly or not); `children`: the units
+        researched from it. Each {address, name}. Its research price and time are rows of its table (UpgradePrice,
+        UpgradeTime)."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        new_units = edits.new_units if edits else {}
+        real, _new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            units = {u["address"]: u for u in self._all_units(ix)}
+            if real not in units:
+                raise StudioError(f"{address} isn't a unit")
+            links = self._upgrade_links(ix, edits)
+            game_parent = ix.links(UPGRADE).get(real)
+
+            def where(a):  # (nation, build menu) as the mod has it
+                u = units[self._resolve(edits, a)[0]]
+                get = (lambda p, d: edits.get(a, p) if edits and edits.get(a, p) is not None else d)
+                return get("Nationalite", u["nation"]), get("Factory", u["factory"])
+
+            below, todo = set(), [address]  # every unit researched from this one, directly or not
+            while todo:
+                top = todo.pop()
+                for child, p in links.items():
+                    if p == top and child not in below:
+                        below.add(child)
+                        todo.append(child)
+            mine = where(address)
+            pool = [a for a in list(units) + list(new_units) if a in units or self._resolve(edits, a)[0] in units]
+            choices = [a for a in pool if a != address and a not in below and units[self._resolve(edits, a)[0]]["class"]
+                       in KIND_OF and where(a) == mine]
+            children = sorted(c for c, p in links.items() if p == address)
+            parent = links.get(address)
+            names = self._names(ix, set(choices) | set(children) | {parent, game_parent} - {None}, lang, new_units)
+            game = _props(ix.show(real))
+            research = {}
+            for prop in RESEARCH:
+                mine = edits.get(address, prop) if edits else None
+                research[prop] = {"label": schema.label(prop, lang),
+                                  "game": game[prop]["numbers"][0] if prop in game else None,
+                                  "value": None if mine is REMOVED else mine}
+        finally:
+            ix.close()
+
+        shown = [names.get(a, _tail(a)) for a in names]
+        twice = {n for n in shown if shown.count(n) > 1}  # two units the game calls the same: their code names too
+
+        def named(a):
+            if not a:
+                return None
+            name = names.get(a, _tail(a))
+            return {"address": a, "name": f"{name} ({_tail(a)})" if name in twice and name != _tail(a) else name}
+        return {"address": address, "parent": named(parent), "game_parent": named(game_parent),
+                "choices": sorted((named(a) for a in choices), key=lambda c: c["name"].lower()),
+                "children": [named(c) for c in children], "research": research}
+
+    def set_research(self, address: str, prop: str, value) -> dict:
+        """Change a unit's research price or time (UpgradePrice, UpgradeTime: whole numbers) in the current mod, also
+        on a unit the game gives none (one made an upgrade). Its own value again, or None, takes the change out."""
+        if prop not in RESEARCH:
+            raise StudioError(f"{prop} isn't a research price or time")
+        if value is not None and (not isinstance(value, (int, float)) or isinstance(value, bool)):
+            raise StudioError(f"{prop}: numbers only")
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        game = self.upgrade(address)["research"][prop]["game"]
+        new = None if value is None else _whole(value, "int32", prop)
+        if new is not None and new < 0:
+            # not a game rule: a price or a time below nothing means nothing
+            raise StudioError(f"{prop}: {new} is below 0")
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            if new is None or new == game:
+                edits.reset(address, prop)
+            else:
+                edits.set(address, prop, new)
+        return {"saved": str(edits.file), "value": game if new is None else new}
+
+    def set_upgrade(self, address: str, parent: str | None, lang: str = schema.BASE) -> dict:
+        """Make a unit researched from `parent` (one of upgrade(address)'s choices), or a unit of its own (None), in the
+        current mod: the link and the upgrade flag together; a unit that becomes an upgrade gets a research price and
+        time if it has none (his 50 and 50). Saved at once; the game's own parent again takes the changes out. Returns
+        upgrade(address, lang) as it is now."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        info = self.upgrade(address)
+        if parent is not None and parent not in {c["address"] for c in info["choices"]}:
+            # not a game rule: what the Upgrade box offers (the same nation's units in the same build menu)
+            raise StudioError(f"{address} can't be researched from {parent} here")
+        game_parent = info["game_parent"]["address"] if info["game_parent"] else None
+        real, _new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            has = set(_props(ix.show(real)))
+        finally:
+            ix.close()
+        with self._saving:
+            edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
+            if parent == game_parent:
+                edits.reset(address, UPGRADE)
+                edits.reset(address, UPGRADE_FLAG)
+                for prop in RESEARCH:
+                    if prop not in has:  # added for the upgrade only
+                        edits.reset(address, prop)
+            elif parent is None:
+                edits.set(address, UPGRADE, REMOVED)
+                edits.set(address, UPGRADE_FLAG, REMOVED)
+            else:
+                edits.set(address, UPGRADE, Link(parent))
+                if UPGRADE_FLAG in has:
+                    edits.reset(address, UPGRADE_FLAG)
+                else:
+                    edits.set(address, UPGRADE_FLAG, 1)  # a yes/no in the build, as on the game's upgrades
+                for prop, value in RESEARCH.items():
+                    if prop not in has and edits.get(address, prop) is None:
+                        edits.set(address, prop, value)
+        return {"saved": str(edits.file), **self.upgrade(address, lang)}
 
     def _editable(self, o: dict) -> tuple[bool, str]:
         """Whether this object's values can be edited from the Studio, and if not, why (a key of the tool's words)."""

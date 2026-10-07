@@ -1390,6 +1390,78 @@ function modelWant(startNew) {
     el("p", { className: "muted small", textContent: w.model_want }), el("div", { className: "actions" }, go));
 }
 
+// A unit's place in the upgrade chains and its research (StudioApi.upgrade, set_upgrade, set_research; LittleGroove's
+// "Upgrade chain"): the unit it's researched from, picked among the same nation's units in the same build menu, the
+// units researched from it, and its research price and time
+function upgradeGroup(u) {
+  const w = state.words;
+  const can = Boolean(state.mod && u.editable);
+  const pick = el("select", { disabled: !can, title: w.tip_upgrade_from });
+  const was = el("div", { className: "was" });
+  const kids = el("p", { className: "muted small" });
+  const table = el("table");
+  const head = el("tr", {}, el("th", { textContent: w.upgrade_from }), el("td", {}, pick, was));
+  const researchRow = (prop, r) => {
+    const box = numberBox({ type: "int32" }, r.value ?? r.game ?? "", r.label);
+    box.disabled = !can;
+    const rwas = el("div", { className: "was" });
+    const cell = el("td", {}, el("div", { className: "boxes" }, box), rwas);
+    const mark = (value) => {
+      const edited = value !== null && value !== r.game;
+      cell.classList.toggle("edited", edited);
+      if (!edited) { rwas.replaceChildren(); return; }
+      const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_upgrade_undo });
+      undo.addEventListener("click", async () => {
+        try {
+          const res = await api().set_research(u.address, prop, null);
+          box.value = res.value ?? "";
+          mark(null);
+        } catch (err) { problem(err); }
+      });
+      rwas.replaceChildren(el("span", { textContent: w.was.replace("{v}", r.game ?? "–") }), undo);
+    };
+    box.addEventListener("change", async () => {
+      const n = readBox(box);
+      box.setAttribute("aria-invalid", String(!Number.isFinite(n)));
+      if (!Number.isFinite(n)) return;
+      try {
+        const res = await api().set_research(u.address, prop, n);
+        box.value = String(res.value);
+        mark(res.value);
+        say(w.saved.replace("{file}", res.saved), "ok");
+      } catch (err) { problem(err); }
+    });
+    mark(r.value);
+    return el("tr", {}, el("th", { textContent: r.label }), cell);
+  };
+  const show = (info) => {
+    const current = info.parent ? info.parent.address : "", game = info.game_parent ? info.game_parent.address : "";
+    pick.replaceChildren(el("option", { value: "", textContent: w.upgrade_none, selected: !current }),
+      ...info.choices.map((c) => el("option", { value: c.address, textContent: c.name, selected: c.address === current })));
+    head.classList.toggle("edited", current !== game);
+    if (current === game) was.replaceChildren();
+    else {
+      const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_upgrade_undo });
+      undo.addEventListener("click", () => choose(game || null));
+      was.replaceChildren(el("span", { textContent: w.was.replace("{v}", info.game_parent ? info.game_parent.name : w.upgrade_none) }), undo);
+    }
+    kids.textContent = info.children.length
+      ? fillText(w.upgrade_children, { names: info.children.map((c) => c.name).join(", ") }) : "";
+    table.replaceChildren(head, ...Object.entries(info.research).map(([prop, r]) => researchRow(prop, r)));
+  };
+  const choose = async (parent) => {
+    try {
+      const res = await api().set_upgrade(u.address, parent, state.lang);
+      show(res);
+      say(w.saved.replace("{file}", res.saved), "ok");
+    } catch (err) { problem(err); }
+  };
+  pick.addEventListener("change", () => choose(pick.value || null));
+  api().upgrade(u.address, state.lang).then(show).catch(problem);
+  return el("div", { className: "group" }, el("h2", { textContent: w.upgrade_title }),
+    el("p", { className: "muted small", textContent: w.upgrade_help }), table, kids);
+}
+
 async function showUnit(address, via) {
   via = via || "";
   if (!state.page || state.page.via !== via) state.mode = "own";  // a new way in: "only this unit" first
@@ -1430,6 +1502,7 @@ async function showUnit(address, via) {
     parts.push(group);
   }
   if (u.has_weapons && u.editable) parts.push(weaponsGroup(u));
+  if (u.can_upgrade) parts.push(upgradeGroup(u));
   if (u.parts.length) {
     const list = el("ul", { className: "parts" });
     for (const p of u.parts) {

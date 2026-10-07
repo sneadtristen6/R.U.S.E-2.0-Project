@@ -808,7 +808,24 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     return { address, class: cls, name, ...aboutOf(address), stable: true, shared: Boolean(share), owners: [], groups: out, parts, uses,
       used_by: usedBy, editable, why_not: whyNot, users, share: share || null, named: !address.includes(":"),
       can_copy: editable && !address.includes(":") && units.some((u) => E + u.id === address), new: null,
-      can_copy_ammo: false, has_weapons: !address.includes(":") && cls !== "TAmmunition" };
+      can_copy_ammo: false, has_weapons: !address.includes(":") && cls !== "TAmmunition",
+      can_upgrade: !address.includes(":") && cls !== "TAmmunition" };
+  }
+  // the Upgrade box (StudioApi.upgrade): every made-up unit may be an upgrade of the first one, which has none
+  const upgradeEdits = new Map();  // address -> the mod's parent (null: a unit of its own)
+  const researchEdits = new Map();  // `${address}|${prop}` -> the mod's research price or time
+  function upgradeOf(address, lang) {
+    const all = units.map((u) => ({ address: E + u.id, name: lang === "base" ? u.id : u.names[lang] || u.names.us }));
+    const gameParent = address === all[0].address ? null : all[0];
+    const parent = upgradeEdits.has(address) ? all.find((x) => x.address === upgradeEdits.get(address)) || null : gameParent;
+    const research = {};
+    for (const [prop, labelText, game] of [["UpgradePrice", "Upgrade price", 25], ["UpgradeTime", "Upgrade time", 50]]) {
+      const key = `${address}|${prop}`;
+      research[prop] = { label: lang === "base" ? prop : labelText, game: gameParent ? game : null,
+        value: researchEdits.has(key) ? researchEdits.get(key) : null };
+    }
+    return { address, parent, game_parent: gameParent, choices: all.filter((x) => x.address !== address),
+      children: address === all[0].address ? all.slice(1, 3) : [], research };
   }
 
   function unit(address, lang, via) {
@@ -1150,7 +1167,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ai_scripts_help: "The scripts the game runs on its maps: the campaign's chapters, challenges, Operations and its own tests (IA_Common.dat), shown as Python to read. A big one takes a few seconds to open. From LittleGroove's AI editor; changing a script isn't here yet.",
     ai_scripts_pick: "Pick a script…", ai_scripts_opening: "Opening {name}… (a big script takes a few seconds)",
     ai_scripts_shown: "{name}: {n} lines ({file})", ai_scripts_missing: "This copy of the Studio can't show the scripts: {why}",
-    ai_scripts_copy: "Copy", tip_ai_scripts_copy: "Copy the whole script.", ai_scripts_copied: "Script copied." });
+    ai_scripts_copy: "Copy", tip_ai_scripts_copy: "Copy the whole script.", ai_scripts_copied: "Script copied.",
+    upgrade_title: "Upgrade and research",
+    upgrade_help: "The unit this one is an upgrade of, as in the game: heavy infantry of light infantry, the Jackson of the Wolverine. An upgrade is researched for its price and time before it can be built. From LittleGroove's units editor. Not tried in the game yet.",
+    upgrade_from: "Upgrade of", upgrade_none: "None: a unit of its own", upgrade_children: "Its upgrades: {names}",
+    tip_upgrade_from: "Pick the unit this one is an upgrade of (the same nation's, in the same build menu), or none.",
+    tip_upgrade_undo: "Put it back as the game has it." });
   Object.assign(words.fr, { ai_tab: "IA", ai_title: "IA : les joueurs ordinateur", ai_default: "Défaut",
     ai_group_attack: "Attaque", ai_group_money: "Argent", ai_not_in_menu: "Pas dans le menu des ruses" });
   Object.assign(words.sc, { ai_tab: "AI", ai_title: "AI：电脑玩家", ai_default: "默认", ai_group_attack: "进攻",
@@ -1448,6 +1470,20 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { deleted: address, source: gone.source, saved: current + "/src/studio.rndf" };
       },
       unit: async (address, lang, via) => unit(address, lang, via),
+      upgrade: async (address, lang) => upgradeOf(address, lang),
+      set_upgrade: async (address, parent, lang) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        const game = upgradeOf(address, lang).game_parent;
+        if ((game ? game.address : null) === parent) upgradeEdits.delete(address); else upgradeEdits.set(address, parent);
+        return { saved: current + "/src/studio.rndf", ...upgradeOf(address, lang) };
+      },
+      set_research: async (address, prop, value) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        const game = upgradeOf(address, "us").research[prop].game;
+        const v = value === null ? null : Math.round(value);
+        if (v === null || v === game) researchEdits.delete(`${address}|${prop}`); else researchEdits.set(`${address}|${prop}`, v);
+        return { saved: current + "/src/studio.rndf", value: v === null ? game : v };
+      },
       // a unit's look (?fake=noblender: Blender not found): every unit has one made-up model and two pictures
       look: async (address) => fakeLook(address),
       model_import: async (address, file, size) => {

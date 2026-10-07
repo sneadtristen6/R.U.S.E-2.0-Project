@@ -556,6 +556,13 @@ class Index:
         return [{"address": a, "id": None if i is None else int(i), "name_key": k, "type_key": t,
                  "users": sorted(users[oid])} for oid, a, i, k, t in rows]
 
+    def links(self, path: str) -> dict:
+        """{address: the named object it points at} for every named object whose `path` refers to one: a unit's
+        UpgradeRequire, the unit it's researched from."""
+        return dict(self.db.execute("""SELECT o.address, d.address FROM ref r JOIN object o ON o.id = r.src
+                                       JOIN object d ON d.id = r.dst WHERE r.path = ? AND o.shadow = 0
+                                       AND o.export IS NOT NULL ORDER BY o.address""", (path,)).fetchall())
+
     def named_by(self, path: str, numbers) -> dict:
         """{number: address} of the named objects whose `path` holds one of `numbers`: a unit by its DescriptorId, as
         a list of unit numbers names them (the computer players' bonus, rusemod.ai)."""
