@@ -275,7 +275,7 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   Attack, Spawn...), each line heard and replaced in the same editor. A unit speaks the lines of its nation and kind,
   so the page names the units that share them (a line changed there is heard from all of them); a copied unit speaks
   its source's.
-- **New songs (2026-10-07; not tried in the game yet):** `files/music/list1/<name>.wav` (and `list2`, `list3`) adds a
+- **New songs (2026-10-07; heard in the game: a new song in battle lists 1 and 2):** `files/music/list1/<name>.wav` (and `list2`, `list3`) adds a
   song of the mod's own, with a name of its own, to that one of the three lists battles play from: the build makes
   the song (as above), adds it beside the game's songs with its description, and adds a new song object naming it at
   the end of the list. The name is letters, digits and `_`. The Music tab's **Add a song…** under each list writes it

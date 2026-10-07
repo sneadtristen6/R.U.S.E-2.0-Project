@@ -8,8 +8,9 @@ that has one for that sound.
 
 Reading follows RugnirViking's moddingSuite (GPL-2.0-or-later: its EssReader), widened to any number of channels;
 the writer is ours. What `encode` makes, `decode` plays back sample for sample (tests/test_sound.py). Heard in the game
-(the sound test, 2026-10-07): the main menu song, the songs of battle lists 1 and 2 and the Sherman's move lines,
-each replaced this way; the rest (the third list, missions' songs, jingles, other voices) not tried yet.
+(the sound tests, 2026-10-07): the main menu song, the songs of battle lists 1 and 2 and the Sherman's move lines,
+each replaced this way, and new songs under names of their own in lists 1 and 2; the rest (the third list,
+missions' songs, jingles, other voices) not tried yet.
 """
 from __future__ import annotations
 
@@ -485,7 +486,8 @@ def script_songs(raw_scripts) -> dict:
     return {k: sorted(v) for k, v in found.items()}
 
 
-# --- a mod's new songs: files/music/list<N>/<name>.wav, a new song in battle list N (not tried in the game yet) ---
+# --- a mod's new songs: files/music/list<N>/<name>.wav, a new song in battle list N (heard in the game in lists 1 and
+# 2: the new-song test, 2026-10-07) ---
 NEW_MUSIC = "files/music"
 LISTS = ("list1", "list2", "list3")  # the three lists battles play from, in the data's order
 B = "\\"

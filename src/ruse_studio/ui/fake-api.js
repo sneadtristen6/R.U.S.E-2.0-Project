@@ -1135,7 +1135,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {
     music_tab: "Music", tip_tab_music: "The game's songs: hear each one, and put your own in its place",
     music_title: "Music",
-    music_help: "Every song the game plays, by where it plays. Replace one with your own: drop a sound file on it (WAV, MP3, OGG or FLAC), cut it, fade it, then Use this. It's saved in the current mod, and the next build puts it in the game. Tried in the game: the main menu song, the songs of battle lists 1 and 2, and a unit's voice; the rest not yet.",
+    music_help: "Every song the game plays, by where it plays. Replace one with your own: drop a sound file on it (WAV, MP3, OGG or FLAC), cut it, fade it, then Use this. It's saved in the current mod, and the next build puts it in the game. Tried in the game: the main menu song, the songs of battle lists 1 and 2, new songs added to those lists, and a unit's voice; the rest not yet.",
     music_none: "No songs found in the game index: build it again in Settings.", music_group_menu: "Main menu",
     music_group_credits: "Credits", music_group_playlist: "In battle: list {n}",
     music_help_playlist: "In every battle the game plays from three lists and switches between them as the fight goes.",
@@ -1168,7 +1168,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.fr, {
     music_tab: "Musique", tip_tab_music: "Les morceaux du jeu : écoutez-les, et mettez les vôtres à leur place",
     music_title: "Musique",
-    music_help: "Tous les morceaux que joue le jeu, selon l'endroit où ils passent. Remplacez-en un par le vôtre : déposez-y un fichier son (WAV, MP3, OGG ou FLAC), coupez-le, ajoutez un fondu, puis Utiliser. Il est enregistré dans le mod actuel, et la prochaine construction le met dans le jeu. Essayé en jeu : le morceau du menu principal, les morceaux des listes de bataille 1 et 2, et la voix d'une unité ; le reste pas encore.",
+    music_help: "Tous les morceaux que joue le jeu, selon l'endroit où ils passent. Remplacez-en un par le vôtre : déposez-y un fichier son (WAV, MP3, OGG ou FLAC), coupez-le, ajoutez un fondu, puis Utiliser. Il est enregistré dans le mod actuel, et la prochaine construction le met dans le jeu. Essayé en jeu : le morceau du menu principal, les morceaux des listes de bataille 1 et 2, de nouveaux morceaux ajoutés à ces listes, et la voix d'une unité ; le reste pas encore.",
     music_none: "Aucun morceau dans l'index du jeu : reconstruisez-le dans Paramètres.",
     music_group_menu: "Menu principal", music_group_credits: "Crédits",
     music_group_playlist: "En bataille : liste {n}",
@@ -1202,7 +1202,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   });
   Object.assign(words.sc, {
     music_tab: "音乐", tip_tab_music: "游戏的音乐：试听每一首，并换成你自己的", music_title: "音乐",
-    music_help: "游戏播放的每一首音乐，按播放场合分组。用你自己的替换：拖入一个声音文件（WAV、MP3、OGG 或 FLAC），剪切、淡入淡出，然后点“使用”。它保存在当前模组中，下次构建会放进游戏。已在游戏中试过：主菜单音乐、战斗列表 1 和 2 的音乐，以及单位的语音；其余尚未试过。",
+    music_help: "游戏播放的每一首音乐，按播放场合分组。用你自己的替换：拖入一个声音文件（WAV、MP3、OGG 或 FLAC），剪切、淡入淡出，然后点“使用”。它保存在当前模组中，下次构建会放进游戏。已在游戏中试过：主菜单音乐、战斗列表 1 和 2 的音乐、加入这些列表的新音乐，以及单位的语音；其余尚未试过。",
     music_none: "游戏索引里没有音乐：请在设置中重新建立。", music_group_menu: "主菜单", music_group_credits: "制作人员",
     music_group_playlist: "战斗中：列表 {n}", music_help_playlist: "每场战斗中，游戏从三个列表播放音乐，并随战况在它们之间切换。",
     music_group_end: "比赛结束", music_group_goals: "任务目标", music_group_missions: "战役章节和行动",
@@ -1222,7 +1222,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     music_saving: "保存中… {n} %", music_saved: "{name}：你的音乐已保存到模组（{file}）。"
   });
   // a unit's voice lines (words.toml voice_*)
-  Object.assign(words.us, { music_add: "Add a song…", tip_music_add: "Add a song of your own to this list: the game plays it with the list's other songs", music_add_title: "A new song for battle list {n}", music_add_lead: "It joins the songs the game plays from this list. Give it a name, drop a sound file, cut it, then Use this. Not tried in the game yet.", music_name: "Name", music_new: "New", music_remove: "Remove", tip_music_remove: "Take this song out of the mod", music_removed: "{name}: taken out of the mod.", music_need_name: "Give the song a name (letters and digits)." });
+  Object.assign(words.us, { music_add: "Add a song…", tip_music_add: "Add a song of your own to this list: the game plays it with the list's other songs", music_add_title: "A new song for battle list {n}", music_add_lead: "It joins the songs the game plays from this list. Give it a name, drop a sound file, cut it, then Use this.", music_name: "Name", music_new: "New", music_remove: "Remove", tip_music_remove: "Take this song out of the mod", music_removed: "{name}: taken out of the mod.", music_need_name: "Give the song a name (letters and digits)." });
   Object.assign(words.us, { voice_hidden: "{n} unit(s) no build menu shows" });
   Object.assign(words.us, { voice_saved: "{name}: your line is saved in the mod ({file}).",
     voice_back_done: "{name}: the game's line again." });
@@ -1242,7 +1242,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     voice_moment_attackground: "Attack the ground", voice_moment_ambush: "Ambush", voice_moment_capture: "Capture",
     voice_moment_recon: "Recon"
   });
-  Object.assign(words.fr, { music_add: "Ajouter un morceau…", tip_music_add: "Ajouter votre propre morceau à cette liste : le jeu le joue avec les autres morceaux de la liste", music_add_title: "Un nouveau morceau pour la liste de bataille {n}", music_add_lead: "Il rejoint les morceaux que le jeu joue depuis cette liste. Donnez-lui un nom, déposez un fichier son, coupez-le, puis Utiliser. Pas encore essayé en jeu.", music_name: "Nom", music_new: "Nouveau", music_remove: "Retirer", tip_music_remove: "Retirer ce morceau du mod", music_removed: "{name} : retiré du mod.", music_need_name: "Donnez un nom au morceau (lettres et chiffres)." });
+  Object.assign(words.fr, { music_add: "Ajouter un morceau…", tip_music_add: "Ajouter votre propre morceau à cette liste : le jeu le joue avec les autres morceaux de la liste", music_add_title: "Un nouveau morceau pour la liste de bataille {n}", music_add_lead: "Il rejoint les morceaux que le jeu joue depuis cette liste. Donnez-lui un nom, déposez un fichier son, coupez-le, puis Utiliser.", music_name: "Nom", music_new: "Nouveau", music_remove: "Retirer", tip_music_remove: "Retirer ce morceau du mod", music_removed: "{name} : retiré du mod.", music_need_name: "Donnez un nom au morceau (lettres et chiffres)." });
   Object.assign(words.fr, { voice_hidden: "{n} unité(s) absente(s) des menus de production" });
   Object.assign(words.fr, { voice_saved: "{name} : votre réplique est enregistrée dans le mod ({file}).",
     voice_back_done: "{name} : de nouveau la réplique du jeu." });
@@ -1263,7 +1263,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     voice_moment_attackground: "Attaque au sol", voice_moment_ambush: "Embuscade", voice_moment_capture: "Capture",
     voice_moment_recon: "Reconnaissance"
   });
-  Object.assign(words.sc, { music_add: "添加音乐…", tip_music_add: "把你自己的音乐加入这个列表：游戏会和列表中的其他音乐一起播放", music_add_title: "战斗列表 {n} 的新音乐", music_add_lead: "它会加入游戏从这个列表播放的音乐。给它起个名字，拖入一个声音文件，剪切，然后点“使用”。尚未在游戏中试过。", music_name: "名称", music_new: "新增", music_remove: "移除", tip_music_remove: "从模组中移除这首音乐", music_removed: "{name}：已从模组中移除。", music_need_name: "请给音乐起个名字（字母和数字）。" });
+  Object.assign(words.sc, { music_add: "添加音乐…", tip_music_add: "把你自己的音乐加入这个列表：游戏会和列表中的其他音乐一起播放", music_add_title: "战斗列表 {n} 的新音乐", music_add_lead: "它会加入游戏从这个列表播放的音乐。给它起个名字，拖入一个声音文件，剪切，然后点“使用”。", music_name: "名称", music_new: "新增", music_remove: "移除", tip_music_remove: "从模组中移除这首音乐", music_removed: "{name}：已从模组中移除。", music_need_name: "请给音乐起个名字（字母和数字）。" });
   Object.assign(words.sc, { voice_hidden: "{n} 个不在任何生产菜单中的单位" });
   Object.assign(words.sc, { voice_saved: "{name}：你的台词已保存到模组（{file}）。",
     voice_back_done: "{name}：已恢复为游戏原台词。" });

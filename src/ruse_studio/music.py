@@ -2,7 +2,8 @@
 sound for the page to play, and the current mod's own songs, saved from the page's editor as
 files/replace/<the song's path in ZZ_Win.dat>.wav. The page makes the WAV (the window reads MP3, OGG, FLAC and WAV
 itself, and cuts, fades and sets the volume): nothing to install. Tried in the game (2026-10-07): songs replaced
-this way in the main menu and battle lists 1 and 2 play (rusemod.sound)."""
+this way in the main menu and battle lists 1 and 2 play, a unit's replaced voice line too, and new songs added to
+lists 1 and 2 (rusemod.sound)."""
 from __future__ import annotations
 
 import base64
