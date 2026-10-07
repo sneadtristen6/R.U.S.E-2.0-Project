@@ -165,11 +165,24 @@
     $("music-nomod").classList.toggle("hidden", data.mod);
     $("music-groups").replaceChildren(...(data.groups.length ? data.groups.map((g) => {
       const list = el("div", { className: "music-list" });
-      for (const s of g.songs) list.append(row(s));
+      const battle = g.id.startsWith("playlist");
+      const reference = battle ? g.songs.find((x) => !x.new) : null;  // the list's first game song: loudness
+      for (const s of g.songs) {
+        if (s.new) s.reference = reference && reference.member;
+        list.append(row(s));
+      }
       const head = el("h2", { textContent: w[`music_group_${g.id.replace(/\d$/, "")}`] ? fill(w[`music_group_${g.id.replace(/\d$/, "")}`], { n: Number(g.id.slice(-1)) + 1 }) : g.id });
-      const first = g.id === "playlist0" || !g.id.startsWith("playlist");  // the three lists share one help line
+      const first = g.id === "playlist0" || !battle;  // the three lists share one help line
       const help = first ? w[`music_help_${g.id.replace(/\d$/, "")}`] : null;
-      return el("div", { className: "group" }, head, ...(help ? [el("p", { className: "muted small", textContent: help })] : []), list);
+      const extra = [];
+      if (battle && data.mod) {  // a new song of the mod's own in this list (files/music/list<N>)
+        const n = Number(g.id.slice(-1)) + 1;
+        const add = el("button", { type: "button", className: "small", textContent: "+ " + w.music_add, title: w.tip_music_add });
+        add.addEventListener("click", () => openEditor({ adding: `list${n}`, listNumber: n, member: null, name: "",
+          channels: 2, rate: 48000, seconds: 0, also: [], maps: [], reference: reference && reference.member }));
+        extra.push(el("div", { className: "music-actions music-add" }, add));
+      }
+      return el("div", { className: "group" }, head, ...(help ? [el("p", { className: "muted small", textContent: help })] : []), list, ...extra);
     }) : [el("p", { className: "muted", textContent: w.music_none })]));
   }
 
@@ -217,6 +230,7 @@
 
   function row(s, refresh = render) {
     const w = W();
+    if (s.new) return newRow(s, refresh);
     const playBtn = el("button", { type: "button", className: "small", textContent: "▶ " + w.music_play, title: w.tip_music_play });
     const name = el("span", { className: "music-name", textContent: s.name });
     const len = el("span", { className: "muted small", textContent: clock(s.seconds) });
@@ -253,6 +267,26 @@
       el("div", { className: "music-head" }, name, len, mark), sub, actions);
   }
 
+  // a song of the mod's own in a battle list (files/music/list<N>/<name>.wav): play, change, take out
+  function newRow(s, refresh) {
+    const w = W();
+    const playBtn = el("button", { type: "button", className: "small", textContent: "▶ " + w.music_play });
+    const edit = el("button", { type: "button", className: "small primary", textContent: w.music_change, title: w.tip_music_replace });
+    const remove = el("button", { type: "button", className: "link small", textContent: w.music_remove, title: w.tip_music_remove });
+    playBtn.addEventListener("click", () => toggle(playBtn, "▶ " + w.music_play, () => modBuffer(s.member)));
+    edit.addEventListener("click", () => openEditor(s, refresh));
+    remove.addEventListener("click", async () => {
+      stop();
+      try { await api().music_reset(s.member); say(fill(w.music_removed, { name: s.name }), "ok"); refresh(); }
+      catch (err) { problem(err); }
+    });
+    return el("div", { className: "music-row edited" },
+      el("div", { className: "music-head" }, el("span", { className: "music-name", textContent: s.name }),
+        el("span", { className: "muted small", textContent: clock(s.seconds) }),
+        el("span", { className: "music-mine small", textContent: w.music_new })),
+      el("div", { className: "music-actions" }, playBtn, edit, remove));
+  }
+
   // a Play button that becomes Stop while its sound plays
   async function toggle(btn, label, load) {
     const w = W();
@@ -273,8 +307,21 @@
     stop();
     S.ed = { song: s, src: null, start: 0, end: 0, fadeIn: 0, fadeOut: 0, db: 0, game: null, drag: null, after };
     const voice = s.version !== undefined;  // a unit's voice line (voicesGroup), not a song
-    $("me-title").textContent = fill(voice ? w.voice_editor_title : w.music_editor_title, { name: s.name });
-    $("me-lead").textContent = fill(voice ? w.voice_editor_lead : w.music_editor_lead, { len: clock(s.seconds, true) });
+    const ours = Boolean(s.adding || s.new);  // a new song of the mod's (no game song in its place)
+    if (s.adding) {
+      $("me-title").textContent = fill(w.music_add_title, { n: s.listNumber });
+      $("me-lead").textContent = w.music_add_lead;
+    } else if (s.new) {
+      $("me-title").textContent = fill(w.music_editor_title, { name: s.name });
+      $("me-lead").textContent = w.music_add_lead;
+    } else {
+      $("me-title").textContent = fill(voice ? w.voice_editor_title : w.music_editor_title, { name: s.name });
+      $("me-lead").textContent = fill(voice ? w.voice_editor_lead : w.music_editor_lead, { len: clock(s.seconds, true) });
+    }
+    $("me-name-row").classList.toggle("hidden", !s.adding);  // a new song's name, asked once when it's added
+    $("me-name-label").textContent = w.music_name;
+    $("me-name").value = "";
+    $("me-game").classList.toggle("hidden", ours);
     $("me-drop-text").textContent = w.music_drop;
     $("me-choose").textContent = w.music_choose;
     $("me-start-label").textContent = w.music_start;
@@ -295,7 +342,9 @@
     $("me-volume").value = "0";
     showSource();
     $("music-editor").showModal();
-    gameBuffer(s.member).then((b) => { if (S.ed && S.ed.song === s) S.ed.game = b; }).catch(() => {});
+    const reference = ours ? s.reference : s.member;  // what "as loud as the game's" compares with
+    if (reference) gameBuffer(reference).then((b) => { if (S.ed && S.ed.song === s) S.ed.game = b; }).catch(() => {});
+    $("me-match").disabled = !reference;
     if (s.mine) modBuffer(s.member).then((b) => { if (S.ed && S.ed.song === s && !S.ed.src) setSource(b, w.music_yours); })
       .catch(() => {});
   }
@@ -324,6 +373,7 @@
     try {
       const buffer = await ctx().decodeAudioData(await file.arrayBuffer());
       setSource(buffer, file.name);
+      if (S.ed.song.adding && !$("me-name").value.trim()) $("me-name").value = file.name.replace(/\.[^.]+$/, "");
       $("me-note").textContent = "";
     } catch {
       $("me-note").textContent = w.music_cant_read;
@@ -401,7 +451,9 @@
 
   async function matchLoudness() {
     const ed = S.ed, w = W();
-    try { if (!ed.game) ed.game = await gameBuffer(ed.song.member); } catch (err) { problem(err); return; }
+    const reference = ed.song.adding || ed.song.new ? ed.song.reference : ed.song.member;
+    if (!reference) return;
+    try { if (!ed.game) ed.game = await gameBuffer(reference); } catch (err) { problem(err); return; }
     const mine = rms(ed.src, ed.start, ed.end), game = rms(ed.game, 0, ed.game.duration);
     if (!mine || !game) return;
     ed.db = Math.max(-20, Math.min(10, Math.round(20 * Math.log10(game / mine) * 2) / 2));
@@ -450,6 +502,13 @@
   async function use() {
     const ed = S.ed, w = W(), btn = $("me-use");
     if (!ed || !ed.src || ed.end - ed.start <= 0.05) return;
+    let member = ed.song.member;
+    if (ed.song.adding) {  // a new song: its name makes its file (files/music/<list>/<name>.wav)
+      const name = $("me-name").value.trim();
+      if (!/[A-Za-z0-9]/.test(name)) { $("me-note").textContent = w.music_need_name; $("me-name").focus(); return; }
+      member = `new:${ed.song.adding}/${name}`;
+      ed.song.name = name;
+    }
     stop();
     btn.disabled = true;
     try {
@@ -459,7 +518,7 @@
       let res;
       for (let i = 0; i < count; i++) {
         $("me-note").textContent = fill(w.music_saving, { n: Math.round((100 * i) / count) });
-        res = await api().music_save(ed.song.member, base64(wav.subarray(i * size, (i + 1) * size)), i, count);
+        res = await api().music_save(member, base64(wav.subarray(i * size, (i + 1) * size)), i, count);
       }
       $("music-editor").close();
       say(fill(ed.song.version !== undefined ? w.voice_saved : w.music_saved, { name: ed.song.name, file: res.saved }), "ok");

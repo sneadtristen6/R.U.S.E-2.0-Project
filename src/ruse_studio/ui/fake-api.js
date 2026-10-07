@@ -1222,6 +1222,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     music_saving: "保存中… {n} %", music_saved: "{name}：你的音乐已保存到模组（{file}）。"
   });
   // a unit's voice lines (words.toml voice_*)
+  Object.assign(words.us, { music_add: "Add a song…", tip_music_add: "Add a song of your own to this list: the game plays it with the list's other songs", music_add_title: "A new song for battle list {n}", music_add_lead: "It joins the songs the game plays from this list. Give it a name, drop a sound file, cut it, then Use this. Not tried in the game yet.", music_name: "Name", music_new: "New", music_remove: "Remove", tip_music_remove: "Take this song out of the mod", music_removed: "{name}: taken out of the mod.", music_need_name: "Give the song a name (letters and digits)." });
   Object.assign(words.us, { voice_hidden: "{n} unit(s) no build menu shows" });
   Object.assign(words.us, { voice_saved: "{name}: your line is saved in the mod ({file}).",
     voice_back_done: "{name}: the game's line again." });
@@ -1241,6 +1242,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     voice_moment_attackground: "Attack the ground", voice_moment_ambush: "Ambush", voice_moment_capture: "Capture",
     voice_moment_recon: "Recon"
   });
+  Object.assign(words.fr, { music_add: "Ajouter un morceau…", tip_music_add: "Ajouter votre propre morceau à cette liste : le jeu le joue avec les autres morceaux de la liste", music_add_title: "Un nouveau morceau pour la liste de bataille {n}", music_add_lead: "Il rejoint les morceaux que le jeu joue depuis cette liste. Donnez-lui un nom, déposez un fichier son, coupez-le, puis Utiliser. Pas encore essayé en jeu.", music_name: "Nom", music_new: "Nouveau", music_remove: "Retirer", tip_music_remove: "Retirer ce morceau du mod", music_removed: "{name} : retiré du mod.", music_need_name: "Donnez un nom au morceau (lettres et chiffres)." });
   Object.assign(words.fr, { voice_hidden: "{n} unité(s) absente(s) des menus de production" });
   Object.assign(words.fr, { voice_saved: "{name} : votre réplique est enregistrée dans le mod ({file}).",
     voice_back_done: "{name} : de nouveau la réplique du jeu." });
@@ -1261,6 +1263,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     voice_moment_attackground: "Attaque au sol", voice_moment_ambush: "Embuscade", voice_moment_capture: "Capture",
     voice_moment_recon: "Reconnaissance"
   });
+  Object.assign(words.sc, { music_add: "添加音乐…", tip_music_add: "把你自己的音乐加入这个列表：游戏会和列表中的其他音乐一起播放", music_add_title: "战斗列表 {n} 的新音乐", music_add_lead: "它会加入游戏从这个列表播放的音乐。给它起个名字，拖入一个声音文件，剪切，然后点“使用”。尚未在游戏中试过。", music_name: "名称", music_new: "新增", music_remove: "移除", tip_music_remove: "从模组中移除这首音乐", music_removed: "{name}：已从模组中移除。", music_need_name: "请给音乐起个名字（字母和数字）。" });
   Object.assign(words.sc, { voice_hidden: "{n} 个不在任何生产菜单中的单位" });
   Object.assign(words.sc, { voice_saved: "{name}：你的台词已保存到模组（{file}）。",
     voice_back_done: "{name}：已恢复为游戏原台词。" });
@@ -1752,9 +1755,13 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       economy_reset: async (prop) => { economyEdits.delete(prop); return { saved: current + "/src/studio.rndf" }; },
       // the Music tab (StudioApi.music, ruse_studio.music): a few of the game's songs; each "game song" is a made-up
       // tone (the real Studio hands the page the game's own file)
-      music: async () => ({ mod: Boolean(current), groups: MUSIC.map(([id, songs]) => ({ id, songs: songs.map(
+      music: async () => ({ mod: Boolean(current), groups: MUSIC.map(([id, songs]) => ({ id, songs: [...songs.map(
         ([member, name, seconds, also, maps]) => ({ member, name, seconds, channels: 2, rate: 48000, also, maps,
-          mine: musicMine.has(member) })) })) }),
+          mine: musicMine.has(member) })),
+        // the mod's new songs in a battle list ("new:list<N>/<name>", StudioApi.music)
+        ...[...musicMine.keys()].filter((m) => id.startsWith("playlist") && m.startsWith(`new:list${Number(id.slice(-1)) + 1}/`))
+          .map((m) => ({ member: m, name: m.split("/").pop().split("_").join(" "), seconds: 0, channels: 2, rate: 48000,
+            also: [], maps: [], mine: true, new: true }))] })) }),
       // a unit's voice lines (StudioApi.unit_voices): the US medium tanks' set, for any tank; none for the rest
       unit_voices: async (address) => {
         if (!/Sherman|Lee|M4|M3/.test(address)) return { moments: [], shared: [], copy: false };
@@ -1765,7 +1772,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       music_sound: async (member, which = "game") => {
         const song = MUSIC.flatMap(([, s]) => s).find((s) => s[0] === member)
-          || (member.startsWith(VOICE_DIR) ? [member, member.slice(VOICE_DIR.length), 2] : null);
+          || (member.startsWith(VOICE_DIR) || member.startsWith("new:") ? [member, member.slice(VOICE_DIR.length), 2] : null);
         if (!song) throw new Error(`${member} isn't one of the game's songs`);
         if (which === "mod") {
           if (!musicMine.has(member)) throw new Error("This mod has no song of its own here.");
@@ -1780,6 +1787,10 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (index < count - 1) return { part: index };
         const bytes = musicUpload.map((p) => Uint8Array.from(atob(p), (c) => c.charCodeAt(0)));
         const blob = new Blob(bytes, { type: "audio/wav" });
+        if (member.startsWith("new:")) {  // a new song: its name made safe, as StudioApi does
+          const [list, name] = member.slice(4).split("/");
+          member = `new:${list}/${name.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "")}`;
+        }
         musicMine.set(member, URL.createObjectURL(blob));
         return { saved: `${current}/files/replace/${member.split("\\").join("/")}.wav`, seconds: 0 };
       },

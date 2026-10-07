@@ -485,6 +485,51 @@ def script_songs(raw_scripts) -> dict:
     return {k: sorted(v) for k, v in found.items()}
 
 
+# --- a mod's new songs: files/music/list<N>/<name>.wav, a new song in battle list N (not tried in the game yet) ---
+NEW_MUSIC = "files/music"
+LISTS = ("list1", "list2", "list3")  # the three lists battles play from, in the data's order
+B = "\\"
+MUSIC_DIR = B.join(["gen_sound", "ww2", "sons", "atp_music"]) + B   # where the game keeps its songs
+MUSIC_FILES = B.join(["WW2", "Sons", "ATP_Music"]) + B              # how its data names them
+
+
+def safe_name(name: str) -> str:
+    """A new song's name as files and the data can hold it: letters, digits and _ only ("" when none are left)."""
+    import re
+    import unicodedata
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    return re.sub(r"[^A-Za-z0-9]+", "_", plain).strip("_")[:40]
+
+
+def new_song(mod_id: str, list_name: str, name: str) -> dict:
+    """What the build makes of files/music/<list>/<name>.wav: the song's path in ZZ_Win.dat (`member`), the file name
+    its data object gives (`file`), that object's name (`object`) and the list (`index`, 0 to 2)."""
+    stem = f"{mod_id}_{safe_name(name)}"
+    return {"member": (MUSIC_DIR + stem + ".ess").lower(), "file": MUSIC_FILES + stem + ".ogg",
+            "object": "Music_" + safe_name(f"{mod_id}_{name}"), "index": LISTS.index(list_name)}
+
+
+def mod_new_songs(folder: Path, mod_id: str) -> dict:
+    """{song path in ZZ_Win.dat: (its WAV, new_song())} from a mod's files/music/list<N>/<name>.wav."""
+    root = Path(folder) / NEW_MUSIC
+    out: dict = {}
+    for list_name in LISTS:
+        for f in sorted((root / list_name).glob("*.wav")) if (root / list_name).is_dir() else []:
+            if safe_name(f.stem):
+                song = new_song(mod_id, list_name, f.stem)
+                out[song["member"]] = (f, song)
+    return out
+
+
+def new_songs_rndf(songs: dict) -> str:
+    """The data a mod's new songs need, as .rndf: each a new TSoundStream naming its file, added to its list."""
+    lines = []
+    for _member, (_wav, s) in sorted(songs.items()):
+        lines.append(f"{s['object']} is TSoundStream ( FileName = path('{s['file']}') )")
+        lines.append(f"patch {PLAYLISTS}:PlayLists[{s['index']}] ( Musics += [~/{s['object']}] )")
+    return "\n".join(lines) + ("\n" if lines else "")
+
+
 # --- a mod's own sounds, put in by the build ---
 def mod_sounds(folder: Path) -> dict:
     """{sound path in ZZ_Win.dat (backslashes, lower case): its WAV} from a mod's files/replace/**/<name>.ess.wav."""
@@ -513,6 +558,43 @@ def _cooked(raw_wav: bytes, flag: int, cache: Path | None) -> bytes:
         tmp.write_bytes(made)
         tmp.replace(file)
     return made
+
+
+def new_song_changes(zz, songs: dict, cache: Path | None = None, say=print, before: dict | None = None):
+    """({bank's path in ZZ_Win.dat: new bytes}, {new member: bytes}) for a mod's new songs (mod_new_songs): each song
+    made from its WAV as a new file of ZZ_Win.dat, and its description added to every bank that holds the game's
+    music's (where the game keeps its songs' descriptions). `before`: banks other steps changed ({path: bytes})."""
+    from .edat import Edat
+    earlier = {k.lower().replace("/", "\\"): v for k, v in (before or {}).items()}
+    added: dict = {}
+    descs: dict = {}
+    for member, (wav, s) in sorted(songs.items()):
+        if zz.entry(member) is not None:
+            # not a game rule: the name is taken (two mods, or a mod and the game, with the same song file)
+            raise SoundError(f"{NEW_MUSIC}/{LISTS[s['index']]}/{Path(wav).name}: {member} is already in the game")
+        try:
+            raw = Path(wav).read_bytes()
+        except OSError as exc:
+            raise SoundError(f"{wav}: {exc.strerror or exc}") from None
+        made = _cooked(raw, 1, cache)
+        added[member] = made
+        descs[member[:-len(".ess")] + ".sformat"] = description(made)
+        h = header(made)
+        say(f"new song: {s['object']} in battle list {s['index'] + 1} from {Path(wav).name} "
+            f"({h['frames'] / h['rate']:.1f} s, {h['channels']} channel(s), {h['rate']} a second)")
+    banks: dict = {}
+    if not descs:
+        return banks, added
+    for e in zz.entries:
+        p = e.path.lower()
+        if not (p.startswith(BANKS) and p.endswith(".mpk")):
+            continue
+        raw = earlier.get(p) or bytes(zz.read(e))
+        bank = Edat(raw)
+        if not any(x.path.lower().startswith(MUSIC_DIR) for x in bank.entries):
+            continue
+        banks[e.path] = bank.to_bytes(None, descs)
+    return banks, added
 
 
 def changes(zz, sounds: dict, cache: Path | None = None, say=print, before: dict | None = None) -> dict:

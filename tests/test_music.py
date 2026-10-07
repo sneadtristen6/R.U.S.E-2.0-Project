@@ -139,6 +139,28 @@ class Music(unittest.TestCase):
             with self.assertRaises(MusicError):  # no mod picked: nowhere to save it
                 Calls(d2, mod=False).music_save(D + "menu.ess", good, 0, 1)
 
+    def test_a_new_song_added_listed_and_taken_out(self):
+        wav = sound.write_wav([((i * 13) % 2000) - 1000 for i in range(2 * 24000)], 2, 48000)
+        res = self.calls.music_save("new:list2/Iwo Jima march!", base64.b64encode(wav).decode(), 0, 1)
+        target = self.calls.mod / "files" / "music" / "list2" / "Iwo_Jima_march.wav"
+        self.assertEqual(res, {"saved": str(target), "seconds": 0.5})
+        self.assertEqual(target.read_bytes(), wav)
+        got = {g["id"]: g["songs"] for g in self.calls.music("us")["groups"]}
+        mine = got["playlist1"][-1]  # battle list 2, after the game's songs
+        self.assertEqual((mine["member"], mine["name"], mine["new"], mine["mine"], mine["seconds"]),
+                         ("new:list2/Iwo_Jima_march", "Iwo Jima march", True, True, 0.5))
+        self.assertEqual([s["name"] for s in got["playlist1"][:-1]], ["Battle 1"])
+        self.assertEqual(self.calls.music_sound("new:list2/Iwo_Jima_march", "mod")["kind"], "wav")
+        self.assertEqual(list(sound.mod_new_songs(self.calls.mod, "mod")), ["gen_sound\\ww2\\sons\\atp_music\\mod_iwo_jima_march.ess"])
+        self.calls.music_reset("new:list2/Iwo_Jima_march")
+        self.assertFalse(target.exists())
+        after = {g["id"]: g["songs"] for g in self.calls.music("us")["groups"]}
+        self.assertEqual([s["name"] for s in after["playlist1"]], ["Battle 1"])  # out of the list again
+        with self.assertRaises(MusicError):  # the game has three lists
+            self.calls.music_save("new:list4/x", base64.b64encode(wav).decode(), 0, 1)
+        with self.assertRaises(MusicError):  # a name with nothing left once made safe
+            self.calls.music_save("new:list1/!!!", base64.b64encode(wav).decode(), 0, 1)
+
     def test_the_page_can_call_them(self):
         from rusemod.webui import page_api
         from ruse_studio.api import StudioApi

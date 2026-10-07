@@ -198,6 +198,81 @@ class InTheBuild(unittest.TestCase):
             self.assertEqual(len(list(Path(d, "home").rglob("*.ess"))), 1)  # made once, kept
             self.assertEqual((game / "Data" / "PC" / "190852" / "ZZ_Win.dat").read_bytes(), zz)  # the install untouched
 
+    def test_ruse_build_adds_a_new_song_to_a_battle_list(self):
+        """files/music/list2/<name>.wav: a new song file and its description in both music banks (the other banks
+        as they were), a new TSoundStream naming it and battle list 2 holding it (not tried in the game yet)."""
+        from fixtures import make_edat, make_ndf, val
+        from rusemod.cli import main
+        from rusemod.edat import Edat
+        from rusemod.ndf import Ndf, local_ref, sub_values
+
+        def ref(i, cls):
+            return val(0x09, struct.pack("<III", 0xBBBBBBBB, i, cls))
+
+        def lst(*items):
+            return val(0x11, struct.pack("<I", len(items)) + b"".join(items))
+
+        battle = val(0x09, struct.pack("<II", 0xAAAAAAAA, 0))
+        ndf = make_ndf(objects=[(0, [(0, lst(ref(1, 1), ref(2, 1), ref(3, 1)))]), (1, [(1, lst(battle))]),
+                                (1, [(1, lst(battle))]), (1, [(1, lst(battle))]), (2, [(2, val(0x1C, struct.pack("<I", 0)))])],
+                       classes=["TMusicInGameDescriptor", "TMusicInGamePlayListDescriptor", "TSoundStream"],
+                       props=[("PlayLists", 0), ("Musics", 1), ("FileName", 2)], strings=["WW2\\Sons\\fire.wav"],
+                       exports={0: "GFX/Everything/musicInGame"}, imports=["RUSE_battle1"], compress=True)
+        units = make_edat([("dir", "genglad\\patchable\\gfx\\", [("file", "everything.cpp.gladndfbin", ndf)])])
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"RUSE_PLATFORM_HOME": str(Path(d, "home"))}):
+            game, zz = self.game(d)
+            (game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").write_bytes(units)
+            mod = Path(d, "music")
+            wav = mod / "files" / "music" / "list2" / "My Song.wav"
+            wav.parent.mkdir(parents=True)
+            (mod / "mod.toml").write_text('[mod]\nid = "music"\nversion = "1.0.0"\n', encoding="utf-8")
+            mine = tone(900, 2, 48000, seed=3)
+            wav.write_bytes(sound.write_wav(mine, 2, 48000))
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                code = main(["--game", str(game), "build", str(mod), "--instance", str(Path(d, "copy"))])
+            self.assertEqual(code, 0, out.getvalue())
+            self.assertIn("new song: Music_music_My_Song in battle list 2", out.getvalue())
+            data = Path(d, "copy", "Data", "PC", "190852")
+            copy = Edat((data / "ZZ_Win.dat").read_bytes())
+            new = bytes(copy.read(copy.entry("gen_sound\\ww2\\sons\\atp_music\\music_my_song.ess")))
+            back, h = sound.decode(new)
+            self.assertEqual((h["channels"], h["rate"], h["frames"]), (2, 48000, 900))
+            self.assertGreater(snr(mine, back), 30)
+            for name in ("gfxdescriptor.mpk", "ps3buttonpack.mpk"):  # both banks that hold the game's songs
+                bank = Edat(bytes(copy.read(copy.find(name))))
+                self.assertEqual(bytes(bank.read(bank.entry("gen_sound\\ww2\\sons\\atp_music\\music_my_song.sformat"))),
+                                 sound.description(new))
+                was = Edat(bytes(Edat(zz).read(Edat(zz).find(name))))
+                game_song = "gen_sound\\ww2\\sons\\atp_music\\song.sformat"
+                self.assertEqual(bytes(bank.read(bank.entry(game_song))), bytes(was.read(was.entry(game_song))))
+            self.assertEqual(bytes(copy.read(copy.find("alphaambient.mpk"))),
+                             bytes(Edat(zz).read(Edat(zz).find("alphaambient.mpk"))))  # no songs there: as it was
+            pack = Edat((data / "ZZ_GladPatchableWin.dat").read_bytes())
+            nd = Ndf(bytes(pack.read(pack.find("everything.cpp.gladndfbin"))))
+            new_obj = len(nd.objects) - 1
+            self.assertEqual(nd.classes[nd.objects[new_obj].cls], "TSoundStream")
+            file = nd.objects[new_obj].get(nd.prop_index("FileName"))
+            self.assertEqual(file.tc, 0x1C)  # a path, as the game's own sound streams name their files
+            self.assertEqual(nd.strings[struct.unpack("<I", file.payload)[0]],
+                             "WW2\\Sons\\ATP_Music\\music_My_Song.ogg")
+            lists = [local_ref(v) for v in sub_values(nd.objects[0].get(nd.prop_index("PlayLists")))]
+            musics = [sub_values(nd.objects[i].get(nd.prop_index("Musics"))) for i in lists]
+            self.assertEqual([len(m) for m in musics], [1, 2, 1])  # list 2 gets the new song after the game's
+            self.assertEqual(local_ref(musics[1][1]), new_obj)
+            self.assertEqual((game / "Data" / "PC" / "190852" / "ZZ_Win.dat").read_bytes(), zz)  # the install untouched
+
+    def test_new_songs_from_the_mod_folder(self):
+        with tempfile.TemporaryDirectory() as d:
+            for rel in ("list1/Calm one.wav", "list3/Ruse!.wav", "list4/nope.wav", "list2/!!!.wav"):
+                Path(d, "files", "music", rel).parent.mkdir(parents=True, exist_ok=True)
+                Path(d, "files", "music", rel).write_bytes(b"")
+            got = sound.mod_new_songs(Path(d), "my-mod")
+            self.assertEqual(sorted((s["object"], s["index"], s["file"]) for _w, s in got.values()), [
+                ("Music_my_mod_Calm_one", 0, "WW2\\Sons\\ATP_Music\\my-mod_Calm_one.ogg"),
+                ("Music_my_mod_Ruse", 2, "WW2\\Sons\\ATP_Music\\my-mod_Ruse.ogg")])  # list4 and a nameless one: not
+            self.assertIn("gen_sound\\ww2\\sons\\atp_music\\my-mod_calm_one.ess", got)
+
     def test_a_sound_the_game_has_not(self):
         from rusemod.cli import main
         with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"RUSE_PLATFORM_HOME": str(Path(d, "home"))}):

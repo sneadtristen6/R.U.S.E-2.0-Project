@@ -19,6 +19,7 @@ from rusemod.terrain import map_list
 
 # where a song plays, in the order the tab shows them (a song shows under the first that fits, the rest as "also")
 GROUPS = ("menu", "credits", "playlist0", "playlist1", "playlist2", "end", "goals", "missions", "other", "unused")
+NEW = "new:"  # a mod's new song, "new:list2/My_song" (files/music/list2/My_song.wav, rusemod.sound.mod_new_songs)
 VOICES_AT = "$/GFX/Everything/AcknowManager:AcknowUnitContainer.Content["  # the units' voice lines
 UNITS_AT = "$/GFX/Everything/Descriptor_Unit_"
 VOICE_CLASSES = ("TUniteAuSolDescriptor", "TInfanterieDescriptor", "TAvionDescriptor")  # what has AcknowUnitType
@@ -148,8 +149,45 @@ class MusicCalls:
             self._voices_kept = (key, table)
             return table
 
+    def _new_song(self, member: str) -> dict:
+        """A mod's new song, "new:<list>/<name>" (files/music/<list>/<name>.wav; the name made safe), as a song."""
+        list_name, _, name = member[len(NEW):].partition("/")
+        name = sound.safe_name(name)
+        if list_name not in sound.LISTS:
+            # not a game rule: the page named a list there isn't (the game has three)
+            raise MusicError(f"{list_name} isn't one of the battle lists")
+        if not name:
+            raise MusicError("Give the song a name (letters and digits).")
+        member = f"{NEW}{list_name}/{name}"
+        file = self._music_file(member)
+        frames = rate = 0
+        if file is not None and file.is_file():
+            try:
+                pcm, channels, rate = sound.read_wav(file.read_bytes())
+                frames = len(pcm) // channels
+            except sound.SoundError:
+                pass
+        # made like the game's songs: two channels at 48,000 a second
+        return {"member": member, "name": name.replace("_", " "), "list": list_name, "channels": 2, "rate": 48000,
+                "frames": frames, "seconds": round(frames / rate, 1) if rate else 0, "new": True}
+
+    def _new_songs(self) -> dict:
+        """The current mod's new songs by list: {"list1": [song, ...], ...}."""
+        mod = self._mod_dir()
+        out: dict = {x: [] for x in sound.LISTS}
+        if mod is None:
+            return out
+        for list_name in sound.LISTS:
+            folder = mod / sound.NEW_MUSIC / list_name
+            for f in sorted(folder.glob("*.wav")) if folder.is_dir() else []:
+                if sound.safe_name(f.stem) == f.stem:
+                    out[list_name].append(self._new_song(f"{NEW}{list_name}/{f.stem}"))
+        return out
+
     def _music_song(self, member: str) -> dict:
         """One of the game's songs or voice lines, with its format: what the page may play, replace or put back."""
+        if str(member).startswith(NEW):
+            return self._new_song(str(member))
         member = str(member).lower()
         song = self._music_songs().get(member)
         if song is not None:
@@ -168,15 +206,22 @@ class MusicCalls:
                 "frames": h["frames"]}
 
     def _music_file(self, member: str) -> Path | None:
-        """The current mod's own song for `member` (files/replace/<member>.wav), whether made yet or not."""
+        """The current mod's own song for `member` (files/replace/<member>.wav; a new song's files/music/<list>/
+        <name>.wav), whether made yet or not."""
         mod = self._mod_dir()
-        return mod / sound.REPLACE / (member.replace("\\", "/") + ".wav") if mod is not None else None
+        if mod is None:
+            return None
+        if member.startswith(NEW):
+            list_name, _, name = member[len(NEW):].partition("/")
+            return mod / sound.NEW_MUSIC / list_name / (name + ".wav")
+        return mod / sound.REPLACE / (member.replace("\\", "/") + ".wav")
 
     # --- what the page calls ---
     def music(self, lang: str = "base") -> dict:
         """The Music tab: the game's songs by where they play (GROUPS order), each with its name, length, format, the
         maps whose missions play it ({map: its names in the game's menus in `lang`, parts: the script folders,
-        "chapter1"}), and whether the current mod has its own."""
+        "chapter1"}), and whether the current mod has its own; the mod's new songs ("new": True, member
+        "new:<list>/<name>") at the end of their battle list."""
         game, _zz, _key = self._music_game()
         songs = self._music_songs()
         try:
@@ -200,6 +245,10 @@ class MusicCalls:
                 "member": member, "name": s["name"], "seconds": round(s["frames"] / s["rate"], 1),
                 "channels": s["channels"], "rate": s["rate"], "also": s["groups"][1:], "maps": maps,
                 "mine": mine is not None and mine.is_file()})
+        new = self._new_songs()
+        for i, list_name in enumerate(sound.LISTS):  # the mod's new songs, at the end of their list
+            for s in new[list_name]:
+                groups[f"playlist{i}"].append({**s, "also": [], "maps": [], "mine": True})
         return {"groups": [{"id": g, "songs": groups[g]} for g in GROUPS if groups[g]],
                 "mod": self._mod_dir() is not None}
 
