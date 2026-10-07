@@ -223,8 +223,11 @@ async function modChanged() {
   await refreshMarks();
   if (state.page) await showUnit(state.page.address, state.page.via);
   if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // a map's strokes are the mod's
+  state.aiScripts = null;  // which scripts the mod changes: the other mod's now (read again when the AI tab shows)
+  $("ai-script").dataset.lang = "";
+  closeScriptEditor();
   if (state.view === "economy") await renderEconomy();  // the economy shown is the mod's
-  if (state.view === "ai") await renderAI();  // and so are the computer players
+  if (state.view === "ai") await renderAI();  // and so are the computer players, and its scripts
   if (state.view === "values" && state.valuePage) await showValueObject(state.valuePage.address, { keep: true });  // and its changes
 }
 
@@ -2088,6 +2091,24 @@ async function renderAIScripts() {
   $("ai-scripts-help").textContent = w.ai_scripts_help;
   $("ai-script-copy").textContent = w.ai_scripts_copy;
   $("ai-script-copy").title = w.tip_ai_scripts_copy;
+  $("ai-script-edit").textContent = w.ai_script_edit;
+  $("ai-script-editing-help").textContent = w.ai_script_editing_help;
+  for (const [id, word, tip] of [["ai-script-check", "ai_script_check", "tip_ai_script_check"],
+    ["ai-script-save", "ai_script_save", "tip_ai_script_save"], ["ai-script-reset", "ai_script_reset", "tip_ai_script_reset"],
+    ["ai-script-close", "ai_script_close", "tip_ai_script_close"]]) {
+    $(id).textContent = w[word];
+    $(id).title = w[tip] || "";
+  }
+  $("ai-script-area").title = w.tip_ai_script_area;
+  $("ai-script").title = w.tip_ai_script_pick;
+  $("ai-outline-title").textContent = w.ai_outline_title;
+  $("ai-outline-title").title = w.tip_ai_outline;
+  $("ai-ref-title").textContent = w.ai_ref_title;
+  $("ai-ref-title").title = w.tip_ai_ref;
+  $("ai-ref-find").placeholder = w.ai_ref_find;
+  $("ai-ref-find").title = w.tip_ai_ref_find;
+  $("ai-ref-kind").title = w.tip_ai_ref_kind;
+  renderScriptEditButton();
   const pick = $("ai-script");
   if (pick.dataset.lang === state.lang) return;  // built for this language already: the script shown stays as it is
   if (!state.aiScripts || state.aiScripts.lang !== state.lang) {
@@ -2104,8 +2125,9 @@ async function renderAIScripts() {
   const groups = new Map();
   for (const s of scripts) {
     if (!groups.has(s.map)) groups.set(s.map, el("optgroup", { label: s.map }));
-    groups.get(s.map).append(el("option", { value: s.path, textContent: [s.part, s.file].filter(Boolean).join(" · "),
-      title: s.detail, selected: s.path === state.aiScriptPath }));
+    // a script the mod changes says so in the list
+    groups.get(s.map).append(el("option", { value: s.path, textContent: [s.part, s.file].filter(Boolean).join(" · ")
+      + (s.mine ? `  ✎ ${w.ai_scripts_changed}` : ""), title: s.detail, selected: s.path === state.aiScriptPath }));
   }
   pick.replaceChildren(el("option", { value: "", textContent: w.ai_scripts_pick, disabled: true,
     selected: !state.aiScriptPath }), ...groups.values());
@@ -2115,23 +2137,212 @@ async function renderAIScripts() {
 async function showAIScript(path) {
   const w = state.words, s = (state.aiScripts.scripts || []).find((x) => x.path === path);
   if (!s) return;
+  if (state.aiScriptPath !== path) closeScriptEditor();  // another script: the editor starts again on it
   state.aiScriptPath = path;
   const name = `${s.map} · ${[s.part, s.file].filter(Boolean).join(" · ")}`;
   $("ai-script-about").textContent = fillText(w.ai_scripts_opening, { name });
   $("ai-script-copy").disabled = true;
+  $("ai-script-edit").disabled = true;
   $("ai-script").disabled = true;  // one at a time
   try {
-    const res = await api().ai_script(path);
+    const res = await api().ai_script(path, "mod");
     if (state.aiScriptPath !== path) return;
-    $("ai-script-text").textContent = res.text;
-    $("ai-script-text").classList.remove("hidden");
-    $("ai-script-about").textContent = fillText(w.ai_scripts_shown, { name, n: res.lines, file: s.detail });
+    state.aiScript = { ...res, name, detail: s.detail };
+    $("ai-script-text").textContent = res.mine ?? res.text;  // what the game will run with the mod
+    if ($("ai-script-editor").classList.contains("hidden")) $("ai-script-text").classList.remove("hidden");
+    $("ai-script-about").textContent = fillText(w.ai_scripts_shown, { name, n: res.lines, file: s.detail })
+      + (res.mine !== null && res.mine !== undefined ? " " + w.ai_script_mine : "");
     $("ai-script-copy").disabled = false;
-  } catch (err) { problem(err); $("ai-script-about").textContent = ""; } finally { $("ai-script").disabled = false; }
+  } catch (err) { problem(err); $("ai-script-about").textContent = ""; } finally {
+    $("ai-script").disabled = false;
+    renderScriptEditButton();
+  }
 }
 
 async function copyAIScript() {
   if (await copyText($("ai-script-text").textContent)) say(state.words.ai_scripts_copied, "ok");
+}
+
+// --- changing a mission script (StudioApi.ai_script_check / ai_script_save / ai_script_reset / script_outline /
+// script_reference; LittleGroove's Mission Script editor): the whole text, checked with the game's own Python before
+// it's saved in the mod, the mission's steps to jump to, and his reference of the game's script parts to insert ---
+function renderScriptEditButton() {
+  const w = state.words, b = $("ai-script-edit"), res = state.aiScript;
+  const why = !res ? w.tip_ai_script_edit : res.compiler_missing ? fillText(w.ai_script_no_compiler, { why: res.compiler_missing })
+    : !state.mod ? w.no_mod : w.tip_ai_script_edit;
+  b.disabled = !res || Boolean(res.compiler_missing) || !state.mod || !$("ai-script-editor").classList.contains("hidden");
+  b.title = why;
+}
+
+let scriptSaved = "";  // the editor's text as last saved or opened: anything else is "not saved yet"
+
+function editAIScript() {
+  const res = state.aiScript;
+  if (!res) return;
+  const area = $("ai-script-area");
+  area.value = res.mine ?? res.text;
+  scriptSaved = area.value;
+  $("ai-script-text").classList.add("hidden");
+  $("ai-script-editor").classList.remove("hidden");
+  renderScriptEditButton();
+  scriptState();
+  refreshOutline();
+  if (!$("ai-ref-list").childNodes.length) findScriptParts();
+  area.focus();
+}
+
+function closeScriptEditor() {
+  $("ai-script-editor").classList.add("hidden");
+  if (state.aiScript) $("ai-script-text").classList.remove("hidden");
+  renderScriptEditButton();
+}
+
+function scriptState(text, kind) {
+  const w = state.words, s = $("ai-script-state"), changed = $("ai-script-area").value !== scriptSaved;
+  s.textContent = text || (changed ? w.ai_script_unsaved : "");
+  s.className = "small ai-script-state" + (kind ? " " + kind : changed ? " warn" : "");
+}
+
+// Select line `n` of the editor's text, and scroll to it
+function goToLine(n) {
+  const area = $("ai-script-area"), lines = area.value.split("\n");
+  if (!n || n > lines.length) return;
+  const start = lines.slice(0, n - 1).reduce((sum, l) => sum + l.length + 1, 0);
+  area.focus();
+  area.setSelectionRange(start, start + lines[n - 1].length);
+  area.scrollTop = Math.max(0, (n - 5) * (area.scrollHeight / Math.max(lines.length, 1)));
+}
+
+async function checkAIScript() {
+  const w = state.words;
+  scriptState(w.ai_script_checking);
+  let res;
+  try { res = await api().ai_script_check(state.aiScriptPath, $("ai-script-area").value); } catch (err) { problem(err); scriptState(); return; }
+  if (res.ok) { scriptState(w.ai_script_ok, "ok"); return true; }
+  scriptState(res.line ? fill(w.ai_script_bad, { line: res.line, error: res.error }) : res.error, "error");
+  goToLine(res.line);
+  return false;
+}
+
+async function saveAIScript() {
+  const w = state.words, text = $("ai-script-area").value;
+  let res;
+  try { res = await api().ai_script_save(state.aiScriptPath, text, "mod"); } catch (err) {
+    problem(err);
+    const m = /\(line (\d+)\)/.exec((err && err.message) || "");
+    if (m) goToLine(Number(m[1]));
+    return;
+  }
+  state.aiScript = { ...state.aiScript, ...res };
+  scriptSaved = text;
+  const mine = res.mine !== null && res.mine !== undefined;
+  scriptState(mine ? w.ai_script_saved_here : w.ai_script_game_again, "ok");
+  say(fill(mine ? w.ai_script_saved : w.ai_script_back, { name: state.aiScript.name }), "ok");
+  $("ai-script-text").textContent = res.mine ?? res.text;
+  markScriptInList(mine);
+  refreshOutline();
+}
+
+async function resetAIScript() {
+  const w = state.words;
+  let res;
+  try { res = await api().ai_script_reset(state.aiScriptPath, "mod"); } catch (err) { problem(err); return; }
+  state.aiScript = { ...state.aiScript, ...res };
+  $("ai-script-area").value = res.text;
+  scriptSaved = res.text;
+  $("ai-script-text").textContent = res.text;
+  scriptState(w.ai_script_game_again, "ok");
+  say(fill(w.ai_script_back, { name: state.aiScript.name }), "ok");
+  markScriptInList(false);
+  refreshOutline();
+}
+
+// The list's line for the script shown says whether the mod changes it
+function markScriptInList(mine) {
+  const w = state.words, s = (state.aiScripts.scripts || []).find((x) => x.path === state.aiScriptPath);
+  if (!s) return;
+  s.mine = mine;
+  const option = [...$("ai-script").options].find((o) => o.value === s.path);
+  if (option) option.textContent = [s.part, s.file].filter(Boolean).join(" · ") + (mine ? `  ✎ ${w.ai_scripts_changed}` : "");
+}
+
+let outlineTimer = null;
+async function refreshOutline() {
+  const w = state.words, text = $("ai-script-area").value;
+  let res;
+  try { res = await api().script_outline(text); } catch { res = { steps: [] }; }
+  $("ai-outline").replaceChildren(...(res.steps.length ? res.steps.map((st) => {
+    const b = el("button", { type: "button", className: "link", title: st.line ? fill(w.tip_ai_outline_step, { line: st.line }) : w.tip_ai_outline,
+      textContent: st.label || st.ir });
+    b.addEventListener("click", () => goToLine(st.line));
+    return el("li", { className: `outline-${st.kind || "action"}`, style: `padding-left: ${Math.min(st.depth, 8) * 12}px` }, b);
+  }) : [el("li", { className: "muted small", textContent: w.ai_outline_none })]),
+    ...(res.more ? [el("li", { className: "muted small", textContent: fill(w.ai_outline_more, { n: res.steps.length, more: res.more }) })] : []));
+}
+
+let refTimer = null;
+async function findScriptParts() {
+  const w = state.words, words = $("ai-ref-find").value.trim(), kind = $("ai-ref-kind").value;
+  let res;
+  try { res = await api().script_reference(words, kind); } catch (err) { problem(err); return; }
+  const pick = $("ai-ref-kind");
+  if (pick.options.length !== res.kinds.length + 1) {
+    const keep = pick.value;
+    pick.replaceChildren(el("option", { value: "", textContent: w.ai_ref_kind_all }),
+      ...res.kinds.map((k) => el("option", { value: k, textContent: k })));
+    pick.value = keep;
+  }
+  $("ai-ref-list").replaceChildren(...(res.classes.length ? res.classes.map((c) => {
+    const b = el("button", { type: "button", title: `${c.help || c.label}\n${c.name} · ${c.kind} · ${c.category}`,
+      textContent: c.label });
+    b.append(el("small", { textContent: ` ${c.name}` }));
+    b.addEventListener("click", () => showScriptPart(c));
+    return el("li", {}, b);
+  }) : [el("li", { className: "muted small", textContent: w.ai_ref_none })]));
+}
+
+function showScriptPart(c) {
+  const w = state.words;
+  const insert = el("button", { type: "button", className: "small", textContent: w.ai_ref_insert, title: w.tip_ai_ref_insert });
+  insert.addEventListener("click", () => {
+    const area = $("ai-script-area"), at = area.selectionStart, text = area.value;
+    const lineStart = text.lastIndexOf("\n", at - 1) + 1;  // a line of its own, above the cursor's
+    area.value = text.slice(0, lineStart) + c.snippet + "\n" + text.slice(lineStart);
+    area.focus();
+    area.setSelectionRange(lineStart, lineStart + c.snippet.length);
+    scriptState();
+    refreshOutline();  // the steps' lines moved down by one
+  });
+  const rows = c.params.map((p) => el("tr", { title: p.help || "" }, el("th", { textContent: p.name }),
+    el("td", { textContent: `${p.type || ""}${p.default !== null && p.default !== undefined ? ` = ${p.default}` : ""}${p.required ? " *" : ""}` })));
+  $("ai-ref-detail").replaceChildren(el("strong", { textContent: c.label }), el("code", { textContent: ` ${c.name}` }),
+    ...(c.help ? [el("p", { className: "small", textContent: c.help })] : []),
+    el("p", { className: "muted small", textContent: fill(w.ai_ref_used, { n: c.used }) + (c.examples.length ? ` (${c.examples.join(", ")})` : "") }),
+    ...(rows.length ? [el("table", { className: "ai-ref-params", title: w.ai_ref_params }, ...rows)] : []),
+    el("pre", { className: "ai-ref-snippet", textContent: c.snippet }), insert);
+}
+
+function scriptEvents() {
+  $("ai-script-edit").addEventListener("click", editAIScript);
+  $("ai-script-check").addEventListener("click", checkAIScript);
+  $("ai-script-save").addEventListener("click", saveAIScript);
+  $("ai-script-reset").addEventListener("click", resetAIScript);
+  $("ai-script-close").addEventListener("click", closeScriptEditor);
+  const area = $("ai-script-area");
+  area.addEventListener("input", () => {
+    scriptState();
+    clearTimeout(outlineTimer);
+    outlineTimer = setTimeout(refreshOutline, 1200);
+  });
+  area.addEventListener("keydown", (e) => {  // Tab indents as Python wants: 4 spaces
+    if (e.key !== "Tab" || e.ctrlKey || e.altKey) return;
+    e.preventDefault();
+    const at = area.selectionStart;
+    area.setRangeText("    ", at, area.selectionEnd, "end");
+    scriptState();
+  });
+  $("ai-ref-find").addEventListener("input", () => { clearTimeout(refTimer); refTimer = setTimeout(findScriptParts, 300); });
+  $("ai-ref-kind").addEventListener("change", findScriptParts);
 }
 
 // --- the All values tab (StudioApi.values_files / values_find / value_object / value_edit / value_reset / value_links,
@@ -2941,6 +3152,7 @@ async function start() {
   valuesEvents();
   $("ai-script").addEventListener("change", (e) => { if (e.target.value) showAIScript(e.target.value); });
   $("ai-script-copy").addEventListener("click", copyAIScript);
+  scriptEvents();
   $("tab-maps").addEventListener("click", () => showView("maps"));
   $("tab-settings").addEventListener("click", () => showView("settings"));
   $("set-game-change").addEventListener("click", () => chooseGame().catch(problem));

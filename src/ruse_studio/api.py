@@ -18,6 +18,7 @@ import functools
 import html
 import io
 import json
+import os
 import math
 import re
 import shutil
@@ -220,6 +221,25 @@ def _can_edit(prop: str, p: dict) -> bool:
     return prop not in NOT_EDITABLE and p["in_order"] and all(n is not None for n in p["numbers"]) \
         and not (p["list"] and len(p["numbers"]) >= WHOLE_LISTS.get(prop, LIST_VALUES))  # the index keeps 16 items of
     # most lists: there may be more
+
+
+def _py2(v) -> str:
+    """A default value as Python 2 source for the game's scripts."""
+    if isinstance(v, bool) or v is None:
+        return repr(v)
+    if isinstance(v, (int, float)):
+        return repr(v)
+    return "'" + str(v).encode("unicode_escape").decode("ascii").replace("'", "\\'") + "'"
+
+
+def _script_snippet(name: str, rec: dict) -> str:
+    """A line the script editor's reference inserts for one of the game's script classes: a new step named IR_NEW
+    made of `name` from its module, with the parameters it needs and the ones that have a default (a parameter it
+    needs without one starts as None, to be filled in)."""
+    where = rec.get("path") or ""
+    args = [f"{p['name']}={_py2(p.get('default'))}" for p in rec.get("params") or []
+            if p.get("name") and (p.get("required") or p.get("default") is not None)]
+    return f"IR_NEW = {where + '.' if where else ''}{name}({', '.join(args)})"
 
 
 def ammo_name(texts: dict, name_key, type_key) -> str | None:
@@ -3857,8 +3877,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """The scripts the AI tab can show: [{path, map, part, file, detail}] by map, `map` the names the game's menus
         give the map's entries in `lang`, up to three (its folder's name in the code names, or when no menu shows it:
         which chapter of a campaign map a script is for isn't read yet), `part` the folder of scripts without its
-        "scripting" ("chapter1"), `detail` where it is in the game's file. `missing`: why this copy of the Studio can't
-        show them (a library isn't there), else None."""
+        "scripting" ("chapter1"), `detail` where it is in the game's file, `mine` whether the current mod changes it.
+        `missing`: why this copy of the Studio can't show them (a library isn't there), else None."""
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
@@ -3867,18 +3887,23 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             titles = {m["pack"].lower(): m["titles"] for m in map_list(game)} if lang != schema.BASE else {}
         except (OSError, ValueError, KeyError):  # no map list (a made-up game): each map by its folder's name
             titles = {}
+        folder = self._mod_dir()
+        changed = set(mapscripts.read_mod(folder)) if folder is not None else set()
         out = []
         for s in mapscripts.scripts(game):
             t = titles.get(s["map"].lower(), {})
             names = t.get(lang) or t.get("us") or [s["map"]]
             out.append({"path": s["path"], "map": " / ".join(names[:3]) + (" …" if len(names) > 3 else ""),
                         "part": re.sub(r"^scripting_?", "", s["part"], flags=re.I),
-                        "file": s["file"], "detail": f"{s['map']}/{s['part']}/{s['file']}"})
+                        "file": s["file"], "detail": f"{s['map']}/{s['part']}/{s['file']}",
+                        "mine": (s["map"].lower(), s["part"].lower(), s["file"].lower()) in changed})
         return {"scripts": out, "missing": mapscripts.missing()}
 
-    def ai_script(self, path: str) -> dict:
-        """One of the game's scripts as Python source text, read only (rusemod.mapscripts.text), with its number of
-        lines. Kept for the session: opening it again is at once."""
+    def ai_script(self, path: str, kind: str = "mod") -> dict:
+        """One of the game's scripts as Python source text (rusemod.mapscripts.text), with its number of lines (kept for
+        the session: opening it again is at once), the current mod's text of it (`mine`, None when the mod doesn't
+        change it; `kind` "map": the map project's), whether there is a mod to save a change in (`can_change`) and
+        why this copy of the Studio can't make a script the game runs (`compiler_missing`, None when it can)."""
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
@@ -3896,7 +3921,143 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     # not a game rule: what this copy of the Studio carries
                     raise StudioError(f"This copy of the Studio can't show scripts ({why}).")
                 shown = self._scripts_shown[path] = mapscripts.text(raw)
-        return {"path": path, "text": shown, "lines": shown.count("\n")}
+        mine = self._mod_script(path, kind)
+        return {"path": path, "text": shown, "lines": shown.count("\n"),
+                "mine": mine, "can_change": self._mod_dir(self._kind(kind)) is not None,
+                "compiler_missing": mapscripts.compiler_missing()}
+
+    # changing a mission script in the current mod (rusemod.mapscripts; LittleGroove's Mission Script editor): its whole
+    # text, kept as scripts/<map>/<part>/<file>.py with the .xyz the game's own Python 2.5.1 makes from it beside it
+    def _script_entry(self, path: str) -> dict:
+        game = self._game()
+        if game is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("We couldn't find R.U.S.E., so there are no scripts to change.")
+        entry = next((s for s in mapscripts.scripts(game) if s["path"] == path), None)
+        if entry is None or not entry["map"]:
+            # not a game rule: the page asked for a script the game's file doesn't have (or one outside the maps)
+            raise StudioError(f"{path} isn't one of the game's mission scripts.")
+        return entry
+
+    def _mod_script(self, path: str, kind: str = "mod") -> str | None:
+        """The current mod's text of the game's script at `path` (None: it doesn't change it)."""
+        folder = self._mod_dir(self._kind(kind))
+        if folder is None:
+            return None
+        try:
+            e = self._script_entry(path)
+        except StudioError:
+            return None
+        f = folder / mapscripts.mod_file(e["map"], e["part"], e["file"])
+        return f.read_text(encoding="utf-8") if f.is_file() else None
+
+    def ai_script_check(self, path: str, text: str) -> dict:
+        """Whether the game's own Python (2.5.1) reads `text` as the script at `path`: {ok} or {ok: False, error,
+        line} (the line of the first mistake; None when not known). Nothing is saved."""
+        game = self._game()
+        self._script_entry(path)
+        try:
+            mapscripts.compile_text(str(text), mapscripts.read(game, path))
+        except mapscripts.ScriptError as exc:
+            return {"ok": False, "error": str(exc), "line": exc.line}
+        return {"ok": True, "error": None, "line": None}
+
+    def ai_script_save(self, path: str, text: str, kind: str = "mod") -> dict:
+        """Save `text` as the current mod's script at `path` (`kind` "map": in the map project): its text and the
+        .xyz the game's Python makes from it, only when the game's Python reads it (else StudioError with the line).
+        The game's own text again takes the mod's script out. Returns ai_script(path) again."""
+        folder = self._mod_dir(self._kind(kind))
+        if folder is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        game = self._game()
+        e = self._script_entry(path)
+        text = str(text).replace("\r\n", "\n")
+        rel = mapscripts.mod_file(e["map"], e["part"], e["file"])
+        py, xyz = folder / rel, (folder / rel).with_suffix(".xyz")
+        shown = self.ai_script(path, kind)["text"]
+        with self._saving:
+            if text.strip() == shown.strip():  # the game's own script again: nothing to keep
+                for f in (py, xyz):
+                    f.unlink(missing_ok=True)
+            else:
+                try:
+                    made = mapscripts.compile_text(text, mapscripts.read(game, path))
+                except mapscripts.ScriptError as exc:
+                    at = f" (line {exc.line})" if exc.line else ""
+                    # not a game rule: Python 2.5.1's own message about the text
+                    raise StudioError(f"The game's Python can't read this script{at}: {exc}. Nothing was saved.") \
+                        from None
+                ModEdits._write(py, text)
+                xyz.parent.mkdir(parents=True, exist_ok=True)
+                part = xyz.with_name(xyz.name + ".partial")
+                part.write_bytes(made)
+                os.replace(part, xyz)
+        return self.ai_script(path, kind)
+
+    def ai_script_reset(self, path: str, kind: str = "mod") -> dict:
+        """Take the current mod's script at `path` out: the game runs its own again. Returns ai_script(path)."""
+        folder = self._mod_dir(self._kind(kind))
+        if folder is not None:
+            e = self._script_entry(path)
+            rel = mapscripts.mod_file(e["map"], e["part"], e["file"])
+            with self._saving:
+                for f in (folder / rel, (folder / rel).with_suffix(".xyz")):
+                    f.unlink(missing_ok=True)
+        return self.ai_script(path, kind)
+
+    def script_reference(self, words: str = "", kind: str = "") -> dict:
+        """The script editor's reference (LittleGroove's catalogue of the game's script classes, in English): the
+        classes whose name or label has `words` (of `kind`: action, condition, objective, ai, control, camp, variable,
+        operator, other; "" for all), the ones he described first, then by how often the game uses them; at most 60.
+        Each with its parameters and a line to insert (`snippet`)."""
+        from ruse_mod_engine import dsl_catalog
+        found = dsl_catalog.search(kind=kind or None, query=words.strip(), limit=60)
+        out = []
+        for name, rec in found:
+            params = [{"name": p.get("name"), "type": p.get("type"), "default": p.get("default"),
+                       "required": bool(p.get("required")), "help": p.get("help") or ""}
+                      for p in rec.get("params") or []]
+            out.append({"name": name, "label": rec.get("label") or name, "kind": rec.get("kind"),
+                        "category": rec.get("category"), "help": rec.get("help") or "", "params": params,
+                        "used": rec.get("used_count") or 0, "examples": list(rec.get("example_scenarios") or [])[:3],
+                        "snippet": _script_snippet(name, rec)})
+        kinds = sorted({r.get("kind") for r in dsl_catalog.load().get("classes", {}).values() if r.get("kind")})
+        return {"classes": out, "kinds": kinds}
+
+    def script_outline(self, text: str) -> dict:
+        """The mission's steps as LittleGroove's outline reads them from a script's text (script_logic.parse_flow):
+        [{depth, ir, kind (flow, wait, action), label, line}], `line` where the step is written, the first
+        OUTLINE_SHOWN of them (`more`: how many more there are). Empty when the text has no mission flow (a map's helper
+        script)."""
+        from ruse_mod_engine import script_logic
+        try:
+            root = script_logic.parse_flow(str(text))
+        except Exception:  # his reader stops on text it doesn't expect: no outline, the text still edits
+            root = None
+        lines = {}
+        for n, line in enumerate(str(text).splitlines(), 1):
+            m = re.match(r"\s*([A-Z]{2}_\d+)\s*=", line)
+            if m and m.group(1) not in lines:
+                lines[m.group(1)] = n
+        out = []
+        more = 0
+        stack = [(root, 0)] if root is not None else []
+        while stack:  # (not recursive: a mission's steps nest deep)
+            node, depth = stack.pop()
+            if not isinstance(node, dict):
+                continue
+            if len(out) >= self.OUTLINE_SHOWN:
+                more += 1
+            else:
+                label = node.get("label") or node.get("type") or node.get("ir")
+                if node.get("kind") == "wait" and node.get("duree") is not None:
+                    label = f"{label} ({node['duree']} s)"
+                out.append({"depth": depth, "ir": node.get("ir"), "kind": node.get("kind"), "label": label,
+                            "line": lines.get(node.get("ir"))})
+            stack += [(child, depth + 1) for child in reversed(node.get("children") or [])]
+        return {"steps": out, "more": more}
+
+    OUTLINE_SHOWN = 400  # the most steps the outline lists (a campaign chapter has 1,500)
 
     # --- the All values tab (rusemod.values; LittleGroove's raw value editor brought over): any object of the unit
     # data, every value it has as the game's file has it, each changed in the current mod ---

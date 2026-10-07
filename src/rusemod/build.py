@@ -43,6 +43,8 @@ _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 SHADOW = re.compile(r"_debuginfo\.cpp\.[a-z]*ndfbin$")
 # PLAN.md decision 23: a mod never brings code that the game or the PC would run. The build only reads mod.toml,
 # src/**/*.rndf and text/*.csv anyway; refusing these files outright keeps them from travelling with a mod at all.
+# One exception, the owner's (2026-10-07, "allow a tool to edit mission scripts"): the game's own mission scripts as
+# the Studio saves them, scripts/<map>/<part>/*.py and *.xyz (rusemod.mapscripts, MOD_FORMAT §9).
 NOT_IN_MODS = {".py", ".pyc", ".pyo", ".pyw", ".pyd", ".xyz", ".ipk", ".exe", ".dll", ".com", ".scr", ".msi", ".bat",
                ".cmd", ".ps1", ".vbs", ".js", ".jar"}
 
@@ -69,12 +71,16 @@ def load_mod(path) -> tuple[ModInfo, list]:
         manifest_file = path / "mod.toml"
         if not manifest_file.is_file():
             raise BuildError(f"{path} has no mod.toml (and isn't a .rndf file)")
-        bad = sorted(f.relative_to(path).as_posix() for f in path.rglob("*")
-                     if f.is_file() and f.suffix.lower() in NOT_IN_MODS)
+        from .mapscripts import is_mod_script
+        bad = sorted(rel for rel in (f.relative_to(path).as_posix() for f in path.rglob("*")
+                                     if f.is_file() and f.suffix.lower() in NOT_IN_MODS)
+                     if not is_mod_script(rel))  # the game's mission scripts a mod changes (§9): its only scripts
         if bad:
             more = ", …" if len(bad) > 5 else ""
-            raise BuildError(f"{path}: mods can't contain scripts or programs ({', '.join(bad[:5])}{more}). The "
-                             f"build writes the only script changes a mod needs itself (decision 23).")
+            # not a game rule: what our format lets a mod bring (PLAN decision 23; mission scripts, the owner 2026-10-07)
+            raise BuildError(f"{path}: mods can't contain scripts or programs ({', '.join(bad[:5])}{more}), apart "
+                             f"from the game's mission scripts as the Studio saves them (scripts/<map>/<part>/, "
+                             f".py and .xyz).")
         try:
             manifest = tomllib.loads(manifest_file.read_text(encoding="utf-8"))
         except tomllib.TOMLDecodeError as exc:
@@ -131,6 +137,8 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.models = mod_models(path)
         from .solved import read_mod
         info.solved = read_mod(path)
+        from . import mapscripts
+        info.scripts = mapscripts.read_mod(path)
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -2702,6 +2710,22 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {where}: {note}")
                 if changed_members or data_new:
                     data_packs.append((data_path, data_arc, changed_members))
+        by_id = {m.id: m for m, _ops in mods}
+        mod_scripts = [(i, by_id[i].scripts) for i in result.order if i in by_id and getattr(by_id[i], "scripts", None)]
+        if mod_scripts:  # the game's mission scripts the mods change (rusemod.mapscripts, MOD_FORMAT §9)
+            from . import mapscripts
+            ia_path = find_pack(game, mapscripts.PACK)
+            if ia_path is None:
+                # not a game rule: the game or one of its files isn't found
+                result.findings.append(Finding("error", f"{mapscripts.PACK} isn't in this game, so no mission "
+                                                        f"script can be changed"))
+            else:
+                ia_arc = open_pack(ia_path)
+                scripts_changed, said_scripts = mapscripts.build_changes(ia_arc, mod_scripts)
+                result.findings += [Finding(level, message) for level, message in said_scripts]  # (said below)
+                if scripts_changed:
+                    data_packs.append((ia_path, ia_arc, scripts_changed))
+                    say(f"mission scripts: {len(scripts_changed)} changed in {ia_path.name}")
         for path, pack in new_packs.items():  # a new map's pack is written even when no mod edits its files
             if not any(e[0] == path for e in map_packs):
                 map_packs.append((path, pack, {}))

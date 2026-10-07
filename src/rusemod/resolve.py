@@ -44,6 +44,8 @@ class ModInfo:
     cards: dict = field(default_factory=dict)                # a new unit's name -> its own card PNG (files/cards, §7)
     models: dict = field(default_factory=dict)               # a new unit's name -> its own model .glb (files/models, §7)
     solved: dict = field(default_factory=dict)               # map pack name -> its solved.bin's bytes, locked (§8)
+    scripts: dict = field(default_factory=dict)              # the game's mission scripts it changes (§9, scripts/):
+    # (map, part, file) in lower case -> {"rel", "text", "xyz"} (rusemod.mapscripts.read_mod)
 
 
 # --- versions ---

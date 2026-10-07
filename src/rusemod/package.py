@@ -20,13 +20,14 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 from .build import NOT_IN_MODS, BuildError, load_mod
+from .mapscripts import is_mod_script  # the game's mission scripts a mod changes (MOD_FORMAT §9): its only scripts
 from .rndf import RndfError
 
 EXTENSION = ".rusemod"
 MANIFEST = "mod.toml"
 SIZE_LIMIT = 500_000_000  # bytes unpacked: a mod of data files is a few MB; anything near this isn't one
 TOP_FILES = ("mod.toml", "README.md", "LICENSE", "CHANGELOG.md")  # loose files a package keeps
-FOLDERS = ("src", "text", "files", "maps")                        # folders a package keeps (§2)
+FOLDERS = ("src", "text", "files", "maps", "scripts")             # folders a package keeps (§2; scripts/: §9)
 SKIP = {"__pycache__", ".git", "cache", "build", "dist"}
 _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 _VERSION = re.compile(r"^\d+(\.\d+){0,2}([-+][0-9A-Za-z.-]+)?$")
@@ -126,8 +127,8 @@ def update_manifest(folder, mod: dict | None = None, game: dict | None = None,
 # --- pack ---
 def files_of(folder) -> list[Path]:
     """The files of a mod folder that go into its package: mod.toml and the other loose files of §2, the .rmod a
-    community mod's mod.toml names ([rmod] file: the mod itself), and everything under src/, text/, files/ and maps/
-    (never caches, hidden files or build output)."""
+    community mod's mod.toml names ([rmod] file: the mod itself), and everything under src/, text/, files/, maps/
+    and scripts/ (never caches, hidden files or build output)."""
     folder = Path(folder)
     out = [folder / f for f in TOP_FILES if (folder / f).is_file()]
     try:
@@ -160,7 +161,8 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
     if solved:
         from .solved import write_mod
         write_mod(folder, solved)
-    bad = [f for f in folder.rglob("*") if f.is_file() and f.suffix.lower() in NOT_IN_MODS]
+    bad = [f for f in folder.rglob("*") if f.is_file() and f.suffix.lower() in NOT_IN_MODS
+           and not is_mod_script(f.relative_to(folder).as_posix())]
     if bad:
         raise PackageError(f"This mod can't be packed: mods can't contain scripts or programs "
                            f"({bad[0].relative_to(folder).as_posix()}).")
@@ -223,7 +225,7 @@ def check(path, read: bool = True) -> dict:
             parts = PurePosixPath(rel).parts
             if not rel or rel.startswith("/") or ".." in parts or ":" in rel or any(p.startswith("\\") for p in parts):
                 raise PackageError(f"{path.name} would write outside its folder ({rel}), so it can't be unpacked safely.")
-            if PurePosixPath(rel).suffix.lower() in NOT_IN_MODS:
+            if PurePosixPath(rel).suffix.lower() in NOT_IN_MODS and not is_mod_script(rel):
                 raise PackageError(f"{path.name} can't be used: mods can't contain scripts or programs ({rel}). Ask its "
                                    f"author for a version without it.")
             files.append(rel)

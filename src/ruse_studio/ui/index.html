@@ -404,9 +404,34 @@
         <h2 id="ai-scripts-title"></h2>
         <p id="ai-scripts-help" class="muted small"></p>
         <div class="ai-scripts-bar"><select id="ai-script"></select>
-          <button id="ai-script-copy" type="button" class="ghost small" disabled></button></div>
+          <button id="ai-script-copy" type="button" class="ghost small" disabled></button>
+          <button id="ai-script-edit" type="button" class="small" disabled></button></div>
         <p id="ai-script-about" class="muted small"></p>
         <pre id="ai-script-text" class="ai-script-text hidden"></pre>
+        <!-- changing a mission script (app.js editAIScript, StudioApi.ai_script_check / ai_script_save /
+             ai_script_reset / script_outline / script_reference; LittleGroove's Mission Script editor) -->
+        <div id="ai-script-editor" class="ai-script-editor hidden">
+          <p id="ai-script-editing-help" class="muted small"></p>
+          <div class="ai-script-tools">
+            <button id="ai-script-check" type="button" class="small"></button>
+            <button id="ai-script-save" type="button" class="small primary"></button>
+            <button id="ai-script-reset" type="button" class="small ghost"></button>
+            <button id="ai-script-close" type="button" class="small ghost"></button>
+            <span id="ai-script-state" class="small ai-script-state"></span>
+          </div>
+          <div class="ai-script-work">
+            <textarea id="ai-script-area" class="ai-script-area" spellcheck="false" wrap="off"></textarea>
+            <aside class="ai-script-side">
+              <h3 id="ai-outline-title"></h3>
+              <ol id="ai-outline" class="ai-outline"></ol>
+              <h3 id="ai-ref-title"></h3>
+              <div class="ai-ref-bar"><input id="ai-ref-find" type="search" autocomplete="off">
+                <select id="ai-ref-kind"></select></div>
+              <ul id="ai-ref-list" class="ai-ref-list"></ul>
+              <div id="ai-ref-detail" class="ai-ref-detail"></div>
+            </aside>
+          </div>
+        </div>
       </section>
     </div>
   </main>

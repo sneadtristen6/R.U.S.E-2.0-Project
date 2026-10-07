@@ -189,6 +189,37 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .ai-script-text { max-height: 60vh; overflow: auto; margin: 6px 0 0; padding: 8px 10px; background: var(--panel-hi);
                   border: 1px solid var(--line); border-radius: 6px; font: 12px/1.45 Consolas, monospace;
                   white-space: pre; tab-size: 4; }
+/* changing a mission script (app.js editAIScript) */
+.ai-script-editor { margin-top: 8px; }
+.ai-script-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0; }
+.ai-script-state.ok { color: var(--ok); }
+.ai-script-state.error { color: var(--error); }
+.ai-script-state.warn { color: var(--accent); }
+.ai-script-work { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 10px; }
+.ai-script-area { width: 100%; height: 62vh; min-height: 300px; padding: 8px 10px; background: var(--panel-hi);
+                  border: 1px solid var(--line); border-radius: 6px; color: inherit; font: 12px/1.45 Consolas, monospace;
+                  white-space: pre; tab-size: 4; resize: vertical; }
+.ai-script-side { max-height: 66vh; overflow: auto; padding: 4px 8px; background: var(--panel); border: 1px solid var(--line);
+                  border-radius: 6px; }
+.ai-script-side h3 { margin: 8px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); }
+.ai-outline { list-style: none; margin: 0; padding: 0; max-height: 26vh; overflow: auto; font-size: 12px; }
+.ai-outline .link { text-align: left; padding: 1px 2px; }
+.ai-outline .outline-flow .link { color: var(--accent); }
+.ai-outline .outline-wait .link { color: var(--muted); }
+.ai-ref-bar { display: flex; gap: 4px; }
+.ai-ref-bar input { flex: 1; min-width: 0; padding: 3px 6px; background: var(--panel-hi); border: 1px solid var(--line);
+                    border-radius: 6px; color: inherit; }
+.ai-ref-bar select { max-width: 40%; }
+.ai-ref-list { list-style: none; margin: 4px 0; padding: 0; max-height: 22vh; overflow: auto; }
+.ai-ref-list button { width: 100%; text-align: left; padding: 3px 6px; background: none; border: 1px solid transparent;
+                      font-size: 12px; }
+.ai-ref-list button:hover { background: var(--panel-hi); }
+.ai-ref-list small { color: var(--muted); font: 11px Consolas, monospace; }
+.ai-ref-detail { font-size: 12px; }
+.ai-ref-detail code { font: 11px Consolas, monospace; color: var(--muted); }
+.ai-ref-params th { font: 11px Consolas, monospace; text-align: left; padding-right: 6px; }
+.ai-ref-snippet { white-space: pre-wrap; word-break: break-all; padding: 4px 6px; background: var(--panel-hi); border-radius: 4px;
+                  font: 11px Consolas, monospace; }
 /* the All values tab (app.js renderValues, renderValuePage) */
 .values-browser .values-field { display: grid; gap: 3px; }
 .values-browser select { width: 100%; padding: 6px 8px; background: var(--panel); border: 1px solid var(--line);

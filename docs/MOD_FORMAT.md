@@ -27,6 +27,7 @@ ruse2-core/
     replace/<game path>    replaces an existing game file (cooked from a source format)
     add/<new path>         adds a new file (under mods/<mod id>/...)
   maps/<MapId>/            map sources (see §8)
+  scripts/<map>/<part>/    the game's mission scripts it changes, as the Studio saves them (see §9)
   README.md, LICENSE, CHANGELOG.md
 ```
 
@@ -919,8 +920,24 @@ take_out = ["roads", "bridges"]   # either, or both
 
 ## 9. Scripts
 
-- A mod in our own format never brings scripts or programs: the build refuses them (below). New units get their
-  place in the game's unit list from the build itself.
+- A mod in our own format brings no scripts or programs of its own: the build refuses them (below). New units get
+  their place in the game's unit list from the build itself.
+- **The game's mission scripts** (the scripts of its maps in `IA_Common.dat`: the campaign's chapters, challenges,
+  Operations) are the one exception (the owner, 2026-10-07: "allow a tool to edit mission scripts"; LittleGroove's
+  Mission Script editor brought over). A mod changes one by bringing its whole text, as the Studio's script editor
+  (the AI tab) saves it, with the script as the game runs it beside it:
+
+  ```
+  scripts/<map>/<part>/<file>.py     the text (a game script's map, part and file as the Studio's list names them:
+  scripts/<map>/<part>/<file>.xyz    scripts/m04_cotentin/scripting_chapter1/effetmap.py); and the game's form of it
+  ```
+
+  The Studio only saves a text the game's own Python (2.5.1) reads, and makes the `.xyz` with it. A build with that
+  Python at hand makes the `.xyz` again from the text and stops when the two differ (changed by another tool); a
+  build without it (the Launcher) uses the `.xyz`, and stops when only the text is there. A script the game hasn't
+  got, or one changed by two mods, stops the build too. Each mod that changes scripts gets a warning: scripts run
+  inside the game, so a player should use it only if they trust its author. The game's own text again (saved
+  unchanged) takes the mod's script out. Not tried in the game yet.
 - A RUSE-Mod-Manager mod (`.rmod`, §13) may replace the game's own scripts; the build warns when it does.
 
 ## 10. Build semantics
@@ -1047,8 +1064,8 @@ A unit is one named object plus unnamed sub-objects (weapon slots, turrets and s
   unlisted one, gets a warning: the game ignores it. Deleting a listed unit is an error for now (the list would point
   at nothing).
 - **Mods never contain scripts or programs** (`.py`, `.exe`, `.dll`, `.bat`, the game's compiled scripts, …): the
-  build refuses them. Listing new units (above) is the only such change a build makes, from one fixed pattern, and
-  checked.
+  build refuses them, apart from the game's own mission scripts a mod changes under `scripts/` (§9). Listing new
+  units (above) is the only such change a build makes itself, from one fixed pattern, and checked.
 - **Giving a clone its own weapon:** clone the weapon or ammunition too, and point the clone at the copy:
   `Weapons[0].Ammunition = ~/Ammo_R2_Flamethrower`.
 

@@ -1172,8 +1172,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ai_group_attack: "Attacking", ai_group_defense: "Defending", ai_group_harass: "Harassing", ai_group_money: "Money",
     ai_group_depots: "Depots and trucks", ai_group_production: "Building units", ai_group_weights: "What it likes to build",
     ai_group_ruses: "Ruses", ai_group_retaliation: "Retaliation", ai_group_intel: "Intelligence", ai_group_other: "Other",
-    ai_scripts_title: "Map and mission scripts (read only)",
-    ai_scripts_help: "The scripts the game runs on its maps: the campaign's chapters, challenges, Operations and its own tests (IA_Common.dat), shown as Python to read. A big one takes a few seconds to open. From LittleGroove's AI editor; changing a script isn't here yet.",
+    ai_scripts_title: "Map and mission scripts",
+    ai_scripts_help: "The scripts the game runs on its maps: the campaign's chapters, challenges, Operations and its own tests (IA_Common.dat), shown as Python. A big one takes a few seconds to open. Change this script lets you change one in your mod. From LittleGroove's AI editor and his Mission Script editor.",
     ai_scripts_pick: "Pick a script…", ai_scripts_opening: "Opening {name}… (a big script takes a few seconds)",
     ai_scripts_shown: "{name}: {n} lines ({file})", ai_scripts_missing: "This copy of the Studio can't show the scripts: {why}",
     ai_scripts_copy: "Copy", tip_ai_scripts_copy: "Copy the whole script.", ai_scripts_copied: "Script copied.",
@@ -1249,6 +1249,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"values_as_text": "Edit as a list", "tip_values_as_text": "Type the whole list in one box, with a comma between the numbers: to add numbers or take some out.", "values_item_n": "Number {n} in the list"});
   Object.assign(words.us, {"values_words_edit": "Change the words…", "tip_values_words_edit": "Change what this text says in the game, in each language (a unit's name, say).", "values_words_help": "What players see for this text, one box per language. Languages you leave as they are keep the game's words. Not tried in the game yet.", "tip_values_words_lang": "What players who play in {lang} see.", "values_words_save": "Save the words", "tip_values_words_save": "Save these words in the current mod.", "values_words_reset": "Game's words", "tip_values_words_reset": "Put back the game's words in every language (takes the change out of the mod).", "values_words_saved": "Saved the words of {key} in the mod.", "values_words_back": "{key} has the game's words again.", "values_words_mine": "(your mod's words)", "values_words_no_text": "The game has no words for this key."});
   Object.assign(words.us, {"scen_item_title": "This item's values", "tip_scen_item_title": "Change what the picked item is like in this scenario: whose it is, a depot's trucks, a zone's size, a town's name. Saved in your map changes at once.", "scen_item_camp": "Whose it is", "tip_scen_item_camp": "Who gets this unit or building when the scenario starts: nobody (neutral, anyone can take it) or one of the scenario's sides.", "tip_scen_item_camp_skirmish": "On a battle map every item stays neutral: a skirmish game spawns only neutral items.", "scen_item_trucks": "Supply trucks", "tip_scen_item_trucks": "How many supply trucks this depot has (the game's depots have 15 to 72). 0 to 1000.", "scen_item_radius": "Radius", "scen_item_width": "Width", "scen_item_height": "Length", "tip_scen_item_size": "The zone's size in metres. Missions use zones to tell where things happen.", "scen_item_metres": "{m} m", "scen_item_zone_note": "Zones are used by the scenario's mission: a size changed here changes where it happens.", "scen_item_town": "Town name", "tip_scen_item_words": "The town's name on the map, in every language. Saved in your map changes.", "scen_item_game": "The game has: {value}", "scen_item_reset": "Game's value", "tip_scen_item_reset": "Put this value back as the game has it (takes your change out of the map changes).", "scen_item_untested": "Changes here are saved in your map changes at once. Not tried in the game yet."});
+  Object.assign(words.us, {"ai_script_edit": "Change this script", "tip_ai_script_edit": "Change this mission's script in your mod: its whole text, checked with the game's own Python before it's saved.", "ai_script_editing_help": "Change the text, then Check and Save in the mod. A script runs inside the game for everyone who plays your mod, and a mistake can stop the mission: test it in the game. The steps and the reference on the right help find your way. Not tried in the game yet.", "ai_script_check": "Check", "tip_ai_script_check": "Have the game's own Python read the text, without saving: it says the line of the first mistake.", "ai_script_save": "Save in the mod", "tip_ai_script_save": "Check the text and, when the game's Python reads it, save it in the current mod with the form the game runs.", "ai_script_reset": "Game's script", "tip_ai_script_reset": "Take your change of this script out of the mod: the game runs its own script again.", "ai_script_close": "Stop changing", "tip_ai_script_close": "Close the editor and show the script again. Text not saved yet stays only until you open another script.", "tip_ai_script_area": "The script's text, as Python 2.5 (the game's). Tab puts 4 spaces.", "ai_outline_title": "The mission's steps", "tip_ai_outline": "What the mission does, in order (LittleGroove's outline): click a step to go to where it is written.", "tip_ai_outline_step": "Go to line {line}, where this step is written.", "ai_outline_none": "No steps found here (a helper script, or a mission written another way).", "ai_ref_title": "Reference: the game's script parts (in English)", "tip_ai_ref": "LittleGroove's catalogue of the 1,133 parts the game's scripts are built from: what each does, its values, and a line to insert.", "ai_ref_find": "Find a part: Victory, Spawn, Camera…", "tip_ai_ref_find": "Type part of a name (the catalogue is in English): the list shows the parts the game uses most first.", "tip_ai_ref_kind": "Show only one kind of part: actions, conditions, objectives, the AI, camps, variables…", "ai_ref_kind_all": "Every kind", "ai_ref_insert": "Insert", "tip_ai_ref_insert": "Put this part in the script on a line of its own, above the cursor, named IR_NEW: rename it, then use it in a step.", "ai_ref_used": "Used {n} times in the game's missions", "ai_ref_params": "Its values (* needed)", "ai_ref_none": "Nothing found. Try fewer letters.", "ai_scripts_changed": "changed", "ai_script_mine": "Your mod changes this script: this is its text.", "ai_script_no_compiler": "This copy of the Studio can't make scripts the game runs ({why}).", "ai_script_unsaved": "Not saved yet", "ai_script_checking": "Checking…", "ai_script_ok": "The game's Python reads it: no mistakes found.", "ai_script_bad": "Line {line}: {error}", "ai_script_saved_here": "Saved in the mod.", "ai_script_game_again": "The game's own script again.", "ai_script_saved": "Saved in the mod: the script of {name}.", "ai_script_back": "{name}: the game's own script again."});
+  Object.assign(words.us, {"tip_ai_script_pick": "Pick one of the game's scripts, by map: it shows below, and Change this script changes it in your mod."});
+  Object.assign(words.us, {"ai_outline_more": "Only the first {n} steps are listed here; {more} more are further down in the script."});
   // the All values tab (StudioApi.values_files / values_find / value_object...): a few objects of the unit data, each
   // row as rusemod.values.row makes it: [prop, label, kind, type, value, text, to, extra]
   const EV = "$/GFX/Everything/";
@@ -1287,6 +1290,21 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       ["Id", "Id", "guid", "guid", "8a1f9c0e-35b2-4c55-9e7d-0d3e5f6a7b8c", "GUID:{8a1f9c0e-35b2-4c55-9e7d-0d3e5f6a7b8c}"],
       ["Blob", "Blob", "fixed", "0x14", "48 bytes", null]] },
   };
+  // a made-up mission script (never the game's), the mod's changed ones, and two parts of the reference
+  const FAKE_SCRIPT = ["# a made-up mission script for the preview", "import leveldesignsolo.objectif", "",
+    "IR_1 = leveldesign.descriptor.DescriptorWaitDuree(Duree=10)",
+    "IR_2 = leveldesign.descriptor.DescriptorPrint(Message=u'Hold the bridge', ObjectList=[])",
+    "IR_3 = leveldesignsolo.objectif.DescriptorDeclencheVictoire(Duree=1, Chapter=1)",
+    "IR_4 = leveldesign.descriptor.DescriptorSequentiel(SubActions=[IR_1, IR_2, IR_3])", ""].join("\n");
+  const fakeScripts = new Map();  // path -> the mod's text (StudioApi.ai_script_save)
+  const FAKE_PARTS = [
+    { name: "DescriptorDeclencheVictoire", label: "Trigger victory", kind: "objective", category: "Objectives & endings",
+      help: "Ends the mission in victory.", params: [{ name: "Duree", type: "object", default: 1, required: false, help: "" },
+        { name: "Chapter", type: "int", default: 1, required: false, help: "" }], used: 27, examples: ["m01_leipzig__scripting"],
+      snippet: "IR_NEW = leveldesignsolo.objectif.DescriptorDeclencheVictoire(Duree=1, IdMapSoloForLadder=-1, Chapter=1, DeclencheCredits=False)" },
+    { name: "DescriptorWaitDuree", label: "Wait (seconds)", kind: "action", category: "Control flow", help: "Waits this many seconds.",
+      params: [{ name: "Duree", type: "float", default: 0, required: true, help: "Seconds." }], used: 640, examples: [],
+      snippet: "IR_NEW = leveldesign.descriptor.DescriptorWaitDuree(Duree=0)" }];
   const valueEdits = new Map();  // `${address}|${prop}` -> { value, text } (StudioApi.value_edit)
   const valueWords = new Map();  // text key -> { lang: words } (StudioApi.value_words_set)
   const VALUE_LANGS = ["us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc"];
@@ -1744,12 +1762,37 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           map: "D-Day / 10. UTAH BEACH / 11. THE HEDGEROW WAR …", part: "chapter1", file: "effetmap.xyz",
           detail: "m04_cotentin/scripting_chapter1/effetmap.xyz" },
         { path: "genpython\\1000\\test\\map\\supercrossroads4\\scripting_challenge\\effetmap.xyz", map: "Blitz / Anzio",
-          part: "challenge", file: "effetmap.xyz", detail: "supercrossroads4/scripting_challenge/effetmap.xyz" }] }),
+          part: "challenge", file: "effetmap.xyz", detail: "supercrossroads4/scripting_challenge/effetmap.xyz" }]
+        .map((s) => ({ ...s, mine: fakeScripts.has(s.path) })) }),
       ai_script: async (path) => {
         await new Promise((r) => setTimeout(r, 600));  // a big one takes seconds
-        const text = "# a made-up script for the preview\nGOAL = 'Hold the bridge'\n\ndef start(camp):\n    camp.say(GOAL)\n";
-        return { path, text, lines: text.split("\n").length - 1 };
+        const text = FAKE_SCRIPT;
+        return { path, text, lines: text.split("\n").length - 1, mine: fakeScripts.get(path) ?? null,
+          can_change: Boolean(current), compiler_missing: mode === "nocompiler" ? "the game's Python (2.5.1) isn't with this copy of the apps" : null };
       },
+      // changing a script (StudioApi.ai_script_check / ai_script_save / ai_script_reset): a line with "oops" in it is the
+      // made-up mistake the game's Python finds
+      ai_script_check: async (path, text) => {
+        const bad = text.split("\n").findIndex((l) => l.includes("oops"));
+        return bad < 0 ? { ok: true, error: null, line: null } : { ok: false, error: "SyntaxError: invalid syntax", line: bad + 1 };
+      },
+      ai_script_save: async (path, text, kind) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        const bad = text.split("\n").findIndex((l) => l.includes("oops"));
+        if (bad >= 0) throw new Error(`The game's Python can't read this script (line ${bad + 1}): SyntaxError: invalid syntax. Nothing was saved.`);
+        if (text.trim() === FAKE_SCRIPT.trim()) fakeScripts.delete(path); else fakeScripts.set(path, text);
+        return { path, text: FAKE_SCRIPT, lines: FAKE_SCRIPT.split("\n").length - 1, mine: fakeScripts.get(path) ?? null,
+          can_change: true, compiler_missing: null };
+      },
+      ai_script_reset: async (path) => {
+        fakeScripts.delete(path);
+        return { path, text: FAKE_SCRIPT, lines: FAKE_SCRIPT.split("\n").length - 1, mine: null, can_change: Boolean(current), compiler_missing: null };
+      },
+      script_outline: async (text) => ({ steps: text.split("\n").map((l, i) => [l, i + 1]).filter(([l]) => /^IR_\d+ = /.test(l))
+        .map(([l, line], k) => ({ depth: k ? 1 : 0, ir: l.split(" ")[0], kind: k ? (l.includes("Wait") ? "wait" : "action") : "flow",
+          label: l.split("(")[0].split(".").pop().replace("Descriptor", ""), line })) }),
+      script_reference: async (words, kind) => ({ kinds: ["action", "condition", "objective"], classes: FAKE_PARTS
+        .filter((c) => (!kind || c.kind === kind) && (c.name + c.label).toLowerCase().includes((words || "").toLowerCase())) }),
       test_in_game: async () => ({ job: "test" }),
       // a made-up road network: one road east-west across the island, one north-south (Stick to roads)
       map_road_graph: async () => ({ nodes: [[300000, 600000], [1000000, 600000], [655000, 350000], [655000, 900000]],

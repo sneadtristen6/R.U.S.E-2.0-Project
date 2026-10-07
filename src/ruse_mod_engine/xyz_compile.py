@@ -85,10 +85,35 @@ def _strip_module_return(source):
     return "\n".join(ln for ln in source.split("\n") if ln.rstrip() not in ("return", "return None"))
 
 
+def _unicode_literal(self):
+    """xdis's UnicodeForPython3 spelled as Python 2 source the game's 2.5.1 reads back as the same text: ASCII only,
+    every other letter escaped (e acute as \\xe9), quotes and backslashes escaped.
+
+    Added by the RUSE Mod Platform (2026-10-07): xdis 6.1.8's own __repr__ drops the first two letters of any text
+    with an accented letter and writes the rest as hex numbers (u'b1 bis vus et pr\\xe9sent\\xe9s' came out as
+    u'\\u bis vus et pr0xe9sent0xe9s'), and leaves an apostrophe inside a text unescaped (u'l'ouverture'), so 16 of
+    the game's missions and 23 of its test maps did not recompile from their decompiled source."""
+    try:
+        s = self.value.decode("utf-8")
+    except UnicodeDecodeError:
+        s = self.value.decode("latin-1")
+    body = s.encode("unicode_escape").decode("ascii")
+    if "'" in body and '"' not in body:
+        return 'u"' + body + '"'
+    return "u'" + body.replace("'", "\\'") + "'"
+
+
+def _fix_unicode_spelling():
+    from xdis import cross_types
+    if cross_types.UnicodeForPython3.__repr__ is not _unicode_literal:
+        cross_types.UnicodeForPython3.__repr__ = _unicode_literal
+
+
 def decompile(marshal_bytes):
     """2.5.1 marshal -> recompilable Python source (xdis + uncompyle6; module-return artifact stripped)."""
     import io
     from uncompyle6.main import decompile as _decompile
+    _fix_unicode_spelling()
     code = load_code(marshal_bytes)
     buf = io.StringIO()
     # 2.5.1 marshal (magic 62131); uncompyle6 decodes it with the (2,5) opcode table — verified across
