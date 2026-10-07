@@ -1,6 +1,7 @@
 """The Studio app's back end (ruse_studio.api) and the display names (rusemod.schema), on a made-up game."""
 import csv
 import hashlib
+import json
 import os
 import re
 import struct
@@ -286,6 +287,27 @@ class ModsAndMaps(WithMod):
         (old / "maps" / "SuperCrossRoads4").mkdir(parents=True)
         self.assertEqual(self.api._map_dir(), old)  # no map picked yet: the mod's maps go on
         self.assertEqual([m["path"] for m in self.api.mods("map")["mods"]], [str(old)])
+
+    def test_private_notes(self):
+        """LittleGroove's Notes boxes: one note per object, kept in the mod folder's notes.json; never in an export."""
+        self.assertEqual(self.api.note("obj:$/GFX/Unit/X"), {"key": "obj:$/GFX/Unit/X", "text": "", "can": False})
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+            self.api.note_set("obj:$/GFX/Unit/X", "hello")
+        self.api.new_mod("Noted")
+        folder = self.home / "mods" / "noted"
+        saved = self.api.note_set("obj:$/GFX/Unit/X", "Faster, for the beach map.\r\nTry 30 next. \n")
+        self.assertEqual(saved, {"key": "obj:$/GFX/Unit/X", "text": "Faster, for the beach map.\nTry 30 next.",
+                                 "can": True})
+        self.api.note_set("obj:$/GFX/Unit/Y", "é")
+        self.assertEqual(json.loads((folder / "notes.json").read_text(encoding="utf-8")),
+                         {"obj:$/GFX/Unit/X": "Faster, for the beach map.\nTry 30 next.", "obj:$/GFX/Unit/Y": "é"})
+        made = package.pack(folder, self.home / "out")
+        self.assertNotIn("notes.json", package.check(made)["files"])
+        with self.assertRaisesRegex(StudioError, "at most"):
+            self.api.note_set("obj:$/GFX/Unit/X", "x" * (StudioApi.NOTE_MOST + 1))
+        self.api.note_set("obj:$/GFX/Unit/X", "  ")
+        self.api.note_set("obj:$/GFX/Unit/Y", "")
+        self.assertFalse((folder / "notes.json").exists())
 
 
 class Editing(WithMod):

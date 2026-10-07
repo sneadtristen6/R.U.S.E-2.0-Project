@@ -1264,6 +1264,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"scen_mark_tool": "Add a name or zone", "tip_scen_mark": "Put a town or hill name, a named point or a zone on the map: pick what, then click the map where it goes.", "scen_mark_town": "Town name", "tip_scen_mark_town": "A town's name written on the map, as the game shows its towns. You type the name; it's the same in every language until you change one.", "scen_mark_hill": "Hill name", "tip_scen_mark_hill": "A hill's name written on the map, as the game shows its hills. You type the name; it's the same in every language until you change one.", "scen_mark_point": "Named point", "tip_scen_mark_point": "An invisible spot with a name. Mission scripts use these names to send units somewhere or to check where they are.", "scen_mark_circle": "Round zone", "tip_scen_mark_circle": "An invisible round area with a name. Mission scripts use it to notice when units go in or out.", "scen_mark_rect": "Square zone", "tip_scen_mark_rect": "An invisible rectangle with a name. Mission scripts use it to notice when units go in or out.", "scen_mark_town_help": "Type the town's name below, then click the map where it goes.", "scen_mark_hill_help": "Type the hill's name below, then click the map where it goes.", "scen_mark_point_help": "Click the map where the named point goes. It gets a name you can change after (point_1, point_2…).", "scen_mark_circle_help": "Click the map where the zone's middle goes. You can change its size and name after.", "scen_mark_rect_help": "Click the map where the zone's middle goes. You can change its size, turn and name after.", "scen_mark_words": "Name to show", "scen_mark_words_hint": "e.g. Springfield", "tip_scen_mark_words": "The words written on the map, in every language. To give one language other words, pick the name on the map after and use Change the words…", "scen_mark_words_first": "Type the name to show first, then click the map.", "scen_layer_points": "Named spots", "tip_scen_take_out_point": "Take it out of the match. A mission script that uses its name may stop working. You can put it back.", "scen_item_hill": "Hill name", "tip_scen_item_no_key": "This name isn't one of the game's texts, so its words can't be changed here.", "scen_item_name": "Name", "tip_scen_item_name": "The name mission scripts find it by. Changing it can break a script that uses the old name.", "scen_item_no_name": "(no name)", "scen_item_turn": "Turn", "tip_scen_item_turn": "Which way it faces, in degrees."});
   Object.assign(words.us, {"values_words_help_new": "This is your map's own name, one box per language. A box you leave empty gets the English words. Not tried in the game yet."});
   Object.assign(words.us, {"tip_scen_remove_place": "Take this name, point or zone back out of your map changes: the game's map is as before.", "tip_scen_remove_mine": "Take what you added back out of your map changes.", "tip_scen_put_back": "Put it back where the game has it (your move is undone)."});
+  Object.assign(words.us, {"notes_title": "Notes", "notes_hint": "Your own notes about this: what you changed and why, ideas to try…", "tip_notes": "Only you see these: they're kept in your mod's folder (notes.json), never in the game or in a mod you export. Saved when you click elsewhere.", "notes_saved": "Note saved."});
   // the All values tab (StudioApi.values_files / values_find / value_object...): a few objects of the unit data, each
   // row as rusemod.values.row makes it: [prop, label, kind, type, value, text, to, extra]
   const EV = "$/GFX/Everything/";
@@ -1330,6 +1331,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   };
   const valueGameWords = (key) => ({ N_UNI_137: "SHERMAN", AP_shell: "AP shell", PortIsland: "Port Island" })[key] || null;
   const newWords = new Map();  // a new label's own text key -> { lang: words } (StudioApi._new_label_text)
+  const fakeNotes = new Map();  // mod -> { key: note } (StudioApi.note_set)
   const valuePage = (address, lang) => {
     const o = VALUE_OBJECTS[address];
     if (!o) throw new Error(`There's nothing at ${address} in this game build.`);
@@ -1776,6 +1778,15 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       value_links: async (address, prop, words) => ({ class: null, objects: Object.entries(VALUE_OBJECTS)
         .filter(([a, o]) => !o.owner && a.toLowerCase().includes((words || "").toLowerCase()))
         .map(([a, o]) => ({ address: a, class: o.class, name: o.name })) }),
+      // private notes (StudioApi.note / note_set), per mod
+      note: async (key) => ({ key, text: (fakeNotes.get(current) || {})[key] || "", can: Boolean(current) }),
+      note_set: async (key, text) => {
+        if (!current) throw new Error("Pick or make a mod first: notes are kept in it.");
+        const notes = fakeNotes.get(current) || {};
+        if (String(text).trim()) notes[key] = String(text).trimEnd(); else delete notes[key];
+        fakeNotes.set(current, notes);
+        return { key, text: notes[key] || "", can: true };
+      },
       // the AI tab's scripts (StudioApi.ai_scripts / ai_script): a made-up list, and a made-up script (never the game's)
       ai_scripts: async () => ({ missing: mode === "noindex" ? "ImportError: a library isn't there" : null, scripts: [
         { path: "genpython\\1000\\test\\map\\m01_leipzig\\scripting\\effetmap.xyz", map: "1. COLDITZ CASTLE", part: "",

@@ -4510,6 +4510,49 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             edits.reset(o["address"], prop, "shared" if o["shared"] and not o["export"] else None)
         return {"saved": str(edits.file), "page": self.value_object(address, lang)}
 
+    # --- private notes (LittleGroove's Notes boxes): the modder's own words about a unit, an object of All values or an
+    # AI profile, in the mod folder's notes.json: never read by a build, never in an exported mod (package.TOP_FILES) ---
+    NOTES_FILE = "notes.json"
+    NOTE_MOST = 20000  # letters in one note
+
+    def _notes(self, kind: str) -> tuple[Path | None, dict]:
+        folder = self._mod_dir(self._kind(kind))
+        if folder is None:
+            return None, {}
+        path = folder / self.NOTES_FILE
+        try:
+            data = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+        except (OSError, ValueError):
+            data = {}  # a broken file: read as none (a save writes a good one)
+        return path, {str(k): str(v) for k, v in data.items()} if isinstance(data, dict) else {}
+
+    def note(self, key: str, kind: str = "mod") -> dict:
+        """The current mod's private note on `key` (obj:<address>: a unit, an object of All values or an AI profile,
+        one note per object wherever it's shown): {key, text, can} (`can`: there's a mod to keep it in)."""
+        path, notes = self._notes(kind)
+        return {"key": key, "text": notes.get(str(key), ""), "can": path is not None}
+
+    def note_set(self, key: str, text: str, kind: str = "mod") -> dict:
+        """Keep `text` as the current mod's private note on `key` (empty: the note is taken out). Returns note()."""
+        key, text = str(key), str(text).replace("\r\n", "\n").rstrip()
+        if not key or len(key) > 300:
+            raise StudioError("A note needs what it's about.")
+        if len(text) > self.NOTE_MOST:
+            raise StudioError(f"A note can be at most {self.NOTE_MOST} letters long.")
+        with self._saving:
+            path, notes = self._notes(kind)
+            if path is None:
+                raise StudioError("Pick or make a mod first: notes are kept in it.")
+            if text:
+                notes[key] = text
+            else:
+                notes.pop(key, None)
+            if notes:
+                ModEdits._write(path, json.dumps(dict(sorted(notes.items())), indent=1, ensure_ascii=False) + "\n")
+            elif path.is_file():
+                path.unlink()
+        return self.note(key, kind)
+
     # the words a game text key shows, changed in the mod (MOD_FORMAT §6: a `game:KEY` row in text/<table>.csv), kept
     # in a file of the Studio's own, apart from the new units' names (edits.NAMES_FILE, which ModEdits rewrites)
     WORDS_FILE = "studio-words"  # text/studio-words.<the key's table>.csv

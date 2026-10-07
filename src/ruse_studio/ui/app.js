@@ -1536,6 +1536,7 @@ async function showUnit(address, via) {
     for (const r of u.used_by) list.append(el("li", { className: "muted small", textContent: `${r.address}  (${r.path})` }));
     parts.push(el("div", { className: "group" }, el("h2", { textContent: w.used_by }), list));
   }
+  parts.push(notesBox(`obj:${u.address}`));  // (the same note as on its All values page)
   if (u.named || u.new) {  // a unit: its model beside its values, with the Blender buttons under it
     const view = unitView(u);
     const side = el("aside", { className: "unit-side" }, view,
@@ -1995,7 +1996,32 @@ function renderAIProfile(data) {
     const table = el("table");
     for (const r of g.rows) table.append(aiRow(p.id, r));
     return el("div", { className: "group" }, el("h2", { textContent: w[`ai_group_${g.id}`] || g.id }), table);
-  }));
+  }), notesBox(`obj:${p.id}`));
+}
+
+// A private Notes box (LittleGroove's): the modder's own words about this unit, object or profile, kept in the mod's
+// notes.json (StudioApi.note / note_set) and saved when the box is left; never in the game's data or an exported mod.
+function notesBox(key, kind = "mod") {
+  const w = state.words;
+  const area = el("textarea", { className: "notes-area", rows: 3, placeholder: w.notes_hint, title: w.tip_notes,
+    disabled: true });
+  area.setAttribute("aria-label", w.notes_title);
+  const said = el("div", { className: "muted small" });
+  let last = "";
+  api().note(key, kind).then((res) => {
+    area.value = last = res.text;
+    area.disabled = !res.can;
+    if (!res.can) said.textContent = w.no_mod;
+  }).catch(() => { said.textContent = w.no_mod; });
+  area.addEventListener("blur", async () => {
+    if (area.value === last) return;
+    try {
+      const res = await api().note_set(key, area.value, kind);
+      last = area.value = res.text;
+      said.textContent = w.notes_saved;
+    } catch (err) { problem(err); }
+  });
+  return el("div", { className: "group notes" }, el("h2", { textContent: w.notes_title, title: w.tip_notes }), area, said);
 }
 
 function renderAICards(data) {
@@ -2518,6 +2544,7 @@ function renderValuePage(p) {
     const more = p.users > p.used_by.length ? [el("p", { className: "muted small", textContent: fill(w.values_users_more, { n: p.users - p.used_by.length }) })] : [];
     parts.push(el("div", { className: "group" }, el("h2", { textContent: fill(w.values_used_by, { n: p.users }) }), list, ...more));
   }
+  parts.push(notesBox(`obj:${p.address}`));
   $("values-detail").replaceChildren(...parts);
 }
 
