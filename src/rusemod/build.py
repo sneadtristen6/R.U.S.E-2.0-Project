@@ -80,7 +80,8 @@ def load_mod(path) -> tuple[ModInfo, list]:
             # not a game rule: what our format lets a mod bring (PLAN decision 23; mission scripts, the owner 2026-10-07)
             raise BuildError(f"{path}: mods can't contain scripts or programs ({', '.join(bad[:5])}{more}), apart "
                              f"from the game's mission scripts as the Studio saves them (scripts/<map>/<part>/, "
-                             f".py and .xyz).")
+                             f".py and .xyz). The build writes the only other script changes a mod needs itself "
+                             f"(decision 23).")
         try:
             manifest = tomllib.loads(manifest_file.read_text(encoding="utf-8"))
         except tomllib.TOMLDecodeError as exc:
