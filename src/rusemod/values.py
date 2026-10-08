@@ -185,6 +185,37 @@ def rows(obj, links: dict[str, str]) -> list[dict]:
     return [row(prop, v, links) for prop, v in obj.props.items()]
 
 
+# --- the values an object can be given (LittleGroove's Add prop) ---
+def class_props(nd: NdfFile, cls: str) -> dict[str, int]:
+    """{property: the first object that has it (its index)} for the properties objects of class `cls` have in the data
+    file `nd`: the ones an object of that class can be given there (the build writes a new value only under a name
+    objects of its class use in its file, rusemod.model), each with an example of its kind of value."""
+    ndf = nd.ndf
+    if cls not in ndf.classes:
+        return {}
+    ci = ndf.classes.index(cls)
+    out: dict[str, int] = {}
+    for i, o in enumerate(ndf.objects):
+        if o.cls == ci:
+            for pi, _v in o.props:
+                out.setdefault(ndf.prop_name(pi), i)
+    return out
+
+
+def start_text(r: dict) -> str:
+    """A row's value (row()) as the modder would type it: what a new value starts as when it's added (the example's)."""
+    kind, v = r["kind"], r["value"]
+    if kind in ("number", "bool"):
+        return str(v)
+    if kind in ("numbers", "vector"):
+        return ", ".join(map(str, v)) if isinstance(v, list) else ""
+    if kind in ("text", "key", "guid"):
+        return "" if v is None else str(v)
+    if kind == "link":
+        return r.get("to") or ""
+    return r["text"] or ""
+
+
 # --- what the modder types, as a value of the mod file ---
 def _num(text, what: str) -> Decimal:
     t = str(text).strip()

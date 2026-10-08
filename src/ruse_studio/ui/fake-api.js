@@ -1492,6 +1492,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"values_text_new": "New text…", "tip_values_text_new": "Give this value words of its own: a new text of your mod's, so no other unit or menu that shares the game's text changes with it.", "values_text_new_help": "The words, in English; every language gets them until you change one with Change the words…", "values_text_new_hint": "e.g. Sherman Firefly", "values_text_new_make": "Make the new text", "values_text_new_done": "A new text of your mod's: the value now shows it."});
   Object.assign(words.us, {"files_tab": "Files", "tip_tab_files": "Look at any file inside the game's packs (pictures, texts, scripts, data), save a copy, or change it in your mod. The game's own files are never touched.", "files_intro": "Every file inside the game's packs. Pick a pack, then a file to see it, save a copy, or change it in your mod (only what you change is kept; the game's files are never touched).", "files_pack_label": "Pack", "tip_files_pack": "One of the game's packs (big files that hold many smaller ones): its data, its texts and pictures, its scripts, or one map's own.", "files_pack_gameplay": "Gameplay (units, economy, menus)", "files_pack_gameplay_fixed": "Gameplay, not patchable", "files_pack_scripts": "Mission scripts and the computer players", "files_pack_maps": "Maps (scenarios and placements)", "files_pack_texts": "Texts, pictures and sounds", "files_pack_common": "Common (videos, fonts)", "files_pack_map": "Map · {file}", "files_find_label": "Look for", "files_find_hint": "part of a name, e.g. .tgv or baseunite", "tip_files_find": "Shows only the files whose path has these letters (upper or lower case doesn't matter).", "files_loading": "Reading…", "files_count": "{n} of its {total} files", "files_more": "(the first {n} shown: look for part of a name to find the rest)", "files_pick": "Pick a file on the left to see it.", "tip_files_row": "Click to see this file.", "files_kind_ndf": "Game data", "files_kind_texture": "Texture", "files_kind_image": "Picture", "files_kind_picture": "Picture", "files_kind_table": "Text table", "files_kind_script": "Mission script", "files_kind_text": "Text", "files_kind_scenario": "Scenario", "files_kind_pack": "Pack inside the pack", "files_kind_binary": "Other file", "files_kind_bytes": "Other file", "files_save": "Save a copy…", "tip_files_save": "Save this file, as the game has it, wherever you choose (to open it in another program). The game isn't touched.", "files_saved": "Saved: {path}", "files_open_pack": "Open this pack", "tip_files_open_pack": "This file is itself a pack with files inside: list them, as for the game's packs.", "files_inside": "{n} files inside.", "files_in_pack": "Inside: {path}", "files_back_out": "Back out", "tip_files_back_out": "Back to the pack this one is inside.", "files_not_read": "Not shown as its kind ({why}): its first bytes instead.", "files_ndf_objects": "Objects", "files_ndf_classes": "Kinds of object", "files_ndf_props": "Value names", "files_ndf_packed": "Packed", "files_ndf_top": "Its most used kinds of object", "files_picture_size": "{w} × {h} shown; {fw} × {fh} in the game · {format}", "files_table_count": "{n} texts ({shown} shown here; save a copy to see them all).", "files_scenario_zones": "Zones (sectors)", "files_bytes_more": "…and {n} more bytes (save a copy to see them all)."});
   Object.assign(words.us, {"files_changed_mark": "changed in your mod", "files_added_mark": "added by your mod", "files_showing_mine": "shown here as your mod has it", "files_showing_game": "shown here as the game has it", "files_change": "Change it with a file of mine…", "tip_files_change": "Pick a file of yours of the same kind (a texture for a texture...): it's checked, then your mod keeps only what differs from the game's file. The game's files are never touched.", "files_changed_done": "Changed in your mod. Test in game builds it in.", "files_show_mine": "Show my version", "files_show_game": "Show the game's version", "tip_files_show": "Switch between the file as your mod changes it and as the game has it.", "files_reset": "Put the game's back", "tip_files_reset": "Take your change of this file out of your mod: the game's own file is used again.", "files_remove_added": "Take it out of my mod", "tip_files_remove_added": "Take this file you added out of your mod.", "files_mine_error": "Your change of this file no longer fits the game's file ({why}).", "files_cannot": "This file can't be changed in a mod: {why}", "files_add": "Add a file of mine to this pack…", "tip_files_add": "Add a new file of yours (a texture, a picture, a text table...) to this pack, in your mod's own folder there, for your mod's values to point at.", "files_add_help": "Its name in your mod's folder in the pack (folders with /). It goes in mods/<your mod>/.", "files_add_name": "Name of the new file", "files_add_hint": "e.g. pictures/my_flag.tgv", "tip_files_add_name": "Letters, digits, _, - and dots; its ending says what it is (.tgv a texture, .dic a text table...).", "files_add_pick": "Pick the file…", "tip_files_add_pick": "Choose the file on your PC: it's checked as a file of its kind, then put in your mod.", "files_added_done": "Added to your mod.", "files_safe": "Your mod keeps only what you change, never a copy of the game's file, and the game's own files are never touched. Not tried in the game yet."});
+  Object.assign(words.us, {"values_new": "New object…", "tip_values_new": "Make a brand-new object of one of the game's kinds (an ammunition, a weapon…) with a name of your own, in your mod. It starts empty: give it values on its page.", "values_new_help": "A new object starts with no values: give it some with Add a value… on its page. The game only uses it once something links to it. Not tried in the game yet.", "values_new_kind_label": "Kind", "values_new_kind_hint": "e.g. TAmmunition", "tip_values_new_kind": "The kind of object, by the game's own name for it (TAmmunition is an ammunition). Type part of it and pick one from the list.", "values_new_kind_count": "{n} in the game", "values_new_name_label": "Name", "values_new_name_hint": "e.g. Ammo_My_Shell", "tip_values_new_name": "Its name in the game's data: letters A-Z, digits and _, starting with a letter. Start it with something of your mod's own, so it's never a name the game has.", "values_new_make": "Make it", "tip_values_new_make": "Make the new object in your mod and open it.", "values_new_done": "{name} is made in your mod: give it values with Add a value…", "values_mine_mark": "made by your mod", "values_deleted_mark": "deleted by your mod", "values_mine": "Made by your mod: it has only the values you give it. Not tried in the game yet.", "values_meta_mine": "{kind} · made by your mod", "values_why_deleted": "Your mod deletes this object (or the one it's part of), so its values can't be changed here. Put it back to change them.", "values_put_back": "Put it back", "tip_values_put_back": "Take the delete out of your mod: the object is in the game again, with any changes your mod makes to it.", "values_put_back_done": "{name} is back.", "values_add": "Add a value…", "tip_values_add": "Give this object a value it doesn't have yet: one that other objects of its kind have. Saved in your mod.", "values_add_help": "Pick a value that other objects of this kind have, check what it should be, then click Add. You can change it on its row after. Not tried in the game yet.", "values_add_pick_label": "Which value", "tip_values_add_pick": "The values other objects of this kind have and this one doesn't.", "values_add_value_label": "Its value", "tip_values_add_value": "What the new value is. It starts as another object of this kind has it.", "values_add_go": "Add", "tip_values_add_go": "Add this value to the object, in your mod.", "values_add_none": "This object already has every value its kind has here.", "values_add_some_cant": "{n} more can't be added here (parts and raw data).", "values_added_done": "Added in your mod: {name}.", "values_added": "Added by your mod (the game's object doesn't have it).", "values_given": "Given by your mod.", "tip_values_take_out_added": "Take this value back out of your mod.", "values_take_out": "Take out", "tip_values_take_out": "Take this value out of the object, in your mod: the game then uses its own default for it. You're asked first. Not tried in the game yet.", "values_take_out_sure": "Take {name} out of this object? The game then uses its own default for it.", "values_take_out_yes": "Take it out", "values_took_out": "{name} is taken out in your mod.", "values_delete": "Delete this object…", "tip_values_delete": "Take this whole object out of the game's data, in your mod. You're told first what points at it. Hiding a unit from the build menus is usually safer. Not tried in the game yet.", "values_delete_sure": "Delete {name}? It's taken out of the game's data when your mod is built. Not tried in the game yet.", "values_delete_sure_mine": "Delete {name}? It's taken out of your mod, with its values.", "values_delete_yes": "Delete it", "tip_values_delete_yes": "Delete this object in your mod.", "values_delete_listed": "{name} can't be deleted: the game's list of units names it, and the game fails to load its units when one is missing. Hide it from the build menus instead.", "values_deleted_done": "{name} is deleted in your mod.", "values_points_at": "Things that point at it ({n}):", "values_points_after": "If it goes, they point at nothing: the game may fail where they're used, and your mod won't build until each one points somewhere else.", "values_your_change": "your change", "values_inside_go": "Your changes inside it go with it ({n})."});
   // the All values tab (StudioApi.values_files / values_find / value_object...): a few objects of the unit data, each
   // row as rusemod.values.row makes it: [prop, label, kind, type, value, text, to, extra]
   const EV = "$/GFX/Everything/";
@@ -1551,10 +1552,23 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   const valueRowOf = (address, lang, [prop, label, kind, type, value, text, to, extra]) => {
     const key = `${address}|${prop}`;
     const locked = prop === "DescriptorId";
+    const gone = valueDeleted.has(address.split(":")[0]), edited = valueEdits.get(key) || null;
+    const added = !!(extra && extra.added);
     return { prop, label: lang === "base" ? prop : label, kind, type, value, text, to: to || null, locked,
-      can: !!current && !locked && kind !== "part" && kind !== "fixed", words: (extra && extra.words) || null,
+      can: !!current && !gone && !locked && kind !== "part" && kind !== "fixed", words: (extra && extra.words) || null,
       words_mine: kind === "key" && valueWords.has(value) ? valueWords.get(value)[lang === "base" ? "us" : lang] || null : null,
-      count: extra && extra.count, items: extra && extra.items, edited: valueEdits.get(key) || null };
+      count: extra && extra.count, items: extra && extra.items, edited, added,
+      deletable: !!current && !gone && !locked && !added && !(edited && edited.removed) };
+  };
+  // values added and taken out, objects made and deleted (StudioApi.value_prop_add / value_object_new...)
+  const valueDeleted = new Set();  // the game's objects the mod deletes
+  const VALUE_KIND_PROPS = {  // what objects of each kind can be given: [prop, label, kind, type, start]
+    TUniteAuSolDescriptor: [["UpgradePrice", "Research price", "number", "int32", "50"],
+      ["IsUpgrade", "Is an upgrade", "bool", "bool", "0"], ["Factory", "Factory", "number", "int32", "10"],
+      ["DescriptorId", "Id", "number", "uint32", ""]],
+    TAmmunition: [["Puissance", "Damage", "number", "float32", "120"], ["PorteeMaximale", "Range", "number", "float32", "104000"],
+      ["TypeName", "TypeName", "key", "key", "AP_shell"], ["NbTirParSalves", "Shots per salvo", "number", "int32", "1"]],
+    TWeaponManagerDescriptor: [["Salves", "Salves", "numbers", "int32", "4, 30"]],
   };
   const valueGameWords = (key) => ({ N_UNI_137: "SHERMAN", AP_shell: "AP shell", PortIsland: "Port Island" })[key] || null;
   const newWords = new Map();  // a new label's own text key -> { lang: words } (StudioApi._new_label_text)
@@ -1572,12 +1586,14 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   const valuePage = (address, lang) => {
     const o = VALUE_OBJECTS[address];
     if (!o) throw new Error(`There's nothing at ${address} in this game build.`);
-    return { address, class: o.class, named: !o.owner, name: lang === "base" ? null : o.name, file: VALUE_FILE,
+    const gone = valueDeleted.has(address.split(":")[0]);
+    return { address, class: o.class, named: !o.owner, name: lang === "base" ? null : o.name, file: o.mine ? null : VALUE_FILE,
       pack: "ZZ_GladPatchableWin.dat", index: o.index, shared: false, owners: 1,
       owner: o.owner ? { address: o.owner, name: lang === "base" ? null : VALUE_OBJECTS[o.owner].name } : null,
-      editable: !!current, why_not: current ? "" : "no_mod", rows: o.rows.map((r) => valueRowOf(address, lang, r)),
+      editable: !!current && !gone, why_not: !current ? "no_mod" : gone ? "deleted" : "",
+      rows: o.rows.map((r) => valueRowOf(address, lang, r)),
       used_by: o.users.map(([a, path]) => ({ address: a, path, name: lang === "base" ? null : (VALUE_OBJECTS[a] || {}).name })),
-      users: o.users.length };
+      users: o.users.length, mine: !!o.mine, deleted: gone };
   };
   const valueTyped = (row, value) => {  // what rusemod.values.typed makes of what was typed (enough for the preview)
     const [, , kind, type, game] = row;
@@ -2034,9 +2050,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           && (words || "").split(/\s+/).filter(Boolean).every((wd) => (a + " " + o.class).toLowerCase().includes(wd.toLowerCase()))
           && (!prop && !value || o.rows.some((r) => r[0].toLowerCase().includes((prop || "").toLowerCase())
             && String(r[4] ?? r[5]).toLowerCase().includes((value || "").toLowerCase()))))
-          .map(([a, o]) => ({ address: a, class: o.class, export: o.owner ? null : a, file: VALUE_FILE, index: o.index,
+          .map(([a, o]) => ({ address: a, class: o.class, export: o.owner ? null : a, file: o.mine ? null : VALUE_FILE, index: o.index,
             name: lang === "base" ? null : o.name, match: prop || value ? (o.rows.filter((r) => r[0].toLowerCase().includes((prop || "").toLowerCase()))
-              .map((r) => `${r[0]} = ${r[4] ?? r[5]}`)[0] || null) : null }));
+              .map((r) => `${r[0]} = ${r[4] ?? r[5]}`)[0] || null) : null, mine: !!o.mine, deleted: valueDeleted.has(a.split(":")[0]) }));
         return { objects: found, total: found.length };
       },
       value_object: async (address, lang) => valuePage(address, lang),
@@ -2084,8 +2100,75 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           mine: valueWords.has(key) ? valueWords.get(key)[lang] : null })) };
       },
       value_links: async (address, prop, words) => ({ class: null, objects: Object.entries(VALUE_OBJECTS)
-        .filter(([a, o]) => !o.owner && a.toLowerCase().includes((words || "").toLowerCase()))
+        .filter(([a, o]) => !o.owner && !valueDeleted.has(a) && a.toLowerCase().includes((words || "").toLowerCase()))
         .map(([a, o]) => ({ address: a, class: o.class, name: o.name })) }),
+      // values added and taken out, objects made and deleted (StudioApi.value_prop_choices...): on VALUE_OBJECTS
+      value_prop_choices: async (address, lang) => {
+        const o = VALUE_OBJECTS[address];
+        if (!o) throw new Error(`There's nothing at ${address} in this game build.`);
+        const have = new Set(o.rows.map((r) => r[0]));
+        return { class: o.class, props: (VALUE_KIND_PROPS[o.class] || []).filter(([prop]) => !have.has(prop))
+          .map(([prop, label, kind, type, start]) => ({ prop, label: lang === "base" ? prop : label, kind, type,
+            start: prop === "DescriptorId" ? "" : start, can: prop !== "DescriptorId" })) };
+      },
+      value_prop_add: async (address, prop, value, lang) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        const o = VALUE_OBJECTS[address];
+        const spec = (VALUE_KIND_PROPS[o.class] || []).find(([p]) => p === prop);
+        if (!spec || o.rows.some((r) => r[0] === prop)) throw new Error(`It has ${prop} already: change it on its row.`);
+        const row = [prop, spec[1], spec[2], spec[3], null, null, null, { added: true }];
+        const t = valueTyped(row, value);
+        o.rows.push(row);
+        valueEdits.set(`${address}|${prop}`, { value: t.value, text: t.text });
+        return { saved: current + "/src/studio.rndf", page: valuePage(address, lang) };
+      },
+      value_prop_delete: async (address, prop, lang) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        const o = VALUE_OBJECTS[address], i = o.rows.findIndex((r) => r[0] === prop);
+        if (i < 0) throw new Error(`${address} has no ${prop}`);
+        if (o.rows[i][7] && o.rows[i][7].added) { o.rows.splice(i, 1); valueEdits.delete(`${address}|${prop}`); }
+        else valueEdits.set(`${address}|${prop}`, { value: null, text: null, removed: true });
+        return { saved: current + "/src/studio.rndf", page: valuePage(address, lang) };
+      },
+      value_pointing: async (address, prop) => {
+        await new Promise((r) => setTimeout(r, 150));
+        if (prop) return { users: [], total: 0, inside: 0, blocked: null };
+        const o = VALUE_OBJECTS[address] || { users: [] };
+        const mine = [...valueEdits.entries()].filter(([k, v]) => v.value === address && !k.startsWith(address + "|"))
+          .map(([k]) => ({ address: k.split("|")[0], path: k.split("|")[1], name: null, mine: true }));
+        const users = o.users.map(([a, path]) => ({ address: a, path, name: (VALUE_OBJECTS[a] || {}).name || null, mine: false }))
+          .concat(mine);
+        return { users, total: users.length, inside: 0, blocked: address === EV + "Descriptor_Unit_M4_Sherman" ? "listed" : null };
+      },
+      value_classes: async () => ({ classes: [{ class: "TAmmunition", count: 1610 }, { class: "TMountedWeaponDescriptor", count: 2207 },
+        { class: "TUniteAuSolDescriptor", count: 512 }, { class: "TWeaponManagerDescriptor", count: 700 }] }),
+      value_object_new: async (cls, name, lang) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (!/^[A-Za-z][A-Za-z0-9_]{0,99}$/.test(String(name || "").trim())) {
+          throw new Error("Give the new object a name of letters A-Z, digits and _, starting with a letter (like Ammo_My_Shell).");
+        }
+        if (!VALUE_KIND_PROPS[cls]) throw new Error(`${cls} isn't a kind of object the game's unit data has: pick one from the list.`);
+        const address = EV + String(name).trim();
+        if (VALUE_OBJECTS[address]) throw new Error(`There's already something called ${name} in the game or your mod. Pick another name.`);
+        VALUE_OBJECTS[address] = { class: cls, name: null, index: null, users: [], rows: [], mine: true };
+        return { address, saved: current + "/src/studio.rndf", page: valuePage(address, lang) };
+      },
+      value_object_delete: async (address, lang) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (VALUE_OBJECTS[address] && VALUE_OBJECTS[address].mine) {
+          delete VALUE_OBJECTS[address];
+          return { saved: current + "/src/studio.rndf", page: null };
+        }
+        if (address === EV + "Descriptor_Unit_M4_Sherman") {
+          throw new Error("Descriptor_Unit_M4_Sherman can't be deleted: the game's list of units names it, and the game fails to load its units when one of them is missing. Hide it from the build menus instead (ShowInMenu).");
+        }
+        valueDeleted.add(address);
+        return { saved: current + "/src/studio.rndf", page: valuePage(address, lang) };
+      },
+      value_object_restore: async (address, lang) => {
+        valueDeleted.delete(address);
+        return { saved: current + "/src/studio.rndf", page: valuePage(address, lang) };
+      },
       // the Files tab (StudioApi.files_packs / files_list / files_preview / files_export): made-up packs and files
       files_packs: async () => ({ packs: [{ id: "gameplay", file: "ZZ_GladPatchableWin.dat", size: 24000000, map: false },
         { id: "texts", file: "ZZ_Win.dat", size: 2100000000, map: false },

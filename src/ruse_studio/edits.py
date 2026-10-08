@@ -2,12 +2,14 @@
 changes and the new units, and `text/studio.baseunite.csv` for the new units' names.
 
 The files are the only record: the Studio reads them back to show what's been changed, and rewrites them after every
-change: the new units first (one `clone` block each, holding that unit's own values), then one `patch` block per
-object in address order. They only hold plain values (`Prop = 12` or `Prop = [30, 30, 30, 30, 30]`), links to named
-objects (`Ammunition = $/GFX/Everything/Ammo_X`: which ammo a weapon fires), any other value the Values tab sets, kept
-as its own text (`Literal`: `Position = Float3[0.0, 0.0, 1.0]`), and the new units' names; hand-written changes belong
-in other `.rndf` and `.csv` files of the same mod, which the Studio never touches. A copy that keeps its source's name
-in game (an ammunition) has no names row.
+change: the new units first (one `clone` block each, holding that unit's own values), then the new objects the All
+values tab makes from scratch (`Name is TClass`, holding their values), then one `patch` block per object in address
+order, then the objects the mod deletes (`delete $/...`: last, so the changes above never meet a deleted object). They
+only hold plain values (`Prop = 12` or `Prop = [30, 30, 30, 30, 30]`), links to named objects (`Ammunition =
+$/GFX/Everything/Ammo_X`: which ammo a weapon fires), any other value the Values tab sets, kept as its own text
+(`Literal`: `Position = Float3[0.0, 0.0, 1.0]`), values taken out (`delete Prop`), and the new units' names;
+hand-written changes belong in other `.rndf` and `.csv` files of the same mod, which the Studio never touches. A copy
+that keeps its source's name in game (an ammunition) has no names row.
 """
 from __future__ import annotations
 
@@ -68,6 +70,12 @@ class NewUnit:
     def text_key(self) -> str:
         """Its name's row in text/studio.baseunite.csv, which the clone refers to with loc('…')."""
         return f"studio.{self.target.rsplit('/', 1)[-1]}.name"
+
+
+@dataclass
+class NewObject:
+    target: str             # $/GFX/Everything/Name: its address (`Name is TClass` puts it there, rusemod.rndf)
+    cls: str                # its kind: a class the game's unit data has
 
 
 def split(address: str) -> tuple[str, str]:
@@ -143,7 +151,8 @@ class ModEdits:
     """The Studio's changes in one mod. A change is keyed by the named object, the path to the value inside it, and
     how a part that several units use is changed: "shared" (for all of them), "own" (this unit gets its own copy), or
     "" (not a shared part). New units are copies of a unit the game has; their own values are changes like any other,
-    written inside the copy's block."""
+    written inside the copy's block. New objects (made from scratch, of a class) are the same, inside their own block;
+    deleted objects are named objects of the game the mod takes out."""
 
     def __init__(self, folder):
         self.folder = Path(folder)
@@ -151,6 +160,8 @@ class ModEdits:
         self.names_file = self.folder / NAMES_FILE
         self.edits: dict[tuple[str, str, str], Edit] = {}
         self.new_units: dict[str, NewUnit] = {}
+        self.new_objects: dict[str, NewObject] = {}
+        self.deleted: set[str] = set()
         names = self._read_names()
         if self.file.is_file():
             try:
@@ -160,6 +171,16 @@ class ModEdits:
             for op in ops:
                 if op.kind == "clone" and op.target and op.source:
                     self._read_clone(op, names)
+                    continue
+                if op.kind == "create" and op.target and op.cls:
+                    self.new_objects[op.target] = NewObject(op.target, op.cls)
+                    for b in op.body:
+                        value = _plain(b.value) if b.kind == "set" else None
+                        if value is not None:
+                            self.edits[(op.target, b.path, "")] = Edit(op.target, b.path, value)
+                    continue
+                if op.kind == "delobj" and op.target:
+                    self.deleted.add(op.target)
                     continue
                 if op.kind == "delprop" and op.target:
                     self.edits[(op.target, op.path, op.share or "")] = Edit(op.target, op.path, REMOVED, op.share)
@@ -211,6 +232,60 @@ class ModEdits:
 
     def reset(self, address: str, prop: str, share: str | None = None) -> None:
         self.edits.pop(self.key(address, prop, share), None)
+        self.save()
+
+    def inside(self, address: str, prop: str) -> list[tuple[str, str, str]]:
+        """The keys of the changes made inside the value `prop` of the object at `address` (a part's own values, an
+        item of a list), however they're shared."""
+        target, path, _how = self.key(address, prop)
+        return [k for k in self.edits if k[0] == target and k[1].startswith((path + ".", path + "["))]
+
+    def remove(self, address: str, prop: str, share: str | None = None) -> int:
+        """Take the value `prop` out of the object (`delete Prop`), with the changes made inside it (inside(): they'd
+        have nothing left to change, and the build would stop on them). Returns how many of those went."""
+        gone = self.inside(address, prop)
+        for k in gone:
+            del self.edits[k]
+        target, path, how = self.key(address, prop, share)
+        self.edits[(target, path, how)] = Edit(target, path, REMOVED, how or None)
+        self.save()
+        return len(gone)
+
+    def links_to(self, address: str) -> list[tuple[str, str]]:
+        """(the object, the path) of every change of this mod whose value points at `address` or inside it (a link,
+        or a link written in a list or a map), its own changes left out."""
+        whole = re.compile(re.escape(address) + r"(?![\w/-])")
+        out = []
+        for (target, path, _how), e in self.edits.items():
+            if target == address or target.startswith(address + ":"):
+                continue
+            if isinstance(e.value, (Link, Literal)) and whole.search(str(e.value)):
+                out.append((target, path))
+        return sorted(set(out))
+
+    # --- new objects and deleted ones (the All values tab) ---
+    def add_object(self, target: str, cls: str) -> NewObject:
+        """A new object of class `cls` at `target`, with no values yet (set() gives it some)."""
+        obj = NewObject(target, cls)
+        self.new_objects[target] = obj
+        self.save()
+        return obj
+
+    def remove_object(self, target: str) -> None:
+        """Take a new object out of the mod, with its values."""
+        self.new_objects.pop(target, None)
+        for key in [k for k in self.edits if k[0] == target]:
+            del self.edits[key]
+        self.save()
+
+    def delete(self, target: str) -> None:
+        """Delete one of the game's named objects (`delete $/...`). The mod's changes to it stay, and do nothing while
+        it's deleted: putting it back (undelete) brings them back too."""
+        self.deleted.add(target)
+        self.save()
+
+    def undelete(self, target: str) -> None:
+        self.deleted.discard(target)
         self.save()
 
     def of(self, address: str, share: str | None = None) -> dict:
@@ -272,11 +347,18 @@ class ModEdits:
             for prop, value in sorted(own, key=lambda pv: _natural(pv[0])):
                 out.append(_line(prop, value))
             out.append(")\n")
+        for target in sorted(self.new_objects):  # then the objects made from scratch: exactly the values written
+            out.append(f"\nexport {target.rsplit('/', 1)[-1]} is {self.new_objects[target].cls}\n(\n")
+            own = [(path, e.value) for (t, path, how), e in self.edits.items()
+                   if t == target and how == "" and "." not in path and e.value is not REMOVED]
+            for prop, value in sorted(own, key=lambda pv: _natural(pv[0])):
+                out.append(_line(prop, value))
+            out.append(")\n")
         blocks: dict[tuple, list] = {}
         for (target, path, how), e in self.edits.items():
             head, _, prop = path.rpartition(".")
-            if target in self.new_units and how == "" and not head:
-                continue  # written inside the copy's block above
+            if (target in self.new_units or target in self.new_objects) and how == "" and not head:
+                continue  # written inside the copy's (or the new object's) block above
             blocks.setdefault((SHARE_ORDER[how], target, head, how), []).append((prop, e.value))
         for block in sorted(blocks):
             _order, target, head, how = block
@@ -285,6 +367,8 @@ class ModEdits:
             for prop, value in sorted(blocks[block], key=lambda pv: _natural(pv[0])):
                 out.append(_line(prop, value))
             out.append(")\n")
+        if self.deleted:  # last: every change above still finds what it changes
+            out.append("\n" + "".join(f"delete {target}\n" for target in sorted(self.deleted)))
         text = "".join(out)
         try:  # only a file the build can read back is ever saved
             parse(text, file=FILE.as_posix(), mod=self.folder.name)
