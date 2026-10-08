@@ -1,6 +1,6 @@
 """Unit model packs written (rusemod.unitpacks): the name trie, mesh and skeleton packs, texture stand-in packs and
 animation packs, each written back as read and with models copied in; and a unit's models given to another nation,
-on made-up packs. tools/verify_unitpacks.py runs the same on every pack the game ships."""
+on made-up packs."""
 import hashlib
 import struct
 import tempfile

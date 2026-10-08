@@ -121,7 +121,7 @@ def _line(prop: str, value) -> str:
 
 
 def game_key(target: str) -> str:
-    """The game key (FORMATS.md §4) of a new unit's name: 10 characters made from the unit's address, so it's the same
+    """The game key of a new unit's name: 10 characters made from the unit's address, so it's the same
     on every PC and two Studio units never get the same one. The game's own keys are readable names (LD_UNI_135), so
     ours start with S and can't be mistaken for one."""
     n = int.from_bytes(hashlib.sha256(target.encode("utf-8")).digest()[:8], "big")

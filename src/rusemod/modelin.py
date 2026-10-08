@@ -252,7 +252,7 @@ def _unit(v) -> tuple:
 
 def read_glb(path: Path) -> Model:
     """A .glb's meshes (z up) with their own normals when it has them, and each material's picture and, when the
-    material's extras name one (`rusemod_alpha_texture`, as write_glb and the modelshop write it), its alpha picture."""
+    material's extras name one (`rusemod_alpha_texture`, as write_glb writes it), its alpha picture."""
     try:
         doc, binary = glb_document(Path(path).read_bytes())
     except (ValueError, struct.error) as exc:
@@ -539,7 +539,7 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
         alphas.append(mat.alpha if data else b"")
     # colours as the model has them; alpha (side colour where low, shine where high) the model's own alpha picture
     # when it names one (sized the same way as the colour), else the game's plain value. Said in the report, never
-    # dropped silently (2026-10-05: the modelshop's shine map was lost here before).
+    # dropped silently (2026-10-05: a model's shine map was lost here before).
     own_alpha, notes = [], []
     for pic, alpha in zip(pictures, alphas):
         px = bytearray(pic[3])

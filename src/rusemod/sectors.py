@@ -14,7 +14,7 @@ How it is done, as other map editors make regions (a grid, then outlines traced 
      zone map made again from the same outlines, so the sectors drawn and the ones played agree, and two neighbours
      share one border, point for point.
 
-Not seen in the game yet (2026-10-05): written for the owner's D-Day map, all of it flattened and painted blue."""
+Seen in the game (Studio 0.9.8): written for the owner's D-Day map, all of it flattened and painted blue."""
 from __future__ import annotations
 
 import math

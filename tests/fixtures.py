@@ -1,6 +1,6 @@
 """Small made-up EDAT archives and NDF files for tests (no game files needed).
 
-The layouts follow docs/FORMATS.md §1 (EDAT) and §2 (NDF).
+The layouts are the game's (EDAT and NDF).
 """
 import struct
 import zlib

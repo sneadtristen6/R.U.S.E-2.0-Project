@@ -51,8 +51,8 @@ def block(items, far=False, mask=0x1F, box=(0.0, 0.0, 1.0, 1.0)):
 
 
 def road_pass(s):
-    """(block, item offset) of every road piece the game's road pass would reach, walked as the game's code was read
-    to walk a scenery file: a block is entered only when its root has the road mark (bit 25), a block seen from far
+    """(block, item offset) of every road piece the game's road pass would reach, walked as the game walks a
+    scenery file: a block is entered only when its root has the road mark (bit 25), a block seen from far
     starts at its root's right side, and inside it a node is entered only with the mark. A model of the walk, not of
     the screen: a piece it reaches isn't proven drawn (TESTS.md T12)."""
     reached, todo = set(), [0]

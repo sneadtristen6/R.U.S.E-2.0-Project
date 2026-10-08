@@ -552,7 +552,7 @@ class Rebuild:
                         + (", …" if len(files) > 6 else ""))
         if sdb:
             left.append(f"terrain layers for {len(sdb)} map(s) (`sdb_patches`): that part of the format waits for the "
-                        f"terrain work (PLAN.md §7 MT)")
+                        f"terrain work")
         if left:
             lines += ["## Not rebuilt", ""] + [n if n.startswith("- ") else f"- {n}" for n in left]
             if self.counts.get("not rebuilt"):

@@ -1,6 +1,7 @@
 # Mod Package Format: Draft Spec v0.1
 
-Status: draft for discussion (2026-09-28). Nothing here is final until M2 proves it in-game.
+Status: a working draft (2026-10-08): the format RUSE Studio 0.9.8.1 and RUSE Launcher 0.4.8.1 read and write.
+Parts can still change before 1.0.
 
 ## 1. Goals
 
@@ -248,7 +249,7 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   size, gives it a card of its own: the build points the new unit's `TextureForInterface` at a card of its own and
   adds it wherever the build menu shows the source's. The source's card is left as it is. A picture there for a unit
   no mod in the set makes is an error. The Studio writes it there when the card is made on a new unit's page, and
-  removes it with the unit. Not yet seen in the game.
+  removes it with the unit. Seen in the game.
 - **A new unit's own model:** `files/models/<the new unit's name>.glb` (`files/models/Descriptor_Unit_R2_M1_Abrams.glb`)
   gives a copied unit a model of its own. The build points its model part (`GfxDescriptor.MeshDescriptor.FileName`) at
   a new model of its own, following the source's bones: the parts in the node called `chassis` move with the hull,
@@ -256,8 +257,8 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   `ruse import-model` (or the Studio's *Import model*) writes from a .3ds or
   .glb from any 3D tool: fitted to the source unit (its length, its turret's turning point, its ground), in the axes
   `ruse export-model` writes, so it opens in Blender and can be changed there and saved over (keep the node names).
-  The source's wreck stays its own. A model there for a unit no mod in the set makes is an error. Not yet seen in the
-  game.
+  The source's wreck stays its own. A model there for a unit no mod in the set makes is an error. Seen in the game (the
+  M1 Abrams, Studio 0.9.6).
 - **The Studio's unit page** shows the unit's 3D model, turning, with the mod's paint on it (a .glb made once per game
   build in the Studio's cache). A dashed frame on it marks the card: *Use this view as the card* saves what's inside
   it, over a backdrop like the game's cards, as the mod's card; *Game's card* removes it. Under it, *Open in Blender* writes the unit's models and pictures to a work folder
@@ -351,8 +352,8 @@ maps/<map pack>/
 
 A map's files live in a folder named after the map's pack name (`TwoIslands` for Centre of Gravity,
 `SuperCrossRoads4` for Blitz: the Studio's Maps tab names each map's); a mod holds only the files it needs. A mod can also make a **new map**, a copy of a
-shipped one under a name of its own, which its other files then edit like any map (below). Terrain from scratch comes
-later (M8).
+shipped one under a name of its own, which its other files then edit like any map (below), or a blank start with ground of
+its own (`ground = "generated"`, below).
 
 ### A new map: `maps/<NewName>/map.toml` with `copy_of` (built: `rusemod.newmap`)
 
@@ -628,7 +629,7 @@ and `cover` strokes over the same circles here; its Undo takes back both.
   same bytes. The reshaped map counts for multiplayer: its files are part of the fingerprint (§12).
 - **Load order:** when several mods reshape one map, their strokes run in load order, one mod's after another's.
 - **Not yet:** raising the ground above the map's highest point or below its lowest (points stop at the highest
-  and lowest the map can hold, and the build says how many did), water in the movement data, and cutting the mesh finer. The game's acceptance of moved ground is the next in-game check.
+  and lowest the map can hold, and the build says how many did), water in the movement data, and cutting the mesh finer. Moved ground works in the game: units drive on it and take orders there (Blitz, 2026-09-30).
 
 ### Scenery: `maps/<map pack>/scenery.toml`
 
@@ -935,7 +936,7 @@ square = true       # optional: a square along the map's axes, `radius` (map uni
   brushes paint circles (its map view draws a square stroke of terrain.toml as a square).
 - `rusemod.cover` changes exactly the cells in the circles and nothing else (checked on every shipped map).
 - Circles apply in load order, a later mod's over an earlier one's.
-- Whether units hide in painted cover the way they do in a wood is the next in-game check.
+- Infantry on painted cover are hidden in the game, as in a wood (2026-09-30).
 
 ### Ground units can't use: `maps/<map pack>/movement.toml`
 
@@ -1200,7 +1201,7 @@ A unit is one named object plus unnamed sub-objects (weapon slots, turrets and s
     same row.
   - Anything the clone sets itself is kept. The build report lists every fresh value, and warns when a new object
     ends up sharing one with another object (after a later patch, say).
-  - The name shown in game (`NameInMenuToken`) stays the source's until text mods can supply names (§6).
+  - The name shown in game (`NameInMenuToken`) stays the source's unless a text mod gives the new unit a name of its own (§6), as the Studio does.
 - **A copy of that moment:** a clone copies its source as it is at that point in the load order. Later patches to the
   source don't reach the clone, and patches to the clone never reach the source.
 - **The game's unit list:** R.U.S.E. only uses the units it lists, so the build lists every copy of a listed unit
@@ -1437,7 +1438,7 @@ Built: `tools/rmod_to_mod.py` rebuilds an `.rmod` as a mod of ours, for editing.
 
 ## 14. Not yet
 
-- A mod can't add sounds yet, nor a whole new data file: its new objects go beside the ones they are copied from.
+- The game's short sound effects of the second kind can't be replaced yet (songs and most unit voices can: §7).
 - The gameplay and cosmetic split (§10.8) is cautious on purpose; the two-PC tests will tell where it can relax.
 
 ## 15. The mod index (Supported mods)

@@ -32,8 +32,13 @@ make works in the game every time, the first time.
 what changing strictly data can do. Anything beyond data is outside what we want to do with it. Your Steam install
 is never changed.
 
+**LittleGroove's tools are in the Studio.** RUSE Studio 0.9.8.1 brings over the tools of his RUSE-Mod-Manager (the
+Economy and AI tabs, All values, the game's files, missions), adds a **Music** tab for songs and voice lines, and a
+**Nations** tab that makes one of the game's nations into another, with a name and a flag of its own.
+
 **New maps can start blank.** RUSE Studio 0.9.8 starts a new map as flat land or open sea, and gives any map its own
-pictures in the game's menus, from a PNG or made in Blender from the map itself.
+pictures in the game's menus, from a PNG or made in Blender from the map itself. Since 0.9.8.1, Blank Terrain's ground
+is made as its own.
 
 **Very large map mods now build in minutes.** Before, they took a very long time to build, and that's why this
 update was needed: our most extreme map mod went from about four hours to under 10 minutes. It's in RUSE Studio
@@ -179,6 +184,8 @@ criticism are welcome in [the name discussion](https://github.com/sneadtristen6/
 | Tick mods from our supported list | Clear the map's own woods and props |
 | Troubleshoot finds what stops Play, and fixes it | Check a map before you test it |
 | Play new maps that start blank | Start a new map as flat land or open sea, with its own menu pictures |
+| Hear a mod's own songs | Replace songs and voice lines in the Music tab |
+| Play a nation with a new name and flag | Make one of the game's nations into another |
 
 <details>
 <summary><b>Everything the apps can do</b></summary>
@@ -213,6 +220,10 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
   0.2.0 on).
 - **Mod sets** and the **Mod library** in two tabs, each with the window's whole height: the whole library in reach,
   with a search and a count (Launcher 0.3.1).
+- **Convert an old mod…** (Launcher 0.4.8.1, LittleGroove's Convert brought over): an older mod that comes as the
+  game's own packs, made to be copied into the game folder, becomes a mod your library plays beside others (not tried
+  with a real old mod yet). When two mods change the same game file, the Launcher says so before Play, and **Use the
+  one from…** picks which.
 
 **Modders, with RUSE Studio**
 
@@ -252,6 +263,24 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
   own roads, bridges, depots, units and names, **sectors over the whole map**, and a thin layer of **water over the
   whole map**. **Menu pictures…** gives any map its own pictures in the game's menus, from a PNG of yours or made in
   Blender from the map's own 3D model, with the start dots where its players start. Seen in the game (2026-10-05).
+  Since 0.9.8.1, Blank Terrain's ground is made from your terrain strokes (seen in the game on test maps), and Blank
+  Ocean carries a warning: separate islands aren't ready for full-scale battles, so join the islands with land or an
+  underwater road.
+- **LittleGroove's tools** (Studio 0.9.8.1), from his RUSE-Mod-Manager: an **Economy** tab (starting money and
+  income, supply depots, the ruse cards each side starts with), an **AI** tab (how the computer players play, the
+  units they prefer and their ruse cards, and the game's map and mission scripts, shown read only), an **Upgrade box**
+  on a unit's page, **All values** (add or take out a value, make or delete an object), a **Files** tab (see a file
+  of the game's packs, save it out, or change it in your mod), and the missions' scripts, checks and menu order. Seen
+  in the game: the starting money and cards, and the AI tab.
+- **A Music tab** (Studio 0.9.8.1): every song by where it plays, each replaced in a small editor in the Studio (cut,
+  fade, volume), new songs added to the battle lists, a unit's voice lines on its page, and a map's background sound.
+  Seen in the game: the songs, the new songs and the voice lines.
+- **Make a nation into another** (Studio 0.9.8.1): the **Nations** tab gives one of the game's seven nations a new
+  name, in the lobby and for its army, and a new flag from any picture: China in Italy's place, say. Seen in the
+  game: the new name in the lobby, the new flag beside the player's name in a match.
+- **Units from other eras** (Studio 0.9.8.1): the Units tab gets WWI, WWII+, Cold War and Modern beside the game's own
+  units. Add one to your mod and it becomes a new unit with its own model, its maker credited; nothing is added until
+  you pick it. Not tried in the game yet.
 - **Add units in formations:** 1 to 10 at once, in a line, column, wedge, box or circle (Studio 0.7.1).
 - A **mod check** reads every file of your mod the way the game build does, names each problem and offers the fix
   (set a broken file aside, rename a map folder to the map's pack name) (Studio 0.7.1).
@@ -308,8 +337,8 @@ Modders who write mods by hand can also use the `ruse` command-line tool, from t
   <tr>
     <td width="50%" valign="top">
       <img src="docs/images/movement-building-on-hill.jpg" alt="R.U.S.E. in game on Blitz: a building being placed by the player on the edited hill" width="380"><br>
-      <sub>Building on the edited ground in the game works too. Four crashes on the way were found from the game's
-      crash reports and fixed the same evening.</sub>
+      <sub>Building on the edited ground in the game works too. Four crashes on the way were fixed the same
+      evening.</sub>
     </td>
     <td width="50%" valign="top">
       <img src="docs/images/bridge-tanks-ingame.jpg" alt="R.U.S.E. in game on D-Day: tanks driving across a new bridge, on its deck" width="380"><br>
@@ -366,6 +395,33 @@ Stuck on something? See [Questions? Ask any AI](#questions-ask-any-ai) at the bo
 The big steps so far, newest first. Each one was played in the game before it went out.
 
 <details>
+<summary><b>LittleGroove's tools, music, and a nation made into another (Studio 0.9.8.1)</b></summary>
+
+LittleGroove's RUSE-Mod-Manager had tools ours didn't. They're in the Studio now: the **Economy** tab (starting money,
+income, supply depots and starting ruse cards), the **AI** tab (how the computer players play, and the game's map and
+mission scripts to read), the **Upgrade box**, **All values**, the **Files** tab, and the missions' scripts, checks and
+menu order. The starting money and cards and the AI tab were seen in the game; the rest isn't tried there yet.
+
+The **Music** tab lists every song by where it plays. Replace one in a small editor (cut, fade, volume), add new songs
+to the battle lists, change a unit's voice lines on its page, or give a map its own background sound. The songs, the
+new songs and the voice lines were heard in the game.
+
+The **Nations** tab makes one of the game's seven nations into another: China in Italy's place, with its name in the
+lobby and for its army, and a flag made from any picture. Seen in the game: "China" in the lobby's list, and its flag
+beside the player's name in a match. The lobby's own flag button still shows the game's flag.
+
+Blank Terrain's ground is now made from the terrain strokes, not the game map's ground pushed about: round shores up
+close and from high up, no dents in hilltops, buildings and tanks sitting right on it. Seen in the game on test maps.
+
+**Why there are no navy maps yet.** We tried maps of islands for full-scale battles with ships, and the game itself
+stands in the way: a land unit sent to an island it can't reach crashes the game; joining the islands with a strip of
+land stops the crash, but then the computer just sends its infantry across it; with no road between the islands, no
+building can be placed anywhere; and with the game's own weapons, ships and land units can barely hurt each other.
+Map data alone can't fix the crash, so navy maps wait. Blank Ocean stays in the Studio, with that warning on it.
+
+</details>
+
+<details>
 <summary><b>New maps start blank, with their own menu pictures (Studio 0.9.8)</b></summary>
 
 A new map no longer has to start as a full copy of a game map. **Duplicate map** can start it as **Blank Terrain**,
@@ -379,7 +435,7 @@ Ocean, Blank Terrain, and a copy of D-Day with pictures made in Blender beside t
 
 Fixed on the way, each seen in the game: a unit built on a drained sea crashed the game, old river water stood as
 walls along a map's edge, and erased lighthouses still shone over the sea. Not tried yet: units under Blank Ocean's
-water. Next: navy maps.
+water.
 
 </details>
 
@@ -555,7 +611,7 @@ Twelve hours, six rounds of testing.
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.8) &middot; **Studio** for modders, a preview (latest: 0.9.8) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.8.1) &middot; **Studio** for modders, a preview (latest: 0.9.8.1) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -569,8 +625,11 @@ second Sherman with a 3D model of its own, a mission of our own played to a vict
 units in a campaign map, erased buildings opening their ground, a new unit's own card, and an M1 Abrams imported from
 another 3D program; on 2026-10-05, a drained sea units are built and move on, new maps that start blank (Blank
 Terrain, Blank Ocean) with sectors over the whole map, and a map's own pictures in the game's menus, made in Blender
-or from a PNG, with the start dots where its players start. **Not yet checked in the game:** a new unit made in the Studio's window, mod sets made in the launcher's window, a mod exported as one file, sharing a load
-order, units a skirmish spawns, and Browse mods.
+or from a PNG, with the start dots where its players start; by 2026-10-08, the Economy tab's starting money and cards,
+the AI tab, replaced and new songs and voice lines, a nation with a new name in the lobby and a new flag in a match,
+and Blank Terrain's own ground. **Not yet checked in the game:** a new unit made in the Studio's window, mod sets made
+in the launcher's window, a mod exported as one file, sharing a load order, units a skirmish spawns, Browse mods, and
+from 0.9.8.1 the Upgrade box, All values, Files, the missions' tools, background sounds and units from other eras.
 
 </details>
 
@@ -602,7 +661,7 @@ The two apps run on the engine, separate from each other (neither needs the othe
 desktop windows built like web pages; once: `py -3 -m pip install pywebview`. Their screens also open in a normal
 browser with made-up data: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_studio/ui/index.html?fake`.
 
-- **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/), released 0.3.0), for players: it finds the game,
+- **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/)), for players: it finds the game,
   lists your mod sets and has a big Play button that builds the set's modded copy and starts the game (Vanilla
   starts through Steam). `py -3 -m ruse_launcher`. **Players never touch a file.** A
   mod library ("Add a mod file…" for a `.rusemod` from the Studio, a `.rmod` or a `.zip`, or drop a mod file or
@@ -613,7 +672,7 @@ browser with made-up data: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_stu
   mods** (0.3.0): our list of mods (a GitHub repository, MOD_FORMAT §15) with tick boxes, several installed at once,
   each file checked against the list before it goes into the library, cheat mods kept apart; offline, the last
   copy of the list.
-- **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/), released 0.8.0), for modders: browse every unit and
+- **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/)), for modders: browse every unit and
   building, see a unit's values, parts and what uses it, and pick a language: the game's own names by default, or
   any of the game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is
   saved in the mod's `src/studio.rndf` (with Undo); a part several units share changes for one of them or all.
@@ -686,6 +745,9 @@ R.U.S.E. 2.0 stands on three people's work. None of it would be here without the
 - **LittleGroove's map editor led the way for ours:** supply depots and HQs sticking to roads (LittleGroove's
   measured distances), the opening camera each match starts on, and turning it round the HQ all come from that work.
   So does saving a changed scenario so the game loads it, and the units editor's ammo types and flag lists.
+- **LittleGroove's tools are in the Studio and the Launcher** (Studio 0.9.8.1, Launcher 0.4.8.1): the Economy and AI
+  tabs, the script viewer, the Upgrade box, All values, the game's files, the missions' tools, and Convert an old mod
+  all come from his RUSE-Mod-Manager.
 
 ### DomesticNukes: the map maker's groundwork
 

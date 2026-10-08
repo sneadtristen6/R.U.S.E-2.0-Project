@@ -10,9 +10,9 @@ zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy 
     pokazane jako Python, tylko do odczytu. Sprawdzone w grze.
   - **Pole Ulepszenie** na stronie jednostki: jednostka, której jest ulepszeniem, jej własne ulepszenia, cena i czas
     badania.
-  - **Karta Wszystkie wartości:** każdy obiekt i każda wartość danych gry, zmienione w modzie: dodać lub usunąć
+  - **Karta Wszystkie wartości:** dowolny obiekt lub wartość gry, zmienione w modzie: dodać lub usunąć
     wartość, utworzyć lub usunąć obiekt, nadać wartości tekstowej własne słowa.
-  - **Karta Pliki:** każdy plik z paczek gry, do obejrzenia i zapisania. Zamień jeden na własny plik albo dodaj nowy:
+  - **Karta Pliki:** dowolny plik z paczek gry, do obejrzenia i zapisania. Zamień jeden na własny plik albo dodaj nowy:
     twój mod zachowuje tylko zmiany, każda sprawdzona według rodzaju.
   - **Misje:** zmienić skrypty misji; sprawdzić, czy jest w menu, czy ładuje się każdy potrzebny plik, i jej teksty;
     przesunąć ją w górę lub w dół w jej menu.

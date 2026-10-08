@@ -57,8 +57,8 @@ Each player starts at a **starting point** of their team, one per player: in a 3
 4. When the line says **Every player has a starting point**, **Test in game** and open **BATTLES**: the map is listed
    with its new count, e.g. *(8) Cotentin (4v4)*.
 
-A starting point you added moves with **Move**, or goes with **Remove**. More than 8: not yet (the game's own
-limit is still to test).
+A starting point you added moves with **Move**, or goes with **Remove**. More than 8: no, the game's lobby has 8
+seats (tried 2026-10-02).
 
 > [!NOTE]
 > New, not yet checked in the game: tell us in [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)

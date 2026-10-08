@@ -57,7 +57,7 @@ def _drives() -> list[str]:
 
 def portable_blenders() -> list[Path]:
     """Blenders unpacked from blender.org's zip (no installer, so in no list): a blender* folder holding blender.exe
-    at the top of a local drive or one folder down (D:\\Tools\\blender-4.5.14-windows-x64, the owner's), or in the
+    at the top of a local drive or one folder down (D:\\Tools\\blender-4.5-windows-x64, say), or in the
     user's Downloads, Desktop or Documents (or one folder down there)."""
     places = list(_drives())
     home = Path.home()

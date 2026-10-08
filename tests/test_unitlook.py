@@ -367,7 +367,7 @@ class Blender(unittest.TestCase):
 
     def test_a_portable_blender_is_found(self):
         """Blender unzipped from blender.org (no installer: not in Program Files, not on the PATH) is found at the top
-        of a drive or one folder down, the newest first: the owner's D:\\Tools\\blender-4.5.14-windows-x64 wasn't."""
+        of a drive or one folder down, the newest first (one in D:\\Tools\\blender-4.5-windows-x64 wasn't, before)."""
         from unittest import mock
         with tempfile.TemporaryDirectory() as drive, tempfile.TemporaryDirectory() as home:
             for folder in ("Tools/blender-4.5.14-windows-x64", "blender-4.2.3-windows-x64", "Games/notblender"):

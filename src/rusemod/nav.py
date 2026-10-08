@@ -565,7 +565,7 @@ class Graph:
     def open_ground(self, zones: list[tuple[float, float, float]]) -> dict:
         """Give units the ground inside `zones` (circles: x, y, radius) where the graph has none: the reverse of
         Graph.block. Ground a shipped map closes to units has no circle over it at all (no shipped graph has a circle
-        without links, or an emptied one: FORMATS.md §6, movement graphs), so opening it is adding circles there.
+        without links, or an emptied one), so opening it is adding circles there.
 
         The main graph gets new circles over the zones where no live circle is (_grow: centres on the 2 STEP grid,
         the largest first, each inside a zone, down to MIN_RADIUS, their middles on the map and never

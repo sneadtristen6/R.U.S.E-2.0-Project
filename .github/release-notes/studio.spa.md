@@ -10,9 +10,9 @@ idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de
     los scripts de mapas y misiones del juego, mostrados en Python, solo de lectura. Visto en el juego.
   - **Recuadro Mejora** en la página de una unidad: la unidad de la que es mejora, sus propias mejoras, el precio y el
     tiempo de su investigación.
-  - **Pestaña Todos los valores:** cada objeto y valor de los datos del juego, cambiados en un mod: añadir o quitar un
+  - **Pestaña Todos los valores:** cualquier objeto o valor del juego, cambiado en un mod: añadir o quitar un
     valor, crear o borrar un objeto, dar a un valor de texto palabras propias.
-  - **Pestaña Archivos:** cada archivo de los paquetes del juego, visible y guardable. Cambia uno por un archivo tuyo o
+  - **Pestaña Archivos:** cualquier archivo de los paquetes del juego, visible y guardable. Cambia uno por un archivo tuyo o
     añade uno: tu mod guarda solo los cambios, cada uno comprobado según su tipo.
   - **Misiones:** cambiar los scripts de una misión; ver si está en los menús, si carga cada archivo que necesita, y
     sus textos; subirla o bajarla en su menú.

@@ -11,9 +11,9 @@ modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non v
     gioco.
   - **Riquadro Potenziamento** nella pagina di un'unità: l'unità di cui è un potenziamento, i suoi potenziamenti, il
     prezzo e il tempo della ricerca.
-  - **Scheda Tutti i valori:** ogni oggetto e valore dei dati del gioco, cambiato in una mod: aggiungere o togliere un
+  - **Scheda Tutti i valori:** qualsiasi oggetto o valore del gioco, cambiato in una mod: aggiungere o togliere un
     valore, creare o eliminare un oggetto, dare a un valore di testo parole proprie.
-  - **Scheda File:** ogni file dei pacchetti del gioco, visibile e salvabile. Sostituiscine uno con un tuo file o
+  - **Scheda File:** qualsiasi file dei pacchetti del gioco, visibile e salvabile. Sostituiscine uno con un tuo file o
     aggiungine uno: la tua mod conserva solo le modifiche, ognuna controllata secondo il suo tipo.
   - **Missioni:** cambiare gli script di una missione; vedere se è nei menu, se ogni file che le serve si carica, e i
     suoi testi; spostarla su o giù nel suo menu.

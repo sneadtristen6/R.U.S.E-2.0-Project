@@ -138,7 +138,7 @@ def skirt_q(t: Tms, z: int) -> int:
 
 def skirt_meshes(t: Tms) -> list:
     """The skirt read back: per submesh present, (indices, [(x, y, z, w)], [6 bounds], [(vstart, vcount, istart,
-    icount)]), from the layout in docs/FORMATS.md (independent of rusemod.tms)."""
+    icount)]), from the layout itself (independent of rusemod.tms)."""
     out, pos = [], 0
     for m in range(2):
         ib, vb, bb, pb = struct.unpack_from("<4I", t.skirt, 4 + 16 * m)

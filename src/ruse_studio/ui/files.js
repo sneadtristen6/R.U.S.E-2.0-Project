@@ -1,7 +1,7 @@
 // The Files tab (StudioApi.files_packs / files_list / files_preview / files_export, rusemod.packfiles; LittleGroove's
 // Raw / Asset Editor's Browse / Files): every file of the game's packs, and of the packs stored inside them, listed by
 // path, shown as what it is (a picture, a text table, a mission script, a summary of a data file...) and saved out.
-// Read only: mods change the game through the other tabs. Uses app.js's $, el, fill, problem and api.
+// A file changed or added here goes in the mod (only the change is kept). Uses app.js's $, el, fill, problem and api.
 (function () {
   "use strict";
   const F = { words: {}, packs: null, pack: null, nested: [], find: "", list: null, picked: null, ask: 0, shown: 0 };

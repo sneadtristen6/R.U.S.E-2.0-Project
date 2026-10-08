@@ -39,7 +39,7 @@ Placed buildings don't hide units by themselves: open **Cover**, pick **Town** a
    the tray counts what they'll take when the mod is built.
 
 Where trees go, the ground opens to every unit and loses its forest cover (proven in the game: tanks drive into a
-cleared wood, infantry there aren't hidden). Buildings are only taken out of sight for now: units still go around
-where they stood. **Undo** (**Ctrl+Z**) takes back the last drag, **Start over** removes every circle on the map.
+cleared wood, infantry there aren't hidden). Erased buildings open their ground to units
+too. **Undo** (**Ctrl+Z**) takes back the last drag, **Start over** removes every circle on the map.
 
 **Next:** [[Edit a scenario|Edit-a-Scenario]]

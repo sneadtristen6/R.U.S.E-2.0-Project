@@ -10,9 +10,9 @@ vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemě
     zobrazené jako Python, jen ke čtení. Ověřeno ve hře.
   - **Rámeček Vylepšení** na stránce jednotky: jednotka, jejímž je vylepšením, její vlastní vylepšení, cena a doba
     výzkumu.
-  - **Karta Všechny hodnoty:** každý objekt a každá hodnota dat hry, změněné v modu: přidat nebo odebrat hodnotu,
+  - **Karta Všechny hodnoty:** libovolný objekt nebo hodnota hry, změněné v modu: přidat nebo odebrat hodnotu,
     vytvořit nebo smazat objekt, dát textové hodnotě vlastní slova.
-  - **Karta Soubory:** každý soubor z balíků hry, k prohlédnutí a uložení. Nahraďte jeden svým souborem nebo přidejte
+  - **Karta Soubory:** libovolný soubor z balíků hry, k prohlédnutí a uložení. Nahraďte jeden svým souborem nebo přidejte
     nový: váš mod si ponechá jen změny, každou ověřenou podle jejího druhu.
   - **Mise:** změnit skripty mise; zjistit, zda je v menu, zda se načte každý soubor, který potřebuje, a její texty;
     posunout ji v jejím menu nahoru nebo dolů.

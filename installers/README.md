@@ -23,18 +23,21 @@ build was checked (its SHA-256 matched GitHub's record, and Windows Defender fou
 
 1. **Releases, not test builds** (done): one stable file per version at a GitHub address, so its reputation grows as
    people download it. Don't publish a new version without a reason; each new file starts from zero.
-2. **Updates from inside the launcher** (planned, Velopack): after the first install, updates never pass through a
+2. **Updates from inside the apps** (done: both offer their new versions, check the file and install it): after the
+   first install, updates never pass through a
    browser, so the warning can only ever appear once, at the first download.
 3. **Report false alarms** for each release (needs the owner's go, since it sends the file to Google and Microsoft):
    Google Safe Browsing's error report and Microsoft's file submission (Defender and SmartScreen) usually clear a
    false alarm within days.
 4. **Later, with no browser download at all:** `winget install` (Windows' package manager) and the Microsoft Store.
-   Code signing is the paid way to carry a reputation from one version to the next; it isn't needed yet. Run it: no admin rights
+   Code signing is the paid way to carry a reputation from one version to the next; it isn't needed yet.
+
+**Run it:** no admin rights
 needed; it installs for your Windows user, adds a Start menu entry (and a desktop icon if you tick it), and has an
 uninstaller in Windows' "Installed apps". Uninstalling keeps your mods and settings (`%LOCALAPPDATA%\RUSE Mod Platform`).
 
 - **Windows may warn "Windows protected your PC"** the first time: the installers aren't signed yet (signing costs
-  money and waits for the first public release). Click "More info", then "Run anyway".
+  money). Click "More info", then "Run anyway".
 - **WebView2:** the apps' screens need Microsoft Edge WebView2 Runtime. Windows 11 has it, and so do most Windows 10
   PCs. If yours doesn't, the installer and the app both say so and offer Microsoft's download.
 - What the installed apps print goes to `%LOCALAPPDATA%\RUSE Mod Platform\logs\` (for bug reports).
@@ -43,7 +46,8 @@ uninstaller in Windows' "Installed apps". Uninstalling keeps your mods and setti
 
 `installers/build_app.py launcher|studio` (Windows only) does it all:
 
-1. `icons.py` draws the app's icon (standard library only; no image files in the repo).
+1. `icons.py` gives the app its icon: our artwork in `installers/art` (`<app>.ico`, 16 to 256 px, and a 256 px
+   `<app>.png`), else one drawn with the standard library.
 2. **Nuitka** compiles the app (`launcher.py` / `studio.py` start it) into a folder with `RUSE Launcher.exe` and
    everything it needs, Python included. It's a folder, not one file: that starts faster and antivirus programs
    trust it more. The Studio also gets the game's own Python 2.5.1 (`python251()`), which saves a changed mission

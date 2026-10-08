@@ -92,7 +92,7 @@ def _unicode_literal(self):
     Added by the RUSE Mod Platform (2026-10-07): xdis 6.1.8's own __repr__ drops the first two letters of any text
     with an accented letter and writes the rest as hex numbers (u'b1 bis vus et pr\\xe9sent\\xe9s' came out as
     u'\\u bis vus et pr0xe9sent0xe9s'), and leaves an apostrophe inside a text unescaped (u'l'ouverture'), so 16 of
-    the game's missions and 23 of its test maps did not recompile from their decompiled source."""
+    the game's missions and 23 of its test maps did not compile again from the source it gave."""
     try:
         s = self.value.decode("utf-8")
     except UnicodeDecodeError:

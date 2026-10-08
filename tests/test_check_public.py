@@ -38,7 +38,7 @@ class Guard(unittest.TestCase):
         self.assertEqual(sorted(f.split(":")[0] for f in found), ["a/save.boobspc", "b/Cheat.rmod", "stuff/ZZ_Win.dat"])
 
     def test_program_addresses_are_refused(self):
-        found = check({"docs/notes.md": b"the loader FUN_140a5d3f0 reads it", "docs/b.md": b"at 0x140a58ff0",
+        found = check({"docs/notes.md": b"the loader FUN_1400abc00 reads it", "docs/b.md": b"at 0x1400abd00",
                        "docs/c.md": b"offset 0x40D and FUN_x are fine"})
         self.assertEqual(sorted(f.split(":")[0] for f in found), ["docs/b.md", "docs/notes.md"])
 

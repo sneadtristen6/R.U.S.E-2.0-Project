@@ -38,7 +38,7 @@ and the Studio's map list shows both: the title first, the pack name after the d
 
 ## A new map
 
-A mod can add a map of its own to BATTLES: a copy of a shipped map, under a name of its own, that the mod's other
+A mod can add a map of its own to BATTLES: a copy of a shipped map or a blank start, under a name of its own, that the mod's other
 files then reshape. Its folder's name is the new map's pack name (letters, digits and `_`), and its `map.toml` says
 which map it copies and what the menus call it:
 
@@ -51,8 +51,8 @@ fr = "Blitz jumeau"
 ```
 
 `maps/BlitzTwin/terrain.toml` and the rest then edit the copy, and Blitz stays as it was. Any map BATTLES lists can be
-copied; campaign and Operation maps can't. Two players need the same mod to play it together, like any mod. Not
-tried in the game yet; the Studio can't open a new map in its map view yet (the file is written by hand for now).
+copied; campaign and Operation maps can't. Two players need the same mod to play it together, like any mod. New
+maps play in the game (2026-10-03), and the Studio's **Duplicate map** makes this folder for you.
 
 ## Common mistakes
 
@@ -61,7 +61,7 @@ tried in the game yet; the Studio can't open a new map in its map view yet (the 
 | The zip holds a folder inside a folder | The launcher looks one folder down and finds it. Two or more down, it says it found no mod. | Zip the folder that holds `mod.toml`. |
 | A map folder named after the map's title | The build says it isn't a map's pack name. | Rename it to the pack name. |
 | A file edited by hand has a typo | The mod check names the file and the line. | Fix it, or **Set aside** in the Studio. |
-| A `.exe`, `.dll` or script inside the mod | Refused: mods carry data only. | Take it out. |
+| A `.exe`, `.dll` or PC script inside the mod | Refused: mods carry data only (the game's own mission scripts, as the Studio saves them, are the one exception). | Take it out. |
 
 If a file can't be read, the Studio never writes over it: your work is never lost. **Set aside** renames it
 `<name>.broken.toml` next to the original.

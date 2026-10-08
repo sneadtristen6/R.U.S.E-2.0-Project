@@ -10,10 +10,10 @@ sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird n
     Karten- und Missionsskripte des Spiels, als Python gezeigt, nur zum Lesen. Im Spiel gesehen.
   - **Aufwertungs-Feld** auf der Seite einer Einheit: wovon sie eine Aufwertung ist, ihre eigenen Aufwertungen, Preis
     und Dauer ihrer Forschung.
-  - **Reiter Alle Werte:** jedes Objekt und jeder Wert der Spieldaten, in einem Mod geändert: einen Wert hinzufügen oder
+  - **Reiter Alle Werte:** ein beliebiges Objekt oder ein beliebiger Wert des Spiels, in einem Mod geändert: einen Wert hinzufügen oder
     entfernen, ein Objekt anlegen oder löschen, einem Textwert eigene Worte geben.
-  - **Reiter Dateien:** jede Datei der Spielpakete, ansehen und speichern. Eine durch eine eigene Datei ersetzen oder
-    eine hinzufügen: Ihr Mod behält nur die Änderungen, jede nach ihrer Art geprüft.
+  - **Reiter Dateien:** eine beliebige Datei der Spielpakete, ansehen und speichern. Eine durch eine eigene Datei ersetzen oder
+    eine hinzufügen: dein Mod behält nur die Änderungen, jede nach ihrer Art geprüft.
   - **Missionen:** die Skripte einer Mission ändern; sehen, ob sie in den Menüs ist, ob jede nötige Datei lädt, und
     ihre Texte; sie in ihrem Menü nach oben oder unten schieben.
   - **Karten:** Namen von Städten und Hügeln, benannte Punkte und Zonen, Name und Ausrichtung eines Kartenobjekts.
@@ -23,14 +23,14 @@ sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird n
   das Hintergrundgeräusch einer Karte. Im Spiel gesehen: die Stücke, die neuen Stücke und die Sprachzeilen.
 - **Aus einer Nation eine andere machen.** Der neue Reiter **Nationen** gibt einer der sieben Nationen des Spiels
   einen neuen Namen (in der Lobby und für ihre Armee) und eine neue Flagge aus einem beliebigen Bild: zum Beispiel
-  China an Italiens Stelle. Ihre Einheiten und was sie sagen ändern Sie wie bisher im Reiter Einheiten und auf der
+  China an Italiens Stelle. Ihre Einheiten und was sie sagen änderst du wie bisher im Reiter Einheiten und auf der
   Seite jeder Einheit. Im Spiel gesehen: der neue Name in der Lobby, die neue Flagge im Gefecht.
 - **Einheiten aus anderen Epochen:** Der Reiter Einheiten bietet WWI, WWII+, Kalter Krieg und Modern neben den
-  Einheiten des Spiels. Fügen Sie eine Ihrem Mod hinzu, und sie wird eine neue Einheit mit eigenem Modell, ihr
-  Urheber genannt; nichts wird hinzugefügt, bevor Sie es wählen.
+  Einheiten des Spiels. Füge eine deinem Mod hinzu, und sie wird eine neue Einheit mit eigenem Modell, ihr
+  Urheber genannt; nichts wird hinzugefügt, bevor du sie wählst.
 - **Neue Karte: von Grund auf…** steht im Reiter Karten, bevor eine Karte offen ist.
 - **Der Boden von Leerem Gelände wird eigens gezeichnet.** Eine leer begonnene neue Karte bekommt ihren Boden aus
-  Ihren Geländestrichen statt des verschobenen Bodens der Spielkarte: runde Küsten aus der Nähe und von oben, keine
+  deinen Geländestrichen statt des verschobenen Bodens der Spielkarte: runde Küsten aus der Nähe und von oben, keine
   Dellen mehr auf Hügelkuppen, und Gebäude und Panzer stehen genau darauf. Im Spiel auf Testkarten gesehen.
 - **Leerer Ozean bleibt, mit einem Warnhinweis** auf seiner Schaltfläche: Getrennte Inseln sind noch nicht
   bereit für große Schlachten (unten).

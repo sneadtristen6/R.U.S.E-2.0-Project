@@ -3,8 +3,8 @@ title: "Roadmap: what's done, what's next"
 category: Announcements
 order: 2
 ---
-Where things stand, and what's next. Tested-in-game features are marked ✅. Latest: **RUSE Studio 0.9.5** and
-**RUSE Launcher 0.4.5** (2026-10-04), in [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
+Where things stand, and what's next. Tested-in-game features are marked ✅. Latest: **RUSE Studio 0.9.8.1** and
+**RUSE Launcher 0.4.8.1**, in [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
 0.9.x is the alpha; **1.0** is the launch.
 
 ### Done

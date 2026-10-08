@@ -4455,7 +4455,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     OUTLINE_SHOWN = 400  # the most steps the outline lists (a campaign chapter has 1,500)
 
     # --- the Files tab (rusemod.packfiles; LittleGroove's Raw / Asset Editor, Browse / Files): every file of the game's
-    # packs and of the packs inside them, shown as what it is and saved out; read only ---
+    # packs and of the packs inside them, shown as what it is, saved out, changed or added in a mod ---
     def _files_game(self) -> Path:
         game = self._game()
         if game is None:

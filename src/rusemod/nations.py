@@ -29,7 +29,7 @@ def check(n) -> int:
     except (TypeError, ValueError):
         raise NationError(f"{n!r} isn't a nation's number") from None
     if not 0 <= n < len(NATIONS):
-        # not a game rule: the seven nations the game has (an eighth needs the game's program changed)
+        # not a game rule: the seven nations the game has
         raise NationError(f"there's no nation {n}: the game has {len(NATIONS)}, 0 to {len(NATIONS) - 1}")
     return n
 

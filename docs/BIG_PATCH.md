@@ -113,7 +113,10 @@ files, the server on his PC, the process scan as he designed it.
 
 ## Music, sounds and campaign scenes
 
-**Where it stands:** research and theory only (2026-10-04); nothing built, nothing tried in the game. The owner's
+**Where it stands:** music came out early, in RUSE Studio 0.9.8.1's **Music** tab: songs replaced and new ones
+added to the battle lists, a unit's voice lines, a map's background sound (MOD_FORMAT §7); the songs, the new songs
+and the voice lines were heard in the game. The rest is research and theory only (2026-10-04): nothing built, nothing
+tried in the game. The owner's
 idea: new music for R.U.S.E. 2.0 and its Iwo Jima Operation for variety, different sounds for
 units and buildings, and new campaign scenes. What follows is what the game's data says, and our best theory for each
 open question, to be proved by one test copy.

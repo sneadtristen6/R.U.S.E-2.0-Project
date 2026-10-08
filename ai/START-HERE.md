@@ -90,8 +90,8 @@ Studio's are marked pre-release). Each app offers its updates when it starts.
   any 3D tool. Seen in the game: an M1 Abrams (the M1 Abrams mod in Ruse-Mods). Step by step: the wiki's Import a
   model page. Early: tracks and wheels don't turn yet.
 - **"What's coming?"** [docs/community/roadmap.md](../docs/community/roadmap.md), and for the big patch before 1.0
-  (RUSE Guard's fair play, music and sounds), [docs/BIG_PATCH.md](../docs/BIG_PATCH.md): written up there, not in the
-  apps yet.
+  (RUSE Guard's fair play, unit and building sounds), [docs/BIG_PATCH.md](../docs/BIG_PATCH.md): written up there,
+  not in the apps yet. Music and voice lines are in the Studio's Music tab since 0.9.8.1.
 - **"How do I report a bug?"** The apps' **Report a problem** button, or
   [Discussions → Bug reports](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions). Check
   [issue #15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/15) first.

@@ -841,7 +841,7 @@ class Tms:
         self.skirt_data = bytes(data)
 
     # -- water -------------------------------------------------------------------------------------------------
-    # The shipped maps' water rules (private notes water-and-trees-2026-09-29, checked on all 32 maps): a vertex's
+    # The shipped maps' water rules (checked on all 32 maps): a vertex's
     # 4th value w is the water surface over it; list 1 holds the water triangles, copies of list-0 triangles (same
     # corners, same order) whose corners all have w >= z; a cell has flag bit 1 exactly when it has a list 1; and the
     # patch bounds follow a per-cell rule (see _water_lists). Dry vertices carry the map's base level, under the

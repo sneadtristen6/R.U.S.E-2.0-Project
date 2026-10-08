@@ -9,9 +9,9 @@ your own, and test it in the game. Your Steam install is never changed.
   - **AI tab:** how the computer players play, the units they prefer and the ruse cards; and the game's map and mission
     scripts, shown as Python, read only. Seen in the game.
   - **Upgrade box** on a unit's page: the unit it's an upgrade of, its own upgrades, its research price and time.
-  - **All values tab:** every object and value of the game's data, changed in a mod: add or take out a value, make or
+  - **All values tab:** any of the game's objects and values, changed in a mod: add or take out a value, make or
     delete an object, give a text value words of its own.
-  - **Files tab:** every file of the game's packs, seen and saved out. Change one with a file of yours or add one: your
+  - **Files tab:** any file of the game's packs, seen and saved out. Change one with a file of yours or add one: your
     mod keeps only the changes, each checked as its kind.
   - **Missions:** change a mission's scripts; see whether it's in the menus, whether every file it needs loads, and its
     texts; move it up or down in its menu.

@@ -7,7 +7,7 @@ times on 2026-09-30, and a test built a pack with a broken name). So:
     continuation; \\a \\b \\f \\v and unknown ones (\\m, \\s, ...) fail here, with the file and line. A backslash
     in a path goes in as "\\\\", or the path as "a/b".replace("/", "\\\\").
   - Every text file: no control characters other than tab, newline and carriage return, and no tab inside a
-    Windows-looking path in Markdown (`D:\\RUSE-Instances<TAB>errain` was `\\terrain`).
+    Windows-looking path in Markdown (`D:\\Games<TAB>errain` was `\\terrain`).
 """
 import io
 import re

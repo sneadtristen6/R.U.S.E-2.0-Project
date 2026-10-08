@@ -4,8 +4,7 @@ kinds"). Each reads the whole file as its kind, and refuses what doesn't read cl
 
 The programs among them (a Flash menu's code, the shaders) are the game's own or nothing (safeguard 5: no scripts or
 programs from outside): a Flash menu may change its layout, shapes and words but keeps the game's code; a changed
-shader is refused. (RUSE 2.0-approved programs: kept on the feat/approvals branch, not offered yet, the owner's call
-of 2026-10-08.)
+shader is refused.
 """
 from __future__ import annotations
 

@@ -6,18 +6,18 @@ from urllib.parse import parse_qs, urlsplit
 
 from rusemod.community import LINKS, MESSAGE_MOST, CommunityCalls, private_paths_out, report_url
 
-HOME = "C:/Users/snead".replace("/", "\\")
+HOME = "C:/Users/kestrel".replace("/", "\\")
 ENV = {"USERPROFILE": HOME, "LOCALAPPDATA": HOME + "\\AppData\\Local", "APPDATA": HOME + "\\AppData\\Roaming"}
 
 
 @mock.patch.dict(os.environ, ENV)
 class PrivatePaths(unittest.TestCase):
     def test_the_players_folders_are_named_for_anyone(self):
-        mod = "C:/Users/snead/AppData/Local/RUSE Mod Platform/mods/test/maps/Blitz/terrain.toml"
+        mod = "C:/Users/kestrel/AppData/Local/RUSE Mod Platform/mods/test/maps/Blitz/terrain.toml"
         self.assertEqual(private_paths_out(mod.replace("/", "\\") + " can't be read"),
                          "%LOCALAPPDATA%\\RUSE Mod Platform\\mods\\test\\maps\\Blitz\\terrain.toml can't be read")
         self.assertEqual(private_paths_out(mod), "%LOCALAPPDATA%/RUSE Mod Platform/mods/test/maps/Blitz/terrain.toml")
-        self.assertEqual(private_paths_out("c:\\users\\SNEAD\\Desktop\\x.rusemod"), "%USERPROFILE%\\Desktop\\x.rusemod")
+        self.assertEqual(private_paths_out("c:\\users\\KESTREL\\Desktop\\x.rusemod"), "%USERPROFILE%\\Desktop\\x.rusemod")
         self.assertEqual(private_paths_out("E:/Users/someone else/x and D:\\Users\\bob\\y"),
                          "%USERPROFILE% else/x and %USERPROFILE%\\y")  # any other user folder too
         self.assertEqual(private_paths_out("D:\\RUSE-Instances\\studio-test"), "D:\\RUSE-Instances\\studio-test")
@@ -39,7 +39,7 @@ class ReportLink(unittest.TestCase):
         self.assertTrue(got["title"].startswith("[Bug] RUSE Studio 0.7.1: %LOCALAPPDATA%"))
         self.assertLessEqual(len(got["title"]), len("[Bug] RUSE Studio 0.7.1: ") + 80)
         self.assertTrue(got["message"].endswith("needs level\nmore"))
-        self.assertNotIn("snead", urlsplit(report_url("studio", "0.7.1", message)).query)  # (the repo's owner is)
+        self.assertNotIn("kestrel", urlsplit(report_url("studio", "0.7.1", message)).query)
 
     def test_no_message_and_a_long_one(self):
         got = self.fields(report_url("launcher", "0.2.7"))
