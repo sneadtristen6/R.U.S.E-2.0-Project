@@ -1265,6 +1265,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"values_words_help_new": "This is your map's own name, one box per language. A box you leave empty gets the English words. Not tried in the game yet."});
   Object.assign(words.us, {"tip_scen_remove_place": "Take this name, point or zone back out of your map changes: the game's map is as before.", "tip_scen_remove_mine": "Take what you added back out of your map changes.", "tip_scen_put_back": "Put it back where the game has it (your move is undone)."});
   Object.assign(words.us, {"notes_title": "Notes", "notes_hint": "Your own notes about this: what you changed and why, ideas to try…", "tip_notes": "Only you see these: they're kept in your mod's folder (notes.json), never in the game or in a mod you export. Saved when you click elsewhere.", "notes_saved": "Note saved."});
+  Object.assign(words.us, {"values_text_new": "New text…", "tip_values_text_new": "Give this value words of its own: a new text of your mod's, so no other unit or menu that shares the game's text changes with it.", "values_text_new_help": "The words, in English; every language gets them until you change one with Change the words…", "values_text_new_hint": "e.g. Sherman Firefly", "values_text_new_make": "Make the new text", "values_text_new_done": "A new text of your mod's: the value now shows it."});
   // the All values tab (StudioApi.values_files / values_find / value_object...): a few objects of the unit data, each
   // row as rusemod.values.row makes it: [prop, label, kind, type, value, text, to, extra]
   const EV = "$/GFX/Everything/";
@@ -1754,6 +1755,15 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       value_reset: async (address, prop, lang) => {
         valueEdits.delete(`${address}|${prop}`);
         return { saved: current ? current + "/src/studio.rndf" : null, page: valuePage(address, lang) };
+      },
+      // a new text of the mod's own for a text value (StudioApi.value_text_new): pointed at, with its words
+      value_text_new: async (address, prop, words, lang) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (!String(words || "").trim()) throw new Error("Type the words first (one line).");
+        const key = (String(words).replace(/[^A-Za-z0-9]/g, "").slice(0, 6) || "Text") + "_" + Math.random().toString(36).slice(2, 5);
+        newWords.set(key, Object.fromEntries(VALUE_LANGS.map((l) => [l, String(words).trim()])));
+        valueEdits.set(`${address}|${prop}`, { value: key, text: key, words: String(words).trim() });
+        return { saved: current + "/src/studio.rndf", page: valuePage(address, lang) };
       },
       value_words: async (key) => newWords.has(key)
         ? { key, table: "ville_multi", new: true, words: VALUE_LANGS.map((lang) => ({ lang, game: null, mine: newWords.get(key)[lang] })) }

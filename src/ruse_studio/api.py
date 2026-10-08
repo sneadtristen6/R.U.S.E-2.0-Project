@@ -2728,33 +2728,44 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     LABEL_ROW = "label."  # the row's key: label.<its game key>
 
     def _new_label_text(self, words: str) -> str:
-        """A new game text in the map project for a new label showing `words` (every language the same words): its
-        key, made of the words' first letters and three letters of its own (Spring_k3x), one the game's texts and
-        the project's haven't got. The build adds it to the game's town and hill names (rusemod.loc)."""
+        """A new game text in the map project for a new label showing `words` (_new_text): the game's town and hill
+        names (the label's text names its key)."""
         words = str(words).strip()
         if not words or any(c in words for c in "\r\n\t"):
             raise StudioError("Type the name to show on the map first (one line).")
+        return self._new_text(words, scenario.LABEL_TABLE, "map", self.LABEL_ROW)
+
+    TEXT_ROW = "text."  # a new text of the All values tab: its row's key, text.<its game key>
+
+    def _new_text(self, words: str, table: str, kind: str, row_prefix: str) -> str:
+        """A new game text in game table `table`, in the current mod (`kind` "map": the map project), showing `words`
+        in every language: its key, made of the words' first letters and three letters of its own (Spring_k3x), one
+        the game's texts and the mod's haven't got, kept as a row <row_prefix><key> with that game key in
+        text/studio-words.<table>.csv (MOD_FORMAT §6; the build adds it to the game's table). Call it holding _saving."""
+        words = str(words).strip()
+        if not words or any(c in words for c in "\r\n\t"):
+            raise StudioError("Type the words first (one line).")
         if len(words) > scenario.TEXT_MOST:
-            raise StudioError(f"The name is too long: at most {scenario.TEXT_MOST} letters.")
-        folder = self._map_dir()
+            raise StudioError(f"The words are too long: at most {scenario.TEXT_MOST} letters.")
+        folder = self._mod_dir(self._kind(kind))
+        if folder is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
         ix = self._open()
         try:
-            taken = {r[0] for r in ix.db.execute("SELECT DISTINCT name FROM text WHERE dictionary = ?",
-                                                 (scenario.LABEL_TABLE,)) if r[0]}
+            taken = {r[0] for r in ix.db.execute("SELECT DISTINCT name FROM text WHERE dictionary = ?", (table,)) if r[0]}
         finally:
             ix.close()
-        taken |= set(self._mod_words("map"))
+        taken |= set(self._mod_words(kind))
         plain = unicodedata.normalize("NFKD", words.title())
-        base = "".join(c for c in plain if c.isascii() and c.isalnum())[:6] or "Name"
+        base = "".join(c for c in plain if c.isascii() and c.isalnum())[:6] or "Text"
         for n in range(10000):
             tag = int(hashlib.sha1(f"{folder.name}/{words}/{n}".encode("utf-8")).hexdigest(), 16)
             key = base + "_" + "".join("0123456789abcdefghijklmnopqrstuvwxyz"[(tag >> (6 * i)) % 36] for i in range(3))
             if key not in taken:
                 break
         else:
-            raise StudioError("No new text key was free for this name; try other words.")
-        self._words_rows_set(scenario.LABEL_TABLE, {self.LABEL_ROW + key: (key, {lang_: words for lang_ in loc.LANGS})},
-                             "map")
+            raise StudioError("No new text key was free for these words; try others.")
+        self._words_rows_set(table, {row_prefix + key: (key, {lang_: words for lang_ in loc.LANGS})}, kind)
         return key
 
     def _drop_label_text(self, key: str) -> None:
@@ -4419,8 +4430,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             said = mod_words.get(r["value"], (None, {}))[1].get(text_lang) if r["kind"] == "key" else None
             r["words_mine"] = said if said and said != r["words"] else None
             r["edited"] = mine.get(r["prop"])
-            if r["edited"] and r["kind"] == "key":
-                r["edited"]["words"] = words.get(r["edited"]["value"])
+            if r["edited"] and r["kind"] == "key":  # (a text the mod adds: its own words)
+                v = r["edited"]["value"]
+                r["edited"]["words"] = words.get(v) or (mod_words.get(v, (None, {}))[1] or {}).get(text_lang)
         for u in shown_users:
             u["name"] = names.get(u["address"])
         return {"address": o["address"], "class": o["class"], "named": bool(o["export"]),
@@ -4490,6 +4502,28 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             else:
                 edits.set(o["address"], prop, new, share)
         return {"saved": str(edits.file), "page": self.value_object(address, lang)}
+
+    def value_text_new(self, address: str, prop: str, words: str, lang: str = schema.BASE) -> dict:
+        """A new game text for a text value of the All values tab (LittleGroove's raw editor's Mint new): a key of the
+        mod's own in the same table as the game text the value shows now, showing `words` in every language (the
+        words panel changes each), and the value pointed at it. Returns value_edit's {saved, page}."""
+        if self._edits() is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        page = self.value_object(address, lang)
+        row = next((r for r in page["rows"] if r["prop"] == prop), None)
+        if row is None or row["kind"] != "key":
+            raise StudioError(f"{prop} isn't one of {address}'s texts")
+        if not row["can"]:
+            # not a game rule: the tab can't change this value (why_not says why)
+            raise StudioError(f"{prop} can't be changed here")
+        table = self.value_words(str(row["value"]))["table"] if row["value"] else None
+        if not table:
+            # not a game rule: which of the game's text tables the new text goes in comes from the game's text now
+            raise StudioError("The game has no words under this value's text now, so it isn't known which of its text "
+                              "tables a new one goes in. Point it at a text of the game's first.")
+        with self._saving:
+            key = self._new_text(words, table, "mod", self.TEXT_ROW)
+        return self.value_edit(address, prop, key, lang)
 
     def value_reset(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
         """Take the current mod's change of one value out (the All values tab's "Game's value")."""
@@ -4662,8 +4696,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         with self._saving:
             if now.get("new"):  # the mod's own text: its row keeps its game key
                 row = {lang_: words or row["us"] for lang_, words in row.items()}
-                row_key = self.LABEL_ROW + key
-                if not self._words_row_there(now["table"], row_key, kind):
+                row_key = next((p + key for p in (self.LABEL_ROW, self.TEXT_ROW)
+                                if self._words_row_there(now["table"], p + key, kind)), None)
+                if row_key is None:
                     # not a game rule: the row was made by hand (another key name): it's changed in its file
                     raise StudioError(f"{key} is a text of this mod's own file text/{self.WORDS_FILE}.{now['table']}"
                                       f".csv under another name: change it there.")

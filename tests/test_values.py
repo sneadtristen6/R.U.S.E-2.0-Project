@@ -466,6 +466,35 @@ class Tab(unittest.TestCase):
         self.assertEqual([w for w in back["words"] if w["mine"]], [])
         self.assertFalse(csv_file.exists())
 
+    def test_a_new_text_for_a_value(self):
+        """LittleGroove's Mint new: a text of the mod's own, in the table of the game text the value shows (here the
+        unit names), every language the same words until the words panel changes one; the value points at it and the
+        build adds it to the game's table."""
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+            self.api.value_text_new(E + "Unit_A", "NameInMenuToken", "Ant")
+        self.api.new_mod("Minted")
+        folder = self.home / "mods" / "minted"
+        with self.assertRaisesRegex(StudioError, "isn't one of"):
+            self.api.value_text_new(E + "Unit_A", "Price", "Ant")
+        res = self.api.value_text_new(E + "Unit_A", "NameInMenuToken", "Giant Ant", "fr")
+        row = self.rows(res["page"])["NameInMenuToken"]
+        key = row["edited"]["value"]
+        self.assertRegex(key, r"^GiantA_[0-9a-z]{3}$")
+        self.assertEqual(row["edited"]["words"], "Giant Ant")  # its own words, though the game has no such text
+        words = self.api.value_words(key)
+        self.assertEqual((words["table"], words["new"], {w["mine"] for w in words["words"]}), ("baseunite", True, {"Giant Ant"}))
+        self.api.value_words_set(key, {"fr": "Fourmi géante"})
+        self.assertEqual(self.rows(self.api.value_object(E + "Unit_A", "fr"))["NameInMenuToken"]["edited"]["words"],
+                         "Fourmi géante")
+        rev = self.game / "Data" / "PC" / "190852"
+        arc, text_arc = Edat((rev / "ZZ_GladPatchableWin.dat").read_bytes()), Edat((rev / "ZZ_Win.dat").read_bytes())
+        result = build_pack(arc, [load_mod(folder)], text_arc=text_arc)
+        self.assertEqual(result.errors, [])
+        from rusemod.dic import Dic
+        changed = {k.lower(): v for k, v in result.text_changed.items()}
+        fr = Dic(changed["genlocalisation\\ww2\\localisation\\translations\\fr\\baseunite.dic"])
+        self.assertEqual(fr.text(name_to_key(key)), "Fourmi géante")
+
     def test_the_units_tab_shows_a_change_made_here(self):
         self.api.new_mod("Both")
         self.api.value_edit(E + "Unit_A", "Price", "")  # an emptied list: the mod's own text

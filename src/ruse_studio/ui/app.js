@@ -2607,6 +2607,33 @@ function valueRow(p, r) {
       });
       td.append(edit);
     }
+    if (r.can) {  // a new text of the mod's own, this value pointed at it (StudioApi.value_text_new; his Mint new)
+      const fresh = el("button", { type: "button", className: "link", textContent: w.values_text_new,
+        title: w.tip_values_text_new });
+      let form = null;
+      fresh.addEventListener("click", () => {
+        if (form) { form.remove(); form = null; return; }
+        const input = el("input", { type: "text", className: "values-text", maxLength: 200,
+          placeholder: w.values_text_new_hint, title: w.tip_values_text_new });
+        input.setAttribute("aria-label", w.values_text_new);
+        const make = el("button", { type: "button", className: "small primary", textContent: w.values_text_new_make,
+          title: w.tip_values_text_new });
+        make.addEventListener("click", async () => {
+          if (!input.value.trim()) { input.focus(); return; }
+          make.disabled = true;
+          try {
+            const res = await api().value_text_new(p.address, r.prop, input.value, state.lang);
+            say(w.values_text_new_done, "ok");
+            renderValuePage(res.page);
+          } catch (err) { problem(err); make.disabled = false; }
+        });
+        form = el("div", { className: "values-words-box" }, el("p", { className: "muted small", textContent: w.values_text_new_help }),
+          input, " ", make);
+        td.append(form);
+        input.focus();
+      });
+      td.append(" ", fresh);
+    }
   } else if (r.kind === "vector") {
     const items = Array.isArray(shown) ? shown : [];
     const color = r.type === "RGBA";
