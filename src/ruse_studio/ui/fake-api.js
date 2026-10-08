@@ -2144,7 +2144,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         { class: "TUniteAuSolDescriptor", count: 512 }, { class: "TWeaponManagerDescriptor", count: 700 }] }),
       value_object_new: async (cls, name, lang) => {
         if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
-        if (!/^[A-Za-z][A-Za-z0-9_]{0,99}$/.test(String(name || "").trim())) {
+        if (!/^[A-Za-z_]\w*(?:-\w+)*$/.test(String(name || "").trim())) {  // as the mod format reads a name
           throw new Error("Give the new object a name of letters A-Z, digits and _, starting with a letter (like Ammo_My_Shell).");
         }
         if (!VALUE_KIND_PROPS[cls]) throw new Error(`${cls} isn't a kind of object the game's unit data has: pick one from the list.`);

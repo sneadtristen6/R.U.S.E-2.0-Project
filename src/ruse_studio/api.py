@@ -45,6 +45,7 @@ from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Inde
 from rusemod.patch import INT_RANGES
 from rusemod.play import SHARED, Starter, instances_dir
 from rusemod.rndf import DEFAULT_NAMESPACE, RndfError, parse_value
+from rusemod.rndf import parse as rndf_parse
 from rusemod.steam import build_of, data_revisions, find_game
 from rusemod.uilang import LanguageCalls
 from rusemod.build import find_pack
@@ -5257,7 +5258,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             edits.undelete(address)
         return {"saved": str(edits.file), "page": self.value_object(address, lang)}
 
-    NEW_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,99}")  # a new object's name, as a mod file writes it (rusemod.rndf)
+    @staticmethod
+    def _new_name_ok(name: str) -> bool:
+        """Whether a mod file can write a new object called `name`: the mod format reads it back as that same name
+        (edits.py writes `export <name> is <class>`)."""
+        try:
+            ops = rndf_parse(f"export {name} is TObject\n(\n)\n")
+        except RndfError:
+            return False
+        return len(ops) == 1 and ops[0].target == f"{DEFAULT_NAMESPACE}/{name}"
 
     def value_classes(self) -> dict:
         """The kinds of object a new one can be (value_object_new): the classes of the unit data's objects, each with
@@ -5280,7 +5289,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if edits is None:
             raise StudioError("Pick or make a mod first: changes are saved in a mod.")
         name, cls = str(name or "").strip(), str(cls or "").strip()
-        if not self.NEW_NAME.fullmatch(name):
+        if not self._new_name_ok(name):
+            # not a game rule: a mod file can't write that name (rusemod.rndf reads it back as something else)
             raise StudioError("Give the new object a name of letters A-Z, digits and _, starting with a letter (like "
                               "Ammo_My_Shell).")
         if not any(c["class"] == cls for c in self.value_classes()["classes"]):

@@ -619,6 +619,9 @@ class Tab(unittest.TestCase):
         for cls, name in (("TPart", "My Part"), ("TPart", "1Part"), ("TNope", "My_Part"), ("TUnit", "Unit_A")):
             with self.subTest(name=name), self.assertRaises(StudioError):
                 self.api.value_object_new(cls, name)
+        for name, ok in (("_Part", True), ("My-Part", True), ("P" * 300, True), ("1Part", False), ("My Part", False),
+                         ("My:Part", False)):
+            self.assertEqual(self.api._new_name_ok(name), ok, name)  # exactly the names a mod file can write
         res = self.api.value_object_new("TPart", "My_Part", "us")
         mine = E + "My_Part"
         self.assertEqual((res["address"], res["page"]["mine"], res["page"]["class"], res["page"]["rows"]),
