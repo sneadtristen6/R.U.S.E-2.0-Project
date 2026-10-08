@@ -32,8 +32,8 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path, PurePosixPath
 
-from rusemod import (ai, doctor, economy, identity, loc, mapscripts, missions, mod_index, package, packfiles, scenario,
-                     scenery, schema, startlog, values as every_value)
+from rusemod import (ai, doctor, economy, gamefiles, identity, loc, mapscripts, missions, mod_index, package,
+                     packfiles, scenario, scenery, schema, startlog, values as every_value)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -4303,23 +4303,141 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """The game's packs: {packs: [{id, file, size, map}]}: the six of its data, then each map's own."""
         return {"packs": packfiles.packs(self._files_game())}
 
+    def _game_file_rel(self, pack: str, nested, path: str, added: bool = False) -> PurePosixPath:
+        """Where the current mod keeps its change of a game file (files/game/<pack file>/..., rusemod.gamefiles)."""
+        pack_file = packfiles.pack_path(self._files_game(), str(pack)).name
+        inner = "/".join([*(str(n).replace("\\", "/") for n in nested or []), str(path).replace("\\", "/")])
+        return gamefiles.mod_path(pack_file, inner, added)
+
     def files_list(self, pack: str, nested=None, words: str = "") -> dict:
         """The files of pack `pack` (or of the pack inside it `nested` names, a list of paths, outermost first) whose
-        path has `words`: {files: [{path, kind, size}], total, matching} (at most packfiles.LISTED_MOST)."""
+        path has `words`: {files: [{path, kind, size, mine}], total, matching} (at most packfiles.LISTED_MOST);
+        `mine`: the current mod changes it ("changed") or adds it ("added": listed after the game's)."""
+        nested = list(nested or [])
         try:
-            return packfiles.listing(self._files_game(), str(pack), list(nested or []), str(words or ""))
+            out = packfiles.listing(self._files_game(), str(pack), nested, str(words or ""))
+            folder = self._mod_dir()
+            if folder is not None:
+                for f in out["files"]:
+                    if (folder / self._game_file_rel(pack, nested, f["path"])).is_file():
+                        f["mine"] = "changed"
+                own = folder / self._game_file_rel(pack, [], "mods", added=True)
+                key = str(words or "").strip().lower().replace("/", "\\")
+                for f in sorted(own.rglob("*")) if not nested and own.is_dir() else []:
+                    path = "mods\\" + f.relative_to(own).as_posix().replace("/", "\\")
+                    if f.is_file() and key in path.lower():
+                        out["files"].append({"path": path, "kind": packfiles.kind_of(path), "size": f.stat().st_size,
+                                             "mine": "added"})
+            return out
         except packfiles.PackFileError as exc:
             raise StudioError(str(exc)) from None
 
-    def files_preview(self, pack: str, nested, path: str) -> dict:
-        """One file shown as what it is (packfiles.preview), a picture as a data: URL (`picture`)."""
+    def files_preview(self, pack: str, nested, path: str, mine: bool = False) -> dict:
+        """One file shown as what it is (packfiles.preview), a picture as a data: URL (`picture`); with `mine`, as the
+        current mod has it. Also whether the mod changes it (`changed`) or adds it (`added`), and whether its kind can
+        be changed in a mod (`can_change`; `why_not`: why it can't)."""
+        nested = list(nested or [])
         try:
-            out = packfiles.preview(self._files_game(), str(pack), list(nested or []), str(path))
+            folder = self._mod_dir()
+            rel = self._game_file_rel(pack, nested, path)
+            own = folder / self._game_file_rel(pack, nested, path, added=True) if folder is not None else None
+            changed = folder is not None and (folder / rel).is_file()
+            added = own is not None and own.is_file()
+            if added:
+                out = packfiles.preview_bytes(str(path), own.read_bytes())
+            elif mine and changed:
+                with packfiles.Opened(self._files_game(), str(pack), nested) as o:
+                    base = o.read(str(path))
+                try:
+                    out = packfiles.preview_bytes(str(path), gamefiles.apply_delta(base, (folder / rel).read_bytes()))
+                except gamefiles.GameFileError as exc:
+                    out = packfiles.preview(self._files_game(), str(pack), nested, str(path)) | {"mine_error": str(exc)}
+            else:
+                out = packfiles.preview(self._files_game(), str(pack), nested, str(path))
         except packfiles.PackFileError as exc:
             raise StudioError(str(exc)) from None
         if "png" in out:
             out["picture"] = "data:image/png;base64," + base64.b64encode(out.pop("png")).decode("ascii")
-        return out
+        try:
+            gamefiles.taken(str(path))
+            out.update(can_change=not added, why_not=None)
+        except gamefiles.GameFileError as exc:
+            out.update(can_change=False, why_not=str(exc))
+        return out | {"changed": changed, "added": added, "showing_mine": bool(mine and changed or added)}
+
+    def _picked_file(self, source) -> bytes | None:
+        """The bytes of the file the modder picks (`source` given by the tests), or None when the dialog is cancelled."""
+        if source is None:
+            source = pick_file(self._window) if self._window is not None else None
+        if not source:
+            return None
+        return Path(source).read_bytes()
+
+    def files_change(self, pack: str, nested, path: str, source: str | None = None) -> dict:
+        """Change one of the game's files in the current mod with a file of the modder's (a dialog picks it): checked
+        as a file of its kind, then kept as a delta against the game's own file (rusemod.gamefiles: the mod never
+        carries the game's file). The game's own file again takes the change out. Returns files_preview (the mod's
+        version), or {"cancelled": True}."""
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        nested = list(nested or [])
+        data = self._picked_file(source)
+        if data is None:
+            return {"cancelled": True}
+        try:
+            gamefiles.check_kind(str(path), data)
+            with packfiles.Opened(self._files_game(), str(pack), nested) as o:
+                base = o.read(str(path))
+        except (gamefiles.GameFileError, packfiles.PackFileError) as exc:
+            raise StudioError(str(exc)) from None
+        target = folder / self._game_file_rel(pack, nested, path)
+        with self._saving:
+            if data == base:
+                target.unlink(missing_ok=True)
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                part = target.with_name(target.name + ".partial")
+                part.write_bytes(gamefiles.make_delta(base, data))
+                os.replace(part, target)
+        return self.files_preview(pack, nested, path, mine=True)
+
+    def files_reset(self, pack: str, nested, path: str) -> dict:
+        """Take the current mod's change (or its own new file) at `path` out. Returns files_preview (the game's)."""
+        folder = self._mod_dir()
+        nested = list(nested or [])
+        if folder is not None:
+            with self._saving:
+                for added in (False, True):
+                    (folder / self._game_file_rel(pack, nested, path, added)).unlink(missing_ok=True)
+        if str(path).replace("/", "\\").lower().startswith("mods\\"):
+            return {"path": path, "gone": True}
+        return self.files_preview(pack, nested, path)
+
+    def files_add(self, pack: str, name: str, source: str | None = None) -> dict:
+        """Add a file of the modder's (a dialog picks it) to pack `pack`, in the mod's own folder there
+        (mods/<mod id>/<name>): checked as a file of its kind. Returns files_list(pack), or {"cancelled": True}."""
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        name = str(name).strip().replace("\\", "/").strip("/")
+        if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]*(/[A-Za-z0-9_][A-Za-z0-9_.-]*)*", name) or ".." in name:
+            raise StudioError("Give the new file a name of letters, digits, _, - and dots (folders with /), like "
+                              "pictures/my_flag.tgv.")
+        mod_id = self.mod_info()["id"]
+        path = f"mods/{mod_id}/{name}"
+        data = self._picked_file(source)
+        if data is None:
+            return {"cancelled": True}
+        try:
+            gamefiles.check_kind(path, data)
+        except gamefiles.GameFileError as exc:
+            raise StudioError(str(exc)) from None
+        target = folder / self._game_file_rel(pack, [], path, added=True)
+        with self._saving:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+        return self.files_list(pack, [], "")
 
     def files_export(self, pack: str, nested, path: str) -> dict:
         """Save one file out where the modder picks (a "save as" dialog suggesting its name): {saved: the file, or

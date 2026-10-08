@@ -127,6 +127,7 @@
   ];
   // "Choose your language" (?fake=lang: the game set to French in Steam; it also opens on the first-run modes)
   Object.assign(words.us, {"convert_mod": "Convert an old mod…", "tip_convert_mod": "For an old mod that comes as the game's own files (.dat packs) to copy into the game folder: makes it a mod the library can play beside others.", "convert_title": "Convert an old mod", "convert_help": "Some older mods come as the game's own packs (.dat files) with the changes inside, made to be copied into the game folder. Pick the folder the mod came in: the Launcher compares each pack with your game's clean one, keeps only what the mod changes, and adds it to your library. Your game folder isn't touched. Uses LittleGroove's converter.", "convert_pick": "Pick the mod's folder…", "tip_convert_pick": "Choose the folder the old mod came in (the one holding its .dat files, or a Data or PC folder with them inside).", "tip_convert_cancel": "Close this without converting anything.", "convert_found": "{n} game pack(s) found in {folder}:", "convert_none": "There's no game pack in {folder} (a .dat file the game has too). Pick the folder the old mod came in.", "convert_ref_backup": "Compared with your clean backup of the game, so mods already copied into the game folder don't get mixed in.", "convert_ref_game": "Compared with your game folder, as there's no clean backup. If you ever copied mods into the game folder, make a clean backup first (Settings) after letting Steam repair the game, or their changes end up in this mod too.", "convert_name": "Name", "tip_convert_name": "The mod's name in your library and in mod sets.", "convert_version": "Version", "tip_convert_version": "Numbers with dots, like 1.0.0. Converting it again with a higher one replaces the old copy.", "convert_author": "Author", "tip_convert_author": "Who made the old mod (shown in your library, to give them credit).", "convert_description": "Description", "tip_convert_description": "A line about what the mod does (shown in your library).", "convert_go": "Convert and add to the library", "tip_convert_go": "Compare the packs and make the mod. A big mod takes a minute or two; the lines below say how far it is.", "convert_running": "Converting…", "convert_failed": "The mod couldn't be converted."});
+  Object.assign(words.us, {"clash_gamefile": "{a} and {b} both change the same game file, {file}. The one from {b} is used, because {b} is lower in the list.", "clash_use": "Use the one from {a}", "tip_clash_use": "Moves {a} just below {b} in this mod set, so the {file} from {a} is used. If the two mods change other things too, {a} wins those as well.", "clash_use_done": "{name}: {a} is now below {b}, so the {file} from {a} is used."});
   Object.assign(words.us, { lang_pick_title: "Choose your language", lang_from_steam: "Your game's language in Steam",
     lang_from_pc: "Your PC's language", lang_pick_close: "Close", tip_lang_open: "Change the language.",
     set_in_this: "In this set ({n})", set_none_yet: "No mods yet: tick them below.", set_add_mods: "Add mods from your library",
@@ -175,6 +176,13 @@
       soft.push({ kind: "value", hard: false, mods: pair, what: "Unit_Battleship.VitesseLineaire",
         message: `${pair[1]} changes 8 values ${pair[0]} changed too, e.g. Unit_Battleship.VitesseLineaire; it comes later, so it wins.`,
         count: 8, file_kind: "", a: pair[1], b: pair[0] });
+    }
+    // both change one game file whole (rusemod.gamefiles.overlaps): the lower one's is used, the other offered
+    if (mods.includes("harbour-pack") && mods.includes("anchored-ships")) {
+      const [first, last] = mods.filter((m) => m === "harbour-pack" || m === "anchored-ships");
+      soft.push({ kind: "gamefile", hard: false, mods: [name(first), name(last)], what: "Sample.ppk: ships/battleship.png",
+        message: `${name(first)} and ${name(last)} both change Sample.ppk: ships/battleship.png: ${name(last)}'s is used`,
+        count: 1, a: name(first), b: name(last), move: first, below: last });
     }
     // the best order (rusemod.rmod.best_order): Harbour Pack changes more, so it goes first and Anchored Ships keeps its 8
     let best = null, helped = [];
@@ -393,6 +401,14 @@
         const s = sets.find((x) => x.id === id);
         const best = clashesOf(s.mods).best;
         if (best) s.mods = best;
+        return lists({ set: id });
+      },
+      move_below: async (id, move, below) => {
+        const s = sets.find((x) => x.id === id);
+        const order = s.mods.filter((m) => m !== move);
+        if (!order.includes(below) || order.length === s.mods.length) throw new Error("That mod isn't in this mod set any more.");
+        order.splice(order.indexOf(below) + 1, 0, move);
+        s.mods = order;
         return lists({ set: id });
       },
       delete_set: async (id) => {

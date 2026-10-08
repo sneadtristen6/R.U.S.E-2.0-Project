@@ -116,6 +116,48 @@ class Files(unittest.TestCase):
         with self.assertRaisesRegex(StudioError, "isn't a pack"):
             api.files_list("texts", ["gen\\notes.txt"])
 
+    def test_a_game_file_changed_and_added_in_a_mod(self):
+        """His Import / Replace and Add File, the safe way (rusemod.gamefiles): a delta in the mod, never the game's
+        file; checked as its kind; an added file only in the mod's own folder in the pack."""
+        from rusemod import gamefiles
+        home = Path(tempfile.mkdtemp(dir=self.tmp.name))
+        api = StudioApi(game_dir=self.game, home=home, instances=home / "copies")
+        mine = Path(home, "mine.tgv")
+        mine.write_bytes(make_tgv(2, 2, "A8R8G8B8_LIN", [zipo_pack(bytes([0, 255, 0, 255]) * 4)]))
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+            api.files_change("texts", [], "gen\\flag.tgv", str(mine))
+        api.new_mod("Painted")
+        folder = home / "mods" / "painted"
+        shown = api.files_change("texts", ["gen\\menu.ppk"], "gen\\inner\\card.tgv", str(mine))
+        self.assertEqual((shown["changed"], shown["showing_mine"], shown["can_change"]), (True, True, True))
+        self.assertEqual(read_png(base64.b64decode(shown["picture"].split(",", 1)[1]))[2][:4], bytes([0, 255, 0, 255]))
+        delta = folder / "files" / "game" / "ZZ_Win.dat" / "gen" / "menu.ppk" / "gen" / "inner" / "card.tgv.rdelta"
+        self.assertTrue(delta.is_file())
+        self.assertNotIn(TEXTURE, delta.read_bytes())  # never the game's file
+        self.assertEqual(gamefiles.apply_delta(TEXTURE, delta.read_bytes()), mine.read_bytes())
+        game_side = api.files_preview("texts", ["gen\\menu.ppk"], "gen\\inner\\card.tgv")
+        self.assertEqual((game_side["changed"], game_side["showing_mine"]), (True, False))
+        self.assertEqual([f.get("mine") for f in api.files_list("texts", ["gen\\menu.ppk"])["files"]], ["changed"])
+        notes = Path(home, "notes.txt")
+        notes.write_text("x", encoding="utf-8")
+        with self.assertRaisesRegex(StudioError, "can't be checked"):
+            api.files_change("texts", [], "gen\\notes.txt", str(notes))
+        self.assertEqual(api.files_preview("texts", [], "gen\\blob.bin")["can_change"], False)
+        api.files_reset("texts", ["gen\\menu.ppk"], "gen\\inner\\card.tgv")
+        self.assertFalse(delta.exists())
+        listed = api.files_add("texts", "pictures/my_flag.tgv", str(mine))
+        self.assertEqual(listed["files"][-1], {"path": "mods\\painted\\pictures\\my_flag.tgv", "kind": "texture",
+                                               "size": mine.stat().st_size, "mine": "added"})
+        self.assertEqual(api.files_preview("texts", [], "mods\\painted\\pictures\\my_flag.tgv")["added"], True)
+        for name, why in (("../x.tgv", "Give the new file a name"), ("x.webm", "can't be checked")):
+            with self.subTest(name=name), self.assertRaisesRegex(StudioError, why):
+                api.files_add("texts", name, str(mine))
+        self.assertEqual(api.files_change("texts", [], "gen\\flag.tgv"), {"cancelled": True})  # (no file picked)
+        self.assertFalse((folder / "files" / "game" / "ZZ_Win.dat" / "gen" / "flag.tgv.rdelta").exists())
+        from rusemod.build import load_mod
+        self.assertEqual([(g.path, g.added) for g in load_mod(folder)[0].game_files],
+                         [("mods/painted/pictures/my_flag.tgv", True)])
+
 
 if __name__ == "__main__":
     unittest.main()

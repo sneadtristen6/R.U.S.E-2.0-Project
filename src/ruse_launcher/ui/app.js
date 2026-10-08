@@ -486,6 +486,11 @@ function renderActive() {
       useLists(await api().best_order(set.id));
       setMessage(fill(w.best_order_done, { name: set.name }), "good");
     } catch (e) { problem(e); }
+  } : null, set.editable ? async (c) => {
+    try {
+      useLists(await api().move_below(set.id, c.move, c.below));
+      setMessage(fill(w.clash_use_done, { name: set.name, a: c.a, b: c.b, file: c.what.split("/").pop() }), "good");
+    } catch (e) { problem(e); }
   } : null);
   play.disabled = state.playing || Boolean(set.error) || Boolean(check && check.hard.length)
     || backupState().busy === "restore";  // a copy built now would take half-restored files
@@ -513,6 +518,7 @@ function clashText(c) {
     "sound archive": w.kind_sound_archive, "picture": w.kind_picture, "map file": w.kind_map_file, "text file": w.kind_text_file,
     "game data": w.kind_game_data };
   const values = { a: c.a, b: c.b, n: c.count, example: c.what, file: c.what.split("/").pop(), kind: kinds[c.file_kind] || w.kind_game_data };
+  if (c.kind === "gamefile") return fill(w.clash_gamefile, values);
   if (c.kind === "file" || c.kind === "script") return fill(w.clash_file, values);
   if (c.kind === "archive") return fill(w.clash_archive, values);
   if (c.kind === "create") return fill(w.clash_create, values);
@@ -520,14 +526,21 @@ function clashText(c) {
   return fill(c.count === 1 ? w.clash_value_one : w.clash_value, values);
 }
 
-// onBest: puts the mods in the best order (check.best: rusemod.rmod.best_order), offered in the box of overwrites
-function renderClashes(holder, check, onBest) {
+// onBest: puts the mods in the best order (check.best: rusemod.rmod.best_order), offered in the box of overwrites;
+// onMove(c): moves c.move just below c.below, offered on each game file two mods change (rusemod.gamefiles.overlaps)
+function renderClashes(holder, check, onBest, onMove) {
   const w = state.words;
   holder.replaceChildren();
   if (!check) return;
   const item = (c) => {
     const li = el("li", { textContent: clashText(c) });
-    if ((c.kind === "file" || c.kind === "script") && c.what.includes("/")) li.append(" ", el("span", { className: "path", textContent: c.what }));
+    if ((c.kind === "file" || c.kind === "script" || c.kind === "gamefile") && c.what.includes("/")) li.append(" ", el("span", { className: "path", textContent: c.what }));
+    if (c.kind === "gamefile" && onMove) {
+      const values = { a: c.a, b: c.b, file: c.what.split("/").pop() };
+      const button = el("button", { type: "button", className: "small ghost", textContent: fill(w.clash_use, values), title: fill(w.tip_clash_use, values) });
+      button.addEventListener("click", async () => { button.disabled = true; try { await onMove(c); } finally { button.disabled = false; } });
+      li.append(" ", button);
+    }
     return li;
   };
   if (check.hard.length) {  // open, since Play is off because of it; folds like the yellow one (a 75-mod set lists dozens)
@@ -542,7 +555,7 @@ function renderClashes(holder, check, onBest) {
       el("ul", {}, ...check.soft.map(item)));
     box.open = check.soft.length <= 3 || Boolean(check.best && onBest);
     if (check.best && onBest) {
-      const button = el("button", { type: "button", className: "small", textContent: w.best_order });
+      const button = el("button", { type: "button", className: "small", textContent: w.best_order, title: w.best_order_why });
       button.addEventListener("click", async () => { button.disabled = true; try { await onBest(check.best); } finally { button.disabled = false; } });
       const why = el("p", { className: "muted", textContent: w.best_order_why });
       if (check.helped && check.helped.length) why.append(" ", fill(w.best_order_helps, { names: check.helped.join(", ") }));
@@ -840,7 +853,13 @@ function renderEditor() {
     ed.names = best.map((m) => names[m]);
     renderEditor();
   };
-  renderClashes(clashes, checkOf(ed.mods, (res) => { if (state.editing === ed) renderClashes(clashes, res, toBest); }), toBest);
+  const toBelow = (c) => {  // "Use <mod>'s" in the editor: its own order changes, Save keeps it
+    const order = ed.mods.filter((m) => m !== c.move);
+    if (!order.includes(c.below) || order.length === ed.mods.length) return;
+    order.splice(order.indexOf(c.below) + 1, 0, c.move);
+    toBest(order);
+  };
+  renderClashes(clashes, checkOf(ed.mods, (res) => { if (state.editing === ed) renderClashes(clashes, res, toBest, toBelow); }), toBest, toBelow);
   form.replaceChildren(
     el("h1", { textContent: ed.id ? w.edit : w.new_set }),
     el("label", { className: "field" }, el("span", { textContent: w.set_name }), name),

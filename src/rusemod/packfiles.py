@@ -182,6 +182,11 @@ def preview(game: Path, pack_id: str, nested, path: str) -> dict:
     not read as its kind is shown as bytes, with `why`."""
     with Opened(game, pack_id, nested) as o:
         raw = o.read(path)
+    return preview_bytes(path, raw)
+
+
+def preview_bytes(path: str, raw: bytes) -> dict:
+    """preview() of a file's bytes (`path` names its kind): the game's, or a mod's version of it."""
     kind = "pack" if raw[:4] == PACK_MAGIC else kind_of(path)
     out = {"path": path, "kind": kind, "size": len(raw)}
     try:

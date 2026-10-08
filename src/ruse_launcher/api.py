@@ -609,6 +609,19 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
         found = rmod_clashes(folders) if len(folders) > 1 else []
         out = {"hard": [c.view() for c in found if c.hard], "soft": [c.view() for c in found if not c.hard],
                "best": None}
+        # two mods of ours changing one game file whole (rusemod.gamefiles): the lower one's is used, and the screen
+        # offers the other's (move_below); the owner, 2026-10-08: "give a solution"
+        from rusemod.gamefiles import overlaps
+        ours = [(entry, Path(folder)) for entry, folder in zip(entries, folders) if Path(folder).is_dir()]
+        if len(ours) > 1:
+            names = {entry: self._mod_name(entry, Path(folder)) for entry, folder in ours}
+            out["soft"] += [{"kind": "gamefile", "hard": False, "what": o["file"], "a": names[o["a"]], "b": names[o["b"]],
+                             "mods": [names[o["a"]], names[o["b"]]], "move": o["a"], "below": o["b"], "count": 1,
+                             "message": f"{names[o['a']]} and {names[o['b']]} both change {o['file']}: "
+                                        f"{names[o['b']]}'s is used"} for o in overlaps(ours)]
+        return self._best_order(out, mods, entries, folders, found)
+
+    def _best_order(self, out: dict, mods: list, entries: list, folders: list, found: list) -> dict:
         if any(not c.hard for c in found):
             # the order in which each mod keeps the most of its changes (rusemod.rmod.best_order), when it's another
             order = rmod_best_order(folders)
@@ -631,6 +644,18 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
         if best is None:
             return self._lists(set=set_id)
         return self.save_set(set_id, chosen["name"], best)
+
+    def move_below(self, set_id: str, move: str, below: str) -> dict:
+        """Move one mod of a set to just below another (the "Use <mod>'s" button when two mods change one game file
+        whole: the lower one's is used) and save it. Returns the fresh lists."""
+        chosen = self._set(set_id)
+        mods = list(chosen["mods"])
+        if move not in mods or below not in mods:
+            # not a game rule: the Launcher's own mod sets
+            raise LauncherError("That mod isn't in this mod set any more.")
+        mods.remove(move)
+        mods.insert(mods.index(below) + 1, move)
+        return self.save_set(set_id, chosen["name"], mods)
 
     def set_check(self, set_id: str) -> dict:
         """check_mods for a mod set (Vanilla: nothing clashes)."""

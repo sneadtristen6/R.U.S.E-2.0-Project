@@ -60,9 +60,10 @@
     $("files-count").textContent = fill(w.files_count, { n: l.matching, total: l.total })
       + (l.matching > l.files.length ? " " + fill(w.files_more, { n: l.files.length }) : "");
     $("files-list").replaceChildren(...l.files.map((f) => {
+      const mark = f.mine === "changed" ? ` · ✎ ${w.files_changed_mark}` : f.mine === "added" ? ` · ＋ ${w.files_added_mark}` : "";
       const b = el("button", { type: "button", title: `${f.path}\n${w.tip_files_row}` },
         el("span", { className: "name", textContent: tail(f.path) }),
-        el("span", { className: "meta", textContent: `${kindWord(f.kind)} · ${size(f.size)} · ${f.path}` }));
+        el("span", { className: "meta", textContent: `${kindWord(f.kind)} · ${size(f.size)}${mark} · ${f.path}` }));
       b.dataset.path = f.path;
       b.setAttribute("aria-current", String(f.path === F.picked));
       b.addEventListener("click", () => showFile(f.path));
@@ -70,14 +71,95 @@
     }));
   }
 
-  async function showFile(path) {
+  async function showFile(path, mine = false) {
     F.picked = path;
     for (const b of $("files-list").querySelectorAll("button")) b.setAttribute("aria-current", String(b.dataset.path === path));
     const ask = ++F.shown;
     $("files-detail").replaceChildren(el("h1", { textContent: tail(path) }), el("p", { className: "muted", textContent: W().files_loading }));
     let p;
-    try { p = await api().files_preview(F.pack, F.nested, path); } catch (err) { problem(err); return; }
+    try { p = await api().files_preview(F.pack, F.nested, path, mine); } catch (err) { problem(err); return; }
     if (ask === F.shown) renderDetail(p);
+  }
+
+  // What the modder can do to the file in the mod (StudioApi.files_change / files_reset; rusemod.gamefiles): change it
+  // with a file of theirs (kept as only what changed), see their version or the game's, put the game's back
+  function mineBox(p) {
+    const w = W(), box = el("div", { className: "group" });
+    if (p.mine_error) box.append(el("p", { className: "notice warn", textContent: fill(w.files_mine_error, { why: p.mine_error }) }));
+    if (p.changed || p.added) {
+      box.append(el("p", { className: "small", textContent: p.added ? `＋ ${w.files_added_mark}`
+        : `✎ ${w.files_changed_mark} · ${p.showing_mine ? w.files_showing_mine : w.files_showing_game}` }));
+    }
+    const row = el("div", { className: "actions" });
+    if (p.can_change) {
+      const change = el("button", { type: "button", className: "primary", textContent: w.files_change, title: w.tip_files_change,
+        disabled: !state.mod });
+      change.addEventListener("click", async () => {
+        change.disabled = true;
+        try {
+          const res = await api().files_change(F.pack, F.nested, p.path);
+          if (!res.cancelled) { say(w.files_changed_done, "ok"); renderDetail(res); refreshMarks(); }
+        } catch (err) { problem(err); }
+        change.disabled = false;
+      });
+      row.append(change);
+    }
+    if (p.changed) {
+      const flip = el("button", { type: "button", textContent: p.showing_mine ? w.files_show_game : w.files_show_mine,
+        title: w.tip_files_show });
+      flip.addEventListener("click", () => showFile(p.path, !p.showing_mine));
+      row.append(flip);
+    }
+    if (p.changed || p.added) {
+      const back = el("button", { type: "button", className: "ghost", textContent: p.added ? w.files_remove_added : w.files_reset,
+        title: p.added ? w.tip_files_remove_added : w.tip_files_reset });
+      back.addEventListener("click", async () => {
+        try {
+          const res = await api().files_reset(F.pack, F.nested, p.path);
+          refreshMarks();
+          if (res.gone) { F.picked = null; renderTexts(); } else renderDetail(res);
+        } catch (err) { problem(err); }
+      });
+      row.append(back);
+    }
+    if (row.childNodes.length) box.append(row);
+    if (!p.can_change && !p.added && p.why_not) box.append(el("p", { className: "muted small", textContent: fill(w.files_cannot, { why: p.why_not }) }));
+    else if (p.can_change && !state.mod) box.append(el("p", { className: "muted small", textContent: w.no_mod }));
+    return box;
+  }
+
+  async function refreshMarks() {  // the list again, with what the mod changes marked
+    try { F.list = await api().files_list(F.pack, F.nested, F.find); } catch { return; }
+    renderList();
+  }
+
+  // Add a file of the modder's to the pack, in the mod's own folder there (StudioApi.files_add)
+  function renderAdd() {
+    const w = W(), box = $("files-add");
+    box.replaceChildren();
+    if (F.nested.length || !state.mod) return;
+    const open = el("button", { type: "button", className: "link", textContent: w.files_add, title: w.tip_files_add });
+    open.addEventListener("click", () => {
+      if (box.querySelector("input")) { renderAdd(); return; }
+      const name = el("input", { type: "text", className: "values-text", placeholder: w.files_add_hint, title: w.tip_files_add_name,
+        maxLength: 200 });
+      name.setAttribute("aria-label", w.files_add_name);
+      const pick = el("button", { type: "button", className: "small primary", textContent: w.files_add_pick, title: w.tip_files_add_pick });
+      pick.addEventListener("click", async () => {
+        if (!name.value.trim()) { name.focus(); return; }
+        try {
+          const res = await api().files_add(F.pack, name.value);
+          if (res.cancelled) return;
+          F.list = res;
+          renderList();
+          renderAdd();
+          say(w.files_added_done, "ok");
+        } catch (err) { problem(err); }
+      });
+      box.append(el("p", { className: "muted small", textContent: w.files_add_help }), name, " ", pick);
+      name.focus();
+    });
+    box.append(open);
   }
 
   function rowsTable(rows) {
@@ -121,7 +203,7 @@
       body.append(el("pre", { className: "files-text", textContent: (p.lines || []).join("\n") }));
       if (p.more) body.append(el("p", { className: "muted small", textContent: fill(w.files_bytes_more, { n: p.more }) }));
     }
-    parts.push(body, el("p", { className: "muted small", textContent: w.files_read_only }));
+    parts.push(mineBox(p), body, el("p", { className: "muted small", textContent: w.files_safe }));
     $("files-detail").replaceChildren(...parts);
   }
 
@@ -142,6 +224,7 @@
     $("files-find").value = "";
     $("files-list").replaceChildren();
     renderTexts();
+    renderAdd();
     load();
   }
 
@@ -153,6 +236,7 @@
       if (!F.pack && F.packs.length) F.pack = F.packs[0].id;
     }
     renderPacks();
+    renderAdd();
     if (!F.list) await load(); else renderList();
   }
 
@@ -167,7 +251,13 @@
 
   window.FilesView = {
     open,
-    setWords(words) { F.words = words; renderTexts(); if (F.packs) renderPacks(); if (F.list) renderList(); },
+    setWords(words) { F.words = words; renderTexts(); renderAdd(); if (F.packs) renderPacks(); if (F.list) renderList(); },
+    modChanged() {  // another mod picked: its changes marked, its Add a file…
+      if (!F.packs) return;
+      renderAdd();
+      refreshMarks();
+      if (F.picked) showFile(F.picked);
+    },
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wire); else wire();
 })();

@@ -458,6 +458,31 @@ class Clashing(Base):
         self.assertEqual(chosen["mods"], ["navy", "static"])
         self.assertIsNone(api.set_check("ships")["best"])  # already the best order: no button
 
+    def test_two_mods_changing_one_game_file_and_the_one_click_fix(self):
+        # rusemod.gamefiles: the lower mod's file is used; the screen offers the other's (the owner, 2026-10-08:
+        # "For seven, yes, I agree, but give a solution")
+        from rusemod.gamefiles import make_delta
+        api = self.api()
+        for mod_id, name, new in (("paint", "Paint", b"GREEN"), ("navy", "Navy", b"BLUE!"), ("plain", "Plain", None)):
+            folder = write_mod(Path(self.tmp.name, "dl"), mod_id, HALF, extra=f'name = "{name}"\n')
+            if new:
+                delta = folder / "files/game/ZZ_Win.dat/gen/flag.tgv.rdelta"
+                delta.parent.mkdir(parents=True)
+                delta.write_bytes(make_delta(b"GAME!", new))
+            api.add_mod(str(folder))
+        api.new_set("Flags", ["paint", "plain", "navy"])
+        soft = [c for c in api.set_check("flags")["soft"] if c["kind"] == "gamefile"]
+        self.assertEqual([(c["a"], c["b"], c["what"], c["move"], c["below"]) for c in soft],
+                         [("Paint", "Navy", "ZZ_Win.dat: gen/flag.tgv", "paint", "navy")])
+        self.assertIn("Navy's is used", soft[0]["message"])
+        lists = api.move_below("flags", "paint", "navy")
+        self.assertEqual(next(s for s in lists["sets"] if s["id"] == "flags")["mods"], ["plain", "navy", "paint"])
+        soft = [c for c in api.set_check("flags")["soft"] if c["kind"] == "gamefile"]
+        self.assertEqual([(c["a"], c["b"], c["move"], c["below"]) for c in soft], [("Navy", "Paint", "navy", "paint")])
+        self.assertEqual(api.check_mods(["paint", "plain"])["soft"], [])  # while a set is edited: one of them, none
+        with self.assertRaisesRegex(LauncherError, "isn't in this mod set any more"):
+            api.move_below("flags", "gone", "navy")
+
 class ListServer(Base):
     """The mod index on a local web server, listing one mod (econ-half)."""
 

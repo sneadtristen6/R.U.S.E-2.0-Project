@@ -234,6 +234,7 @@ async function modChanged() {
   if (state.view === "ai") await renderAI();  // and so are the computer players, and its scripts
   if (state.view === "values" && state.valuePage) await showValueObject(state.valuePage.address, { keep: true });  // and its changes
   if (state.view === "music") window.SoundView.modChanged();  // and the songs of its own
+  if (state.view === "files") window.FilesView.modChanged();  // and the game files it changes
 }
 
 async function pickMod(e, kind = "mod") {

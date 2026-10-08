@@ -46,6 +46,8 @@ class ModInfo:
     solved: dict = field(default_factory=dict)               # map pack name -> its solved.bin's bytes, locked (§8)
     scripts: dict = field(default_factory=dict)              # the game's mission scripts it changes (§9, scripts/):
     # (map, part, file) in lower case -> {"rel", "text", "xyz"} (rusemod.mapscripts.read_mod)
+    game_files: list = field(default_factory=list)           # whole game files it changes or adds (§7, files/game):
+    # rusemod.gamefiles.GameFile
 
 
 # --- versions ---

@@ -150,6 +150,11 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.solved = read_mod(path)
         from . import mapscripts
         info.scripts = mapscripts.read_mod(path)
+        from .gamefiles import GameFileError, read_mod as game_files_of
+        try:
+            info.game_files = game_files_of(path, info.id)
+        except GameFileError as exc:
+            raise BuildError(f"{path.name}: {exc}") from None
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -1569,6 +1574,23 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say(".rmod mods first: " + " -> ".join(m.id for m in rmods))
             run = rmod.apply(game, [m.rmod for m in rmods], build_of(game), say)
             stack.callback(run.close)
+        game_files = [(m.id, m.game_files) for m, _ops in mods if getattr(m, "game_files", None)]
+        if game_files:  # whole game files the mods change or add (rusemod.gamefiles, MOD_FORMAT §7): into the packs
+            from . import gamefiles, rmod as layers  # before anything else, so later changes go on top of them
+            if run is None:
+                run = layers.RmodRun()
+                stack.callback(run.close)
+
+            def layered(path: Path):
+                p = Path(path).resolve()
+                if p not in run.packs:
+                    base = Edat.open(str(p))
+                    run.opened.append(base)
+                    run.packs[p] = layers.Layered(base, p)
+                return run.packs[p]
+
+            _touched, said = gamefiles.changes(layered, lambda name: find_pack(game, name), game_files, say)
+            run.findings += [Finding(level, message) for level, message in said]
 
         new_packs: dict = {}  # a new map's pack (a path the game hasn't got) -> newmap.NewPack over the shipped one
 

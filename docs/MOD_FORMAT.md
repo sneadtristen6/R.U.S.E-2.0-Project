@@ -26,6 +26,8 @@ ruse2-core/
   files/
     replace/<game path>    replaces an existing game file (cooked from a source format)
     add/<new path>         adds a new file (under mods/<mod id>/...)
+    game/<pack>/<path>.rdelta  a game file changed whole, as a delta (the Studio's Files tab; see §7)
+    game/<pack>/mods/<mod id>/<path>  a file added to a game pack (§7)
   maps/<MapId>/            map sources (see §8)
   scripts/<map>/<part>/    the game's mission scripts it changes, as the Studio saves them (see §9)
   README.md, LICENSE, CHANGELOG.md
@@ -295,6 +297,26 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   own, or the one another map plays), and its three layers, each heard and replaced in the Music tab's editor; *Hear
   all three together* plays them as the build will put them together.
 - `files/add/mods/<mod id>/<name>.<source ext>` adds a new file, referenced from `.rndf` by its game path.
+- **Any game file, whole (2026-10-08, `rusemod.gamefiles`; not tried in the game yet):** the Studio's **Files** tab
+  shows every file in the game's packs; *Change it with a file of mine…* puts a file of the modder's in place of the
+  game's, and *Add a file of mine to this pack…* adds a new one. The safeguards the owner asked for:
+  - The game's packs are never written: the build puts the files into the modded copy only.
+  - A changed file is kept in the mod as a **delta**, `files/game/<pack>/<its path in the pack>.rdelta`, never as
+    the game's file: only the bytes the modder changed are in it, with a check of the game file it was made from.
+    When the game's file isn't that one any more (a game update), the build stops and says so; the mod has to be
+    made again from the new file.
+  - Every file is checked as its kind before the game gets it, the changed file as the delta makes it as well as an
+    added one: textures, PNG pictures, text tables, game data, scenarios and XML. A kind not on that list is refused
+    (songs and sounds go through the Music tab, above). A file inside a pack inside the pack is changed the same way:
+    `files/game/<pack>/<the inner pack's path>/<its path in it>.rdelta`.
+  - No scripts or programs: none of the kinds taken can run.
+  - A file a mod adds goes in its own folder in the pack, `files/game/<pack>/mods/<mod id>/...`, so it never stands
+    in for one of the game's.
+  - At most 32 MB a file and 256 MB of game files a mod, for now. (Later, maybe: a higher limit for particular packs,
+    for an overhaul.)
+  - Two mods changing the same file: the lower one in the load order wins, the build says which, and the Launcher
+    shows it before Play with *Use the one from <the other mod>*, which moves that mod just below (§10.4).
+  - Value patches (`.rndf`) run on top of a changed game data file, the same as on the game's own.
 
 ## 8. Maps
 
@@ -1095,6 +1117,7 @@ Mod A loads before mod B, and both touch the same property, list, object or file
 | create / clone → create / clone with the same name | two objects can't share a name | **error** |
 | replace file → replace file | B's file wins | warning |
 | replace file → patch inside that file | B's patch runs on A's replacement | note |
+| change a game file whole → the same (§7) | B's file wins; the Launcher offers *Use the one from A* (moves A below B) | warning |
 
 Also:
 - In a list of references, an item that's already there isn't added twice (a note). Lists of plain values keep duplicates.
