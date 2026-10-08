@@ -13,8 +13,8 @@ menu shows it (seen in the game). A new unit (a clone) starts with its source's 
 wherever the build menu shows the source's.
 
 A plain picture (one level of A8R8G8B8, ZIPO: a nation's flag badge) is replaced the same way, whole: its colour from
-the PNG, its alpha (the badge's shape) the game's unless a grey `.alpha.png` is there too. Not tried in the game yet
-(the Studio's Nations tab writes a nation's new flag this way)."""
+the PNG, its alpha (the badge's shape) the game's unless a grey `.alpha.png` is there too. Seen in the game
+(2026-10-08: the Studio's Nations tab wrote Italy's flag as China's this way, shown beside the player's name)."""
 from __future__ import annotations
 
 import hashlib

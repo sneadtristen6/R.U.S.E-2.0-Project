@@ -9,7 +9,7 @@ for this patch"; other mods have done it, his word). Data only: the game keeps s
   round shape stays the game's.
 - Its units and what they say are changed where they always are: the Units tab (New unit puts a unit in its build
   menus) and each unit's page (Voice).
-Not tried in the game yet."""
+Seen in the game (2026-10-08, Italy made China): the new name in the lobby's list, the new flag in a match."""
 from __future__ import annotations
 
 import base64

@@ -3,10 +3,10 @@ idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de
 
 **0.9.8.1:** Terreno en blanco tiene suelo propio, y Océano en blanco se ha quitado.
 
-- **Convertir una nación en otra.** La nueva pestaña **Naciones** da a una de las siete naciones del juego un
-  nombre nuevo (en la sala y para su ejército) y una bandera nueva a partir de cualquier imagen: por ejemplo,
-  China en lugar de Italia. Sus unidades y lo que dicen se cambian como antes, en la pestaña Unidades y en la
-  página de cada unidad. Aún no probado en el juego.
+- **Convertir una nación en otra.** La nueva pestaña **Naciones** da a una de las siete naciones del juego un nombre
+  nuevo (en la sala y para su ejército) y una bandera nueva a partir de cualquier imagen: por ejemplo, China en
+  lugar de Italia. Sus unidades y lo que dicen se cambian como antes, en la pestaña Unidades y en la página de cada
+  unidad. Visto en el juego: el nombre nuevo en la sala, la bandera nueva en la partida.
 - **El suelo de Terreno en blanco se dibuja como propio.** Un mapa nuevo empezado en blanco tiene el suelo hecho a
   partir de tus trazos de terreno, no el suelo del mapa del juego desplazado: costas redondeadas de cerca y desde lo
   alto, sin abolladuras en las cimas, y edificios y tanques asentados justo encima. Visto en el juego en mapas de

@@ -4,7 +4,8 @@
 // with All values' words box (app.js wordsPanel); its flag is a picture of the modder's (any picture the window can
 // read: PNG, JPG, WebP...) fitted here to the flag's size, shone like the game's flags, its round shape kept the game's.
 // Its units: the Units tab with that nation picked (New unit puts a unit in its build menus); what they say: each
-// unit's page (Voice). Not tried in the game yet. Uses app.js's $, el, fill, say, problem, api, state, wordsPanel,
+// unit's page (Voice). Seen in the game (2026-10-08, Italy made China). Uses app.js's $, el, fill, say, problem, api,
+// state, wordsPanel,
 // showView, renderChips and refreshList.
 (function () {
   "use strict";

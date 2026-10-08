@@ -297,7 +297,8 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   A new map gets its own the same way. The Maps tab's **Background sound…** shows the map's: what it starts from (its
   own, or the one another map plays), and its three layers, each heard and replaced in the Music tab's editor; *Hear
   all three together* plays them as the build will put them together.
-- **A nation given a new name and flag (2026-10-08, `rusemod.nations`; not tried in the game yet):** one of the game's
+- **A nation given a new name and flag (2026-10-08, `rusemod.nations`; seen in the game: Italy made China, its new
+  name in the lobby's nation list and its new flag beside the player's name in a match, no crash):** one of the game's
   seven nations made into another, China in Italy's place say (the game keeps seven). Its name in the lobby's nation
   list is the game text `NATION_<n>` (Japan's is `NATION_7`: `NATION_6` is the lobby's Random) and its army's name,
   where an Operation asks which army to take, `NAT_NAME_<n>` (Japan has none): changed as any game text (§6,

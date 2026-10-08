@@ -9,7 +9,8 @@ What a nation's name and flag are in the game's files:
   loading screen's, the players' labels', the replays'): its FileName in `MultiplayerDataBag.NationalityIcons[n]`.
   A mod changes it as any picture (MOD_FORMAT §7, files/replace: rusemod.unitlook).
 The lobby's own nation button draws its flags in its menu file (a frame each), not from this picture: it stays the
-game's. Not tried in the game yet."""
+game's. Seen in the game (2026-10-08, Italy made China): the new name in the lobby's list, the new flag beside the
+player's name in a match."""
 from __future__ import annotations
 
 NATIONS = ("usa", "germany", "uk", "france", "italy", "ussr", "japan")  # Nationalite 0..6 (rusemod.unitcheck)

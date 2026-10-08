@@ -3,10 +3,10 @@ modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n
 
 **0.9.8.1:** Terrain vierge a désormais son propre sol, et Océan vierge est retiré.
 
-- **Faire d'une nation une autre.** Le nouvel onglet **Nations** donne à l'une des sept nations du jeu un
-  nouveau nom (dans le salon, et pour son armée) et un nouveau drapeau à partir de n'importe quelle image : la
-  Chine à la place de l'Italie, par exemple. Ses unités et ce qu'elles disent se changent comme avant, dans
-  l'onglet Unités et sur la page de chaque unité. Pas encore essayé en jeu.
+- **Faire d'une nation une autre.** Le nouvel onglet **Nations** donne à l'une des sept nations du jeu un nouveau
+  nom (dans le salon, et pour son armée) et un nouveau drapeau à partir de n'importe quelle image : la Chine à la
+  place de l'Italie, par exemple. Ses unités et ce qu'elles disent se changent comme avant, dans l'onglet Unités et
+  sur la page de chaque unité. Vu en jeu : le nouveau nom dans le salon, le nouveau drapeau en partie.
 - **Le sol de Terrain vierge est dessiné pour lui-même.** Une nouvelle carte partie de zéro a un sol fait à partir de
   vos traits de terrain, et non plus le sol de la carte du jeu déplacé : des rivages arrondis de près comme de haut,
   plus de creux au sommet des collines, et les bâtiments et les chars posés exactement dessus. Vu en jeu sur des
