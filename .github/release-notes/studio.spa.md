@@ -6,7 +6,7 @@ idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de
 - **Las herramientas de LittleGroove, traídas** de su RUSE-Mod-Manager:
   - **Pestaña Economía:** dinero inicial e ingresos, depósitos de suministros y las cartas de engaño con que empieza
     cada bando. Visto en el juego: el dinero inicial y las cartas iniciales.
-  - **Pestaña IA:** cómo juegan los jugadores de la computadora, las unidades que prefieren y las cartas de engaño; y
+  - **Pestaña IA:** cómo juegan los jugadores del ordenador, las unidades que prefieren y las cartas de engaño; y
     los scripts de mapas y misiones del juego, mostrados en Python, solo de lectura. Visto en el juego.
   - **Recuadro Mejora** en la página de una unidad: la unidad de la que es mejora, sus propias mejoras, el precio y el
     tiempo de su investigación.
@@ -17,7 +17,7 @@ idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de
   - **Misiones:** cambiar los scripts de una misión; ver si está en los menús, si carga cada archivo que necesita, y
     sus textos; subirla o bajarla en su menú.
   - **Mapas:** nombres de ciudades y colinas, puntos y zonas con nombre, nombre y orientación de un objeto del mapa.
-    **Notas** sobre una unidad, un valor o un jugador de la computadora.
+    **Notas** sobre una unidad, un valor o un jugador del ordenador.
 - **Pestaña Música:** cada canción según dónde suena, cada una cambiada en un pequeño editor del Studio (cortar,
   fundido, volumen); canciones nuevas añadidas a las listas de batalla; las frases de una unidad en su página; el
   sonido de fondo de un mapa. Visto en el juego: las canciones, las canciones nuevas y las frases.
@@ -43,7 +43,7 @@ añadidos a los mapas, los sonidos de fondo y las unidades de otras épocas.
 juego lo impide:
 
 - Una unidad terrestre enviada a una isla a la que no puede llegar hace que el juego se cuelgue.
-- Unir las islas con una franja de tierra evita el cuelgue, pero entonces la computadora simplemente envía su
+- Unir las islas con una franja de tierra evita el cuelgue, pero entonces el ordenador simplemente envía su
   infantería por ella.
 - Sin carretera entre las islas, no se puede colocar ningún edificio.
 - Con las armas del propio juego, los barcos y las unidades terrestres apenas se hacen daño.
