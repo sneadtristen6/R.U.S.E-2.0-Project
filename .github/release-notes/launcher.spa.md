@@ -1,6 +1,16 @@
 **RUSE Launcher 0.4, para jugadores.** Encuentra R.U.S.E. a través de Steam, y **Jugar** construye una copia del juego
 con tus mods y la inicia. Tu instalación de Steam nunca se modifica.
 
+**0.4.8.1:** convierte mods antiguos y juega mods hechos con el Studio 0.9.8.1.
+
+- **Convertir un mod antiguo…**, el Convert de LittleGroove traído al Launcher: un mod antiguo que llega como paquetes
+  del juego, para copiar en la carpeta del juego, se convierte en un mod que tu biblioteca juega junto a otros. Aún no
+  probado con un mod antiguo real.
+- **Dos mods que cambian el mismo archivo del juego:** el Launcher lo avisa antes de Jugar, y **Usar la de…** elige
+  cuál.
+- Los mods hechos con el Studio 0.9.8.1 funcionan: canciones y voces, una nación convertida en otra, unidades de otras
+  épocas.
+
 **0.4.8:** juega los mods hechos con Studio 0.9.8, entre ellos los mapas nuevos que empiezan en blanco, y muestra las
 novedades en tu idioma.
 

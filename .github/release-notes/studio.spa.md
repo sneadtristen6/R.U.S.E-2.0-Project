@@ -1,18 +1,43 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
-**0.9.8.1:** Terreno en blanco tiene suelo propio, y Océano en blanco lleva un aviso.
+**0.9.8.1:** Las herramientas de LittleGroove llegan al Studio, con música y sonidos, una nación convertida en otra y unidades de otras épocas.
 
+- **Las herramientas de LittleGroove, traídas** de su RUSE-Mod-Manager:
+  - **Pestaña Economía:** dinero inicial e ingresos, depósitos de suministros y las cartas de engaño con que empieza
+    cada bando. Visto en el juego: el dinero inicial y las cartas iniciales.
+  - **Pestaña IA:** cómo juegan los jugadores de la computadora, las unidades que prefieren y las cartas de engaño; y
+    los scripts de mapas y misiones del juego, mostrados en Python, solo de lectura. Visto en el juego.
+  - **Recuadro Mejora** en la página de una unidad: la unidad de la que es mejora, sus propias mejoras, el precio y el
+    tiempo de su investigación.
+  - **Pestaña Todos los valores:** cada objeto y valor de los datos del juego, cambiados en un mod: añadir o quitar un
+    valor, crear o borrar un objeto, dar a un valor de texto palabras propias.
+  - **Pestaña Archivos:** cada archivo de los paquetes del juego, visible y guardable. Cambia uno por un archivo tuyo o
+    añade uno: tu mod guarda solo los cambios, cada uno comprobado según su tipo.
+  - **Misiones:** cambiar los scripts de una misión; ver si está en los menús, si carga cada archivo que necesita, y
+    sus textos; subirla o bajarla en su menú.
+  - **Mapas:** nombres de ciudades y colinas, puntos y zonas con nombre, nombre y orientación de un objeto del mapa.
+    **Notas** sobre una unidad, un valor o un jugador de la computadora.
+- **Pestaña Música:** cada canción según dónde suena, cada una cambiada en un pequeño editor del Studio (cortar,
+  fundido, volumen); canciones nuevas añadidas a las listas de batalla; las frases de una unidad en su página; el
+  sonido de fondo de un mapa. Visto en el juego: las canciones, las canciones nuevas y las frases.
 - **Convertir una nación en otra.** La nueva pestaña **Naciones** da a una de las siete naciones del juego un nombre
   nuevo (en la sala y para su ejército) y una bandera nueva a partir de cualquier imagen: por ejemplo, China en
   lugar de Italia. Sus unidades y lo que dicen se cambian como antes, en la pestaña Unidades y en la página de cada
   unidad. Visto en el juego: el nombre nuevo en la sala, la bandera nueva en la partida.
+- **Unidades de otras épocas:** la pestaña Unidades ofrece WWI, WWII+, Guerra Fría y Moderna junto a las unidades del
+  juego. Añade una a tu mod y se convierte en una unidad nueva con su propio modelo, su autor citado; no se añade nada
+  hasta que la eliges.
+- **Mapa nuevo: empezar desde cero…** está en la pestaña Mapas antes de abrir un mapa.
 - **El suelo de Terreno en blanco se dibuja como propio.** Un mapa nuevo empezado en blanco tiene el suelo hecho a
   partir de tus trazos de terreno, no el suelo del mapa del juego desplazado: costas redondeadas de cerca y desde lo
   alto, sin abolladuras en las cimas, y edificios y tanques asentados justo encima. Visto en el juego en mapas de
   prueba.
 - **Océano en blanco se queda, con un aviso** en su botón: las islas separadas no están listas para batallas
   a gran escala (abajo).
+
+Aún no probado en el juego: el recuadro Mejora, Todos los valores, Archivos, las herramientas de misiones, los
+añadidos a los mapas, los sonidos de fondo y las unidades de otras épocas.
 
 **Por qué aún no hay mapas navales.** Probamos mapas de islas para batallas a gran escala con barcos, y el propio
 juego lo impide:

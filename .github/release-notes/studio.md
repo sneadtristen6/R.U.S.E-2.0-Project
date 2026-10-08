@@ -1,17 +1,40 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
-**0.9.8.1:** Blank Terrain gets ground of its own, and Blank Ocean gets a warning.
+**0.9.8.1:** LittleGroove's tools come to the Studio, with music and sounds, a nation made into another, and units from other eras.
 
+- **LittleGroove's tools, brought over** from his RUSE-Mod-Manager:
+  - **Economy tab:** starting money and income, supply depots, and the ruse cards each side starts with. Seen in the
+    game: the starting money and the starting cards.
+  - **AI tab:** how the computer players play, the units they prefer and the ruse cards; and the game's map and mission
+    scripts, shown as Python, read only. Seen in the game.
+  - **Upgrade box** on a unit's page: the unit it's an upgrade of, its own upgrades, its research price and time.
+  - **All values tab:** every object and value of the game's data, changed in a mod: add or take out a value, make or
+    delete an object, give a text value words of its own.
+  - **Files tab:** every file of the game's packs, seen and saved out. Change one with a file of yours or add one: your
+    mod keeps only the changes, each checked as its kind.
+  - **Missions:** change a mission's scripts; see whether it's in the menus, whether every file it needs loads, and its
+    texts; move it up or down in its menu.
+  - **Maps:** town and hill names, named points and zones, a map item's name and facing. **Notes** on a unit, a value
+    or a computer player.
+- **Music tab:** every song by where it plays, each replaced in a small editor in the Studio (cut, fade, volume); new
+  songs added to the battle lists; a unit's voice lines on its page; a map's background sound. Seen in the game: the
+  songs, the new songs and the voice lines.
 - **Make a nation into another.** The new **Nations** tab gives one of the game's seven nations a new name (in the
   lobby, and for its army) and a new flag from any picture: China in Italy's place, say. Its units and what they say
   are changed as before, on the Units tab and each unit's page. Seen in the game: the new name in the lobby, the new
   flag in a match.
+- **Units from other eras:** the Units tab gets WWI, WWII+, Cold War and Modern beside the game's own units. Add one to
+  your mod and it becomes a new unit with its own model, its maker credited; nothing is added until you pick it.
+- **New map: start from scratch…** is on the Maps tab before any map is open.
 - **Blank Terrain's ground is drawn as its own.** A new map started blank gets its ground made from your terrain
   strokes, not the game map's ground pushed about: round shores up close and from high up, no dents in hilltops, and
   buildings and tanks sitting right on it. Seen in the game on test maps.
 - **Blank Ocean stays, with a warning** on its button: separate islands aren't ready for full-scale battles
   (below).
+
+Not tried in the game yet: the Upgrade box, All values, Files, the missions' tools, the map additions, background
+sounds and the units from other eras.
 
 **Why there are no navy maps yet.** We tried maps of islands for full-scale battles with ships, and the game itself
 stands in the way:

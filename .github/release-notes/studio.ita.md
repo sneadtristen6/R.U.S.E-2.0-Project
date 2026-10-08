@@ -1,17 +1,43 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
-**0.9.8.1:** Terreno vuoto ha un terreno tutto suo, e Oceano vuoto ha un avviso.
+**0.9.8.1:** Gli strumenti di LittleGroove arrivano nello Studio, con musica e suoni, una nazione trasformata in un'altra e unità di altre epoche.
 
+- **Gli strumenti di LittleGroove, ripresi** dal suo RUSE-Mod-Manager:
+  - **Scheda Economia:** denaro iniziale e rendita, depositi di rifornimento e le carte dell'inganno con cui parte ogni
+    schieramento. Visto in gioco: il denaro iniziale e le carte iniziali.
+  - **Scheda IA:** come giocano i giocatori controllati dal computer, le unità che preferiscono e le carte
+    dell'inganno; e gli script delle mappe e delle missioni del gioco, mostrati in Python, in sola lettura. Visto in
+    gioco.
+  - **Riquadro Potenziamento** nella pagina di un'unità: l'unità di cui è un potenziamento, i suoi potenziamenti, il
+    prezzo e il tempo della ricerca.
+  - **Scheda Tutti i valori:** ogni oggetto e valore dei dati del gioco, cambiato in una mod: aggiungere o togliere un
+    valore, creare o eliminare un oggetto, dare a un valore di testo parole proprie.
+  - **Scheda File:** ogni file dei pacchetti del gioco, visibile e salvabile. Sostituiscine uno con un tuo file o
+    aggiungine uno: la tua mod conserva solo le modifiche, ognuna controllata secondo il suo tipo.
+  - **Missioni:** cambiare gli script di una missione; vedere se è nei menu, se ogni file che le serve si carica, e i
+    suoi testi; spostarla su o giù nel suo menu.
+  - **Mappe:** nomi di città e colline, punti e zone con nome, nome e orientamento di un oggetto della mappa. **Note**
+    su un'unità, un valore o un giocatore del computer.
+- **Scheda Musica:** ogni brano secondo dove suona, ognuno sostituito in un piccolo editor nello Studio (taglio,
+  dissolvenza, volume); nuovi brani aggiunti alle liste di battaglia; le battute di un'unità nella sua pagina; il suono
+  di sottofondo di una mappa. Visto in gioco: i brani, i nuovi brani e le battute.
 - **Fare di una nazione un'altra.** La nuova scheda **Nazioni** dà a una delle sette nazioni del gioco un nuovo nome
   (nella lobby e per il suo esercito) e una nuova bandiera da qualsiasi immagine: per esempio la Cina al posto
   dell'Italia. Le sue unità e ciò che dicono si cambiano come prima, nella scheda Unità e nella pagina di ogni
   unità. Visto in gioco: il nuovo nome nella lobby, la nuova bandiera in partita.
+- **Unità di altre epoche:** la scheda Unità offre WWI, WWII+, Guerra fredda e Moderno accanto alle unità del gioco.
+  Aggiungine una alla tua mod e diventa una nuova unità con il suo modello, il suo autore citato; non si aggiunge
+  nulla finché non la scegli.
+- **Nuova mappa: partire da zero…** è nella scheda Mappe prima che una mappa sia aperta.
 - **Il terreno di Terreno vuoto è disegnato apposta.** Una nuova mappa partita da zero ha il terreno fatto dai tuoi
   tratti, non più il terreno della mappa del gioco spostato: coste rotonde da vicino e dall'alto, niente più
   ammaccature in cima alle colline, ed edifici e carri poggiano esattamente sopra. Visto in gioco su mappe di prova.
 - **Oceano vuoto resta, con un avviso** sul suo pulsante: isole separate non sono pronte per vere battaglie
   (sotto).
+
+Non ancora provato in gioco: il riquadro Potenziamento, Tutti i valori, File, gli strumenti delle missioni, le
+aggiunte alle mappe, i suoni di sottofondo e le unità di altre epoche.
 
 **Perché non ci sono ancora mappe navali.** Abbiamo provato mappe di isole per vere battaglie con le navi, ed è il
 gioco stesso a impedirlo:

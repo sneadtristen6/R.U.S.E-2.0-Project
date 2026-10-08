@@ -1,17 +1,42 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
-**0.9.8.1:** Pusty teren dostaje własny grunt, a Pusty ocean dostaje ostrzeżenie.
+**0.9.8.1:** Narzędzia LittleGroove'a trafiają do Studia, a z nimi muzyka i dźwięki, nacja zmieniona w inną i jednostki z innych epok.
 
+- **Narzędzia LittleGroove'a, przeniesione** z jego RUSE-Mod-Managera:
+  - **Karta Ekonomia:** pieniądze na start i dochód, składy zaopatrzenia oraz karty podstępu, z którymi startuje każda
+    strona. Sprawdzone w grze: pieniądze na start i karty na start.
+  - **Karta SI:** jak grają gracze komputerowi, jakie jednostki wolą i karty podstępu; a także skrypty map i misji gry,
+    pokazane jako Python, tylko do odczytu. Sprawdzone w grze.
+  - **Pole Ulepszenie** na stronie jednostki: jednostka, której jest ulepszeniem, jej własne ulepszenia, cena i czas
+    badania.
+  - **Karta Wszystkie wartości:** każdy obiekt i każda wartość danych gry, zmienione w modzie: dodać lub usunąć
+    wartość, utworzyć lub usunąć obiekt, nadać wartości tekstowej własne słowa.
+  - **Karta Pliki:** każdy plik z paczek gry, do obejrzenia i zapisania. Zamień jeden na własny plik albo dodaj nowy:
+    twój mod zachowuje tylko zmiany, każda sprawdzona według rodzaju.
+  - **Misje:** zmienić skrypty misji; sprawdzić, czy jest w menu, czy ładuje się każdy potrzebny plik, i jej teksty;
+    przesunąć ją w górę lub w dół w jej menu.
+  - **Mapy:** nazwy miast i wzgórz, nazwane punkty i strefy, nazwa i obrót obiektu na mapie. **Notatki** o jednostce,
+    wartości lub graczu komputerowym.
+- **Karta Muzyka:** każdy utwór według miejsca, w którym gra, każdy zamieniany w małym edytorze w Studiu (cięcie,
+  wyciszanie, głośność); nowe utwory dodane do list bitewnych; kwestie jednostki na jej stronie; dźwięk tła mapy.
+  Sprawdzone w grze: utwory, nowe utwory i kwestie.
 - **Zrób z jednej nacji inną.** Nowa karta **Nacje** daje jednej z siedmiu nacji gry nową nazwę (w lobby i dla jej
   armii) oraz nową flagę z dowolnego obrazu: na przykład Chiny w miejsce Włoch. Jej jednostki i to, co mówią,
   zmienia się jak dotąd, w karcie Jednostki i na stronie każdej jednostki. Sprawdzone w grze: nowa nazwa w lobby,
   nowa flaga w meczu.
+- **Jednostki z innych epok:** karta Jednostki oferuje WWI, WWII+, Zimną wojnę i Współczesność obok jednostek gry.
+  Dodaj jedną do swojego moda, a stanie się nową jednostką z własnym modelem i podpisanym autorem; nic nie jest
+  dodawane, dopóki jej nie wybierzesz.
+- **Nowa mapa: od zera…** jest w karcie Mapy, zanim otworzysz jakąkolwiek mapę.
 - **Grunt Pustego terenu jest rysowany jako własny.** Nowa mapa zaczęta od zera ma grunt zrobiony z twoich pociągnięć
   terenu, a nie przesunięty grunt mapy z gry: okrągłe brzegi z bliska i z góry, bez wgnieceń na szczytach wzgórz, a
   budynki i czołgi stoją dokładnie na nim. Sprawdzone w grze na mapach testowych.
 - **Pusty ocean zostaje, z ostrzeżeniem** na swoim przycisku: osobne wyspy nie są gotowe do pełnych bitew
   (niżej).
+
+Jeszcze nie sprawdzone w grze: pole Ulepszenie, Wszystkie wartości, Pliki, narzędzia misji, dodatki do map,
+dźwięki tła i jednostki z innych epok.
 
 **Dlaczego nie ma jeszcze map morskich.** Wypróbowaliśmy mapy z wyspami do pełnych bitew z okrętami i przeszkadza
 sama gra:

@@ -1,17 +1,42 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
-**0.9.8.1:** Prázdný terén dostává vlastní terén a Prázdný oceán dostává varování.
+**0.9.8.1:** Nástroje LittleGroove přicházejí do Studia, s hudbou a zvuky, národem proměněným v jiný a jednotkami z jiných období.
 
+- **Nástroje LittleGroove, převzaté** z jeho RUSE-Mod-Manageru:
+  - **Karta Ekonomika:** počáteční peníze a příjem, zásobovací sklady a karty lsti, se kterými začíná každá strana.
+    Ověřeno ve hře: počáteční peníze a počáteční karty.
+  - **Karta AI:** jak hrají počítačoví hráči, které jednotky upřednostňují, karty lsti; a skripty map a misí hry,
+    zobrazené jako Python, jen ke čtení. Ověřeno ve hře.
+  - **Rámeček Vylepšení** na stránce jednotky: jednotka, jejímž je vylepšením, její vlastní vylepšení, cena a doba
+    výzkumu.
+  - **Karta Všechny hodnoty:** každý objekt a každá hodnota dat hry, změněné v modu: přidat nebo odebrat hodnotu,
+    vytvořit nebo smazat objekt, dát textové hodnotě vlastní slova.
+  - **Karta Soubory:** každý soubor z balíků hry, k prohlédnutí a uložení. Nahraďte jeden svým souborem nebo přidejte
+    nový: váš mod si ponechá jen změny, každou ověřenou podle jejího druhu.
+  - **Mise:** změnit skripty mise; zjistit, zda je v menu, zda se načte každý soubor, který potřebuje, a její texty;
+    posunout ji v jejím menu nahoru nebo dolů.
+  - **Mapy:** názvy měst a kopců, pojmenované body a zóny, název a natočení objektu na mapě. **Poznámky** k jednotce,
+    hodnotě nebo počítačovému hráči.
+- **Karta Hudba:** každá skladba podle místa, kde hraje, každá nahrazená v malém editoru ve Studiu (střih, prolínání,
+  hlasitost); nové skladby přidané do bitevních seznamů; hlášky jednotky na její stránce; zvuk pozadí mapy. Ověřeno ve
+  hře: skladby, nové skladby a hlášky.
 - **Udělat z jednoho národa jiný.** Nová karta **Národy** dá jednomu ze sedmi národů hry nový název (v lobby a pro
   jeho armádu) a novou vlajku z jakéhokoli obrázku: třeba Čínu místo Itálie. Jeho jednotky a to, co říkají, se mění
   jako dosud, na kartě Jednotky a na stránce každé jednotky. Ověřeno ve hře: nový název v lobby, nová vlajka v
   zápase.
+- **Jednotky z jiných období:** karta Jednotky nabízí vedle jednotek hry WWI, WWII+, Studenou válku a Současnost.
+  Přidejte jednu do svého modu a stane se novou jednotkou s vlastním modelem a uvedeným autorem; nic se nepřidá,
+  dokud ji nevyberete.
+- **Nová mapa: od nuly…** je na kartě Mapy, dokud není otevřená žádná mapa.
 - **Terén Prázdného terénu se kreslí jako vlastní.** Nová mapa začatá od nuly má terén vytvořený z vašich tahů terénu,
   ne posunutý terén mapy ze hry: kulaté břehy zblízka i shora, žádné promáčkliny na vrcholcích kopců a budovy i tanky
   stojí přesně na něm. Ověřeno ve hře na testovacích mapách.
 - **Prázdný oceán zůstává, s varováním** na svém tlačítku: oddělené ostrovy zatím nejsou připravené na velké
   bitvy (níže).
+
+Ve hře zatím nevyzkoušeno: rámeček Vylepšení, Všechny hodnoty, Soubory, nástroje misí, doplňky map, zvuky pozadí
+a jednotky z jiných období.
 
 **Proč zatím nejsou námořní mapy.** Zkoušeli jsme mapy z ostrovů pro velké bitvy s loďmi a v cestě stojí samotná hra:
 

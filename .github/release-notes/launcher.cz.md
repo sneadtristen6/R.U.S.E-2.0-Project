@@ -1,6 +1,13 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.1:** převádí staré mody a spouští mody ze Studia 0.9.8.1.
+
+- **Převést starý mod…**, nástroj Convert od LittleGroove: starší mod v podobě balíků hry, určený ke zkopírování do
+  složky hry, se stane modem, který vaše knihovna spustí vedle ostatních. Se skutečným starým modem zatím nevyzkoušeno.
+- **Dva mody mění stejný soubor hry:** Launcher to řekne před Hrát a **Použít verzi…** vybere který.
+- Mody ze Studia 0.9.8.1 fungují: skladby a hlasy, národ proměněný v jiný, jednotky z jiných období.
+
 **0.4.8:** spouští módy udělané ve Studiu 0.9.8, mezi nimi nové mapy, které začínají prázdné, a ukazuje novinky ve
 vašem jazyce.
 
