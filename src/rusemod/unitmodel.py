@@ -47,11 +47,12 @@ class UnitModelError(ModelError):
 
 
 def import_model(game: Path, source_model: str, model_file: Path, out: Path, size: float = 1.0,
-                 side: int = 1024, pictures: Path | None = None) -> dict:
+                 side: int = 1024, pictures: Path | None = None, aircraft: bool = False) -> dict:
     """Step one for a mod: `model_file` (.3ds or .glb) fitted to the game's model `source_model` (the unit the new
     one copies) and saved as `out` (the mod's files/models/<unit>.glb). A .3ds's pictures are looked for in
-    `pictures`, then beside it, then one folder up (downloads often keep them in a folder of their own). Returns the
-    fitting's report (parts and their roles, facing, scale, counts, pictures, "missing": pictures not found)."""
+    `pictures`, then beside it, then one folder up (downloads often keep them in a folder of their own). `aircraft`:
+    the new unit is a plane (its tail fin, its highest point, goes at the back). Returns the fitting's report (parts
+    and their roles, facing, scale, counts, pictures, "missing": pictures not found)."""
     from .build import find_pack
     from .edat import Edat
     from .modelin import prepare, read_model, write_glb
@@ -65,7 +66,7 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
         zz.close()
     here = Path(model_file).resolve().parent
     look = ([Path(pictures)] if pictures else []) + [here, here.parent]
-    prep = prepare(read_model(model_file), look, src.like, size=size, side=side)
+    prep = prepare(read_model(model_file), look, dict(src.like, aircraft=aircraft), size=size, side=side)
     write_glb(prep, out, src.model)
     return dict(prep.report, like=src.model)
 
@@ -177,7 +178,7 @@ def find_source(zz, model: str) -> Source:
         raise UnitModelError(f"{model}'s skeleton has no {ROOT} bone")
     spk = Spk(next(iter(meshes.values())))
     mats = spk.materials()
-    hull, low = [], math.inf
+    hull, hull_y, low = [], [], math.inf
     body = None
     for part in spk.model(model):
         remap = mats[part.material].get("skinning") or []
@@ -192,11 +193,12 @@ def find_source(zz, model: str) -> Source:
             heavy = max(range(len(w)), key=lambda k: w[k])
             if (remap[b[heavy]] if b[heavy] < len(remap) else b[heavy]) == bones.names.index(ROOT):
                 hull.append(p[0])
+                hull_y.append(p[1])
     if not hull or body is None:
         raise UnitModelError(f"{model} has no hull on its {ROOT} bone, or no body texture (CombinedDSCTexture)")
     pivot = bones.pivots[bones.names.index(TURRET)] if TURRET in bones.names else ((max(hull) + min(hull)) / 2, 0.0, 0)
-    like = {"length": max(hull) - min(hull), "pivot": (pivot[0], pivot[1]), "ground": low,
-            "middle": (max(hull) + min(hull)) / 2}
+    like = {"length": max(hull) - min(hull), "width": max(hull_y) - min(hull_y), "pivot": (pivot[0], pivot[1]),
+            "ground": low, "middle": (max(hull) + min(hull)) / 2}
     return Source(model, meshes, skeletons, bones, like, body)
 
 

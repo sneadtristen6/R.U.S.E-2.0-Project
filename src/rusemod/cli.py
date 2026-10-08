@@ -221,7 +221,8 @@ def cmd_import_model(args) -> int:
         # not a game rule: we never write into the game folder
         raise UserError(f"Refusing to write into the game folder ({game}).")
     try:
-        r = import_model(game, found[0], Path(args.file), out, size=args.size, side=args.side, pictures=args.pictures)
+        r = import_model(game, found[0], Path(args.file), out, size=args.size, side=args.side, pictures=args.pictures,
+                         aircraft=args.aircraft)
     except (ModelError, OSError, ValueError) as exc:
         raise UserError(str(exc)) from None
     print(f"{out}: {r['vertices']:,} points, {r['triangles']:,} triangles in {r['draws']} part(s), fitted to "
@@ -379,6 +380,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--size", type=float, default=1.0, help="its length over the copied unit's (default 1: as long)")
     p.add_argument("--side", type=int, default=1024, help="largest picture side (default 1024, as the game's)")
     p.add_argument("--pictures", help="where a .3ds's pictures are (default: beside it, then one folder up)")
+    p.add_argument("--aircraft", action="store_true", help="the new unit is a plane (its tail fin goes at the back)")
     p.set_defaults(fn=cmd_import_model)
     p = sub.add_parser("build", help="build mods into a rebuilt pack or a modded copy of the game")
     p.add_argument("mods", nargs="+", help="mod folders (with mod.toml), .rmod files, or single .rndf files")

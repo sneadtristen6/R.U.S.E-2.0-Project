@@ -424,9 +424,11 @@ def roles(model: Model) -> list[str]:
     return [r or HULL for r in out]
 
 
-def facing(model: Model, parts: list[str]) -> tuple[int, int]:
+def facing(model: Model, parts: list[str], like: dict | None = None) -> tuple[int, int]:
     """Which way the model faces, as (axis: 0 = x, 1 = y; sign): the way its gun points from its turret's middle;
-    without a gun or turret, along its longer side, +."""
+    without a gun or turret, the way round whose length over width is nearest the copied unit's (`like`'s "length"
+    and "width": a plane is wider than it is long, so its longer side is its wings, 2026-10-08), else along its
+    longer side; +, but an aircraft's (`like` "aircraft") tail fin, its highest point, is at the back."""
     gun = [p for m, r in zip(model.meshes, parts) if r == GUN for p in m.positions]
     turret = [p for m, r in zip(model.meshes, parts) if r == TURRET for p in m.positions]
     if gun and turret:
@@ -435,7 +437,19 @@ def facing(model: Model, parts: list[str]) -> tuple[int, int]:
         axis = 0 if abs(d[0]) >= abs(d[1]) else 1
         return axis, 1 if d[axis] > 0 else -1
     b = model.box()
-    return (0 if b[3] - b[0] >= b[4] - b[1] else 1), 1
+    dx, dy = b[3] - b[0], b[4] - b[1]
+    axis = 0 if dx >= dy else 1
+    if like and like.get("width") and like.get("length") and dx > 0 and dy > 0:
+        want = math.log(like["length"] / like["width"])
+        axis = 0 if abs(math.log(dx / dy) - want) <= abs(math.log(dy / dx) - want) else 1
+    sign = 1
+    if like and like.get("aircraft"):
+        pts = [p for m in model.meshes for p in m.positions]
+        top = sorted(pts, key=lambda p: p[2])[-max(1, len(pts) // 50):]
+        middle = (b[axis] + b[axis + 3]) / 2
+        if sum(p[axis] for p in top) / len(top) > middle:
+            sign = -1
+    return axis, sign
 
 
 def turn_ring(points: list) -> tuple[float, float]:
@@ -472,7 +486,7 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
     looked in in turn). A picture named but not found is a flat colour, listed in the report's "missing"."""
     folders = [Path(f) for f in ([folder] if isinstance(folder, (str, Path)) else (folder or []))]
     parts = roles(model)
-    axis, sign = facing(model, parts)
+    axis, sign = facing(model, parts, like)
     f = [0.0, 0.0, 0.0]
     f[axis] = float(sign)
     r = (f[1], -f[0], 0.0)        # forward x up: the right-hand side

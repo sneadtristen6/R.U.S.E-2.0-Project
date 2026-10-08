@@ -230,6 +230,28 @@ class Fitting(unittest.TestCase):
         self.assertAlmostEqual((min(xs) + max(xs)) / 2, -20.0)
 
 
+class PlaneFacing(unittest.TestCase):
+    """A plane is wider than it is long: fitted to a plane, its longer side is its wings, and its tail fin (its highest
+    point) is at the back (2026-10-08: a P-51 came out sideways)."""
+    def plane_model(self, fin_x=-4.0):
+        fuselage = [(x, y, z) for x in (-4.5, 4.5) for y in (-0.5, 0.5) for z in (0.0, 1.0)]
+        wings = [(x, y, 0.5) for x in (-0.5, 1.5) for y in (-5.5, 5.5)]
+        fin = [(fin_x - 0.4, 0.0, 2.6), (fin_x + 0.4, 0.0, 1.0)]
+        return modelin.Model([modelin.Mesh("body", fuselage + wings + fin, [(0, 1, 2)])], [])
+
+    def test_plane(self):
+        like = {"length": 9.8, "width": 11.3, "aircraft": True}            # a P-51's
+        m = self.plane_model(fin_x=-4.0)                                     # its fin at -x: it faces +x
+        self.assertEqual(modelin.facing(m, ["hull"]), (1, 1))               # longest side: the wings (wrong)
+        self.assertEqual(modelin.facing(m, ["hull"], like), (0, 1))         # along the fuselage, nose at +x
+        self.assertEqual(modelin.facing(self.plane_model(fin_x=4.0), ["hull"], like), (0, -1))   # fin at +x: -x
+
+    def test_tank_unchanged(self):
+        m = modelin.Model([modelin.Mesh("hull", [(x, y, 0.0) for x in (-3, 3) for y in (-1.5, 1.5)], [(0, 1, 2)])],
+                          [])
+        self.assertEqual(modelin.facing(m, ["hull"], {"length": 6.5, "width": 3.6}), (0, 1))
+
+
 class ModFile(unittest.TestCase):
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()
@@ -313,7 +335,8 @@ class Packs(unittest.TestCase):
         s = self.source
         self.assertEqual((s.mesh_packs.keys(), s.skeleton_packs.keys()), ({MESHES}, {SKELETONS}))
         self.assertEqual(s.skeleton.names, ["chassis", "tourelle_01"])
-        self.assertEqual(s.like, {"length": 200.0, "pivot": (-70.0, 5.0), "ground": 2.0, "middle": -20.0})
+        self.assertEqual(s.like, {"length": 200.0, "width": 80.0, "pivot": (-70.0, 5.0), "ground": 2.0,
+                                  "middle": -20.0})
         self.assertEqual(s.body_texture, TEX)
 
     def test_written_beside_the_unit_s_model(self):
