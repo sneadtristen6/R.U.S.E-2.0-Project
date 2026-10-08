@@ -764,6 +764,10 @@ tr.edited .flag { border-color: var(--accent); }
 .mission-text { padding: 3px 0; border-bottom: 1px solid var(--line); }
 .mission-text.edited { border-left: 3px solid var(--accent); padding-left: 6px; }
 
+/* era units in the Units tab (eraunits.js): the era filter above the kinds; an era unit's model picture on its page */
+.chips.eras { margin-bottom: 2px; }
+.era-picture { display: block; max-width: min(100%, 560px); border-radius: var(--radius); border: 1px solid var(--line); margin: 8px 0; }
+
 /* the Nations tab (nations.js): a nation each, its flag, names and units; Change… opens its name, army and flag */
 .nations-list { display: grid; gap: 8px; max-width: 820px; margin: 10px 0; }
 .nation { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }

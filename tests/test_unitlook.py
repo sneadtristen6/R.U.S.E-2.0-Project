@@ -519,7 +519,7 @@ class StudioLook(unittest.TestCase):
         self.api._edits = lambda: Edits()
         calls = []
 
-        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None):
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False):
             calls.append((source, Path(file).name, size))
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_bytes(b"glTF-own")

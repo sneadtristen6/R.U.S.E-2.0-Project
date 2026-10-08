@@ -60,6 +60,7 @@ from rusemod.webui import Job, job_view, pick_file, pick_folder, pick_save
 
 from .edits import REMOVED, EditsFileError, Link, Literal, ModEdits, NewUnit, plain_name
 from .music import MusicCalls
+from .era_units import EraUnitCalls
 from .nations import NationCalls
 from . import __version__
 
@@ -387,7 +388,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls, startlog.StartCalls, MusicCalls,
-                NationCalls):
+                NationCalls, EraUnitCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
     # What Export writes into every mod's manifest ([made_with]); the mod list and the Launcher show it as the credit
@@ -5560,11 +5561,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         mod = self._mod_dir()
         return mod / MODELS / f"{_tail(unit.target)}.glb" if unit is not None and mod is not None else None
 
-    def model_import(self, address: str, file: str | None = None, size: float = 1.0) -> dict:
+    def model_import(self, address: str, file: str | None = None, size: float = 1.0, aircraft: bool = False) -> dict:
         """Give a new unit a model of its own: `file` (a .3ds with its pictures beside it, or a .glb; asked for when
         not given) fitted to the model of the unit it copies (its length times `size`, its turret on the copy's
-        turret point) and saved as the mod's files/models/<the unit's name>.glb, which the build writes into the game
-        beside the copied model. Returns {"model": what was made (parts, counts, pictures, "missing"), **look()}."""
+        turret point; `aircraft`: a plane, its tail fin at the back) and saved as the mod's files/models/<the unit's
+        name>.glb, which the build writes into the game beside the copied model. Returns {"model": what was made
+        (parts, counts, pictures, "missing"), **look()}."""
         from rusemod.modelin import ModelError
         from rusemod.unitmodel import import_model
         target = self._own_model_file(address)
@@ -5587,7 +5589,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if not found:
             raise StudioError("The unit this one copies has no 3D model to fit a new one to.")
         try:
-            report = import_model(self._game(), found[0], Path(file), target, size=size)
+            report = import_model(self._game(), found[0], Path(file), target, size=size, aircraft=bool(aircraft))
         except (ModelError, OSError, ValueError) as exc:
             raise StudioError(f"{Path(file).name}: {exc}") from None
         report["file"] = Path(file).name

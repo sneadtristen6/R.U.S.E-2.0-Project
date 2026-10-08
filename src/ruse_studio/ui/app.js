@@ -10,12 +10,15 @@ const state = { lang: "base", kind: "all", nation: -1, search: "", group: "all",
   mode: "own",    // a part several units share: change it for "own" (that unit only) or "shared" (all of them)
   view: "units",  // the tab: "units" or "maps" (maps.js)
   start: "change",     // the Units tab's way in (renderStart): "change" a unit, or start a "new" one from it
+  era: "vanilla",      // the Units list's era filter: the game's own units, or an era's (eraunits.js)
+  eraPage: null,       // the era unit shown (its library key), when one is
   focusModel: null,    // a new unit just made: its page opens at Import model (lookBox)
   aiProfile: null,     // the AI tab's set of values shown (its address: Default, a difficulty or a profile)
   aiScripts: null,     // the AI tab's list of the game's scripts, for one language: { lang, scripts, missing }
   aiScriptPath: null,  // the script shown there (its path in the game's file)
   lastEdit: null };  // the last value changed this session, for Ctrl+Z: { address, prop, mode, via, label }
-const KINDS = ["all", "ground", "infantry", "air", "buildings", "ammo"];  // ammo: what weapons fire (its own list)
+const KINDS = ["all", "ground", "infantry", "air", "buildings", "ammo"];
+const ERA_CHINA = 7;  // the era units' nation chip for China, which has no game nation of its own (eraunits.js)  // ammo: what weapons fire (its own list)
 const WHOLE = new Set(["int8", "int16", "uint16", "int32", "uint32", "int64"]);
 const NEW = "\u0001new", OPEN = "\u0001open", EXPORT = "\u0001export", SHARE = "\u0001share";  // the mod menu's actions (never a folder path)
 
@@ -228,6 +231,8 @@ async function modChanged() {
   state.lastEdit = null;  // the change was in the other mod
   await refreshMarks();
   if (state.page) await showUnit(state.page.address, state.page.via);
+  else if (state.eraPage && state.view === "units") await window.EraUnits.showPage(state.eraPage);
+  if (state.era !== "vanilla" && state.view === "units") await refreshList();
   if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // a map's strokes are the mod's
   state.aiScripts = null;  // which scripts the mod changes: the other mod's now (read again when the AI tab shows)
   $("ai-script").dataset.lang = "";
@@ -402,17 +407,20 @@ function setStart(key) {
 
 function renderChips() {
   const w = state.words;
-  const kinds = state.start === "new" ? KINDS.filter((k) => k !== "ammo") : KINDS;
+  if (window.EraUnits) window.EraUnits.renderChips();  // (eraunits.js loads after this file: the first draw may come first)
+  const era = state.era !== "vanilla";
+  const kinds = era ? ["all", "ground", "air"] : state.start === "new" ? KINDS.filter((k) => k !== "ammo") : KINDS;
   $("kinds").replaceChildren(...kinds.map((k) => {
     const b = el("button", { type: "button", className: "chip", textContent: w[k], title: w.tip_kind });
     b.setAttribute("aria-pressed", String(state.kind === k));
     b.addEventListener("click", () => { state.kind = k; state.group = "all"; renderChips(); refreshList(); });
     return b;
   }));
-  const nations = state.kind === "ammo" ? [] : [-1, 0, 1, 2, 3, 4, 5, 6];  // ammunition has no nation
+  // ammunition has no nation; an era's units add China (no game nation of its own)
+  const nations = state.kind === "ammo" ? [] : era ? [-1, 0, 1, 2, 3, 4, 5, 6, ERA_CHINA] : [-1, 0, 1, 2, 3, 4, 5, 6];
   $("nations").replaceChildren(...nations.map((n) => {
     const b = el("button", { type: "button", className: "chip", title: w.tip_nation,
-      textContent: n < 0 ? w.all : state.nationNames[n] || String(n) });
+      textContent: n < 0 ? w.all : n === ERA_CHINA ? w.eras_nation_china : state.nationNames[n] || String(n) });
     b.setAttribute("aria-pressed", String(state.nation === n));
     b.addEventListener("click", () => { state.nation = n; renderChips(); refreshList(); });
     return b;
@@ -445,6 +453,7 @@ function unitSub(u) {
 }
 
 async function refreshList() {
+  if (state.era !== "vanilla") return window.EraUnits.refreshList();  // an era's units (eraunits.js)
   let res;
   try {
     res = await api().units(state.lang, state.kind, state.nation, state.search, state.group || "all");
@@ -1480,6 +1489,7 @@ function upgradeGroup(u) {
 
 async function showUnit(address, via) {
   via = via || "";
+  state.eraPage = null;
   if (!state.page || state.page.via !== via) state.mode = "own";  // a new way in: "only this unit" first
   state.selected = address;
   for (const b of $("unit-list").querySelectorAll("button")) {
