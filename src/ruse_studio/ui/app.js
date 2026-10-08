@@ -232,6 +232,7 @@ async function modChanged() {
   closeScriptEditor();
   if (state.view === "economy") await renderEconomy();  // the economy shown is the mod's
   if (state.view === "ai") await renderAI();  // and so are the computer players, and its scripts
+  if (state.view === "values") renderValuesNew();  // New object… needs a mod
   if (state.view === "values" && state.valuePage) await showValueObject(state.valuePage.address, { keep: true });  // and its changes
   if (state.view === "music") window.SoundView.modChanged();  // and the songs of its own
   if (state.view === "files") window.FilesView.modChanged();  // and the game files it changes
@@ -2388,7 +2389,9 @@ function scriptEvents() {
 
 // --- the All values tab (StudioApi.values_files / values_find / value_object / value_edit / value_reset / value_links,
 // rusemod.values; LittleGroove's raw value editor brought over): any object of the unit data and every value it has,
-// as the game's file has it, each changed in the current mod at once. For whatever the other tabs don't show. Every
+// as the game's file has it, each changed in the current mod at once; values added and taken out, objects made and
+// deleted (value_prop_add / value_prop_delete / value_object_new / value_object_delete, each delete asked first with
+// what points at it, value_pointing). For whatever the other tabs don't show. Every
 // control says in its tooltip what it is and what changing it does (the owner, 2026-10-07: "everything needs to work
 // as if someone not very smart was playing, lots of tooltips") ---
 const VALUE_KIND_TIPS = { number: "values_kind_number", bool: "values_kind_bool", text: "values_kind_text",
@@ -2410,6 +2413,62 @@ function valuesEvents() {
   }
   $("values-file").addEventListener("change", now);
   $("values-go").addEventListener("click", now);
+  $("values-new").addEventListener("click", () => {
+    const form = $("values-new-form");
+    if (!form.classList.contains("hidden")) { form.classList.add("hidden"); return; }
+    valuesNewForm(form);
+    form.classList.remove("hidden");
+  });
+}
+
+// "New object…" needs a mod to keep the object in: without one it's locked, and its tooltip says why
+function renderValuesNew() {
+  const w = state.words, b = $("values-new");
+  b.textContent = w.values_new;
+  b.disabled = !state.mod;
+  b.title = state.mod ? w.tip_values_new : w.no_mod;
+  if (!state.mod) $("values-new-form").classList.add("hidden");
+}
+
+// A brand-new object (StudioApi.value_classes / value_object_new; LittleGroove's raw editor's Add): its kind, typed
+// with a list of the unit data's kinds to pick from, and its name. Its page opens at once, to give it values.
+async function valuesNewForm(form) {
+  const w = state.words;
+  const kinds = el("datalist", { id: "values-new-kinds" });
+  const kind = el("input", { type: "text", className: "values-text", placeholder: w.values_new_kind_hint,
+    title: w.tip_values_new_kind, autocomplete: "off" });
+  kind.setAttribute("list", "values-new-kinds");
+  const name = el("input", { type: "text", className: "values-text", placeholder: w.values_new_name_hint,
+    title: w.tip_values_new_name, maxLength: 100, autocomplete: "off" });
+  const make = el("button", { type: "button", className: "small primary", textContent: w.values_new_make,
+    title: w.tip_values_new_make });
+  make.addEventListener("click", async () => {
+    if (!kind.value.trim()) { kind.focus(); return; }
+    if (!name.value.trim()) { name.focus(); return; }
+    make.disabled = true;
+    let res;
+    try { res = await api().value_object_new(kind.value.trim(), name.value.trim(), state.lang); } catch (err) {
+      problem(err);
+      make.disabled = false;
+      return;
+    }
+    form.classList.add("hidden");
+    if (state.valuePage && state.valuePage.address !== res.address) (state.valueBack = state.valueBack || []).push(state.valuePage.address);
+    renderValuePage(res.page);
+    say(fill(w.values_new_done, { name: name.value.trim() }), "ok");
+    if (state.valuesFound) findValues();
+  });
+  name.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); make.click(); } });
+  form.replaceChildren(el("p", { className: "muted small", textContent: w.values_new_help }),
+    el("label", { className: "values-field" }, el("span", { className: "small", textContent: w.values_new_kind_label }), kind, kinds),
+    el("label", { className: "values-field" }, el("span", { className: "small", textContent: w.values_new_name_label }), name),
+    el("div", { className: "actions" }, make));
+  kind.focus();
+  if (!state.valueClasses) {
+    try { state.valueClasses = (await api().value_classes()).classes; } catch (err) { problem(err); return; }
+  }
+  kinds.replaceChildren(...state.valueClasses.map((c) => el("option", { value: c.class,
+    label: fill(w.values_new_kind_count, { n: c.count }) })));
 }
 
 // $/GFX/Everything/Descriptor_Unit_M4_Sherman:WeaponDescriptor -> Descriptor_Unit_M4_Sherman:WeaponDescriptor
@@ -2434,6 +2493,7 @@ async function renderValues() {
   const tips = { "values-file": "tip_values_file", "values-find": "tip_values_find", "values-by-title": "tip_values_by",
     "values-prop": "tip_values_prop", "values-value": "tip_values_value", "values-go": "tip_values_go" };
   for (const [id, key] of Object.entries(tips)) $(id).title = w[key] || "";
+  renderValuesNew();
   if (!state.valueFiles) {
     try { state.valueFiles = (await api().values_files()).files; } catch (err) { problem(err); return; }
   }
@@ -2474,7 +2534,8 @@ function listValues(res) {
   $("values-count").textContent = !res.total ? w.values_none
     : fill(res.total > res.objects.length ? w.values_some : w.values_count, { shown: res.objects.length, n: res.total });
   $("values-list").replaceChildren(...res.objects.map((o) => {
-    const sub = [o.name ? shortAddress(o.address) : null, o.class, o.match].filter(Boolean).join(" · ");
+    const sub = [o.mine ? w.values_mine_mark : null, o.deleted ? w.values_deleted_mark : null,
+      o.name ? shortAddress(o.address) : null, o.class, o.match].filter(Boolean).join(" · ");
     const b = el("button", { type: "button", title: `${fill(w.tip_values_object, { kind: o.class, file: o.file })}\n${o.address}` },
       el("span", { className: "name", textContent: o.name || shortAddress(o.address) }),
       el("span", { className: "sub", textContent: sub }));
@@ -2511,7 +2572,8 @@ async function showValueObject(address, opts) {
 
 function valuesWhy(p) {
   const w = state.words;
-  return { outside: w.values_why_outside, not_stable: w.values_why_not_stable, no_mod: w.no_mod }[p.why_not] || p.why_not;
+  return { outside: w.values_why_outside, not_stable: w.values_why_not_stable, no_mod: w.no_mod,
+    deleted: w.values_why_deleted }[p.why_not] || p.why_not;
 }
 
 function renderValuePage(p) {
@@ -2536,12 +2598,26 @@ function renderValuePage(p) {
   if (nav.childNodes.length) parts.unshift(nav);
   if (p.name) parts.push(el("div", { className: "game-name", textContent: shortAddress(p.address), title: w.tip_values_code_name }));
   parts.push(el("div", { className: "address" }, el("code", { textContent: p.address }), copy),
-    el("div", { className: "meta", title: w.tip_values_meta, textContent: fill(w.values_meta, { kind: p.class, file: p.file, n: p.index }) }));
-  if (!p.editable) parts.push(el("p", { className: "notice", textContent: valuesWhy(p) }));
+    el("div", { className: "meta", title: w.tip_values_meta, textContent: p.mine ? fill(w.values_meta_mine, { kind: p.class })
+      : fill(w.values_meta, { kind: p.class, file: p.file, n: p.index }) }));
+  if (p.mine) parts.push(el("p", { className: "notice new", textContent: w.values_mine }));
+  if (p.deleted && p.named && state.mod) {  // deleted by the mod: put it back to change it again
+    const back = el("button", { type: "button", className: "small", textContent: w.values_put_back, title: w.tip_values_put_back });
+    back.addEventListener("click", async () => {
+      back.disabled = true;
+      let res;
+      try { res = await api().value_object_restore(p.address, state.lang); } catch (err) { problem(err); back.disabled = false; return; }
+      renderValuePage(res.page);
+      say(fill(w.values_put_back_done, { name: p.name || shortAddress(p.address) }), "ok");
+      if (state.valuesFound) findValues();
+    });
+    parts.push(el("div", { className: "notice warn" }, el("p", { textContent: valuesWhy(p) }), el("div", { className: "actions" }, back)));
+  } else if (!p.editable) parts.push(el("p", { className: "notice", textContent: valuesWhy(p) }));
   else {
     parts.push(el("p", { className: "notice", textContent: w.values_how }));
     if (p.shared) parts.push(el("p", { className: "notice warn", textContent: fill(w.values_shared, { n: p.owners }) }));
     else if (p.named && p.users > 1) parts.push(el("p", { className: "notice warn", textContent: fill(w.values_users_warn, { n: p.users }) }));
+    if (state.mod) parts.push(valueTools(p));
   }
   const table = el("table", { className: "values-table" });
   for (const r of p.rows) table.append(valueRow(p, r));
@@ -2622,7 +2698,7 @@ function valueRow(p, r) {
       });
       td.append(edit);
     }
-    if (r.can) {  // a new text of the mod's own, this value pointed at it (StudioApi.value_text_new; his Mint new)
+    if (r.can && !r.added) {  // a new text of the mod's own, this value pointed at it (StudioApi.value_text_new; his Mint new)
       const fresh = el("button", { type: "button", className: "link", textContent: w.values_text_new,
         title: w.tip_values_text_new });
       let form = null;
@@ -2731,12 +2807,171 @@ function valueRow(p, r) {
   }
   if (r.edited) {
     td.classList.add("edited");
-    const reset = el("button", { type: "button", className: "link", textContent: w.values_reset, title: w.tip_values_reset,
-      disabled: !state.mod });
+    // a value the mod adds (or gives an object it makes) is taken back out; any other gets the game's value back
+    const reset = el("button", { type: "button", className: "link", textContent: r.added ? w.values_take_out : w.values_reset,
+      title: r.added ? w.tip_values_take_out_added : w.tip_values_reset, disabled: !state.mod });
     reset.addEventListener("click", () => resetValue(p, r));
-    td.append(el("div", { className: "was" }, r.edited.removed ? w.values_removed : fill(w.values_game, { value: valueGameText(r) }), " ", reset));
+    const was = r.edited.removed ? w.values_removed : r.added ? (p.mine ? w.values_given : w.values_added)
+      : fill(w.values_game, { value: valueGameText(r) });
+    td.append(el("div", { className: "was" }, was, " ", reset));
+  }
+  if (r.deletable && state.mod) {  // one of the game's values taken out of the object (his Del prop), asked first
+    const out = el("button", { type: "button", className: "link", textContent: w.values_take_out, title: w.tip_values_take_out });
+    let ask = null;
+    out.addEventListener("click", () => {
+      if (ask) { ask.remove(); ask = null; return; }
+      ask = valueTakeOutAsk(p, r, () => { if (ask) ask.remove(); ask = null; });
+      td.append(ask);
+    });
+    td.append(el("div", { className: "values-row-tools" }, out));
   }
   return el("tr", {}, th, td);
+}
+
+// Add a value… and Delete this object… on an object's page (LittleGroove's Add prop and Delete): each opens its box
+// under the buttons, one at a time
+function valueTools(p) {
+  const w = state.words;
+  const holder = el("div", { className: "values-tools" });
+  let open = null;
+  const show = (box) => { if (open) open.remove(); open = box; if (box) holder.append(box); };
+  const add = el("button", { type: "button", textContent: w.values_add, title: w.tip_values_add });
+  add.addEventListener("click", () => show(open && open.dataset.kind === "add" ? null : valueAddForm(p)));
+  const buttons = el("div", { className: "values-nav" }, add);
+  if (p.named || p.mine) {  // a part goes with a value of the object it's part of (Take out on that row)
+    const del = el("button", { type: "button", className: "ghost danger", textContent: w.values_delete, title: w.tip_values_delete });
+    del.addEventListener("click", () => show(open && open.dataset.kind === "delete" ? null : valueDeleteAsk(p, () => show(null))));
+    buttons.append(del);
+  }
+  holder.append(buttons);
+  return holder;
+}
+
+// A value this object hasn't got, picked from the ones other objects of its kind have (StudioApi.value_prop_choices),
+// its box starting as another's value; Add saves it in the mod (value_prop_add) and it gets its own row
+function valueAddForm(p) {
+  const w = state.words;
+  const box = el("div", { className: "values-words-box" }, el("p", { className: "muted small", textContent: w.values_add_help }));
+  box.dataset.kind = "add";
+  api().value_prop_choices(p.address, state.lang).then((res) => {
+    const can = res.props.filter((x) => x.can);
+    const cant = res.props.length - can.length;
+    if (!can.length) {
+      box.append(el("p", { className: "muted small", textContent: w.values_add_none }));
+      if (cant) box.append(el("p", { className: "muted small", textContent: fill(w.values_add_some_cant, { n: cant }) }));
+      return;
+    }
+    const pick = el("select", { title: w.tip_values_add_pick });
+    pick.append(...can.map((x) => el("option", { value: x.prop, title: w[VALUE_KIND_TIPS[x.kind]] || "",
+      textContent: x.label !== x.prop ? `${x.label} (${x.prop})` : x.prop })));
+    const holder = el("span", { className: "values-add-value" });
+    let input = null;
+    const fillValue = () => {  // a tick box for a yes/no, a number box for a number, else a text box
+      const x = can.find((c) => c.prop === pick.value);
+      input = x.kind === "bool" ? el("input", { type: "checkbox", checked: x.start === "1", title: w.tip_values_add_value })
+        : el("input", { type: x.kind === "number" ? "number" : "text", value: x.start, step: "any",
+          className: "values-text", title: w.tip_values_add_value });
+      holder.replaceChildren(input);
+    };
+    pick.addEventListener("change", fillValue);
+    fillValue();
+    const go = el("button", { type: "button", className: "small primary", textContent: w.values_add_go, title: w.tip_values_add_go });
+    go.addEventListener("click", async () => {
+      const x = can.find((c) => c.prop === pick.value);
+      go.disabled = true;
+      let done;
+      try { done = await api().value_prop_add(p.address, x.prop, x.kind === "bool" ? input.checked : input.value, state.lang); }
+      catch (err) { problem(err); go.disabled = false; return; }
+      renderValuePage(done.page);
+      say(fill(w.values_added_done, { name: x.label }), "ok");
+    });
+    box.append(el("div", { className: "values-words-grid" },
+      el("span", { className: "small", textContent: w.values_add_pick_label, title: w.tip_values_add_pick }), pick,
+      el("span", { className: "small", textContent: w.values_add_value_label, title: w.tip_values_add_value }), holder),
+    el("div", { className: "actions" }, go));
+    if (cant) box.append(el("p", { className: "muted small", textContent: fill(w.values_add_some_cant, { n: cant }) }));
+  }).catch(problem);
+  return box;
+}
+
+// What points at what's about to go (StudioApi.value_pointing): each one a button that opens it, the mod's own
+// changes marked, and the mod's changes inside it that go with it
+function pointingParts(res) {
+  const w = state.words, out = [];
+  if (res.total) {
+    const list = el("ul", { className: "parts" });
+    for (const u of res.users) {
+      const b = el("button", { type: "button", title: `${w.tip_values_user}\n${u.address}` },
+        `${u.name || shortAddress(u.address)}  ·  ${u.path}${u.mine ? `  ·  ${w.values_your_change}` : ""}`);
+      b.addEventListener("click", () => openValue(u.address, true));
+      list.append(el("li", {}, b));
+    }
+    out.push(el("p", { className: "notice warn", textContent: fill(w.values_points_at, { n: res.total }) }), list);
+    if (res.total > res.users.length) out.push(el("p", { className: "muted small", textContent: fill(w.values_users_more, { n: res.total - res.users.length }) }));
+    out.push(el("p", { className: "small", textContent: w.values_points_after }));
+  }
+  if (res.inside) out.push(el("p", { className: "small", textContent: fill(w.values_inside_go, { n: res.inside }) }));
+  return out;
+}
+
+// "Take out" on a row: asked first, saying what points at it (a part or a list of them), then taken out in the mod
+// (StudioApi.value_prop_delete: `delete Prop`)
+function valueTakeOutAsk(p, r, close) {
+  const w = state.words;
+  const box = el("div", { className: "values-words-box" }, el("p", { className: "muted small", textContent: w.values_looking }));
+  api().value_pointing(p.address, r.prop, state.lang).then((res) => {
+    const yes = el("button", { type: "button", className: "small ghost danger", textContent: w.values_take_out_yes,
+      title: w.tip_values_take_out });
+    const no = el("button", { type: "button", className: "small ghost", textContent: w.cancel, title: w.tip_cancel });
+    no.addEventListener("click", close);
+    yes.addEventListener("click", async () => {
+      yes.disabled = true;
+      let done;
+      try { done = await api().value_prop_delete(p.address, r.prop, state.lang); } catch (err) { problem(err); yes.disabled = false; return; }
+      renderValuePage(done.page);
+      say(fill(w.values_took_out, { name: r.label }), "ok");
+    });
+    box.replaceChildren(el("p", { textContent: fill(w.values_take_out_sure, { name: r.label }) }), ...pointingParts(res),
+      el("div", { className: "actions" }, yes, no));
+    yes.focus();
+  }).catch((err) => { problem(err); close(); });
+  return box;
+}
+
+// "Delete this object…": asked first, saying what points at it (StudioApi.value_pointing); a unit the game's unit list
+// names can't be deleted, and the box says so. Then deleted in the mod (value_object_delete: `delete $/...`), or, for
+// one the mod made, taken out of the mod
+function valueDeleteAsk(p, close) {
+  const w = state.words, name = p.name || shortAddress(p.address);
+  const box = el("div", { className: "values-words-box" }, el("p", { className: "muted small", textContent: w.values_looking }));
+  box.dataset.kind = "delete";
+  api().value_pointing(p.address, "", state.lang).then((res) => {
+    const no = el("button", { type: "button", className: "small ghost", textContent: w.cancel, title: w.tip_cancel });
+    no.addEventListener("click", close);
+    if (res.blocked) {
+      box.replaceChildren(el("p", { className: "notice warn", textContent: fill(w.values_delete_listed, { name }) }),
+        el("div", { className: "actions" }, no));
+      return;
+    }
+    const yes = el("button", { type: "button", className: "small ghost danger", textContent: w.values_delete_yes,
+      title: w.tip_values_delete_yes });
+    yes.addEventListener("click", async () => {
+      yes.disabled = true;
+      let done;
+      try { done = await api().value_object_delete(p.address, state.lang); } catch (err) { problem(err); yes.disabled = false; return; }
+      say(fill(w.values_deleted_done, { name }), "ok");
+      if (done.page) renderValuePage(done.page);
+      else {  // one the mod made: gone
+        state.valuePage = null;
+        $("values-detail").replaceChildren(el("p", { id: "values-pick", className: "muted", textContent: w.values_pick }));
+      }
+      if (state.valuesFound) findValues();
+    });
+    box.replaceChildren(el("p", { textContent: fill(p.mine ? w.values_delete_sure_mine : w.values_delete_sure, { name }) }),
+      ...pointingParts(res), el("div", { className: "actions" }, yes, no));
+    no.focus();
+  }).catch((err) => { problem(err); close(); });
+  return box;
 }
 
 // The words a game text key shows, one box per language, each named in its own words (StudioApi.value_words /
@@ -2827,7 +3062,7 @@ async function resetValue(p, r) {
   let res;
   try { res = await api().value_reset(p.address, r.prop, state.lang); } catch (err) { problem(err); return; }
   renderValuePage(res.page);
-  say(fill(state.words.values_same, { name: r.label }), "ok");
+  say(fill(r.added ? state.words.values_took_out : state.words.values_same, { name: r.label }), "ok");
 }
 
 // Duplicate map (maps.js) made a new map: it may have made a map project for it too, which the header's menu shows

@@ -86,6 +86,37 @@ class Spelling(unittest.TestCase):
                                                              "Up": "nil", "Price": [20, 25]})
             self.assertIsInstance(again.get("$/GFX/Everything/A", "Pos"), Literal)
 
+    def test_new_objects_deleted_ones_and_values_taken_out(self):
+        """What the All values tab adds and takes out, written as the mod file's own operations and read back."""
+        e = "$/GFX/Everything/"
+        with tempfile.TemporaryDirectory() as tmp:
+            edits = ModEdits(tmp)
+            edits.add_object(e + "My_Ammo", "TAmmunition")
+            edits.set(e + "My_Ammo", "Puissance", 120)
+            edits.set(e + "My_Ammo", "Arme", Link(e + "Unit_A"))
+            edits.set(e + "Unit_A:Weapon", "Speed", 12)
+            edits.set(e + "Unit_A:Weapon.Turrets[0]", "Arc", 3)
+            edits.set(e + "Unit_B", "Up", Literal(f"[{e}Unit_A:Weapon.Turrets[0], nil]"))
+            edits.delete(e + "Unit_C")
+            self.assertEqual(edits.links_to(e + "Unit_A"), [(e + "My_Ammo", "Arme"), (e + "Unit_B", "Up")])
+            self.assertEqual(edits.links_to(e + "Unit_A:Weapon"), [(e + "Unit_B", "Up")])
+            self.assertEqual(edits.links_to(e + "Unit_A:Weap"), [])  # a name that only starts the same
+            self.assertEqual(len(edits.inside(e + "Unit_A", "Weapon")), 2)
+            self.assertEqual(edits.remove(e + "Unit_A", "Weapon"), 2)  # its own values go with it
+            text = edits.file.read_text(encoding="utf-8")
+            self.assertIn(f"\nexport My_Ammo is TAmmunition\n(\n    Arme = {e}Unit_A\n    Puissance = 120\n)\n", text)
+            self.assertIn(f"\npatch {e}Unit_A\n(\n    delete Weapon\n)\n", text)
+            self.assertTrue(text.endswith(f"\n\ndelete {e}Unit_C\n"))  # last: every change above finds what it changes
+            self.assertNotIn("Speed", text)
+            again = ModEdits(tmp)
+            self.assertEqual((list(again.new_objects), again.new_objects[e + "My_Ammo"].cls, again.deleted),
+                             ([e + "My_Ammo"], "TAmmunition", {e + "Unit_C"}))
+            self.assertEqual(again.of(e + "My_Ammo"), {"Puissance": 120, "Arme": e + "Unit_A"})
+            again.undelete(e + "Unit_C")
+            again.remove_object(e + "My_Ammo")
+            last = ModEdits(tmp)
+            self.assertEqual((last.new_objects, last.deleted, last.of(e + "My_Ammo")), ({}, set(), {}))
+
 
 class Typed(unittest.TestCase):
     """rusemod.values.typed: what the modder types, as the mod file's value, checked against the game's."""
@@ -258,9 +289,15 @@ class Words(unittest.TestCase):
                        "api().value_edit(", "api().value_reset(", "api().value_links(", 'showView("values")',
                        '"tab-values": "tip_tab_values"'):
             self.assertIn(needle, app)
+        added = ("value_prop_choices", "value_prop_add", "value_prop_delete", "value_pointing", "value_classes",
+                 "value_object_new", "value_object_delete", "value_object_restore")
+        for name in added:  # adding and taking out values and objects: a button on the page, a stand-in in the preview
+            self.assertIn(f"api().{name}(", app)
+            self.assertTrue(callable(getattr(StudioApi, name)))
         for needle in ("values_files: async", "values_find: async", "value_object: async", "value_edit: async",
-                       "value_reset: async", "value_links: async"):
+                       "value_reset: async", "value_links: async", *(f"{name}: async" for name in added)):
             self.assertIn(needle, fake)
+        self.assertIn('id="values-new"', html)
 
 
 class Tab(unittest.TestCase):
@@ -494,6 +531,164 @@ class Tab(unittest.TestCase):
         changed = {k.lower(): v for k, v in result.text_changed.items()}
         fr = Dic(changed["genlocalisation\\ww2\\localisation\\translations\\fr\\baseunite.dic"])
         self.assertEqual(fr.text(name_to_key(key)), "Fourmi géante")
+
+    def built(self, folder):
+        """The unit data's main file after building the mod in `folder`: (the build's result, the file)."""
+        arc = Edat((self.game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes())
+        result = build_pack(arc, [load_mod(folder)])
+        new = Edat(arc.to_bytes(result.changed)) if not result.errors else None
+        return result, Ndf(new.read(new.find("everything.cpp.gladndfbin"))) if new else None
+
+    def test_a_value_added_and_taken_out(self):
+        """LittleGroove's Add prop and Del prop: a value the object's kind has in its file, given in the mod; one of
+        the game's taken out (`delete Prop`); both built."""
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+            self.api.value_prop_add(E + "Unit_B", "Price", "30, 35")
+        self.api.new_mod("Shape")
+        folder = self.home / "mods" / "shape"
+        choices = {c["prop"]: c for c in self.api.value_prop_choices(E + "Unit_B", "us")["props"]}
+        self.assertEqual(set(choices), {p for p, c in PROPS if c == 0} - {"Health", "ArmorDescriptor", "NameInMenuToken"})
+        self.assertEqual({p for p, c in choices.items() if not c["can"]}, {"DescriptorId", "Weapon", "Blob"})
+        self.assertEqual((choices["Price"]["kind"], choices["Price"]["start"]), ("numbers", "20, 20"))
+        self.assertEqual((choices["Stick"]["kind"], choices["Upgrade"]["start"]), ("bool", E + "Unit_B"))
+        for prop, value in (("Price", "30, 35"), ("Upgrade", E + "Unit_A"), ("Stick", True), ("Pos", "1, 2, 3")):
+            res = self.api.value_prop_add(E + "Unit_B", prop, value, "us")
+            row = self.rows(res["page"])[prop]
+            self.assertEqual((row["added"], row["can"], row["deletable"], row["value"]), (True, True, False, None))
+        rows = self.rows(self.api.value_object(E + "Unit_B", "us"))
+        self.assertEqual(rows["Price"]["edited"]["value"], [30, 35])
+        self.assertEqual(rows["Pos"]["edited"]["text"], "Float3[1.0, 2.0, 3.0]")
+        self.assertNotIn("Price", {c["prop"] for c in self.api.value_prop_choices(E + "Unit_B")["props"]})
+        for prop, value in (("Price", "1"), ("DescriptorId", 5), ("Weapon", ""), ("Nope", 1), ("Health", 5)):
+            with self.subTest(prop=prop), self.assertRaises(StudioError):  # has it; an id; a part; none has it
+                self.api.value_prop_add(E + "Unit_B", prop, value)
+        with self.assertRaises(StudioError):
+            self.api.value_prop_add(E + "Unit_B", "Big", 300)  # doesn't fit its kind (another's int8)
+        page = self.api.value_edit(E + "Unit_B", "Price", "30, 35")["page"]  # an added value stays, even as typed
+        self.assertEqual(self.rows(page)["Price"]["edited"]["value"], [30, 35])
+        self.api.value_edit(E + "Unit_B", "Price", "40, 45")
+        with self.assertRaises(StudioError):
+            self.api.value_edit(E + "Unit_B", "Pair", "(1, 2.5)")  # not added yet
+
+        with self.assertRaises(StudioError):
+            self.api.value_prop_delete(E + "Unit_A", "DescriptorId")  # an id the Studio keeps unique
+        gone = self.rows(self.api.value_prop_delete(E + "Unit_B", "Health", "us")["page"])["Health"]
+        self.assertEqual((gone["edited"], gone["deletable"]), ({"value": None, "text": None, "removed": True}, False))
+        self.assertNotIn("Stick", self.rows(self.api.value_prop_delete(E + "Unit_B", "Stick")["page"]))  # an added one
+        text = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        self.assertIn(f"\npatch {E}Unit_B\n(\n    delete Health\n    Pos = Float3[1.0, 2.0, 3.0]\n    Price = [40, 45]\n"
+                      f"    Upgrade = {E}Unit_A\n)\n", text)
+
+        result, nd = self.built(folder)
+        self.assertEqual(result.errors, [])
+        got = {nd.prop_name(pi): v for pi, v in nd.objects[3].props}
+        self.assertEqual(set(got), {"ArmorDescriptor", "NameInMenuToken", "Pos", "Price", "Upgrade"})
+        self.assertEqual(got["Price"].payload, struct.pack("<I", 2) + i32(40) + i32(45))  # the kind Unit_A's has
+        self.assertEqual(got["Pos"].payload, struct.pack("<fff", 1, 2, 3))
+        self.assertEqual(struct.unpack("<III", got["Upgrade"].payload)[1], 0)  # Unit_A
+        self.assertIsNone(self.rows(self.api.value_reset(E + "Unit_B", "Health", "us")["page"])["Health"]["edited"])
+
+    def test_a_part_taken_out_says_what_points_at_it(self):
+        self.api.new_mod("Parts")
+        folder = self.home / "mods" / "parts"
+        self.api.value_edit(E + "Unit_A:Weapon", "Speed", 12)
+        self.api.value_edit(E + "Unit_B", "ArmorDescriptor", E + "Unit_A:Weapon")  # a link into the part
+        said = self.api.value_pointing(E + "Unit_A", "Weapon", "us")
+        self.assertEqual((said["users"], said["total"], said["inside"], said["blocked"]),
+                         ([{"address": E + "Unit_B", "path": "ArmorDescriptor", "name": "BRAVO", "mine": True}], 1, 1,
+                          None))
+        self.assertEqual(self.api.value_pointing(E + "Unit_A", "Health"),
+                         {"users": [], "total": 0, "inside": 0, "blocked": None})
+        row = self.rows(self.api.value_prop_delete(E + "Unit_A", "Weapon", "us")["page"])["Weapon"]
+        self.assertTrue(row["edited"]["removed"])
+        text = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        self.assertIn("    delete Weapon\n", text)
+        self.assertNotIn("Speed", text)  # the change inside it went with it
+        result, _nd = self.built(folder)
+        self.assertEqual([f.message for f in result.errors], [f"parts (src/studio.rndf:11): {E}Unit_A has no Weapon"])
+        # (Unit_B still points at it: the build stops, as the page said)
+
+    def test_objects_made_and_deleted(self):
+        """LittleGroove's Add and Delete: a brand-new object of a kind the unit data has, given values and linked
+        to; one of the game's deleted after the page says what points at it; both built."""
+        self.assertEqual([c["class"] for c in self.api.value_classes()["classes"]], ["TOther", "TPart", "TUnit"])
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+            self.api.value_object_new("TPart", "My_Part")
+        self.api.new_mod("Objects")
+        folder = self.home / "mods" / "objects"
+        for cls, name in (("TPart", "My Part"), ("TPart", "1Part"), ("TNope", "My_Part"), ("TUnit", "Unit_A")):
+            with self.subTest(name=name), self.assertRaises(StudioError):
+                self.api.value_object_new(cls, name)
+        for name, ok in (("_Part", True), ("My-Part", True), ("P" * 300, True), ("1Part", False), ("My Part", False),
+                         ("My:Part", False)):
+            self.assertEqual(self.api._new_name_ok(name), ok, name)  # exactly the names a mod file can write
+        res = self.api.value_object_new("TPart", "My_Part", "us")
+        mine = E + "My_Part"
+        self.assertEqual((res["address"], res["page"]["mine"], res["page"]["class"], res["page"]["rows"]),
+                         (mine, True, "TPart", []))
+        with self.assertRaises(StudioError):
+            self.api.value_object_new("TPart", "My_Part")  # taken now
+        self.assertEqual([c["prop"] for c in self.api.value_prop_choices(mine)["props"]], ["Armour", "Speed"])
+        self.api.value_prop_add(mine, "Speed", "7.5")
+        page = self.api.value_edit(mine, "Speed", 8, "us")["page"]
+        self.assertEqual(self.rows(page)["Speed"]["edited"], {"value": 8, "text": "8"})
+        self.assertEqual(self.api.values_find(words="my_part")["objects"][0]["mine"], True)
+        self.assertEqual([o["address"] for o in self.api.value_links(E + "Unit_B", "ArmorDescriptor", "My")["objects"]],
+                         [mine])
+        self.api.value_edit(E + "Unit_B", "ArmorDescriptor", mine)  # a link to it
+        self.assertIn("\nexport My_Part is TPart\n(\n    Speed = 8\n)\n",
+                      (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
+
+        said = self.api.value_pointing(E + "Unit_B", "", "us")
+        self.assertEqual([(u["address"], u["path"], u["mine"]) for u in said["users"]], [(E + "Unit_A", "Upgrade", False)])
+        with self.assertRaises(StudioError):
+            self.api.value_object_delete(E + "Unit_A:Weapon")  # a part: taken out of its owner instead
+        page = self.api.value_object_delete(E + "Unit_B", "us")["page"]
+        self.assertEqual((page["deleted"], page["editable"], page["why_not"]), (True, False, "deleted"))
+        self.assertFalse(any(r["can"] or r["deletable"] for r in page["rows"]))
+        self.assertTrue(self.api.values_find(words="Unit_B")["objects"][0]["deleted"])
+        with self.assertRaises(StudioError):
+            self.api.value_edit(E + "Unit_B", "Health", 5)
+        self.assertNotIn(E + "Unit_B", [o["address"] for o in self.api.value_links(E + "Unit_A", "Upgrade")["objects"]])
+        self.assertTrue((folder / "src" / "studio.rndf").read_text(encoding="utf-8").endswith(f"\ndelete {E}Unit_B\n"))
+
+        result, _nd = self.built(folder)
+        self.assertTrue(any("still refers to " + E + "Unit_B" in f.message for f in result.errors))  # Unit_A's link
+        self.api.value_edit(E + "Unit_A", "Upgrade", "")
+        result, nd = self.built(folder)
+        self.assertEqual(result.errors, [])
+        self.assertNotIn(E + "Unit_B", nd.exports.values())
+        made = next(i for i, name in nd.exports.items() if name == mine)
+        self.assertEqual((nd.classes[nd.objects[made].cls], [nd.prop_name(pi) for pi, _v in nd.objects[made].props]),
+                         ("TPart", ["Speed"]))
+
+        self.assertFalse(self.api.value_object_restore(E + "Unit_B", "us")["page"]["deleted"])
+        self.assertEqual([(u["address"], u["path"], u["mine"]) for u in self.api.value_pointing(mine)["users"]],
+                         [(E + "Unit_B", "ArmorDescriptor", True)])
+        self.assertIsNone(self.api.value_object_delete(mine)["page"])
+        self.assertEqual(ModEdits(folder).new_objects, {})
+
+    def test_a_unit_the_game_lists_isn_t_deleted(self):
+        """A unit the game's Python unit list names can't be deleted (rules: delete-unit-class), on a made-up game
+        with such a list (test_pyscript's)."""
+        from test_pyscript import UNIT_PACK, ZZ_WIN
+        root = Path(tempfile.mkdtemp(dir=self.tmp.name))
+        rev = root / "game" / "Data" / "PC" / "190852"
+        rev.mkdir(parents=True)
+        (rev / "ZZ_GladPatchableWin.dat").write_bytes(UNIT_PACK)
+        (rev / "ZZ_Win.dat").write_bytes(ZZ_WIN)
+        (root / "game" / "RUSE.exe").write_bytes(b"MZ")
+        index = build_index(root / "game", root / "index.sqlite", say=lambda line: None)
+        starter = Starter(open_url=lambda url: None, start_game=lambda exe: None, steam_running=lambda: True,
+                          wait=lambda s: None)
+        api = StudioApi(index_path=index, game_dir=root / "game", home=root / "home", starter=starter,
+                        instances=root / "copies")
+        api.new_mod("Listed")
+        self.assertEqual(api.value_pointing("$/Tank_A")["blocked"], "listed")
+        with self.assertRaisesRegex(StudioError, "list of units"):
+            api.value_object_delete("$/Tank_A")
+        self.assertIsNone(api.value_pointing("$/Tank_Hidden")["blocked"])
+        self.assertTrue(api.value_object_delete("$/Tank_Hidden")["page"]["deleted"])
 
     def test_the_units_tab_shows_a_change_made_here(self):
         self.api.new_mod("Both")

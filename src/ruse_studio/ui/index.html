@@ -457,7 +457,8 @@
     </div>
   </main>
   <!-- the All values tab (app.js renderValues, StudioApi.values_find / value_object / value_edit, rusemod.values;
-       LittleGroove's raw value editor): any object of the unit data, every value it has, each changed in the mod -->
+       LittleGroove's raw value editor): any object of the unit data, every value it has, each changed in the mod;
+       values added and taken out, objects made and deleted -->
   <main id="values-view" class="layout hidden">
     <aside class="browser values-browser">
       <p id="values-intro" class="muted small"></p>
@@ -474,6 +475,9 @@
           <input id="values-value" type="search" autocomplete="off"></label>
       </details>
       <button id="values-go" type="button" class="primary"></button>
+      <!-- a brand-new object of a kind the unit data has (app.js valuesNewForm, StudioApi.value_object_new) -->
+      <button id="values-new" type="button" class="ghost"></button>
+      <div id="values-new-form" class="values-words-box hidden"></div>
       <div id="values-count" class="muted small"></div>
       <ul id="values-list" class="unit-list"></ul>
     </aside>

@@ -44,7 +44,8 @@ from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
 from rusemod.patch import INT_RANGES
 from rusemod.play import SHARED, Starter, instances_dir
-from rusemod.rndf import RndfError, parse_value
+from rusemod.rndf import DEFAULT_NAMESPACE, RndfError, parse_value
+from rusemod.rndf import parse as rndf_parse
 from rusemod.steam import build_of, data_revisions, find_game
 from rusemod.uilang import LanguageCalls
 from rusemod.build import find_pack
@@ -427,6 +428,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._scripts_lock = threading.Lock()  # one at a time: a big one takes seconds of a core
         self._value_files: dict[tuple, object] = {}  # the All values tab's last data files read (_value_file)
         self._value_files_lock = threading.Lock()
+        self._listed: tuple | None = None  # (ZZ_Win.dat's path, time and size, the units its unit list names)
 
     # --- where things are ---
     def _game(self) -> Path | None:
@@ -3815,14 +3817,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def edited(self) -> list[str]:
         """The named objects the current mod changes: a part changed for all its users marks every one of them. New
-        units aren't in it: the list marks them as new instead."""
+        units aren't in it: the list marks them as new instead (nor are the objects the All values tab makes)."""
         try:
             edits = self._edits()
         except EditsFileError:
             return []
         if not edits:
             return []
-        names = edits.edited() - set(edits.new_units)
+        names = edits.edited() - set(edits.new_units) - set(edits.new_objects)
         if edits.shared():
             ix = self._open()
             try:
@@ -4586,17 +4588,30 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def values_find(self, file: str = "", words: str = "", prop: str = "", value: str = "",
                     lang: str = schema.BASE) -> dict:
         """Objects of the unit data (rusemod.values.find): in one file or all, by name or kind, and by a value they
-        hold. Each with `name`, what the game calls it in `lang` (None without one). `total`: how many fit in all; at
-        most VALUES_SHOWN are listed."""
+        hold. Each with `name`, what the game calls it in `lang` (None without one), and `deleted` when the current
+        mod deletes it (or the object it's part of). The objects the mod makes come first (`mine`), when looking by
+        name or kind in every file. `total`: how many fit in all; at most VALUES_SHOWN are listed."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
         ix = self._open()
         try:
             found, total = every_value.find(ix, file, words, prop, value, self.VALUES_SHOWN)
             names = self._object_names(ix, [f["address"] for f in found], lang)
         finally:
             ix.close()
+        deleted = edits.deleted if edits else set()
         for f in found:
             f["name"] = names.get(f["address"])
-        return {"objects": found, "total": total}
+            f["deleted"] = f["address"].partition(":")[0] in deleted
+        mine = []
+        if edits and not file and not prop.strip() and not value.strip():
+            wanted = [w.lower() for w in re.split(r"[\s,;]+", words.strip()) if w]
+            mine = [{"address": a, "class": o.cls, "export": a, "file": None, "index": None, "match": None, "name": None,
+                     "deleted": False, "mine": True} for a, o in sorted(edits.new_objects.items())
+                    if all(w in f"{a} {o.cls}".lower() for w in wanted)]
+        return {"objects": mine + found, "total": total + len(mine)}
 
     @staticmethod
     def _value_shown(v) -> dict:
@@ -4617,14 +4632,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def value_object(self, address: str, lang: str = schema.BASE) -> dict:
         """One object of the game's data as the All values tab shows it: every value it has, read from the game's
         file (rusemod.values.rows), each with its name in `lang` (`label`), whether it can be changed here (`can`;
-        `locked`: an id the Studio keeps unique), the words a text key shows (`words`) and the current mod's change
-        (`edited`). Also where it is, what uses it (`used_by`, at most VALUE_USERS; `users` in all), the named object
-        it's a part of (`owner`), and whether a mod can change it (`editable`, else `why_not`: "outside" the unit data,
-        "not_stable": no named object leads to it, "no_mod", or the mod file's mistake)."""
+        `locked`: an id the Studio keeps unique), whether it can be taken out (`deletable`, value_prop_delete), the
+        words a text key shows (`words`) and the current mod's change (`edited`); then the values the mod adds
+        (`added`: the game's object hasn't got them, value_prop_add). Also where it is, what uses it (`used_by`, at
+        most VALUE_USERS; `users` in all), the named object it's a part of (`owner`), and whether a mod can change it
+        (`editable`, else `why_not`: "outside" the unit data, "not_stable": no named object leads to it, "deleted":
+        the mod deletes it or the object it's part of, "no_mod", or the mod file's mistake). An object the current mod
+        makes (value_object_new) has `mine` and only the values the mod gives it."""
         try:
             mod, broken = self._edits(), ""
         except EditsFileError as exc:  # looking still works; changing waits until the file is fixed
             mod, broken = None, str(exc)
+        if mod is not None and address in mod.new_objects:
+            return self._value_new_page(mod, address, lang)
         text_lang = "us" if lang == schema.BASE else lang
         ix = self._open()
         try:
@@ -4642,29 +4662,23 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             nd, changeable = self._value_file(o["file"])
             rows = every_value.rows(nd.obj(o["index"]), links)
             share = "shared" if o["shared"] and not o["export"] else None
-            mine = {prop: self._value_shown(v) for prop, v in (mod.of(o["address"], share) if mod else {}).items()}
+            changes = mod.of(o["address"], share) if mod else {}
+            have = {r["prop"] for r in rows}
+            added = [p for p, v in changes.items() if p not in have and v is not REMOVED]
+            if added:  # the values the mod gives it that the game's object hasn't got: shown like another of its kind's
+                examples = every_value.class_props(nd, o["class"])
+                rows += [self._added_row(p, nd.obj(examples[p]).props.get(p) if p in examples else None)
+                         for p in added]
+            mine = {prop: self._value_shown(v) for prop, v in changes.items()}
             keys = [r["value"] for r in rows if r["kind"] == "key"] + [
                 mine[r["prop"]]["value"] for r in rows if r["kind"] == "key" and r["prop"] in mine]
             words = ix.names([k for k in keys if isinstance(k, str)], text_lang)
         finally:
             ix.close()
+        gone = mod is not None and o["address"].partition(":")[0] in mod.deleted
         why = ("outside" if not changeable else "not_stable" if not o["stable"] else broken if broken
-               else "no_mod" if mod is None else "")
-        mod_words = self._mod_words() if mod is not None else {}
-        for r in rows:
-            r["label"] = schema.label(r["prop"], lang)
-            r["locked"] = r["prop"] in NOT_EDITABLE
-            # a link can always be pointed elsewhere; anything else only when a mod file can spell it
-            r["can"] = not why and not r["locked"] and r["kind"] not in ("part", "fixed") and (
-                r["text"] is not None or r["kind"] == "link")
-            r["words"] = words.get(r["value"]) if r["kind"] == "key" else None
-            # the words the mod gives the key instead (value_words_set), in this language, when they differ
-            said = mod_words.get(r["value"], (None, {}))[1].get(text_lang) if r["kind"] == "key" else None
-            r["words_mine"] = said if said and said != r["words"] else None
-            r["edited"] = mine.get(r["prop"])
-            if r["edited"] and r["kind"] == "key":  # (a text the mod adds: its own words)
-                v = r["edited"]["value"]
-                r["edited"]["words"] = words.get(v) or (mod_words.get(v, (None, {}))[1] or {}).get(text_lang)
+               else "no_mod" if mod is None else "deleted" if gone else "")
+        self._value_rows_finish(rows, mine, why, words, lang, mod is not None)
         for u in shown_users:
             u["name"] = names.get(u["address"])
         return {"address": o["address"], "class": o["class"], "named": bool(o["export"]),
@@ -4672,15 +4686,77 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 "pack": o["file"].partition("!")[0], "index": o["index"], "shared": share is not None,
                 "owners": len(o["owners"]), "owner": {"address": owner, "name": names.get(owner)} if owner else None,
                 "editable": not why, "why_not": why, "rows": rows, "used_by": shown_users,
-                "users": len({a for a, _p in users})}
+                "users": len({a for a, _p in users}), "mine": False, "deleted": gone}
 
-    def _value_target(self, edits: ModEdits | None, location: str):
-        """Whether an address may be linked to from the All values tab, from an object in the file at `location`: a
-        named object of the game's data, a part of one in the same file (the build can't link to a part in another
-        file), or a new unit of the current mod."""
+    @staticmethod
+    def _added_row(prop: str, example) -> dict:
+        """A row for a value the mod adds (the game's object hasn't got it): its kind from `example` (another object's
+        value of that name, its class's), no game value. None for `example`: one no object of the class has (any
+        more): shown, not changed."""
+        r = every_value.row(prop, example, {}) if example is not None else {"prop": prop, "kind": "fixed", "type": "?"}
+        spelled = r.get("text") is not None or r["kind"] == "link"
+        r.update(value=None, text=None, to=None, added=True, spelled=spelled)
+        if "items" in r:
+            r["items"], r["count"] = [], None
+        return r
+
+    def _value_rows_finish(self, rows: list, mine: dict, why: str, words: dict, lang: str, has_mod: bool) -> None:
+        """What the All values tab shows beside each row's game value (value_object): its label, `locked`, `can`,
+        `deletable`, the words of a text key, the mod's change."""
+        text_lang = "us" if lang == schema.BASE else lang
+        mod_words = self._mod_words() if has_mod else {}
+        for r in rows:
+            r["label"] = schema.label(r["prop"], lang)
+            r["locked"] = r["prop"] in NOT_EDITABLE
+            added = r.pop("spelled", None)
+            # a link can always be pointed elsewhere; anything else only when a mod file can spell it
+            r["can"] = not why and not r["locked"] and r["kind"] not in ("part", "fixed") and (
+                r["text"] is not None or r["kind"] == "link" or bool(added))
+            r["words"] = words.get(r["value"]) if r["kind"] == "key" else None
+            # the words the mod gives the key instead (value_words_set), in this language, when they differ
+            said = mod_words.get(r["value"], (None, {}))[1].get(text_lang) if r["kind"] == "key" else None
+            r["words_mine"] = said if said and said != r["words"] else None
+            r["edited"] = mine.get(r["prop"])
+            r.setdefault("added", False)
+            # a value of the game's taken out of the object (one the mod adds is taken out with Game's value)
+            r["deletable"] = not why and not r["locked"] and not r["added"] and not (r["edited"] or {}).get("removed")
+            if r["edited"] and r["kind"] == "key":  # (a text the mod adds: its own words)
+                v = r["edited"]["value"]
+                r["edited"]["words"] = words.get(v) or (mod_words.get(v, (None, {}))[1] or {}).get(text_lang)
+            if r["added"] and r["edited"] and r["kind"] in ("list", "map", "pair") and r["edited"]["text"]:
+                try:
+                    r["count"] = every_value.row("", parse_value(r["edited"]["text"]), {}).get("count")
+                except RndfError:
+                    pass
+
+    def _value_new_page(self, mod: ModEdits, address: str, lang: str) -> dict:
+        """The All values page of an object the current mod makes (value_object_new): only the values the mod gives
+        it, each shown like its class's own (_class_examples)."""
+        obj = mod.new_objects[address]
+        changes = mod.of(address)
+        examples = self._class_examples(obj.cls)
+        rows = [self._added_row(p, examples.get(p)) for p in sorted(changes)]
+        mine = {prop: self._value_shown(v) for prop, v in changes.items()}
+        keys = [mine[r["prop"]]["value"] for r in rows if r["kind"] == "key"]
+        ix = self._open()
+        try:
+            words = ix.names([k for k in keys if isinstance(k, str)], "us" if lang == schema.BASE else lang)
+        finally:
+            ix.close()
+        self._value_rows_finish(rows, mine, "", words, lang, True)
+        return {"address": address, "class": obj.cls, "named": True, "name": None, "file": None, "pack": None,
+                "index": None, "shared": False, "owners": 0, "owner": None, "editable": True, "why_not": "",
+                "rows": rows, "used_by": [], "users": 0, "mine": True, "deleted": False}
+
+    def _value_target(self, edits: ModEdits | None, location: str | None):
+        """Whether an address may be linked to from the All values tab, from an object in the file at `location` (None:
+        an object the mod makes): a named object of the game's data, a part of one in the same file (the build can't
+        link to a part in another file), or a new unit or new object of the current mod; never one the mod deletes."""
         def named(address: str) -> bool:
-            if edits is not None and address in edits.new_units:
+            if edits is not None and (address in edits.new_units or address in edits.new_objects):
                 return True
+            if edits is not None and address.partition(":")[0] in edits.deleted:
+                return False
             ix = self._open()
             try:
                 return ix.db.execute("""SELECT 1 FROM object o JOIN file f ON f.id = o.file WHERE o.shadow = 0 AND
@@ -4700,6 +4776,61 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError("Pick or make a mod first: changes are saved in a mod.")
         if prop in NOT_EDITABLE:
             raise StudioError(f"{prop} isn't changed here: the Studio keeps each of these numbers unique")
+        if address in edits.new_objects:  # an object the mod makes: checked against its class's kind of value
+            if prop not in edits.of(address):
+                raise StudioError(f"{_tail(address)} has no {prop} yet: add it with Add a value…")
+            old = self._class_examples(edits.new_objects[address].cls).get(prop)
+            if old is None:
+                # not a game rule: a value is checked against another object's of its class, and none has it now
+                raise StudioError(f"No {edits.new_objects[address].cls} in the game's data has {prop} now, so it "
+                                  f"can't be checked here")
+            new = self._value_typed(old, value, prop, edits, None, None)[0]
+            with self._saving:
+                edits = ModEdits(edits.folder)
+                edits.set(address, prop, new)
+            return {"saved": str(edits.file), "page": self.value_object(address, lang)}
+        o, nd = self._value_changeable(edits, address)
+        ix = self._open()
+        try:
+            game_to = next((w for p, k, w in ix.uses(o["address"]) if p == prop and k in ("object", "import")), None)
+        finally:
+            ix.close()
+        share = "shared" if o["shared"] and not o["export"] else None
+        old = nd.obj(o["index"]).props.get(prop)
+        added = old is None
+        if added:  # a value the mod adds: checked against another object's of its class, never the game's own value
+            if edits.get(o["address"], prop, share) in (None, REMOVED):
+                raise StudioError(f"{address} has no {prop}")
+            old = self._file_example(nd, o["class"], prop)
+            if old is None:
+                # not a game rule: a value is checked against another object's of its class, and none has it now
+                raise StudioError(f"No {o['class']} in its file of the game's data has {prop} now, so it can't be "
+                                  f"checked here")
+        new, same = self._value_typed(old, value, prop, edits, o["file"], game_to)
+        with self._saving:
+            edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
+            if same and not added:
+                edits.reset(o["address"], prop, share)
+            else:
+                edits.set(o["address"], prop, new, share)
+        return {"saved": str(edits.file), "page": self.value_object(address, lang)}
+
+    def _value_typed(self, old, value, prop: str, edits: ModEdits, location: str | None, game_to: str | None):
+        """What the modder typed for `prop` as the mod file's value (rusemod.values.typed against `old`): (a number,
+        a list of numbers, a Link or a Literal, whether it's `old` again)."""
+        try:
+            new, same = every_value.typed(old, value, prop, self._value_target(edits, location), game_to)
+        except every_value.TypedError as exc:
+            raise StudioError(str(exc)) from None
+        if isinstance(new, every_value.Spelled):
+            new = Literal(new)
+        elif isinstance(new, every_value.Linked):
+            new = Link(new)
+        return new, same
+
+    def _value_changeable(self, edits: ModEdits | None, address: str):
+        """(the game index's object at `address`, its data file) for a change of the All values tab: StudioError when
+        a mod can't change it (outside the unit data, nothing named leads to it, or the mod deletes it)."""
         ix = self._open()
         try:
             try:
@@ -4707,7 +4838,6 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             except KeyError:
                 # not a game rule: the page asked for something this game build's index doesn't have
                 raise StudioError(f"There's nothing at {address} in this game build.") from None
-            game_to = next((w for p, k, w in ix.uses(o["address"]) if p == prop and k in ("object", "import")), None)
         finally:
             ix.close()
         nd, changeable = self._value_file(o["file"])
@@ -4715,25 +4845,40 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError(f"{address} isn't in the unit data, so a mod can't change it")
         if not o["stable"]:
             raise StudioError(f"No named object leads to {address}, so a mod can't find it to change it")
-        old = nd.obj(o["index"]).props.get(prop)
-        if old is None:
-            raise StudioError(f"{address} has no {prop}")
+        if edits is not None and o["address"].partition(":")[0] in edits.deleted:
+            raise StudioError(f"Your mod deletes {_tail(o['address'].partition(':')[0])}: put it back first to change "
+                              f"it.")
+        return o, nd
+
+    @staticmethod
+    def _file_example(nd, cls: str, prop: str):
+        """Another object's value `prop`, of class `cls` in the data file `nd` (rusemod.values.class_props): the kind
+        of value it takes there. None when no object of the class has it."""
+        found = every_value.class_props(nd, cls).get(prop)
+        return None if found is None else nd.obj(found).props.get(prop)
+
+    def _class_file(self, cls: str) -> str | None:
+        """The unit data's file (pack!file, as the game index has it) with the most objects of class `cls`."""
+        ix = self._open()
         try:
-            new, same = every_value.typed(old, value, prop, self._value_target(edits, o["file"]), game_to)
-        except every_value.TypedError as exc:
-            raise StudioError(str(exc)) from None
-        if isinstance(new, every_value.Spelled):
-            new = Literal(new)
-        elif isinstance(new, every_value.Linked):
-            new = Link(new)
-        share = "shared" if o["shared"] and not o["export"] else None
-        with self._saving:
-            edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
-            if same:
-                edits.reset(o["address"], prop, share)
-            else:
-                edits.set(o["address"], prop, new, share)
-        return {"saved": str(edits.file), "page": self.value_object(address, lang)}
+            row = ix.db.execute("""SELECT f.location FROM object o JOIN file f ON f.id = o.file JOIN pack p ON p.id = f.pack
+                                   WHERE p.name = ? AND p.layer = 'core' AND o.shadow = 0 AND o.class = ?
+                                   GROUP BY f.id ORDER BY COUNT(*) DESC, f.location LIMIT 1""",
+                                (every_value.PACK, cls)).fetchone()
+        finally:
+            ix.close()
+        return row[0] if row else None
+
+    def _class_examples(self, cls: str) -> dict:
+        """{property: a value of it} for the properties objects of class `cls` have in the unit data's file with the
+        most of them: what an object the mod makes of that class can be given, each an example of its kind of value."""
+        location = self._class_file(cls)
+        if location is None:
+            return {}
+        nd, _changeable = self._value_file(location)
+        objects: dict = {}
+        return {p: (objects.get(i) or objects.setdefault(i, nd.obj(i))).props.get(p)
+                for p, i in every_value.class_props(nd, cls).items()}
 
     def value_text_new(self, address: str, prop: str, words: str, lang: str = schema.BASE) -> dict:
         """A new game text for a text value of the All values tab (LittleGroove's raw editor's Mint new): a key of the
@@ -4758,10 +4903,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return self.value_edit(address, prop, key, lang)
 
     def value_reset(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
-        """Take the current mod's change of one value out (the All values tab's "Game's value")."""
+        """Take the current mod's change of one value out (the All values tab's "Game's value"); a value the mod adds
+        (value_prop_add), or gives an object it makes, is taken out."""
         edits = self._edits()
         if edits is None:
             return {"saved": None, "page": self.value_object(address, lang)}
+        if address in edits.new_objects:
+            with self._saving:
+                edits = ModEdits(edits.folder)
+                edits.reset(address, prop)
+            return {"saved": str(edits.file), "page": self.value_object(address, lang)}
         ix = self._open()
         try:
             try:
@@ -4951,11 +5102,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def value_links(self, address: str, prop: str, words: str = "", lang: str = schema.BASE) -> dict:
         """What a link of the All values tab could point at (_value_target): objects of the kind the game's link
         points at (named ones of any kind when it points at nothing) whose address has `words`, named ones first; at
-        most 60, each with what the game calls it."""
+        most 60, each with what the game calls it. The objects the current mod makes come first; the ones it deletes
+        aren't offered."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
         ix = self._open()
         try:
-            o = ix.show(address)
-            target = next((w for p, k, w in ix.uses(o["address"]) if p == prop and k in ("object", "import")), None)
+            if edits is not None and address in edits.new_objects:
+                o, target = {"file": None}, None
+            else:
+                o = ix.show(address)
+                target = next((w for p, k, w in ix.uses(o["address"]) if p == prop and k in ("object", "import")), None)
             cls = None
             if target:
                 try:
@@ -4970,7 +5129,274 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             names = self._object_names(ix, [a for a, _c in found], lang)
         finally:
             ix.close()
-        return {"class": cls, "objects": [{"address": a, "class": c, "name": names.get(a)} for a, c in found]}
+        mine, gone = [], set()
+        if edits is not None:
+            gone = edits.deleted
+            mine = [{"address": a, "class": n.cls, "name": None} for a, n in sorted(edits.new_objects.items())
+                    if (cls is None or n.cls == cls) and words.strip().lower() in a.lower()]
+        return {"class": cls, "objects": mine + [{"address": a, "class": c, "name": names.get(a)} for a, c in found
+                                                 if a.partition(":")[0] not in gone]}
+
+    # --- adding and taking out values, new objects and deleted ones (LittleGroove's raw editor's Add prop / Del prop
+    # and Add / Delete), as the mod's own operations (MOD_FORMAT §10.2: set, delete property, create, delete object) ---
+    def value_prop_choices(self, address: str, lang: str = schema.BASE) -> dict:
+        """The values the object at `address` can be given (LittleGroove's Add prop): the properties objects of its
+        class have in its data file (rusemod.values.class_props; for an object the mod makes, in the unit data's file
+        with the most objects of its class) that it hasn't got. Each {prop, label (in `lang`), kind, type, start (what
+        the value box starts with: another object's value), can (the tab can write that kind of value; ids the Studio
+        keeps unique aren't added)}, by label. {class, props}."""
+        try:
+            edits = self._edits()
+        except EditsFileError as exc:
+            raise StudioError(str(exc)) from None
+        if edits is not None and address in edits.new_objects:
+            cls = edits.new_objects[address].cls
+            have = set(edits.of(address))
+            examples = {p: v for p, v in self._class_examples(cls).items() if p not in have}
+        else:
+            ix = self._open()
+            try:
+                try:
+                    o = ix.show(address)
+                except KeyError:
+                    # not a game rule: the page asked for something this game build's index doesn't have
+                    raise StudioError(f"There's nothing at {address} in this game build.") from None
+            finally:
+                ix.close()
+            nd, _changeable = self._value_file(o["file"])
+            cls, share = o["class"], "shared" if o["shared"] and not o["export"] else None
+            have = set(nd.obj(o["index"]).props)
+            if edits is not None:
+                have |= {p for p, v in edits.of(o["address"], share).items() if v is not REMOVED}
+            objects: dict = {}
+            examples = {p: (objects.get(i) or objects.setdefault(i, nd.obj(i))).props.get(p)
+                        for p, i in every_value.class_props(nd, cls).items() if p not in have}
+        out = []
+        for p, example in examples.items():
+            r = every_value.row(p, example, {})
+            can = p not in NOT_EDITABLE and r["kind"] not in ("part", "fixed") and (
+                r["text"] is not None or r["kind"] == "link")
+            out.append({"prop": p, "label": schema.label(p, lang), "kind": r["kind"], "type": r["type"],
+                        "start": every_value.start_text(r) if can else "", "can": can})
+        out.sort(key=lambda x: (x["label"].lower(), x["prop"]))
+        return {"class": cls, "props": out}
+
+    def value_prop_add(self, address: str, prop: str, value, lang: str = schema.BASE) -> dict:
+        """Give the object at `address` a value it hasn't got (value_prop_choices), in the current mod: `value` as
+        value_edit takes it, checked against another object's value of that name, of its class. Saved as `Prop = v`
+        (a value the object doesn't have is added, MOD_FORMAT §10.2). Returns {saved, page}."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        if prop in NOT_EDITABLE:
+            raise StudioError(f"{prop} isn't added here: the Studio keeps each of these numbers unique")
+        if address in edits.new_objects:
+            cls, location, share, target = edits.new_objects[address].cls, None, None, address
+            if prop in edits.of(address):
+                raise StudioError(f"{_tail(address)} has {prop} already: change it on its row.")
+            example = self._class_examples(cls).get(prop)
+        else:
+            o, nd = self._value_changeable(edits, address)
+            cls, location, target = o["class"], o["file"], o["address"]
+            share = "shared" if o["shared"] and not o["export"] else None
+            if prop in nd.obj(o["index"]).props or edits.get(target, prop, share) is not None:
+                # not a game rule: a value it has is changed on its row, not added again
+                raise StudioError(f"It has {prop} already: change it on its row (Game's value puts back a value taken "
+                                  f"out).")
+            example = self._file_example(nd, cls, prop)
+        if example is None:
+            # not a game rule: the build writes a new value only under a name objects of its class use in its file
+            raise StudioError(f"No {cls} in the game's data has {prop} there, so it can't be added here.")
+        r = every_value.row(prop, example, {})
+        if r["kind"] in ("part", "fixed") or (r["text"] is None and r["kind"] != "link"):
+            raise StudioError(f"{prop} is a kind of value that can't be written here, so it can't be added here.")
+        new = self._value_typed(example, value, prop, edits, location, None)[0]
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            edits.set(target, prop, new, share)
+        return {"saved": str(edits.file), "page": self.value_object(address, lang)}
+
+    def value_prop_delete(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
+        """Take the value `prop` out of the object at `address` in the current mod (LittleGroove's Del prop): one of the
+        game's is written `delete Prop` (the game then uses its own default, MOD_FORMAT §10.2), with the mod's
+        changes inside it (value_pointing's `inside`); one the mod adds, or gives an object it makes, is simply taken
+        out. Returns {saved, page}."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        if prop in NOT_EDITABLE:
+            raise StudioError(f"{prop} isn't taken out here: the Studio keeps each of these numbers unique")
+        if address in edits.new_objects:
+            return self.value_reset(address, prop, lang)
+        o, nd = self._value_changeable(edits, address)
+        share = "shared" if o["shared"] and not o["export"] else None
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            if prop in nd.obj(o["index"]).props:
+                edits.remove(o["address"], prop, share)
+            elif edits.get(o["address"], prop, share) is not None:
+                edits.reset(o["address"], prop, share)
+            else:
+                raise StudioError(f"{address} has no {prop}")
+        return {"saved": str(edits.file), "page": self.value_object(address, lang)}
+
+    def value_pointing(self, address: str, prop: str = "", lang: str = schema.BASE) -> dict:
+        """What points at the object at `address` (with `prop`: at its value `prop`, a part or a list of them), for the
+        page to say before it's deleted (or taken out): `users`, the game's objects that link to it and the current
+        mod's changes that do (`mine`), each {address, path, name}, at most VALUE_USERS of `total`; `inside`: the mod's
+        changes inside the value, which go with it; `blocked`: "listed" for a unit the game's unit list names (it
+        can't be deleted, value_object_delete), else None."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        new = edits is not None and address in edits.new_objects
+        at = (f"{address}.{prop}" if ":" in address else f"{address}:{prop}") if prop else address
+        game: list = []
+        listed = False
+        ix = self._open()
+        try:
+            if not new:
+                try:
+                    users = ix.used_by(at)
+                except KeyError:  # a value that isn't a part: nothing of the game's can point at it
+                    users = []
+                # what goes with it (the object itself, its own parts, and the value of its owner that holds it)
+                # isn't left pointing at nothing
+                game = [(a, p) for a, p in users if a not in (at, address)
+                        and not a.startswith((at + ":", at + ".", at + "["))]
+                listed = not prop and at in self._listed_units()
+            mine = edits.links_to(at) if edits is not None else []
+            both = [(a, p, False) for a, p in game] + [(a, p, True) for a, p in mine]
+            shown = both[:self.VALUE_USERS]
+            names = self._object_names(ix, [a for a, _p, _m in shown], lang)
+        finally:
+            ix.close()
+        return {"users": [{"address": a, "path": p, "name": names.get(a), "mine": m} for a, p, m in shown],
+                "total": len(both), "inside": len(edits.inside(address, prop)) if edits is not None and prop else 0,
+                "blocked": "listed" if listed else None}
+
+    def value_object_delete(self, address: str, lang: str = schema.BASE) -> dict:
+        """Delete a named object in the current mod (LittleGroove's Delete; MOD_FORMAT §10.2 `delete $/...`): the page
+        asks first, saying what points at it (value_pointing). One the mod makes is taken out of the mod, with its
+        values. Returns {saved, page: the object's page again (deleted), or None for one the mod made}."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        if address in edits.new_objects:
+            with self._saving:
+                edits = ModEdits(edits.folder)
+                edits.remove_object(address)
+            return {"saved": str(edits.file), "page": None}
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(address)
+            except KeyError:
+                # not a game rule: the page asked for something this game build's index doesn't have
+                raise StudioError(f"There's nothing at {address} in this game build.") from None
+        finally:
+            ix.close()
+        if not o["export"]:
+            # not a game rule: a mod deletes named objects (MOD_FORMAT §10.2); a part goes with a value of its owner
+            raise StudioError("A part can't be deleted on its own: take it out of the object it's part of (Take out, "
+                              "on that value's row).")
+        if not self._value_file(o["file"])[1]:
+            raise StudioError(f"{address} isn't in the unit data, so a mod can't change it")
+        if o["address"] in self._listed_units():
+            # rule: delete-unit-class
+            raise StudioError(f"{_tail(o['address'])} can't be deleted: the game's list of units names it, and the game "
+                              f"fails to load its units when one of them is missing. Hide it from the build menus "
+                              f"instead (ShowInMenu).")
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            edits.delete(o["address"])
+        return {"saved": str(edits.file), "page": self.value_object(address, lang)}
+
+    def value_object_restore(self, address: str, lang: str = schema.BASE) -> dict:
+        """Put back an object the current mod deletes (its changes to it come back too). Returns {saved, page}."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            edits.undelete(address)
+        return {"saved": str(edits.file), "page": self.value_object(address, lang)}
+
+    @staticmethod
+    def _new_name_ok(name: str) -> bool:
+        """Whether a mod file can write a new object called `name`: the mod format reads it back as that same name
+        (edits.py writes `export <name> is <class>`)."""
+        try:
+            ops = rndf_parse(f"export {name} is TObject\n(\n)\n")
+        except RndfError:
+            return False
+        return len(ops) == 1 and ops[0].target == f"{DEFAULT_NAMESPACE}/{name}"
+
+    def value_classes(self) -> dict:
+        """The kinds of object a new one can be (value_object_new): the classes of the unit data's objects, each with
+        how many the game has: {classes: [{class, count}]}, by name."""
+        ix = self._open()
+        try:
+            found = ix.db.execute("""SELECT o.class, COUNT(*) FROM object o JOIN file f ON f.id = o.file
+                                     JOIN pack p ON p.id = f.pack WHERE p.name = ? AND p.layer = 'core'
+                                     AND o.shadow = 0 GROUP BY o.class ORDER BY o.class""",
+                                  (every_value.PACK,)).fetchall()
+        finally:
+            ix.close()
+        return {"classes": [{"class": c, "count": n} for c, n in found]}
+
+    def value_object_new(self, cls: str, name: str, lang: str = schema.BASE) -> dict:
+        """A brand-new object of class `cls` called `name`, in the current mod (LittleGroove's Add; MOD_FORMAT §10.2
+        create: `Name is TClass ( … )`, under $/GFX/Everything/), with no values yet: value_prop_add gives it some.
+        Returns {address, saved, page}."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        name, cls = str(name or "").strip(), str(cls or "").strip()
+        if not self._new_name_ok(name):
+            # not a game rule: a mod file can't write that name (rusemod.rndf reads it back as something else)
+            raise StudioError("Give the new object a name of letters A-Z, digits and _, starting with a letter (like "
+                              "Ammo_My_Shell).")
+        if not any(c["class"] == cls for c in self.value_classes()["classes"]):
+            # not a game rule: the kinds offered are the ones the unit data's objects have
+            raise StudioError(f"{cls or 'That'} isn't a kind of object the game's unit data has: pick one from the "
+                              f"list.")
+        target = f"{DEFAULT_NAMESPACE}/{name}"
+        ix = self._open()
+        try:
+            taken = ix.db.execute("SELECT 1 FROM object WHERE address = ? OR export = ? LIMIT 1",
+                                  (target, target)).fetchone() is not None
+        finally:
+            ix.close()
+        if taken or target in edits.new_units or target in edits.new_objects:
+            # not a game rule: two objects can't share a name (MOD_FORMAT §10.4)
+            raise StudioError(f"There's already something called {name} in the game or your mod. Pick another name.")
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            edits.add_object(target, cls)
+        return {"address": target, "saved": str(edits.file), "page": self.value_object(target, lang)}
+
+    def _listed_units(self) -> set[str]:
+        """The units the game's Python unit list names (in ZZ_Win.dat, rusemod.pyscript): the ones a mod can't delete
+        (rules: delete-unit-class). Read once per file; none when it can't be read (the build checks again)."""
+        from rusemod import pyscript
+        game = self._game()
+        path = find_pack(game, "ZZ_Win.dat") if game else None
+        if path is None:
+            return set()
+        st = path.stat()
+        key = (str(path), st.st_mtime_ns, st.st_size)
+        if self._listed is not None and self._listed[0] == key:
+            return self._listed[1]
+        try:
+            with Edat.open(str(path)) as arc:
+                found = pyscript.find_unit_list(arc)
+            listed = set(pyscript.unit_list(pyscript.read_xyz(found[3]).payload).by_path) if found else set()
+        except (OSError, ValueError, pyscript.ScriptError):
+            listed = set()
+        self._listed = (key, listed)
+        return listed
 
     # --- a unit's look: its models out to Blender, its paint back into the mod (rusemod.unitlook, rusemod.blender) ---
     @staticmethod

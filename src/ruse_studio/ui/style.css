@@ -263,6 +263,15 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .values-written { width: 100%; max-width: 720px; margin-top: 4px; padding: 4px 7px; background: var(--panel-hi);
                   border: 1px solid var(--line); border-radius: 6px; font: 12px/1.4 Consolas, monospace; color: inherit;
                   resize: vertical; }
+/* Add a value… / Delete this object… on a page, Take out on a row, New object… on the left (app.js valueTools,
+   valueTakeOutAsk, valuesNewForm) */
+.values-tools { margin: 4px 0 10px; }
+.values-tools select, .values-tools input.values-text, #values-new-form input.values-text { width: 100%; max-width: 520px;
+  padding: 4px 7px; background: var(--panel-hi); border: 1px solid var(--line); border-radius: 6px; color: inherit;
+  font: 12px Consolas, monospace; }
+.values-tools .parts, .values-table .parts { margin: 4px 0; }
+.values-row-tools { margin-top: 2px; }
+#values-new-form .values-field { margin-bottom: 6px; }
 /* a range: its slider beside the box, and about how far that is in metres (app.js rangeSlider, weaponRange) */
 .range { display: inline-flex; align-items: center; gap: 8px; flex: 1 1 180px; min-width: 0; }
 .range input[type="range"] { flex: 1 1 auto; min-width: 100px; max-width: 260px; accent-color: var(--accent); }
