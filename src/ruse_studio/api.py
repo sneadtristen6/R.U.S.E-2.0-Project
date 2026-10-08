@@ -74,6 +74,9 @@ FLAG_LISTS = set(WHOLE_LISTS)  # lists edited as a set of flags, any length (a u
 # Upgrades (LittleGroove's "Upgrade chain"): an upgrade names the unit it's researched from and carries the flag; its
 # research price and time (also on units that are researched without being upgrades) start at his 50 and 50
 UPGRADE, UPGRADE_FLAG, RESEARCH = "UpgradeRequire", "IsUpgrade", {"UpgradePrice": 50, "UpgradeTime": 50}
+BLANK_STARTS = ("blank_terrain",)  # the blank starts offered (rusemod.presets.KINDS): Blank Ocean taken out, the owner,
+                                   # 2026-10-08: "remove blank ocean" (islands crash full-scale battles; navy needs the
+                                   # game's own files changed)
 NOT_EDITABLE = {"DescriptorId", "TrackingId", "AmmunitionId", "Nationalite"}  # ids stay unique (rusemod.identity);
 # moving a unit to another nation needs more than one number (its menus, and the new nation's add-on for China), so it
 # comes later
@@ -1406,12 +1409,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def duplicate_map(self, pack: str, name: str, entry: str | None = None, preset: str | None = None) -> dict:
         """Make a new map: a copy of `pack` called `name` in the menus, in the current map project (one is made when
         none is picked). The map project's changes to `pack` so far are copied with it, so the copy starts as the
-        map view shows it; with `preset` (rusemod.presets: "blank_terrain", "blank_ocean", a Battles map only) it
-        starts blank instead, its files the preset's, made from the shipped map's own. Returns {"pack": the new map's
-        own name (its folder and files), "maps": maps()}."""
+        map view shows it; with `preset` (BLANK_STARTS: "blank_terrain", a Battles map only) it starts blank
+        instead, its files the preset's, made from the shipped map's own. Returns {"pack": the new map's own name (its
+        folder and files), "maps": maps()}."""
         from rusemod import newmap, presets, roadnet
-        if preset is not None and preset not in presets.KINDS:
-            raise StudioError(f"There's no {preset!r} to start from.")
+        if preset is not None and preset not in BLANK_STARTS:
+            # not a game rule: the owner took Blank Ocean out of the Studio (2026-10-08, "remove blank ocean")
+            raise StudioError(f"There's no {preset!r} to start from." + (
+                " Blank Ocean was taken out: a map of islands breaks full-scale battles (a land unit sent to an "
+                "island it can't reach crashes the game), and that needs changes to the game's own files."
+                if preset == "blank_ocean" else ""))
         name = " ".join(str(name or "").split())
         if not name:
             raise StudioError("Give the new map a name.")
@@ -1435,7 +1442,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if preset is not None:
             if entry is not None and entry not in battles:
                 # not a game rule: a blank copy takes the scenario's own items out, which a mission's script needs
-                raise StudioError("Blank Terrain and Blank Ocean start from a Battles map.")
+                raise StudioError("Blank Terrain starts from a Battles map.")
             game = self._game()
             if game is None:
                 # not a game rule: the game or one of its files isn't found

@@ -1,6 +1,26 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
+**0.9.8.1:** Terreno en blanco tiene suelo propio, y Océano en blanco se ha quitado.
+
+- **El suelo de Terreno en blanco se dibuja como propio.** Un mapa nuevo empezado en blanco tiene el suelo hecho a
+  partir de tus trazos de terreno, no el suelo del mapa del juego desplazado: costas redondeadas de cerca y desde lo
+  alto, sin abolladuras en las cimas, y edificios y tanques asentados justo encima. Visto en el juego en mapas de
+  prueba.
+- **Océano en blanco se ha quitado** del Studio.
+
+**Por qué aún no hay mapas navales.** Probamos mapas de islas para batallas a gran escala con barcos, y el propio
+juego lo impide:
+
+- Una unidad terrestre enviada a una isla a la que no puede llegar hace que el juego se cuelgue.
+- Unir las islas con una franja de tierra evita el cuelgue, pero entonces la computadora simplemente envía su
+  infantería por ella.
+- Sin carretera entre las islas, no se puede colocar ningún edificio.
+- Con las armas del propio juego, los barcos y las unidades terrestres apenas se hacen daño.
+
+Los datos del mapa por sí solos no pueden arreglar el cuelgue: hace falta cambiar los archivos del propio juego, así
+que los mapas navales esperan a conocer la postura de Eugen al respecto.
+
 **0.9.8:** un mapa nuevo puede empezar en blanco, como tierra llana o mar abierto, y cada mapa puede tener sus propias
 imágenes en los menús del juego.
 

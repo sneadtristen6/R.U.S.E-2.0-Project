@@ -5398,7 +5398,8 @@ const DUP_KINDS = ["battles", "operation", "campaign"];
 // What a new map starts from: a full copy, or blank (StudioApi.duplicate_map's preset; rusemod.presets). The owner,
 // 2026-10-05: "a preset, like want to start a Navy map ... D-Day, but ocean" and "a flat basic terrain version";
 // "Blank Terrain, Blank Ocean". Blank ones start from a Battles map only (a mission's script needs its own items).
-const DUP_STARTS = ["copy", "blank_terrain", "blank_ocean"];
+// Blank Ocean taken out 2026-10-08 (the owner: "remove blank ocean": a map of islands breaks full-scale battles).
+const DUP_STARTS = ["copy", "blank_terrain"];
 // scratch: opened from "New map: start from scratch…" before any map is open (2026-10-06, the owner: a blank map had
 // to be found under Duplicate map, "it needs to explicitly say that"); base: the game map it then sits on
 const dup = { entries: [], kind: null, typed: false, start: "copy", scratch: false, base: null };
@@ -5508,7 +5509,7 @@ function fillDupEntries() {
   dupSuggestName();
 }
 
-function dupSuggestName() {  // "<what the copied entry is called> 2" (or "... Blank Ocean"), until a name is typed
+function dupSuggestName() {  // "<what the copied entry is called> 2" (or "... Blank Terrain"), until a name is typed
   if (dup.typed) return;
   const e = dup.entries.find((x) => x.name === $("dup-entry").value);
   const tail = dup.start === "copy" ? "2" : mv.words[`dup_start_${dup.start}`];

@@ -1,6 +1,22 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.1:** Prázdný terén dostává vlastní terén a Prázdný oceán je odebrán.
+
+- **Terén Prázdného terénu se kreslí jako vlastní.** Nová mapa začatá od nuly má terén vytvořený z vašich tahů terénu,
+  ne posunutý terén mapy ze hry: kulaté břehy zblízka i shora, žádné promáčkliny na vrcholcích kopců a budovy i tanky
+  stojí přesně na něm. Ověřeno ve hře na testovacích mapách.
+- **Prázdný oceán je odebrán** ze Studia.
+
+**Proč zatím nejsou námořní mapy.** Zkoušeli jsme mapy z ostrovů pro velké bitvy s loďmi a v cestě stojí samotná hra:
+
+- Pozemní jednotka poslaná na ostrov, kam se nemůže dostat, způsobí pád hry.
+- Spojení ostrovů pruhem souše pádu zabrání, ale počítač po něm pak jen posílá svou pěchotu.
+- Bez silnice mezi ostrovy nejde nikde postavit žádnou budovu.
+- Se zbraněmi ze hry si lodě a pozemní jednotky skoro neublíží.
+
+Samotná data mapy pád neopraví: je třeba změnit soubory samotné hry, a tak námořní mapy čekají na postoj studia Eugen.
+
 **0.9.8:** nová mapa může začít prázdná, jako rovná souš nebo otevřené moře, a každá mapa může mít vlastní obrázky v
 nabídkách hry.
 

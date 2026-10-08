@@ -1,6 +1,24 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.1:** Blank Terrain gets ground of its own, and Blank Ocean is taken out.
+
+- **Blank Terrain's ground is drawn as its own.** A new map started blank gets its ground made from your terrain
+  strokes, not the game map's ground pushed about: round shores up close and from high up, no dents in hilltops, and
+  buildings and tanks sitting right on it. Seen in the game on test maps.
+- **Blank Ocean is taken out** of the Studio.
+
+**Why there are no navy maps yet.** We tried maps of islands for full-scale battles with ships, and the game itself
+stands in the way:
+
+- A land unit sent to an island it can't reach crashes the game.
+- Joining the islands with a strip of land stops the crash, but then the computer just sends its infantry across it.
+- With no road between the islands, no building can be placed anywhere.
+- With the game's own weapons, ships and land units can barely hurt each other.
+
+Map data alone can't fix the crash: that takes changes to the game's own files, so navy maps wait until we hear
+Eugen's position on that.
+
 **0.9.8:** a new map can start blank, as flat land or open sea, and every map can have its own pictures in the
 game's menus.
 

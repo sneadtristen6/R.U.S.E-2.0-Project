@@ -244,7 +244,8 @@ class BlankStart(WithAMapProject):
         maps.mkdir(parents=True)
         (maps / "terrain.toml").write_text('[[stroke]]\nbrush = "hill"\nx = 1.0\ny = 2.0\nradius = 3.0\nheight = 4.0\n',
                                            encoding="utf-8")
-        for kind in presets.KINDS:
+        from ruse_studio.api import BLANK_STARTS
+        for kind in BLANK_STARTS:  # the starts the Studio offers (Blank Ocean taken out, 2026-10-08)
             with mock.patch.object(presets, "copy_scenario", return_value=self.facts().scenario) as scen, \
                     mock.patch.object(presets, "read_facts", return_value=self.facts()) as read:
                 pack = self.api.duplicate_map("SuperCrossRoads4", f"Blitz {presets.NAMES[kind]}", preset=kind)["pack"]
@@ -375,13 +376,22 @@ class MenuPictures(WithAMapProject):
         from rusemod import presets
         facts = presets.Facts((0.0, 0.0, 400000.0, 200000.0), 12623.0, 19233.0, "leveldesign_normal.scenario",
                               [(0, "StartingPoint")], [])
-        for kind, want in (("blank_ocean", ("ocean", 12623.0)), ("blank_terrain", ("land", 19233.0))):
-            with mock.patch.object(presets, "copy_scenario", return_value=facts.scenario), \
-                    mock.patch.object(presets, "read_facts", return_value=facts):
-                pack = self.api.duplicate_map("SuperCrossRoads4", presets.NAMES[kind], preset=kind)["pack"]
-            self.assertEqual(self.api._menu_scene_kind(pack), want)
+        with mock.patch.object(presets, "copy_scenario", return_value=facts.scenario), \
+                mock.patch.object(presets, "read_facts", return_value=facts):
+            pack = self.api.duplicate_map("SuperCrossRoads4", "Blank Terrain", preset="blank_terrain")["pack"]
+        self.assertEqual(self.api._menu_scene_kind(pack), ("land", 19233.0))
+        self.assertEqual(self.toml(pack)["ground"], "generated")  # a blank start's ground is drawn as its own
         pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
         self.assertEqual(self.api._menu_scene_kind(pack), ("map", None))
+
+    def test_blank_ocean_is_no_longer_offered(self):
+        """The owner, 2026-10-08: "remove blank ocean" (a map of islands breaks full-scale battles)."""
+        from ruse_studio.api import BLANK_STARTS
+        self.assertEqual(BLANK_STARTS, ("blank_terrain",))
+        with self.assertRaisesRegex(StudioError, "Blank Ocean was taken out"):
+            self.api.duplicate_map("SuperCrossRoads4", "Blank Ocean", preset="blank_ocean")
+        maps_js = (Path(__file__).resolve().parents[1] / "src/ruse_studio/ui/maps.js").read_text(encoding="utf-8")
+        self.assertIn('const DUP_STARTS = ["copy", "blank_terrain"];', maps_js)
 
     def test_blender_needed(self):
         pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]

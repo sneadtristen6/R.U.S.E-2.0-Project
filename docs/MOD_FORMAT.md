@@ -351,6 +351,8 @@ players = 4                    # optional: as on any map (below), for the copy
 picture = "menu.png"           # optional: its own pictures in the menus, PNGs in this folder (below; any map can)
 wide_picture = "menu-wide.png"
 start_dots = true
+ground = "generated"           # optional: its ground drawn as its own from its terrain strokes (below); "kept" (the
+                               # default): the shipped map's ground, moved by the strokes
 
 [name]                         # what the menus call it, or one name for every language: name = "Blitz Twin"
 us = "Blitz Twin"              # English, which the languages left out fall back to
@@ -392,12 +394,20 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
   height); the edge now moves with the ground and the curtain hanging from it follows (built, not yet seen in the
   game).
 - **Start blank:** **New map: start from scratch…** (Maps tab, before a map is open, and on the open map's panel) or
-  Duplicate map's *Start from* Blank Terrain or Blank Ocean (a Battles map's copy; `rusemod.presets`). The window
+  Duplicate map's *Start from* Blank Terrain (a Battles map's copy; `rusemod.presets`; Blank Ocean, offered in
+  0.9.8, was taken out in 0.9.8.1: on a map of islands, full-scale battles break). The window
   says why a new map sits on a game map (the game can't load one made from nothing) and asks which one it's *Built
   on*: that map gives it its size, its player count and its starting points, nothing else. It
   writes the copy's files from the shipped map's own: the whole map flat (land, or the sea over it), everything on it
   erased, its roads and bridges taken out, only the starting points kept, the sectors over the whole map, and its own
   menu pictures with `start_dots` (below). Seen in the game (both, 2026-10-05).
+- **`ground = "generated"`** (a blank start sets it): the new map's ground is drawn as its own from its terrain
+  strokes, starting from the map flattened all over, instead of the shipped map's ground being pushed about: the
+  close-up and far ground on one grid cut exactly at the water, the ground units stand on the same as the ground
+  drawn, and the water's look and the roads laid on the new ground. Shores come out round close up and from high up,
+  with no dents in hilltops. Seen in the game (2026-10-07): buildings and tanks sit on the drawn ground. Refused on a
+  shipped map (it keeps its own ground); when the strokes don't start by levelling the whole map, the build says so
+  and makes the map the usual way.
 
 ### A map's pictures in the menus: `picture`, `wide_picture`, `start_dots` in `map.toml` (built: `rusemod.menupicture`)
 

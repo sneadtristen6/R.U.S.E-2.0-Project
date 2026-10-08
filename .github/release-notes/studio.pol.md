@@ -1,6 +1,24 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.1:** Pusty teren dostaje własny grunt, a Pusty ocean został usunięty.
+
+- **Grunt Pustego terenu jest rysowany jako własny.** Nowa mapa zaczęta od zera ma grunt zrobiony z twoich pociągnięć
+  terenu, a nie przesunięty grunt mapy z gry: okrągłe brzegi z bliska i z góry, bez wgnieceń na szczytach wzgórz, a
+  budynki i czołgi stoją dokładnie na nim. Sprawdzone w grze na mapach testowych.
+- **Pusty ocean został usunięty** ze Studia.
+
+**Dlaczego nie ma jeszcze map morskich.** Wypróbowaliśmy mapy z wyspami do pełnych bitew z okrętami i przeszkadza
+sama gra:
+
+- Jednostka lądowa wysłana na wyspę, do której nie może dotrzeć, powoduje awarię gry.
+- Połączenie wysp pasem lądu zapobiega awarii, ale wtedy komputer po prostu wysyła nim swoją piechotę.
+- Bez drogi między wyspami nigdzie nie da się postawić budynku.
+- Z bronią z gry okręty i jednostki lądowe ledwo mogą sobie nawzajem zaszkodzić.
+
+Same dane mapy nie naprawią awarii: potrzebne są zmiany w plikach samej gry, więc mapy morskie czekają na stanowisko
+studia Eugen w tej sprawie.
+
 **0.9.8:** nowa mapa może zacząć się pusta, jako płaski ląd albo otwarte morze, a każda mapa może mieć własne obrazy w
 menu gry.
 

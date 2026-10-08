@@ -1,6 +1,25 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
+**0.9.8.1:** Terreno vuoto ha un terreno tutto suo, e Oceano vuoto è stato tolto.
+
+- **Il terreno di Terreno vuoto è disegnato apposta.** Una nuova mappa partita da zero ha il terreno fatto dai tuoi
+  tratti, non più il terreno della mappa del gioco spostato: coste rotonde da vicino e dall'alto, niente più
+  ammaccature in cima alle colline, ed edifici e carri poggiano esattamente sopra. Visto in gioco su mappe di prova.
+- **Oceano vuoto è stato tolto** dallo Studio.
+
+**Perché non ci sono ancora mappe navali.** Abbiamo provato mappe di isole per vere battaglie con le navi, ed è il
+gioco stesso a impedirlo:
+
+- Un'unità di terra mandata su un'isola che non può raggiungere fa andare in crash il gioco.
+- Collegare le isole con una striscia di terra evita il crash, ma allora il computer ci manda semplicemente la sua
+  fanteria.
+- Senza una strada tra le isole, non si può piazzare nessun edificio.
+- Con le armi del gioco, navi e unità di terra si fanno a malapena danno.
+
+I soli dati della mappa non possono correggere il crash: servono modifiche ai file del gioco stesso, quindi le mappe
+navali aspettano la posizione di Eugen in merito.
+
 **0.9.8:** una nuova mappa può partire vuota, come terra piatta o mare aperto, e ogni mappa può avere le sue immagini
 nei menu del gioco.
 

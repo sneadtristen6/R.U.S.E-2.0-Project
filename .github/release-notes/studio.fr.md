@@ -1,6 +1,25 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.1:** Terrain vierge a désormais son propre sol, et Océan vierge est retiré.
+
+- **Le sol de Terrain vierge est dessiné pour lui-même.** Une nouvelle carte partie de zéro a un sol fait à partir de
+  vos traits de terrain, et non plus le sol de la carte du jeu déplacé : des rivages arrondis de près comme de haut,
+  plus de creux au sommet des collines, et les bâtiments et les chars posés exactement dessus. Vu en jeu sur des
+  cartes de test.
+- **Océan vierge est retiré** du Studio.
+
+**Pourquoi il n'y a pas encore de cartes navales.** Nous avons essayé des cartes d'îles pour de vraies batailles avec
+des navires, et c'est le jeu lui-même qui bloque :
+
+- Une unité terrestre envoyée vers une île qu'elle ne peut pas atteindre fait planter le jeu.
+- Relier les îles par une bande de terre évite le plantage, mais l'ordinateur y envoie alors simplement son infanterie.
+- Sans route entre les îles, aucun bâtiment ne peut être placé nulle part.
+- Avec les armes du jeu, navires et unités terrestres ne peuvent presque pas se blesser.
+
+Les données de carte seules ne peuvent pas corriger le plantage : il faut modifier les fichiers du jeu lui-même, donc
+les cartes navales attendent la position d'Eugen à ce sujet.
+
 **0.9.8:** une nouvelle carte peut partir de zéro, en terre plate ou en pleine mer, et chaque carte peut avoir ses
 propres images dans les menus du jeu.
 

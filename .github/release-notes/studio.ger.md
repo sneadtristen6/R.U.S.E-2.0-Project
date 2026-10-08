@@ -1,6 +1,25 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.1:** Leeres Gelände bekommt eigenen Boden, und Leerer Ozean ist entfernt.
+
+- **Der Boden von Leerem Gelände wird eigens gezeichnet.** Eine leer begonnene neue Karte bekommt ihren Boden aus
+  Ihren Geländestrichen statt des verschobenen Bodens der Spielkarte: runde Küsten aus der Nähe und von oben, keine
+  Dellen mehr auf Hügelkuppen, und Gebäude und Panzer stehen genau darauf. Im Spiel auf Testkarten gesehen.
+- **Leerer Ozean ist** aus dem Studio **entfernt**.
+
+**Warum es noch keine Marinekarten gibt.** Wir haben Inselkarten für große Schlachten mit Schiffen ausprobiert, und
+das Spiel selbst steht im Weg:
+
+- Eine Landeinheit, die auf eine unerreichbare Insel geschickt wird, bringt das Spiel zum Absturz.
+- Ein Landstreifen zwischen den Inseln verhindert den Absturz, aber dann schickt der Computer einfach seine
+  Infanterie hinüber.
+- Ohne Straße zwischen den Inseln lässt sich nirgends ein Gebäude platzieren.
+- Mit den Waffen des Spiels können Schiffe und Landeinheiten einander kaum schaden.
+
+Kartendaten allein können den Absturz nicht beheben: Dafür müssen die Dateien des Spiels selbst geändert werden,
+deshalb warten Marinekarten auf Eugens Haltung dazu.
+
 **0.9.8:** eine neue Karte kann leer beginnen, als flaches Land oder offenes Meer, und jede Karte kann eigene Bilder
 in den Menüs des Spiels haben.
 
