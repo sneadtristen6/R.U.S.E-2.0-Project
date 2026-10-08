@@ -24,7 +24,7 @@ your own, and test it in the game. Your Steam install is never changed.
   lobby, and for its army) and a new flag from any picture: China in Italy's place, say. Its units and what they say
   are changed as before, on the Units tab and each unit's page. Seen in the game: the new name in the lobby, the new
   flag in a match.
-- **Units from other eras:** the Units tab gets WWI, WWII+, Cold War and Modern beside the game's own units. Add one to
+- **Units from other eras:** the Units tab gets WWI, WWII+, Cold War and Modern beside the game's own units. Each era downloads in the Studio when you pick it, from our GitHub (each file checked), and updates itself as more units are finished. Add one to
   your mod and it becomes a new unit with its own model, its maker credited; nothing is added until you pick it.
 - **New map: start from scratch…** is on the Maps tab before any map is open.
 - **Blank Terrain's ground is drawn as its own.** A new map started blank gets its ground made from your terrain

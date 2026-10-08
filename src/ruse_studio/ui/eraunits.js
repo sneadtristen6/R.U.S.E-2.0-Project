@@ -38,6 +38,91 @@
     }));
     $("era-note").textContent = state.era === "vanilla" ? "" : w.eras_note;
     $("era-note").classList.toggle("hidden", state.era === "vanilla");
+    updateDownloaded();
+  }
+
+  // an era not on this PC yet: downloaded from RUSE 2.0's GitHub when the modder presses Download (each file checked
+  // by the Studio before it's used); a downloaded era updates itself when a newer one is out (the owner, 2026-10-08:
+  // "have the studio auto-update with them")
+  const coming = {};  // era -> its download's job, while it runs
+  const sizeOf = (n) => (n >= 1e9 ? `${(n / 1e9).toFixed(1)} GB` : `${Math.max(1, Math.round(n / 1e6))} MB`);
+
+  async function sections() {
+    if (!state.eraSections) {
+      try { state.eraSections = await api().era_sections(false); } catch (err) {
+        problem(err);
+        return { sections: [], message: "" };
+      }
+    }
+    return state.eraSections;
+  }
+
+  async function downloadPanel(era) {
+    const w = W();
+    const list = await sections();
+    const s = list.sections.find((x) => x.era === era);
+    if (!s) {
+      return el("div", { className: "notice" }, el("p", { textContent: list.message
+        ? fill(w.eras_no_list, { why: list.message }) : fill(w.eras_none_yet, { era: eraOf(era) }) }));
+    }
+    const go = el("button", { type: "button", className: "primary", textContent: fill(w.eras_download, { era: eraOf(era) }),
+      title: w.tip_eras_download });
+    const status = el("p", { className: "small muted" });
+    go.addEventListener("click", () => follow(era, go, status));
+    if (coming[era]) follow(era, go, status);  // already coming: follow it here
+    return el("div", { className: "notice" },
+      el("p", { textContent: fill(w.eras_not_downloaded, { era: eraOf(era), n: s.units, size: sizeOf(s.size) }) }),
+      el("div", { className: "actions" }, go), status);
+  }
+
+  async function follow(era, button, status) {
+    const w = W();
+    if (button) button.disabled = true;
+    let job = coming[era];
+    if (!job) {
+      try { job = (await api().era_download(era)).job; } catch (err) {
+        problem(err);
+        if (button) button.disabled = false;
+        return;
+      }
+      coming[era] = job;
+    }
+    let seen = 0;
+    const tick = async () => {
+      let j;
+      try { j = await api().job(job, seen); } catch (err) { problem(err); delete coming[era]; return; }
+      seen = j.count;
+      const last = j.lines[j.lines.length - 1];
+      if (status && last === "unpack") status.textContent = w.eras_unpacking;
+      else if (status && last) {
+        const [done, total] = last.split("/").map(Number);
+        status.textContent = fill(w.eras_downloading, { done: sizeOf(done), total: sizeOf(total) });
+      }
+      if (j.state === "running") { setTimeout(tick, 500); return; }
+      delete coming[era];
+      state.eraSections = null;
+      if (j.state === "done") {
+        say(fill(w.eras_download_done, { era: eraOf(era) }), "ok");
+        if (state.era === era) refreshList();
+      } else {
+        say(j.message, "error");
+        if (button) button.disabled = false;
+        if (status) status.textContent = "";
+      }
+    };
+    tick();
+  }
+
+  let checked = false;
+  async function updateDownloaded() {  // once a start: the downloaded eras with a newer version out
+    if (checked) return;
+    checked = true;
+    let res;
+    try { res = await api().era_sections(true); } catch { return; }
+    for (const s of res.sections.filter((x) => x.state === "update")) {
+      say(fill(W().eras_updating, { era: eraOf(s.era) }), "ok");
+      follow(s.era, null, null);
+    }
   }
 
   async function refreshEraList() {
@@ -46,9 +131,13 @@
     try {
       res = await api().era_units_list(state.era, state.kind, state.nation, state.search, state.group || "all");
     } catch (err) { problem(err); return; }
-    if (!res.library) {
-      $("era-note").textContent = w.eras_no_library;
-      $("era-note").classList.remove("hidden");
+    if (!res.installed) {
+      const era = state.era;
+      $("count").textContent = w.units.replace("{n}", 0);
+      renderGroups([], []);
+      const panel = await downloadPanel(era);
+      if (state.era === era) $("unit-list").replaceChildren(el("li", {}, panel));
+      return;
     }
     $("count").textContent = w.units.replace("{n}", res.units.length);
     renderGroups([], res.types || []);

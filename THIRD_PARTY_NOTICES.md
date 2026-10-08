@@ -115,6 +115,13 @@ What is carried, unchanged: `python.exe`, `python25.dll`, and from its library o
 package); the rest of Python 2.5.1 is left out. Beside them is `msvcr71.dll`, the Microsoft Visual C++ 7.1 runtime
 that Python 2.5.1 was built with and that its installer puts beside it (Copyright Microsoft Corporation).
 
+## Code of ours that follows moddingSuite
+
+Reading the game's sounds ([src/rusemod/sound.py](src/rusemod/sound.py)), and parts of reading its text keys and
+scenarios (`dic.py`, `scenario.py`), follow moddingSuite: enohka's Wargame modding suite, in RugnirViking's version made
+for R.U.S.E. (https://github.com/RugnirViking/moddingSuite; copyright enohka, as its program says). Its README says it
+is released under GPL 3.0 (its LICENSE file holds the text of GPL version 2). The apps are GPL-3.0 ([LICENSE](LICENSE)).
+
 ## The other libraries the apps carry
 
 Nuitka makes each app into a Windows program with Python 3.12 ([installers/build_app.py](installers/build_app.py)), so

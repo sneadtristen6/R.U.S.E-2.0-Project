@@ -25,7 +25,7 @@ zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy 
   armii) oraz nową flagę z dowolnego obrazu: na przykład Chiny w miejsce Włoch. Jej jednostki i to, co mówią,
   zmienia się jak dotąd, w karcie Jednostki i na stronie każdej jednostki. Sprawdzone w grze: nowa nazwa w lobby,
   nowa flaga w meczu.
-- **Jednostki z innych epok:** karta Jednostki oferuje WWI, WWII+, Zimną wojnę i Współczesność obok jednostek gry.
+- **Jednostki z innych epok:** karta Jednostki oferuje WWI, WWII+, Zimną wojnę i Współczesność obok jednostek gry. Każda epoka pobiera się w Studiu, gdy ją wybierzesz, z naszego GitHuba (każdy plik sprawdzony), i aktualizuje się sama, gdy kolejne jednostki są gotowe.
   Dodaj jedną do swojego moda, a stanie się nową jednostką z własnym modelem i podpisanym autorem; nic nie jest
   dodawane, dopóki jej nie wybierzesz.
 - **Nowa mapa: od zera…** jest w karcie Mapy, zanim otworzysz jakąkolwiek mapę.

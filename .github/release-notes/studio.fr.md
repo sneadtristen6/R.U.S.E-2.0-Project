@@ -26,7 +26,7 @@ modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n
   place de l'Italie, par exemple. Ses unités et ce qu'elles disent se changent comme avant, dans l'onglet Unités et
   sur la page de chaque unité. Vu en jeu : le nouveau nom dans le salon, le nouveau drapeau dans une partie.
 - **Des unités d'autres époques :** l'onglet Unités propose WWI, WWII+, Guerre froide et Moderne à côté des unités du
-  jeu. Ajoutez-en une à votre mod : elle devient une nouvelle unité avec son propre modèle, son auteur crédité ; rien
+  jeu. Chaque époque se télécharge dans le Studio quand vous la choisissez, depuis notre GitHub (chaque fichier vérifié), et se met à jour d'elle-même à mesure que d'autres unités sont terminées. Ajoutez-en une à votre mod : elle devient une nouvelle unité avec son propre modèle, son auteur crédité ; rien
   n'est ajouté tant que vous ne la choisissez pas.
 - **Nouvelle carte : partir de zéro…** est dans l'onglet Cartes avant qu'une carte soit ouverte.
 - **Le sol de Terrain vierge est dessiné pour lui-même.** Une nouvelle carte partie de zéro a un sol fait à partir de

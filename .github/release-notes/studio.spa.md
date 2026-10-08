@@ -26,7 +26,7 @@ idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de
   lugar de Italia. Sus unidades y lo que dicen se cambian como antes, en la pestaña Unidades y en la página de cada
   unidad. Visto en el juego: el nombre nuevo en la sala, la bandera nueva en la partida.
 - **Unidades de otras épocas:** la pestaña Unidades ofrece WWI, WWII+, Guerra Fría y Moderna junto a las unidades del
-  juego. Añade una a tu mod y se convierte en una unidad nueva con su propio modelo, su autor citado; no se añade nada
+  juego. Cada época se descarga en el Studio cuando la eliges, desde nuestro GitHub (cada archivo comprobado), y se actualiza sola a medida que se terminan más unidades. Añade una a tu mod y se convierte en una unidad nueva con su propio modelo, su autor citado; no se añade nada
   hasta que la eliges.
 - **Mapa nuevo: empezar desde cero…** está en la pestaña Mapas antes de abrir un mapa.
 - **El suelo de Terreno en blanco se dibuja como propio.** Un mapa nuevo empezado en blanco tiene el suelo hecho a

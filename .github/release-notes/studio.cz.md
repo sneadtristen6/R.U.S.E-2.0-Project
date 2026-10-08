@@ -25,7 +25,7 @@ vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemě
   jeho armádu) a novou vlajku z jakéhokoli obrázku: třeba Čínu místo Itálie. Jeho jednotky a to, co říkají, se mění
   jako dosud, na kartě Jednotky a na stránce každé jednotky. Ověřeno ve hře: nový název v lobby, nová vlajka v
   zápase.
-- **Jednotky z jiných období:** karta Jednotky nabízí vedle jednotek hry WWI, WWII+, Studenou válku a Současnost.
+- **Jednotky z jiných období:** karta Jednotky nabízí vedle jednotek hry WWI, WWII+, Studenou válku a Současnost. Každá epocha se stáhne ve Studiu, když ji vyberete, z našeho GitHubu (každý soubor ověřený), a sama se aktualizuje, jak přibývají další hotové jednotky.
   Přidejte jednu do svého modu a stane se novou jednotkou s vlastním modelem a uvedeným autorem; nic se nepřidá,
   dokud ji nevyberete.
 - **Nová mapa: od nuly…** je na kartě Mapy, dokud není otevřená žádná mapa.

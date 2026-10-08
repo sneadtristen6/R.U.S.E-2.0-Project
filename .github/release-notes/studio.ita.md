@@ -26,7 +26,7 @@ modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non v
   (nella lobby e per il suo esercito) e una nuova bandiera da qualsiasi immagine: per esempio la Cina al posto
   dell'Italia. Le sue unità e ciò che dicono si cambiano come prima, nella scheda Unità e nella pagina di ogni
   unità. Visto in gioco: il nuovo nome nella lobby, la nuova bandiera in partita.
-- **Unità di altre epoche:** la scheda Unità offre WWI, WWII+, Guerra fredda e Moderno accanto alle unità del gioco.
+- **Unità di altre epoche:** la scheda Unità offre WWI, WWII+, Guerra fredda e Moderno accanto alle unità del gioco. Ogni epoca si scarica nello Studio quando la scegli, dal nostro GitHub (ogni file controllato), e si aggiorna da sola man mano che altre unità sono pronte.
   Aggiungine una alla tua mod e diventa una nuova unità con il suo modello, il suo autore citato; non si aggiunge
   nulla finché non la scegli.
 - **Nuova mappa: partire da zero…** è nella scheda Mappe prima che una mappa sia aperta.

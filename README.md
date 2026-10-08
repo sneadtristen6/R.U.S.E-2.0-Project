@@ -279,8 +279,9 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
   name, in the lobby and for its army, and a new flag from any picture: China in Italy's place, say. Seen in the
   game: the new name in the lobby, the new flag beside the player's name in a match.
 - **Units from other eras** (Studio 0.9.8.1): the Units tab gets WWI, WWII+, Cold War and Modern beside the game's own
-  units. Add one to your mod and it becomes a new unit with its own model, its maker credited; nothing is added until
-  you pick it. Not tried in the game yet.
+  units. Each era downloads in the Studio when you pick it, from our GitHub (each file checked), and updates itself as
+  more units are finished. Add one to your mod and it becomes a new unit with its own model, its maker credited;
+  nothing is added until you pick it. Not tried in the game yet.
 - **Add units in formations:** 1 to 10 at once, in a line, column, wedge, box or circle (Studio 0.7.1).
 - A **mod check** reads every file of your mod the way the game build does, names each problem and offers the fix
   (set a broken file aside, rename a map folder to the map's pack name) (Studio 0.7.1).

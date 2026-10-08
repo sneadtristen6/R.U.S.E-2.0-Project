@@ -6,8 +6,8 @@ texture is replaced by files/replace/<texture>.png): files/replace/gen_sound/ww2
 build makes the game's kind of file from it, and the small description the game reads first, in every sound bank
 that has one for that sound.
 
-Reading follows RugnirViking's moddingSuite (GPL-2.0-or-later: its EssReader), widened to any number of channels;
-the writer is ours. What `encode` makes, `decode` plays back sample for sample (tests/test_sound.py). Heard in the game
+Reading follows RugnirViking's moddingSuite (its EssReader; GPL 3.0, its README says), widened to any number of
+channels; the writer is ours. What `encode` makes, `decode` plays back sample for sample (tests/test_sound.py). Heard in the game
 (the sound tests, 2026-10-07): the main menu song, the songs of battle lists 1 and 2 and the Sherman's move lines,
 each replaced this way, and new songs under names of their own in lists 1 and 2; the rest (the third list,
 missions' songs, jingles, other voices) not tried yet.
