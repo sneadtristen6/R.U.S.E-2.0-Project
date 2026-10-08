@@ -103,7 +103,9 @@ def ask_to_save(folder: Path, timeout: float) -> list | None:
     folder = Path(folder)
     done, request = folder / SAVE_DONE, folder / SAVE_REQUEST
     done.unlink(missing_ok=True)
-    request.write_text("save", encoding="utf-8")
+    part = folder / (SAVE_REQUEST + ".part")  # written beside it, then put in place: Blender never sees it half made
+    part.write_text("save", encoding="utf-8")  # (on Windows a file still open can't be deleted, so its answer failed)
+    os.replace(part, request)
     end = time.monotonic() + timeout
     while time.monotonic() < end:
         if done.exists():
