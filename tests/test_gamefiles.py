@@ -73,7 +73,9 @@ class Kinds(unittest.TestCase):
         for path, data, why in (("gen/a.tgv", TEXTURE[:40], "isn't a good texture"),
                                 ("a/b.dic", b"nope", "isn't a good text table"),
                                 ("a/b.xml", b"<a>", "isn't a good XML text"),
-                                ("v/x.webm", b"x", "isn't set up yet"), ("ui/menu.gfx", b"x", "not a Flash menu"),
+                                ("v/x.webm", b"x", "a video isn't offered yet"),
+                                ("gen/x.shc", b"x", "the shaders isn't offered yet"),
+                                ("ui/menu.gfx", b"x", "not a Flash menu"),
                                 ("v/x.bik", b"x", "can't be checked by the build yet"),
                                 ("genpython/a.xyz", b"x", "holds code"),
                                 ("gen_sound/a.ess", b"x", "Music tab")):

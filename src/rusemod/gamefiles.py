@@ -8,9 +8,9 @@ and Add File, brought over the safe way the owner asked for, 2026-10-08):
   so it can't stand in for one of the game's files.
 - Every file a build would hand the game is checked first as a file of its kind (CHECKED): a texture opens as a
   texture, a text table as a text table, a font, a Flash menu, the shader file and a video read cleanly to their end
-  (rusemod.filechecks). A Flash menu's code and the shaders stay the game's own until RUSE 2.0's approvals exist;
-  videos wait (WAITING). A kind that can't be checked, or is a script, or has a tool of its own (sounds: the Music
-  tab), isn't taken.
+  (rusemod.filechecks). A Flash menu's code stays the game's own; shaders and videos aren't offered yet
+  (NOT_YET). A kind that can't be checked, or is a script, or has a tool of its own (sounds: the Music tab), isn't
+  taken.
 - A file inside a pack inside the pack is reached through it: files/game/ZZ_Win.dat/gen/pack/x.ppk/gen/a.tgv.rdelta.
 - Two mods changing one file: the one lower in the load order wins, as for every other change, and the build says
   which (the Launcher shows it before Play, with the way to have the other one's).
@@ -41,9 +41,10 @@ CHECKED = {".tgv": "texture", ".tgv_pc": "texture", ".png": "picture", ".dic": "
            ".gladndfbin": "game data", ".ndfbin": "game data", ".truendfbin": "game data", ".scenario": "scenario",
            ".xml": "XML text", ".ttf": "font", ".otf": "font", ".ttc": "font", ".gfx": "Flash menu",
            ".shc": "shader file", ".webm": "video"}
-# checked, but not taken yet: what each waits for (the owner's calls of 2026-10-08)
-WAITING = {".webm": "a video waits for the safe way to hand the game a mod's video (a video the build makes itself, "
-                    "or RUSE 2.0's approval), which isn't set up yet"}
+# checked, but not offered yet (the owner, 2026-10-08: what would need RUSE 2.0's approval isn't included yet; the
+# approvals themselves are kept on the feat/approvals branch)
+NOT_YET = {".webm": "changing or adding a video isn't offered yet",
+           ".shc": "changing the shaders isn't offered yet"}
 ELSEWHERE = {".ess": "a sound: change it in the Studio's Music tab, which keeps what the game reads about it in step",
              ".wav": "a sound: change it in the Studio's Music tab"}
 NESTED = (".ppk", ".apk", ".mpk", ".gpk", ".spk")  # packs inside a pack, reached through (never replaced whole)
@@ -140,9 +141,9 @@ def taken(path: str) -> str:
     ext = PurePosixPath(path.replace("\\", "/")).suffix.lower()
     if ext in ELSEWHERE:
         raise GameFileError(f"{path} is {ELSEWHERE[ext]}")
-    if ext in WAITING:
-        # not a game rule: the owner's safeguards of 2026-10-08 (a video from outside could harm the player's PC)
-        raise GameFileError(f"{path}: {WAITING[ext]}")
+    if ext in NOT_YET:
+        # not a game rule: the owner, 2026-10-08 (what needs RUSE 2.0's approval isn't included yet)
+        raise GameFileError(f"{path}: {NOT_YET[ext]}")
     kind = CHECKED.get(ext)
     if kind is None:
         from .build import NOT_IN_MODS

@@ -2,9 +2,10 @@
 every file is checked as its kind before the game gets it; the owner, 2026-10-08: "just write a check for those four
 kinds"). Each reads the whole file as its kind, and refuses what doesn't read cleanly to its end.
 
-The programs among them (a Flash menu's code, the shaders) are the game's own or nothing, until RUSE 2.0's approvals
-exist (safeguard 5, the owner's question of 2026-10-08: "only RUSE 2.0 approved scripts and programs"): a Flash menu
-may change its layout, shapes and words but keep the game's code; a changed shader is refused.
+The programs among them (a Flash menu's code, the shaders) are the game's own or nothing (safeguard 5: no scripts or
+programs from outside): a Flash menu may change its layout, shapes and words but keeps the game's code; a changed
+shader is refused. (RUSE 2.0-approved programs: kept on the feat/approvals branch, not offered yet, the owner's call
+of 2026-10-08.)
 """
 from __future__ import annotations
 
@@ -295,14 +296,14 @@ def check_flash(data: bytes, base: bytes | None) -> int:
     if mine != theirs:
         names = sorted({FLASH_CODE.get(c, f"tag {c}") for _s, c, _p in
                         [t for t in mine if t not in theirs] + [t for t in theirs if t not in mine]})
-        # not a game rule: the owner's safeguard 5 (a program goes in only as the game's own, or RUSE 2.0-approved)
-        raise CheckError(f"its code isn't the game's ({', '.join(names)} changed): a Flash menu's code can't be "
-                         f"changed until RUSE 2.0 approves it")
+        # not a game rule: the owner's safeguard 5 (no scripts or programs from outside)
+        raise CheckError(f"its code isn't the game's ({', '.join(names)} changed): a Flash menu's pictures, words "
+                         f"and layout can change, its code can't")
     return len(tags)
 
 
 # --- shaders (the game's shader file: compiled Direct3D 9 shaders, shader model 3) ---
-SM3_OPCODES = set(range(0, 49)) | set(range(64, 97))  # the instructions of vs_3_0 / ps_3_0 (and the 1.x-2.x ones)
+SM3_INSTRUCTIONS = set(range(0, 49)) | set(range(64, 97))  # those of vs_3_0 / ps_3_0 (and the 1.x-2.x ones)
 SHADER_CLASSES = ["TShaderCompiledCache", "TShaderCompiledCacheEntry", "TStreamedShaderParameterInfos",
                   "TShaderParameterInfo"]
 
@@ -327,7 +328,7 @@ def check_shader_code(code: bytes) -> str:
             return ("ps" if version >> 16 == 0xFFFF else "vs") + "_3_0"
         if op == 0xFFFE:
             i += 1 + (w >> 16)
-        elif op in SM3_OPCODES and not w & 0x80000000:
+        elif op in SM3_INSTRUCTIONS and not w & 0x80000000:
             i += 1 + ((w >> 24) & 0x0F)
         else:
             raise CheckError(f"a shader has an instruction no shader has ({w:#010x})")
@@ -370,14 +371,14 @@ def shader_programs(data: bytes) -> list[bytes]:
     return out
 
 
-def check_shaders(data: bytes, base: bytes | None, approved=frozenset()) -> int:
+def check_shaders(data: bytes, base: bytes | None) -> int:
     """Check the game's shader file: every shader in it reads as one (check_shader_code), and each is the game's own
-    (`base`'s) or one RUSE 2.0 approved (`approved`: SHA-256s, none until the approvals exist). Returns how many."""
-    import hashlib
+    (`base`'s). Returns how many. (Not offered in mods yet: gamefiles.NOT_YET.)"""
     mine = shader_programs(data)
     theirs = set(shader_programs(base)) if base is not None else set()
-    changed = [c for c in mine if c not in theirs and hashlib.sha256(c).hexdigest() not in approved]
+    changed = [c for c in mine if c not in theirs]
     if changed:
-        raise CheckError(f"{len(changed)} shader{'s' if len(changed) != 1 else ''} in it changed: a shader can't be "
-                         f"changed until RUSE 2.0 approves it")
+        # not a game rule: the owner's safeguard 5 (no scripts or programs from outside)
+        raise CheckError(f"{len(changed)} shader{'s' if len(changed) != 1 else ''} in it changed: a mod can't change "
+                         f"shaders")
     return len(mine)

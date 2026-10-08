@@ -100,9 +100,9 @@ class Videos(unittest.TestCase):
             with self.subTest(why=why), self.assertRaisesRegex(CheckError, why):
                 filechecks.check_video(data)
 
-    def test_not_taken_yet(self):
-        # checked, but waiting for the safe way to hand the game a mod's video (the owner's call)
-        with self.assertRaisesRegex(gamefiles.GameFileError, "isn't set up yet"):
+    def test_not_offered_yet(self):
+        # checked, but not offered in mods yet (the owner, 2026-10-08: what needs approval isn't included yet)
+        with self.assertRaisesRegex(gamefiles.GameFileError, "changing or adding a video isn't offered yet"):
             gamefiles.check_kind("ww2/videos/new.webm", webm())
 
 
@@ -179,20 +179,18 @@ def shader_file(*codes: bytes) -> bytes:
 
 
 class Shaders(unittest.TestCase):
-    def test_the_game_s_shaders_pass_changed_ones_wait_for_approval(self):
+    def test_the_game_s_shaders_pass_changed_ones_are_refused(self):
         game = shader_file(PS, VS)
         self.assertEqual(filechecks.check_shader_code(PS), "ps_3_0")
         self.assertEqual(filechecks.check_shader_code(VS), "vs_3_0")
         self.assertEqual(filechecks.check_shaders(game, game), 2)
         self.assertEqual(filechecks.check_shaders(shader_file(VS, PS), game), 2)  # the same shaders, moved
         changed = PS.replace(struct.pack("<I", 0x80E40000), struct.pack("<I", 0x80E40001))
-        with self.assertRaisesRegex(CheckError, "1 shader in it changed: .* until RUSE 2.0 approves it"):
+        with self.assertRaisesRegex(CheckError, "1 shader in it changed: a mod can't change shaders"):
             filechecks.check_shaders(shader_file(changed, VS), game)
-        import hashlib
-        self.assertEqual(filechecks.check_shaders(shader_file(changed, VS), game,
-                                                  approved={hashlib.sha256(changed).hexdigest()}), 2)
-        with self.assertRaisesRegex(gamefiles.GameFileError, "approves it"):
-            gamefiles.check_kind("genhlsl/x/shadercachev02.shc", shader_file(changed, VS), game)
+        # and the shader file isn't offered in mods yet (the owner, 2026-10-08)
+        with self.assertRaisesRegex(gamefiles.GameFileError, "changing the shaders isn't offered yet"):
+            gamefiles.check_kind("genhlsl/x/shadercachev02.shc", game, game)
 
     def test_bad_shaders_are_refused(self):
         cases = {"another kind": struct.pack("<2I", 0xFFFF0200, 0x0000FFFF),
