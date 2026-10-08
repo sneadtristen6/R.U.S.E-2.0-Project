@@ -46,7 +46,11 @@ uninstaller in Windows' "Installed apps". Uninstalling keeps your mods and setti
 1. `icons.py` draws the app's icon (standard library only; no image files in the repo).
 2. **Nuitka** compiles the app (`launcher.py` / `studio.py` start it) into a folder with `RUSE Launcher.exe` and
    everything it needs, Python included. It's a folder, not one file: that starts faster and antivirus programs
-   trust it more.
+   trust it more. The Studio also gets the game's own Python 2.5.1 (`python251()`), which saves a changed mission
+   script: only the interpreter and the few library files that needs, from python.org's `python-2.5.1.msi` unpacked
+   (`msiexec /a python-2.5.1.msi /qn TARGETDIR=<folder>`; on your PC set `RUSE_PYTHON251` to that folder, or put
+   the files in `src/ruse_mod_engine/python251`). The GitHub build fetches the installer and uses it only when its
+   SHA-256 is python.org's file's. Without it the Studio's build stops.
 3. The built program checks itself: `"RUSE Launcher.exe" --self-test report.txt` (its screens and data files, its
    back end, and the window library with its .NET and WebView2 parts), without opening a window.
 4. **Inno Setup** wraps the folder into the installer (`installer.iss`, one script for both apps).

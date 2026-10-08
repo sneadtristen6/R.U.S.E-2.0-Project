@@ -177,6 +177,37 @@ class BuildCommands(unittest.TestCase):
                 self.assertIn(f"--include-package={package}", studio)
                 self.assertNotIn(f"--include-package={package}", launcher)
 
+    def test_the_studio_carries_the_game_s_python(self):
+        """The game's own Python 2.5.1 beside the Studio's engine code (the owner, 2026-10-08: "Yes, Python and
+        installers"): its interpreter, licence, the few library files a compile needs, and the engine's compile
+        worker; a build without it stops; the Launcher doesn't carry it. The automatic build gets python.org's
+        installer only when its checksum is the one python.org's file has."""
+        self.assertTrue(build_app.APPS["studio"].get("python251"))
+        self.assertFalse(build_app.APPS["launcher"].get("python251"))
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp, "py251")
+            (source / "Lib" / "encodings").mkdir(parents=True)
+            for name in build_app.PY251_FILES:
+                (source / name).write_bytes(name.encode())
+            for name in build_app.PY251_LIB + ("this", "Tkinter"):
+                (source / "Lib" / f"{name}.py").write_text(f"# {name}\n", encoding="utf-8")
+            (source / "Lib" / "encodings" / "__init__.py").write_text("#", encoding="utf-8")
+            (source / "Lib" / "encodings" / "utf_8.pyc").write_bytes(b"pyc")
+            app = Path(tmp, "app")
+            target = build_app.python251(app, source)
+            self.assertEqual(target, app / "ruse_mod_engine" / "python251")
+            got = sorted(p.relative_to(target).as_posix() for p in target.rglob("*") if p.is_file())
+            self.assertEqual(got, sorted(list(build_app.PY251_FILES) + ["compile_worker.py", "Lib/encodings/__init__.py"]
+                                         + [f"Lib/{n}.py" for n in build_app.PY251_LIB]))  # not "this", no .pyc
+            self.assertEqual((target / "compile_worker.py").read_bytes(),
+                             (ROOT / "src" / "ruse_mod_engine" / "python251" / "compile_worker.py").read_bytes())
+            (source / "python25.dll").unlink()
+            with self.assertRaisesRegex(SystemExit, "python25.dll"):
+                build_app.python251(Path(tmp, "app2"), source)
+        workflow = (ROOT / ".github" / "workflows" / "apps.yml").read_text(encoding="utf-8")
+        self.assertIn("02CDB49AAE617B87EBE17F7C56D7644A132EA1EA6F190474D5FC5E99947713C5", workflow)
+        self.assertIn("RUSE_PYTHON251=", workflow)
+
     def test_the_licence_files_go_beside_the_program(self):
         with tempfile.TemporaryDirectory() as tmp:
             build_app.licence_files(Path(tmp))

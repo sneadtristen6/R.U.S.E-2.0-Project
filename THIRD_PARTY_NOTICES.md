@@ -19,6 +19,19 @@ his RUSE Mod Manager pins (click at the newest), and their complete source is at
 
 The GPL's text is in [LICENSE](LICENSE). The other licences' texts, as each library ships them:
 
+## In the Studio, for saving the game's mission scripts: Python 2.5.1
+
+The Studio saves a changed mission script in the form the game runs with the game's own version of Python, 2.5.1,
+from python.org's Windows installer (`python-2.5.1.msi`, https://www.python.org/ftp/python/2.5.1/). It is in the
+install's `ruse_mod_engine/python251` folder with its own licence beside it (`LICENSE.txt`: the PSF License
+Agreement for Python 2.5.1, "Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007 Python Software Foundation; All
+Rights Reserved", and the earlier licences it includes).
+
+What is carried, unchanged: `python.exe`, `python25.dll`, and from its library only what saving a script needs
+(`os`, `ntpath`, `stat`, `UserDict`, `copy_reg`, `types`, `warnings`, `linecache`, `codecs` and the `encodings`
+package); the rest of Python 2.5.1 is left out. Beside them is `msvcr71.dll`, the Microsoft Visual C++ 7.1 runtime
+that Python 2.5.1 was built with and that its installer puts beside it (Copyright Microsoft Corporation).
+
 ### spark_parser (MIT)
 
 ```

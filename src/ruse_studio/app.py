@@ -34,6 +34,19 @@ def _scripts() -> str:
     return f"a script of ours ({len(mapscripts.sample())} bytes) shown"
 
 
+def _script_saves() -> str:
+    """A changed mission script can be saved: the game's own Python 2.5.1 is beside the engine's code
+    (installers/build_app.py python251) and makes a script of ours that reads back as written."""
+    from rusemod import mapscripts
+    why = mapscripts.compiler_missing()
+    if why:
+        raise RuntimeError(why)
+    made = mapscripts.compile_text("GOAL = u'\\xe9t\\xe9'\n", mapscripts.sample())
+    if mapscripts.text(made) != "GOAL = u'\\xe9t\\xe9'\n":
+        raise RuntimeError(f"the script made reads back as {mapscripts.text(made)!r}")
+    return f"a script of ours made ({len(made)} bytes) and read back"
+
+
 def _beside_the_code() -> str:
     """The files the app hands to others as files: the scripts Blender runs (Open in Blender, Make in Blender) and
     the blank maps' pictures (rusemod.presets): Studio 0.9.7's install had no Blender script beside its code."""
@@ -70,6 +83,7 @@ def main(argv=None) -> int:
             ("the map sums on whole grids (a big map is painted by them)", _grids),
             ("Blender's scripts and the blank maps' pictures beside the code", _beside_the_code),
             ("the game's scripts shown as Python (the AI tab)", _scripts),
+            ("a changed mission script saved with the game's own Python", _script_saves),
         ])
     log.mark("api")
     log.go()

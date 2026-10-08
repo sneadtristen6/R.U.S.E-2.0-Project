@@ -4,7 +4,8 @@ installers/README.md). Runs on Windows: GitHub Actions does it on every push to 
   py -3 installers/build_app.py launcher|studio [--test-install]
 
 Steps: draw the icon; compile the app into a folder under build/<app>/ ("RUSE Launcher.exe" and everything it
-needs, Python included); run that program's self-test; make dist/RUSE-Launcher-Setup-<version>.exe. With
+needs, Python included; the Studio also the game's own Python 2.5.1: python251()); run that program's self-test;
+make dist/RUSE-Launcher-Setup-<version>.exe. With
 --test-install it also installs the result into a scratch folder, runs the installed app's self-test and uninstalls.
 """
 from __future__ import annotations
@@ -25,8 +26,43 @@ APPS = {
                "id": "89731BD4-5E55-415F-970E-F6CBBB8CFD51",
                # the two libraries LittleGroove's engine shows the game's scripts with (the AI tab, rusemod.mapscripts):
                # they load parts of themselves by name, which Nuitka can't follow from the code
-               "include": ("uncompyle6", "xdis")},
+               "include": ("uncompyle6", "xdis"),
+               # the game's own Python, which saves a changed mission script in the game's form (rusemod.mapscripts)
+               "python251": True},
 }  # the ids never change: they let a new installer replace the old version
+
+# The game's own Python 2.5.1 (the owner, 2026-10-08: "Yes, Python and installers"): only what a mission script's
+# compile needs, beside the engine's code where it looks (ruse_mod_engine/python251/python.exe). From python.org's
+# python-2.5.1.msi (MD5 a1d1a9c07bc4c78bd8fa05dd3efec87f, 10,970,624 bytes, as python.org lists it), unpacked
+# (msiexec /a): the folder RUSE_PYTHON251 names, else the engine's own slot on a modder's PC. Every one of the game's
+# 82 scripts compiles to the same bytes with these files as with the whole interpreter (checked 2026-10-08), 4 MB
+# instead of 19. Its licence (the PSF's, LICENSE.txt) goes with it.
+PY251_FILES = ("python.exe", "python25.dll", "msvcr71.dll", "LICENSE.txt")
+PY251_LIB = ("os", "ntpath", "stat", "UserDict", "copy_reg", "types", "warnings", "linecache", "codecs")  # (Lib/<it>.py,
+# what python.exe -E -S -v loads for the compile, a coding line included) and the whole encodings package
+PY251_SLOT = ROOT / "src" / "ruse_mod_engine" / "python251"
+
+
+def python251(app_dir: Path, source: Path | None = None) -> Path:
+    """Put the game's Python 2.5.1 beside the built app's engine code (ruse_mod_engine/python251): its interpreter,
+    the few library files a compile needs, its licence, and the engine's compile worker (a .py Nuitka would compile
+    in). SystemExit when the interpreter isn't found: a Studio without it can't save a mission script."""
+    source = Path(source or os.environ.get("RUSE_PYTHON251") or PY251_SLOT)
+    missing = [n for n in PY251_FILES if not (source / n).is_file()]
+    missing += [f"Lib/{n}.py" for n in PY251_LIB if not (source / "Lib" / f"{n}.py").is_file()]
+    if missing or not (source / "Lib" / "encodings" / "__init__.py").is_file():
+        raise SystemExit(f"the game's Python 2.5.1 isn't in {source} ({', '.join(missing) or 'Lib/encodings'}): unpack "
+                         f"python.org's python-2.5.1.msi there (msiexec /a), or set RUSE_PYTHON251 to that folder")
+    target = app_dir / "ruse_mod_engine" / "python251"
+    (target / "Lib").mkdir(parents=True, exist_ok=True)
+    for name in PY251_FILES:
+        shutil.copy2(source / name, target / name)
+    for name in PY251_LIB:
+        shutil.copy2(source / "Lib" / f"{name}.py", target / "Lib" / f"{name}.py")
+    shutil.copytree(source / "Lib" / "encodings", target / "Lib" / "encodings", dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns("*.pyc", "*.pyo"))
+    shutil.copy2(PY251_SLOT / "compile_worker.py", target / "compile_worker.py")
+    return target
 # Beside the built program: the apps' licence (GPL-3.0) and the libraries they carry, with theirs
 LICENCE_FILES = ("LICENSE", "THIRD_PARTY_NOTICES.md")
 
@@ -134,6 +170,8 @@ def main(argv=None) -> int:
     program = next(build.rglob(exe_name(app)))
     blender_scripts(program.parent)
     licence_files(program.parent)
+    if APPS[app].get("python251"):
+        python251(program.parent)
     self_test(program, "built app")
     run(installer_command(app, program.parent, icon, dist))
     setup = dist / f"{APPS[app]['name'].replace(' ', '-')}-Setup-{version(app)}.exe"

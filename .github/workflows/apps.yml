@@ -33,6 +33,23 @@ jobs:
         run: |
           python -m pip install -r installers/requirements.txt
           choco install innosetup --no-progress -y
+      # The Studio carries the game's own Python 2.5.1 (installers/build_app.py python251): python.org's installer,
+      # used only when it's the very file python.org gave out (its SHA-256 below; python.org lists its MD5,
+      # a1d1a9c07bc4c78bd8fa05dd3efec87f, and its size, 10,970,624 bytes), unpacked, never installed
+      - name: Get the game's Python 2.5.1 (the Studio saves mission scripts with it)
+        if: matrix.app == 'studio'
+        shell: pwsh
+        run: |
+          $msi = Join-Path $env:RUNNER_TEMP "python-2.5.1.msi"
+          Invoke-WebRequest "https://www.python.org/ftp/python/2.5.1/python-2.5.1.msi" -OutFile $msi
+          $hash = (Get-FileHash $msi -Algorithm SHA256).Hash
+          if ($hash -ne "02CDB49AAE617B87EBE17F7C56D7644A132EA1EA6F190474D5FC5E99947713C5") {
+            throw "python-2.5.1.msi isn't the file python.org gave out (its SHA-256 is $hash)"
+          }
+          $dir = Join-Path $env:RUNNER_TEMP "python251"
+          $p = Start-Process msiexec.exe -Wait -PassThru -ArgumentList "/a `"$msi`" /qn TARGETDIR=`"$dir`""
+          if ($p.ExitCode -ne 0) { throw "python-2.5.1.msi didn't unpack (msiexec exit code $($p.ExitCode))" }
+          "RUSE_PYTHON251=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
       - name: Keep Nuitka's compile cache between builds
         uses: actions/cache@v4
         with:
