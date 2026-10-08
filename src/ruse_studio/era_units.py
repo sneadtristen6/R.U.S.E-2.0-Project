@@ -83,12 +83,18 @@ def slug(era: str) -> str:
     return era.replace(" ", "_")
 
 
+def folders(era: str) -> tuple[str, ...]:
+    """An era's own folders in the library: its name, or as the library writes it (Cold_War)."""
+    return (era, slug(era))
+
+
 def safe_member(name) -> bool:
     """A path a section may hold: <era>/<nation>/<file> or pictures/<file>, a model or a picture, nothing outside."""
     if not isinstance(name, str):
         return False
     parts = name.split("/")
-    return ((len(parts) == 3 and parts[0] in ERAS) or (len(parts) == 2 and parts[0] == "pictures")) and all(
+    return ((len(parts) == 3 and any(parts[0] in folders(e) for e in ERAS))
+            or (len(parts) == 2 and parts[0] == "pictures")) and all(
         p and p not in (".", "..") and p == p.strip() and not any(c in p for c in ':\\*?"<>|') for p in parts) and (
         Path(name).suffix.lower() in KINDS)
 
@@ -221,7 +227,7 @@ def install_section(root: Path, section: dict, zips: list[Path]) -> None:
             for info in zf.infolist():
                 if info.is_dir():
                     continue
-                if not safe_member(info.filename) or info.filename.split("/")[0] not in (era, "pictures"):
+                if not safe_member(info.filename) or info.filename.split("/")[0] not in (*folders(era), "pictures"):
                     shutil.rmtree(stage, ignore_errors=True)
                     raise EraDownloadError(f"{z.name} holds {info.filename!r}, which an era's file never does, so "
                                            f"nothing was installed.")
@@ -239,7 +245,8 @@ def install_section(root: Path, section: dict, zips: list[Path]) -> None:
     for u in (read_section(root, era) or {}).get("units", []):
         if u.get("picture") and u["picture"] not in others and safe_member(u["picture"]):
             (root / u["picture"]).unlink(missing_ok=True)   # the era's old pictures (one another era shows stays)
-    shutil.rmtree(root / era, ignore_errors=True)
+    for folder in folders(era):
+        shutil.rmtree(root / folder, ignore_errors=True)
     for name in sorted(names):
         (root / name).parent.mkdir(parents=True, exist_ok=True)
         os.replace(stage / name, root / name)

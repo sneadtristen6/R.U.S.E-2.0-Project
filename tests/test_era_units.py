@@ -182,6 +182,13 @@ class EraDownload(WithMod):
         self.assertFalse((self.root / "pictures/a.jpg").exists())
         self.assertFalse((self.root / "WWI/USA/Liberty.glb").exists())
 
+    def test_an_era_in_the_librarys_folder_name(self):
+        u = dict(entry("Cold War", "USA", "Patton", "Medium Tank", M4), model="Cold_War/USA/Patton.glb")
+        self.publish({"Cold_War/USA/Patton.glb": b"glb"}, [u], era="Cold War", name="era-units-Cold_War-1.zip")
+        self.assertEqual(self.run_job("Cold War")["state"], "done")
+        self.assertEqual([x["name"] for x in self.api.era_units_list("Cold War")["units"]], ["Patton"])
+        self.assertTrue(self.api.era_unit_page("Cold War|USA|Patton")["has_model"])
+
     def test_a_file_outside_the_era_installs_nothing(self):
         for bad in ("../evil.glb", "WWII/USA/x.glb", "WWI/USA/run.exe", "WWI/a/b/c.glb"):
             self.publish({"WWI/USA/Liberty.glb": b"glb", bad: b"x"}, [self.unit("Liberty", None)])
@@ -213,6 +220,7 @@ class EraDownload(WithMod):
         with self.assertRaises(era_units.EraDownloadError):
             era_units.parse_list(b'{"format": 2, "sections": []}')
         self.assertTrue(era_units.safe_member("Cold War/USA/M1 Abrams.glb"))
+        self.assertTrue(era_units.safe_member("Cold_War/China/An_12_Chinese.glb"))   # as the library names it
         for name in ("pictures/../x.jpg", "WWI\\USA\\x.glb", "pictures/a/b.jpg", "WWI/USA/x.py", "/WWI/USA/x.glb"):
             self.assertFalse(era_units.safe_member(name), name)
 
