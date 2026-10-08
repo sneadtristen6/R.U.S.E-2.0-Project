@@ -210,9 +210,9 @@ def _map_readers() -> dict:
         "roads.toml": (("road", "take_out"), "a roads file holds [[road]] tables and take_out = [\"roads\", \"bridges\"]",
                        lambda d, rel: parse_roads(d.get("road", []), rel) + parse_take_out(d.get("take_out"), rel),
                        RoadNetError),
-        "map.toml": (("players", "entry", "copy_of", "name", "picture", "wide_picture", "start_dots"),
+        "map.toml": (("players", "entry", "copy_of", "name", "picture", "wide_picture", "start_dots", "ground"),
                      "a map file holds players = N (and entry = the map-list name), picture, wide_picture and "
-                     "start_dots, and for a new map copy_of and name",
+                     "start_dots, and for a new map copy_of, name and ground",
                      _map_toml, (PlayersError, NewMapError, PictureError)),
     }
 
@@ -1670,6 +1670,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         # new maps first (rusemod.newmap): the mods' other map files then edit them like any map
         new_paths: dict = {}  # new map's pack name, lower case -> its pack's path, as the copy will have it
         sources: dict = {}    # new map's pack name, lower case -> the shipped map's folder (its water constants)
+        generated: set = set()  # new maps (lower case) whose ground is drawn as our own (map.toml ground; groundgen)
         data_base, data_new = None, {}  # DataMap_Win.dat as opened for the new maps, and the members they add
         try:
             making = new_maps(result.order, mods)
@@ -1728,6 +1729,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 new_packs[path] = NewPack(open_pack(source), clone.pack_id, source.name)
                 new_paths[name.lower()] = path
                 sources[name.lower()] = clone.map_folder
+                if spec.ground == "generated":
+                    generated.add(name.lower())
                 result.new_maps[name] = clone
                 say(f"new map: {name}, from {mod_id}")
                 for note in clone.notes:
@@ -1780,13 +1783,25 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                             ids=ids) -> dict | None:
                 """The map's new ground: its files, the lines said about it, the new water's blocks and the drained
                 beds' circles, the filled hollows, warnings. None after an error (said in the findings)."""
-                try:
-                    changed_members, notes = edit_map(read, strokes, name, max_depth_of=depth)
-                except (ValueError, struct.error, zlib.error) as exc:
-                    result.findings.append(Finding("error", f"{map_path.name}: its ground files can't be read ({exc})"))
-                    return None
+                drawn, why = name.lower() in generated, None
+                if drawn:  # a new map whose ground is drawn as our own (map.toml ground = "generated")
+                    from .groundgen import GroundGenError, generate
+                    try:
+                        changed_members, notes = generate(read, strokes, name, depth())
+                    except (GroundGenError, struct.error, zlib.error) as exc:
+                        drawn, why = False, str(exc)
+                if not drawn:
+                    try:
+                        changed_members, notes = edit_map(read, strokes, name, max_depth_of=depth)
+                    except (ValueError, struct.error, zlib.error) as exc:
+                        result.findings.append(Finding("error", f"{map_path.name}: its ground files can't be read ({exc})"))
+                        return None
                 made = {"members": changed_members, "lines": [f"  {note}" for note in notes], "zones": [],
-                        "beds": [], "filled": None, "warnings": []}
+                        "beds": [], "filled": None, "warnings": [], "drawn": drawn}
+                if why:
+                    made["warnings"].append(f"{', '.join(ids)}: {name}: ground = \"generated\" asks for its ground drawn "
+                                            f"as our own, but {why}: it was made the usual way, the map's own ground "
+                                            f"moved by the strokes")
                 from .terrain_edit import FILES as GROUND, _area_of
                 before = read(GROUND["highdef"]) if GROUND["highdef"] in changed_members else None
                 if before is None:
@@ -1819,6 +1834,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     mx, my = (sum(p[k] for p in drained) / len(drained) for k in (0, 1))
                     made["lines"].append(f"  {name}: water drained around ({mx:.0f}, {my:.0f}): its bed opened to "
                                          f"units ({len(made['beds'])} circle(s))")
+                if drawn:  # drawn as our own from a map flattened all over: no old riverbed left to mend
+                    return made
                 # a riverbed raised flat still shows its old banks: up close the river's rock stickers and the low
                 # cover laid for it, from high up the banks painted in the picture (TESTS.md T27). Its pictures are
                 # mended from both banks here, its low cover taken off with the scenery below (T28: "purple wins")
@@ -1843,7 +1860,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if cache is not None:
                 try:
                     depth = depth_of()
-                    keep_key = mapkeep.key(name, mapkeep.pack_identity(map_arc, map_path), strokes, depth)
+                    keep_key = mapkeep.key(name + ("|generated" if name.lower() in generated else ""),
+                                           mapkeep.pack_identity(map_arc, map_path), strokes, depth)
                 except Exception:  # noqa: BLE001 - nothing to tell it by: the map is made as before, and not kept
                     keep_key = None
             made = mapkeep.read(cache, keep_key)
