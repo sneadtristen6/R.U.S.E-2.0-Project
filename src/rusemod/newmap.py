@@ -391,8 +391,10 @@ def entry_scenario(m: Ndf, mi: int, read_glad) -> str | None:
     raw = read_glad(_member(base)) if base else None
     if raw is None:
         return None
-    scen_at = re.compile(r"^DataDir:[\\/]Test[\\/]Map[\\/][^\\/]+[\\/](.+\.scenario)$", re.I)
-    found = {scen_at.match(s).group(1).replace("/", BS).lower() for s in Ndf(raw).strings if scen_at.match(s)}
+    scen_at = re.compile(r"^DataDir:[\\/]+Test[\\/]+Map[\\/]+[^\\/]+[\\/]+(.+\.scenario)$", re.I)
+    # (Bir Hakeim's cluster names its file as Alpha//LevelDesign_BH.scenario and Alpha\LevelDesign_BH.scenario: one)
+    found = {re.sub(r"[\\/]+", "/", scen_at.match(s).group(1)).replace("/", BS).lower()
+             for s in Ndf(raw).strings if scen_at.match(s)}
     return found.pop() if len(found) == 1 else None
 
 

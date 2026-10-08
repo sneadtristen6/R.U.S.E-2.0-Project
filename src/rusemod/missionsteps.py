@@ -4,13 +4,14 @@ scenario_chain, edits), so they say what his say:
 
 - **In the menus** (his Menu Entry): whether the game lists the mission at all, which menu, where in it, and the
   values of its menu entry. Changing them goes through the All values tab (the entry is an object of the unit data
-  reached from a named object), which saves them in the mod.
+  reached from a named object), which saves them in the mod. Moving it up or down within its group (his Move up and
+  Move down) is a mod's menus.toml (rusemod.menuorder): menu() shows a mod's order, move() works out the next one.
 - **Files check** (his Load & Files): the chain that takes that menu entry to a playable mission, link by link, each
   fine, missing or not matching, with why (`why`: a code the Studio's words say in every language). Read only.
 - **Texts** (his Text): every text the mission owns, its menu entry's and its mission script's, each a game text key
   the words panel changes in every language at once.
 
-Everything here reads; nothing writes. The packs come from the game folder, or from a built copy over it (`over`:
+Everything here reads; nothing writes (the Studio saves). The packs come from the game folder, or from a built copy over it (`over`:
 the folder the map check builds into), so a mod's own missions are checked as the game would get them.
 """
 from __future__ import annotations
@@ -43,6 +44,7 @@ class PackStore:
         self._stack = ExitStack()
         self._arcs: dict = {}
         self._ndfs: dict = {}
+        self.bound = None  # his registry's bindings, read once (bindings())
 
     def __enter__(self):
         return self
@@ -120,13 +122,20 @@ class Mission:
     tracking: str | None
 
 
+def bindings(store: PackStore) -> dict:
+    """{map folder: its scenarios' bindings} (his scenario_registry.build_bindings), read once per store."""
+    if store.bound is None:
+        from ruse_mod_engine import scenario_registry as SR
+        m_ndf, g_ndf = SR.open_registry(store.view("gameplay"))
+        store.bound = SR.build_bindings(m_ndf, g_ndf, store.view("maps"), gd=store.view("gameplay"),
+                                        ia=store.view("scripts"))
+    return store.bound
+
+
 def missions(store: PackStore, map_dir: str) -> list[Mission]:
     """The map's scenario files and the menu entries that list them (his scenario_registry.build_bindings), the map
     found by its folder's name in any case (the Studio's pack name)."""
-    from ruse_mod_engine import scenario_registry as SR
-    m_ndf, g_ndf = SR.open_registry(store.view("gameplay"))
-    found = SR.build_bindings(m_ndf, g_ndf, store.view("maps"), gd=store.view("gameplay"), ia=store.view("scripts"))
-    bound = next((v for k, v in found.items() if k.lower() == map_dir.lower()), [])
+    bound = next((v for k, v in bindings(store).items() if k.lower() == map_dir.lower()), [])
     return [Mission(b.map_dir, b.scenario_name or "", b.kind, b.info_idx, b.pack_idx, b.tracking_id)
             for b in bound if b.has_file]
 
@@ -181,20 +190,41 @@ def chain(store: PackStore, map_dir: str, file: str, kind: str = "") -> dict:
 
 
 # --- In the menus ---
-def menu(store: PackStore, mission: Mission) -> dict | None:
+MENU_OF = {"operation": "operation", "campaign": "campaign", "mp": "battles"}  # his kinds -> menus.toml's menus
+
+
+def menu(store: PackStore, mission: Mission, orders=()) -> dict | None:
     """Where the game's menus list a mission: {"kind", "listed" (in a menu at all), "order": [{"info", "tracking",
-    "title_key", "this"}] (that menu, in the order the player sees it), "values": {name: value} (SHOWN), "info"
-    (the entry's place in the menus' data file, for the All values tab)}; None when no menu entry lists it."""
+    "title_key", "this", "mission" (as menus.toml names it, None when no scenario file), "pack" (the menu pack whose
+    list it's in), "group" (its CategoryId), "players"}] (that menu, in the order the player sees it), "values":
+    {name: value} (SHOWN), "info" (the entry's place in the menus' data file, for the All values tab)}; None when no
+    menu entry lists it. `orders`: a mod's menuorder.Order list, put in as the build would."""
     if mission.kind not in KINDS or mission.info_idx is None:
         return None
     from ruse_mod_engine import scenario_chain as chain_mod
     from ruse_mod_engine import scenario_registry as SR
+    from . import menuorder
     g = store.get_ndf("gameplay", chain_mod.GLOBALS_PATH)
+    names = {b.info_idx: menuorder.mission(b.map_dir, b.scenario_name + ".scenario")
+             for bs in bindings(store).values() for b in bs
+             if b.kind == mission.kind and b.has_file and b.info_idx is not None}
+    full = SR.full_menu_order(g, mission.kind)
+    packs, ids = dict(full), [i for i, _p in full]
+    menu_name = MENU_OF[mission.kind]
+    by_key = {menuorder.key(menu_name, n): i for i, n in names.items()}
+    for o in orders:
+        if o.menu == menu_name:
+            ids = menuorder.arrange(ids, [by_key[k] for k in (menuorder.key(o.menu, x) for x in o.missions)
+                                          if k in by_key])
     order = []
-    for info_idx, _pack in SR.full_menu_order(g, mission.kind):
+    for info_idx in ids:
         inst = g.instances[info_idx]
+        players = SR._get_prop(g, inst, "NbPlayers")
         order.append({"info": info_idx, "tracking": SR._str_prop(g, inst, "TrackingId"),
-                      "title_key": _key(g, inst, "Description"), "this": info_idx == mission.info_idx})
+                      "title_key": _key(g, inst, "Description"), "this": info_idx == mission.info_idx,
+                      "mission": names.get(info_idx), "pack": packs[info_idx],
+                      "group": SR._group_key(g, info_idx, SR.group_prop_for(mission.kind)),
+                      "players": SR.ndf_val(g, players) if players is not None else None})
     inst = g.instances[mission.info_idx]
     values = {}
     for name in SHOWN[mission.kind]:
@@ -204,6 +234,39 @@ def menu(store: PackStore, mission: Mission) -> dict | None:
     return {"kind": mission.kind, "listed": mission.pack_idx is not None and any(o["this"] for o in order),
             "order": order, "values": values, "info": mission.info_idx,
             "texts": {p: _key(g, inst, p) for p in TEXT_PROPS if _key(g, inst, p)}}
+
+
+def run(order: list[dict]) -> tuple[int, int]:
+    """[start, end) of the mission's group in `order` (menu()'s): the entries side by side with it in its pack's list
+    with its group, the ones it can move among (his scenario_registry.move_within_group)."""
+    at = next(i for i, o in enumerate(order) if o["this"])
+
+    def same(o):
+        return o["pack"] == order[at]["pack"] and o["group"] == order[at]["group"]
+    s, e = at, at + 1
+    while s > 0 and same(order[s - 1]):
+        s -= 1
+    while e < len(order) and same(order[e]):
+        e += 1
+    return s, e
+
+
+def move(order: list[dict], delta: int) -> list[str]:
+    """The missions of its group (run()) in their order once it has moved `delta` places (-1 up, 1 down), as
+    menus.toml names them. ValueError "top" or "bottom" at its group's edge, "unnamed" when one of the group has no
+    scenario file (a mod can't name it)."""
+    at = next(i for i, o in enumerate(order) if o["this"])
+    s, e = run(order)
+    to = at + delta
+    if to < s:
+        raise ValueError("top")
+    if to >= e:
+        raise ValueError("bottom")
+    names = [o["mission"] for o in order[s:e]]
+    if None in names:
+        raise ValueError("unnamed")
+    names[at - s], names[to - s] = names[to - s], names[at - s]
+    return names
 
 
 def _key(g, inst, prop: str) -> str | None:

@@ -3417,7 +3417,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def mission_steps(self, pack: str, file: str, lang: str = schema.BASE) -> dict:
         """One of a map's scenarios (`file`, as map_scenarios names it) as LittleGroove's mission editor shows it, read
         from the game's own files: {"kind": operation / campaign / mp / unbound, "menu": where the game's menus list
-        it (or None): {"listed", "order": [{"title", "tracking", "this"}], "values": [{"prop", "label", "value"}],
+        it (or None): {"listed", "order": [{"title", "tracking", "this", "pack", "group", "players"}] (in the current
+        mod's order, menus.toml), "up"/"down": None when it can move that way in its group, else why not ("top",
+        "bottom", "unnamed"), "mine": the mod changes its group's order, "values": [{"prop", "label", "value"}],
         "address" (its menu entry, for the All values tab), "texts": [{"prop", "label", "key", "words"}]}, "chain":
         {"links": [{"kind", "why", "state", "depth", "detail"}], "broken"}, "texts": [{"key", "where", "prop", "line",
         "words", "mine"}] (the words in `lang`; `mine`: the current mod changes them), "script": whether the mission
@@ -3431,12 +3433,25 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if self._new_maps().get(str(pack).lower()):
             return {"new": True}
         text_lang = "us" if lang == schema.BASE else lang
+        orders = self._menu_orders()
         with missionsteps.PackStore(game) as store:
             m = missionsteps.find(store, str(pack), str(file))
             if m is None:
                 # not a game rule: the page asked for a scenario this map doesn't have
                 raise StudioError(f"{pack} has no scenario {file}.")
-            menu = missionsteps.menu(store, m)
+            menu = missionsteps.menu(store, m, orders)
+            moves = {}
+            if menu is not None:
+                game_menu = missionsteps.menu(store, m)
+                for d, name in ((-1, "up"), (1, "down")):
+                    try:
+                        missionsteps.move(menu["order"], d)
+                        moves[name] = None
+                    except ValueError as exc:
+                        moves[name] = str(exc)
+                s, e = missionsteps.run(menu["order"])
+                moves["mine"] = [o["info"] for o in menu["order"][s:e]] != \
+                    [o["info"] for o in game_menu["order"] if o["info"] in {x["info"] for x in menu["order"][s:e]}]
             chain = missionsteps.chain(store, m.map_dir, m.file, m.kind)
             raw = missionsteps.script_of(store, m.map_dir, m.file)
             source, script = "", None
@@ -3470,13 +3485,79 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if menu is not None:
             out_menu = {"listed": menu["listed"], "address": address,
                         "order": [{"title": said(o["title_key"]) if o["title_key"] else None,
-                                   "tracking": o["tracking"], "this": o["this"]} for o in menu["order"]],
+                                   "tracking": o["tracking"], "this": o["this"], "pack": o["pack"],
+                                   "group": o["group"], "players": o["players"]} for o in menu["order"]],
+                        "up": moves["up"], "down": moves["down"], "mine": moves["mine"],
                         "values": [{"prop": p, "label": schema.label(p, lang), "value": v}
                                    for p, v in menu["values"].items()],
                         "texts": [{"prop": p, "label": schema.label(p, lang), "key": k, "words": said(k)}
                                   for p, k in menu["texts"].items()]}
         return {"kind": m.kind, "menu": out_menu, "chain": chain, "script": script,
                 "texts": [dict(t, words=said(t["key"]), mine=t["key"] in mine) for t in texts]}
+
+    def _menu_orders(self) -> list:
+        """The current mod's menus.toml orders (rusemod.menuorder), [] without a mod or file."""
+        from rusemod import menuorder
+        folder = self._mod_dir()
+        if folder is None:
+            return []
+        try:
+            return menuorder.read_mod(folder)
+        except menuorder.MenuOrderError as exc:
+            raise StudioError(f"Your mod's {exc}") from None
+
+    def _save_menu_order(self, pack: str, file: str, delta: int) -> None:
+        """Move a mission `delta` places in its group (0: back to the game's order for its group), in the current
+        mod's menus.toml: its group's order replaces any the mod had for those missions, and none is kept when it's
+        the game's."""
+        from rusemod import menuorder, missionsteps
+        folder, game = self._mod_dir(), self._game()
+        if folder is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        if game is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("We couldn't find R.U.S.E., so there are no missions to show.")
+        orders = self._menu_orders()
+        with missionsteps.PackStore(game) as store:
+            m = missionsteps.find(store, str(pack), str(file))
+            menu = missionsteps.menu(store, m, orders) if m is not None else None
+            if menu is None or not menu["listed"]:
+                # not a game rule: the page asked for a mission no menu lists
+                raise StudioError(f"{file} isn't in a menu, so it has no place to move.")
+            game_menu = missionsteps.menu(store, m)
+        name = missionsteps.MENU_OF[m.kind]
+        s, e = missionsteps.run(menu["order"])
+        group = [o["mission"] for o in menu["order"][s:e] if o["mission"]]
+        if delta:
+            try:
+                group = missionsteps.move(menu["order"], delta)
+            except ValueError as exc:
+                why = {"top": "it's already first in its group", "bottom": "it's already last in its group"}
+                # not a game rule: a mission moves among the missions grouped with it (his move_within_group)
+                raise StudioError(f"It can't move: {why.get(str(exc), 'the mission next to it has no scenario file')}.")
+        keys = {menuorder.key(name, x) for x in group}
+        kept = [o for o in orders if not (o.menu == name and keys & {menuorder.key(o.menu, x) for x in o.missions})]
+        game_group = [o["mission"] for o in game_menu["order"]
+                      if o["mission"] and menuorder.key(name, o["mission"]) in keys]
+        if delta and group != game_group:
+            kept.append(menuorder.Order(name, group))
+        target = Path(folder) / menuorder.FILE
+        with self._saving:
+            if kept:
+                target.write_text(menuorder.text(kept), encoding="utf-8")
+            elif target.is_file():
+                target.unlink()
+
+    def mission_move(self, pack: str, file: str, delta: int, lang: str = schema.BASE) -> dict:
+        """LittleGroove's Move up (-1) / Move down (1): the mission one place along in its group of the menu, saved in
+        the current mod's menus.toml (rusemod.menuorder, MOD_FORMAT §8). Returns mission_steps' answer."""
+        self._save_menu_order(pack, file, -1 if int(delta) < 0 else 1)
+        return self.mission_steps(pack, file, lang)
+
+    def mission_order_reset(self, pack: str, file: str, lang: str = schema.BASE) -> dict:
+        """Game's order: the current mod's order for the mission's group taken out of its menus.toml."""
+        self._save_menu_order(pack, file, 0)
+        return self.mission_steps(pack, file, lang)
 
     # --- the Bridges dock: the map's own bridge kinds, and bridges placed by hand (rusemod.bridges) ---
     def map_bridges(self, pack: str) -> dict:

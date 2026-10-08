@@ -5186,7 +5186,7 @@ function wireMenuPictures() {
 
 // --- a mission's three steps (StudioApi.mission_steps, rusemod.missionsteps: LittleGroove's Menu Entry, Load & Files
 // and Text): where the game's menus list it, the files the game needs to start it, link by link, and its texts ---
-const mission = { data: null, tab: "menu", pack: null, file: null };
+const mission = { data: null, tab: "menu", pack: null, file: null, note: null };
 const MISSION_TABS = ["menu", "files", "texts"];
 const MISSION_KINDS = { operation: "operation", campaign: "campaign", mp: "skirmish" };  // his kinds -> scen_kind_*
 const MISSION_MARKS = { ok: "✓", missing: "✗", mismatch: "✗", optional: "–", unknown: "?" };
@@ -5194,7 +5194,7 @@ const MISSION_MARKS = { ok: "✓", missing: "✗", mismatch: "✗", optional: "�
 async function openMission() {
   const w = mv.words, s = ((scen.data || {}).scenarios || [])[scen.pick];
   if (!s || !mv.current) return;
-  Object.assign(mission, { pack: mv.current, file: s.file, data: null });
+  Object.assign(mission, { pack: mv.current, file: s.file, data: null, note: null });
   $("mission-title").textContent = fill(w.mission_title, { name: scenarioLabel(s) });
   $("mission-close").textContent = w.close;
   $("mission-close").title = w.tip_close;
@@ -5243,12 +5243,16 @@ function missionMenu(d) {
     title: m.address ? w.tip_mission_values_change : w.mission_values_cannot,
     disabled: !m.address || typeof window.openAllValues !== "function" });
   change.addEventListener("click", () => { $("mission-box").close(); window.openAllValues(m.address); });
+  const note = mission.note;
+  mission.note = null;
   return [
     el("p", { className: m.listed ? "small" : "notice warn", textContent: m.listed
       ? fill(w.mission_listed, { menu, n: at + 1, total: m.order.length }) : w.mission_not_listed }),
     el("h3", { className: "dup-how-title", textContent: w.mission_order_head, title: w.tip_mission_order }),
-    el("ol", { className: "mission-order small" }, ...m.order.map((o) => el("li", { className: o.this ? "this" : "",
-      textContent: o.title || o.tracking || "?" }))),
+    missionOrder(d),
+    ...(m.listed ? [missionMoves(m)] : []),
+    ...(m.mine ? [el("p", { className: "muted small", textContent: w.mission_order_mine })] : []),
+    ...(note ? [el("p", { className: note.bad ? "notice warn" : "notice", textContent: note.text })] : []),
     el("h3", { className: "dup-how-title", textContent: w.mission_values_head, title: w.tip_mission_values }),
     values,
     el("div", { className: "actions" }, change),
@@ -5256,6 +5260,53 @@ function missionMenu(d) {
     ...m.texts.map((t) => missionTextRow(w["mission_t_" + t.prop] || t.label, t.key, t.words,
       (d.texts.find((x) => x.key === t.key) || {}).mine)),
   ];
+}
+
+// The menu as the player sees it, in its groups (missions the menu shows together: a pack's list, one CategoryId):
+// a mission moves only within its own (LittleGroove's Move up / Move down)
+function missionOrder(d) {
+  const w = mv.words, order = d.menu.order, box = el("div", { className: "mission-order small" });
+  for (let s = 0; s < order.length;) {
+    let e = s + 1;
+    while (e < order.length && order[e].pack === order[s].pack && order[e].group === order[s].group) e++;
+    const members = order.slice(s, e), counts = members.map((o) => o.players).filter((n) => n != null);
+    const label = d.kind === "mp" && counts.length
+      ? fill(w.mission_group_players, { n: Math.min(...counts) === Math.max(...counts) ? counts[0]
+        : `${Math.min(...counts)}–${Math.max(...counts)}` })
+      : fill(w.mission_group, { n: members[0].group ?? 0 });
+    const list = el("ol", { start: s + 1 }, ...members.map((o) => el("li", { className: o.this ? "this" : "",
+      textContent: o.title || o.tracking || "?" })));
+    box.append(el("div", { className: "mission-group", title: w.tip_mission_group, textContent: label }), list);
+    s = e;
+  }
+  return box;
+}
+
+// Move up, Move down and Game's order, saved in the mod's menus.toml (each locked with its reason when it can't)
+function missionMoves(m) {
+  const w = mv.words, can = !!mv.brush.mod;
+  const button = (text, why, tip, call) => {
+    const b = el("button", { type: "button", className: "small", textContent: text, disabled: !can || !!why,
+      title: !can ? w.no_mod : why ? w[why] : tip });
+    b.addEventListener("click", async () => {
+      b.disabled = true;
+      try {
+        mission.data = await call();
+        mission.note = { text: w.mission_moved };
+      } catch (err) {
+        mission.note = { text: String(err.message || err), bad: true };
+      }
+      renderMission();
+    });
+    return b;
+  };
+  return el("div", { className: "actions" },
+    button(w.mission_move_up, m.up && "tip_mission_move_" + m.up, w.tip_mission_move_up,
+      () => mv.api.mission_move(mission.pack, mission.file, -1, mv.lang)),
+    button(w.mission_move_down, m.down && "tip_mission_move_" + m.down, w.tip_mission_move_down,
+      () => mv.api.mission_move(mission.pack, mission.file, 1, mv.lang)),
+    button(w.mission_order_reset, !m.mine && "tip_mission_order_reset_none", w.tip_mission_order_reset,
+      () => mv.api.mission_order_reset(mission.pack, mission.file, mv.lang)));
 }
 
 // Files check: the chain from the menu entry to the mission, each link fine, missing or not matching, and why

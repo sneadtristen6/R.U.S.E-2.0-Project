@@ -29,6 +29,7 @@ ruse2-core/
     game/<pack>/<path>.rdelta  a game file changed whole, as a delta (the Studio's Files tab; see §7)
     game/<pack>/mods/<mod id>/<path>  a file added to a game pack (§7)
   maps/<MapId>/            map sources (see §8)
+  menus.toml               where missions show in their menus (see §8)
   scripts/<map>/<part>/    the game's mission scripts it changes, as the Studio saves them (see §9)
   README.md, LICENSE, CHANGELOG.md
 ```
@@ -430,6 +431,27 @@ start_dots = true              # the build draws the start dots on the 3D map (n
   drew, and a copy of D-Day with pictures made in Blender (**Make in Blender…**, **Bring back**) beside D-Day's own,
   on the Choose map screen: the big picture is the card in the middle, the 3D map the slab under the map's name. A
   shipped map's own pictures replaced (no `copy_of`) are built but not tried in the game yet.
+
+### Where missions show in their menus: `menus.toml` (built: `rusemod.menuorder`; not tried in the game yet)
+
+The OPERATIONS, the CAMPAIGN and BATTLES list their missions from menu packs (the game's own, then each add-on's),
+each pack's list in its order, grouped by `CategoryId` in runs (an entry outside its run splits its group in two).
+A mod gives the order of one run, beside its `mod.toml`:
+
+```toml
+[[order]]
+menu = "operation"                 # operation, campaign or battles
+missions = [                       # each: its map's pack name, a /, its scenario file (any case)
+    "Alpha/LevelDesign_BH.scenario",
+    "TwoIslands/leveldesign_challenge.scenario",
+]
+```
+
+- The build puts those missions in that order in the places they had in their list, after every other change to
+  the menus (new maps' entries, player counts); an entry the order doesn't name keeps its place. Mods' orders apply
+  in load order. A mission the game no longer has is left out with a note; missions of two lists are an error.
+- **The Studio:** the Maps tab's **Menus, files and texts of this mission…**, *In the menus*: **Move up** and **Move
+  down** (within its group, as LittleGroove's Menu Entry step), and **Game's order** to take the mod's order out.
 
 ### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`)
 

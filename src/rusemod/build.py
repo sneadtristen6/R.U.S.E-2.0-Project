@@ -132,6 +132,11 @@ def load_mod(path) -> tuple[ModInfo, list]:
         _take_outs(info)
         info.players = _read_maps(path, "map.toml")
         _new_maps(info)
+        from .menuorder import MenuOrderError, read_mod as menu_order_of
+        try:
+            info.menu_order = menu_order_of(path)  # menus.toml: missions' places in the menus
+        except MenuOrderError as exc:
+            raise BuildError(f"{mod_id}: {exc}") from None
         from .unitlook import mod_cards, mod_textures
         from .unitmodel import mod_models
         info.textures = mod_textures(path)
@@ -1420,6 +1425,38 @@ def _start_dots(result, making: dict, shipped: dict, read_data, ground_bounds, s
             continue
         say(f"menu pictures: {name}: {len(dots(starts))} start dot(s) on its 3D map picture, where its starting "
             f"points are")
+
+
+def _menu_orders(result, mods: list, arc, say) -> None:
+    """Missions put in the mods' order in their menus (menus.toml, rusemod.menuorder): on globals.cpp as the build
+    has it once everything else is in (the new maps' entries, the player counts), in load order."""
+    from .menuorder import apply
+    by_id = {m.id: m for m, _ in mods}
+    orders = [(o, mod_id) for mod_id in result.order if mod_id in by_id
+              for o in getattr(by_id[mod_id], "menu_order", [])]
+    if not orders:
+        return
+
+    def read_glad(member):
+        key = member.lower()
+        mine = next((d for m, d in result.changed.items() if m.lower() == key), None)
+        if mine is not None:
+            return mine
+        e = arc.entry(member)
+        return bytes(arc.read(e)) if e is not None else None
+    try:
+        new, notes, problems = apply(read_glad, orders)
+    except (ValueError, KeyError, struct.error) as exc:
+        result.findings.append(Finding("error", f"menus.toml: the menus couldn't be read ({exc})"))
+        return
+    result.findings += [Finding("error", p) for p in problems]
+    for member, data in new.items():
+        e = arc.entry(member)
+        for old in [m for m in result.changed if m.lower() == member.lower()]:
+            del result.changed[old]
+        result.changed[e.path if e is not None else member] = data
+    for note in notes:
+        say(f"menus: {note}")
 
 
 def scenario_edits(order: list[str], mods: list, what: str = "scenario") -> dict[str, tuple[list, list[str]]]:
@@ -2750,6 +2787,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {where}: {note}")
                 if changed_members or data_new:
                     data_packs.append((data_path, data_arc, changed_members))
+        _menu_orders(result, mods, arc, say)  # last on the menus: after the new maps' entries and the player counts
         by_id = {m.id: m for m, _ops in mods}
         mod_scripts = [(i, by_id[i].scripts) for i in result.order if i in by_id and getattr(by_id[i], "scripts", None)]
         if mod_scripts:  # the game's mission scripts the mods change (rusemod.mapscripts, MOD_FORMAT §9)

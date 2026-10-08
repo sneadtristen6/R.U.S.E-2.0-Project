@@ -26,7 +26,7 @@ from .rndf import RndfError
 EXTENSION = ".rusemod"
 MANIFEST = "mod.toml"
 SIZE_LIMIT = 500_000_000  # bytes unpacked: a mod of data files is a few MB; anything near this isn't one
-TOP_FILES = ("mod.toml", "README.md", "LICENSE", "CHANGELOG.md")  # loose files a package keeps
+TOP_FILES = ("mod.toml", "menus.toml", "README.md", "LICENSE", "CHANGELOG.md")  # loose files a package keeps
 FOLDERS = ("src", "text", "files", "maps", "scripts")             # folders a package keeps (§2; scripts/: §9)
 SKIP = {"__pycache__", ".git", "cache", "build", "dist"}
 _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
