@@ -5959,8 +5959,9 @@ function makePanels() {
       placePanel(key);
       savePanel(key);
     });
-    grip.addEventListener("dblclick", () => {  // back where it started (its fold and size stay)
-      panels[key].state = { folded: panels[key].state.folded, scale: panels[key].state.scale };
+    grip.addEventListener("dblclick", () => {  // back where it started (its fold, size and Show more stay)
+      const { folded, scale, more } = panels[key].state;
+      panels[key].state = { folded, scale, more };
       placePanel(key);
       savePanel(key);
     });
@@ -6015,6 +6016,16 @@ function renderPanelWords() {
     panels[key].grip.title = mv.words.tip_panel_grip || "";
     placePanel(key);
   }
+  renderHudMore();
+}
+
+// The map panel starts short: Show more opens its wordier parts (the counts, what the colours mean, the see-through
+// layers, where the scenario is in the game, the keys), Show less closes them; kept with the panel's place
+function renderHudMore() {
+  const w = mv.words, more = Boolean((panels.hud || { state: {} }).state.more), b = $("map-more");
+  $("map-hud-more").classList.toggle("hidden", !more);
+  b.textContent = more ? w.map_less : w.map_more;
+  b.title = more ? w.tip_map_less : w.tip_map_more;
 }
 
 let wired = false;
@@ -6022,6 +6033,11 @@ function wire() {
   if (wired) return;
   wired = true;
   makePanels();
+  $("map-more").addEventListener("click", () => {
+    panels.hud.state.more = !panels.hud.state.more;
+    savePanel("hud");
+    renderHudMore();
+  });
   $("map-detail").addEventListener("click", () => {
     mv.lod = mv.lod === "lowdef" ? "highdef" : "lowdef";
     renderWords();

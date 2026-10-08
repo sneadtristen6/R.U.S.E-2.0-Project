@@ -116,15 +116,20 @@
       <div id="map-hud" class="map-hud hidden">
         <div id="map-title" class="map-title"></div>
         <div id="map-stats" class="muted small"></div>
-        <!-- a new map from this one (maps.js openDuplicate) -->
-        <button id="map-duplicate" type="button" class="chip map-duplicate"></button>
-        <!-- the same from-scratch start with a map open (maps.js openDuplicate(true)) -->
-        <button id="map-scratch-hud" type="button" class="chip map-duplicate"></button>
-        <!-- the map's own pictures in the game's menus (maps.js openMenuPictures, StudioApi.menu_pictures): any map,
-             with a map project to keep them in -->
-        <button id="map-picture" type="button" class="chip map-duplicate hidden"></button>
-        <!-- the map's background sound (sound.js openAmbience, StudioApi.map_sound): any map, kept in the map project -->
-        <button id="map-sound" type="button" class="chip map-duplicate hidden"></button>
+        <!-- the panel starts short (the owner, 2026-10-08: "start condensed ... open it up if you need"): the map's name,
+             these buttons, the check marks and the scenario; the wordier parts below are in #map-hud-more, opened by
+             Show more (maps.js renderHudMore) -->
+        <div class="map-actions">
+          <!-- a new map from this one (maps.js openDuplicate) -->
+          <button id="map-duplicate" type="button" class="chip map-duplicate"></button>
+          <!-- the same from-scratch start with a map open (maps.js openDuplicate(true)) -->
+          <button id="map-scratch-hud" type="button" class="chip map-duplicate"></button>
+          <!-- the map's own pictures in the game's menus (maps.js openMenuPictures, StudioApi.menu_pictures): any map,
+               with a map project to keep them in -->
+          <button id="map-picture" type="button" class="chip map-duplicate hidden"></button>
+          <!-- the map's background sound (sound.js openAmbience, StudioApi.map_sound): any map, in the map project -->
+          <button id="map-sound" type="button" class="chip map-duplicate hidden"></button>
+        </div>
         <!-- a new map's folder to the Recycle Bin (maps.js deleteMap, StudioApi.delete_map): shown on new maps only -->
         <button id="map-delete" type="button" class="ghost danger map-delete hidden"></button>
         <div id="map-delete-sure" class="map-delete-sure hidden">
@@ -145,25 +150,28 @@
           <label class="small"><input id="scenery-prop" type="checkbox" checked> <span id="scenery-prop-label"></span></label>
           <label class="small"><input id="scenery-vegetation" type="checkbox" checked> <span id="scenery-vegetation-label"></span></label>
         </div>
-        <div id="scenery-stats" class="muted small"></div>
-        <!-- what the colours on the ground mean (maps.js renderLegend), and a see-through slider per layer -->
-        <div id="map-legend" class="map-legend small hidden"></div>
-        <details id="map-layers" class="map-layers small">
-          <summary id="map-layers-label"></summary>
-          <div id="map-layers-rows" class="layer-rows"></div>
-        </details>
         <!-- the map's scenarios (maps.js, StudioApi.map_scenarios): zones, starting points, spawns, names -->
         <div class="map-controls">
           <label class="small"><input id="scen-show" type="checkbox" checked> <span id="scen-show-label"></span></label>
           <select id="scen-pick" class="small scen-pick"></select>
         </div>
-        <div id="scen-stats" class="muted small"></div>
-        <div id="scen-where" class="small scen-where"></div>
         <button id="scen-mission" type="button" class="link small hidden"></button>
         <div id="scenery-hover" class="small"></div>
         <div id="map-ground" class="small"></div>
         <div id="map-help" class="muted small"></div>
-        <div id="map-keys" class="muted small map-keys"></div>
+        <button id="map-more" type="button" class="link small map-more"></button>
+        <div id="map-hud-more" class="map-hud-more hidden">
+          <div id="scenery-stats" class="muted small"></div>
+          <!-- what the colours on the ground mean (maps.js renderLegend), and a see-through slider per layer -->
+          <div id="map-legend" class="map-legend small hidden"></div>
+          <details id="map-layers" class="map-layers small">
+            <summary id="map-layers-label"></summary>
+            <div id="map-layers-rows" class="layer-rows"></div>
+          </details>
+          <div id="scen-stats" class="muted small"></div>
+          <div id="scen-where" class="small scen-where"></div>
+          <div id="map-keys" class="muted small map-keys"></div>
+        </div>
       </div>
       <!-- the tools along the bottom, by kind (maps.js DOCK, DOCK_GROUPS), as Cities: Skylines does it: a bar of kinds
            (those that go together on one tile), and above it the picked kind's tray. Brush strokes are saved in the current mod's maps/<map>/terrain.toml, placed
@@ -460,26 +468,32 @@
        LittleGroove's raw value editor): any object of the unit data, every value it has, each changed in the mod;
        values added and taken out, objects made and deleted -->
   <main id="values-view" class="layout hidden">
+    <!-- the owner, 2026-10-08: "that menu sucks make it look a little better" (it scrolled sideways on long names):
+         the help set off, the search in one card like the AI tab's, the results in rows that wrap their names -->
     <aside class="browser values-browser">
-      <p id="values-intro" class="muted small"></p>
-      <label class="values-field"><span id="values-file-label" class="small"></span>
-        <select id="values-file"></select></label>
-      <label class="values-field"><span id="values-find-label" class="small"></span>
-        <input id="values-find" type="search" autocomplete="off"></label>
-      <details id="values-by" class="values-by">
-        <summary id="values-by-title"></summary>
-        <p id="values-by-help" class="muted small"></p>
-        <label class="values-field"><span id="values-prop-label" class="small"></span>
-          <input id="values-prop" type="search" autocomplete="off"></label>
-        <label class="values-field"><span id="values-value-label" class="small"></span>
-          <input id="values-value" type="search" autocomplete="off"></label>
-      </details>
-      <button id="values-go" type="button" class="primary"></button>
-      <!-- a brand-new object of a kind the unit data has (app.js valuesNewForm, StudioApi.value_object_new) -->
-      <button id="values-new" type="button" class="ghost"></button>
+      <p id="values-intro" class="muted small values-intro"></p>
+      <div class="values-search">
+        <label class="values-field"><span id="values-file-label" class="small"></span>
+          <select id="values-file"></select></label>
+        <label class="values-field"><span id="values-find-label" class="small"></span>
+          <input id="values-find" type="search" autocomplete="off"></label>
+        <details id="values-by" class="values-by">
+          <summary id="values-by-title"></summary>
+          <p id="values-by-help" class="muted small"></p>
+          <label class="values-field"><span id="values-prop-label" class="small"></span>
+            <input id="values-prop" type="search" autocomplete="off"></label>
+          <label class="values-field"><span id="values-value-label" class="small"></span>
+            <input id="values-value" type="search" autocomplete="off"></label>
+        </details>
+        <div class="values-buttons">
+          <button id="values-go" type="button" class="primary"></button>
+          <!-- a brand-new object of a kind the unit data has (app.js valuesNewForm, StudioApi.value_object_new) -->
+          <button id="values-new" type="button" class="ghost"></button>
+        </div>
+      </div>
       <div id="values-new-form" class="values-words-box hidden"></div>
-      <div id="values-count" class="muted small"></div>
-      <ul id="values-list" class="unit-list"></ul>
+      <div id="values-count" class="values-count small"></div>
+      <ul id="values-list" class="unit-list values-list"></ul>
     </aside>
     <section id="values-detail" class="detail" aria-live="polite">
       <p id="values-pick" class="muted"></p>

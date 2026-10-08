@@ -235,6 +235,20 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
                          border-radius: var(--radius); color: inherit; }
 .values-by { display: grid; gap: 6px; padding: 6px 8px; background: var(--panel); border: 1px solid var(--line);
              border-radius: var(--radius); }
+/* its left side like the AI tab's cards: the help set off, the search in one card, the results in rows */
+.values-intro { margin: 0; padding: 6px 10px; border-left: 3px solid var(--accent); background: var(--panel);
+                border-radius: 0 var(--radius) var(--radius) 0; line-height: 1.4; }
+.values-search { display: grid; gap: 8px; padding: 12px; background: var(--panel); border: 1px solid var(--line);
+                 border-radius: var(--radius); }
+.values-search .values-by { background: var(--panel-hi); }
+.values-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.values-buttons button { padding: 7px 8px; }
+.values-count { margin-top: 2px; color: var(--accent); font-weight: 600; letter-spacing: 0.04em; }
+.values-list { overflow-x: hidden; border-top: 1px solid var(--line); }
+.values-list li { border-bottom: 1px solid var(--line); }
+.values-list button { padding: 8px 10px; }
+.values-list .name { font-weight: 500; overflow-wrap: anywhere; }
+.values-list .sub { margin-top: 2px; overflow-wrap: anywhere; line-height: 1.35; }
 .values-by summary { cursor: pointer; font-size: 13px; }
 .values-by p { margin: 4px 0 0; }
 .values-nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
@@ -375,8 +389,8 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
            border-radius: var(--radius); }
 .map-title { font-weight: 600; font-size: 15px; }
 .map-code { color: var(--muted); font-weight: normal; }
-.map-controls { display: flex; align-items: center; gap: 12px; }
-.map-controls label { display: flex; align-items: center; gap: 6px; }
+.map-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.map-controls label { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 /* the map's panels in R.U.S.E.'s blues (the owner, 2026-10-01; before: the game's black HUD with gold): translucent
    navy, a thin steel-blue frame, square corners; steel-blue bands on the buttons, the game's bright blue for what's
    picked, white for a tray's name */
@@ -554,6 +568,13 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 
 /* Duplicate map (maps.js openDuplicate): what a new map is, how it works, then its name */
 .map-duplicate { align-self: flex-start; margin: 4px 0; }
+/* the map panel starts short (maps.js renderHudMore): its buttons in one row, the wordier parts behind Show more, which
+   scroll on their own so the panel never reaches down to the tools */
+.map-actions { display: flex; flex-wrap: wrap; gap: 0 6px; }
+.map-actions .map-duplicate { margin: 2px 0; }
+.map-more { align-self: flex-start; }
+.map-hud-more { display: flex; flex-direction: column; gap: 6px; max-height: 38vh; overflow-y: auto; padding-right: 4px; }
+.map-hud-more.hidden { display: none; }
 .map-delete { align-self: flex-start; margin: 0 0 4px; }
 .map-delete-sure { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 4px; }
 .dup-how-title { margin: 12px 0 4px; font-size: 14px; }
@@ -672,7 +693,7 @@ tr.edited .flag { border-color: var(--accent); }
 .grip:active { cursor: grabbing; }
 .panel-fold { padding: 0 6px; background: none; border: 1px solid transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
 .panel-fold:hover, .grip:hover { color: #fff; }
-.map-hud.folded > :not(.panel-grip):not(.map-title):not(.map-duplicate) { display: none; }
+.map-hud.folded > :not(.panel-grip):not(.map-title):not(.map-actions) { display: none; }
 .map-dock.folded .dock-tray { display: none; }
 .map-dock.moved { transform: none; }
 /* a panel's size handle (maps.js placePanel): drag down smaller, up bigger, double-click normal size */
