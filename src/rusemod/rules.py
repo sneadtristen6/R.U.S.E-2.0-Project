@@ -129,6 +129,15 @@ RULES: dict[str, Rule] = {
         "The game draws nothing placed outside a map's scenery grid.",
         "studied", "up close, the game draws only the grid's cells that hold objects, and none outside it (2026-10-01 "
                    "audit, checked again 2026-10-02); the far tiers rest on the audit alone"),
+    "video-vp9-vorbis": Rule(
+        "The game plays WebM videos with a VP9 picture and Vorbis sound, and no other kind.",
+        "studied", "the game's video player takes WebM only and names only VP9 pictures and Vorbis sound (2026-10-08); "
+                   "all 96 shipped videos are such (the campaign's long films with up to 8 sound tracks); another "
+                   "kind not tried in the game"),
+    "shader-model-3": Rule(
+        "The game's shaders are compiled for shader model 3 (vs_3_0 and ps_3_0).",
+        "generalization", "all 1,806 shaders in the shipped shader file are vs_3_0 or ps_3_0 (2026-10-08); whether the "
+                          "game takes another kind isn't known"),
 }
 
 

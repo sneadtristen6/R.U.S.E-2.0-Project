@@ -7,8 +7,10 @@ and Add File, brought over the safe way the owner asked for, 2026-10-08):
 - A file the mod adds is its own, only inside the mod's own folder in the pack (`files/game/<pack>/mods/<mod id>/...`),
   so it can't stand in for one of the game's files.
 - Every file a build would hand the game is checked first as a file of its kind (CHECKED): a texture opens as a
-  texture, a text table as a text table... A kind that can't be checked, or that holds code (scripts, menus made in
-  Flash, shaders) or has a tool of its own (sounds: the Music tab), isn't taken.
+  texture, a text table as a text table, a font, a Flash menu, the shader file and a video read cleanly to their end
+  (rusemod.filechecks). A Flash menu's code and the shaders stay the game's own until RUSE 2.0's approvals exist;
+  videos wait (WAITING). A kind that can't be checked, or is a script, or has a tool of its own (sounds: the Music
+  tab), isn't taken.
 - A file inside a pack inside the pack is reached through it: files/game/ZZ_Win.dat/gen/pack/x.ppk/gen/a.tgv.rdelta.
 - Two mods changing one file: the one lower in the load order wins, as for every other change, and the build says
   which (the Launcher shows it before Play, with the way to have the other one's).
@@ -23,6 +25,7 @@ import zlib
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
+from . import filechecks
 from .edat import MAGIC as PACK_MAGIC, Edat
 
 MOD_DIR = PurePosixPath("files", "game")
@@ -36,7 +39,11 @@ BLOCK = 64                     # bytes: the size of the runs a delta looks for i
 # the kinds of file that are checked before the game gets them (ending -> what it is, for a sentence)
 CHECKED = {".tgv": "texture", ".tgv_pc": "texture", ".png": "picture", ".dic": "text table",
            ".gladndfbin": "game data", ".ndfbin": "game data", ".truendfbin": "game data", ".scenario": "scenario",
-           ".xml": "XML text"}
+           ".xml": "XML text", ".ttf": "font", ".otf": "font", ".ttc": "font", ".gfx": "Flash menu",
+           ".shc": "shader file", ".webm": "video"}
+# checked, but not taken yet: what each waits for (the owner's calls of 2026-10-08)
+WAITING = {".webm": "a video waits for the safe way to hand the game a mod's video (a video the build makes itself, "
+                    "or RUSE 2.0's approval), which isn't set up yet"}
 ELSEWHERE = {".ess": "a sound: change it in the Studio's Music tab, which keeps what the game reads about it in step",
              ".wav": "a sound: change it in the Studio's Music tab"}
 NESTED = (".ppk", ".apk", ".mpk", ".gpk", ".spk")  # packs inside a pack, reached through (never replaced whole)
@@ -133,19 +140,22 @@ def taken(path: str) -> str:
     ext = PurePosixPath(path.replace("\\", "/")).suffix.lower()
     if ext in ELSEWHERE:
         raise GameFileError(f"{path} is {ELSEWHERE[ext]}")
+    if ext in WAITING:
+        # not a game rule: the owner's safeguards of 2026-10-08 (a video from outside could harm the player's PC)
+        raise GameFileError(f"{path}: {WAITING[ext]}")
     kind = CHECKED.get(ext)
     if kind is None:
         from .build import NOT_IN_MODS
-        why = ("holds code" if ext in NOT_IN_MODS | {".gfx", ".gpk", ".shc", ".lua"}
-               else "can't be checked by the build yet")
+        why = ("holds code" if ext in NOT_IN_MODS | {".gpk", ".lua"} else "can't be checked by the build yet")
         # not a game rule: what the build can check before the game gets it (owner, 2026-10-08: "in a safe way")
         raise GameFileError(f"{path}: a {ext or 'nameless'} file {why}, so a mod can't change or add it")
     return kind
 
 
-def check_kind(path: str, data: bytes) -> str:
+def check_kind(path: str, data: bytes, base: bytes | None = None) -> str:
     """Check `data` is a good file of the kind its name says (CHECKED): GameFileError saying why when it isn't, or when
-    its kind isn't taken. Returns what it is ("texture"...)."""
+    its kind isn't taken. `base` is the game's own file it changes (None for a file a mod adds): a Flash menu's code
+    and the shaders must be its (rusemod.filechecks). Returns what it is ("texture"...)."""
     kind = taken(path)
     if len(data) > FILE_MOST:
         # not a game rule: the hard limit for now (the owner, 2026-10-08)
@@ -170,6 +180,17 @@ def check_kind(path: str, data: bytes) -> str:
         elif kind == "XML text":
             import xml.etree.ElementTree as ET
             ET.fromstring(data)
+        elif kind == "font":
+            filechecks.check_font(data)
+        elif kind == "Flash menu":
+            filechecks.check_flash(data, base)
+        elif kind == "shader file":
+            filechecks.check_shaders(data, base)
+        elif kind == "video":
+            filechecks.check_video(data)
+    except filechecks.CheckError as exc:
+        # not a game rule: the file doesn't read as its kind, or changes code (the owner's safeguards, 2026-10-08)
+        raise GameFileError(f"{path}: {exc}") from None
     except GameFileError:
         raise
     except Exception as exc:  # each reader says what's wrong its own way
@@ -317,13 +338,14 @@ def changes(open_pack, find_pack, mods: list, say=print) -> tuple[dict, list]:
                 if e is not None:
                     # not a game rule: an added file never stands in for one already there
                     raise GameFileError(f"the game already has {inner}")
-                new = g.data
+                new, base = g.data, None
             else:
                 if e is None:
                     # not a game rule: the file the mod changes isn't in the game
                     raise GameFileError(f"the game has no {inner} in {g.pack}")
-                new = apply_delta(bytes(arc.read(e)), g.data)
-            check_kind(inner, new)
+                base = bytes(arc.read(e))
+                new = apply_delta(base, g.data)
+            check_kind(inner, new, base)
             # put it in, then each pack it went through back into the one before
             data, member, added = new, inner, g.added
             for parent, name in zip(reversed(chain[:-1]), reversed(nested)):

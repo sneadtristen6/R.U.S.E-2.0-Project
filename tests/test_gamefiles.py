@@ -73,8 +73,9 @@ class Kinds(unittest.TestCase):
         for path, data, why in (("gen/a.tgv", TEXTURE[:40], "isn't a good texture"),
                                 ("a/b.dic", b"nope", "isn't a good text table"),
                                 ("a/b.xml", b"<a>", "isn't a good XML text"),
-                                ("v/x.webm", b"x", "can't be checked by the build yet"),
-                                ("ui/menu.gfx", b"x", "holds code"), ("genpython/a.xyz", b"x", "holds code"),
+                                ("v/x.webm", b"x", "isn't set up yet"), ("ui/menu.gfx", b"x", "not a Flash menu"),
+                                ("v/x.bik", b"x", "can't be checked by the build yet"),
+                                ("genpython/a.xyz", b"x", "holds code"),
                                 ("gen_sound/a.ess", b"x", "Music tab")):
             with self.subTest(path=path), self.assertRaisesRegex(gamefiles.GameFileError, why):
                 gamefiles.check_kind(path, data)
@@ -131,8 +132,8 @@ class InAMod(unittest.TestCase):
                          [("ZZ_Win.dat", "gen/flag.tgv", False), ("ZZ_Win.dat", "mods/paint/new.tgv", True)])
         for rel, data, why in (("files/game/ZZ_Win.dat/gen/new.tgv", BLUE, "its own folder in the pack"),
                                ("files/game/ZZ_Win.dat/mods/other/new.tgv", BLUE, "its own folder"),
-                               ("files/game/ZZ_Win.dat/mods/bad/x.webm", b"x", "can't be checked"),
-                               ("files/game/ZZ_Win.dat/gen/x.gfx.rdelta", delta, "holds code"),
+                               ("files/game/ZZ_Win.dat/mods/bad/x.bik", b"x", "can't be checked"),
+                               ("files/game/ZZ_Win.dat/gen/x.xyz.rdelta", delta, "holds code"),
                                ("files/game/flag.tgv.rdelta", delta, "files/game/<the game's pack>"),
                                ("files/game/ZZ_Win.dat/gen/flag.tgv.rdelta", b"not a delta", "not a delta")):
             with self.subTest(rel=rel), tempfile.TemporaryDirectory() as tmp:

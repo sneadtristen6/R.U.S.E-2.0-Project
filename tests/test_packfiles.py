@@ -149,7 +149,8 @@ class Files(unittest.TestCase):
         self.assertEqual(listed["files"][-1], {"path": "mods\\painted\\pictures\\my_flag.tgv", "kind": "texture",
                                                "size": mine.stat().st_size, "mine": "added"})
         self.assertEqual(api.files_preview("texts", [], "mods\\painted\\pictures\\my_flag.tgv")["added"], True)
-        for name, why in (("../x.tgv", "Give the new file a name"), ("x.webm", "can't be checked")):
+        for name, why in (("../x.tgv", "Give the new file a name"), ("x.bik", "can't be checked"),
+                          ("x.webm", "isn't set up yet")):
             with self.subTest(name=name), self.assertRaisesRegex(StudioError, why):
                 api.files_add("texts", name, str(mine))
         self.assertEqual(api.files_change("texts", [], "gen\\flag.tgv"), {"cancelled": True})  # (no file picked)

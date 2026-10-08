@@ -4386,9 +4386,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if data is None:
             return {"cancelled": True}
         try:
-            gamefiles.check_kind(str(path), data)
+            gamefiles.taken(str(path))
             with packfiles.Opened(self._files_game(), str(pack), nested) as o:
                 base = o.read(str(path))
+            gamefiles.check_kind(str(path), data, base)  # (a Flash menu's code and the shaders: the game's own)
         except (gamefiles.GameFileError, packfiles.PackFileError) as exc:
             raise StudioError(str(exc)) from None
         target = folder / self._game_file_rel(pack, nested, path)

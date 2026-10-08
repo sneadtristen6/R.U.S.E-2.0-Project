@@ -306,10 +306,13 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
     When the game's file isn't that one any more (a game update), the build stops and says so; the mod has to be
     made again from the new file.
   - Every file is checked as its kind before the game gets it, the changed file as the delta makes it as well as an
-    added one: textures, PNG pictures, text tables, game data, scenarios and XML. A kind not on that list is refused
-    (songs and sounds go through the Music tab, above). A file inside a pack inside the pack is changed the same way:
-    `files/game/<pack>/<the inner pack's path>/<its path in it>.rdelta`.
-  - No scripts or programs: none of the kinds taken can run.
+    added one: textures, PNG pictures, text tables, game data, scenarios, XML, fonts (TrueType and OpenType, one or a
+    collection), the menus made in Flash and the shader file. A kind not on that list is refused (songs and sounds go
+    through the Music tab, above). Videos are checked too (WebM, a VP9 picture, Vorbis sound) but not taken yet: they
+    wait for a safe way to hand the game a video from outside. A file inside a pack inside the pack is changed the
+    same way: `files/game/<pack>/<the inner pack's path>/<its path in it>.rdelta`.
+  - No scripts or programs from outside: a menu's layout, shapes and words can change, its code stays the game's
+    (and a new menu holds none); the shaders stay the game's. (Programs RUSE 2.0 has approved: planned.)
   - A file a mod adds goes in its own folder in the pack, `files/game/<pack>/mods/<mod id>/...`, so it never stands
     in for one of the game's.
   - At most 32 MB a file and 256 MB of game files a mod, for now. (Later, maybe: a higher limit for particular packs,
