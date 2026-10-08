@@ -22,6 +22,7 @@
       <button id="tab-ai" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-values" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-music" type="button" role="tab" aria-selected="false"></button>
+      <button id="tab-files" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-maps" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-settings" type="button" role="tab" aria-selected="false"></button>
     </div>
@@ -478,6 +479,23 @@
     </section>
   </main>
 
+  <!-- the Files tab (files.js, StudioApi.files_*, rusemod.packfiles; LittleGroove's Raw / Asset Editor, Browse /
+       Files): every file of the game's packs and of the packs inside them, shown as what it is and saved out; read
+       only -->
+  <main id="files-view" class="layout hidden">
+    <aside class="browser values-browser">
+      <p id="files-intro" class="muted small"></p>
+      <label class="values-field"><span id="files-pack-label" class="small"></span>
+        <select id="files-pack"></select></label>
+      <div id="files-nested" class="small"></div>
+      <label class="values-field"><span id="files-find-label" class="small"></span>
+        <input id="files-find" type="search" autocomplete="off"></label>
+      <div id="files-count" class="muted small"></div>
+      <ul id="files-list" class="unit-list"></ul>
+    </aside>
+    <section id="files-detail" class="detail" aria-live="polite"></section>
+  </main>
+
   <main id="settings-view" class="settings-view hidden">
     <div class="settings">
       <h1 id="settings-title"></h1>
@@ -683,6 +701,7 @@
   <script src="fake-api.js"></script>
   <script src="app.js"></script>
   <script src="sound.js"></script>
+  <script src="files.js"></script>
   <script type="module" src="maps.js"></script>
 </body>
 </html>

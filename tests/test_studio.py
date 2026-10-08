@@ -1866,8 +1866,11 @@ class Labels(unittest.TestCase):
 
     def test_every_word_the_studio_screen_uses_exists(self):
         ui = Path(__file__).parents[1] / "src" / "ruse_studio" / "ui"
-        app = "\n".join((ui / f).read_text(encoding="utf-8") for f in ("app.js", "maps.js"))
-        used = set(re.findall(r"\b(?:w|state\.words|mv\.words)\.([a-z_]+)", app))
+        app = "\n".join((ui / f).read_text(encoding="utf-8") for f in ("app.js", "maps.js", "files.js"))
+        used = set(re.findall(r"(?:\b(?:w|state\.words|mv\.words)|\bW\(\))\.([a-z_]+)", app))
+        files = (ui / "files.js").read_text(encoding="utf-8")  # the Files tab's packs and kinds, looked up by key
+        used |= set(re.findall(r'"(files_pack_\w+)"', files))
+        used |= {"files_kind_" + k for k in re.findall(r'"(\w+)"', re.search(r"const KINDS = \[(.*?)\];", files).group(1))}
         used |= {"all", "ground", "infantry", "air", "buildings", "not_stable"}  # looked up by key
         from ruse_studio.api import AMMO_GROUP_ORDER, GROUPS
         used |= {"group_" + g for g in GROUPS + AMMO_GROUP_ORDER}  # each type's name too

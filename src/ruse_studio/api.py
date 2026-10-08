@@ -30,10 +30,10 @@ import tomllib
 import unicodedata
 from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
-from rusemod import (ai, doctor, economy, identity, loc, mapscripts, missions, mod_index, package, scenario, scenery,
-                     schema, startlog, values as every_value)
+from rusemod import (ai, doctor, economy, identity, loc, mapscripts, missions, mod_index, package, packfiles, scenario,
+                     scenery, schema, startlog, values as every_value)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -4289,6 +4289,53 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return {"steps": out, "more": more}
 
     OUTLINE_SHOWN = 400  # the most steps the outline lists (a campaign chapter has 1,500)
+
+    # --- the Files tab (rusemod.packfiles; LittleGroove's Raw / Asset Editor, Browse / Files): every file of the game's
+    # packs and of the packs inside them, shown as what it is and saved out; read only ---
+    def _files_game(self) -> Path:
+        game = self._game()
+        if game is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("We couldn't find R.U.S.E., so there are no files to show.")
+        return game
+
+    def files_packs(self) -> dict:
+        """The game's packs: {packs: [{id, file, size, map}]}: the six of its data, then each map's own."""
+        return {"packs": packfiles.packs(self._files_game())}
+
+    def files_list(self, pack: str, nested=None, words: str = "") -> dict:
+        """The files of pack `pack` (or of the pack inside it `nested` names, a list of paths, outermost first) whose
+        path has `words`: {files: [{path, kind, size}], total, matching} (at most packfiles.LISTED_MOST)."""
+        try:
+            return packfiles.listing(self._files_game(), str(pack), list(nested or []), str(words or ""))
+        except packfiles.PackFileError as exc:
+            raise StudioError(str(exc)) from None
+
+    def files_preview(self, pack: str, nested, path: str) -> dict:
+        """One file shown as what it is (packfiles.preview), a picture as a data: URL (`picture`)."""
+        try:
+            out = packfiles.preview(self._files_game(), str(pack), list(nested or []), str(path))
+        except packfiles.PackFileError as exc:
+            raise StudioError(str(exc)) from None
+        if "png" in out:
+            out["picture"] = "data:image/png;base64," + base64.b64encode(out.pop("png")).decode("ascii")
+        return out
+
+    def files_export(self, pack: str, nested, path: str) -> dict:
+        """Save one file out where the modder picks (a "save as" dialog suggesting its name): {saved: the file, or
+        None when the dialog was cancelled}."""
+        name = PurePosixPath(str(path).replace("\\", "/")).name or "file"
+        if self._pick_save is not None:
+            target = self._pick_save(name)
+        else:
+            target = pick_save(self._window, name) if self._window is not None else None
+        if not target:
+            return {"saved": None}
+        try:
+            return {"saved": str(packfiles.save_out(self._files_game(), str(pack), list(nested or []), str(path),
+                                                    Path(target)))}
+        except packfiles.PackFileError as exc:
+            raise StudioError(str(exc)) from None
 
     # --- the All values tab (rusemod.values; LittleGroove's raw value editor brought over): any object of the unit
     # data, every value it has as the game's file has it, each changed in the current mod ---

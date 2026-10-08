@@ -1445,6 +1445,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"tip_scen_remove_place": "Take this name, point or zone back out of your map changes: the game's map is as before.", "tip_scen_remove_mine": "Take what you added back out of your map changes.", "tip_scen_put_back": "Put it back where the game has it (your move is undone)."});
   Object.assign(words.us, {"notes_title": "Notes", "notes_hint": "Your own notes about this: what you changed and why, ideas to try…", "tip_notes": "Only you see these: they're kept in your mod's folder (notes.json), never in the game or in a mod you export. Saved when you click elsewhere.", "notes_saved": "Note saved."});
   Object.assign(words.us, {"values_text_new": "New text…", "tip_values_text_new": "Give this value words of its own: a new text of your mod's, so no other unit or menu that shares the game's text changes with it.", "values_text_new_help": "The words, in English; every language gets them until you change one with Change the words…", "values_text_new_hint": "e.g. Sherman Firefly", "values_text_new_make": "Make the new text", "values_text_new_done": "A new text of your mod's: the value now shows it."});
+  Object.assign(words.us, {"files_tab": "Files", "tip_tab_files": "Look at any file inside the game's packs (pictures, texts, scripts, data) and save a copy out. Nothing is changed here.", "files_intro": "Every file inside the game's packs, as the game has it. Pick a pack, then a file to see it. Read only: your mod changes the game through the other tabs.", "files_pack_label": "Pack", "tip_files_pack": "One of the game's packs (big files that hold many smaller ones): its data, its texts and pictures, its scripts, or one map's own.", "files_pack_gameplay": "Gameplay (units, economy, menus)", "files_pack_gameplay_fixed": "Gameplay, not patchable", "files_pack_scripts": "Mission scripts and the computer players", "files_pack_maps": "Maps (scenarios and placements)", "files_pack_texts": "Texts, pictures and sounds", "files_pack_common": "Common (videos, fonts)", "files_pack_map": "Map · {file}", "files_find_label": "Look for", "files_find_hint": "part of a name, e.g. .tgv or baseunite", "tip_files_find": "Shows only the files whose path has these letters (upper or lower case doesn't matter).", "files_loading": "Reading…", "files_count": "{n} of its {total} files", "files_more": "(the first {n} shown: look for part of a name to find the rest)", "files_pick": "Pick a file on the left to see it.", "tip_files_row": "Click to see this file.", "files_kind_ndf": "Game data", "files_kind_texture": "Texture", "files_kind_image": "Picture", "files_kind_picture": "Picture", "files_kind_table": "Text table", "files_kind_script": "Mission script", "files_kind_text": "Text", "files_kind_scenario": "Scenario", "files_kind_pack": "Pack inside the pack", "files_kind_binary": "Other file", "files_kind_bytes": "Other file", "files_save": "Save a copy…", "tip_files_save": "Save this file, as the game has it, wherever you choose (to open it in another program). The game isn't touched.", "files_saved": "Saved: {path}", "files_open_pack": "Open this pack", "tip_files_open_pack": "This file is itself a pack with files inside: list them, as for the game's packs.", "files_inside": "{n} files inside.", "files_in_pack": "Inside: {path}", "files_back_out": "Back out", "tip_files_back_out": "Back to the pack this one is inside.", "files_not_read": "Not shown as its kind ({why}): its first bytes instead.", "files_ndf_objects": "Objects", "files_ndf_classes": "Kinds of object", "files_ndf_props": "Value names", "files_ndf_packed": "Packed", "files_ndf_top": "Its most used kinds of object", "files_picture_size": "{w} × {h} shown; {fw} × {fh} in the game · {format}", "files_table_count": "{n} texts ({shown} shown here; save a copy to see them all).", "files_scenario_zones": "Zones (sectors)", "files_bytes_more": "…and {n} more bytes (save a copy to see them all).", "files_read_only": "Read only: nothing here changes the game or your mod."});
   // the All values tab (StudioApi.values_files / values_find / value_object...): a few objects of the unit data, each
   // row as rusemod.values.row makes it: [prop, label, kind, type, value, text, to, extra]
   const EV = "$/GFX/Everything/";
@@ -1512,6 +1513,15 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   const valueGameWords = (key) => ({ N_UNI_137: "SHERMAN", AP_shell: "AP shell", PortIsland: "Port Island" })[key] || null;
   const newWords = new Map();  // a new label's own text key -> { lang: words } (StudioApi._new_label_text)
   const fakeNotes = new Map();  // mod -> { key: note } (StudioApi.note_set)
+  const FAKE_FILES = {  // the Files tab's made-up packs (never the game's files)
+    gameplay: [{ path: "genglad\\patchable\\gfx\\everything.cpp.gladndfbin", kind: "ndf", size: 597431 },
+      { path: "genglad\\patchable\\readme.txt", kind: "text", size: 120 }],
+    texts: [{ path: "gen\\ww2\\res2d\\interface\\flags\\flag_us.tgv", kind: "texture", size: 3720 },
+      { path: "genlocalisation\\ww2\\localisation\\us\\baseunite.dic", kind: "table", size: 44676 },
+      { path: "gen\\pack\\menuus.ppk", kind: "pack", size: 26229 }],
+    "map:DataMapIsland_v09.dat": [{ path: "output\\highdef.tms", kind: "binary", size: 2048 }],
+    inner: [{ path: "gen\\ww2\\res2d\\texanimationuniticone\\eu\\soldat_us_leger.tgv", kind: "texture", size: 3716 }],
+  };
   const valuePage = (address, lang) => {
     const o = VALUE_OBJECTS[address];
     if (!o) throw new Error(`There's nothing at ${address} in this game build.`);
@@ -2009,6 +2019,27 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       value_links: async (address, prop, words) => ({ class: null, objects: Object.entries(VALUE_OBJECTS)
         .filter(([a, o]) => !o.owner && a.toLowerCase().includes((words || "").toLowerCase()))
         .map(([a, o]) => ({ address: a, class: o.class, name: o.name })) }),
+      // the Files tab (StudioApi.files_packs / files_list / files_preview / files_export): made-up packs and files
+      files_packs: async () => ({ packs: [{ id: "gameplay", file: "ZZ_GladPatchableWin.dat", size: 24000000, map: false },
+        { id: "texts", file: "ZZ_Win.dat", size: 2100000000, map: false },
+        { id: "map:DataMapIsland_v09.dat", file: "DataMapIsland_v09.dat", size: 46000000, map: true }] }),
+      files_list: async (pack, nested, words) => {
+        const all = nested && nested.length ? FAKE_FILES.inner : FAKE_FILES[pack] || [];
+        const found = all.filter((f) => f.path.toLowerCase().includes(String(words || "").toLowerCase()));
+        return { files: found, total: all.length, matching: found.length };
+      },
+      files_preview: async (pack, nested, path) => {
+        const f = [...Object.values(FAKE_FILES)].flat().find((x) => x.path === path) || { kind: "binary", size: 64 };
+        const base = { path, size: f.size };
+        if (f.kind === "ndf") return { ...base, kind: "ndf", objects: 63686, classes: 386, props: 3338, packed: true,
+          top: [["TConstantInteger", 8520], ["TIntrinsicCall_2Param", 5350], ["TConstantFloat", 4577]] };
+        if (f.kind === "texture") return { ...base, kind: "picture", width: 2, height: 2, full: [512, 512], format: "DXT1",
+          picture: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP4z8DwnoGB4T8D0wQGBgAs4AT/6hx7RQAAAABJRU5ErkJggg==" };
+        if (f.kind === "table") return { ...base, kind: "table", count: 2, rows: [["N_UNI_137", "SHERMAN"], ["N_UNI_138", "PANZER IV"]] };
+        if (f.kind === "pack") return { ...base, kind: "pack", files: FAKE_FILES.inner.length };
+        return { ...base, kind: "bytes", lines: ["00000000  65 64 61 74 01 00 00 00                          edat...."], more: 0 };
+      },
+      files_export: async (pack, nested, path) => ({ saved: "C:\\Users\\You\\Desktop\\" + path.split("\\").pop() }),
       // private notes (StudioApi.note / note_set), per mod
       note: async (key) => ({ key, text: (fakeNotes.get(current) || {})[key] || "", can: Boolean(current) }),
       note_set: async (key, text) => {

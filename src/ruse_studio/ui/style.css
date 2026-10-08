@@ -196,6 +196,12 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .ai-script-state.error { color: var(--error); }
 .ai-script-state.warn { color: var(--accent); }
 .ai-script-work { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 10px; }
+/* the Files tab (files.js): a file shown as a picture, or as text or bytes; long paths wrap in the list */
+#files-list .meta { overflow-wrap: anywhere; }
+.files-picture { display: block; max-width: 100%; max-height: 62vh; margin: 6px 0; image-rendering: pixelated;
+                 background: repeating-conic-gradient(#555 0 25%, #333 0 50%) 0 0 / 16px 16px; border: 1px solid var(--line); }
+.files-text { max-height: 62vh; overflow: auto; padding: 8px 10px; background: var(--panel-hi); border: 1px solid var(--line);
+              border-radius: 6px; font: 12px/1.45 Consolas, monospace; white-space: pre; }
 /* a private Notes box (app.js notesBox) */
 .notes-area { width: 100%; max-width: 620px; min-height: 60px; padding: 6px 8px; background: var(--panel-hi);
               border: 1px solid var(--line); border-radius: 6px; color: inherit; font: inherit; resize: vertical; }

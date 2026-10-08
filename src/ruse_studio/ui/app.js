@@ -84,6 +84,7 @@ async function setLanguage(lang) {
   $("tab-ai").textContent = w.ai_tab;
   $("tab-values").textContent = w.values_tab;
   $("tab-music").textContent = w.music_tab;
+  $("tab-files").textContent = w.files_tab;
   $("tab-maps").textContent = w.maps_tab;
   $("tab-settings").textContent = w.settings_tab;
   if (state.view === "maps" && window.MapView) window.MapView.setWords(w, lang);
@@ -91,6 +92,7 @@ async function setLanguage(lang) {
   if (state.view === "ai") renderAI();
   if (state.view === "values") renderValues();
   if (state.view === "music") window.SoundView.setWords(w, lang);
+  if (state.view === "files") window.FilesView.setWords(w);
   $("lang-name").textContent = lang === "base" ? w.game_names
     : (state.languages.find((l) => l.code === lang) || {}).name || "";
   renderLangPick();
@@ -111,7 +113,7 @@ async function setLanguage(lang) {
   $("test-log-close").textContent = w.close;
   $("test-log-copy").textContent = w.doc_copy;
   // tooltips: one sentence on every control, from words.toml (tip_*)
-  const tips = { "tab-units": "tip_tab_units", "tab-economy": "tip_tab_economy", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values", "tab-music": "tip_tab_music", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
+  const tips = { "tab-units": "tip_tab_units", "tab-economy": "tip_tab_economy", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values", "tab-music": "tip_tab_music", "tab-files": "tip_tab_files", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close", "test-log-copy": "tip_copy_log",
     "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
@@ -1844,6 +1846,7 @@ function showView(view) {
   $("ai-view").classList.toggle("hidden", view !== "ai");
   $("values-view").classList.toggle("hidden", view !== "values");
   $("music-view").classList.toggle("hidden", view !== "music");
+  $("files-view").classList.toggle("hidden", view !== "files");
   $("maps-view").classList.toggle("hidden", view !== "maps");
   $("settings-view").classList.toggle("hidden", view !== "settings");
   $("tab-units").setAttribute("aria-selected", String(view === "units"));
@@ -1851,6 +1854,7 @@ function showView(view) {
   $("tab-ai").setAttribute("aria-selected", String(view === "ai"));
   $("tab-values").setAttribute("aria-selected", String(view === "values"));
   $("tab-music").setAttribute("aria-selected", String(view === "music"));
+  $("tab-files").setAttribute("aria-selected", String(view === "files"));
   $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
   $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
   $("pick-mod").classList.toggle("hidden", view === "maps");  // Units, Economy, AI, All values and Music edit a mod, Maps a map
@@ -1864,6 +1868,7 @@ function showView(view) {
   if (view === "ai") { renderAI(); return; }
   if (view === "values") { renderValues(); return; }
   if (view === "music") { window.SoundView.open(state.words, state.lang); return; }
+  if (view === "files") { window.FilesView.open(state.words); return; }  // (reads the packs, not the game index)
   if (view === "settings") { renderSettings(); loadBackup(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
@@ -3215,6 +3220,7 @@ async function start() {
   $("tab-values").addEventListener("click", () => showView("values"));
   valuesEvents();
   $("tab-music").addEventListener("click", () => showView("music"));
+  $("tab-files").addEventListener("click", () => showView("files"));
   $("ai-script").addEventListener("change", (e) => { if (e.target.value) showAIScript(e.target.value); });
   $("ai-script-copy").addEventListener("click", copyAIScript);
   scriptEvents();
