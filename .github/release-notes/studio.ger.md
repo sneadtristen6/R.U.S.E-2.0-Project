@@ -1,7 +1,7 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
-**0.9.8.1:** Leeres Gelände bekommt eigenen Boden, und Leerer Ozean ist entfernt.
+**0.9.8.1:** Leeres Gelände bekommt eigenen Boden, und Leerer Ozean bekommt einen Warnhinweis.
 
 - **Aus einer Nation eine andere machen.** Der neue Reiter **Nationen** gibt einer der sieben Nationen des Spiels
   einen neuen Namen (in der Lobby und für ihre Armee) und eine neue Flagge aus einem beliebigen Bild: zum Beispiel
@@ -10,7 +10,8 @@ sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird n
 - **Der Boden von Leerem Gelände wird eigens gezeichnet.** Eine leer begonnene neue Karte bekommt ihren Boden aus
   Ihren Geländestrichen statt des verschobenen Bodens der Spielkarte: runde Küsten aus der Nähe und von oben, keine
   Dellen mehr auf Hügelkuppen, und Gebäude und Panzer stehen genau darauf. Im Spiel auf Testkarten gesehen.
-- **Leerer Ozean ist** aus dem Studio **entfernt**.
+- **Leerer Ozean bleibt, mit einem Warnhinweis** auf seiner Schaltfläche: Getrennte Inseln sind noch nicht
+  bereit für große Schlachten (unten).
 
 **Warum es noch keine Marinekarten gibt.** Wir haben Inselkarten für große Schlachten mit Schiffen ausprobiert, und
 das Spiel selbst steht im Weg:

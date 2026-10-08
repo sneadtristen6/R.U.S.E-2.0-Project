@@ -1,7 +1,7 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
-**0.9.8.1:** Terrain vierge a désormais son propre sol, et Océan vierge est retiré.
+**0.9.8.1:** Terrain vierge a désormais son propre sol, et Océan vierge reçoit un avertissement.
 
 - **Faire d'une nation une autre.** Le nouvel onglet **Nations** donne à l'une des sept nations du jeu un nouveau
   nom (dans le salon, et pour son armée) et un nouveau drapeau à partir de n'importe quelle image : la Chine à la
@@ -11,7 +11,8 @@ modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n
   vos traits de terrain, et non plus le sol de la carte du jeu déplacé : des rivages arrondis de près comme de haut,
   plus de creux au sommet des collines, et les bâtiments et les chars posés exactement dessus. Vu en jeu sur des
   cartes de test.
-- **Océan vierge est retiré** du Studio.
+- **Océan vierge reste, avec un avertissement** sur son bouton : des îles séparées ne sont pas prêtes pour de
+  vraies batailles (ci-dessous).
 
 **Pourquoi il n'y a pas encore de cartes navales.** Nous avons essayé des cartes d'îles pour de vraies batailles avec
 des navires, et c'est le jeu lui-même qui bloque :

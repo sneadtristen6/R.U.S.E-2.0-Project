@@ -1,7 +1,7 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
-**0.9.8.1:** Blank Terrain gets ground of its own, and Blank Ocean is taken out.
+**0.9.8.1:** Blank Terrain gets ground of its own, and Blank Ocean gets a warning.
 
 - **Make a nation into another.** The new **Nations** tab gives one of the game's seven nations a new name (in the
   lobby, and for its army) and a new flag from any picture: China in Italy's place, say. Its units and what they say
@@ -10,7 +10,8 @@ your own, and test it in the game. Your Steam install is never changed.
 - **Blank Terrain's ground is drawn as its own.** A new map started blank gets its ground made from your terrain
   strokes, not the game map's ground pushed about: round shores up close and from high up, no dents in hilltops, and
   buildings and tanks sitting right on it. Seen in the game on test maps.
-- **Blank Ocean is taken out** of the Studio.
+- **Blank Ocean stays, with a warning** on its button: separate islands aren't ready for full-scale battles
+  (below).
 
 **Why there are no navy maps yet.** We tried maps of islands for full-scale battles with ships, and the game itself
 stands in the way:

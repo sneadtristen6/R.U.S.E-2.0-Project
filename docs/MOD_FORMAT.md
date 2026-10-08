@@ -407,8 +407,9 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
   height); the edge now moves with the ground and the curtain hanging from it follows (built, not yet seen in the
   game).
 - **Start blank:** **New map: start from scratch…** (Maps tab, before a map is open, and on the open map's panel) or
-  Duplicate map's *Start from* Blank Terrain (a Battles map's copy; `rusemod.presets`; Blank Ocean, offered in
-  0.9.8, was taken out in 0.9.8.1: on a map of islands, full-scale battles break). The window
+  Duplicate map's *Start from* Blank Terrain or Blank Ocean (a Battles map's copy; `rusemod.presets`; Blank Ocean's
+  button warns that separate islands aren't ready for full-scale battles: a land unit ordered onto an island it can't
+  reach crashes the game). The window
   says why a new map sits on a game map (the game can't load one made from nothing) and asks which one it's *Built
   on*: that map gives it its size, its player count and its starting points, nothing else. It
   writes the copy's files from the shipped map's own: the whole map flat (land, or the sea over it), everything on it

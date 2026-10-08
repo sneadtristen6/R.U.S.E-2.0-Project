@@ -1,7 +1,7 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
-**0.9.8.1:** Terreno vuoto ha un terreno tutto suo, e Oceano vuoto è stato tolto.
+**0.9.8.1:** Terreno vuoto ha un terreno tutto suo, e Oceano vuoto ha un avviso.
 
 - **Fare di una nazione un'altra.** La nuova scheda **Nazioni** dà a una delle sette nazioni del gioco un nuovo nome
   (nella lobby e per il suo esercito) e una nuova bandiera da qualsiasi immagine: per esempio la Cina al posto
@@ -10,7 +10,8 @@ modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non v
 - **Il terreno di Terreno vuoto è disegnato apposta.** Una nuova mappa partita da zero ha il terreno fatto dai tuoi
   tratti, non più il terreno della mappa del gioco spostato: coste rotonde da vicino e dall'alto, niente più
   ammaccature in cima alle colline, ed edifici e carri poggiano esattamente sopra. Visto in gioco su mappe di prova.
-- **Oceano vuoto è stato tolto** dallo Studio.
+- **Oceano vuoto resta, con un avviso** sul suo pulsante: isole separate non sono pronte per vere battaglie
+  (sotto).
 
 **Perché non ci sono ancora mappe navali.** Abbiamo provato mappe di isole per vere battaglie con le navi, ed è il
 gioco stesso a impedirlo:

@@ -589,6 +589,7 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
             border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); cursor: pointer; }
 .dup-kind .kind-name { font-weight: 600; }
 .dup-kind .kind-what { font-size: 12px; line-height: 1.4; color: var(--muted); }
+.dup-kind .kind-warn { font-size: 12px; line-height: 1.4; color: #ffcf5c; font-weight: 600; }  /* a start's warning (Blank Ocean's) */
 .dup-kind[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .dup-kind:disabled { opacity: 0.45; cursor: default; }
 .dup-base { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 0; }

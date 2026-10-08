@@ -1,7 +1,7 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
-**0.9.8.1:** Terreno en blanco tiene suelo propio, y Océano en blanco se ha quitado.
+**0.9.8.1:** Terreno en blanco tiene suelo propio, y Océano en blanco lleva un aviso.
 
 - **Convertir una nación en otra.** La nueva pestaña **Naciones** da a una de las siete naciones del juego un nombre
   nuevo (en la sala y para su ejército) y una bandera nueva a partir de cualquier imagen: por ejemplo, China en
@@ -11,7 +11,8 @@ idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de
   partir de tus trazos de terreno, no el suelo del mapa del juego desplazado: costas redondeadas de cerca y desde lo
   alto, sin abolladuras en las cimas, y edificios y tanques asentados justo encima. Visto en el juego en mapas de
   prueba.
-- **Océano en blanco se ha quitado** del Studio.
+- **Océano en blanco se queda, con un aviso** en su botón: las islas separadas no están listas para batallas
+  a gran escala (abajo).
 
 **Por qué aún no hay mapas navales.** Probamos mapas de islas para batallas a gran escala con barcos, y el propio
 juego lo impide:

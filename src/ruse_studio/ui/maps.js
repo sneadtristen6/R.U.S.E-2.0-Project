@@ -5398,8 +5398,9 @@ const DUP_KINDS = ["battles", "operation", "campaign"];
 // What a new map starts from: a full copy, or blank (StudioApi.duplicate_map's preset; rusemod.presets). The owner,
 // 2026-10-05: "a preset, like want to start a Navy map ... D-Day, but ocean" and "a flat basic terrain version";
 // "Blank Terrain, Blank Ocean". Blank ones start from a Battles map only (a mission's script needs its own items).
-// Blank Ocean taken out 2026-10-08 (the owner: "remove blank ocean": a map of islands breaks full-scale battles).
-const DUP_STARTS = ["copy", "blank_terrain"];
+// Blank Ocean taken out, then back the same day with a warning of its own (the owner, 2026-10-08: "blank oceans stay
+// in with a warning label"): a map of separate islands crashes the game when a land unit is sent across.
+const DUP_STARTS = ["copy", "blank_terrain", "blank_ocean"];
 // scratch: opened from "New map: start from scratch…" before any map is open (2026-10-06, the owner: a blank map had
 // to be found under Duplicate map, "it needs to explicitly say that"); base: the game map it then sits on
 const dup = { entries: [], kind: null, typed: false, start: "copy", scratch: false, base: null };
@@ -5458,7 +5459,8 @@ function renderDupStarts() {
   $("dup-starts").replaceChildren(...starts.map((k) => {
     const b = el("button", { type: "button", className: "dup-kind", disabled: k !== "copy" && !battles },
       el("span", { className: "kind-name", textContent: w[`dup_start_${k}`] }),
-      el("span", { className: "kind-what", textContent: fill(w[`dup_start_${k}_what`], { map }) }));
+      el("span", { className: "kind-what", textContent: fill(w[`dup_start_${k}_what`], { map }) }),
+      ...(w[`dup_start_${k}_warn`] ? [el("span", { className: "kind-warn", textContent: "⚠ " + w[`dup_start_${k}_warn`] })] : []));
     b.setAttribute("role", "radio");
     b.setAttribute("aria-checked", String(dup.start === k));
     b.addEventListener("click", () => { dup.start = k; renderDupStarts(); dupSuggestName(); });
@@ -5509,7 +5511,7 @@ function fillDupEntries() {
   dupSuggestName();
 }
 
-function dupSuggestName() {  // "<what the copied entry is called> 2" (or "... Blank Terrain"), until a name is typed
+function dupSuggestName() {  // "<what the copied entry is called> 2" (or "... Blank Ocean"), until a name is typed
   if (dup.typed) return;
   const e = dup.entries.find((x) => x.name === $("dup-entry").value);
   const tail = dup.start === "copy" ? "2" : mv.words[`dup_start_${dup.start}`];
