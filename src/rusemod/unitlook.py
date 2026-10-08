@@ -10,7 +10,11 @@ keeps the game's own, byte for byte. Seen in the game.
 A unit's card, its picture in the build menu (`TextureForInterface`), is replaced the same way, everywhere the build
 menu shows it (seen in the game). A new unit (a clone) starts with its source's card; its own card is
 `files/cards/<the unit's name>.png`: the build gives the clone a card of its own beside its source's and adds it
-wherever the build menu shows the source's."""
+wherever the build menu shows the source's.
+
+A plain picture (one level of A8R8G8B8, ZIPO: a nation's flag badge) is replaced the same way, whole: its colour from
+the PNG, its alpha (the badge's shape) the game's unless a grey `.alpha.png` is there too. Not tried in the game yet
+(the Studio's Nations tab writes a nation's new flag this way)."""
 from __future__ import annotations
 
 import hashlib
@@ -213,16 +217,49 @@ def make_standin(original: bytes, colour: bytes | None, alpha: bytes | None, w: 
 
 
 def is_picture(original: bytes) -> bool:
-    """Whether a texture is a one-level ZIPO picture (a unit's card), which make_picture writes."""
+    """Whether a texture is a one-level ZIPO picture (a unit's card, a flag badge), which make_picture writes."""
     g = Tgv(original)
     return len(g.mips) == 1 and g.codec == "ZIPO"
 
 
-def make_picture(original: bytes, colour: bytes, w: int, h: int) -> tuple[bytes, dict]:
+def is_plain(original: bytes) -> bool:
+    """Whether a picture's pixels are stored as they are (A8R8G8B8, blue green red alpha: a nation's flag badge), not
+    in DXT blocks."""
+    return Tgv(original).format.upper().startswith("A8R8G8B8")
+
+
+def _plain_picture(original: bytes, colour: bytes, w: int, h: int, alpha: bytes | None) -> tuple[bytes, dict]:
+    """make_picture for a plain one: every pixel's colour from `colour` (RGBA), its alpha the game's, or from `alpha`
+    (a grey picture's red channel); the rest of the file as it was."""
+    g = Tgv(original)
+    if g.flag != 1:
+        # not a game rule: a picture unlike the game's flag badges, which this writer can't change safely
+        raise LookError(f"a {g.format} picture with flag {g.flag} can't be replaced yet")
+    if (w, h) != (g.width, g.height):
+        raise LookError(f"the picture is {w} x {h}; this one is {g.width} x {g.height}")
+    old = zipo_unpack(g.payload(0))
+    if len(old) != w * h * 4:
+        # not a game rule: a picture unlike the game's flag badges, which this writer can't change safely
+        raise LookError("a picture whose size doesn't match its pixels")
+    px = bytearray(old)
+    px[0::4], px[1::4], px[2::4] = colour[2::4], colour[1::4], colour[0::4]
+    if alpha is not None:
+        px[3::4] = alpha[0::4]
+    changed = sum(1 for i in range(0, len(px), 4) if px[i:i + 4] != old[i:i + 4])
+    report = {"levels": 1, "blocks": w * h, "encoded": changed, "unit": "pixels"}
+    if not changed:
+        return original, report
+    return make_tgv(g.width, g.height, g.format, [zipo_pack(bytes(px))], flag=g.flag), report
+
+
+def make_picture(original: bytes, colour: bytes, w: int, h: int, alpha: bytes | None = None) -> tuple[bytes, dict]:
     """A one-level ZIPO DXT1 picture (a unit's card) replaced by `colour` (RGBA pixels, w x h, its alpha unused):
     the 4 x 4 blocks that changed are encoded again, the others stay the game's byte for byte, and the level is
-    packed again as ZIPO under the same TGV header. Returns (the new .tgv, report); nothing changed: (original, ...)."""
+    packed again as ZIPO under the same TGV header. Returns (the new .tgv, report); nothing changed: (original, ...).
+    A plain one (A8R8G8B8: a flag badge) is written whole, its alpha the game's unless `alpha` is given."""
     g = Tgv(original)
+    if is_picture(original) and is_plain(original):
+        return _plain_picture(original, colour, w, h, alpha)
     if not is_picture(original) or not g.format.upper().startswith("DXT1") or g.flag != 1:
         # not a game rule: a picture unlike the game's cards, which this writer can't change safely
         raise LookError(f"a {g.format} picture with {len(g.mips)} level(s) can't be replaced yet: only cards (one "
@@ -317,9 +354,14 @@ def own_cards(zz, cards: dict, earlier: dict | None = None, say=print, loose: di
 
 
 def picture_rgba(original: bytes) -> tuple[int, int, bytes]:
-    """A one-level ZIPO picture (a card) as (width, height, RGBA pixels)."""
+    """A one-level ZIPO picture (a card, a flag badge) as (width, height, RGBA pixels)."""
     g = Tgv(original)
-    return g.width, g.height, dxt.decode_rgba(zipo_unpack(g.payload(0)), g.width, g.height, g.format)
+    raw = zipo_unpack(g.payload(0))
+    if is_plain(original):  # blue green red alpha, as they are
+        px = bytearray(raw[:g.width * g.height * 4])
+        px[0::4], px[2::4] = px[2::4], px[0::4]
+        return g.width, g.height, bytes(px)
+    return g.width, g.height, dxt.decode_rgba(raw, g.width, g.height, g.format)
 
 
 def standin_name(member: str) -> str:
@@ -377,16 +419,18 @@ def changes(zz, textures: dict, say=print, before: dict | None = None) -> dict:
         w, h = (cw, ch) if cpx is not None else (aw, ah)
         if cpx is not None and apx is not None and (cw, ch) != (aw, ah):
             raise LookError(f"{alpha_file}: {aw} x {ah}, but its colour picture is {cw} x {ch}")
-        if is_picture(original):  # a unit's card: one level, no stand-ins
-            if apx is not None or cpx is None:
+        if is_picture(original):  # a unit's card or a flag badge: one level, no stand-ins
+            plain = is_plain(original)
+            if cpx is None or (apx is not None and not plain):
                 raise LookError(f"{alpha_file or colour_file}: a card has no alpha picture, only its colour")
             try:
-                new, report = make_picture(original, cpx, w, h)
+                new, report = make_picture(original, cpx, w, h, apx if plain else None)
             except LookError as exc:
                 raise LookError(f"{colour_file}: {exc}") from None
             if new is not original:
                 out[e.path] = new
-            say(f"card {member}: {report['encoded']:,} of {report['blocks']:,} blocks changed")
+            say(f"{'picture' if plain else 'card'} {member}: {report['encoded']:,} of {report['blocks']:,} "
+                f"{report.get('unit', 'blocks')} changed")
             continue
         try:
             new, report = make_texture(original, cpx, apx, w, h)

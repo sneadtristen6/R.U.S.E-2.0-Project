@@ -3,6 +3,9 @@ your own, and test it in the game. Your Steam install is never changed.
 
 **0.9.8.1:** Blank Terrain gets ground of its own, and Blank Ocean is taken out.
 
+- **Make a nation into another.** The new **Nations** tab gives one of the game's seven nations a new name (in
+  the lobby, and for its army) and a new flag from any picture: China in Italy's place, say. Its units and what
+  they say are changed as before, on the Units tab and each unit's page. Not tried in the game yet.
 - **Blank Terrain's ground is drawn as its own.** A new map started blank gets its ground made from your terrain
   strokes, not the game map's ground pushed about: round shores up close and from high up, no dents in hilltops, and
   buildings and tanks sitting right on it. Seen in the game on test maps.

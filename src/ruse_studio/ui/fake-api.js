@@ -1162,6 +1162,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     economy_atomic: "Mode Nucléaire : {v} dans le jeu (un changement règle les deux)" });
   Object.assign(words.sc, { economy_tab: "经济", economy_title: "经济", economy_group_money: "资金与收入",
     economy_group_supply: "补给站", economy_group_cards: "计谋卡", economy_atomic: "核战争模式：游戏中为 {v}（更改会同时设置两者）" });
+  // the Nations tab (words.toml nations_*, tip_tab_nations, tip_nations_*)
+  Object.assign(words.us, { nations_tab: "Nations", tip_tab_nations: "Give one of the game's seven nations a new name and flag: China in Italy's place, say.", nations_title: "Nations", nations_help: "Give one of the game's seven nations a new name and flag, to make it another nation: China in Italy's place, say. The game keeps seven nations: the one you change keeps its place in the lobby, its build menus, and its campaign chapters and Operations. Its units are changed on the Units tab, and what they say on each unit's page. Not tried in the game yet.", nations_lobby_note: "The lobby's own nation button draws its flags inside the game's menu file, so it shows the game's flag for now. The new flag goes everywhere the game's flag lists show it: the loading screen, the players' names in a match, replays.", nations_flag_of: "{nation}'s flag", nations_was: "(was {nation})", nations_units_count: "{n} units and buildings", nations_change: "Change…", nations_close: "Close", tip_nations_change: "Give {nation} a new name and flag.", nations_name_head: "Name in the lobby", tip_nations_name_head: "What the lobby's nation list calls it, in every language.", nations_name_help: "What the lobby's nation list calls it. A language left as it is keeps the game's name.", nations_army_head: "Army name", tip_nations_army_head: "Its army's name where an Operation asks which army to take.", nations_army_help: "Its army's name where an Operation asks which army to take.", nations_flag_head: "Flag", tip_nations_flag_head: "The small round flag the game shows for this nation.", nations_flag_help: "Choose any picture of the flag, or drop one here: it's fitted to the game's flag, and the round shape stays the game's.", nations_flag_game: "The game's", nations_flag_mine: "Yours", nations_shine: "Shine like the game's flags", tip_nations_shine: "Light the top half and shade the bottom half, as the game's own flags are.", nations_flag_pick: "Choose a picture…", tip_nations_flag_pick: "Pick a picture of the new flag: PNG, JPG or any picture.", nations_flag_back: "Game's flag", tip_nations_flag_back: "Take your flag out: the game's comes back.", nations_flag_backed: "{nation} has the game's flag again.", nations_flag_none: "The Studio can't read this nation's flag in the game's files.", nations_flag_unreadable: "That picture couldn't be read. Try a PNG or JPG.", nations_flag_saved: "{nation}'s new flag is in your mod. Click Test in game to see it.", nations_units_head: "Units and what they say", nations_units_help: "Its units are changed on the Units tab: New unit… puts a copy of any unit in its build menus. What a unit says is on its page, under Voice.", nations_units: "{nation}'s units", tip_nations_units: "Open the Units tab with this nation picked.", nations_reset: "Put it all back", tip_nations_reset: "Give this nation back the game's name, army name and flag.", nations_reset_done: "{nation} is the game's again." });
   // the Music tab (words.toml music_*, tip_tab_music, tip_music_*)
   Object.assign(words.us, {
     music_tab: "Music", tip_tab_music: "The game's songs: hear each one, and put your own in its place",
@@ -1586,7 +1588,17 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       ["TypeName", "TypeName", "key", "key", "AP_shell"], ["NbTirParSalves", "Shots per salvo", "number", "int32", "1"]],
     TWeaponManagerDescriptor: [["Salves", "Salves", "numbers", "int32", "4, 30"]],
   };
-  const valueGameWords = (key) => ({ N_UNI_137: "SHERMAN", AP_shell: "AP shell", PortIsland: "Port Island" })[key] || null;
+  const valueGameWords = (key) => ({ N_UNI_137: "SHERMAN", AP_shell: "AP shell", PortIsland: "Port Island",
+    NATION_0: "USA", NATION_1: "Germany", NATION_2: "UK", NATION_3: "France", NATION_4: "Italy", NATION_5: "USSR",
+    NATION_7: "Japan", NAT_NAME_0: "American 1st Army", NAT_NAME_1: "German Transition Army",
+    NAT_NAME_2: "British 21st Army", NAT_NAME_3: "French 1st Army", NAT_NAME_4: "Italian Co-Belligerent Army",
+    NAT_NAME_5: "Russian 1st Belorussian Front" })[key] || null;
+  // the Nations tab's made-up flags (the real Studio hands the page the game's own 28 x 28 pictures): a round badge
+  // in each nation's colours, and the mod's own flags (StudioApi.nation_flag_set) by nation
+  const NATION_COLOURS = [["#2b4fa8", "#ffffff"], ["#d33", "#111"], ["#c8102e", "#012169"], ["#0055a4", "#ef4135"],
+    ["#1a8a4a", "#d22"], ["#d22", "#ffd700"], ["#fff", "#d00"]];
+  const fakeBadge = ([a, b]) => "data:image/svg+xml;base64," + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="13" fill="${a}"/><circle cx="14" cy="14" r="6" fill="${b}"/></svg>`);
+  const nationFlags = new Map();
   const newWords = new Map();  // a new label's own text key -> { lang: words } (StudioApi._new_label_text)
   const fakeNotes = new Map();  // mod -> { key: note } (StudioApi.note_set)
   const fakeGameFiles = new Map();  // `${mod}|${pack}|${nested}|${path}` -> "changed" or "added" (StudioApi.files_change)
@@ -2094,6 +2106,29 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         newWords.set(key, Object.fromEntries(VALUE_LANGS.map((l) => [l, String(words).trim()])));
         valueEdits.set(`${address}|${prop}`, { value: key, text: key, words: String(words).trim() });
         return { saved: current + "/src/studio.rndf", page: valuePage(address, lang) };
+      },
+      // the Nations tab (StudioApi.nations_view, ruse_studio.nations): the seven nations, their lobby and army words
+      // (value_words, above), their flags and how many units each has
+      nations_view: async () => ({ mod: Boolean(current), nations: ["usa", "germany", "uk", "france", "italy", "ussr", "japan"].map((code, n) => {
+        const nameKey = `NATION_${n < 6 ? n : 7}`, armyKey = n < 6 ? `NAT_NAME_${n}` : null;
+        const wordsOf = (key) => VALUE_LANGS.map((lang) => ({ lang, game: valueGameWords(key),
+          mine: valueWords.has(key) ? valueWords.get(key)[lang] ?? null : null }));
+        const game = fakeBadge(NATION_COLOURS[n]), mine = nationFlags.get(n);
+        return { nation: n, code, name_key: nameKey, army_key: armyKey, name: wordsOf(nameKey), army: armyKey ? wordsOf(armyKey) : null,
+          flag: { texture: `gen\\ww2\\res2d\\interface\\flags\\flag_${code}.tgv`, width: 28, height: 28, own: Boolean(mine), url: mine || game, game_url: game },
+          units: [92, 95, 90, 88, 79, 91, 77][n] };
+      }) }),
+      nation_flag_set: async (n, picture) => {
+        if (!current) throw new Error("Pick or make a mod first: the flag goes into it.");
+        nationFlags.set(Number(n), picture);
+        return {};
+      },
+      nation_reset: async (n, what = "all") => {
+        if (["flag", "all"].includes(what)) nationFlags.delete(Number(n));
+        for (const [which, key] of [["name", `NATION_${n < 6 ? n : 7}`], ["army", `NAT_NAME_${n}`]]) {
+          if (what === which || what === "all") valueWords.delete(key);
+        }
+        return {};
       },
       value_words: async (key) => newWords.has(key)
         ? { key, table: "ville_multi", new: true, words: VALUE_LANGS.map((lang) => ({ lang, game: null, mine: newWords.get(key)[lang] })) }

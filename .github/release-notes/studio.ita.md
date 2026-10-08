@@ -3,6 +3,10 @@ modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non v
 
 **0.9.8.1:** Terreno vuoto ha un terreno tutto suo, e Oceano vuoto è stato tolto.
 
+- **Fare di una nazione un'altra.** La nuova scheda **Nazioni** dà a una delle sette nazioni del gioco un nuovo
+  nome (nella lobby e per il suo esercito) e una nuova bandiera da qualsiasi immagine: per esempio la Cina al
+  posto dell'Italia. Le sue unità e ciò che dicono si cambiano come prima, nella scheda Unità e nella pagina
+  di ogni unità. Non ancora provato in gioco.
 - **Il terreno di Terreno vuoto è disegnato apposta.** Una nuova mappa partita da zero ha il terreno fatto dai tuoi
   tratti, non più il terreno della mappa del gioco spostato: coste rotonde da vicino e dall'alto, niente più
   ammaccature in cima alle colline, ed edifici e carri poggiano esattamente sopra. Visto in gioco su mappe di prova.

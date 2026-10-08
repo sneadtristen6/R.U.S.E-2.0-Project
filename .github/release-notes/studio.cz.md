@@ -3,6 +3,9 @@ vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemě
 
 **0.9.8.1:** Prázdný terén dostává vlastní terén a Prázdný oceán je odebrán.
 
+- **Udělat z jednoho národa jiný.** Nová karta **Národy** dá jednomu ze sedmi národů hry nový název (v lobby a
+  pro jeho armádu) a novou vlajku z jakéhokoli obrázku: třeba Čínu místo Itálie. Jeho jednotky a to, co
+  říkají, se mění jako dosud, na kartě Jednotky a na stránce každé jednotky. Ve hře zatím nevyzkoušeno.
 - **Terén Prázdného terénu se kreslí jako vlastní.** Nová mapa začatá od nuly má terén vytvořený z vašich tahů terénu,
   ne posunutý terén mapy ze hry: kulaté břehy zblízka i shora, žádné promáčkliny na vrcholcích kopců a budovy i tanky
   stojí přesně na něm. Ověřeno ve hře na testovacích mapách.

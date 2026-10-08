@@ -31,7 +31,8 @@ button:disabled { cursor: default; opacity: 0.5; }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
 
-.top { display: flex; align-items: center; gap: 16px; padding: 10px 20px; background: linear-gradient(180deg, #17406f, #0f2a4b);
+.top { display: flex; flex-wrap: wrap; row-gap: 8px; align-items: center; gap: 16px; padding: 10px 20px;
+       background: linear-gradient(180deg, #17406f, #0f2a4b);
        border-bottom: 2px solid var(--accent-dark); }
 .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; letter-spacing: 0.06em; font-size: 17px; }
 .brand img { width: 30px; height: 30px; flex: none; border-radius: 7px; }
@@ -761,3 +762,19 @@ tr.edited .flag { border-color: var(--accent); }
 .mission-chain .chain-optional, .mission-chain .chain-unknown { color: var(--muted); }
 .mission-text { padding: 3px 0; border-bottom: 1px solid var(--line); }
 .mission-text.edited { border-left: 3px solid var(--accent); padding-left: 6px; }
+
+/* the Nations tab (nations.js): a nation each, its flag, names and units; Change… opens its name, army and flag */
+.nations-list { display: grid; gap: 8px; max-width: 820px; margin: 10px 0; }
+.nation { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.nation.changed { box-shadow: inset 3px 0 0 var(--accent); }
+.nation-head { display: flex; align-items: center; gap: 12px; }
+.nation-head > button { margin-left: auto; }
+.nation-names { display: grid; gap: 1px; }
+.nation-flag { width: 42px; height: 42px; flex: none; }
+.nation-flag.big { width: 84px; height: 84px; image-rendering: pixelated; }
+.nation-flags { display: flex; gap: 18px; margin: 6px 0; }
+.nation-flags figure { margin: 0; display: grid; justify-items: center; gap: 4px; }
+.nation-details { margin-top: 10px; padding-top: 6px; border-top: 1px solid var(--line); }
+.nation-details h3 { margin: 12px 0 2px; font-size: 14px; }
+.nation-details .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0; }
+.nation-reset { margin-top: 14px; }

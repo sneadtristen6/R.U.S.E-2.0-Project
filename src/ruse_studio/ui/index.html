@@ -18,6 +18,7 @@
       <small id="app-version" class="app-version"></small></div>
     <div class="tabs" role="tablist">
       <button id="tab-units" type="button" role="tab" aria-selected="true"></button>
+      <button id="tab-nations" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-economy" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-ai" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-values" type="button" role="tab" aria-selected="false"></button>
@@ -396,6 +397,17 @@
   </main>
   <!-- the AI tab (app.js renderAI, StudioApi.ai, rusemod.ai; LittleGroove's AI editor): how the computer players
        play (their sets of values), the units they're keener to build, and the ruse cards (every player's) -->
+  <!-- the Nations tab (nations.js, StudioApi.nations_view, rusemod.nations): one of the game's seven nations given a
+       new name and flag, China in Italy's place say; its units on the Units tab, what they say on each unit's page -->
+  <main id="nations-view" class="settings-view hidden">
+    <div class="settings">
+      <h1 id="nations-title"></h1>
+      <p id="nations-help" class="muted small"></p>
+      <p id="nations-nomod" class="small"></p>
+      <div id="nations-list" class="nations-list"></div>
+      <p id="nations-lobby" class="muted small"></p>
+    </div>
+  </main>
   <!-- the Music tab (sound.js, StudioApi.music, rusemod.sound): every song the game plays, by where it plays, each heard
        and replaced in the small editor below; saved in the current mod as files/replace/<the song>.wav -->
   <main id="music-view" class="settings-view hidden">
@@ -749,6 +761,7 @@
   <script src="fake-api.js"></script>
   <script src="app.js"></script>
   <script src="sound.js"></script>
+  <script src="nations.js"></script>
   <script src="files.js"></script>
   <script type="module" src="maps.js"></script>
 </body>

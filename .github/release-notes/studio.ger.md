@@ -3,6 +3,10 @@ sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird n
 
 **0.9.8.1:** Leeres Gelände bekommt eigenen Boden, und Leerer Ozean ist entfernt.
 
+- **Aus einer Nation eine andere machen.** Der neue Reiter **Nationen** gibt einer der sieben Nationen des
+  Spiels einen neuen Namen (in der Lobby und für ihre Armee) und eine neue Flagge aus einem beliebigen Bild:
+  zum Beispiel China an Italiens Stelle. Ihre Einheiten und was sie sagen ändern Sie wie bisher im Reiter
+  Einheiten und auf der Seite jeder Einheit. Noch nicht im Spiel ausprobiert.
 - **Der Boden von Leerem Gelände wird eigens gezeichnet.** Eine leer begonnene neue Karte bekommt ihren Boden aus
   Ihren Geländestrichen statt des verschobenen Bodens der Spielkarte: runde Küsten aus der Nähe und von oben, keine
   Dellen mehr auf Hügelkuppen, und Gebäude und Panzer stehen genau darauf. Im Spiel auf Testkarten gesehen.

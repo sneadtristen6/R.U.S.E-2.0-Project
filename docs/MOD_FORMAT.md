@@ -297,6 +297,18 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   A new map gets its own the same way. The Maps tab's **Background sound…** shows the map's: what it starts from (its
   own, or the one another map plays), and its three layers, each heard and replaced in the Music tab's editor; *Hear
   all three together* plays them as the build will put them together.
+- **A nation given a new name and flag (2026-10-08, `rusemod.nations`; not tried in the game yet):** one of the game's
+  seven nations made into another, China in Italy's place say (the game keeps seven). Its name in the lobby's nation
+  list is the game text `NATION_<n>` (Japan's is `NATION_7`: `NATION_6` is the lobby's Random) and its army's name,
+  where an Operation asks which army to take, `NAT_NAME_<n>` (Japan has none): changed as any game text (§6,
+  `game:NATION_4`). Its flag is one small round picture (28 x 28) that every flag list of the game shows:
+  `files/replace/gen/ww2/res2d/interface/flags/flag_ita.tgv.png` for Italy's, at that size. The picture's colour is
+  used and the flag's round shape (its alpha) stays the game's, unless a grey `.alpha.png` beside it gives another; the
+  build also changes the copy the game keeps inside a pack of its own. The Studio's **Nations** tab does both: the
+  name in every language with the words box of All values, the flag from any picture the window can read, fitted to
+  the flag's size and shone like the game's. The lobby's own nation button draws its flags in its menu file, so it
+  keeps the game's. Its units are changed as any units (New unit puts a copy of any unit in its build menus), and what
+  they say on each unit's page (Voice, above).
 - `files/add/mods/<mod id>/<name>.<source ext>` adds a new file, referenced from `.rndf` by its game path.
 - **Any game file, whole (2026-10-08, `rusemod.gamefiles`; not tried in the game yet):** the Studio's **Files** tab
   shows every file in the game's packs; *Change it with a file of mine…* puts a file of the modder's in place of the

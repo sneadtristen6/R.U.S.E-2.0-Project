@@ -80,6 +80,7 @@ async function setLanguage(lang) {
   state.nationNames = await api().nations(lang);
   const w = state.words;
   $("tab-units").textContent = w.units_tab;
+  $("tab-nations").textContent = w.nations_tab;
   $("tab-economy").textContent = w.economy_tab;
   $("tab-ai").textContent = w.ai_tab;
   $("tab-values").textContent = w.values_tab;
@@ -92,6 +93,7 @@ async function setLanguage(lang) {
   if (state.view === "ai") renderAI();
   if (state.view === "values") renderValues();
   if (state.view === "music") window.SoundView.setWords(w, lang);
+  if (state.view === "nations") window.NationsView.setWords(w, lang);
   if (state.view === "files") window.FilesView.setWords(w);
   $("lang-name").textContent = lang === "base" ? w.game_names
     : (state.languages.find((l) => l.code === lang) || {}).name || "";
@@ -113,7 +115,7 @@ async function setLanguage(lang) {
   $("test-log-close").textContent = w.close;
   $("test-log-copy").textContent = w.doc_copy;
   // tooltips: one sentence on every control, from words.toml (tip_*)
-  const tips = { "tab-units": "tip_tab_units", "tab-economy": "tip_tab_economy", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values", "tab-music": "tip_tab_music", "tab-files": "tip_tab_files", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
+  const tips = { "tab-units": "tip_tab_units", "tab-nations": "tip_tab_nations", "tab-economy": "tip_tab_economy", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values", "tab-music": "tip_tab_music", "tab-files": "tip_tab_files", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close", "test-log-copy": "tip_copy_log",
     "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
@@ -235,6 +237,7 @@ async function modChanged() {
   if (state.view === "values") renderValuesNew();  // New object… needs a mod
   if (state.view === "values" && state.valuePage) await showValueObject(state.valuePage.address, { keep: true });  // and its changes
   if (state.view === "music") window.SoundView.modChanged();  // and the songs of its own
+  if (state.view === "nations") window.NationsView.modChanged();  // and the nations' new names and flags
   if (state.view === "files") window.FilesView.modChanged();  // and the game files it changes
 }
 
@@ -1844,6 +1847,7 @@ function unitKeys(e) {
 function showView(view) {
   state.view = view;
   $("units-view").classList.toggle("hidden", view !== "units");
+  $("nations-view").classList.toggle("hidden", view !== "nations");
   $("economy-view").classList.toggle("hidden", view !== "economy");
   $("ai-view").classList.toggle("hidden", view !== "ai");
   $("values-view").classList.toggle("hidden", view !== "values");
@@ -1852,6 +1856,7 @@ function showView(view) {
   $("maps-view").classList.toggle("hidden", view !== "maps");
   $("settings-view").classList.toggle("hidden", view !== "settings");
   $("tab-units").setAttribute("aria-selected", String(view === "units"));
+  $("tab-nations").setAttribute("aria-selected", String(view === "nations"));
   $("tab-economy").setAttribute("aria-selected", String(view === "economy"));
   $("tab-ai").setAttribute("aria-selected", String(view === "ai"));
   $("tab-values").setAttribute("aria-selected", String(view === "values"));
@@ -1864,8 +1869,9 @@ function showView(view) {
   // "No game index yet" (and the index's build, a minute or more) covers the tabs that read it, Units, Economy, AI, All
   // values and Music: the Maps tab and Settings (where the installer's clean backup shows how far it is) can be used
   // meanwhile
-  $("no-index").classList.toggle("off-tab", !["units", "economy", "ai", "values", "music"].includes(view));
+  $("no-index").classList.toggle("off-tab", !["units", "nations", "economy", "ai", "values", "music"].includes(view));
   if (view !== "music") window.SoundView.leave();  // a song playing stops with its tab
+  if (view === "nations") { window.NationsView.open(state.words, state.lang); return; }
   if (view === "economy") { renderEconomy(); return; }
   if (view === "ai") { renderAI(); return; }
   if (view === "values") { renderValues(); return; }
@@ -3451,6 +3457,7 @@ async function installUpdate() {
 
 async function start() {
   $("tab-units").addEventListener("click", () => showView("units"));
+  $("tab-nations").addEventListener("click", () => showView("nations"));
   $("tab-economy").addEventListener("click", () => showView("economy"));
   $("tab-ai").addEventListener("click", () => showView("ai"));
   $("tab-values").addEventListener("click", () => showView("values"));
