@@ -8688,16 +8688,16 @@ jpn = "マップ全体が海で、その下は平らな地面、上には何も�
 sc = "整张地图都是海，下面是平地，上面什么都没有：只有出生点。部队在水下通行，就像海战地图一样。这一点尚未在游戏中测试。"
 
 [dup_start_blank_ocean_warn]
-us = "Warning: separate islands aren't ready for full-scale battles. When a land unit is ordered onto an island it can't reach (the computer's units too), the game crashes. Join the islands with land."
-fr = "Attention : des îles séparées ne sont pas prêtes pour de vraies batailles. Quand une unité terrestre reçoit l'ordre d'aller sur une île qu'elle ne peut pas atteindre (celles de l'ordinateur aussi), le jeu plante. Reliez les îles par la terre."
-ger = "Achtung: Getrennte Inseln sind noch nicht bereit für große Schlachten. Wenn eine Landeinheit auf eine Insel befohlen wird, die sie nicht erreichen kann (auch die des Computers), stürzt das Spiel ab. Verbinden Sie die Inseln mit Land."
-ita = "Attenzione: isole separate non sono pronte per vere battaglie. Quando un'unità di terra riceve l'ordine di andare su un'isola che non può raggiungere (anche quelle del computer), il gioco va in crash. Collega le isole con la terra."
-spa = "Atención: las islas separadas no están listas para batallas a gran escala. Cuando se ordena a una unidad terrestre ir a una isla a la que no puede llegar (también a las de la computadora), el juego se cuelga. Une las islas con tierra."
-pol = "Uwaga: osobne wyspy nie są gotowe do pełnych bitew. Gdy jednostka lądowa dostanie rozkaz pójścia na wyspę, do której nie może dotrzeć (także jednostki komputera), gra ulega awarii. Połącz wyspy lądem."
-ru = "Внимание: отдельные острова пока не готовы для полноценных сражений. Когда наземному юниту приказывают идти на остров, до которого он не может добраться (юнитам компьютера тоже), игра вылетает. Соедините острова сушей."
-cz = "Pozor: oddělené ostrovy zatím nejsou připravené na velké bitvy. Když pozemní jednotka dostane rozkaz jít na ostrov, kam se nemůže dostat (i jednotky počítače), hra spadne. Spojte ostrovy souší."
-jpn = "注意：離れた島どうしは、まだ本格的な戦闘に対応していません。到達できない島へ地上部隊に移動を命じると（コンピューターの部隊も同じ）、ゲームがクラッシュします。島どうしを陸でつないでください。"
-sc = "警告：彼此分开的岛屿还不适合大规模战斗。命令地面单位前往它无法到达的岛屿时（电脑的单位也一样），游戏会崩溃。请用陆地把岛屿连起来。"
+us = "Warning: separate islands aren't ready for full-scale battles. When a land unit is ordered onto an island it can't reach (the computer's units too), the game crashes. Join the islands with land or an underwater road."
+fr = "Attention : des îles séparées ne sont pas prêtes pour de vraies batailles. Quand une unité terrestre reçoit l'ordre d'aller sur une île qu'elle ne peut pas atteindre (celles de l'ordinateur aussi), le jeu plante. Reliez les îles par la terre ou par une route sous l'eau."
+ger = "Achtung: Getrennte Inseln sind noch nicht bereit für große Schlachten. Wenn eine Landeinheit auf eine Insel befohlen wird, die sie nicht erreichen kann (auch die des Computers), stürzt das Spiel ab. Verbinden Sie die Inseln mit Land oder einer Straße unter Wasser."
+ita = "Attenzione: isole separate non sono pronte per vere battaglie. Quando un'unità di terra riceve l'ordine di andare su un'isola che non può raggiungere (anche quelle del computer), il gioco va in crash. Collega le isole con la terra o con una strada sott'acqua."
+spa = "Atención: las islas separadas no están listas para batallas a gran escala. Cuando se ordena a una unidad terrestre ir a una isla a la que no puede llegar (también a las de la computadora), el juego se cuelga. Une las islas con tierra o con una carretera bajo el agua."
+pol = "Uwaga: osobne wyspy nie są gotowe do pełnych bitew. Gdy jednostka lądowa dostanie rozkaz pójścia na wyspę, do której nie może dotrzeć (także jednostki komputera), gra ulega awarii. Połącz wyspy lądem albo drogą pod wodą."
+ru = "Внимание: отдельные острова пока не готовы для полноценных сражений. Когда наземному юниту приказывают идти на остров, до которого он не может добраться (юнитам компьютера тоже), игра вылетает. Соедините острова сушей или подводной дорогой."
+cz = "Pozor: oddělené ostrovy zatím nejsou připravené na velké bitvy. Když pozemní jednotka dostane rozkaz jít na ostrov, kam se nemůže dostat (i jednotky počítače), hra spadne. Spojte ostrovy souší nebo silnicí pod vodou."
+jpn = "注意：離れた島どうしは、まだ本格的な戦闘に対応していません。到達できない島へ地上部隊に移動を命じると（コンピューターの部隊も同じ）、ゲームがクラッシュします。島どうしを陸か水中の道路でつないでください。"
+sc = "警告：彼此分开的岛屿还不适合大规模战斗。命令地面单位前往它无法到达的岛屿时（电脑的单位也一样），游戏会崩溃。请用陆地或水下道路把岛屿连起来。"
 
 [dup_start_battles_only]
 us = "Blank Terrain and Blank Ocean start from a Battles map."
