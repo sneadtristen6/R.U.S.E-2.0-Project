@@ -707,3 +707,7 @@ tr.edited .flag { border-color: var(--accent); }
 .voices details.voice-moment > summary { cursor: pointer; padding: 6px 10px; border: 1px solid var(--line);
   border-radius: var(--radius); background: var(--panel); display: flex; gap: 8px; align-items: center; }
 .voices details.voice-moment[open] > summary { margin-bottom: 6px; }
+/* a map's background sound (sound.js openAmbience): what it starts from, then its three layers */
+#map-sound-box { width: min(640px, calc(100% - 40px)); }
+#map-sound-box .ms-from { width: 100%; margin: 4px 0 6px; }
+#map-sound-box .music-actions { margin-top: 8px; }

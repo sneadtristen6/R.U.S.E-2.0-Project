@@ -118,16 +118,11 @@
     return me;
   }
 
-  async function gameBuffer(member) {
-    if (S.cache.has(member)) return S.cache.get(member);
-    const got = await api().music_sound(member, "game");
+  // the game's sound at got.url (StudioApi.music_sound), as the window plays it
+  async function decoded(got) {
     const res = await fetch(got.url);
     if (!res.ok) throw new Error(`${res.status}`);
-    if (got.kind === "wav") {  // the preview's made-up songs
-      const wav = await ctx().decodeAudioData(await res.arrayBuffer());
-      S.cache.set(member, wav);
-      return wav;
-    }
+    if (got.kind === "wav") return ctx().decodeAudioData(await res.arrayBuffer());  // the preview's made-up songs
     const song = decodeEss(await res.arrayBuffer());
     const buffer = new AudioBuffer({ numberOfChannels: song.channels, length: Math.max(1, song.frames), sampleRate: song.rate });
     for (let c = 0; c < song.channels; c++) {
@@ -136,8 +131,27 @@
       for (let i = 0; i < f.length; i++) f[i] = s[i] / 32768;
       buffer.copyToChannel(f, c);
     }
+    return buffer;
+  }
+
+  function keep(key, buffer) {
     if (S.cache.size >= 2) S.cache.delete(S.cache.keys().next().value);  // long songs are big: keep two
-    S.cache.set(member, buffer);
+    S.cache.set(key, buffer);
+  }
+
+  async function gameBuffer(member) {
+    if (S.cache.has(member)) return S.cache.get(member);
+    const got = await api().music_sound(member, "game");
+    if (got.pair) {  // a layer of a map's background: two of its six channels (the whole read once, by its address)
+      let whole = S.cache.get(got.url);
+      if (!whole) { whole = await decoded(got); keep(got.url, whole); }
+      if (whole.numberOfChannels < 2 * got.pair) return whole;  // (the preview's made-up backgrounds)
+      const pair = new AudioBuffer({ numberOfChannels: 2, length: whole.length, sampleRate: whole.sampleRate });
+      for (let c = 0; c < 2; c++) pair.copyToChannel(whole.getChannelData(2 * (got.pair - 1) + c), c);
+      return pair;
+    }
+    const buffer = await decoded(got);
+    keep(member, buffer);
     return buffer;
   }
 
@@ -254,7 +268,8 @@
         stop();
         try {
           await api().music_reset(s.member);
-          say(fill(s.version !== undefined ? w.voice_back_done : w.music_back_done, { name: s.name }), "ok");
+          say(fill(s.version !== undefined ? w.voice_back_done : s.pair ? w.map_sound_back_done : w.music_back_done,
+            { name: s.name }), "ok");
           refresh();
         }
         catch (err) { problem(err); }
@@ -314,6 +329,9 @@
     } else if (s.new) {
       $("me-title").textContent = fill(w.music_editor_title, { name: s.name });
       $("me-lead").textContent = w.music_add_lead;
+    } else if (s.pair) {  // a layer of a map's background (openAmbience)
+      $("me-title").textContent = fill(w.map_sound_editor_title, { n: s.pair, map: s.mapName });
+      $("me-lead").textContent = fill(w.map_sound_editor_lead, { len: clock(s.seconds, true) });
     } else {
       $("me-title").textContent = fill(voice ? w.voice_editor_title : w.music_editor_title, { name: s.name });
       $("me-lead").textContent = fill(voice ? w.voice_editor_lead : w.music_editor_lead, { len: clock(s.seconds, true) });
@@ -521,7 +539,8 @@
         res = await api().music_save(member, base64(wav.subarray(i * size, (i + 1) * size)), i, count);
       }
       $("music-editor").close();
-      say(fill(ed.song.version !== undefined ? w.voice_saved : w.music_saved, { name: ed.song.name, file: res.saved }), "ok");
+      say(fill(ed.song.version !== undefined ? w.voice_saved : ed.song.pair ? w.map_sound_saved : w.music_saved,
+        { name: ed.song.name, file: res.saved }), "ok");
       ed.after();
     } catch (err) {
       $("me-note").textContent = (err && err.message) || String(err);
@@ -530,7 +549,94 @@
     }
   }
 
+  // --- a map's background sound (StudioApi.map_sound, map_sound_use; rusemod.sound; not tried in the game yet): one
+  // long sound of three stereo layers, each heard and replaced in the editor above, or the map started from the one
+  // another map plays; saved in the map project. Opened from the Maps tab (maps.js) ---
+  const A = { pack: null, name: "", data: null };
+
+  async function openAmbience(pack, name, words, lang) {
+    S.words = words;
+    S.lang = lang;
+    const w = W();
+    stop();
+    Object.assign(A, { pack, name, data: null });
+    $("ms-title").textContent = fill(w.map_sound_title, { map: name });
+    $("ms-lead").textContent = w.map_sound_lead;
+    $("ms-untried").textContent = w.map_sound_untried;
+    $("ms-from-title").textContent = w.map_sound_from;
+    $("ms-layers-title").textContent = w.map_sound_layers;
+    $("ms-layers-help").textContent = w.map_sound_layers_help;
+    $("ms-all").textContent = "▶ " + w.map_sound_all;
+    $("ms-close").textContent = w.close;
+    $("ms-note").textContent = "";
+    $("ms-from").replaceChildren();
+    $("ms-layers").replaceChildren();
+    $("map-sound-box").showModal();
+    await renderAmbience();
+  }
+
+  // the maps a background is heard on, as the menus name them (the game's own name for one no menu lists)
+  const heardOn = (c) => c.maps.length ? c.maps.slice(0, 3).join(", ") + (c.maps.length > 3 ? ` +${c.maps.length - 3}` : "") : c.name;
+
+  async function renderAmbience() {
+    const w = W(), pack = A.pack;
+    let d;
+    try { d = await api().map_sound(pack, S.lang); } catch (err) { $("ms-note").textContent = (err && err.message) || String(err); return; }
+    if (pack !== A.pack) return;
+    A.data = d;
+    $("ms-from").replaceChildren(...d.choices.map((c) => el("option", { value: c.file, selected: c.use,
+      textContent: `${fill(c.own ? w.map_sound_own : w.map_sound_like, { maps: heardOn(c) })} · ${clock(c.seconds)}` })));
+    const using = d.choices.find((c) => c.use);
+    if (using) $("ms-from").value = using.file;
+    $("ms-from").disabled = !d.mod;
+    $("ms-layers").replaceChildren(...d.layers.map((x) => row({ ...x, name: fill(w.map_sound_layer, { n: x.n }), pair: x.n,
+      mapName: A.name, also: [], maps: [] }, renderAmbience)));
+    $("ms-all").disabled = false;
+    if (!d.mod) $("ms-note").textContent = w.map_sound_no_project;
+  }
+
+  // the map's background as the build will make it: its layers and the modder's, played together; a shorter one
+  // over again until the longest ends (how loud the game plays each isn't known: here, all as they are)
+  async function wholeBackground() {
+    const parts = [];
+    for (const x of A.data.layers) parts.push(x.mine ? await modBuffer(x.member) : await gameBuffer(x.member));
+    const rate = 48000, len = Math.max(1, ...parts.map((b) => Math.round(b.duration * rate)));
+    const out = new AudioBuffer({ numberOfChannels: 2, length: len, sampleRate: rate });
+    for (let c = 0; c < 2; c++) {
+      const dst = out.getChannelData(c);
+      for (const b of parts) {
+        const src = b.getChannelData(Math.min(c, b.numberOfChannels - 1)), step = b.sampleRate / rate;
+        const n = Math.max(1, Math.round(src.length / step));
+        for (let i = 0; i < len; i++) dst[i] += src[Math.min(src.length - 1, Math.floor((i % n) * step))];
+      }
+    }
+    return out;
+  }
+
+  async function useBackground() {
+    const w = W(), file = $("ms-from").value, d = A.data;
+    if (!d) return;
+    stop();
+    const c = d.choices.find((x) => x.file === file);
+    $("ms-from").disabled = true;
+    try {
+      await api().map_sound_use(A.pack, c && c.own ? null : file, S.lang);
+      say(c && !c.own ? fill(w.map_sound_from_other, { map: A.name, maps: heardOn(c) })
+        : fill(w.map_sound_from_own, { map: A.name }), "ok");
+    } catch (err) {
+      $("ms-note").textContent = (err && err.message) || String(err);
+    }
+    await renderAmbience();
+  }
+
   function wire() {
+    if (document.getElementById("map-sound-box")) {
+      $("ms-from").addEventListener("change", useBackground);
+      $("ms-all").addEventListener("click", () => { if (A.data) toggle($("ms-all"), "▶ " + W().map_sound_all, wholeBackground); });
+      $("ms-close").addEventListener("click", () => $("map-sound-box").close());
+      $("map-sound-box").addEventListener("close", () => { stop(); A.pack = null; });
+      $("map-sound-box").addEventListener("keydown", (e) => e.stopPropagation());  // keys never move the map behind it
+    }
     if (!document.getElementById("music-editor")) return;  // a page without the tab (a check page)
     const ed = () => S.ed;
     $("me-choose").addEventListener("click", () => $("me-file-input").click());
@@ -581,11 +687,13 @@
     $("me-use").addEventListener("click", use);
     $("me-cancel").addEventListener("click", () => $("music-editor").close());
     $("music-editor").addEventListener("close", () => { stop(); S.ed = null; });
+    $("music-editor").addEventListener("keydown", (e) => e.stopPropagation());  // (over the map: keys stay here)
   }
 
   window.SoundView = {
     decodeEss,
     voicesGroup,
+    openAmbience,
     open(words, lang) { S.words = words; S.lang = lang; render(); },
     setWords(words, lang) { S.words = words; S.lang = lang; render(); },
     modChanged() { render(); },
