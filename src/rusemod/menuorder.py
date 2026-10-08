@@ -1,10 +1,11 @@
 """Where missions show in their menus: a mod's `menus.toml` (MOD_FORMAT §8), LittleGroove's Menu Entry step's Move up
 and Move down (ruse_mod_engine.scenario_registry.move_within_group).
 
-The menus list their entries from menu packs (globals.cpp: a TChallengePack's ChallengeList for OPERATIONS, a
-TChapterPack's ChapterList for the CAMPAIGN, a TMultiPack's MultiList for BATTLES), each pack's list in its order, and
-group them by CategoryId in runs of one value (his edits.place_at_end_of_group: an entry put outside its run splits
-its group in two). A mod gives the order of one run's missions:
+The game hands the menus their entries from menu packs (globals.cpp: a TChallengePack's ChallengeList for OPERATIONS,
+a TChapterPack's ChapterList for the CAMPAIGN, a TMultiPack's MultiList for BATTLES), pack by pack, each pack's list
+in its order, and the menus show them in groups by CategoryId from 0 up, each group in that order (the CAMPAIGN sorts
+a group's chapters by their pack and place in its list, the same order within a pack). So a mission's place in its
+group follows its place in its pack's list. A mod gives the order of some missions of one list:
 
     [[order]]
     menu = "operation"                      # operation, campaign or battles

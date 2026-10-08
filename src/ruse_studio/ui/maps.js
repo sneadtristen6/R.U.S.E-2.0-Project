@@ -5262,18 +5262,15 @@ function missionMenu(d) {
   ];
 }
 
-// The menu as the player sees it, in its groups (missions the menu shows together: a pack's list, one CategoryId):
-// a mission moves only within its own (LittleGroove's Move up / Move down)
+// The menu as the player sees it, in its groups under the menu's own headings (CategoryId): a mission moves among its
+// group's missions from its own list of the game's (LittleGroove's Move up / Move down)
 function missionOrder(d) {
-  const w = mv.words, order = d.menu.order, box = el("div", { className: "mission-order small" });
+  const w = mv.words, m = d.menu, order = m.order, box = el("div", { className: "mission-order small" });
   for (let s = 0; s < order.length;) {
     let e = s + 1;
-    while (e < order.length && order[e].pack === order[s].pack && order[e].group === order[s].group) e++;
-    const members = order.slice(s, e), counts = members.map((o) => o.players).filter((n) => n != null);
-    const label = d.kind === "mp" && counts.length
-      ? fill(w.mission_group_players, { n: Math.min(...counts) === Math.max(...counts) ? counts[0]
-        : `${Math.min(...counts)}–${Math.max(...counts)}` })
-      : fill(w.mission_group, { n: members[0].group ?? 0 });
+    while (e < order.length && order[e].group === order[s].group) e++;
+    const members = order.slice(s, e);
+    const label = (m.headings || {})[String(members[0].group)] || fill(w.mission_group, { n: members[0].group });
     const list = el("ol", { start: s + 1 }, ...members.map((o) => el("li", { className: o.this ? "this" : "",
       textContent: o.title || o.tracking || "?" })));
     box.append(el("div", { className: "mission-group", title: w.tip_mission_group, textContent: label }), list);

@@ -63,13 +63,16 @@ class Moves(unittest.TestCase):
         self.assertEqual(missionsteps.move(order, -1), ["M3/m.scenario", "M2/m.scenario", "M4/m.scenario"])
         self.assertEqual(missionsteps.move(order, 1), ["M2/m.scenario", "M4/m.scenario", "M3/m.scenario"])
 
-    def test_not_past_its_group(self):
-        first = [entry(1, 9, None), entry(2, 9, 1, True), entry(3, 9, 1)]
-        last = [entry(2, 9, 1), entry(3, 9, 1, True), entry(5, 8, 1)]
+    def test_not_past_its_group_or_its_list(self):
+        first = [entry(1, 9, 0), entry(2, 9, 1, True), entry(3, 9, 1)]
+        last = [entry(2, 9, 1), entry(3, 9, 1, True), entry(5, 9, 2)]
+        other_list = [entry(2, 9, 1), entry(3, 9, 1, True), entry(5, 8, 1)]  # its group goes on in another pack's list
         with self.assertRaisesRegex(ValueError, "top"):
             missionsteps.move(first, -1)
         with self.assertRaisesRegex(ValueError, "bottom"):
             missionsteps.move(last, 1)
+        with self.assertRaisesRegex(ValueError, "pack"):
+            missionsteps.move(other_list, 1)
         unnamed = [entry(2, 9, 1), entry(3, 9, 1, True), dict(entry(4, 9, 1), mission=None)]
         with self.assertRaisesRegex(ValueError, "unnamed"):
             missionsteps.move(unnamed, -1)
@@ -106,7 +109,15 @@ class RealGame(unittest.TestCase):
                         self.assertEqual(records.get(menuorder.key(menu, name)), b.info_idx, name)  # as he binds it
                         if b.kind == "operation" and first is None:
                             first = missionsteps.Mission(d, b.scenario_name, b.kind, b.info_idx, b.pack_idx, None)
+                        if b.kind == "campaign" and b.pack_idx is not None:
+                            chapter = missionsteps.Mission(d, b.scenario_name, b.kind, b.info_idx, b.pack_idx, None)
             self.assertEqual(len(records), 68)
+            # the campaign's groups leave out the tutorial's chapters (another menu), unless it's the one looked at
+            from ruse_mod_engine import scenario_chain as chain_mod
+            g_engine = store.get_ndf("gameplay", chain_mod.GLOBALS_PATH)
+            shown = missionsteps.menu(store, chapter)["order"]
+            tuto = {o["pack"] for o in shown if missionsteps._flag(g_engine, g_engine.instances[o["pack"]], "IsTuto")}
+            self.assertTrue(tuto <= {chapter.pack_idx})
             order = missionsteps.menu(store, first)["order"]
             s, e = missionsteps.run(order)
             other = next(o for o in order if o["pack"] != order[s]["pack"])  # an Operation of another menu pack
@@ -159,6 +170,10 @@ class RealGame(unittest.TestCase):
             before = [o["title"] for o in steps["menu"]["order"]]
             at = next(i for i, o in enumerate(steps["menu"]["order"]) if o["this"])
             self.assertFalse(steps["menu"]["mine"])
+            groups = [o["group"] for o in steps["menu"]["order"]]
+            self.assertEqual(groups, sorted(groups))  # the menu shows its groups from 0 up
+            self.assertEqual(set(steps["menu"]["headings"]), {str(n) for n in groups})  # each under the game's words
+            self.assertEqual(steps["menu"]["headings"]["1"], "1 vs 1")
             moved = api.mission_move(pack, file, -1, "us")
             target = home / "mods" / "order" / "menus.toml"
             self.assertTrue(target.is_file())

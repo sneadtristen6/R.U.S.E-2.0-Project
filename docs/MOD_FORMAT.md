@@ -434,9 +434,13 @@ start_dots = true              # the build draws the start dots on the 3D map (n
 
 ### Where missions show in their menus: `menus.toml` (built: `rusemod.menuorder`; not tried in the game yet)
 
-The OPERATIONS, the CAMPAIGN and BATTLES list their missions from menu packs (the game's own, then each add-on's),
-each pack's list in its order, grouped by `CategoryId` in runs (an entry outside its run splits its group in two).
-A mod gives the order of one run, beside its `mod.toml`:
+The OPERATIONS, the CAMPAIGN and BATTLES show their missions in groups by `CategoryId`, from 0 up, each under the
+game's text for it (`CATCHAL_<n>`, `CATSOLO_<n>`, `CATMULT_<n>` in flash_txt: "1 vs 1", "North Africa", "2 players"…).
+The game hands the menu its entries from the menu packs (globals.cpp: a TChallengePack's ChallengeList, a
+TChapterPack's ChapterList, a TMultiPack's MultiList), pack by pack, each pack's list in its order, and a group shows
+them in that order (the CAMPAIGN sorts a group's chapters by their pack and place in its list: the same order within a
+pack). So a mission's place in its group follows its place in its pack's list. A mod gives the order of some missions
+of one list, beside its `mod.toml`:
 
 ```toml
 [[order]]
@@ -450,8 +454,9 @@ missions = [                       # each: its map's pack name, a /, its scenari
 - The build puts those missions in that order in the places they had in their list, after every other change to
   the menus (new maps' entries, player counts); an entry the order doesn't name keeps its place. Mods' orders apply
   in load order. A mission the game no longer has is left out with a note; missions of two lists are an error.
-- **The Studio:** the Maps tab's **Menus, files and texts of this mission…**, *In the menus*: **Move up** and **Move
-  down** (within its group, as LittleGroove's Menu Entry step), and **Game's order** to take the mod's order out.
+- **The Studio:** the Maps tab's **Menus, files and texts of this mission…**, *In the menus*: the menu as the game
+  builds it, under its own headings, with **Move up** and **Move down** (among the missions of its group from its own
+  list, as LittleGroove's Menu Entry step) and **Game's order** to take the mod's order out.
 
 ### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`)
 

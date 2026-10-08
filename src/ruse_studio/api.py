@@ -3417,9 +3417,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def mission_steps(self, pack: str, file: str, lang: str = schema.BASE) -> dict:
         """One of a map's scenarios (`file`, as map_scenarios names it) as LittleGroove's mission editor shows it, read
         from the game's own files: {"kind": operation / campaign / mp / unbound, "menu": where the game's menus list
-        it (or None): {"listed", "order": [{"title", "tracking", "this", "pack", "group", "players"}] (in the current
-        mod's order, menus.toml), "up"/"down": None when it can move that way in its group, else why not ("top",
-        "bottom", "unnamed"), "mine": the mod changes its group's order, "values": [{"prop", "label", "value"}],
+        it (or None): {"listed", "order": [{"title", "tracking", "this", "pack", "group"}] (as the menu shows it, in
+        the current mod's order, menus.toml), "headings": {group: the menu's heading for it}, "up"/"down": None when
+        it can move that way, else why not ("top", "bottom", "pack", "unnamed"), "mine": the mod changes the order it
+        is in, "values": [{"prop", "label", "value"}],
         "address" (its menu entry, for the All values tab), "texts": [{"prop", "label", "key", "words"}]}, "chain":
         {"links": [{"kind", "why", "state", "depth", "detail"}], "broken"}, "texts": [{"key", "where", "prop", "line",
         "words", "mine"}] (the words in `lang`; `mine`: the current mod changes them), "script": whether the mission
@@ -3469,12 +3470,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 row = ix.db.execute("SELECT text FROM text WHERE key = ? AND lang = ? LIMIT 1",
                                     (key[2:], text_lang)).fetchone()
                 words[key] = row[0] if row else None
-            address = None
+            address, headings = None, {}  # headings: the menu's own group headings (missionsteps.HEADINGS)
             if menu is not None:
                 row = ix.db.execute("""SELECT o.address FROM object o JOIN file f ON f.id = o.file
                                        WHERE f.location LIKE ? AND o.idx = ? AND o.shadow = 0""",
                                     ("%globals.cpp.gladndfbin", menu["info"])).fetchone()
                 address = row[0] if row else None
+                for n in dict.fromkeys(o["group"] for o in menu["order"]):
+                    row = ix.db.execute("SELECT text FROM text WHERE name = ? AND lang = ? LIMIT 1",
+                                        (f"{missionsteps.HEADINGS[m.kind]}{n}", text_lang)).fetchone()
+                    if row:
+                        headings[str(n)] = row[0]
         finally:
             ix.close()
         mine = self._mod_words() if self._mod_dir() is not None else {}
@@ -3486,8 +3492,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             out_menu = {"listed": menu["listed"], "address": address,
                         "order": [{"title": said(o["title_key"]) if o["title_key"] else None,
                                    "tracking": o["tracking"], "this": o["this"], "pack": o["pack"],
-                                   "group": o["group"], "players": o["players"]} for o in menu["order"]],
-                        "up": moves["up"], "down": moves["down"], "mine": moves["mine"],
+                                   "group": o["group"]} for o in menu["order"]],
+                        "headings": headings, "up": moves["up"], "down": moves["down"], "mine": moves["mine"],
                         "values": [{"prop": p, "label": schema.label(p, lang), "value": v}
                                    for p, v in menu["values"].items()],
                         "texts": [{"prop": p, "label": schema.label(p, lang), "key": k, "words": said(k)}
@@ -3532,9 +3538,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             try:
                 group = missionsteps.move(menu["order"], delta)
             except ValueError as exc:
-                why = {"top": "it's already first in its group", "bottom": "it's already last in its group"}
-                # not a game rule: a mission moves among the missions grouped with it (his move_within_group)
-                raise StudioError(f"It can't move: {why.get(str(exc), 'the mission next to it has no scenario file')}.")
+                why = {"top": "it's already first in its group", "bottom": "it's already last in its group",
+                       "pack": "the mission next to it is in another of the game's lists, which keep their order"}
+                # not a game rule: a mod reorders one menu pack's list (rusemod.menuorder)
+                raise StudioError(f"It can't move: {why.get(str(exc), 'one beside it has no scenario file')}.")
         keys = {menuorder.key(name, x) for x in group}
         kept = [o for o in orders if not (o.menu == name and keys & {menuorder.key(o.menu, x) for x in o.missions})]
         game_group = [o["mission"] for o in game_menu["order"]

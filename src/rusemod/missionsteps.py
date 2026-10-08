@@ -191,12 +191,16 @@ def chain(store: PackStore, map_dir: str, file: str, kind: str = "") -> dict:
 
 # --- In the menus ---
 MENU_OF = {"operation": "operation", "campaign": "campaign", "mp": "battles"}  # his kinds -> menus.toml's menus
+# each menu's group headings: the game text <stem><CategoryId> (the menus' BuildCategoryToken; flash_txt has
+# CATCHAL_0-3 "Operation", "1 vs 1", "1 vs All", "Cooperative", CATMULT_0-3 "2 players" .. "7-8 players", CATSOLO_0-6
+# "Prologue" .. "Germany")
+HEADINGS = {"operation": "CATCHAL_", "mp": "CATMULT_", "campaign": "CATSOLO_"}
 
 
 def menu(store: PackStore, mission: Mission, orders=()) -> dict | None:
     """Where the game's menus list a mission: {"kind", "listed" (in a menu at all), "order": [{"info", "tracking",
     "title_key", "this", "mission" (as menus.toml names it, None when no scenario file), "pack" (the menu pack whose
-    list it's in), "group" (its CategoryId), "players"}] (that menu, in the order the player sees it), "values":
+    list it's in), "group" (its CategoryId, 0 when it has none)}] (that menu, in the order the player sees it), "values":
     {name: value} (SHOWN), "info" (the entry's place in the menus' data file, for the All values tab)}; None when no
     menu entry lists it. `orders`: a mod's menuorder.Order list, put in as the build would."""
     if mission.kind not in KINDS or mission.info_idx is None:
@@ -216,15 +220,21 @@ def menu(store: PackStore, mission: Mission, orders=()) -> dict | None:
         if o.menu == menu_name:
             ids = menuorder.arrange(ids, [by_key[k] for k in (menuorder.key(o.menu, x) for x in o.missions)
                                           if k in by_key])
+    # The menu as the game builds it (the game hands each entry to the menu pack by pack in each pack's list order,
+    # with its CategoryId; the menu shows the groups from 0 up, each in the order it got them; the campaign sorts a
+    # group's chapters by their pack and place in its list, the same order): a stable sort by group. A tutorial pack's
+    # chapters go to the tutorial list instead, so they're left out unless it's this mission's.
+    tuto = {p for p in set(packs.values()) if _flag(g, g.instances[p], "IsTuto")}
+    ids = [i for i in ids if packs[i] not in tuto or packs[i] == packs.get(mission.info_idx)]
+    group_prop = SR.group_prop_for(mission.kind)
+    ids.sort(key=lambda i: SR._group_key(g, i, group_prop) or 0)
     order = []
     for info_idx in ids:
         inst = g.instances[info_idx]
-        players = SR._get_prop(g, inst, "NbPlayers")
         order.append({"info": info_idx, "tracking": SR._str_prop(g, inst, "TrackingId"),
                       "title_key": _key(g, inst, "Description"), "this": info_idx == mission.info_idx,
                       "mission": names.get(info_idx), "pack": packs[info_idx],
-                      "group": SR._group_key(g, info_idx, SR.group_prop_for(mission.kind)),
-                      "players": SR.ndf_val(g, players) if players is not None else None})
+                      "group": SR._group_key(g, info_idx, group_prop) or 0})
     inst = g.instances[mission.info_idx]
     values = {}
     for name in SHOWN[mission.kind]:
@@ -237,8 +247,8 @@ def menu(store: PackStore, mission: Mission, orders=()) -> dict | None:
 
 
 def run(order: list[dict]) -> tuple[int, int]:
-    """[start, end) of the mission's group in `order` (menu()'s): the entries side by side with it in its pack's list
-    with its group, the ones it can move among (his scenario_registry.move_within_group)."""
+    """[start, end) of the entries it can move among in `order` (menu()'s): those of its group from its own pack's
+    list, side by side there (a menus.toml order reorders one pack's list; the packs keep their order)."""
     at = next(i for i, o in enumerate(order) if o["this"])
 
     def same(o):
@@ -252,21 +262,27 @@ def run(order: list[dict]) -> tuple[int, int]:
 
 
 def move(order: list[dict], delta: int) -> list[str]:
-    """The missions of its group (run()) in their order once it has moved `delta` places (-1 up, 1 down), as
-    menus.toml names them. ValueError "top" or "bottom" at its group's edge, "unnamed" when one of the group has no
-    scenario file (a mod can't name it)."""
+    """The missions it moves among (run()) in their order once it has moved `delta` places (-1 up, 1 down), as
+    menus.toml names them. ValueError "top" or "bottom" at its group's edge, "pack" when the next one of its group
+    is from another pack's list, "unnamed" when one of them has no scenario file (a mod can't name it)."""
     at = next(i for i, o in enumerate(order) if o["this"])
     s, e = run(order)
     to = at + delta
-    if to < s:
-        raise ValueError("top")
-    if to >= e:
-        raise ValueError("bottom")
+    if not s <= to < e:
+        beside = order[to] if 0 <= to < len(order) else None
+        raise ValueError("pack" if beside is not None and beside["group"] == order[at]["group"]
+                         else "top" if to < s else "bottom")
     names = [o["mission"] for o in order[s:e]]
     if None in names:
         raise ValueError("unnamed")
     names[at - s], names[to - s] = names[to - s], names[at - s]
     return names
+
+
+def _flag(g, inst, prop: str) -> bool:
+    from ruse_mod_engine import scenario_registry as SR
+    v = SR._get_prop(g, inst, prop)
+    return bool(v is not None and v.raw)
 
 
 def _key(g, inst, prop: str) -> str | None:
