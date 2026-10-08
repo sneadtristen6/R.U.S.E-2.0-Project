@@ -727,7 +727,8 @@ tr.edited .flag { border-color: var(--accent); }
 .mission-order { columns: 2; margin: 4px 0 8px; }
 .mission-order ol { margin: 0 0 6px; padding-left: 28px; }
 .mission-order li.this { color: var(--accent); font-weight: 600; }
-.mission-group { color: var(--muted); font-weight: 600; break-after: avoid; }
+.mission-run { break-inside: avoid; }
+.mission-group { color: var(--muted); font-weight: 600; }
 .mission-values { display: grid; grid-template-columns: max-content auto; gap: 2px 14px; margin: 4px 0; }
 .mission-values dt { color: var(--muted); }
 .mission-values dd { margin: 0; }

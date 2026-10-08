@@ -5273,7 +5273,8 @@ function missionOrder(d) {
     const label = (m.headings || {})[String(members[0].group)] || fill(w.mission_group, { n: members[0].group });
     const list = el("ol", { start: s + 1 }, ...members.map((o) => el("li", { className: o.this ? "this" : "",
       textContent: o.title || o.tracking || "?" })));
-    box.append(el("div", { className: "mission-group", title: w.tip_mission_group, textContent: label }), list);
+    box.append(el("div", { className: "mission-run" },  // a group stays whole in one column
+      el("div", { className: "mission-group", title: w.tip_mission_group, textContent: label }), list));
     s = e;
   }
   return box;
