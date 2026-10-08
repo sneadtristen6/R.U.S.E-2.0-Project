@@ -48,8 +48,7 @@ gioco stesso a impedirlo:
 - Senza una strada tra le isole, non si può piazzare nessun edificio.
 - Con le armi del gioco, navi e unità di terra si fanno a malapena danno.
 
-I soli dati della mappa non possono correggere il crash: servono modifiche ai file del gioco stesso, quindi le mappe
-navali aspettano la posizione di Eugen in merito.
+I soli dati della mappa non possono correggere il crash, quindi le mappe navali aspettano.
 
 **0.9.8:** una nuova mappa può partire vuota, come terra piatta o mare aperto, e ogni mappa può avere le sue immagini
 nei menu del gioco.

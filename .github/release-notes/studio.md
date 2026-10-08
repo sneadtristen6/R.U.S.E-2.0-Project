@@ -44,8 +44,7 @@ stands in the way:
 - With no road between the islands, no building can be placed anywhere.
 - With the game's own weapons, ships and land units can barely hurt each other.
 
-Map data alone can't fix the crash: that takes changes to the game's own files, so navy maps wait until we hear
-Eugen's position on that.
+Map data alone can't fix the crash, so navy maps wait.
 
 **0.9.8:** a new map can start blank, as flat land or open sea, and every map can have its own pictures in the
 game's menus.

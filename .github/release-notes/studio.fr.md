@@ -47,8 +47,7 @@ des navires, et c'est le jeu lui-même qui bloque :
 - Sans route entre les îles, aucun bâtiment ne peut être placé nulle part.
 - Avec les armes du jeu, navires et unités terrestres ne peuvent presque pas se blesser.
 
-Les données de carte seules ne peuvent pas corriger le plantage : il faut modifier les fichiers du jeu lui-même, donc
-les cartes navales attendent la position d'Eugen à ce sujet.
+Les données de carte seules ne peuvent pas corriger le plantage, donc les cartes navales attendent.
 
 **0.9.8:** une nouvelle carte peut partir de zéro, en terre plate ou en pleine mer, et chaque carte peut avoir ses
 propres images dans les menus du jeu.

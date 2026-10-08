@@ -46,8 +46,7 @@ sama gra:
 - Bez drogi między wyspami nigdzie nie da się postawić budynku.
 - Z bronią z gry okręty i jednostki lądowe ledwo mogą sobie nawzajem zaszkodzić.
 
-Same dane mapy nie naprawią awarii: potrzebne są zmiany w plikach samej gry, więc mapy morskie czekają na stanowisko
-studia Eugen w tej sprawie.
+Same dane mapy nie naprawią awarii, więc mapy morskie czekają.
 
 **0.9.8:** nowa mapa może zacząć się pusta, jako płaski ląd albo otwarte morze, a każda mapa może mieć własne obrazy w
 menu gry.

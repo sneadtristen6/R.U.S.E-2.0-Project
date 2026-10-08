@@ -47,8 +47,7 @@ das Spiel selbst steht im Weg:
 - Ohne Straße zwischen den Inseln lässt sich nirgends ein Gebäude platzieren.
 - Mit den Waffen des Spiels können Schiffe und Landeinheiten einander kaum schaden.
 
-Kartendaten allein können den Absturz nicht beheben: Dafür müssen die Dateien des Spiels selbst geändert werden,
-deshalb warten Marinekarten auf Eugens Haltung dazu.
+Kartendaten allein können den Absturz nicht beheben, deshalb warten Marinekarten.
 
 **0.9.8:** eine neue Karte kann leer beginnen, als flaches Land oder offenes Meer, und jede Karte kann eigene Bilder
 in den Menüs des Spiels haben.

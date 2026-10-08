@@ -48,8 +48,7 @@ juego lo impide:
 - Sin carretera entre las islas, no se puede colocar ningún edificio.
 - Con las armas del propio juego, los barcos y las unidades terrestres apenas se hacen daño.
 
-Los datos del mapa por sí solos no pueden arreglar el cuelgue: hace falta cambiar los archivos del propio juego, así
-que los mapas navales esperan a conocer la postura de Eugen al respecto.
+Los datos del mapa por sí solos no pueden arreglar el cuelgue, así que los mapas navales esperan.
 
 **0.9.8:** un mapa nuevo puede empezar en blanco, como tierra llana o mar abierto, y cada mapa puede tener sus propias
 imágenes en los menús del juego.

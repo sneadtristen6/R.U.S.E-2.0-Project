@@ -45,7 +45,7 @@ a jednotky z jiných období.
 - Bez silnice mezi ostrovy nejde nikde postavit žádnou budovu.
 - Se zbraněmi ze hry si lodě a pozemní jednotky skoro neublíží.
 
-Samotná data mapy pád neopraví: je třeba změnit soubory samotné hry, a tak námořní mapy čekají na postoj studia Eugen.
+Samotná data mapy pád neopraví, a tak námořní mapy počkají.
 
 **0.9.8:** nová mapa může začít prázdná, jako rovná souš nebo otevřené moře, a každá mapa může mít vlastní obrázky v
 nabídkách hry.
