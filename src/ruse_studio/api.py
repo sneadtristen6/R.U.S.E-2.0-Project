@@ -1426,8 +1426,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             entry = players.entry
         spec = newmap.NewMap(opts["source"], {"us": name}, entry)
         target, src_dir = folder / "maps" / new, folder / "maps" / pack
-        if pictures:  # a blank start's own pictures, its starting points drawn on the wide one by the build
-            spec = replace(spec, picture=presets.PICTURE, wide_picture=presets.WIDE_PICTURE, start_dots=True)
+        if pictures:  # a blank start's own pictures, its starting points drawn on the wide one by the build; and its
+            # ground drawn as our own from its strokes (rusemod.groundgen; the owner, 2026-10-07: "The whole map
+            # should be made but like that. From now on.")
+            spec = replace(spec, picture=presets.PICTURE, wide_picture=presets.WIDE_PICTURE, start_dots=True,
+                           ground="generated")
         elif old_copy is not None:  # a copy of a copy keeps its own menu pictures
             for key in ("picture", "wide_picture"):
                 own = getattr(old_copy[1], key)

@@ -50,6 +50,9 @@ class NewMapError(ValueError):
     """A new map that can't be made, said for the modder: what to change."""
 
 
+GROUNDS = ("kept", "generated")   # a new map's ground: the copied map's moved, or drawn as our own (map.toml ground)
+
+
 @dataclass
 class NewMap:
     copy_of: str                  # the shipped map's pack name
@@ -58,6 +61,8 @@ class NewMap:
     picture: str | None = None    # its own big picture in the menus: a PNG in its folder (rusemod.menupicture)
     wide_picture: str | None = None  # its own wide one (the 3D map), a PNG there too; else made from `picture`
     start_dots: bool = False      # the build draws its starting points on the wide one (menupicture.start_dots_of)
+    ground: str = "kept"          # "generated": its ground drawn as our own from its strokes (rusemod.groundgen),
+                                  # not the copied map's moved; "kept": the copied map's, moved by the strokes
     picture_data: bytes | None = field(default=None, compare=False, repr=False)  # that PNG's bytes, read with the mod
     wide_picture_data: bytes | None = field(default=None, compare=False, repr=False)
 
@@ -69,6 +74,9 @@ def parse(data: dict, where: str = "map.toml", folder: str = "") -> list[NewMap]
         if "name" in data:
             raise NewMapError(f"{where}: name is for a new map; add copy_of = \"<the shipped map's pack name>\" (a "
                               f"shipped map's name in the menus can't change here)")
+        if "ground" in data:
+            raise NewMapError(f"{where}: ground is for a new map (copy_of = \"<the shipped map's pack name>\"): a "
+                              f"shipped map keeps its own ground, moved by its strokes")
         return []
     src = data["copy_of"]
     if not isinstance(src, str) or not re.match(r"^[A-Za-z0-9_]+$", src):
@@ -110,7 +118,11 @@ def parse(data: dict, where: str = "map.toml", folder: str = "") -> list[NewMap]
         dots = start_dots_of(data, where, wide)
     except PictureError as exc:
         raise NewMapError(str(exc)) from None
-    return [NewMap(src, names, entry, picture, wide, dots)]
+    ground = data.get("ground", "kept")
+    if ground not in GROUNDS:
+        raise NewMapError(f"{where}: ground must be one of {', '.join(repr(g) for g in GROUNDS)} ('generated': the "
+                          f"map's ground drawn as our own from its strokes, starting from a map flattened all over)")
+    return [NewMap(src, names, entry, picture, wide, dots, ground)]
 
 
 def map_toml(spec: NewMap, players: int | None = None, header: str = "") -> str:
@@ -127,6 +139,8 @@ def map_toml(spec: NewMap, players: int | None = None, header: str = "") -> str:
         lines.append(f'wide_picture = "{_toml_text(spec.wide_picture)}"')
     if spec.start_dots:
         lines.append("start_dots = true")
+    if spec.ground != "kept":
+        lines.append(f'ground = "{spec.ground}"')
     if set(spec.names) == {"us"}:
         lines.append(f'name = "{_toml_text(spec.names["us"])}"')
     else:
