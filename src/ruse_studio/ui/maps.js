@@ -1751,6 +1751,9 @@ function renderScenarioPick() {
     `${w["scen_kind_" + e.kind] || e.kind} › ${(e.titles || {})[mv.lang] || (e.titles || {}).us || e.name}`
     + ((/^\((\d+)\)/.exec(e.name || "") || [])[1] ? ` (${fill(w.scen_players, { n: /^\((\d+)\)/.exec(e.name)[1] })})` : "")).join(" · ") }) : "";
   $("scen-where").title = w.tip_scen_where;
+  $("scen-mission").classList.toggle("hidden", !s);  // its menu entry, files and texts (openMission)
+  $("scen-mission").textContent = w.mission_open;
+  $("scen-mission").title = w.tip_mission_open;
   if (!s) { $("scen-stats").textContent = scen.data ? w.scen_none : ""; return; }
   const n = (k) => s.items.filter((i) => i.kind === k).length;
   $("scen-stats").textContent = fill(w.scen_stats, { zones: s.zones.length, starts: n("StartingPoint"), spawns: n("Spawn"),
@@ -4147,6 +4150,11 @@ function checkMade() {
 function findingText(f) {
   const w = mv.words, data = { ...f.data };
   if (data.units) data.units = w["mc_units_" + data.units] || data.units;
+  if (f.say === "mc_mission_link") {  // a link of a mission's chain: the mission by its menu name, the link in words
+    const s = ((scen.data || {}).scenarios || []).find((x) => x.file.toLowerCase() === String(data.mission).toLowerCase());
+    data.mission = s ? scenarioLabel(s) : data.mission;
+    data.why = w["mission_why_" + data.why] || data.why;
+  }
   for (const k of ["metres", "n"]) if (typeof data[k] === "number") data[k] = data[k].toLocaleString();  // (x, y) as they are
   return fill(w[f.say] || f.say, data);
 }
@@ -5176,6 +5184,134 @@ function wireMenuPictures() {
   $("menu-pics").addEventListener("keydown", (e) => e.stopPropagation());  // keys never move the map behind it
 }
 
+// --- a mission's three steps (StudioApi.mission_steps, rusemod.missionsteps: LittleGroove's Menu Entry, Load & Files
+// and Text): where the game's menus list it, the files the game needs to start it, link by link, and its texts ---
+const mission = { data: null, tab: "menu", pack: null, file: null };
+const MISSION_TABS = ["menu", "files", "texts"];
+const MISSION_KINDS = { operation: "operation", campaign: "campaign", mp: "skirmish" };  // his kinds -> scen_kind_*
+const MISSION_MARKS = { ok: "✓", missing: "✗", mismatch: "✗", optional: "–", unknown: "?" };
+
+async function openMission() {
+  const w = mv.words, s = ((scen.data || {}).scenarios || [])[scen.pick];
+  if (!s || !mv.current) return;
+  Object.assign(mission, { pack: mv.current, file: s.file, data: null });
+  $("mission-title").textContent = fill(w.mission_title, { name: scenarioLabel(s) });
+  $("mission-close").textContent = w.close;
+  $("mission-close").title = w.tip_close;
+  renderMission();
+  $("mission-box").showModal();
+  await refreshMission();
+}
+
+async function refreshMission() {
+  const asked = `${mission.pack}|${mission.file}`;
+  let data;
+  try { data = await mv.api.mission_steps(mission.pack, mission.file, mv.lang); } catch (err) { data = { error: String(err.message || err) }; }
+  if (asked !== `${mission.pack}|${mission.file}`) return;  // another mission was opened meanwhile
+  mission.data = data;
+  renderMission();
+}
+
+function renderMission() {
+  const w = mv.words, d = mission.data;
+  $("mission-tabs").replaceChildren(...MISSION_TABS.map((t) => {
+    const tab = el("button", { type: "button", className: "tray-tab", role: "tab", textContent: w["mission_tab_" + t],
+      title: w["tip_mission_tab_" + t] });
+    tab.setAttribute("aria-selected", String(t === mission.tab));
+    tab.addEventListener("click", () => { mission.tab = t; renderMission(); });
+    return tab;
+  }));
+  const body = $("mission-body");
+  if (!d) { body.replaceChildren(el("p", { className: "muted small", textContent: w.mission_loading })); return; }
+  if (d.error) { body.replaceChildren(el("p", { className: "notice warn", textContent: d.error })); return; }
+  if (d.new) { body.replaceChildren(el("p", { className: "small", textContent: w.mission_new_map })); return; }
+  body.replaceChildren(...(mission.tab === "menu" ? missionMenu(d) : mission.tab === "files" ? missionFiles(d) : missionTexts(d)));
+}
+
+// In the menus: whether the game lists it, the menu as the player sees it, the entry's values and texts
+function missionMenu(d) {
+  const w = mv.words, m = d.menu;
+  if (!m) return [el("p", { className: "small", textContent: w.mission_unbound })];
+  const at = m.order.findIndex((o) => o.this);
+  const menu = w["scen_kind_" + (MISSION_KINDS[d.kind] || d.kind)] || d.kind;
+  const values = el("dl", { className: "mission-values small" });
+  for (const v of m.values) {
+    values.append(el("dt", { textContent: w["mission_v_" + v.prop] || v.label, title: w.tip_mission_values }),
+      el("dd", { textContent: String(v.value) }));
+  }
+  const change = el("button", { type: "button", className: "small", textContent: w.mission_values_change,
+    title: m.address ? w.tip_mission_values_change : w.mission_values_cannot,
+    disabled: !m.address || typeof window.openAllValues !== "function" });
+  change.addEventListener("click", () => { $("mission-box").close(); window.openAllValues(m.address); });
+  return [
+    el("p", { className: m.listed ? "small" : "notice warn", textContent: m.listed
+      ? fill(w.mission_listed, { menu, n: at + 1, total: m.order.length }) : w.mission_not_listed }),
+    el("h3", { className: "dup-how-title", textContent: w.mission_order_head, title: w.tip_mission_order }),
+    el("ol", { className: "mission-order small" }, ...m.order.map((o) => el("li", { className: o.this ? "this" : "",
+      textContent: o.title || o.tracking || "?" }))),
+    el("h3", { className: "dup-how-title", textContent: w.mission_values_head, title: w.tip_mission_values }),
+    values,
+    el("div", { className: "actions" }, change),
+    el("h3", { className: "dup-how-title", textContent: w.mission_menu_texts_head, title: w.tip_mission_menu_texts }),
+    ...m.texts.map((t) => missionTextRow(w["mission_t_" + t.prop] || t.label, t.key, t.words,
+      (d.texts.find((x) => x.key === t.key) || {}).mine)),
+  ];
+}
+
+// Files check: the chain from the menu entry to the mission, each link fine, missing or not matching, and why
+function missionFiles(d) {
+  const w = mv.words, c = d.chain;
+  const list = el("ul", { className: "mission-chain small" });
+  for (const l of c.links) {
+    let why = w["mission_why_" + l.why] || l.why;
+    if (l.why === "dico_langs_ok") why = fill(why, { n: l.detail.split(",").filter(Boolean).length });
+    const li = el("li", { className: "chain-" + l.state, title: w["mission_state_" + l.state] || l.state },
+      el("span", { className: "chain-mark", textContent: MISSION_MARKS[l.state] || "?" }), " ", why);
+    li.style.marginLeft = `${l.depth * 18}px`;
+    list.append(li);
+  }
+  return [
+    el("p", { className: c.broken ? "notice warn" : "small", textContent: c.broken
+      ? fill(w.mission_files_broken, { n: c.broken }) : w.mission_files_ok }),
+    list,
+    el("p", { className: "muted small", textContent: w.mission_files_note }),
+  ];
+}
+
+// Texts: every text the mission owns, its menu entry's and its script's, each changed in every language at once
+function missionTexts(d) {
+  const w = mv.words, out = [];
+  if (d.script === false) out.push(el("p", { className: "notice warn", textContent: w.mission_texts_no_script }));
+  out.push(el("p", { className: "muted small", textContent: fill(w.mission_texts_count, { n: d.texts.length }) }));
+  for (const t of d.texts) {
+    const where = t.where === "menu" ? (w["mission_t_" + t.prop] || t.prop)
+      : t.line ? fill(w.mission_texts_line, { line: t.line }) : w.mission_texts_script;
+    out.push(missionTextRow(where, t.key, t.words, t.mine));
+  }
+  return out;
+}
+
+function missionTextRow(label, key, words, mine) {
+  const w = mv.words, box = el("div", { className: "mission-text" + (mine ? " edited" : "") });
+  const edit = el("button", { type: "button", className: "link small", textContent: w.values_words_edit,
+    title: w.tip_mission_words, disabled: typeof window.wordsPanel !== "function" });
+  let panel = null;
+  edit.addEventListener("click", () => {
+    if (panel) { panel.remove(); panel = null; return; }
+    panel = window.wordsPanel(key, refreshMission, "mod");  // saved in the mod, every language at once
+    box.append(panel);
+  });
+  box.append(el("div", { className: "small" }, el("span", { className: "muted", textContent: `${label}: ` }),
+    el("span", { textContent: words ? `“${words}”` : w.values_words_none }), " ", edit));
+  return box;
+}
+
+function wireMission() {
+  $("scen-mission").addEventListener("click", openMission);
+  $("mission-close").addEventListener("click", () => $("mission-box").close());
+  $("mission-box").addEventListener("keydown", (e) => e.stopPropagation());  // keys never move the map behind it
+}
+
 async function deleteMap() {
   const w = mv.words, pack = mv.current, name = mapName(pack);
   $("map-delete-yes").disabled = true;
@@ -5998,6 +6134,7 @@ function wire() {
   $("dup-base").addEventListener("change", dupBaseChanged);
   $("map-picture").addEventListener("click", openMenuPictures);
   wireMenuPictures();
+  wireMission();
   $("map-sound").addEventListener("click", () => {  // the map's background sound (sound.js; StudioApi.map_sound)
     if (mv.current) window.SoundView.openAmbience(mv.current, mapName(mv.current), mv.words, mv.lang);
   });

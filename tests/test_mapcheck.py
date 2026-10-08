@@ -269,6 +269,8 @@ class RealGame(unittest.TestCase):
             self.assertEqual(set(f), {"key", "level", "say", "data", "fix"})
             said(f)
         self.assertTrue(any(line.startswith("roads: SuperCrossRoads4") for line in lines))
+        # its missions' chains (rusemod.missionsteps, walked in the built copy): a road breaks none of them
+        self.assertEqual([f for f in got if f["key"] == "missions"], [])
 
 
 if __name__ == "__main__":

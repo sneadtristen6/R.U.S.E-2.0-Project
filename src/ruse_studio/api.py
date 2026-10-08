@@ -3411,6 +3411,71 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return job.start(self._reading_game(game, work), "The map is checked.",
                          plain=(BuildError, RndfError, OSError))
 
+    # --- a mission's three steps (rusemod.missionsteps: LittleGroove's Menu Entry, Load & Files and Text) ---
+    def mission_steps(self, pack: str, file: str, lang: str = schema.BASE) -> dict:
+        """One of a map's scenarios (`file`, as map_scenarios names it) as LittleGroove's mission editor shows it, read
+        from the game's own files: {"kind": operation / campaign / mp / unbound, "menu": where the game's menus list
+        it (or None): {"listed", "order": [{"title", "tracking", "this"}], "values": [{"prop", "label", "value"}],
+        "address" (its menu entry, for the All values tab), "texts": [{"prop", "label", "key", "words"}]}, "chain":
+        {"links": [{"kind", "why", "state", "depth", "detail"}], "broken"}, "texts": [{"key", "where", "prop", "line",
+        "words", "mine"}] (the words in `lang`; `mine`: the current mod changes them), "script": whether the mission
+        script's texts could be read (None when it has none)}. A map new in the mod: {"new": True} (its missions are
+        checked by Check this map, which builds it)."""
+        from rusemod import missionsteps
+        game = self._game()
+        if game is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("We couldn't find R.U.S.E., so there are no missions to show.")
+        if self._new_maps().get(str(pack).lower()):
+            return {"new": True}
+        text_lang = "us" if lang == schema.BASE else lang
+        with missionsteps.PackStore(game) as store:
+            m = missionsteps.find(store, str(pack), str(file))
+            if m is None:
+                # not a game rule: the page asked for a scenario this map doesn't have
+                raise StudioError(f"{pack} has no scenario {file}.")
+            menu = missionsteps.menu(store, m)
+            chain = missionsteps.chain(store, m.map_dir, m.file, m.kind)
+            raw = missionsteps.script_of(store, m.map_dir, m.file)
+            source, script = "", None
+            if raw is not None:
+                try:
+                    source, script = mapscripts.text(raw), True
+                except Exception:  # the script viewer's libraries aren't there: only the menu's texts
+                    script = False
+            texts = missionsteps.texts(store, m, source)
+        keys = {t["key"] for t in texts} | {o["title_key"] for o in (menu or {}).get("order", []) if o["title_key"]}
+        ix = self._open()
+        try:
+            words = {}
+            for key in keys:
+                row = ix.db.execute("SELECT text FROM text WHERE key = ? AND lang = ? LIMIT 1",
+                                    (key[2:], text_lang)).fetchone()
+                words[key] = row[0] if row else None
+            address = None
+            if menu is not None:
+                row = ix.db.execute("""SELECT o.address FROM object o JOIN file f ON f.id = o.file
+                                       WHERE f.location LIKE ? AND o.idx = ? AND o.shadow = 0""",
+                                    ("%globals.cpp.gladndfbin", menu["info"])).fetchone()
+                address = row[0] if row else None
+        finally:
+            ix.close()
+        mine = self._mod_words() if self._mod_dir() is not None else {}
+
+        def said(key):
+            return (mine.get(key, (None, {}))[1] or {}).get(text_lang) or words.get(key)
+        out_menu = None
+        if menu is not None:
+            out_menu = {"listed": menu["listed"], "address": address,
+                        "order": [{"title": said(o["title_key"]) if o["title_key"] else None,
+                                   "tracking": o["tracking"], "this": o["this"]} for o in menu["order"]],
+                        "values": [{"prop": p, "label": schema.label(p, lang), "value": v}
+                                   for p, v in menu["values"].items()],
+                        "texts": [{"prop": p, "label": schema.label(p, lang), "key": k, "words": said(k)}
+                                  for p, k in menu["texts"].items()]}
+        return {"kind": m.kind, "menu": out_menu, "chain": chain, "script": script,
+                "texts": [dict(t, words=said(t["key"]), mine=t["key"] in mine) for t in texts]}
+
     # --- the Bridges dock: the map's own bridge kinds, and bridges placed by hand (rusemod.bridges) ---
     def map_bridges(self, pack: str) -> dict:
         """The map's own bridge kinds, for the Bridges dock: {"kinds": [rusemod.bridges.kinds' dicts], "kind": the

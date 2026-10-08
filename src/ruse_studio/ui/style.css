@@ -711,3 +711,20 @@ tr.edited .flag { border-color: var(--accent); }
 #map-sound-box { width: min(640px, calc(100% - 40px)); }
 #map-sound-box .ms-from { width: 100%; margin: 4px 0 6px; }
 #map-sound-box .music-actions { margin-top: 8px; }
+/* a mission's three steps (maps.js openMission): its place in the menus, the files check, its texts */
+.mission-box { width: min(760px, calc(100% - 40px)); }
+.mission-box .tray-tabs { margin: 8px 0 10px; }
+.mission-body { max-height: 62vh; overflow-y: auto; }
+.mission-order { columns: 2; margin: 4px 0 8px; padding-left: 28px; }
+.mission-order li.this { color: var(--accent); font-weight: 600; }
+.mission-values { display: grid; grid-template-columns: max-content auto; gap: 2px 14px; margin: 4px 0; }
+.mission-values dt { color: var(--muted); }
+.mission-values dd { margin: 0; }
+.mission-chain { list-style: none; padding: 0; margin: 6px 0; }
+.mission-chain li { padding: 1px 0; }
+.mission-chain .chain-mark { display: inline-block; width: 14px; font-weight: 700; }
+.mission-chain .chain-ok .chain-mark { color: var(--ok); }
+.mission-chain .chain-missing .chain-mark, .mission-chain .chain-mismatch .chain-mark { color: var(--error); }
+.mission-chain .chain-optional, .mission-chain .chain-unknown { color: var(--muted); }
+.mission-text { padding: 3px 0; border-bottom: 1px solid var(--line); }
+.mission-text.edited { border-left: 3px solid var(--accent); padding-left: 6px; }

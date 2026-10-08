@@ -159,6 +159,7 @@
         </div>
         <div id="scen-stats" class="muted small"></div>
         <div id="scen-where" class="small scen-where"></div>
+        <button id="scen-mission" type="button" class="link small hidden"></button>
         <div id="scenery-hover" class="small"></div>
         <div id="map-ground" class="small"></div>
         <div id="map-help" class="muted small"></div>
@@ -653,6 +654,15 @@
     <p id="mp-shared" class="muted small"></p>
     <p id="mp-note" class="small" role="status"></p>
     <div class="actions"><button id="mp-close" type="button" class="small ghost"></button></div>
+  </dialog>
+
+  <!-- a mission's three steps (maps.js openMission, StudioApi.mission_steps, rusemod.missionsteps: LittleGroove's Menu
+       Entry, Load & Files and Text): where the game's menus list it, the files the game needs to start it, its texts -->
+  <dialog id="mission-box" class="doctor mission-box" aria-labelledby="mission-title">
+    <h2 id="mission-title"></h2>
+    <div id="mission-tabs" class="tray-tabs" role="tablist"></div>
+    <div id="mission-body" class="mission-body"></div>
+    <div class="actions"><button id="mission-close" type="button" class="small ghost"></button></div>
   </dialog>
 
   <!-- a map's background sound (sound.js openAmbience, StudioApi.map_sound, rusemod.sound): the three layers of the

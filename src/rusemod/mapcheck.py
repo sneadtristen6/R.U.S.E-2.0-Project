@@ -47,6 +47,8 @@ WORDS = {
     "mc_objects_more": "{n} more objects stand on the new roads.",
     "mc_units_infantry": "infantry",
     "mc_units_vehicles": "vehicles",
+    "mc_mission_link": "Mission {mission}: {why}",
+    "mc_missions_unread": "The map's missions couldn't be checked: {why}",
 }
 
 
@@ -437,6 +439,7 @@ def check_map(game: Path, mod_folder: Path, pack: str, say=None) -> list[dict]:
         win = _member(built, member(pack)) if built is not None else None
         built_map = _named(Path(tmp), map_pack.name) if map_pack is not None else None
         mesh = _member(built_map, "output\\highdef.tms", exact=False) if built_map is not None else None
+        missions = _mission_links(game, Path(tmp), pack)
     if win is None:
         data_pack = find_pack(game, PACK)
         win = _member(data_pack, member(pack)) if data_pack is not None else None
@@ -479,5 +482,25 @@ def check_map(game: Path, mod_folder: Path, pack: str, say=None) -> list[dict]:
                     if o.type in descs and descs[o.type].group in ("building", "prop") and not descs[o.type].bridge]
         if sc_raw is not None:
             objects += list(map_objects(Scenery(sc_raw), descs, lines))
-    out = check_built(win, lines, decks, objects)
+    out = check_built(win, lines, decks, objects) + missions
     return out or [_finding("map", "ok", "mc_ok")]
+
+
+def _mission_links(game: Path, built: Path, pack: str) -> list[dict]:
+    """The map's missions (rusemod.missionsteps: LittleGroove's Load & Files), each one's chain from its menu entry to
+    the mission walked in the built copy over the game: a finding for each link missing or not matching (`why`: the
+    Studio words it, mission_why_<why>)."""
+    from . import missionsteps
+    out = []
+    try:
+        with missionsteps.PackStore(game, built) as store:
+            for m in missionsteps.missions(store, pack):
+                if m.kind not in missionsteps.KINDS:
+                    continue  # no menu loads it (a test or an unused setup): nothing for a player to miss
+                for link in missionsteps.chain(store, m.map_dir, m.file, m.kind)["links"]:
+                    if link["state"] in ("missing", "mismatch"):
+                        out.append(_finding("missions", "fail", "mc_mission_link", mission=m.file + ".scenario",
+                                            why=link["why"]))
+    except Exception as exc:  # his engine stopped on these files: said, and the rest of the check still shown
+        out.append(_finding("missions", "warn", "mc_missions_unread", why=f"{type(exc).__name__}: {exc}"))
+    return out
