@@ -227,7 +227,7 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
 |---|---|---|
 | Texture | PNG | a repaint of a game picture (below) |
 | Model | glTF 2.0 (+ textures) | a new unit's own model (below) |
-| Sound | WAV | not yet |
+| Sound | WAV | a new song or sound in place of the game's (below) |
 
 - `files/replace/<game path>.png` repaints an existing picture: the Studio's **Open in Blender** and
   `ruse export-model` write the pictures with their paths, so a repaint goes back where it came from.
@@ -262,6 +262,28 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   *Bring back* asks that Blender to save the paint (it also saves on Ctrl+S, on its "Save paint" button and every
   10 seconds) and copies the pictures painted since into the mod's `files/replace`. The game's models never go into
   a mod.
+- **Songs and sounds (2026-10-07, `rusemod.sound`; heard in the game: the main menu song, the songs of battle lists
+  1 and 2 and a unit's voice lines, each replaced this way; the rest not tried yet):** `files/replace/<the sound's path in
+  ZZ_Win.dat>.wav` plays in place of the game's sound, e.g.
+  `files/replace/gen_sound/ww2/sons/atp_music/battle1.ess.wav` for the battle song "Battle 1". A 16-bit WAV, any
+  length; one channel, two or six (as the game's own sounds have), at its own rate. The build makes the game's kind
+  of file from it, once (the build cache keeps it), and updates what the game reads about the sound wherever the game
+  keeps that. A later mod's WAV wins over an earlier one's. Music and most unit voices can be replaced this way; the
+  short sound effects of the other kind can't yet (the build says so). The Studio's **Music** tab lists every song
+  the game plays by where it plays (the menus, the three lists battles play from, the end of a match, mission goals,
+  the campaign chapters and Operations that name them, and the few no part of the game plays), plays each one, and
+  replaces it in a small editor of its own: a sound file dropped or chosen (the Studio's window reads WAV, MP3, OGG
+  and FLAC itself), cut with two handles, faded in and out, made louder or quieter (or as loud as the game's), heard,
+  then *Use this* saves it in the mod as above, in the game song's own format. Nothing to install. A unit's page has
+  a **Voice** section the same way: what the unit says in the game, by moment (the game's own words for them: Move,
+  Attack, Spawn...), each line heard and replaced in the same editor. A unit speaks the lines of its nation and kind,
+  so the page names the units that share them (a line changed there is heard from all of them); a copied unit speaks
+  its source's.
+- **New songs (2026-10-07; heard in the game: a new song in battle lists 1 and 2):** `files/music/list1/<name>.wav` (and `list2`, `list3`) adds a
+  song of the mod's own, with a name of its own, to that one of the three lists battles play from: the build makes
+  the song (as above), adds it beside the game's songs with its description, and adds a new song object naming it at
+  the end of the list. The name is letters, digits and `_`. The Music tab's **Add a song…** under each list writes it
+  there (the editor asks for its name); the song then shows in that list, marked New, with Change… and Remove.
 - `files/add/mods/<mod id>/<name>.<source ext>` adds a new file, referenced from `.rndf` by its game path.
 
 ## 8. Maps

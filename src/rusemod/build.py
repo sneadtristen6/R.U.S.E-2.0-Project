@@ -137,6 +137,11 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.textures = mod_textures(path)
         info.cards = mod_cards(path)
         info.models = mod_models(path)
+        from .sound import mod_new_songs, mod_sounds, new_songs_rndf
+        info.sounds = mod_sounds(path)
+        info.new_songs = mod_new_songs(path, mod_id)  # files/music/list<N>/<name>.wav: and the data they need
+        if info.new_songs:
+            ops += parse(new_songs_rndf(info.new_songs), file="files/music", mod=mod_id)
         from .solved import read_mod
         info.solved = read_mod(path)
         from . import mapscripts
@@ -719,6 +724,7 @@ class BuildResult:
     script_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (the script pack) -> new bytes
     model_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (a skirmish unit pack) -> new bytes
     texture_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (a texture, a stand-in pack) -> bytes
+    sound_changed: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (a sound, a sound bank) -> bytes
     close_up_maps: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (a map's close-up map copy) -> bytes
     new_classes: list = field(default_factory=list)  # class names added to the game's Python unit list
     terrain_changed: dict = field(default_factory=dict)  # map pack file name -> {member path: new bytes}
@@ -765,10 +771,11 @@ def load_pack(arc: Edat, cache=None) -> PackModel:
 
 def needs_zz_win(mods: list) -> bool:
     """Whether building `mods` [(ModInfo, ops)] needs ZZ_Win.dat: some mod adds texts or a new map (its name in the
-    menus), changes a map's menu pictures, repaints a texture (files/replace, rusemod.unitlook), or new objects (a new unit needs a class in the Python unit list, which lives there), or moves a unit to
+    menus), changes a map's menu pictures, repaints a texture or replaces a sound (files/replace, rusemod.unitlook,
+    rusemod.sound), or new objects (a new unit needs a class in the Python unit list, which lives there), or moves a unit to
     another nation or model (the skirmish mesh packs there say whether its models are loaded for it: unit_models)."""
     return any(m.texts or m.new_maps or getattr(m, "menu_pictures", None) or getattr(m, "textures", None)
-               for m, _ in mods) or \
+               or getattr(m, "sounds", None) or getattr(m, "new_songs", None) for m, _ in mods) or \
         any(op.kind in ("create", "clone") or _moves(op) for _, ops in mods for op in ops)
 
 
@@ -2850,11 +2857,36 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 say(f"own model of {unit}: {r.get('vertices', '?')} points, {r.get('triangles', '?')} triangles in "
                     f"{r.get('draws', '?')} draw call(s), {len(written.added)} texture(s); into "
                     f"{len(written.changed)} pack(s) beside {source}")
+        sounds: dict = {}  # mods' own sounds (MOD_FORMAT §7, rusemod.sound): a later mod's WAV wins
+        for mod_id in result.order:
+            sounds.update(getattr(by_id.get(mod_id), "sounds", None) or {})
+        if sounds and text_arc is not None:
+            from .sound import SoundError, changes as sound_changes
+            say(f"sounds: {len(sounds)}")
+            try:
+                result.sound_changed = sound_changes(text_arc, sounds, cache, say=say, before={
+                    **result.model_changed, **result.texture_changed, **result.model_imports})
+            except SoundError as exc:
+                raise BuildError(str(exc)) from None
+        new_songs: dict = {}  # mods' new songs (files/music/list<N>, rusemod.sound): new files and descriptions
+        for mod_id in result.order:
+            new_songs.update(getattr(by_id.get(mod_id), "new_songs", None) or {})
+        if new_songs and text_arc is not None:
+            from .sound import SoundError, new_song_changes
+            try:
+                banks, added = new_song_changes(text_arc, new_songs, cache, say=say, before={
+                    **result.model_changed, **result.texture_changed, **result.model_imports,
+                    **result.sound_changed})
+            except SoundError as exc:
+                raise BuildError(str(exc)) from None
+            result.sound_changed.update(banks)
+            result.new_files.update(added)
         if result.new_files and text_arc is not None:  # new cards and model textures: files of ZZ_Win.dat's own
             from .newmap import Grown
             text_arc = Grown(text_arc, result.new_files)
         zz_win_changed = {**result.text_changed, **result.script_changed, **result.model_changed,
-                          **result.close_up_maps, **result.texture_changed, **result.model_imports}
+                          **result.close_up_maps, **result.texture_changed, **result.model_imports,
+                          **result.sound_changed}
         for data_path, _a, changed_members in data_packs:
             new_ones = {m.lower() for m in result.added.get(data_path.name, {})}
             shipped = [m for m in changed_members if m.replace("/", "\\").lower() not in new_ones]  # (new: "added")

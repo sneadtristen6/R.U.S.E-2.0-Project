@@ -83,12 +83,14 @@ async function setLanguage(lang) {
   $("tab-economy").textContent = w.economy_tab;
   $("tab-ai").textContent = w.ai_tab;
   $("tab-values").textContent = w.values_tab;
+  $("tab-music").textContent = w.music_tab;
   $("tab-maps").textContent = w.maps_tab;
   $("tab-settings").textContent = w.settings_tab;
   if (state.view === "maps" && window.MapView) window.MapView.setWords(w, lang);
   if (state.view === "economy") renderEconomy();
   if (state.view === "ai") renderAI();
   if (state.view === "values") renderValues();
+  if (state.view === "music") window.SoundView.setWords(w, lang);
   $("lang-name").textContent = lang === "base" ? w.game_names
     : (state.languages.find((l) => l.code === lang) || {}).name || "";
   renderLangPick();
@@ -109,7 +111,7 @@ async function setLanguage(lang) {
   $("test-log-close").textContent = w.close;
   $("test-log-copy").textContent = w.doc_copy;
   // tooltips: one sentence on every control, from words.toml (tip_*)
-  const tips = { "tab-units": "tip_tab_units", "tab-economy": "tip_tab_economy", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
+  const tips = { "tab-units": "tip_tab_units", "tab-economy": "tip_tab_economy", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values", "tab-music": "tip_tab_music", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close", "test-log-copy": "tip_copy_log",
     "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
@@ -229,6 +231,7 @@ async function modChanged() {
   if (state.view === "economy") await renderEconomy();  // the economy shown is the mod's
   if (state.view === "ai") await renderAI();  // and so are the computer players, and its scripts
   if (state.view === "values" && state.valuePage) await showValueObject(state.valuePage.address, { keep: true });  // and its changes
+  if (state.view === "music") window.SoundView.modChanged();  // and the songs of its own
 }
 
 async function pickMod(e, kind = "mod") {
@@ -1512,6 +1515,7 @@ async function showUnit(address, via) {
   }
   if (u.has_weapons && u.editable) parts.push(weaponsGroup(u));
   if (u.can_upgrade) parts.push(upgradeGroup(u));
+  if (u.named || u.new) parts.push(window.SoundView.voicesGroup(u, w, state.lang));  // what it says (sound.js)
   if (u.parts.length) {
     const list = el("ul", { className: "parts" });
     for (const p of u.parts) {
@@ -1839,22 +1843,27 @@ function showView(view) {
   $("economy-view").classList.toggle("hidden", view !== "economy");
   $("ai-view").classList.toggle("hidden", view !== "ai");
   $("values-view").classList.toggle("hidden", view !== "values");
+  $("music-view").classList.toggle("hidden", view !== "music");
   $("maps-view").classList.toggle("hidden", view !== "maps");
   $("settings-view").classList.toggle("hidden", view !== "settings");
   $("tab-units").setAttribute("aria-selected", String(view === "units"));
   $("tab-economy").setAttribute("aria-selected", String(view === "economy"));
   $("tab-ai").setAttribute("aria-selected", String(view === "ai"));
   $("tab-values").setAttribute("aria-selected", String(view === "values"));
+  $("tab-music").setAttribute("aria-selected", String(view === "music"));
   $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
   $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
-  $("pick-mod").classList.toggle("hidden", view === "maps");  // Units, Economy, AI and All values edit a mod, Maps a map
+  $("pick-mod").classList.toggle("hidden", view === "maps");  // Units, Economy, AI, All values and Music edit a mod, Maps a map
   $("pick-map").classList.toggle("hidden", view !== "maps");
-  // "No game index yet" (and the index's build, a minute or more) covers the tabs that read it, Units, Economy, AI and
-  // All values: the Maps tab and Settings (where the installer's clean backup shows how far it is) can be used meanwhile
-  $("no-index").classList.toggle("off-tab", !["units", "economy", "ai", "values"].includes(view));
+  // "No game index yet" (and the index's build, a minute or more) covers the tabs that read it, Units, Economy, AI, All
+  // values and Music: the Maps tab and Settings (where the installer's clean backup shows how far it is) can be used
+  // meanwhile
+  $("no-index").classList.toggle("off-tab", !["units", "economy", "ai", "values", "music"].includes(view));
+  if (view !== "music") window.SoundView.leave();  // a song playing stops with its tab
   if (view === "economy") { renderEconomy(); return; }
   if (view === "ai") { renderAI(); return; }
   if (view === "values") { renderValues(); return; }
+  if (view === "music") { window.SoundView.open(state.words, state.lang); return; }
   if (view === "settings") { renderSettings(); loadBackup(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
@@ -3205,6 +3214,7 @@ async function start() {
   $("tab-ai").addEventListener("click", () => showView("ai"));
   $("tab-values").addEventListener("click", () => showView("values"));
   valuesEvents();
+  $("tab-music").addEventListener("click", () => showView("music"));
   $("ai-script").addEventListener("change", (e) => { if (e.target.value) showAIScript(e.target.value); });
   $("ai-script-copy").addEventListener("click", copyAIScript);
   scriptEvents();
