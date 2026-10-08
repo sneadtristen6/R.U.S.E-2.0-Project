@@ -121,6 +121,8 @@
         <!-- the map's own pictures in the game's menus (maps.js openMenuPictures, StudioApi.menu_pictures): any map,
              with a map project to keep them in -->
         <button id="map-picture" type="button" class="chip map-duplicate hidden"></button>
+        <!-- the map's background sound (sound.js openAmbience, StudioApi.map_sound): any map, kept in the map project -->
+        <button id="map-sound" type="button" class="chip map-duplicate hidden"></button>
         <!-- a new map's folder to the Recycle Bin (maps.js deleteMap, StudioApi.delete_map): shown on new maps only -->
         <button id="map-delete" type="button" class="ghost danger map-delete hidden"></button>
         <div id="map-delete-sure" class="map-delete-sure hidden">
@@ -573,6 +575,23 @@
     <p id="mp-shared" class="muted small"></p>
     <p id="mp-note" class="small" role="status"></p>
     <div class="actions"><button id="mp-close" type="button" class="small ghost"></button></div>
+  </dialog>
+
+  <!-- a map's background sound (sound.js openAmbience, StudioApi.map_sound, rusemod.sound): the three layers of the
+       sound the map plays under the battle, each heard and replaced in the Music tab's editor, or the map started from
+       another of the game's backgrounds; saved in the map project. Not tried in the game yet -->
+  <dialog id="map-sound-box" class="doctor" aria-labelledby="ms-title">
+    <h2 id="ms-title"></h2>
+    <p id="ms-lead" class="small"></p>
+    <p id="ms-untried" class="muted small"></p>
+    <h3 id="ms-from-title" class="dup-how-title"></h3>
+    <select id="ms-from" class="ms-from"></select>
+    <h3 id="ms-layers-title" class="dup-how-title"></h3>
+    <p id="ms-layers-help" class="muted small"></p>
+    <div id="ms-layers" class="music-list"></div>
+    <div class="music-actions"><button id="ms-all" type="button" class="small"></button></div>
+    <p id="ms-note" class="small" role="status"></p>
+    <div class="actions"><button id="ms-close" type="button" class="small ghost"></button></div>
   </dialog>
 
   <footer id="status" class="status" role="status"></footer>

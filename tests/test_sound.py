@@ -273,6 +273,147 @@ class InTheBuild(unittest.TestCase):
                 ("Music_my_mod_Ruse", 2, "WW2\\Sons\\ATP_Music\\my-mod_Ruse.ogg")])  # list4 and a nameless one: not
             self.assertIn("gen_sound\\ww2\\sons\\atp_music\\my-mod_calm_one.ess", got)
 
+    def test_layers_into_a_background(self):
+        base = array("h", [(i % 6) * 100 + (i // 6) % 50 for i in range(6 * 10)])  # 10 frames: channel c = c*100 + t
+        layer = array("h", [1000 + i for i in range(2 * 4)])  # 4 stereo frames: repeated to fill 10
+        out = sound.compose(base, 6, {2: layer})
+        self.assertEqual(len(out), 60)
+        self.assertEqual(list(out[0::6]), list(base[0::6]))  # layer 1 (channels 1-2) as it was
+        self.assertEqual(list(out[5::6]), list(base[5::6]))  # layer 3 too
+        self.assertEqual(list(out[2::6]), [1000, 1002, 1004, 1006] * 2 + [1000, 1002])  # layer 2: the new, repeated
+        self.assertEqual(list(out[3::6]), [1001, 1003, 1005, 1007] * 2 + [1001, 1003])
+        longer = sound.compose(base, 6, {1: array("h", [7] * 2 * 25)})  # a longer layer: the others repeated
+        self.assertEqual((len(longer) // 6, list(longer[2::6])[10:12]), (25, list(base[2::6])[:2]))
+
+    def background_game(self, d: str):
+        """A made-up game with one map (Alpha) whose settings name the Tunisie background; two backgrounds in
+        ZZ_Win.dat, their descriptions in the map's own bank."""
+        from fixtures import make_edat, make_ndf, val
+        bg = {n: sound.encode(tone(1200, 6, 48000, seed=k), 6, 48000, flag=0) for k, n in enumerate(("tunisie", "swamp"))}
+        bank = make_edat([("dir", "gen_sound\\ww2\\sons\\sfx_env\\", [
+            ("file", f"multipiste_ambiance_{n}.sformat", sound.description(b)) for n, b in bg.items()])])
+        zz = make_edat([("dir", "gen_sound\\", [
+            ("dir", "pack\\", [("file", "map\\alphaambient.mpk", bank),
+                               ("file", "gfxdescriptor.mpk", make_edat([("file", "x.sformat", b"x" * 28)]))]),
+            ("dir", "ww2\\sons\\sfx_env\\", [("file", f"multipiste_ambiance_{n}.ess", b) for n, b in bg.items()])])])
+        ndf = make_ndf(objects=[(0, [(0, val(0x09, struct.pack("<III", 0xBBBBBBBB, 1, 1)))]),
+                                (1, [(1, val(0x1C, struct.pack("<I", 0)))])],
+                       classes=["TSoundMapConfig", "TSoundStream"], props=[("AmbianceDecor_MultiPiste", 0), ("FileName", 1)],
+                       strings=["WW2\\Sons\\SFX_ENV\\MultiPiste_Ambiance_Tunisie.wav"],
+                       exports={0: "MapConstante/MapInstance/Map_SoundConfig"}, compress=True)
+        units = make_edat([("dir", "genglad\\patchable\\", [("dir", "gfx\\", [("file", "everything.cpp.gladndfbin",
+                                                                              make_ndf(objects=[], classes=[], props=[]))]),
+                                                            ("dir", "map\\alpha\\", [("file", "mapconstante.cpp.gladndfbin", ndf)])])])
+        game = Path(d, "R.U.S.E")
+        data = game / "Data" / "PC" / "190852"
+        data.mkdir(parents=True)
+        (data / "ZZ_GladPatchableWin.dat").write_bytes(units)
+        (data / "ZZ_Win.dat").write_bytes(zz)
+        return game, zz, bg
+
+    def build(self, d, game, mod):
+        from rusemod.cli import main
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+            code = main(["--game", str(game), "build", str(mod), "--instance", str(Path(d, "copy"))])
+        self.assertEqual(code, 0, out.getvalue())
+        return out.getvalue(), Path(d, "copy", "Data", "PC", "190852")
+
+    def test_ruse_build_gives_a_map_a_background_layer_of_its_own(self):
+        from rusemod.edat import Edat
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"RUSE_PLATFORM_HOME": str(Path(d, "home"))}):
+            game, zz, bg = self.background_game(d)
+            mod = Path(d, "amb")
+            (mod / "maps" / "Alpha").mkdir(parents=True)
+            (mod / "mod.toml").write_text('[mod]\nid = "amb"\nversion = "1.0.0"\n', encoding="utf-8")
+            mine = tone(600, 2, 48000, seed=9)
+            (mod / "maps" / "Alpha" / "background_2.wav").write_bytes(sound.write_wav(mine, 2, 48000))
+            said, data = self.build(d, game, mod)
+            self.assertIn("background sound: Alpha, layer(s) 2 of its own", said)
+            copy = Edat((data / "ZZ_Win.dat").read_bytes())
+            new = bytes(copy.read(copy.entry("gen_sound\\ww2\\sons\\sfx_env\\amb_alpha.ess")))
+            got, h = sound.decode(new)
+            self.assertEqual((h["channels"], h["rate"], h["frames"], h["flag"]), (6, 48000, 1200, 0))
+            base, _ = sound.decode(bg["tunisie"])
+            self.assertGreater(snr(base[0::6], got[0::6]), 30)  # layer 1: the map's own, as it was
+            self.assertGreater(snr(list(mine[0::2]) * 2, got[2::6]), 30)  # layer 2: the new, twice over
+            bank = Edat(bytes(copy.read(copy.find("alphaambient.mpk"))))
+            desc = bytes(bank.read(bank.entry("gen_sound\\ww2\\sons\\sfx_env\\amb_alpha.sformat")))
+            self.assertEqual((len(desc), desc, desc[28:]), (36, sound.description(new), bytes(6) + bytes([10, 5])))
+            self.assertEqual(bytes(copy.read(copy.find("gfxdescriptor.mpk"))),
+                             bytes(Edat(zz).read(Edat(zz).find("gfxdescriptor.mpk"))))  # no backgrounds there
+            pack = Edat((data / "ZZ_GladPatchableWin.dat").read_bytes())
+            raw = bytes(pack.read(pack.find("map\\alpha\\mapconstante.cpp.gladndfbin")))
+            self.assertEqual(sound.background_of(raw), "WW2\\Sons\\SFX_ENV\\amb_Alpha.wav")
+
+    def test_ruse_build_gives_a_map_another_maps_background(self):
+        from rusemod.edat import Edat
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"RUSE_PLATFORM_HOME": str(Path(d, "home"))}):
+            game, zz, _bg = self.background_game(d)
+            mod = Path(d, "amb")
+            (mod / "maps" / "Alpha").mkdir(parents=True)
+            (mod / "mod.toml").write_text('[mod]\nid = "amb"\nversion = "1.0.0"\n', encoding="utf-8")
+            (mod / "maps" / "Alpha" / "sound.toml").write_text(
+                "background = 'WW2\\Sons\\SFX_ENV\\MultiPiste_Ambiance_Swamp.wav'\n", encoding="utf-8")
+            said, data = self.build(d, game, mod)
+            self.assertIn("background sound: Alpha uses WW2\\Sons\\SFX_ENV\\MultiPiste_Ambiance_Swamp.wav", said)
+            pack = Edat((data / "ZZ_GladPatchableWin.dat").read_bytes())
+            raw = bytes(pack.read(pack.find("map\\alpha\\mapconstante.cpp.gladndfbin")))
+            self.assertEqual(sound.background_of(raw), "WW2\\Sons\\SFX_ENV\\MultiPiste_Ambiance_Swamp.wav")
+            if (data / "ZZ_Win.dat").is_file():  # nothing new to play: the sounds as they were
+                self.assertEqual((data / "ZZ_Win.dat").read_bytes(), zz)
+
+    def test_ruse_build_gives_a_new_map_a_background_of_its_own(self):
+        """A new map (map.toml copy_of) has settings of its own, copied from its map's: its background is changed
+        there, the shipped map's left as it was."""
+        from fixtures import make_edat, make_ndf
+        from test_build import PACK, write_mod
+        from test_newmap import CONSTANTS, data_files, flat_pack, glad_files, map_pack, p, ref, text_files
+        from rusemod.build import build_and_write, load_mod
+        from rusemod.edat import Edat
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            game = root / "steamapps" / "common" / "R.U.S.E"
+            rev = game / "Data" / "PC" / "190852"
+            rev.mkdir(parents=True)
+            (game / "Maps" / "PC").mkdir(parents=True)
+            (game / "RUSE.exe").write_bytes(b"MZ")
+            (root / "steamapps" / "appmanifest_21970.acf").write_text('"AppState" { "buildid" "24687178" }')
+            (game / "Maps" / "PC" / "DataMapSuperCrossroads4_v09.dat").write_bytes(map_pack())
+            tunisie = "WW2\\Sons\\SFX_ENV\\MultiPiste_Ambiance_Tunisie.wav"
+            constants = make_ndf(
+                objects=[(0, [(0, p(0))]), (1, [(1, ref(2, 2))]), (2, [(2, p(1))])],
+                classes=["TCurrentMapInfo", "TSoundMapConfig", "TSoundStream"],
+                props=[("MapPath", 0), ("AmbianceDecor_MultiPiste", 1), ("FileName", 2)],
+                strings=["DataDir:\\datasmap\\SuperCrossRoads4", tunisie], compress=True)
+            units = Edat(PACK)
+            (rev / "ZZ_GladPatchableWin.dat").write_bytes(flat_pack({**{e.path: bytes(units.read(e)) for e in units.entries},
+                                                                     **glad_files(), CONSTANTS: constants}))
+            (rev / "DataMap_Win.dat").write_bytes(flat_pack(data_files()))
+            bg = sound.encode(tone(1200, 6, 48000, seed=3), 6, 48000, flag=0)
+            bank = make_edat([("dir", "gen_sound\\ww2\\sons\\sfx_env\\", [
+                ("file", "multipiste_ambiance_tunisie.sformat", sound.description(bg))])])
+            (rev / "ZZ_Win.dat").write_bytes(flat_pack({
+                **text_files(), "gen_sound\\pack\\map\\supercrossroads4ambient.mpk": bank,
+                "gen_sound\\ww2\\sons\\sfx_env\\multipiste_ambiance_tunisie.ess": bg}))
+            mod = write_mod(root / "mods", "dusk", {})
+            (mod / "maps" / "BlitzAtDusk").mkdir(parents=True)
+            (mod / "maps" / "BlitzAtDusk" / "map.toml").write_text('copy_of = "SuperCrossRoads4"\nname = "Blitz at Dusk"\n',
+                                                                    encoding="utf-8")
+            (mod / "maps" / "BlitzAtDusk" / "background_3.wav").write_bytes(sound.write_wav(tone(300, 2, 48000), 2, 48000))
+            lines = []
+            with mock.patch.dict(os.environ, {"RUSE_PLATFORM_HOME": str(root / "home")}):
+                result = build_and_write(game, [load_mod(mod)], instance=root / "copy", say=lines.append)
+            self.assertEqual(result.errors, [], "\n".join(lines))
+            self.assertIn("background sound: BlitzAtDusk, layer(s) 3 of its own", "\n".join(lines))
+            glad = Edat((root / "copy" / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes())
+            mine = glad.entry("genglad\\patchable\\map\\blitzatdusk\\mapconstante.cpp.gladndfbin")
+            self.assertEqual(sound.background_of(bytes(glad.read(mine))), "WW2\\Sons\\SFX_ENV\\dusk_BlitzAtDusk.wav")
+            self.assertEqual(sound.background_of(bytes(glad.read(glad.entry(CONSTANTS)))), tunisie)  # the shipped map's
+            zz = Edat((root / "copy" / "Data" / "PC" / "190852" / "ZZ_Win.dat").read_bytes())
+            new = bytes(zz.read(zz.entry("gen_sound\\ww2\\sons\\sfx_env\\dusk_blitzatdusk.ess")))
+            self.assertEqual(sound.header(new)["frames"], 1200)  # as long as the map's own (its layer 3 repeated)
+
     def test_a_sound_the_game_has_not(self):
         from rusemod.cli import main
         with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"RUSE_PLATFORM_HOME": str(Path(d, "home"))}):

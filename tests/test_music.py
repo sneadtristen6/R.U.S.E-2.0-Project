@@ -271,5 +271,125 @@ class Voices(unittest.TestCase):
             self.calls.music_save(V + "nope.ess", base64.b64encode(wav).decode(), 0, 1)
 
 
+E = "gen_sound\\ww2\\sons\\sfx_env\\"
+TUNISIE, SWAMP = "WW2\\Sons\\SFX_ENV\\MultiPiste_Ambiance_Tunisie.wav", "WW2\\Sons\\SFX_ENV\\MultiPiste_Ambiance_Swamp.wav"
+
+
+def settings(file_name: str) -> bytes:
+    """A map's settings file naming `file_name` as its background, as the game's do (Map_SoundConfig)."""
+    import struct
+    from fixtures import make_ndf, val
+    return make_ndf(objects=[(0, [(0, val(0x09, struct.pack("<III", 0xBBBBBBBB, 1, 1)))]),
+                             (1, [(1, val(0x1C, struct.pack("<I", 0)))])],
+                    classes=["TSoundMapConfig", "TSoundStream"], props=[("AmbianceDecor_MultiPiste", 0), ("FileName", 1)],
+                    strings=[file_name], exports={0: "MapConstante/MapInstance/Map_SoundConfig"}, compress=True)
+
+
+class MapCalls(Calls):
+    """Calls on a made-up game with two backgrounds: Tunisia's (played by the Tunisia campaign map and, named with
+    DataDir:\\ in front, a base no menu lists) and the swamp's (Swamps'), and a map project beside the mod."""
+
+    def __init__(self, d, new=None):
+        from fixtures import make_edat
+        super().__init__(d)
+        data = self.game / "Data" / "PC" / "190852"
+        self.bg = {"tunisie": song(0.2, 6, 48000), "swamp": song(0.3, 6, 48000)}
+        songs = [("file", m[len(D):], b) for m, b in self.raw.items()]
+        (data / "ZZ_Win.dat").write_bytes(make_edat([("dir", D, songs), ("dir", E, [
+            ("file", f"multipiste_ambiance_{n}.ess", b) for n, b in self.bg.items()])]))
+        (data / "ZZ_GladPatchableWin.dat").write_bytes(make_edat([("dir", "genglad\\patchable\\map\\", [
+            ("dir", f"{folder}\\", [("file", "mapconstante.cpp.gladndfbin", settings(name))])
+            for folder, name in (("m02_tunisie", TUNISIE), ("swamps", SWAMP), ("base", "DataDir:\\" + TUNISIE))])]))
+        self.maps = self.root / "maps project"
+        self.maps.mkdir()
+        self.new = new or {}
+
+    def _map_dir(self):
+        return self.maps
+
+    def _new_maps(self):
+        return self.new
+
+    def _game_pack(self, pack):
+        copy = self.new.get(pack.lower())
+        return copy[1].copy_of if copy else pack
+
+
+class Backgrounds(unittest.TestCase):
+    """A map's background sound (not tried in the game yet): its three layers heard, replaced and put back, or the
+    map started from another of the game's backgrounds; saved where the build reads them (rusemod.sound.mod_ambience)."""
+
+    def setUp(self):
+        self.d = tempfile.TemporaryDirectory()
+        self.addCleanup(self.d.cleanup)
+        for p in patched():
+            p.start()
+            self.addCleanup(p.stop)
+        self.calls = MapCalls(self.d.name)
+
+    def test_the_maps_background_and_the_games_others(self):
+        got = self.calls.map_sound("M02_Tunisie", "us")
+        self.assertEqual((got["own"], got["use"], got["seconds"], got["mod"]), (TUNISIE, TUNISIE, 0.2, True))
+        self.assertEqual([(c["file"], c["name"], c["maps"], c["seconds"], c["own"], c["use"]) for c in got["choices"]],
+                         [(TUNISIE, "Tunisie", ["2. TAKING COMMAND!"], 0.2, True, True),  # its own first, by its menu name
+                          (SWAMP, "Swamp", [], 0.3, False, False)])                       # (no menu lists Swamps here)
+        self.assertEqual([(x["member"], x["mine"], x["seconds"]) for x in got["layers"]],
+                         [(f"layer:M02_Tunisie/{n}", False, 0.2) for n in (1, 2, 3)])
+        self.assertEqual({(x["channels"], x["rate"]) for x in got["layers"]}, {(2, 48000)})  # what the page makes
+        heard = self.calls.music_sound("layer:M02_Tunisie/2")
+        self.assertEqual((heard["kind"], heard["pair"]), ("ess", 2))  # the whole background: the page plays two of six
+        self.assertEqual((self.calls.root / heard["url"]).read_bytes(), self.calls.bg["tunisie"])
+
+    def test_a_layer_saved_then_put_back(self):
+        wav = sound.write_wav([((i * 11) % 1600) - 800 for i in range(2 * 24000)], 2, 48000)
+        res = self.calls.music_save("layer:M02_Tunisie/2", base64.b64encode(wav).decode(), 0, 1)
+        target = self.calls.maps / "maps" / "M02_Tunisie" / "background_2.wav"
+        self.assertEqual(res, {"saved": str(target), "seconds": 0.5})
+        self.assertEqual(sound.mod_ambience(self.calls.maps, "m"),
+                         {"M02_Tunisie": {"layers": {2: target}, "use": None, "mod": "m"}})  # what the build reads
+        layers = self.calls.map_sound("M02_Tunisie", "us")["layers"]
+        self.assertEqual([(x["mine"], x["seconds"]) for x in layers], [(False, 0.2), (True, 0.5), (False, 0.2)])
+        self.assertEqual(self.calls.music_sound("layer:M02_Tunisie/2", "mod")["kind"], "wav")
+        self.assertEqual(self.calls.music_reset("layer:M02_Tunisie/2"), {"saved": str(target)})
+        self.assertFalse(target.exists())
+        mono = base64.b64encode(sound.write_wav([0] * 4800, 1, 48000)).decode()
+        for member, part in (("layer:M02_Tunisie/2", mono), ("layer:M02_Tunisie/4", base64.b64encode(wav).decode()),
+                             ("layer:../x/1", base64.b64encode(wav).decode()), ("layer:Nowhere/1", mono)):
+            with self.subTest(member=member), self.assertRaises(MusicError):
+                self.calls.music_save(member, part, 0, 1)
+        self.assertEqual(list(self.calls.maps.rglob("*.wav")), [])
+
+    def test_started_from_another_background(self):
+        got = self.calls.map_sound_use("M02_Tunisie", SWAMP.lower(), "us")  # any letter case: the game's own spelling
+        toml = self.calls.maps / "maps" / "M02_Tunisie" / "sound.toml"
+        self.assertEqual(sound.mod_ambience(self.calls.maps, "m")["M02_Tunisie"]["use"], SWAMP)
+        self.assertEqual((got["own"], got["use"], got["seconds"]), (TUNISIE, SWAMP, 0.3))
+        self.assertEqual([c["use"] for c in got["choices"]], [False, True])
+        heard = self.calls.music_sound("layer:M02_Tunisie/1")  # a layer is heard in the background it starts from
+        self.assertEqual((self.calls.root / heard["url"]).read_bytes(), self.calls.bg["swamp"])
+        self.assertEqual(self.calls.map_sound_use("M02_Tunisie", None, "us")["use"], TUNISIE)
+        self.assertFalse(toml.exists())
+        self.calls.map_sound_use("M02_Tunisie", SWAMP, "us")
+        self.calls.map_sound_use("M02_Tunisie", "DataDir:\\" + TUNISIE, "us")  # its own again, however it's spelt
+        self.assertFalse(toml.exists())
+        with self.assertRaises(MusicError):
+            self.calls.map_sound_use("M02_Tunisie", "WW2\\Sons\\SFX_ENV\\Nope.wav", "us")
+
+    def test_a_new_maps_from_the_map_it_copies(self):
+        spec = mock.Mock(copy_of="Swamps")
+        calls = MapCalls(Path(self.d.name, "new"), new={"blitzatdusk": ("BlitzAtDusk", spec)})
+        got = calls.map_sound("blitzatdusk", "us")  # (as the map view names it)
+        self.assertEqual((got["own"], got["seconds"]), (SWAMP, 0.3))
+        wav = sound.write_wav([0, 0] * 4800, 2, 48000)
+        res = calls.music_save("layer:blitzatdusk/3", base64.b64encode(wav).decode(), 0, 1)
+        self.assertEqual(res["saved"], str(calls.maps / "maps" / "BlitzAtDusk" / "background_3.wav"))  # its own folder
+
+    def test_the_page_can_call_them(self):
+        from rusemod.webui import page_api
+        from ruse_studio.api import StudioApi
+        names = set(dir(type(page_api(StudioApi(home=self.d.name)))))
+        self.assertLessEqual({"map_sound", "map_sound_use"}, names)
+
+
 if __name__ == "__main__":
     unittest.main()

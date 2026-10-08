@@ -280,6 +280,16 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   the song (as above), adds it beside the game's songs with its description, and adds a new song object naming it at
   the end of the list. The name is letters, digits and `_`. The Music tab's **Add a song…** under each list writes it
   there (the editor asks for its name); the song then shows in that list, marked New, with Change… and Remove.
+- **A map's background sound (2026-10-07; not tried in the game yet):** under the battle each map plays one long
+  sound over and over, made of three stereo layers played together (how loud the game plays each, and when, isn't
+  known yet). Many maps share one. `maps/<map pack>/background_1.wav` (and `_2`, `_3`) puts a layer of the mod's own
+  in place of that layer: a 16-bit stereo WAV at 48,000 a second, any length (a shorter one is repeated until the
+  longest ends; the layers not given stay the map's). The build makes a background for that map alone from them, so
+  the maps that shared the old one keep it. `maps/<map pack>/sound.toml` with `background = '<another background, as
+  the Studio names it>'` starts the map from the one another map plays instead (its layers then come from that one).
+  A new map gets its own the same way. The Maps tab's **Background sound…** shows the map's: what it starts from (its
+  own, or the one another map plays), and its three layers, each heard and replaced in the Music tab's editor; *Hear
+  all three together* plays them as the build will put them together.
 - `files/add/mods/<mod id>/<name>.<source ext>` adds a new file, referenced from `.rndf` by its game path.
 
 ## 8. Maps
@@ -293,6 +303,8 @@ maps/<map pack>/
   cover.toml      # where units hide, and the AI's blocked ground
   movement.toml   # ground units can't use, or can again
   roads.toml      # new roads
+  sound.toml      # the background sound it starts from (§7)
+  background_<n>.wav  # a layer of its background sound of the mod's own (§7)
 ```
 
 A map's files live in a folder named after the map's pack name (`TwoIslands` for Centre of Gravity,

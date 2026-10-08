@@ -4852,6 +4852,9 @@ function renderDelete() {
   $("map-picture").classList.toggle("hidden", !mv.current);  // its pictures in the menus (openMenuPictures)
   $("map-picture").textContent = w.map_picture;
   $("map-picture").title = w.tip_map_picture;
+  $("map-sound").classList.toggle("hidden", !mv.current || !window.SoundView);  // its background sound (sound.js)
+  $("map-sound").textContent = w.map_sound_btn;
+  $("map-sound").title = w.tip_map_sound;
   $("map-delete").classList.toggle("hidden", !mine || asking);
   $("map-delete-sure").classList.toggle("hidden", !asking);
   $("map-delete").textContent = w.delete_map;
@@ -5793,6 +5796,9 @@ function wire() {
   $("dup-base").addEventListener("change", dupBaseChanged);
   $("map-picture").addEventListener("click", openMenuPictures);
   wireMenuPictures();
+  $("map-sound").addEventListener("click", () => {  // the map's background sound (sound.js; StudioApi.map_sound)
+    if (mv.current) window.SoundView.openAmbience(mv.current, mapName(mv.current), mv.words, mv.lang);
+  });
   $("map-delete").addEventListener("click", () => { mv.deleteAsk = mv.current; renderDelete(); $("map-delete-yes").focus(); });
   $("map-delete-no").addEventListener("click", () => { mv.deleteAsk = null; renderDelete(); });
   $("map-delete-yes").addEventListener("click", deleteMap);

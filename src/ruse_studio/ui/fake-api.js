@@ -1280,6 +1280,47 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     voice_moment_attackground: "对地攻击", voice_moment_ambush: "伏击", voice_moment_capture: "占领",
     voice_moment_recon: "侦察"
   });
+  // a map's background sound (words.toml map_sound_*, tip_map_sound; sound.js openAmbience)
+  Object.assign(words.us, { map_sound_btn: "Background sound…",
+    tip_map_sound: "The sound this map plays under the battle: hear it, and put your own in",
+    map_sound_title: "Background sound: {map}",
+    map_sound_lead: "Under the battle, the map plays one long sound over and over, made of three layers played together. Hear each layer, then put a sound of yours in its place, or start from the one another map plays.",
+    map_sound_untried: "Not tried in the game yet. How loud the game plays each layer, and when, isn't known yet.",
+    map_sound_from: "Start from", map_sound_own: "This map's own (heard on {maps})", map_sound_like: "The one heard on {maps}",
+    map_sound_layers: "The three layers",
+    map_sound_layers_help: "A layer of yours that's shorter than the others plays again from the start until they end.",
+    map_sound_layer: "Layer {n}", map_sound_all: "Hear all three together",
+    map_sound_no_project: "Pick or make your map changes first: a map's sounds are saved there.",
+    map_sound_editor_title: "Layer {n} of the background sound: {map}",
+    map_sound_editor_lead: "The game's layer is {len} long. Yours plays over and over under the battle, with the other two layers.",
+    map_sound_from_own: "{map} starts from its own background sound again.",
+    map_sound_from_other: "{map} now starts from the background sound heard on {maps}.",
+    map_sound_saved: "{name}: saved in your map changes ({file}).", map_sound_back_done: "{name}: the game's layer again." });
+  Object.assign(words.fr, { map_sound_btn: "Son d'ambiance…",
+    tip_map_sound: "Le son que cette carte joue sous la bataille : écoutez-le et mettez le vôtre",
+    map_sound_title: "Son d'ambiance : {map}",
+    map_sound_lead: "Pendant la bataille, la carte joue en boucle un long son fait de trois couches jouées ensemble. Écoutez chaque couche, puis mettez un son à vous à sa place, ou partez de celui d'une autre carte.",
+    map_sound_untried: "Pas encore essayé dans le jeu. On ne sait pas encore à quel volume le jeu joue chaque couche, ni quand.",
+    map_sound_from: "Partir de", map_sound_own: "Celui de cette carte (entendu sur {maps})", map_sound_like: "Celui qu'on entend sur {maps}",
+    map_sound_layers: "Les trois couches",
+    map_sound_layers_help: "Une couche à vous plus courte que les autres reprend du début jusqu'à ce qu'elles finissent.",
+    map_sound_layer: "Couche {n}", map_sound_all: "Écouter les trois ensemble",
+    map_sound_no_project: "Choisissez ou créez d'abord vos modifications de cartes : les sons d'une carte y sont enregistrés.",
+    map_sound_editor_title: "Couche {n} du son d'ambiance : {map}",
+    map_sound_editor_lead: "La couche du jeu dure {len}. La vôtre se joue en boucle sous la bataille, avec les deux autres couches.",
+    map_sound_from_own: "{map} repart de son propre son d'ambiance.",
+    map_sound_from_other: "{map} part maintenant du son d'ambiance qu'on entend sur {maps}.",
+    map_sound_saved: "{name} : enregistrée dans vos modifications de cartes ({file}).", map_sound_back_done: "{name} : de nouveau la couche du jeu." });
+  Object.assign(words.sc, { map_sound_btn: "背景音…", tip_map_sound: "这张地图在战斗中播放的声音：试听，并换成你自己的",
+    map_sound_title: "背景音：{map}",
+    map_sound_lead: "战斗中，地图会循环播放一段由三层同时播放组成的长音。逐层试听，然后换成你自己的声音，或者从另一张地图的声音开始。",
+    map_sound_untried: "尚未在游戏中试过。游戏以多大音量、在什么时候播放每一层，目前还不清楚。",
+    map_sound_from: "起始声音", map_sound_own: "这张地图自己的（在 {maps} 上播放）", map_sound_like: "在 {maps} 上播放的那个",
+    map_sound_layers: "三层", map_sound_layers_help: "你的某层比其他层短时，会从头重播，直到其他层结束。",
+    map_sound_layer: "第 {n} 层", map_sound_all: "三层一起试听", map_sound_no_project: "请先选择或新建你的地图修改：地图的声音保存在那里。",
+    map_sound_editor_title: "背景音第 {n} 层：{map}", map_sound_editor_lead: "游戏原有的这一层长 {len}。你的会在战斗中与另外两层一起循环播放。",
+    map_sound_from_own: "{map} 已改回自己的背景音。", map_sound_from_other: "{map} 现在从在 {maps} 上播放的背景音开始。",
+    map_sound_saved: "{name}：已保存到你的地图修改（{file}）。", map_sound_back_done: "{name}：已恢复为游戏原有的这一层。" });
   // [prop, its name, type, the game's value, the Nuclear mode's when it differs]: some of rusemod.economy's values
   const ECONOMY = [
     ["money", [["QteDeviseInitiale", "Starting money", "int32", 200], ["TempsGenAutoDevises", "Income: seconds between payments", "int32", 4],
@@ -1309,6 +1350,10 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ["unused", [[MUSIC_DIR + "lose1.ess", "Lose", 11.8, [], []]]]];
   const VOICE_DIR = "gen_sound\\ww2\\sons\\generated\\acknows\\";
   const VOICES = [["Stop", 1, 1.2], ["Move", 4, 1.6], ["Attack", 4, 1.8], ["Fire", 4, 1.1], ["Spawn", 3, 2.0]];
+  // the game's map backgrounds (StudioApi.map_sound): [file, name, the maps they're heard on, seconds], made up
+  const BACKGROUNDS = [["WW2\\Sons\\SFX_ENV\\MultiPiste_Ambiance_Tunisie.wav", "Tunisie", ["Blitz", "Valley", "Gamma", "Beta"], 60.0],
+    ["WW2\\Sons\\SFX_ENV\\MultiPiste_Ambiance_Swamp.wav", "Swamp", ["Swamps"], 45.0]];
+  const mapSoundUse = new Map();  // map -> the background it starts from (StudioApi.map_sound_use)
   const musicMine = new Map();  // member -> the mod's song (an address the page can fetch)
   const musicUpload = [];
   // a made-up "game song": a soft chord of `seconds` as a WAV the page can fetch
@@ -1772,7 +1817,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       music_sound: async (member, which = "game") => {
         const song = MUSIC.flatMap(([, s]) => s).find((s) => s[0] === member)
-          || (member.startsWith(VOICE_DIR) || member.startsWith("new:") ? [member, member.slice(VOICE_DIR.length), 2] : null);
+          || (member.startsWith(VOICE_DIR) || member.startsWith("new:") || member.startsWith("layer:")
+            ? [member, member.slice(VOICE_DIR.length), 2] : null);
         if (!song) throw new Error(`${member} isn't one of the game's songs`);
         if (which === "mod") {
           if (!musicMine.has(member)) throw new Error("This mod has no song of its own here.");
@@ -1780,8 +1826,23 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         }
         return { url: fakeTone(Math.min(song[2], 12), 220 + 40 * (song[1].length % 7)), kind: "wav" };
       },
+      // a map's background sound (StudioApi.map_sound, map_sound_use): its layers are heard and saved like songs
+      map_sound: async (pack) => {
+        const own = /swamp/i.test(pack) ? BACKGROUNDS[1] : BACKGROUNDS[0], use = mapSoundUse.get(pack) || own[0];
+        const at = BACKGROUNDS.find((b) => b[0] === use);
+        return { map: pack, own: own[0], use, seconds: at[3], mod: Boolean(currentMap),
+          choices: [own, ...BACKGROUNDS.filter((b) => b !== own)].map(([file, name, heard, seconds]) => ({
+            file, name, maps: heard, seconds, own: file === own[0], use: file === use })),
+          layers: [1, 2, 3].map((n) => ({ member: `layer:${pack}/${n}`, n, mine: musicMine.has(`layer:${pack}/${n}`),
+            seconds: at[3], channels: 2, rate: 48000 })) };
+      },
+      map_sound_use: async (pack, file, lang) => {
+        if (!currentMap) throw new Error("Pick or make a map project first: a map's sounds are saved in it.");
+        if (file) mapSoundUse.set(pack, file); else mapSoundUse.delete(pack);
+        return window.pywebview.api.map_sound(pack, lang);
+      },
       music_save: async (member, part, index, count) => {
-        if (!current) throw new Error("Pick or make a mod first: songs are saved in a mod.");
+        if (member.startsWith("layer:") ? !currentMap : !current) throw new Error("Pick or make a mod first: songs are saved in a mod.");
         if (index === 0) musicUpload.length = 0;
         musicUpload.push(part);
         if (index < count - 1) return { part: index };
@@ -1792,6 +1853,10 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           member = `new:${list}/${name.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "")}`;
         }
         musicMine.set(member, URL.createObjectURL(blob));
+        if (member.startsWith("layer:")) {  // a map's background layer: in the map project (maps/<map>/background_<n>.wav)
+          const [pack, n] = member.slice(6).split("/");
+          return { saved: `${currentMap}/maps/${pack}/background_${n}.wav`, seconds: 0 };
+        }
         return { saved: `${current}/files/replace/${member.split("\\").join("/")}.wav`, seconds: 0 };
       },
       music_reset: async (member) => { musicMine.delete(member); return { saved: current }; },

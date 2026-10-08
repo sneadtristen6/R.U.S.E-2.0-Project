@@ -127,8 +127,12 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.textures = mod_textures(path)
         info.cards = mod_cards(path)
         info.models = mod_models(path)
-        from .sound import mod_new_songs, mod_sounds, new_songs_rndf
+        from .sound import SoundError, mod_ambience, mod_new_songs, mod_sounds, new_songs_rndf
         info.sounds = mod_sounds(path)
+        try:
+            info.ambience = mod_ambience(path, mod_id)  # maps/<map>/background_<n>.wav and sound.toml
+        except SoundError as exc:
+            raise BuildError(f"{mod_id}: {exc}") from None
         info.new_songs = mod_new_songs(path, mod_id)  # files/music/list<N>/<name>.wav: and the data they need
         if info.new_songs:
             ops += parse(new_songs_rndf(info.new_songs), file="files/music", mod=mod_id)
@@ -754,7 +758,8 @@ def needs_zz_win(mods: list) -> bool:
     rusemod.sound), or new objects (a new unit needs a class in the Python unit list, which lives there), or moves a unit to
     another nation or model (the skirmish mesh packs there say whether its models are loaded for it: unit_models)."""
     return any(m.texts or m.new_maps or getattr(m, "menu_pictures", None) or getattr(m, "textures", None)
-               or getattr(m, "sounds", None) or getattr(m, "new_songs", None) for m, _ in mods) or \
+               or getattr(m, "sounds", None) or getattr(m, "new_songs", None) or getattr(m, "ambience", None)
+               for m, _ in mods) or \
         any(op.kind in ("create", "clone") or _moves(op) for _, ops in mods for op in ops)
 
 
@@ -2842,6 +2847,33 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     **result.sound_changed})
             except SoundError as exc:
                 raise BuildError(str(exc)) from None
+            result.sound_changed.update(banks)
+            result.new_files.update(added)
+        ambience: dict = {}  # mods' map backgrounds (maps/<map>/background_<n>.wav, sound.toml; rusemod.sound)
+        for mod_id in result.order:
+            ambience.update(getattr(by_id.get(mod_id), "ambience", None) or {})
+        if ambience and text_arc is not None:
+            from .sound import SoundError, ambience_changes
+
+            def read_config(member: str):
+                """A map's settings file as the build has it so far: changed by a mod, a new map's, or the game's."""
+                low = member.lower()
+                got = next((v for k, v in result.changed.items() if k.replace("/", "\\").lower() == low), None)
+                if got is not None:
+                    return got
+                e = arc.entry(member)
+                return bytes(arc.read(e)) if e is not None else None
+            try:
+                configs, banks, added = ambience_changes(read_config, text_arc, ambience, cache, say=say, before={
+                    **result.model_changed, **result.texture_changed, **result.model_imports,
+                    **result.sound_changed})
+            except SoundError as exc:
+                raise BuildError(str(exc)) from None
+            for member, raw in configs.items():
+                key = arc.entry(member).path
+                result.changed[key] = raw
+                if key in result.added.get(pack_path.name, {}):  # a new map's own settings file
+                    result.added[pack_path.name][key] = raw
             result.sound_changed.update(banks)
             result.new_files.update(added)
         if result.new_files and text_arc is not None:  # new cards and model textures: files of ZZ_Win.dat's own

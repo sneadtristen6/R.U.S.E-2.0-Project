@@ -3,14 +3,18 @@ sound for the page to play, and the current mod's own songs, saved from the page
 files/replace/<the song's path in ZZ_Win.dat>.wav. The page makes the WAV (the window reads MP3, OGG, FLAC and WAV
 itself, and cuts, fades and sets the volume): nothing to install. Tried in the game (2026-10-07): songs replaced
 this way in the main menu and battle lists 1 and 2 play, a unit's replaced voice line too, and new songs added to
-lists 1 and 2 (rusemod.sound)."""
+lists 1 and 2 (rusemod.sound). A map's background sound (its three layers, or another of the game's) is saved in the
+map project, maps/<map>/background_<n>.wav and sound.toml: not tried in the game yet."""
 from __future__ import annotations
 
 import base64
 import binascii
 import hashlib
 import re
+import struct
 import threading
+import tomllib
+import zlib
 from pathlib import Path
 
 from rusemod import sound
@@ -24,6 +28,8 @@ NEW = "new:"  # a mod's new song, "new:list2/My_song" (files/music/list2/My_song
 VOICES_AT = "$/GFX/Everything/AcknowManager:AcknowUnitContainer.Content["  # the units' voice lines
 UNITS_AT = "$/GFX/Everything/Descriptor_Unit_"
 VOICE_CLASSES = ("TUniteAuSolDescriptor", "TInfanterieDescriptor", "TAvionDescriptor")  # what has AcknowUnitType
+LAYER = "layer:"  # a map's background layer, "layer:<map>/<n>" (the map project's maps/<map>/background_<n>.wav)
+UNITS_PACK = "ZZ_GladPatchableWin.dat"  # where each map's settings are (rusemod.sound.map_config_member)
 
 
 class MusicError(Exception):
@@ -186,9 +192,12 @@ class MusicCalls:
         return out
 
     def _music_song(self, member: str) -> dict:
-        """One of the game's songs or voice lines, with its format: what the page may play, replace or put back."""
+        """One of the game's songs or voice lines, or a layer of a map's background, with its format: what the page
+        may play, replace or put back."""
         if str(member).startswith(NEW):
             return self._new_song(str(member))
+        if str(member).startswith(LAYER):
+            return self._layer(str(member))
         member = str(member).lower()
         song = self._music_songs().get(member)
         if song is not None:
@@ -208,7 +217,12 @@ class MusicCalls:
 
     def _music_file(self, member: str) -> Path | None:
         """The current mod's own song for `member` (files/replace/<member>.wav; a new song's files/music/<list>/
-        <name>.wav), whether made yet or not."""
+        <name>.wav; a map's background layer the map project's maps/<map>/background_<n>.wav), whether made yet or
+        not."""
+        if member.startswith(LAYER):
+            folder = self._map_dir()
+            pack, n = self._map_layer(member)
+            return folder / "maps" / self._map_folder(pack) / f"background_{n}.wav" if folder is not None else None
         mod = self._mod_dir()
         if mod is None:
             return None
@@ -269,17 +283,18 @@ class MusicCalls:
                 out.write_bytes(raw)
             return {"url": f"cache/sound/mod/{name}", "kind": "wav"}
         _game, zz, key = self._music_game()
-        name = hashlib.sha1(song["member"].encode()).hexdigest()[:24] + ".ess"
+        source = song.get("source", song["member"])  # a layer's: the whole background (`pair`: its two channels)
+        name = hashlib.sha1(source.encode()).hexdigest()[:24] + ".ess"
         out = self.cache_dir / "sound" / "game" / key / name
         if not out.is_file():
             with Edat.open(str(zz)) as arc:
-                raw = bytes(arc.read(arc.entry(song["member"])))
+                raw = bytes(arc.read(arc.entry(source)))
             out.parent.mkdir(parents=True, exist_ok=True)
             tmp = out.with_suffix(".part")
             tmp.write_bytes(raw)
             tmp.replace(out)
         return {"url": f"cache/sound/game/{key}/{name}", "kind": "ess", "channels": song["channels"],
-                "rate": song["rate"], "frames": song["frames"]}
+                "rate": song["rate"], "frames": song["frames"], "pair": song.get("pair")}
 
     def music_save(self, member: str, part: str, index: int, count: int) -> dict:
         """The page's finished song (a 16-bit WAV, in `count` base64 parts sent in order): saved in the current mod
@@ -287,7 +302,8 @@ class MusicCalls:
         song = self._music_song(member)
         target = self._music_file(song["member"])
         if target is None:
-            raise MusicError("Pick or make a mod first: songs are saved in a mod.")
+            raise MusicError("Pick or make a map project first: a map's sounds are saved in it." if song.get("pair")
+                             else "Pick or make a mod first: songs are saved in a mod.")
         if not (isinstance(index, int) and isinstance(count, int) and 0 <= index < count):
             raise MusicError("the song's parts came out of order: try Use this again")
         try:
@@ -308,6 +324,9 @@ class MusicCalls:
         if channels not in sound.FRAMES_PER_BLOCK or not 1 <= rate <= 0xFFFF or len(pcm) < channels:
             # not a game rule: what rusemod.sound writes (the game's own channel counts, a rate its file can hold)
             raise MusicError(f"a song of {channels} channel(s) at {rate} a second can't be made")
+        if song.get("pair") and (channels, rate) != (2, 48000):
+            # not a game rule: rusemod.sound puts a layer in beside the map's own, which are stereo at 48,000 a second
+            raise MusicError(f"a background's layer is stereo at 48,000 a second, not {channels} channel(s) at {rate}")
         with self._saving:
             target.parent.mkdir(parents=True, exist_ok=True)
             tmp = target.with_suffix(".part")
@@ -372,3 +391,156 @@ class MusicCalls:
         with self._saving:
             target.unlink()
         return {"saved": str(target)}
+
+    # --- a map's background sound (rusemod.sound; not tried in the game yet): one sound of three stereo layers that
+    # the map's settings name; the map project's maps/<map>/background_<n>.wav replace layers, and its sound.toml
+    # (background =) starts the map from another of the game's backgrounds ---
+    def _backgrounds(self) -> dict:
+        """{a map's settings folder, lower case: the background its settings name}, read once per game build."""
+        game, _zz, key = self._music_game()
+        units = find_pack(game, UNITS_PACK)
+        if units is None:
+            # not a game rule: the game or one of its files isn't found
+            raise MusicError(f"{UNITS_PACK} isn't in this game, so the maps' background sounds can't be read")
+        st = units.stat()
+        key = f"{key}/{st.st_size}-{int(st.st_mtime)}"
+        with self._music_lock:
+            kept = getattr(self, "_backgrounds_kept", None)
+            if kept is not None and kept[0] == key:
+                return kept[1]
+            out = {}
+            with Edat.open(str(units)) as arc:
+                for e in arc.entries:
+                    parts = e.path.lower().split("\\")
+                    if parts[:3] != ["genglad", "patchable", "map"] or parts[4:] != ["mapconstante.cpp.gladndfbin"]:
+                        continue
+                    try:
+                        name = sound.background_of(bytes(arc.read(e)))
+                    except (ValueError, KeyError, IndexError, struct.error, zlib.error):  # a settings file not read
+                        name = None
+                    if name:
+                        out[parts[3]] = name
+            self._backgrounds_kept = (key, out)
+            return out
+
+    def _map_layer(self, member: str) -> tuple[str, int]:
+        """(the map, the layer's number) of "layer:<map>/<n>"."""
+        q = re.fullmatch(r"layer:([A-Za-z0-9_]+)/([0-9])", str(member))
+        if not q or int(q.group(2)) not in sound.LAYERS:
+            # not a game rule: the page named a layer there isn't (the game's backgrounds hold three)
+            raise MusicError(f"{member} isn't one of a map's background layers")
+        return q.group(1), int(q.group(2))
+
+    def _map_folder(self, pack: str) -> str:
+        """The map's folder in the map project: a new map's own (as map.toml's folder spells it), else the pack."""
+        copy = self._new_maps().get(str(pack).lower())
+        return copy[0] if copy else str(pack)
+
+    def _map_use(self, pack: str) -> str | None:
+        """The other background the map project's maps/<map>/sound.toml starts the map from, or None."""
+        folder = self._map_dir()
+        path = folder / "maps" / self._map_folder(pack) / "sound.toml" if folder is not None else None
+        if path is None or not path.is_file():
+            return None
+        try:
+            use = tomllib.loads(path.read_text(encoding="utf-8")).get("background")
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):  # (a broken file is the mod check's to say)
+            return None
+        return use if isinstance(use, str) and use else None
+
+    def _map_background(self, pack: str) -> tuple[str, str]:
+        """(the background the game gives the map (a new map: the map it copies), the one its layers start from)."""
+        own = self._backgrounds().get(self._game_pack(pack).lower())
+        if own is None:
+            # not a game rule: the map's settings name no background sound this game has
+            raise MusicError(f"{pack} has no background sound in this game")
+        return own, self._map_use(pack) or own
+
+    def _layer(self, member: str) -> dict:
+        """A layer of a map's background as a song: two of the background's six channels (`pair`), made like the
+        game's (stereo at 48,000 a second); `source`: the background it's heard in now."""
+        pack, n = self._map_layer(member)
+        _own, use = self._map_background(pack)
+        source = sound.ambience_member(use)
+        _game, zz, _key = self._music_game()
+        with Edat.open(str(zz)) as arc:
+            e = arc.entry(source)
+            if e is None:  # not a game rule: the data names a sound this game build hasn't got
+                raise MusicError(f"{use} isn't in this game build")
+            h = sound.header(bytes(arc.raw[arc.data_offset + e.offset:arc.data_offset + e.offset + 20]))
+        return {"member": f"{LAYER}{pack}/{n}", "name": str(n), "map": pack, "pair": n, "source": source,
+                "channels": 2, "rate": 48000, "frames": h["frames"], "seconds": round(h["frames"] / h["rate"], 1)}
+
+    def map_sound(self, pack: str, lang: str = "base") -> dict:
+        """A map's background sound, as its window shows it: {"own": the background the game gives it, "use": the one
+        it starts from now (sound.toml's, else its own), "choices": the game's backgrounds, the map's own first, each
+        {"file", "name", "maps": the maps that play it by their names in the menus (in `lang`), "seconds", "own"},
+        "layers": [{"member", "n", "mine", "seconds", "channels", "rate"}: each made like the game's, stereo at 48,000
+        a second], "seconds": how long its background is, "mod": whether a map
+        project is open}. A new map's: those of the map it copies, with its own changes."""
+        own, use = self._map_background(pack)
+        game, zz, _key = self._music_game()
+        try:
+            titles = {m["pack"].lower(): m["titles"] for m in map_list(game)}
+        except (OSError, ValueError, KeyError):  # no map list (a made-up game): the backgrounds by their names
+            titles = {}
+        found: dict = {}
+        for folder, file in sorted(self._backgrounds().items()):
+            key = sound.ambience_member(file)
+            c = found.setdefault(key, {"file": file, "maps": []})
+            if ":" in c["file"] and ":" not in file:  # the name most maps give it (some write DataDir:\ in front)
+                c["file"] = file
+            t = titles.get(folder)  # (the game's test maps and bases: no menu lists them)
+            names = (t.get(lang) or t.get("us") or []) if t else []
+            if names and names[0] not in c["maps"]:
+                c["maps"].append(names[0])
+        choices = []
+        with Edat.open(str(zz)) as arc:
+            for key, c in found.items():
+                e = arc.entry(key)
+                if e is None:  # not a game rule: the data names a sound this game build hasn't got
+                    continue
+                h = sound.header(bytes(arc.raw[arc.data_offset + e.offset:arc.data_offset + e.offset + 20]))
+                stem = re.sub(r"^multipiste_ambiance_", "", key.rsplit("\\", 1)[-1].rsplit(".", 1)[0], flags=re.I)
+                choices.append({**c, "name": stem.replace("_", " ").title(), "seconds": round(h["frames"] / h["rate"], 1),
+                                "own": key == sound.ambience_member(own), "use": key == sound.ambience_member(use)})
+        choices.sort(key=lambda c: (not c["own"], (c["maps"] or [c["name"]])[0].lower()))
+        at = next((c for c in choices if c["use"]), None)
+        layers = []
+        for n in sound.LAYERS:
+            member = f"{LAYER}{pack}/{n}"
+            file = self._music_file(member)
+            seconds = None
+            if file is not None and file.is_file():
+                try:
+                    pcm, channels, rate = sound.read_wav(file.read_bytes())
+                    seconds = round(len(pcm) / channels / rate, 1)
+                except sound.SoundError:
+                    seconds = 0
+            layers.append({"member": member, "n": n, "mine": seconds is not None, "channels": 2, "rate": 48000,
+                           "seconds": seconds if seconds is not None else (at["seconds"] if at else 0)})
+        return {"map": pack, "own": own, "use": use, "choices": choices, "layers": layers,
+                "seconds": at["seconds"] if at else 0, "mod": self._map_dir() is not None}
+
+    def map_sound_use(self, pack: str, file: str | None, lang: str = "base") -> dict:
+        """Start the map's background from another of the game's (`file`, a name map_sound's choices give), or from
+        its own again (None, or its own): the map project's maps/<map>/sound.toml. Returns map_sound()."""
+        folder = self._map_dir()
+        if folder is None:
+            raise MusicError("Pick or make a map project first: a map's sounds are saved in it.")
+        own, _use = self._map_background(pack)
+        if file:
+            known = {sound.ambience_member(f): f for f in self._backgrounds().values()}
+            if sound.ambience_member(file) not in known:
+                # not a game rule: the page named a background none of the game's maps plays
+                raise MusicError(f"{file} isn't one of the game's background sounds")
+            file = known[sound.ambience_member(file)]
+        path = folder / "maps" / self._map_folder(pack) / "sound.toml"
+        with self._saving:
+            if not file or sound.ambience_member(file) == sound.ambience_member(own):
+                path.unlink(missing_ok=True)
+            else:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("# This map's background sound starts from another of the game's (the Studio's "
+                                "Background sound).\n" f"background = '{file}'\n", encoding="utf-8")
+        return self.map_sound(pack, lang)

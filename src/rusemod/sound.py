@@ -347,12 +347,16 @@ def encode(pcm, channels: int, rate: int, flag: int = 1, recon=None) -> bytes:
 
 
 def description(b: bytes) -> bytes:
-    """The description the game reads before a sound, for a sound of the kind music and most voices are (flag 1).
-    The other kind also carries a loudness track whose making isn't known yet: refused."""
+    """The description the game reads before a sound, for a sound of the kind music and most voices are (flag 1),
+    and for the 6-channel map backgrounds (flag 0 with an empty loudness section, as every one of the game's own has).
+    The other flag-0 sounds carry a loudness track whose making isn't known yet: refused."""
     h = header(b)
+    ch = h["channels"]
+    if h["flag"] == 0 and ch == 6:
+        return struct.pack("<HBBBBHIIIIIIHBB", 0x0106, 0, ch, 0, 2 * ch, h["rate"], h["frames"], 44, len(b),
+                           h["loop_start"], h["loop_end"], 0, 0, 10, 5)
     if h["flag"] != 1:
         raise SoundError("this kind of sound (one with a loudness track) can't be made yet")
-    ch = h["channels"]
     return struct.pack("<HBBBBHIIIII", 0x0106, 1, ch, 0, 2 * ch, h["rate"], h["frames"], 2 * ch, len(b),
                        h["loop_start"], h["loop_end"])
 
@@ -530,6 +534,188 @@ def new_songs_rndf(songs: dict) -> str:
         lines.append(f"{s['object']} is TSoundStream ( FileName = path('{s['file']}') )")
         lines.append(f"patch {PLAYLISTS}:PlayLists[{s['index']}] ( Musics += [~/{s['object']}] )")
     return "\n".join(lines) + ("\n" if lines else "")
+
+
+# --- a map's background sound (not tried in the game yet): maps/<map>/background_<1..3>.wav, its three layers, and
+# maps/<map>/sound.toml, `background` = another of the game's background sounds for this map ---
+AMBIENCE_DIR = B.join(["gen_sound", "ww2", "sons", "sfx_env"]) + B    # where the game keeps its map backgrounds
+AMBIENCE_FILES = B.join(["WW2", "Sons", "SFX_ENV"]) + B               # how the maps' data names them
+# a background holds three stereo layers (channels 1-2, 3-4, 5-6); the map's settings give the game three volumes for
+# them (Hq, Air, Decor), but which layer each is, and when the game plays which, isn't known yet
+LAYERS = (1, 2, 3)
+
+
+def map_config_member(map_name: str) -> str:
+    """The map's own settings file in the unit-data pack, which names its background sound."""
+    return B.join(["genglad", "patchable", "map", map_name.lower(), "mapconstante.cpp.gladndfbin"])
+
+
+def ambience_member(file_name: str) -> str:
+    """The background's path in ZZ_Win.dat for the name the map's data gives it (some write DataDir:\\ in front)."""
+    name = file_name.split(":", 1)[1].lstrip(B) if ":" in file_name else file_name
+    return member_of(name)
+
+
+def mod_ambience(folder: Path, mod_id: str) -> dict:
+    """{map (as its folder under maps/ spells it): {"layers": {n: WAV}, "use": another background or None, "mod"}}
+    from a mod's maps/<map>/background_<n>.wav and maps/<map>/sound.toml."""
+    import tomllib
+    out: dict = {}
+    root = Path(folder) / "maps"
+    for d in sorted(root.iterdir()) if root.is_dir() else []:
+        if not d.is_dir():
+            continue
+        layers = {n: d / f"background_{n}.wav" for n in LAYERS if (d / f"background_{n}.wav").is_file()}
+        use = None
+        if (d / "sound.toml").is_file():
+            try:
+                use = tomllib.loads((d / "sound.toml").read_text(encoding="utf-8")).get("background")
+            except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+                raise SoundError(f"maps/{d.name}/sound.toml: {exc}") from None
+            if use is not None and not isinstance(use, str):
+                raise SoundError(f"maps/{d.name}/sound.toml: background must be a background sound's name")
+        if layers or use:
+            out[d.name] = {"layers": layers, "use": use, "mod": mod_id}
+    return out
+
+
+def _background(raw: bytes):
+    """(the settings file, the sound stream object it names as the background, that stream's FileName)."""
+    from .ndf import Ndf, local_ref
+    nd = Ndf(raw)
+    for o in nd.objects:
+        if nd.classes[o.cls] != "TSoundMapConfig":
+            continue
+        ref = next((v for pi, v in o.props if nd.prop_name(pi) == "AmbianceDecor_MultiPiste"), None)
+        idx = local_ref(ref) if ref is not None else None
+        if idx is None:
+            continue
+        name = next((v for pi, v in nd.objects[idx].props if nd.prop_name(pi) == "FileName"), None)
+        if name is not None and name.tc in (0x07, 0x1C):
+            return nd, idx, nd.strings[struct.unpack("<I", name.payload)[0]]
+    return None, None, None
+
+
+def background_of(raw: bytes) -> str | None:
+    """The background sound a map's settings file names (its FileName), or None."""
+    return _background(raw)[2]
+
+
+def with_background(raw: bytes, file_name: str) -> bytes:
+    """The map's settings file naming `file_name` as its background sound."""
+    from .ndf import Value
+    nd, idx, _old = _background(raw)
+    if nd is None:
+        raise SoundError("this map's settings name no background sound")
+    at = nd.string_index(file_name)
+    if at is None:
+        at = nd.add_string(file_name)
+    obj = nd.objects[idx]
+    obj.props = [(pi, Value(v.tc, struct.pack("<I", at)) if nd.prop_name(pi) == "FileName" else v)
+                 for pi, v in obj.props]
+    return nd.to_member(compress=bool(struct.unpack_from("<I", raw, 12)[0] & 0x80))
+
+
+def compose(base, base_channels: int, layers: dict) -> array:
+    """A 6-channel background from the map's current one (`base`, interleaved; None when every layer is new) and new
+    stereo layers ({n: 16-bit stereo PCM}): each layer in its own pair of channels, all as long as the longest, a
+    shorter one repeated (the game loops the whole)."""
+    frames = max([len(p) // 2 for p in layers.values()] + ([len(base) // base_channels] if base is not None else []))
+    out = array("h", bytes(12 * frames))
+    for n in LAYERS:
+        if n in layers:
+            src, ch, pair = layers[n], 2, (0, 1)
+        elif base is not None:
+            src, ch, pair = base, base_channels, (2 * (n - 1), 2 * (n - 1) + 1)
+        else:
+            continue
+        length = len(src) // ch
+        if length == 0:
+            continue
+        for c in (0, 1):
+            col = src[pair[c]::ch]
+            dst = 2 * (n - 1) + c
+            for start in range(0, frames, length):
+                part = col[:min(length, frames - start)]
+                out[6 * start + dst:6 * (start + len(part)) + dst - 5:6] = part
+    return out
+
+
+def ambience_changes(read_config, zz, maps: dict, cache: Path | None = None, say=print, before: dict | None = None):
+    """For the mods' map backgrounds ({map: mod_ambience entry}): ({settings file member: new bytes} for the unit-data
+    pack, {bank: new bytes} and {new member: bytes} for ZZ_Win.dat). `read_config(member)`: a settings file's bytes
+    as the build has it so far (None when the game has no such map). A new background is made from the layers given
+    and the map's current one, cooked once (the build cache), and its description added to every bank that holds
+    the game's backgrounds' (each map's own bank holds them all)."""
+    from .edat import Edat
+    earlier = {k.lower().replace("/", "\\"): v for k, v in (before or {}).items()}
+    configs: dict = {}
+    added: dict = {}
+    descs: dict = {}
+    for map_name, entry in sorted(maps.items()):
+        member = map_config_member(map_name)
+        raw = read_config(member)
+        if raw is None:
+            # not a game rule: the folder is named for a map this game (and the mods) haven't got
+            raise SoundError(f"maps/{map_name}: no map {map_name} with a background sound in this game")
+        current = background_of(raw)
+        target = entry["use"] or current
+        base_member = ambience_member(target or "")
+        e = zz.entry(base_member) if target else None
+        if e is None:
+            # not a game rule: sound.toml names a background this game hasn't got
+            raise SoundError(f"maps/{map_name}: no background sound {target} in this game")
+        if entry["layers"]:
+            base_raw = bytes(zz.read(e))
+            wavs = {n: Path(w).read_bytes() for n, w in sorted(entry["layers"].items())}
+            key = hashlib.sha256(base_raw + b"".join(bytes([n]) + hashlib.sha256(w).digest() for n, w in wavs.items())
+                                 + bytes([0, CODEC_VERSION])).hexdigest()
+            file = Path(cache) / "sound" / f"{key}.ess" if cache is not None else None
+            if file is not None and file.is_file():
+                made = file.read_bytes()
+            else:
+                layers = {}
+                for n, w in wavs.items():
+                    pcm, ch, rate = read_wav(w)
+                    if (ch, rate) != (2, 48000):
+                        raise SoundError(f"maps/{map_name}/background_{n}.wav: {ch} channel(s) at {rate} a second; a "
+                                         f"background's layer is stereo at 48,000 a second (the Studio makes it so)")
+                    layers[n] = pcm
+                base = None
+                if len(wavs) < len(LAYERS):  # the layers not given stay the map's current ones
+                    base, h = decode(base_raw)
+                    if (h["channels"], h["rate"]) != (6, 48000):
+                        raise SoundError(f"{target}: not a background of three layers")
+                made = encode(compose(base, 6, layers), 6, 48000, flag=0)
+                if file is not None:
+                    file.parent.mkdir(parents=True, exist_ok=True)
+                    file.with_suffix(".part").write_bytes(made)
+                    file.with_suffix(".part").replace(file)
+            stem = f"{entry['mod']}_{safe_name(map_name)}"
+            new_member = (AMBIENCE_DIR + stem + ".ess").lower()
+            if zz.entry(new_member) is not None:
+                # not a game rule: the name is taken (two mods, or a mod and the game)
+                raise SoundError(f"maps/{map_name}: {new_member} is already in the game")
+            added[new_member] = made
+            descs[new_member[:-len(".ess")] + ".sformat"] = description(made)
+            target = AMBIENCE_FILES + stem + ".wav"
+            say(f"background sound: {map_name}, layer(s) {', '.join(str(n) for n in sorted(wavs))} of its own "
+                f"({header(made)['frames'] / 48000:.1f} s)")
+        else:
+            say(f"background sound: {map_name} uses {target}")
+        if target != current:
+            configs[member] = with_background(raw, target)
+    banks: dict = {}
+    if descs:
+        for e in zz.entries:
+            p = e.path.lower()
+            if not (p.startswith(BANKS) and p.endswith(".mpk")):
+                continue
+            raw = earlier.get(p) or bytes(zz.read(e))
+            bank = Edat(raw)
+            if any(x.path.lower().startswith(AMBIENCE_DIR) for x in bank.entries):
+                banks[e.path] = bank.to_bytes(None, descs)
+    return configs, banks, added
 
 
 # --- a mod's own sounds, put in by the build ---
