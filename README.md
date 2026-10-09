@@ -32,9 +32,27 @@ make works in the game every time, the first time.
 what changing strictly data can do. Anything beyond data is outside what we want to do with it. Your Steam install
 is never changed.
 
-**Units from other eras.** RUSE Studio 0.9.8.2 brings 366 units from WWI to today, each another maker's free 3D
-model, credited: at its real size, researched like the game's own units, with its own card. Each era downloads in
-the Studio when you pick it.
+**366 units from WWI to today, in the Studio.** WWI tanks and biplanes, B-29s, Cold War and modern armour and jets:
+each another maker's free 3D model, credited, at its real size, researched like the game's own units, with its own
+card in the build menu. Pick an era in the Studio's Units tab and it downloads; add any of its units to your mod
+(RUSE Studio 0.9.8.2).
+
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <img src="docs/images/era-b29-airfield.jpg" alt="R.U.S.E. in game: two B-29 Superfortress bombers parked beside an airfield's runway, added to a mod from RUSE Studio's units from other eras" width="260"><br>
+      <sub><b>Bombers from another war.</b> Two B-29 Superfortresses on an airfield.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/images/era-mark-v-field.jpg" alt="R.U.S.E. in game: two WWI Mark V tanks with British markings in a ploughed field" width="260"><br>
+      <sub><b>Back to 1918.</b> WWI Mark V tanks in the fields.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/images/era-airfield-three-eras.jpg" alt="R.U.S.E. in game: WWI biplanes, B-29 bombers and MiG-29 jets on one airfield" width="260"><br>
+      <sub><b>Three eras, one airfield.</b> WWI biplanes, B-29s and MiG-29s.</sub>
+    </td>
+  </tr>
+</table>
 
 **LittleGroove's tools are in the Studio.** RUSE Studio 0.9.8.1 brings over the tools of his RUSE-Mod-Manager (the
 Economy and AI tabs, All values, the game's files, missions), adds a **Music** tab for songs and voice lines, and a
@@ -190,6 +208,7 @@ criticism are welcome in [the name discussion](https://github.com/sneadtristen6/
 | Play new maps that start blank | Start a new map as flat land or open sea, with its own menu pictures |
 | Hear a mod's own songs | Replace songs and voice lines in the Music tab |
 | Play a nation with a new name and flag | Make one of the game's nations into another |
+| Play units from WWI to today | Add any of 366 era units, with their models, at their real size |
 
 <details>
 <summary><b>Everything the apps can do</b></summary>
@@ -288,7 +307,8 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
   each another maker's free model (CC0 or CC BY), credited. Each era downloads in the Studio when you pick it, from
   our GitHub (each file checked), and updates itself as more are finished. Add one to your mod: it's a new unit at
   its real size, with its own card, researched from any unit of its nation's building (chains too: a T-80, then a
-  T-90M). Seen in the game: they load at once, research and a chain, a Land Rover's own model, the sizes.
+  T-90M). Seen in the game: they load at once, their own cards, research and a chain, a Land Rover's own model, the
+  sizes.
 - **Add units in formations:** 1 to 10 at once, in a line, column, wedge, box or circle (Studio 0.7.1).
 - A **mod check** reads every file of your mod the way the game build does, names each problem and offers the fix
   (set a broken file aside, rename a map folder to the map's pack name) (Studio 0.7.1).
@@ -322,6 +342,29 @@ Modders who write mods by hand can also use the `ruse` command-line tool, from t
     <td width="50%" valign="top">
       <img src="docs/images/studio-units.jpg" alt="RUSE Studio: the unit list, with filters by type and nation" width="380"><br>
       <sub>RUSE Studio: the unit list, with filters by type and nation.</sub>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: the Units tab on the Modern era, 124 units listed, the M1A1 Abrams page with its model, its maker credited, and the form that adds it to a mod: name, start unit, price, size, build menu and research" width="380"><br>
+      <sub>The Units tab's eras: the M1A1 Abrams, its model's maker credited, ready to add to a mod at its real size and behind research.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/studio-nations.jpg" alt="RUSE Studio: the Nations tab, the game's seven nations with their flags, armies and a Change button each" width="380"><br>
+      <sub>The Nations tab: any of the game's seven nations made into another, with a name and a flag of its own.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/studio-music.jpg" alt="RUSE Studio: the Music tab, every song by where it plays, each with Play and Replace" width="380"><br>
+      <sub>The Music tab: every song by where it plays, each replaced in the Studio's own small editor.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/studio-economy.jpg" alt="RUSE Studio: the Economy tab, starting money, income, supply depots and production limits" width="380"><br>
+      <sub>The Economy tab, from LittleGroove's RUSE-Mod-Manager: starting money, income, supply depots and more.</sub>
     </td>
   </tr>
 </table>
@@ -405,14 +448,20 @@ The big steps so far, newest first. Each one was played in the game before it we
 <details>
 <summary><b>Units from other eras, at their real size and behind research (Studio 0.9.8.2)</b></summary>
 
+<p align="center">
+  <img src="docs/images/era-amx13-research.jpg" alt="R.U.S.E. in game: the Armor Base's build menu, the AMX-13 researched after the Lee and the Sherman, with its own card" width="640">
+  <br>
+  <sub>The AMX-13 in the Armor Base's research row, after the Lee and the Sherman, with its own card.</sub>
+</p>
+
 The Units tab's eras have their units: 366 from WWI to today, every one another maker's 3D model shared for free
 (CC0 or CC BY), credited, fitted to the game and given its nation's markings. Each era downloads in the Studio when
 you pick it, from our GitHub, every file checked, and updates itself as more are finished.
 
 Added to a mod, an era unit is a new unit at its real size (its width, or a plane's wingspan, at the game's own
 scale), with its own card, researched from any unit of its nation's building, the mod's own era units too: a T-80,
-then a T-90M. Seen in the game: they load at once, the research tabs and a chain, a Land Rover with its own model,
-the sizes. Not tried yet: towed guns.
+then a T-90M. Seen in the game: they load at once, their own cards in the build menus, the research tabs and a
+chain, a Land Rover with its own model, the sizes. Not tried yet: towed guns.
 
 On the way: a unit researched from another army's unit left the game on an endless loading screen; **New unit…** now
 drops that link, and the build refuses one. And the apps open in the player's web browser where their own window

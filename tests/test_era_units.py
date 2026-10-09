@@ -99,7 +99,7 @@ class EraUnits(WithMod):
     def test_its_card_comes_with_it(self):
         """The library's card picture (its model drawn at the game's card size) becomes the new unit's own card, for the
         build menu and the selection to show, not the card of the unit it started from (2026-10-08 test: an F-4 showed
-        the Bf 109's; not tried in the game yet); out of the mod, it goes too. Its kind of card ("card": Heavy Tank) stays what it was."""
+        the Bf 109's; their own cards seen in the build menus, test 5); out of the mod, it goes too. Its kind of card ("card": Heavy Tank) stays what it was."""
         from rusemod.dxt import png_bytes
         (self.lib / "WWI" / "USA").mkdir(parents=True)
         card = png_bytes(bytes([90, 110, 130, 255]) * (360 * 184), 360, 184, channels=4)

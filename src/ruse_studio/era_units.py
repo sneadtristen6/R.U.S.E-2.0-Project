@@ -815,8 +815,8 @@ class EraUnitCalls:
     def _era_card(self, address: str, folder: Path, entry: dict) -> bool:
         """Give the new unit its era card (the library's "card_picture": its fitted model drawn at the game's card
         size; "card" is its kind of card, Tank or Fighter), for the build menu and the selection to show instead of
-        the card of the unit it started from (2026-10-08 test: an F-4 showed the Bf 109's; this not tried in the game
-        yet). False when the library has
+        the card of the unit it started from (2026-10-08 test: an F-4 showed the Bf 109's; 2026-10-09 test 5: the era
+        units' own cards in the build menus; the selection not looked at). False when the library has
         none, or it isn't the card's size."""
         from rusemod.png import read_png
         name = entry.get("card_picture")

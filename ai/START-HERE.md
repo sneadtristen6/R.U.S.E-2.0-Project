@@ -89,6 +89,18 @@ Studio's are marked pre-release). Each app offers its updates when it starts.
   (a copy of a similar one: a tank for a tank), then **Import model…** on its page with a .3ds or .glb from Blender or
   any 3D tool. Seen in the game: an M1 Abrams (the M1 Abrams mod in Ruse-Mods). Step by step: the wiki's Import a
   model page. Early: tracks and wheels don't turn yet.
+- **"Are there modern tanks, WWI units, other eras?"** Yes, since Studio 0.9.8.2: the **Units** tab's eras (WWI, WWII+,
+  Cold War, Modern) hold 366 units, each another maker's free 3D model, credited. Pick an era, it downloads; **Add to my
+  mod** makes one a new unit at its real size, behind research, with its own card. Seen in the game: they load at once,
+  their cards, research and a chain, their sizes. Not tried: towed guns. Step by step: the wiki's Units from other eras
+  page.
+- **"Can I make a nation into another, like China?"** Since Studio 0.9.8.1 the **Nations** tab gives one of the game's
+  seven nations a new name and flag (China in Italy's place); the game keeps seven nations. Seen in the game: the name
+  in the lobby, the flag in a match.
+- **"Can I change the music or what units say?"** Since Studio 0.9.8.1: the **Music** tab, and a unit's **Voice**
+  section. Seen in the game: replaced songs, new songs, voice lines.
+- **"Does it run on Linux or the Steam Deck?"** Through Proton, from Launcher 0.4.8.2 and Studio 0.9.8.2 the apps open
+  in the web browser when their own window can't (WebView2 doesn't start under Proton). Not tried on Linux yet.
 - **"What's coming?"** [docs/community/roadmap.md](../docs/community/roadmap.md), and for the big patch before 1.0
   (RUSE Guard's fair play, unit and building sounds), [docs/BIG_PATCH.md](../docs/BIG_PATCH.md): written up there,
   not in the apps yet. Music and voice lines are in the Studio's Music tab since 0.9.8.1.

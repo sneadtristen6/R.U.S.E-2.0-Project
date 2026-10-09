@@ -30,7 +30,8 @@
 
 1. A **mod set** is a list of mods in load order. When two mods change the same thing, the lower one wins.
 2. Click **New mod set...**, add the mods you want and put them in order.
-3. If two mods can't be played together, the launcher says which and why.
+3. If two mods can't be played together, the launcher says which and why. When two mods change the same game file,
+   it says so before **Play**, and **Use the one from…** picks which mod's file the game gets.
 
 ## 4. Play
 
@@ -43,5 +44,12 @@ what changed. Then R.U.S.E. starts.
 ## Updates
 
 The launcher checks for a new version each time it starts. Click **Update** when it offers one.
+
+## Linux and Steam Deck (through Proton)
+
+From Launcher 0.4.8.2 and Studio 0.9.8.2, when an app's own window can't show its pages (under Proton it stays blue,
+because Microsoft's WebView2 doesn't start there), the app opens in your web browser instead, and a small box says
+so: keep the box open while you play, and close it to close the app. Not tried on Linux yet: please tell us how it
+goes in [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions).
 
 **Next:** [[Play with friends|Play-With-Friends]]

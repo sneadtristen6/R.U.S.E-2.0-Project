@@ -20,6 +20,7 @@ starts a quick test copy on its own, to check your work as you go.
 |---|---|
 | Install the launcher and play a mod | [[Install and play|Install-and-Play]] |
 | Play a modded game with friends (everyone needs the same mods) | [[Play with friends|Play-With-Friends]] |
+| Play on Linux or Steam Deck (through Proton) | [[Install and play|Install-and-Play]] |
 
 ## Make mods: RUSE Studio
 
@@ -28,6 +29,10 @@ starts a quick test copy on its own, to check your work as you go.
 | Make my first mod (10 minutes, start here) | [[Your first mod|Your-First-Mod]] |
 | Change a unit, make a new one, swap its ammo | [[Edit units|Edit-Units]] |
 | Give a new unit a 3D model from Blender or any 3D tool | [[Import a model|Import-a-Model]] |
+| Add units from WWI to today (B-29s, Mark V tanks, modern jets), at their real size and behind research | [[Units from other eras|Units-From-Other-Eras]] |
+| Give one of the game's nations a new name and flag (China in Italy's place) | [[Make a nation into another|Make-a-Nation]] |
+| Replace songs, add new ones, change what a unit says | [[Music and sounds|Music-and-Sounds]] |
+| Change the economy, the computer players, any value or file of the game | [[Economy, AI and more|Economy-AI-and-More]] |
 | Raise hills, dig craters, make ramps, add lakes | [[Shape the ground|Shape-the-Ground]] |
 | Make a town or wood units can hide in; block ground | [[Cover and movement|Cover-and-Movement]] |
 | Draw new roads (supply trucks use them) | [[Draw roads|Draw-Roads]] |
