@@ -449,6 +449,8 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .scen-details { display: grid; gap: 5px; margin-top: 6px; padding: 6px 8px; background: var(--panel); border: 1px solid var(--line);
                 border-radius: var(--radius); }
 .scen-details-title { font-weight: 600; color: var(--accent); }
+.scen-hqs-title { font-weight: 600; color: var(--accent); margin-top: 4px; }  /* a blank map's HQs (maps.js renderScenHqs) */
+.scen-hq-row.picked { color: #ffd34d; }
 .scen-detail-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .scen-detail-row > span:first-child { min-width: 7em; }
 .scen-detail-row select { max-width: 100%; }

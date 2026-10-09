@@ -125,6 +125,36 @@ class Seats(unittest.TestCase):
         self.assertEqual(seats(s.team_sizes(), [2], 4), [(2, 2)])  # team 2's second start is missing
         self.assertEqual(seats({1: 2, 2: 2}, [2], 4), [])  # counts or collections
 
+    def test_which_starting_points_seat_players(self):
+        """seated: a team's players take its starting points lowest place first, so a team needing N uses its first N
+        (file order between equal places); each layout offered counts, the one needing most per team wins. Its seat:
+        the number in the team."""
+        from rusemod.players import seated
+        starts = [("a", 1, 2), ("b", 1, 1), ("c", 1, 3), ("d", 2, 1), ("e", 2, 1), ("f", 3, 1), ("g", 4, 1)]
+        self.assertEqual(seated(starts, [2], 4), {"b": (1, 1), "a": (1, 2), "d": (2, 1), "e": (2, 2)})
+        self.assertEqual(seated(starts, [2], 2), {"b": (1, 1), "d": (2, 1)})
+        self.assertEqual(seated(starts, [2, 0], 4),  # free-for-all seats teams 3 and 4 too
+                         {"b": (1, 1), "a": (1, 2), "d": (2, 1), "e": (2, 2), "f": (3, 1), "g": (4, 1)})
+        self.assertEqual(seated(starts, [3], 4), {})  # 4 players can't make 3 even teams: not offered, nobody seated
+
+    def test_a_blank_maps_hqs(self):
+        """blank_seats (the owner, 2026-10-09: on a blank map "the HQ shouldn't be there"): the starting points that
+        seat a player, each placed once the mod moves it ([[move]]) or adds it ([[start]]); the shipped one at item 0
+        seats team 2 (test_scenario's)."""
+        from test_scenario import scenario
+
+        from rusemod.players import blank_seats
+        from rusemod.scenario import Move, Start
+        f = "leveldesign_normal.scenario"
+        self.assertEqual(blank_seats(scenario(), f, [], 2, [2]), {0: (2, 1, False)})
+        own = Start(f, 1, 10.0, 20.0)
+        self.assertEqual(blank_seats(scenario(), f, [own], 2, [2]), {0: (2, 1, False), ("new", 0): (1, 1, True)})
+        moved = Move(f, 0, "StartingPoint", 30.0, 40.0)
+        self.assertEqual(blank_seats(scenario(), f, [own, moved], 2, [2]), {0: (2, 1, True), ("new", 0): (1, 1, True)})
+        other = Move("another.scenario", 0, "StartingPoint", 30.0, 40.0)  # another scenario's move doesn't count
+        self.assertEqual(blank_seats(scenario(), f, [other], 2, [2]), {0: (2, 1, False)})
+        self.assertEqual(blank_seats(scenario(), f.upper(), [moved], 2, [2]), {0: (2, 1, True)})  # (any case)
+
     def test_the_name_follows(self):
         self.assertEqual(renamed("(6) Cotentin (3v3)", 8, True), "(8) Cotentin (4v4)")
         self.assertEqual(renamed("(4) Robert (2vs2)", 8, True), "(8) Robert (4vs4)")

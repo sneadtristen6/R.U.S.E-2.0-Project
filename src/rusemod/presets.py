@@ -7,7 +7,9 @@ map's own files that take the copied map back to its ground and its starting poi
   under the water.
 - Both: every object of the map's scenery erased (the types the game gives no kind are named one by one), the map's
   own roads and bridges taken out, every design item but the starting points taken out (depots, town names), and the
-  sectors over the whole map.
+  sectors over the whole map. The starting points stay in the files (the game seats players on them) but none is
+  placed: the map's map.toml says `blank`, and the modder places each player's HQ, the build waiting until every one
+  is (rusemod.players.blank_seats; the owner, 2026-10-09: "the HQ shouldn't be there ... This isn't D-Day").
 
 Every number comes from the map's own files, so every PC writes the same files. Not seen in the game yet
 (2026-10-05): the owner's blank D-Day ("a blank blue map on the lowest terrain, with nothing on it") is the model."""
