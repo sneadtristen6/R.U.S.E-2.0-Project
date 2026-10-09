@@ -365,8 +365,11 @@ def found_at(k: K.Kdt, x: float, y: float) -> list[int]:
     return sorted(set(out))
 
 
-SUNK = -100000.0   # where the floor of a bridge taken out goes: far under any ground, out of reach. It stays in the
-                   # file, which can't be left empty (all 556 of D-Day's triangles are its bridges' floors)
+SUNK = -100000.0   # where the floor of a bridge taken out went before T41 run 3 (2026-10-09), "out of reach": units
+                   # over it stood on it all the same and went "so far under the map you can't even figure out where
+                   # they are". A unit over an objects-only triangle stands on it even below the ground, so a floor
+                   # taken out is now laid on the ground (sink_floors' `lay_at`); SUNK stays for a point no ground
+                   # covers. The file can't be left empty (all 556 of D-Day's triangles are its bridges' floors)
 
 
 def tri_key(t) -> tuple:
@@ -375,14 +378,16 @@ def tri_key(t) -> tuple:
     return tuple((round(x), round(y), round(z)) for x, y, z in t)
 
 
-def sink_floors(k: K.Kdt, height_at, gone: list[Deck], own: set | None = None) -> tuple[bytes, list[str]]:
-    """The objects-only file with the floors (and aprons) of the decks `gone` sunk to SUNK, flat: the map's own bridges
+def sink_floors(k: K.Kdt, height_at, gone: list[Deck], own: set | None = None, lay_at=None) -> tuple[bytes, list[str]]:
+    """The objects-only file with the floors (and aprons) of the decks `gone` taken out: the map's own bridges
     taken out (roads.toml take_out). `height_at(x, y)`: the map's ground as shipped, where the floors were made (a
     wide floor is found at the height between its ends' ground). `own`: the tri_key of every triangle the map
     shipped with; each of those lying along a gone deck within the stone bridges' width (ACROSS_WIDE) goes too, so the
     outer bands of a wide floor the deck match leaves go with it (Blitz's Blank Terrain, T41, 2026-10-09: 80 of its 320
-    were left 25 m under the flattened ground, and units dropped into them). Returns (the file, notes); none found:
-    (b"", [])."""
+    were left 25 m under the flattened ground, and units dropped into them). `lay_at(x, y)`: the map's ground as the
+    build has made it; each point of a floor taken out is laid on it (units stand on these triangles wherever they are,
+    so on the ground they stand where the ground is); without it, or off its mesh, a point goes to SUNK. Returns
+    (the file, notes); none found: (b"", [])."""
     shipped = triangles(k)
 
     def ground(deck):
@@ -395,9 +400,13 @@ def sink_floors(k: K.Kdt, height_at, gone: list[Deck], own: set | None = None) -
         out |= {id(t) for t in shipped if tri_key(t) in own and any(on_deck(t, d, across=ACROSS_WIDE) for d in gone)}
     if not out:
         return b"", []
-    tris = [tuple((x, y, SUNK) for x, y, _z in t) if id(t) in out else t for t in shipped]
-    return rebuild(k, tris), [f"floors: {len(out):,} triangle(s) of the {len(gone)} bridge(s) taken out sunk under the "
-                              f"ground, out of reach"]
+
+    def laid(x, y):
+        z = lay_at(x, y) if lay_at is not None else None
+        return SUNK if z is None else z
+    tris = [tuple((x, y, laid(x, y)) for x, y, _z in t) if id(t) in out else t for t in shipped]
+    where = "laid on the ground" if lay_at is not None else "sunk under the ground, out of reach"
+    return rebuild(k, tris), [f"floors: {len(out):,} triangle(s) of the {len(gone)} bridge(s) taken out {where}"]
 
 
 def floors_for(k: K.Kdt, height_at, new: list, gone: list[Deck], water=None) -> tuple[bytes, list[str]]:

@@ -2368,8 +2368,10 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         own_raw = read_shipped(floors.MEMBER)  # the map's own floors: every one along a gone deck
                         own = ({floors.tri_key(t) for t in floors.triangles(Kdt(own_raw))}  # goes (a mod's new
                                if own_raw is not None else None)                           # bridges keep theirs)
+                        now_ground = read_done("output\\highdef.tms")  # the ground as built (a reshaped or blank
+                        lay = Ground(Tms(now_ground)).height_at if now_ground is not None else None   # map's own)
                         data, more = floors.sink_floors(Kdt(k_raw), Ground(Tms(shipped_ground)).height_at, decks,
-                                                        own)
+                                                        own, lay)
                         if data:
                             done[map_arc.find(floors.MEMBER).path] = data
                         notes += more
