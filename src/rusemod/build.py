@@ -425,7 +425,12 @@ def cleared_woods(erasing: dict) -> tuple[dict, dict]:
     point), so the area opens whole; each house's own ground alone opens next to nothing (islands no unit reaches,
     checked in memory on T25's spots). Seen in the game 2026-10-04 (TESTS.md T25): tanks and infantry drive through
     where Blitz's town stood, and infantry there no longer act as in a town. Erasing only props leaves both, and so
-    does a new road's own clearing (keep_ground)."""
+    does a new road's own clearing (keep_ground).
+
+    The blocked layer goes too, under trees and buildings alike: a unit fires its direct weapons only along a line
+    that crosses no blocked cell (artillery doesn't ask), and the maps mark their towns' buildings blocked, so where
+    an erased town stood (and everywhere on Blank Terrain, which erases the whole map) tanks saw the enemy and didn't
+    fire (T41, 2026-10-09; not tried in the game yet)."""
     from .cover import Paint
     from .nav import Block
     opens, uncover = {}, {}
@@ -436,9 +441,10 @@ def cleared_woods(erasing: dict) -> tuple[dict, dict]:
             # a square or a line opens as circles covering it (the movement graphs are circles), and uncovers itself
             opens[name] = ([Block(x, y, r, "all", True) for a in cleared
                             for x, y, r in a.footprint().circles(_block_cell(a.footprint()))], list(ids))
-        if woods:
             uncover[name] = ([Paint(a.x, a.y, a.radius, "cover", True, False, a.shape, a.dx, a.dy, a.x2, a.y2)
-                              for a in woods], list(ids))
+                              for a in woods]
+                             + [Paint(a.x, a.y, a.radius, "blocked", True, False, a.shape, a.dx, a.dy, a.x2, a.y2)
+                                for a in cleared], list(ids))
     return opens, uncover
 
 

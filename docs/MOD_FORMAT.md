@@ -698,6 +698,10 @@ types = ["TypeWarrior/Pont_Normandie"]  # and these types, whatever they are (th
 - **A circle that takes trees clears a wood**: the build also opens its ground to every unit and takes the forest
   cover away there, after the mod's own movement and cover edits (`rusemod.build.cleared_woods`; proven in the game
   2026-10-01: tanks drive in, infantry there are seen).
+- **A circle that takes trees or buildings also takes the blocked layer** (§ cover.toml below) under it: units fire
+  their direct weapons only along a line crossing no blocked cell, and the maps mark their towns' buildings blocked,
+  so tanks saw the enemy where an erased town stood and didn't fire (Blank Terrain, T41, 2026-10-09). Not tried in
+  the game yet.
 - The Studio's **Erase** tool (Maps view) paints these circles along a drag: trees and props, buildings too when
   picked. It tints red what they take, and counts it the way the build erases (`rusemod.scenery.erase_count`).
 - Erase areas are applied before the mod's own objects are added, so objects placed inside a circle stay.
@@ -928,7 +932,9 @@ square = true       # optional: a square along the map's axes, `radius` (map uni
                     # its edges follow the grid's rows and columns
 ```
 
-- **`blocked` doesn't stop units.** It is what the AI asks about ground (its sight lines, where it builds and
+- **`blocked` doesn't stop units moving, but it stops their direct fire across it**: a unit fires its direct
+  weapons only along a line crossing no blocked cell (artillery doesn't ask; read from the game 2026-10-09, not
+  tried in the game). It is also what the AI asks about ground (its sight lines, where it builds and
   defends, and the AI grid's clearance); units move by the movement graphs alone, and walk on shipped "blocked" cells
   too (from 3% of them on SuperCrossroads4 to half on Ardennes). To keep units off, add a `movement.toml` block with
   the same x, y and radius: the build warns about a blocked paint with no block holding its middle.
