@@ -2983,7 +2983,17 @@ function renderSectorTools(s) {
       lines.push(fill(p.pieces > 1 ? w.sectors_pieces : w.sectors_hole, { n: p.number + 1, pieces: p.pieces }));
       bad = true;
     }
+    // what the build tidies, as shown (StudioApi.sector_view "tidied": rusemod.sectors.tidy_cells)
+    for (const t of v.tidied || []) {
+      if (t.kind === "pieces") {
+        lines.push(fill(t.to < 0 ? w.sectors_tidy_pieces_none : w.sectors_tidy_pieces,
+          { bits: t.bits, n: t.number + 1, to: t.to + 1 }));
+      } else {
+        lines.push(fill(t.number < 0 ? w.sectors_tidy_gap : w.sectors_tidy_line, { n: t.number + 1, around: t.around + 1 }));
+      }
+    }
     if (!bad) lines.push(w.sectors_help);
+    if ((v.tidied || []).length) lines.push(w.sectors_tidy_untried);
     lines.push(w.sectors_untried);
   }
   note.replaceChildren(...lines.filter(Boolean).map((t) => el("div", { textContent: t })));

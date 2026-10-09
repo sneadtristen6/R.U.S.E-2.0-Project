@@ -807,12 +807,20 @@ points = [[1200000.0, 900000.0], [1220000.0, 900000.0]]   # where each dab went
 - Each sector's outline is traced round its painted ground and it gets its own zone map share, as above. A number
   the scenario already has keeps its name and its label (moved inside the sector when the paint left it outside); a
   new number gets a new sector, made like the scenario's own.
-- The build stops when a painted scenario has no sector at all (paint at least one), or when a sector is in two or
-  more pieces or has a hole (a sector in the scenario's file has one outline): the message names the sector.
+- A sector in the scenario's file has one outline, so the painted ground is tidied before it is written, and the
+  Studio's Sectors brush shows it tidied (what you see is what the build writes):
+  - a sector left in two or more pieces keeps its biggest piece; each smaller piece goes to the sector it shares the
+    most border with, or to no sector when it touches only no-sector ground and the map's edge;
+  - a sector that goes all the way round something (another sector, or ground the eraser took out) gets a thin line
+    one grid cell wide (4 m on D-Day) cut through it from the hole to its outside, in the hole's own sector, along
+    the shortest straight cut (a row or a column) that keeps the sector in one piece. The sector becomes a C shape.
+- The build stops when a painted scenario has no sector at all (paint at least one), and, as a last resort, when a
+  hole can't be opened by any straight cut: the message names the sector.
 - A new Blank Terrain or Blank Ocean map starts with its scenario in `no_sectors`. Blank maps made before (Studio 0.9.8
   to 0.9.8.2) have `whole_map = true` and keep it.
-- Not tried in the game yet: painted sectors, a sector number the scenario didn't have, numbers with gaps, and a map
-  with no sectors at all (the build won't make one).
+- Seen in the game (2026-10-09): 13 painted sectors on a blank map, a new number among them. Not tried in the game
+  yet: the tidying (pieces given to a neighbour, the thin lines), numbers with gaps, and a map with no sectors at all
+  (the build won't make one).
 
 A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
 Operations spawn theirs this way; skirmish maps spawn only their supply depots):

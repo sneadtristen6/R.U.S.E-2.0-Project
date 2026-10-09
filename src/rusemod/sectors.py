@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import math
 import struct
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .kdt import Kdt, Q_MASK
 from .scenario import Scenario, Zone
@@ -314,7 +314,7 @@ def fill_nearest(lab, outlines: dict, g: Grid, np, coarse: int = COARSE):
 
 
 def _padded(lab, np):
-    p = np.full((lab.shape[0] + 2, lab.shape[1] + 2), -1, np.int32)
+    p = np.full((lab.shape[0] + 2, lab.shape[1] + 2), -1, lab.dtype if lab.dtype.kind == "i" else np.int32)
     p[1:-1, 1:-1] = lab
     return p
 
@@ -884,6 +884,7 @@ class Whole:
     labels: object        # the grid's cells' sectors (numpy), for a picture
     grid: Grid
     notes: list
+    tidied: list = field(default_factory=list)   # painted sectors: what tidy_cells did
 
 
 def over_whole_map(s: Scenario, kdt_raw: bytes, width: float, height: float, height_at=None,
@@ -931,9 +932,9 @@ def over_whole_map(s: Scenario, kdt_raw: bytes, width: float, height: float, hei
 # sector fill: the scenario's start (its own sectors, over the whole map when whole_map is on, or none) on the grid,
 # each stroke's dabs over it in order, then the borders traced, each sector made again from its outline and the zone
 # map made again from the same outlines. Ground left in no sector stays in none (as on every shipped map).
-# Not tried in the game (2026-10-09): painted sectors, a sector number the scenario didn't have (a new zone record,
-# copied from the scenario's own), sector numbers with gaps between them. The sectors-over-the-whole-map writer it
-# shares its steps with played fine (2026-10-05).
+# Seen in the game (2026-10-09, T42): 13 painted sectors on a blank map, a new number 12 among them (a new zone
+# record, copied from the scenario's own), no crash. Not tried in the game: sector numbers with gaps between them,
+# and the tidying below.
 
 
 class PaintError(SectorError):
@@ -1013,6 +1014,251 @@ def sector_shapes(lab, g: Grid, np) -> tuple[list, dict, list, int]:
     return chains, rings, problems, pinched
 
 
+# --- tidying painted cells (the owner, 2026-10-09: the brush must "work intuitively" on every map): a sector left in
+# pieces keeps its biggest piece and each smaller piece joins the sector it borders most; a sector that goes all the
+# way round something gets a corridor CORRIDOR cells wide cut from the hole out to its edge, in the hole's own sector.
+# The Studio's view and the build both tidy the same way, so what the modder sees is what the build writes.
+# Not tried in the game (2026-10-09): pieces given to a neighbour, corridors. (over_whole_map's own way of giving a
+# stray piece to its neighbour, _absorb, played fine on 2026-10-05.) ---
+
+TIDY_ROUNDS = 64    # rounds of tidying at most (each: every sector's pieces, or one hole)
+CORRIDOR = 1        # a corridor's width in cells (D-Day: 4 m); the outline steps keep it (tests: test_sectors_paint)
+CORRIDOR_TRIES = 24  # straight cuts tried per hole, shortest first, for one that leaves its sector in one piece
+
+
+@dataclass
+class Parts:
+    """The connected pieces of a grid of cells (side by side, never corner to corner; every cell is in one, no
+    sector too): `comp` each cell's piece (numbered in the order their first cells come, row by row); per piece its
+    sector (`label`), its size in cells and whether it touches the map's edge."""
+    comp: object
+    label: object
+    size: object
+    edge: object
+
+
+def cell_parts(lab, np) -> Parts:
+    """The pieces of `lab`, on whole arrays: each row cut into runs of one sector, then the runs joined to those above
+    and below that share a sector and a side (tests check it against a cell-by-cell flood fill)."""
+    ny, nx = lab.shape
+    start = np.ones(lab.shape, bool)
+    start[:, 1:] = lab[:, 1:] != lab[:, :-1]
+    run_id = np.cumsum(start.ravel(), dtype=np.int32).reshape(ny, nx)
+    run_id -= 1
+    first = np.flatnonzero(start.ravel())
+    n = len(first)
+    length = np.diff(np.append(first, ny * nx))
+    # two runs one above the other with the same sector share a side where either row's run starts (the first
+    # column they share), so those cells alone give every join
+    key = (lab[:-1] == lab[1:]) & (start[:-1] | start[1:])
+    a, b = run_id[:-1][key], run_id[1:][key]
+    parent = np.arange(n, dtype=np.int64)
+    while len(a):
+        pa, pb = parent[a], parent[b]
+        if (pa == pb).all():
+            break
+        m = np.minimum(pa, pb)
+        np.minimum.at(parent, pa, m)
+        np.minimum.at(parent, pb, m)
+        while True:
+            jumped = parent[parent]
+            if (jumped == parent).all():
+                break
+            parent = jumped
+    roots, piece = np.unique(parent, return_inverse=True)
+    piece = piece.astype(np.int32).ravel()
+    k = len(roots)
+    label = np.full(k, NO_SECTOR, np.int64)
+    label[piece] = lab.ravel()[first]
+    size = np.bincount(piece, weights=length, minlength=k).astype(np.int64)
+    rows, cols = first // nx, first % nx
+    touches = ((rows == 0) | (rows == ny - 1) | (cols == 0) | (cols + length == nx)).astype(np.int64)
+    edge = np.bincount(piece, weights=touches, minlength=k) > 0
+    return Parts(piece[run_id], label, size, edge)
+
+
+def _borders(lab, comp, np) -> dict:
+    """How many cell sides each two pieces share: {(piece, other piece): sides}, both ways round."""
+    a_parts, b_parts = [], []
+    for x, cx, y, cy in ((lab[:, :-1], comp[:, :-1], lab[:, 1:], comp[:, 1:]),
+                         (lab[:-1], comp[:-1], lab[1:], comp[1:])):
+        diff = x != y
+        a_parts += [cx[diff], cy[diff]]
+        b_parts += [cy[diff], cx[diff]]
+    a, b = np.concatenate(a_parts), np.concatenate(b_parts)
+    if not len(a):
+        return {}
+    k = int(comp.max()) + 1
+    keys, counts = np.unique(a.astype(np.int64) * k + b, return_counts=True)
+    return {(int(q // k), int(q % k)): int(c) for q, c in zip(keys.tolist(), counts.tolist())}
+
+
+def _tidy_pieces(lab, parts: Parts, borders: dict, np) -> list:
+    """Each sector in pieces keeps its biggest (the first in the grid's order on a tie); every smaller piece goes to
+    the sector it shares the most cell sides with (the lowest number on a tie), or to no sector when it borders none
+    (only no-sector ground and the map's edge). Changes `lab`; returns [(sector, its new sector, cells)] per piece."""
+    label, size = parts.label.tolist(), parts.size.tolist()
+    by_sector: dict = {}
+    for c, n in enumerate(label):
+        if n >= 0:
+            by_sector.setdefault(n, []).append(c)
+    small = {c for cs in by_sector.values() if len(cs) > 1 for c in cs}
+    if not small:
+        return []
+    side: dict = {}
+    for (p, q), sides in borders.items():
+        if p in small and label[q] >= 0:
+            side.setdefault(p, {})
+            side[p][label[q]] = side[p].get(label[q], 0) + sides
+    new = np.array(label, np.int64)
+    out = []
+    for n in sorted(by_sector):
+        cs = by_sector[n]
+        if len(cs) < 2:
+            continue
+        keep = max(cs, key=lambda c: (size[c], -c))
+        for c in cs:
+            if c != keep:
+                near = side.get(c, {})
+                to = min(near, key=lambda m: (-near[m], m)) if near else NO_SECTOR
+                new[c] = to
+                out.append((n, to, size[c]))
+    lab[...] = new[parts.comp].astype(lab.dtype)
+    return out
+
+
+def _holes(parts: Parts, borders: dict) -> list:
+    """Every hole: [(the sector's piece, [the pieces inside it], {the pieces outside it})], a hole being pieces that
+    one sector's one piece cuts off from the map's edge (in the order of the sector's piece, then of the hole's first
+    piece)."""
+    k = len(parts.label)
+    label, edge = parts.label.tolist(), parts.edge.tolist()
+    near: dict = {}
+    for p, q in borders:
+        near.setdefault(p, set()).add(q)
+    count: dict = {}
+    for c in range(k):
+        if label[c] >= 0:
+            count[label[c]] = count.get(label[c], 0) + 1
+    out = []
+    for y in range(k):
+        if label[y] < 0 or count[label[y]] != 1 or not near.get(y):
+            continue
+        seen = {c for c in range(k) if edge[c] and c != y}
+        todo = list(seen)
+        while todo:
+            for q in near.get(todo.pop(), ()):
+                if q != y and q not in seen:
+                    seen.add(q)
+                    todo.append(q)
+        inside = [c for c in range(k) if c != y and c not in seen]
+        while inside:
+            group, todo = {inside[0]}, [inside[0]]
+            while todo:
+                for q in near.get(todo.pop(), ()):
+                    if q != y and q not in seen and q not in group:
+                        group.add(q)
+                        todo.append(q)
+            out.append((y, sorted(group), seen))
+            inside = [c for c in inside if c not in group]
+    return out
+
+
+def _corridors(parts: Parts, y: int, group: list, outside: set, np) -> list:
+    """The straight cuts along a row or a column through piece `y`, from a cell of the hole (`group`'s pieces) to a
+    cell outside (a piece of `outside`, or past the map's edge): [(cells cut, (row, col) of the hole's cell where it
+    starts, the cells as (rows, cols))], shortest first (then rows before columns, then the grid's order)."""
+    k = len(parts.label)
+    inner = np.zeros(k, bool)
+    inner[group] = True
+    away = np.zeros(k, bool)
+    away[sorted(outside)] = True
+    found = []
+    for turn, cg in ((0, parts.comp), (1, np.ascontiguousarray(parts.comp.T))):
+        ny, nx = cg.shape
+        flat = cg.ravel()
+        start = np.ones(cg.shape, bool)
+        start[:, 1:] = cg[:, 1:] != cg[:, :-1]
+        first = np.flatnonzero(start.ravel())
+        length = np.diff(np.append(first, ny * nx))
+        mine = flat[first] == y
+        first, length = first[mine], length[mine]
+        col = first % nx
+        has_b, has_a = col > 0, col + length < nx
+        before = np.where(has_b, first - 1, first)
+        after = np.where(has_a, first + length, first)
+        b_in, a_in = has_b & inner[flat[before]], has_a & inner[flat[after]]
+        b_out, a_out = ~has_b | away[flat[before]], ~has_a | away[flat[after]]
+        for ok, hole_at in ((b_in & a_out, before), (a_in & b_out, after)):
+            for f, ln, h in zip(first[ok].tolist(), length[ok].tolist(), hole_at[ok].tolist()):
+                found.append((ln, turn, f, h, nx))
+    found.sort(key=lambda t: t[:3])
+    out = []
+    for ln, turn, f, h, nx in found[:CORRIDOR_TRIES]:
+        r, c0 = divmod(f, nx)
+        hr, hc = divmod(h, nx)
+        rows, cols = np.full(ln, r), np.arange(c0, c0 + ln)
+        if turn:   # (found on the grid turned over: its rows are the map's columns)
+            rows, cols, hr, hc = cols, rows, hc, hr
+        out.append((ln, (hr, hc), (rows, cols)))
+    return out
+
+
+def tidy_cells(lab, np) -> tuple[object, list, int]:
+    """Painted cells `lab` tidied so every sector can be written (a copy): unpinch, then round by round every sector in
+    pieces tidied (_tidy_pieces), else one hole opened with a corridor CORRIDOR cells wide: the shortest straight cut
+    from it to its sector's outside that leaves the sector in one piece, in the sector of the hole's cell where it
+    starts. Returns (the cells, what was done: [{"kind": "pieces", "number", "to", "bits", "cells"} per sector and
+    where its bits went, {"kind": "corridor", "number": the corridor's sector, "around": the sector it cuts,
+    "cells"}], how many cells unpinch moved). Raises PaintError when a hole can't be opened."""
+    lab = lab.copy()
+    pieces: dict = {}
+    corridors = []
+    pinched = 0
+    for _round in range(TIDY_ROUNDS):
+        pinched += unpinch(lab, np)
+        parts = cell_parts(lab, np)
+        borders = _borders(lab, parts.comp, np)
+        moved = _tidy_pieces(lab, parts, borders, np)
+        if moved:
+            for n, to, cells in moved:
+                d = pieces.setdefault((n, to), [0, 0])
+                d[0] += 1
+                d[1] += cells
+            continue
+        holes = _holes(parts, borders)
+        if not holes:
+            break
+        y, group, outside = holes[0]
+        sector = int(parts.label[y])
+        inside = sorted({int(parts.label[c]) for c in group}, key=lambda n: (n < 0, n))
+        for ln, (hr, hc), cells in _corridors(parts, y, group, outside, np):
+            fill = int(lab[hr, hc])
+            old = lab[cells].copy()
+            lab[cells] = fill
+            if int((cell_parts(lab, np).label == sector).sum()) == 1:
+                corridors.append({"kind": "corridor", "number": fill, "around": sector, "cells": ln})
+                break
+            lab[cells] = old      # it would cut the sector in two: the next shortest
+        else:
+            p = {"number": sector, "pieces": 1, "holes": 1, "inside": inside}
+            raise PaintError(problem_text(p), [p])
+    else:
+        raise PaintError("the painted sectors can't be tidied (they keep making pieces and holes)")
+    done = [{"kind": "pieces", "number": n, "to": to, "bits": b, "cells": c} for (n, to), (b, c) in sorted(pieces.items())]
+    return lab, done + corridors, pinched
+
+
+def tidy_text(t: dict) -> str:
+    """One tidying in words (sector numbers as the Studio says them: the file's number + 1)."""
+    if t["kind"] == "pieces":
+        to = "no sector" if t["to"] < 0 else f"sector {t['to'] + 1}"
+        return f"{t['bits']} small bit(s) of sector {t['number'] + 1} went to {to}"
+    what = "a gap of no sector" if t["number"] < 0 else f"a thin line of sector {t['number'] + 1}"
+    return (f"{what} cut through sector {t['around'] + 1} to its edge (a sector can't go all the way round "
+            f"another; not tried in the game)")
+
+
 def problem_text(p: dict) -> str:
     """A painted sector's problem in words (sector numbers as the Studio says them: the file's number + 1)."""
     name = f"sector {p['number'] + 1}"
@@ -1080,15 +1326,19 @@ def over_painted(s: Scenario, kdt_raw: bytes, lab, g: Grid, height_at=None, seed
     """Scenario `s`'s sectors (and its zone map `kdt_raw`) made again from painted cells `lab` (each cell's sector
     number, NO_SECTOR for none, on grid `g`): one sector per number painted, its outline traced round its cells.
     A number the scenario has keeps its zone's name and its label point when that is still inside it; a new number
-    gets a new zone (new_zone_name, from `seed`) with the scenario's 4th value. Raises PaintError when no sector is
-    painted or a sector is in pieces or has a hole."""
+    gets a new zone (new_zone_name, from `seed`) with the scenario's 4th value. The cells are tidied first
+    (tidy_cells: pieces to their neighbours, holes opened), as the Studio shows them. Raises PaintError when no sector
+    is painted, or when tidying can't make every sector one piece without a hole."""
     from dataclasses import replace
     np = _numpy()
-    lab = lab.copy()
     if not (lab >= 0).any():
         raise PaintError(EMPTY)
-    chains, rings, problems, pinched = sector_shapes(lab, g, np)
-    if problems:
+    lab, tidied, pinched = tidy_cells(lab, np)
+    if not (lab >= 0).any():
+        raise PaintError(EMPTY)
+    chains, rings, problems, more_pinched = sector_shapes(lab, g, np)
+    pinched += more_pinched
+    if problems:   # (tidy_cells leaves none: a safety net)
         raise PaintError("; ".join(problem_text(p) for p in problems), problems)
     numbers = sorted(rings)
     outline = _simple_outlines(chains, rings, g)
@@ -1133,9 +1383,10 @@ def over_painted(s: Scenario, kdt_raw: bytes, lab, g: Grid, height_at=None, seed
         notes.append("the sector numbers have gaps (not tried in the game)")
     if moved:
         notes.append(f"{moved} sector label(s) moved inside their painted ground")
+    notes += ["tidied: " + tidy_text(t) for t in tidied]
     if pinched:
         notes.append(f"{pinched} cell(s) moved where a sector touched itself corner to corner")
-    return Whole(zones, kdt_new, lab, g, notes)
+    return Whole(zones, kdt_new, lab, g, notes, tidied)
 
 
 def apply_sectors(read, map_pack: str, files: list, height_at=None, most: int = MOST_CELLS,

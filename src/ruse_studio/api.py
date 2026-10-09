@@ -3043,12 +3043,30 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         the map's y 0, run by run), "sectors": [{"number", "cells", "x", "y"}] (its ground in the build's cells, a
         point inside it), "problems": [{"number", "pieces", "holes", "inside"}] (a sector the build can't write),
         "empty": no sector at all, "starts_empty": it starts with no sectors, "whole_map", "strokes": its strokes,
-        "next": the number a new sector takes, "pinched": cells the build moves where a sector touches itself corner
-        to corner, "outlines": {number: [x, y, ...]} (when asked, the sectors with one outline) or None}."""
+        "next": the number a new sector takes, "tidied": what the build tidies (rusemod.sectors.tidy_cells: small
+        bits of a sector given to a neighbour, a hole opened by a thin line), "outlines": {number: [x, y, ...]} (when
+        asked, the sectors with one outline) or None}. The cells are the tidied ones: what the build writes."""
         from rusemod import sectors
         from rusemod.numpy2 import np
         setting = self._sector_setting(pack)
-        lab, g, _src = self._sector_cells(pack, file, setting)
+        painted, g, _src = self._sector_cells(pack, file, setting)
+        key = ("sector-tidy", pack.lower(), file.lower(), setting.starts_empty(file), setting.whole_map,
+               tuple(setting.paints_of(file)))
+        kept = getattr(self, "_tidy_kept", None)
+        if kept is None:
+            kept = self._tidy_kept = {}
+        with self._grounds_lock:
+            hit = kept.get(key)
+        if hit is None:
+            try:
+                hit = sectors.tidy_cells(painted, np)[:2] + ([],)
+            except sectors.PaintError as exc:   # a hole no straight cut opens: the build stops with the same
+                hit = (painted, [], exc.problems or [{"number": -1, "pieces": 0, "holes": 0, "inside": []}])
+            with self._grounds_lock:
+                kept[key] = hit
+                while len(kept) > self.SECTOR_CELLS_KEPT:   # (a grid each: about 20 MB on D-Day)
+                    kept.pop(next(iter(kept)))
+        lab, tidied, problems = hit
         k = 1   # the map view's cells: every k-th of the build's, at most PREVIEW_CELLS along the longer side
         while max(g.nx, g.ny) > self.PREVIEW_CELLS * k:
             k *= 2
@@ -3069,23 +3087,21 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             else:
                 x, y = sectors.label_point(lab, n, g, np)
             listed.append({"number": n, "cells": int(counted[n + 1]), "x": round(x, 1), "y": round(y, 1)})
-        shapes = lab.copy()
-        problems, pinched, lines = [], 0, None
-        if numbers:
-            chains, rings, problems, pinched = sectors.sector_shapes(shapes, g, np)
-            if outlines:
-                one = {z: r for z, r in rings.items() if len(r) == 1}
-                try:
-                    lines = {str(z): [round(c, 1) for pt in pts for c in pt]
-                             for z, pts in sectors._simple_outlines(chains, one, g).items()}
-                except sectors.SectorError:
-                    lines = {}
+        lines = None
+        if numbers and outlines:
+            chains, rings, _problems, _pinched = sectors.sector_shapes(lab.copy(), g, np)
+            one = {z: r for z, r in rings.items() if len(r) == 1}
+            try:
+                lines = {str(z): [round(c, 1) for pt in pts for c in pt]
+                         for z, pts in sectors._simple_outlines(chains, one, g).items()}
+            except sectors.SectorError:
+                lines = {}
         free = next(n for n in range(sectors.MOST_SECTOR + 2) if n > sectors.MOST_SECTOR or n not in numbers)
         return {"file": file, "nx": nx, "ny": ny, "box": [0.0, 0.0, nx * g.step * k, ny * g.step * k], "runs": runs,
                 "sectors": listed, "problems": problems, "empty": not numbers,
                 "starts_empty": setting.starts_empty(file), "whole_map": setting.whole_map,
                 "strokes": len(setting.paints_of(file)),
-                "next": free if free <= sectors.MOST_SECTOR else None, "pinched": pinched, "outlines": lines}
+                "next": free if free <= sectors.MOST_SECTOR else None, "tidied": tidied, "outlines": lines}
 
     SECTOR_STROKE_DABS = 5000   # dabs one drag may hold (sectors.MOST_POINTS is the file's own limit)
 

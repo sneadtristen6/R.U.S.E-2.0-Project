@@ -38,6 +38,32 @@ def plain_paint(lab, p, g):
                     lab[i][j] = p.sector
 
 
+def plain_parts(lab):
+    """The plain code for cell_parts: a flood fill from each cell not yet in a piece, row by row (sides only)."""
+    ny, nx = len(lab), len(lab[0])
+    comp = [[-1] * nx for _ in range(ny)]
+    label, size, edge = [], [], []
+    for i in range(ny):
+        for j in range(nx):
+            if comp[i][j] >= 0:
+                continue
+            k = len(label)
+            label.append(lab[i][j])
+            size.append(0)
+            edge.append(False)
+            comp[i][j] = k
+            todo = [(i, j)]
+            while todo:
+                a, b = todo.pop()
+                size[k] += 1
+                edge[k] = edge[k] or a in (0, ny - 1) or b in (0, nx - 1)
+                for p, q in ((a - 1, b), (a + 1, b), (a, b - 1), (a, b + 1)):
+                    if 0 <= p < ny and 0 <= q < nx and comp[p][q] < 0 and lab[p][q] == lab[a][b]:
+                        comp[p][q] = k
+                        todo.append((p, q))
+    return comp, label, size, edge
+
+
 @unittest.skipIf(np is None, "numpy (the apps carry it) isn't here")
 class Cells(unittest.TestCase):
     def test_strokes_land_where_the_plain_code_says_cell_for_cell(self):
@@ -132,19 +158,93 @@ class Painted(unittest.TestCase):
         self.assertIn("paint at least one sector", str(caught.exception))
         self.assertIn("never been tried in the game", str(caught.exception))
 
-    def test_a_sector_in_two_pieces_or_with_a_hole_is_named(self):
+    def at(self, lab, x, y):
+        return int(lab[int(y // self.g.step), int(x // self.g.step)])
+
+    def written(self, setting):
+        """The build's result, checked to say what tidy_cells says (view == build) and every sector one piece."""
+        lab = self.cells(setting)
+        tidy, done, _pinched = S.tidy_cells(lab, np)
+        res = S.over_painted(self.s, self.kdt, lab, self.g, None, seed="TestMap/a")
+        self.assertEqual(res.labels.astype(np.int32).tobytes(), tidy.astype(np.int32).tobytes())
+        self.assertEqual(res.tidied, done)
+        parts = S.cell_parts(tidy, np)
+        sectors = [n for n in parts.label.tolist() if n >= 0]
+        self.assertEqual(len(sectors), len(set(sectors)))   # each sector one piece
+        self.assertEqual(S.sector_shapes(tidy.copy(), self.g, np)[2], [])   # no hole, nothing the build refuses
+        return tidy, done, res
+
+    def test_a_stroke_through_a_sector_gives_its_small_piece_to_the_neighbour(self):
+        # sector 2 (the file's 1) drawn across sector 1 (file 0) at y 70,000: 1's top 26,000 to its bottom 46,000
+        cut = S.Sectors(paints=(square(1, 20000, 70000, 110000, 70000),))
+        tidy, done, _res = self.written(cut)
+        self.assertEqual((self.at(tidy, 70000, 50000), self.at(tidy, 70000, 100000)), (1, 0))
+        self.assertEqual([(d["kind"], d["number"], d["to"], d["bits"]) for d in done], [("pieces", 0, 1, 1)])
+        # two pieces of a sector touching nothing else: the smaller (a tie: the later) goes to no sector
         two = S.Sectors(no_sectors=(FILE,), paints=(square(3, 20000, 20000, 60000, 60000),
                                                     square(3, 120000, 120000, 160000, 160000)))
-        with self.assertRaises(S.PaintError) as caught:
-            S.over_painted(self.s, self.kdt, self.cells(two), self.g)
-        self.assertEqual(caught.exception.problems, [{"number": 3, "pieces": 2, "holes": 0, "inside": []}])
-        self.assertIn("sector 4 is in 2 pieces", str(caught.exception))
-        ring = S.Sectors(no_sectors=(FILE,), paints=(square(0, 20000, 20000, 140000, 140000),
-                                                     stroke(S.NO_SECTOR, [(80000.0, 80000.0)], 20000.0)))
-        with self.assertRaises(S.PaintError) as caught:
-            S.over_painted(self.s, self.kdt, self.cells(ring), self.g)
-        self.assertEqual(caught.exception.problems, [{"number": 0, "pieces": 1, "holes": 1, "inside": [-1]}])
-        self.assertIn("ground in no sector inside it", str(caught.exception))
+        tidy, done, _res = self.written(two)
+        self.assertEqual((self.at(tidy, 40000, 40000), self.at(tidy, 140000, 140000)), (3, -1))
+        self.assertEqual([(d["number"], d["to"]) for d in done], [(3, -1)])
+        self.assertIn("went to no sector", S.tidy_text(done[0]))
+
+    def test_a_blob_inside_a_sector_gets_a_thin_line_out(self):
+        blob = S.Sectors(no_sectors=(FILE,), paints=(square(0, 20000, 20000, 160000, 160000),
+                                                     square(1, 84000, 84000, 96000, 96000)))
+        tidy, done, res = self.written(blob)
+        [c] = done
+        self.assertEqual((c["kind"], c["number"], c["around"]), ("corridor", 1, 0))
+        self.assertEqual([z.number for z in res.zones], [0, 1])
+        k = Kdt(res.kdt)
+        self.assertEqual((level_at(k, 90000.0, 90000.0), level_at(k, 40000.0, 40000.0)), (1, 0))
+        self.assertEqual(int((tidy == 1).sum()) - int((self.cells(blob) == 1).sum()), c["cells"])  # one cell wide
+        self.assertIn("thin line of sector 2 cut through sector 1", S.tidy_text(c))
+
+    def test_an_eraser_hole_and_two_holes_in_one_sector(self):
+        hole = S.Sectors(no_sectors=(FILE,), paints=(square(0, 20000, 20000, 160000, 160000),
+                                                     stroke(S.NO_SECTOR, [(80000.0, 80000.0)], 12000.0)))
+        _tidy, done, res = self.written(hole)
+        self.assertEqual([(c["kind"], c["number"], c["around"]) for c in done], [("corridor", -1, 0)])
+        self.assertEqual([z.number for z in res.zones], [0])
+        self.assertIsNone(level_at(Kdt(res.kdt), 80000.0, 80000.0))
+        two = S.Sectors(no_sectors=(FILE,), paints=(square(0, 20000, 20000, 160000, 160000),
+                                                    square(1, 50000, 84000, 62000, 96000),
+                                                    stroke(S.NO_SECTOR, [(130000.0, 90000.0)], 9000.0)))
+        _tidy, done, res = self.written(two)
+        self.assertEqual(sorted((c["number"], c["around"]) for c in done), [(-1, 0), (1, 0)])
+        self.assertEqual([z.number for z in res.zones], [0, 1])
+
+    def test_a_cut_that_would_split_the_sector_is_passed_over(self):
+        # sector 1 round a blob of 2, with a thin neck of 1 to the right: a (made-up) shortest cut across the neck
+        # would leave 1 in two pieces, so the next one is taken
+        g = self.g
+        lab = np.full((g.ny, g.nx), -1, np.int32)
+        lab[40:120, 40:120] = 0
+        lab[70:90, 70:90] = 1
+        lab[80:81, 120:200] = 0     # the neck, one cell thick
+        lab[60:100, 200:240] = 0    # and what it leads to
+        real = S._corridors
+        bad = (1, (80, 80), (np.full(1, 80), np.arange(150, 151)))   # a cut across the neck, in the blob's sector
+
+        def with_bad(*a, **kw):
+            return [bad] + real(*a, **kw)
+        from unittest import mock
+        with mock.patch.object(S, "_corridors", with_bad):
+            tidy, done, _p = S.tidy_cells(lab, np)
+        [c] = done
+        self.assertEqual((c["number"], c["around"]), (1, 0))
+        self.assertEqual(int(tidy[80, 150]), 0)                    # the neck left alone
+        self.assertEqual(int((S.cell_parts(tidy, np).label == 0).sum()), 1)
+
+    def test_pieces_found_on_whole_arrays_match_a_flood_fill(self):
+        rng = np.random.default_rng(7)
+        for trial in range(6):
+            lab = rng.integers(-1, 3, size=(23 + trial, 31)).astype(np.int32)
+            lab[5:15, 5:20] = 1
+            parts = S.cell_parts(lab, np)
+            comp, label, size, edge = plain_parts(lab.tolist())
+            self.assertEqual(parts.comp.astype(np.int64).tobytes(), np.array(comp, np.int64).tobytes())
+            self.assertEqual((parts.label.tolist(), parts.size.tolist(), parts.edge.tolist()), (label, size, edge))
 
     def test_a_label_lands_inside_a_c_shape(self):
         g = S.Grid.over(W, H, 256)
@@ -242,11 +342,22 @@ class StudioBrush(_with_mod()):
         self.assertEqual(set(self.cells(v)), {0, 1, 6})
         data = tomllib.loads(self.file.read_text(encoding="utf-8"))["sectors"]
         self.assertEqual((data["no_sectors"], [p["sector"] for p in data["paint"]]), ([f], [0, 5]))
-        # a second piece of sector 1: named, with what the build says
+        # a second, smaller piece of sector 1 touching nothing: tidied to no sector, shown and said as the build does
         v = self.api.sector_paint("Blitz", f, 0, 8000.0, [[30000.0, 150000.0]])
-        self.assertEqual(v["problems"], [{"number": 0, "pieces": 2, "holes": 0, "inside": []}])
+        self.assertEqual(v["problems"], [])
+        self.assertEqual([(t["kind"], t["number"], t["to"], t["bits"]) for t in v["tidied"]], [("pieces", 0, -1, 1)])
+        self.assertEqual(set(self.cells(v)), {0, 1, 6})
+        from rusemod.numpy2 import np as np_
+        painted, g, (s, kdt_raw, _w, _h) = self.api._sector_cells("Blitz", f, self.api._sector_setting("Blitz"))
+        built = S.over_painted(s, kdt_raw, painted, g, None, seed=f"Blitz/{f}")
+        k = 1
+        while max(g.nx, g.ny) > self.api.PREVIEW_CELLS * k:
+            k *= 2
+        shown = (built.labels[k // 2::k, k // 2::k].astype(np_.int32) + 1).ravel().tolist()
+        self.assertEqual(self.cells(v), shown)                  # what's shown is what the build writes
+        self.assertEqual(built.tidied, v["tidied"])
         scen = next(x for x in self.api.map_scenarios("Blitz")["scenarios"] if x["file"] == f)
-        self.assertIn("sector 1 is in 2 pieces", scen["sectors_note"])
+        self.assertEqual(([z["number"] for z in scen["zones"]], scen.get("sectors_note")), ([0, 5], None))
         v = self.api.sector_undo("Blitz", f)
         self.assertEqual((v["problems"], v["strokes"]), ([], 2))
         v = self.api.sector_view("Blitz", f, outlines=True)

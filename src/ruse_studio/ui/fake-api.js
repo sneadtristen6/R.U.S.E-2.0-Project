@@ -789,7 +789,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     const free = [...Array(255).keys()].find((k) => !numbers.includes(k));
     return { file, nx: n, ny: n, box: [0, 0, size, size], runs, sectors, problems: [], empty: !numbers.length,
       starts_empty: f.empty, whole_map: false, strokes: f.strokes.length,
-      next: free === undefined ? null : free, pinched: 0, outlines: lines };
+      next: free === undefined ? null : free, tidied: [], outlines: lines };
   }
   function withScenarioEdits(pack) {
     const out = baseScenarios();
