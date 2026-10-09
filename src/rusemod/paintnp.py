@@ -104,11 +104,25 @@ def _coverage(stroke, f, xs, ys, pw: float, ph: float, grid: bool = True):
     return total / 9
 
 
+def _texture(stroke, swatch, xs, ys, pixel: float):
+    """A texture stroke's texture at every pixel middle (x of xs, y of ys): (colour [row, column, 3], how much it shows
+    [row, column], its alpha over 255), groundtex.Swatch.sampler's own sums for pixels `pixel` map units across."""
+    from .groundtex import rep_of
+    rep = rep_of(stroke, swatch)
+    n, data = swatch.mips[swatch.mip_for(rep, pixel)]
+    pic = np.frombuffer(data, dtype=np.uint8).reshape(n, n, 4)
+    i = np.minimum(np.floor(np.mod(xs / rep, 1.0) * n).astype(_I), n - 1)
+    j = np.minimum(np.floor(np.mod(ys / rep, 1.0) * n).astype(_I), n - 1)
+    got = pic[j[:, None], i[None, :]]
+    return got[:, :, :3].astype(np.float64), got[:, :, 3].astype(np.float64) / 255.0
+
+
 def _in_turn(gp, old, reach: list, strokes: list, boxes: list, colours: list, hard: list, px, py, cx0, cy0,
-             pw: float, ph: float):
+             pw: float, ph: float, swatches=None):
     """A tile's pixels after the strokes of `reach`, each laid in its turn on every pixel (paint_strokes's sums in
     its order), and the blocks a hard stroke covered whole (always written again). `old`: its pixels before; `px`,
-    `py` the pixels' middles, `cx0`, `cy0` the blocks' corners."""
+    `py` the pixels' middles, `cx0`, `cy0` the blocks' corners. A texture stroke lays its texture's colour at each
+    pixel, its share times the texture's alpha (`swatches`: paint_strokes's)."""
     ny, nx = len(cy0), len(cx0)
     img = old.astype(np.float64)
     force = np.zeros((ny, nx), dtype=bool)
@@ -135,6 +149,9 @@ def _in_turn(gp, old, reach: list, strokes: list, boxes: list, colours: list, ha
         if i0 >= i1 or j0 >= j1:
             continue
         a = _coverage(s, f, px[i0:i1], py[j0:j1], pw, ph) * s.weight
+        if c is None:  # a texture: its colour at each pixel, as much as it shows
+            tex, shows = _texture(s, swatches[s.texture], px[i0:i1], py[j0:j1], max(pw, ph))
+            a = a * shows
         lay = a > 0.0
         sub = img[j0:j1, i0:i1]
         if hard[k]:
@@ -150,7 +167,7 @@ def _in_turn(gp, old, reach: list, strokes: list, boxes: list, colours: list, ha
         if lay.any():
             for ch in range(3):
                 v = sub[:, :, ch]
-                np.copyto(v, v + (c[ch] - v) * a, where=lay)
+                np.copyto(v, v + ((tex[:, :, ch] if c is None else c[ch]) - v) * a, where=lay)
     return np.clip(np.rint(img), 0, 255).astype(np.uint8), force
 
 
@@ -248,13 +265,14 @@ def _by_colour(gp, old, reach: list, strokes: list, boxes: list, colours: list, 
     return new
 
 
-def paint_tile(gp, store, tile, rect, near: list, strokes: list, boxes: list, colours: list, hard: list, cache=None):
+def paint_tile(gp, store, tile, rect, near: list, strokes: list, boxes: list, colours: list, hard: list, cache=None,
+               swatches=None):
     """One tile painted as groundpaint.paint_strokes paints it: its new record, b"" when nothing changes, or None when
-    a stroke near it isn't a colour laid with the soft shape (a stamp: paint_strokes's own pixels). `gp` is
-    rusemod.groundpaint, `rect` the tile's place (_tile_rect), `near` the strokes whose boxes reach it; `boxes`,
-    `colours` and `hard` as paint_strokes makes them."""
+    a stroke near it isn't a colour or a texture laid with the soft shape (a stamp: paint_strokes's own pixels). `gp`
+    is rusemod.groundpaint, `rect` the tile's place (_tile_rect), `near` the strokes whose boxes reach it; `boxes`,
+    `colours`, `hard` and `swatches` as paint_strokes makes them. Tiles a texture reaches are laid in turn."""
     for k in near:
-        if colours[k] is None or strokes[k].kind.shape != "soft":
+        if strokes[k].kind.shape != "soft" or (colours[k] is None and strokes[k].kind.kind != "texture"):
             return None
     rx0, ry0, rx1, ry1 = rect
     w, h = gp._dims(store, tile)
@@ -270,8 +288,8 @@ def paint_tile(gp, store, tile, rect, near: list, strokes: list, boxes: list, co
     cx0, cy0 = rx0 + (np.arange(nx) * 4) * pw, ry0 + (np.arange(ny) * 4) * ph
     px = (cx0[:, None] + ((np.arange(4) + 0.5) * pw)[None, :]).ravel()
     py = (cy0[:, None] + ((np.arange(4) + 0.5) * ph)[None, :]).ravel()
-    if len(reach) > MOST or any(hard[k] or not 0.0 <= strokes[k].weight <= 1.0 for k in reach):
-        new, force = _in_turn(gp, old, reach, strokes, boxes, colours, hard, px, py, cx0, cy0, pw, ph)
+    if len(reach) > MOST or any(hard[k] or colours[k] is None or not 0.0 <= strokes[k].weight <= 1.0 for k in reach):
+        new, force = _in_turn(gp, old, reach, strokes, boxes, colours, hard, px, py, cx0, cy0, pw, ph, swatches)
     else:
         new, force = _by_colour(gp, old, reach, strokes, boxes, colours, px, py, pw, ph), False
         if isinstance(new, tuple):  # that colour all over

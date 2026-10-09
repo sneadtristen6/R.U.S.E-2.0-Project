@@ -128,6 +128,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.movement = read_movement(path)
         _block_brushes(info)
         _paint_brushes(info)
+        _ground_pictures(info, path)
         info.roads = _read_maps(path, "roads.toml")
         _take_outs(info)
         info.players = _read_maps(path, "map.toml")
@@ -387,8 +388,9 @@ def _block_brushes(info) -> None:
 
 
 def _paint_brushes(info) -> None:
-    """The Studio's Map Paint brushes (paint, stamp) live in terrain.toml with the others, but change the ground's
-    picture, not its shape: they move to `info.paint` in their order, like the cover brushes to the cover grid."""
+    """The Studio's Map Paint brushes (paint, stamp, texture) live in terrain.toml with the others, but change the
+    ground's picture, not its shape: they move to `info.paint` in their order, like the cover brushes to the cover
+    grid."""
     from .brush import PAINT_KINDS
     for pack, strokes in list(info.terrain.items()):
         paint = [s for s in strokes if s.kind.kind in PAINT_KINDS]
@@ -400,6 +402,28 @@ def _paint_brushes(info) -> None:
             info.terrain[pack] = rest
         else:
             del info.terrain[pack]
+
+
+def _ground_pictures(info, path: Path) -> None:
+    """The mod's own pictures its texture strokes lay (texture = "file:<name>.png": files/ground/<name>.png), named
+    with the mod (file:<mod id>/<name>.png) so two mods' pictures of one name stay apart; one that isn't there is an
+    error that says where it should be."""
+    from dataclasses import replace
+    from .groundtex import GROUND
+    for pack, strokes in info.paint.items():
+        out = []
+        for s in strokes:
+            if s.kind.kind == "texture" and s.texture.startswith("file:"):
+                name = s.texture[5:]
+                file = path / GROUND / name
+                if not file.is_file():
+                    raise BuildError(f"{info.id}: maps/{pack}/terrain.toml paints with the picture {name}, which "
+                                     f"isn't in the mod's {GROUND.as_posix()} folder")
+                key = f"file:{info.id}/{name}"
+                info.ground_pictures[key] = file
+                s = replace(s, texture=key)
+            out.append(s)
+        info.paint[pack] = out
 
 
 BED_RADII = (3840.0, 2560.0, 1920.0, 1280.0)  # down to nav.MIN_RADIUS: a new movement circle fits in one of these
@@ -2398,6 +2422,34 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             except (KeyError, CoverError, ValueError, struct.error):
                 return None
 
+        library: list = []  # [the texture strokes' groundtex.Library], made once when a mod paints with a texture
+
+        def textures():
+            """The textures the mods' texture strokes lay: the game's (from ZZ_Win.dat, their repeats from the unit
+            data), a square of any map's ground, or a mod's own picture (rusemod.groundtex)."""
+            if not library:
+                from .groundtex import Library
+                zz_path = text_path or find_pack(game, loc.PACK)
+                zz = text_arc if text_arc is not None else open_pack(zz_path) if zz_path else None
+
+                def map_reader(pack):
+                    where = find_map(pack)
+                    if where is None:
+                        return None
+                    a = open_pack(where)
+
+                    def read(member, a=a):
+                        try:
+                            return bytes(a.read(a.find(member)))
+                        except KeyError:
+                            return None
+                    return read
+                files = {}
+                for m, _ops in mods:
+                    files.update(getattr(m, "ground_pictures", None) or {})
+                library.append(Library(zz, arc, map_reader, files, cache))
+            return library[0]
+
         for name, (strokes, ids) in scenario_edits(result.order, mods, "paint").items():  # the Map Paint strokes,
             # before the new roads, so a road drawn over paint shows on top of it
             map_path = find_map(name)
@@ -2419,15 +2471,26 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 return done.get(e.path) or bytes(a.read(e))
             from . import mapkeep
             from .groundpaint import DETAIL, PaintError, paint_ground, paint_inputs
+            from .groundtex import TextureError
+            swatches = None
+            if any(s.kind.kind == "texture" for s in strokes):
+                try:
+                    swatches = textures().for_strokes(strokes)
+                except (TextureError, ValueError, KeyError, struct.error, zlib.error) as exc:
+                    result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: a texture to paint with "
+                                                            f"can't be read ({exc})"))
+                    continue
             # the same paint on the same ground as an earlier build: its pictures from the build cache (a map painted
-            # all over takes many minutes), kept like a reshaped map (rusemod.mapkeep)
-            paint_k = mapkeep.key(name, ["paint", paint_inputs(read_map)], strokes, None) if cache is not None else None
+            # all over takes many minutes), kept like a reshaped map (rusemod.mapkeep); a texture's own pixels count
+            made_from = ["paint", paint_inputs(read_map)] + sorted(f"{r} {s.digest}" for r, s in (swatches or {}).items())
+            paint_k = mapkeep.key(name, made_from, strokes, None) if cache is not None else None
             kept = mapkeep.read(cache, paint_k)
             if kept is not None and isinstance(kept.get("notes"), list):
                 painted, notes = kept["members"], kept["notes"]
             else:
                 try:
-                    painted, notes = paint_ground(read_map, lambda m, a=map_arc: a.find(m).path, strokes, cache)
+                    painted, notes = paint_ground(read_map, lambda m, a=map_arc: a.find(m).path, strokes, cache,
+                                                  swatches=swatches)
                 except (PaintError, ValueError, KeyError, struct.error, zlib.error) as exc:
                     result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the paint can't be laid "
                                                             f"({exc})"))

@@ -468,9 +468,9 @@ class MapPaint(unittest.TestCase):
         real = gp.paint_strokes
         asked = []
 
-        def counted(store, bounds, made, cache=None, only=None):
+        def counted(store, bounds, made, cache=None, only=None, swatches=None):
             asked.append(None if only is None else sorted(only))
-            return real(store, bounds, made, cache, only)
+            return real(store, bounds, made, cache, only, swatches)
 
         def reached(s, item):  # the tiles a stroke's box reaches
             (bx0, bx1, by0, by1), out = strokes(item)[0].box(), []

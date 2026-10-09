@@ -1010,6 +1010,20 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     }).map((u) => u.id);
   }
 
+  // Map Paint's textures in the preview: [ref, group, words, colour], each drawn as a checker of its colour
+  const fakeTextures = [["game:france/stickers01/herbe_verte", "grass", ["green", "grass"], "#4f6e2a"],
+    ["game:france/stickers01/labourage", "fields", ["ploughed"], "#7a6040"],
+    ["game:france/stickers01/terre", "earth", ["earth"], "#6a4a30"],
+    ["game:italie/stickers/sable", "sand", ["sand"], "#b09060"],
+    ["game:ardennes/stickers/plaque_neige", "snow", ["snow"], "#dcdcd8"],
+    ["game:france/stickers01/cour_paves", "town", ["yard", "cobbles"], "#7a7068"]];
+  const fakeOwnPictures = [];
+  function fakeChecker(a, b) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="${a}"/>`
+      + `<rect width="4" height="4" fill="${b}"/><rect x="4" y="4" width="4" height="4" fill="${b}"/></svg>`;
+    return "data:image/svg+xml;base64," + btoa(svg);
+  }
+
   // The Maps view: a made-up island, packed like rusemod.terrain (uint16 positions over the bounds, zlib, base64)
   // (titles: what the game's menus call each map, as the game has them)
   const fakeMaps = [
@@ -2533,6 +2547,24 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       map_view: async (pack, lod) => fakeGround(pack, lod || "lowdef"),
       map_ground: async () => ({ url: null }),
       map_models: async () => ({}),  // no game models in the preview: the shapes stay  // the made-up island has only its colours
+      // Map Paint's textures (rusemod.groundtex): a few made-up ones, each a two-colour checker
+      ground_textures: async () => ({ base: "", groups: ["grass", "fields", "earth", "sand", "rock", "snow", "water",
+        "roads", "town", "damage", "marks", "other"], textures: fakeTextures.map(([ref, group, words, a]) => ({
+        ref, theatres: ["france"], group, words, period: 8192, see_through: false, thumb: fakeChecker(a, "#222") })) }),
+      ground_texture: async (ref) => {
+        const t = fakeTextures.find((x) => x[0] === ref), own = fakeOwnPictures.find((p) => p.ref === ref);
+        return { ref, period: ref.startsWith("map:") ? 81920 : 8192, n: 8,
+          png: own ? own.thumb : fakeChecker(t ? t[3] : "#9a8a5a", "#4a3a2a") };
+      },
+      map_overview: async (pack) => ({ pack, picture: fakeChecker("#6a8a4a", "#c8b070"), bounds: [0, 0, 1000000, 1000000] }),
+      map_texture: async (pack, x, y) => ({ ref: `map:${pack}:${Math.round(x)}:${Math.round(y)}`, period: 81920, n: 8,
+        png: fakeChecker("#c8b070", "#8a7040") }),
+      ground_pictures: async () => ({ pictures: fakeOwnPictures, folder: "mods/test/files/ground" }),
+      add_ground_picture: async (name, picture) => {
+        const ref = `file:${String(name).replace(/\.\w+$/, "")}.png`;
+        fakeOwnPictures.push({ ref, name: ref.slice(5, -4), thumb: picture });
+        return { pictures: fakeOwnPictures, folder: "mods/test/files/ground", ref };
+      },
       app_version: async () => ({ app: "Studio", version: "0.8.1" }),
       // the start-up log: here, the page's moment kept in window.fakeStartMarks (ms since the page began loading)
       start_mark: async (what) => { (window.fakeStartMarks = window.fakeStartMarks || {})[what] = performance.now(); return {}; },

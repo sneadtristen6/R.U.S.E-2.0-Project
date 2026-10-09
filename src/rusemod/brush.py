@@ -94,9 +94,11 @@ BRUSHES = {
     # the Map Paint tab (PLAN §15): the ground's picture, not its shape (rusemod.groundpaint.paint_strokes)
     "paint": Brush("paint", "soft"),  # a colour laid over the ground picture, `weight` its opacity
     "stamp": Brush("stamp", "soft"),  # the map's own ground copied from (x + sx, y + sy), `weight` its opacity
+    # a texture laid repeating, `size` map units a repeat (rusemod.groundtex: the game's, a map's square, the mod's)
+    "texture": Brush("texture", "soft"),
 }
 WATER_KINDS = ("water", "drain")
-PAINT_KINDS = ("paint", "stamp")
+PAINT_KINDS = ("paint", "stamp", "texture")
 GROUND_UNCHANGED = WATER_KINDS + ("cover", "block", "open") + PAINT_KINDS  # kinds that never move the ground
 CRATER_RIM = 0.35      # the crater's rim rises by this share of the bowl's depth
 
@@ -302,10 +304,12 @@ class Stroke:
     colour: str = ""      # paint: the colour laid on the ground picture, "#rrggbb"
     sx: float = 0.0       # stamp: where the ground it copies lies, from each point it paints (world units)
     sy: float = 0.0
-    clear: bool = True    # paint, stamp: take off what hides it up close (stickers, low plants, stones) where it is
-                          # at least half strength (groundpaint.paint_clearing; TESTS.md T21)
+    clear: bool = True    # paint, stamp, texture: take off what hides it up close (stickers, low plants, stones)
+                          # where it is at least half strength (groundpaint.paint_clearing; TESTS.md T21)
     block: bool = True    # water: its water closes the ground under it to units, as a shipped map's does; false: a
                           # thin layer units go under, the movement taking all of the stroke's place for dry ground
+    texture: str = ""     # texture: what it lays (rusemod.groundtex: game:..., map:..., file:...)
+    size: float = 0.0     # texture: map units one repeat covers; 0 = the texture's own
 
     @property
     def kind(self) -> Brush:
@@ -412,8 +416,8 @@ class Stroke:
 # --- the mod file: maps/<map pack>/terrain.toml -------------------------------------------------------------------
 _NEEDS = {"add": ("height",), "level": ("level",), "smooth": (), "ramp": ("x2", "y2", "level", "level2"),
           "water": ("level",), "drain": (), "cover": (), "block": (), "open": (), "paint": ("colour",),
-          "stamp": ("sx", "sy")}
-_NUMBERS = ("x", "y", "radius", "height", "level", "weight", "x2", "y2", "level2", "dx", "dy", "sx", "sy")
+          "stamp": ("sx", "sy"), "texture": ("texture",)}
+_NUMBERS = ("x", "y", "radius", "height", "level", "weight", "x2", "y2", "level2", "dx", "dy", "sx", "sy", "size")
 _COLOUR = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
@@ -499,10 +503,20 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
             raise BrushError(f"{at}: sx and sy (where a stamp copies from) are for the stamp brush")
         if kind == "stamp" and values["sx"] == 0.0 and values["sy"] == 0.0:
             raise BrushError(f"{at}: the stamp copies from where it paints (sx, sy are 0, 0): pick another spot")
+        if "texture" in item or "size" in values:
+            if kind != "texture":
+                raise BrushError(f"{at}: texture and size (what a texture lays, how big) are for the texture brush")
+            from .groundtex import TextureError, check_ref
+            try:
+                values["texture"] = check_ref(item.get("texture"))
+            except TextureError as exc:
+                raise BrushError(f"{at}: {exc}") from None
+            if values.get("size", 0.0) < 0.0:
+                raise BrushError(f"{at}: size can't be below 0 (0 lays the texture at its own size)")
         if "clear" in item:
             if kind not in PAINT_KINDS:
-                raise BrushError(f"{at}: clear (taking off what hides the paint up close) is for the paint and stamp "
-                                 f"brushes")
+                raise BrushError(f"{at}: clear (taking off what hides the paint up close) is for the paint, stamp and "
+                                 f"texture brushes")
             if not isinstance(item["clear"], bool):
                 raise BrushError(f"{at}: clear must be true or false")
             values["clear"] = item["clear"]
@@ -539,6 +553,10 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
             lines.append(f'colour = "{s.colour}"')
         if kind == "stamp":
             lines += [f"sx = {_num_text(s.sx)}", f"sy = {_num_text(s.sy)}"]
+        if kind == "texture":
+            lines.append(f'texture = "{s.texture}"')
+            if s.size > 0.0:
+                lines.append(f"size = {_num_text(s.size)}")
         if kind in ("level", "smooth", "ramp") + PAINT_KINDS:
             lines.append(f"weight = {_num_text(s.weight)}")
         if kind in PAINT_KINDS and not s.clear:

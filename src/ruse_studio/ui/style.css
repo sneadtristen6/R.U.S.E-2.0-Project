@@ -511,7 +511,24 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .swatch { width: 18px; height: 18px; padding: 0; border: 1px solid #000; outline: 1px solid #5d7ea6; cursor: pointer; }
 .swatch.big { width: 28px; height: 28px; cursor: default; }
 .swatch[aria-pressed="true"] { outline: 2px solid #fff; }
-.paint-stamp { display: flex; flex-direction: column; gap: 5px; }
+.paint-stamp { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+/* the Texture brush's library (maps.js renderTexturePanel): picture buttons over a checker, so see-through shows */
+.tex-pane { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.tex-pane > .chip { align-self: flex-start; }  /* Add a picture, Pick the spot: as wide as their words */
+.tex-search { padding: 3px 6px; background: var(--panel-hi); border: 1px solid var(--line); color: inherit; font-size: 12px; }
+.tex-groups .chip { padding: 2px 8px; font-size: 11px; }
+.tex-grid { display: flex; flex-wrap: wrap; gap: 3px; max-height: 196px; overflow-y: auto; overflow-x: hidden; }
+.tex-grid:empty { display: none; }
+.tex-used { max-height: none; }
+.tex-item, .tex-now-pic { width: 40px; height: 40px; padding: 0; border: 1px solid #000; outline: 1px solid #5d7ea6;
+  cursor: pointer; flex: none; background: repeating-conic-gradient(#888 0 25%, #555 0 50%) 0 0 / 10px 10px; }
+.tex-item img { width: 100%; height: 100%; display: block; image-rendering: auto; }
+.tex-item[aria-pressed="true"] { outline: 2px solid #fff; }
+.tex-now { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tex-now-pic { width: 48px; height: 48px; cursor: default; background-size: cover; }
+.tex-now-pic[style*="url"] { background-color: #555; }
+.tex-map-list { padding: 2px 4px; background: var(--panel-hi); border: 1px solid var(--line); color: inherit; }
+.tex-map-pic { width: 100%; max-width: 320px; cursor: crosshair; border: 1px solid var(--line); }
 .tray-paint > .chip { align-self: flex-start; }  /* Clear the ground under it: as wide as its words, like the others */
 .brush-tip { display: flex; flex-direction: column; gap: 5px; }  /* the brush types: shape, edge, a square's angle */
 .brush-tip .chips:empty { display: none; }
