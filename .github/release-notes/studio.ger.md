@@ -22,6 +22,11 @@ sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird n
 - **Eine Einheit, die aus einer Einheit einer anderen Armee erforscht wird,** ließ das Spiel in einem endlosen
   Ladebildschirm: **Neue Einheit…** entfernt diese Verbindung jetzt, und der Bau lehnt eine Einheit ab, die aus einer
   fehlenden Einheit oder der einer anderen Nation erforscht wird, und sagt, warum und wie man es behebt.
+- **Eine Einheit entfernen, aus der andere erforscht werden:** In **Einstellungen > Forschung** wählst du, ob du
+  zuerst gewarnt wirst (Standard), ob es abgelehnt wird oder ob sie neu mit deren eigener Vorgängereinheit verknüpft
+  werden; eine Einheit, die auf eine entfernte zeigt, zeigt das auf ihrer Seite und in der Prüfung. Forschungszeiten
+  lassen sich in Sekunden oder Minuten eingeben (dass das Spiel sie in Sekunden zählt, ist im Spiel noch nicht
+  ausprobiert).
 - **Linux und Steam Deck (über Proton):** Das Studio öffnet sich in deinem Webbrowser, wenn sein eigenes Fenster es
   nicht kann. Unter Linux noch nicht ausprobiert: Sag uns, wie es läuft.
 

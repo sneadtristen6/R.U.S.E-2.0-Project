@@ -21,6 +21,10 @@ modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non v
 - **Un'unità ricercata da un'unità di un altro esercito** lasciava il gioco in una schermata di caricamento infinita:
   **Nuova unità…** ora toglie quel collegamento, e la costruzione rifiuta un'unità ricercata da un'unità mancante o
   di un'altra nazione, dicendo perché e come correggere.
+- **Togliere un'unità da cui altre sono ricercate:** scegli in **Impostazioni > Ricerca** se essere avvisato prima
+  (predefinito), rifiutare, o ricollegarle al suo stesso genitore; un'unità che punta a un'unità tolta lo mostra
+  nella sua pagina e nel controllo. I tempi di ricerca si scrivono in secondi o minuti (che il gioco li conti in
+  secondi non è ancora provato in gioco).
 - **Linux e Steam Deck (con Proton):** lo Studio si apre nel tuo browser web quando la sua finestra non ci riesce.
   Non ancora provato su Linux: facci sapere com'è andata.
 

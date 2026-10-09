@@ -24,6 +24,10 @@ modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n
 - **Une unité recherchée depuis l'unité d'une autre armée** laissait le jeu sur un écran de chargement sans fin :
   **Nouvelle unité…** retire ce lien désormais, et la construction du mod refuse une unité recherchée depuis une
   unité absente ou d'une autre nation, en disant pourquoi et comment corriger.
+- **Retirer une unité dont d'autres sont recherchées :** choisissez dans **Réglages > Recherche** d'être averti
+  d'abord (par défaut), de refuser, ou de les relier à nouveau à son propre parent ; une unité qui pointe vers une
+  unité disparue le montre sur sa page et dans la vérification. Les durées de recherche se tapent en secondes ou en
+  minutes (que le jeu les compte en secondes n'est pas encore essayé en jeu).
 - **Linux et Steam Deck (via Proton) :** le Studio s'ouvre dans votre navigateur web quand sa propre fenêtre ne le
   peut pas. Pas encore essayé sur Linux : dites-nous ce qu'il en est.
 

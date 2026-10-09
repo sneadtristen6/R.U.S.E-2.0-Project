@@ -21,6 +21,10 @@ your own, and test it in the game. Your Steam install is never changed.
 - **A unit researched from another army's unit** left the game on an endless loading screen: **New unit…** drops that
   link now, and the build refuses a unit researched from a missing unit or another nation's, saying why and how to
   fix it.
+- **Taking out a unit others are researched from:** choose in **Settings > Research** to be warned first (the
+  default), refuse, or re-link them to its own parent; a unit left pointing at a gone one shows it on its page and in
+  the check. Research times can be typed in seconds or minutes (that the game counts them in seconds isn't tried in
+  the game yet).
 - **Linux and Steam Deck (through Proton):** the Studio opens in your web browser when its own window can't. Not
   tried on Linux yet: tell us how it goes.
 

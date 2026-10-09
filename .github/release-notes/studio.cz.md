@@ -21,6 +21,10 @@ vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemě
 - **Jednotka zkoumaná z jednotky jiné armády** nechávala hru na nekonečné obrazovce načítání: **Nová jednotka…** teď
   to propojení odstraní a sestavení odmítne jednotku zkoumanou z chybějící jednotky nebo z jednotky jiného národa a
   řekne proč a jak to opravit.
+- **Odebrání jednotky, ze které se zkoumají jiné:** v **Nastavení > Výzkum** vyberte, zda nejdřív varovat (výchozí),
+  odmítnout, nebo je znovu propojit s jejím vlastním předchůdcem; jednotka, která ukazuje na odebranou, to ukáže na
+  své stránce a v kontrole. Doby výzkumu se zadávají v sekundách nebo minutách (že je hra počítá v sekundách, zatím
+  není ve hře vyzkoušeno).
 - **Linux a Steam Deck (přes Proton):** Studio se otevře ve vašem webovém prohlížeči, když jeho vlastní okno nemůže.
   Na Linuxu zatím nevyzkoušeno: dejte nám vědět, jak to šlo.
 

@@ -21,6 +21,10 @@ zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy 
 - **Jednostka badana z jednostki innej armii** zostawiała grę na niekończącym się ekranie wczytywania: **Nowa
   jednostka…** usuwa teraz to powiązanie, a budowanie odrzuca jednostkę badaną z brakującej jednostki lub z jednostki
   innej nacji, mówiąc dlaczego i jak to naprawić.
+- **Usuwanie jednostki, z której badane są inne:** wybierz w **Ustawienia > Badania**, czy najpierw ostrzec
+  (domyślnie), odmówić, czy połączyć je ponownie z jej własnym poprzednikiem; jednostka wskazująca na usuniętą
+  pokazuje to na swojej stronie i w sprawdzaniu. Czasy badań wpisuje się w sekundach lub minutach (że gra liczy je w
+  sekundach, nie sprawdzono jeszcze w grze).
 - **Linux i Steam Deck (przez Protona):** Studio otwiera się w twojej przeglądarce, gdy jego własne okno nie może.
   Jeszcze nie sprawdzone na Linuksie: daj nam znać, jak poszło.
 

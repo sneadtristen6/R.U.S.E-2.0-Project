@@ -22,6 +22,10 @@ idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de
 - **Una unidad investigada desde la unidad de otro ejército** dejaba el juego en una pantalla de carga sin fin:
   **Nueva unidad…** quita ahora ese enlace, y la construcción rechaza una unidad investigada desde una unidad que
   falta o de otra nación, diciendo por qué y cómo arreglarlo.
+- **Quitar una unidad de la que se investigan otras:** elige en **Ajustes > Investigación** que te avise antes (por
+  defecto), negarse, o volver a enlazarlas con su propio padre; una unidad que apunta a una que ya no está lo muestra
+  en su página y en la comprobación. Los tiempos de investigación se escriben en segundos o minutos (que el juego los
+  cuente en segundos aún no se ha probado en el juego).
 - **Linux y Steam Deck (con Proton):** el Studio se abre en tu navegador web cuando su propia ventana no puede. Aún
   no probado en Linux: cuéntanos qué tal va.
 
