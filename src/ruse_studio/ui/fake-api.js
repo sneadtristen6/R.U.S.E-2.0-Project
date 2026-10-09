@@ -2490,7 +2490,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         const kind = ((FAKE_ENTRIES[m.copy_of || pack] || []).find((e) => e.name === entry) || {}).kind || "battles";
         fakeMaps.splice(at + 1, 0, { ...m, pack: own, names: [name], paths: [own], file: `DataMap${own}_v09.dat`,
           kinds: [kind === "battles" ? "skirmish" : kind], titles: { us: [name], fr: [name], sc: [name] },
-          copy_of: m.copy_of || pack });
+          copy_of: m.copy_of || pack, blank: preset ? true : Boolean(m.blank) });  // StudioApi.maps "blank"
         return { pack: own, maps: fakeMaps };
       },
       // a map's menu pictures (StudioApi.menu_pictures and its window's calls); no file picker here: as if menu.png /
