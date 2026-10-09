@@ -1808,7 +1808,9 @@ class SpawnNamesAndSelection(unittest.TestCase):
         self.assertIn("THREE.Sprite(", self.function("spawnIcon("))
         at = self.function("scenarioAt(")
         self.assertIn("o.isSprite", at)
-        self.assertIn("h.object.isSprite", at)  # an icon counts before a zone under it
+        # an icon counts before a zone under it: the icons are tried first, the zones only when none is hit (on the
+        # map itself since 2026-10-09: zoneAt, not through their drape)
+        self.assertLess(at.index("if (hit) return"), at.index("zoneAt("))
 
     def test_a_box_a_click_and_shift_select_and_the_strip_shows_the_map_icons(self):
         self.assertIn("boxStart(ev)", self.function("scenPointerDown("))
