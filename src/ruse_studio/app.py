@@ -70,6 +70,8 @@ def main(argv=None) -> int:
     ap.add_argument("--spike", action="store_true", help="open the 3D check instead of the Studio")
     ap.add_argument("--self-test", metavar="REPORT", help="check this copy of the app is complete and write REPORT, "
                                                            "without opening a window (the build uses it)")
+    ap.add_argument("--browser", action="store_true", help="open the Studio in your web browser instead of its own "
+                                                           "window (it does so by itself where the window can't open)")
     ap.add_argument("--version", action="version", version=f"RUSE Studio {__version__}")
     args = ap.parse_args(argv)
     api = StudioApi(index_path=args.index, game_dir=args.game)
@@ -92,4 +94,4 @@ def main(argv=None) -> int:
         fix_app_list_version("studio", __version__)
         log.mark("app_list")
     page = "spike3d.html" if args.spike else "index.html"
-    return open_window("RUSE Studio", UI, page, api, extra={"cache": api.cache_dir})
+    return open_window("RUSE Studio", UI, page, api, extra={"cache": api.cache_dir}, words=words, browser=args.browser)

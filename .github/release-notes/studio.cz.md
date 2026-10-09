@@ -1,7 +1,7 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
-**0.9.8.1:** Nástroje LittleGroove přicházejí do Studia, s hudbou a zvuky, národem proměněným v jiný a jednotkami z jiných období.
+**0.9.8.1:** Nástroje LittleGroove přicházejí do Studia, s hudbou a zvuky a národem proměněným v jiný.
 
 - **Nástroje LittleGroove, převzaté** z jeho RUSE-Mod-Manageru:
   - **Karta Ekonomika:** počáteční peníze a příjem, zásobovací sklady a karty lsti, se kterými začíná každá strana.
@@ -25,9 +25,8 @@ vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemě
   jeho armádu) a novou vlajku z jakéhokoli obrázku: třeba Čínu místo Itálie. Jeho jednotky a to, co říkají, se mění
   jako dosud, na kartě Jednotky a na stránce každé jednotky. Ověřeno ve hře: nový název v lobby, nová vlajka v
   zápase.
-- **Jednotky z jiných období:** karta Jednotky nabízí vedle jednotek hry WWI, WWII+, Studenou válku a Současnost. Každá epocha se stáhne ve Studiu, když ji vyberete, z našeho GitHubu (každý soubor ověřený), a sama se aktualizuje, jak přibývají další hotové jednotky.
-  Přidejte jednu do svého modu a stane se novou jednotkou s vlastním modelem a uvedeným autorem; nic se nepřidá,
-  dokud ji nevyberete.
+- **Jednotky z jiných období:** karta Jednotky nabízí vedle jednotek hry období WWI, WWII+, Studená válka a
+  Současnost. Zatím v nich nejsou žádné jednotky: přijdou v některé z dalších aktualizací.
 - **Nová mapa: od nuly…** je na kartě Mapy, dokud není otevřená žádná mapa.
 - **Terén Prázdného terénu se kreslí jako vlastní.** Nová mapa začatá od nuly má terén vytvořený z vašich tahů terénu,
   ne posunutý terén mapy ze hry: kulaté břehy zblízka i shora, žádné promáčkliny na vrcholcích kopců a budovy i tanky
@@ -35,8 +34,8 @@ vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemě
 - **Prázdný oceán zůstává, s varováním** na svém tlačítku: oddělené ostrovy zatím nejsou připravené na velké
   bitvy (níže).
 
-Ve hře zatím nevyzkoušeno: rámeček Vylepšení, Všechny hodnoty, Soubory, nástroje misí, doplňky map, zvuky pozadí
-a jednotky z jiných období.
+Ve hře zatím nevyzkoušeno: rámeček Vylepšení, Všechny hodnoty, Soubory, nástroje misí, doplňky map
+a zvuky pozadí.
 
 **Proč zatím nejsou námořní mapy.** Zkoušeli jsme mapy z ostrovů pro velké bitvy s loďmi a v cestě stojí samotná hra:
 

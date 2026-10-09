@@ -1,7 +1,7 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
-**0.9.8.1:** Las herramientas de LittleGroove llegan al Studio, con música y sonidos, una nación convertida en otra y unidades de otras épocas.
+**0.9.8.1:** Las herramientas de LittleGroove llegan al Studio, con música y sonidos y una nación convertida en otra.
 
 - **Las herramientas de LittleGroove, traídas** de su RUSE-Mod-Manager:
   - **Pestaña Economía:** dinero inicial e ingresos, depósitos de suministros y las cartas de engaño con que empieza
@@ -25,9 +25,8 @@ idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de
   nuevo (en la sala y para su ejército) y una bandera nueva a partir de cualquier imagen: por ejemplo, China en
   lugar de Italia. Sus unidades y lo que dicen se cambian como antes, en la pestaña Unidades y en la página de cada
   unidad. Visto en el juego: el nombre nuevo en la sala, la bandera nueva en la partida.
-- **Unidades de otras épocas:** la pestaña Unidades ofrece WWI, WWII+, Guerra Fría y Moderna junto a las unidades del
-  juego. Cada época se descarga en el Studio cuando la eliges, desde nuestro GitHub (cada archivo comprobado), y se actualiza sola a medida que se terminan más unidades. Añade una a tu mod y se convierte en una unidad nueva con su propio modelo, su autor citado; no se añade nada
-  hasta que la eliges.
+- **Unidades de otras épocas:** la pestaña Unidades ofrece las épocas WWI, WWII+, Guerra Fría y Moderna junto a las
+  unidades del juego. Aún no tienen unidades: llegarán en una próxima actualización.
 - **Mapa nuevo: empezar desde cero…** está en la pestaña Mapas antes de abrir un mapa.
 - **El suelo de Terreno en blanco se dibuja como propio.** Un mapa nuevo empezado en blanco tiene el suelo hecho a
   partir de tus trazos de terreno, no el suelo del mapa del juego desplazado: costas redondeadas de cerca y desde lo
@@ -37,7 +36,7 @@ idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de
   a gran escala (abajo).
 
 Aún no probado en el juego: el recuadro Mejora, Todos los valores, Archivos, las herramientas de misiones, los
-añadidos a los mapas, los sonidos de fondo y las unidades de otras épocas.
+añadidos a los mapas y los sonidos de fondo.
 
 **Por qué aún no hay mapas navales.** Probamos mapas de islas para batallas a gran escala con barcos, y el propio
 juego lo impide:

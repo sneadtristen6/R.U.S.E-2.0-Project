@@ -8,8 +8,7 @@ con tus mods y la inicia. Tu instalación de Steam nunca se modifica.
   probado con un mod antiguo real.
 - **Dos mods que cambian el mismo archivo del juego:** el Launcher lo avisa antes de Jugar, y **Usar la de…** elige
   cuál.
-- Los mods hechos con el Studio 0.9.8.1 funcionan: canciones y voces, una nación convertida en otra, unidades de otras
-  épocas.
+- Los mods hechos con el Studio 0.9.8.1 funcionan: canciones y voces, una nación convertida en otra.
 
 **0.4.8:** juega los mods hechos con Studio 0.9.8, entre ellos los mapas nuevos que empiezan en blanco, y muestra las
 novedades en tu idioma.

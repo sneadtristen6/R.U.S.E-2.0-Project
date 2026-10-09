@@ -21,7 +21,8 @@ UI = Path(__file__).with_name("ui")
 
 def dropped(api: LauncherApi, window, paths) -> None:
     """Files dropped on the window: add each as a mod, then tell the page what happened (the page never sees a
-    dropped file's path itself; pywebview hands it to us)."""
+    dropped file's path itself; pywebview hands it to us, and in the web browser it's a copy of the file the page
+    sent: rusemod.browsermode)."""
     for path in paths:
         try:
             event = {"ok": True, **api.add_mod(path)}
@@ -47,6 +48,8 @@ def main(argv=None) -> int:
     ap.add_argument("--game", help="the R.U.S.E. folder (default: found through Steam)")
     ap.add_argument("--self-test", metavar="REPORT", help="check this copy of the app is complete and write REPORT, "
                                                            "without opening a window (the build uses it)")
+    ap.add_argument("--browser", action="store_true", help="open the launcher in your web browser instead of its own "
+                                                           "window (it does so by itself where the window can't open)")
     ap.add_argument("--version", action="version", version=f"RUSE Launcher {__version__}")
     args = ap.parse_args(argv)
     api = LauncherApi(game_dir=args.game)
@@ -68,4 +71,5 @@ def main(argv=None) -> int:
     api._pick_folder = lambda: pick_folder(api._window)
     api._pick_file = lambda: pick_file(api._window, MOD_FILES)
     return open_window("RUSE Launcher", UI, "index.html", api, width=1120, height=740,
-                       setup=lambda window: on_file_drop(window, lambda paths: dropped(api, window, paths)))
+                       setup=lambda window: on_file_drop(window, lambda paths: dropped(api, window, paths)),
+                       words=words, browser=args.browser)

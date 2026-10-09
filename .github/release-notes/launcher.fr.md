@@ -8,8 +8,7 @@ avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
   un vrai ancien mod.
 - **Deux mods qui changent le même fichier du jeu :** le Launcher le dit avant Jouer, et **Utiliser celle de…**
   choisit lequel.
-- Les mods faits avec le Studio 0.9.8.1 se lancent : morceaux et voix, une nation changée en une autre, des unités
-  d'autres époques.
+- Les mods faits avec le Studio 0.9.8.1 se lancent : morceaux et voix, une nation changée en une autre.
 
 **0.4.8:** il lance les mods faits avec Studio 0.9.8, dont les nouvelles cartes qui partent de zéro, et montre les
 nouveautés dans votre langue.

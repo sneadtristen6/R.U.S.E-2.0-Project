@@ -135,6 +135,7 @@
     try {
       res = await api().era_units_list(state.era, state.kind, state.nation, state.search, state.group || "all");
     } catch (err) { problem(err); return; }
+    $("era-note").classList.toggle("hidden", !res.installed);  // the models' note only over models
     if (!res.installed) {
       const era = state.era;
       $("count").textContent = w.units.replace("{n}", 0);

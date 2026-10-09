@@ -1,7 +1,7 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
-**0.9.8.1:** Narzędzia LittleGroove'a trafiają do Studia, a z nimi muzyka i dźwięki, nacja zmieniona w inną i jednostki z innych epok.
+**0.9.8.1:** Narzędzia LittleGroove'a trafiają do Studia, a z nimi muzyka i dźwięki oraz nacja zmieniona w inną.
 
 - **Narzędzia LittleGroove'a, przeniesione** z jego RUSE-Mod-Managera:
   - **Karta Ekonomia:** pieniądze na start i dochód, składy zaopatrzenia oraz karty podstępu, z którymi startuje każda
@@ -25,9 +25,8 @@ zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy 
   armii) oraz nową flagę z dowolnego obrazu: na przykład Chiny w miejsce Włoch. Jej jednostki i to, co mówią,
   zmienia się jak dotąd, w karcie Jednostki i na stronie każdej jednostki. Sprawdzone w grze: nowa nazwa w lobby,
   nowa flaga w meczu.
-- **Jednostki z innych epok:** karta Jednostki oferuje WWI, WWII+, Zimną wojnę i Współczesność obok jednostek gry. Każda epoka pobiera się w Studiu, gdy ją wybierzesz, z naszego GitHuba (każdy plik sprawdzony), i aktualizuje się sama, gdy kolejne jednostki są gotowe.
-  Dodaj jedną do swojego moda, a stanie się nową jednostką z własnym modelem i podpisanym autorem; nic nie jest
-  dodawane, dopóki jej nie wybierzesz.
+- **Jednostki z innych epok:** karta Jednostki oferuje epoki WWI, WWII+, Zimna wojna i Współczesność obok jednostek
+  gry. Nie mają jeszcze jednostek: przyjdą w jednej z kolejnych aktualizacji.
 - **Nowa mapa: od zera…** jest w karcie Mapy, zanim otworzysz jakąkolwiek mapę.
 - **Grunt Pustego terenu jest rysowany jako własny.** Nowa mapa zaczęta od zera ma grunt zrobiony z twoich pociągnięć
   terenu, a nie przesunięty grunt mapy z gry: okrągłe brzegi z bliska i z góry, bez wgnieceń na szczytach wzgórz, a
@@ -35,8 +34,8 @@ zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy 
 - **Pusty ocean zostaje, z ostrzeżeniem** na swoim przycisku: osobne wyspy nie są gotowe do pełnych bitew
   (niżej).
 
-Jeszcze nie sprawdzone w grze: pole Ulepszenie, Wszystkie wartości, Pliki, narzędzia misji, dodatki do map,
-dźwięki tła i jednostki z innych epok.
+Jeszcze nie sprawdzone w grze: pole Ulepszenie, Wszystkie wartości, Pliki, narzędzia misji, dodatki do map
+i dźwięki tła.
 
 **Dlaczego nie ma jeszcze map morskich.** Wypróbowaliśmy mapy z wyspami do pełnych bitew z okrętami i przeszkadza
 sama gra:

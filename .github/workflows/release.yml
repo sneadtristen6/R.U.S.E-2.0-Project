@@ -42,6 +42,24 @@ jobs:
           $app, $version = "${{ github.ref_name }}" -split '-v', 2
           "app=$app" >> $env:GITHUB_OUTPUT
           "version=$version" >> $env:GITHUB_OUTPUT
+      # The Studio carries the game's own Python 2.5.1 (installers/build_app.py python251), as apps.yml gets it:
+      # python.org's installer, used only when it's the very file python.org gave out (its SHA-256 below; python.org
+      # lists its MD5, a1d1a9c07bc4c78bd8fa05dd3efec87f, and its size, 10,970,624 bytes), unpacked, never installed.
+      # studio-v0.9.8.1's first build stopped without it (2026-10-09)
+      - name: Get the game's Python 2.5.1 (the Studio saves mission scripts with it)
+        if: steps.tag.outputs.app == 'studio'
+        shell: pwsh
+        run: |
+          $msi = Join-Path $env:RUNNER_TEMP "python-2.5.1.msi"
+          Invoke-WebRequest "https://www.python.org/ftp/python/2.5.1/python-2.5.1.msi" -OutFile $msi
+          $hash = (Get-FileHash $msi -Algorithm SHA256).Hash
+          if ($hash -ne "02CDB49AAE617B87EBE17F7C56D7644A132EA1EA6F190474D5FC5E99947713C5") {
+            throw "python-2.5.1.msi isn't the file python.org gave out (its SHA-256 is $hash)"
+          }
+          $dir = Join-Path $env:RUNNER_TEMP "python251"
+          $p = Start-Process msiexec.exe -Wait -PassThru -ArgumentList "/a `"$msi`" /qn TARGETDIR=`"$dir`""
+          if ($p.ExitCode -ne 0) { throw "python-2.5.1.msi didn't unpack (msiexec exit code $($p.ExitCode))" }
+          "RUSE_PYTHON251=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
       - name: Build, check, make the installer, test-install it
         run: python installers/build_app.py ${{ steps.tag.outputs.app }} --test-install
       - name: Publish the release

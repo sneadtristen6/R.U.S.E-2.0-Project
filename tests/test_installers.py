@@ -204,9 +204,11 @@ class BuildCommands(unittest.TestCase):
             (source / "python25.dll").unlink()
             with self.assertRaisesRegex(SystemExit, "python25.dll"):
                 build_app.python251(Path(tmp, "app2"), source)
-        workflow = (ROOT / ".github" / "workflows" / "apps.yml").read_text(encoding="utf-8")
-        self.assertIn("02CDB49AAE617B87EBE17F7C56D7644A132EA1EA6F190474D5FC5E99947713C5", workflow)
-        self.assertIn("RUSE_PYTHON251=", workflow)
+        # both builds that make the Studio get it: the release's too (studio-v0.9.8.1 stopped without it, 2026-10-09)
+        for name in ("apps.yml", "release.yml"):
+            workflow = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
+            self.assertIn("02CDB49AAE617B87EBE17F7C56D7644A132EA1EA6F190474D5FC5E99947713C5", workflow, name)
+            self.assertIn("RUSE_PYTHON251=", workflow, name)
 
     def test_the_licence_files_go_beside_the_program(self):
         with tempfile.TemporaryDirectory() as tmp:

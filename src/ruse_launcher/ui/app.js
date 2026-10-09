@@ -1237,6 +1237,8 @@ function watchDrops() {
     const res = e.detail;
     if (res.ok) added(res); else setMessage(res.message, "bad");
   });
+  // in a web browser (rusemod.browsermode) only files reach the app: a dropped folder is told apart
+  window.addEventListener("folder-dropped", () => { setMessage(state.words.drop_folder_browser, "bad"); });
 }
 
 // --- play ---

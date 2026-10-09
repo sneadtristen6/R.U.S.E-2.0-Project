@@ -1,7 +1,7 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
-**0.9.8.1:** LittleGrooves Werkzeuge kommen ins Studio, dazu Musik und Klänge, eine Nation als eine andere und Einheiten aus anderen Epochen.
+**0.9.8.1:** LittleGrooves Werkzeuge kommen ins Studio, dazu Musik und Klänge und eine Nation als eine andere.
 
 - **LittleGrooves Werkzeuge, übernommen** aus seinem RUSE-Mod-Manager:
   - **Reiter Wirtschaft:** Startgeld und Einkommen, Versorgungsdepots und die Täuschungskarten, mit denen jede Seite
@@ -25,9 +25,8 @@ sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird n
   einen neuen Namen (in der Lobby und für ihre Armee) und eine neue Flagge aus einem beliebigen Bild: zum Beispiel
   China an Italiens Stelle. Ihre Einheiten und was sie sagen änderst du wie bisher im Reiter Einheiten und auf der
   Seite jeder Einheit. Im Spiel gesehen: der neue Name in der Lobby, die neue Flagge im Gefecht.
-- **Einheiten aus anderen Epochen:** Der Reiter Einheiten bietet WWI, WWII+, Kalter Krieg und Modern neben den
-  Einheiten des Spiels. Jede Epoche wird im Studio heruntergeladen, wenn du sie wählst, von unserem GitHub (jede Datei geprüft), und aktualisiert sich selbst, sobald weitere Einheiten fertig sind. Füge eine deinem Mod hinzu, und sie wird eine neue Einheit mit eigenem Modell, ihr
-  Urheber genannt; nichts wird hinzugefügt, bevor du sie wählst.
+- **Einheiten aus anderen Epochen:** Der Reiter Einheiten bietet die Epochen WWI, WWII+, Kalter Krieg und Modern
+  neben den Einheiten des Spiels. Sie haben noch keine Einheiten: Die kommen mit einem späteren Update.
 - **Neue Karte: von Grund auf…** steht im Reiter Karten, bevor eine Karte offen ist.
 - **Der Boden von Leerem Gelände wird eigens gezeichnet.** Eine leer begonnene neue Karte bekommt ihren Boden aus
   deinen Geländestrichen statt des verschobenen Bodens der Spielkarte: runde Küsten aus der Nähe und von oben, keine
@@ -36,7 +35,7 @@ sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird n
   bereit für große Schlachten (unten).
 
 Noch nicht im Spiel ausprobiert: das Aufwertungs-Feld, Alle Werte, Dateien, die Werkzeuge für Missionen, die
-Ergänzungen an Karten, Hintergrundgeräusche und die Einheiten aus anderen Epochen.
+Ergänzungen an Karten und Hintergrundgeräusche.
 
 **Warum es noch keine Marinekarten gibt.** Wir haben Inselkarten für große Schlachten mit Schiffen ausprobiert, und
 das Spiel selbst steht im Weg:
