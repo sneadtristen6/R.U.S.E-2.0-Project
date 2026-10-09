@@ -31,7 +31,7 @@ class Files(unittest.TestCase):
         from rusemod.roadnet import TakeOut, take_out_of
         from rusemod.scenario import Remove
         from rusemod.scenery import ERASE_GROUPS
-        from rusemod.sectors import whole_map_of
+        from rusemod.sectors import sectors_of, whole_map_of
         for kind in presets.KINDS:
             info = self.mod(kind)
             got = info.terrain["BlankMap"] + info.paint["BlankMap"]
@@ -40,7 +40,11 @@ class Files(unittest.TestCase):
             self.assertEqual([(r.file, r.item, r.kind) for r in rows if isinstance(r, Remove)],
                              [(FACTS.scenario, 0, "LabelVille"), (FACTS.scenario, 1, "Spawn"),
                               (FACTS.scenario, 3, "Spawn")])   # the starting points stay
-            self.assertTrue(whole_map_of(rows))
+            # a new blank map starts with no sectors (painted with the Sectors brush), not D-Day's stretched
+            self.assertFalse(whole_map_of(rows))
+            setting = sectors_of(rows)
+            self.assertEqual((setting.no_sectors, setting.paints), ((FACTS.scenario,), ()))
+            self.assertTrue(setting.painted(FACTS.scenario.upper()))
             self.assertEqual(take_out_of(info.take_out["BlankMap"]), TakeOut(True, True))
             [area] = info.erase["BlankMap"]
             self.assertEqual((set(area.what), area.types), (set(ERASE_GROUPS), tuple(FACTS.untyped)))

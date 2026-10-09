@@ -752,6 +752,45 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     return { order, headings: { 0: "2 players", 1: "3-4 players" }, up: at === 0 ? "top" : null,
       down: at === 2 ? "pack" : null, mine: missionOrder.join() !== "MP01,MP02,MP06" };
   }
+  // the Sectors brush's fake: strokes per map and scenario, cells worked out on a small grid (no checks)
+  const sectorPaints = new Map();
+  function fakeSectors(pack, file) {
+    const key = `${current}|${pack}|${file}`;
+    if (!sectorPaints.has(key)) sectorPaints.set(key, { strokes: [], empty: false });
+    return sectorPaints.get(key);
+  }
+  function fakeSectorView(pack, file, outlines) {
+    const f = fakeSectors(pack, file), n = 64, size = 1310720, step = size / n, cells = new Array(n * n);
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) cells[i * n + j] = f.empty ? 0 : (j < n / 2 ? 1 : 2);
+    for (const s of f.strokes) {
+      for (const [x, y] of s.points) {
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) {
+            const dx = (j + 0.5) * step - x, dy = (i + 0.5) * step - y;
+            const t = s.shape === "square" ? Math.max(Math.abs(dx), Math.abs(dy)) / s.radius : Math.hypot(dx, dy) / s.radius;
+            if (t < 1) cells[i * n + j] = s.sector + 1;
+          }
+        }
+      }
+    }
+    const runs = [];
+    for (const v of cells) {
+      if (runs.length && runs[runs.length - 2] === v) runs[runs.length - 1] += 1;
+      else runs.push(v, 1);
+    }
+    const numbers = [...new Set(cells)].filter((v) => v > 0).map((v) => v - 1).sort((a, b) => a - b);
+    const sectors = numbers.map((num) => {
+      const at = cells.indexOf(num + 1);
+      return { number: num, cells: cells.filter((v) => v === num + 1).length * 16,
+        x: ((at % n) + 0.5) * step, y: (Math.floor(at / n) + 0.5) * step };
+    });
+    const lines = outlines ? Object.fromEntries(sectors.map((s) => [String(s.number),
+      [s.x - step, s.y - step, s.x + step, s.y - step, s.x + step, s.y + step, s.x - step, s.y + step]])) : null;
+    const free = [...Array(255).keys()].find((k) => !numbers.includes(k));
+    return { file, nx: n, ny: n, box: [0, 0, size, size], runs, sectors, problems: [], empty: !numbers.length,
+      starts_empty: f.empty, whole_map: false, strokes: f.strokes.length,
+      next: free === undefined ? null : free, pinched: 0, outlines: lines };
+  }
   function withScenarioEdits(pack) {
     const out = baseScenarios();
     const e = current && scenarioEdits.get(`${current}|${pack}`) || { moves: [], spawns: [], starts: [] };
@@ -2721,6 +2760,21 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         scenEdits(pack).wholeMap = Boolean(whole);
         return withScenarioEdits(pack);
       },
+      // the Sectors brush (StudioApi.sector_*): a 64 x 64 grid over the map; the map's own sectors two halves
+      sector_view: async (pack, file, outlines) => fakeSectorView(pack, file, outlines),
+      sector_paint: async (pack, file, sector, radius, points, shape) => {
+        if (!(sector >= -1 && sector <= 254)) throw new Error("That stroke can't be saved (sector is a whole number from 0 to 254).");
+        fakeSectors(pack, file).strokes.push({ sector, radius, points, shape });
+        return fakeSectorView(pack, file);
+      },
+      sector_undo: async (pack, file) => {
+        const f = fakeSectors(pack, file);
+        if (!f.strokes.length) throw new Error("There's no painted sector stroke to take back.");
+        f.strokes.pop();
+        return fakeSectorView(pack, file);
+      },
+      sector_clear: async (pack, file) => { fakeSectors(pack, file).strokes = []; return fakeSectorView(pack, file); },
+      sector_start: async (pack, file, empty) => { fakeSectors(pack, file).empty = Boolean(empty); return fakeSectorView(pack, file); },
       scenario_change: async (pack, file, item, field, value) => {
         const e = scenEdits(pack), s = baseScenarios().scenarios.find((x) => x.file === file);
         const it = s && s.items[item];

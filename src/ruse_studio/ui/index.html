@@ -334,6 +334,23 @@
                 <button id="scen-spawn" type="button" class="tool-tile"></button>
                 <button id="scen-start" type="button" class="tool-tile"></button>
                 <button id="scen-mark" type="button" class="tool-tile"></button>
+                <button id="scen-sectors" type="button" class="tool-tile"></button>
+              </div>
+              <!-- the Sectors brush (maps.js renderSectorTools, StudioApi.sector_*): a sector to paint, the dab's
+                   shape and size, take back, where the scenario starts from, the outlines, and what the build says -->
+              <div id="scen-sectors-box" class="hidden">
+                <div id="scen-sectors-pick" class="chips" role="group"></div>
+                <div id="scen-sectors-shape" class="chips" role="group"></div>
+                <label id="scen-sectors-size-row" class="brush-slider small"><span id="scen-sectors-size-label"></span>
+                  <input id="scen-sectors-size" type="range" min="1" max="20" step="1" value="4"></label>
+                <div class="small">
+                  <button id="scen-sectors-undo" type="button" class="link"></button>
+                  <button id="scen-sectors-clear" type="button" class="link"></button>
+                  <button id="scen-sectors-start" type="button" class="link"></button>
+                </div>
+                <label id="scen-sectors-outlines-row" class="small"><input id="scen-sectors-outlines" type="checkbox">
+                  <span id="scen-sectors-outlines-label"></span></label>
+                <div id="scen-sectors-note" class="small"></div>
               </div>
               <div id="scen-team" class="chips hidden" role="group"></div>
               <!-- Add a name or zone (maps.js MARK_KINDS): a town's or hill's name, a named point, a round or square zone -->

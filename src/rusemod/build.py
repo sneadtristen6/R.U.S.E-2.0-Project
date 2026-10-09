@@ -2653,8 +2653,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {note}")
                 for name, (rows, ids) in moves.items():  # sectors over the whole map (rusemod.sectors), after the
                     from .scenario import folder_of       # design items: every scenario's zones and zone map, their
-                    from .sectors import SectorError, apply_sectors, whole_map_of  # points on the final ground
-                    if not whole_map_of(rows):
+                    from .sectors import SectorError, apply_sectors, sectors_of  # points on the final ground; or
+                    setting = sectors_of(rows)                                   # painted (the Sectors brush)
+                    if setting is None or not setting.active:
                         continue
                     height_at = None
                     map_path = find_map(name)
@@ -2675,14 +2676,19 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                                    and "\\" not in e.path[len(folder):])
                     skipped: list = []
                     try:
-                        new, notes = apply_sectors(read_data, name, files, height_at, skipped=skipped)
+                        # a painted scenario with no sector at all, or a painted sector in pieces or with a hole,
+                        # raises PaintError (a SectorError): the build stops with it, so the map check and Test in
+                        # game say why
+                        new, notes = apply_sectors(read_data, name, files, height_at, skipped=skipped,
+                                                   setting=setting)
                     except (SectorError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
                     for why in skipped:
                         warn(f"{', '.join(ids)}: {why}")
                     changed_members.update(new)
-                    say(f"sectors: {name}, over the whole map, from {', '.join(ids)}")
+                    say(f"sectors: {name}, {'painted' if setting.paints or setting.no_sectors else 'over the whole map'}"
+                        f", from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
                 for name, (map_paints, ids) in paints.items():

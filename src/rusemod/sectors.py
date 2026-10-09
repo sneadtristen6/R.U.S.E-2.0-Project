@@ -39,11 +39,90 @@ class SectorError(ValueError):
 # --- a mod's setting: maps/<map pack>/scenario.toml [sectors] ---
 
 
+NO_SECTOR = -1       # a painted stroke's sector for ground in no sector (the Sectors brush's eraser)
+MOST_SECTOR = 254    # the highest sector number a stroke may paint (the Studio's overlay holds number + 1 in a byte)
+MOST_POINTS = 20000  # a stroke's dabs at most
+
+
+@dataclass(frozen=True)
+class SectorPaint:
+    """One drag of the Studio's Sectors brush (scenario.toml `[[sectors.paint]]`): scenario `file`'s ground under
+    each dab (`points`, map x, y) put in sector `sector` (NO_SECTOR: in none). A dab is round (`radius` round its
+    point) or square (sides 2 x `radius` long, running along dx, dy): rusemod.brush.Footprint's shapes. A grid cell
+    is under a dab when its middle is inside it (Footprint.inside)."""
+    file: str
+    sector: int
+    radius: float
+    points: tuple
+    shape: str = "round"
+    dx: float = 1.0
+    dy: float = 0.0
+
+    def footprints(self):
+        from .brush import Footprint
+        kind = "square" if self.shape == "square" else "round"
+        return [Footprint(kind, x, y, self.radius, self.dx, self.dy) for x, y in self.points]
+
+
 @dataclass(frozen=True)
 class Sectors:
     """What a mod does to a map's sectors (scenario.toml `[sectors]`): `whole_map`, every scenario's sectors reach
-    over the whole map."""
+    over the whole map; `no_sectors`, the scenario files that start with no sectors at all (a new blank map's); and
+    `paints`, the Sectors brush's strokes, in order, each on its own scenario file, over the sectors the scenario
+    starts from (its own, over the whole map when whole_map is on, or none)."""
     whole_map: bool = False
+    no_sectors: tuple = ()
+    paints: tuple = ()
+
+    @property
+    def active(self) -> bool:
+        """Whether the setting changes anything (a scenario.toml with nothing else is still written)."""
+        return self.whole_map or bool(self.no_sectors) or bool(self.paints)
+
+    def starts_empty(self, file: str) -> bool:
+        return file.lower() in {f.lower() for f in self.no_sectors}
+
+    def paints_of(self, file: str) -> list:
+        return [p for p in self.paints if p.file.lower() == file.lower()]
+
+    def painted(self, file: str) -> bool:
+        """Whether scenario `file`'s sectors are worked out from cells (paint_cells): it starts empty or is painted."""
+        return self.starts_empty(file) or bool(self.paints_of(file))
+
+
+def _number(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+
+
+def parse_paint(p, at: str) -> SectorPaint:
+    if not isinstance(p, dict):
+        raise SectorError(f"{at} isn't a table")
+    extra = sorted(set(p) - {"file", "sector", "radius", "points", "shape", "dx", "dy"})
+    if extra:
+        raise SectorError(f"{at}: unknown key {extra[0]!r}")
+    for k in ("file", "sector", "radius", "points"):
+        if k not in p:
+            raise SectorError(f"{at}: {k} is missing")
+    if not isinstance(p["file"], str) or not p["file"].lower().endswith(".scenario") or "/" in p["file"] \
+            or "\\" in p["file"]:
+        raise SectorError(f"{at}: file is a scenario file's name (like leveldesign_3v3_v01.scenario)")
+    s = p["sector"]
+    if isinstance(s, bool) or not isinstance(s, int) or not NO_SECTOR <= s <= MOST_SECTOR:
+        raise SectorError(f"{at}: sector is a whole number from 0 to {MOST_SECTOR} (or {NO_SECTOR}: no sector)")
+    if not _number(p["radius"]) or p["radius"] <= 0:
+        raise SectorError(f"{at}: radius is a number more than 0")
+    pts = p["points"]
+    if not isinstance(pts, list) or not 1 <= len(pts) <= MOST_POINTS \
+            or not all(isinstance(q, list) and len(q) == 2 and all(_number(c) for c in q) for q in pts):
+        raise SectorError(f"{at}: points is a list of 1 to {MOST_POINTS} [x, y] pairs")
+    shape = p.get("shape", "round")
+    if shape not in ("round", "square"):
+        raise SectorError(f"{at}: shape is round or square")
+    for k in ("dx", "dy"):
+        if k in p and not _number(p[k]):
+            raise SectorError(f"{at}: {k} is a number")
+    return SectorPaint(p["file"], s, float(p["radius"]), tuple((float(x), float(y)) for x, y in pts), shape,
+                       float(p.get("dx", 1.0)), float(p.get("dy", 0.0)))
 
 
 def parse_sectors(table, where: str = "scenario.toml") -> list:
@@ -52,28 +131,68 @@ def parse_sectors(table, where: str = "scenario.toml") -> list:
         return []
     if not isinstance(table, dict):
         raise SectorError(f"{where}: sectors is a table: [sectors] then whole_map = true")
-    extra = sorted(set(table) - {"whole_map"})
+    extra = sorted(set(table) - {"whole_map", "no_sectors", "paint"})
     if extra:
-        raise SectorError(f"{where}: [sectors] has an unknown key {extra[0]!r} (it holds whole_map = true or false)")
+        raise SectorError(f"{where}: [sectors] has an unknown key {extra[0]!r} (it holds whole_map, no_sectors and "
+                          f"[[sectors.paint]] tables)")
     whole = table.get("whole_map", False)
     if not isinstance(whole, bool):
         raise SectorError(f"{where}: [sectors] whole_map is true or false")
-    return [Sectors(whole)]
+    empty = table.get("no_sectors", [])
+    if not isinstance(empty, list) or not all(isinstance(f, str) and f.lower().endswith(".scenario") for f in empty):
+        raise SectorError(f"{where}: [sectors] no_sectors is a list of scenario files' names")
+    paints = table.get("paint", [])
+    if not isinstance(paints, list):
+        raise SectorError(f"{where}: [[sectors.paint]] are tables")
+    rows = tuple(parse_paint(p, f"{where}: sectors paint {n}") for n, p in enumerate(paints, start=1))
+    return [Sectors(whole, tuple(dict.fromkeys(empty)), rows)]
+
+
+def _toml_str(s: str) -> str:
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
 def sectors_toml(setting) -> str:
     """The [sectors] table for a scenario.toml ("" when it does nothing)."""
-    if setting is None or not setting.whole_map:
+    if setting is None or not setting.active:
         return ""
-    return ("# Every scenario's sectors reach over the whole map: each place the map's sectors leave out goes to the\n"
-            "# sector nearest it.\n[sectors]\nwhole_map = true\n")
+    lines = []
+    if setting.whole_map:
+        lines += ["# Every scenario's sectors reach over the whole map: each place the map's sectors leave out goes to the",
+                  "# sector nearest it."]
+    if setting.no_sectors:
+        lines.append("# no_sectors: these scenarios start with no sectors at all (their sectors are painted).")
+    if setting.paints:
+        lines.append("# Each [[sectors.paint]] is one drag of the Sectors brush: the ground under its dabs put in `sector` "
+                     f"({NO_SECTOR}: in none).")
+    lines.append("[sectors]")
+    if setting.whole_map:
+        lines.append("whole_map = true")
+    if setting.no_sectors:
+        lines.append("no_sectors = [" + ", ".join(_toml_str(f) for f in setting.no_sectors) + "]")
+    lines.append("")
+    for p in setting.paints:
+        lines += ["[[sectors.paint]]", f"file = {_toml_str(p.file)}", f"sector = {p.sector}", f"radius = {p.radius!r}"]
+        if p.shape != "round":
+            lines.append(f'shape = "{p.shape}"')
+            if (p.dx, p.dy) != (1.0, 0.0):
+                lines += [f"dx = {p.dx!r}", f"dy = {p.dy!r}"]
+        lines += ["points = [" + ", ".join(f"[{x!r}, {y!r}]" for x, y in p.points) + "]", ""]
+    return "\n".join(lines)
+
+
+def sectors_of(rows: list):
+    """A map's sectors setting from its scenario rows (all the mods', in load order): the last mod's [sectors]
+    decides (None: no mod has one)."""
+    found = [r for r in rows if isinstance(r, Sectors)]
+    return found[-1] if found else None
 
 
 def whole_map_of(rows: list) -> bool:
     """Whether a map's scenario rows (all the mods', in load order) leave its sectors over the whole map: the last
     mod's [sectors] decides."""
-    found = [r for r in rows if isinstance(r, Sectors)]
-    return bool(found) and found[-1].whole_map
+    found = sectors_of(rows)
+    return found is not None and found.whole_map
 
 
 def map_size(win: bytes) -> tuple[float, float]:
@@ -588,10 +707,10 @@ def _split(tris: list, pts: list, ay: float) -> tuple[list, list]:
     return north, south
 
 
-def zone_mesh(old: Zone, ring: list, height_at, band: float = BAND) -> tuple[Zone, list]:
+def zone_mesh(old: Zone, ring: list, height_at, band: float = BAND, w: float | None = None) -> tuple[Zone, list]:
     """Zone `old` (number, name, label, the 4th value) with the outline `ring` (counter-clockwise map points): its
     parts and border drawn the way the shipped zones are, with a border band `band` wide where it fits, each point
-    at `height_at(x, y)`'s ground. Returns the zone and notes."""
+    at `height_at(x, y)`'s ground. `w`: the 4th value (None: `old`'s own). Returns the zone and notes."""
     notes = []
     n = len(ring)
     widths: list = [band] * n
@@ -624,7 +743,8 @@ def zone_mesh(old: Zone, ring: list, height_at, band: float = BAND) -> tuple[Zon
         ay = (min(ys) + max(ys)) / 2
         notes.append(f"sector {old.number}: its label lies outside it, so its parts split through its middle")
     north, south = _split(tris, pts, ay)
-    w = old.vertices[0][3] if old.vertices else 0.0
+    if w is None:
+        w = old.vertices[0][3] if old.vertices else 0.0
     vertices, triangles, parts = [], [], []
     for piece in (north, south):
         first_v, first_t = len(vertices), len(triangles)
@@ -687,27 +807,35 @@ def zone_map(template: bytes, rings: dict, width: float, height: float) -> bytes
 # --- all of it ---
 
 
-@dataclass
-class Whole:
-    zones: list           # the scenario's zones, in their order, made again
-    kdt: bytes            # the zone map made again
-    labels: object        # the grid's cells' sectors (numpy), for a picture
-    grid: Grid
-    notes: list
+def _simple_outlines(chains: list, rings: dict, g: Grid) -> dict:
+    """Each sector's one outline (`rings`: number -> [its one ring]) made of its chains' simpler lines, the
+    tolerances of a sector's chains halved until its outline is a simple polygon: number -> [(x, y), ...]."""
+    outline = {}
+    for _round in range(12):
+        for ch in chains:
+            ch.points = simplify([_corner_point(c, g) for c in ch.corners], ch.tolerances(g))
+        bad = []
+        for zone, (r,) in rings.items():
+            pts = ring_points(r, chains, g)
+            if is_simple(pts):
+                outline[zone] = pts
+            else:
+                bad.append(zone)
+                for k, _fwd in r:
+                    chains[k].scale /= 2
+        if not bad:
+            return outline
+    raise SectorError(f"sector(s) {bad}: their outlines can't be made simple")
 
 
-def over_whole_map(s: Scenario, kdt_raw: bytes, width: float, height: float, height_at=None,
-                   most: int = MOST_CELLS) -> Whole:
-    """Scenario `s`'s sectors (and its zone map `kdt_raw`) made again so that they cover the whole map (`width` by
-    `height` map units): every place goes to the sector it was in, or the sector nearest it. `height_at(x, y)`: the
-    ground's height (None off the map: the nearest place on it), else every point at the zone's label height."""
-    np = _numpy()
+def _whole_cells(s: Scenario, kdt_raw: bytes, g: Grid, np):
+    """Steps 1 and 2 of over_whole_map on grid `g`, each sector's stray pieces given to their neighbours: (the map's
+    own sectors' cells, every cell's sector, the chains, the rings, how many cells unpinch moved)."""
     if not s.zones:
         raise SectorError("the scenario has no sectors")
     numbers = [z.number for z in s.zones]
     if len(set(numbers)) != len(numbers) or min(numbers) < 0:
         raise SectorError(f"the scenario's sectors are numbered {numbers}: each must be a different number, 0 or more")
-    g = Grid.over(width, height, most)
     kdt = Kdt(kdt_raw)
     lab0 = kdt_labels(kdt, g, numbers, np)
     outlines = {}
@@ -719,7 +847,6 @@ def over_whole_map(s: Scenario, kdt_raw: bytes, width: float, height: float, hei
         raise SectorError("none of the scenario's sectors has an outline")
     lab = fill_nearest(lab0, outlines, g, np)
     orig = lab0 >= 0
-    notes = []
     pinched = unpinch(lab, np)
     for _round in range(16):
         chains = chains_of(lab, g, np, orig)
@@ -741,6 +868,34 @@ def over_whole_map(s: Scenario, kdt_raw: bytes, width: float, height: float, hei
     missing = sorted(set(numbers) - set(rings))
     if missing:
         raise SectorError(f"sector(s) {missing} have no ground left on the map")
+    return lab0, lab, chains, rings, pinched
+
+
+def whole_map_cells(s: Scenario, kdt_raw: bytes, g: Grid):
+    """Every cell of grid `g` in the sector over_whole_map puts it in (a painted scenario's start when its sectors
+    are over the whole map)."""
+    return _whole_cells(s, kdt_raw, g, _numpy())[1]
+
+
+@dataclass
+class Whole:
+    zones: list           # the scenario's zones, in their order, made again
+    kdt: bytes            # the zone map made again
+    labels: object        # the grid's cells' sectors (numpy), for a picture
+    grid: Grid
+    notes: list
+
+
+def over_whole_map(s: Scenario, kdt_raw: bytes, width: float, height: float, height_at=None,
+                   most: int = MOST_CELLS) -> Whole:
+    """Scenario `s`'s sectors (and its zone map `kdt_raw`) made again so that they cover the whole map (`width` by
+    `height` map units): every place goes to the sector it was in, or the sector nearest it. `height_at(x, y)`: the
+    ground's height (None off the map: the nearest place on it), else every point at the zone's label height."""
+    np = _numpy()
+    numbers = [z.number for z in s.zones]
+    g = Grid.over(width, height, most)
+    lab0, lab, chains, rings, pinched = _whole_cells(s, kdt_raw, g, np)
+    notes = []
     for zone, zr in rings.items():
         if len(zr) > 1:
             inside = sorted({chains[k].right if fwd else chains[k].left for r in zr[1:] for k, fwd in r} - {-1})
@@ -748,23 +903,7 @@ def over_whole_map(s: Scenario, kdt_raw: bytes, width: float, height: float, hei
             # written down; the build keeps that scenario's own sectors and warns
             raise SectorError(f"sector {zone} has sector(s) {inside} inside it, and a sector's outline in the "
                               f"scenario's file can't have a hole")
-    outline = {}
-    for _round in range(12):
-        for ch in chains:
-            ch.points = simplify([_corner_point(c, g) for c in ch.corners], ch.tolerances(g))
-        bad = []
-        for zone, (r,) in rings.items():
-            pts = ring_points(r, chains, g)
-            if is_simple(pts):
-                outline[zone] = pts
-            else:
-                bad.append(zone)
-                for k, _fwd in r:
-                    chains[k].scale /= 2
-        if not bad:
-            break
-    else:
-        raise SectorError(f"sector(s) {bad}: their outlines can't be made simple")
+    outline = _simple_outlines(chains, rings, g)
     neighbours: dict = {z: set() for z in numbers}
     for ch in chains:
         if ch.left >= 0 and ch.right >= 0:
@@ -786,13 +925,227 @@ def over_whole_map(s: Scenario, kdt_raw: bytes, width: float, height: float, hei
     return Whole(zones, kdt_new, lab, g, notes)
 
 
+# --- sectors painted (the Studio's Sectors brush: scenario.toml [[sectors.paint]], no_sectors) ---
+#
+# The same pipeline as over_whole_map from step 3 on, starting from cells the modder painted instead of the nearest-
+# sector fill: the scenario's start (its own sectors, over the whole map when whole_map is on, or none) on the grid,
+# each stroke's dabs over it in order, then the borders traced, each sector made again from its outline and the zone
+# map made again from the same outlines. Ground left in no sector stays in none (as on every shipped map).
+# Not tried in the game (2026-10-09): painted sectors, a sector number the scenario didn't have (a new zone record,
+# copied from the scenario's own), sector numbers with gaps between them. The sectors-over-the-whole-map writer it
+# shares its steps with played fine (2026-10-05).
+
+
+class PaintError(SectorError):
+    """Painted sectors that can't be written: the build stops on it (the Studio's map check and Test in game say
+    why). `problems`: [{"number", "pieces", "holes", "inside": [numbers, NO_SECTOR for ground in none]}], empty when
+    the scenario has no sector at all."""
+
+    def __init__(self, message: str, problems: list | None = None):
+        super().__init__(message)
+        self.problems = problems or []
+
+
+def paint_cells(lab, paint: SectorPaint, g: Grid, np) -> None:
+    """Stroke `paint` on the cells `lab` (in place): each cell whose middle is inside one of its dabs goes to its
+    sector, as rusemod.brush.Footprint.inside says (the same sums, on whole arrays)."""
+    value = paint.sector
+    r2 = paint.radius * paint.radius
+    n = math.sqrt(paint.dx * paint.dx + paint.dy * paint.dy) or 1.0
+    for fp in paint.footprints():
+        bx0, bx1, by0, by1 = fp.box()
+        j0, j1 = max(0, math.floor(bx0 / g.step - 0.5)), min(g.nx - 1, math.ceil(bx1 / g.step - 0.5))
+        i0, i1 = max(0, math.floor(by0 / g.step - 0.5)), min(g.ny - 1, math.ceil(by1 / g.step - 0.5))
+        if j1 < j0 or i1 < i0:
+            continue
+        ox = (np.arange(j0, j1 + 1) + 0.5) * g.step - fp.x
+        oy = (np.arange(i0, i1 + 1) + 0.5) * g.step - fp.y
+        ox, oy = ox[None, :], oy[:, None]
+        if fp.shape == "square":
+            u = np.abs(ox * fp.dx + oy * fp.dy) / n
+            v = np.abs(oy * fp.dx - ox * fp.dy) / n
+            t2 = (np.maximum(u, v) / fp.r) ** 2
+        else:
+            t2 = (ox * ox + oy * oy) / r2
+        lab[i0:i1 + 1, j0:j1 + 1][t2 < 1.0] = value
+
+
+def painted_cells(start, paints, g: Grid, np):
+    """A copy of the cells `start` with each stroke of `paints` on it, in order."""
+    lab = start.copy()
+    for p in paints:
+        paint_cells(lab, p, g, np)
+    return lab
+
+
+def start_cells(s: Scenario, kdt_raw: bytes | None, g: Grid, setting: Sectors, file: str, np):
+    """The cells scenario `file` (`s`, its zone map `kdt_raw`) starts from before its strokes: none when it starts
+    with no sectors, its own sectors over the whole map when whole_map is on, else its own (the zone map's)."""
+    if setting.starts_empty(file) or not s.zones or kdt_raw is None:
+        return np.full((g.ny, g.nx), NO_SECTOR, np.int32)
+    if setting.whole_map:
+        return whole_map_cells(s, kdt_raw, g)
+    return kdt_labels(Kdt(kdt_raw), g, [z.number for z in s.zones], np)
+
+
+def sector_shapes(lab, g: Grid, np) -> tuple[list, dict, list, int]:
+    """The painted cells' sectors (`lab`, changed in place where a sector touches itself corner to corner: unpinch)
+    traced: (chains, rings, problems, cells unpinch moved). A problem is a sector in more than one piece or with a
+    hole (a sector in the scenario's file has one outline): {"number", "pieces", "holes", "inside"}."""
+    pinched = unpinch(lab, np)
+    chains = chains_of(lab, g, np)
+    for ch in chains:            # the painted borders are the modder's own: kept to SIMPLE cells, not coarse ones
+        ch.scale = 1.0 / COARSE
+    rings = rings_of(chains)
+    problems = []
+    for zone in sorted(rings):
+        pieces, holes, inside = 0, 0, set()
+        for r in rings[zone]:
+            a = area(ring_points(r, chains, g, simple=False))
+            if a > 0:
+                pieces += 1
+            else:
+                holes += 1
+                inside |= {chains[k].right if fwd else chains[k].left for k, fwd in r}
+        if pieces > 1 or holes:
+            problems.append({"number": zone, "pieces": pieces, "holes": holes,
+                             "inside": sorted(inside - {zone}, key=lambda n: (n < 0, n))})
+    return chains, rings, problems, pinched
+
+
+def problem_text(p: dict) -> str:
+    """A painted sector's problem in words (sector numbers as the Studio says them: the file's number + 1)."""
+    name = f"sector {p['number'] + 1}"
+    if p["pieces"] > 1:
+        return (f"{name} is in {p['pieces']} pieces: a sector is one piece of ground (a sector in the scenario's file "
+                f"has one outline). Join its pieces with the Sectors brush, or erase all but one")
+    what = ", ".join("ground in no sector" if n < 0 else f"sector {n + 1}" for n in p["inside"]) or "ground"
+    return (f"{name} has a hole ({what} inside it): a sector's outline in the scenario's file can't have a hole. "
+            f"Paint the hole into {name}, or open it to the edge of {name}")
+
+
+EMPTY = ("it has no sector at all: paint at least one sector with the Sectors brush (Scenario panel). A map with no "
+         "sectors has never been tried in the game")
+
+
+def label_point(lab, number: int, g: Grid, np, most: int = 128) -> tuple[float, float]:
+    """A point inside sector `number`'s cells for its label: the cell left last when its cells are worn away from
+    their edges one ring at a time (the one nearest their middle of those), on blocks of cells (at most `most` along
+    the sector's longer side; a block counts when all its cells are the sector's)."""
+    ii, jj = np.nonzero(lab == number)
+    if not len(ii):
+        raise SectorError(f"sector {number + 1} has no ground")
+    i0, i1, j0, j1 = int(ii.min()), int(ii.max()), int(jj.min()), int(jj.max())
+    mask = lab[i0:i1 + 1, j0:j1 + 1] == number
+    h, w = mask.shape
+    f = 1
+    while max(h, w) > most * f:
+        f *= 2
+    while True:
+        if f == 1:
+            m = mask
+        else:
+            m = np.pad(mask, ((0, -h % f), (0, -w % f)))
+            m = m.reshape(m.shape[0] // f, f, m.shape[1] // f, f).all(axis=(1, 3))
+        if f == 1 or m.any():
+            break
+        f //= 2
+    last = m
+    while True:
+        e = last.copy()
+        e[1:, :] &= last[:-1, :]
+        e[:-1, :] &= last[1:, :]
+        e[:, 1:] &= last[:, :-1]
+        e[:, :-1] &= last[:, 1:]
+        e[0, :] = e[-1, :] = False
+        e[:, 0] = e[:, -1] = False
+        if not e.any():
+            break
+        last = e
+    ci, cj = np.nonzero(last)
+    my, mx = float(ii.mean()) - i0 + 0.5, float(jj.mean()) - j0 + 0.5    # the cells' middle, in cells from the box
+    d = ((ci + 0.5) * f - my) ** 2 + ((cj + 0.5) * f - mx) ** 2
+    k = int(np.argmin(d))
+    return (j0 + (float(cj[k]) + 0.5) * f) * g.step, (i0 + (float(ci[k]) + 0.5) * f) * g.step
+
+
+def new_zone_name(seed: str, number: int) -> str:
+    """A new sector's name in the scenario's file, the shipped zones' way (zone_ and a GUID), the same on every PC
+    (made from the map, the scenario file and the number)."""
+    import uuid
+    return "zone_" + str(uuid.uuid5(uuid.NAMESPACE_URL, f"rusemod-sector:{seed.lower()}:{number}"))
+
+
+def over_painted(s: Scenario, kdt_raw: bytes, lab, g: Grid, height_at=None, seed: str = "") -> Whole:
+    """Scenario `s`'s sectors (and its zone map `kdt_raw`) made again from painted cells `lab` (each cell's sector
+    number, NO_SECTOR for none, on grid `g`): one sector per number painted, its outline traced round its cells.
+    A number the scenario has keeps its zone's name and its label point when that is still inside it; a new number
+    gets a new zone (new_zone_name, from `seed`) with the scenario's 4th value. Raises PaintError when no sector is
+    painted or a sector is in pieces or has a hole."""
+    from dataclasses import replace
+    np = _numpy()
+    lab = lab.copy()
+    if not (lab >= 0).any():
+        raise PaintError(EMPTY)
+    chains, rings, problems, pinched = sector_shapes(lab, g, np)
+    if problems:
+        raise PaintError("; ".join(problem_text(p) for p in problems), problems)
+    numbers = sorted(rings)
+    outline = _simple_outlines(chains, rings, g)
+    neighbours: dict = {z: set() for z in numbers}
+    for ch in chains:
+        if ch.left >= 0 and ch.right >= 0:
+            neighbours[ch.left].add(ch.right)
+            neighbours[ch.right].add(ch.left)
+    by_number = {z.number: z for z in s.zones}
+    template = next((z for z in s.zones if z.vertices), None)
+    w = template.vertices[0][3] if template is not None else 0.0
+    notes = []
+    if template is None:
+        notes.append("the scenario had no sector to copy the 4th value from: 0 used (what it does isn't known)")
+    ground = _heights(height_at, g.width, g.height)
+    zones, new, moved = [], [], 0
+    for number in numbers:   # (in number order, as every shipped scenario lists them)
+        old = by_number.get(number)
+        if old is None:
+            old = Zone(number, new_zone_name(seed, number), (0.0, 0.0, 0.0))
+            new.append(number)
+        ax, ay = old.anchor[0], old.anchor[1]
+        ci, cj = int(ay // g.step), int(ax // g.step)
+        inside = number not in new and 0 <= ci < g.ny and 0 <= cj < g.nx and int(lab[ci, cj]) == number \
+            and _inside((ax, ay), outline[number])
+        if not inside:
+            ax, ay = label_point(lab, number, g, np)
+            moved += number not in new
+        z, more = zone_mesh(replace(old, anchor=(ax, ay, 0.0)), outline[number], ground, w=w)
+        kept = [n for n in old.outline if n in neighbours[number]]
+        z.outline = kept + sorted(neighbours[number] - set(kept))
+        zones.append(z)
+        notes += more
+    kdt_new = zone_map(kdt_raw, outline, g.width, g.height)
+    covered = float((lab >= 0).mean())
+    notes.insert(0, f"{len(zones)} sector(s) painted ({covered:.0%} of the map in a sector)")
+    if new:
+        # not tried in the game: a zone record the scenario didn't have (made like its own), and more sectors than it had
+        notes.append(f"new sector(s) {', '.join(str(n + 1) for n in new)}: not in the scenario before, not tried in "
+                     f"the game")
+    if numbers != list(range(len(numbers))):
+        notes.append("the sector numbers have gaps (not tried in the game)")
+    if moved:
+        notes.append(f"{moved} sector label(s) moved inside their painted ground")
+    if pinched:
+        notes.append(f"{pinched} cell(s) moved where a sector touched itself corner to corner")
+    return Whole(zones, kdt_new, lab, g, notes)
+
+
 def apply_sectors(read, map_pack: str, files: list, height_at=None, most: int = MOST_CELLS,
-                  skipped: list | None = None) -> tuple[dict, list]:
-    """Every scenario of a map (`files`: its scenario file names) over the whole map (over_whole_map): its zones and
-    its zone map. `read(member)`: a DataMap_Win.dat member as the build has it so far (None when it isn't there).
+                  skipped: list | None = None, setting: Sectors | None = None) -> tuple[dict, list]:
+    """Every scenario of a map (`files`: its scenario file names) over the whole map (over_whole_map), or painted
+    (over_painted) as the map's sectors `setting` says (None: every scenario over the whole map): its zones and its
+    zone map. `read(member)`: a DataMap_Win.dat member as the build has it so far (None when it isn't there).
     A scenario without sectors or without a zone map is left as it is, with a note; one whose sectors can't be made
-    again (a sector inside another) too, and `skipped` (when given) is told why. Returns ({member: new bytes},
-    notes)."""
+    again over the whole map (a sector inside another) too, and `skipped` (when given) is told why. Painted sectors
+    that can't be written raise PaintError (the build stops). Returns ({member: new bytes}, notes)."""
     from .cover import member as movement_member
     from .scenario import ScenarioError, folder_of
     win = read(movement_member(map_pack))
@@ -805,6 +1158,9 @@ def apply_sectors(read, map_pack: str, files: list, height_at=None, most: int = 
     notes: list = []
     for f in files:
         stem = f[:-len(".scenario")] if f.lower().endswith(".scenario") else f
+        painted = setting is not None and setting.painted(f)
+        if setting is not None and not painted and not setting.whole_map:
+            continue
         raw = read(folder + f)
         if raw is None:
             continue
@@ -813,7 +1169,7 @@ def apply_sectors(read, map_pack: str, files: list, height_at=None, most: int = 
         except (ScenarioError, struct.error) as exc:
             notes.append(f"{f}: can't be read ({exc}), its sectors left as they are")
             continue
-        if not s.zones:
+        if not s.zones and not painted:
             continue
         kdt_member = f"{folder}zonebluff\\{stem}.kdt"
         kdt_raw = read(kdt_member)
@@ -826,8 +1182,21 @@ def apply_sectors(read, map_pack: str, files: list, height_at=None, most: int = 
             notes.append(f"{f}: its zone map can't be read ({exc}), its sectors left as they are")
             continue
         try:
-            res = over_whole_map(s, kdt_raw, width, height, height_at, most)
+            if painted:
+                np = _numpy()
+                g = Grid.over(width, height, most)
+                lab = painted_cells(start_cells(s, kdt_raw, g, setting, f, np), setting.paints_of(f), g, np)
+                try:
+                    res = over_painted(s, kdt_raw, lab, g, height_at, seed=f"{map_pack}/{f}")
+                except PaintError as exc:
+                    raise PaintError(f"{map_pack}: {f}: {exc}", exc.problems) from None
+            else:
+                res = over_whole_map(s, kdt_raw, width, height, height_at, most)
+        except PaintError:
+            raise
         except SectorError as exc:
+            if painted:   # (the painted sectors traced, but their outlines couldn't be written down)
+                raise PaintError(f"{map_pack}: {f}: the painted sectors can't be written ({exc})") from None
             why = f"{map_pack}: {f}: its sectors can't reach over the whole map ({exc}), so they stay as the map has them"
             notes.append(why)
             if skipped is not None:
