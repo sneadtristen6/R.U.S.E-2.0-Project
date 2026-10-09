@@ -13,6 +13,7 @@ from rusemod import Edat, modelin, tgu1, unitmodel
 from rusemod.build import build_pack, load_mod
 from rusemod.dxt import decode_rgba
 from rusemod.model import load
+from rusemod.patch import Inline, Ref
 from rusemod.spk import Spk
 from rusemod.tga import TgaError, read_tga
 from rusemod.tmst import Tgv
@@ -166,6 +167,43 @@ class Pictures(unittest.TestCase):
             self.assertEqual(modelin.find_picture("other.tga", Path(d)), Path(d, "Other.tga"))
             self.assertIsNone(modelin.find_picture("NOTHERE.TGA", Path(d)))
 
+    def test_a_glb_painted_the_older_way(self):
+        """A material in glTF's older specular-glossiness form names its colour picture and colour in that extension
+        (2026-10-09: about 30 downloaded models came out plain grey, their paint never read)."""
+        from rusemod.dxt import png_bytes
+        from rusemod.gltf import FLOAT, UINT, _Glb
+        paint = png_bytes(bytes(range(48)), 4, 4)
+        g = _Glb()
+        tex = g.image(paint, "paint")
+        older = "KHR_materials_pbrSpecularGlossiness"
+        g.doc["materials"] = [{"name": "Painted", "extensions": {older: {"diffuseTexture": {"index": tex}}}},
+                              {"name": "Plain", "extensions": {older: {"diffuseFactor": [0.5, 0.25, 1.0, 1.0]}}},
+                              {"name": "Newer", "pbrMetallicRoughness": {"baseColorFactor": [0.1, 0.2, 0.3, 1.0]},
+                               "extensions": {older: {"diffuseFactor": [0.5, 0.25, 1.0, 1.0]}}}]
+        for k in range(3):
+            attrs = {"POSITION": g.accessor([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, float(k))], "VEC3", FLOAT),
+                     "TEXCOORD_0": g.accessor([(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)], "VEC2", FLOAT)}
+            g.doc["meshes"].append({"name": f"m{k}", "primitives": [{"attributes": attrs, "material": k,
+                                                                     "indices": g.accessor([0, 1, 2], "SCALAR", UINT,
+                                                                                           34963)}]})
+            g.doc["nodes"].append({"name": f"m{k}", "mesh": k})
+        g.doc["scenes"], g.doc["scene"] = [{"nodes": [0, 1, 2]}], 0
+        g.doc["extensionsUsed"] = [older]
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d, "older.glb")
+            path.write_bytes(g.to_bytes())
+            mats = modelin.read_model(path).materials
+        self.assertEqual((mats[0].picture, mats[0].data), ("paint", paint))
+        self.assertEqual(mats[1].data, b"")
+        self.assertEqual([round(c * 255) for c in mats[1].colour], [188, 137, 255])   # sRGB of the linear factor
+        self.assertEqual([round(c * 255) for c in mats[2].colour], [89, 124, 149])    # the newer form's own first
+
+    def test_a_glb_colour_is_linear(self):
+        """glTF's colour factors are linear, a picture's bytes sRGB (2026-10-09: the Rapier's mustard, linear (0.138,
+        0.112, 0.008), was written (35, 29, 2) and drew black; sRGB it is about (104, 94, 22))."""
+        self.assertEqual([round(modelin._srgb(c) * 255) for c in (0.138, 0.112, 0.008)], [104, 94, 22])
+        self.assertEqual([round(modelin._srgb(c) * 255) for c in (0.0, 0.002, 1.0, 1.5)], [0, 7, 255, 255])
+
 
 class Fitting(unittest.TestCase):
     def setUp(self):
@@ -245,6 +283,107 @@ class PlaneFacing(unittest.TestCase):
         self.assertEqual(modelin.facing(m, ["hull"]), (1, 1))               # longest side: the wings (wrong)
         self.assertEqual(modelin.facing(m, ["hull"], like), (0, 1))         # along the fuselage, nose at +x
         self.assertEqual(modelin.facing(self.plane_model(fin_x=4.0), ["hull"], like), (0, -1))   # fin at +x: -x
+
+    def test_a_jet_copying_a_plane_wider_than_long(self):
+        """A jet is longer than it is wide; copying a P-51 (wider than long), the ratio alone turned it sideways (an F-4
+        copying a Bf 109, 2026-10-08). Its fin at one end of the fuselage, in the middle of the wings, says which way
+        it lies."""
+        fuselage = [(x, y, z) for x in (-9.5, 9.5) for y in (-0.8, 0.8) for z in (0.0, 1.5)]
+        wings = [(x, y, 0.7) for x in (-3.0, 2.0) for y in (-5.8, 5.8)]
+        fin = [(-8.8, 0.0, 5.0), (-7.0, 0.0, 1.5)]
+        jet = modelin.Model([modelin.Mesh("body", fuselage + wings + fin, [(0, 1, 2)])], [])
+        like = {"length": 9.8, "width": 11.3, "aircraft": True}
+        self.assertEqual(modelin.facing(jet, ["hull"], like), (0, 1))          # along the fuselage, fin at -x
+        turned = modelin.Model([modelin.Mesh("body", [(y, x, z) for x, y, z in fuselage + wings + fin], [(0, 1, 2)])],
+                               [])
+        self.assertEqual(modelin.facing(turned, ["hull"], like), (1, 1))       # the same jet along y
+
+    @staticmethod
+    def sheet(name, xs, ys, z):
+        """A surface over xs x ys at height z(x, y), in triangles."""
+        pts = [(x, y, z(x, y)) for x in xs for y in ys]
+        n, tris = len(ys), []
+        for i in range(len(xs) - 1):
+            for j in range(n - 1):
+                a, b, c, d = i * n + j, i * n + j + 1, (i + 1) * n + j, (i + 1) * n + j + 1
+                tris += [(a, c, b), (b, c, d)]
+        return modelin.Mesh(name, pts, tris)
+
+    @staticmethod
+    def steps(lo, hi, n):
+        return [lo + (hi - lo) * k / (n - 1) for k in range(n)]
+
+    def facing_both_ways(self, meshes, like):
+        """facing() of the meshes, and of the same turned end for end (x -> -x)."""
+        turned = [modelin.Mesh(m.name, [(-x, y, z) for x, y, z in m.positions], m.triangles) for m in meshes]
+        return modelin.facing(modelin.Model(meshes, []), ["hull"] * len(meshes), like), \
+            modelin.facing(modelin.Model(turned, []), ["hull"] * len(turned), like)
+
+    def test_a_biplane_whose_top_wing_is_its_highest_point(self):
+        """A biplane's top wing stands higher than its fin (2026-10-08: the Fokker Dr.I flew tail first, its top wing
+        taken for the fin): the wings stand nearer the nose, so the nose is the end nearer them."""
+        s, st = self.sheet, self.steps
+        meshes = [s("fuselage", st(-3, 3, 13), (-0.4, 0.4), lambda x, y: 0.9),
+                  s("lower", (-2.0, -1.5, -1.0), st(-4, 4, 17), lambda x, y: 0.6),
+                  s("upper", st(-2, -1, 5), st(-4, 4, 17), lambda x, y: 2.0 + 0.01 * abs(y)),
+                  s("tailplane", (2.4, 2.7, 3.0), st(-1.2, 1.2, 5), lambda x, y: 1.0),
+                  modelin.Mesh("fin", [(2.4, 0.0, 1.0), (3.0, 0.0, 1.0), (2.4, 0.0, 1.8), (3.0, 0.0, 1.8)],
+                               [(0, 1, 2), (1, 3, 2)])]
+        like = {"length": 6.0, "width": 8.0, "aircraft": True}
+        self.assertEqual(self.facing_both_ways(meshes, like), ((0, -1), (0, 1)))     # nose at -x, then at +x
+
+    def test_a_plane_parked_tail_down(self):
+        """Parked on its tail wheel, a plane's nose stands up and a propeller blade is its highest point, at its nose
+        (2026-10-08: the Camel and the P-40 flew tail first, the blade taken for the fin): its tail end's underside is
+        down on the ground, so that end is its tail."""
+        s, st = self.sheet, self.steps
+        meshes = [s("fuselage", st(-3, 3, 25), (-0.4, 0.4), lambda x, y: 1.0 - 0.2 * x),     # nose up at -x
+                  s("cowling", (-3.0, -2.8, -2.6), st(-0.5, 0.5, 5), lambda x, y: 1.2),
+                  s("wing", st(-2, -1, 5), st(-5, 5, 21), lambda x, y: 1.2),
+                  s("tailplane", (2.4, 2.7, 3.0), st(-1.5, 1.5, 7), lambda x, y: 0.5),
+                  modelin.Mesh("fin", [(2.6, 0.0, 0.4), (3.0, 0.0, 0.4), (2.8, 0.0, 1.3)], [(0, 1, 2)]),
+                  modelin.Mesh("blade", [(-3.2, -0.1, 2.8), (-3.2, 0.1, 2.8), (-3.2, 0.0, 0.6)], [(0, 1, 2)])]
+        like = {"length": 6.4, "width": 10.0, "aircraft": True}
+        self.assertEqual(self.facing_both_ways(meshes, like), ((0, -1), (0, 1)))     # nose at -x, then at +x
+
+    def test_a_tank_with_nothing_named_faces_its_gun(self):
+        """No part called gun or turret (a scan's Object_12...): the end its gun reaches past the hull is its front
+        (2026-10-08: 60-odd era tanks faced backwards)."""
+        hull = [(x, y, z) for x in (-3.0, 3.0) for y in (-1.5, 1.5) for z in (0.0, 1.0)]
+        turret = [(x, y, z) for x in (-1.0, 1.0) for y in (-1.0, 1.0) for z in (1.0, 2.0)]
+        gun = [(-6.5, 0.0, 1.5), (-1.0, 0.1, 1.6)]                       # the gun out past the hull at -x
+        tank = modelin.Model([modelin.Mesh("Object_1", hull + turret + gun, [(0, 1, 2)])], [])
+        self.assertEqual(modelin.facing(tank, ["hull"], {"length": 6.5, "width": 3.6}), (0, -1))
+        mirrored = modelin.Model([modelin.Mesh("Object_1", [(-x, y, z) for x, y, z in hull + turret + gun],
+                                               [(0, 1, 2)])], [])
+        self.assertEqual(modelin.facing(mirrored, ["hull"], {"length": 6.5, "width": 3.6}), (0, 1))
+
+    def test_a_short_reach_is_no_gun(self):
+        """Stowage reaching a little past the hull at the back, a short gun not past it at the front (the M2 Bradley
+        scan, 2026-10-08: taken the wrong way round when any reach counted): no long gun, so no say from it."""
+        hull = [(x, y, z) for x in (-3.0, 3.0) for y in (-1.5, 1.5) for z in (0.0, 1.0)]
+        stowage = [(-3.5, 0.0, 0.6), (-3.0, 0.5, 0.8)]                    # 0.5 past the hull at -x
+        gun = [(2.5, 0.0, 1.5), (0.5, 0.1, 1.6)]                         # short: inside the hull's length
+        m = modelin.Model([modelin.Mesh("Object_1", hull + stowage + gun, [(0, 1, 2)])], [], source="ifv.glb")
+        self.assertEqual(modelin.facing(m, ["hull"], {"length": 6.5, "width": 3.6}), (0, 1))
+
+    def test_an_unarmed_gltf_model_faces_the_formats_front(self):
+        """Nothing reaching past the hull either way (a truck): a glTF model faces the format's front, +Z, which
+        read_glb turns into -y."""
+        truck = [(x, y, z) for x in (-1.2, 1.2) for y in (-3.0, 3.0) for z in (0.0, 2.0)]
+        m = modelin.Model([modelin.Mesh("Object_1", truck, [(0, 1, 2)])], [], source="truck.glb")
+        self.assertEqual(modelin.facing(m, ["hull"], {"length": 6.0, "width": 2.4}), (1, -1))
+        self.assertEqual(modelin.facing(modelin.Model(m.meshes, [], source="truck.3ds"), ["hull"],
+                                        {"length": 6.0, "width": 2.4}), (1, 1))
+
+    def test_a_facing_pinned_by_hand(self):
+        """Whoever imports it can pin the facing when no rule can tell (a box-shaped truck): [axis, sign] in the
+        like; anything else there is left to the rules."""
+        truck = [(x, y, z) for x in (-1.2, 1.2) for y in (-3.0, 3.0) for z in (0.0, 2.0)]
+        m = modelin.Model([modelin.Mesh("Object_1", truck, [(0, 1, 2)])], [], source="truck.glb")
+        like = {"length": 6.0, "width": 2.4}
+        self.assertEqual(modelin.facing(m, ["hull"], dict(like, facing=[1, 1])), (1, 1))
+        self.assertEqual(modelin.facing(m, ["hull"], dict(like, facing=[2, 1])), (1, -1))      # not an axis
 
     def test_tank_unchanged(self):
         m = modelin.Model([modelin.Mesh("hull", [(x, y, 0.0) for x in (-3, 3) for y in (-1.5, 1.5)], [(0, 1, 2)])],
@@ -421,6 +560,20 @@ ARMY = make_ndf(objects=[(0, [(0, val(0x03, struct.pack("<I", 2))), (1, val(0x02
                 strings=["WW2\\Res3D\\Units\\GER\\Tank\\GER_PanzerIVlod0.Ase2NdfBin"], exports={0: "Panzer"},
                 compress=True)
 UNIT_PACK = make_edat([("dir", "genglad\\patchable\\gfx\\", [("file", "everything.cpp.gladndfbin", ARMY)])])
+PLANE_FILE = "WW2\\Res3D\\Units\\GER\\Avion\\GER_Bf_109lod0.Ase2NdfBin"
+# planes as the game's: each one's GfxDescriptor written in it, their MeshDescriptor one object they share (two users:
+# loaded as an object of its own, a Ref)
+AIR = make_ndf(objects=[(0, [(0, val(0x03, struct.pack("<I", 2))), (1, val(0x02, struct.pack("<i", 1))),
+                             (2, ref(1, 1))]),
+                        (1, [(3, ref(2, 2))]),
+                        (2, [(4, val(0x1C, struct.pack("<I", 0)))]),
+                        (0, [(0, val(0x03, struct.pack("<I", 4))), (1, val(0x02, struct.pack("<i", 1))),
+                             (2, ref(4, 1))]),
+                        (1, [(3, ref(2, 2))])],
+               classes=["TAvionDescriptor", "TGfxDescriptorModeleWithAnimation", "TResourceMultiMaterialMesh"],
+               props=[("DescriptorId", 0), ("Nationalite", 0), ("GfxDescriptor", 0), ("MeshDescriptor", 1),
+                      ("FileName", 2)],
+               strings=[PLANE_FILE], exports={0: "Plane", 3: "Plane_PV"}, compress=True)
 
 
 class TheBuild(unittest.TestCase):
@@ -455,6 +608,37 @@ class TheBuild(unittest.TestCase):
         result = self.build("export Panzer_2 is clone $/Panzer ( DescriptorId = 3 )\n")
         self.assertEqual(len(result.errors), 1)
         self.assertIn("no mod in the set makes a new unit Panzer_Model", result.errors[0].message)
+
+    def test_a_plane_whose_model_part_is_shared(self):
+        """A plane's MeshDescriptor names an object of its own in the unit data (the Bf 109's, 2026-10-08), not one
+        written in the unit: the copy gets its own copy of that part naming its own model; the copied plane and the
+        shared part keep the game's model."""
+        with tempfile.TemporaryDirectory() as d:
+            mod = Path(d, "mod")
+            (mod / "src").mkdir(parents=True)
+            (mod / "mod.toml").write_text('[mod]\nid = "m"\nname = "M"\nversion = "0.1.0"\n', encoding="utf-8")
+            (mod / "src" / "units.rndf").write_text("export Plane_Model is clone $/Plane ( DescriptorId = 3 )\n",
+                                                    encoding="utf-8")
+            (mod / "files" / "models").mkdir(parents=True)
+            (mod / "files" / "models" / "Plane_Model.glb").write_bytes(b"glTF")
+            base, _files = load({"genglad\\patchable\\gfx\\everything.cpp.gladndfbin": AIR})
+            plane = base.objects[next(k for k in base.objects if k.rsplit("/", 1)[-1] == "Plane")]
+            shared = plane.props["GfxDescriptor"].obj.props["MeshDescriptor"]
+            self.assertIsInstance(shared, Ref)                      # the fixture's part is the plane's kind
+            result = build_pack(Edat(make_edat([("dir", "genglad\\patchable\\gfx\\",
+                                                 [("file", "everything.cpp.gladndfbin", AIR)])])),
+                                [load_mod(mod)], text_arc=zz_win())
+        self.assertEqual(result.errors, [])
+        source, glb, _mod_id = result.own_models["Plane_Model"]
+        self.assertEqual((source, glb.name), (PLANE_FILE, "Plane_Model.glb"))
+        game, _files = load(result.changed)
+        objs = {k.rsplit("/", 1)[-1]: v for k, v in game.objects.items()}
+        mine = objs["Plane_Model"].props["GfxDescriptor"].obj.props["MeshDescriptor"]
+        self.assertIsInstance(mine, Inline)
+        self.assertEqual(mine.obj.props["FileName"].value, "WW2\\Res3D\\Units\\GER\\Avion\\Plane_Modellod0.Ase2ndfbin")
+        theirs = objs["Plane"].props["GfxDescriptor"].obj.props["MeshDescriptor"]
+        self.assertIsInstance(theirs, Ref)
+        self.assertEqual(game.objects[theirs.target].props["FileName"].value, PLANE_FILE)
 
 
 if __name__ == "__main__":

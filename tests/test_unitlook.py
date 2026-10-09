@@ -544,6 +544,43 @@ class StudioLook(unittest.TestCase):
         self.assertIsNone(self.api.model_import_remove(address)["own_model"])
         self.assertFalse(own.exists() or own.with_suffix(".json").exists())
 
+    def test_own_model_fitted_past_a_crew_figure(self):
+        """A copied unit whose models list a crew figure first (the Kubelwagen's driver: no chassis bone) gets the new
+        model fitted to the first model that can take one, the vehicle (2026-10-09: every era jeep copying the
+        Kubelwagen failed); when none can, the first one's reason is said."""
+        from unittest import mock
+
+        from rusemod.unitmodel import UnitModelError
+        from ruse_studio.api import StudioError
+        from ruse_studio.edits import NewUnit
+        address = "$/GFX/Everything/Descriptor_Unit_R2_Jeep"
+        unit = NewUnit(address, "$/GFX/Everything/Descriptor_Unit_Test", "Jeep")
+
+        class Edits:
+            def new_unit_of(self, a):
+                return unit if a.split(":")[0] == address else None
+        self.api._edits = lambda: Edits()
+        driver, jeep = "ww2\\res3d\\units\\ger\\infanterie\\driverlod0.ase2ndfbin", self.MODEL
+        self.api._look_models = lambda a: ([driver, jeep], [])
+        tried = []
+
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False):
+            tried.append(source)
+            if source == driver:
+                raise UnitModelError(f"{driver}'s skeleton has no chassis bone")
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_bytes(b"glTF-jeep")
+            return {"vertices": 8, "triangles": 2, "draws": 1, "parts": {"Hull": "hull"}, "missing": []}
+        model = Path(self.dir.name) / "jeep.glb"
+        model.write_bytes(b"glTF")
+        with mock.patch("rusemod.unitmodel.import_model", fake_import):
+            res = self.api.model_import(address, str(model))
+        self.assertEqual((tried, res["model"]["vertices"]), ([driver, jeep], 8))
+        self.api._look_models = lambda a: ([driver], [])
+        with mock.patch("rusemod.unitmodel.import_model", fake_import), \
+                self.assertRaisesRegex(StudioError, "no chassis bone"):
+            self.api.model_import(address, str(model))
+
     def test_bring_back_asks_the_running_blender_to_save(self):
         import json
         folder = Path(self.dir.name) / "work"

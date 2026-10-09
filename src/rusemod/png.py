@@ -1,5 +1,9 @@
 """PNG pictures read into plain pixels (stdlib only): what Blender, GIMP or Paint save. 8- and 16-bit grey, grey +
-alpha, RGB, RGBA and 8-bit palette pictures, not interlaced (the default everywhere). The writer is rusemod.dxt.png_bytes."""
+alpha, RGB, RGBA and 8-bit palette pictures, not interlaced (the default everywhere). The writer is rusemod.dxt.png_bytes.
+
+With numpy there (rusemod.picturenp), the rows' filters are undone and a palette looked up for every pixel at once: the
+same pixels, many times sooner. The loops here are what that is checked against (tests/test_picturenp.py), and what
+runs without numpy."""
 from __future__ import annotations
 
 import struct
@@ -13,6 +17,20 @@ class PngError(ValueError):
     pass
 
 
+_WHOLE = []  # [rusemod.picturenp, or None without numpy], looked for once
+
+
+def whole_arrays():
+    """rusemod.picturenp, the pictures on whole arrays, when numpy is there (the apps carry it); None without it."""
+    if not _WHOLE:
+        try:
+            from . import picturenp
+            _WHOLE.append(picturenp)
+        except ImportError:
+            _WHOLE.append(None)
+    return _WHOLE[0]
+
+
 def _paeth(a: int, b: int, c: int) -> int:
     p = a + b - c
     pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
@@ -21,6 +39,10 @@ def _paeth(a: int, b: int, c: int) -> int:
 
 def _unfilter(raw: bytes, width: int, height: int, bpp: int) -> bytearray:
     """The scanlines without their filters (bpp: bytes per pixel, at least 1)."""
+    arrays = whole_arrays()
+    whole = arrays.unfilter(raw, width, height, bpp) if arrays else None
+    if whole is not None:   # (numpy: the same bytes, every pixel at once)
+        return whole
     stride = width * bpp
     out = bytearray(stride * height)
     prev = bytearray(stride)
@@ -100,6 +122,10 @@ def read_png(data: bytes) -> tuple[int, int, bytes]:
         if palette is None:
             raise PngError("a palette PNG without its palette")
         alpha = trns or b""
+        arrays = whole_arrays()
+        whole = arrays.palette_rgba(pixels, palette, alpha) if arrays else None
+        if whole is not None:   # (numpy: the same pixels, all at once)
+            return width, height, whole
         for i, k in enumerate(pixels):
             out[4 * i:4 * i + 3] = palette[3 * k:3 * k + 3]
             out[4 * i + 3] = alpha[k] if k < len(alpha) else 255

@@ -1134,7 +1134,7 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
     """New units' own models (a mod's files/models/<the unit's name>.glb; rusemod.unitmodel): the clone's model part
     names a model of its own, beside its source's, which the build writes into the packs that hold the source's.
     Returns {unit: (its source's model, the .glb, mod id)}."""
-    from .patch import Inline
+    from .patch import Inline, Ref, _fresh
     wanted: dict = {}
     for m in order:
         for unit, glb in (getattr(m, "models", None) or {}).items():
@@ -1150,6 +1150,12 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
             continue
         gfx = run.game.objects[name].props.get("GfxDescriptor")
         mesh = gfx.obj.props.get("MeshDescriptor") if isinstance(gfx, Inline) else None
+        if isinstance(mesh, Ref) and mesh.target in run.game.objects:
+            # a plane's model part is an object of its own that the copy shares with the unit it copies (the Bf 109's
+            # MeshDescriptor names one; a tank's is written in the unit): the copy gets a copy of that part, written
+            # in it, to name its own model, and the copied unit keeps its own (era planes, 2026-10-08)
+            mesh = Inline(_fresh(run.game.objects[mesh.target]))
+            gfx.obj.props["MeshDescriptor"] = mesh
         file = mesh.obj.props.get("FileName") if isinstance(mesh, Inline) else None
         if not isinstance(file, Text) or file.kind != "path" or not file.value.lower().endswith(".ase2ndfbin"):
             # not a game rule: what our build supports (a model part of its own, naming one model file)

@@ -76,6 +76,7 @@ FLAG_LISTS = set(WHOLE_LISTS)  # lists edited as a set of flags, any length (a u
 # Upgrades (LittleGroove's "Upgrade chain"): an upgrade names the unit it's researched from and carries the flag; its
 # research price and time (also on units that are researched without being upgrades) start at his 50 and 50
 UPGRADE, UPGRADE_FLAG, RESEARCH = "UpgradeRequire", "IsUpgrade", {"UpgradePrice": 50, "UpgradeTime": 50}
+MODEL_SIZES = (0.2, 5.0)  # an imported model's size, times the length of the unit it copies (model_import)
 BLANK_STARTS = ("blank_terrain", "blank_ocean")  # the blank starts offered (rusemod.presets.KINDS); Blank Ocean taken
 # out and back the same day with a warning of its own (the owner, 2026-10-08: "blank oceans stay in with a warning
 # label"; words.toml dup_start_blank_ocean_warn: separate islands crash the game when a land unit is sent across)
@@ -1146,6 +1147,21 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     links[target] = str(e.value)
         return links
 
+    def _menu_of(self, edits: ModEdits | None, units: dict, address: str) -> tuple:
+        """(nation, build menu) of a unit as the current mod has it (`units`: the index's units by address)."""
+        u = units[self._resolve(edits, address)[0]]
+        get = (lambda p, d: edits.get(address, p) if edits and edits.get(address, p) is not None else d)
+        return get("Nationalite", u["nation"]), get("Factory", u["factory"])
+
+    def _menu_units(self, edits: ModEdits | None, units: dict, menu: tuple) -> list[str]:
+        """The units (the game's, then the current mod's new ones) in build menu `menu` ((nation, build menu)) as the
+        mod has it: those a unit there may be researched from (upgrade's choices, before its own upgrades are left
+        out)."""
+        new_units = edits.new_units if edits else {}
+        pool = [a for a in list(units) + list(new_units) if a in units or self._resolve(edits, a)[0] in units]
+        return [a for a in pool if units[self._resolve(edits, a)[0]]["class"] in KIND_OF
+                and self._menu_of(edits, units, a) == menu]
+
     def upgrade(self, address: str, lang: str = schema.BASE) -> dict:
         """A unit's place in the upgrade chains. `parent`: the unit it's researched from as the current mod has it
         (None: a unit of its own); `game_parent`: as the game has it; `choices`: the units it may be researched from,
@@ -1165,12 +1181,6 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 raise StudioError(f"{address} isn't a unit")
             links = self._upgrade_links(ix, edits)
             game_parent = ix.links(UPGRADE).get(real)
-
-            def where(a):  # (nation, build menu) as the mod has it
-                u = units[self._resolve(edits, a)[0]]
-                get = (lambda p, d: edits.get(a, p) if edits and edits.get(a, p) is not None else d)
-                return get("Nationalite", u["nation"]), get("Factory", u["factory"])
-
             below, todo = set(), [address]  # every unit researched from this one, directly or not
             while todo:
                 top = todo.pop()
@@ -1178,10 +1188,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     if p == top and child not in below:
                         below.add(child)
                         todo.append(child)
-            mine = where(address)
-            pool = [a for a in list(units) + list(new_units) if a in units or self._resolve(edits, a)[0] in units]
-            choices = [a for a in pool if a != address and a not in below and units[self._resolve(edits, a)[0]]["class"]
-                       in KIND_OF and where(a) == mine]
+            mine = self._menu_of(edits, units, address)
+            choices = [a for a in self._menu_units(edits, units, mine) if a != address and a not in below]
             children = sorted(c for c, p in links.items() if p == address)
             parent = links.get(address)
             names = self._names(ix, set(choices) | set(children) | {parent, game_parent} - {None}, lang, new_units)
@@ -5561,14 +5569,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         mod = self._mod_dir()
         return mod / MODELS / f"{_tail(unit.target)}.glb" if unit is not None and mod is not None else None
 
-    def model_import(self, address: str, file: str | None = None, size: float = 1.0, aircraft: bool = False) -> dict:
+    def model_import(self, address: str, file: str | None = None, size: float = 1.0, aircraft: bool = False,
+                     facing: list | None = None) -> dict:
         """Give a new unit a model of its own: `file` (a .3ds with its pictures beside it, or a .glb; asked for when
         not given) fitted to the model of the unit it copies (its length times `size`, its turret on the copy's
-        turret point; `aircraft`: a plane, its tail fin at the back) and saved as the mod's files/models/<the unit's
-        name>.glb, which the build writes into the game beside the copied model. Returns {"model": what was made
-        (parts, counts, pictures, "missing"), **look()}."""
+        turret point; `aircraft`: a plane, its tail fin at the back; `facing` [axis, sign]: which way it faces, when
+        known, as for an era unit's model) and saved as the mod's files/models/<the unit's name>.glb, which the build
+        writes into the game beside the copied model. Returns {"model": what was made (parts, counts, pictures,
+        "missing"), **look()}."""
         from rusemod.modelin import ModelError
-        from rusemod.unitmodel import import_model
+        from rusemod.unitmodel import UnitModelError, import_model
         target = self._own_model_file(address)
         if target is None:
             # not a game rule: the Studio gives models only to the units a mod makes (a game unit's stays the game's)
@@ -5583,15 +5593,25 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             size = float(size)
         except (TypeError, ValueError):
             raise StudioError("The size is a number: 1 is as long as the unit it copies.") from None
-        if not 0.2 <= size <= 5:
+        if not MODEL_SIZES[0] <= size <= MODEL_SIZES[1]:
             raise StudioError("Give a size from 0.2 to 5 (1 is as long as the unit it copies).")
         found = [m for m in self._look_models(address)[0] if "_dest" not in m.lower()]
         if not found:
             raise StudioError("The unit this one copies has no 3D model to fit a new one to.")
-        try:
-            report = import_model(self._game(), found[0], Path(file), target, size=size, aircraft=bool(aircraft))
-        except (ModelError, OSError, ValueError) as exc:
-            raise StudioError(f"{Path(file).name}: {exc}") from None
+        # the first of its models a new one can be fitted to: a jeep's crew figure can come first (the Kubelwagen's
+        # driver, 2026-10-09: every era jeep copying it failed on "no chassis bone")
+        report, first_error = None, None
+        for model in found:
+            try:
+                report = import_model(self._game(), model, Path(file), target, size=size, aircraft=bool(aircraft),
+                                      **({"facing": facing} if facing else {}))
+                break
+            except UnitModelError as exc:     # this model has no bones or hull to fit to: try the next one
+                first_error = first_error or exc
+            except (ModelError, OSError, ValueError) as exc:
+                raise StudioError(f"{Path(file).name}: {exc}") from None
+        if report is None:
+            raise StudioError(f"{Path(file).name}: {first_error}")
         report["file"] = Path(file).name
         record = target.with_suffix(".json")
         record.write_text(json.dumps({"from": str(file), "size": size, "report": report}, indent=1), encoding="utf-8")
@@ -5920,7 +5940,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if not o["export"] or o["class"] not in KIND_OF:
                 raise StudioError(f"{source} isn't a unit or building, so it can't be copied here")
             types = ix.prop_types(o["class"])
-            menus = {(u["nation"], u["factory"]) for u in self._all_units(ix) if u["factory"] is not None}
+            all_units = self._all_units(ix)
+            menus = {(u["nation"], u["factory"]) for u in all_units if u["factory"] is not None}
+            parent = ix.links(UPGRADE).get(source)      # the unit the source is researched from, if any
+            parent_menu = next(((u["nation"], u["factory"]) for u in all_units if u["address"] == parent), None)
             namespace, tail = source.rsplit("/", 1)
             m = _PREFIX.match(tail)
             prefix = m.group(1) if m else "Descriptor_Unit_"
@@ -5962,12 +5985,22 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             own_factory = next((int(n) for path, n, _t in o["values"] if path == "Factory" and n is not None), None)
             if (nation, factory) != (own_nation, own_factory):
                 values["Nationalite"], values["Factory"] = nation, factory
+        # moved to a menu its research parent isn't in, it becomes a unit of its own: the game builds each nation's
+        # research tree by finding every unit's parent among that nation's units and loops for ever when it isn't
+        # there (2026-10-09 test: a T-80 started from the Soviet IS-2, researched from the KV-1, put in the USA's menu:
+        # the loading screen never ended; rule unit-research-parent). The Upgrade box can link it again in its menu.
+        dropped = parent if parent is not None and "Nationalite" in values and parent_menu != (nation, factory) \
+            else None
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
             if target in edits.new_units:
                 raise StudioError(f"There's already a unit at {target}. Pick another name.")
             edits.add_unit(target, source, name, values)
-        return {"address": target, "name": name, "saved": str(edits.file)}
+            if dropped:
+                edits.set(target, UPGRADE, REMOVED)
+                if any(path == UPGRADE_FLAG for path, _n, _t in o["values"]):
+                    edits.set(target, UPGRADE_FLAG, REMOVED)
+        return {"address": target, "name": name, "saved": str(edits.file), "research_parent_dropped": dropped}
 
     def delete_unit(self, address: str) -> dict:
         """Remove a new unit from the current mod: its copy, every change made to it and its parts, and its name."""

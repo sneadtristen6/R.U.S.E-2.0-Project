@@ -63,13 +63,20 @@ class _Glb:
         width = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}[kind]
         code = {FLOAT: "f", UBYTE: "B", USHORT: "H", UINT: "I"}[ctype]
         flat = [c for v in values for c in (v if width > 1 else (v,))]
-        a = {"bufferView": self.view(struct.pack(f"<{len(flat)}{code}", *flat), target), "componentType": ctype,
-             "count": len(values), "type": kind}
+        data = struct.pack(f"<{len(flat)}{code}", *flat)
+        low = [min(v[i] for v in values) for i in range(width)] if minmax else None
+        high = [max(v[i] for v in values) for i in range(width)] if minmax else None
+        return self.packed(data, len(values), kind, ctype, target, low=low, high=high, normalized=normalized)
+
+    def packed(self, data: bytes, count: int, kind: str, ctype: int, target: int | None = 34962,
+               low: list | None = None, high: list | None = None, normalized: bool = False) -> int:
+        """An accessor of `count` values already packed (`data`), with their lowest and highest when given."""
+        a = {"bufferView": self.view(data, target), "componentType": ctype, "count": count, "type": kind}
         if normalized:
             a["normalized"] = True
-        if minmax:
-            a["min"] = [min(v[i] for v in values) for i in range(width)]
-            a["max"] = [max(v[i] for v in values) for i in range(width)]
+        if low is not None:
+            a["min"] = low
+            a["max"] = high
         self.doc["accessors"].append(a)
         return len(self.doc["accessors"]) - 1
 

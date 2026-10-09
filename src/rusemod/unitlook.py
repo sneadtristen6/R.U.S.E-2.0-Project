@@ -38,9 +38,28 @@ class LookError(ValueError):
     pass
 
 
+_WHOLE = []  # [rusemod.picturenp, or None without numpy], looked for once
+
+
+def whole_arrays():
+    """rusemod.picturenp, the pictures on whole arrays, when numpy is there (the apps carry it); None without it."""
+    if not _WHOLE:
+        try:
+            from . import picturenp
+            _WHOLE.append(picturenp)
+        except ImportError:
+            _WHOLE.append(None)
+    return _WHOLE[0]
+
+
 # --- pictures ---
 def halve(px: bytes, w: int, h: int, channels: int = 4) -> bytes:
-    """A picture at half the size (each pixel the rounded average of a 2 x 2 square)."""
+    """A picture at half the size (each pixel the rounded average of a 2 x 2 square). With numpy there
+    (rusemod.picturenp), every pixel at once: the same bytes; these loops are what that is checked against."""
+    arrays = whole_arrays()
+    whole = arrays.halve(px, w, h, channels) if arrays else None
+    if whole is not None:
+        return whole
     nw, nh = max(1, w // 2), max(1, h // 2)
     out = bytearray(nw * nh * channels)
     for y in range(nh):

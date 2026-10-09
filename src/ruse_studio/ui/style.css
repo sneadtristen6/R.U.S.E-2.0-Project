@@ -320,6 +320,7 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .new-unit input[type="text"], .new-unit input:not([type]), .new-unit input[type="number"], .new-unit select {
   padding: 6px 10px; background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--radius); }
 .new-unit input[type="number"] { width: 8em; }
+.new-unit input:disabled, .new-unit select:disabled { opacity: 0.5; }
 .menu-choice { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
 .menu-choice > label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .menu-choice input[type="radio"] { accent-color: var(--accent); }

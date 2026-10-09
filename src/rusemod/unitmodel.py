@@ -47,12 +47,15 @@ class UnitModelError(ModelError):
 
 
 def import_model(game: Path, source_model: str, model_file: Path, out: Path, size: float = 1.0,
-                 side: int = 1024, pictures: Path | None = None, aircraft: bool = False) -> dict:
+                 side: int = 1024, pictures: Path | None = None, aircraft: bool = False,
+                 facing: list | None = None) -> dict:
     """Step one for a mod: `model_file` (.3ds or .glb) fitted to the game's model `source_model` (the unit the new
     one copies) and saved as `out` (the mod's files/models/<unit>.glb). A .3ds's pictures are looked for in
     `pictures`, then beside it, then one folder up (downloads often keep them in a folder of their own). `aircraft`:
-    the new unit is a plane (its tail fin, its highest point, goes at the back). Returns the fitting's report (parts
-    and their roles, facing, scale, counts, pictures, "missing": pictures not found)."""
+    the new unit is a plane (its tail fin, its highest point, goes at the back). `facing` ([axis, sign]) pins which way
+    it faces instead of working it out (an era unit's library model is already in the game's axes, its front +x: a
+    facing pinned by hand when it was fitted stays). Returns the fitting's report (parts and their roles, facing,
+    scale, counts, pictures, "missing": pictures not found)."""
     from .build import find_pack
     from .edat import Edat
     from .modelin import prepare, read_model, write_glb
@@ -66,7 +69,8 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
         zz.close()
     here = Path(model_file).resolve().parent
     look = ([Path(pictures)] if pictures else []) + [here, here.parent]
-    prep = prepare(read_model(model_file), look, dict(src.like, aircraft=aircraft), size=size, side=side)
+    like = dict(src.like, aircraft=aircraft, **({"facing": list(facing)} if facing else {}))
+    prep = prepare(read_model(model_file), look, like, size=size, side=side)
     write_glb(prep, out, src.model)
     return dict(prep.report, like=src.model)
 

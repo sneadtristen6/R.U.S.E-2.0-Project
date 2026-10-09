@@ -139,6 +139,28 @@ class Upgrades(unittest.TestCase):
         self.api.set_upgrade(B, A)  # the game's own parent again: no change left
         self.assertNotIn("patch", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
 
+    def test_a_new_unit_in_another_menu_leaves_its_parent(self):
+        """A new unit put in a menu its source's research parent isn't in becomes a unit of its own: the game looks
+        for every unit's parent among its nation's units while it loads and never stops when it isn't there
+        (2026-10-09: a T-80 from the Soviet IS-2, researched from the KV-1, in the USA's menu hung the loading
+        screen). In the source's own menu it keeps the parent."""
+        self.api.new_mod("Chains")
+        folder = self.home / "mods" / "chains"
+        away = self.api.new_unit(B, "B abroad", 30, nation=1, factory=10)
+        self.assertEqual(away["research_parent_dropped"], A)
+        self.assertIsNone(self.api.upgrade(away["address"])["parent"])
+        self.assertIs(ModEdits(folder).get(away["address"], "UpgradeRequire"), REMOVED)
+        home = self.api.new_unit(B, "B at home", 30)
+        self.assertIsNone(home["research_parent_dropped"])
+        self.assertEqual(self.api.upgrade(home["address"])["parent"]["address"], A)
+        text = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        block = text[text.index(f"export {away['address'].rsplit('/', 1)[-1]} is clone"):]
+        block = block[:block.index("\n)\n")]
+        self.assertIn("delete UpgradeRequire", block)
+        self.assertIn("delete IsUpgrade", block)
+        block = text[text.index(f"export {home['address'].rsplit('/', 1)[-1]} is clone"):]
+        self.assertNotIn("UpgradeRequire", block[:block.index("\n)\n")])
+
     def test_what_is_refused(self):
         self.api.new_mod("Chains")
         for unit, parent, why in ((C, D, "can't be researched from"),   # another nation

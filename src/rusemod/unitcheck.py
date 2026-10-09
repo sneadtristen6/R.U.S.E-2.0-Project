@@ -104,6 +104,41 @@ def id_clashes(game, names) -> dict[str, str]:
     return out
 
 
+UPGRADE = "UpgradeRequire"
+
+
+def research_parent_problems(game, names) -> dict[str, str]:
+    """For the units `names`: {name: why} when the unit it's researched from (UpgradeRequire) isn't in the game or is
+    another nation's. As a match loads, the game builds each nation's research tree by looking for every unit's parent
+    among that nation's own units, and it never stops looking when the parent isn't there: the loading screen goes on
+    for ever, with no crash and no message (2026-10-09: a T-80 copied from the Soviet IS-2, researched from the KV-1,
+    put in the USA's army; rule unit-research-parent)."""
+    out = {}
+    for name in names:
+        obj = game.objects.get(name)
+        if obj is None or not is_unit(obj):
+            continue
+        v = obj.props.get(UPGRADE)
+        if not isinstance(v, Ref):
+            continue
+        n = nation_of(obj)
+        army = NATIONS[n] if 0 <= n < len(NATIONS) else f"nation {n}"
+        parent = game.objects.get(v.target)
+        fix = (f"Research it from one of {army}'s own units, or make it a unit of its own (delete {UPGRADE} and "
+               f"IsUpgrade: the Studio's Upgrade box does both)")
+        hang = ("as a match loads, the game builds each nation's research tree by finding every unit's parent among "
+                "that nation's own units, and when the parent isn't there it keeps looking for ever: the loading "
+                "screen never ends (no crash, no message)")
+        if parent is None:
+            out[name] = f"it's researched from {v.target} ({UPGRADE}), which isn't in the game: {hang}. {fix}"
+        elif nation_of(parent) != n:
+            pn = nation_of(parent)
+            other = NATIONS[pn] if 0 <= pn < len(NATIONS) else f"nation {pn}"
+            out[name] = (f"it's researched from {v.target} ({UPGRADE}), which is {other}'s unit, but this unit is in "
+                         f"{army}'s army: {hang}. {fix}")
+    return out
+
+
 def _resolve(game, v):
     """The object a list item is: an owned part, or the named object a reference points at (with its name)."""
     if isinstance(v, Inline):

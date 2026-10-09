@@ -82,6 +82,13 @@ RULES: dict[str, Rule] = {
         "Two units with one DescriptorId: orders for one build the other.",
         "studied", "the game keeps the first unit with an id and skips the next without a word; production orders "
                    "name the unit by id (2026-10-01 audit, checked again 2026-10-02)"),
+    "unit-research-parent": Rule(
+        "A unit researched from (UpgradeRequire) a unit that's missing or another nation's: the match never loads.",
+        "game", "2026-10-09 era test 4: the loading screen ran on for minutes with no crash while the game built the "
+                "nations' research trees; 5 new units there were researched from other nations' units (the details "
+                "are in the project's private notes). Test 5, the same units with those links deleted, loaded at once "
+                "(owner: 'load it in instantly'); test 6, era units researched from their own army's units and "
+                "chained (T-80 -> T-90M), loaded and researched as set"),
     "unit-five-dates": Rule(
         "ProductionPrice and ShowInMenu have 5 items, one per battle date; fewer makes the unit free or hidden.",
         "studied", "partly: the game's scripts make a missing price 0 and a missing menu item hidden, with the length "

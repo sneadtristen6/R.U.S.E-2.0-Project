@@ -137,6 +137,44 @@ class Nations(unittest.TestCase):
         self.assertIn(f"{TANK}: Nationalite 8 isn't a nation", said(r)[0])
 
 
+class ResearchParents(unittest.TestCase):
+    """A unit researched from (UpgradeRequire) another nation's unit, or a missing one: as a match loads the game looks
+    for every unit's parent among its nation's units and never stops when it isn't there (2026-10-09, era test 4)."""
+    KV1, IS2, PERSHING = "$/KV1", "$/IS2", "$/Pershing"
+
+    def base(self):
+        g = game()
+        g.objects[self.KV1] = unit("TUniteAuSolDescriptor", 1500, [10, 24, 43, 55], nation=5)
+        g.objects[self.IS2] = unit("TUniteAuSolDescriptor", 1501, [10, 24, 43, 55], nation=5,
+                                   UpgradeRequire=Ref(self.KV1), IsUpgrade=num(1, "bool"))
+        g.objects[self.PERSHING] = unit("TUniteAuSolDescriptor", 1502, [10, 24, 43, 55], nation=0)
+        return g
+
+    def test_a_copy_in_another_army_keeping_its_parent(self):
+        r = run(clone(("Nationalite", num(0)), source=self.IS2), base=self.base())
+        self.assertEqual(len(said(r)), 1)
+        self.assertIn(f"{NEW}: it's researched from {self.KV1} (UpgradeRequire), which is USSR's unit, but this unit "
+                      f"is in US's army", said(r)[0])
+        self.assertIn("the loading screen never ends", said(r)[0])
+        self.assertIn("Research it from one of US's own units, or make it a unit of its own", said(r)[0])
+
+    def test_fine_in_its_own_army_or_on_its_own(self):
+        self.assertEqual(said(run(clone(source=self.IS2), base=self.base())), [])
+        on_its_own = clone(("Nationalite", num(0)), source=self.IS2)
+        on_its_own.body += [Op("delprop", path="UpgradeRequire"), Op("delprop", path="IsUpgrade")]
+        self.assertEqual(said(run(on_its_own, base=self.base())), [])
+        moved = clone(("Nationalite", num(0)), ("UpgradeRequire", Ref(self.PERSHING)), source=self.IS2)
+        self.assertEqual(said(run(moved, base=self.base())), [])
+
+    def test_a_missing_parent_and_a_parent_moved_away(self):
+        r = run(clone(("UpgradeRequire", Ref("$/Nothing")), source=self.IS2), base=self.base())
+        self.assertIn(f"{NEW} still refers to $/Nothing", said(r))     # the build's own word on a missing object
+        self.assertEqual(len([m for m in said(r) if "which isn't in the game: as a match loads" in m]), 1)
+        r = run(Op("set", self.KV1, "Nationalite", num(2)), base=self.base())   # the parent given to the UK
+        self.assertEqual(len(said(r)), 1)
+        self.assertIn(f"{self.IS2}: it's researched from {self.KV1} (UpgradeRequire), which is UK's unit", said(r)[0])
+
+
 class Lists(unittest.TestCase):
     """ProductionPrice and ShowInMenu have one item per battle date: 5."""
 

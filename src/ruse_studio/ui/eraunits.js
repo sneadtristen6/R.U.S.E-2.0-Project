@@ -4,9 +4,9 @@
 // An era's units are listed and filtered like the game's (kind, nation, type, search); none is in the mod until added
 // (the owner, 2026-10-08). An era unit's page shows its model's picture and credit, and adds it to the mod: it starts
 // from the values of any game unit of its kind (the library's suggestion first; the owner: "what if they don't want to
-// make it the same as a Sherman?"), with the name, price and build menu given; then it's a new unit like any other,
-// its page open to change every value. Uses app.js's $, el, fill, say, problem, api, state, renderChips, refreshList,
-// renderGroups, showUnit and factoryLabel.
+// make it the same as a Sherman?"), with the name, price, size, build menu and the unit it's researched from given;
+// then it's a new unit like any other, its page open to change every value. Uses app.js's $, el, fill, say, problem,
+// api, state, renderChips, refreshList, renderGroups, showUnit and factoryLabel.
 (function () {
   "use strict";
   const ERAS = [["vanilla", "era_vanilla"], ["WWI", "eras_era_ww1"], ["WWII", "eras_era_ww2"],
@@ -15,7 +15,11 @@
     France: "eras_nation_france", Italy: "eras_nation_italy", USSR: "eras_nation_ussr", Russia: "eras_nation_russia",
     Japan: "eras_nation_japan", China: "eras_nation_china" };
   const CHINA = 7;  // the nation chip for China, which has no game nation of its own
+  // why a unit to research it from is suggested (StudioApi.era_unit_start's research.why)
+  const WHY = { start: "eras_research_why_start", in_place_of: "eras_research_why_in_place_of",
+    dearest: "eras_research_why_dearest" };
   const W = () => state.words;
+  const round3 = (x) => String(Math.round(x * 1000) / 1000);
   const nationOf = (n) => W()[NATION_WORD[n]] || n;
   const eraOf = (era) => W()[(ERAS.find(([k]) => k === era) || [])[1]] || era;
 
@@ -210,7 +214,12 @@
     await showUnit(address);
   }
 
-  // add it: its name, the game unit it starts from (any of its kind), its price and its build menu
+  // add it: its name, the game unit it starts from (any of its kind), its price, its size, its build menu and the unit
+  // it's researched from. Its size: 1 is as long as the start unit, the suggestion its real size (the owner,
+  // 2026-10-09: "the units we add should be scaled proportionally with how big the units are ... in real life").
+  // Researched from: any unit of the build menu picked, the mod's new ones too, or none (the owner: "If it's advanced,
+  // I want it to be hidden behind the research ... it has to be super customizable"); the unit page's Upgrade box
+  // changes it later. A start unit or build menu picked asks the Studio again (era_unit_start).
   async function addForm(p) {
     const w = W();
     const form = el("form", { className: "new-unit" });
@@ -231,9 +240,22 @@
     const price = el("input", { type: "number", min: "0", step: "1", inputMode: "numeric", required: true,
       value: String(p.price), title: w.tip_eras_price });
     price.setAttribute("aria-label", w.price);
-    start.addEventListener("change", async () => {
-      try { price.value = String((await api().era_start_price(start.value)).price); } catch (err) { problem(err); }
-    });
+
+    // its size (only with a model of its own: without one it shows the start unit's model)
+    const size = el("input", { type: "number", min: "0.2", max: "5", step: "any", inputMode: "decimal", required: true,
+      title: w.tip_eras_size });
+    size.setAttribute("aria-label", w.eras_size);
+    const sizeNote = el("span");
+    let exact = null;  // the size suggested, as the Studio worked it out (the box shows it rounded)
+    const showSize = (value, info) => {
+      exact = value;
+      size.value = round3(value);
+      const real = info.real ? fill(info.what === "span" ? w.eras_size_real_span : w.eras_size_real_width, { m: info.real_m }) : "";
+      sizeNote.textContent = info.real
+        ? (info.clamped === null ? real : `${real} ${fill(w.eras_size_clamped, { raw: round3(info.clamped), size: round3(value) })}`)
+        : ["no_real", "no_scale"].includes(info.why) ? w.eras_size_unknown : info.why === "no_model" ? "" : w.eras_size_unread;
+    };
+
     const nation = el("select", { title: w.tip_eras_nation }), factory = el("select", { title: w.tip_eras_factory });
     nation.setAttribute("aria-label", w.nation);
     factory.setAttribute("aria-label", w.factory);
@@ -247,25 +269,89 @@
         textContent: factoryLabel(f), selected: f.factory === p.factory })));
     };
     fillF();
-    nation.addEventListener("change", fillF);
+
+    // researched from: the build menu's units, or none (buyable from the start), with its research price and time
+    const research = el("select", { title: w.tip_eras_research_from });
+    research.setAttribute("aria-label", w.eras_research_from);
+    const researchNote = el("p", { className: "muted small" });
+    const rPrice = el("input", { type: "number", min: "0", step: "1", inputMode: "numeric", required: true, value: "50",
+      title: w.tip_eras_research_price });
+    rPrice.setAttribute("aria-label", w.eras_research_price);
+    const rTime = el("input", { type: "number", min: "0", step: "1", inputMode: "numeric", required: true, value: "50",
+      title: w.tip_eras_research_time });
+    rTime.setAttribute("aria-label", w.eras_research_time);
+    let picked = false;  // the modder picked one: kept while the build menu still offers it
+    const lockCosts = () => {  // nothing to research: its price and time are locked, and say why
+      for (const [box, tip] of [[rPrice, w.tip_eras_research_price], [rTime, w.tip_eras_research_time]]) {
+        box.disabled = !research.value;
+        box.title = research.value ? tip : research.disabled ? w.tip_eras_research_off : w.tip_eras_research_locked;
+      }
+    };
+    const showResearch = (r) => {
+      const kept = picked && (research.value === "" || r.choices.some((c) => c.address === research.value))
+        ? research.value : null;
+      const want = kept ?? (r.suggested || "");
+      research.replaceChildren(el("option", { value: "", textContent: w.eras_research_none, selected: want === "" }),
+        ...r.choices.map((c) => el("option", { value: c.address, textContent: c.name, selected: c.address === want })));
+      research.value = want;
+      research.disabled = !r.offered;
+      research.title = r.offered ? w.tip_eras_research_from : w.tip_eras_research_off;
+      researchNote.textContent = !r.offered ? w.tip_eras_research_off
+        : r.suggested && want === r.suggested && WHY[r.why] ? w[WHY[r.why]] : "";
+      lockCosts();
+    };
+    research.addEventListener("change", () => { picked = true; researchNote.textContent = ""; lockCosts(); });
+
+    // another start unit or build menu: its price, size and research asked for again (the last asked wins)
+    let asked = 0;
+    const again = async (newStart) => {
+      const n = ++asked;
+      let o;
+      try {
+        o = await api().era_unit_start(p.key, start.value, Number(nation.value), Number(factory.value), state.lang);
+      } catch (err) { problem(err); return; }
+      if (n !== asked) return;
+      if (newStart) {
+        price.value = String(o.price);
+        showSize(o.size, o.size_info);
+      }
+      showResearch(o.research);
+    };
+    start.addEventListener("change", () => again(true));
+    nation.addEventListener("change", () => { fillF(); again(false); });
+    factory.addEventListener("change", () => again(false));
+    showSize(p.size, p.size_info);
+    showResearch(p.research);
+    if (Number(nation.value) !== p.game_nation || Number(factory.value) !== p.factory) again(false);  // not the page's menu
+
     const add = el("button", { type: "submit", className: "primary", textContent: w.eras_add, title: w.tip_eras_add });
     form.append(
       el("label", {}, el("span", { textContent: w.new_unit_name }), name),
       el("label", {}, el("span", { textContent: w.eras_start_from }), start),
       el("p", { className: "muted small", textContent: w.eras_start_help }),
       el("label", {}, el("span", { textContent: w.price }), price),
+      ...(p.has_model ? [el("label", {}, el("span", { textContent: w.eras_size }), size),
+        el("p", { className: "muted small" }, `${w.eras_size_help} `, sizeNote)] : []),
       el("div", { className: "menu-picks" }, el("span", { textContent: w.build_menu }),
         el("label", {}, el("span", { textContent: w.nation }), nation),
         el("label", {}, el("span", { textContent: w.factory }), factory)),
+      el("label", {}, el("span", { textContent: w.eras_research_from }), research),
+      researchNote,
+      el("div", { className: "menu-picks" },
+        el("label", {}, el("span", { textContent: w.eras_research_price }), rPrice),
+        el("label", {}, el("span", { textContent: w.eras_research_time }), rTime)),
       el("div", { className: "actions" }, add));
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const cost = Number(price.value);
-      if (!name.value.trim() || !Number.isFinite(cost)) return;
+      const sized = size.value === round3(exact) ? exact : Number(size.value);
+      const from = research.value || null, rp = Number(rPrice.value), rt = Number(rTime.value);
+      if (!name.value.trim() || !Number.isFinite(cost) || (p.has_model && !Number.isFinite(sized))) return;
+      if (from && (!Number.isFinite(rp) || !Number.isFinite(rt))) return;
       add.disabled = true;
       try {
         const res = await api().era_unit_add(p.key, Number(nation.value), Number(factory.value), start.value,
-          name.value.trim(), cost);
+          name.value.trim(), cost, p.has_model ? sized : null, from, from ? rp : null, from ? rt : null);
         say(fill(w.eras_added, { name: res.name }), "ok");
         if (res.model_note === "no_fit") say(w.eras_no_fit, "warn");
         else if (res.model_note && res.model_note !== "no_model") say(res.model_note, "warn");

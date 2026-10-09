@@ -263,6 +263,8 @@ class Engine:
                           for n, o in self.game.objects.items() if unitcheck.is_unit(o)}
         self._had_ids = unitcheck.ids(self.game)
         self._had_salvos = {(top, path, why) for top, path, _named, why in unitcheck.salvo_problems(self.game)}
+        self._had_research = set(unitcheck.research_parent_problems(
+            self.game, [n for n, o in self.game.objects.items() if unitcheck.is_unit(o)]).items())
         self._done: list = []  # (owner, path, op) of every property operation, in the order they ran
         self._kinds: dict | None = None  # (class, property) -> the number type the game gives it (_kind_in_class)
 
@@ -878,6 +880,14 @@ class Engine:
         moved = [n for n in units if n in self.created or now.get(n) != self._had_ids.get(n)]
         # rule: unit-id-clash
         found += [(name, uc.ID, "error", why) for name, why in uc.id_clashes(self.game, moved).items()]
+        # every unit, not only those the mods touched: moving a parent to another army breaks the units researched
+        # from it; what the game's own data had (or a copy has from what it copies) isn't the mods' doing
+        everyone = [n for n, o in self.game.objects.items() if uc.is_unit(o)]
+        for name, why in uc.research_parent_problems(self.game, everyone).items():
+            made = self.created.get(name)
+            if (made.source if made and made.kind == "clone" else name, why) not in self._had_research:
+                # rule: unit-research-parent
+                found.append((name, uc.UPGRADE, "error", why))
         for name, prop, level, why in found:
             op = self._blame(lambda o, p, n=name, r=prop: o == n and _root(p) == r) or self.created.get(name) \
                 or self._blame(lambda o, p, n=name: o == n)
