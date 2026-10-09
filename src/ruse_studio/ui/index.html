@@ -225,6 +225,20 @@
                     <input id="tex-file" type="file" accept="image/*" class="hidden">
                     <div id="tex-own-grid" class="tex-grid" role="group"></div>
                   </div>
+                  <!-- Online (free): Poly Haven, ambientCG, US aerial photos (maps.js renderOnline; groundtex_online):
+                       only the picture clicked is downloaded, then kept in the mod like your own -->
+                  <div id="tex-online" class="tex-pane hidden">
+                    <div id="tex-online-from" class="chips tex-groups" role="group"></div>
+                    <input id="tex-online-search" class="tex-search" type="search" spellcheck="false" autocomplete="off">
+                    <div id="tex-online-place" class="tex-online-place hidden">
+                      <label class="small"><span id="tex-online-metres-label"></span>
+                        <select id="tex-online-metres" class="tex-map-list"></select></label>
+                      <input id="tex-online-where" class="tex-search" type="text" spellcheck="false" autocomplete="off">
+                      <button id="tex-online-take" type="button" class="chip"></button>
+                    </div>
+                    <div id="tex-online-grid" class="tex-grid" role="group"></div>
+                    <div id="tex-online-note" class="muted small"></div>
+                  </div>
                   <div id="tex-spot" class="tex-pane hidden">
                     <button id="stamp-pick" type="button" class="chip"></button>
                   </div>

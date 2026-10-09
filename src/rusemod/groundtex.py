@@ -8,7 +8,9 @@
   file:<name>.png                  the mod's own picture, files/ground/<name>.png (any PNG: its middle square is used)
 
 Each is laid repeating across the ground, from the map's corner (0, 0), `size` map units a repeat (0: its own size,
-Swatch.period: for a game texture the size the game itself lays it at). Every texture is made seamless first
+Swatch.period: for a game texture the size the game itself lays it at; for the mod's own picture the metres its
+sidecar files/ground/<name>.toml says it covers (read_credit: a picture from the Studio's Online textures has one),
+else FILE_PERIOD). Every texture is made seamless first
 (seamless: its edges blended with its own middle, so no line shows where it repeats). Each level of the ground's tiles
 samples the texture's own smaller copy (its mips) whose pixels are nearest the level's (Swatch.mip_for), nearest
 pixel. A see-through texture lays as much as it shows: its alpha times the stroke's share.
@@ -35,6 +37,7 @@ FINEST = 160.0        # map units across a pixel of the ground's finest tiles: t
 OWN_PERIOD = 8192.0   # a game texture's repeat where the game's data doesn't say it (32 m: the most common)
 MAP_SIDE = 81920.0    # a map square: 512 of its finest pixels across (320 m)
 FILE_PERIOD = 8192.0  # the mod's own picture: one repeat 32 m across until the stroke says otherwise
+METRE = 260.0         # map units in a metre (the Studio's METRE: the game's distances, 260,000 to a kilometre)
 MOST = 1024           # pixels across a texture keeps at most (the game's own are 1,024 at most)
 GROUND = Path("files") / "ground"  # the mod's own pictures to paint with
 SEAM = 8              # seamless: the strip blended along each edge is 1/SEAM of the texture across
@@ -447,12 +450,62 @@ def file_name_ok(name: str) -> bool:
     return bool(_REF.match(f"file:{name}"))
 
 
+# the sidecar beside a mod's own picture (files/ground/<name>.toml): how much ground the picture covers and whose it is
+CREDIT_KEYS = ("source", "author", "licence", "url")
+METRES_MOST = 100000.0  # a picture covering more than 100 km isn't a ground texture
+
+
+def credit_path(picture) -> Path:
+    """files/ground/<name>.png -> files/ground/<name>.toml."""
+    return Path(picture).with_suffix(".toml")
+
+
+def read_credit(picture) -> dict:
+    """What the sidecar beside a mod's own picture says: {"metres": real metres the picture covers across, "source",
+    "author", "licence", "url"}, each as far as it says it (metres only when a number above 0, up to METRES_MOST);
+    {} without a sidecar, or one that can't be read."""
+    import math
+    import tomllib
+    try:
+        data = tomllib.loads(credit_path(picture).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError, TypeError):
+        return {}
+    out: dict = {}
+    m = data.get("metres")
+    if isinstance(m, (int, float)) and not isinstance(m, bool) and math.isfinite(m) and 0 < m <= METRES_MOST:
+        out["metres"] = float(m)
+    for k in CREDIT_KEYS:
+        if isinstance(data.get(k), str) and data[k].strip():
+            out[k] = data[k].strip()
+    return out
+
+
+def credit_toml(metres: float | None, credit: dict | None) -> str:
+    """The sidecar's text: metres (when known) and the credit's source, author, licence and url."""
+    import json
+    lines = ["# Where this picture comes from and how much ground it covers (rusemod.groundtex.read_credit)"]
+    if metres:
+        lines.append(f"metres = {float(metres)!r}")
+    for k in CREDIT_KEYS:
+        v = (credit or {}).get(k)
+        v = re.sub(r"[\x00-\x1f\x7f]+", " ", v).strip() if isinstance(v, str) else ""
+        if v:
+            lines.append(f"{k} = {json.dumps(v, ensure_ascii=False)}")  # (a JSON string without controls is TOML's)
+    return "\n".join(lines) + "\n"
+
+
+def file_period(picture) -> float:
+    """Map units one repeat of the mod's own picture covers at its own size: its sidecar's metres, else FILE_PERIOD."""
+    m = read_credit(picture).get("metres") if picture is not None else None
+    return m * METRE if m else FILE_PERIOD
+
+
 # --- resolving the strokes' textures, for a build ----------------------------------------------------------------
 class Library:
     """Finds and makes the textures a build's strokes name, each once. `zz` and `glad` open the game's ZZ_Win.dat and
     ZZ_GladPatchableWin.dat (an Edat each, or None when not there); `map_reader(pack)` gives a map pack's member
     reader (or None for a map that isn't there); `files` maps a mod's own picture (file:<mod id>/<name>, as the build
-    names them) to its path. `cache`: groundpaint's."""
+    names them) to its path (its sidecar, when it has one, beside it: read_credit). `cache`: groundpaint's."""
 
     def __init__(self, zz=None, glad=None, map_reader=None, files=None, cache=None, periods=None):
         self.zz, self.glad, self.map_reader, self.files, self.cache = zz, glad, map_reader, files or {}, cache
@@ -465,7 +518,7 @@ class Library:
         if kind == "map":
             return MAP_SIDE
         if kind == "file":
-            return FILE_PERIOD
+            return file_period(self.files.get(ref))  # (its sidecar beside the picture, files/ground/<name>.toml)
         if self._periods is None:
             self._periods = own_periods(self.glad) if self.glad is not None else {}
         return self._periods.get(game_member(ref).lower(), OWN_PERIOD)
@@ -499,7 +552,7 @@ class Library:
                 raise TextureError(f"the picture {ref[5:]} isn't in the mod's {GROUND.as_posix()} folder")
             w, h, px = picture_rgba(Path(path).read_bytes())
             side, px = square(w, h, px)
-            made = Swatch.make(ref, side, px, FILE_PERIOD)
+            made = Swatch.make(ref, side, px, self.period_of(ref))
         else:
             raise TextureError(f"texture {ref!r} isn't one this build knows")
         self._made[key] = made

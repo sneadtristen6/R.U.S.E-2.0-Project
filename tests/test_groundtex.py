@@ -294,7 +294,257 @@ class TheStudio(unittest.TestCase):
         self.assertTrue(gt.file_name_ok(_file_name("été 1944!.webp")))
 
 
+JPG = b"\xff\xd8\xff\xe0 a stand-in JPG"
+
+
+class FakeWeb:
+    """Stand-in answers for urllib.request.urlopen, nothing over the network: {address start: bytes, or an exception
+    to raise}, the first that matches; every address asked is kept in `asked`."""
+
+    def __init__(self, answers):
+        self.answers, self.asked = answers, []
+
+    def __call__(self, req, timeout=None):
+        import io
+        import urllib.error
+        url = getattr(req, "full_url", req)
+        self.asked.append(url)
+        for start, answer in self.answers.items():
+            if url.startswith(start):
+                if isinstance(answer, BaseException):
+                    raise answer
+                return io.BytesIO(answer)
+        raise urllib.error.URLError("no stand-in for that address")
+
+
+class Online(unittest.TestCase):
+    """Online (free) textures (ruse_studio.groundtex_online) with stand-in answers: the lists read and kept a day,
+    one picture taken per click from the right place, the US photos' address, words in plain English when something
+    goes wrong, and the picture kept in the mod with its real size and credit (files/ground/<name>.toml)."""
+
+    PH_AERIAL = {"aerial_beach_01": {"name": "Aerial Beach 01", "categories": ["terrain", "aerial"], "tags": ["beach"],
+                                     "dimensions": [30000, 30000], "authors": {"Rob Tuytel": "All"},
+                                     "thumbnail_url": "https://cdn.polyhaven.com/asset_img/thumbs/aerial_beach_01.png"}}
+    PH_TERRAIN = {**PH_AERIAL, "brown_mud": {"name": "Brown Mud", "categories": ["terrain"], "tags": ["mud"],
+                                             "dimensions": [2000, 1000], "authors": {"A": "All", "B": "Photo"},
+                                             "thumbnail_url": "http://not-secure.example/x.png"}}
+    PH_FILES = {"Diffuse": {"1k": {"jpg": {"url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/"
+                                                  "aerial_beach_01/aerial_beach_01_diff_1k.jpg", "size": 20}}},
+                "nor_gl": {"1k": {"jpg": {"url": "https://dl.polyhaven.org/nor.jpg", "size": 20}}}}
+
+    def setUp(self):
+        from ruse_studio.api import StudioApi
+        self.tmp = tempfile.TemporaryDirectory()
+        self.api = StudioApi(home=Path(self.tmp.name, "home"), game_dir=Path(self.tmp.name, "game"))
+        self.cache = self.api.cache_dir / "groundtex" / "online"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def web(self, answers):
+        web = FakeWeb(answers)
+        patch = mock.patch("urllib.request.urlopen", web)
+        patch.start()
+        self.addCleanup(patch.stop)
+        return web
+
+    @staticmethod
+    def json(doc) -> bytes:
+        import json
+        return json.dumps(doc).encode()
+
+    def test_nothing_goes_over_the_network_on_import(self):
+        import importlib
+        from ruse_studio import groundtex_online
+        web = self.web({})
+        importlib.reload(groundtex_online)
+        self.assertEqual(web.asked, [])
+
+    def test_poly_havens_list_aerial_first_and_kept_a_day(self):
+        import os
+        web = self.web({"https://api.polyhaven.com/assets?t=textures&c=aerial": self.json(self.PH_AERIAL),
+                        "https://api.polyhaven.com/assets?t=textures&c=terrain": self.json(self.PH_TERRAIN)})
+        got = self.api.online_textures("polyhaven")
+        self.assertEqual(got["licence"], "CC0")
+        self.assertEqual([t["id"] for t in got["items"]], ["aerial_beach_01", "brown_mud"])  # the aerial ones first
+        beach, mud = got["items"]
+        self.assertEqual((beach["metres"], beach["author"], beach["group"]), (30.0, "Rob Tuytel", "aerial"))
+        self.assertEqual((mud["metres"], mud["author"], mud["thumb"]), (1.0, "A, B", ""))  # mm; its smaller side
+        self.assertEqual(len(web.asked), 2)
+        self.api.online_textures("polyhaven")
+        self.assertEqual(len(web.asked), 2)  # kept: not asked again
+        kept = self.cache / "polyhaven.json"
+        os.utime(kept, (kept.stat().st_atime, kept.stat().st_mtime - 2 * 24 * 3600))
+        self.api.online_textures("polyhaven")
+        self.assertEqual(len(web.asked), 4)  # two days old: asked again
+
+    def test_one_poly_haven_picture(self):
+        import base64
+        web = self.web({"https://api.polyhaven.com/assets?t=textures&c=": self.json(self.PH_AERIAL),
+                        "https://api.polyhaven.com/files/aerial_beach_01": self.json(self.PH_FILES),
+                        "https://dl.polyhaven.org/file/": JPG})
+        self.api.online_textures("polyhaven")
+        got = self.api.online_texture("polyhaven", "aerial_beach_01")
+        self.assertEqual(base64.b64decode(got["picture"].split(",", 1)[1]), JPG)
+        self.assertTrue(got["picture"].startswith("data:image/jpeg;base64,"))
+        self.assertEqual((got["name"], got["metres"]), ("Aerial Beach 01", 30.0))
+        self.assertEqual(got["credit"], {"source": "Poly Haven", "author": "Rob Tuytel", "licence": "CC0",
+                                         "url": "https://polyhaven.com/a/aerial_beach_01"})
+        pictures = [u for u in web.asked if "api.polyhaven.com" not in u]
+        self.assertEqual(pictures, [self.PH_FILES["Diffuse"]["1k"]["jpg"]["url"]])  # only its colour picture
+        elsewhere = {"Diffuse": {"1k": {"jpg": {"url": "https://elsewhere.example/beach.jpg"}}}}
+        web.answers["https://api.polyhaven.com/files/aerial_beach_01"] = self.json(elsewhere)
+        with self.assertRaisesRegex(gt.TextureError, "no colour picture"):
+            self.api.online_texture("polyhaven", "aerial_beach_01")
+        self.assertNotIn("https://elsewhere.example/beach.jpg", web.asked)
+        with self.assertRaises(gt.TextureError):
+            self.api.online_texture("polyhaven", "not_listed")
+
+    def test_ambientcg_found_by_words_and_its_colour_picture_out_of_the_zip(self):
+        import base64
+        import io
+        import zipfile
+
+        def asset(key, dx, dy, attribute="1K-JPG"):
+            return {"assetId": key, "displayName": key[:-3] + " " + key[-3:], "dimensionX": dx, "dimensionY": dy,
+                    "tags": ["ground"], "shortLink": f"https://ambientcg.com/a/{key}",
+                    "previewImage": {"64-PNG": f"https://acg-media.example/64/{key}.png",
+                                     "128-JPG-242424": f"https://acg-media.example/128/{key}.jpg"},
+                    "downloadFolders": {"default": {"downloadFiletypeCategories": {"zip": {"downloads": [
+                        {"attribute": attribute, "size": 3000, "downloadLink":
+                            f"https://ambientcg.com/get?file={key}_{attribute}.zip"}]}}}}}
+        found = {"foundAssets": [asset("Ground054", 200, 300), asset("Grass005", 0, 0),
+                                 asset("Fabric001", 100, 100, "2K-PNG")]}
+        pack = io.BytesIO()
+        with zipfile.ZipFile(pack, "w") as z:
+            z.writestr("Ground054_1K-JPG_NormalGL.jpg", b"\xff\xd8\xff not the colour")
+            z.writestr("Ground054_1K-JPG_Color.jpg", JPG)
+            z.writestr("Ground054_1K-JPG.usda", b"text")
+        web = self.web({"https://ambientcg.com/api/v2/full_json": self.json(found),
+                        "https://ambientcg.com/get?file=Ground054_1K-JPG.zip": pack.getvalue()})
+        got = self.api.online_textures("ambientcg", "")
+        self.assertIn("q=ground&", web.asked[0])  # nothing typed: its ground materials
+        self.assertEqual([(t["id"], t["metres"]) for t in got["items"]], [("Ground054", 2.0), ("Grass005", None)])
+        self.assertEqual(got["items"][0]["thumb"], "https://acg-media.example/128/Ground054.jpg")
+        self.api.online_textures("ambientcg", "wet   mud")
+        self.assertIn("q=wet%20mud&", web.asked[1])
+        taken = self.api.online_texture("ambientcg", "Ground054")
+        self.assertEqual(base64.b64decode(taken["picture"].split(",", 1)[1]), JPG)
+        self.assertEqual((taken["metres"], taken["credit"]["licence"], taken["credit"]["url"]),
+                         (2.0, "CC0", "https://ambientcg.com/a/Ground054"))
+        empty = io.BytesIO()
+        with zipfile.ZipFile(empty, "w") as z:
+            z.writestr("Grass005_1K-JPG_Roughness.jpg", b"\xff\xd8\xff")
+        web.answers["https://ambientcg.com/get?file=Grass005_1K-JPG.zip"] = empty.getvalue()
+        with self.assertRaisesRegex(gt.TextureError, "no colour picture"):
+            self.api.online_texture("ambientcg", "Grass005")
+        with self.assertRaisesRegex(gt.TextureError, "find it again"):
+            self.api.online_texture("ambientcg", "Fabric001")  # (not listed: it has no 1K-JPG)
+
+    def test_a_us_aerial_photo(self):
+        import base64
+        import math
+        import urllib.parse
+        from ruse_studio import groundtex_online as online
+        web = self.web({online.NAIP + "/exportImage?": JPG})
+        places = self.api.online_textures("usgs")
+        self.assertEqual((places["licence"], places["metres"], places["default"]),
+                         ("Public domain", [160, 320, 640, 1280], 320))
+        self.assertEqual(len(places["items"]), len(online.PLACES))
+        self.assertEqual(web.asked, [])  # the places are the Studio's own: nothing asked
+        got = self.api.online_texture("usgs", "wheat_kansas", 320)
+        self.assertEqual(len(web.asked), 1)
+        q = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(web.asked[0]).query))
+        self.assertEqual((q["f"], q["format"], q["size"], q["bboxSR"], q["imageSR"]),
+                         ("image", "jpg", "512,512", "3857", "3857"))
+        x0, y0, x1, y1 = (float(v) for v in q["bbox"].split(","))
+        self.assertAlmostEqual(x1 - x0, 320 / math.cos(math.radians(38.35)), delta=0.05)  # 320 m on the ground
+        self.assertAlmostEqual(y1 - y0, x1 - x0, delta=0.05)
+        self.assertAlmostEqual((x0 + x1) / 2, 6378137.0 * math.radians(-98.60), delta=0.05)
+        self.assertEqual(base64.b64decode(got["picture"].split(",", 1)[1]), JPG)
+        self.assertEqual((got["name"], got["metres"], got["credit"]["licence"]),
+                         ("Wheat fields Kansas 320m", 320.0, "Public domain"))
+        typed = self.api.online_texture("usgs", "", 1280, "38.2000, -98.4")
+        self.assertEqual((typed["name"], typed["metres"]), ("US photo 38.2000 -98.4000 1280m", 1280.0))
+        self.assertIn("size=1024%2C1024", web.asked[-1])
+        self.assertEqual([online.naip_pixels(m) for m in online.NAIP_METRES], [256, 512, 1024, 1024])
+        for where, said in (("51.5, -0.12", "48 US states"), ("somewhere", "latitude and a longitude")):
+            with self.assertRaisesRegex(gt.TextureError, said):
+                self.api.online_texture("usgs", "", 320, where)
+        with self.assertRaisesRegex(gt.TextureError, "m across"):
+            self.api.online_texture("usgs", "wheat_kansas", 300)
+        self.assertEqual(len(web.asked), 2)  # none of those was asked for
+        web.answers[online.NAIP + "/exportImage?"] = self.json({"error": {"code": 400, "message": "Bad extent"}})
+        with self.assertRaisesRegex(gt.TextureError, r"didn't send a photo \(Bad extent\)"):
+            self.api.online_texture("usgs", "wheat_kansas", 320)
+
+    def test_the_places_are_in_the_48_states_and_said_in_every_language(self):
+        from ruse_studio import groundtex_online as online
+        from ruse_studio.api import _words
+        from rusemod import schema
+        words = _words()
+        self.assertGreaterEqual(len(online.PLACES), 30)  # "the more, the merrier"
+        self.assertEqual(len({p[0] for p in online.PLACES}), len(online.PLACES))
+        for key, name, lat, lon, _kind in online.PLACES:
+            self.assertTrue(online.US_LAT[0] <= lat <= online.US_LAT[1] and online.US_LON[0] <= lon <= online.US_LON[1])
+            self.assertEqual(words[f"tex_place_{key}"]["us"], name)
+            self.assertEqual([lang for lang in schema.LANGS if not words[f"tex_place_{key}"].get(lang)], [], key)
+
+    def test_plain_words_when_a_site_cant_be_reached(self):
+        import urllib.error
+        self.web({"https://api.polyhaven.com/": urllib.error.URLError("timed out"),
+                  "https://ambientcg.com/": TimeoutError("timed out")})
+        with self.assertRaisesRegex(gt.TextureError, r"Poly Haven's list couldn't be loaded \(no answer in 20 seconds\)"):
+            self.api.online_textures("polyhaven")
+        with self.assertRaisesRegex(gt.TextureError, r"no answer in 20 seconds"):
+            self.api.online_textures("ambientcg", "rock")
+        with self.assertRaisesRegex(gt.TextureError, "isn't one of the online sources"):
+            self.api.online_textures("elsewhere")
+        self.assertFalse((self.cache / "polyhaven.json").exists())  # nothing kept from a failed list
+
+    def test_the_picture_kept_with_its_real_size_and_credit(self):
+        import base64
+        from rusemod.dxt import png_bytes
+        self.api.new_mod("My maps", "map")
+        pic = "data:image/png;base64," + base64.b64encode(png_bytes(bytes([200, 170, 110] * 64), 8, 8)).decode()
+        credit = {"source": "Poly Haven", "author": "Rob \"R\" Tuytel\n", "licence": "CC0",
+                  "url": "https://polyhaven.com/a/aerial_beach_01", "other": "not kept"}
+        res = self.api.add_ground_picture("Aerial Beach 01", pic, 30.0, credit)
+        self.assertEqual(res["ref"], "file:Aerial Beach 01.png")
+        folder = Path(res["folder"])
+        said = gt.read_credit(folder / "Aerial Beach 01.png")
+        self.assertEqual(said, {"metres": 30.0, "source": "Poly Haven", "author": "Rob \"R\" Tuytel", "licence": "CC0",
+                                "url": "https://polyhaven.com/a/aerial_beach_01"})
+        row = res["pictures"][0]
+        self.assertEqual((row["metres"], row["period"], row["credit"]["author"]), (30.0, 30.0 * 260, "Rob \"R\" Tuytel"))
+        self.assertEqual(self.api.ground_texture(res["ref"])["period"], 30.0 * 260)  # laid at its real size
+        plain = self.api.add_ground_picture("mine", pic)
+        self.assertFalse((folder / "mine.toml").exists())  # a picture of your own: no sidecar
+        self.assertEqual(self.api.ground_texture(plain["ref"])["period"], gt.FILE_PERIOD)
+        self.assertNotIn("credit", plain["pictures"][1])
+        (folder / "left.toml").write_text("metres = 5.0\n", encoding="utf-8")
+        self.assertEqual(self.api.add_ground_picture("left", pic)["ref"], "file:left_2.png")  # not another's sidecar
+        for bad in (-1.0, float("nan"), "30", 1e9):
+            with self.assertRaises(gt.TextureError):
+                self.api.add_ground_picture("bad", pic, bad)
+
+
 class Library(unittest.TestCase):
+    def test_a_pictures_real_size_from_its_sidecar(self):
+        from rusemod.dxt import png_bytes
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "beach.png"
+            path.write_bytes(png_bytes(bytes([200, 180, 120] * 64), 8, 8))
+            lib = gt.Library(files={"file:mod/beach.png": path})  # (the build's name: file:<mod>/...)
+            self.assertEqual(lib.period_of("file:mod/beach.png"), gt.FILE_PERIOD)
+            (Path(tmp) / "beach.toml").write_text(gt.credit_toml(4.0, {"licence": "CC0"}), encoding="utf-8")
+            self.assertEqual(lib.period_of("file:mod/beach.png"), 4.0 * gt.METRE)
+            self.assertEqual(lib.swatch("file:mod/beach.png", 8).period, 4.0 * gt.METRE)
+            (Path(tmp) / "beach.toml").write_text("metres = -3\nlicence = 'CC0'\n", encoding="utf-8")
+            self.assertEqual(gt.read_credit(path), {"licence": "CC0"})  # a size that isn't one is left out
+            (Path(tmp) / "beach.toml").write_text("not = [toml", encoding="utf-8")
+            self.assertEqual(lib.period_of("file:mod/beach.png"), gt.FILE_PERIOD)
+
     def test_the_mods_own_picture(self):
         from rusemod.dxt import png_bytes
         with tempfile.TemporaryDirectory() as tmp:

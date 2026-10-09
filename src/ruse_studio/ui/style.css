@@ -529,6 +529,11 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .tex-now-pic[style*="url"] { background-color: #555; }
 .tex-map-list { padding: 2px 4px; background: var(--panel-hi); border: 1px solid var(--line); color: inherit; }
 .tex-map-pic { width: 100%; max-width: 320px; cursor: crosshair; border: 1px solid var(--line); }
+/* Online (free): the US photos' size, a typed place and its button on one row; the places as word chips */
+.tex-online-place { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-width: 0; }
+.tex-online-place .tex-search { flex: 1 1 120px; min-width: 0; }
+.tex-places .chip { padding: 2px 8px; font-size: 11px; }
+.tex-item[aria-busy="true"], .tex-places .chip[aria-busy="true"] { opacity: 0.5; cursor: progress; }
 .tray-paint > .chip { align-self: flex-start; }  /* Clear the ground under it: as wide as its words, like the others */
 .brush-tip { display: flex; flex-direction: column; gap: 5px; }  /* the brush types: shape, edge, a square's angle */
 .brush-tip .chips:empty { display: none; }
