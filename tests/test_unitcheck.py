@@ -138,8 +138,8 @@ class Nations(unittest.TestCase):
 
 
 class ResearchParents(unittest.TestCase):
-    """A unit researched from (UpgradeRequire) another nation's unit, or a missing one: as a match loads the game looks
-    for every unit's parent among its nation's units and never stops when it isn't there (2026-10-09, era test 4)."""
+    """A unit researched from (UpgradeRequire) another nation's unit: the match's loading screen never ends
+    (2026-10-09, era test 4); one researched from a missing unit is refused with it."""
     KV1, IS2, PERSHING = "$/KV1", "$/IS2", "$/Pershing"
 
     def base(self):
@@ -169,7 +169,7 @@ class ResearchParents(unittest.TestCase):
     def test_a_missing_parent_and_a_parent_moved_away(self):
         r = run(clone(("UpgradeRequire", Ref("$/Nothing")), source=self.IS2), base=self.base())
         self.assertIn(f"{NEW} still refers to $/Nothing", said(r))     # the build's own word on a missing object
-        self.assertEqual(len([m for m in said(r) if "which isn't in the game: as a match loads" in m]), 1)
+        self.assertEqual(len([m for m in said(r) if "which isn't in the game. Research it from" in m]), 1)
         r = run(Op("set", self.KV1, "Nationalite", num(2)), base=self.base())   # the parent given to the UK
         self.assertEqual(len(said(r)), 1)
         self.assertIn(f"{self.IS2}: it's researched from {self.KV1} (UpgradeRequire), which is UK's unit", said(r)[0])

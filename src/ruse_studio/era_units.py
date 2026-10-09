@@ -746,7 +746,7 @@ class EraUnitCalls:
         {"address", "name", "model": the model's report or None, "model_note": "" or why it shows the start unit's
         model, "card": whether it got its own card, "size": the size its model was fitted at (None: no model),
         "research_from": the unit it's researched from or None}."""
-        from .api import MODEL_SIZES, RESEARCH, StudioError
+        from .api import MODEL_SIZES, RESEARCH, StudioError, _whole
         folder, lib, entry = self._era_entry(key)
         if self._mod_dir() is None or self._edits() is None:
             raise StudioError("Pick or make a mod first: an era unit is added to a mod.")
@@ -775,6 +775,7 @@ class EraUnitCalls:
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
                 # not a game rule: a research price or time is a number, nothing below 0
                 raise StudioError(f"{prop}: a number from 0 up")
+            _whole(value, "int32", prop)  # what set_research keeps, checked before the unit is made (0.9.8.2 review)
             costs[prop] = value
         cost = self._era_price(source) if price is None or price == "" else price
         wanted = (name or "").strip() or entry["name"]
@@ -813,8 +814,9 @@ class EraUnitCalls:
 
     def _era_card(self, address: str, folder: Path, entry: dict) -> bool:
         """Give the new unit its era card (the library's "card_picture": its fitted model drawn at the game's card
-        size; "card" is its kind of card, Tank or Fighter): the build menu and the selection show it instead of the
-        card of the unit it started from (2026-10-08 test: an F-4 showed the Bf 109's). False when the library has
+        size; "card" is its kind of card, Tank or Fighter), for the build menu and the selection to show instead of
+        the card of the unit it started from (2026-10-08 test: an F-4 showed the Bf 109's; this not tried in the game
+        yet). False when the library has
         none, or it isn't the card's size."""
         from rusemod.png import read_png
         name = entry.get("card_picture")

@@ -97,9 +97,9 @@ class EraUnits(WithMod):
             self.api.era_unit_remove("WWI|USA|Mark VIII Liberty")                           # not in any more
 
     def test_its_card_comes_with_it(self):
-        """The library's card picture (its model drawn at the game's card size) becomes the new unit's own card, so the
-        build menu and the selection show it, not the card of the unit it started from (2026-10-08 test: an F-4 showed
-        the Bf 109's); out of the mod, it goes too. Its kind of card ("card": Heavy Tank) stays what it was."""
+        """The library's card picture (its model drawn at the game's card size) becomes the new unit's own card, for the
+        build menu and the selection to show, not the card of the unit it started from (2026-10-08 test: an F-4 showed
+        the Bf 109's; not tried in the game yet); out of the mod, it goes too. Its kind of card ("card": Heavy Tank) stays what it was."""
         from rusemod.dxt import png_bytes
         (self.lib / "WWI" / "USA").mkdir(parents=True)
         card = png_bytes(bytes([90, 110, 130, 255]) * (360 * 184), 360, 184, channels=4)
@@ -435,6 +435,11 @@ class EraResearch(unittest.TestCase):
         self.assertIn(f"UpgradeRequire = {t80['address']}", text)
         # the Upgrade box changes it afterwards: buyable from the start
         self.assertIsNone(self.api.set_upgrade(t90["address"], None)["parent"])
+        # a research price the game can't keep is refused before the unit is made: nothing half made (0.9.8.2 review)
+        before = json.loads((folder / "era_units.json").read_text(encoding="utf-8"))
+        with self.assertRaisesRegex(StudioError, "UpgradePrice: 3000000000 doesn't fit"):
+            self.api.era_unit_add("Cold War|USA|Patton", 0, 10, research_price=3_000_000_000)
+        self.assertEqual(json.loads((folder / "era_units.json").read_text(encoding="utf-8")), before)
 
     def test_taken_out_with_a_unit_researched_from_it(self):
         """The T-80 taken out while the T-90 is researched from it, as the modder chose (Settings > Research): warned

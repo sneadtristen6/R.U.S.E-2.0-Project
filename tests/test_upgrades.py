@@ -140,9 +140,8 @@ class Upgrades(unittest.TestCase):
         self.assertNotIn("patch", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
 
     def test_a_new_unit_in_another_menu_leaves_its_parent(self):
-        """A new unit put in a menu its source's research parent isn't in becomes a unit of its own: the game looks
-        for every unit's parent among its nation's units while it loads and never stops when it isn't there
-        (2026-10-09: a T-80 from the Soviet IS-2, researched from the KV-1, in the USA's menu hung the loading
+        """A new unit put in a menu its source's research parent isn't in becomes a unit of its own: one researched
+        from another nation's unit never lets a match finish loading (2026-10-09: a T-80 from the Soviet IS-2, researched from the KV-1, in the USA's menu hung the loading
         screen). In the source's own menu it keeps the parent."""
         self.api.new_mod("Chains")
         folder = self.home / "mods" / "chains"

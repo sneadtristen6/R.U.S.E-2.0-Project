@@ -153,6 +153,11 @@ class Served(unittest.TestCase):
         self.assertFalse(path.exists())
         self.assertFalse(path.parent.exists())
         self.assertEqual(self.window.take_scripts(), [])
+        # a mod.toml alone would be an empty mod put in place of the library's copy: the page says use the folder's way
+        code, body, _ = get(self.at + "__drop?name=MOD.toml", b"[mod]\nid = 'x'\n", "application/octet-stream")
+        self.assertEqual((code, json.loads(body)),
+                         (200, {"scripts": ['window.dispatchEvent(new CustomEvent("folder-dropped"))']}))
+        self.assertEqual(len(seen), 1)
 
 
 class Pieces(unittest.TestCase):

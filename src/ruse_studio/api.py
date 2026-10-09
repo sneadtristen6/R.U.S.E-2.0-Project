@@ -3802,8 +3802,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         finally:
             ix.close()
         return [{"file": None, "set_aside": False, "unit": t,    # the check bar opens its page
-                 "problem": f"{names.get(t, _tail(t))} is researched from a unit that's no longer in the mod, and the "
-                            f"game would never finish loading a match with it. Pick another unit to research it from "
+                 "problem": f"{names.get(t, _tail(t))} is researched from a unit that's no longer in the mod, so the "
+                            f"build stops on it. Pick another unit to research it from "
                             f"in its Upgrade and research box, or none."} for t in lost]
 
     def rename_map_folder(self, name: str, to: str) -> dict:
@@ -6020,9 +6020,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             own_factory = next((int(n) for path, n, _t in o["values"] if path == "Factory" and n is not None), None)
             if (nation, factory) != (own_nation, own_factory):
                 values["Nationalite"], values["Factory"] = nation, factory
-        # moved to a menu its research parent isn't in, it becomes a unit of its own: the game builds each nation's
-        # research tree by finding every unit's parent among that nation's units and loops for ever when it isn't
-        # there (2026-10-09 test: a T-80 started from the Soviet IS-2, researched from the KV-1, put in the USA's menu:
+        # moved to a menu its research parent isn't in, it becomes a unit of its own: a unit researched from another
+        # nation's unit never lets a match finish loading (2026-10-09 test: a T-80 started from the Soviet IS-2, researched from the KV-1, put in the USA's menu:
         # the loading screen never ended; rule unit-research-parent). The Upgrade box can link it again in its menu.
         dropped = parent if parent is not None and "Nationalite" in values and parent_menu != (nation, factory) \
             else None

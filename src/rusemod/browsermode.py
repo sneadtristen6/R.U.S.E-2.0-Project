@@ -302,13 +302,17 @@ def serve(folder: Path, extra: dict[str, Path] | None, page_side, window: Browse
             rest = self._inside()
             kind = self.headers.get("Content-Type", "").split(";")[0].strip().lower()
             length = int(self.headers.get("Content-Length") or 0)
-            if rest is None:
-                return self._send(404, b"not found", TYPES[".txt"])
-            if rest.startswith(API_PATH) and kind == "application/json":
+            if rest is not None and rest.startswith(API_PATH) and kind == "application/json":
                 return self._call(rest[len(API_PATH):], self.rfile.read(length) if length else b"[]")
             if rest == DROP_PATH and kind == "application/octet-stream" and window.drop_handler is not None:
                 query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
                 return self._drop(safe_name((query.get("name") or [""])[0]), length)
+            # refused: what was sent is read first (up to 1 MB), so Windows doesn't cut the answer off (WinError 10053
+            # in the tests, 2026-10-09); a bigger body is left and the connection closed
+            if 0 < length <= 1 << 20:
+                self.rfile.read(length)
+            else:
+                self.close_connection = True
             self._send(404, b"not found", TYPES[".txt"])
 
         def _call(self, name: str, body: bytes) -> None:
@@ -326,6 +330,16 @@ def serve(folder: Path, extra: dict[str, Path] | None, page_side, window: Browse
             self._send(200, out, "application/json")
 
         def _drop(self, name: str, length: int) -> None:
+            if name.lower() == "mod.toml":
+                # a mod.toml stands for its folder (library.Library.add): sent alone, it would be a mod with nothing
+                # in it, put in place of the library's whole copy. The page says what a dropped folder gets instead
+                # (the 0.9.8.2 review)
+                if length <= 1 << 20:
+                    self.rfile.read(length)
+                else:
+                    self.close_connection = True
+                window.evaluate_js('window.dispatchEvent(new CustomEvent("folder-dropped"))')
+                return self._json({"scripts": window.take_scripts()})
             work = Path(tempfile.mkdtemp(prefix="ruse-drop-"))
             try:
                 path = work / name

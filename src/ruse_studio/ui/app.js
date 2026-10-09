@@ -1439,8 +1439,8 @@ function modelWant(startNew) {
 
 // --- research: what taking out a unit others are researched from does (the modder's choice in Settings > Research,
 // kept as the preference "research_gone": warn first, refuse, or re-link them; StudioApi.RESEARCH_GONE), and research
-// times typed in seconds or minutes (the game keeps whole seconds: research runs on the timer that builds units, not
-// timed in the game yet; kept as "research_time_unit") ---
+// times typed in seconds or minutes (kept as whole seconds; that the game counts them in seconds isn't timed in the
+// game yet; kept as "research_time_unit") ---
 const RESEARCH_GONE = ["warn", "refuse", "relink"];
 const TIME_UNITS = { s: 1, min: 60 };
 

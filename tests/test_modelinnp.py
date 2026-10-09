@@ -53,7 +53,7 @@ def glb_bytes(prep) -> bytes:
 
 
 def prep_bytes(prep) -> bytes:
-    """What the markings check compares (an exact pickle of every part and the pictures), and the report."""
+    """What the comparison checks (an exact pickle of every part and the pictures), and the report."""
     return pickle.dumps(([(p.bone, p.picture, p.positions, p.normals, p.uvs, p.triangles) for p in prep.parts],
                          prep.pictures, repr(prep.report)), protocol=5)
 
@@ -469,7 +469,7 @@ class WholeArrays(unittest.TestCase):
             modelin.prepare(flat, [], LIKE)
 
     def test_a_part_changed_after_fitting_is_saved_the_same(self):
-        """write_glb on parts as the markings tool may leave them: ints among the uvs (left to the loops), more points,
+        """write_glb on parts changed after fitting: ints among the uvs (left to the loops), more points,
         a point moved, a normal swapped for an equal one, a triangle taken away: a list changed in any way is read
         again, number by number; one left as it was is taken as the array it was made from."""
         prep = modelin.prepare(made_up(9), [], LIKE)
