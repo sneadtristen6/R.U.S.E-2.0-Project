@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.2:** otevře se ve vašem webovém prohlížeči, když jeho vlastní okno nemůže, a spouští mody ze Studia 0.9.8.2.
+
+- **Linux a Steam Deck (přes Proton):** Launcher se otevře ve vašem webovém prohlížeči, když jeho vlastní okno
+  nemůže. Na Linuxu zatím nevyzkoušeno: dejte nám vědět, jak to šlo.
+- Mody ze Studia 0.9.8.2 fungují: jednotky z jiných období s vlastními modely, velikostmi, výzkumem a kartami.
+
 **0.4.8.1:** převádí staré mody a spouští mody ze Studia 0.9.8.1.
 
 - **Převést starý mod…**, nástroj Convert od LittleGroove: starší mod v podobě balíků hry, určený ke zkopírování do

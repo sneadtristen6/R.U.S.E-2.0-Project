@@ -1,6 +1,29 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
+**0.9.8.2:** arrivano le unità di altre epoche: i loro modelli, a grandezza reale, dietro una ricerca.
+
+- **Unità di altre epoche:** le epoche WWI, WWII+, Guerra fredda e Moderno della scheda Unità ora hanno le loro
+  unità: 366, ognuna il modello gratuito di un altro autore (CC0 o CC BY), citato. Ogni epoca si scarica nello Studio
+  quando la scegli, dal nostro GitHub (ogni file controllato: WWI 232 MB, WWII+ 198 MB, Guerra fredda 996 MB, Moderno
+  709 MB), e si aggiorna da sola man mano che altre sono pronte.
+  - **A grandezza reale:** la larghezza reale di ogni unità (per un aereo, l'apertura alare) alla scala del gioco;
+    modificabile da 0,2 a 5 volte.
+  - **Ricercate come le unità del gioco:** da qualsiasi unità dell'edificio della sua nazione, anche dalle unità
+    d'epoca della mod, così funziona una catena (un T-80, poi un T-90M), con prezzo e tempo di ricerca. Le unità WWI
+    e WWII+ si comprano subito; quelle della Guerra fredda e Moderne partono ricercate da un'unità adatta.
+  - **Le loro carte** nel menu di costruzione e alla selezione.
+  - Visto in gioco: si caricano subito, le schede di ricerca e una catena, un Land Rover con il suo modello, le
+    dimensioni. Non ancora provato: i cannoni trainati (nessun cannone del gioco a cui adattarli, per ora).
+- **Importa modello…:** un modello che comincia con una figura dell'equipaggio ha ora il suo modello (le jeep copiate
+  dal Kübelwagen mostravano quello del Kübelwagen); i modelli dipinti in specular-glossiness tengono la loro pittura;
+  i colori dati come numeri non sono più neri; i modelli grandi si importano più in fretta.
+- **Un'unità ricercata da un'unità di un altro esercito** lasciava il gioco in una schermata di caricamento infinita:
+  **Nuova unità…** ora toglie quel collegamento, e la costruzione rifiuta un'unità ricercata da un'unità mancante o
+  di un'altra nazione, dicendo perché e come correggere.
+- **Linux e Steam Deck (con Proton):** lo Studio si apre nel tuo browser web quando la sua finestra non ci riesce.
+  Non ancora provato su Linux: facci sapere com'è andata.
+
 **0.9.8.1:** Gli strumenti di LittleGroove arrivano nello Studio, con musica e suoni e una nazione trasformata in un'altra.
 
 - **Gli strumenti di LittleGroove, ripresi** dal suo RUSE-Mod-Manager:

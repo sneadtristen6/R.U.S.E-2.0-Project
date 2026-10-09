@@ -1,6 +1,29 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.2:** przychodzą jednostki z innych epok: ich modele, w prawdziwej wielkości, za badaniem.
+
+- **Jednostki z innych epok:** epoki WWI, WWII+, Zimna wojna i Współczesność w karcie Jednostki mają teraz swoje
+  jednostki: 366, każda na darmowym modelu innego autora (CC0 lub CC BY), podpisanym. Każda epoka pobiera się w
+  Studiu, gdy ją wybierzesz, z naszego GitHuba (każdy plik sprawdzony: WWI 232 MB, WWII+ 198 MB, Zimna wojna 996 MB,
+  Współczesność 709 MB), i aktualizuje się sama, gdy kolejne są gotowe.
+  - **W prawdziwej wielkości:** prawdziwa szerokość każdej jednostki (u samolotu rozpiętość skrzydeł) w skali gry; do
+    zmiany od 0,2 do 5 razy.
+  - **Badane jak jednostki gry:** z dowolnej jednostki budynku jej nacji, także z jednostek epok moda, więc działa
+    łańcuch (T-80, potem T-90M), z ceną i czasem badania. Jednostki WWI i WWII+ można kupić od razu; te z Zimnej
+    wojny i Współczesności zaczynają jako badane z odpowiedniej jednostki.
+  - **Własne karty** w menu budowy i przy zaznaczeniu.
+  - Sprawdzone w grze: wczytują się od razu, karty badań i łańcuch, Land Rover z własnym modelem, rozmiary. Jeszcze
+    nie sprawdzone: działa holowane (na razie nie ma działa z gry, do którego można je dopasować).
+- **Importuj model…:** model zaczynający się od figury załogi dostaje teraz własny model (jeepy skopiowane z
+  Kübelwagena pokazywały Kübelwagena); modele malowane metodą specular-glossiness zachowują malowanie; kolory podane
+  liczbami nie są już czarne; duże modele importują się szybciej.
+- **Jednostka badana z jednostki innej armii** zostawiała grę na niekończącym się ekranie wczytywania: **Nowa
+  jednostka…** usuwa teraz to powiązanie, a budowanie odrzuca jednostkę badaną z brakującej jednostki lub z jednostki
+  innej nacji, mówiąc dlaczego i jak to naprawić.
+- **Linux i Steam Deck (przez Protona):** Studio otwiera się w twojej przeglądarce, gdy jego własne okno nie może.
+  Jeszcze nie sprawdzone na Linuksie: daj nam znać, jak poszło.
+
 **0.9.8.1:** Narzędzia LittleGroove'a trafiają do Studia, a z nimi muzyka i dźwięki oraz nacja zmieniona w inną.
 
 - **Narzędzia LittleGroove'a, przeniesione** z jego RUSE-Mod-Managera:

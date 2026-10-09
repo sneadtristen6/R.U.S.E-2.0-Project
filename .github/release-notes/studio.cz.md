@@ -1,6 +1,29 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.2:** přicházejí jednotky z jiných období: jejich modely, ve skutečné velikosti, za výzkumem.
+
+- **Jednotky z jiných období:** období WWI, WWII+, Studená válka a Současnost na kartě Jednotky teď mají své
+  jednotky: 366, každá na bezplatném modelu jiného autora (CC0 nebo CC BY), uvedeného. Každé období se stáhne ve
+  Studiu, když ho vyberete, z našeho GitHubu (každý soubor ověřený: WWI 232 MB, WWII+ 198 MB, Studená válka 996 MB,
+  Současnost 709 MB), a samo se aktualizuje, jak přibývají další hotové.
+  - **Ve skutečné velikosti:** skutečná šířka každé jednotky (u letadla rozpětí křídel) v měřítku hry; dá se změnit
+    od 0,2 do 5 násobku.
+  - **Zkoumané jako jednotky hry:** z kterékoli jednotky budovy svého národa, i z jednotek období v modu, takže
+    funguje řetěz (T-80, pak T-90M), s cenou a dobou výzkumu. Jednotky WWI a WWII+ se dají koupit hned; ty ze Studené
+    války a Současnosti začínají jako zkoumané z vhodné jednotky.
+  - **Vlastní karty** v nabídce stavby a při výběru.
+  - Ověřeno ve hře: načtou se hned, karty výzkumu a řetěz, Land Rover s vlastním modelem, velikosti. Zatím
+    nevyzkoušeno: tažená děla (zatím není dělo ze hry, ke kterému je přizpůsobit).
+- **Importovat model…:** model, který začíná figurkou osádky, teď dostane vlastní model (džípy zkopírované z
+  Kübelwagenu ukazovaly Kübelwagen); modely malované metodou specular-glossiness si nechají barvu; barvy zadané čísly
+  už nejsou černé; velké modely se importují rychleji.
+- **Jednotka zkoumaná z jednotky jiné armády** nechávala hru na nekonečné obrazovce načítání: **Nová jednotka…** teď
+  to propojení odstraní a sestavení odmítne jednotku zkoumanou z chybějící jednotky nebo z jednotky jiného národa a
+  řekne proč a jak to opravit.
+- **Linux a Steam Deck (přes Proton):** Studio se otevře ve vašem webovém prohlížeči, když jeho vlastní okno nemůže.
+  Na Linuxu zatím nevyzkoušeno: dejte nám vědět, jak to šlo.
+
 **0.9.8.1:** Nástroje LittleGroove přicházejí do Studia, s hudbou a zvuky a národem proměněným v jiný.
 
 - **Nástroje LittleGroove, převzaté** z jeho RUSE-Mod-Manageru:

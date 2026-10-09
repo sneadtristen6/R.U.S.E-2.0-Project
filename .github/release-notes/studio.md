@@ -1,6 +1,29 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.2:** the units from other eras arrive: their models, at their real size, behind research.
+
+- **Units from other eras:** the WWI, WWII+, Cold War and Modern eras in the Units tab have their units now: 366,
+  each another maker's free model (CC0 or CC BY), credited. Each era downloads in the Studio when you pick it, from
+  our GitHub (each file checked: WWI 232 MB, WWII+ 198 MB, Cold War 996 MB, Modern 709 MB), and updates itself as
+  more are finished.
+  - **At their real size:** each unit's real width (a plane's: its wingspan) at the game's own scale; change it from
+    0.2 to 5 times.
+  - **Researched like the game's units:** from any unit of its nation's building, the mod's own era units too, so a
+    chain works (a T-80, then a T-90M), with its research price and time. WWI and WWII+ units can be bought straight
+    away; Cold War and Modern ones start as researched from a suitable unit.
+  - **Their own cards** in the build menu and when selected.
+  - Seen in the game: they load at once, the research tabs and a chain, a Land Rover with its own model, the sizes.
+    Not tried yet: towed guns (no game gun to fit them to yet).
+- **Import model…:** a model with a crew figure first gets its own model (jeeps copying the Kübelwagen showed the
+  Kübelwagen's); models painted the specular-glossiness way keep their paint; colours given as numbers aren't black
+  any more; big models import faster.
+- **A unit researched from another army's unit** left the game on an endless loading screen: **New unit…** drops that
+  link now, and the build refuses a unit researched from a missing unit or another nation's, saying why and how to
+  fix it.
+- **Linux and Steam Deck (through Proton):** the Studio opens in your web browser when its own window can't. Not
+  tried on Linux yet: tell us how it goes.
+
 **0.9.8.1:** LittleGroove's tools come to the Studio, with music and sounds, and a nation made into another.
 
 - **LittleGroove's tools, brought over** from his RUSE-Mod-Manager:

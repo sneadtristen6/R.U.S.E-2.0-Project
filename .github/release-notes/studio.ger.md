@@ -1,6 +1,30 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.2:** Die Einheiten aus anderen Epochen kommen: ihre Modelle, in echter Größe, hinter Forschung.
+
+- **Einheiten aus anderen Epochen:** Die Epochen WWI, WWII+, Kalter Krieg und Modern im Reiter Einheiten haben jetzt
+  ihre Einheiten: 366, jede das kostenlose Modell eines anderen Urhebers (CC0 oder CC BY), genannt. Jede Epoche wird
+  im Studio heruntergeladen, wenn du sie wählst, von unserem GitHub (jede Datei geprüft: WWI 232 MB, WWII+ 198 MB,
+  Kalter Krieg 996 MB, Modern 709 MB), und aktualisiert sich selbst, sobald weitere fertig sind.
+  - **In echter Größe:** die echte Breite jeder Einheit (bei einem Flugzeug die Spannweite) im Maßstab des Spiels;
+    änderbar vom 0,2- bis 5-Fachen.
+  - **Erforscht wie die Einheiten des Spiels:** aus jeder Einheit des Gebäudes ihrer Nation, auch aus den
+    Epochen-Einheiten des Mods, sodass eine Kette geht (ein T-80, dann ein T-90M), mit Preis und Dauer der Forschung.
+    Einheiten aus WWI und WWII+ sind sofort kaufbar; die aus Kalter Krieg und Modern werden zunächst aus einer
+    passenden Einheit erforscht.
+  - **Eigene Karten** im Baumenü und bei der Auswahl.
+  - Im Spiel gesehen: Sie laden sofort, die Forschungs-Reiter und eine Kette, ein Land Rover mit eigenem Modell, die
+    Größen. Noch nicht ausprobiert: gezogene Geschütze (noch kein Geschütz des Spiels, auf das sie passen).
+- **Modell importieren…:** Ein Modell, das mit einer Besatzungsfigur beginnt, bekommt sein eigenes Modell (Jeeps als
+  Kopie des Kübelwagens zeigten den Kübelwagen); im Specular-Glossiness-Verfahren bemalte Modelle behalten ihre
+  Farbe; als Zahlen angegebene Farben sind nicht mehr schwarz; große Modelle werden schneller importiert.
+- **Eine Einheit, die aus einer Einheit einer anderen Armee erforscht wird,** ließ das Spiel in einem endlosen
+  Ladebildschirm: **Neue Einheit…** entfernt diese Verbindung jetzt, und der Bau lehnt eine Einheit ab, die aus einer
+  fehlenden Einheit oder der einer anderen Nation erforscht wird, und sagt, warum und wie man es behebt.
+- **Linux und Steam Deck (über Proton):** Das Studio öffnet sich in deinem Webbrowser, wenn sein eigenes Fenster es
+  nicht kann. Unter Linux noch nicht ausprobiert: Sag uns, wie es läuft.
+
 **0.9.8.1:** LittleGrooves Werkzeuge kommen ins Studio, dazu Musik und Klänge und eine Nation als eine andere.
 
 - **LittleGrooves Werkzeuge, übernommen** aus seinem RUSE-Mod-Manager:

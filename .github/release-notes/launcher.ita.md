@@ -1,6 +1,14 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
+**0.4.8.2:** si apre nel tuo browser web dove la sua finestra non ci riesce, e avvia le mod fatte con lo Studio
+0.9.8.2.
+
+- **Linux e Steam Deck (con Proton):** il Launcher si apre nel tuo browser web quando la sua finestra non ci riesce.
+  Non ancora provato su Linux: facci sapere com'è andata.
+- Le mod fatte con lo Studio 0.9.8.2 funzionano: unità di altre epoche con i loro modelli, dimensioni, ricerche e
+  carte.
+
 **0.4.8.1:** converte le vecchie mod e avvia le mod fatte con lo Studio 0.9.8.1.
 
 - **Converti una vecchia mod…**, il Convert di LittleGroove ripreso: una mod più vecchia che arriva come pacchetti del

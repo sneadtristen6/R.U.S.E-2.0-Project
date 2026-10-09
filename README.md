@@ -32,6 +32,10 @@ make works in the game every time, the first time.
 what changing strictly data can do. Anything beyond data is outside what we want to do with it. Your Steam install
 is never changed.
 
+**Units from other eras.** RUSE Studio 0.9.8.2 brings 366 units from WWI to today, each another maker's free 3D
+model, credited: at its real size, researched like the game's own units, with its own card. Each era downloads in
+the Studio when you pick it.
+
 **LittleGroove's tools are in the Studio.** RUSE Studio 0.9.8.1 brings over the tools of his RUSE-Mod-Manager (the
 Economy and AI tabs, All values, the game's files, missions), adds a **Music** tab for songs and voice lines, and a
 **Nations** tab that makes one of the game's nations into another, with a name and a flag of its own.
@@ -224,6 +228,8 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
   game's own packs, made to be copied into the game folder, becomes a mod your library plays beside others (not tried
   with a real old mod yet). When two mods change the same game file, the Launcher says so before Play, and **Use the
   one from…** picks which.
+- **Linux and Steam Deck (through Proton)** (Launcher 0.4.8.2, Studio 0.9.8.2): the apps open in your web browser
+  when their own window can't (not tried on Linux yet).
 
 **Modders, with RUSE Studio**
 
@@ -278,9 +284,11 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - **Make a nation into another** (Studio 0.9.8.1): the **Nations** tab gives one of the game's seven nations a new
   name, in the lobby and for its army, and a new flag from any picture: China in Italy's place, say. Seen in the
   game: the new name in the lobby, the new flag beside the player's name in a match.
-- **Units from other eras** (Studio 0.9.8.1): the Units tab gets the eras WWI, WWII+, Cold War and Modern beside the
-  game's own units. They have no units yet: those come in a later update, with models other people made and shared
-  for free, each maker credited.
+- **Units from other eras** (Studio 0.9.8.2): the Units tab's WWI, WWII+, Cold War and Modern eras hold 366 units,
+  each another maker's free model (CC0 or CC BY), credited. Each era downloads in the Studio when you pick it, from
+  our GitHub (each file checked), and updates itself as more are finished. Add one to your mod: it's a new unit at
+  its real size, with its own card, researched from any unit of its nation's building (chains too: a T-80, then a
+  T-90M). Seen in the game: they load at once, research and a chain, a Land Rover's own model, the sizes.
 - **Add units in formations:** 1 to 10 at once, in a line, column, wedge, box or circle (Studio 0.7.1).
 - A **mod check** reads every file of your mod the way the game build does, names each problem and offers the fix
   (set a broken file aside, rename a map folder to the map's pack name) (Studio 0.7.1).
@@ -393,6 +401,24 @@ Stuck on something? See [Questions? Ask any AI](#questions-ask-any-ai) at the bo
 ## How we got here
 
 The big steps so far, newest first. Each one was played in the game before it went out.
+
+<details>
+<summary><b>Units from other eras, at their real size and behind research (Studio 0.9.8.2)</b></summary>
+
+The Units tab's eras have their units: 366 from WWI to today, every one another maker's 3D model shared for free
+(CC0 or CC BY), credited, fitted to the game and given its nation's markings. Each era downloads in the Studio when
+you pick it, from our GitHub, every file checked, and updates itself as more are finished.
+
+Added to a mod, an era unit is a new unit at its real size (its width, or a plane's wingspan, at the game's own
+scale), with its own card, researched from any unit of its nation's building, the mod's own era units too: a T-80,
+then a T-90M. Seen in the game: they load at once, the research tabs and a chain, a Land Rover with its own model,
+the sizes. Not tried yet: towed guns.
+
+On the way: a unit researched from another army's unit left the game on an endless loading screen; **New unit…** now
+drops that link, and the build refuses one. And the apps open in the player's web browser where their own window
+can't, for Linux and Steam Deck through Proton (not tried on Linux yet).
+
+</details>
 
 <details>
 <summary><b>LittleGroove's tools, music, and a nation made into another (Studio 0.9.8.1)</b></summary>
@@ -611,7 +637,7 @@ Twelve hours, six rounds of testing.
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.8.1) &middot; **Studio** for modders, a preview (latest: 0.9.8.1) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.8.2) &middot; **Studio** for modders, a preview (latest: 0.9.8.2) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
@@ -627,9 +653,11 @@ another 3D program; on 2026-10-05, a drained sea units are built and move on, ne
 Terrain, Blank Ocean) with sectors over the whole map, and a map's own pictures in the game's menus, made in Blender
 or from a PNG, with the start dots where its players start; by 2026-10-08, the Economy tab's starting money and cards,
 the AI tab, replaced and new songs and voice lines, a nation with a new name in the lobby and a new flag in a match,
-and Blank Terrain's own ground. **Not yet checked in the game:** a new unit made in the Studio's window, mod sets made
+and Blank Terrain's own ground; by 2026-10-09, units from other eras that load at once, are researched in a chain,
+stand at their real size, and a Land Rover with its own model. **Not yet checked in the game:** a new unit made in the Studio's window, mod sets made
 in the launcher's window, a mod exported as one file, sharing a load order, units a skirmish spawns, Browse mods, and
-from 0.9.8.1 the Upgrade box, All values, Files, the missions' tools and background sounds.
+from 0.9.8.1 the Upgrade box, All values, Files, the missions' tools and background sounds, and from 0.9.8.2 towed
+guns from other eras and the apps on Linux.
 
 </details>
 
@@ -758,6 +786,14 @@ R.U.S.E. 2.0 stands on three people's work. None of it would be here without the
   make units from another nation work.
 - The notes on unit flags, bridge floors and how units stand on the ground went into the build's checks and the
   bridges units now drive over. DomesticNukes tests the releases in the game, too.
+
+### The era units' model makers
+
+The units from other eras (Studio 0.9.8.2) are free 3D models by the people who made and shared them, under CC0 or
+CC BY. Every maker is named, with the model's title, licence and link, on the unit's page in the Studio, in the
+credits file of any mod that uses one (`CREDITS-era-units.md`), and in the full list on the
+[era units release](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). What we changed:
+each was fitted to the game (turned and scaled) and given its nation's markings.
 
 ### sneadtristen6 and Claude: building R.U.S.E. 2.0
 

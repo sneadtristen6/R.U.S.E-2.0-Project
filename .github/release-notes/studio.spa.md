@@ -1,6 +1,30 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
+**0.9.8.2:** llegan las unidades de otras épocas: sus modelos, a tamaño real, tras una investigación.
+
+- **Unidades de otras épocas:** las épocas WWI, WWII+, Guerra Fría y Moderna de la pestaña Unidades ya tienen sus
+  unidades: 366, cada una el modelo gratuito de otro autor (CC0 o CC BY), citado. Cada época se descarga en el Studio
+  cuando la eliges, desde nuestro GitHub (cada archivo comprobado: WWI 232 MB, WWII+ 198 MB, Guerra Fría 996 MB,
+  Moderna 709 MB), y se actualiza sola a medida que se terminan más.
+  - **A tamaño real:** el ancho real de cada unidad (en un avión, su envergadura) a la escala del juego; se cambia de
+    0,2 a 5 veces.
+  - **Investigadas como las unidades del juego:** desde cualquier unidad del edificio de su nación, también las
+    unidades de época del mod, así funciona una cadena (un T-80, luego un T-90M), con precio y tiempo de
+    investigación. Las unidades WWI y WWII+ se compran directamente; las de la Guerra Fría y Modernas empiezan
+    investigadas desde una unidad adecuada.
+  - **Sus propias cartas** en el menú de construcción y al seleccionarlas.
+  - Visto en el juego: cargan al instante, las pestañas de investigación y una cadena, un Land Rover con su propio
+    modelo, los tamaños. Aún no probado: los cañones remolcados (aún no hay un cañón del juego al que ajustarlos).
+- **Importar modelo…:** un modelo que empieza con una figura de tripulante tiene ahora su propio modelo (los jeeps
+  copiados del Kübelwagen mostraban el del Kübelwagen); los modelos pintados en specular-glossiness conservan su
+  pintura; los colores dados como números ya no salen negros; los modelos grandes se importan más rápido.
+- **Una unidad investigada desde la unidad de otro ejército** dejaba el juego en una pantalla de carga sin fin:
+  **Nueva unidad…** quita ahora ese enlace, y la construcción rechaza una unidad investigada desde una unidad que
+  falta o de otra nación, diciendo por qué y cómo arreglarlo.
+- **Linux y Steam Deck (con Proton):** el Studio se abre en tu navegador web cuando su propia ventana no puede. Aún
+  no probado en Linux: cuéntanos qué tal va.
+
 **0.9.8.1:** Las herramientas de LittleGroove llegan al Studio, con música y sonidos y una nación convertida en otra.
 
 - **Las herramientas de LittleGroove, traídas** de su RUSE-Mod-Manager:

@@ -3,8 +3,8 @@ title: "Roadmap: what's done, what's next"
 category: Announcements
 order: 2
 ---
-Where things stand, and what's next. Tested-in-game features are marked ✅. Latest: **RUSE Studio 0.9.8.1** and
-**RUSE Launcher 0.4.8.1**, in [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
+Where things stand, and what's next. Tested-in-game features are marked ✅. Latest: **RUSE Studio 0.9.8.2** and
+**RUSE Launcher 0.4.8.2**, in [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
 0.9.x is the alpha; **1.0** is the launch.
 
 ### Done
@@ -32,6 +32,9 @@ Where things stand, and what's next. Tested-in-game features are marked ✅. Lat
 - ✅ **LittleGroove's tools** in the Studio: the Economy and AI tabs (Studio 0.9.8.1)
 - ✅ **Music:** songs replaced and new ones added, and a unit's voice lines (Studio 0.9.8.1)
 - ✅ **A nation made into another:** a new name in the lobby and a new flag in a match (Studio 0.9.8.1)
+- ✅ **Units from other eras:** 366 from WWI to today, at their real size, researched like the game's own, each with
+  its own card (Studio 0.9.8.2). Instead of making our own models, we use ones other people made and shared for free,
+  each maker credited
 - Launcher: mod sets, `.rmod` support, shared load orders, Supported mods, self-updates, Convert an old mod
 - **Map Paint** (early): paint the ground's picture; up close where the ground under it is cleared
 - **Troubleshoot**, a **clean game backup**, **Check this map**, **Report a problem** and **Help** in both apps
@@ -39,8 +42,6 @@ Where things stand, and what's next. Tested-in-game features are marked ✅. Lat
 ### Next
 
 - **Iwo Jima and Pacific Island Defense:** the flagship.
-- **Units from other eras** (WWI, WWII+, Cold War, Modern). Instead of making our own models, we use ones other people
-  made and shared for free, each maker credited.
 - **RUSE Guard** (fair play): join codes, cheats kept offline, a watcher in every modded game. Written and kept
   switched off until it's tested in the game
 - **Unit and building sounds, and campaign scenes** (being researched)

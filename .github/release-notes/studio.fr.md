@@ -1,6 +1,32 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.2:** les unités d'autres époques arrivent : leurs modèles, à leur vraie taille, derrière une recherche.
+
+- **Des unités d'autres époques :** les époques WWI, WWII+, Guerre froide et Moderne de l'onglet Unités ont désormais
+  leurs unités : 366, chacune sur le modèle gratuit d'un autre auteur (CC0 ou CC BY), crédité. Chaque époque se
+  télécharge dans le Studio quand vous la choisissez, depuis notre GitHub (chaque fichier vérifié : WWI 232 Mo, WWII+
+  198 Mo, Guerre froide 996 Mo, Moderne 709 Mo), et se met à jour d'elle-même à mesure que d'autres sont terminées.
+  - **À leur vraie taille :** la vraie largeur de chaque unité (pour un avion, son envergure) à l'échelle du jeu ;
+    modifiable de 0,2 à 5 fois.
+  - **Recherchées comme les unités du jeu :** depuis n'importe quelle unité du bâtiment de sa nation, y compris les
+    unités d'époque du mod, pour faire une chaîne (un T-80, puis un T-90M), avec un prix et une durée de recherche.
+    Les unités WWI et WWII+ s'achètent directement ; celles de la Guerre froide et Modernes partent d'une recherche
+    depuis une unité adaptée.
+  - **Leurs propres cartes** dans le menu de construction et à la sélection.
+  - Vu en jeu : elles se chargent tout de suite, les onglets de recherche et une chaîne, un Land Rover avec son
+    propre modèle, les tailles. Pas encore essayé : les canons tractés (pas encore de canon du jeu auquel les
+    ajuster).
+- **Importer un modèle… :** un modèle qui commence par une figurine d'équipage a maintenant son propre modèle (les
+  jeeps copiées sur le Kübelwagen montraient celui du Kübelwagen) ; les modèles peints en spéculaire-brillance
+  gardent leur peinture ; les couleurs données en nombres ne sont plus noires ; les gros modèles s'importent plus
+  vite.
+- **Une unité recherchée depuis l'unité d'une autre armée** laissait le jeu sur un écran de chargement sans fin :
+  **Nouvelle unité…** retire ce lien désormais, et la construction du mod refuse une unité recherchée depuis une
+  unité absente ou d'une autre nation, en disant pourquoi et comment corriger.
+- **Linux et Steam Deck (via Proton) :** le Studio s'ouvre dans votre navigateur web quand sa propre fenêtre ne le
+  peut pas. Pas encore essayé sur Linux : dites-nous ce qu'il en est.
+
 **0.9.8.1:** Les outils de LittleGroove arrivent dans le Studio, avec la musique et les sons, et une nation changée en une autre.
 
 - **Les outils de LittleGroove, repris** de son RUSE-Mod-Manager :
