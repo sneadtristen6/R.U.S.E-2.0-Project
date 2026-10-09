@@ -511,19 +511,21 @@ def decal_room(scenery_len: int) -> int:
     return max(0, (SCENERY_MOST - ROOM_KEPT - scenery_len) // DECAL_BYTES)
 
 
-def decal_grid(strokes: list, types: dict, sets: set[str], seed: str = "", most: int | None = None) -> tuple[list, dict]:
+def decal_grid(strokes: list, types: dict, sets: set[str], seed: str = "", most: int | None = None,
+               inside: tuple[float, float] | None = None) -> tuple[list, dict]:
     """The decals over painted ground: (scenery.NewObject list, {"types": {type: count}, "missing": [textures with no
-    decal the map loads], "step": map units between points, "thinned": whether the grid was spread out to fit}). One
-    grid over all the strokes' boxes, a point every DECAL_STEP of the largest decal's laid width; each point takes the
-    stroke on top there (the last one painting it at least DECAL_AT strongly); if that is a texture stroke of a game
-    texture with `decals` on, one of that texture's decal types the map loads (`sets`), turned and sized a little at
-    random (the same every build: `seed`). With `most` (decal_room), a grid that would lay more is spread out evenly
-    until it fits: the same look, fewer and further apart."""
-    out, said = _decal_grid(strokes, types, sets, seed, 1.0)
+    decal the map loads], "step": map units between points, "thinned": whether the grid was spread out to fit}). Each
+    texture its own grid over its strokes' boxes, a point every DECAL_STEP of its smallest decal's laid width; each
+    point takes the stroke on top there (the last one painting it at least DECAL_AT strongly); if that is a texture
+    stroke of a game texture with `decals` on, one of that texture's decal types the map loads (`sets`), turned and
+    sized a little at random (the same every build: `seed`). With `inside` (the scenery grid's width and height), no
+    point off it: the game draws nothing there and the build refuses one. With `most` (decal_room), a grid that would
+    lay more is spread out evenly until it fits: the same look, fewer and further apart."""
+    out, said = _decal_grid(strokes, types, sets, seed, 1.0, inside)
     spread = 1.0
     while most is not None and len(out) > most and spread < 64.0:
         spread *= max(1.05, math.sqrt(len(out) / max(1, most)) * 1.02)
-        out, said = _decal_grid(strokes, types, sets, seed, spread)
+        out, said = _decal_grid(strokes, types, sets, seed, spread, inside)
         said["thinned"] = True
     if most is not None and len(out) > most:
         out = []
@@ -531,7 +533,8 @@ def decal_grid(strokes: list, types: dict, sets: set[str], seed: str = "", most:
     return out, said
 
 
-def _decal_grid(strokes: list, types: dict, sets: set[str], seed: str, spread: float) -> tuple[list, dict]:
+def _decal_grid(strokes: list, types: dict, sets: set[str], seed: str, spread: float,
+                inside: tuple[float, float] | None) -> tuple[list, dict]:
     import random
     from .brush import PAINT_KINDS
     from .scenery import NewObject
@@ -580,6 +583,8 @@ def _decal_grid(strokes: list, types: dict, sets: set[str], seed: str, spread: f
                     rnd = random.Random(f"decals {seed} {ref} {ix} {iy} {spread}")  # the same every build
                     x = (ix + 0.5 + rnd.uniform(-0.3, 0.3)) * step
                     y = (iy + 0.5 + rnd.uniform(-0.3, 0.3)) * step
+                    if inside is not None and not (0.0 <= x < inside[0] and 0.0 <= y < inside[1]):
+                        continue
                     top = top_at(x, y)
                     if top is None or top.kind.kind != "texture" or top.texture != ref or not top.decals:
                         continue

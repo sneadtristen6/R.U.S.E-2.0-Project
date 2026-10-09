@@ -271,6 +271,14 @@ class Decals(unittest.TestCase):
         out, said = gt.decal_grid(self.strokes(sand), self.TYPES, {"france", "italie"})
         self.assertIn("TypeWarrior/Sable", said["types"])
 
+    def test_none_off_the_scenery_grid(self):
+        # a stroke reaching past the grid's edge (T44's whole-map paint): its decals stop at the edge, none past it
+        out, _ = gt.decal_grid(self.strokes(), self.TYPES, {"france"}, seed="m", inside=(120000.0, 90000.0))
+        self.assertTrue(out)
+        self.assertTrue(all(0.0 <= o.x < 120000.0 and 0.0 <= o.y < 90000.0 for o in out))
+        full, _ = gt.decal_grid(self.strokes(), self.TYPES, {"france"}, seed="m")
+        self.assertTrue([o for o in full if o.x >= 120000.0 or o.y >= 90000.0])
+
     def test_spread_out_to_fit_the_room(self):
         full, _ = gt.decal_grid(self.strokes(), self.TYPES, {"france"}, seed="m")
         fitted, said = gt.decal_grid(self.strokes(), self.TYPES, {"france"}, seed="m", most=len(full) // 4)

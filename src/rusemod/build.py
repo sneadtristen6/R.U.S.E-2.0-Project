@@ -2260,12 +2260,15 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     # up close: the game's own decals of the game textures painted, laid over the ground they paint
                     # (groundtex.decal_grid), as many as the map's scenery has room for; not tried in the game yet
                     from .groundtex import decal_grid, decal_room, decal_types, map_sets
-                    from .scenery import add_names
+                    from .scenery import GRID_CELL, add_names
                     if "types" not in decal_kept:
                         decal_kept["types"] = decal_types(arc)
-                    room = decal_room(Scenery(raw).fields[3])
+                    held = Scenery(raw)
+                    room = decal_room(held.fields[3])
+                    grid = (min(held.grid_dims[2 * k] * GRID_CELL[k] for k in range(3)),  # the scenery grid's
+                            min(held.grid_dims[2 * k + 1] * GRID_CELL[k] for k in range(3)))  # width and height
                     sets = map_sets(arc, name)
-                    decals, said = decal_grid(strokes, decal_kept["types"], sets, seed=name, most=room)
+                    decals, said = decal_grid(strokes, decal_kept["types"], sets, seed=name, most=room, inside=grid)
                     if decals:
                         raw = add_names(raw, sorted({o.type for o in decals}))
                         objects = list(objects) + decals
