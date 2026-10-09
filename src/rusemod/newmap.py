@@ -80,6 +80,9 @@ def parse(data: dict, where: str = "map.toml", folder: str = "") -> list[NewMap]
         if "ground" in data:
             raise NewMapError(f"{where}: ground is for a new map (copy_of = \"<the shipped map's pack name>\"): a "
                               f"shipped map keeps its own ground, moved by its strokes")
+        if "blank" in data:
+            raise NewMapError(f"{where}: blank is for a new map that started as Blank Terrain or Blank Ocean (copy_of "
+                              f"= \"<the shipped map's pack name>\"); a shipped map can't start blank")
         return []
     src = data["copy_of"]
     if not isinstance(src, str) or not re.match(r"^[A-Za-z0-9_]+$", src):

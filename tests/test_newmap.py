@@ -511,6 +511,17 @@ class Building(unittest.TestCase):
         with self.assertRaisesRegex(BuildError, "has no such picture"):
             load_mod(dusk)
 
+    def test_a_blank_maps_file_loads(self):
+        """map.toml blank (a new map started as Blank Terrain or Blank Ocean, 2026-10-09) is one of the keys the build
+        reads; on a map that isn't new it's a mistake, said like ground's."""
+        blank = self.mod("blank", {"map.toml": 'copy_of = "SuperCrossRoads4"\nname = "Blitz Blank"\nblank = "terrain"\n'},
+                         name="BlitzBlank")
+        info, _ops = load_mod(blank)
+        self.assertEqual([spec.blank for spec in info.new_maps["BlitzBlank"]], ["terrain"])
+        shipped = self.mod("shipped", {"map.toml": 'blank = "terrain"\n'}, name="SuperCrossRoads4")
+        with self.assertRaisesRegex(BuildError, "blank is for a new map"):
+            load_mod(shipped)
+
     def wide_at(self, member, u, v):
         """The copy's wide picture `member` in ZZ_Win.dat: the colour where map point (u, v) is drawn."""
         import zlib
