@@ -64,6 +64,26 @@ class SectorPaint:
         return [Footprint(kind, x, y, self.radius, self.dx, self.dy) for x, y in self.points]
 
 
+MOST_AREA_POINTS = 4000   # an area's corners at most
+
+
+@dataclass(frozen=True)
+class SectorArea:
+    """One edit of a sector's shape in the Studio (the owner, 2026-10-09: sectors as "draggable" shapes, with the brush
+    kept for touch-ups; scenario.toml `[[sectors.paint]]` with `area`): scenario `file`'s sector `sector` is from now
+    on exactly the ground inside `points` (map x, y corners, in order; a cell is inside when its middle is, by the
+    even-odd rule). The ground it had outside them goes to what touches it (area_cells); no points: the sector is
+    taken out, its ground to its neighbours. Rows saved in one go share `group` (the Studio's Undo takes them back
+    together: moving a corner two sectors share changes both). `within`: polygons that limit the change to the
+    ground inside them (a corner moved: the triangles it made with its neighbouring corners, before and after), so
+    the rest of the sector stays cell for cell as it was; none: the whole sector."""
+    file: str
+    sector: int
+    points: tuple
+    group: int = 0
+    within: tuple = ()
+
+
 @dataclass(frozen=True)
 class Sectors:
     """What a mod does to a map's sectors (scenario.toml `[sectors]`): `whole_map`, every scenario's sectors reach
@@ -94,9 +114,46 @@ def _number(v) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
 
 
-def parse_paint(p, at: str) -> SectorPaint:
+def _corners(pts) -> bool:
+    return isinstance(pts, list) and all(isinstance(q, list) and len(q) == 2 and all(_number(c) for c in q) for q in pts)
+
+
+def parse_area(p: dict, at: str) -> SectorArea:
+    extra = sorted(set(p) - {"file", "sector", "area", "group", "within"})
+    if extra:
+        raise SectorError(f"{at}: unknown key {extra[0]!r} (an area row holds file, sector, area, group and within)")
+    for k in ("file", "sector"):
+        if k not in p:
+            raise SectorError(f"{at}: {k} is missing")
+    if not isinstance(p["file"], str) or not p["file"].lower().endswith(".scenario") or "/" in p["file"] \
+            or "\\" in p["file"]:
+        raise SectorError(f"{at}: file is a scenario file's name (like leveldesign_3v3_v01.scenario)")
+    s = p["sector"]
+    if isinstance(s, bool) or not isinstance(s, int) or not 0 <= s <= MOST_SECTOR:
+        raise SectorError(f"{at}: sector is a whole number from 0 to {MOST_SECTOR}")
+    pts = p["area"]
+    if not isinstance(pts, list) or len(pts) in (1, 2) or len(pts) > MOST_AREA_POINTS \
+            or not all(isinstance(q, list) and len(q) == 2 and all(_number(c) for c in q) for q in pts):
+        raise SectorError(f"{at}: area is a list of 3 to {MOST_AREA_POINTS} [x, y] corners (none: the sector taken "
+                          f"out)")
+    group = p.get("group", 0)
+    if isinstance(group, bool) or not isinstance(group, int) or group < 0:
+        raise SectorError(f"{at}: group is a whole number, 0 or more")
+    within = p.get("within", [])
+    if not isinstance(within, list) or len(within) > MOST_AREA_POINTS \
+            or not all(_corners(w) and 3 <= len(w) <= MOST_AREA_POINTS for w in within):
+        raise SectorError(f"{at}: within is a list of polygons, each a list of 3 or more [x, y] corners")
+    return SectorArea(p["file"], s, tuple((float(x), float(y)) for x, y in pts), group,
+                      tuple(tuple((float(x), float(y)) for x, y in w) for w in within))
+
+
+def parse_paint(p, at: str):
+    """A [[sectors.paint]] row: a Sectors brush stroke (SectorPaint) or, with `area`, a sector's new shape
+    (SectorArea)."""
     if not isinstance(p, dict):
         raise SectorError(f"{at} isn't a table")
+    if "area" in p:
+        return parse_area(p, at)
     extra = sorted(set(p) - {"file", "sector", "radius", "points", "shape", "dx", "dy"})
     if extra:
         raise SectorError(f"{at}: unknown key {extra[0]!r}")
@@ -164,7 +221,8 @@ def sectors_toml(setting) -> str:
         lines.append("# no_sectors: these scenarios start with no sectors at all (their sectors are painted).")
     if setting.paints:
         lines.append("# Each [[sectors.paint]] is one drag of the Sectors brush: the ground under its dabs put in `sector` "
-                     f"({NO_SECTOR}: in none).")
+                     f"({NO_SECTOR}: in none); one with `area` makes `sector` exactly the ground inside those corners "
+                     "(none: taken out).")
     lines.append("[sectors]")
     if setting.whole_map:
         lines.append("whole_map = true")
@@ -172,6 +230,14 @@ def sectors_toml(setting) -> str:
         lines.append("no_sectors = [" + ", ".join(_toml_str(f) for f in setting.no_sectors) + "]")
     lines.append("")
     for p in setting.paints:
+        if isinstance(p, SectorArea):
+            lines += ["[[sectors.paint]]", f"file = {_toml_str(p.file)}", f"sector = {p.sector}", f"group = {p.group}",
+                      "area = [" + ", ".join(f"[{x!r}, {y!r}]" for x, y in p.points) + "]"]
+            if p.within:
+                lines.append("within = [" + ", ".join("[" + ", ".join(f"[{x!r}, {y!r}]" for x, y in w) + "]"
+                                                      for w in p.within) + "]")
+            lines.append("")
+            continue
         lines += ["[[sectors.paint]]", f"file = {_toml_str(p.file)}", f"sector = {p.sector}", f"radius = {p.radius!r}"]
         if p.shape != "round":
             lines.append(f'shape = "{p.shape}"')
@@ -947,9 +1013,101 @@ class PaintError(SectorError):
         self.problems = problems or []
 
 
-def paint_cells(lab, paint: SectorPaint, g: Grid, np) -> None:
+LEFT_OVER = -2   # (area_cells: a cell a sector gave up, waiting for what touches it)
+
+
+def polygon_mask(points, g: Grid, np):
+    """The cells whose middle is inside the polygon `points` (map x, y corners in order), by the even-odd rule:
+    (i0, i1, mask) with mask[i - i0, j] for rows i0..i1 (None when no row's middle is inside its height). Row by row:
+    each edge crossing the row's middle line toggles every cell whose middle is past the crossing."""
+    pts = np.asarray(points, dtype=float)
+    xs, ys = pts[:, 0], pts[:, 1]
+    i0 = max(0, math.ceil(float(ys.min()) / g.step - 0.5))
+    i1 = min(g.ny - 1, math.floor(float(ys.max()) / g.step - 0.5))
+    if i1 < i0:
+        return i0, i1, None
+    cy = (np.arange(i0, i1 + 1) + 0.5) * g.step
+    ax, ay, bx, by = xs, ys, np.roll(xs, -1), np.roll(ys, -1)
+    crosses = (ay[None, :] > cy[:, None]) != (by[None, :] > cy[:, None])   # rows x edges
+    with np.errstate(divide="ignore", invalid="ignore"):
+        x = ax[None, :] + (cy[:, None] - ay[None, :]) * ((bx - ax) / (by - ay))[None, :]
+    rows, edges = np.nonzero(crosses)
+    first = np.floor(x[rows, edges] / g.step - 0.5).astype(np.int64) + 1   # the first cell whose middle is past it
+    first = np.clip(first, 0, g.nx)
+    toggles = np.zeros((i1 - i0 + 1, g.nx + 1), dtype=np.int32)
+    np.add.at(toggles, (rows, first), 1)
+    return i0, i1, (np.cumsum(toggles, axis=1)[:, :g.nx] % 2).astype(bool)
+
+
+def fill_left(lab, np, avoid: int | None = None) -> None:
+    """The cells marked LEFT_OVER (in place) take what touches them, layer by layer from their edges inward: a
+    sector's, or no sector's where no-sector ground touches them; any that touch nothing else become no sector.
+    Sector `avoid` (the one that gave the ground up) is never what they take."""
+    left = lab == LEFT_OVER
+    if not left.any():
+        return
+    rows, cols = np.flatnonzero(left.any(axis=1)), np.flatnonzero(left.any(axis=0))
+    i0, i1 = max(0, int(rows[0]) - 1), min(lab.shape[0] - 1, int(rows[-1]) + 1)
+    j0, j1 = max(0, int(cols[0]) - 1), min(lab.shape[1] - 1, int(cols[-1]) + 1)
+    sub = lab[i0:i1 + 1, j0:j1 + 1]
+    while True:
+        hole = sub == LEFT_OVER
+        if not hole.any():
+            return
+        moved = False
+        for side in ("above", "below", "left", "right"):   # each cell's neighbour on that side, as src
+            src = np.full_like(sub, LEFT_OVER)
+            if side == "above":
+                src[1:, :] = sub[:-1, :]
+            elif side == "below":
+                src[:-1, :] = sub[1:, :]
+            elif side == "left":
+                src[:, 1:] = sub[:, :-1]
+            else:
+                src[:, :-1] = sub[:, 1:]
+            take = hole & (src != LEFT_OVER)
+            if avoid is not None:
+                take &= src != avoid
+            if take.any():
+                sub[take] = src[take]
+                hole &= ~take
+                moved = True
+        if not moved:
+            sub[hole] = NO_SECTOR
+            return
+
+
+def area_cells(lab, a: SectorArea, g: Grid, np) -> None:
+    """Sector `a.sector` made exactly the ground inside `a.points` on the cells `lab` (in place): its cells first
+    given up, the area's cells then its own (taken from whatever had them), the ground it gave up and didn't take
+    back going to what touches it (fill_left). No points: the sector taken out. With `a.within`, only the cells
+    inside those polygons change."""
+    def mask_of(points):
+        out = np.zeros(lab.shape, bool)
+        i0, i1, m = polygon_mask(points, g, np)
+        if m is not None:
+            out[i0:i1 + 1] = m
+        return out
+    region = None
+    if a.within:
+        region = np.zeros(lab.shape, bool)
+        for w in a.within:
+            region |= mask_of(w)
+    mine = lab == a.sector
+    lab[mine if region is None else mine & region] = LEFT_OVER
+    if len(a.points) >= 3:
+        inside = mask_of(a.points)
+        lab[inside if region is None else inside & region] = a.sector
+    fill_left(lab, np, a.sector)
+
+
+def paint_cells(lab, paint, g: Grid, np) -> None:
     """Stroke `paint` on the cells `lab` (in place): each cell whose middle is inside one of its dabs goes to its
-    sector, as rusemod.brush.Footprint.inside says (the same sums, on whole arrays)."""
+    sector, as rusemod.brush.Footprint.inside says (the same sums, on whole arrays). An area row (SectorArea):
+    area_cells."""
+    if isinstance(paint, SectorArea):
+        area_cells(lab, paint, g, np)
+        return
     value = paint.sector
     r2 = paint.radius * paint.radius
     n = math.sqrt(paint.dx * paint.dx + paint.dy * paint.dy) or 1.0

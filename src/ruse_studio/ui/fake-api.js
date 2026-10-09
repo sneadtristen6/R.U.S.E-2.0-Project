@@ -762,7 +762,22 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   function fakeSectorView(pack, file, outlines) {
     const f = fakeSectors(pack, file), n = 64, size = 1310720, step = size / n, cells = new Array(n * n);
     for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) cells[i * n + j] = f.empty ? 0 : (j < n / 2 ? 1 : 2);
+    const inside = (pts, x, y) => {   // the even-odd test (rusemod.sectors.polygon_mask)
+      let c = false;
+      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+        const [xi, yi] = pts[i], [xj, yj] = pts[j];
+        if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c;
+      }
+      return c;
+    };
     for (const s of f.strokes) {
+      if (s.area) {   // a sector's new shape (StudioApi.sector_area): what it gave up goes to no sector here
+        for (let k = 0; k < cells.length; k++) if (cells[k] === s.sector + 1) cells[k] = 0;
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) if (s.area.length >= 3 && inside(s.area, (j + 0.5) * step, (i + 0.5) * step)) cells[i * n + j] = s.sector + 1;
+        }
+        continue;
+      }
       for (const [x, y] of s.points) {
         for (let i = 0; i < n; i++) {
           for (let j = 0; j < n; j++) {
@@ -2767,11 +2782,20 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         fakeSectors(pack, file).strokes.push({ sector, radius, points, shape });
         return fakeSectorView(pack, file);
       },
+      sector_area: async (pack, file, areas) => {   // a shape edit: the sectors it changes, kept together for Undo
+        const f = fakeSectors(pack, file), group = f.strokes.reduce((g, s) => Math.max(g, s.group || 0), 0) + 1;
+        for (const a of areas) {
+          if (!(a.sector >= 0 && a.sector <= 254)) throw new Error("That shape can't be saved (sector is a whole number from 0 to 254).");
+          f.strokes.push({ sector: a.sector, area: a.points || [], group });
+        }
+        return fakeSectorView(pack, file, true);
+      },
       sector_undo: async (pack, file) => {
         const f = fakeSectors(pack, file);
         if (!f.strokes.length) throw new Error("There's no painted sector stroke to take back.");
-        f.strokes.pop();
-        return fakeSectorView(pack, file);
+        const last = f.strokes.pop();
+        while (last.group && f.strokes.length && f.strokes[f.strokes.length - 1].group === last.group) f.strokes.pop();
+        return fakeSectorView(pack, file, Boolean(last.group));
       },
       sector_clear: async (pack, file) => { fakeSectors(pack, file).strokes = []; return fakeSectorView(pack, file); },
       sector_start: async (pack, file, empty) => { fakeSectors(pack, file).empty = Boolean(empty); return fakeSectorView(pack, file); },

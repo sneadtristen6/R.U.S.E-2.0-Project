@@ -3126,16 +3126,51 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             self._save_sectors(pack, _replace(now, paints=now.paints + (paint,)))
         return self.sector_view(pack, file)
 
-    def sector_undo(self, pack: str, file: str) -> dict:
-        """Take back scenario `file`'s last Sectors brush stroke. Returns sector_view."""
+    SECTOR_AREAS_MOST = 64   # sectors one shape edit may change (a corner shared by a few, a deleted one)
+
+    def sector_area(self, pack: str, file: str, areas: list) -> dict:
+        """One shape edit of scenario `file`'s sectors (the owner, 2026-10-09: sectors as shapes you drag, the brush
+        kept for touch-ups): each of `areas` [{"sector", "points": [[x, y], ...]}] makes that sector exactly the
+        ground inside its corners (no points: it's taken out, its ground to its neighbours; rusemod.sectors.SectorArea),
+        saved together so Undo takes them back together. An area's "within" (polygons) limits the change to the
+        ground inside them (a corner moved: the triangles round it). Returns sector_view with the outlines."""
         from dataclasses import replace as _replace
+        from rusemod import sectors
+        self._base_scenario(pack, file)   # (a scenario the map has)
+        if not isinstance(areas, list) or not 1 <= len(areas) <= self.SECTOR_AREAS_MOST:
+            raise StudioError(f"A shape edit changes 1 to {self.SECTOR_AREAS_MOST} sectors.")
         with self._saving:
             now = self._sector_setting(pack)
-            last = max((i for i, p in enumerate(now.paints) if p.file.lower() == file.lower()), default=None)
-            if last is None:
+            group = max((p.group for p in now.paints if isinstance(p, sectors.SectorArea)), default=0) + 1
+            try:
+                rows = tuple(sectors.parse_paint({"file": file, "sector": int(a["sector"]), "group": group,
+                                                  "area": [[float(x), float(y)] for x, y in a.get("points") or []],
+                                                  "within": [[[float(x), float(y)] for x, y in w]
+                                                             for w in a.get("within") or []]},
+                                                 "the sector's shape") for a in areas)
+            except (TypeError, ValueError, KeyError) as exc:   # (SectorError is a ValueError)
+                raise StudioError(f"That shape can't be saved ({exc}).") from None
+            self._save_sectors(pack, _replace(now, paints=now.paints + rows))
+        return self.sector_view(pack, file, outlines=True)
+
+    def sector_undo(self, pack: str, file: str) -> dict:
+        """Take back scenario `file`'s last Sectors brush stroke, or its last shape edit (every sector it changed).
+        Returns sector_view (with the outlines after a shape edit)."""
+        from dataclasses import replace as _replace
+        from rusemod import sectors
+        with self._saving:
+            now = self._sector_setting(pack)
+            mine = [i for i, p in enumerate(now.paints) if p.file.lower() == file.lower()]
+            if not mine:
                 raise StudioError("There's no painted sector stroke to take back.")
-            self._save_sectors(pack, _replace(now, paints=now.paints[:last] + now.paints[last + 1:]))
-        return self.sector_view(pack, file)
+            last = now.paints[mine[-1]]
+            if isinstance(last, sectors.SectorArea):
+                drop = {i for i in mine if isinstance(now.paints[i], sectors.SectorArea)
+                        and now.paints[i].group == last.group}
+            else:
+                drop = {mine[-1]}
+            self._save_sectors(pack, _replace(now, paints=tuple(p for i, p in enumerate(now.paints) if i not in drop)))
+        return self.sector_view(pack, file, outlines=isinstance(last, sectors.SectorArea))
 
     def sector_clear(self, pack: str, file: str) -> dict:
         """Take back every Sectors brush stroke of scenario `file`. Returns sector_view."""

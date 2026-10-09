@@ -2886,9 +2886,13 @@ function renderScenHqs(s) {
 // cover. Saved in the map project's scenario.toml, per scenario (StudioApi.sector_paint, rusemod.sectors); the cells
 // shown are the build's own (StudioApi.sector_view), so what the note says is what the build will say. Not tried in
 // the game yet. ---
+// mode: "shapes" (each sector's corners dragged on the map: the owner, 2026-10-09, "draggable square rectangles that
+// you can adjust", his pick "Shapes + brush") or "paint" (the brush, for touch-ups); drag: a corner being dragged
+// ({key, owners: [[sector, index in its outline]], moved}); newBox: a new sector's box being dragged
 const sec = { view: null, file: null, pack: null, pick: "new", shape: "round", size: 4, painting: null, busy: false,
   dirty: false, outlines: false, lines: null, nx: 0, ny: 0, box: null, cells: null, canvas: null, ctx: null, img: null,
-  tex: null, mesh: null, linesMesh: null, on: false, error: "" };
+  tex: null, mesh: null, linesMesh: null, on: false, error: "", mode: "shapes", dotsMesh: null, hotMesh: null,
+  drag: null, newBox: null, hot: null };
 const SECTOR_SIZE_MOST = 20;  // the size slider: a dab's radius as a share of the map's width, in %
 
 // a sector's colour on the overlay: the zones' own (zoneColour), by its number (worked out once each)
@@ -2930,7 +2934,18 @@ function renderSectorTools(s) {
     loadSectorView();
   }
   sectorOverlayShow(true);
-  const v = sec.view, can = Boolean(mv.brush.mod) && Boolean(v) && !sec.busy;
+  const v = sec.view, can = Boolean(mv.brush.mod) && Boolean(v) && !sec.busy, shapes = sec.mode === "shapes";
+  if (shapes && v && !v.outlines && !sec.lines && !sec.busy) loadSectorView(true);   // the corners need the outlines
+  $("scen-sectors-mode").replaceChildren(...["shapes", "paint"].map((k) => chipOf(w["sectors_mode_" + k],
+    w["tip_sectors_mode_" + k], sec.mode === k, () => {
+      sec.mode = k;
+      if (mv.gl && mv.gl.ring) { mv.gl.ring.visible = false; mv.gl.squareRing.visible = false; }
+      sectorDrawLines();
+      renderSectorTools(s);
+    })));
+  $("scen-sectors-shape").classList.toggle("hidden", shapes);   // the brush's own: its dab and size
+  $("scen-sectors-size-row").classList.toggle("hidden", shapes);
+  $("scen-sectors-outlines-row").classList.toggle("hidden", shapes);   // (Shapes always shows them)
   const picks = $("scen-sectors-pick");
   const listed = v ? v.sectors : [];
   if (sec.pick !== "new" && sec.pick !== -1 && !listed.some((x) => x.number === sec.pick)) sec.pick = "new";
@@ -2962,6 +2977,9 @@ function renderSectorTools(s) {
     () => mv.api.sector_undo(mv.current, s.file));
   button("scen-sectors-clear", w.sectors_clear, w.tip_sectors_clear, !strokes, w.tip_sectors_undo_none,
     () => mv.api.sector_clear(mv.current, s.file));
+  const picked = typeof sec.pick === "number" && sec.pick >= 0;   // a sector taken out: its ground to its neighbours
+  button("scen-sectors-delete", w.sectors_delete, w.tip_sectors_delete, !picked, w.tip_sectors_delete_none,
+    () => mv.api.sector_area(mv.current, s.file, [{ sector: sec.pick, points: [] }]));
   const empty = Boolean(v && v.starts_empty);
   button("scen-sectors-start", empty ? w.sectors_start_map : w.sectors_start_none,
     empty ? w.tip_sectors_start_map : w.tip_sectors_start_none, false, "",
@@ -2983,8 +3001,12 @@ function renderSectorTools(s) {
       lines.push(fill(p.pieces > 1 ? w.sectors_pieces : w.sectors_hole, { n: p.number + 1, pieces: p.pieces }));
       bad = true;
     }
-    // what the build tidies, as shown (StudioApi.sector_view "tidied": rusemod.sectors.tidy_cells)
-    for (const t of v.tidied || []) {
+    // what the build tidies, as shown (StudioApi.sector_view "tidied": rusemod.sectors.tidy_cells); bits too small
+    // to see (under 0.1 % of the sectors' ground: a moved border's straight line against the old cells' steps, a few
+    // metres) aren't said, the thin lines always are
+    const total = v.sectors.reduce((n, x) => n + x.cells, 0);
+    const said = (v.tidied || []).filter((t) => t.kind !== "pieces" || t.cells >= total / 1000);
+    for (const t of said) {
       if (t.kind === "pieces") {
         lines.push(fill(t.to < 0 ? w.sectors_tidy_pieces_none : w.sectors_tidy_pieces,
           { bits: t.bits, n: t.number + 1, to: t.to + 1 }));
@@ -2992,8 +3014,8 @@ function renderSectorTools(s) {
         lines.push(fill(t.number < 0 ? w.sectors_tidy_gap : w.sectors_tidy_line, { n: t.number + 1, around: t.around + 1 }));
       }
     }
-    if (!bad) lines.push(w.sectors_help);
-    if ((v.tidied || []).length) lines.push(w.sectors_tidy_untried);
+    if (!bad) lines.push(shapes ? w.sectors_shapes_help : w.sectors_help);
+    if (said.length) lines.push(w.sectors_tidy_untried);
     lines.push(w.sectors_untried);
   }
   note.replaceChildren(...lines.filter(Boolean).map((t) => el("div", { textContent: t })));
@@ -3004,7 +3026,7 @@ async function loadSectorView(outlines) {
   const pack = mv.current, file = sec.file;
   sec.busy = true;
   try {
-    const v = await mv.api.sector_view(pack, file, Boolean(outlines || sec.outlines));
+    const v = await mv.api.sector_view(pack, file, Boolean(outlines || sec.outlines || sec.mode === "shapes"));
     if (pack !== mv.current || file !== sec.file) return;
     takeSectorView(v);
   } catch (err) {
@@ -3024,7 +3046,7 @@ async function sectorCall(call) {
     if (pack === mv.current) {
       sec.dirty = true;
       takeSectorView(v);
-      if (sec.outlines) loadSectorView(true);
+      if ((sec.outlines || sec.mode === "shapes") && !v.outlines) loadSectorView(true);
     }
   } catch (err) {
     if (sec.view && pack === mv.current) takeSectorView(sec.view);  // a stroke not saved: off the ground again
@@ -3095,7 +3117,10 @@ function sectorOverlayShow(show) {
     gl.scene.add(sec.mesh);
   }
   if (sec.mesh) sec.mesh.visible = show;
-  if (sec.linesMesh) sec.linesMesh.visible = show && sec.outlines;
+  const lines = show && (sec.outlines || sec.mode === "shapes");
+  if (sec.linesMesh) sec.linesMesh.visible = lines;
+  if (sec.dotsMesh) sec.dotsMesh.visible = lines && sec.mode === "shapes";
+  if (sec.hotMesh) sec.hotMesh.visible = lines && sec.mode === "shapes";
   gl.draw();
 }
 
@@ -3114,22 +3139,30 @@ function sectorDrawCells(r0, r1, c0, c1) {
   if (mv.gl) mv.gl.draw();
 }
 
-// The sectors' outlines as the build traces them (Show outlines): lines on the ground in each sector's colour.
+// The sectors' outlines as the build traces them (Show outlines, and always in Shapes): lines on the ground in each
+// sector's colour; in Shapes their corners as dots too (the one under the pointer or dragged bigger), and a new
+// sector's box while it's dragged.
 function sectorDrawLines() {
   const gl = mv.gl;
   if (!gl || !mv.edit) return;
-  if (sec.linesMesh) { gl.scene.remove(sec.linesMesh); sec.linesMesh.geometry.dispose(); sec.linesMesh.material.dispose(); sec.linesMesh = null; }
-  if (!sec.outlines || !sec.lines) { gl.draw(); return; }
+  for (const k of ["linesMesh", "dotsMesh", "hotMesh"]) {
+    const o = sec[k];
+    if (o) { gl.scene.remove(o); o.geometry.dispose(); o.material.dispose(); sec[k] = null; }
+  }
+  const shapes = sec.mode === "shapes";
+  if (!(sec.outlines || shapes) || !(sec.lines || sec.newBox)) { gl.draw(); return; }
   const { THREE } = gl, grid = makeGrid(mv.edit), lift = (mv.size || 1000) * 0.002, pos = [], col = [];
   const at = (x, y) => [x * SCALE, groundAt(grid, x, y) * SCALE + lift, y * SCALE];
-  for (const [num, p] of Object.entries(sec.lines)) {
-    const rgb = sectorRgb(Number(num)).map((c) => Math.min(1, c / 255 + 0.2));
+  const ring = (p, rgb) => {
     for (let i = 0; i < p.length; i += 2) {
       const j = (i + 2) % p.length;
       pos.push(...at(p[i], p[i + 1]), ...at(p[j], p[j + 1]));
       col.push(...rgb, ...rgb);
     }
-  }
+  };
+  for (const [num, p] of Object.entries(sec.lines || {})) ring(p, sectorRgb(Number(num)).map((c) => Math.min(1, c / 255 + 0.2)));
+  const b = sec.newBox;
+  if (b) ring([b.x0, b.y0, b.x1, b.y0, b.x1, b.y1, b.x0, b.y1], [1, 0.83, 0.3]);
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pos), 3));
   g.setAttribute("color", new THREE.BufferAttribute(new Float32Array(col), 3));
@@ -3137,7 +3170,192 @@ function sectorDrawLines() {
   sec.linesMesh.renderOrder = 11;
   sec.linesMesh.visible = sec.on;
   gl.scene.add(sec.linesMesh);
+  if (shapes && sec.lines) {
+    const dots = [], hot = [];
+    for (const [key, d] of sectorDots()) (key === sec.hot || (sec.drag && key === sec.drag.key) ? hot : dots).push(...at(d.x, d.y));
+    const points = (list, size, colour) => {
+      const pg = new THREE.BufferGeometry();
+      pg.setAttribute("position", new THREE.BufferAttribute(new Float32Array(list), 3));
+      const m = new THREE.Points(pg, new THREE.PointsMaterial({ size, sizeAttenuation: false, color: colour, depthTest: false }));
+      m.renderOrder = 12;
+      m.visible = sec.on;
+      gl.scene.add(m);
+      return m;
+    };
+    sec.dotsMesh = points(dots, 7, 0xffffff);
+    sec.hotMesh = points(hot, 13, 0xffd34d);
+  }
   gl.draw();
+}
+
+// --- Shapes: each sector's outline (as the build traces it: two sectors share their border's corners, point for
+// point) with its corners as dots. Dragging a dot moves it in every sector that has it, so a shared border stays
+// shared; let go and each sector it changed is saved as its new shape (StudioApi.sector_area, rusemod.sectors
+// SectorArea: the build fills it on its own grid, the ground a sector gives up going to what touches it, and tidies
+// as for the brush). Double-click a border: a new dot; right-click a dot: it's taken out. New sector: drag a box. ---
+function sectorDots() {   // {key "x,y": {x, y, owners: [[sector, index of x in its outline], ...]}}
+  const out = new Map();
+  for (const [num, p] of Object.entries(sec.lines || {})) {
+    for (let i = 0; i < p.length; i += 2) {
+      const key = `${p[i]},${p[i + 1]}`;
+      if (!out.has(key)) out.set(key, { x: p[i], y: p[i + 1], owners: [] });
+      out.get(key).owners.push([num, i]);
+    }
+  }
+  return out;
+}
+
+function sectorScreen(x, y, grid, rect) {   // a map point on the screen: [x, y] in pixels, or null behind the camera
+  const gl = mv.gl, v = new gl.THREE.Vector3(x * SCALE, groundAt(grid, x, y) * SCALE, y * SCALE).project(gl.camera);
+  if (v.z > 1) return null;
+  return [rect.left + (v.x + 1) / 2 * rect.width, rect.top + (1 - v.y) / 2 * rect.height];
+}
+
+const SECTOR_REACH = 10;   // pixels: how near the pointer a dot or a border is to be picked
+function sectorDotAt(ev) {
+  if (!sec.lines || !mv.gl || !mv.edit) return null;
+  const grid = makeGrid(mv.edit), rect = mv.gl.renderer.domElement.getBoundingClientRect();
+  let best = null, bestD = SECTOR_REACH * SECTOR_REACH;
+  for (const [key, d] of sectorDots()) {
+    const s = sectorScreen(d.x, d.y, grid, rect);
+    if (!s) continue;
+    const dd = (s[0] - ev.clientX) ** 2 + (s[1] - ev.clientY) ** 2;
+    if (dd < bestD) { bestD = dd; best = { key, ...d }; }
+  }
+  return best;
+}
+
+// The border under the pointer: its two corners' keys and the map point on it nearest the pointer.
+function sectorEdgeAt(ev) {
+  if (!sec.lines || !mv.gl || !mv.edit) return null;
+  const grid = makeGrid(mv.edit), rect = mv.gl.renderer.domElement.getBoundingClientRect();
+  let best = null, bestD = SECTOR_REACH * SECTOR_REACH;
+  for (const p of Object.values(sec.lines)) {
+    for (let i = 0; i < p.length; i += 2) {
+      const j = (i + 2) % p.length, a = sectorScreen(p[i], p[i + 1], grid, rect), b = sectorScreen(p[j], p[j + 1], grid, rect);
+      if (!a || !b) continue;
+      const ex = b[0] - a[0], ey = b[1] - a[1], l2 = ex * ex + ey * ey;
+      if (!l2) continue;
+      const t = Math.max(0.05, Math.min(0.95, ((ev.clientX - a[0]) * ex + (ev.clientY - a[1]) * ey) / l2));
+      const dd = (a[0] + t * ex - ev.clientX) ** 2 + (a[1] + t * ey - ev.clientY) ** 2;
+      if (dd < bestD) {
+        bestD = dd;
+        best = { a: `${p[i]},${p[i + 1]}`, b: `${p[j]},${p[j + 1]}`,
+          x: Math.round(p[i] + t * (p[j] - p[i])), y: Math.round(p[i + 1] + t * (p[j + 1] - p[i + 1])) };
+      }
+    }
+  }
+  return best;
+}
+
+// Save the new shapes of the sectors `nums` (their outlines as they are in sec.lines) in one go, changed only inside
+// `within` (the triangles round a corner that moved), so the rest of each stays cell for cell as the build had it.
+function sectorSaveShapes(nums, within) {
+  const pairs = (p) => { const out = []; for (let i = 0; i < p.length; i += 2) out.push([p[i], p[i + 1]]); return out; };
+  const areas = [...new Set(nums)].map((n) => ({ sector: Number(n), points: pairs(sec.lines[n]), within }));
+  if (areas.length) sectorCall(() => mv.api.sector_area(mv.current, sec.file, areas));
+}
+
+// A corner's neighbours in each sector that has it: [[sector, index, [prev x, y], [next x, y]], ...]
+function sectorAround(owners) {
+  return owners.map(([num, i]) => {
+    const p = sec.lines[num], n = p.length, a = (i - 2 + n) % n, b = (i + 2) % n;
+    return [num, i, [p[a], p[a + 1]], [p[b], p[b + 1]]];
+  });
+}
+
+function sectorShapesOn() {
+  return scen.tool === "sectors" && sec.on && sec.mode === "shapes" && Boolean(sec.view) && Boolean(mv.gl) && Boolean(mv.edit);
+}
+
+// A press in Shapes, before the view's own (capture): on a dot, its drag; with New sector picked, a box; else the
+// view turns as usual.
+function sectorShapeDown(ev) {
+  if (!sectorShapesOn() || ev.button !== 0 || sec.busy) return;
+  if (!mv.brush.mod) { scenNote(mv.words.no_mod, "error"); return; }
+  const dot = sectorDotAt(ev);
+  const p = dot ? null : hitGround(ev);
+  if (!dot && !(sec.pick === "new" && p && sec.view.next !== null)) return;
+  ev.preventDefault();
+  ev.stopPropagation();   // the view doesn't turn under the drag
+  mv.gl.renderer.domElement.parentElement.setPointerCapture(ev.pointerId);
+  if (dot) sec.drag = { key: dot.key, owners: dot.owners, moved: false, from: [dot.x, dot.y], around: sectorAround(dot.owners) };
+  else sec.newBox = { x0: Math.round(p.x / SCALE), y0: Math.round(p.z / SCALE), x1: Math.round(p.x / SCALE), y1: Math.round(p.z / SCALE) };
+  sectorDrawLines();
+}
+
+function sectorShapeMove(ev) {
+  if (!sectorShapesOn()) return;
+  if (!sec.drag && !sec.newBox) {   // over a dot: it's drawn bigger, so it's clear what a press takes
+    const dot = sectorDotAt(ev), key = dot ? dot.key : null;
+    if (key !== sec.hot) { sec.hot = key; sectorDrawLines(); }
+    mv.gl.renderer.domElement.style.cursor = key ? "grab" : "";
+    return;
+  }
+  const p = hitGround(ev);
+  if (!p) return;
+  const x = Math.round(p.x / SCALE), y = Math.round(p.z / SCALE);
+  if (sec.drag) {
+    for (const [num, i] of sec.drag.owners) { sec.lines[num][i] = x; sec.lines[num][i + 1] = y; }
+    sec.drag.key = `${x},${y}`;
+    sec.drag.moved = true;
+  } else {
+    sec.newBox.x1 = x;
+    sec.newBox.y1 = y;
+  }
+  sectorDrawLines();
+}
+
+function sectorShapeUp() {
+  const d = sec.drag, b = sec.newBox;
+  sec.drag = null;
+  sec.newBox = null;
+  if (d && d.moved) {   // the ground that changed: each sector's two triangles round the corner, before and after
+    const [ox, oy] = d.from, [nx, ny] = d.key.split(",").map(Number), within = [];
+    for (const [, , prev, next] of d.around) within.push([prev, [ox, oy], next], [prev, [nx, ny], next]);
+    sectorSaveShapes(d.owners.map(([num]) => num), within);
+  } else if (b) {
+    const [x0, x1] = [Math.min(b.x0, b.x1), Math.max(b.x0, b.x1)], [y0, y1] = [Math.min(b.y0, b.y1), Math.max(b.y0, b.y1)];
+    const [mx0, , , mx1] = mv.edit.bounds;
+    if (x1 - x0 > (mx1 - mx0) / 200 && y1 - y0 > (mx1 - mx0) / 200) {   // (a click, not a box: nothing)
+      const n = sec.view.next;
+      sec.pick = n;   // the new sector stays picked
+      sectorCall(() => mv.api.sector_area(mv.current, sec.file, [{ sector: n, points: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]] }]));
+    }
+  }
+  sectorDrawLines();
+}
+
+// Double-click a border: a new dot there, in each sector the border belongs to. Nothing changes until it's dragged
+// (the drag saves it with the shape), so it's only drawn till then.
+function sectorAddDot(ev) {
+  if (!sectorShapesOn() || !mv.brush.mod || sec.busy) return;
+  const e = sectorEdgeAt(ev);
+  if (!e) return;
+  for (const p of Object.values(sec.lines)) {
+    for (let i = 0; i < p.length; i += 2) {
+      const j = (i + 2) % p.length, a = `${p[i]},${p[i + 1]}`, b = `${p[j]},${p[j + 1]}`;
+      if ((a === e.a && b === e.b) || (a === e.b && b === e.a)) {
+        p.splice(i + 2, 0, e.x, e.y);
+        break;
+      }
+    }
+  }
+  sec.hot = `${e.x},${e.y}`;
+  sectorDrawLines();
+}
+
+// Right-click a dot: it's taken out of each sector that has it (a sector keeps at least three corners).
+function sectorRemoveDot(ev) {
+  if (!sectorShapesOn()) return false;
+  const dot = sectorDotAt(ev);
+  if (!dot) return false;
+  ev.preventDefault();
+  if (!mv.brush.mod || sec.busy || dot.owners.some(([num]) => sec.lines[num].length <= 6)) return true;
+  const within = sectorAround(dot.owners).map(([, , prev, next]) => [prev, [dot.x, dot.y], next]);   // the corner cut off
+  for (const [num, i] of dot.owners) sec.lines[num].splice(i, 2);
+  sectorSaveShapes(dot.owners.map(([num]) => num), within);
+  return true;
 }
 
 // One dab on the shown cells (the build's rule: a cell whose middle is inside it), before the save.
@@ -3157,6 +3375,7 @@ function sectorDab(x, y, value) {
 
 // A press on the ground with the Sectors brush: the drag starts (its dabs every half radius, as Cover's).
 function sectorDown(ev, s) {
+  if (sec.mode !== "paint") return;   // (Shapes: sectorShapeDown, before the view's own)
   if (!mv.brush.mod || !sec.view || sec.busy) return;  // (no mod: the note says so already)
   const value = sec.pick === "new" ? sec.view.next : sec.pick;
   if (value === null || value === undefined) { sec.error = mv.words.tip_sectors_new_full; renderSectorTools(s); return; }
@@ -3170,6 +3389,7 @@ function sectorDown(ev, s) {
 
 function sectorMove(p) {
   const g = sec.painting;
+  if (sec.mode !== "paint") return;
   sectorRing(p);
   if (!g || !p) return;
   const x = p.x / SCALE, y = p.z / SCALE, spacing = g.radius / 2;
@@ -3222,6 +3442,24 @@ function watchSectorPointer(canvas) {
   });
   for (const type of ["pointerup", "pointercancel"]) canvas.addEventListener(type, () => { if (sec.painting) sectorUp(); });
   canvas.addEventListener("pointerleave", () => { if (scen.tool === "sectors") sectorRing(null); });
+  // Shapes: a press on a dot (or a box for a new sector) is taken before the view turns (as Drag to move does)
+  const host = canvas.parentElement;
+  host.addEventListener("pointerdown", sectorShapeDown, { capture: true });
+  let shapeEv = null, shapeFrame = 0;
+  host.addEventListener("pointermove", (ev) => {
+    if (!sectorShapesOn()) return;
+    shapeEv = ev;
+    if (!shapeFrame) shapeFrame = requestAnimationFrame(() => { shapeFrame = 0; if (shapeEv) sectorShapeMove(shapeEv); });
+  });
+  for (const type of ["pointerup", "pointercancel"]) host.addEventListener(type, () => { if (sec.drag || sec.newBox) sectorShapeUp(); });
+  canvas.addEventListener("dblclick", sectorAddDot);
+  // right-drag moves the view: only a right-click that stays put takes a dot out
+  let rightAt = null;
+  host.addEventListener("pointerdown", (ev) => { rightAt = ev.button === 2 ? [ev.clientX, ev.clientY] : null; }, { capture: true });
+  canvas.addEventListener("contextmenu", (ev) => {
+    if (rightAt && Math.hypot(ev.clientX - rightAt[0], ev.clientY - rightAt[1]) <= 4) sectorRemoveDot(ev);
+    rightAt = null;
+  });
   $("scen-sectors-size").addEventListener("input", (e) => {
     sec.size = Number(e.target.value) || 1;
     $("scen-sectors-size-label").textContent = fill(mv.words.sectors_size, { pct: sec.size });

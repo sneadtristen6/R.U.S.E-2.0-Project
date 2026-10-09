@@ -804,6 +804,24 @@ points = [[1200000.0, 900000.0], [1220000.0, 900000.0]]   # where each dab went
   of every sector (the eraser). Ground left in no sector stays in none, as on the shipped maps.
 - A dab is round, or a square with sides twice the radius long (`dx` and `dy` turn it, as in cover.toml). The ground
   is cut into the same grid as above (4 m on D-Day); a cell is painted when its middle is under a dab.
+- A sector's shape (the Studio's Sectors tool, Shapes: each sector's outline with its corners to drag, shared corners
+  moving both sectors; New sector drags a box; Delete sector) is a row of its own in the same list, in order with
+  the strokes:
+
+  ```toml
+  [[sectors.paint]]
+  file = "leveldesign_3v3_v01.scenario"
+  sector = 8
+  group = 1                          # rows saved together (Undo takes them back together)
+  area = [[1830000.0, 1400000.0], [1900000.0, 1390000.0], [1880000.0, 1500000.0]]   # its corners, in order
+  within = [[[1800000.0, 1350000.0], [1836032.0, 1399808.0], [1850000.0, 1520000.0]]]   # optional: where it changes
+  ```
+
+  The sector becomes exactly the ground inside `area` (a cell is inside when its middle is, by the even-odd rule);
+  the ground it had outside goes to what touches it (another sector, or no sector next to no-sector ground). No
+  corners (`area = []`): the sector is taken out, its ground to its neighbours. `within` limits the change to the
+  ground inside those polygons (a corner dragged: the two triangles it made with its neighbouring corners, before
+  and after), so the rest of the sector stays cell for cell as it was.
 - Each sector's outline is traced round its painted ground and it gets its own zone map share, as above. A number
   the scenario already has keeps its name and its label (moved inside the sector when the paint left it outside); a
   new number gets a new sector, made like the scenario's own.
@@ -819,8 +837,8 @@ points = [[1200000.0, 900000.0], [1220000.0, 900000.0]]   # where each dab went
 - A new Blank Terrain or Blank Ocean map starts with its scenario in `no_sectors`. Blank maps made before (Studio 0.9.8
   to 0.9.8.2) have `whole_map = true` and keep it.
 - Seen in the game (2026-10-09): 13 painted sectors on a blank map, a new number among them. Not tried in the game
-  yet: the tidying (pieces given to a neighbour, the thin lines), numbers with gaps, and a map with no sectors at all
-  (the build won't make one).
+  yet: sectors' shapes on a shipped map's own sectors, the tidying (pieces given to a neighbour, the thin lines),
+  numbers with gaps, and a map with no sectors at all (the build won't make one).
 
 A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
 Operations spawn theirs this way; skirmish maps spawn only their supply depots):

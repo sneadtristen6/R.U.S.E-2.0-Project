@@ -376,6 +376,127 @@ class StudioBrush(_with_mod()):
         with self.assertRaises(Exception):
             self.api.sector_paint("Blitz", f, 300, 5000.0, [[1.0, 1.0]])
 
+    def test_shapes_saved_together_and_taken_back_together(self):
+        """A shape edit (the owner, 2026-10-09: sectors as shapes you drag): the sectors it changes saved in one go,
+        the outlines with them, and Undo taking them all back."""
+        f = "leveldesign.scenario"
+        left = [[0.0, 0.0], [140000.5, 0.0], [140000.5, H], [0.0, H]]      # the shared border moved right
+        right = [[140000.5, 0.0], [W, 0.0], [W, H], [140000.5, H]]
+        v = self.api.sector_area("Blitz", f, [{"sector": 0, "points": left}, {"sector": 1, "points": right}])
+        self.assertEqual((sorted(v["outlines"]), v["strokes"], v["problems"]), (["0", "1"], 2, []))
+        data = tomllib.loads(self.file.read_text(encoding="utf-8"))["sectors"]["paint"]
+        self.assertEqual([(p["sector"], p["group"], len(p["area"])) for p in data], [(0, 1, 4), (1, 1, 4)])
+        v = self.api.sector_area("Blitz", f, [{"sector": 1, "points": []}])   # taken out: its ground to sector 0
+        self.assertEqual([s["number"] for s in v["sectors"]], [0])
+        self.assertEqual(tomllib.loads(self.file.read_text(encoding="utf-8"))["sectors"]["paint"][-1]["group"], 2)
+        v = self.api.sector_undo("Blitz", f)
+        self.assertEqual(([s["number"] for s in v["sectors"]], v["strokes"]), ([0, 1], 2))
+        v = self.api.sector_undo("Blitz", f)                                   # both rows of the first edit
+        self.assertEqual(v["strokes"], 0)
+        for bad in ([], [{"sector": 0, "points": [[1.0, 1.0], [2.0, 2.0]]}], [{"sector": -1, "points": left}]):
+            with self.assertRaises(Exception, msg=str(bad)):
+                self.api.sector_area("Blitz", f, bad)
+
+
+def area(sector, points, group=1, file=FILE):
+    return S.SectorArea(file, sector, tuple(points), group)
+
+
+def plain_inside(pts, x, y) -> bool:
+    """The plain even-odd test of one point."""
+    inside = False
+    for i in range(len(pts)):
+        (xi, yi), (xj, yj) = pts[i], pts[i - 1]
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi) + xi:
+            inside = not inside
+    return inside
+
+
+@unittest.skipIf(np is None, "numpy (the apps carry it) isn't here")
+class Areas(unittest.TestCase):
+    """A sector's shape (SectorArea, the Studio's corners to drag): the cells it holds, the ground it gives up going
+    to what touches it, a sector taken out, the rows read back, and the build writing them."""
+
+    def test_an_areas_cells_are_where_the_plain_test_says_cell_for_cell(self):
+        g = S.Grid.over(W, H, 128)
+        star = [(30000.3, 20000.7), (120000.1, 41000.2), (200000.9, 15000.4), (180000.2, 120000.6), (240000.5, 190000.3),
+                (100000.7, 150000.1), (60000.4, 185000.9), (90000.2, 100000.8), (10000.6, 90000.5)]
+        i0, i1, mask = S.polygon_mask(star, g, np)
+        got = np.zeros((g.ny, g.nx), bool)
+        got[i0:i1 + 1] = mask
+        plain = [[plain_inside(star, (j + 0.5) * g.step, (i + 0.5) * g.step) for j in range(g.nx)] for i in range(g.ny)]
+        self.assertEqual(got.tobytes(), np.array(plain, bool).tobytes())
+        self.assertGreater(int(got.sum()), 1000)
+
+    def test_the_ground_a_sector_gives_up_goes_to_what_touches_it(self):
+        g = S.Grid.over(W, H, 128)
+        lab = np.full((g.ny, g.nx), 0, np.int32)
+        lab[:, g.nx // 2:] = 1
+        lab[:8] = S.NO_SECTOR                      # a strip of ground in no sector along the top
+        before0 = int((lab == 0).sum())
+        small = [(W * 0.75, H * 0.5), (W * 0.9, H * 0.5), (W * 0.9, H * 0.7), (W * 0.75, H * 0.7)]
+        S.area_cells(lab, area(1, small), g, np)
+        i0, i1, mask = S.polygon_mask(small, g, np)
+        own = np.zeros_like(lab, bool)
+        own[i0:i1 + 1] = mask
+        self.assertTrue((lab[own] == 1).all() and not (lab[~own] == 1).any())   # sector 1: its new shape, no more
+        self.assertFalse((lab == S.LEFT_OVER).any())
+        # what it gave up: to sector 0 where that's nearer, to no sector near the strip; never back to sector 1
+        self.assertGreater(int((lab == 0).sum()), before0 + 1000)
+        freed_none = np.argwhere(lab[8:] == S.NO_SECTOR)   # (the ground sector 1 had: the right half)
+        self.assertTrue(len(freed_none) and (freed_none[:, 1] >= g.nx // 2).all())
+        self.assertEqual(int((lab[8:, :g.nx // 2] != 0).sum()), 0)              # sector 0's own ground untouched
+        self.assertTrue((lab[:8] == S.NO_SECTOR).all())                         # the strip stays no sector
+        S.area_cells(lab, area(1, ()), g, np)       # taken out
+        self.assertEqual(set(np.unique(lab).tolist()), {S.NO_SECTOR, 0})
+
+    def test_a_moved_corner_changes_only_the_ground_round_it(self):
+        """within: a corner of the border between sectors 0 and 1 moved right; only the cells in its two triangles
+        (before and after) change, every other cell stays as it was, even where the new outline (a straight line
+        here) and the old cells (a step here) don't agree."""
+        g = S.Grid.over(W, H, 128)
+        lab = np.full((g.ny, g.nx), 0, np.int32)
+        lab[:, g.nx // 2:] = 1
+        lab[:g.ny // 4, g.nx // 2 - 3:g.nx // 2] = 1          # a step in the border the straight outline skips
+        before = lab.copy()
+        top, bottom, old, new = (W / 2, 0.0), (W / 2, H), (W / 2, H / 2), (W * 0.7, H / 2)
+        fans = (top + old + bottom, top + new + bottom)
+        fans = tuple(tuple(zip(f[0::2], f[1::2])) for f in fans)
+        right = ((W / 2, 0.0), (W, 0.0), (W, H), (W / 2, H), new)   # sector 1's new outline (its corner moved in)
+        S.area_cells(lab, S.SectorArea(FILE, 1, right, 1, fans), g, np)
+        region = np.zeros(lab.shape, bool)
+        for f in fans:
+            i0, i1, m = S.polygon_mask(f, g, np)
+            region[i0:i1 + 1] |= m
+        self.assertTrue((lab[~region] == before[~region]).all())          # the step stays: nothing else moved
+        self.assertGreater(int(((before == 1) & (lab == 0)).sum()), 100)  # the triangle it gave up: to sector 0
+
+    def test_shape_rows_read_back_and_mistakes_are_refused(self):
+        fans = (((1.5, 2.0), (3.0, 4.0), (5.0, 1.0)), ((1.5, 2.0), (3.5, 4.5), (5.0, 1.0)))
+        setting = S.Sectors(paints=(area(0, [(1.5, 2.0), (3.0, 4.0), (5.0, 1.0)], 3), stroke(2, [(5.0, 6.0)]),
+                                    area(4, (), 4), S.SectorArea(FILE, 5, ((0.0, 0.0), (9.0, 0.0), (9.0, 9.0)), 5, fans)))
+        self.assertEqual(S.parse_sectors(tomllib.loads(S.sectors_toml(setting))["sectors"]), [setting])
+        good = {"file": "a.scenario", "sector": 0, "group": 1, "area": [[1, 2], [3, 4], [5, 1]]}
+        S.parse_sectors({"paint": [good]})
+        for bad in ({"sector": -1}, {"sector": 255}, {"group": -1}, {"group": True}, {"area": [[1, 2], [3, 4]]},
+                    {"area": [[1, "a"], [3, 4], [5, 1]]}, {"radius": 5.0}, {"file": "a.toml"},
+                    {"within": [[[1, 2], [3, 4]]]}, {"within": [[1, 2], [3, 4], [5, 1]]}):
+            with self.assertRaises(S.SectorError, msg=str(bad)):
+                S.parse_sectors({"paint": [{**good, **bad}]})
+
+    def test_shapes_are_written_as_zones(self):
+        s, kdt = made_up()
+        g = S.Grid.over(W, H, 512)
+        setting = S.Sectors(no_sectors=(FILE,), paints=(
+            area(0, [(20000.5, 20000.5), (130000.5, 20000.5), (130000.5, 170000.5), (20000.5, 170000.5)]),
+            area(1, [(130000.5, 20000.5), (240000.5, 20000.5), (240000.5, 170000.5), (130000.5, 170000.5)]),
+            area(3, [(60000.5, 60000.5), (90000.5, 60000.5), (90000.5, 100000.5), (60000.5, 100000.5)], 2)))
+        start = S.start_cells(s, kdt, g, setting, FILE, np)
+        lab = S.painted_cells(start, setting.paints_of(FILE), g, np)
+        res = S.over_painted(s, kdt, lab, g, lambda x, y: 50.0, seed="TestMap/a")
+        self.assertEqual([z.number for z in res.zones], [0, 1, 3])
+        self.assertEqual([t["kind"] for t in res.tidied], ["corridor"])   # 3 inside 0: a thin line out
+
 
 if __name__ == "__main__":
     unittest.main()

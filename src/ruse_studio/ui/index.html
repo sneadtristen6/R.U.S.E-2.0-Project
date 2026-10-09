@@ -339,12 +339,15 @@
               <!-- the Sectors brush (maps.js renderSectorTools, StudioApi.sector_*): a sector to paint, the dab's
                    shape and size, take back, where the scenario starts from, the outlines, and what the build says -->
               <div id="scen-sectors-box" class="hidden">
+                <!-- Shapes: each sector's corners dragged on the map; Paint: the brush, for touch-ups (maps.js sec.mode) -->
+                <div id="scen-sectors-mode" class="chips" role="group"></div>
                 <div id="scen-sectors-pick" class="chips" role="group"></div>
                 <div id="scen-sectors-shape" class="chips" role="group"></div>
                 <label id="scen-sectors-size-row" class="brush-slider small"><span id="scen-sectors-size-label"></span>
                   <input id="scen-sectors-size" type="range" min="1" max="20" step="1" value="4"></label>
                 <div class="small">
                   <button id="scen-sectors-undo" type="button" class="link"></button>
+                  <button id="scen-sectors-delete" type="button" class="link"></button>
                   <button id="scen-sectors-clear" type="button" class="link"></button>
                   <button id="scen-sectors-start" type="button" class="link"></button>
                 </div>
