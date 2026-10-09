@@ -2206,15 +2206,21 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         moves, starts, spawns, removes = self._read_scenario_tables(pack)
         changes = self._read_item_changes(pack)
         added = self._read_places(pack)  # (not `places`: a starting point's places, below)
-        whole = self._read_scenario_sectors(pack)
-        whole = whole is not None and whole.whole_map
-        if not moves and not spawns and not starts and not removes and not whole and not changes and not added:
+        setting = self._read_scenario_sectors(pack)
+        whole = setting is not None and setting.whole_map
+        painting = setting is not None and setting.active
+        if not moves and not spawns and not starts and not removes and not painting and not changes and not added:
             return base
         label_words = self._mod_words("map") if any(p.kind in scenario.LABEL_KINDS for p in added) else {}
         out = []
         for s in base["scenarios"]:
             s = {**s, "items": [dict(it) for it in s["items"]]}
-            if whole and s.get("zones"):  # sectors over the whole map: drawn as the build will make them
+            if painting and setting.painted(s["file"]):  # painted sectors (the Sectors brush): as the build makes them
+                zones, why = self._painted_zones(pack, s["file"], setting)
+                s["zones"], s["sectors_painted"] = zones or [], True
+                if why:
+                    s["sectors_note"] = why
+            elif whole and s.get("zones"):  # sectors over the whole map: drawn as the build will make them
                 zones, why = self._whole_map_zones(pack, s["file"])
                 if zones is not None:
                     s["zones"], s["sectors_whole"] = zones, True
@@ -2416,7 +2422,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             removes = own_removes if removes is None else removes
         if sectors is _KEEP:
             sectors = self._read_scenario_sectors(pack)
-        if moves or spawns or starts or removes or (sectors is not None and sectors.whole_map):
+        if moves or spawns or starts or removes or (sectors is not None and sectors.active):
             _save_checked(path, _scenario_toml(moves, starts, spawns, removes, self.SCENARIO_HEADER, sectors),
                           _scenario_checked(str(path)))
         elif path.is_file():
@@ -2806,12 +2812,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """Sectors over the whole map on (every scenario of the map: each place its sectors leave out goes to the
         sector nearest it, rusemod.sectors) or off, in the current mod. Returns the map's scenarios, drawn with the
         sectors as the build will make them."""
+        from dataclasses import replace as _replace
         from rusemod.sectors import Sectors
         if self._map_dir() is None:
             raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
         with self._saving:
             moves, starts, spawns, removes = self._read_scenario_tables(pack)
-            self._write_scenario_edits(pack, moves, spawns, starts, removes, Sectors(bool(whole_map)))
+            now = self._read_scenario_sectors(pack) or Sectors()   # (the painted sectors stay)
+            self._write_scenario_edits(pack, moves, spawns, starts, removes, _replace(now, whole_map=bool(whole_map)))
         return self.map_scenarios(pack)
 
     PREVIEW_CELLS = 1024  # the map view's sectors over the whole map: a coarser grid than the build's (quicker)
@@ -2849,6 +2857,223 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         with self._grounds_lock:
             self._sceneries[key] = out
         return out
+
+    # --- the Sectors brush (the owner, 2026-10-09: "Build a sector tool now"): the modder paints a scenario's sectors
+    # on the ground, kept in the mod's scenario.toml ([[sectors.paint]], no_sectors: rusemod.sectors). The cells are
+    # worked out on the build's own grid (sectors.MOST_CELLS: D-Day 3,840 x 2,560), so the checks here say what the
+    # build will say; the map view gets them on a coarser grid (PREVIEW_CELLS), run by run. Not tried in the game. ---
+    SECTOR_CELLS_KEPT = 2   # painted grids kept (about 20 MB each on D-Day)
+
+    def _sector_setting(self, pack: str):
+        from rusemod.sectors import Sectors
+        return self._read_scenario_sectors(pack) or Sectors()
+
+    def _save_sectors(self, pack: str, setting) -> None:
+        if self._map_dir() is None:
+            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+        moves, starts, spawns, removes = self._read_scenario_tables(pack)
+        self._write_scenario_edits(pack, moves, spawns, starts, removes, setting)
+
+    def _sector_source(self, pack: str, file: str):
+        """Scenario `file` of the map (a new map: of the map it copies) as the game has it: (Scenario, its zone map's
+        bytes or None, the map's width, height). Read once."""
+        from rusemod import sectors
+        from rusemod.cover import member as movement_member
+        game = self._game()
+        shipped = self._game_pack(pack)
+        path = find_pack(game, scenario.PACK) if game is not None else None
+        if path is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("We couldn't find R.U.S.E., so there are no sectors to paint.")
+        key = ("sector-source", str(path), path.stat().st_mtime, shipped.lower(), file.lower())
+        with self._grounds_lock:
+            hit = self._sceneries.get(key)
+        if hit is not None:
+            return hit
+        folder = scenario.folder_of(shipped)
+        stem = file[:-len(".scenario")] if file.lower().endswith(".scenario") else file
+        try:
+            with Edat.open(str(path)) as arc:
+                e = arc.entry(folder + file)
+                if e is None:
+                    raise StudioError(f"{pack} has no scenario {file}")
+                s = scenario.Scenario.read(bytes(arc.read(e)))
+                kdt = arc.entry(f"{folder}zonebluff\\{stem}.kdt")
+                kdt_raw = bytes(arc.read(kdt)) if kdt is not None else None
+                width, height = sectors.map_size(bytes(arc.read(arc.find(movement_member(shipped)))))
+        except (KeyError, ValueError, struct.error) as exc:   # (SectorError and ScenarioError are ValueErrors)
+            # not a game rule: the game's own files couldn't be read
+            raise StudioError(f"{file}: its sectors can't be read ({exc})") from None
+        out = (s, kdt_raw, width, height)
+        with self._grounds_lock:
+            self._sceneries[key] = out
+        return out
+
+    def _sector_cells(self, pack: str, file: str, setting):
+        """Scenario `file`'s painted cells on the build's grid (rusemod.sectors.painted_cells), as int16: (the cells,
+        the grid, the source). The start is kept per scenario; a stroke added to the ones before is painted on alone."""
+        from rusemod import sectors
+        from rusemod.numpy2 import np
+        s, kdt_raw, width, height = self._sector_source(pack, file)
+        g = sectors.Grid.over(width, height)
+        empty = setting.starts_empty(file)
+        start_key = ("sector-start", self._game_pack(pack).lower(), file.lower(), empty, setting.whole_map)
+        with self._grounds_lock:
+            start = self._sceneries.get(start_key)
+        if start is None:
+            try:
+                start = sectors.start_cells(s, kdt_raw, g, setting, file, np).astype(np.int16)
+            except sectors.SectorError:   # its sectors can't reach over the whole map: the build keeps its own
+                start = sectors.kdt_labels(sectors.Kdt(kdt_raw), g, [z.number for z in s.zones], np).astype(np.int16)
+            with self._grounds_lock:
+                self._sceneries[start_key] = start
+        paints = tuple(setting.paints_of(file))
+        kept = getattr(self, "_painted_kept", None)
+        if kept is None:
+            kept = self._painted_kept = {}
+        mine = (pack.lower(), file.lower())
+        with self._grounds_lock:
+            hit = kept.get(mine)
+        if hit is not None and hit[0] == start_key and hit[1] == paints[:len(hit[1])]:
+            lab = hit[2].copy() if len(hit[1]) < len(paints) else hit[2]
+            todo = paints[len(hit[1]):]
+        else:
+            lab, todo = start.copy(), paints
+        for p in todo:
+            sectors.paint_cells(lab, p, g, np)
+        with self._grounds_lock:
+            kept.pop(mine, None)
+            kept[mine] = (start_key, paints, lab)
+            while len(kept) > self.SECTOR_CELLS_KEPT:
+                kept.pop(next(iter(kept)))
+        return lab, g, (s, kdt_raw, width, height)
+
+    def _painted_zones(self, pack: str, file: str, setting):
+        """Scenario `file`'s painted sectors as the map view draws zones (the build's way, on its own grid), or
+        ([], why) when they can't be written. Worked out once per set of strokes."""
+        from rusemod import sectors
+        try:
+            lab, g, (s, kdt_raw, _w, _h) = self._sector_cells(pack, file, setting)
+        except (StudioError, ImportError) as exc:
+            return [], str(exc)
+        if kdt_raw is None:
+            return [], "it has no zone map: its sectors stay as they are"
+        key = ("painted-zones", pack.lower(), file.lower(), setting.starts_empty(file), setting.whole_map,
+               tuple(setting.paints_of(file)))
+        with self._grounds_lock:
+            hit = self._sceneries.get(key)
+        if hit is not None:
+            return hit
+        try:
+            res = sectors.over_painted(s, kdt_raw, lab, g, None, seed=f"{pack}/{file}")
+            out = (scenario.view(scenario.Scenario(s.version, res.zones, []))["zones"], "")
+        except sectors.SectorError as exc:
+            out = ([], str(exc))
+        with self._grounds_lock:
+            self._sceneries[key] = out
+        return out
+
+    def sector_view(self, pack: str, file: str, outlines: bool = False) -> dict:
+        """Scenario `file`'s sectors as the Sectors brush shows them: {"file", "nx", "ny", "box": [x, y, w, h] (the
+        cells' box, map units), "runs": [value, count, ...] (each cell's sector number + 1, 0 for none, row by row from
+        the map's y 0, run by run), "sectors": [{"number", "cells", "x", "y"}] (its ground in the build's cells, a
+        point inside it), "problems": [{"number", "pieces", "holes", "inside"}] (a sector the build can't write),
+        "empty": no sector at all, "starts_empty": it starts with no sectors, "whole_map", "strokes": its strokes,
+        "next": the number a new sector takes, "pinched": cells the build moves where a sector touches itself corner
+        to corner, "outlines": {number: [x, y, ...]} (when asked, the sectors with one outline) or None}."""
+        from rusemod import sectors
+        from rusemod.numpy2 import np
+        setting = self._sector_setting(pack)
+        lab, g, _src = self._sector_cells(pack, file, setting)
+        k = 1   # the map view's cells: every k-th of the build's, at most PREVIEW_CELLS along the longer side
+        while max(g.nx, g.ny) > self.PREVIEW_CELLS * k:
+            k *= 2
+        small = lab[k // 2::k, k // 2::k]
+        ny, nx = small.shape
+        flat = (small.astype(np.int32) + 1).ravel()
+        cut = np.flatnonzero(np.diff(flat)) + 1
+        starts = np.concatenate([[0], cut])
+        counts = np.diff(np.concatenate([starts, [flat.size]]))
+        runs = np.stack([flat[starts], counts], axis=1).ravel().tolist()
+        counted = np.bincount((lab.astype(np.int32) + 1).ravel(), minlength=sectors.MOST_SECTOR + 2)
+        numbers = [int(n) for n in np.flatnonzero(counted[1:])]
+        small_g = sectors.Grid(g.width, g.height, g.step * k, nx, ny)
+        listed = []
+        for n in numbers:
+            if (small == n).any():
+                x, y = sectors.label_point(small, n, small_g, np)
+            else:
+                x, y = sectors.label_point(lab, n, g, np)
+            listed.append({"number": n, "cells": int(counted[n + 1]), "x": round(x, 1), "y": round(y, 1)})
+        shapes = lab.copy()
+        problems, pinched, lines = [], 0, None
+        if numbers:
+            chains, rings, problems, pinched = sectors.sector_shapes(shapes, g, np)
+            if outlines:
+                one = {z: r for z, r in rings.items() if len(r) == 1}
+                try:
+                    lines = {str(z): [round(c, 1) for pt in pts for c in pt]
+                             for z, pts in sectors._simple_outlines(chains, one, g).items()}
+                except sectors.SectorError:
+                    lines = {}
+        free = next(n for n in range(sectors.MOST_SECTOR + 2) if n > sectors.MOST_SECTOR or n not in numbers)
+        return {"file": file, "nx": nx, "ny": ny, "box": [0.0, 0.0, nx * g.step * k, ny * g.step * k], "runs": runs,
+                "sectors": listed, "problems": problems, "empty": not numbers,
+                "starts_empty": setting.starts_empty(file), "whole_map": setting.whole_map,
+                "strokes": len(setting.paints_of(file)),
+                "next": free if free <= sectors.MOST_SECTOR else None, "pinched": pinched, "outlines": lines}
+
+    SECTOR_STROKE_DABS = 5000   # dabs one drag may hold (sectors.MOST_POINTS is the file's own limit)
+
+    def sector_paint(self, pack: str, file: str, sector: int, radius: float, points: list, shape: str = "round",
+                     dx: float = 1.0, dy: float = 0.0) -> dict:
+        """One drag of the Sectors brush on scenario `file`: the ground under each dab ([x, y] of `points`, `radius`
+        map units, round or square along dx, dy) put in sector `sector` (-1: in no sector, the eraser), saved in the
+        mod. Returns sector_view."""
+        from dataclasses import replace as _replace
+        from rusemod import sectors
+        self._base_scenario(pack, file)   # (a scenario the map has)
+        try:
+            pts = [[float(x), float(y)] for x, y in points][:self.SECTOR_STROKE_DABS]
+            row = {"file": file, "sector": int(sector), "radius": float(radius), "points": pts, "shape": shape}
+            if shape == "square":
+                row.update(dx=float(dx), dy=float(dy))
+            paint = sectors.parse_paint(row, "the Sectors brush")
+        except (TypeError, ValueError) as exc:   # (SectorError is a ValueError)
+            raise StudioError(f"That stroke can't be saved ({exc}).") from None
+        with self._saving:
+            now = self._sector_setting(pack)
+            self._save_sectors(pack, _replace(now, paints=now.paints + (paint,)))
+        return self.sector_view(pack, file)
+
+    def sector_undo(self, pack: str, file: str) -> dict:
+        """Take back scenario `file`'s last Sectors brush stroke. Returns sector_view."""
+        from dataclasses import replace as _replace
+        with self._saving:
+            now = self._sector_setting(pack)
+            last = max((i for i, p in enumerate(now.paints) if p.file.lower() == file.lower()), default=None)
+            if last is None:
+                raise StudioError("There's no painted sector stroke to take back.")
+            self._save_sectors(pack, _replace(now, paints=now.paints[:last] + now.paints[last + 1:]))
+        return self.sector_view(pack, file)
+
+    def sector_clear(self, pack: str, file: str) -> dict:
+        """Take back every Sectors brush stroke of scenario `file`. Returns sector_view."""
+        from dataclasses import replace as _replace
+        with self._saving:
+            now = self._sector_setting(pack)
+            self._save_sectors(pack, _replace(now, paints=tuple(p for p in now.paints if p.file.lower() != file.lower())))
+        return self.sector_view(pack, file)
+
+    def sector_start(self, pack: str, file: str, empty: bool) -> dict:
+        """Scenario `file` starts with no sectors (`empty`: the strokes paint every sector it has) or from the map's own
+        (over the whole map when that's on). Its strokes stay. Returns sector_view."""
+        from dataclasses import replace as _replace
+        with self._saving:
+            now = self._sector_setting(pack)
+            rest = tuple(f for f in now.no_sectors if f.lower() != file.lower())
+            self._save_sectors(pack, _replace(now, no_sectors=rest + ((file,) if empty else ())))
+        return self.sector_view(pack, file)
 
     def scenario_spawn(self, pack: str, file: str, unit: str, x: float, y: float, camp: int | None = scenario.NEUTRAL,
                        rotation: float = 0.0) -> dict:
@@ -6245,7 +6470,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                         spawns[k] = replace(spawns[k], camp=scenario.NEUTRAL)
                 else:
                     spawns = [s for i, s in enumerate(spawns) if i not in hit]
-                if moves or starts or spawns or removes or (sectors is not None and sectors.whole_map):
+                if moves or starts or spawns or removes or (sectors is not None and sectors.active):
                     _save_checked(path, _scenario_toml(moves, starts, spawns, removes, self.SCENARIO_HEADER, sectors),
                                   _scenario_checked(str(path)))
                 else:

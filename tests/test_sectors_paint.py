@@ -185,5 +185,86 @@ class Apply(unittest.TestCase):
         self.assertIn("TestMap: b.scenario: it has no sector at all", str(caught.exception))
 
 
+def _with_mod():
+    from test_studio import WithMod
+    return WithMod
+
+
+@unittest.skipIf(np is None, "numpy (the apps carry it) isn't here")
+class StudioBrush(_with_mod()):
+    """The Studio's Sectors brush calls: strokes kept in the mod's scenario.toml, taken back, cleared, a start from
+    no sectors, and the view the map shows (cells run by run, the checks, the outlines when asked)."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from test_scenario import scenario
+        from test_studio import make_edat
+        zoned, kdt = made_up()
+        s = Scenario.read(scenario())
+        s.zones = zoned.zones
+        win = b"INFOIA\r\n" + bytes(32) + struct.pack("<2f", W, H) + bytes(16)
+        (cls.game / "Data" / "PC" / "190852" / "DataMap_Win.dat").write_bytes(make_edat([
+            ("dir", "test\\map\\blitz\\", [("file", "leveldesign.scenario", s.to_bytes()),
+                                           ("dir", "zonebluff\\", [("file", "leveldesign.kdt", kdt)])]),
+            ("dir", "datasmap\\blitz\\", [("file", "mapinfo.win", win)])]))
+
+    def setUp(self):
+        from pathlib import Path
+        from unittest import mock
+        super().setUp()
+        menus = mock.patch("rusemod.scenario.kinds_of", return_value={})
+        menus.start()
+        self.addCleanup(menus.stop)
+        self.mod = Path(self.api.new_mod("Sectors")["current"])
+        self.file = self.mod / "maps" / "Blitz" / "scenario.toml"
+
+    def cells(self, view):
+        out = []
+        for v, n in zip(view["runs"][0::2], view["runs"][1::2]):
+            out += [v] * n
+        self.assertEqual(len(out), view["nx"] * view["ny"])
+        return out
+
+    def test_paint_take_back_clear_and_start_from_none(self):
+        f = "leveldesign.scenario"
+        v = self.api.sector_view("Blitz", f)
+        self.assertEqual([s["number"] for s in v["sectors"]], [0, 1])
+        self.assertEqual((v["empty"], v["problems"], v["next"], v["strokes"]), (False, [], 2, 0))
+        v = self.api.sector_start("Blitz", f, True)
+        self.assertEqual((v["empty"], v["starts_empty"], v["next"]), (True, True, 0))
+        self.assertEqual(set(self.cells(v)), {0})
+        v = self.api.sector_paint("Blitz", f, 0, 4000.0, [[x, 60000.0] for x in range(20000, 100001, 4000)],
+                                  "square")
+        self.assertEqual(([s["number"] for s in v["sectors"]], v["strokes"], v["next"]), ([0], 1, 1))
+        v = self.api.sector_paint("Blitz", f, 5, 10000.0, [[150000.0, 150000.0]])
+        self.assertEqual([s["number"] for s in v["sectors"]], [0, 5])
+        self.assertEqual(set(self.cells(v)), {0, 1, 6})
+        data = tomllib.loads(self.file.read_text(encoding="utf-8"))["sectors"]
+        self.assertEqual((data["no_sectors"], [p["sector"] for p in data["paint"]]), ([f], [0, 5]))
+        # a second piece of sector 1: named, with what the build says
+        v = self.api.sector_paint("Blitz", f, 0, 8000.0, [[30000.0, 150000.0]])
+        self.assertEqual(v["problems"], [{"number": 0, "pieces": 2, "holes": 0, "inside": []}])
+        scen = next(x for x in self.api.map_scenarios("Blitz")["scenarios"] if x["file"] == f)
+        self.assertIn("sector 1 is in 2 pieces", scen["sectors_note"])
+        v = self.api.sector_undo("Blitz", f)
+        self.assertEqual((v["problems"], v["strokes"]), ([], 2))
+        v = self.api.sector_view("Blitz", f, outlines=True)
+        self.assertEqual(sorted(v["outlines"]), ["0", "5"])
+        scen = next(x for x in self.api.map_scenarios("Blitz")["scenarios"] if x["file"] == f)
+        self.assertEqual(([z["number"] for z in scen["zones"]], scen.get("sectors_note")), ([0, 5], None))
+        v = self.api.sector_clear("Blitz", f)
+        self.assertEqual((v["strokes"], v["empty"]), (0, True))
+        v = self.api.sector_start("Blitz", f, False)
+        self.assertEqual([s["number"] for s in v["sectors"]], [0, 1])
+        self.assertFalse(self.file.exists())   # nothing left: no file
+        self.api.scenario_sectors("Blitz", True)    # the whole-map switch keeps the strokes
+        self.api.sector_paint("Blitz", f, 1, 5000.0, [[60000.0, 60000.0]])
+        self.api.scenario_sectors("Blitz", False)
+        self.assertEqual(len(tomllib.loads(self.file.read_text(encoding="utf-8"))["sectors"]["paint"]), 1)
+        with self.assertRaises(Exception):
+            self.api.sector_paint("Blitz", f, 300, 5000.0, [[1.0, 1.0]])
+
+
 if __name__ == "__main__":
     unittest.main()

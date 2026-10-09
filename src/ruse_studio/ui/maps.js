@@ -2136,7 +2136,7 @@ function drawScenario() {
   scen.zones = zones;
   s.zones.forEach((z, k) => drawZone(z, k, zones, at, step));
   fillZones();
-  zones.visible = scen.layers.zones;
+  zones.visible = scen.layers.zones && scen.tool !== "sectors";  // the Sectors brush shows its own cells instead
   scen.zoneFlat = s.zones.map((z, k) => flatZone(z, k));  // for pointing at them (scenarioAt)
   const pillar = size * 0.03, blank = blankMap();
   for (const it of s.items) {
@@ -2502,6 +2502,9 @@ function renderScenTools() {
   iconTile($("scen-mark"), "mark", w.scen_mark_tool).title = w.tip_scen_mark;
   $("scen-mark").setAttribute("aria-pressed", String(scen.tool === "mark"));
   $("scen-move").disabled = $("scen-spawn").disabled = $("scen-start").disabled = $("scen-mark").disabled = !s;
+  iconTile($("scen-sectors"), "sectors", w.scen_sectors_tool).title = s ? w.tip_scen_sectors : w.tip_scen_sectors_locked;
+  $("scen-sectors").setAttribute("aria-pressed", String(scen.tool === "sectors"));
+  $("scen-sectors").disabled = !s;
   // Add a name or zone: what to add (each chip says what it is for), and a town's or hill's words to show
   const markPick = $("scen-mark-kind"), wordsRow = $("scen-mark-words-row");
   markPick.classList.toggle("hidden", scen.tool !== "mark");
@@ -2612,6 +2615,7 @@ function renderScenTools() {
   $("scen-snap-label").textContent = w.scen_snap_roads || "Stick to roads";
   snapRow.title = w.tip_scen_snap_roads || "";
   renderScenClear(s);
+  renderSectorTools(s);  // the Sectors brush's own controls (shown with its tool only)
   renderItemDetails(null, null);  // the picked item's values: shown again below when there is one
   if (!mv.brush.mod && scen.tool) { scenNote(w.no_mod, "error"); return; }
   if (scen.tool === "move") {
@@ -2642,6 +2646,7 @@ function renderScenTools() {
   } else if (scen.tool === "spawn") { scenNote(w.scen_spawn_help); renderItemDetails(null, null); }
   else if (scen.tool === "start") { scenNote(w.scen_start_help); renderItemDetails(null, null); }
   else if (scen.tool === "mark") { scenNote(w[MARK_WORD[scen.markKind] + "_help"]); renderItemDetails(null, null); }
+  else if (scen.tool === "sectors") { scenNote(""); renderItemDetails(null, null); }  // its notes: renderSectorTools
   else {
     scenNote(s && w.scen_drag_help ? w.scen_drag_help : "");
     const it = s && scen.selected !== null ? s.items[scen.selected] : null;
@@ -2829,6 +2834,348 @@ function renderScenClear(s) {
   }
 }
 
+// --- the Sectors brush (the owner, 2026-10-09: "Build a sector tool now"): pick a sector (or New sector, or No
+// sector to take ground out of every sector), then drag on the ground to paint it, like the Cover brush paints
+// cover. Saved in the map project's scenario.toml, per scenario (StudioApi.sector_paint, rusemod.sectors); the cells
+// shown are the build's own (StudioApi.sector_view), so what the note says is what the build will say. Not tried in
+// the game yet. ---
+const sec = { view: null, file: null, pack: null, pick: "new", shape: "round", size: 4, painting: null, busy: false,
+  dirty: false, outlines: false, lines: null, nx: 0, ny: 0, box: null, cells: null, canvas: null, ctx: null, img: null,
+  tex: null, mesh: null, linesMesh: null, on: false, error: "" };
+const SECTOR_SIZE_MOST = 20;  // the size slider: a dab's radius as a share of the map's width, in %
+
+// a sector's colour on the overlay: the zones' own (zoneColour), by its number (worked out once each)
+const sectorColours = [];
+function sectorRgb(number) {
+  if (!sectorColours[number]) {
+    const c = zoneColour(number);
+    sectorColours[number] = [Math.round(c.r * 255), Math.round(c.g * 255), Math.round(c.b * 255)];
+  }
+  return sectorColours[number];
+}
+
+function sectorRadius() {
+  const [x0, , , x1] = mv.edit.bounds;
+  return sec.size / 100 * (x1 - x0);
+}
+
+// The tool's controls and notes, and its cells on the ground while it's picked.
+function renderSectorTools(s) {
+  const w = mv.words, box = $("scen-sectors-box"), on = scen.tool === "sectors" && Boolean(s);
+  box.classList.toggle("hidden", !on);
+  if (on !== sec.on) {
+    sec.on = on;
+    if (!on && sec.dirty) {  // the sectors as the build makes them, drawn as zones again
+      sec.dirty = false;
+      scenEdit(() => mv.api.map_scenarios(mv.current), true);
+    }
+    if (!on && mv.gl && mv.gl.ring) { mv.gl.ring.visible = false; mv.gl.squareRing.visible = false; }
+  }
+  if (!on) { sectorOverlayShow(false); return; }
+  if (sec.file !== s.file || sec.pack !== mv.current || (sec.mesh && mv.gl && mv.gl.ground
+    && sec.mesh.geometry.index !== mv.gl.ground.geometry.index)) {
+    sec.file = s.file;   // another scenario, another map (or its ground made again): its own cells
+    sec.pack = mv.current;
+    sec.view = null;
+    sec.lines = null;
+    sec.cells = null;
+    sectorDropMesh();
+    loadSectorView();
+  }
+  sectorOverlayShow(true);
+  const v = sec.view, can = Boolean(mv.brush.mod) && Boolean(v) && !sec.busy;
+  const picks = $("scen-sectors-pick");
+  const listed = v ? v.sectors : [];
+  if (sec.pick !== "new" && sec.pick !== -1 && !listed.some((x) => x.number === sec.pick)) sec.pick = "new";
+  const swatch = (n) => el("span", { className: "swatch", style: `background: rgb(${sectorRgb(n).join(", ")})` });
+  const chip = (label, tip, value, n) => {
+    const c = chipOf(label, tip, sec.pick === value, () => { sec.pick = value; renderSectorTools(s); });
+    if (n !== undefined) c.prepend(swatch(n), " ");
+    return c;
+  };
+  const newChip = chip(w.sectors_new, v && v.next === null ? w.tip_sectors_new_full : w.tip_sectors_new, "new");
+  newChip.disabled = Boolean(v) && v.next === null;
+  picks.replaceChildren(...listed.map((x) => chip(fill(w.sectors_n, { n: x.number + 1 }), w.tip_sectors_pick, x.number, x.number)),
+    newChip, chip(w.sectors_none, w.tip_sectors_none, -1));
+  $("scen-sectors-shape").replaceChildren(...["round", "square"].map((k) => chipOf(w["sectors_" + k], w.tip_sectors_shape,
+    sec.shape === k, () => { sec.shape = k; renderSectorTools(s); })));
+  $("scen-sectors-size").value = String(sec.size);
+  $("scen-sectors-size").max = String(SECTOR_SIZE_MOST);
+  $("scen-sectors-size-label").textContent = fill(w.sectors_size, { pct: sec.size });
+  $("scen-sectors-size-row").title = w.tip_sectors_size;
+  const strokes = v ? v.strokes : 0;
+  const button = (id, word, tip, locked, why, call) => {
+    const b = $(id);
+    b.textContent = word;
+    b.disabled = !can || locked;
+    b.title = !mv.brush.mod ? w.no_mod : locked ? why : tip;
+    b.onclick = () => sectorCall(call);
+  };
+  button("scen-sectors-undo", w.sectors_undo, w.tip_sectors_undo, !strokes, w.tip_sectors_undo_none,
+    () => mv.api.sector_undo(mv.current, s.file));
+  button("scen-sectors-clear", w.sectors_clear, w.tip_sectors_clear, !strokes, w.tip_sectors_undo_none,
+    () => mv.api.sector_clear(mv.current, s.file));
+  const empty = Boolean(v && v.starts_empty);
+  button("scen-sectors-start", empty ? w.sectors_start_map : w.sectors_start_none,
+    empty ? w.tip_sectors_start_map : w.tip_sectors_start_none, false, "",
+    () => mv.api.sector_start(mv.current, s.file, !empty));
+  const outl = $("scen-sectors-outlines");
+  outl.checked = sec.outlines;
+  outl.disabled = !v;
+  $("scen-sectors-outlines-label").textContent = w.sectors_outlines;
+  $("scen-sectors-outlines-row").title = w.tip_sectors_outlines;
+  // what the build will say: no sector at all, a sector in pieces or with a hole (and that it's untried)
+  const note = $("scen-sectors-note"), lines = [];
+  let bad = false;
+  if (!mv.brush.mod) { lines.push(w.no_mod); bad = true; }
+  if (sec.error) { lines.push(sec.error); bad = true; }
+  if (!v) lines.push(sec.busy ? w.sectors_busy : "");
+  else {
+    if (v.empty) { lines.push(w.sectors_empty); bad = true; }
+    for (const p of v.problems) {
+      lines.push(fill(p.pieces > 1 ? w.sectors_pieces : w.sectors_hole, { n: p.number + 1, pieces: p.pieces }));
+      bad = true;
+    }
+    if (!bad) lines.push(w.sectors_help);
+    lines.push(w.sectors_untried);
+  }
+  note.replaceChildren(...lines.filter(Boolean).map((t) => el("div", { textContent: t })));
+  note.className = "small" + (bad ? " error-text" : "");
+}
+
+async function loadSectorView(outlines) {
+  const pack = mv.current, file = sec.file;
+  sec.busy = true;
+  try {
+    const v = await mv.api.sector_view(pack, file, Boolean(outlines || sec.outlines));
+    if (pack !== mv.current || file !== sec.file) return;
+    takeSectorView(v);
+  } catch (err) {
+    sec.error = (err && err.message) || String(err);
+  } finally {
+    sec.busy = false;
+    renderSectorTools(((scen.data || {}).scenarios || [])[scen.pick]);
+  }
+}
+
+// A save (a stroke, Undo, Clear, the start): the view it returns shown; its outlines asked for again when they're on.
+async function sectorCall(call) {
+  const pack = mv.current;
+  sec.busy = true;
+  try {
+    const v = await call();
+    if (pack === mv.current) {
+      sec.dirty = true;
+      takeSectorView(v);
+      if (sec.outlines) loadSectorView(true);
+    }
+  } catch (err) {
+    if (sec.view && pack === mv.current) takeSectorView(sec.view);  // a stroke not saved: off the ground again
+    sec.error = (err && err.message) || String(err);
+  } finally {
+    sec.busy = false;
+    renderSectorTools(((scen.data || {}).scenarios || [])[scen.pick]);
+  }
+}
+
+// The view's cells (run by run) into the overlay's picture; its outlines, when it has them, as lines.
+function takeSectorView(v) {
+  sec.view = v;
+  sec.error = "";
+  sec.lines = v.outlines || (sec.outlines ? sec.lines : null);
+  const n = v.nx * v.ny;
+  if (!sec.cells || sec.nx !== v.nx || sec.ny !== v.ny) {
+    sec.nx = v.nx;
+    sec.ny = v.ny;
+    sec.cells = new Uint8Array(n);
+    sectorDropMesh();
+  }
+  sec.box = v.box;
+  let i = 0;
+  for (let k = 0; k < v.runs.length; k += 2) { sec.cells.fill(v.runs[k], i, i + v.runs[k + 1]); i += v.runs[k + 1]; }
+  sectorDrawCells(0, sec.ny - 1, 0, sec.nx - 1);
+  sectorDrawLines();
+}
+
+function sectorDropMesh() {
+  for (const k of ["mesh", "linesMesh"]) {
+    const o = sec[k];
+    if (!o) continue;
+    if (mv.gl) mv.gl.scene.remove(o);
+    o.geometry.dispose();
+    o.material.dispose();
+    sec[k] = null;
+  }
+}
+
+// The cells on the ground: the ground's own points, with their place in the cells' picture (like overlayMesh).
+function sectorOverlayShow(show) {
+  const gl = mv.gl;
+  if (!gl) return;
+  if (show && !sec.mesh && sec.cells && gl.ground && mv.edit) {
+    const { THREE } = gl, ed = mv.edit, [bx, by, bw, bh] = sec.box;
+    if (!sec.canvas || sec.canvas.width !== sec.nx || sec.canvas.height !== sec.ny) {
+      sec.canvas = document.createElement("canvas");
+      sec.canvas.width = sec.nx;
+      sec.canvas.height = sec.ny;
+      sec.ctx = sec.canvas.getContext("2d");
+      sec.img = sec.ctx.createImageData(sec.nx, sec.ny);
+      if (sec.tex) sec.tex.dispose();
+      sec.tex = new THREE.CanvasTexture(sec.canvas);
+      sec.tex.flipY = false;  // row 0 is the cells' first row (y 0)
+      sec.tex.userData.keep = true;
+      sectorDrawCells(0, sec.ny - 1, 0, sec.nx - 1);
+    }
+    const src = gl.ground.geometry, g = new THREE.BufferGeometry(), uv = new Float32Array(ed.n * 2);
+    for (let i = 0; i < ed.n; i++) { uv[2 * i] = (ed.wx[i] - bx) / bw; uv[2 * i + 1] = (ed.wy[i] - by) / bh; }
+    g.setAttribute("position", src.attributes.position);
+    g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    g.setIndex(src.index);
+    sec.mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: sec.tex, transparent: true, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6, side: THREE.DoubleSide }));
+    sec.mesh.frustumCulled = false;  // its points move with the ground's
+    sec.mesh.renderOrder = 5;
+    gl.scene.add(sec.mesh);
+  }
+  if (sec.mesh) sec.mesh.visible = show;
+  if (sec.linesMesh) sec.linesMesh.visible = show && sec.outlines;
+  gl.draw();
+}
+
+function sectorDrawCells(r0, r1, c0, c1) {
+  if (!sec.cells || !sec.img) return;
+  const n = sec.nx, px = sec.img.data;
+  for (let r = r0; r <= r1; r++) {
+    for (let c = c0; c <= c1; c++) {
+      const i = r * n + c, k = 4 * i, v = sec.cells[i];
+      if (v) { const rgb = sectorRgb(v - 1); px[k] = rgb[0]; px[k + 1] = rgb[1]; px[k + 2] = rgb[2]; px[k + 3] = 130; }
+      else px[k + 3] = 0;
+    }
+  }
+  sec.ctx.putImageData(sec.img, 0, 0, c0, r0, c1 - c0 + 1, r1 - r0 + 1);
+  sec.tex.needsUpdate = true;
+  if (mv.gl) mv.gl.draw();
+}
+
+// The sectors' outlines as the build traces them (Show outlines): lines on the ground in each sector's colour.
+function sectorDrawLines() {
+  const gl = mv.gl;
+  if (!gl || !mv.edit) return;
+  if (sec.linesMesh) { gl.scene.remove(sec.linesMesh); sec.linesMesh.geometry.dispose(); sec.linesMesh.material.dispose(); sec.linesMesh = null; }
+  if (!sec.outlines || !sec.lines) { gl.draw(); return; }
+  const { THREE } = gl, grid = makeGrid(mv.edit), lift = (mv.size || 1000) * 0.002, pos = [], col = [];
+  const at = (x, y) => [x * SCALE, groundAt(grid, x, y) * SCALE + lift, y * SCALE];
+  for (const [num, p] of Object.entries(sec.lines)) {
+    const rgb = sectorRgb(Number(num)).map((c) => Math.min(1, c / 255 + 0.2));
+    for (let i = 0; i < p.length; i += 2) {
+      const j = (i + 2) % p.length;
+      pos.push(...at(p[i], p[i + 1]), ...at(p[j], p[j + 1]));
+      col.push(...rgb, ...rgb);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pos), 3));
+  g.setAttribute("color", new THREE.BufferAttribute(new Float32Array(col), 3));
+  sec.linesMesh = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false }));
+  sec.linesMesh.renderOrder = 11;
+  sec.linesMesh.visible = sec.on;
+  gl.scene.add(sec.linesMesh);
+  gl.draw();
+}
+
+// One dab on the shown cells (the build's rule: a cell whose middle is inside it), before the save.
+function sectorDab(x, y, value) {
+  if (!sec.cells || !sec.box) return;
+  const [bx, by, bw, bh] = sec.box, cw = bw / sec.nx, ch = bh / sec.ny, r = sec.painting.radius;
+  const s = { x, y, radius: r, shape: sec.shape };
+  const c0 = Math.max(0, Math.floor((x - r - bx) / cw)), c1 = Math.min(sec.nx - 1, Math.ceil((x + r - bx) / cw));
+  const r0 = Math.max(0, Math.floor((y - r - by) / ch)), r1 = Math.min(sec.ny - 1, Math.ceil((y + r - by) / ch));
+  if (c0 > c1 || r0 > r1) return;
+  for (let row = r0; row <= r1; row++) {
+    const cy = by + (row + 0.5) * ch;
+    for (let c = c0; c <= c1; c++) if (footT2(s, bx + (c + 0.5) * cw, cy) < 1) sec.cells[row * sec.nx + c] = value + 1;
+  }
+  sectorDrawCells(r0, r1, c0, c1);
+}
+
+// A press on the ground with the Sectors brush: the drag starts (its dabs every half radius, as Cover's).
+function sectorDown(ev, s) {
+  if (!mv.brush.mod || !sec.view || sec.busy) return;  // (no mod: the note says so already)
+  const value = sec.pick === "new" ? sec.view.next : sec.pick;
+  if (value === null || value === undefined) { sec.error = mv.words.tip_sectors_new_full; renderSectorTools(s); return; }
+  const p = hitGround(ev);
+  if (!p) return;
+  const x = Math.round(p.x / SCALE), y = Math.round(p.z / SCALE);
+  sec.painting = { file: s.file, value, radius: Math.max(1, Math.round(sectorRadius())), points: [[x, y]], last: [x, y] };
+  sectorDab(x, y, value);
+  mv.gl.renderer.domElement.setPointerCapture(ev.pointerId);
+}
+
+function sectorMove(p) {
+  const g = sec.painting;
+  sectorRing(p);
+  if (!g || !p) return;
+  const x = p.x / SCALE, y = p.z / SCALE, spacing = g.radius / 2;
+  let [lx, ly] = g.last, dist = Math.hypot(x - lx, y - ly);
+  while (dist >= spacing && g.points.length < 5000) {
+    lx += (x - lx) * spacing / dist;
+    ly += (y - ly) * spacing / dist;
+    g.points.push([Math.round(lx), Math.round(ly)]);
+    sectorDab(lx, ly, g.value);
+    dist = Math.hypot(x - lx, y - ly);
+  }
+  g.last = [lx, ly];
+}
+
+// Let go: the drag saved as one stroke; a new sector stays picked, so the next drag paints more of it.
+function sectorUp() {
+  const g = sec.painting;
+  sec.painting = null;
+  if (!g) return;
+  if (sec.pick === "new") sec.pick = g.value;
+  sectorCall(() => mv.api.sector_paint(mv.current, g.file, g.value, g.radius, g.points, sec.shape));
+}
+
+// The brush's outline under the pointer, in the picked sector's colour (red: No sector).
+function sectorRing(p) {
+  const gl = mv.gl;
+  if (!gl || !gl.ring) return;
+  const r = sectorRadius() * SCALE, square = sec.shape === "square";
+  gl.ring.visible = Boolean(p) && !square;
+  gl.squareRing.visible = Boolean(p) && square;
+  if (p) {
+    const value = sec.pick === "new" ? (sec.view ? sec.view.next : 0) : sec.pick;
+    if (value === -1 || value === null) gl.ring.material.color.setHex(0xe0533d);
+    else gl.ring.material.color.setRGB(...sectorRgb(value).map((c) => c / 255));
+    gl.ring.position.set(p.x, p.y + r * 0.02, p.z);
+    gl.ring.scale.set(r, r, r);
+    gl.squareRing.position.set(p.x, p.y + r * 0.02, p.z);
+    gl.squareRing.scale.set(r * Math.SQRT2, r * Math.SQRT2, r * Math.SQRT2);
+    gl.squareRing.rotation.set(-Math.PI / 2, 0, 0);
+  }
+  gl.draw();
+}
+
+function watchSectorPointer(canvas) {
+  let pending = null, frame = 0;
+  canvas.addEventListener("pointermove", (ev) => {
+    if (scen.tool !== "sectors") return;
+    pending = ev;
+    if (!frame) frame = requestAnimationFrame(() => { frame = 0; if (scen.tool === "sectors" && pending) sectorMove(hitGround(pending)); });
+  });
+  for (const type of ["pointerup", "pointercancel"]) canvas.addEventListener(type, () => { if (sec.painting) sectorUp(); });
+  canvas.addEventListener("pointerleave", () => { if (scen.tool === "sectors") sectorRing(null); });
+  $("scen-sectors-size").addEventListener("input", (e) => {
+    sec.size = Number(e.target.value) || 1;
+    $("scen-sectors-size-label").textContent = fill(mv.words.sectors_size, { pct: sec.size });
+  });
+  $("scen-sectors-outlines").addEventListener("change", (e) => {
+    sec.outlines = e.target.checked;
+    if (sec.outlines && sec.file) loadSectorView(true);
+    else sectorDrawLines();
+  });
+}
+
 // Save a change, then draw the scenario as the mod leaves it now.
 async function scenEdit(call, keepPicked = false) {
   try {
@@ -2847,6 +3194,7 @@ function scenPointerDown(ev) {
   const gl = mv.gl, s = ((scen.data || {}).scenarios || [])[scen.pick];
   if (!scen.tool || ev.button !== 0 || !gl.ground || !mv.edit || !s) return;
   ev.preventDefault();
+  if (scen.tool === "sectors") { sectorDown(ev, s); return; }  // the Sectors brush: a drag paints
   // Move, pressed on the ground (a press on an item is grabStart's): a box dragged selects every spawn in it (no mod
   // needed); a click puts the item picked there, or clears what's selected (boxEnd)
   if (scen.tool === "move") { boxStart(ev); return; }
@@ -3524,6 +3872,7 @@ const ICONS = {
   spawn: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8v8 M8 12h8",
   start: "M6 21V3 M6 4h11l-3 4 3 4H6",
   mark: "M12 21s-6-6.5-6-11a6 6 0 0 1 12 0c0 4.5-6 11-6 11z M12 7.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z",
+  sectors: "M3 4h18v16H3z M3 11c4 0 5-3 9-3 M12 8v12 M12 14c3 0 5 2 9 2",
 };
 const BRUSH_ICON = { water: "drop", cover: "cover", block: "movement" };
 for (const f of FORMATIONS) {
@@ -4913,6 +5262,7 @@ function watchPointer() {
     canvas.addEventListener(type, () => { if (mv.brush.painting) finishStroke(); });
   }
   canvas.addEventListener("pointerdown", scenPointerDown);
+  watchSectorPointer(canvas);  // the Sectors brush's drag and ring
   // Drag to move: listened for on the map's frame, before the view's own handlers (capture), so a press on an item
   // grabs it instead of turning the view; the frame keeps the pointer until the button's let go.
   const host = canvas.parentElement;
@@ -6127,6 +6477,7 @@ function wire() {
     renderScenTools();
   });
   $("scen-move").addEventListener("click", () => setScenTool("move"));
+  $("scen-sectors").addEventListener("click", () => setScenTool("sectors"));
   $("scen-gap").addEventListener("input", (e) => { scen.gap[scen.kind] = Number(e.target.value); renderScenTools(); });
   $("scen-spawn").addEventListener("click", () => setScenTool("spawn"));
   $("scen-start").addEventListener("click", () => setScenTool("start"));

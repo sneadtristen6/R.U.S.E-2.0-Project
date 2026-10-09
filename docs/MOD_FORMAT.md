@@ -773,6 +773,35 @@ whole_map = true   # every scenario of the map: each place its sectors leave out
 - Seen in the game (2026-10-05, a drained D-Day, then Blank Ocean and Blank Terrain): the sectors meet the map's
   edges all round, and a ruse card takes on a sector that was sea.
 
+A mod also paints a scenario's sectors itself (the Studio's Sectors brush, in the Scenario panel):
+
+```toml
+[sectors]
+no_sectors = ["leveldesign_3v3_v01.scenario"]   # these scenarios start with no sectors at all
+
+[[sectors.paint]]                  # one drag of the brush
+file = "leveldesign_3v3_v01.scenario"   # the scenario it paints
+sector = 0                         # the sector's number (0 is the first: the Studio calls it Sector 1); -1: no sector
+radius = 40000.0                   # each dab's size, map units
+shape = "square"                   # round (the default) or square
+points = [[1200000.0, 900000.0], [1220000.0, 900000.0]]   # where each dab went
+```
+
+- A scenario starts from its own sectors (over the whole map when `whole_map` is on), or from none when it is in
+  `no_sectors`. Each stroke then puts the ground under its dabs in its sector, in order; `-1` takes the ground out
+  of every sector (the eraser). Ground left in no sector stays in none, as on the shipped maps.
+- A dab is round, or a square with sides twice the radius long (`dx` and `dy` turn it, as in cover.toml). The ground
+  is cut into the same grid as above (4 m on D-Day); a cell is painted when its middle is under a dab.
+- Each sector's outline is traced round its painted ground and it gets its own zone map share, as above. A number
+  the scenario already has keeps its name and its label (moved inside the sector when the paint left it outside); a
+  new number gets a new sector, made like the scenario's own.
+- The build stops when a painted scenario has no sector at all (paint at least one), or when a sector is in two or
+  more pieces or has a hole (a sector in the scenario's file has one outline): the message names the sector.
+- A new Blank Terrain or Blank Ocean map starts with its scenario in `no_sectors`. Blank maps made before (Studio 0.9.8
+  to 0.9.8.2) have `whole_map = true` and keep it.
+- Not tried in the game yet: painted sectors, a sector number the scenario didn't have, numbers with gaps, and a map
+  with no sectors at all (the build won't make one).
+
 A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
 Operations spawn theirs this way; skirmish maps spawn only their supply depots):
 
