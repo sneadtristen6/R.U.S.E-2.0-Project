@@ -9,6 +9,10 @@ to be able to add cool textures to your map."
 - A square of any map's ground: the map's overview to click on, and the square's picture.
 - The mod's own pictures (files/ground/<name>.png): the page turns any picture the browser can show into a PNG of
   its middle square and sends it here.
+- Online (free) textures (groundtex_online): Poly Haven's and ambientCG's (CC0) and US aerial photos (public domain),
+  listed from their sites (kept a day) and downloaded one at a time, only the one the modder clicks; the page makes
+  it a PNG of its middle square and keeps it as one of the mod's own pictures, with its real size and credit beside it
+  (files/ground/<name>.toml).
 Each texture's picture for the page to paint with is the one the build lays (groundtex.Swatch: made seamless), at
 up to PREVIEW pixels across."""
 from __future__ import annotations
@@ -17,6 +21,7 @@ import base64
 import binascii
 import hashlib
 import json
+import math
 import re
 
 from rusemod import groundtex as gt
@@ -26,10 +31,13 @@ from rusemod.edat import Edat
 from rusemod.terrain import pack_file
 from rusemod.webui import Job
 
+from . import groundtex_online as online
+
 PREVIEW = 128        # pixels across the picture the page paints its preview with
 THUMB = 64           # pixels across a texture's small picture in the list
 CATALOGUE_FORMAT = 1  # the kept list's own format: a new one makes it again
 PICTURE_MOST = 4096  # pixels across a picture of the mod's own, at most (it is cut to its middle square, 1,024 at most)
+CREDIT_MOST = 300    # characters kept of each of a picture's credit's words (source, author, licence, url)
 
 
 def _png_url(n: int, rgba: bytes) -> str:
@@ -52,6 +60,16 @@ def _file_name(name: str) -> str:
     if not re.match(r"[A-Za-z0-9_]", stem):
         stem = "_" + stem
     return stem[:76] + ".png"
+
+
+def _metres(metres) -> float | None:
+    """A picture's real size across (metres), checked: None when not given, TextureError when it isn't one."""
+    if metres in (None, "", 0):
+        return None
+    if isinstance(metres, bool) or not isinstance(metres, (int, float)) or not math.isfinite(metres) or not (
+            0 < metres <= gt.METRES_MOST):
+        raise gt.TextureError(f"A picture covers 0 to {gt.METRES_MOST:,.0f} m across, not {metres!r}.")
+    return float(metres)
 
 
 class GroundTextureCalls:
@@ -209,7 +227,9 @@ class GroundTextureCalls:
 
     def ground_pictures(self) -> dict:
         """The current mod's own pictures to paint with (files/ground/*.png): {"pictures": [{"ref": "file:<name>",
-        "name", "thumb": a small copy as a data URL}], "folder": where they are, or None without a mod}."""
+        "name", "thumb": a small copy as a data URL, "period": map units a repeat at its own size, and from its sidecar
+        (files/ground/<name>.toml) when it has one: "metres" it covers across and "credit": {"source", "author",
+        "licence", "url"}}], "folder": where they are, or None without a mod}."""
         folder = self._map_dir()
         if folder is None:
             return {"pictures": [], "folder": None}
@@ -222,13 +242,23 @@ class GroundTextureCalls:
                 n, px = _small(*gt.square(*gt.picture_rgba(f.read_bytes())), THUMB)
             except (ValueError, OSError):
                 continue  # (the mod check says what's wrong with it)
-            out.append({"ref": f"file:{f.name}", "name": f.stem, "thumb": _png_url(n, px)})
+            said = gt.read_credit(f)
+            row = {"ref": f"file:{f.name}", "name": f.stem, "thumb": _png_url(n, px), "period": gt.file_period(f)}
+            if "metres" in said:
+                row["metres"] = said["metres"]
+            credit = {k: said[k] for k in gt.CREDIT_KEYS if k in said}
+            if credit:
+                row["credit"] = credit
+            out.append(row)
         return {"pictures": out, "folder": str(where)}
 
-    def add_ground_picture(self, name: str, picture: str) -> dict:
+    def add_ground_picture(self, name: str, picture: str, metres: float | None = None,
+                           credit: dict | None = None) -> dict:
         """Keep a picture in the current mod to paint with: `picture` a PNG as a data URL (the page makes one of any
-        picture), saved as files/ground/<name>.png (a name already there gets _2, _3...). Returns ground_pictures()
-        with "ref" the new one's."""
+        picture), saved as files/ground/<name>.png (a name already there gets _2, _3...). With `metres` (the ground
+        the picture covers across, its real size) or `credit` ({"source", "author", "licence", "url"}: where it comes
+        from, an online texture's) they're kept beside it, files/ground/<name>.toml, and the picture is laid at its
+        real size. Returns ground_pictures() with "ref" the new one's."""
         folder = self._map_dir()
         if folder is None:
             raise gt.TextureError("Pick or make a mod first: its pictures are kept in it.")
@@ -239,12 +269,38 @@ class GroundTextureCalls:
             raise gt.TextureError(f"That picture can't be read ({exc}).") from None
         if not (w and h) or max(w, h) > PICTURE_MOST:
             raise gt.TextureError(f"That picture is {w} x {h}: up to {PICTURE_MOST} pixels across, please.")
+        side = _metres(metres)
+        said = {k: str(credit[k])[:CREDIT_MOST] for k in gt.CREDIT_KEYS
+                if isinstance(credit, dict) and isinstance(credit.get(k), str) and credit[k].strip()}
         where = folder / gt.GROUND
         base = _file_name(name)
         file, k = where / base, 2
-        while file.exists():
+        while file.exists() or gt.credit_path(file).exists():  # (a sidecar left behind isn't another picture's)
             file, k = where / f"{base[:-4]}_{k}.png", k + 1
         with self._saving:
             where.mkdir(parents=True, exist_ok=True)
             file.write_bytes(data)
+            if side or said:
+                gt.credit_path(file).write_text(gt.credit_toml(side, said), encoding="utf-8")
         return {**self.ground_pictures(), "ref": f"file:{file.name}"}
+
+    def online_textures(self, source: str, words: str = "") -> dict:
+        """Free ground pictures to download, from `source`: "polyhaven" (Poly Haven's aerial textures, then its
+        terrain ones; CC0), "ambientcg" (ambientCG's materials found by `words`; CC0) or "usgs" (US aerial photos'
+        places; public domain). {"source", "licence", "items": [{"id", "name", "metres" (real metres across, None when
+        not known), "thumb" (the site's own small picture), "tags", "author"}]} (usgs: [{"id", "name", "lat", "lon",
+        "group"}], with "metres": the photo sizes to choose from, and "default"). The lists are kept a day in the
+        cache; nothing else is downloaded here."""
+        return online.listing(self.cache_dir / "groundtex" / "online", str(source), str(words or ""))
+
+    def online_texture(self, source: str, item: str = "", metres: float = 0, where: str = "") -> dict:
+        """Download ONE free picture, the one the modder clicked: `item` an id from online_textures (usgs: a place's,
+        or none and `where` a typed "latitude, longitude"; `metres` the photo's side). {"name", "picture": a JPG or
+        PNG data URL, "metres", "credit": {"source", "author", "licence", "url"}}: the page makes it a PNG of its
+        middle square and keeps it with add_ground_picture."""
+        try:
+            side = float(metres or 0)
+        except (TypeError, ValueError):
+            raise gt.TextureError("A photo's size is a number of metres.") from None
+        return online.picture(self.cache_dir / "groundtex" / "online", str(source), str(item or ""), side,
+                              str(where or ""))

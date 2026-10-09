@@ -582,7 +582,23 @@ weight  = 0.8
 ```
 
 A mod's own pictures to paint with go in `files/ground/` (`files/ground/my sand.png`): the Studio's **Your pictures**
-puts them there.
+puts them there, and so does **Online (free)** (Poly Haven's and ambientCG's textures, CC0, and US aerial photos from
+the USGS National Map, public domain), which downloads only the one picture clicked.
+
+A picture may have a sidecar beside it with the same name, `files/ground/<name>.toml` (`rusemod.groundtex.read_credit`),
+saying how much ground it covers and where it comes from; Online (free) writes one for each picture it downloads:
+
+```toml
+metres  = 30.0                                   # the real ground the picture (its middle square) covers across
+source  = "Poly Haven"                           # where it comes from
+author  = "Rob Tuytel"                           # who made it
+licence = "CC0"                                  # "CC0" or "Public domain" for Online (free) pictures
+url     = "https://polyhaven.com/a/aerial_beach_01"
+```
+
+With `metres` the picture is laid at its real size: one repeat covers `metres` x 260 map units (a stroke's `size` still
+changes it); without a sidecar, or without `metres` in it, a repeat is 32 m (8,192 map units). The rest is shown in the
+Studio's tooltips and kept with the picture; the game never reads it. Every field is optional.
 
 Paint strokes apply in their order, each over what's below it (a stroke on the same place again builds up), before
 the mod's new roads are painted, so a road drawn over paint shows on top.
