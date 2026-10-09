@@ -21,6 +21,7 @@ stamp are (those seen in the game)."""
 from __future__ import annotations
 
 import hashlib
+import math
 import re
 import struct
 from dataclasses import dataclass
@@ -393,6 +394,197 @@ def catalogue(zz_arc, glad_arc=None) -> list[GameTexture]:
     out = list(by_bytes.values())
     out.sort(key=lambda t: (GROUP_ORDER.index(t.group) if t.group in GROUP_ORDER else len(GROUP_ORDER), t.ref))
     return out
+
+
+# --- the game's own decals over painted ground (`decals`, a texture stroke's) ---------------------------------------
+# Up close the ground's picture is 0.6 m a pixel; the game's maps show their detail there with decals, scenery objects
+# laid on the ground (rusemod.scenery). A game texture's own decal types are laid over the ground it paints, on one
+# even grid, each point taking the decal of the texture that shows on top there. Not tried in the game yet.
+DECAL_SIZE = 2.5   # decals laid this much bigger than the game lays them (its road decals: 2.0): fewer cover an area
+DECAL_STEP = 0.75  # grid points this share of a decal's width apart: neighbours overlap, so their soft edges meet
+DECAL_TURN = 360.0
+DECAL_AT = 0.5     # a point takes a decal where its stroke paints at least this strongly (as `clear` takes off)
+SETS = {"france": "France", "allemagne": "Allemagne", "hollande": "Hollande", "italie": "Italie",
+        "ardennes": "Ardennes", "afrique": "Africa", "communs": "Common"}  # theatre folder -> its decor set's name
+SCENERY_FOLDERS = {"africa": "afrique", "commonset": "communs"}  # a decor set's folder -> its textures' theatre
+_SET = re.compile(r"ClusterLoad_(\w+?)DecorsSet")
+
+
+@dataclass
+class DecalType:
+    name: str      # the scenery type (TypeWarrior/Herbe_verte)
+    theatre: str   # the decor set's folder it is defined in (france, communs, ...)
+    half: float    # map units from its middle to its side at size 1
+    colour: str    # its colour picture (the texture member, lower case)
+
+
+def decal_types(glad_arc) -> dict[str, list[DecalType]]:
+    """{texture member (lower case): the decal types that lay it}, from the game's decor sets (ZZ_GladPatchableWin.dat,
+    `glad_arc`): each type's registered name, its set and its size (MaxExtent)."""
+    from .ndf import Ndf, local_ref, sub_values
+    out: dict = {}
+    for e in glad_arc.entries:
+        low = e.path.lower()
+        if not (low.startswith(SCENERY_DIR) and low.endswith("decors.cpp.gladndfbin")):
+            continue
+        folder = low[len(SCENERY_DIR):].split("\\", 1)[0]
+        theatre = SCENERY_FOLDERS.get(folder, folder)
+        nd = Ndf(bytes(glad_arc.read(e)))
+        names = [p for p, _ in nd.props]
+
+        def props(i):
+            return {names[pi]: v for pi, v in nd.objects[i].props}
+        for i, o in enumerate(nd.objects):
+            if not nd.classes[o.cls].endswith("Sticker"):
+                continue
+            p = props(i)
+            reg, hi = _string(nd, p.get("RegistrationName")), p.get("MaxExtent")
+            handler = local_ref(p["SceneryMeshBucketHandler"]) if "SceneryMeshBucketHandler" in p else None
+            if not reg or hi is None or len(hi.payload) < 12 or handler is None:
+                continue
+            mat = props(handler).get("AdditionalDataMeshMaterial")
+            mat = local_ref(mat) if mat is not None else None
+            textures = props(mat).get("Textures") if mat is not None else None
+            if textures is None or textures.tc != 0x12:
+                continue
+            items = sub_values(textures)
+            colour = next((_string(nd, sub_values(items[k + 1])[0]) for k in range(0, len(items) - 1, 2)
+                           if _string(nd, items[k]) == "OARTexture0" and items[k + 1].tc == 0x22), None)
+            half = struct.unpack("<f", hi.payload[:4])[0]
+            if not colour or not half > 0:
+                continue
+            member = "gen\\" + colour.replace("/", "\\").lower().rsplit(".", 1)[0] + ".tgv"
+            out.setdefault(member, []).append(DecalType(reg, theatre, half, member))
+    return out
+
+
+def map_sets(glad_arc, pack: str) -> set[str]:
+    """The decor sets a map loads (theatre folders: france, communs, ...): the sets its cluster names
+    (genglad\\patchable\\map\\<map>\\clustermap.cpp.gladndfbin), and the sets those load in turn
+    (genglad\\patchable\\scenery\\clustersets.cpp.gladndfbin; France's loads the common one). Empty when not found."""
+    from .ndf import Ndf
+    wanted = {name.lower(): t for t, name in SETS.items()}
+
+    def strings(member):
+        e = glad_arc.entry(member)
+        if e is None:
+            return []
+        nd = Ndf(bytes(glad_arc.read(e)))
+        return [s for s in list(nd.strings) + list(nd.exports.values()) + list(nd.imports.values())
+                if isinstance(s, str)]
+    named = {m.group(1).lower() for s in strings(f"genglad\\patchable\\map\\{pack.lower()}\\clustermap.cpp.gladndfbin")
+             for m in _SET.finditer(s)}
+    out = {wanted[n] for n in named if n in wanted}
+    if out:
+        from .ndf import local_ref
+        e = glad_arc.entry("genglad\\patchable\\scenery\\clustersets.cpp.gladndfbin")
+        if e is not None:  # a set that loads another (France's: the common one)
+            from .ndf import sub_values
+            nd = Ndf(bytes(glad_arc.read(e)))
+            props = [p for p, _ in nd.props]
+            for i, path in nd.exports.items():
+                m = _SET.search(path or "")
+                if not m or m.group(1).lower() not in named or path.count("/") > 2 or i >= len(nd.objects):
+                    continue
+                for pi, v in nd.objects[i].props:
+                    if props[pi] != "SubClusterList":
+                        continue
+                    for item in sub_values(v):
+                        at = local_ref(item)
+                        m2 = _SET.search(nd.exports.get(at, "") or "") if at is not None else None
+                        if m2 and m2.group(1).lower() in wanted:
+                            out.add(wanted[m2.group(1).lower()])
+    return out
+
+
+DECAL_BYTES = 40  # what one decal adds to a map's scenery, about: its 4-byte word, a 24-byte turn-and-place, two list
+                  # entries of 4 (scenery.add_objects's blocks), and a little for its block
+SCENERY_MOST = 0xFFFFFC  # a map's scenery data can't grow past this: a block link holds its place in 24 bits
+ROOM_KEPT = 256 * 1024   # left free under it, for the blocks and grid cells the new objects need
+
+
+def decal_room(scenery_len: int) -> int:
+    """How many decals a map's scenery of `scenery_len` bytes of data has room for (decal_grid's `most`)."""
+    return max(0, (SCENERY_MOST - ROOM_KEPT - scenery_len) // DECAL_BYTES)
+
+
+def decal_grid(strokes: list, types: dict, sets: set[str], seed: str = "", most: int | None = None) -> tuple[list, dict]:
+    """The decals over painted ground: (scenery.NewObject list, {"types": {type: count}, "missing": [textures with no
+    decal the map loads], "step": map units between points, "thinned": whether the grid was spread out to fit}). One
+    grid over all the strokes' boxes, a point every DECAL_STEP of the largest decal's laid width; each point takes the
+    stroke on top there (the last one painting it at least DECAL_AT strongly); if that is a texture stroke of a game
+    texture with `decals` on, one of that texture's decal types the map loads (`sets`), turned and sized a little at
+    random (the same every build: `seed`). With `most` (decal_room), a grid that would lay more is spread out evenly
+    until it fits: the same look, fewer and further apart."""
+    out, said = _decal_grid(strokes, types, sets, seed, 1.0)
+    spread = 1.0
+    while most is not None and len(out) > most and spread < 64.0:
+        spread *= max(1.05, math.sqrt(len(out) / max(1, most)) * 1.02)
+        out, said = _decal_grid(strokes, types, sets, seed, spread)
+        said["thinned"] = True
+    if most is not None and len(out) > most:
+        out = []
+    said.setdefault("thinned", False)
+    return out, said
+
+
+def _decal_grid(strokes: list, types: dict, sets: set[str], seed: str, spread: float) -> tuple[list, dict]:
+    import random
+    from .brush import PAINT_KINDS
+    from .scenery import NewObject
+    lay = [s for s in strokes if s.kind.kind == "texture" and s.decals and s.texture.startswith("game:")]
+    if not lay:
+        return [], {"types": {}, "missing": [], "step": 0.0}
+    usable, missing = {}, []
+    for ref in dict.fromkeys(s.texture for s in lay):
+        here = [t for t in types.get(game_member(ref).lower(), []) if t.theatre in sets]
+        if here:
+            usable[ref] = here
+        else:
+            missing.append(ref)
+    if not usable:
+        return [], {"types": {}, "missing": missing, "step": 0.0}
+    # each texture its own grid, a point every DECAL_STEP of its smallest decal's laid width, over its own strokes
+    steps = {ref: DECAL_STEP * 2 * DECAL_SIZE * min(t.half for t in ts) * spread for ref, ts in usable.items()}
+    paint = [s for s in strokes if s.kind.kind in PAINT_KINDS]
+    boxes = [s.box() for s in paint]
+    bucket = 4 * max(steps.values())  # strokes filed by the cells their boxes reach, to find the ones over a point
+    cells: dict = {}
+    for k, (bx0, bx1, by0, by1) in enumerate(boxes):
+        for cx in range(int(bx0 // bucket), int(bx1 // bucket) + 1):
+            for cy in range(int(by0 // bucket), int(by1 // bucket) + 1):
+                cells.setdefault((cx, cy), []).append(k)
+
+    def top_at(x, y):
+        """The stroke that shows on top at (x, y): the last one painting it at least DECAL_AT strongly."""
+        for k in reversed(cells.get((int(x // bucket), int(y // bucket)), [])):
+            bx0, bx1, by0, by1 = boxes[k]
+            if bx0 <= x <= bx1 and by0 <= y <= by1 and paint[k].strength_at(x, y) * paint[k].weight >= DECAL_AT:
+                return paint[k]
+        return None
+    out, counts = [], {}
+    for ref, kinds in usable.items():
+        step, done = steps[ref], set()
+        for s in lay:
+            if s.texture != ref:
+                continue
+            bx0, bx1, by0, by1 = s.box()
+            for iy in range(math.floor(by0 / step), math.floor(by1 / step) + 1):
+                for ix in range(math.floor(bx0 / step), math.floor(bx1 / step) + 1):
+                    if (ix, iy) in done:
+                        continue
+                    done.add((ix, iy))
+                    rnd = random.Random(f"decals {seed} {ref} {ix} {iy} {spread}")  # the same every build
+                    x = (ix + 0.5 + rnd.uniform(-0.3, 0.3)) * step
+                    y = (iy + 0.5 + rnd.uniform(-0.3, 0.3)) * step
+                    top = top_at(x, y)
+                    if top is None or top.kind.kind != "texture" or top.texture != ref or not top.decals:
+                        continue
+                    t = kinds[rnd.randrange(len(kinds))]
+                    out.append(NewObject(t.name, x, y, rnd.uniform(0.0, DECAL_TURN),
+                                         round(DECAL_SIZE * rnd.uniform(0.85, 1.15), 3), solid=False))
+                    counts[t.name] = counts.get(t.name, 0) + 1
+    return out, {"types": counts, "missing": missing, "step": min(steps.values())}
 
 
 # --- a map's square ---------------------------------------------------------------------------------------------

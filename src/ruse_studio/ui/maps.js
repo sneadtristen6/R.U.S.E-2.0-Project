@@ -914,6 +914,7 @@ const paint = {
   source: null,   // where Texture copies from: { x, y } picked, until the next stroke turns it into the offset
   offset: null,   // Texture's offset from each point it paints to where it copies from: { sx, sy }, kept stroke to stroke
   clear: true,    // the strokes take off what hides them up close (the build: groundpaint.paint_clearing; T21)
+  decals: true,   // a game texture's strokes get the game's own decals of it up close (groundtex.decal_grid)
   // the Texture brush's library (the owner, 2026-10-09: "On a blank map, there is no spot to copy from ... add all of
   // the game textures ... make it very easy to be able to add cool textures to your map")
   from: "game",   // where Texture takes from: "game" (the game's textures), "map" (any map's ground), "own" (the mod's
@@ -1531,6 +1532,11 @@ function renderPaintPanel() {
   clear.textContent = w.paint_clear;
   clear.title = w.tip_paint_clear;
   clear.setAttribute("aria-pressed", String(paint.clear));
+  const decals = $("paint-decals");  // the game's own decals up close: for the game's textures only
+  decals.classList.toggle("hidden", colour || paint.from === "spot" || !String(paint.texture || "").startsWith("game:"));
+  decals.textContent = w.paint_decals;
+  decals.title = w.tip_paint_decals;
+  decals.setAttribute("aria-pressed", String(paint.decals));
   $("paint-note").textContent = !colour && paint.from !== "spot" ? w.tex_note : w.paint_note;
 }
 
@@ -4847,6 +4853,7 @@ function newStroke(x, y, level, end) {
     s.brush = "texture";
     s.texture = paint.texture;
     if (paint.texScale) s.size = Math.round(texturePeriod(paint.texture) * Math.pow(2, paint.texScale));
+    if (!paint.decals && paint.texture.startsWith("game:")) s.decals = false;
     s.weight = set.strength / 100;
     s.clear = paint.clear;
   } else if (kind === "stamp") {
@@ -6523,6 +6530,10 @@ function wire() {
   });
   $("paint-clear").addEventListener("click", () => {  // for the strokes painted from now on
     paint.clear = !paint.clear;
+    renderPaintPanel();
+  });
+  $("paint-decals").addEventListener("click", () => {  // for the strokes painted from now on
+    paint.decals = !paint.decals;
     renderPaintPanel();
   });
   $("brush-angle").addEventListener("input", (e) => {  // a square brush's turn: its outline follows at once

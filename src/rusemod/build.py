@@ -2097,14 +2097,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             who.extend(i for i in ids if i not in who)
         from .brush import PAINT_KINDS
         painting = scenario_edits(result.order, mods, "paint")  # Map Paint: what hides it up close goes (`clear`)
-        for name, (strokes, ids) in painting.items():
-            if any(s.kind.kind in PAINT_KINDS and s.clear for s in strokes):
+        for name, (strokes, ids) in painting.items():  # (and the game's own decals laid over game textures)
+            if any(s.kind.kind in PAINT_KINDS and (s.clear or (s.kind.kind == "texture" and s.decals))
+                   for s in strokes):
                 every, who = with_pieces.setdefault(name, ([], []))
                 who.extend(i for i in ids if i not in who)
         for name, (_filled, ids) in filled_hollows.items():  # riverbeds raised flat: their low cover goes (T28)
             every, who = with_pieces.setdefault(name, ([], []))
             who.extend(i for i in ids if i not in who)
         low_sizes: dict = {}  # type name -> how far it reaches at size 1 (stickers, low plants, stones), once a build
+        decal_kept: dict = {}  # "types": the game's decal types by the texture they lay (groundtex.decal_types), once
         solid: dict = {}  # map pack name -> (nav.Block for each placed building, the mods' ids)
         lights_out: dict = {}  # map pack name -> (where its erased lighthouses stood, the mods' ids)
         for name, (objects, ids) in with_pieces.items():
@@ -2254,6 +2256,30 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     erased_towers = gone(towers, lighthouses(raw)) if towers else []
                     if erased_towers:  # their lights go with them (rusemod.lighthouses), once every map's scenery
                         lights_out[name] = (erased_towers, ids)  # is done
+                if any(s.kind.kind == "texture" and s.decals and s.texture.startswith("game:") for s in strokes):
+                    # up close: the game's own decals of the game textures painted, laid over the ground they paint
+                    # (groundtex.decal_grid), as many as the map's scenery has room for; not tried in the game yet
+                    from .groundtex import decal_grid, decal_room, decal_types, map_sets
+                    from .scenery import add_names
+                    if "types" not in decal_kept:
+                        decal_kept["types"] = decal_types(arc)
+                    room = decal_room(Scenery(raw).fields[3])
+                    sets = map_sets(arc, name)
+                    decals, said = decal_grid(strokes, decal_kept["types"], sets, seed=name, most=room)
+                    if decals:
+                        raw = add_names(raw, sorted({o.type for o in decals}))
+                        objects = list(objects) + decals
+                        sunk = sunk + [f"Map Paint up close: {len(decals):,} of the game's own decal(s) over the game "
+                                       f"textures painted, {said['step'] / 260:.0f} m apart"
+                                       + (" (spread out to fit the map's scenery room)" if said["thinned"] else "")
+                                       + " (" + ", ".join(f"{t.split('/')[-1]} {n:,}"
+                                                          for t, n in sorted(said["types"].items())) + ")"]
+                    elif said.get("types") is not None and room == 0:
+                        sunk = sunk + ["Map Paint up close: no room left in the map's scenery for the game's decals"]
+                    if said.get("missing"):
+                        sunk = sunk + [f"Map Paint up close: no decal of {', '.join(r[5:] for r in said['missing'])} "
+                                       f"is loaded on this map (its decor sets: {', '.join(sorted(sets)) or 'none'}), "
+                                       f"so it shows from its painted ground only"]
                 if descs is None:
                     descs = descriptors(arc)
                 lowest = _LowestPoints(game, descs)

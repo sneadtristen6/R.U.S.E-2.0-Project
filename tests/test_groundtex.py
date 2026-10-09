@@ -226,6 +226,71 @@ class Laid(unittest.TestCase):
         self.assertTrue(all(one[i] != two[i] for i in one))
 
 
+class Decals(unittest.TestCase):
+    """The game's own decals over a game texture's ground (groundtex.decal_grid): each texture its own grid, a point
+    only where that texture shows on top at least half strength, only decal types the map loads, the same every
+    build, spread out to fit the room the map's scenery has."""
+
+    TYPES = {gt.game_member("game:france/stickers01/herbe_verte").lower(): [
+        gt.DecalType("TypeWarrior/Herbe_verte", "france", 2048.0, ""),
+        gt.DecalType("TypeWarrior/Herbe_verte_triangle", "france", 2048.0, "")],
+        gt.game_member("game:italie/stickers/sable").lower(): [gt.DecalType("TypeWarrior/Sable", "italie", 4096.0, "")]}
+
+    def strokes(self, *extra):
+        return parse_strokes([{"brush": "texture", "x": 100000.0, "y": 100000.0, "radius": 60000.0,
+                               "texture": "game:france/stickers01/herbe_verte", "shape": "square", "edge": "hard"},
+                              *extra])
+
+    def test_a_grid_over_the_ground_it_paints(self):
+        out, said = gt.decal_grid(self.strokes(), self.TYPES, {"france", "communs"}, seed="m")
+        step = gt.DECAL_STEP * 2 * gt.DECAL_SIZE * 2048.0
+        self.assertAlmostEqual(said["step"], step)
+        self.assertGreater(len(out), (100000.0 / step) ** 2 * 0.8)  # about the square's area over a point's
+        self.assertTrue(all(abs(o.x - 100000.0) <= 60000.0 and abs(o.y - 100000.0) <= 60000.0 for o in out))
+        self.assertEqual({o.type for o in out}, {"TypeWarrior/Herbe_verte", "TypeWarrior/Herbe_verte_triangle"})
+        self.assertTrue(all(not o.solid and 0.8 * gt.DECAL_SIZE <= o.size <= 1.2 * gt.DECAL_SIZE for o in out))
+        again, _ = gt.decal_grid(self.strokes(), self.TYPES, {"france", "communs"}, seed="m")
+        self.assertEqual(out, again)  # the same every build
+
+    def test_only_where_it_shows_on_top(self):
+        cover = {"brush": "paint", "x": 100000.0, "y": 100000.0, "radius": 30000.0, "colour": "#000000",
+                 "shape": "square", "edge": "hard"}
+        out, _ = gt.decal_grid(self.strokes(cover), self.TYPES, {"france"}, seed="m")
+        self.assertTrue(out)
+        self.assertFalse([o for o in out if abs(o.x - 100000.0) < 25000.0 and abs(o.y - 100000.0) < 25000.0])
+        off, _ = gt.decal_grid(parse_strokes([{"brush": "texture", "x": 0.0, "y": 0.0, "radius": 50000.0,
+                                               "texture": "game:france/stickers01/herbe_verte", "decals": False}]),
+                               self.TYPES, {"france"})
+        self.assertEqual(off, [])  # decals = false: none
+
+    def test_only_the_decals_the_map_loads(self):
+        sand = {"brush": "texture", "x": 300000.0, "y": 100000.0, "radius": 60000.0, "texture": "game:italie/stickers/sable"}
+        out, said = gt.decal_grid(self.strokes(sand), self.TYPES, {"france", "communs"})
+        self.assertNotIn("TypeWarrior/Sable", said["types"])
+        self.assertEqual(said["missing"], ["game:italie/stickers/sable"])
+        out, said = gt.decal_grid(self.strokes(sand), self.TYPES, {"france", "italie"})
+        self.assertIn("TypeWarrior/Sable", said["types"])
+
+    def test_spread_out_to_fit_the_room(self):
+        full, _ = gt.decal_grid(self.strokes(), self.TYPES, {"france"}, seed="m")
+        fitted, said = gt.decal_grid(self.strokes(), self.TYPES, {"france"}, seed="m", most=len(full) // 4)
+        self.assertTrue(said["thinned"])
+        self.assertLessEqual(len(fitted), len(full) // 4)
+        self.assertGreater(len(fitted), len(full) // 10)
+        self.assertEqual(gt.decal_room(gt.SCENERY_MOST), 0)
+        self.assertEqual(gt.decal_room(0), (gt.SCENERY_MOST - gt.ROOM_KEPT) // gt.DECAL_BYTES)
+
+    def test_the_switch_in_the_file(self):
+        made = parse_strokes([{"brush": "texture", "x": 1.0, "y": 2.0, "radius": 3.0,
+                               "texture": "game:france/stickers01/paille", "decals": False}])
+        self.assertFalse(made[0].decals)
+        self.assertIn("decals = false", strokes_toml(made))
+        self.assertTrue(parse_strokes([{"brush": "texture", "x": 1.0, "y": 2.0, "radius": 3.0,
+                                        "texture": "file:a.png"}])[0].decals)
+        with self.assertRaises(BrushError):
+            parse_strokes([{"brush": "paint", "x": 1.0, "y": 2.0, "radius": 3.0, "colour": "#000000", "decals": True}])
+
+
 class TheStudio(unittest.TestCase):
     """The Studio's calls (ruse_studio.groundtex_calls): the mod's own pictures kept in files/ground and listed, and
     the words the Texture panel says a game texture with in all ten languages."""

@@ -310,6 +310,8 @@ class Stroke:
                           # thin layer units go under, the movement taking all of the stroke's place for dry ground
     texture: str = ""     # texture: what it lays (rusemod.groundtex: game:..., map:..., file:...)
     size: float = 0.0     # texture: map units one repeat covers; 0 = the texture's own
+    decals: bool = True   # texture, a game one: the game's own decals of it laid over it, for detail up close
+                          # (groundtex.decal_grid); not tried in the game yet
 
     @property
     def kind(self) -> Brush:
@@ -520,6 +522,13 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
             if not isinstance(item["clear"], bool):
                 raise BrushError(f"{at}: clear must be true or false")
             values["clear"] = item["clear"]
+        if "decals" in item:
+            if kind != "texture":
+                raise BrushError(f"{at}: decals (the game's own decals laid over a game texture) are for the texture "
+                                 f"brush")
+            if not isinstance(item["decals"], bool):
+                raise BrushError(f"{at}: decals must be true or false")
+            values["decals"] = item["decals"]
         if "block" in item:
             if brush != "water":
                 raise BrushError(f"{at}: block (whether its water keeps units out) is for the water brush")
@@ -557,6 +566,8 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
             lines.append(f'texture = "{s.texture}"')
             if s.size > 0.0:
                 lines.append(f"size = {_num_text(s.size)}")
+            if not s.decals:
+                lines.append("decals = false")
         if kind in ("level", "smooth", "ramp") + PAINT_KINDS:
             lines.append(f"weight = {_num_text(s.weight)}")
         if kind in PAINT_KINDS and not s.clear:
