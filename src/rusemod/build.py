@@ -2365,7 +2365,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     if k_raw is not None and shipped_ground is not None and sc_shipped is not None:
                         decks = [floors.Deck.of(*b.deck) for b in shipped_bridges(
                             Scenery(sc_shipped), descs, lambda kind: model_length(game, descs, kind))]
-                        data, more = floors.sink_floors(Kdt(k_raw), Ground(Tms(shipped_ground)).height_at, decks)
+                        own_raw = read_shipped(floors.MEMBER)  # the map's own floors: every one along a gone deck
+                        own = ({floors.tri_key(t) for t in floors.triangles(Kdt(own_raw))}  # goes (a mod's new
+                               if own_raw is not None else None)                           # bridges keep theirs)
+                        data, more = floors.sink_floors(Kdt(k_raw), Ground(Tms(shipped_ground)).height_at, decks,
+                                                        own)
                         if data:
                             done[map_arc.find(floors.MEMBER).path] = data
                         notes += more

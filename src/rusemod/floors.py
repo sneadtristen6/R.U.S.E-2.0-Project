@@ -369,10 +369,20 @@ SUNK = -100000.0   # where the floor of a bridge taken out goes: far under any g
                    # file, which can't be left empty (all 556 of D-Day's triangles are its bridges' floors)
 
 
-def sink_floors(k: K.Kdt, height_at, gone: list[Deck]) -> tuple[bytes, list[str]]:
+def tri_key(t) -> tuple:
+    """A triangle by its points to the nearest map unit: the same triangle read from two writes of the file (each
+    write sets its own grid, so the points move by a fraction of a unit) gives the same key."""
+    return tuple((round(x), round(y), round(z)) for x, y, z in t)
+
+
+def sink_floors(k: K.Kdt, height_at, gone: list[Deck], own: set | None = None) -> tuple[bytes, list[str]]:
     """The objects-only file with the floors (and aprons) of the decks `gone` sunk to SUNK, flat: the map's own bridges
     taken out (roads.toml take_out). `height_at(x, y)`: the map's ground as shipped, where the floors were made (a
-    wide floor is found at the height between its ends' ground). Returns (the file, notes); none found: (b"", [])."""
+    wide floor is found at the height between its ends' ground). `own`: the tri_key of every triangle the map
+    shipped with; each of those lying along a gone deck within the stone bridges' width (ACROSS_WIDE) goes too, so the
+    outer bands of a wide floor the deck match leaves go with it (Blitz's Blank Terrain, T41, 2026-10-09: 80 of its 320
+    were left 25 m under the flattened ground, and units dropped into them). Returns (the file, notes); none found:
+    (b"", [])."""
     shipped = triangles(k)
 
     def ground(deck):
@@ -381,6 +391,8 @@ def sink_floors(k: K.Kdt, height_at, gone: list[Deck]) -> tuple[bytes, list[str]
         return None if g0 is None or g1 is None else (g0, g1)
     out = {id(t) for d in gone for t in deck_floor(shipped, d, ground(d))[0]}
     out |= {id(t) for t in shipped if any(beside_deck(t, d) for d in gone)}
+    if own:
+        out |= {id(t) for t in shipped if tri_key(t) in own and any(on_deck(t, d, across=ACROSS_WIDE) for d in gone)}
     if not out:
         return b"", []
     tris = [tuple((x, y, SUNK) for x, y, _z in t) if id(t) in out else t for t in shipped]
