@@ -129,6 +129,25 @@ def italy_top():
     return make_scenery([root, wood], NAMES)
 
 
+def open_fields():
+    """A top block over 40,960 x 40,960 placing a town hall and a wood twice, both references listed for far view. Its
+    full list's node splits along x: the hall and the west wood's reference in its left side (x up to 5,140), the
+    east wood's in its right side (from 35,980); the middle of the map is open ground, in no box (a painted field
+    away from D-Day's villages)."""
+    wood = block([compact(1, 0.0, 0.0)], box=(-100.0, -100.0, 100.0, 100.0))
+    items = [compact(0, 1000.0, 2000.0), moved(0, 0, 0), moved(0, 0, 0)]
+    offsets = [0, len(items[0]), len(items[0]) + len(items[1])]
+    nodes = (struct.pack("<IHBB", 0x1F << 20 | 2 << 2, 2, 0xFF, 0)            # the root: far list | full list
+             + struct.pack("<IHBB", 0xC0000000 | 0x08 << 20, 2, 0xFF, 0)     # the far list's leaf
+             + struct.pack("<IHBB", 0xC0000000 | 0x17 << 20, 4, 0x20, 0xE0))  # the full list, split along x
+    entries = [offsets[1], offsets[2]] + offsets
+    head = struct.pack("<II4f", 0x80000000 | len(entries), 3, 0.0, 0.0, 40960.0, 40960.0) + bytes(8)
+    root_len = len(head) + 4 * len(entries) + len(nodes) + sum(map(len, items))
+    items = [compact(0, 1000.0, 2000.0), moved(root_len, 2000.0, 1000.0), moved(root_len, 38000.0, 8000.0)]
+    root = head + struct.pack(f"<{len(entries)}I", *entries) + nodes + b"".join(items)
+    return make_scenery([root, wood], NAMES)
+
+
 def make_scenery(blocks, names):
     offsets, pos = [], 0
     for b in blocks:
@@ -331,7 +350,7 @@ class Adding(unittest.TestCase):
         self.assertEqual(len(s.blocks), 3)
         refs = [(b.index, s._by_offset[it.child_offset]) for b in s.blocks for it in b.items if it.kind == "child"]
         self.assertEqual(refs, [(0, 1), (0, 2), (1, 2)])  # the far one (listed first) goes through the new block
-        self.assertIn("with block 1", notes[0])
+        self.assertIn("with block 1", " ".join(notes))  # (after the tree's widening: its box is 1 across)
         hall = next(m for sym, m in s.walk() if sym == 0 and round(m[3]) == 5300)
         _x, _y, turn, size = placement(hall)
         self.assertAlmostEqual(math.degrees(turn), 45.0, places=3)
@@ -601,9 +620,93 @@ class RoadStickers(unittest.TestCase):
             add_objects(data, [NewObject("TypeWarrior/Chene_02", 50000.0, 9000.0)])
         _new, notes = add_objects(data, [NewObject("TypeWarrior/Chene_02", 3000.0, 5000.0)])  # between the boxes:
         self.assertNotIn("no box", " ".join(notes))  # its cell meets the south one, so the game walks it there
-        _new, notes = add_objects(data, [NewObject("TypeWarrior/Chene_02", 30000.0, 30000.0)])  # out in the open
-        self.assertIn("lie in no box of the map's draw tree", notes[-1])
-        self.assertIn("(30000, 30000)", notes[-1])
+        before = scenery._leaf_boxes(Scenery(data).blocks[0])
+        new, notes = add_objects(data, [NewObject("TypeWarrior/Chene_02", 30000.0, 30000.0)])  # out in the open,
+        self.assertNotIn("no box", " ".join(notes))  # past the top block's own box (10,000 across): it grows too
+        self.assertIn("draw tree widened", " ".join(notes))
+        top = Scenery(new).blocks[0]
+        self.assertTrue(top.bbox[2] >= 30720.0 and top.bbox[3] >= 30720.0, top.bbox)  # the object's whole cell
+        after = scenery._leaf_boxes(top)
+        for e, b in before.items():
+            a = after[e]
+            self.assertTrue(a[0] <= b[0] and a[1] <= b[1] and a[2] >= b[2] and a[3] >= b[3], (e, b, a))
+        self.assertTrue(any(a[0] <= 30000.0 <= a[2] and a[1] <= 30000.0 <= a[3] for e, a in after.items() if e >= 2))
+
+    def test_open_ground_widens_one_box_and_keeps_every_other(self):
+        """Objects in no box of the top block's tree (a painted field away from the map's own scenery): the west
+        wood's leaf box (the bigger) is widened over their cells, every entry's leaf box still holds what it held,
+        and they go in a block wrapping that reference, so the game's walk reaches them."""
+        data = open_fields()
+        top0 = Scenery(data).blocks[0]
+        before = scenery._leaf_boxes(top0)
+        self.assertEqual(len(scenery._carriers(Scenery(data), [NewObject("TypeWarrior/Chene_02", 20000.0, 20000.0)])[1]),
+                         1)  # out in the open: in no box
+        field = [NewObject("TypeWarrior/Chene_02", 20000.0, 20000.0), NewObject("TypeWarrior/Chene_02", 25000.0, 12000.0)]
+        new, notes = add_objects(data, field)
+        self.assertNotIn("no box", " ".join(notes))
+        self.assertIn("draw tree widened", " ".join(notes))
+        s = Scenery(new)
+        top = s.blocks[0]
+        after = scenery._leaf_boxes(top)
+        for e, b in before.items():
+            a = after[e]
+            self.assertTrue(a[0] <= b[0] and a[1] <= b[1] and a[2] >= b[2] and a[3] >= b[3], (e, b, a))
+        west = next(it for it in top.items if it.kind == "child" and round(it.matrix()[3]) == 2000)
+        e = top.entries.index(west.at, 2)  # its entry in the full list
+        cell = scenery.GRID_CELL[2]
+        for o in field:
+            x0, y0 = math.floor(o.x / cell) * cell, math.floor(o.y / cell) * cell
+            b = after[e]
+            self.assertTrue(b[0] <= x0 and b[1] <= y0 and b[2] >= x0 + cell and b[3] >= y0 + cell, b)
+        wrapper = s.blocks[s._by_offset[west.child_offset]]
+        self.assertEqual(sum(1 for it in wrapper.items if it.kind == "object"), 2)
+
+    def test_a_new_block_finds_each_item_through_its_tree(self):
+        """A new block's lists are search trees like the shipped blocks': leaves of 1 to 4 entries, each item in the
+        leaf box of its entry in both lists (the far list without road pieces), the far list's nodes marked far only."""
+        rnd = random.Random(7)
+        places = [(rnd.uniform(0.0, 9000.0), rnd.uniform(0.0, 5000.0)) for _ in range(300)]
+        items = [compact(1, x, y) for x, y in places]
+        boxes = [(x - 50.0, y - 50.0, x + 50.0, y + 50.0) for x, y in places]
+        raw = scenery._new_block(items, (-50.0, -50.0, 9050.0, 5050.0), boxes)
+        b = Scenery(make_scenery([raw], NAMES)).blocks[0]
+        nodes = scenery._tree(b)
+        split0 = nodes[0][1]
+        self.assertEqual((split0, len(b.entries)), (300, 600))
+        leaves = scenery._leaf_boxes(b)
+        self.assertEqual(set(leaves), set(range(600)))
+        by_at = {it.at: it for it in b.items}
+        for e, at in enumerate(b.entries):
+            m = by_at[at].matrix()
+            x0, y0, x1, y1 = leaves[e]
+            self.assertTrue(x0 <= m[3] <= x1 and y0 <= m[7] <= y1, (e, m[3], m[7], leaves[e]))
+        self.assertEqual(sorted(b.entries[:300]), sorted(b.entries[300:]))
+        right = (nodes[0][0] & 0xFFFFF) >> 2
+        self.assertTrue(all((w >> 20) & 0x3F == 0x08 for w, *_ in nodes[1:right]))
+        self.assertTrue(all((w >> 20) & 0x3F == 0x17 for w, *_ in nodes[right:]))  # no road piece, no block placed
+        sizes, todo = [], [(0, 0, 600)]
+        while todo:
+            k, lo, hi = todo.pop()
+            w, sp = nodes[k][:2]
+            for leaf, a, z, nxt in ((w & 0x40000000, lo, sp, k + 1), (w & 0x80000000, sp, hi, k + ((w & 0xFFFFF) >> 2))):
+                if leaf:
+                    sizes.append(z - a)
+                else:
+                    todo.append((nxt, a, z))
+        self.assertTrue(sizes and all(1 <= n <= scenery.LEAF_MOST for n in sizes), Counter(sizes))
+
+    def test_more_objects_than_a_block_holds_go_in_blocks_wrapping_each_other(self):
+        from unittest import mock
+        data = open_fields()
+        near = [NewObject("TypeWarrior/Chene_02", 1500.0 + 20.0 * k, 1500.0 + 15.0 * (k % 7)) for k in range(120)]
+        with mock.patch.object(scenery, "BLOCK_MOST", 50):
+            new, notes = add_objects(data, near)
+        self.assertEqual(sum("added in a new block" in n for n in notes), 4)  # halved till each fits: 4 of 30
+        s = Scenery(new)
+        placed = [(round(m[3]) + 2000, round(m[7]) + 1000)  # in the west wood reference's frame (2000, 1000)
+                  for bl in s.blocks[1:] if tuple(bl.bbox) != (-100.0, -100.0, 100.0, 100.0)
+                  for it in bl.items if it.kind == "object" for m in [it.matrix()]]
+        self.assertEqual(sorted(placed), sorted((round(o.x), round(o.y)) for o in near))  # each once
 
     def test_the_maps_own_tier_and_turn_bits_are_not_copied(self):
         wood = block([struct.pack("<I4h4f", 0x80000000 | 0x34000000 | 1 << 4, *[round(1 / SCALE16), 0, 0,

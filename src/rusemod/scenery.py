@@ -506,6 +506,9 @@ ROAD_TIER = 0x20      # a tree node's road mark, above the LOD mask (bit 25 of i
 ROAD_BIT = ROAD_TIER << 20  # Route pieces only through nodes that carry it (every Route piece of the shipped maps does);
 #                             what that pass draws on screen isn't known (TESTS.md T12)
 MARGIN = 5000.0       # added to a new block's box around its objects' positions (map units, times their size)
+LEAF_MOST = 4         # entries a leaf of a new block's tree lists at most, as the shipped trees' leaves do (1 to 4)
+BLOCK_MOST = 12000    # objects one new block holds at most: each is listed twice (far and full), a tree node splits
+                      # its entries at a 16-bit index, and the shipped maps' biggest block lists 39,699 (M03_Italie)
 GROUP = 40000.0       # objects further apart than this (400 m) go in separate new blocks, each hung on an object near
                       # them: the game draws a block when the object it hangs on is in view (owner's test, 2026-09-30:
                       # towers hung on a decal 3 km away never showed)
@@ -750,24 +753,100 @@ def _is_road(item: bytes) -> bool:
     return not w >> 31 and bool(w & 0x01000000)  # as Scenery._block tells them: not an object, not a reference
 
 
-def _new_block(items: list[bytes], box: tuple) -> bytes:
-    """A block of `items` in `box`, with a two-leaf tree: the far-view list (every item but road pieces, which the
-    shipped maps never list for far view: 0 of 10,505), then every item. The root and the full list's node carry the
-    road mark, so the game's road pass reaches road pieces in it, or in a block it places (a superset only costs
-    culling); whether that shows them on screen isn't known (T12)."""
-    offsets, far, pos = [], [], 4
+def _new_block(items: list[bytes], box: tuple, boxes: list[tuple] | None = None) -> bytes:
+    """A block of `items` in `box`, its tree as the shipped blocks' (D-Day's block 13: 29,228 entries, 9,853 nodes):
+    the root's left side the far-view list (every item but road pieces, which the shipped maps never list for far
+    view: 0 of 10,505), its right side every item, each list a search tree (_subtree) over the items' `boxes` (in the
+    block's coordinates; none: each the whole block), so the game finds the items of a cell it walks without going
+    through all of them. The root and the full list's nodes over a road piece or a placed block carry the road mark,
+    so the game's road pass reaches road pieces in it, or in a block it places (a superset only costs culling);
+    whether that shows them on screen isn't known (T12)."""
+    offsets, pos = [], 4
     for it in items:
         offsets.append(pos)
-        if not _is_road(it):
-            far.append(pos)
         pos += len(it)
-    entries = far + offsets  # the far-view items first, then all of them
-    p = len(far)
-    nodes = (struct.pack("<IHBB", ((ALL_TIERS | ROAD_TIER) << 20) | (2 << 2), p, 0xFF, 0)
-             + struct.pack("<IHBB", 0xC0000000 | (0x08 << 20), p, 0xFF, 0)
-             + struct.pack("<IHBB", 0xC0000000 | (((ALL_TIERS & ~0x08) | ROAD_TIER) << 20), 0, 0xFF, 0))
-    head = struct.pack("<II4f", 0x80000000 | len(entries), 3, *box) + BLOCK_TAIL
-    return head + struct.pack(f"<{len(entries)}I", *entries) + nodes + struct.pack("<I", FILLER) + b"".join(items)
+    boxes = boxes or [tuple(box)] * len(items)
+    far_e, far_n = _subtree([(b, o, False) for it, o, b in zip(items, offsets, boxes) if not _is_road(it)],
+                            box, 0, 0x08)
+    full_e, full_n = _subtree([(b, o, not struct.unpack_from("<I", it)[0] >> 31)  # a road piece or a placed block
+                               for it, o, b in zip(items, offsets, boxes)], box, len(far_e), ALL_TIERS & ~0x08)
+    entries = far_e + full_e  # the far-view items first, then all of them
+    if len(entries) > 0xFFFF:
+        raise SceneryEditError("too many objects for one new block: a tree node splits its entries at a 16-bit index")
+    nodes = [[((ALL_TIERS | ROAD_TIER) << 20) | ((1 + len(far_n)) << 2), len(far_e), 0xFF, 0]] + far_n + full_n
+    head = struct.pack("<II4f", 0x80000000 | len(entries), len(nodes), *box) + BLOCK_TAIL
+    return (head + struct.pack(f"<{len(entries)}I", *entries) + b"".join(struct.pack("<IHBB", *n) for n in nodes)
+            + struct.pack("<I", FILLER) + b"".join(items))
+
+
+def _share(v: float, a0: float, ext: float, up: bool) -> int:
+    """`v` as a share /255 of [a0, a0 + ext], as a tree node keeps its sides' edges: rounded outward (up for a side's
+    top, down for its bottom), within 0 to 255."""
+    if ext <= 0:
+        return 255 if up else 0
+    s = (v - a0) / ext * 255
+    return min(255, max(0, math.ceil(s) if up else math.floor(s)))
+
+
+def _sides(node, box: tuple) -> tuple[tuple, tuple]:
+    """A tree node's left and right sides' boxes, from its own `box` (as _leaf_boxes reads them)."""
+    w, _split, b1, b2 = node[:4]
+    x0, y0, x1, y1 = box
+    if w & 3 == 0:
+        return (x0, y0, x0 + b1 / 255 * (x1 - x0), y1), (x0 + b2 / 255 * (x1 - x0), y0, x1, y1)
+    return (x0, y0, x1, y0 + b1 / 255 * (y1 - y0)), (x0, y0 + b2 / 255 * (y1 - y0), x1, y1)
+
+
+def _subtree(things: list, box: tuple, lo: int, mask: int) -> tuple[list[int], list[list[int]]]:
+    """A search tree over `things` [(its box, its entry, whether the road pass needs it)] in `box`, as the shipped
+    blocks' are: each node splits its things in two halves along the longer spread of their middles, its sides' boxes
+    (shares /255 of its own, rounded outward) holding each half, down to leaves of LEAF_MOST or fewer. Returns (the
+    entries in the order the leaves list them, from entry index `lo`; the nodes as [word, split, b1, b2], the first
+    its root, each with the LOD mask `mask` and the road mark when a thing under it needs the road pass)."""
+    entries: list[int] = []
+    nodes: list = []
+
+    def node(part, nbox, at):
+        k = len(nodes)
+        nodes.append(None)
+        mids = [((t[0][0] + t[0][2]) / 2, (t[0][1] + t[0][3]) / 2) for t in part]
+        spread = [max((m[a] for m in mids), default=0.0) - min((m[a] for m in mids), default=0.0) for a in (0, 1)]
+        axis = 0 if spread[0] >= spread[1] else 1
+        part = sorted(part, key=lambda t: t[0][axis] + t[0][axis + 2])
+        left, right = part[:len(part) // 2], part[len(part) // 2:]
+        a0, ext = (nbox[0], nbox[2] - nbox[0]) if axis == 0 else (nbox[1], nbox[3] - nbox[1])
+        b1 = _share(max((t[0][axis + 2] for t in left), default=a0), a0, ext, up=True)
+        b2 = _share(min((t[0][axis] for t in right), default=a0 + ext), a0, ext, up=False)
+        word = ((mask | (ROAD_TIER if any(t[2] for t in part) else 0)) << 20) | axis
+        lbox, rbox = _sides([word, 0, b1, b2], nbox)
+        split = at + len(left)
+        if len(left) <= LEAF_MOST:
+            word |= 0x40000000
+            entries.extend(t[1] for t in left)
+        else:
+            node(left, lbox, at)
+        if len(right) <= LEAF_MOST:
+            word |= 0x80000000
+            entries.extend(t[1] for t in right)
+        else:
+            if len(nodes) - k >= 1 << 18:
+                raise SceneryEditError("too many objects for one new block: its tree's nodes are too far apart")
+            word |= (len(nodes) - k) << 2
+            node(right, rbox, split)
+        nodes[k] = [word, split, b1, b2]
+
+    node(things, tuple(box), lo)
+    return entries, nodes
+
+
+def _chunks(things: list) -> list[list]:
+    """`things` in parts of at most BLOCK_MOST, neighbours together: halved along the longer spread of their places."""
+    if len(things) <= BLOCK_MOST:
+        return [things]
+    spread_x = max(p.x for p in things) - min(p.x for p in things)
+    spread_y = max(p.y for p in things) - min(p.y for p in things)
+    part = sorted(things, key=(lambda p: p.x) if spread_x >= spread_y else (lambda p: p.y))
+    return _chunks(part[:len(part) // 2]) + _chunks(part[len(part) // 2:])
 
 
 def _groups(objects: list[NewObject]) -> list[list[NewObject]]:
@@ -817,12 +896,22 @@ def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]
                 notes += more
             continue
         groups, lost = _carriers(Scenery(data), things, roads)
+        if lost and not roads:  # in open ground: one carrier's box in the top block's tree widened over them
+            data, at, more = _widen(Scenery(data), data, lost)
+            notes += more
+            if at is not None:
+                gone, kept = {id(p) for p in lost}, {}
+                for a, group in groups:
+                    kept.setdefault(a, []).extend(p for p in group if id(p) not in gone)
+                kept.setdefault(at, []).extend(lost)
+                groups, lost = [(a, g) for a, g in kept.items() if g], []
         outside += lost
         for at, group in groups:
-            sc = Scenery(data)  # the top block's items and tree stay where they are: `at` still names the carrier
-            data, more = _wrap(sc, data, group, _far_children(sc),
-                               next(it for it in sc.blocks[0].items if it.at == at))
-            notes += more
+            for part in _chunks(group):  # a carrier given more than one block holds: one wrapping the next
+                sc = Scenery(data)  # the top block's items and tree stay where they are: `at` still names the carrier
+                data, more = _wrap(sc, data, part, _far_children(sc),
+                                   next(it for it in sc.blocks[0].items if it.at == at))
+                notes += more
     if objects:
         data, cells = _grids_hold(data, [(o.x, o.y) for o in objects])
         if cells:
@@ -2002,6 +2091,108 @@ def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tupl
     return list(out.items()), left
 
 
+def _widen(sc: Scenery, data: bytes, things: list) -> tuple[bytes, int | None, list[str]]:
+    """For new objects in no carrier's box (_carriers: open ground, away from the map's villages, farms and woods),
+    one reference of the top block, its leaf box in the full list widened over all their cells: the shares of the
+    nodes on the way down to it grown, every other node's box still holding what it held (its shares worked out
+    again, rounded outward), so the game reaches that reference, and the block that will wrap it, wherever they lie,
+    from middle distance in, and nothing the map had is lost. Objects past the top block's own box (past the last
+    of the map's own scenery: on the decals test copy, 26,960 of them) grow that box too, and so every node's. On
+    M03_Italie, a shipped map, every far-listed reference's boxes are the whole map. Picks the reference fewest
+    nodes down, far-listed first, then the one whose box is biggest already. Returns (the file, that reference's
+    `at`, notes); (data, None, []) when none can: a map whose top block has no tree."""
+    top = sc.blocks[0]
+    nodes = _tree(top)
+    if not nodes or not things:
+        return bytes(data), None, []
+    close = GRID_CELL[2]
+    want = (min(math.floor(p.x / close) * close for p in things),  # every cell they lie in
+            min(math.floor(p.y / close) * close for p in things),
+            max(math.floor(p.x / close) * close + close for p in things),
+            max(math.floor(p.y / close) * close + close for p in things))
+    x0, y0, x1, y1 = top.bbox
+    root = tuple(top.bbox)
+    if not (x0 <= want[0] and y0 <= want[1] and x1 >= want[2] and y1 >= want[3]):  # grown, as the file keeps it
+        root = struct.unpack("<4f", struct.pack("<4f", min(x0, want[0] - 1.0), min(y0, want[1] - 1.0),
+                                                max(x1, want[2] + 1.0), max(y1, want[3] + 1.0)))
+    boxes = _leaf_boxes(top)
+    split0 = nodes[0][1]
+    children = {it.at for it in top.items if it.kind == "child"}
+    far_at = {it.at for it in _far_children(sc)}
+    cands = [(e, a) for e, a in enumerate(top.entries) if e >= split0 and a in children and e in boxes]
+    if not cands:
+        return bytes(data), None, []
+
+    def area(b):
+        return (b[2] - b[0]) * (b[3] - b[1])
+    e, at = min(cands, key=lambda c: (len(_path(nodes, c[0])), c[1] not in far_at, -area(boxes[c[0]])))
+    toward = {}  # the nodes on the way down to entry e: the side each takes
+    for k in _path(nodes, e):
+        toward[k] = "L" if e < nodes[k][1] else "R"
+    old: dict = {}  # every node's box and its sides' boxes, as they were
+    todo = [(0, tuple(top.bbox))]
+    while todo:
+        k, box = todo.pop()
+        w = nodes[k][0]
+        old[k] = (box, *_sides(nodes[k], box))
+        if w & 0x10000000:
+            continue
+        if not w & 0x40000000:
+            todo.append((k + 1, old[k][1]))
+        if not w & 0x80000000:
+            todo.append((k + ((w & 0xFFFFF) >> 2), old[k][2]))
+
+    def union(a, b):
+        return (min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3]))
+    new = [list(n) for n in nodes]
+    changed = 0
+    todo = [(0, root)]
+    while todo:
+        k, box = todo.pop()
+        w, _s, b1, b2 = nodes[k]
+        if w & 0x10000000:
+            continue
+        was, lw, rw = old[k]
+        lw = union(lw, want) if toward.get(k) == "L" else lw
+        rw = union(rw, want) if toward.get(k) == "R" else rw
+        axis = 0 if w & 3 == 0 else 1
+        a0, ext = (box[0], box[2] - box[0]) if axis == 0 else (box[1], box[3] - box[1])
+        if box == was:  # its own box as it was: its shares only grow, and only toward entry e
+            n1 = max(b1, _share(lw[axis + 2], a0, ext, up=True)) if toward.get(k) == "L" else b1
+            n2 = min(b2, _share(rw[axis], a0, ext, up=False)) if toward.get(k) == "R" else b2
+        else:  # its box grew: shares worked out again to hold what its sides held
+            n1, n2 = _share(lw[axis + 2], a0, ext, up=True), _share(rw[axis], a0, ext, up=False)
+        new[k][2:] = [n1, n2]
+        changed += (n1, n2) != (b1, b2)
+        lb, rb = _sides(new[k], box)
+        if not w & 0x40000000:
+            todo.append((k + 1, lb))
+        if not w & 0x80000000:
+            todo.append((k + ((w & 0xFFFFF) >> 2), rb))
+    if not changed and root == tuple(top.bbox):
+        return bytes(data), at, []
+    raw = bytearray(top.raw)
+    start = (0x20 if top.long else 0x1C) + 4 * len(top.entries)
+    if bytes(raw[start:start + len(top.nodes)]) != top.nodes:
+        raise SceneryError("the top block's tree isn't where this writer expects it")
+    for k, n in enumerate(new):
+        struct.pack_into("<IHBB", raw, start + 8 * k, *n)
+    struct.pack_into("<4f", raw, 8, *root)  # the block's own box, as Scenery reads it
+    out = bytearray(data)
+    at_file = sc.data_off + top.offset
+    out[at_file:at_file + len(raw)] = raw
+    out[:16] = hashlib.md5(bytes(out[16:])).digest()
+    grown = Scenery(bytes(out))  # nothing the map had is lost: every entry's leaf box holds its old one
+    after = _leaf_boxes(grown.blocks[0])
+    if any(not (after[i][0] <= b[0] and after[i][1] <= b[1] and after[i][2] >= b[2] and after[i][3] >= b[3])
+           for i, b in boxes.items()) or not (after[e][0] <= want[0] and after[e][1] <= want[1]
+                                               and after[e][2] >= want[2] and after[e][3] >= want[3]):
+        raise SceneryError("widening the top block's tree lost a box")
+    return bytes(out), at, [f"{len(things)} new object(s) in open ground, away from the map's own scenery: one box of "
+                            f"the map's draw tree widened to reach them ({changed} of its {len(nodes)} node(s) "
+                            f"changed; not tried in the game yet)"]
+
+
 # --- road pieces filed where the map files its own: among a block's items, in the leaf of its tree that holds them ---
 @dataclass
 class _Leaf:
@@ -2305,6 +2496,7 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
     to_local = _inverse(carrier.matrix())
     inner = sc.block_at(carrier.child_offset)
     items, xs, ys = [], [inner.bbox[0], inner.bbox[2]], [inner.bbox[1], inner.bbox[3]]
+    boxes = [tuple(inner.bbox)]  # each item's box in the new block, for its tree: the old block's own first
     style = _road_style(sc)
     for o in objects:
         if isinstance(o, RoadPiece):
@@ -2314,6 +2506,7 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
             items.append(body)
             xs += px
             ys += py
+            boxes.append((min(px), min(py), max(px), max(py)))
             continue
         sym = index.get(o.type)
         if sym is None:
@@ -2327,14 +2520,17 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
         pad = MARGIN * o.size * max(1.0, o.stretch)
         xs += [local[3] - pad, local[3] + pad]
         ys += [local[7] - pad, local[7] + pad]
-    probe = _new_block([b"\0" * 4] + items, (0.0, 0.0, 0.0, 0.0))  # its size, to know where the old block moves to
+        boxes.append((local[3] - pad, local[7] - pad, local[3] + pad, local[7] + pad))
+    probe = _new_block([b"\0" * 4] + items, (0.0, 0.0, 0.0, 0.0), boxes)  # its size: where the old block moves to
     shift = len(probe)
     moved_to = carrier.child_offset + shift
     if (sc.fields[3] + shift) & ~0xFFFFFC:
         raise SceneryEditError("the map's scenery is too big for a new block to be referenced")
     # the old block, placed where it was (no transform: the reference to the new block keeps the old one's)
     first = struct.pack("<I", (carrier.word & 0xFF000000) | moved_to | T_IDENTITY)
-    new = _new_block([first] + items, (min(xs), min(ys), max(xs), max(ys)))
+    new = _new_block([first] + items, (min(xs), min(ys), max(xs), max(ys)), boxes)
+    if len(new) != shift:
+        raise SceneryError("a new block came out a different size than measured")
     # every block, its references to blocks after the top one moved by the new block's size
     f = list(sc.fields)
     tab_off, tab_n, data_off, data_len = f[0], f[1], f[2], f[3]
