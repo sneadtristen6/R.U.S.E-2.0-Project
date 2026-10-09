@@ -210,9 +210,10 @@ def _map_readers() -> dict:
         "roads.toml": (("road", "take_out"), "a roads file holds [[road]] tables and take_out = [\"roads\", \"bridges\"]",
                        lambda d, rel: parse_roads(d.get("road", []), rel) + parse_take_out(d.get("take_out"), rel),
                        RoadNetError),
-        "map.toml": (("players", "entry", "copy_of", "name", "picture", "wide_picture", "start_dots", "ground"),
+        "map.toml": (("players", "entry", "copy_of", "name", "picture", "wide_picture", "start_dots", "ground",
+                      "blank"),
                      "a map file holds players = N (and entry = the map-list name), picture, wide_picture and "
-                     "start_dots, and for a new map copy_of, name and ground",
+                     "start_dots, and for a new map copy_of, name, ground and blank",
                      _map_toml, (PlayersError, NewMapError, PictureError)),
     }
 
