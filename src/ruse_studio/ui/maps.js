@@ -806,7 +806,7 @@ const ROAD_LIFT = 600;   // map units above the ground (about 2 m), so the groun
 
 async function loadRoads(pack, ask) {
   dropRoads();
-  const res = await mv.api.map_roads(pack);
+  const res = blankMap(pack) ? { pieces: [] } : await mv.api.map_roads(pack);  // a blank map's roads are all taken out
   if (ask !== mv.ask || !mv.edit) return;
   roads.pieces = res.pieces;
   road.samples = null;  // snapping reads them
@@ -2038,11 +2038,39 @@ function zoneBorder(triangles) {
 
 // A zone on the ground, Stellaris' way (ZONE_FILL_MOST): a clear line along its border, a glow just inside it that
 // fades inwards (clear at the border, gone `band` in), and a faint fill, in its own colour; all following the ground.
+// A zone's hover: "Zone 2 · an area of the map (a sector), not a side" (the owner asked whether zones are sides; the
+// zone's own name in the file is only a code, zone_<guid>)
+const zoneLabel = (z, k) => `${mv.words.scen_zone} ${k + 1} · ${mv.words.scen_zone_what || z.name}`;
+
+// A zone flat on the map, for pointing at it: its own triangles (a few hundred), not the drape that follows the
+// ground (tens of thousands each; raycasting those took 20-46 ms a pointer move on a blank D-Day, 2026-10-09)
+function flatZone(z, k) {
+  const p = z.points;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < p.length; i += 2) {
+    x0 = Math.min(x0, p[i]); x1 = Math.max(x1, p[i]); y0 = Math.min(y0, p[i + 1]); y1 = Math.max(y1, p[i + 1]);
+  }
+  return { p, t: z.triangles, box: [x0, y0, x1, y1], label: zoneLabel(z, k) };
+}
+
+// The zone at map point x, y ("" when none): the first whose triangles hold it, as the drape's raycast found it.
+function zoneAt(x, y) {
+  for (const { p, t, box, label } of scen.zoneFlat || []) {
+    if (x < box[0] || x > box[2] || y < box[1] || y > box[3]) continue;
+    for (let i = 0; i + 2 < t.length; i += 3) {
+      const ax = p[2 * t[i]], ay = p[2 * t[i] + 1], bx = p[2 * t[i + 1]], by = p[2 * t[i + 1] + 1];
+      const cx = p[2 * t[i + 2]], cy = p[2 * t[i + 2] + 1];
+      const d1 = (x - bx) * (ay - by) - (ax - bx) * (y - by), d2 = (x - cx) * (by - cy) - (bx - cx) * (y - cy);
+      const d3 = (x - ax) * (cy - ay) - (cx - ax) * (y - ay);
+      if (!((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))) return label;  // inside or on an edge
+    }
+  }
+  return "";
+}
+
 function drawZone(z, k, zones, at, step) {
-  // its hover: "Zone 2 · an area of the map (a sector), not a side" (the owner asked whether zones are sides; the
-  // zone's own name in the file is only a code, zone_<guid>)
   const { THREE } = mv.gl, colour = zoneColour(k);
-  const label = `${mv.words.scen_zone} ${k + 1} · ${mv.words.scen_zone_what || z.name}`;
+  const label = zoneLabel(z, k);
   const p = z.points;
   const { xy, tris } = drapeZone(p, z.triangles, step), n = xy.length / 2, pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) {
@@ -2109,8 +2137,10 @@ function drawScenario() {
   s.zones.forEach((z, k) => drawZone(z, k, zones, at, step));
   fillZones();
   zones.visible = scen.layers.zones;
-  const pillar = size * 0.03;
+  scen.zoneFlat = s.zones.map((z, k) => flatZone(z, k));  // for pointing at them (scenarioAt)
+  const pillar = size * 0.03, blank = blankMap();
   for (const it of s.items) {
+    if (blank && it.gone) continue;  // a blank map: what it took out of the map it copies isn't there to put back
     if (it.kind === "StartingPoint") {  // a tall pillar in the alliance's colour
       const colour = ALLIANCE[((it.alliance || 1) - 1) % ALLIANCE.length];
       if (it.cam && scen.layers.cams) {
@@ -2999,19 +3029,23 @@ function scenarioAt(ev) {
   gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
   gl.raycaster.setFromCamera(gl.ndc, gl.camera);
   // the spawns' icons are sprites, not meshes: left out, pointing at a unit said nothing (a French player, 2026-10-05)
-  const shown = [...scen.group.children, ...(scen.zones && scen.zones.visible ? scen.zones.children : [])]  // their own group
-    .filter((o) => (o.isMesh || o.isSprite) && o.userData.label);
-  const hits = gl.raycaster.intersectObjects(shown, false);
-  // an icon, a pillar or a diamond before a zone
-  const solid = hits.find((h) => h.object.isSprite || h.object.geometry.type !== "BufferGeometry");
-  return ((solid || hits[0]) || { object: { userData: {} } }).object.userData.label || "";
+  const shown = scen.group.children.filter((o) => (o.isMesh || o.isSprite) && o.userData.label);
+  const hit = gl.raycaster.intersectObjects(shown, false)[0];
+  if (hit) return hit.object.userData.label || "";  // an icon, a pillar or a diamond before a zone
+  if (!scen.zones || !scen.zones.visible || !gl.ground) return "";
+  const p = gl.raycaster.intersectObject(gl.ground, false)[0];  // the zones under the pointer, on the map itself
+  return p ? zoneAt(p.point.x / SCALE, p.point.z / SCALE) : "";
 }
 
 async function loadScenery(pack, ask) {
   clearScenery();
   $("scenery-stats").textContent = mv.words.scenery_loading;
-  const data = await mv.api.map_scenery(pack);
+  let data = await mv.api.map_scenery(pack);
   if (ask !== mv.ask || !mv.edit) return;
+  if (blankMap(pack)) {  // every object of the map it copies is erased: none drawn or pointed at; the types stay (Place)
+    const none = { shown: 0, total: 0 };
+    data = { ...data, items: {}, groups: { building: none, prop: none, vegetation: none } };
+  }
   mv.scenery.data = data;
   mv.scenery.meshes = sceneryMeshes(data);
   for (const mesh of Object.values(mv.scenery.meshes)) mv.gl.scene.add(mesh);
@@ -3392,8 +3426,9 @@ async function show(pack, keepCamera) {
   $("map-hud").classList.remove("hidden");
   $("map-dock").classList.remove("hidden");
   loadStrokes(pack, ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
-  loadScenery(pack, ask).then(() => loadModels(pack, ask).catch((err) => {  // the shapes stay when models can't be had
-    $("map-ground").textContent = (err && err.message) || String(err);
+  const blank = blankMap(pack);  // nothing of the map it copies is drawn: no models for its objects, no ground pictures
+  loadScenery(pack, ask).then(() => blank ? null : loadModels(pack, ask).catch((err) => {  // the shapes stay when
+    $("map-ground").textContent = (err && err.message) || String(err);  // models can't be had
   })).catch((err) => {  // no types to place then: the place panel says so too
     $("scenery-stats").textContent = (err && err.message) || String(err);
     placeNote((err && err.message) || String(err), "error");
@@ -3404,7 +3439,17 @@ async function show(pack, keepCamera) {
   loadMoves(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   loadRoads(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   loadModRoads(pack, ask).catch((err) => roadNote((err && err.message) || String(err), "error"));
-  realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
+  if (blank) $("map-ground").textContent = "";  // (the last map's "loading" said nothing more)
+  else realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
+}
+
+// A map started blank (Duplicate map's Blank Terrain or Blank Ocean; StudioApi.maps "blank"): nothing of the map it
+// copies is drawn on it, as nothing of it is in the game (the owner, 2026-10-09: "nothing should be there. This isn't
+// D-Day"): not its objects (all erased), its roads (taken out), the items it took out or its ground's pictures. What
+// the modder adds shows as on any map.
+function blankMap(pack = mv.current) {
+  const m = (mv.maps || []).find((x) => x.pack === pack);
+  return Boolean(m && m.blank);
 }
 
 // --- the dock: the tools by kind along the bottom, as Cities: Skylines does it (a bar of kinds; the kind picked opens

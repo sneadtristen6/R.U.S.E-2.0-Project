@@ -393,6 +393,23 @@ class MenuPictures(WithAMapProject):
         self.assertNotIn("blank", self.toml(pack))
         self.assertFalse(next(m for m in self.api.maps()["maps"] if m["pack"] == pack)["blank"])
 
+    def test_a_blank_map_draws_nothing_of_the_copied_maps(self):
+        """The owner, 2026-10-09, on a Blank Terrain copy of D-Day: "nothing should be there. This isn't D-Day." The
+        map view knows a blank map from the Maps list's `blank` and leaves out what the copied map had: its objects
+        (kept as types to place, none drawn), its roads, the items it took out, its 3D models and its ground's
+        pictures; zones are pointed at on the map itself, not through their drape (20-46 ms a move before)."""
+        ui = Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "ui"
+        js = (ui / "maps.js").read_text(encoding="utf-8")
+        self.assertIn("function blankMap(pack = mv.current) {", js)
+        self.assertIn("data = { ...data, items: {}, groups: { building: none, prop: none, vegetation: none } };", js)
+        self.assertIn("const res = blankMap(pack) ? { pieces: [] } : await mv.api.map_roads(pack);", js)
+        self.assertIn("if (blank && it.gone) continue;", js)
+        self.assertIn("loadScenery(pack, ask).then(() => blank ? null : loadModels(pack, ask)", js)
+        self.assertIn("else realGround(pack, ask)", js)
+        self.assertIn("return p ? zoneAt(p.point.x / SCALE, p.point.z / SCALE) : \"\";", js)
+        fake = (ui / "fake-api.js").read_text(encoding="utf-8")
+        self.assertIn("blank: preset ? true : Boolean(m.blank)", fake)  # the offline pages make blank maps too
+
     def test_a_map_made_blank_before_blank_was_written_counts_as_blank(self):
         """Studio 0.9.8 to 0.9.8.2 wrote a blank start's map.toml with ground = "generated" and no blank: only a blank
         start sets that ground, so such a map counts as blank (the owner's own blank D-Day, 2026-10-09)."""
