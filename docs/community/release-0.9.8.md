@@ -2,6 +2,7 @@
 title: "Studio 0.9.8 and Launcher 0.4.8: new maps start blank, with their own menu pictures"
 category: Announcements
 order: 6
+skip: never posted; 0.9.8.2's announcement covers it
 ---
 **RUSE Studio 0.9.8** and **RUSE Launcher 0.4.8** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.

@@ -32,7 +32,7 @@ make works in the game every time, the first time.
 what changing strictly data can do. Anything beyond data is outside what we want to do with it. Your Steam install
 is never changed.
 
-**366 units from WWI to today, in the Studio.** WWI tanks and biplanes, B-29s, Cold War and modern armour and jets:
+**366 units from WWI to today, in the Studio.** WWI, WWII+, Cold War and modern tanks and planes, all in one game:
 each another maker's free 3D model, credited, at its real size, researched like the game's own units, with its own
 card in the build menu. Pick an era in the Studio's Units tab and it downloads; add any of its units to your mod
 (RUSE Studio 0.9.8.2).
@@ -40,16 +40,16 @@ card in the build menu. Pick an era in the Studio's Units tab and it downloads; 
 <table>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/era-b29-airfield.jpg" alt="R.U.S.E. in game: two B-29 Superfortress bombers parked beside an airfield's runway, added to a mod from RUSE Studio's units from other eras" width="260"><br>
-      <sub><b>Bombers from another war.</b> Two B-29 Superfortresses on an airfield.</sub>
+      <img src="docs/images/era-b29-airfield.jpg" alt="R.U.S.E. in game: new bombers parked beside an airfield's runway, added to a mod from RUSE Studio's units from other eras" width="260"><br>
+      <sub><b>New bombers</b> on a R.U.S.E. airfield.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/era-mark-v-field.jpg" alt="R.U.S.E. in game: two WWI Mark V tanks with British markings in a ploughed field" width="260"><br>
-      <sub><b>Back to 1918.</b> WWI Mark V tanks in the fields.</sub>
+      <img src="docs/images/era-mark-v-field.jpg" alt="R.U.S.E. in game: two WWI tanks in a ploughed field" width="260"><br>
+      <sub><b>WWI tanks</b> in the fields of R.U.S.E.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/era-airfield-three-eras.jpg" alt="R.U.S.E. in game: WWI biplanes, B-29 bombers and MiG-29 jets on one airfield" width="260"><br>
-      <sub><b>Three eras, one airfield.</b> WWI biplanes, B-29s and MiG-29s.</sub>
+      <img src="docs/images/era-airfield-three-eras.jpg" alt="R.U.S.E. in game: WWI biplanes, WWII-era bombers and modern jets on one airfield" width="260"><br>
+      <sub><b>WWI, WWII and modern, all in one.</b> Biplanes, bombers and jets on one airfield.</sub>
     </td>
   </tr>
 </table>
@@ -306,8 +306,8 @@ game's packs, plus the packs a mod rebuilds), and Play starts that copy.
 - **Units from other eras** (Studio 0.9.8.2): the Units tab's WWI, WWII+, Cold War and Modern eras hold 366 units,
   each another maker's free model (CC0 or CC BY), credited. Each era downloads in the Studio when you pick it, from
   our GitHub (each file checked), and updates itself as more are finished. Add one to your mod: it's a new unit at
-  its real size, with its own card, researched from any unit of its nation's building (chains too: a T-80, then a
-  T-90M). Seen in the game: they load at once, their own cards, research and a chain, a Land Rover's own model, the
+  its real size, with its own card, researched from any unit of its nation's building (chains too: a Cold War tank, then
+  a modern one). Seen in the game: they load at once, their own cards, research and a chain, their own models, the
   sizes.
 - **Add units in formations:** 1 to 10 at once, in a line, column, wedge, box or circle (Studio 0.7.1).
 - A **mod check** reads every file of your mod the way the game build does, names each problem and offers the fix
@@ -349,8 +349,8 @@ Modders who write mods by hand can also use the `ruse` command-line tool, from t
 <table>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: the Units tab on the Modern era, 124 units listed, the M1A1 Abrams page with its model, its maker credited, and the form that adds it to a mod: name, start unit, price, size, build menu and research" width="380"><br>
-      <sub>The Units tab's eras: the M1A1 Abrams, its model's maker credited, ready to add to a mod at its real size and behind research.</sub>
+      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: the Units tab on the Modern era, 124 units listed, a modern tank's page with its model, its maker credited, and the form that adds it to a mod: name, start unit, price, size, build menu and research" width="380"><br>
+      <sub>The Units tab's eras: WWI, WWII+, Cold War and Modern, each model's maker credited, ready to add to a mod at its real size and behind research.</sub>
     </td>
     <td width="50%" valign="top">
       <img src="docs/images/studio-nations.jpg" alt="RUSE Studio: the Nations tab, the game's seven nations with their flags, armies and a Change button each" width="380"><br>
@@ -449,9 +449,9 @@ The big steps so far, newest first. Each one was played in the game before it we
 <summary><b>Units from other eras, at their real size and behind research (Studio 0.9.8.2)</b></summary>
 
 <p align="center">
-  <img src="docs/images/era-amx13-research.jpg" alt="R.U.S.E. in game: the Armor Base's build menu, the AMX-13 researched after the Lee and the Sherman, with its own card" width="640">
+  <img src="docs/images/era-amx13-research.jpg" alt="R.U.S.E. in game: the Armor Base's build menu, a unit from another era researched after the game's own tanks, with its own card" width="640">
   <br>
-  <sub>The AMX-13 in the Armor Base's research row, after the Lee and the Sherman, with its own card.</sub>
+  <sub>A unit from another era in the Armor Base's research row, after the game's own tanks, with its own card.</sub>
 </p>
 
 The Units tab's eras have their units: 366 from WWI to today, every one another maker's 3D model shared for free
@@ -459,9 +459,9 @@ The Units tab's eras have their units: 366 from WWI to today, every one another 
 you pick it, from our GitHub, every file checked, and updates itself as more are finished.
 
 Added to a mod, an era unit is a new unit at its real size (its width, or a plane's wingspan, at the game's own
-scale), with its own card, researched from any unit of its nation's building, the mod's own era units too: a T-80,
-then a T-90M. Seen in the game: they load at once, their own cards in the build menus, the research tabs and a
-chain, a Land Rover with its own model, the sizes. Not tried yet: towed guns.
+scale), with its own card, researched from any unit of its nation's building, the mod's own era units too: a Cold War
+tank, then a modern one. Seen in the game: they load at once, their own cards in the build menus, the research
+tabs and a chain, their own models, the sizes. Not tried yet: towed guns.
 
 On the way: a unit researched from another army's unit left the game on an endless loading screen; **New unit…** now
 drops that link, and the build refuses one. And the apps open in the player's web browser where their own window
@@ -703,7 +703,7 @@ Terrain, Blank Ocean) with sectors over the whole map, and a map's own pictures 
 or from a PNG, with the start dots where its players start; by 2026-10-08, the Economy tab's starting money and cards,
 the AI tab, replaced and new songs and voice lines, a nation with a new name in the lobby and a new flag in a match,
 and Blank Terrain's own ground; by 2026-10-09, units from other eras that load at once, are researched in a chain,
-stand at their real size, and a Land Rover with its own model. **Not yet checked in the game:** a new unit made in the Studio's window, mod sets made
+stand at their real size, with their own models. **Not yet checked in the game:** a new unit made in the Studio's window, mod sets made
 in the launcher's window, a mod exported as one file, sharing a load order, units a skirmish spawns, Browse mods, and
 from 0.9.8.1 the Upgrade box, All values, Files, the missions' tools and background sounds, and from 0.9.8.2 towed
 guns from other eras and the apps on Linux.

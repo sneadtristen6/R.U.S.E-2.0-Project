@@ -2,8 +2,8 @@
 
 > **For:** modders · **You need:** RUSE Studio 0.9.8.2 or later and a mod · **Takes:** a minute or two per unit
 
-366 units from WWI to today sit beside the game's own in the **Units** tab: WWI tanks and biplanes, the B-29, Cold War
-and modern armour and jets. Each is another maker's free 3D model (CC BY), already fitted to the game and given its
+366 units from WWI to today sit beside the game's own in the **Units** tab: WWI, WWII+, Cold War and modern
+tanks and planes, all in one game. Each is another maker's free 3D model (CC BY), already fitted to the game and given its
 nation's markings, and credited. None of them is in your mod until you add it.
 
 ## Get an era's units
@@ -43,8 +43,8 @@ The era's units are filtered like the game's: kind (ground or air), nation (Chin
 
 ## Research chains
 
-A unit can be researched from any unit of its nation's build menu, your mod's own era units too: add a T-80, then a
-T-90M researched from it. WWI and WWII+ units can be bought straight away; Cold War and Modern ones start as
+A unit can be researched from any unit of its nation's build menu, your mod's own era units too: add a Cold War tank,
+then a modern one researched from it. WWI and WWII+ units can be bought straight away; Cold War and Modern ones start as
 researched from a suitable unit (the form says which it suggests, and why).
 
 When you take out a unit that others are researched from, **Settings > Research** decides what happens:
@@ -65,7 +65,7 @@ you add one. Keep that file with your mod: the models' licence asks for it. The 
 
 ## What's been seen in the game
 
-Seen: they load at once, with their own cards in the build menus; the research tabs and a chain (a T-80, then a
-T-90M); a Land Rover with its own model; their sizes (a WWI Mark V clearly bigger than an AMX-13). Not tried yet: towed
+Seen: they load at once, with their own cards in the build menus; the research tabs and a chain of upgrades; their
+own models; their sizes. Not tried yet: towed
 guns (the importer can't fit them yet, so they show the start unit's model), and whether the game counts research time
 in seconds.

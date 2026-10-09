@@ -6,6 +6,10 @@ the GitHub CLI, signed in by the owner (`gh auth login`); it never sees or store
 
     python tools/post_discussions.py            # what it would do
     python tools/post_discussions.py --post     # do it
+    python tools/post_discussions.py --post --only release-0.9.8.2.md   # only that one
+
+A file whose front matter has `skip:` (the reason) is never posted: the owner, 2026-10-09, skipped 0.9.8's
+announcement for 0.9.8.2's ("just skip the .9.81 and just do .9.8.2").
 
 Categories and pins can't be set through GitHub's API: make and pin them on the website.
 """
@@ -54,13 +58,25 @@ def read_post(path: Path) -> tuple[dict, str]:
     return meta, body.strip() + "\n"
 
 
-def main(post: bool) -> None:
+def to_post(only: list[str]) -> list[tuple[Path, dict, str]]:
+    """The posts to create or update, in their order: every file but the skipped ones, or only the files named."""
+    posts = sorted(((path, *read_post(path)) for path in FOLDER.glob("*.md")),
+                   key=lambda p: (int(p[1].get("order", 99)), p[0].name))  # "order: 1" in the front matter goes first
+    unknown = set(only) - {path.name for path, _, _ in posts}
+    if unknown:
+        raise ValueError(f"no post file called {', '.join(sorted(unknown))} in docs/community")
+    for path, meta, _ in posts:
+        if path.name in only and meta.get("skip"):
+            raise ValueError(f"{path.name} is skipped: {meta['skip']}")
+    return [p for p in posts if not p[1].get("skip") and (not only or p[0].name in only)]
+
+
+def main(post: bool, only: list[str]) -> None:
     posted = json.loads(POSTED.read_text(encoding="utf-8")) if POSTED.is_file() else {}
+    posts = to_post(only)
     repo = graphql("query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { id "
                    "discussionCategories(first: 50) { nodes { id name } } } }", owner=REPO[0], name=REPO[1])["repository"]
     categories = {c["name"]: c["id"] for c in repo["discussionCategories"]["nodes"]}
-    posts = sorted(((path, *read_post(path)) for path in FOLDER.glob("*.md")),
-                   key=lambda p: (int(p[1].get("order", 99)), p[0].name))  # "order: 1" in the front matter goes first
     for path, meta, body in posts:
         known = posted.get(path.name)
         if known:
@@ -87,4 +103,5 @@ def main(post: bool) -> None:
 
 
 if __name__ == "__main__":
-    main("--post" in sys.argv[1:])
+    flags = sys.argv[1:]
+    main("--post" in flags, [flags[i + 1] for i, flag in enumerate(flags[:-1]) if flag == "--only"])

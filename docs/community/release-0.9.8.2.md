@@ -1,27 +1,27 @@
 ---
-title: "Studio 0.9.8.2: 366 units from WWI to today, with LittleGroove's tools, music and nations"
+title: "Studio 0.9.8.2: WWI, WWII and modern units all in one game, with LittleGroove's tools, music and nations"
 category: Announcements
 order: 7
 ---
 **RUSE Studio 0.9.8.2** and **RUSE Launcher 0.4.8.2** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.
 
-![Two B-29 Superfortresses on an airfield in R.U.S.E.](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/era-b29-airfield.jpg)
+![New bombers on a R.U.S.E. airfield](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/era-b29-airfield.jpg)
 
 **366 units from WWI to today.** The Studio's Units tab now has four eras beside the game's own units: **WWI**,
-**WWII+**, **Cold War** and **Modern**. WWI tanks and biplanes, B-29s, Cold War and modern armour and jets, each another
-maker's free 3D model, credited. Pick an era and it downloads; add any unit to your mod and it's a new unit:
+**WWII+**, **Cold War** and **Modern**. WWI, WWII and modern, all in one game: tanks and planes, each another maker's free 3D
+model, credited. Pick an era and it downloads; add any unit to your mod and it's a new unit:
 
 - **at its real size**, from its real width or wingspan, at the game's own scale;
 - **behind research** like the game's own units, from any unit of its nation's build menu, your own era units too: a
-  T-80, then a T-90M;
+  Cold War tank, then a modern one;
 - **with its own card** in the build menu.
 
-![WWI Mark V tanks in the fields](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/era-mark-v-field.jpg)
-![WWI biplanes, B-29s and MiG-29s on one airfield](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/era-airfield-three-eras.jpg)
+![WWI tanks in the fields](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/era-mark-v-field.jpg)
+![WWI biplanes, bombers and modern jets on one airfield](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/era-airfield-three-eras.jpg)
 
-Seen in the game: they load at once, their own cards, the research tabs and a chain, a Land Rover with its own model,
-the sizes. How to: [Units from other eras](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Units-From-Other-Eras).
+Seen in the game: they load at once, with their own cards, research and a chain of upgrades, their own models
+and sizes. How to: [Units from other eras](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Units-From-Other-Eras).
 
 **Also new since 0.9.8:**
 
