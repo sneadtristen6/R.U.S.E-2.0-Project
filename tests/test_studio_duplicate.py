@@ -409,6 +409,10 @@ class MenuPictures(WithAMapProject):
         self.assertIn("return p ? zoneAt(p.point.x / SCALE, p.point.z / SCALE) : \"\";", js)
         fake = (ui / "fake-api.js").read_text(encoding="utf-8")
         self.assertIn("blank: preset ? true : Boolean(m.blank)", fake)  # the offline pages make blank maps too
+        # a sector the build makes again repeats its points per part: its border is found by where they are, so no
+        # line crosses it where its parts meet (seen on the owner's blank D-Day and on painted sectors, 2026-10-09)
+        self.assertIn("function zoneBorder(triangles, p) {", js)
+        self.assertIn("zoneBorder(z.triangles, p)", js)
 
     def test_a_map_made_blank_before_blank_was_written_counts_as_blank(self):
         """Studio 0.9.8 to 0.9.8.2 wrote a blank start's map.toml with ground = "generated" and no blank: only a blank

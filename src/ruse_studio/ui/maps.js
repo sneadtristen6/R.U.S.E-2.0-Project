@@ -2021,13 +2021,20 @@ function drawStartCamera(it, group, colour, at) {
 }
 
 // A zone's border: the edges only one of its triangles has (whatever order its points come in), each with that
-// triangle's third corner, which says which way the inside is.
-function zoneBorder(triangles) {
-  const seen = new Map();
+// triangle's third corner, which says which way the inside is. Points and triangles are told apart by where they are
+// (`p`: the zone's x, y pairs), not by their numbers: a zone the build makes again (rusemod.sectors.zone_mesh, as the
+// shipped ones are drawn) repeats its points in each of its parts and its band in its border part, which drew lines
+// across a sector where its parts meet (the owner's blank D-Day, 2026-10-09).
+function zoneBorder(triangles, p) {
+  const seen = new Map(), done = new Set(), at = (i) => `${p[2 * i]},${p[2 * i + 1]}`;
   for (let i = 0; i + 2 < triangles.length; i += 3) {
-    const t = [triangles[i], triangles[i + 1], triangles[i + 2]];
+    const t = [triangles[i], triangles[i + 1], triangles[i + 2]], where = t.map(at);
+    const same = where.slice().sort().join(" ");
+    if (done.has(same) || where[0] === where[1] || where[1] === where[2] || where[0] === where[2]) continue;
+    done.add(same);
     for (let e = 0; e < 3; e++) {
-      const a = t[e], b = t[(e + 1) % 3], key = a < b ? `${a},${b}` : `${b},${a}`;
+      const a = t[e], b = t[(e + 1) % 3], ka = where[e], kb = where[(e + 1) % 3];
+      const key = ka < kb ? `${ka} ${kb}` : `${kb} ${ka}`;
       const got = seen.get(key);
       if (got) got.n += 1;
       else seen.set(key, { a, b, c: t[(e + 2) % 3], n: 1 });
@@ -2092,7 +2099,7 @@ function drawZone(z, k, zones, at, step) {
   const band = Math.min(0.1 * Math.min(x1 - x0, y1 - y0), 0.015 * (mv.size || 1000) / SCALE);
   const line = [], glow = [], tint = [];
   const corner = (x, y, a) => { const v = at(x, y); glow.push(v.x, v.y, v.z); tint.push(colour.r, colour.g, colour.b, a); };
-  for (const { a, b, c } of zoneBorder(z.triangles)) {
+  for (const { a, b, c } of zoneBorder(z.triangles, p)) {
     const ax = p[2 * a], ay = p[2 * a + 1], dx = p[2 * b] - ax, dy = p[2 * b + 1] - ay, len = Math.hypot(dx, dy);
     if (!len) continue;
     let nx = -dy / len, ny = dx / len;  // across the edge, turned to the inside (where the third corner is)
