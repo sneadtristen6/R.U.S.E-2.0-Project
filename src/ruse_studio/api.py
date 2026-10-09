@@ -2088,8 +2088,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         with self._grounds_lock:
             cached = self._sceneries.get(key)
         if cached is not None:
-            result = self._with_units(self._with_scenario_edits(mine, _copied(cached, copy))) if edited \
-                else _copied(cached, copy)
+            result = self._with_hqs(mine, self._with_units(self._with_scenario_edits(mine, _copied(cached, copy)))) \
+                if edited else _copied(cached, copy)
             return self._with_scenario_owners(game, pack, result)
         with Edat.open(str(path)) as arc:
             found = scenario.of_map(arc, pack)
@@ -2119,8 +2119,72 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         out = self._with_units({"scenarios": out_list})
         with self._grounds_lock:
             self._sceneries[key] = out
-        result = self._with_units(self._with_scenario_edits(mine, _copied(out, copy))) if edited else _copied(out, copy)
+        result = self._with_hqs(mine, self._with_units(self._with_scenario_edits(mine, _copied(out, copy)))) if edited \
+            else _copied(out, copy)
         return self._with_scenario_owners(game, pack, result)
+
+    def _with_hqs(self, pack: str, view: dict) -> dict:
+        """A blank map's HQs (newmap.is_blank; the owner, 2026-10-09: on a blank map "the HQ shouldn't be there, the
+        camera starting angle shouldn't be there"): each starting point that seats a player gets `seat` [team, its
+        number in the team] and `placed` (the mod has put it: moved it, or it's the mod's own), the others `unused`;
+        each scenario its `hqs` [{"item", "team", "seat", "placed"}] for the Scenario panel, and the view `blank`.
+        The map view draws only the placed ones; the build stops until every seat's is (rusemod.players.blank_seats).
+        Any other map: as it was."""
+        from rusemod import players as pl
+        copy = self._new_maps().get(pack.lower())
+        if copy is None or not newmap.is_blank(copy[1]):
+            return view
+        seating = self._hq_seating(pack)
+        setting = self._read_players(pack)
+        for s in view.get("scenarios", []):
+            s["items"] = [dict(it) for it in s["items"]]  # (the cached view stays the game's)
+            starts = [it for it in s["items"] if it["kind"] == "StartingPoint" and it.get("alliance") is not None]
+            for _entry, count, layouts, file in seating:
+                n = setting.count if setting else count
+                if not file or file.lower() != s["file"].lower() or not n:
+                    continue
+                seats = pl.seated([(it["item"], int(it["alliance"]), int(it.get("place") or 1)) for it in starts],
+                                  layouts, n)
+                rows = []
+                for it in starts:
+                    if it["item"] in seats:
+                        team, seat = seats[it["item"]]
+                        it.update(seat=[team, seat], placed=bool(it.get("mine") or it.get("put")))
+                        rows.append({"item": it["item"], "team": team, "seat": seat, "placed": it["placed"]})
+                    else:
+                        it["unused"] = True
+                s["hqs"] = sorted(rows, key=lambda r: (r["team"], r["seat"]))
+        view["blank"] = True
+        return view
+
+    def _hq_seating(self, pack: str) -> list:
+        """A new map's online entry as the game seats it (rusemod.players.entry_seating, read from the shipped map's
+        entries: the copy has the one it copies): [(name, NbPlayers, layouts, scenario file)]; read once per game
+        file."""
+        from rusemod import players as pl
+        from rusemod.ndf import Ndf
+        copy = self._new_maps().get(pack.lower())
+        game = self._game()
+        glad_path = find_pack(game, "ZZ_GladPatchableWin.dat") if game is not None and copy is not None else None
+        if glad_path is None:
+            return []
+        key = ("hq-seating", str(glad_path), glad_path.stat().st_mtime, copy[1].copy_of.lower(), copy[1].entry)
+        with self._grounds_lock:
+            cached = self._sceneries.get(key)
+        if cached is not None:
+            return cached
+        with Edat.open(str(glad_path)) as glad:
+            def read(member):
+                e = glad.entry(member)
+                return bytes(glad.read(e)) if e is not None else None
+            g = Ndf(read(pl.GLOBALS))
+            listed = {name for _mi, gi, name in pl.entries(Ndf(read(pl.MAPINFO)), g, copy[1].copy_of)
+                      if newmap._listed(g, gi)}
+            out = [row for row in pl.entry_seating(read, copy[1].copy_of)
+                   if row[0] in listed and copy[1].entry in (None, row[0])]
+        with self._grounds_lock:
+            self._sceneries[key] = out
+        return out
 
     def _with_scenario_owners(self, game: Path, pack: str, view: dict) -> dict:
         """Each scenario's `owners`: who Add unit can give a spawn to (_scenario_owners), read once per scenario."""
@@ -2237,7 +2301,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                         it["cam"] = _turned_cam(_shifted_cam(it["cam"], m.x - it["x"], m.y - it["y"]), m.x, m.y,
                                                 m.camera or 0.0)
                     it.update(x=m.x, y=m.y, moved=(m.x, m.y) != (it["x"], it["y"]) or it.get("moved", False),
-                              camera=m.camera or 0.0)
+                              camera=m.camera or 0.0, put=True)  # `put`: the mod places it (a blank map's HQs)
                     if m.rotation is not None:  # turned in the mod (scenario_turn); `game_turn`: the game's
                         it.update(game_turn=it["turn"], turn=m.rotation)
             places: dict = {}
@@ -3365,6 +3429,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         nodes, edges = list(cached["nodes"]), list(cached["edges"])
         try:
             mine = self._read_roads(self._roads_file(pack)) if self._map_dir() is not None else []
+            if self._map_dir() is not None and self._read_take_out(self._roads_file(pack)).roads:
+                nodes, edges = [], []  # the map's own roads taken out (a blank map's always): only the mod's own
         except StudioError:
             mine = []
         for r in mine:

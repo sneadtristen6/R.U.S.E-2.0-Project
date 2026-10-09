@@ -2141,6 +2141,9 @@ function drawScenario() {
   const pillar = size * 0.03, blank = blankMap();
   for (const it of s.items) {
     if (blank && it.gone) continue;  // a blank map: what it took out of the map it copies isn't there to put back
+    // a blank map's HQs: only those the modder has placed, with their cameras (StudioApi._with_hqs; the owner,
+    // 2026-10-09: "the HQ shouldn't be there, the camera starting angle shouldn't be there")
+    if (blank && it.kind === "StartingPoint" && (it.unused || !it.placed)) continue;
     if (it.kind === "StartingPoint") {  // a tall pillar in the alliance's colour
       const colour = ALLIANCE[((it.alliance || 1) - 1) % ALLIANCE.length];
       if (it.cam && scen.layers.cams) {
@@ -2612,12 +2615,15 @@ function renderScenTools() {
   $("scen-snap-label").textContent = w.scen_snap_roads || "Stick to roads";
   snapRow.title = w.tip_scen_snap_roads || "";
   renderScenClear(s);
+  renderScenHqs(s);
   renderItemDetails(null, null);  // the picked item's values: shown again below when there is one
   if (!mv.brush.mod && scen.tool) { scenNote(w.no_mod, "error"); return; }
   if (scen.tool === "move") {
     const it = s && scen.selected !== null ? s.items[scen.selected] : null;
     if (!it) { scenNote(w.scen_pick_item + (w.scen_cam_drag ? " " + w.scen_cam_drag : "")); return; }
-    const parts = [fill(w.scen_pick_place, { what: it.kind === "StartingPoint"
+    if (it.seat && !it.placed) { scenNote(fill(w.scen_hq_click, { t: it.seat[0], k: it.seat[1] })); return; }
+    const parts = [fill(w.scen_pick_place, { what: it.kind === "StartingPoint" && it.seat
+      ? fill(w.scen_hq_seat, { t: it.seat[0], k: it.seat[1] }) : it.kind === "StartingPoint"
       ? fill(w.scen_start_place, { n: it.alliance || "?", p: it.place || 1 })
       : it.kind === "Spawn" ? w.scen_spawn : it.text || it.name || "" })];
     const n = $("scen-note");
@@ -2827,6 +2833,40 @@ function renderScenClear(s) {
       () => scenEdit(() => mv.api.scenario_sectors(mv.current, !whole))), " ");
     if (whole && s.sectors_note) box.append(el("span", { className: "muted", textContent: s.sectors_note }));
   }
+}
+
+// A blank map's HQs (StudioApi._with_hqs: s.hqs), one row per player the map seats: placed or not, and Place (or
+// Move, once placed): it's picked with the Move tool, and the next click on the ground puts it there, its camera with
+// it. Test in game waits until every one is placed (the build says which aren't).
+function renderScenHqs(s) {
+  const w = mv.words, box = $("scen-hqs"), hqs = (s && s.hqs) || [];
+  box.replaceChildren();
+  box.classList.toggle("hidden", !hqs.length);
+  if (!hqs.length) return;
+  box.title = w.tip_scen_hqs;
+  box.append(el("div", { className: "scen-hqs-title", textContent: w.scen_hqs_title, title: w.tip_scen_hqs }));
+  for (const h of hqs) {
+    const picked = scen.tool === "move" && scen.selected === h.item;
+    const row = el("div", { className: "scen-hq-row" + (picked ? " picked" : "") },
+      el("span", { textContent: fill(w.scen_hq_seat, { t: h.team, k: h.seat }) + " · " }),
+      el("span", { className: h.placed ? "muted" : "error-text",
+        textContent: h.placed ? w.scen_hq_placed : w.scen_hq_not_placed }), " ");
+    const b = el("button", { type: "button", className: "link", textContent: h.placed ? w.scen_hq_move : w.scen_hq_place,
+      title: mv.brush.mod ? w.tip_scen_hq_place : w.no_mod });
+    b.disabled = !mv.brush.mod;
+    b.addEventListener("click", () => {
+      if (scen.tool !== "move") setScenTool("move");
+      scen.selected = h.item;
+      scen.sel = new Set();
+      drawScenario();
+      renderScenTools();
+    });
+    row.append(b);
+    box.append(row);
+  }
+  const left = hqs.filter((h) => !h.placed).length;
+  box.append(el("div", { className: left ? "error-text" : "muted",
+    textContent: left ? fill(w.scen_hqs_left, { n: left }) : w.scen_hqs_all }));
 }
 
 // Save a change, then draw the scenario as the mod leaves it now.

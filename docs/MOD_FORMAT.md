@@ -417,10 +417,20 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
   button warns that separate islands aren't ready for full-scale battles: a land unit ordered onto an island it can't
   reach crashes the game). The window
   says why a new map sits on a game map (the game can't load one made from nothing) and asks which one it's *Built
-  on*: that map gives it its size, its player count and its starting points, nothing else. It
+  on*: that map gives it its size and its player count, nothing else. It
   writes the copy's files from the shipped map's own: the whole map flat (land, or the sea over it), everything on it
   erased, its roads and bridges taken out, only the starting points kept, the sectors over the whole map, and its own
-  menu pictures with `start_dots` (below). Seen in the game (both, 2026-10-05).
+  menu pictures with `start_dots` (below). Seen in the game (both, 2026-10-05). The starting points stay in its files
+  but none is placed: the modder places each player's HQ (`blank`, below).
+- **`blank = "terrain"`** or **`"ocean"`** (a blank start sets it; a map made blank by Studio 0.9.8 to 0.9.8.2 has
+  `ground = "generated"` instead, which counts the same): the map started blank, so nothing of the copied map is on
+  it. The Studio draws none of it (its objects, roads, items taken out, ground pictures), and none of its HQs until
+  the modder places them (the owner, 2026-10-09: "the HQ shouldn't be there, the camera starting angle shouldn't be
+  there"). Each starting point that seats a player (the map's player count, in each layout its entry offers: a team's
+  players take its starting points lowest `AlliancePriority` first) counts as placed once the mod moves it
+  (`[[move]]`) or adds it (`[[start]]`); its opening camera moves with it. The build stops until every one is placed,
+  naming them (team, HQ); fewer players need fewer. That stop is the owner's call, not something the game asks: a
+  blank map with HQs left where the copied map had them has never been tried in the game. Refused on a shipped map.
 - **`ground = "generated"`** (a blank start sets it): the new map's ground is drawn as its own from its terrain
   strokes, starting from the map flattened all over, instead of the shipped map's ground being pushed about: the
   close-up and far ground on one grid cut exactly at the water, the ground units stand on the same as the ground

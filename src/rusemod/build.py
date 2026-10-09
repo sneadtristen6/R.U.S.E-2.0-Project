@@ -2583,6 +2583,35 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         except (OSError, TypeError, KeyError, ValueError, struct.error, zlib.error):
                             missions_read[key] = []  # no script to read: the warning falls back to the spawns
                     return missions_read[key]
+                from .newmap import is_blank
+                for name, (spec, mod_id) in making.items():  # a blank map's HQs: every seat's put by the modder
+                    if not is_blank(spec):
+                        continue
+                    from .players import blank_seats, entry_seating
+                    from .scenario import folder_of
+                    rows = moves.get(name, ([], []))[0]
+                    settings = players.get(name, ([], []))[0]
+                    for entry, count, layouts, file in entry_seating(read_glad, name):
+                        raw = read_data(folder_of(name) + file) if file else None
+                        n = settings[-1].count if settings else count
+                        if raw is None or not n:
+                            continue
+                        try:
+                            seats_ = blank_seats(raw, file, rows, n, layouts)
+                        except (ScenarioError, ValueError, struct.error):
+                            continue  # (its scenario can't be read: the moves below say so)
+                        missing = sorted((t, k) for t, k, placed in seats_.values() if not placed)
+                        if missing:
+                            # The owner's call (2026-10-09): a blank map's HQs are each put by the modder ("the HQ
+                            # shouldn't be there ... This isn't D-Day"), and Test in game stops until they are. The game
+                            # itself would start those players where the copied map had them; a blank map with HQs
+                            # left there has never been tried in the game.
+                            where = ", ".join(f"team {t}, HQ {k}" for t, k in missing)
+                            # not a game rule: the owner's call for blank maps (above), not something the game asks
+                            result.findings.append(Finding("error", f"{mod_id}: maps/{name}: {entry!r} seats {n} "
+                                                                    f"players, and these HQs aren't placed yet: {where}. "
+                                                                    f"Place each in the Studio (Scenario, Each "
+                                                                    f"player's HQ), or set fewer players"))
                 for name, (map_moves, ids) in moves.items():
                     from .players import skirmish_files
                     from .scenario import Move, Spawn, spawn_class_problems

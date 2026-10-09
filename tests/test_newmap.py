@@ -642,6 +642,24 @@ class Building(unittest.TestCase):
         self.assertEqual(other.errors, [], "\n".join(lines2))
         self.assertNotEqual(result.fingerprint, other.fingerprint)   # another map list: another game
 
+    def test_a_blank_map_builds_once_every_hq_is_placed(self):
+        """A blank map (map.toml blank; the owner, 2026-10-09: "the HQ shouldn't be there ... nothing should be
+        there") builds only once each player's HQ is placed, and the error names the ones that aren't: here the
+        shipped start the game seats team 2 on (item 0), team 1's being the mod's own."""
+        files = {"map.toml": 'copy_of = "SuperCrossRoads4"\nname = "Blitz Blank"\nblank = "terrain"\nplayers = 2\n',
+                 "scenario.toml": '[[start]]\nfile = "leveldesign_normal.scenario"\nteam = 1\nx = 2000.0\ny = 2000.0\n'}
+        result, lines = self.build(self.mod("blank", files, name="BlitzBlank"))
+        self.assertEqual(len(result.errors), 1, "\n".join(lines))
+        self.assertIn("seats 2 players, and these HQs aren't placed yet: team 2, HQ 1", result.errors[0].message)
+        files["scenario.toml"] += ('[[move]]\nfile = "leveldesign_normal.scenario"\nitem = 0\nkind = "StartingPoint"\n'
+                                   'x = 3000.0\ny = 3000.0\n')
+        result, lines = self.build(self.mod("placed", files, name="BlitzBlank"), copy="copy2")
+        self.assertEqual(result.errors, [], "\n".join(lines))
+        files["map.toml"] = files["map.toml"].replace('blank = "terrain"\n', "")  # not blank: as it always was
+        files["scenario.toml"] = files["scenario.toml"].split("[[move]]")[0]
+        result, lines = self.build(self.mod("copied", files, name="BlitzBlank"), copy="copy3")
+        self.assertEqual(result.errors, [], "\n".join(lines))
+
     def test_mistakes(self):
         a = self.mod("aaa", {"map.toml": 'copy_of = "SuperCrossRoads4"\n'})
         b = self.mod("bbb", {"map.toml": 'copy_of = "SuperCrossRoads4"\n'}, name="blitzatdusk")
