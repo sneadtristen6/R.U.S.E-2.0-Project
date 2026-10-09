@@ -18677,3 +18677,41 @@ ru = "Удаляет его юнит из мода со всеми измене�
 cz = "Smaže její jednotku z modu se všemi změnami, modelem a uvedením autora."
 jpn = "MODからユニットを削除します（変更・モデル・クレジットごと）。"
 sc = "从模组中删除该单位，包括所有修改、模型和署名。"
+
+# --- the app in the player's web browser, where its own window can't open (rusemod.browsermode; issue #21): the box
+# that keeps the app running, the page's note once it's closed, and the box on a PC without WebView2 ---
+[browser_open]
+us = "{app} is open in your web browser, because its own window can't open on this PC.\n\nIf no page opened, paste this address into your browser (it's already copied):\n{address}\n\nKeep this box open while you use {app}.\nOK: open the page again.   Cancel: close {app}."
+fr = "{app} est ouvert dans votre navigateur web, car sa propre fenêtre ne peut pas s'ouvrir sur ce PC.\n\nSi aucune page ne s'est ouverte, collez cette adresse dans votre navigateur (elle est déjà copiée) :\n{address}\n\nGardez cette fenêtre ouverte pendant que vous utilisez {app}.\nOK : rouvrir la page.   Annuler : fermer {app}."
+ger = "{app} ist in Ihrem Webbrowser geöffnet, weil sich sein eigenes Fenster auf diesem PC nicht öffnen lässt.\n\nFalls sich keine Seite geöffnet hat, fügen Sie diese Adresse in Ihren Browser ein (sie ist schon kopiert):\n{address}\n\nLassen Sie dieses Fenster offen, solange Sie {app} verwenden.\nOK: Seite erneut öffnen.   Abbrechen: {app} schließen."
+ita = "{app} è aperto nel tuo browser web, perché la sua finestra non può aprirsi su questo PC.\n\nSe non si è aperta nessuna pagina, incolla questo indirizzo nel browser (è già copiato):\n{address}\n\nTieni aperta questa finestra mentre usi {app}.\nOK: riapri la pagina.   Annulla: chiudi {app}."
+spa = "{app} está abierto en tu navegador web, porque su propia ventana no puede abrirse en este PC.\n\nSi no se abrió ninguna página, pega esta dirección en tu navegador (ya está copiada):\n{address}\n\nMantén esta ventana abierta mientras usas {app}.\nAceptar: volver a abrir la página.   Cancelar: cerrar {app}."
+pol = "{app} jest otwarty w przeglądarce internetowej, bo jego własne okno nie może się otworzyć na tym komputerze.\n\nJeśli żadna strona się nie otworzyła, wklej ten adres do przeglądarki (jest już skopiowany):\n{address}\n\nNie zamykaj tego okienka, dopóki używasz {app}.\nOK: otwórz stronę ponownie.   Anuluj: zamknij {app}."
+ru = "{app} открыт в вашем веб-браузере, потому что его собственное окно не может открыться на этом ПК.\n\nЕсли страница не открылась, вставьте этот адрес в браузер (он уже скопирован):\n{address}\n\nНе закрывайте это окно, пока пользуетесь {app}.\nОК: открыть страницу снова.   Отмена: закрыть {app}."
+cz = "{app} je otevřený ve vašem webovém prohlížeči, protože jeho vlastní okno se na tomto PC nedá otevřít.\n\nPokud se žádná stránka neotevřela, vložte tuto adresu do prohlížeče (už je zkopírovaná):\n{address}\n\nNechte toto okno otevřené, dokud {app} používáte.\nOK: otevřít stránku znovu.   Storno: zavřít {app}."
+jpn = "このPCでは{app}自身のウィンドウを開けないため、Webブラウザーで開いています。\n\nページが開かない場合は、このアドレスをブラウザーに貼り付けてください（コピー済みです）：\n{address}\n\n{app}を使っている間は、このウィンドウを開いたままにしてください。\nOK：ページをもう一度開く   キャンセル：{app}を閉じる"
+sc = "{app} 已在你的网页浏览器中打开，因为它自己的窗口无法在这台电脑上打开。\n\n如果没有打开页面，请把这个地址粘贴到浏览器中（已经复制好了）：\n{address}\n\n使用 {app} 期间请不要关闭这个窗口。\n确定：再次打开页面。   取消：关闭 {app}。"
+
+[browser_closed]
+us = "{app} is closed. Start it again to carry on."
+fr = "{app} est fermé. Relancez-le pour continuer."
+ger = "{app} ist geschlossen. Starten Sie es neu, um weiterzumachen."
+ita = "{app} è chiuso. Riavvialo per continuare."
+spa = "{app} está cerrado. Vuelve a abrirlo para continuar."
+pol = "{app} jest zamknięty. Uruchom go ponownie, aby kontynuować."
+ru = "{app} закрыт. Запустите его снова, чтобы продолжить."
+cz = "{app} je zavřený. Spusťte ho znovu a pokračujte."
+jpn = "{app}は終了しました。続けるにはもう一度起動してください。"
+sc = "{app} 已关闭。请重新启动它以继续。"
+
+[browser_no_engine]
+us = "{app}'s own window needs Microsoft Edge WebView2 Runtime, which this PC doesn't have yet. It's free and small, from Microsoft.\n\nYes: open the download page (then start {app} again).\nNo: use {app} in your web browser now.\nCancel: close {app}."
+fr = "La fenêtre de {app} a besoin de Microsoft Edge WebView2 Runtime, que ce PC n'a pas encore. C'est gratuit et léger, fourni par Microsoft.\n\nOui : ouvrir la page de téléchargement (puis relancer {app}).\nNon : utiliser {app} dans votre navigateur web maintenant.\nAnnuler : fermer {app}."
+ger = "Das eigene Fenster von {app} braucht Microsoft Edge WebView2 Runtime, das dieser PC noch nicht hat. Es ist kostenlos und klein, von Microsoft.\n\nJa: Download-Seite öffnen (danach {app} neu starten).\nNein: {app} jetzt im Webbrowser verwenden.\nAbbrechen: {app} schließen."
+ita = "La finestra di {app} richiede Microsoft Edge WebView2 Runtime, che questo PC non ha ancora. È gratuito e leggero, di Microsoft.\n\nSì: apri la pagina di download (poi riavvia {app}).\nNo: usa {app} nel browser web adesso.\nAnnulla: chiudi {app}."
+spa = "La ventana de {app} necesita Microsoft Edge WebView2 Runtime, que este PC aún no tiene. Es gratis y ligero, de Microsoft.\n\nSí: abrir la página de descarga (y luego volver a abrir {app}).\nNo: usar {app} en tu navegador web ahora.\nCancelar: cerrar {app}."
+pol = "Własne okno {app} potrzebuje Microsoft Edge WebView2 Runtime, którego ten komputer jeszcze nie ma. Jest darmowy i mały, od Microsoftu.\n\nTak: otwórz stronę pobierania (potem uruchom {app} ponownie).\nNie: użyj {app} teraz w przeglądarce internetowej.\nAnuluj: zamknij {app}."
+ru = "Собственному окну {app} нужен Microsoft Edge WebView2 Runtime, которого на этом ПК пока нет. Он бесплатный и небольшой, от Microsoft.\n\nДа: открыть страницу загрузки (затем снова запустить {app}).\nНет: пользоваться {app} в веб-браузере прямо сейчас.\nОтмена: закрыть {app}."
+cz = "Vlastní okno {app} potřebuje Microsoft Edge WebView2 Runtime, který tento PC zatím nemá. Je zdarma a malý, od Microsoftu.\n\nAno: otevřít stránku ke stažení (pak {app} spusťte znovu).\nNe: používat {app} hned ve webovém prohlížeči.\nStorno: zavřít {app}."
+jpn = "{app}自身のウィンドウにはMicrosoft Edge WebView2 Runtimeが必要ですが、このPCにはまだありません。Microsoftの無料で小さなソフトです。\n\nはい：ダウンロードページを開く（その後{app}をもう一度起動）\nいいえ：今すぐWebブラウザーで{app}を使う\nキャンセル：{app}を閉じる"
+sc = "{app} 自己的窗口需要 Microsoft Edge WebView2 Runtime，这台电脑还没有。它免费且很小，来自 Microsoft。\n\n是：打开下载页面（然后重新启动 {app}）。\n否：现在就在网页浏览器中使用 {app}。\n取消：关闭 {app}。"

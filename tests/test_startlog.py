@@ -285,7 +285,7 @@ class TheWindow(Base):
         api = Api()
         calls = [("status", []), ("units", ["fr"]), ("backup_make", []), ("start_mark", ["ready"]), ("job", ["j1"])]
         with mock.patch.dict(sys.modules, {"webview": fake_webview(calls)}), \
-                mock.patch.object(webui, "web_engine_ok", return_value=True):
+                mock.patch.object(webui, "web_engine", return_value="ok"):
             self.assertEqual(webui.open_window("RUSE Studio", Path(webui.__file__).parent, "x.html", api), 0)
         got = entries(self.lines()[0])
         self.assertEqual(list(got), ["python", "imports", "api", "pywebview", "engine", "window", "shown", "page",
@@ -296,7 +296,7 @@ class TheWindow(Base):
         log = self.log()
         log.go()
         with mock.patch.dict(sys.modules, {"webview": fake_webview([("both", []), ("start_mark", ["ready"])])}), \
-                mock.patch.object(webui, "web_engine_ok", return_value=True):
+                mock.patch.object(webui, "web_engine", return_value="ok"):
             self.assertEqual(webui.open_window("RUSE Studio", Path(webui.__file__).parent, "x.html", Api()), 0)
         got = entries(self.lines()[0])
         self.assertIn("both", got)
@@ -306,7 +306,7 @@ class TheWindow(Base):
     def test_without_a_log_the_window_is_as_before(self):
         api = Api()
         with mock.patch.dict(sys.modules, {"webview": fake_webview([("status", [])])}), \
-                mock.patch.object(webui, "web_engine_ok", return_value=True):
+                mock.patch.object(webui, "web_engine", return_value="ok"):
             self.assertEqual(webui.open_window("RUSE Studio", Path(webui.__file__).parent, "x.html", api), 0)
         self.assertNotIn("status", vars(api))  # nothing wrapped
         self.assertEqual(self.lines(), [])

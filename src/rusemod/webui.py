@@ -6,15 +6,17 @@ from __future__ import annotations
 import functools
 import http.server
 import inspect
+import logging
 import os
 import sys
 import threading
+import traceback
 import urllib.parse
 import urllib.request
 import uuid
 from pathlib import Path
 
-from . import startlog
+from . import browsermode, startlog
 from .home import default_home
 
 WEBVIEW2_DOWNLOAD = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"  # Microsoft's WebView2 Runtime installer
@@ -118,20 +120,35 @@ def _passed_on(api, cls, name: str):
 
 
 def open_window(title: str, folder: Path, page: str, api, width=1180, height=760,
-                extra: dict[str, Path] | None = None, setup=None) -> int:
+                extra: dict[str, Path] | None = None, setup=None, words=None, browser: bool = False) -> int:
     """Open a window showing `folder/page`, with `api` callable from its JavaScript. Needs pywebview. What the screens
     keep (the Studio's language, say) is stored in the platform folder, so it's still there next time. `setup(window)`
     runs before the window opens, for hooks like on_file_drop. The app's start-up log (rusemod.startlog), when it has
-    one, notes each step up to the page's first calls."""
+    one, notes each step up to the page's first calls.
+
+    Where the window can't show the pages, they open in the player's own web browser instead (rusemod.browsermode):
+    under Wine (Linux and the Steam Deck through Proton: WebView2 doesn't start there, issue #21), on a PC without
+    WebView2 when the player picks it, when pywebview's .NET part doesn't load or WebView2 fails to start, and when
+    `browser` asks for it (the apps' --browser). `words(lang)`: the app's words, for the box that says so."""
     log = startlog.current()
+    if browser:
+        return _in_browser(title, folder, page, api, extra, setup, words, "asked for (--browser)")
+    if browsermode.under_wine():
+        return _in_browser(title, folder, page, api, extra, setup, words, "Wine or Proton: WebView2 doesn't start there")
     try:
         import webview
     except ImportError:
-        print("This window needs pywebview. Install it once with:  py -3 -m pip install pywebview")
+        print("This window needs pywebview. Install it once with:  py -3 -m pip install pywebview  "
+              "(or open it in your web browser with --browser)")
         return 2
     startlog.mark("pywebview")
-    if not web_engine_ok(title):
-        return 3
+    engine = web_engine()
+    if engine == "missing":
+        if no_engine_choice(title, browsermode.texts(words, browsermode.page_language(api), title)) != "browser":
+            return 3
+        return _in_browser(title, folder, page, api, extra, setup, words, "no WebView2: the player picked the browser")
+    if engine != "ok":
+        return _in_browser(title, folder, page, api, extra, setup, words, engine)
     startlog.mark("engine")
     server, base = serve(folder, extra)
     page_side = page_api(api)
@@ -153,13 +170,66 @@ def open_window(title: str, folder: Path, page: str, api, width=1180, height=760
             except Exception:  # noqa: BLE001  (another pywebview: that step isn't logged, the window opens anyway)
                 pass
         log.mark("window")
+    watch = EngineWatch(window)
+    logging.getLogger("pywebview").addHandler(watch)
+    failed = ""
     try:
         webview.start(private_mode=False, storage_path=str(default_home() / "webview"))
+    except Exception as exc:  # noqa: BLE001  (the window library broke on the way: the browser instead)
+        print(traceback.format_exc(), end="")
+        failed = f"the window didn't start: {type(exc).__name__}: {exc}"
     finally:
-        startlog.mark("closed")
+        logging.getLogger("pywebview").removeHandler(watch)
         server.shutdown()
         server.server_close()
+    if watch.failed:
+        failed = "WebView2 didn't start"
+    if failed:
+        return _in_browser(title, folder, page, api, extra, setup, words, failed)
+    startlog.mark("closed")
     return 0
+
+
+class EngineWatch(logging.Handler):
+    """Closes the window when pywebview says WebView2 didn't start (the window would stay an empty navy rectangle:
+    issue #21's logs), so open_window opens the pages in the web browser instead."""
+
+    FAILED = "WebView2 initialization failed"  # pywebview 6.2.1's words (platforms/edgechromium.py on_webview_ready)
+
+    def __init__(self, window):
+        super().__init__(logging.ERROR)
+        self.window, self.failed = window, False
+
+    def emit(self, record):
+        if self.FAILED in record.getMessage() and not self.failed:
+            self.failed = True
+            threading.Thread(target=self._close, daemon=True).start()  # not from the window's own thread
+
+    def _close(self):
+        try:
+            self.window.destroy()
+        except Exception:  # noqa: BLE001  (already closing)
+            pass
+
+
+def _in_browser(title: str, folder: Path, page: str, api, extra, setup, words, why: str) -> int:
+    """The pages in the player's web browser (rusemod.browsermode), the API's dialogs and drops made the browser's
+    way."""
+    print(f"{title} opens in the web browser: {why}")
+    startlog.mark("browser")
+    page_side = page_api(api)
+    log = startlog.current()
+    if log is not None:
+        startlog.timed(page_side, log)
+    window = browsermode.BrowserWindow()
+    api._window = window
+    if setup is not None:
+        setup(window)
+    try:
+        return browsermode.open_in_browser(title, folder, page, page_side, window, extra,
+                                           browsermode.texts(words, browsermode.page_language(api), title))
+    finally:
+        startlog.mark("closed")
 
 
 def _step(log, step: str):
@@ -169,6 +239,8 @@ def _step(log, step: str):
 
 def pick_folder(window) -> str | None:
     """A "choose a folder" dialog in `window`; the folder, or None if the player cancels."""
+    if isinstance(window, browsermode.BrowserWindow):
+        return window.pick_folder()
     import webview
     kind = webview.FileDialog.FOLDER if hasattr(webview, "FileDialog") else webview.FOLDER_DIALOG
     chosen = window.create_file_dialog(kind)
@@ -178,6 +250,8 @@ def pick_folder(window) -> str | None:
 def pick_file(window, file_types=()) -> str | None:
     """A "choose a file" dialog in `window`; the file, or None if the player cancels. `file_types` are pywebview's
     filters, like ("Mods (*.zip;*.toml)",)."""
+    if isinstance(window, browsermode.BrowserWindow):
+        return window.pick_file(file_types)
     import webview
     kind = webview.FileDialog.OPEN if hasattr(webview, "FileDialog") else webview.OPEN_DIALOG
     chosen = window.create_file_dialog(kind, file_types=tuple(file_types))
@@ -186,6 +260,8 @@ def pick_file(window, file_types=()) -> str | None:
 
 def pick_save(window, filename: str, file_types=()) -> str | None:
     """A "save as" dialog in `window` suggesting `filename`; the path chosen, or None if the person cancels."""
+    if isinstance(window, browsermode.BrowserWindow):
+        return window.pick_save(filename, file_types)
     import webview
     kind = webview.FileDialog.SAVE if hasattr(webview, "FileDialog") else webview.SAVE_DIALOG
     chosen = window.create_file_dialog(kind, save_filename=filename, file_types=tuple(file_types))
@@ -198,7 +274,12 @@ def on_file_drop(window, handler) -> None:
     """Call `handler(paths)` with the full paths of files or folders dropped anywhere on the window's page. A page's
     own JavaScript never sees a dropped file's path; pywebview's Windows side does, and hands it to a drop handler
     registered from Python (`pywebviewFullPath`). The page still has to allow the drop (`dragover` with
-    preventDefault) and is told what happened by `handler` itself (`window.evaluate_js`)."""
+    preventDefault) and is told what happened by `handler` itself (`window.evaluate_js`). In the web browser the page
+    sends a dropped file itself, and `handler` gets the path of a copy (rusemod.browsermode)."""
+    if isinstance(window, browsermode.BrowserWindow):
+        window.drop_handler = handler
+        return
+
     def attach():
         def dropped(event):
             files = (event.get("dataTransfer") or {}).get("files") or []
@@ -210,25 +291,28 @@ def on_file_drop(window, handler) -> None:
     window.events.loaded += attach
 
 
-def web_engine_ok(title: str) -> bool:
-    """On Windows the screens need Microsoft's WebView2 (built into Windows 11, on most Windows 10 PCs). Without it
-    the window would fall back to Internet Explorer and show nothing useful, so say so and offer the download."""
+def web_engine() -> str:
+    """Whether the window can show the screens: "ok" with Microsoft's WebView2 (built into Windows 11, on most Windows
+    10 PCs); "missing" on a PC without it (the window would fall back to Internet Explorer and show nothing useful);
+    else why the window library itself doesn't load (issue #21: .NET under Wine)."""
     if sys.platform != "win32":
-        return True
+        return "ok"
     try:
         from webview.platforms import winforms
-        if winforms.renderer == "edgechromium":
-            return True
-    except Exception as exc:  # the window library itself is broken: let pywebview report it when it starts
-        print(f"Couldn't check the web engine: {type(exc).__name__}: {exc}")
-        return True
-    import ctypes
-    answer = ctypes.windll.user32.MessageBoxW(
-        None, "This app needs Microsoft Edge WebView2 Runtime, which this PC doesn't have yet. It's free and small, "
-              "from Microsoft.\n\nOpen the download now?", title, 0x04 | 0x30)  # Yes/No, warning icon
+    except Exception as exc:  # noqa: BLE001  (the window library itself is broken)
+        print(traceback.format_exc(), end="")
+        return f"the window library doesn't load: {type(exc).__name__}: {exc}"
+    return "ok" if winforms.renderer == "edgechromium" else "missing"
+
+
+def no_engine_choice(title: str, words: dict) -> str:
+    """A PC without WebView2: the player picks "download" (Microsoft's page opens), "browser" (the app in their web
+    browser now) or "quit"."""
+    answer = browsermode.message_box(words["browser_no_engine"], title, 0x03 | 0x30)  # Yes/No/Cancel, warning icon
     if answer == 6:  # Yes
         os.startfile(WEBVIEW2_DOWNLOAD)
-    return False
+        return "download"
+    return "browser" if answer == 7 else "quit"  # No; Cancel or the box closed
 
 
 def webview2_loader() -> str:
@@ -285,6 +369,7 @@ def self_test(report: str, folder: Path, files: list[str], calls: list[tuple[str
             server.server_close()
 
     check("screens served on this PC", served)
+    check("screens in a web browser (for a PC whose window can't show them)", lambda: browsermode.check(folder))
     for name, fn in calls:
         check(name, fn)
 
