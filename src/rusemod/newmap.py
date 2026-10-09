@@ -51,6 +51,7 @@ class NewMapError(ValueError):
 
 
 GROUNDS = ("kept", "generated")   # a new map's ground: the copied map's moved, or drawn as our own (map.toml ground)
+BLANKS = ("terrain", "ocean")     # a new map started blank (map.toml blank): rusemod.presets' Blank Terrain or Ocean
 
 
 @dataclass
@@ -63,6 +64,8 @@ class NewMap:
     start_dots: bool = False      # the build draws its starting points on the wide one (menupicture.start_dots_of)
     ground: str = "kept"          # "generated": its ground drawn as our own from its strokes (rusemod.groundgen),
                                   # not the copied map's moved; "kept": the copied map's, moved by the strokes
+    blank: str | None = None      # BLANKS: started blank, nothing of the copied map's on it (the owner, 2026-10-09:
+                                  # "nothing should be there. This isn't D-Day"); None: a copy as it was
     picture_data: bytes | None = field(default=None, compare=False, repr=False)  # that PNG's bytes, read with the mod
     wide_picture_data: bytes | None = field(default=None, compare=False, repr=False)
 
@@ -122,7 +125,17 @@ def parse(data: dict, where: str = "map.toml", folder: str = "") -> list[NewMap]
     if ground not in GROUNDS:
         raise NewMapError(f"{where}: ground must be one of {', '.join(repr(g) for g in GROUNDS)} ('generated': the "
                           f"map's ground drawn as our own from its strokes, starting from a map flattened all over)")
-    return [NewMap(src, names, entry, picture, wide, dots, ground)]
+    blank = data.get("blank")
+    if blank is not None and blank not in BLANKS:
+        raise NewMapError(f"{where}: blank must be one of {', '.join(repr(b) for b in BLANKS)} (the map started as "
+                          f"Blank Terrain or Blank Ocean), or left out")
+    return [NewMap(src, names, entry, picture, wide, dots, ground, blank)]
+
+
+def is_blank(spec: NewMap | None) -> bool:
+    """Whether a new map started blank: map.toml blank, or (a map made before blank was written, Studio 0.9.8 to
+    0.9.8.2) its ground generated, which only a blank start sets."""
+    return spec is not None and (spec.blank is not None or spec.ground == "generated")
 
 
 def map_toml(spec: NewMap, players: int | None = None, header: str = "") -> str:
@@ -141,6 +154,8 @@ def map_toml(spec: NewMap, players: int | None = None, header: str = "") -> str:
         lines.append("start_dots = true")
     if spec.ground != "kept":
         lines.append(f'ground = "{spec.ground}"')
+    if spec.blank:
+        lines.append(f'blank = "{spec.blank}"')
     if set(spec.names) == {"us"}:
         lines.append(f'name = "{_toml_text(spec.names["us"])}"')
     else:

@@ -32,8 +32,8 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path, PurePosixPath
 
-from rusemod import (ai, doctor, economy, gamefiles, identity, loc, mapscripts, missions, mod_index, package,
-                     packfiles, scenario, scenery, schema, startlog, values as every_value)
+from rusemod import (ai, doctor, economy, gamefiles, identity, loc, mapscripts, missions, mod_index, newmap,
+                     package, packfiles, scenario, scenery, schema, startlog, values as every_value)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -1329,7 +1329,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     out.append({"pack": name, "names": [spec.names["us"]], "paths": [name],
                                 "titles": {lang: [spec.names.get(lang, spec.names["us"])] for lang in m["titles"]},
                                 "kinds": [self._copy_kind(spec)], "file": pack_file(name), "found": True,
-                                "copy_of": m["pack"], "copy_of_names": m["names"]})
+                                "copy_of": m["pack"], "copy_of_names": m["names"],
+                                # started blank: the view draws nothing of the copied map's (newmap.is_blank)
+                                "blank": newmap.is_blank(spec)})
         return {"maps": out}
 
     # --- new maps (MOD_FORMAT §8 "A new map"): a copy of a shipped map with a name of its own, made by the build from
@@ -1483,8 +1485,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             # ground drawn as our own from its strokes (rusemod.groundgen; the owner, 2026-10-07: "The whole map
             # should be made but like that. From now on.")
             spec = replace(spec, picture=presets.PICTURE, wide_picture=presets.WIDE_PICTURE, start_dots=True,
-                           ground="generated")
-        elif old_copy is not None:  # a copy of a copy keeps its own menu pictures
+                           ground="generated", blank=preset.removeprefix("blank_"))
+        elif old_copy is not None:  # a copy of a copy keeps its own menu pictures, and a blank one stays blank
+            spec = replace(spec, ground=old_copy[1].ground, blank=old_copy[1].blank)
             for key in ("picture", "wide_picture"):
                 own = getattr(old_copy[1], key)
                 if own and (src_dir / own).is_file():

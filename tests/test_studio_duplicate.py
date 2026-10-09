@@ -382,8 +382,27 @@ class MenuPictures(WithAMapProject):
                 pack = self.api.duplicate_map("SuperCrossRoads4", presets.NAMES[kind], preset=kind)["pack"]
             self.assertEqual(self.api._menu_scene_kind(pack), want)
             self.assertEqual(self.toml(pack)["ground"], "generated")  # a blank start's ground is drawn as its own
+            self.assertEqual(self.toml(pack)["blank"], kind.removeprefix("blank_"))  # and the map says it started blank
+            row = next(m for m in self.api.maps()["maps"] if m["pack"] == pack)
+            self.assertTrue(row["blank"])  # the view draws nothing of the copied map's
+            again = self.api.duplicate_map(pack, presets.NAMES[kind] + " Two")["pack"]  # a copy of it stays blank
+            self.assertEqual((self.toml(again)["blank"], self.toml(again)["ground"]),
+                             (kind.removeprefix("blank_"), "generated"))
         pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
         self.assertEqual(self.api._menu_scene_kind(pack), ("map", None))
+        self.assertNotIn("blank", self.toml(pack))
+        self.assertFalse(next(m for m in self.api.maps()["maps"] if m["pack"] == pack)["blank"])
+
+    def test_a_map_made_blank_before_blank_was_written_counts_as_blank(self):
+        """Studio 0.9.8 to 0.9.8.2 wrote a blank start's map.toml with ground = "generated" and no blank: only a blank
+        start sets that ground, so such a map counts as blank (the owner's own blank D-Day, 2026-10-09)."""
+        from rusemod import newmap
+        old = newmap.parse({"copy_of": "M04_Cotentin", "name": "Blank D-Day", "ground": "generated"}, "map.toml", "X")
+        self.assertTrue(newmap.is_blank(old[0]))
+        self.assertFalse(newmap.is_blank(newmap.parse({"copy_of": "M04_Cotentin", "name": "D"}, "map.toml", "X")[0]))
+        self.assertFalse(newmap.is_blank(None))
+        with self.assertRaises(newmap.NewMapError):
+            newmap.parse({"copy_of": "M04_Cotentin", "name": "D", "blank": "desert"}, "map.toml", "X")
 
     def test_blank_ocean_offered_with_its_warning(self):
         """The owner, 2026-10-08: Blank Ocean taken out ("remove blank ocean"), then "blank oceans stay in with a warning
