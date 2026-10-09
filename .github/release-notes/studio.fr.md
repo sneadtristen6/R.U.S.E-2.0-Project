@@ -1,7 +1,7 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
-**0.9.8.1:** Les outils de LittleGroove arrivent dans le Studio, avec la musique et les sons, une nation changée en une autre, et des unités d'autres époques.
+**0.9.8.1:** Les outils de LittleGroove arrivent dans le Studio, avec la musique et les sons, et une nation changée en une autre.
 
 - **Les outils de LittleGroove, repris** de son RUSE-Mod-Manager :
   - **Onglet Économie :** argent de départ et revenus, dépôts de ravitaillement, et les cartes de ruse de départ de
@@ -25,9 +25,8 @@ modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n
   nom (dans le salon, et pour son armée) et un nouveau drapeau à partir de n'importe quelle image : la Chine à la
   place de l'Italie, par exemple. Ses unités et ce qu'elles disent se changent comme avant, dans l'onglet Unités et
   sur la page de chaque unité. Vu en jeu : le nouveau nom dans le salon, le nouveau drapeau dans une partie.
-- **Des unités d'autres époques :** l'onglet Unités propose WWI, WWII+, Guerre froide et Moderne à côté des unités du
-  jeu. Chaque époque se télécharge dans le Studio quand vous la choisissez, depuis notre GitHub (chaque fichier vérifié), et se met à jour d'elle-même à mesure que d'autres unités sont terminées. Ajoutez-en une à votre mod : elle devient une nouvelle unité avec son propre modèle, son auteur crédité ; rien
-  n'est ajouté tant que vous ne la choisissez pas.
+- **Des unités d'autres époques :** l'onglet Unités propose les époques WWI, WWII+, Guerre froide et Moderne à côté
+  des unités du jeu. Elles n'ont pas encore d'unités : elles arriveront dans une prochaine mise à jour.
 - **Nouvelle carte : partir de zéro…** est dans l'onglet Cartes avant qu'une carte soit ouverte.
 - **Le sol de Terrain vierge est dessiné pour lui-même.** Une nouvelle carte partie de zéro a un sol fait à partir de
   vos traits de terrain, et non plus le sol de la carte du jeu déplacé : des rivages arrondis de près comme de haut,
@@ -37,7 +36,7 @@ modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n
   vraies batailles (ci-dessous).
 
 Pas encore essayé en jeu : l'encadré Amélioration, Toutes les valeurs, Fichiers, les outils des missions, les ajouts
-aux cartes, les sons d'ambiance et les unités d'autres époques.
+aux cartes et les sons d'ambiance.
 
 **Pourquoi il n'y a pas encore de cartes navales.** Nous avons essayé des cartes d'îles pour de vraies batailles avec
 des navires, et c'est le jeu lui-même qui bloque :

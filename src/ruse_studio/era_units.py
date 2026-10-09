@@ -144,12 +144,18 @@ def base_url() -> str:
 
 
 def fetch_list(base: str | None = None, opener=_open) -> list[dict]:
+    """The release's sections; none while no list is out (the owner, 2026-10-08: the eras are there, "just saying
+    there's no units yet": their models come in a later update)."""
     try:
         with opener((base or base_url()) + LIST) as r:
             data = r.read(LIST_MOST + 1)
     except (OSError, ValueError) as exc:
         if isinstance(exc, urllib.error.HTTPError):
             exc.close()
+            if exc.code == 404:
+                return []   # no list published yet: no units yet
+        if isinstance(exc, FileNotFoundError):
+            return []
         raise EraDownloadError(f"the era units list couldn't be loaded ({plain(exc, TIMEOUT)})") from None
     if len(data) > LIST_MOST:
         raise EraDownloadError("the era units list is far bigger than one ever is, so it wasn't read")
@@ -324,7 +330,8 @@ class EraUnitCalls:
         section = next((s for s in sections if s["era"] == era), None)
         if section is None:
             # not a game rule: the list doesn't offer this era (yet)
-            raise StudioError(f"No {era} units are out yet." if not why else f"The era units list couldn't be had: {why}")
+            raise StudioError(f"No {era} units are out yet." if not why
+                              else f"The era units list couldn't be had: {why}")
         with _LOCK:
             jobs = self.__dict__.setdefault("_era_jobs", {})
             running = jobs.get(era)

@@ -6,7 +6,7 @@ with your mods and starts it. Your Steam install is never changed.
 - **Convert an old mod…**, LittleGroove's Convert brought over: an older mod that comes as the game's own packs, made to
   be copied into the game folder, becomes a mod your library plays beside others. Not tried with a real old mod yet.
 - **Two mods changing the same game file:** the Launcher says so before Play, and **Use the one from…** picks which.
-- Mods made with Studio 0.9.8.1 play: songs and voices, a nation made into another, units from other eras.
+- Mods made with Studio 0.9.8.1 play: songs and voices, a nation made into another.
 
 **0.4.8:** it plays mods made with Studio 0.9.8, new maps that start blank among them, and shows what's new in your
 own language.

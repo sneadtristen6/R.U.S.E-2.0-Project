@@ -159,7 +159,8 @@ class EraDownload(WithMod):
         return dict(u, model=f"WWI/USA/{name}.glb", picture=picture)
 
     def test_downloaded_listed_and_updated(self):
-        self.publish({"WWI/USA/Liberty.glb": b"glb one", "pictures/a.jpg": b"jpg a"}, [self.unit("Liberty", "pictures/a.jpg")])
+        self.publish({"WWI/USA/Liberty.glb": b"glb one", "pictures/a.jpg": b"jpg a"},
+                     [self.unit("Liberty", "pictures/a.jpg")])
         self.assertEqual(self.api.era_units_list("WWI")["installed"], False)
         self.assertEqual(self.api.era_sections()["sections"][0] | {"size": 0},
                          {"era": "WWI", "units": 1, "size": 0, "state": "new"})
@@ -175,7 +176,8 @@ class EraDownload(WithMod):
         self.assertFalse((self.root / ".download").exists() and any((self.root / ".download").iterdir()))
         self.assertEqual(self.api.era_sections()["sections"][0]["state"], "current")
         # a newer version: another unit, the old picture gone
-        self.publish({"WWI/USA/Whippet.glb": b"glb two", "pictures/b.jpg": b"jpg b"}, [self.unit("Whippet", "pictures/b.jpg")])
+        self.publish({"WWI/USA/Whippet.glb": b"glb two", "pictures/b.jpg": b"jpg b"},
+                     [self.unit("Whippet", "pictures/b.jpg")])
         self.assertEqual(self.api.era_sections(downloaded_only=True)["sections"][0]["state"], "update")
         self.assertEqual(self.run_job()["state"], "done")
         self.assertEqual([u["name"] for u in self.api.era_units_list("WWI")["units"]], ["Whippet"])
@@ -224,13 +226,16 @@ class EraDownload(WithMod):
         for name in ("pictures/../x.jpg", "WWI\\USA\\x.glb", "pictures/a/b.jpg", "WWI/USA/x.py", "/WWI/USA/x.glb"):
             self.assertFalse(era_units.safe_member(name), name)
 
-    def test_no_list(self):
-        (self.release / era_units.LIST).unlink(missing_ok=True)
-        res = self.api.era_sections()
-        self.assertEqual(res["sections"], [])
-        self.assertIn("couldn't be loaded", res["message"])
-        with self.assertRaises(StudioError):
+    def test_no_list_yet_and_a_list_that_cant_be_read(self):
+        (self.release / era_units.LIST).unlink(missing_ok=True)   # none published yet: no units yet, no problem
+        self.assertEqual(self.api.era_sections(), {"sections": [], "message": ""})
+        with self.assertRaises(StudioError) as caught:
             self.api.era_download("WWI")
+        self.assertIn("No WWI units are out yet", str(caught.exception))
+        self.assertEqual(self.api.era_units_list("WWI")["installed"], False)
+        (self.release / era_units.LIST).write_text("{not a list", encoding="utf-8")
+        self.api._era_kept = None
+        self.assertIn("can't be read", self.api.era_sections()["message"])
 
 
 if __name__ == "__main__":

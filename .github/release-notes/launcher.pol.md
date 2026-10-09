@@ -7,7 +7,7 @@ modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
   folderu gry, staje się modem, który twoja biblioteka uruchamia obok innych. Jeszcze nie sprawdzone na prawdziwym
   starym modzie.
 - **Dwa mody zmieniające ten sam plik gry:** Launcher mówi o tym przed Graj, a **Użyj wersji…** wybiera który.
-- Mody zrobione w Studiu 0.9.8.1 działają: utwory i głosy, nacja zmieniona w inną, jednostki z innych epok.
+- Mody zrobione w Studiu 0.9.8.1 działają: utwory i głosy, nacja zmieniona w inną.
 
 **0.4.8:** uruchamia mody zrobione w Studio 0.9.8, w tym nowe mapy zaczynające się od pustej, i pokazuje nowości w
 twoim języku.

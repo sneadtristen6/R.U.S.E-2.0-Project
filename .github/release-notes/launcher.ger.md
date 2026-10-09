@@ -7,7 +7,7 @@ Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verän
   den Spielordner kopiert werden sollte, wird ein Mod, den deine Bibliothek neben anderen spielt. Noch nicht mit einem
   echten alten Mod ausprobiert.
 - **Zwei Mods ändern dieselbe Spieldatei:** Der Launcher sagt es vor Spielen, und **Die von … verwenden** wählt, welchen.
-- Mods aus Studio 0.9.8.1 laufen: Musik und Stimmen, eine Nation als eine andere, Einheiten aus anderen Epochen.
+- Mods aus Studio 0.9.8.1 laufen: Musik und Stimmen, eine Nation als eine andere.
 
 **0.4.8:** er spielt Mods, die mit Studio 0.9.8 gemacht wurden, darunter neue Karten, die leer beginnen, und zeigt
 die Neuigkeiten in deiner Sprache.

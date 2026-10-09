@@ -8,8 +8,7 @@ tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
   provato con una vera vecchia mod.
 - **Due mod che cambiano lo stesso file del gioco:** il Launcher lo dice prima di Gioca, e **Usa quella di…** sceglie
   quale.
-- Le mod fatte con lo Studio 0.9.8.1 funzionano: brani e voci, una nazione trasformata in un'altra, unità di altre
-  epoche.
+- Le mod fatte con lo Studio 0.9.8.1 funzionano: brani e voci, una nazione trasformata in un'altra.
 
 **0.4.8:** gioca le mod fatte con Studio 0.9.8, tra cui le nuove mappe che partono vuote, e mostra le novità nella tua
 lingua.

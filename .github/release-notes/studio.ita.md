@@ -1,7 +1,7 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
-**0.9.8.1:** Gli strumenti di LittleGroove arrivano nello Studio, con musica e suoni, una nazione trasformata in un'altra e unità di altre epoche.
+**0.9.8.1:** Gli strumenti di LittleGroove arrivano nello Studio, con musica e suoni e una nazione trasformata in un'altra.
 
 - **Gli strumenti di LittleGroove, ripresi** dal suo RUSE-Mod-Manager:
   - **Scheda Economia:** denaro iniziale e rendita, depositi di rifornimento e le carte dell'inganno con cui parte ogni
@@ -26,9 +26,8 @@ modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non v
   (nella lobby e per il suo esercito) e una nuova bandiera da qualsiasi immagine: per esempio la Cina al posto
   dell'Italia. Le sue unità e ciò che dicono si cambiano come prima, nella scheda Unità e nella pagina di ogni
   unità. Visto in gioco: il nuovo nome nella lobby, la nuova bandiera in partita.
-- **Unità di altre epoche:** la scheda Unità offre WWI, WWII+, Guerra fredda e Moderno accanto alle unità del gioco. Ogni epoca si scarica nello Studio quando la scegli, dal nostro GitHub (ogni file controllato), e si aggiorna da sola man mano che altre unità sono pronte.
-  Aggiungine una alla tua mod e diventa una nuova unità con il suo modello, il suo autore citato; non si aggiunge
-  nulla finché non la scegli.
+- **Unità di altre epoche:** la scheda Unità offre le epoche WWI, WWII+, Guerra fredda e Moderno accanto alle unità
+  del gioco. Non hanno ancora unità: arriveranno con un prossimo aggiornamento.
 - **Nuova mappa: partire da zero…** è nella scheda Mappe prima che una mappa sia aperta.
 - **Il terreno di Terreno vuoto è disegnato apposta.** Una nuova mappa partita da zero ha il terreno fatto dai tuoi
   tratti, non più il terreno della mappa del gioco spostato: coste rotonde da vicino e dall'alto, niente più
@@ -37,7 +36,7 @@ modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non v
   (sotto).
 
 Non ancora provato in gioco: il riquadro Potenziamento, Tutti i valori, File, gli strumenti delle missioni, le
-aggiunte alle mappe, i suoni di sottofondo e le unità di altre epoche.
+aggiunte alle mappe e i suoni di sottofondo.
 
 **Perché non ci sono ancora mappe navali.** Abbiamo provato mappe di isole per vere battaglie con le navi, ed è il
 gioco stesso a impedirlo:
