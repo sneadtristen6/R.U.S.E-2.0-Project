@@ -76,6 +76,12 @@ FLAG_LISTS = set(WHOLE_LISTS)  # lists edited as a set of flags, any length (a u
 # Upgrades (LittleGroove's "Upgrade chain"): an upgrade names the unit it's researched from and carries the flag; its
 # research price and time (also on units that are researched without being upgrades) start at his 50 and 50
 UPGRADE, UPGRADE_FLAG, RESEARCH = "UpgradeRequire", "IsUpgrade", {"UpgradePrice": 50, "UpgradeTime": 50}
+# Taking a new unit out of the mod while others are researched from it (the owner, 2026-10-09: "the modder can choose
+# if it warn, refuse, or relinks"; Settings > Research, kept as the preference "research_gone"): "warn" asks first and,
+# when the modder goes ahead, leaves them researched from a unit that isn't there (the check bar and their Upgrade box
+# say so; the build stops on it); "refuse" keeps the unit; "relink" researches them from the unit it was researched
+# from, or makes them buyable from the start when it had none
+RESEARCH_GONE = ("warn", "refuse", "relink")
 MODEL_SIZES = (0.2, 5.0)  # an imported model's size, times the length of the unit it copies (model_import)
 BLANK_STARTS = ("blank_terrain", "blank_ocean")  # the blank starts offered (rusemod.presets.KINDS); Blank Ocean taken
 # out and back the same day with a warning of its own (the owner, 2026-10-08: "blank oceans stay in with a warning
@@ -1166,7 +1172,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """A unit's place in the upgrade chains. `parent`: the unit it's researched from as the current mod has it
         (None: a unit of its own); `game_parent`: as the game has it; `choices`: the units it may be researched from,
         the same nation's in the same build menu, none researched from it (directly or not); `children`: the units
-        researched from it. Each {address, name}. Its research price and time are rows of its table (UpgradePrice,
+        researched from it. Each {address, name}. `parent_gone`: whether its parent is a unit no longer in the mod
+        (taken out after a warning: RESEARCH_GONE). Its research price and time are rows of its table (UpgradePrice,
         UpgradeTime)."""
         try:
             edits = self._edits()
@@ -1192,6 +1199,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             choices = [a for a in self._menu_units(edits, units, mine) if a != address and a not in below]
             children = sorted(c for c, p in links.items() if p == address)
             parent = links.get(address)
+            gone = parent is not None and parent not in units and parent not in new_units
             names = self._names(ix, set(choices) | set(children) | {parent, game_parent} - {None}, lang, new_units)
             game = _props(ix.show(real))
             research = {}
@@ -1211,7 +1219,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 return None
             name = names.get(a, _tail(a))
             return {"address": a, "name": f"{name} ({_tail(a)})" if name in twice and name != _tail(a) else name}
-        return {"address": address, "parent": named(parent), "game_parent": named(game_parent),
+        return {"address": address, "parent": named(parent), "game_parent": named(game_parent), "parent_gone": gone,
                 "choices": sorted((named(a) for a in choices), key=lambda c: c["name"].lower()),
                 "children": [named(c) for c in children], "research": research}
 
@@ -3769,7 +3777,34 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         folder = self._mod_dir()
         if folder is None:
             return {"mod": None, "problems": []}
-        return {"mod": str(folder), "problems": check_mod_folder(folder, self._game())}
+        return {"mod": str(folder), "problems": check_mod_folder(folder, self._game()) + self._research_problems()}
+
+    def _research_problems(self) -> list[dict]:
+        """The current mod's units researched from a unit that isn't there (one taken out after the warning:
+        RESEARCH_GONE), for the check bar: the build stops on them (rule unit-research-parent)."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            return []                  # the file check says what's wrong with it
+        links = [(t, str(e.value)) for (t, path, how), e in (edits.edits.items() if edits else ())
+                 if path == UPGRADE and how == "" and isinstance(e.value, Link)]
+        if not links:
+            return []
+        try:
+            ix = self._open()
+        except FileNotFoundError:
+            return []                  # no game to look in: the build says it
+        try:
+            units = {u["address"] for u in self._all_units(ix)}
+            lost = [t for t, parent in links if parent not in units and parent not in edits.new_units
+                    and (t in units or t in edits.new_units)]
+            names = self._names(ix, lost, "us", edits.new_units)
+        finally:
+            ix.close()
+        return [{"file": None, "set_aside": False, "unit": t,    # the check bar opens its page
+                 "problem": f"{names.get(t, _tail(t))} is researched from a unit that's no longer in the mod, and the "
+                            f"game would never finish loading a match with it. Pick another unit to research it from "
+                            f"in its Upgrade and research box, or none."} for t in lost]
 
     def rename_map_folder(self, name: str, to: str) -> dict:
         """Rename the current mod's maps/<name> to maps/<to> (the fix the mod check offers). Refused when maps/<to>
@@ -6002,16 +6037,68 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     edits.set(target, UPGRADE_FLAG, REMOVED)
         return {"address": target, "name": name, "saved": str(edits.file), "research_parent_dropped": dropped}
 
-    def delete_unit(self, address: str) -> dict:
-        """Remove a new unit from the current mod: its copy, every change made to it and its parts, and its name."""
+    def research_gone(self) -> str:
+        """What taking a unit out of the mod does to the units researched from it, as the modder chose in Settings >
+        Research (RESEARCH_GONE; "warn" until they choose)."""
+        how = self.prefs().get("research_gone")
+        return how if how in RESEARCH_GONE else "warn"
+
+    def _research_gone(self, address: str, researched=None) -> dict:
+        """Before the new unit at `address` goes: the units researched from it (upgrade's children) dealt with as the
+        modder chose (`researched`, one of RESEARCH_GONE, else research_gone(); "anyway" is the go-ahead after the
+        warning). Returns {"ask": the children} when they're to be warned first (nothing changed), else
+        {"relinked": [{address, name, "to": the unit it's researched from now, or None: buyable from the start}],
+        "left": the children left researched from a unit that won't be there}. Refused (StudioError) on "refuse"."""
+        try:
+            info = self.upgrade(address)
+        except StudioError:
+            return {"relinked": [], "left": []}    # not a unit (an ammunition's copy): nothing is researched from it
+        children = info["children"]
+        if not children:
+            return {"relinked": [], "left": []}
+        how = researched if researched in RESEARCH_GONE + ("anyway",) else self.research_gone()
+        if how == "anyway":
+            return {"relinked": [], "left": children}
+        if how == "warn":
+            return {"ask": children}
+        if how == "refuse":
+            # not a game rule: the modder's choice (Settings > Research)
+            raise StudioError(f"{self._unit_name(address)} stays in the mod: {', '.join(c['name'] for c in children)} "
+                              f"{'is' if len(children) == 1 else 'are'} researched from it. Pick another unit to "
+                              f"research {'it' if len(children) == 1 else 'them'} from in "
+                              f"{'its' if len(children) == 1 else 'their'} Upgrade and research box first, or choose in "
+                              f"Settings > Research what taking it out does.")
+        # relink: researched from what it was researched from (a unit still in the mod, and one their Upgrade box
+        # offers: the same nation's, in the same build menu), else buyable from the start
+        up = info["parent"]["address"] if info["parent"] and not info["parent_gone"] else None
+        relinked = []
+        for c in children:
+            to = up if up and up in {x["address"] for x in self.upgrade(c["address"])["choices"]} else None
+            relinked.append({"address": c["address"], "name": c["name"],
+                             "to": self.set_upgrade(c["address"], to)["parent"]})
+        return {"relinked": relinked, "left": []}
+
+    def _unit_name(self, address: str) -> str:
+        """What the Studio calls a unit in its messages: a new unit's own name, else the end of its address."""
+        unit = self._new_units().get(address)
+        return unit.name if unit else _tail(address)
+
+    def delete_unit(self, address: str, researched=None) -> dict:
+        """Remove a new unit from the current mod: its copy, every change made to it and its parts, and its name. The
+        units researched from it are dealt with first, as the modder chose (_research_gone; `researched` "anyway" after
+        the warning). Returns {"deleted": its address, "source", "saved", "relinked", "left"}, or {"deleted": None,
+        "ask": the units researched from it} when the modder is to be warned first (nothing changed)."""
         edits = self._edits()
         if edits is None or address not in edits.new_units:
             raise StudioError(f"{address} isn't a unit made in this mod, so it can't be deleted here")
+        research = self._research_gone(address, researched)
+        if "ask" in research:
+            return {"deleted": None, "ask": research["ask"]}
         with self._saving:
             edits = ModEdits(edits.folder)
             source = edits.new_units[address].source if address in edits.new_units else None
             edits.remove_unit(address)
-        return {"deleted": address, "source": source, "saved": str(edits.file)}
+        return {"deleted": address, "source": source, "saved": str(edits.file), **research}
 
     def test_in_game(self) -> dict:
         """Build the current mod into the PC's one modded copy (`RUSE-Instances\\Modded game`, the Launcher's too:

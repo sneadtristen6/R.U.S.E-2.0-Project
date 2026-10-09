@@ -6,7 +6,8 @@
 // from the values of any game unit of its kind (the library's suggestion first; the owner: "what if they don't want to
 // make it the same as a Sherman?"), with the name, price, size, build menu and the unit it's researched from given;
 // then it's a new unit like any other, its page open to change every value. Uses app.js's $, el, fill, say, problem,
-// api, state, renderChips, refreshList, renderGroups, showUnit and factoryLabel.
+// api, state, renderChips, refreshList, renderGroups, showUnit and factoryLabel, and its research helpers (researchAsk,
+// researchTold, timeUnit, timeShown, timeSeconds, timeUnitPicker).
 (function () {
   "use strict";
   const ERAS = [["vanilla", "era_vanilla"], ["WWI", "eras_era_ww1"], ["WWII", "eras_era_ww2"],
@@ -193,17 +194,25 @@
     const open = el("button", { type: "button", className: "primary", textContent: w.eras_open_page, title: w.tip_eras_open_page });
     open.addEventListener("click", () => openMade(p.added));
     const out = el("button", { type: "button", className: "ghost danger", textContent: w.eras_take_out, title: w.tip_eras_take_out });
-    out.addEventListener("click", async () => {
+    const ask = el("div", { className: "hidden" });  // the warning, when units are researched from it (app.js researchAsk)
+    // the units researched from it go as the modder chose in Settings > Research: warned first, refused (the Studio
+    // says why), or re-linked to the unit it was researched from
+    const remove = async (researched) => {
       out.disabled = true;
       try {
-        await api().era_unit_remove(p.key);
-        say(fill(w.eras_removed, { name: p.name }), "ok");
+        const res = await api().era_unit_remove(p.key, researched);
+        if (res.ask) {
+          researchAsk(ask, p.name, res.ask, () => remove("anyway"), () => showEraPage(p.key));
+          return;
+        }
+        researchTold(res, fill(w.eras_removed, { name: p.name }));
         await refreshList();
         await showEraPage(p.key);
       } catch (err) { problem(err); out.disabled = false; }
-    });
+    };
+    out.addEventListener("click", () => remove(null));
     return el("div", { className: "notice new" }, el("p", { textContent: w.eras_in_mod_as }),
-      el("div", { className: "actions" }, open, out));
+      el("div", { className: "actions" }, open, out), ask);
   }
 
   async function openMade(address) {
@@ -278,12 +287,14 @@
     const rPrice = el("input", { type: "number", min: "0", step: "1", inputMode: "numeric", required: true, value: "50",
       title: w.tip_eras_research_price });
     rPrice.setAttribute("aria-label", w.eras_research_price);
-    const rTime = el("input", { type: "number", min: "0", step: "1", inputMode: "numeric", required: true, value: "50",
-      title: w.tip_eras_research_time });
+    const rTime = el("input", { type: "number", min: "0", step: "1", inputMode: "numeric", required: true,
+      value: timeShown(50, timeUnit()), title: w.tip_eras_research_time });  // 50 seconds, in the unit picked
     rTime.setAttribute("aria-label", w.eras_research_time);
+    const rUnit = timeUnitPicker(rTime);  // seconds or minutes (app.js): the game keeps whole seconds
     let picked = false;  // the modder picked one: kept while the build menu still offers it
     const lockCosts = () => {  // nothing to research: its price and time are locked, and say why
-      for (const [box, tip] of [[rPrice, w.tip_eras_research_price], [rTime, w.tip_eras_research_time]]) {
+      for (const [box, tip] of [[rPrice, w.tip_eras_research_price], [rTime, w.tip_eras_research_time],
+        [rUnit, w.tip_research_time_unit]]) {
         box.disabled = !research.value;
         box.title = research.value ? tip : research.disabled ? w.tip_eras_research_off : w.tip_eras_research_locked;
       }
@@ -340,13 +351,14 @@
       researchNote,
       el("div", { className: "menu-picks" },
         el("label", {}, el("span", { textContent: w.eras_research_price }), rPrice),
-        el("label", {}, el("span", { textContent: w.eras_research_time }), rTime)),
+        el("label", {}, el("span", { textContent: w.eras_research_time }), rTime), rUnit),
       el("div", { className: "actions" }, add));
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const cost = Number(price.value);
       const sized = size.value === round3(exact) ? exact : Number(size.value);
-      const from = research.value || null, rp = Number(rPrice.value), rt = Number(rTime.value);
+      const from = research.value || null, rp = Number(rPrice.value);
+      const rt = timeSeconds(rTime.value.trim() === "" ? NaN : Number(rTime.value), rUnit.value);  // whole seconds
       if (!name.value.trim() || !Number.isFinite(cost) || (p.has_model && !Number.isFinite(sized))) return;
       if (from && (!Number.isFinite(rp) || !Number.isFinite(rt))) return;
       add.disabled = true;

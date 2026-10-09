@@ -846,17 +846,48 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   const upgradeEdits = new Map();  // address -> the mod's parent (null: a unit of its own)
   const researchEdits = new Map();  // `${address}|${prop}` -> the mod's research price or time
   function upgradeOf(address, lang) {
-    const all = units.map((u) => ({ address: E + u.id, name: lang === "base" ? u.id : u.names[lang] || u.names.us }));
+    const all = units.map((u) => ({ address: E + u.id, name: lang === "base" ? u.id : u.names[lang] || u.names.us }))
+      .concat(mine().map((n) => ({ address: newAddress(n.id), name: n.name })));  // the mod's new units chain too
     const gameParent = address === all[0].address ? null : all[0];
-    const parent = upgradeEdits.has(address) ? all.find((x) => x.address === upgradeEdits.get(address)) || null : gameParent;
+    const linked = upgradeEdits.get(address);
+    // researched from a unit no longer in the mod (taken out after the warning): StudioApi.upgrade's parent_gone
+    const parentGone = Boolean(linked) && !all.some((x) => x.address === linked);
+    const parent = !upgradeEdits.has(address) ? gameParent : !linked ? null
+      : all.find((x) => x.address === linked) || { address: linked, name: linked.slice(E.length) };
     const research = {};
     for (const [prop, labelText, game] of [["UpgradePrice", "Upgrade price", 25], ["UpgradeTime", "Upgrade time", 50]]) {
       const key = `${address}|${prop}`;
       research[prop] = { label: lang === "base" ? prop : labelText, game: gameParent ? game : null,
         value: researchEdits.has(key) ? researchEdits.get(key) : null };
     }
-    return { address, parent, game_parent: gameParent, choices: all.filter((x) => x.address !== address),
-      children: address === all[0].address ? all.slice(1, 3) : [], research };
+    const linkedHere = [...upgradeEdits.entries()].filter(([, p]) => p === address).map(([a]) => all.find((x) => x.address === a))
+      .filter(Boolean);
+    return { address, parent, game_parent: gameParent, parent_gone: parentGone,
+      choices: all.filter((x) => x.address !== address && !linkedHere.includes(x)),
+      children: [...(address === all[0].address ? all.slice(1, 3) : []), ...linkedHere], research };
+  }
+
+  // Before a new unit goes (StudioApi._research_gone): the units the mod researches from it, dealt with as the modder
+  // chose in Settings > Research (prefs.research_gone; "anyway": the warning's go-ahead)
+  function researchGone(address, researched) {
+    const info = upgradeOf(address, "us");
+    const children = info.children.filter((c) => upgradeEdits.get(c.address) === address);
+    if (!children.length) return { relinked: [], left: [] };
+    const how = ["warn", "refuse", "relink", "anyway"].includes(researched) ? researched
+      : ["warn", "refuse", "relink"].includes(prefs.research_gone) ? prefs.research_gone : "warn";
+    if (how === "anyway") return { relinked: [], left: children };
+    if (how === "warn") return { ask: children };
+    if (how === "refuse") {
+      throw new Error(`${(mine().find((n) => newAddress(n.id) === address) || { name: address }).name} stays in the mod: `
+        + `${children.map((c) => c.name).join(", ")} ${children.length === 1 ? "is" : "are"} researched from it. Pick another unit to `
+        + `research ${children.length === 1 ? "it" : "them"} from in ${children.length === 1 ? "its" : "their"} Upgrade and research `
+        + "box first, or choose in Settings > Research what taking it out does.");
+    }
+    const up = info.parent && !info.parent_gone ? info.parent : null;
+    return { left: [], relinked: children.map((c) => {
+      if (up) upgradeEdits.set(c.address, up.address); else upgradeEdits.set(c.address, null);
+      return { address: c.address, name: c.name, to: up };
+    }) };
   }
 
   function unit(address, lang, via) {
@@ -1168,7 +1199,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"eras_note": "These are all the free (CC0 and CC BY) models we could include. There are plenty more out there, and you can add your own with Import model.", "eras_not_downloaded": "The {era} units aren't on this PC yet: {n} units, {size} to download.", "eras_download": "Download the {era} units", "tip_eras_download": "Downloads this era's units (their models and pictures) from RUSE 2.0's GitHub. Every file is checked before it's used. Once they're here, they update themselves when new ones come out.", "eras_downloading": "Downloading: {done} of {total}…", "eras_unpacking": "Unpacking…", "eras_download_done": "The {era} units are ready.", "eras_updating": "Updating the {era} units: newer ones are out…", "eras_none_yet": "No {era} units are out yet: they come as they're finished.", "eras_no_list": "The list of era units couldn't be loaded ({why}).", "eras_era_ww1": "WWI", "eras_era_ww2": "WWII+", "eras_era_cold": "Cold War", "eras_era_modern": "Modern", "eras_nation_usa": "USA", "eras_nation_germany": "Germany", "eras_nation_uk": "United Kingdom", "eras_nation_france": "France", "eras_nation_italy": "Italy", "eras_nation_ussr": "USSR", "eras_nation_russia": "Russia", "eras_nation_japan": "Japan", "eras_nation_china": "China", "tip_eras_nation": "The nation whose build menu the unit goes in.", "tip_eras_factory": "The build menu (building) the unit goes in.", "eras_model_by": "Model by {author} ({licence}):", "tip_eras_credit": "The model's page, where its maker shared it.", "eras_in_place_of": "in place of {name}", "eras_game_model": "No model yet: it shows the copied unit's model.", "eras_no_fit": "The importer can't fit this kind of unit yet (towed guns): it shows the copied unit's model for now.", "eras_added": "{name} is in your mod.", "eras_removed": "{name} is out of your mod.", "era_vanilla": "Vanilla", "tip_era_chip": "Vanilla: the game's own units. WWI, WWII+, Cold War, Modern: RUSE 2.0's units for that era, each with another maker's free 3D model; add any of them to your mod.", "eras_in_mod_badge": "in your mod", "eras_start_from": "Start from", "tip_eras_start_from": "The game unit whose values it starts with: speed, armour, weapons, how it plays. Any unit of its kind; the first is the suggested one.", "eras_start_help": "It starts with that unit's values. Once it's in your mod, change any of them on its page, like any unit.", "eras_suggested": "Suggested", "eras_start_same": "Same type", "eras_start_other": "Other units", "eras_add": "Add to my mod", "tip_eras_add": "Makes it a new unit of your mod: its model, its maker's credit, the values of the unit it starts from, in the build menu picked.", "tip_eras_name": "Its name in the game, in every language.", "tip_eras_price": "What it costs to build, at every battle date.", "eras_in_mod_as": "It's in your mod: change its values, model and card on its page, like any unit.", "eras_open_page": "Open its page", "tip_eras_open_page": "Its page in your mod, where every value can be changed.", "eras_take_out": "Take it out of my mod", "tip_eras_take_out": "Deletes its unit from your mod, with every change made to it, its model and its credit."});
   // an era unit's size and the unit it's researched from (words.toml eras_size*, eras_research_*, tip_eras_size,
   // tip_eras_research_*)
-  Object.assign(words.us, {"eras_size": "Size", "tip_eras_size": "How big its model is: 1 is as long as the unit it starts from. The suggestion gives it its real size beside the game's own units (its real width; a plane's, its wingspan).", "eras_size_help": "1 = as long as the start unit; the suggestion is its real size.", "eras_size_real_width": "Suggested: its real width, {m} m.", "eras_size_real_span": "Suggested: its real wingspan, {m} m.", "eras_size_clamped": "Its real size would need {raw}, but sizes go from 0.2 to 5: {size} is the nearest.", "eras_size_unknown": "Its real size isn't in the library yet, so 1: as long as the start unit.", "eras_size_unread": "Its real size couldn't be worked out, so 1: as long as the start unit.", "eras_research_from": "Researched from", "tip_eras_research_from": "The unit it's researched from: it can be built only after that research (a unit in the same nation's build menu; your mod's new units too). None: buyable from the start. Change it later in its page's Upgrade and research box.", "eras_research_none": "None: buyable from the start", "eras_research_why_start": "Suggested: the unit it starts from.", "eras_research_why_in_place_of": "Suggested: the unit it stands in for.", "eras_research_why_dearest": "Suggested: the dearest unit of this build menu, so an advanced unit comes after research.", "eras_research_price": "Research price", "tip_eras_research_price": "What its research costs.", "eras_research_time": "Research time", "tip_eras_research_time": "How long its research takes (the game's own number; 50 to start, as in the Upgrade and research box).", "tip_eras_research_locked": "Nothing to research: it's buyable from the start. Pick a unit it's researched from first.", "tip_eras_research_off": "Units of this kind have no research in the game's files."});
+  Object.assign(words.us, {"eras_size": "Size", "tip_eras_size": "How big its model is: 1 is as long as the unit it starts from. The suggestion gives it its real size beside the game's own units (its real width; a plane's, its wingspan).", "eras_size_help": "1 = as long as the start unit; the suggestion is its real size.", "eras_size_real_width": "Suggested: its real width, {m} m.", "eras_size_real_span": "Suggested: its real wingspan, {m} m.", "eras_size_clamped": "Its real size would need {raw}, but sizes go from 0.2 to 5: {size} is the nearest.", "eras_size_unknown": "Its real size isn't in the library yet, so 1: as long as the start unit.", "eras_size_unread": "Its real size couldn't be worked out, so 1: as long as the start unit.", "eras_research_from": "Researched from", "tip_eras_research_from": "The unit it's researched from: it can be built only after that research (a unit in the same nation's build menu; your mod's new units too). None: buyable from the start. Change it later in its page's Upgrade and research box.", "eras_research_none": "None: buyable from the start", "eras_research_why_start": "Suggested: the unit it starts from.", "eras_research_why_in_place_of": "Suggested: the unit it stands in for.", "eras_research_why_dearest": "Suggested: the dearest unit of this build menu, so an advanced unit comes after research.", "eras_research_price": "Research price", "tip_eras_research_price": "What its research costs.", "eras_research_time": "Research time", "tip_eras_research_time": "How long its research takes, in the seconds or minutes picked beside it (the game counts seconds; 50 seconds to start, as in the Upgrade and research box).", "tip_eras_research_locked": "Nothing to research: it's buyable from the start. Pick a unit it's researched from first.", "tip_eras_research_off": "Units of this kind have no research in the game's files."});
+  // research: what taking out a unit others are researched from does, seconds or minutes (words.toml research_*, set_research_*, upgrade_parent_gone, upgrade_gone_option, check_open_unit)
+  Object.assign(words.us, {"set_research_title": "Research", "set_research_help": "What happens to the units researched from a unit you take out of your mod, and whether research times are typed in seconds or minutes.", "research_gone_label": "When you take out a unit that others are researched from:", "tip_research_gone": "What the Studio does when you delete a unit of your mod (or take an era unit out) while other units are researched from it.", "research_gone_warn": "Warn me first", "research_gone_refuse": "Refuse", "research_gone_relink": "Re-link them", "tip_research_gone_warn": "The Studio asks first. If you go ahead, the units researched from it are left researched from a unit that's gone: the check bar lists them, and the game can't be tested until each gets another unit, or none, in its Upgrade and research box.", "tip_research_gone_refuse": "The unit stays in your mod while any unit is researched from it: pick another unit for them in their Upgrade and research box first.", "tip_research_gone_relink": "The units researched from it are researched from the unit it was researched from instead, at the same price and time. If it wasn't researched from any, they become buyable from the start.", "research_time_unit": "Research time in", "tip_research_time_unit": "Type research times in seconds or minutes. The game counts research in seconds, so minutes are turned into whole seconds.", "research_seconds": "seconds", "research_minutes": "minutes", "research_gone_ask": "Researched from {name}: {names}. If you take it out, they're left researched from a unit that's gone, and the game can't be tested until each gets another unit, or none, in its Upgrade and research box.", "research_gone_anyway": "Take it out anyway", "tip_research_gone_anyway": "Takes it out now. The units researched from it wait for you to pick another unit for them; the check bar lists them.", "research_gone_settings": "Change this in Settings", "tip_research_gone_settings": "Opens Settings, where you choose what taking out such a unit does: warn first, refuse, or re-link them.", "research_relinked": "{name} is now researched from {to}.", "research_relinked_none": "{name} is now buyable from the start.", "research_left": "Researched from a unit that's gone: {names}. Pick another unit for each in its Upgrade and research box (the check bar lists them).", "upgrade_parent_gone": "It's researched from a unit that's no longer in your mod, and the game would never finish loading a match with it. Pick another unit below, or none.", "upgrade_gone_option": "{name} (no longer in your mod)", "check_open_unit": "Open its page", "tip_check_open_unit": "Shows this unit's page, where its Upgrade and research box picks another unit to research it from."});
   // the Music tab (words.toml music_*, tip_tab_music, tip_music_*)
   Object.assign(words.us, {
     music_tab: "Music", tip_tab_music: "The game's songs: hear each one, and put your own in its place",
@@ -1899,7 +1932,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { address: ammoAddress(stem), name, saved: current + "/src/studio.rndf" };
       },
       flags: async (lang) => ({ flags: knownFlags.map((f) => ({ ...f, meaning: f.meaning ? (f.meaning[lang] || f.meaning.us) : null })) }),
-      delete_unit: async (address) => {
+      delete_unit: async (address, researched) => {
         const j = newAmmo.findIndex((n) => n.mod === current && ammoAddress(n.id) === address);
         if (j >= 0) {
           const [gone] = newAmmo.splice(j, 1);
@@ -1908,9 +1941,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         }
         const i = newUnits.findIndex((n) => n.mod === current && newAddress(n.id) === address);
         if (i < 0) throw new Error(`${address} isn't a unit made in this mod, so it can't be deleted here`);
+        const research = researchGone(address, researched);
+        if (research.ask) return { deleted: null, ask: research.ask };
         const [gone] = newUnits.splice(i, 1);
         for (const k of [...edits.keys()]) if (k.split("|")[1].startsWith(address)) edits.delete(k);
-        return { deleted: address, source: gone.source, saved: current + "/src/studio.rndf" };
+        upgradeEdits.delete(address);
+        return { deleted: address, source: gone.source, saved: current + "/src/studio.rndf", ...research };
       },
       unit: async (address, lang, via) => unit(address, lang, via),
       upgrade: async (address, lang) => upgradeOf(address, lang),
@@ -2211,11 +2247,13 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { address: made.address, name: made.name, model: null, model_note: u.model === null ? "no_model" : (u.fits ? "" : "no_fit"),
           size: u.model === null ? null : size, research_from: researchFrom || null };
       },
-      era_unit_remove: async (key) => {
+      era_unit_remove: async (key, researched) => {
         const address = eraAdded.get(key);
+        const research = researchGone(address, researched);  // before anything goes
+        if (research.ask) return { removed: null, ask: research.ask };
         eraAdded.delete(key);
-        await window.pywebview.api.delete_unit(address);
-        return { removed: address };
+        await window.pywebview.api.delete_unit(address, "anyway");
+        return { removed: address, ...research };
       },
       value_words: async (key) => newWords.has(key)
         ? { key, table: "ville_multi", new: true, words: VALUE_LANGS.map((lang) => ({ lang, game: null, mine: newWords.get(key)[lang] })) }
@@ -2714,7 +2752,13 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return withScenarioEdits(pack);
       },
       // the mod check: one made-up broken file at first (as Studio 0.7.0 left one), set aside on request
-      check_mod: async () => ({ mod: current, problems: current ? checkProblems : [] }),
+      // with the units researched from one taken out after the warning (StudioApi._research_problems)
+      check_mod: async () => ({ mod: current, problems: current ? checkProblems.concat([...upgradeEdits.keys()]
+        .filter((a) => upgradeOf(a, "us").parent_gone)
+        .map((a) => ({ file: null, set_aside: false, unit: a, problem: `${(mine().find((n) => newAddress(n.id) === a)
+          || { name: a.slice(E.length) }).name} is researched from a unit that's no longer in the mod, and the game would `
+          + "never finish loading a match with it. Pick another unit to research it from in its Upgrade and research box, "
+          + "or none." }))) : [] }),
       rename_map_folder: async () => ({ mod: current, problems: checkProblems }),
       set_aside: async (file) => {
         const p = checkProblems.find((x) => x.file === file);

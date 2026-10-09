@@ -161,6 +161,74 @@ class Upgrades(unittest.TestCase):
         block = text[text.index(f"export {home['address'].rsplit('/', 1)[-1]} is clone"):]
         self.assertNotIn("UpgradeRequire", block[:block.index("\n)\n")])
 
+    def chain(self):
+        """X (a copy of C) researched from A; Y (another copy) and the game's C researched from X."""
+        self.api.new_mod("Chains")
+        x = self.api.new_unit(C, "X", 40)["address"]
+        y = self.api.new_unit(C, "Y", 40)["address"]
+        self.api.set_upgrade(x, A)
+        self.api.set_upgrade(y, x)
+        self.api.set_upgrade(C, x)
+        self.assertEqual(self.names(self.api.upgrade(x)["children"]), sorted([C, y]))
+        return x, y
+
+    def test_taking_out_a_parent_warns_first(self):
+        """The owner, 2026-10-09: the modder chooses what taking out a unit others are researched from does (Settings
+        > Research). Until they choose: warned first, nothing changed; then "anyway" takes it out and leaves them
+        researched from a unit that's gone, which their Upgrade box and the check bar say."""
+        x, y = self.chain()
+        self.assertEqual(self.api.research_gone(), "warn")
+        res = self.api.delete_unit(x)
+        self.assertEqual((res["deleted"], self.names(res["ask"])), (None, sorted([C, y])))
+        self.assertIn(x, self.api._new_units())                                   # nothing changed
+        res = self.api.delete_unit(x, "anyway")
+        self.assertEqual((res["deleted"], self.names(res["left"]), res["relinked"]), (x, sorted([C, y]), []))
+        self.assertNotIn(x, self.api._new_units())
+        info = self.api.upgrade(y)
+        self.assertEqual((info["parent"]["address"], info["parent_gone"]), (x, True))
+        problems = [p for p in self.api.check_mod()["problems"] if p.get("unit")]
+        self.assertEqual(sorted(p["unit"] for p in problems), sorted([C, y]))
+        self.assertTrue(all("no longer in the mod" in p["problem"] for p in problems))
+        self.api.set_upgrade(y, A)                                                # mended in its Upgrade box
+        self.assertFalse(self.api.upgrade(y)["parent_gone"])
+        self.assertEqual([p["unit"] for p in self.api.check_mod()["problems"] if p.get("unit")], [C])
+
+    def test_taking_out_a_parent_refused(self):
+        x, y = self.chain()
+        self.api.set_pref("research_gone", "refuse")
+        self.assertEqual(self.api.research_gone(), "refuse")
+        with self.assertRaisesRegex(StudioError, r"X stays in the mod: .*Y.* are researched from it"):
+            self.api.delete_unit(x)
+        self.assertIn(x, self.api._new_units())
+        self.assertEqual(self.api.upgrade(y)["parent"]["address"], x)
+        self.api.set_upgrade(y, None)                                             # once nothing is: it goes
+        self.api.set_upgrade(C, None)
+        self.assertEqual(self.api.delete_unit(x)["deleted"], x)
+
+    def test_taking_out_a_parent_relinks(self):
+        """Re-linked: researched from the unit it was researched from (A), their own research price and time kept;
+        with none, buyable from the start (the game's C back to its own, the copy Y without a link)."""
+        x, y = self.chain()
+        self.api.set_research(y, "UpgradeTime", 120)
+        self.api.set_pref("research_gone", "relink")
+        res = self.api.delete_unit(x)
+        self.assertEqual(sorted((r["address"], r["to"]["address"]) for r in res["relinked"]), sorted([(C, A), (y, A)]))
+        self.assertEqual((self.api.upgrade(y)["parent"]["address"], self.api.upgrade(C)["parent"]["address"]), (A, A))
+        self.assertEqual(self.api.upgrade(y)["research"]["UpgradeTime"]["value"], 120)
+        self.assertEqual([p for p in self.api.check_mod()["problems"] if p.get("unit")], [])
+        # a parent researched from none: they become buyable from the start
+        z = self.api.new_unit(C, "Z", 40)["address"]
+        self.api.set_upgrade(y, z)
+        self.api.set_upgrade(C, z)
+        res = self.api.delete_unit(z)
+        self.assertEqual(sorted((r["address"], r["to"]) for r in res["relinked"]), sorted([(C, None), (y, None)]))
+        self.assertIsNone(self.api.upgrade(y)["parent"])
+        self.assertIsNone(self.api.upgrade(C)["parent"])
+        self.assertIsNone(ModEdits(self.home / "mods" / "chains").get(C, "UpgradeRequire"))  # the game's own again
+        # the go-ahead, or a choice given, beats the one kept; a choice the Studio doesn't know is "warn"
+        self.api.set_pref("research_gone", "loudly")
+        self.assertEqual(self.api.research_gone(), "warn")
+
     def test_what_is_refused(self):
         self.api.new_mod("Chains")
         for unit, parent, why in ((C, D, "can't be researched from"),   # another nation

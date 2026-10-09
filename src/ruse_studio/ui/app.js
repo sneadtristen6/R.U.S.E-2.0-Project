@@ -16,6 +16,7 @@ const state = { lang: "base", kind: "all", nation: -1, search: "", group: "all",
   aiProfile: null,     // the AI tab's set of values shown (its address: Default, a difficulty or a profile)
   aiScripts: null,     // the AI tab's list of the game's scripts, for one language: { lang, scripts, missing }
   aiScriptPath: null,  // the script shown there (its path in the game's file)
+  prefs: {},           // what the Studio keeps for the window (api.prefs): the research choices are read from it
   lastEdit: null };  // the last value changed this session, for Ctrl+Z: { address, prop, mode, via, label }
 const KINDS = ["all", "ground", "infantry", "air", "buildings", "ammo"];
 const ERA_CHINA = 7;  // the era units' nation chip for China, which has no game nation of its own (eraunits.js)  // ammo: what weapons fire (its own list)
@@ -39,7 +40,8 @@ function el(tag, props, ...children) {
 // storage is lost every start (its address changes), and on an update or a reinstall.
 async function loadLang() {
   try {
-    const kept = (await api().prefs()).lang;
+    state.prefs = (await api().prefs()) || {};
+    const kept = state.prefs.lang;
     if (kept) return kept;
   } catch { /* an older Studio: the window's storage */ }
   try { return localStorage.getItem("studio.lang"); } catch { return null; }
@@ -220,6 +222,21 @@ function renderCheck() {
             renderCheck();
             if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();
           } catch (err) { problem(err); button.disabled = false; }
+        });
+        row.append(button);
+      }
+      if (p.unit) {  // a unit researched from one taken out of the mod: its page, where its Upgrade box re-links it
+        const button = el("button", { type: "button", className: "small", textContent: w.check_open_unit,
+          title: w.tip_check_open_unit });
+        button.addEventListener("click", async () => {
+          if (state.era !== "vanilla" && window.EraUnits) {  // its page is in the game's list
+            state.era = "vanilla";
+            state.group = "all";
+            renderChips();
+            await refreshList();
+          }
+          if (state.view !== "units") showView("units");
+          showUnit(p.unit);
         });
         row.append(button);
       }
@@ -998,16 +1015,21 @@ function copyNotice(u) {
   const no = el("button", { type: "button", className: "ghost", textContent: w.cancel, title: w.tip_cancel });
   no.addEventListener("click", () => { sure.classList.add("hidden"); del.classList.remove("hidden"); });
   del.addEventListener("click", () => { del.classList.add("hidden"); sure.classList.remove("hidden"); yes.focus(); });
-  yes.addEventListener("click", async () => {
+  const remove = async (researched) => {
     yes.disabled = true;
     try {
-      const res = await api().delete_unit(u.address);
+      const res = await api().delete_unit(u.address, researched);
+      if (res.ask) {  // units are researched from it, and the modder chose to be warned first (Settings > Research)
+        researchAsk(sure, u.name, res.ask, () => remove("anyway"), () => showUnit(u.address));
+        return;
+      }
       await refreshList();
       await showUnit(res.source);
       knownFlags = null;
-      say(w.unit_deleted.replace("{name}", u.name), "ok");
+      researchTold(res, w.unit_deleted.replace("{name}", u.name));
     } catch (err) { problem(err); yes.disabled = false; }
-  });
+  };
+  yes.addEventListener("click", () => remove(null));
   sure.append(yes, no);
   box.append(del, sure);
   return box;
@@ -1415,9 +1437,94 @@ function modelWant(startNew) {
     el("p", { className: "muted small", textContent: w.model_want }), el("div", { className: "actions" }, go));
 }
 
+// --- research: what taking out a unit others are researched from does (the modder's choice in Settings > Research,
+// kept as the preference "research_gone": warn first, refuse, or re-link them; StudioApi.RESEARCH_GONE), and research
+// times typed in seconds or minutes (the game keeps whole seconds: research runs on the timer that builds units, not
+// timed in the game yet; kept as "research_time_unit") ---
+const RESEARCH_GONE = ["warn", "refuse", "relink"];
+const TIME_UNITS = { s: 1, min: 60 };
+
+function timeUnit() {
+  const u = (state.prefs || {}).research_time_unit;
+  return TIME_UNITS[u] ? u : "s";
+}
+
+function keepPref(key, value) {
+  state.prefs = { ...(state.prefs || {}), [key]: value };
+  Promise.resolve().then(() => api().set_pref(key, value)).catch(problem);
+}
+
+// a time in seconds as its box shows it in `unit` (minutes to two decimals); "" for none
+function timeShown(seconds, unit) {
+  if (seconds === null || seconds === undefined || seconds === "" || !Number.isFinite(Number(seconds))) return "";
+  return unit === "min" ? String(Math.round((Number(seconds) / 60) * 100) / 100) : String(seconds);
+}
+
+// what's typed in `unit`, in whole seconds (NaN when it isn't a number)
+function timeSeconds(typed, unit) {
+  return Number.isFinite(typed) ? Math.round(typed * TIME_UNITS[unit]) : NaN;
+}
+
+// The seconds/minutes picker beside a research time box: the time typed stays the same time in the unit picked, and
+// the pick is kept for every research time box. `changed(unit)` follows a pick.
+function timeUnitPicker(box, changed) {
+  const w = state.words;
+  const pick = el("select", { title: w.tip_research_time_unit });
+  pick.setAttribute("aria-label", w.research_time_unit);
+  pick.append(el("option", { value: "s", textContent: w.research_seconds }),
+    el("option", { value: "min", textContent: w.research_minutes }));
+  pick.value = timeUnit();
+  let shown = pick.value;
+  const fit = () => {
+    box.step = shown === "min" ? "any" : "1";
+    box.inputMode = shown === "min" ? "decimal" : "numeric";
+  };
+  fit();
+  pick.addEventListener("change", () => {
+    const seconds = timeSeconds(readBox(box), shown);
+    shown = pick.value;
+    if (Number.isFinite(seconds)) box.value = timeShown(seconds, shown);
+    fit();
+    keepPref("research_time_unit", shown);
+    if (changed) changed(shown);
+  });
+  return pick;
+}
+
+// The warning before taking out a unit others are researched from (StudioApi.delete_unit / era_unit_remove gave
+// {ask}): in `box`, who's researched from it, Take it out anyway (`goAhead`), Cancel (`cancel`), and the way to
+// Settings > Research, where the modder can choose to refuse or re-link instead
+function researchAsk(box, name, children, goAhead, cancel) {
+  const w = state.words;
+  const anyway = el("button", { type: "button", className: "ghost danger", textContent: w.research_gone_anyway,
+    title: w.tip_research_gone_anyway });
+  const keep = el("button", { type: "button", className: "ghost", textContent: w.cancel, title: w.tip_cancel });
+  const settings = el("button", { type: "button", className: "link", textContent: w.research_gone_settings,
+    title: w.tip_research_gone_settings });
+  anyway.addEventListener("click", () => { anyway.disabled = true; goAhead(); });
+  keep.addEventListener("click", cancel);
+  settings.addEventListener("click", () => window.openSettings("research"));
+  box.classList.remove("hidden");
+  box.replaceChildren(el("p", { className: "notice warn", textContent: fill(w.research_gone_ask,
+    { name, names: children.map((c) => c.name).join(", ") }) }), el("div", { className: "actions" }, anyway, keep, settings));
+  anyway.focus();
+}
+
+// After a unit went: `done`, then what became of the units researched from it (re-linked to its own parent or made
+// buyable from the start; or left researched from a unit that's gone, which the check bar then lists)
+function researchTold(res, done) {
+  const w = state.words;
+  const lines = [done, ...(res.relinked || []).map((r) => r.to ? fill(w.research_relinked, { name: r.name, to: r.to.name })
+    : fill(w.research_relinked_none, { name: r.name }))];
+  const left = res.left || [];
+  if (left.length) lines.push(fill(w.research_left, { names: left.map((c) => c.name).join(", ") }));
+  say(lines.join(" "), left.length ? "warn" : "ok");
+  if (left.length || (res.relinked || []).length) checkMod();
+}
+
 // A unit's place in the upgrade chains and its research (StudioApi.upgrade, set_upgrade, set_research; LittleGroove's
 // "Upgrade chain"): the unit it's researched from, picked among the same nation's units in the same build menu, the
-// units researched from it, and its research price and time
+// units researched from it, and its research price and time (the time in seconds or minutes: timeUnitPicker)
 function upgradeGroup(u) {
   const w = state.words;
   const can = Boolean(state.mod && u.editable);
@@ -1426,12 +1533,19 @@ function upgradeGroup(u) {
   const kids = el("p", { className: "muted small" });
   const table = el("table");
   const head = el("tr", {}, el("th", { textContent: w.upgrade_from }), el("td", {}, pick, was));
+  const gone = el("p", { className: "notice warn hidden", textContent: w.upgrade_parent_gone });
   const researchRow = (prop, r) => {
-    const box = numberBox({ type: "int32" }, r.value ?? r.game ?? "", r.label);
+    // the research time in the unit picked beside it (the game keeps whole seconds); the price as it is
+    const time = prop === "UpgradeTime";
+    let unit = time ? timeUnit() : "s";
+    const shown = (seconds) => (time ? timeShown(seconds, unit) : String(seconds ?? ""));
+    const box = numberBox({ type: "int32" }, "", r.label);
+    box.value = shown(r.value ?? r.game ?? "");
     box.disabled = !can;
+    let now = r.value;  // the mod's value (null: the game's)
     const rwas = el("div", { className: "was" });
-    const cell = el("td", {}, el("div", { className: "boxes" }, box), rwas);
     const mark = (value) => {
+      now = value;
       const edited = value !== null && value !== r.game;
       cell.classList.toggle("edited", edited);
       if (!edited) { rwas.replaceChildren(); return; }
@@ -1439,19 +1553,22 @@ function upgradeGroup(u) {
       undo.addEventListener("click", async () => {
         try {
           const res = await api().set_research(u.address, prop, null);
-          box.value = res.value ?? "";
+          box.value = shown(res.value ?? "");
           mark(null);
         } catch (err) { problem(err); }
       });
-      rwas.replaceChildren(el("span", { textContent: w.was.replace("{v}", r.game ?? "–") }), undo);
+      rwas.replaceChildren(el("span", { textContent: w.was.replace("{v}", r.game === null ? "–" : shown(r.game)) }), undo);
     };
+    const units = time ? timeUnitPicker(box, (picked) => { unit = picked; mark(now); }) : null;
+    if (units) units.disabled = !can;
+    const cell = el("td", {}, el("div", { className: "boxes" }, box, ...(units ? [units] : [])), rwas);
     box.addEventListener("change", async () => {
-      const n = readBox(box);
+      const n = time ? timeSeconds(readBox(box), unit) : readBox(box);
       box.setAttribute("aria-invalid", String(!Number.isFinite(n)));
       if (!Number.isFinite(n)) return;
       try {
         const res = await api().set_research(u.address, prop, n);
-        box.value = String(res.value);
+        box.value = shown(res.value);
         mark(res.value);
         say(w.saved.replace("{file}", res.saved), "ok");
       } catch (err) { problem(err); }
@@ -1461,7 +1578,12 @@ function upgradeGroup(u) {
   };
   const show = (info) => {
     const current = info.parent ? info.parent.address : "", game = info.game_parent ? info.game_parent.address : "";
+    // researched from a unit no longer in the mod (taken out after the warning): said, and shown as picked until
+    // another is
+    gone.classList.toggle("hidden", !info.parent_gone);
     pick.replaceChildren(el("option", { value: "", textContent: w.upgrade_none, selected: !current }),
+      ...(info.parent_gone ? [el("option", { value: current, disabled: true, selected: true,
+        textContent: fill(w.upgrade_gone_option, { name: info.parent.name }) })] : []),
       ...info.choices.map((c) => el("option", { value: c.address, textContent: c.name, selected: c.address === current })));
     head.classList.toggle("edited", current !== game);
     if (current === game) was.replaceChildren();
@@ -1479,12 +1601,13 @@ function upgradeGroup(u) {
       const res = await api().set_upgrade(u.address, parent, state.lang);
       show(res);
       say(w.saved.replace("{file}", res.saved), "ok");
+      if ((state.problems || []).some((p) => p.unit)) checkMod();  // a link to a unit that's gone may be mended now
     } catch (err) { problem(err); }
   };
   pick.addEventListener("change", () => choose(pick.value || null));
   api().upgrade(u.address, state.lang).then(show).catch(problem);
   return el("div", { className: "group" }, el("h2", { textContent: w.upgrade_title }),
-    el("p", { className: "muted small", textContent: w.upgrade_help }), table, kids);
+    el("p", { className: "muted small", textContent: w.upgrade_help }), gone, table, kids);
 }
 
 async function showUnit(address, via) {
@@ -3157,6 +3280,23 @@ function renderLangPick() {
 // its section in index.html. What they change is kept by the app (settings.json), not by the window.
 const SETTINGS = [  // the language isn't here: it has its own button at the top ("Choose your language")
   { id: "keys", render() { if (window.MapView && window.MapView.renderKeysPanel) window.MapView.renderKeysPanel(api(), state.words); } },
+  { id: "research", async render() {  // what taking out a unit others are researched from does; seconds or minutes
+    const w = state.words;
+    try { state.prefs = (await api().prefs()) || {}; } catch { /* the ones read at the start */ }
+    const gone = $("research-gone"), unit = $("research-unit"), note = $("research-gone-note");
+    $("research-gone-label").textContent = w.research_gone_label;
+    $("research-unit-label").textContent = w.research_time_unit;
+    gone.title = w.tip_research_gone;
+    unit.title = w.tip_research_time_unit;
+    gone.replaceChildren(...RESEARCH_GONE.map((k) => el("option", { value: k, textContent: w[`research_gone_${k}`] })));
+    unit.replaceChildren(el("option", { value: "s", textContent: w.research_seconds }),
+      el("option", { value: "min", textContent: w.research_minutes }));
+    gone.value = RESEARCH_GONE.includes(state.prefs.research_gone) ? state.prefs.research_gone : "warn";
+    unit.value = timeUnit();
+    note.textContent = w[`tip_research_gone_${gone.value}`];
+    gone.onchange = () => { note.textContent = w[`tip_research_gone_${gone.value}`]; keepPref("research_gone", gone.value); };
+    unit.onchange = () => keepPref("research_time_unit", unit.value);
+  } },
   { id: "game", async render() {
     const w = state.words, g = await api().game_folder();
     $("set-game-path").textContent = g.message || (g.path ? fill(w.set_game_path, { path: g.path }) : w.set_game_none);

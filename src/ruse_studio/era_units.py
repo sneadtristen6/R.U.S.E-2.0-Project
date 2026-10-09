@@ -833,14 +833,21 @@ class EraUnitCalls:
         target.write_bytes(data)
         return True
 
-    def era_unit_remove(self, key: str) -> dict:
-        """Take an era unit out of the mod: its unit, every change made to it, its model, its card and its credit."""
+    def era_unit_remove(self, key: str, researched=None) -> dict:
+        """Take an era unit out of the mod: its unit, every change made to it, its model, its card and its credit. The
+        units researched from it are dealt with first, as the modder chose (delete_unit; `researched` "anyway" after
+        the warning). Returns {"removed": its address, "relinked", "left"}, or {"removed": None, "ask": the units
+        researched from it} when the modder is to be warned first (nothing changed)."""
         from .api import StudioError
         _folder, lib = self._era_library()
         record = self._era_record()
-        address = record.pop(key, None)
+        address = record.get(key)
         if address is None:
             raise StudioError(f"{key}: not in this mod")
+        research = self._research_gone(address, researched)   # before anything goes: a refusal leaves it whole
+        if "ask" in research:
+            return {"removed": None, "ask": research["ask"]}
+        record.pop(key)
         try:
             self.model_import_remove(address)
         except StudioError:
@@ -848,7 +855,7 @@ class EraUnitCalls:
         mine = self._own_card_file(address)       # its era card goes with it
         if mine is not None:
             mine.unlink(missing_ok=True)
-        self.delete_unit(address)
+        self.delete_unit(address, "anyway")       # the units researched from it are dealt with above
         with self._saving:
             self._era_save(record, lib)
-        return {"removed": address}
+        return {"removed": address, **research}

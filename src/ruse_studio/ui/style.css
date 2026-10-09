@@ -361,6 +361,7 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .status-close:hover { color: var(--text, #fff); }
 .status.ok { color: var(--ok); }
 .status.error { color: var(--error); }
+.status.warn { color: var(--accent); }
 
 .no-index { position: fixed; inset: 60px 0 0 0; display: flex; flex-direction: column; align-items: center;
             justify-content: center; gap: 14px; background: var(--bg); }
@@ -523,6 +524,8 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .setting { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); display: grid; gap: 8px; }
 .setting h2 { margin: 0; font-size: 15px; }
 .setting p { margin: 0; }
+/* a choice of its own (Research: what taking out a unit does, seconds or minutes): its words, then its list */
+.setting-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
 /* the clean game backup (app.js renderBackup): its buttons, the question before a restore, and what a check found */
 .setting .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .setting p:empty { display: none; }

@@ -34,8 +34,9 @@ def save_settings(home: Path, values: dict) -> None:
 
 
 # what a window may keep: its language (and whether the player picked it on "Choose your language", rusemod.uilang),
-# its map-view keys, small view choices
-PREF_KEYS = {"lang", "lang_chosen", "keys", "view"}
+# its map-view keys, small view choices; the Studio's research choices (what taking out a unit others are researched
+# from does, and whether research times are typed in seconds or minutes)
+PREF_KEYS = {"lang", "lang_chosen", "keys", "view", "research_gone", "research_time_unit"}
 PREF_SIZE = 4096                      # characters a kept value may take, as JSON
 
 

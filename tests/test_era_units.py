@@ -436,6 +436,29 @@ class EraResearch(unittest.TestCase):
         # the Upgrade box changes it afterwards: buyable from the start
         self.assertIsNone(self.api.set_upgrade(t90["address"], None)["parent"])
 
+    def test_taken_out_with_a_unit_researched_from_it(self):
+        """The T-80 taken out while the T-90 is researched from it, as the modder chose (Settings > Research): warned
+        first, or refused, with nothing changed; re-linked, the T-90 is researched from what the T-80 was (B), and the
+        T-80 goes."""
+        self.api.new_mod("Research")
+        t80 = self.api.era_unit_add("Cold War|USSR|T-80", 0, 10)
+        t90 = self.api.era_unit_add("Modern|Russia|T-90", 0, 10, research_from=t80["address"])
+        res = self.api.era_unit_remove("Cold War|USSR|T-80")
+        self.assertEqual((res["removed"], [c["address"] for c in res["ask"]]), (None, [t90["address"]]))
+        self.assertEqual(self.api.era_unit_page("Cold War|USSR|T-80")["added"], t80["address"])
+        self.api.set_pref("research_gone", "refuse")
+        with self.assertRaisesRegex(StudioError, "stays in the mod"):
+            self.api.era_unit_remove("Cold War|USSR|T-80")
+        self.assertEqual(self.api.era_unit_page("Cold War|USSR|T-80")["added"], t80["address"])
+        self.assertIn(t80["address"], self.api._new_units())
+        self.api.set_pref("research_gone", "relink")
+        res = self.api.era_unit_remove("Cold War|USSR|T-80")
+        self.assertEqual(res["removed"], t80["address"])
+        self.assertEqual([(r["address"], r["to"]["address"]) for r in res["relinked"]], [(t90["address"], UB)])
+        self.assertEqual(self.api.upgrade(t90["address"])["parent"]["address"], UB)
+        self.assertIsNone(self.api.era_unit_page("Cold War|USSR|T-80")["added"])
+        self.assertNotIn(t80["address"], self.api._new_units())
+
     def test_buyable_from_the_start(self):
         """None: no research, even when the start unit is an upgrade in its own menu (B, of A): its link goes."""
         self.api.new_mod("Buyable")
