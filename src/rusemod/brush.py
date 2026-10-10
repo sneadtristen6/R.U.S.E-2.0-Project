@@ -523,7 +523,7 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
                 raise BrushError(f"{at}: clear must be true or false")
             values["clear"] = item["clear"]
         if "decals" in item:
-            if kind != "texture":
+            if kind != "texture":  # not a game rule: the stroke file's own field, only a texture stroke has it
                 raise BrushError(f"{at}: decals (the game's own decals laid over a game texture) are for the texture "
                                  f"brush")
             if not isinstance(item["decals"], bool):

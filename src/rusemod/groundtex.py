@@ -55,7 +55,7 @@ class TextureError(ValueError):
 
 def check_ref(ref: str) -> str:
     """`ref` if it names a texture the way this module reads them (the module's words), else TextureError."""
-    if not isinstance(ref, str) or not _REF.match(ref):
+    if not isinstance(ref, str) or not _REF.match(ref):  # not a game rule: how this module names a texture
         raise TextureError(f"texture {ref!r} isn't one: game:<set>/<folder>/<name>, map:<map>:<x>:<y> or "
                            f"file:<name>.png")
     return ref
@@ -727,11 +727,11 @@ class Library:
             return self._made[key]
         kind = ref.split(":", 1)[0]
         if kind == "game":
-            if self.zz is None:
+            if self.zz is None:  # not a game rule: the game's file isn't there to read
                 raise TextureError("the game's ZZ_Win.dat isn't found, so its ground textures can't be read")
             member = game_member(ref)
             e = self.zz.entry(member)
-            if e is None:
+            if e is None:  # not a game rule: no such file in the game's archive
                 raise TextureError(f"the game has no ground texture {ref[5:]}")
             w, h, px = tgv_rgba(bytes(self.zz.read(e)), n)
             side, px = square(w, h, px)
@@ -739,7 +739,7 @@ class Library:
         elif kind == "map":
             _, pack, x, y = ref.split(":")
             read = self.map_reader(pack) if self.map_reader else None
-            if read is None:
+            if read is None:  # not a game rule: the map's file isn't in the game folder
                 raise TextureError(f"the map {pack} isn't in this game")
             side, px = map_square(read, float(x), float(y), self.cache)
             made = Swatch.make(ref, side, px, MAP_SIDE)

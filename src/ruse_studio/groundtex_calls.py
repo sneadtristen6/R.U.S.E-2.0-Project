@@ -181,7 +181,7 @@ class GroundTextureCalls:
         _, pack, _x, _y = ref.split(":")
         game = self._game()
         path = find_pack(game, pack_file(pack)) if game is not None else None
-        if path is None:
+        if path is None:  # not a game rule: the map's file isn't in the game folder
             raise gt.TextureError(f"The map {pack} isn't in this game.")
         st = path.stat()
         key = hashlib.sha1(f"{ref}|{st.st_size}|{int(st.st_mtime)}".encode()).hexdigest()[:20]
@@ -208,7 +208,7 @@ class GroundTextureCalls:
         from rusemod.groundpaint import map_bounds
         game = self._game()
         path = find_pack(game, pack_file(pack)) if game is not None and re.fullmatch(r"[A-Za-z0-9_]+", pack) else None
-        if path is None:
+        if path is None:  # not a game rule: the map's file isn't in the game folder
             raise gt.TextureError(f"The map {pack} isn't in this game.")
         with Edat.open(str(path)) as arc:
             mesh = bytes(arc.read(arc.find("output\\highdef.tms")))
