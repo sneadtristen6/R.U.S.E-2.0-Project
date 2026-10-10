@@ -185,7 +185,10 @@ class NationCalls:
         """Nation `nation`'s units for the Nations tab: {"units": [{address, name, kind, factory, hidden}] (its own
         game units in a build menu, by menu and name; `hidden`: the mod takes it out of every battle date's menu),
         "hidden": how many, "can": whether a mod is picked, "eras": [{era, nations: the nations it has units of}] of
-        the eras downloaded (the Units tab downloads them)}."""
+        the eras downloaded (the Units tab downloads them), "empty": the build menus (factory numbers) of its own
+        buildings left with nothing to build (its own units there all hidden and none of the mod's new ones put in:
+        the game then shows the building's construction menu when it's picked, seen 2026-10-10 with Italy's
+        artillery and anti-tank bases)}."""
         from .api import KIND_OF, EditsFileError
         from .era_units import ERAS
         n = nations.check(nation)
@@ -197,6 +200,9 @@ class NationCalls:
         try:
             rows = self._nation_own_units(ix, n)
             names = self._names(ix, [u["address"] for u in rows], lang)
+            every = {u["address"]: u for u in self._all_units(ix)}
+            empty = [f for f in sorted({u["factory"] for u in rows})
+                     if not self._menu_units(edits, every, (n, f), ix)] if edits is not None else []
         finally:
             ix.close()
         out = []
@@ -213,23 +219,26 @@ class NationCalls:
             if have:
                 eras.append({"era": era, "nations": have})
         return {"nation": n, "units": out, "hidden": sum(u["hidden"] for u in out), "can": edits is not None,
-                "eras": eras}
+                "eras": eras, "empty": empty}
 
-    def nation_units_hide(self, nation: int, hide: bool = True, lang: str = "base") -> dict:
+    def nation_units_hide(self, nation: int, hide: bool = True, lang: str = "base", factory: int | None = None) -> dict:
         """Take every one of nation `nation`'s own units out of its build menus in the current mod (`hide`), or give
-        them the game's menus back (each unit's ShowInMenu change taken out). Returns nation_units(), with
-        "unlinked": the names (in `lang`) of the units made buyable from the start because their research parent is
-        hidden now."""
+        them the game's menus back (each unit's ShowInMenu change taken out); with `factory`, only those of that
+        build menu (an empty building's "show its own units here again"). Returns nation_units(), with "unlinked":
+        the names (in `lang`) of the units made buyable from the start because their research parent is hidden
+        now."""
         from rusemod import schema
         from .api import ModEdits, _can_edit, _props
         n = nations.check(nation)
+        if factory is not None and (isinstance(factory, bool) or not isinstance(factory, int)):
+            raise nations.NationError(f"{factory}: a build menu is a number")
         edits = self._edits()
         if edits is None:
             raise nations.NationError("Pick or make a mod first: the change is saved in it.")
         ix = self._open()
         try:
             lists = {u["address"]: _props(ix.show(u["address"])).get(self.SHOW_IN_MENU)
-                     for u in self._nation_own_units(ix, n)}
+                     for u in self._nation_own_units(ix, n) if factory is None or u["factory"] == factory}
         finally:
             ix.close()
         with self._saving:

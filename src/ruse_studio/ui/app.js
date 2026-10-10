@@ -1374,11 +1374,116 @@ function lookBox(u, brought, startNew) {
 // --- a new unit's own model (api.model_import, model_import_remove; rusemod.modelin, rusemod.unitmodel): a .3ds or
 // .glb from any 3D tool, fitted to the copied unit (its length times Size, its turret on the copy's turret point) and
 // kept in the mod as files/models/<the unit's name>.glb; the build puts it in the game beside the copied model ---
+// A model's size on a slider beside its number box (the owner, 2026-10-10: "make it a slider. So if people want to
+// have like super big planes or make them realistic to how they are in real life compared, like maybe have the slider
+// label those points" ... "even do a tiny"): the importer's sizes, Tiny to Huge, on a log scale (1, the game's size,
+// in the middle), with its points named under it (StudioApi.model_size_marks: tiny, game, real when known, huge);
+// a point clicked takes the size to it. The number box stays the exact value; the slider follows it.
+const SIZE_STEPS = 1000;
+const sizeRound = (s) => Number(Number(s).toPrecision(3));
+function sizeSlider(box, marks) {
+  const w = state.words;
+  const lo = Math.log(marks.tiny), hi = Math.log(marks.huge);
+  const at = (s) => Math.round((Math.log(Math.min(marks.huge, Math.max(marks.tiny, s))) - lo) / (hi - lo) * SIZE_STEPS);
+  const sizeAt = (p) => Math.exp(lo + (p / SIZE_STEPS) * (hi - lo));
+  const range = el("input", { type: "range", min: "0", max: String(SIZE_STEPS), step: "1", className: "size-range",
+    title: w.tip_size_slider });
+  range.setAttribute("aria-label", w.model_size);
+  const follow = () => { const v = Number(box.value); if (Number.isFinite(v) && v > 0) range.value = String(at(v)); };
+  const take = (s) => { box.value = String(sizeRound(s)); follow(); box.dispatchEvent(new Event("input")); };
+  range.addEventListener("input", () => take(sizeAt(Number(range.value))));
+  if (box.sizeFollow) box.removeEventListener("input", box.sizeFollow);  // (a slider made again for the same box)
+  box.sizeFollow = follow;
+  box.addEventListener("input", follow);
+  follow();
+  const points = [["tiny", marks.tiny, w.size_tiny, w.tip_size_tiny],
+    ["game", marks.game, w.size_game, fill(w.tip_size_game, { unit: marks.start || "?" })],
+    ...(marks.real ? [["real", marks.real, w.size_real, w.tip_size_real]] : []),
+    ["huge", marks.huge, w.size_huge, w.tip_size_huge]].sort((a, b) => a[1] - b[1]);
+  let last = -1, low = false;
+  const labels = points.map(([key, s, label, tip]) => {
+    const pct = (at(s) / SIZE_STEPS) * 100;
+    low = last >= 0 && pct - last < 14 ? !low : false;  // two points close together: the next on the line below
+    last = pct;
+    const b = el("button", { type: "button", className: `size-mark size-${key}${low ? " low" : ""}`,
+      textContent: `${label} (${sizeRound(s)})`, title: tip });
+    b.style.left = `${pct}%`;
+    b.addEventListener("click", () => take(s));
+    return b;
+  });
+  return el("div", { className: "size-slider" }, range, el("div", { className: "size-marks" }, ...labels));
+}
+
+// Every plane (or ground unit) of the mod with a model of its own, resized at once (StudioApi.models_resize_all, a
+// job): to the game's size, to real life, or a step smaller or bigger.
+function resizeAllRow(kind, n, changed) {
+  const w = state.words;
+  const note = el("span", { className: "small", role: "status" });
+  const go = async (to, times, buttons) => {
+    buttons.forEach((b) => { b.disabled = true; });
+    let job;
+    try { job = await api().models_resize_all(kind, to, times); } catch (err) { problem(err); buttons.forEach((b) => { b.disabled = false; }); return; }
+    let seen = 0;
+    const done = [], skipped = [];
+    for (;;) {
+      let st;
+      try { st = await api().job(job.job, seen); } catch (err) { problem(err); break; }
+      seen = st.count;
+      for (const line of st.lines) {
+        const [what, unit, more] = line.split("\t");
+        if (what === "resized") done.push(unit); else if (what === "skipped") skipped.push(`${unit}: ${more}`);
+      }
+      note.textContent = fill(w.models_all_progress, { done: done.length + skipped.length, all: n });
+      if (st.state !== "running") break;
+      await new Promise((ok) => setTimeout(ok, 700));
+    }
+    note.textContent = fill(w.models_all_done, { n: done.length })
+      + (skipped.length ? " " + fill(w.models_all_skipped, { list: skipped.join(" · ") }) : "");
+    say(note.textContent, skipped.length ? "" : "ok");
+    buttons.forEach((b) => { b.disabled = false; });
+    if (changed) changed();
+  };
+  const specs = [["game", null, w.size_game, w.tip_models_all_game], ["real", null, w.size_real, w.tip_models_all_real],
+    ["times", 0.8, w.models_all_smaller, w.tip_models_all_smaller], ["times", 1.25, w.models_all_bigger, w.tip_models_all_bigger]];
+  const buttons = specs.map(([, , label, tip]) => el("button", { type: "button", className: "small ghost", textContent: label, title: tip }));
+  buttons.forEach((b, i) => b.addEventListener("click", () => go(specs[i][0], specs[i][1], buttons)));
+  return el("div", { className: "actions resize-all" },
+    el("span", { className: "small", textContent: fill(kind === "air" ? w.models_all_air : w.models_all_ground, { n }) }),
+    ...buttons, note);
+}
+
 function modelBox(address, info, draw, changed) {
   const w = state.words;
   const own = info.own_model;
-  const size = el("input", { type: "number", min: "0.05", max: "20", step: "0.05", value: "1", className: "model-size",
+  const size = el("input", { type: "number", min: "0.05", max: "20", step: "any", value: "1", className: "model-size",
     title: w.tip_model_size });
+  // its size now, the slider's points, Resize (fitted again from its own file) and every plane at once
+  const sizing = el("div", { className: "model-sizing" });
+  const resize = el("button", { type: "button", className: "small", textContent: w.model_resize, title: w.tip_model_resize,
+    disabled: true });
+  resize.addEventListener("click", async () => {
+    const s = Number(size.value);
+    if (!Number.isFinite(s)) return;
+    resize.disabled = true;
+    say(w.model_resizing);
+    try {
+      const r = await api().model_resize(address, s);
+      say(fill(w.model_resized, { size: sizeRound(s) }), "ok");
+      if (changed) changed();
+      draw(r);
+    } catch (err) { problem(err); resize.disabled = false; }
+  });
+  (own ? api().model_sizes(address, state.lang) : api().model_size_marks(address, state.lang).then((marks) => ({ marks })))
+    .then((s) => {
+      if (!s) return;
+      if (s.size) size.value = String(sizeRound(s.size));
+      resize.disabled = !s.resizable;
+      if (own && !s.resizable) resize.title = w.tip_model_resize_gone;
+      sizing.append(sizeSlider(size, s.marks));
+      if (own && s.same_kind > 1) {
+        sizing.append(resizeAllRow(s.kind, s.same_kind, () => api().look(address).then(draw).catch(problem)));
+      }
+    }).catch(() => {});  // (no slider: the number box still takes a size)
   const pick = el("button", { type: "button", textContent: own ? w.model_import_again : w.model_import,
     title: w.tip_model_import });
   pick.addEventListener("click", async () => {
@@ -1406,10 +1511,11 @@ function modelBox(address, info, draw, changed) {
     drop.addEventListener("click", async () => {
       try { draw(await api().model_import_remove(address)); if (changed) changed(); } catch (err) { problem(err); }
     });
-    box.append(el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size), drop));
+    box.append(el("div", { className: "actions" }, el("label", { className: "small" }, w.model_size, " ", size), resize),
+      sizing, el("p", { className: "muted small", textContent: w.model_size_when }), el("div", { className: "actions" }, pick, drop));
   } else {
     box.append(el("p", { className: "muted small", textContent: w.model_how }),
-      el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size)));
+      el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size)), sizing);
   }
   box.pick = pick;
   return box;

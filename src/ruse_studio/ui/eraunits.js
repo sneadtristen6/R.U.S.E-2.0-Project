@@ -256,10 +256,14 @@
       title: w.tip_eras_size });
     size.setAttribute("aria-label", w.eras_size);
     const sizeNote = el("span");
+    const sizeSlide = el("div");  // the slider with its points (app.js sizeSlider): Tiny, Game size, Real life, Huge
     let exact = null;  // the size suggested, as the Studio worked it out (the box shows it rounded)
     const showSize = (value, info) => {
       exact = value;
       size.value = round3(value);
+      const startName = start.selectedOptions[0] ? start.selectedOptions[0].textContent.split(" · ")[0] : "";
+      sizeSlide.replaceChildren(sizeSlider(size, { tiny: 0.05, huge: 20, game: 1, start: startName,
+        real: info.real ? Math.min(20, Math.max(0.05, info.clamped === null ? value : info.clamped)) : null }));
       const real = info.real ? fill(info.what === "span" ? w.eras_size_real_span : w.eras_size_real_width, { m: info.real_m }) : "";
       sizeNote.textContent = info.real
         ? (info.clamped === null ? real : `${real} ${fill(w.eras_size_clamped, { raw: round3(info.clamped), size: round3(value) })}`)
@@ -342,7 +346,7 @@
       el("label", {}, el("span", { textContent: w.eras_start_from }), start),
       el("p", { className: "muted small", textContent: w.eras_start_help }),
       el("label", {}, el("span", { textContent: w.price }), price),
-      ...(p.has_model ? [el("label", {}, el("span", { textContent: w.eras_size }), size),
+      ...(p.has_model ? [el("label", {}, el("span", { textContent: w.eras_size }), size), sizeSlide,
         el("p", { className: "muted small" }, `${w.eras_size_help} `, sizeNote)] : []),
       el("div", { className: "menu-picks" }, el("span", { textContent: w.build_menu }),
         el("label", {}, el("span", { textContent: w.nation }), nation),

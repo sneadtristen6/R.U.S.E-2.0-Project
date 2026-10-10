@@ -34,12 +34,22 @@ The era's units are filtered like the game's: kind (ground or air), nation (Chin
      one is first; any unit of its kind can be picked.
    - **Price** (every battle date).
    - **Size**: 1 is as long as the start unit. The suggestion is its real size (its real width, a plane's wingspan,
-     at the game's own scale); anything from 0.05 to 20.
+     at the game's own scale); anything from 0.05 to 20. Drag the slider, or click one of its named points:
+     **Tiny**, **Game size** (1: as long as the start unit, how big the game draws that kind of unit), **Real life**
+     and **Huge**. Modern planes at real life are much bigger than the game's WWII planes (a J-16 is as long as a
+     Lancaster).
    - **Build menu**: the nation and the factory it's bought at.
    - **Researched from**: the unit it's researched from, or **None: buyable from the start**, with its **Research
      price** and **Research time** (type the time in seconds or minutes: the picker beside it).
 3. Click **Add to my mod**. It's a new unit of your mod now: **Open its page** to change any of its values, its model
    or its card, like any unit. **Take it out of my mod** deletes it again.
+
+## Change its size later
+
+On the unit's page, **Its own model** has the same slider: pick a size and click **Resize** (the model is fitted again
+from its own file, nothing to pick). **All my mod's planes** (or ground units) does every one at once: **Game size**,
+**Real life**, **Smaller** (a fifth) or **Bigger** (a quarter). The game reads a unit's model when it loads, so a size
+can't change while you play: the new size shows from the next build (Test in game).
 
 ## Research chains
 

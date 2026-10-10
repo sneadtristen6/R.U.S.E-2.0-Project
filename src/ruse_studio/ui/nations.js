@@ -151,6 +151,23 @@
       };
       hide.addEventListener("click", () => set(true));
       show.addEventListener("click", () => set(false));
+      // a building left with nothing to build (its own units all hidden, none of the mod's put in): the game shows the
+      // building's construction menu when it's picked (seen 2026-10-10, Italy's artillery and anti-tank bases), so
+      // it's said here with a way to give it its own units back
+      const empty = (data.empty || []).map((f) => {
+        const where = w["group_" + FACTORY_GROUP[f]] || String(f);
+        const back = el("button", { type: "button", className: "small", textContent: fill(w.nations_empty_back, { nation: name.now }),
+          title: fill(w.tip_nations_empty_back, { nation: name.now, building: where }), disabled: !data.can });
+        back.addEventListener("click", async () => {
+          try { await api().nation_units_hide(x.nation, false, N.lang, f); } catch (err) { problem(err); return; }
+          say(fill(w.nations_empty_shown, { nation: name.now, building: where }), "ok");
+          draw();
+        });
+        return el("li", {}, el("strong", { textContent: where }), " ", back);
+      });
+      const emptyBox = empty.length ? [el("div", { className: "notice warn nation-empty" },
+        el("p", { className: "small", textContent: fill(w.nations_empty, { nation: name.now }) }),
+        el("ul", { className: "small" }, ...empty))] : [];
       // fill from an era: the eras downloaded, each with the nations it has units of
       const era = el("select", { className: "small", title: w.tip_nations_fill });
       const from = el("select", { className: "small", title: w.tip_nations_fill });
@@ -163,10 +180,10 @@
       era.addEventListener("change", fillFrom);
       const list = el("button", { type: "button", className: "small", textContent: w.nations_fill_list,
         title: w.tip_nations_fill, disabled: !data.can || !data.eras.length });
-      list.addEventListener("click", () => fillList(x, name, era.value, from.value, fillBox));
+      list.addEventListener("click", () => fillList(x, name, era.value, from.value, fillBox, "", draw));
       box.replaceChildren(el("h3", { textContent: w.nations_its_units, title: w.tip_nations_units_hide }), count,
         el("div", { className: "actions" }, hide, show),
-        el("p", { className: "muted small", textContent: w.nations_units_hide_note }),
+        el("p", { className: "muted small", textContent: w.nations_units_hide_note }), ...emptyBox,
         el("h3", { textContent: fill(w.nations_fill_head, { nation: name.now }), title: w.tip_nations_fill }),
         el("p", { className: "muted small", textContent: data.eras.length ? w.nations_fill_help : w.nations_fill_no_eras }),
         el("div", { className: "actions" }, era, from, list), fillBox);
@@ -183,7 +200,7 @@
   }
 
   // The list a fill would add: each unit ticked (one already in the mod: not offered again), its building picked.
-  async function fillList(x, name, era, from, box, said = "") {
+  async function fillList(x, name, era, from, box, said = "", changed = null) {
     const w = W();
     let data;
     try { data = await api().nation_fill_list(x.nation, era, from, N.lang); } catch (err) { problem(err); return; }
@@ -225,7 +242,8 @@
       note.textContent = fill(w.nations_fill_done, { n: added.length, nation: name.now })
         + (skipped.length ? " " + fill(w.nations_fill_skipped, { list: skipped.join(" · ") }) : "");
       say(note.textContent, skipped.length ? "" : "ok");
-      fillList(x, name, era, from, box, note.textContent);
+      fillList(x, name, era, from, box, note.textContent, changed);
+      if (changed) changed();  // (the buildings left empty, asked again)
     });
     box.replaceChildren(
       rows.length ? el("table", { className: "nation-fill-list" }, ...rows.map((r) => r.row))

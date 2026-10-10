@@ -279,6 +279,20 @@ class NationUnits(unittest.TestCase):
         self.assertEqual(view["hidden"], 0)
         self.assertNotIn("ShowInMenu", (self.mod / "src" / "studio.rndf").read_text(encoding="utf-8"))
 
+    def test_a_building_left_with_nothing_to_build_is_said(self):
+        """The 2026-10-10 test: Italy's units all hidden, China's era units had none for its artillery and anti-tank
+        bases, so in the game those showed their construction menu. The view names such a building, and its own
+        units come back to that building alone."""
+        self.assertEqual(self.api.nation_units(4)["empty"], [])
+        self.assertEqual(self.api.nation_units_hide(4, True)["empty"], [9, 10])
+        view = self.api.nation_units_hide(4, False, factory=10)
+        self.assertEqual([(u["name"], u["hidden"]) for u in view["units"]], [("Plane", True), ("Tank", False)])
+        self.assertEqual(view["empty"], [9])
+        with self.assertRaises(nations.NationError):
+            self.api.nation_units_hide(4, False, factory="10")
+        self.api._mod_dir = lambda *a: None  # no mod: nothing is hidden, nothing said
+        self.assertEqual(self.api.nation_units(4)["empty"], [])
+
     def test_a_unit_researched_from_a_hidden_one_is_unlinked(self):
         """The 2026-10-10 crash: Chinese units researched from Italy's, Italy's then hidden; the game's menu stops on a
         shown upgrade whose parent has no button. Hide all makes such a unit buyable from the start, and says so."""

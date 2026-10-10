@@ -5999,8 +5999,156 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError(f"{Path(file).name}: {first_error}")
         report["file"] = Path(file).name
         record = target.with_suffix(".json")
-        record.write_text(json.dumps({"from": str(file), "size": size, "report": report}, indent=1), encoding="utf-8")
+        record.write_text(json.dumps({"from": str(file), "size": size, "aircraft": bool(aircraft),
+                                      **({"facing": list(facing)} if facing else {}), "report": report}, indent=1),
+                          encoding="utf-8")
         return {"model": report, **self.look(address)}
+
+    # --- a new unit's model at another size (the owner, 2026-10-10: "the unarmed recon and some of these Chinese
+    # planes ... are a little bit too big" ... "make it a slider. So if people want to have like super big planes or
+    # make them realistic to how they are in real life compared, like maybe have the slider label those points" ...
+    # "even do a tiny"; in the Studio, players use it too): the model fitted again from the file it was made from, and
+    # every new plane (or ground unit) of the mod at once. A size can't change inside the running game: the game reads
+    # a unit's model when it loads, so a new size shows from the next build ---
+    def _own_model_record(self, address: str) -> dict | None:
+        """The record model_import keeps beside a new unit's own model ({"from", "size", "aircraft", "facing",
+        "report"}), or None when it has no model of its own."""
+        target = self._own_model_file(address)
+        if target is None or not target.is_file():
+            return None
+        try:
+            record = json.loads(target.with_suffix(".json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        return record if isinstance(record, dict) else None
+
+    def _unit_kinds(self, addresses) -> dict:
+        """Each unit's kind ("ground", "infantry", "air", "buildings"; None when unknown), a new unit's as the unit it
+        copies."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        ix = self._open()
+        try:
+            classes = {u["address"]: u["class"] for u in self._all_units(ix)}
+        finally:
+            ix.close()
+        return {a: KIND_OF.get(classes.get(self._resolve(edits, a)[0])) for a in addresses}
+
+    def _unit_kind(self, address: str) -> str | None:
+        return self._unit_kinds([address])[address]
+
+    def model_size_marks(self, address: str, lang: str = schema.BASE) -> dict:
+        """The points the size slider names for a new unit's model: {"tiny", "huge": the smallest and biggest sizes
+        the importer takes; "game": 1, as long as the unit it copies (one of the game's own: the size the game draws
+        that kind of unit); "real": its real-life size for an era unit when the library gives it (its width, a
+        plane's span, in the game's units of a metre), else None; "start": the copied unit's name in `lang`}."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        unit = edits.new_unit_of(address) if edits else None
+        start = None
+        if unit is not None:
+            ix = self._open()
+            try:
+                start = self._names(ix, [unit.source], lang).get(unit.source)
+            finally:
+                ix.close()
+        real = None
+        key = next((k for k, a in self._era_record().items() if a == address), None) if unit is not None else None
+        if key is not None:
+            try:
+                folder, lib, entry = self._era_entry(key)
+                info = self._era_size(folder, lib, entry, unit.source)
+            except (StudioError, OSError, ValueError, KeyError):
+                info = {"real": False}
+            if info.get("real"):
+                real = min(MODEL_SIZES[1], max(MODEL_SIZES[0], info["clamped"] if info["clamped"] is not None
+                                                else info["size"]))
+        return {"tiny": MODEL_SIZES[0], "huge": MODEL_SIZES[1], "game": 1.0, "real": real, "start": start}
+
+    def model_resize(self, address: str, size: float) -> dict:
+        """Fit a new unit's own model again at `size` from the file it was made from (no file to pick), the way it
+        faced and whether it's a plane kept. Returns model_import()'s answer."""
+        record = self._own_model_record(address)
+        if record is None:
+            # not a game rule: only a model the Studio fitted has a file to fit again
+            raise StudioError("This unit has no model of its own to resize: import one first.")
+        file = record.get("from")
+        if not file or not Path(file).is_file():
+            raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
+                              f"to change its size.")
+        aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
+        facing = record.get("facing") or (record.get("report") or {}).get("facing")
+        return self.model_import(address, file, size, bool(aircraft), facing=list(facing) if facing else None)
+
+    RESIZE_TO = ("game", "real", "times")
+
+    def _own_models_of(self, kind: str) -> list[str]:
+        """The current mod's new units with a model of their own, of `kind` ("air": planes; "ground": the rest, the
+        ground units and infantry; "all")."""
+        have = [a for a in sorted(self._new_units()) if self._own_model_record(a) is not None]
+        kinds = self._unit_kinds(have) if have else {}
+        return [a for a in have if kind == "all" or (kind == "air") == (kinds[a] == "air")]
+
+    def model_sizes(self, address: str, lang: str = schema.BASE) -> dict:
+        """The size box of a new unit's own model: {"size": its size now, "resizable": whether the file it was made
+        from is still there (Resize fits it again from it), "kind": "air" or "ground" (the rest), "same_kind": how
+        many of the mod's new units of that kind have a model of their own (for "every plane at once"), "marks":
+        model_size_marks()}; None when it has no model of its own."""
+        record = self._own_model_record(address)
+        if record is None:
+            return None
+        kind = "air" if self._unit_kind(address) == "air" else "ground"
+        file = record.get("from")
+        return {"size": float(record.get("size") or 1.0), "resizable": bool(file) and Path(file).is_file(),
+                "kind": kind, "same_kind": len(self._own_models_of(kind)), "marks": self.model_size_marks(address, lang)}
+
+    def models_resize_all(self, kind: str, to: str, times: float | None = None) -> dict:
+        """Every new unit of the current mod with a model of its own, of `kind` ("air", "ground" or "all"), fitted
+        again: `to` "game" (size 1, as long as the unit it copies), "real" (its real-life size; a unit the library
+        gives none for is skipped) or "times" (its size now times `times`, kept within the importer's sizes). A job
+        the page follows; its lines are "resized<TAB>name<TAB>size" or "skipped<TAB>name<TAB>why"."""
+        from rusemod.webui import Job
+        if kind not in ("air", "ground", "all"):
+            raise StudioError(f"{kind}: resize planes (air), ground units (ground) or all")
+        if to not in self.RESIZE_TO:
+            # not a game rule: the Studio's three ways to resize ("game" is the game's size, size 1)
+            raise StudioError(f"{to}: resize to game, real or times")
+        if to == "times":
+            try:
+                times = float(times)
+            except (TypeError, ValueError):
+                raise StudioError("Times is a number: 0.5 is half the size, 2 twice.") from None
+            if not 0 < times <= MODEL_SIZES[1] / MODEL_SIZES[0]:
+                raise StudioError("Times is a number above 0: 0.5 is half the size, 2 twice.")
+        units = self._own_models_of(kind)
+        names = {a: u.name for a, u in self._new_units().items()}
+        job = Job()
+        self._jobs[job.id] = job
+
+        def work(say):
+            for address in units:
+                name = names.get(address, _tail(address))
+                try:
+                    if to == "game":
+                        size = 1.0
+                    elif to == "real":
+                        size = self.model_size_marks(address)["real"]
+                        if size is None:
+                            say(f"skipped\t{name}\tno real-life size known")
+                            continue
+                    else:
+                        now = float((self._own_model_record(address) or {}).get("size") or 1.0)
+                        size = min(MODEL_SIZES[1], max(MODEL_SIZES[0], now * times))
+                    self.model_resize(address, size)
+                    say(f"resized\t{name}\t{size:g}")
+                except (StudioError, ValueError, OSError) as exc:  # (one that can't be fitted leaves the rest)
+                    say(f"skipped\t{name}\t{exc}")
+
+        return job.start(work, f"{len(units)} model(s) done.", plain=(StudioError,))
 
     def model_import_remove(self, address: str) -> dict:
         """Take a new unit's own model out of the mod: it shows the model of the unit it copies again."""

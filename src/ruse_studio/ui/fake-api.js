@@ -1985,10 +1985,38 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       model_import: async (address, file, size) => {
         if (!fakeLook(address).new_unit) throw new Error("Only a new unit made in this mod can get a model of its own: copy the unit first.");
         await new Promise((r) => setTimeout(r, 400));
-        fakeModels.set(address, { ...FAKE_IMPORT, scale: 2.46 * (size || 1) });
+        fakeModels.set(address, { ...FAKE_IMPORT, scale: 2.46 * (size || 1), size: Number(size) || 1 });
         return { model: fakeModels.get(address), ...fakeLook(address) };
       },
       model_import_remove: async (address) => { fakeModels.delete(address); return fakeLook(address); },
+      // its size on the slider (StudioApi.model_size_marks / model_sizes / model_resize / models_resize_all): a plane
+      // (an address with Avion in it) has a real-life size of 3.4, a ground unit 1.3
+      model_size_marks: async (address) => ({ tiny: 0.05, huge: 20, game: 1, real: /Avion/.test(address) ? 3.4 : 1.3,
+        start: (units.find((u) => address.endsWith(u.id)) || {}).name || "Sherman" }),
+      model_sizes: async (address, lang) => {
+        const own = fakeModels.get(address);
+        if (!own) return null;
+        const kind = /Avion/.test(address) ? "air" : "ground";
+        return { size: own.size || 1, resizable: true, kind, marks: await window.pywebview.api.model_size_marks(address, lang),
+          same_kind: [...fakeModels.keys()].filter((a) => /Avion/.test(a) === (kind === "air")).length };
+      },
+      model_resize: async (address, size) => {
+        if (!fakeModels.has(address)) throw new Error("This unit has no model of its own to resize: import one first.");
+        await new Promise((r) => setTimeout(r, 400));
+        fakeModels.set(address, { ...fakeModels.get(address), scale: 2.46 * size, size: Number(size) });
+        return { model: fakeModels.get(address), ...fakeLook(address) };
+      },
+      models_resize_all: async (kind, to, times) => {
+        const lines = [];
+        for (const [a, m] of fakeModels) {
+          if (kind !== "all" && /Avion/.test(a) !== (kind === "air")) continue;
+          const size = to === "game" ? 1 : to === "real" ? (/Avion/.test(a) ? 3.4 : 1.3) : Math.min(20, Math.max(0.05, (m.size || 1) * times));
+          fakeModels.set(a, { ...m, scale: 2.46 * size, size });
+          lines.push(`resized\t${a.split("/").pop()}\t${size}`);
+        }
+        fakeJobs.set("resize", { state: "done", message: `${lines.length} model(s) done.`, lines });
+        return { job: "resize" };
+      },
       look_open: async (address) => {
         if (mode === "noblender") throw new Error("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use Choose Blender… to show the Studio where blender.exe is.");
         fakeLooks.add(address);
@@ -2223,11 +2251,15 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           .map((u) => ({ address: E + u.id, name: nameOf(u, lang), kind: u.kind, factory: u.factory, hidden: nationHidden.has(E + u.id) }));
         const eras = [...eraHere].map((era) => ({ era, nations: [...new Set(FAKE_ERA_UNITS.filter((u) => u.era === era).map((u) => u.nation))].sort() }))
           .filter((e) => e.nations.length);
-        return { nation: n, units: own, hidden: own.filter((u) => u.hidden).length, can: Boolean(current), eras };
+        // its buildings left with nothing to build: every own unit there hidden, none of the era units added put in
+        const filled = new Set(FAKE_ERA_UNITS.filter((u) => eraAdded.has(u.key)).map((u) => u.factory));
+        const empty = [...new Set(own.map((u) => u.factory))].filter((f) => !filled.has(f)
+          && own.filter((u) => u.factory === f).every((u) => u.hidden)).sort((a, b) => a - b);
+        return { nation: n, units: own, hidden: own.filter((u) => u.hidden).length, can: Boolean(current), eras, empty };
       },
-      nation_units_hide: async (n, hide = true) => {
+      nation_units_hide: async (n, hide = true, lang = "us", factory = null) => {
         if (!current) throw new Error("Pick or make a mod first: the change is saved in it.");
-        for (const u of units.filter((x) => x.nation === n && x.kind !== "buildings")) {
+        for (const u of units.filter((x) => x.nation === n && x.kind !== "buildings" && (factory === null || x.factory === factory))) {
           if (hide) nationHidden.add(E + u.id); else nationHidden.delete(E + u.id);
         }
         return window.pywebview.api.nation_units(n);

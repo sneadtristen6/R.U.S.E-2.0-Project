@@ -335,6 +335,18 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .model-own p { margin: 0; }
 .model-own .actions { flex-wrap: wrap; align-items: center; }
 .model-own input.model-size { width: 5em; }
+/* a model's size slider (app.js sizeSlider): Tiny to Huge on a log scale, its points named under it */
+.size-slider { display: grid; gap: 2px; min-width: 0; }
+.size-slider .size-range { width: 100%; margin: 0; accent-color: var(--accent); }
+.size-marks { position: relative; height: 40px; margin: 0 6px; }
+.size-mark { position: absolute; top: 0; transform: translateX(-50%); padding: 1px 4px; border: 0; border-left: 1px solid var(--line);
+             border-radius: 0; background: none; color: var(--muted); font-size: 11px; white-space: nowrap; cursor: pointer; }
+.size-mark.low { top: 19px; }
+.size-mark.size-tiny { transform: none; }
+.size-mark.size-huge { transform: translateX(-100%); border-left: 0; border-right: 1px solid var(--line); }
+.size-mark:hover, .size-mark:focus-visible { color: var(--accent); }
+.size-mark.size-game, .size-mark.size-real { color: var(--text); }
+.resize-all { flex-wrap: wrap; align-items: center; gap: 6px; }
 /* a new unit just made: its model box lit for a moment, where Import model is */
 .model-own.lit { outline: 2px solid transparent; outline-offset: 5px; border-radius: 2px; animation: lit 3s ease-out; }
 @keyframes lit { from { outline-color: var(--accent); } 60% { outline-color: var(--accent); } to { outline-color: transparent; } }
