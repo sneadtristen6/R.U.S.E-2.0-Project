@@ -73,7 +73,10 @@ class WhereCopiesGo(unittest.TestCase):
         self.assertEqual(instances_choice(self.game, self.home)[1], "recommended")
 
     def test_a_folder_inside_the_game_is_refused(self):
-        for inside in (self.game, self.game / "Copies", str(self.game).upper()):
+        insides = [self.game, self.game / "Copies"]
+        if os.name == "nt":  # Windows paths compare without case; elsewhere the upper-cased name is another folder
+            insides.append(str(self.game).upper())
+        for inside in insides:
             with self.assertRaisesRegex(ValueError, "inside the R.U.S.E. folder"):
                 keep_instances_dir(self.home, inside, self.game)
         self.assertNotIn(INSTANCES_SETTING, settings(self.home))
@@ -83,11 +86,13 @@ class WhereCopiesGo(unittest.TestCase):
         self.assertEqual(settings(self.home)[INSTANCES_SETTING], str(self.game.parent))
 
     def test_the_other_settings_are_kept(self):
+        elsewhere = str(Path(self.tmp.name, "Elsewhere"))
         save_settings(self.home, {"game_dir": str(self.game), "prefs": {"launcher": {"lang": "fr"}}})
-        keep_instances_dir(self.home, OTHER)
+        keep_instances_dir(self.home, elsewhere)
         self.assertEqual(settings(self.home), {"game_dir": str(self.game), "prefs": {"launcher": {"lang": "fr"}},
-                                               INSTANCES_SETTING: OTHER})
+                                               INSTANCES_SETTING: elsewhere})
 
+    @unittest.skipUnless(os.name == "nt", "drive letters: Windows only")
     def test_another_drive_is_seen_by_the_drive_letter(self):
         self.assertFalse(other_drive(self.game, Path(self.game.anchor) / "RUSE-Instances"))
         self.assertTrue(other_drive(self.game, Path(OTHER)))
@@ -106,6 +111,7 @@ class WhereCopiesGo(unittest.TestCase):
         keep_instances_dir(self.home, None)
         self.assertEqual(copies_view(None, self.home)["path"], None)
 
+    @unittest.skipUnless(os.name == "nt", "the other-drive part needs drive letters: Windows only")
     def test_the_troubleshooter_says_where_copies_go_and_why(self):
         copies = Path(self.tmp.name, "RUSE-Instances")
         got = {f["key"]: f for f in doctor.checks(self.game, copies, lambda: True, lambda: [], how="chosen")}
@@ -148,8 +154,9 @@ class InTheLauncher(LauncherBase):
         picks = [str(chosen)]
         api = self.api(instances=None, pick_folder=lambda: picks.pop(0) if picks else None)
         recommended = str(Path(self.game.anchor) / "RUSE-Instances")
+        drive = os.path.splitdrive(str(self.game))[0] or self.game.anchor  # a drive letter, or "/" elsewhere
         self.assertEqual(api.copies_folder(), {"path": recommended, "how": "recommended", "recommended": recommended,
-                                               "drive": os.path.splitdrive(str(self.game))[0], "other_drive": False})
+                                               "drive": drive, "other_drive": False})
         got = api.choose_copies_folder()
         self.assertEqual((got["path"], got["how"], got.get("message")), (str(chosen), "chosen", None))
         self.assertEqual(settings(self.home)[INSTANCES_SETTING], str(chosen))
