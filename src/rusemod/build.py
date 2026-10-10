@@ -2613,8 +2613,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     for pack in {p.lower(): p for p in [*packs, *(k for k in depots if k != ALL_MAPS)]}.values():
                         key = next((k for k in moves if k.lower() == pack.lower()), pack)
                         rows, ids = moves.get(key, ([], []))
-                        shipped = of_map(data_arc, key)
-                        new_rows = with_depots(rows, depot_rule(depots, key), shipped) if shipped else rows
+                        scenarios = of_map(data_arc, key)  # (not `shipped`: shipped_paths() above reads that name)
+                        new_rows = with_depots(rows, depot_rule(depots, key), scenarios) if scenarios else rows
                         if new_rows != rows:
                             moves[key] = (new_rows, ids + [i for i in depot_ids if i not in ids])
                 from .newmap import is_blank

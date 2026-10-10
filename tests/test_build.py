@@ -701,6 +701,20 @@ class DepotsOnTheMaps(unittest.TestCase):
         got = self.built("[all]\ntimes = 2\n\n[maps.Other]\ntrucks = 7\n")
         self.assertEqual(got, {"blitz": [50, None, None, None, None], "other": [7, 7, None, None, None]})
 
+    def test_a_spawn_is_still_checked_against_the_shipped_spawns(self):
+        """The depots' scenarios once took the name of the shipped spawns' class paths (`shipped`), read after them: a
+        spawn checked against those paths then failed on the scenarios instead of being named."""
+        folder = write_mod(self.root / "mods", "spawner", {})
+        (folder / "depots.toml").write_text("[all]\ntimes = 2\n", encoding="utf-8")
+        (folder / "maps" / "Blitz").mkdir(parents=True)
+        (folder / "maps" / "Blitz" / "scenario.toml").write_text(
+            '[[spawn]]\nfile = "leveldesign.scenario"\nwhat = "front.somewhere.Unit_X"\nx = 1.0\ny = 2.0\n',
+            encoding="utf-8")
+        lines = []
+        result = build_and_write(self.game, [load_mod(folder)], instance=self.root / "copy", say=lines.append)
+        self.assertEqual(len(result.errors), 1, lines)
+        self.assertIn("front.somewhere.Unit_X isn't a class path any shipped spawn uses", result.errors[0].message)
+
     def test_a_file_with_a_mistake_is_refused(self):
         folder = write_mod(self.root / "mods", "bad", {})
         (folder / "depots.toml").write_text("[all]\ntimes = -1\n", encoding="utf-8")
