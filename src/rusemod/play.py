@@ -18,11 +18,16 @@ import zlib
 from pathlib import Path
 
 from .build import DEFAULT_PACK, BuildError, build_and_write, build_cache, load_mod
+from .home import save_settings, settings
 from .instance import Note
 from .steam import build_of
 
 STEAM_PLAY = "steam://rungameid/21970"
 STEAM_OPEN = "steam://open/main"
+
+INSTANCES = "RUSE-Instances"          # the recommended folder for modded copies, on the game's drive
+INSTANCES_SETTING = "instances_dir"   # settings.json (rusemod.home): the folder chosen in either app's Settings
+INSTANCES_ENV = "RUSE_INSTANCES"      # the environment variable, between the setting and the recommended place
 
 
 def _files_hash(folder: Path, skip=("__pycache__",)) -> str:
@@ -152,10 +157,75 @@ def steam_running() -> bool:
     return "steam.exe" in out.stdout.lower()
 
 
-def instances_dir(game: Path) -> Path:
-    """Where modded copies go: RUSE-Instances on the game's drive (sharing files with the game only works on one
-    drive)."""
-    return Path(game.anchor) / "RUSE-Instances"
+def recommended_instances_dir(game: Path) -> Path:
+    """The recommended place for modded copies: RUSE-Instances on the game's drive. There a copy shares the game's
+    packs instead of copying them (sharing files only works on one drive), so it is ready in seconds."""
+    return Path(Path(game).anchor) / INSTANCES
+
+
+def instances_choice(game: Path | None, home: Path | None = None) -> tuple[Path | None, str]:
+    """Where modded copies go, and why: the folder chosen in either app's Settings (settings.json `instances_dir`,
+    "chosen"), else $RUSE_INSTANCES ("env"), else the recommended place ("recommended"; None without the game, whose
+    drive it's on). The owner, 2026-10-09: "user should be able to choose where files go, game should not force it
+    into one spot. It can have a recommended spot maybe but everything should be customizable"."""
+    chosen = settings(home).get(INSTANCES_SETTING) if home is not None else None
+    if isinstance(chosen, str) and chosen.strip():
+        return Path(chosen), "chosen"
+    if os.environ.get(INSTANCES_ENV):
+        return Path(os.environ[INSTANCES_ENV]), "env"
+    return (recommended_instances_dir(game) if game is not None else None), "recommended"
+
+
+def instances_dir(game: Path, home: Path | None = None) -> Path:
+    """Where modded copies go (instances_choice): Settings' folder, else $RUSE_INSTANCES, else RUSE-Instances on the
+    game's drive. `home` is the platform folder (rusemod.home) the setting is read from; without it, the setting isn't
+    looked at."""
+    return instances_choice(game, home)[0]
+
+
+def keep_instances_dir(home: Path, folder: Path | str | None, game: Path | None = None) -> None:
+    """Keep `folder` in settings.json as where modded copies go (both apps read it), or with None forget the choice:
+    the recommended place again. The next Play or Test in game builds in the new place; the old folder is never
+    removed by the apps (its copies only take up space: a player deletes it by hand). A folder inside the game folder
+    is refused (ValueError, said for the player): a modded copy is never built there."""
+    values = settings(home)
+    if folder is None:
+        values.pop(INSTANCES_SETTING, None)
+    else:
+        folder = os.path.abspath(str(folder))
+        if game is not None:
+            inside, mine = os.path.normcase(folder), os.path.normcase(os.path.abspath(str(game)))
+            if inside == mine or inside.startswith(mine.rstrip(os.sep) + os.sep):
+                # not a game rule: we never write into the game folder
+                raise ValueError(f"{folder} is inside the R.U.S.E. folder: modded copies can't go there. Pick a folder "
+                                 f"outside the game.")
+        values[INSTANCES_SETTING] = folder
+    save_settings(home, values)
+
+
+def other_drive(game: Path, folder: Path) -> bool:
+    """Whether `folder` is on another drive than the game, by their drive letters: there a modded copy can't share
+    the game's packs, so it is a full copy of the game (rusemod.instance), slower to build and as big as the game."""
+    def drive(p):
+        return os.path.normcase(os.path.splitdrive(os.path.abspath(str(p)))[0] or Path(p).anchor)
+    return drive(game) != drive(folder)
+
+
+def copies_view(game: Path | None, home: Path, fixed: Path | None = None) -> dict:
+    """Where modded copies go, as both apps' Settings show it: {"path": the folder (None without the game and with
+    nothing chosen), "how": "chosen" (in Settings) | "env" ($RUSE_INSTANCES) | "recommended" | "fixed" (given when the
+    app started, `fixed`: it can't change here), "recommended": RUSE-Instances on the game's drive (None without the
+    game), "drive": the game's drive, "other_drive": the folder is on another drive than the game, so each copy is a
+    full copy of the game}."""
+    if fixed is not None:
+        path, how = Path(fixed), "fixed"
+    else:
+        path, how = instances_choice(game, home)
+    recommended = recommended_instances_dir(game) if game is not None else None
+    drive = (os.path.splitdrive(os.path.abspath(str(game)))[0] or Path(game).anchor) if game is not None else None
+    return {"path": str(path) if path is not None else None, "how": how,
+            "recommended": str(recommended) if recommended is not None else None, "drive": drive,
+            "other_drive": bool(game is not None and path is not None and other_drive(game, path))}
 
 
 SHARED = "Modded game"  # the one modded copy on the PC: both apps build every Play and Test in game into it (the owner,
@@ -163,9 +233,11 @@ SHARED = "Modded game"  # the one modded copy on the PC: both apps build every P
 BUILDING = ".building"  # held while either app builds the copy (rusemod.backup._claim): the other one waits its turn
 
 
-def shared_copy(game: Path, instances: Path | None = None) -> Path:
-    """The modded copy both apps use: `RUSE-Instances\\Modded game` on the game's drive (or in `instances`)."""
-    return (Path(instances) if instances else instances_dir(game)) / SHARED
+def shared_copy(game: Path, instances: Path | None = None, home: Path | None = None) -> Path:
+    """The modded copy both apps use: `Modded game` in `instances`, else where modded copies go (instances_dir: the
+    folder chosen in Settings, read from the platform folder `home`, else $RUSE_INSTANCES, else RUSE-Instances on the
+    game's drive)."""
+    return (Path(instances) if instances else instances_dir(game, home)) / SHARED
 
 
 def keep_order(mods) -> None:

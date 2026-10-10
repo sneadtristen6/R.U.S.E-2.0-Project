@@ -122,6 +122,18 @@
           <h2 id="set-game-title"></h2><p id="set-game-path" class="small"></p>
           <div class="actions"><button id="set-game-change" type="button" class="small"></button></div>
         </section>
+        <!-- where modded copies go (rusemod.play.instances_dir, app.js renderCopies): the folder chosen here, else
+             the recommended place, RUSE-Instances on the game's drive; kept in settings.json, the Studio's too -->
+        <section class="setting" id="set-copies">
+          <h2 id="set-copies-title"></h2><p id="set-copies-help" class="muted"></p>
+          <p id="set-copies-path" class="small"></p>
+          <p id="set-copies-drive" class="small muted"></p>
+          <div class="actions">
+            <button id="set-copies-change" type="button" class="small"></button>
+            <button id="set-copies-default" type="button" class="small ghost"></button>
+          </div>
+          <p id="set-copies-note" class="message" role="status"></p>
+        </section>
         <!-- the clean game backup (rusemod.backup, app.js renderBackup): the only way the launcher writes into the
              game's own folder, and only when the player asks for a restore -->
         <section class="setting" id="set-backup">

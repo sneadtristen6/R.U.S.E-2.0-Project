@@ -41,7 +41,7 @@ from rusemod.mod_index import DEFAULT_URL, ModIndexError, size_text, states
 from rusemod.package import PackageError
 from rusemod.rmod import best_order as rmod_best_order, clashes as rmod_clashes, data_layout, overwritten as rmod_overwritten, sizes as rmod_sizes
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir, save_settings, settings
-from rusemod.play import Starter, instances_dir, shared_copy
+from rusemod.play import Starter, copies_view, instances_choice, keep_instances_dir, shared_copy
 from rusemod.rndf import RndfError
 from rusemod.steam import build_of, find_game
 from rusemod.uilang import LanguageCalls, language_code, pc_language, suggest
@@ -95,8 +95,8 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
                  backups=None):
         self._game_dir = Path(game_dir) if game_dir else None
         self._home = Path(home) if home else default_home()
-        self._instances = Path(instances) if instances else None
-        self._backups = Path(backups) if backups else None  # rusemod.backup: RUSE-Backup on the game's drive
+        self._instances = Path(instances) if instances else None  # tests: where modded copies go, over Settings
+        self._backups = Path(backups) if backups else None  # rusemod.backup: RUSE-Backup beside the modded copies
         self._open_url, self._find = open_url, find
         self._starter = Starter(open_url, start_game, steam_running, wait)
         self._pick_folder = pick_folder  # set by the window: a "choose folder" dialog; returns a path or None
@@ -151,21 +151,60 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
         save_settings(self._home, values)
         return self.status()
 
+    # --- where modded copies go (rusemod.play.instances_choice): the folder chosen in Settings (settings.json, the
+    # Studio's too), else $RUSE_INSTANCES, else the recommended place, RUSE-Instances on the game's drive ---
+    def _copies(self, game: Path | None) -> tuple[Path | None, str]:
+        """Where modded copies go and why: (the folder, "chosen" | "env" | "recommended" | "fixed"); (None, "")
+        without the game (no place for them yet). "fixed": the folder given when the launcher started."""
+        if game is None:
+            return None, ""
+        if self._instances:
+            return self._instances, "fixed"
+        return instances_choice(game, self._home)
+
+    def copies_folder(self) -> dict:
+        """Where modded copies go, for Settings (rusemod.play.copies_view): {"path", "how", "recommended", "drive",
+        "other_drive": on another drive than the game, each copy is a full copy of the game, slower and bigger}."""
+        game = self._backup_game()
+        return copies_view(game, self._home, self._instances)
+
+    def choose_copies_folder(self) -> dict:
+        """Ask for the folder modded copies go to (Settings' Choose folder…); kept in settings.json, which the Studio
+        reads too. The next Play builds there; the old folder stays until the player deletes it by hand. Returns
+        copies_folder() and, when the folder is refused (inside the game), a "message"."""
+        if self._pick_folder is None or self._instances:
+            return self.copies_folder()
+        folder = self._pick_folder()
+        if not folder:
+            return self.copies_folder()
+        try:
+            keep_instances_dir(self._home, folder, self._backup_game())
+        except ValueError as exc:
+            return {**self.copies_folder(), "message": str(exc)}
+        return self.copies_folder()
+
+    def use_recommended_copies(self) -> dict:
+        """Modded copies go to the recommended place again (RUSE-Instances on the game's drive): the folder chosen in
+        Settings is forgotten. The old folder stays until the player deletes it by hand. Returns copies_folder()."""
+        if not self._instances:
+            keep_instances_dir(self._home, None)
+        return self.copies_folder()
+
     # --- the troubleshooter (rusemod.doctor): what can stop Play, checked in one go ---
-    def _doctor_places(self) -> tuple[Path | None, Path | None]:
-        """The game folder and where its modded copies go; both None when there's no game (yet)."""
+    def _doctor_places(self) -> tuple[Path | None, Path | None, str]:
+        """The game folder, where its modded copies go and why (_copies); None, None, "" when there's no game (yet)."""
         game, _found = self._game()
         if game is None or not game.is_dir():
-            return None, None
-        return game, self._instances or instances_dir(game)
+            return None, None, ""
+        return game, *self._copies(game)
 
     def troubleshoot(self) -> dict:
         """Every check of the troubleshooter: {"findings": [...], "report": the same as plain text, for a bug report,
         with the launcher's last start-up times (rusemod.startlog)}. A finding's "say" is a word of words.toml, filled
         with its "data"; its "fix" goes to troubleshoot_fix, apart from "choose_game", which is the screen's own Choose
         folder…"""
-        game, instances = self._doctor_places()
-        findings = doctor.checks(game, instances, steam_running=self._starter.steam_running)
+        game, instances, how = self._doctor_places()
+        findings = doctor.checks(game, instances, steam_running=self._starter.steam_running, how=how)
         report = doctor.report(findings, APP_NAMES[self.UPDATE_APP], self.UPDATE_VERSION,
                                startlog.recent(self.UPDATE_APP, self._home))
         return {"findings": findings, "report": report}
@@ -178,7 +217,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
         if self._starting():  # the copy being built looks like a leftover, the game it starts like one left running
             # not a game rule: something else is busy (the game, the other app, a restore)
             raise LauncherError("R.U.S.E. is being started: wait for it to finish, then try again.")
-        game, instances = self._doctor_places()
+        game, instances, _how = self._doctor_places()
         if instances is None:
             # not a game rule: the game or one of its files isn't found
             raise LauncherError("We couldn't find R.U.S.E. Choose its folder first.")
@@ -747,6 +786,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
         if game is None:
             # not a game rule: the game or one of its files isn't found
             raise BuildError("We couldn't find R.U.S.E. Choose its folder first.")
-        instance = shared_copy(game, self._instances)  # one modded copy on the PC, both apps'
+        instance = shared_copy(game, self._instances, self._home)  # one modded copy on the PC, both apps', where
+        # Settings says (rusemod.play.instances_dir)
         self._starter.modded(game, chosen["folders"], instance, chosen["name"], say,
                              words=words(self.prefs().get("lang") or "us"))  # the lines for the player, in theirs

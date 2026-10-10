@@ -3302,6 +3302,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     $("set-game-path").textContent = g.message || (g.path ? fill(w.set_game_path, { path: g.path }) : w.set_game_none);
     $("set-game-change").textContent = w.set_game_change;
   } },
+  { id: "copies", async render() { renderCopies(await api().copies_folder()); } },
   { id: "backup", render() { renderBackup(); } },  // loaded each time Settings opens (loadBackup)
   { id: "updates", async render() {
     const w = state.words, u = state.update || {};
@@ -3324,10 +3325,43 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
 // The game folder chosen by hand: Settings' "Choose folder…", and the troubleshooter's fix when R.U.S.E. wasn't found
 async function chooseGame() {
   const g = await api().choose_game_folder();
-  renderSettings();
-  loadBackup();  // another game folder: its own backups
+  renderSettings();  // another game folder: its own recommended place for modded copies (SETTINGS "copies")
+  loadBackup();  // and its own backups
   if (g.message) $("set-game-path").textContent = g.message;
   return g;
+}
+
+// --- where modded copies go (rusemod.play.instances_dir through api.copies_folder): the folder chosen here, else
+// $RUSE_INSTANCES, else the recommended place, RUSE-Instances on the game's drive (the owner, 2026-10-09: "user should
+// be able to choose where files go"). A change only says where the next Test in game builds: the old folder stays
+// until the modder deletes it by hand, and the game's clean backup goes beside the new folder ---
+function renderCopies(v, note, noteKind) {
+  const w = state.words, how = v.how || "";
+  // the folder and why it's that one: chosen here, $RUSE_INSTANCES, the recommended place, or given at the start
+  $("set-copies-path").textContent = !v.path ? w.set_copies_none
+    : how === "fixed" ? fill(w.set_copies_fixed, { path: v.path })
+      : fill(w["doc_copies_" + how] || w.doc_copies_recommended, { path: v.path });
+  $("set-copies-drive").textContent = v.other_drive  // on another drive: a full copy of the game, slower and bigger
+    ? fill(w.doc_copies_other_drive, { path: v.path, drive: v.drive || "", recommended: v.recommended || "" }) : "";
+  $("set-copies-drive").classList.toggle("hidden", !v.other_drive);
+  const fixed = how === "fixed", change = $("set-copies-change"), back = $("set-copies-default");
+  change.textContent = w.set_copies_change;
+  back.textContent = w.set_copies_default;
+  change.disabled = fixed;
+  change.title = fixed ? w.tip_copies_fixed : w.tip_copies_change;  // a locked button says why
+  back.disabled = fixed || how === "recommended";
+  back.title = fixed ? w.tip_copies_fixed : how === "recommended" ? w.tip_copies_default_off : w.tip_copies_default;
+  const line = $("set-copies-note");
+  line.textContent = note || "";
+  line.className = "small" + (note && noteKind ? " " + noteKind : "");
+}
+
+async function changeCopies(choose) {
+  const w = state.words, was = (await api().copies_folder()).path;
+  const v = await (choose ? api().choose_copies_folder() : api().use_recommended_copies());
+  if (v.message) renderCopies(v, v.message, "bad");
+  else renderCopies(v, v.path && v.path !== was ? fill(w.set_copies_changed, { path: v.path }) : "", "good");
+  loadBackup();  // the clean backup goes beside the copies
 }
 
 // --- the clean game backup (rusemod.backup through api.backup_*): made while the game is clean, then a check of the
@@ -3620,6 +3654,8 @@ async function start() {
   $("tab-maps").addEventListener("click", () => showView("maps"));
   $("tab-settings").addEventListener("click", () => showView("settings"));
   $("set-game-change").addEventListener("click", () => chooseGame().catch(problem));
+  $("set-copies-change").addEventListener("click", () => changeCopies(true).catch(problem));
+  $("set-copies-default").addEventListener("click", () => changeCopies(false).catch(problem));
   $("backup-make").addEventListener("click", makeBackup);
   $("backup-check").addEventListener("click", checkBackup);
   $("backup-restore").addEventListener("click", restoreBackup);

@@ -1,6 +1,14 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
+**0.9.8.3:** le copie con le mod vanno dove dici tu.
+
+- **Dove vanno le copie con le mod**, nelle Impostazioni: scegli la cartella in cui viene costruita la copia del gioco
+  con le mod, o torna al posto consigliato, `RUSE-Instances` sull'unità del gioco (lì la copia condivide i file del
+  gioco ed è pronta in pochi secondi; su un'altra unità è una copia completa del gioco, più lenta e più grande). Il
+  backup pulito del gioco va accanto. Il prossimo Prova in gioco costruisce nel nuovo posto; la vecchia cartella si
+  può eliminare a mano. Il Launcher usa la stessa cartella.
+
 **0.9.8.2:** arrivano le unità di altre epoche: i loro modelli, a grandezza reale, dietro una ricerca.
 
 - **Unità di altre epoche:** le epoche WWI, WWII+, Guerra fredda e Moderno della scheda Unità ora hanno le loro

@@ -9,7 +9,7 @@
 |---|---|
 | The Studio's mods | `%LOCALAPPDATA%\RUSE Mod Platform\mods\<mod>` (paste that into File Explorer's address bar) |
 | The launcher's installed mods | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
-| Modded copies of the game | `RUSE-Instances` on the same drive as the game (for example `D:\RUSE-Instances`) |
+| Modded copies of the game | The folder you choose in Settings (**Where modded copies go**, in either app); the recommended place is `RUSE-Instances` on the same drive as the game (for example `D:\RUSE-Instances`), where a copy shares the game's files. On another drive each copy is a full copy of the game: slower and bigger. The game's clean backup (`RUSE-Backup`) goes beside it. |
 | The game itself | Never changed |
 
 ## Inside a mod

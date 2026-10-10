@@ -43,7 +43,7 @@ from rusemod.lock import fingerprint_text
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
 from rusemod.patch import INT_RANGES
-from rusemod.play import SHARED, Starter, instances_dir
+from rusemod.play import SHARED, Starter, copies_view, instances_choice, keep_instances_dir
 from rusemod.rndf import DEFAULT_NAMESPACE, RndfError, parse_value
 from rusemod.rndf import parse as rndf_parse
 from rusemod.steam import build_of, data_revisions, find_game
@@ -409,9 +409,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._home = Path(home) if home else default_home()
         self._starter = starter or Starter()
         self._last_export = None  # the file Export made this session: what Publish sends to the list
-        self._instances = Path(instances) if instances else None
+        self._instances = Path(instances) if instances else None  # tests: where modded copies go, over Settings
         self._backups = Path(backups) if backups else None  # the clean game backup (rusemod.backup): RUSE-Backup
-        # on the game's drive
+        # beside the modded copies
         self._jobs: dict[str, Job] = {}
         self._units: list | None = None  # every unit and building, read once per index
         self._ammo: list | None = None   # every ammunition, the same
@@ -3955,6 +3955,36 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._game_dir = None
         return self.game_folder()
 
+    # where modded copies go (rusemod.play.instances_choice): the folder chosen here (settings.json, the Launcher's
+    # too), else $RUSE_INSTANCES, else the recommended place, RUSE-Instances on the game's drive
+    def copies_folder(self) -> dict:
+        """Where Test in game builds the modded copy, for Settings (rusemod.play.copies_view): {"path", "how":
+        "chosen" | "env" | "recommended" | "fixed" (given when the Studio started), "recommended", "drive",
+        "other_drive": on another drive than the game, each copy is a full copy of the game, slower and bigger}."""
+        return copies_view(self._backup_game(), self._home, self._instances)
+
+    def choose_copies_folder(self) -> dict:
+        """Ask for the folder modded copies go to (Settings' Choose folder…); kept in settings.json, which the Launcher
+        reads too. The next Test in game builds there; the old folder stays until the modder deletes it by hand.
+        Returns copies_folder() and, when the folder is refused (inside the game), a "message"."""
+        if self._window is None or self._instances:
+            return self.copies_folder()
+        chosen = pick_folder(self._window)
+        if not chosen:
+            return self.copies_folder()
+        try:
+            keep_instances_dir(self._home, chosen, self._backup_game())
+        except ValueError as exc:
+            return {**self.copies_folder(), "message": str(exc)}
+        return self.copies_folder()
+
+    def use_recommended_copies(self) -> dict:
+        """Modded copies go to the recommended place again (RUSE-Instances on the game's drive): the folder chosen in
+        Settings is forgotten. The old folder stays until the modder deletes it by hand. Returns copies_folder()."""
+        if not self._instances:
+            keep_instances_dir(self._home, None)
+        return self.copies_folder()
+
     def edited(self) -> list[str]:
         """The named objects the current mod changes: a part changed for all its users marks every one of them. New
         units aren't in it: the list marks them as new instead (nor are the objects the All values tab makes)."""
@@ -6100,9 +6130,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return {"deleted": address, "source": source, "saved": str(edits.file), **research}
 
     def test_in_game(self) -> dict:
-        """Build the current mod into the PC's one modded copy (`RUSE-Instances\\Modded game`, the Launcher's too:
-        rusemod.play.shared_copy) and start the game from it, in the background. Returns {'job': id}; follow it with
-        job(id)."""
+        """Build the current mod into the PC's one modded copy (`Modded game` where Settings says, the Launcher's too:
+        rusemod.play.SHARED, _copies) and start the game from it, in the background. Returns {'job': id}; follow it
+        with job(id)."""
         # the mod and the map being edited, together (one folder when they're the same, as before mods and maps were
         # apart): the units of the one on the ground of the other
         folders = list(dict.fromkeys(f for f in (self._mod_dir(), self._map_dir()) if f is not None))
@@ -6116,7 +6146,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError("The game's files are being restored: wait for it to finish.")
 
         game = self._game()
-        copies = self._copies(game)
+        copies, _how = self._copies(game)
         instance = copies / SHARED if copies is not None else None
         look = self._where_to_look(folder) if game is not None else []
         name = " + ".join(f.name for f in folders)
@@ -6292,9 +6322,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     out.append(f"{mode} > {title} ({e.get('name', s['file'])})")
         return out
 
-    def _copies(self, game: Path | None) -> Path | None:
-        """Where Test in game puts its modded copies; None without the game (no place for them yet)."""
-        return (self._instances or instances_dir(game)) if game is not None else None
+    def _copies(self, game: Path | None) -> tuple[Path | None, str]:
+        """Where Test in game puts its modded copies and why: (the folder, "chosen" in Settings | "env" | "recommended"
+        | "fixed", given when the Studio started); (None, "") without the game (no place for them yet)."""
+        if game is None:
+            return None, ""
+        if self._instances:
+            return self._instances, "fixed"
+        return instances_choice(game, self._home)
 
     def _building(self) -> bool:
         """Whether a Test in game is still being built."""
@@ -6309,7 +6344,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         bug report, the player's own folders left out (rusemod.community), with the Studio's last start-up times
         (rusemod.startlog): {"findings": [...], "report": text}."""
         game = self._game()
-        findings = doctor.checks(game, self._copies(game), steam_running=self._starter.steam_running)
+        copies, how = self._copies(game)
+        findings = doctor.checks(game, copies, steam_running=self._starter.steam_running, how=how)
         report = doctor.report(findings, APP_NAMES[self.UPDATE_APP], self.UPDATE_VERSION,
                                startlog.recent(self.UPDATE_APP, self._home))
         return {"findings": findings, "report": private_paths_out(report)}
@@ -6320,7 +6356,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if action not in self.FIXES:
             raise StudioError(f"There's no fix called {action!r}.")
         game = self._game()
-        copies = self._copies(game)
+        copies, _how = self._copies(game)
         if copies is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no modded copies yet.")

@@ -1,6 +1,13 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.3:** kopie s módy se ukládají tam, kam řeknete.
+
+- **Kam se ukládají kopie s módy**, v Nastavení: vyberte složku, ve které se sestavuje kopie hry s módy, nebo se vraťte
+  na doporučené místo, `RUSE-Instances` na disku hry (tam kopie sdílí soubory hry a je hotová za pár sekund; na jiném
+  disku je to úplná kopie hry, pomalejší a větší). Čistá záloha hry jde vedle. Další Vyzkoušet ve hře sestaví na
+  novém místě; starou složku lze smazat ručně. Launcher používá stejnou složku.
+
 **0.9.8.2:** přicházejí jednotky z jiných období: jejich modely, ve skutečné velikosti, za výzkumem.
 
 - **Jednotky z jiných období:** období WWI, WWII+, Studená válka a Současnost na kartě Jednotky teď mají své

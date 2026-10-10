@@ -1,6 +1,14 @@
 **RUSE Launcher 0.4, para jugadores.** Encuentra R.U.S.E. a través de Steam, y **Jugar** construye una copia del juego
 con tus mods y la inicia. Tu instalación de Steam nunca se modifica.
 
+**0.4.8.3:** las copias con mods van donde tú digas.
+
+- **Dónde van las copias con mods**, en Ajustes: elige la carpeta donde se construye la copia del juego con mods, o
+  vuelve al lugar recomendado, `RUSE-Instances` en la unidad del juego (allí la copia comparte los archivos del juego
+  y está lista en segundos; en otra unidad es una copia completa del juego, más lenta y más grande). La copia de
+  seguridad limpia del juego va al lado. El próximo Jugar construye en el nuevo lugar; la carpeta antigua puede
+  borrarse a mano. El Studio usa la misma carpeta.
+
 **0.4.8.2:** se abre en tu navegador web donde su propia ventana no puede, y juega mods hechos con el Studio 0.9.8.2.
 
 - **Linux y Steam Deck (con Proton):** el Launcher se abre en tu navegador web cuando su propia ventana no puede. Aún

@@ -2,7 +2,8 @@
 about it (a player's report, 2026-09-30: "Access is denied" on every second test, from a leftover copy Windows wouldn't
 delete). It only reads, apart from a test file it writes and removes in the copies' folder, and the two fixes a player
 can ask for: closing a R.U.S.E. left running from a modded copy, and clearing leftover copies. The game's own folder is
-never changed.
+never changed. The report says where modded copies go and why (the folder chosen in Settings, $RUSE_INSTANCES, or the
+recommended place), and when that is another drive than the game's.
 
 A finding is {"key": what's checked, "level": "ok" | "info" | "warn" | "fail", "say": the apps' word for it (each app's
 words.toml, filled with `data`), "data": {...}, "fix": an action the app can run (`fix`) or None}."""
@@ -128,10 +129,16 @@ def _write_test(instances: Path) -> None:
                 pass
 
 
-def checks(game: Path | None, instances: Path | None, steam_running=None, processes=None) -> list[dict]:
+COPIES_SAID = {"chosen": "doc_copies_chosen", "env": "doc_copies_env", "recommended": "doc_copies_recommended"}
+
+
+def checks(game: Path | None, instances: Path | None, steam_running=None, processes=None, how: str = "") -> list[dict]:
     """Every finding, in the order a player would fix them; without `instances` (no game found yet, so no place for
-    modded copies) the copies' own checks are left out. `steam_running` and `processes` stand in for the real world
-    in tests."""
+    modded copies) the copies' own checks are left out. `how` says why copies go to `instances` (rusemod.play
+    .instances_choice: "chosen" in Settings, "env", "recommended"), so the "drive" finding and the report say where
+    copies go and why; copies on another drive than the game get their own finding (each is a full copy of the
+    game). `steam_running` and `processes` stand in for the real world in tests."""
+    from .play import other_drive, recommended_instances_dir
     from .play import steam_running as real_steam
     out = []
     found = game is not None and any(p.name.lower() == "ruse.exe" for p in game.iterdir()) if game and game.is_dir() \
@@ -156,11 +163,17 @@ def checks(game: Path | None, instances: Path | None, steam_running=None, proces
     where = _existing(instances)
     vol = winfiles.volume(str(where))
     fs = vol.get("fs", "")
-    same = found and Path(game).anchor.lower() == instances.anchor.lower()
+    same = found and not other_drive(game, instances)
     if fs and fs.upper() != "NTFS":
         out.append(_finding("drive", "warn", "doc_drive_other", path=str(instances), fs=fs))
+    elif how in COPIES_SAID:  # where copies go and why, in the report too
+        out.append(_finding("drive", "ok", COPIES_SAID[how], path=str(instances), fs=fs or "?", how=how))
     else:
         out.append(_finding("drive", "ok", "doc_drive_ok", path=str(instances), fs=fs or "?"))
+    if found and not same:  # a copy there can't share the game's packs: it is a full copy of the game
+        drive = os.path.splitdrive(os.path.abspath(str(game)))[0] or Path(game).anchor
+        out.append(_finding("other_drive", "info", "doc_copies_other_drive", path=str(instances), drive=drive,
+                            recommended=str(recommended_instances_dir(game))))
     try:
         free = shutil.disk_usage(where).free
     except OSError:

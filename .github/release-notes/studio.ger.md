@@ -1,6 +1,14 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.3:** Kopien mit Mods kommen dorthin, wo du es sagst.
+
+- **Wohin Kopien mit Mods kommen**, in den Einstellungen: Wähle den Ordner, in dem die Kopie des Spiels mit Mods gebaut
+  wird, oder geh zurück zum empfohlenen Ort, `RUSE-Instances` auf dem Laufwerk des Spiels (dort teilt die Kopie die
+  Dateien des Spiels und ist in Sekunden fertig; auf einem anderen Laufwerk ist sie eine vollständige Kopie des Spiels,
+  langsamer und größer). Die saubere Sicherung des Spiels kommt daneben. Das nächste Im Spiel testen baut am neuen
+  Ort; der alte Ordner kann von Hand gelöscht werden. Der Launcher nutzt denselben Ordner.
+
 **0.9.8.2:** Die Einheiten aus anderen Epochen kommen: ihre Modelle, in echter Größe, hinter Forschung.
 
 - **Einheiten aus anderen Epochen:** Die Epochen WWI, WWII+, Kalter Krieg und Modern im Reiter Einheiten haben jetzt

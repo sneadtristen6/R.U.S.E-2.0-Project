@@ -1,6 +1,14 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.3:** modded copies go where you say.
+
+- **Where modded copies go**, in Settings: choose the folder the modded copy of the game is built in, or go back to
+  the recommended place, `RUSE-Instances` on the game's drive (there the copy shares the game's files and is ready in
+  seconds; on another drive it is a full copy of the game, slower and bigger). The game's clean backup goes beside it.
+  The next Test in game builds in the new place; the old folder can be deleted by hand. The Launcher uses the same
+  folder.
+
 **0.9.8.2:** the units from other eras arrive: their models, at their real size, behind research.
 
 - **Units from other eras:** the WWI, WWII+, Cold War and Modern eras in the Units tab have their units now: 366,
