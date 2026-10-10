@@ -50,6 +50,8 @@ class ModInfo:
     # (map, part, file) in lower case -> {"rel", "text", "xyz"} (rusemod.mapscripts.read_mod)
     game_files: list = field(default_factory=list)           # whole game files it changes or adds (§7, files/game):
     # rusemod.gamefiles.GameFile
+    missions: dict = field(default_factory=dict)             # new map's folder name -> (mission.Mission, its file)
+    # (maps/<map>/mission.toml, §8: a new Operation's or chapter's own mission)
 
 
 # --- versions ---

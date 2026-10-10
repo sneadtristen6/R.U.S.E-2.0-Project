@@ -160,6 +160,11 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.solved = read_mod(path)
         from . import mapscripts
         info.scripts = mapscripts.read_mod(path)
+        from .mission import MissionError, read_mod as missions_of
+        try:
+            info.missions = missions_of(path)  # maps/<map>/mission.toml: a new Operation's or chapter's own mission
+        except MissionError as exc:
+            raise BuildError(f"{mod_id}: {exc}") from None
         from .gamefiles import GameFileError, read_mod as game_files_of
         try:
             info.game_files = game_files_of(path, info.id)
@@ -749,6 +754,9 @@ class BuildResult:
     new_classes: list = field(default_factory=list)  # class names added to the game's Python unit list
     terrain_changed: dict = field(default_factory=dict)  # map pack file name -> {member path: new bytes}
     new_maps: dict = field(default_factory=dict)    # new map's pack name -> newmap.Clone (what it adds)
+    mission_scripts: dict = field(default_factory=dict)  # new members of IA_Common.dat: the new maps' own missions
+    mission_packs: list = field(default_factory=list)    # [(entry GUID, kind, own pack GUID)]: missions' own packs
+    mission_sources: dict = field(default_factory=dict)  # new map's pack name -> its mission script as Python
     added: dict = field(default_factory=dict)       # pack file name -> {member path: bytes}: members new maps add
     own_cards: dict = field(default_factory=dict)   # new units' cards: card member to add -> (its source's, the PNG)
     own_models: dict = field(default_factory=dict)  # new units' models: unit -> (its source's model, the .glb, mod id)
@@ -1439,6 +1447,97 @@ def _start_dots(result, making: dict, shipped: dict, read_data, ground_bounds, s
             f"points are")
 
 
+def _make_mission(result, clone, found: tuple, mod_id: str, rows: list, game, text_arc, read_data, say) -> bool:
+    """A new map's own mission (maps/<map>/mission.toml, rusemod.mission and missionbuild): its script into
+    result.mission_scripts, its texts into the copy's new ZZ_Win.dat files, its camera moves into the copy's own camera
+    file, its scenario cluster and MapIA pointed at them, its own menu pack into result.mission_packs. False (with the
+    findings said) when it can't be made."""
+    from . import mission as M
+    from . import missionbuild as MB
+    from .scenario import Place, Scenario
+    mission, rel = found
+    new, src, bs = clone.new, clone.source, chr(92)
+    where = f"{mod_id}: {rel}"
+    if clone.kind not in ("operation", "campaign"):
+        # not a game rule: our missions are made for Operations and campaign chapters (BATTLES events come later)
+        result.findings.append(Finding("error", f"{where}: maps/{new} copies a BATTLES map; a mission of its own is "
+                                                f"for a copy of an Operation or a campaign chapter (map.toml entry)"))
+        return False
+    try:
+        if text_arc is None:
+            # not a game rule: the game or one of its files isn't found
+            raise MB.MissionBuildError("ZZ_Win.dat isn't in this game, so the mission's texts can't be added")
+        clusters = [k for k in clone.glad if f"scenario{bs}{new.lower()}{bs}" in k.lower() and "clustermap" in k.lower()]
+        if len(clusters) != 1:
+            raise MB.MissionBuildError(f"the copy's scenario cluster wasn't found once ({len(clusters)})")
+        cluster, folder = MB.cluster_pointed(clone.glad[clusters[0]], src, new)
+        ia_path = find_pack(game, "IA_Common.dat")
+        if ia_path is None:
+            # not a game rule: the game or one of its files isn't found
+            raise MB.MissionBuildError("IA_Common.dat isn't in this game, so no mission can be added")
+        with Edat.open(str(ia_path)) as ia:
+            src_member, new_member = MB.script_members(ia, src, folder, new)
+            base = M.base_of(bytes(ia.read(ia.find(src_member))))
+        # what the mission can name: the copy's scenario's named points and zones, and those the mods add
+        scen = next((d for k, d in clone.data.items() if k.lower().endswith(bs + clone.scenario.lower())), None)
+        points, zones, rects = set(), set(), set()
+        for it in (Scenario.read(scen).items if scen is not None else []):
+            name = it.values.get("Name")
+            if isinstance(name, str) and name:
+                (zones if it.kind in ("CircularZone", "RectangleZone") else points).add(name)
+                if it.kind == "RectangleZone":
+                    rects.add(name)
+        for r in rows:
+            if isinstance(r, Place) and r.file.lower() == clone.scenario.lower() and r.name:
+                if r.kind in ("CircularZone", "RectangleZone"):
+                    zones.add(r.name)
+                    if r.kind == "RectangleZone":
+                        rects.add(r.name)
+                else:
+                    points.add(r.name)
+        mapia = [k for k in clone.glad if f"scenario{bs}{new.lower()}{bs}" in k.lower() and "mapia" in k.lower()]
+        cam_member = MB.camera_file_of(clone.glad[mapia[0]], src) if len(mapia) == 1 else None
+        cam_raw = read_data(cam_member) if cam_member else None
+        classes = None
+        found_list = pyscript.find_unit_list(text_arc) if text_arc is not None else None
+        if found_list:
+            try:
+                ul = pyscript.unit_list(pyscript.read_xyz(found_list[3]).payload)
+                classes = {n for n, c in ul.classes.items() if c.registered} | set(result.new_classes)
+            except pyscript.ScriptError:
+                classes = None
+        ctx = M.Context(new, clone.kind, points, zones, rects,
+                        set(MB.camera_paths(cam_raw)) if cam_raw is not None else set(), {}, classes)
+        bad = M.problems(mission, base, ctx)
+        for level, message in bad:
+            result.findings.append(Finding(level, f"{where}: {message}"))
+            say(f"{level}: {where}: {message}")
+        if any(level == "error" for level, _m in bad):
+            return False
+        xyz, text = MB.compiled(mission, base, ctx, new)
+        dics = MB.text_files([e.path for e in text_arc.entries], lambda p: bytes(text_arc.read(text_arc.entry(p))),
+                             src, folder, new, M.texts(mission, new))
+        if mission.cameras:
+            if cam_raw is None or len(mapia) != 1:
+                raise MB.MissionBuildError("the copied map has no camera file to add the camera moves to")
+            own = cam_member.replace(bs + src.lower() + bs, bs + new.lower() + bs)
+            clone.data[own] = MB.with_cameras(cam_raw, mission.cameras)
+            clone.glad[mapia[0]] = MB.mapia_pointed(clone.glad[mapia[0]], src, new)
+    except (MB.MissionBuildError, M.MissionError, pyscript.ScriptError, ValueError, KeyError, struct.error,
+            zlib.error) as exc:
+        result.findings.append(Finding("error", f"{where}: the mission couldn't be made: {exc}"))
+        return False
+    clone.glad[clusters[0]] = cluster
+    clone.zz_new.update(dics)
+    result.mission_scripts[new_member] = xyz
+    result.mission_sources[new] = text
+    from .newmap import guid_for
+    result.mission_packs.append((clone.guid, clone.kind, guid_for(new, "own menu pack")))
+    clone.notes.append(f"its own mission: {len(mission.goals)} goal(s), {len(mission.events)} event(s), "
+                       f"{len(mission.cameras)} camera move(s), in a menu pack of its own")
+    return True
+
+
 def _menu_orders(result, mods: list, arc, say) -> None:
     """Missions put in the mods' order in their menus (menus.toml, rusemod.menuorder): on globals.cpp as the build
     has it once everything else is in (the new maps' entries, the player counts), in load order."""
@@ -1743,6 +1842,14 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     result.findings.append(Finding("error", f"{mod_id}: maps/{name}: {clone.pack_from}, the pack of "
                                                             f"{spec.copy_of}, isn't in this game, so it can't be copied"))
                     continue
+                owner = next((m for m, _ops in mods if m.id == mod_id), None)
+                found = next((v for k, v in getattr(owner, "missions", {}).items() if k.lower() == name.lower()), None)
+                if found is not None:  # its own mission (maps/<map>/mission.toml)
+                    rows = [r for m, _ops in mods for k, rs in m.scenario.items() if k.lower() == name.lower()
+                            for r in rs]
+                    if not _make_mission(result, clone, found, mod_id, rows, game, text_arc,
+                                         reading(data_new, data_base), say):
+                        continue
                 for member, data in clone.glad_changed.items():
                     e = arc.entry(member)
                     for old in [m for m in result.changed if m.lower() == member.lower()]:
@@ -2882,6 +2989,18 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 if changed_members or data_new:
                     data_packs.append((data_path, data_arc, changed_members))
         _menu_orders(result, mods, arc, say)  # last on the menus: after the new maps' entries and the player counts
+        if result.mission_packs:  # a new map with its own mission: alone in a menu pack of its own (missionbuild)
+            from . import missionbuild
+            from .players import GLOBALS
+            key = next((k for k in result.changed if k.lower() == GLOBALS.lower()), None)
+            if key is None:
+                result.findings.append(Finding("error", "the missions' own menu packs: the menus weren't changed"))
+            else:
+                try:
+                    result.changed[key] = missionbuild.own_packs(result.changed[key], result.mission_packs)
+                    say(f"menus: {len(result.mission_packs)} mission(s) of the mods' own, each in a pack of its own")
+                except (missionbuild.MissionBuildError, ValueError, KeyError, struct.error, StopIteration) as exc:
+                    result.findings.append(Finding("error", f"the missions' own menu packs couldn't be made: {exc}"))
         by_id = {m.id: m for m, _ops in mods}
         mod_scripts = [(i, by_id[i].scripts) for i in result.order if i in by_id and getattr(by_id[i], "scripts", None)]
         if mod_scripts:  # the game's mission scripts the mods change (rusemod.mapscripts, MOD_FORMAT §9)
@@ -2898,6 +3017,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 if scripts_changed:
                     data_packs.append((ia_path, ia_arc, scripts_changed))
                     say(f"mission scripts: {len(scripts_changed)} changed in {ia_path.name}")
+        if result.mission_scripts:  # the new maps' own missions (rusemod.mission): new files of IA_Common.dat
+            from .newmap import Grown
+            ia_path = find_pack(game, "IA_Common.dat")
+            at = next((k for k, (p, _a, _c) in enumerate(data_packs) if ia_path is not None and p == ia_path), None)
+            if at is None:
+                data_packs.append((ia_path, Grown(open_pack(ia_path), result.mission_scripts), {}))
+            else:
+                p, a, c = data_packs[at]
+                data_packs[at] = (p, Grown(a, result.mission_scripts), c)
+            say(f"mission scripts: {len(result.mission_scripts)} new in {ia_path.name}")
         for path, pack in new_packs.items():  # a new map's pack is written even when no mod edits its files
             if not any(e[0] == path for e in map_packs):
                 map_packs.append((path, pack, {}))
