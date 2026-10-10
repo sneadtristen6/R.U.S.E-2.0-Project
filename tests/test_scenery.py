@@ -215,6 +215,13 @@ class Reading(unittest.TestCase):
         self.assertEqual(len(s.blocks[0].items), 2)
         self.assertEqual(s.types(), {1: 2})
 
+    def test_a_reference_holds_its_block_s_place_in_24_bits(self):
+        word = 0x9C000002   # flags and a transform kind round the place
+        self.assertEqual(scenery.link_offset(scenery.link_word(word, 0x123450)), 0x123450)
+        self.assertEqual(scenery.link_word(word, 0x123450) & ~0x00FFFFFC, word & ~0x00FFFFFC)
+        with self.assertRaises(SceneryEditError):   # past what 24 bits hold
+            scenery.link_word(word, 0x1000000)
+
     def test_a_wrong_sum_or_version_is_refused(self):
         raw = bytearray(village())
         raw[200] ^= 1

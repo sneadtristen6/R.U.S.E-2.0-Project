@@ -37,7 +37,7 @@ class Item:
 
     @property
     def child_offset(self) -> int:     # a child's block, from the data's start
-        return self.word & 0xFFFFFC
+        return link_offset(self.word)
 
     @property
     def tform(self) -> int:
@@ -775,8 +775,9 @@ def _new_block(items: list[bytes], box: tuple, boxes: list[tuple] | None = None)
         raise SceneryEditError("too many objects for one new block: a tree node splits its entries at a 16-bit index")
     nodes = [[((ALL_TIERS | ROAD_TIER) << 20) | ((1 + len(far_n)) << 2), len(far_e), 0xFF, 0]] + far_n + full_n
     head = struct.pack("<II4f", 0x80000000 | len(entries), len(nodes), *box) + BLOCK_TAIL
-    return (head + struct.pack(f"<{len(entries)}I", *entries) + b"".join(struct.pack("<IHBB", *n) for n in nodes)
-            + struct.pack("<I", FILLER) + b"".join(items))
+    out = (head + struct.pack(f"<{len(entries)}I", *entries) + b"".join(struct.pack("<IHBB", *n) for n in nodes)
+           + struct.pack("<I", FILLER) + b"".join(items))
+    return out + b"\0" * (-len(out) % BLOCK_ALIGN)
 
 
 def _share(v: float, a0: float, ext: float, up: bool) -> int:
@@ -999,6 +1000,19 @@ ERASE_DEFAULT = ("vegetation", "prop")                        # trees and props,
 ERASE_MAX = 4000000.0  # map units an erase area's radius may reach: any map, whole (M04_Cotentin is 3,932,160 wide); a
                        # whole-map erase takes seconds (erase_plan's bulk) and fits (erase_objects shares copies)
 DATA_LIMIT = 0xFFFFFC  # a reference holds a block's offset in 24 bits (4-byte steps): the blocks' data stops there
+BLOCK_ALIGN = 4        # a new block's size is padded to a multiple of this (4: none; the shipped blocks are padded to 16)
+
+
+def link_offset(word: int) -> int:
+    """Where the block a reference (a child item's word) points at starts, from the data's start."""
+    return word & 0xFFFFFC
+
+
+def link_word(word: int, offset: int) -> int:
+    """Reference `word` pointed at the block starting at `offset` (its other bits kept)."""
+    if offset & ~0xFFFFFC:
+        raise SceneryEditError(f"the map's scenery is too big for a block {offset:,} bytes in to be referenced")
+    return (word & ~0x00FFFFFC) | offset
 
 
 @dataclass(frozen=True)
@@ -1684,7 +1698,7 @@ def erase_objects(data: bytes, areas: list[EraseArea], kinds: dict[int, str],
         raw = bytearray(raws[k])
         start = (0x20 if b.long else 0x1C) + 4 * (struct.unpack_from("<I", raw)[0] & 0x7FFFFFFF) + len(b.nodes)
         for it, t in targets(k):
-            struct.pack_into("<I", raw, start + maps[k][it.at], (it.word & ~0x00FFFFFC) | offset_of[t])
+            struct.pack_into("<I", raw, start + maps[k][it.at], link_word(it.word, offset_of[t]))
         parts.append(bytes(raw))
     body = _assembled(sc, data, parts)
     by_group: dict[str, int] = {}
@@ -1752,7 +1766,7 @@ def take_out_road_pieces(data: bytes) -> tuple[bytes, list[str]]:
         for it in b.items:
             if it.kind == "child":
                 to = sc._by_offset[it.child_offset]
-                struct.pack_into("<I", raw, start + maps[b.index][it.at], (it.word & ~0x00FFFFFC) | offset_of[to])
+                struct.pack_into("<I", raw, start + maps[b.index][it.at], link_word(it.word, offset_of[to]))
         parts.append(bytes(raw))
     body = _assembled(sc, data, parts)
     return hashlib.md5(body).digest() + body, [f"{n:,} road piece(s) taken out (the roads drawn from far)"]
@@ -2324,8 +2338,7 @@ def _with_blocks(sc: Scenery, data: bytes, raws: dict[int, bytes]) -> bytes:
             if it.kind == "child":
                 if it.child_offset not in starts:
                     raise SceneryError(f"block {b.index}: a child points at {it.child_offset}, which isn't a block's start")
-                struct.pack_into("<I", raw, grown.items_start + it.at,
-                                 (it.word & ~0x00FFFFFC) | starts[it.child_offset])
+                struct.pack_into("<I", raw, grown.items_start + it.at, link_word(it.word, starts[it.child_offset]))
         parts.append(bytes(raw))
     f = list(sc.fields)
     tab_off, tab_n, data_off, data_len = f[0], f[1], f[2], f[3]
@@ -2524,10 +2537,10 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
     probe = _new_block([b"\0" * 4] + items, (0.0, 0.0, 0.0, 0.0), boxes)  # its size: where the old block moves to
     shift = len(probe)
     moved_to = carrier.child_offset + shift
-    if (sc.fields[3] + shift) & ~0xFFFFFC:
+    if sc.fields[3] + shift > DATA_LIMIT:
         raise SceneryEditError("the map's scenery is too big for a new block to be referenced")
     # the old block, placed where it was (no transform: the reference to the new block keeps the old one's)
-    first = struct.pack("<I", (carrier.word & 0xFF000000) | moved_to | T_IDENTITY)
+    first = struct.pack("<I", link_word(carrier.word & 0xFF000000, moved_to) | T_IDENTITY)
     new = _new_block([first] + items, (min(xs), min(ys), max(xs), max(ys)), boxes)
     if len(new) != shift:
         raise SceneryError("a new block came out a different size than measured")
@@ -2547,7 +2560,7 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
                 target = ins
             else:
                 target = it.child_offset + shift if it.child_offset >= ins else it.child_offset
-            struct.pack_into("<I", raw, at, (it.word & ~0x00FFFFFC) | target)
+            struct.pack_into("<I", raw, at, link_word(it.word, target))
         if b.index == 0 and roads:  # the top block's nodes down to the new block's reference: road-marked
             _mark_road_path(raw, b, carrier.at)
         parts.append(bytes(raw))
@@ -2630,9 +2643,9 @@ def _add_block(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]]
     if tab_off != 124 or data_off != tab_off + 4 * tab_n:
         raise SceneryEditError("the scenery file's tables aren't in the order this writer knows")
     offset = data_len  # the new block goes after every other block: all references stay forward
-    if offset & ~0xFFFFFC:
+    if offset > DATA_LIMIT:
         raise SceneryEditError("the map's scenery is too big for a new block to be referenced")
-    ref = (offset & 0xFFFFFC) | (carrier.word & 0x0C000000) | carrier.tform
+    ref = link_word(carrier.word & 0x0C000000, offset) | carrier.tform
     patched = bytearray(data[data_off:data_off + data_len])
     at = block.offset + block.items_start + carrier.at
     patched[at:at + 4 + len(carrier.data)] = struct.pack("<I", ref) + _identity_data(carrier.tform)

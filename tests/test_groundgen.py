@@ -5,7 +5,7 @@ import unittest
 
 from rusemod import kdt_edit
 from rusemod.brush import Stroke
-from rusemod.groundgen import (GroundGenError, Shape, fine_cells, fit_skirt, gameplay_ground, make_mesh,
+from rusemod.groundgen import (GroundGenError, Shape, fine_cells, fit_skirt, gameplay_ground, hilbert, make_mesh,
                                water_pictures)
 from rusemod.kdt import Kdt
 from rusemod.tms import SKIRT_BOTTOM, Q_MAX, Tms
@@ -121,6 +121,39 @@ class Meshes(unittest.TestCase):
                 if i is not None and j is not None:
                     z = t.to_quant(2, self.shape.h(i * s, j * s))
                     self.assertTrue(p[2] in (z, p[3]), (i, j, p))   # or snapped onto the water at the edge
+
+    def test_a_finer_patch_split_keeps_the_ground_and_stores_each_patch_on_the_curve(self):
+        """16 x 16 patches a cell: the same ground (the fine cell's triangles as with 8), the file's patch_div 16, 256
+        patches a cell, and each patch's triangles inside its own square, the squares in hilbert(16)'s order."""
+        fine = fine_cells(Tms(make_tms(gw=2, gh=2)), self.shape)
+        t = Tms(make_tms(gw=2, gh=2))
+        t.cells, info = make_mesh(t, self.shape.h, self.shape.w, 16, fine, 16)
+        t = Tms(t.to_bytes())
+        self.assertEqual(t.patch_div, 16)
+        self.assertEqual(len(t.cells[3].triangles(0)), len(self.t.cells[3].triangles(0)))   # the island's cell
+        self.assertEqual(len(t.cells[0].triangles(0)) // 3, 256 * 4)   # a flat cell: a 4-triangle fan a patch
+        order = hilbert(16)
+        side = Q_MAX / 2 / 16
+        for k, c in enumerate(t.cells):
+            pats = c.patch_list()
+            self.assertEqual(len(pats), 256)
+            pos, tri = c.positions(), c.triangles(0)
+            x0, y0 = (k % 2) * Q_MAX / 2, (k // 2) * Q_MAX / 2
+            for (col, row), p in zip(order, pats):
+                for i in range(p.i0start, p.i0start + p.i0count, 3):
+                    mx = sum(pos[v][0] for v in tri[i:i + 3]) / 3 - x0
+                    my = sum(pos[v][1] for v in tri[i:i + 3]) / 3 - y0
+                    self.assertEqual((int(mx // side), int(my // side)), (col, row))
+
+    def test_the_patch_order_is_d_day_s(self):
+        dday = [(0, 0), (0, 1), (1, 1), (1, 0), (2, 0), (3, 0), (3, 1), (2, 1), (2, 2), (3, 2), (3, 3), (2, 3), (1, 3),
+                (1, 2), (0, 2), (0, 3), (0, 4), (1, 4), (1, 5), (0, 5), (0, 6), (0, 7), (1, 7), (1, 6), (2, 6), (2, 7),
+                (3, 7), (3, 6), (3, 5), (2, 5), (2, 4), (3, 4), (4, 4), (5, 4), (5, 5), (4, 5), (4, 6), (4, 7), (5, 7),
+                (5, 6), (6, 6), (6, 7), (7, 7), (7, 6), (7, 5), (6, 5), (6, 4), (7, 4), (7, 3), (7, 2), (6, 2), (6, 3),
+                (5, 3), (4, 3), (4, 2), (5, 2), (5, 1), (4, 1), (4, 0), (5, 0), (6, 0), (6, 1), (7, 1), (7, 0)]
+        self.assertEqual(hilbert(8), dday)
+        # a finer split: each run of 4 is one of the coarser patches, in the coarser order
+        self.assertEqual([(x // 2, y // 2) for x, y in hilbert(16)[::4]], dday)
 
     def test_a_dry_map_s_cells_follow_the_shipped_dry_rule(self):
         """No water: every cell flag 1, one list, its patches bounded from 0 to its highest ground (D-Day's and
