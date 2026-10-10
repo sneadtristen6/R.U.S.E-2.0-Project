@@ -73,7 +73,8 @@ class SectorArea:
     kept for touch-ups; scenario.toml `[[sectors.paint]]` with `area`): scenario `file`'s sector `sector` is from now
     on exactly the ground inside `points` (map x, y corners, in order; a cell is inside when its middle is, by the
     even-odd rule). The ground it had outside them goes to what touches it (area_cells); no points: the sector is
-    taken out, its ground to its neighbours. Rows saved in one go share `group` (the Studio's Undo takes them back
+    taken out, its ground to the sectors round it. Sector NO_SECTOR: the ground inside the corners in no sector (the
+    Studio's No sector box, the owner, 2026-10-10). Rows saved in one go share `group` (the Studio's Undo takes them back
     together: moving a corner two sectors share changes both). `within`: polygons that limit the change to the
     ground inside them (a corner moved: the triangles it made with its neighbouring corners, before and after), so
     the rest of the sector stays cell for cell as it was; none: the whole sector."""
@@ -129,13 +130,15 @@ def parse_area(p: dict, at: str) -> SectorArea:
             or "\\" in p["file"]:
         raise SectorError(f"{at}: file is a scenario file's name (like leveldesign_3v3_v01.scenario)")
     s = p["sector"]
-    if isinstance(s, bool) or not isinstance(s, int) or not 0 <= s <= MOST_SECTOR:
-        raise SectorError(f"{at}: sector is a whole number from 0 to {MOST_SECTOR}")
+    if isinstance(s, bool) or not isinstance(s, int) or not NO_SECTOR <= s <= MOST_SECTOR:
+        raise SectorError(f"{at}: sector is a whole number from 0 to {MOST_SECTOR} (or {NO_SECTOR}: no sector)")
     pts = p["area"]
     if not isinstance(pts, list) or len(pts) in (1, 2) or len(pts) > MOST_AREA_POINTS \
             or not all(isinstance(q, list) and len(q) == 2 and all(_number(c) for c in q) for q in pts):
         raise SectorError(f"{at}: area is a list of 3 to {MOST_AREA_POINTS} [x, y] corners (none: the sector taken "
                           f"out)")
+    if s == NO_SECTOR and not pts:
+        raise SectorError(f"{at}: an area of no sector needs its corners (3 or more)")
     group = p.get("group", 0)
     if isinstance(group, bool) or not isinstance(group, int) or group < 0:
         raise SectorError(f"{at}: group is a whole number, 0 or more")
@@ -222,7 +225,7 @@ def sectors_toml(setting) -> str:
     if setting.paints:
         lines.append("# Each [[sectors.paint]] is one drag of the Sectors brush: the ground under its dabs put in `sector` "
                      f"({NO_SECTOR}: in none); one with `area` makes `sector` exactly the ground inside those corners "
-                     "(none: taken out).")
+                     f"(none: taken out, its ground to the sectors round it; {NO_SECTOR}: that ground in no sector).")
     lines.append("[sectors]")
     if setting.whole_map:
         lines.append("whole_map = true")
@@ -1039,10 +1042,11 @@ def polygon_mask(points, g: Grid, np):
     return i0, i1, (np.cumsum(toggles, axis=1)[:, :g.nx] % 2).astype(bool)
 
 
-def fill_left(lab, np, avoid: int | None = None) -> None:
+def fill_left(lab, np, avoid: int | None = None, sectors_only: bool = False) -> None:
     """The cells marked LEFT_OVER (in place) take what touches them, layer by layer from their edges inward: a
-    sector's, or no sector's where no-sector ground touches them; any that touch nothing else become no sector.
-    Sector `avoid` (the one that gave the ground up) is never what they take."""
+    sector's, or no sector's where no-sector ground touches them (not with `sectors_only`: only sectors take it);
+    any that touch nothing they can take become no sector. Sector `avoid` (the one that gave the ground up) is never
+    what they take."""
     left = lab == LEFT_OVER
     if not left.any():
         return
@@ -1068,6 +1072,8 @@ def fill_left(lab, np, avoid: int | None = None) -> None:
             take = hole & (src != LEFT_OVER)
             if avoid is not None:
                 take &= src != avoid
+            if sectors_only:
+                take &= src != NO_SECTOR
             if take.any():
                 sub[take] = src[take]
                 hole &= ~take
@@ -1080,8 +1086,11 @@ def fill_left(lab, np, avoid: int | None = None) -> None:
 def area_cells(lab, a: SectorArea, g: Grid, np) -> None:
     """Sector `a.sector` made exactly the ground inside `a.points` on the cells `lab` (in place): its cells first
     given up, the area's cells then its own (taken from whatever had them), the ground it gave up and didn't take
-    back going to what touches it (fill_left). No points: the sector taken out. With `a.within`, only the cells
-    inside those polygons change."""
+    back going to what touches it (fill_left). No points: the sector taken out, all its ground to the sectors round
+    it (none to no sector unless no sector touches it: the owner, 2026-10-10, "at any place in the map, there could
+    be no sector or it could be covered", by his own shapes, never as a delete's leftover). Sector NO_SECTOR: the
+    ground inside the corners put in no sector, nothing else changed. With `a.within`, only the cells inside those
+    polygons change."""
     def mask_of(points):
         out = np.zeros(lab.shape, bool)
         i0, i1, m = polygon_mask(points, g, np)
@@ -1093,12 +1102,16 @@ def area_cells(lab, a: SectorArea, g: Grid, np) -> None:
         region = np.zeros(lab.shape, bool)
         for w in a.within:
             region |= mask_of(w)
+    if a.sector == NO_SECTOR:
+        inside = mask_of(a.points)
+        lab[inside if region is None else inside & region] = NO_SECTOR
+        return
     mine = lab == a.sector
     lab[mine if region is None else mine & region] = LEFT_OVER
     if len(a.points) >= 3:
         inside = mask_of(a.points)
         lab[inside if region is None else inside & region] = a.sector
-    fill_left(lab, np, a.sector)
+    fill_left(lab, np, a.sector, sectors_only=len(a.points) < 3)
 
 
 def paint_cells(lab, paint, g: Grid, np) -> None:

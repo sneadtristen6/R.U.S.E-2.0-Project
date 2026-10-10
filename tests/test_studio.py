@@ -1720,7 +1720,7 @@ class ZonesOnTheGround(unittest.TestCase):
         on the ground; the slider sets the inside (0: the borders alone) and is kept by the Studio (prefs "view").
         Looked at in the Studio's page: borders, glow and fill at 35 %, the borders alone at 0 %."""
         zone = self.function("drawZone(")
-        self.assertIn("zoneBorder(z.triangles)", zone)
+        self.assertIn("zoneBorder(z.triangles, p)", zone)   # (its edges matched by position: 1fe05f8)
         self.assertIn("new THREE.LineSegments(", zone)
         self.assertIn('zonePart: "fill"', zone)
         self.assertIn('zonePart = "glow"', zone)

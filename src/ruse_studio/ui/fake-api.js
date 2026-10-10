@@ -771,10 +771,21 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       return c;
     };
     for (const s of f.strokes) {
-      if (s.area) {   // a sector's new shape (StudioApi.sector_area): what it gave up goes to no sector here
-        for (let k = 0; k < cells.length; k++) if (cells[k] === s.sector + 1) cells[k] = 0;
+      if (s.area) {   // a sector's new shape (StudioApi.sector_area): what it gave up goes to no sector here, a
+        // sector taken out gives its ground to the nearest other sector in its row (sector -1: a No sector box)
+        const own = s.sector + 1, freed = [];
+        if (own > 0) for (let k = 0; k < cells.length; k++) if (cells[k] === own) { cells[k] = 0; freed.push(k); }
         for (let i = 0; i < n; i++) {
-          for (let j = 0; j < n; j++) if (s.area.length >= 3 && inside(s.area, (j + 0.5) * step, (i + 0.5) * step)) cells[i * n + j] = s.sector + 1;
+          for (let j = 0; j < n; j++) if (s.area.length >= 3 && inside(s.area, (j + 0.5) * step, (i + 0.5) * step)) cells[i * n + j] = own;
+        }
+        if (!s.area.length) {
+          for (const k of freed) {
+            const row = k - (k % n);
+            for (let d = 1; d < n; d++) {
+              const near = [k - d, k + d].find((q) => q >= row && q < row + n && cells[q] > 0 && cells[q] !== own);
+              if (near !== undefined) { cells[k] = cells[near]; break; }
+            }
+          }
         }
         continue;
       }
@@ -2785,7 +2796,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       sector_area: async (pack, file, areas) => {   // a shape edit: the sectors it changes, kept together for Undo
         const f = fakeSectors(pack, file), group = f.strokes.reduce((g, s) => Math.max(g, s.group || 0), 0) + 1;
         for (const a of areas) {
-          if (!(a.sector >= 0 && a.sector <= 254)) throw new Error("That shape can't be saved (sector is a whole number from 0 to 254).");
+          if (!(a.sector >= -1 && a.sector <= 254) || (a.sector === -1 && !(a.points || []).length)) {
+            throw new Error("That shape can't be saved (sector is a whole number from 0 to 254, or -1: no sector, with corners).");
+          }
           f.strokes.push({ sector: a.sector, area: a.points || [], group });
         }
         return fakeSectorView(pack, file, true);

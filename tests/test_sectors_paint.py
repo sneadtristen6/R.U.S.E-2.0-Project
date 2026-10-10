@@ -393,7 +393,12 @@ class StudioBrush(_with_mod()):
         self.assertEqual(([s["number"] for s in v["sectors"]], v["strokes"]), ([0, 1], 2))
         v = self.api.sector_undo("Blitz", f)                                   # both rows of the first edit
         self.assertEqual(v["strokes"], 0)
-        for bad in ([], [{"sector": 0, "points": [[1.0, 1.0], [2.0, 2.0]]}], [{"sector": -1, "points": left}]):
+        before = {s["number"]: s["cells"] for s in v["sectors"]}
+        v = self.api.sector_area("Blitz", f, [{"sector": -1, "points": left}])  # a No sector box (2026-10-10)
+        self.assertLess({s["number"]: s["cells"] for s in v["sectors"]}.get(0, 0), before[0])
+        self.assertEqual(tomllib.loads(self.file.read_text(encoding="utf-8"))["sectors"]["paint"][-1]["sector"], -1)
+        self.api.sector_undo("Blitz", f)
+        for bad in ([], [{"sector": 0, "points": [[1.0, 1.0], [2.0, 2.0]]}], [{"sector": -1, "points": []}]):
             with self.assertRaises(Exception, msg=str(bad)):
                 self.api.sector_area("Blitz", f, bad)
 
@@ -450,6 +455,40 @@ class Areas(unittest.TestCase):
         S.area_cells(lab, area(1, ()), g, np)       # taken out
         self.assertEqual(set(np.unique(lab).tolist()), {S.NO_SECTOR, 0})
 
+    def test_a_sector_taken_out_gives_all_its_ground_to_the_sectors_round_it(self):
+        """The owner, 2026-10-10 (T43's Sector Gap Test: a fifth of the deleted sector went to no sector where the
+        map's outside touched it): none goes to no sector, however near the outside it is; a sector only no sector
+        touches is the one case it becomes no sector."""
+        g = S.Grid.over(W, H, 128)
+        lab = np.full((g.ny, g.nx), 0, np.int32)
+        lab[:, g.nx // 2:] = 1
+        lab[:8] = S.NO_SECTOR                                  # the map's outside, along the top and the right
+        lab[:, -8:] = S.NO_SECTOR
+        lab[20:30, 10:20] = S.NO_SECTOR                        # an island of sector 2 in no sector
+        lab[22:28, 12:18] = 2
+        had, none = lab == 1, lab == S.NO_SECTOR
+        S.area_cells(lab, area(1, ()), g, np)
+        self.assertTrue((lab[had] == 0).all())                 # every cell sector 1 had: to sector 0
+        self.assertTrue((lab[none] == S.NO_SECTOR).all())      # the outside stays as it was
+        S.area_cells(lab, area(2, ()), g, np)
+        self.assertTrue((lab[22:28, 12:18] == S.NO_SECTOR).all())   # only no sector touched it
+
+    def test_a_no_sector_box_takes_only_its_own_ground(self):
+        g = S.Grid.over(W, H, 128)
+        lab = np.full((g.ny, g.nx), 0, np.int32)
+        lab[:, g.nx // 2:] = 1
+        lab[:8] = S.NO_SECTOR
+        before = lab.copy()
+        box = [(W * 0.3, H * 0.4), (W * 0.7, H * 0.4), (W * 0.7, H * 0.6), (W * 0.3, H * 0.6)]
+        S.area_cells(lab, area(S.NO_SECTOR, box), g, np)
+        i0, i1, mask = S.polygon_mask(box, g, np)
+        inside = np.zeros_like(lab, bool)
+        inside[i0:i1 + 1] = mask
+        self.assertTrue((lab[inside] == S.NO_SECTOR).all())         # across both sectors
+        self.assertTrue((lab[~inside] == before[~inside]).all())    # nothing else moved, the outside neither
+        self.assertGreater(int((before[inside] == 0).sum()), 100)
+        self.assertGreater(int((before[inside] == 1).sum()), 100)
+
     def test_a_moved_corner_changes_only_the_ground_round_it(self):
         """within: a corner of the border between sectors 0 and 1 moved right; only the cells in its two triangles
         (before and after) change, every other cell stays as it was, even where the new outline (a straight line
@@ -474,11 +513,12 @@ class Areas(unittest.TestCase):
     def test_shape_rows_read_back_and_mistakes_are_refused(self):
         fans = (((1.5, 2.0), (3.0, 4.0), (5.0, 1.0)), ((1.5, 2.0), (3.5, 4.5), (5.0, 1.0)))
         setting = S.Sectors(paints=(area(0, [(1.5, 2.0), (3.0, 4.0), (5.0, 1.0)], 3), stroke(2, [(5.0, 6.0)]),
-                                    area(4, (), 4), S.SectorArea(FILE, 5, ((0.0, 0.0), (9.0, 0.0), (9.0, 9.0)), 5, fans)))
+                                    area(4, (), 4), S.SectorArea(FILE, 5, ((0.0, 0.0), (9.0, 0.0), (9.0, 9.0)), 5, fans),
+                                    area(S.NO_SECTOR, [(1.0, 1.0), (2.0, 1.0), (2.0, 2.0)], 6)))
         self.assertEqual(S.parse_sectors(tomllib.loads(S.sectors_toml(setting))["sectors"]), [setting])
         good = {"file": "a.scenario", "sector": 0, "group": 1, "area": [[1, 2], [3, 4], [5, 1]]}
         S.parse_sectors({"paint": [good]})
-        for bad in ({"sector": -1}, {"sector": 255}, {"group": -1}, {"group": True}, {"area": [[1, 2], [3, 4]]},
+        for bad in ({"sector": -2}, {"sector": -1, "area": []}, {"sector": 255}, {"group": -1}, {"group": True}, {"area": [[1, 2], [3, 4]]},
                     {"area": [[1, "a"], [3, 4], [5, 1]]}, {"radius": 5.0}, {"file": "a.toml"},
                     {"within": [[[1, 2], [3, 4]]]}, {"within": [[1, 2], [3, 4], [5, 1]]}):
             with self.assertRaises(S.SectorError, msg=str(bad)):

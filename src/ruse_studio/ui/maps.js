@@ -2958,7 +2958,7 @@ function renderSectorTools(s) {
   const newChip = chip(w.sectors_new, v && v.next === null ? w.tip_sectors_new_full : w.tip_sectors_new, "new");
   newChip.disabled = Boolean(v) && v.next === null;
   picks.replaceChildren(...listed.map((x) => chip(fill(w.sectors_n, { n: x.number + 1 }), w.tip_sectors_pick, x.number, x.number)),
-    newChip, chip(w.sectors_none, w.tip_sectors_none, -1));
+    newChip, chip(w.sectors_none, shapes ? w.tip_sectors_none_shapes : w.tip_sectors_none, -1));
   $("scen-sectors-shape").replaceChildren(...["round", "square"].map((k) => chipOf(w["sectors_" + k], w.tip_sectors_shape,
     sec.shape === k, () => { sec.shape = k; renderSectorTools(s); })));
   $("scen-sectors-size").value = String(sec.size);
@@ -3162,7 +3162,7 @@ function sectorDrawLines() {
   };
   for (const [num, p] of Object.entries(sec.lines || {})) ring(p, sectorRgb(Number(num)).map((c) => Math.min(1, c / 255 + 0.2)));
   const b = sec.newBox;
-  if (b) ring([b.x0, b.y0, b.x1, b.y0, b.x1, b.y1, b.x0, b.y1], [1, 0.83, 0.3]);
+  if (b) ring([b.x0, b.y0, b.x1, b.y0, b.x1, b.y1, b.x0, b.y1], b.none ? [0.85, 0.85, 0.85] : [1, 0.83, 0.3]);
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pos), 3));
   g.setAttribute("color", new THREE.BufferAttribute(new Float32Array(col), 3));
@@ -3192,7 +3192,8 @@ function sectorDrawLines() {
 // point) with its corners as dots. Dragging a dot moves it in every sector that has it, so a shared border stays
 // shared; let go and each sector it changed is saved as its new shape (StudioApi.sector_area, rusemod.sectors
 // SectorArea: the build fills it on its own grid, the ground a sector gives up going to what touches it, and tidies
-// as for the brush). Double-click a border: a new dot; right-click a dot: it's taken out. New sector: drag a box. ---
+// as for the brush). Double-click a border: a new dot; right-click a dot: it's taken out. New sector: drag a box;
+// No sector: a box of no sector (its edges are the borders round it, their dots dragged as any). ---
 function sectorDots() {   // {key "x,y": {x, y, owners: [[sector, index of x in its outline], ...]}}
   const out = new Map();
   for (const [num, p] of Object.entries(sec.lines || {})) {
@@ -3268,19 +3269,24 @@ function sectorShapesOn() {
   return scen.tool === "sectors" && sec.on && sec.mode === "shapes" && Boolean(sec.view) && Boolean(mv.gl) && Boolean(mv.edit);
 }
 
-// A press in Shapes, before the view's own (capture): on a dot, its drag; with New sector picked, a box; else the
-// view turns as usual.
+// A press in Shapes, before the view's own (capture): on a dot, its drag; with New sector picked, a box; with No
+// sector picked, a box of no sector (the owner, 2026-10-10: "at any place in the map, there could be no sector or it
+// could be covered"); else the view turns as usual.
 function sectorShapeDown(ev) {
   if (!sectorShapesOn() || ev.button !== 0 || sec.busy) return;
   if (!mv.brush.mod) { scenNote(mv.words.no_mod, "error"); return; }
   const dot = sectorDotAt(ev);
   const p = dot ? null : hitGround(ev);
-  if (!dot && !(sec.pick === "new" && p && sec.view.next !== null)) return;
+  const box = p && ((sec.pick === "new" && sec.view.next !== null) || sec.pick === -1);
+  if (!dot && !box) return;
   ev.preventDefault();
   ev.stopPropagation();   // the view doesn't turn under the drag
   mv.gl.renderer.domElement.parentElement.setPointerCapture(ev.pointerId);
   if (dot) sec.drag = { key: dot.key, owners: dot.owners, moved: false, from: [dot.x, dot.y], around: sectorAround(dot.owners) };
-  else sec.newBox = { x0: Math.round(p.x / SCALE), y0: Math.round(p.z / SCALE), x1: Math.round(p.x / SCALE), y1: Math.round(p.z / SCALE) };
+  else {
+    const x = Math.round(p.x / SCALE), y = Math.round(p.z / SCALE);
+    sec.newBox = { x0: x, y0: y, x1: x, y1: y, none: sec.pick === -1 };
+  }
   sectorDrawLines();
 }
 
@@ -3318,8 +3324,8 @@ function sectorShapeUp() {
     const [x0, x1] = [Math.min(b.x0, b.x1), Math.max(b.x0, b.x1)], [y0, y1] = [Math.min(b.y0, b.y1), Math.max(b.y0, b.y1)];
     const [mx0, , , mx1] = mv.edit.bounds;
     if (x1 - x0 > (mx1 - mx0) / 200 && y1 - y0 > (mx1 - mx0) / 200) {   // (a click, not a box: nothing)
-      const n = sec.view.next;
-      sec.pick = n;   // the new sector stays picked
+      const n = b.none ? -1 : sec.view.next;
+      sec.pick = n;   // the new sector stays picked (No sector too: another box)
       sectorCall(() => mv.api.sector_area(mv.current, sec.file, [{ sector: n, points: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]] }]));
     }
   }

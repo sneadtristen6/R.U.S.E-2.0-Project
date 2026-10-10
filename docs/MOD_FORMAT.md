@@ -805,8 +805,8 @@ points = [[1200000.0, 900000.0], [1220000.0, 900000.0]]   # where each dab went
 - A dab is round, or a square with sides twice the radius long (`dx` and `dy` turn it, as in cover.toml). The ground
   is cut into the same grid as above (4 m on D-Day); a cell is painted when its middle is under a dab.
 - A sector's shape (the Studio's Sectors tool, Shapes: each sector's outline with its corners to drag, shared corners
-  moving both sectors; New sector drags a box; Delete sector) is a row of its own in the same list, in order with
-  the strokes:
+  moving both sectors; New sector drags a box; No sector drags a box of no sector; Delete sector) is a row of its own
+  in the same list, in order with the strokes:
 
   ```toml
   [[sectors.paint]]
@@ -819,9 +819,11 @@ points = [[1200000.0, 900000.0], [1220000.0, 900000.0]]   # where each dab went
 
   The sector becomes exactly the ground inside `area` (a cell is inside when its middle is, by the even-odd rule);
   the ground it had outside goes to what touches it (another sector, or no sector next to no-sector ground). No
-  corners (`area = []`): the sector is taken out, its ground to its neighbours. `within` limits the change to the
-  ground inside those polygons (a corner dragged: the two triangles it made with its neighbouring corners, before
-  and after), so the rest of the sector stays cell for cell as it was.
+  corners (`area = []`): the sector is taken out, all its ground to the sectors round it (none of it to no sector,
+  unless no sector is all that touches it). `sector = -1` with corners: the ground inside them goes to no sector,
+  whatever sectors had it, and nothing else changes; no sector is only ever where a mod puts it. `within` limits the
+  change to the ground inside those polygons (a corner dragged: the two triangles it made with its neighbouring
+  corners, before and after), so the rest of the sector stays cell for cell as it was.
 - Each sector's outline is traced round its painted ground and it gets its own zone map share, as above. A number
   the scenario already has keeps its name and its label (moved inside the sector when the paint left it outside); a
   new number gets a new sector, made like the scenario's own.
@@ -836,9 +838,11 @@ points = [[1200000.0, 900000.0], [1220000.0, 900000.0]]   # where each dab went
   hole can't be opened by any straight cut: the message names the sector.
 - A new Blank Terrain or Blank Ocean map starts with its scenario in `no_sectors`. Blank maps made before (Studio 0.9.8
   to 0.9.8.2) have `whole_map = true` and keep it.
-- Seen in the game (2026-10-09): 13 painted sectors on a blank map, a new number among them. Not tried in the game
-  yet: sectors' shapes on a shipped map's own sectors, the tidying (pieces given to a neighbour, the thin lines),
-  numbers with gaps, and a map with no sectors at all (the build won't make one).
+- Seen in the game (2026-10-09): 13 painted sectors on a blank map, a new number among them; a sector's shape
+  changed on D-Day (a corner moved, a new sector drawn as a box, a ruse card lighting it up on its own); a sector
+  taken out (numbers with a gap: loads, no crash). Not tried in the game yet: the tidying (pieces given to a
+  neighbour, the thin lines), ground in no sector in the middle of the land (what ruse cards do there), and a map
+  with no sectors at all (the build won't make one).
 
 A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
 Operations spawn theirs this way; skirmish maps spawn only their supply depots):

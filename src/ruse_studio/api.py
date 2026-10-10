@@ -3131,7 +3131,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def sector_area(self, pack: str, file: str, areas: list) -> dict:
         """One shape edit of scenario `file`'s sectors (the owner, 2026-10-09: sectors as shapes you drag, the brush
         kept for touch-ups): each of `areas` [{"sector", "points": [[x, y], ...]}] makes that sector exactly the
-        ground inside its corners (no points: it's taken out, its ground to its neighbours; rusemod.sectors.SectorArea),
+        ground inside its corners (no points: it's taken out, its ground to its neighbours; sector -1: a No sector box,
+        that ground in no sector; rusemod.sectors.SectorArea),
         saved together so Undo takes them back together. An area's "within" (polygons) limits the change to the
         ground inside them (a corner moved: the triangles round it). Returns sector_view with the outlines."""
         from dataclasses import replace as _replace

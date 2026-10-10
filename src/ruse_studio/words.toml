@@ -19527,6 +19527,18 @@ cz = "Guma: namalovaná zem vypadne ze všech sektorů."
 jpn = "消しゴム：塗った地面はどのセクターにも入らなくなります。"
 sc = "橡皮擦：绘制的地面不再属于任何扇区。"
 
+[tip_sectors_none_shapes]
+us = "Drag a box on the ground: the ground in it belongs to no sector. Its edges get corner dots like any border, so you can reshape it."
+fr = "Tracez un rectangle sur le terrain : le terrain dedans n'appartient à aucun secteur. Ses bords reçoivent des points de coin comme toute frontière, pour le remodeler."
+ger = "Ein Rechteck auf dem Boden ziehen: der Boden darin gehört zu keinem Sektor. Seine Ränder bekommen Eckpunkte wie jede Grenze, so lässt er sich umformen."
+ita = "Trascina un rettangolo sul terreno: il terreno al suo interno non appartiene a nessun settore. I suoi bordi hanno punti d'angolo come ogni confine, per rimodellarlo."
+spa = "Arrastra un rectángulo sobre el terreno: el terreno de dentro no pertenece a ningún sector. Sus bordes tienen puntos de esquina como cualquier frontera, para darle otra forma."
+pol = "Przeciągnij prostokąt na ziemi: ziemia w nim nie należy do żadnego sektora. Jego krawędzie dostają punkty narożne jak każda granica, więc można zmienić jego kształt."
+ru = "Растяните прямоугольник на земле: земля в нём не принадлежит ни одному сектору. Его края получают угловые точки, как любая граница, так что форму можно менять."
+cz = "Natáhněte obdélník na zemi: zem v něm nepatří žádnému sektoru. Jeho okraje dostanou rohové body jako každá hranice, takže jde přetvarovat."
+jpn = "地面に四角形をドラッグします。その中の地面はどのセクターにも属しません。縁には他の境界と同じく角の点が付くので、形を変えられます。"
+sc = "在地面上拖出一个方框：框内的地面不属于任何扇区。它的边和其他边界一样有角点，可以改变形状。"
+
 [sectors_round]
 us = "Round"
 fr = "Rond"
@@ -19780,16 +19792,16 @@ jpn = "セクター {n} に穴があります：セクターに穴は作れま�
 sc = "扇区 {n} 中间有洞：扇区不能有洞。请用扇区 {n} 填满这个洞，或把它打通到扇区边缘。"
 
 [sectors_untried]
-us = "Sectors made here show in the game (tried once, on a blank map)."
-fr = "Les secteurs faits ici s'affichent en jeu (essayé une fois, sur une carte vierge)."
-ger = "Hier gemachte Sektoren erscheinen im Spiel (einmal ausprobiert, auf einer leeren Karte)."
-ita = "I settori fatti qui compaiono in gioco (provato una volta, su una mappa vuota)."
-spa = "Los sectores hechos aquí aparecen en el juego (probado una vez, en un mapa en blanco)."
-pol = "Sektory zrobione tutaj pojawiają się w grze (sprawdzone raz, na pustej mapie)."
-ru = "Секторы, сделанные здесь, появляются в игре (проверено один раз, на пустой карте)."
-cz = "Sektory udělané zde se ve hře zobrazí (vyzkoušeno jednou, na prázdné mapě)."
-jpn = "ここで作ったセクターはゲームに表示されます（空白のマップで一度試しました）。"
-sc = "在这里做的扇区会在游戏中显示（在空白地图上试过一次）。"
+us = "Sectors made here show in the game (tried on a blank map and on D-Day). Not tried yet: what the game does on ground in no sector in the middle of the land."
+fr = "Les secteurs faits ici s'affichent en jeu (essayé sur une carte vierge et sur D-Day). Pas encore essayé : ce que fait le jeu sur un terrain sans secteur au milieu des terres."
+ger = "Hier gemachte Sektoren erscheinen im Spiel (ausprobiert auf einer leeren Karte und auf D-Day). Noch nicht ausprobiert: was das Spiel mit Boden ohne Sektor mitten im Land macht."
+ita = "I settori fatti qui compaiono in gioco (provato su una mappa vuota e su D-Day). Non ancora provato: cosa fa il gioco sul terreno senza settore in mezzo alla terraferma."
+spa = "Los sectores hechos aquí aparecen en el juego (probado en un mapa en blanco y en D-Day). Aún sin probar: qué hace el juego con el terreno sin sector en medio de la tierra."
+pol = "Sektory zrobione tutaj pojawiają się w grze (sprawdzone na pustej mapie i na D-Day). Jeszcze nie sprawdzone: co gra robi z ziemią bez sektora w środku lądu."
+ru = "Секторы, сделанные здесь, появляются в игре (проверено на пустой карте и на D-Day). Ещё не проверено: что игра делает с землёй без сектора посреди суши."
+cz = "Sektory udělané zde se ve hře zobrazí (vyzkoušeno na prázdné mapě a na D-Day). Zatím nevyzkoušeno: co hra dělá se zemí bez sektoru uprostřed pevniny."
+jpn = "ここで作ったセクターはゲームに表示されます（空白のマップとD-Dayで試しました）。まだ試していないこと：陸の真ん中のセクターなしの地面でゲームがどうなるか。"
+sc = "在这里做的扇区会在游戏中显示（在空白地图和D-Day上试过）。尚未试过：陆地中间无扇区的地面在游戏中会怎样。"
 
 [sectors_mode_shapes]
 us = "Shapes"
@@ -19840,16 +19852,16 @@ jpn = "ブラシで仕上げます。選んだセクターに地面を塗るか�
 sc = "用画笔修整：把地面画进所选扇区，或用“无扇区”把它移出所有扇区。"
 
 [sectors_shapes_help]
-us = "Drag a corner dot to move a border: the sectors that share it move together. Double-click a border to add a dot; right-click a dot to remove it. New sector: drag a box on the ground."
-fr = "Faites glisser un point de coin pour déplacer une frontière : les secteurs qui la partagent bougent ensemble. Double-cliquez sur une frontière pour ajouter un point ; clic droit sur un point pour l'enlever. Nouveau secteur : tracez un rectangle sur le terrain."
-ger = "Einen Eckpunkt ziehen, um eine Grenze zu verschieben: die Sektoren, die sie teilen, bewegen sich mit. Doppelklick auf eine Grenze fügt einen Punkt hinzu; Rechtsklick auf einen Punkt entfernt ihn. Neuer Sektor: ein Rechteck auf dem Boden ziehen."
-ita = "Trascina un punto d'angolo per spostare un confine: i settori che lo condividono si muovono insieme. Doppio clic su un confine aggiunge un punto; clic destro su un punto lo toglie. Nuovo settore: trascina un rettangolo sul terreno."
-spa = "Arrastra un punto de esquina para mover una frontera: los sectores que la comparten se mueven juntos. Doble clic en una frontera añade un punto; clic derecho en un punto lo quita. Nuevo sector: arrastra un rectángulo sobre el terreno."
-pol = "Przeciągnij punkt narożnika, aby przesunąć granicę: sektory, które ją dzielą, przesuwają się razem. Dwuklik na granicy dodaje punkt; prawy klik na punkcie go usuwa. Nowy sektor: przeciągnij prostokąt na ziemi."
-ru = "Перетащите угловую точку, чтобы сдвинуть границу: секторы с общей границей двигаются вместе. Двойной щелчок по границе добавляет точку; правый щелчок по точке убирает её. Новый сектор: растяните прямоугольник на земле."
-cz = "Táhněte rohový bod, abyste posunuli hranici: sektory, které ji sdílejí, se pohnou spolu. Dvojklik na hranici přidá bod; pravý klik na bod ho odebere. Nový sektor: natáhněte obdélník na zemi."
-jpn = "角の点をドラッグして境界を動かします。境界を共有するセクターは一緒に動きます。境界をダブルクリックすると点が増え、点を右クリックすると消えます。新しいセクター：地面に四角形をドラッグします。"
-sc = "拖动角点来移动边界：共用这条边界的扇区会一起移动。双击边界可添加一个点；右键点击一个点可删除它。新扇区：在地面上拖出一个方框。"
+us = "Drag a corner dot to move a border: the sectors that share it move together. Double-click a border to add a dot; right-click a dot to remove it. New sector: drag a box on the ground. No sector: drag a box where no sector should be."
+fr = "Faites glisser un point de coin pour déplacer une frontière : les secteurs qui la partagent bougent ensemble. Double-cliquez sur une frontière pour ajouter un point ; clic droit sur un point pour l'enlever. Nouveau secteur : tracez un rectangle sur le terrain. Aucun secteur : tracez un rectangle là où il ne doit y avoir aucun secteur."
+ger = "Einen Eckpunkt ziehen, um eine Grenze zu verschieben: die Sektoren, die sie teilen, bewegen sich mit. Doppelklick auf eine Grenze fügt einen Punkt hinzu; Rechtsklick auf einen Punkt entfernt ihn. Neuer Sektor: ein Rechteck auf dem Boden ziehen. Kein Sektor: ein Rechteck ziehen, wo kein Sektor sein soll."
+ita = "Trascina un punto d'angolo per spostare un confine: i settori che lo condividono si muovono insieme. Doppio clic su un confine aggiunge un punto; clic destro su un punto lo toglie. Nuovo settore: trascina un rettangolo sul terreno. Nessun settore: trascina un rettangolo dove non deve esserci nessun settore."
+spa = "Arrastra un punto de esquina para mover una frontera: los sectores que la comparten se mueven juntos. Doble clic en una frontera añade un punto; clic derecho en un punto lo quita. Nuevo sector: arrastra un rectángulo sobre el terreno. Ningún sector: arrastra un rectángulo donde no debe haber ningún sector."
+pol = "Przeciągnij punkt narożnika, aby przesunąć granicę: sektory, które ją dzielą, przesuwają się razem. Dwuklik na granicy dodaje punkt; prawy klik na punkcie go usuwa. Nowy sektor: przeciągnij prostokąt na ziemi. Bez sektora: przeciągnij prostokąt tam, gdzie ma nie być sektora."
+ru = "Перетащите угловую точку, чтобы сдвинуть границу: секторы с общей границей двигаются вместе. Двойной щелчок по границе добавляет точку; правый щелчок по точке убирает её. Новый сектор: растяните прямоугольник на земле. Без сектора: растяните прямоугольник там, где сектора быть не должно."
+cz = "Táhněte rohový bod, abyste posunuli hranici: sektory, které ji sdílejí, se pohnou spolu. Dvojklik na hranici přidá bod; pravý klik na bod ho odebere. Nový sektor: natáhněte obdélník na zemi. Žádný sektor: natáhněte obdélník tam, kde nemá být žádný sektor."
+jpn = "角の点をドラッグして境界を動かします。境界を共有するセクターは一緒に動きます。境界をダブルクリックすると点が増え、点を右クリックすると消えます。新しいセクター：地面に四角形をドラッグします。セクターなし：セクターを置かない場所に四角形をドラッグします。"
+sc = "拖动角点来移动边界：共用这条边界的扇区会一起移动。双击边界可添加一个点；右键点击一个点可删除它。新扇区：在地面上拖出一个方框。无扇区：在不需要扇区的地方拖出一个方框。"
 
 [sectors_delete]
 us = "Delete sector"
