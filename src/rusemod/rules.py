@@ -89,6 +89,14 @@ RULES: dict[str, Rule] = {
                 "are in the project's private notes). Test 5, the same units with those links deleted, loaded at once "
                 "(owner: 'load it in instantly'); test 6, era units researched from their own army's units and "
                 "chained (T-80 -> T-90M), loaded and researched as set"),
+    "unit-research-shown-parent": Rule(
+        "A unit shown in its build menu at a battle date where the unit it's researched from is hidden (ShowInMenu "
+        "0): the game stops when that build menu opens.",
+        "game", "2026-10-10 more-custom test: Italy's units hidden, Chinese era units researched from them; the game "
+                "stopped as soon as Italy's buildings were built (crash dump: headup/menu.py add_bouton_techno, "
+                "KeyError on the hidden parent's button). The owner the same day: \"don't allow that to happen. There "
+                "shouldn't be a unit hidden behind a research one shown in the menu\"; with the links taken out, the "
+                "next test ran"),
     "unit-five-dates": Rule(
         "ProductionPrice and ShowInMenu have 5 items, one per battle date; fewer makes the unit free or hidden.",
         "studied", "partly: the game's scripts make a missing price 0 and a missing menu item hidden, with the length "

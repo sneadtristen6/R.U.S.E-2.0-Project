@@ -207,6 +207,25 @@ class Upgrades(unittest.TestCase):
         self.assertFalse(self.api.upgrade(y)["parent_gone"])
         self.assertEqual([p["unit"] for p in self.api.check_mod()["problems"] if p.get("unit")], [C])
 
+    def test_a_shown_unit_researched_from_a_hidden_one_is_in_the_check_bar(self):
+        """Rule unit-research-shown-parent (the owner, 2026-10-10: "don't allow that to happen"): the build refuses a
+        unit shown in its menu at a battle date where the unit it's researched from is hidden, and the check bar says
+        so before Test in game, naming both."""
+        self.api.new_mod("Chains")
+        folder = self.home / "mods" / "chains"
+        edits = ModEdits(folder)
+        edits.set(B, "ShowInMenu", [1, 1, 1, 1, 1])
+        edits.set(A, "ShowInMenu", [1, 1, 0, 0, 0])
+        problems = [p for p in self.api.check_mod()["problems"] if p.get("unit")]
+        self.assertEqual([p["unit"] for p in problems], [B])
+        self.assertIn("is shown in its build menu but researched from", problems[0]["problem"])
+        self.assertIn("the build stops on it", problems[0]["problem"])
+        ModEdits(folder).set(B, "ShowInMenu", [1, 1, 0, 0, 0])    # hidden where its parent is: fine
+        self.assertEqual([p for p in self.api.check_mod()["problems"] if p.get("unit")], [])
+        ModEdits(folder).set(B, "ShowInMenu", [1, 1, 1, 1, 1])
+        self.api.set_upgrade(B, None)                                # a unit of its own: fine
+        self.assertEqual([p for p in self.api.check_mod()["problems"] if p.get("unit")], [])
+
     def test_taking_out_a_parent_refused(self):
         x, y = self.chain()
         self.api.set_pref("research_gone", "refuse")

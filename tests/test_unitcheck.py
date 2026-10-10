@@ -174,6 +174,29 @@ class ResearchParents(unittest.TestCase):
         self.assertEqual(len(said(r)), 1)
         self.assertIn(f"{self.IS2}: it's researched from {self.KV1} (UpgradeRequire), which is UK's unit", said(r)[0])
 
+    def test_a_shown_unit_researched_from_a_hidden_one(self):
+        """The 2026-10-10 crash: Italy's units hidden (ShowInMenu 0), units still shown researched from them; the
+        game's build menu stops on the missing parent button. The owner: "don't allow that to happen". Refused at the
+        dates it's shown and the parent isn't; fine when both are hidden, or the link is taken out."""
+        hide = Op("set", self.KV1, "ShowInMenu", nums([0, 0, 1, 1, 1], "bool"))
+        r = run(hide, base=self.base())
+        self.assertEqual(len(said(r)), 1)
+        self.assertIn(f"{self.IS2}: it's shown in its build menu at battle date 1, 2, but {self.KV1}, the unit it's "
+                      f"researched from (UpgradeRequire), is hidden there (ShowInMenu 0): the game stops when that "
+                      f"build menu opens", said(r)[0])
+        both = Op("set", self.IS2, "ShowInMenu", nums([0, 0, 1, 1, 1], "bool"))
+        self.assertEqual(said(run(hide, both, base=self.base())), [])
+        own = [Op("delprop", self.IS2, "UpgradeRequire"), Op("delprop", self.IS2, "IsUpgrade")]
+        self.assertEqual(said(run(hide, *own, base=self.base())), [])
+        r = run(clone(source=self.IS2), Op("set", self.KV1, "ShowInMenu", nums([0] * 5, "bool")), base=self.base())
+        self.assertEqual(sorted(m.split(": it's")[0].rsplit(" ", 1)[-1] for m in said(r)), sorted([NEW, self.IS2]))
+
+    def test_what_the_game_already_hides_isn_t_the_mods_doing(self):
+        base = self.base()
+        base.objects[self.KV1].props["ShowInMenu"] = nums([0] * 5, "bool")
+        self.assertEqual(said(run(Op("set", self.IS2, "SeuilMort", num(5)), base=base)), [])
+        self.assertEqual(said(run(clone(source=self.IS2), base=base)), [])  # a copy of it as the game had it
+
 
 class Lists(unittest.TestCase):
     """ProductionPrice and ShowInMenu have one item per battle date: 5."""

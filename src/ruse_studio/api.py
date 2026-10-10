@@ -4055,7 +4055,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             return []                  # the file check says what's wrong with it
         links = [(t, str(e.value)) for (t, path, how), e in (edits.edits.items() if edits else ())
                  if path == UPGRADE and how == "" and isinstance(e.value, Link)]
-        if not links:
+        shows = {t for (t, path, how), _e in (edits.edits.items() if edits else ()) if path == "ShowInMenu" and how == ""}
+        if not links and not shows:
             return []
         try:
             ix = self._open()
@@ -4065,13 +4066,41 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             units = {u["address"] for u in self._all_units(ix)}
             lost = [t for t, parent in links if parent not in units and parent not in edits.new_units
                     and (t in units or t in edits.new_units)]
-            names = self._names(ix, lost, "us", edits.new_units)
+            behind = self._shown_behind_hidden(ix, edits, units, {t for t, _p in links} | shows)
+            names = self._names(ix, lost + [a for pair in behind for a in pair], "us", edits.new_units)
         finally:
             ix.close()
         return [{"file": None, "set_aside": False, "unit": t,    # the check bar opens its page
                  "problem": f"{names.get(t, _tail(t))} is researched from a unit that's no longer in the mod, so the "
                             f"build stops on it. Pick another unit to research it from "
-                            f"in its Upgrade and research box, or none."} for t in lost]
+                            f"in its Upgrade and research box, or none."} for t in lost] + [
+            {"file": None, "set_aside": False, "unit": child,
+             # rule: unit-research-shown-parent
+             "problem": f"{names.get(child, _tail(child))} is shown in its build menu but researched from "
+                        f"{names.get(parent, _tail(parent))}, which is hidden there, so the build stops on it (the "
+                        f"game stops when that build menu opens). Show {names.get(parent, _tail(parent))} again, or "
+                        f"pick another unit to research it from in its Upgrade and research box, or none."}
+            for child, parent in behind]
+
+    def _shown_behind_hidden(self, ix: Index, edits: ModEdits, units: set, touched: set) -> list[tuple[str, str]]:
+        """[(unit, the unit it's researched from)] as the current mod has them, where the unit is shown in its build
+        menu at a battle date the other is hidden at (rule unit-research-shown-parent; the build refuses it). The
+        game's own units never are (checked 2026-10-10), so only links the mod made or a unit whose ShowInMenu it
+        changed (`touched`) are looked at."""
+        def shown(a):
+            mine = edits.get(a, "ShowInMenu")
+            if isinstance(mine, list):
+                return mine
+            real = self._resolve(edits, a)[0]
+            return (_props(ix.show(real)).get("ShowInMenu") or {}).get("numbers") if real in units else None
+        out = []
+        for child, parent in sorted(self._upgrade_links(ix, edits).items()):
+            if child not in touched and parent not in touched and child not in edits.new_units:
+                continue
+            mine, theirs = shown(child), shown(parent)
+            if mine and theirs and any(s and i < len(theirs) and theirs[i] == 0 for i, s in enumerate(mine)):
+                out.append((child, parent))
+        return out
 
     def rename_map_folder(self, name: str, to: str) -> dict:
         """Rename the current mod's maps/<name> to maps/<to> (the fix the mod check offers). Refused when maps/<to>
