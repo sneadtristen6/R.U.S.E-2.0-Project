@@ -1,6 +1,13 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.3:** kopie s módy se ukládají tam, kam řeknete.
+
+- **Kam se ukládají kopie s módy**, v Nastavení: vyberte složku, ve které se sestavuje kopie hry s módy, nebo se vraťte
+  na doporučené místo, `RUSE-Instances` na disku hry (tam kopie sdílí soubory hry a je hotová za pár sekund; na jiném
+  disku je to úplná kopie hry, pomalejší a větší). Čistá záloha hry jde vedle. Další Hrát sestaví na novém místě;
+  starou složku lze smazat ručně. Studio používá stejnou složku.
+
 **0.4.8.2:** otevře se ve vašem webovém prohlížeči, když jeho vlastní okno nemůže, a spouští mody ze Studia 0.9.8.2.
 
 - **Linux a Steam Deck (přes Proton):** Launcher se otevře ve vašem webovém prohlížeči, když jeho vlastní okno

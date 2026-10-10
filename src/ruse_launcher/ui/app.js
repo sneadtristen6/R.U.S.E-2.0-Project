@@ -170,6 +170,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     text($("set-game-path"), s.found ? fill(w.set_game_path, { path: s.game_dir || "" }) : (s.message || w.set_game_none));
     text($("set-game-change"), w.set_game_change);
   } },
+  { id: "copies", render() { renderCopies(); } },  // loaded when Settings opens (loadCopies)
   { id: "backup", render() { renderBackup(); } },  // loaded when Settings opens (loadBackup)
   { id: "updates", render() {
     const w = state.words, u = state.update || {};
@@ -178,6 +179,54 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     text($("set-updates-check"), w.set_updates_check);
   } },
 ];
+
+// --- where modded copies go (rusemod.play.instances_dir through api.copies_folder): the folder chosen here, else
+// $RUSE_INSTANCES, else the recommended place, RUSE-Instances on the game's drive (the owner, 2026-10-09: "user should
+// be able to choose where files go"). A change only says where the next Play builds: the old folder stays until the
+// player deletes it by hand, and the game's clean backup goes beside the new folder ---
+function copiesState() {
+  return state.copies || (state.copies = { view: null, note: "", noteKind: "" });
+}
+
+async function loadCopies() {
+  const c = copiesState();
+  try { c.view = await api().copies_folder(); } catch (err) { Object.assign(c, { note: errorText(err), noteKind: "bad" }); }
+  if (state.settings) renderCopies();
+}
+
+function renderCopies() {
+  const w = state.words, c = copiesState(), v = c.view || {}, how = v.how || "";
+  text($("set-copies-help"), w.set_copies_help);
+  // the folder and why it's that one: chosen here, $RUSE_INSTANCES, the recommended place, or given at the start
+  text($("set-copies-path"), !v.path ? w.set_copies_none
+    : how === "fixed" ? fill(w.set_copies_fixed, { path: v.path })
+      : fill(w["doc_copies_" + how] || w.doc_copies_recommended, { path: v.path }));
+  text($("set-copies-drive"), v.other_drive  // on another drive: a full copy of the game, slower and bigger
+    ? fill(w.doc_copies_other_drive, { path: v.path, drive: v.drive || "", recommended: v.recommended || "" }) : "");
+  $("set-copies-drive").classList.toggle("hidden", !v.other_drive);
+  const fixed = how === "fixed", change = $("set-copies-change"), back = $("set-copies-default");
+  text(change, w.set_copies_change);
+  text(back, w.set_copies_default);
+  change.disabled = fixed;
+  change.title = fixed ? w.tip_copies_fixed : w.tip_copies_change;  // a locked button says why
+  back.disabled = fixed || how === "recommended";
+  back.title = fixed ? w.tip_copies_fixed : how === "recommended" ? w.tip_copies_default_off : w.tip_copies_default;
+  const note = $("set-copies-note");
+  text(note, c.note);
+  note.className = "message" + (c.note && c.noteKind ? " " + c.noteKind : "");
+}
+
+async function changeCopies(choose) {
+  const w = state.words, c = copiesState(), was = c.view && c.view.path;
+  Object.assign(c, { note: "", noteKind: "" });
+  try {
+    c.view = await (choose ? api().choose_copies_folder() : api().use_recommended_copies());
+    if (c.view.message) Object.assign(c, { note: c.view.message, noteKind: "bad" });
+    else if (c.view.path && c.view.path !== was) Object.assign(c, { note: fill(w.set_copies_changed, { path: c.view.path }), noteKind: "good" });
+  } catch (err) { Object.assign(c, { note: errorText(err), noteKind: "bad" }); }
+  renderCopies();
+  loadBackup();  // the clean backup goes beside the copies
+}
 
 // --- the clean game backup (rusemod.backup through api.backup_*): made while the game is clean, then a check of the
 // game's files against it, and a restore of what other mod managers or hand edits changed. The only way the launcher
@@ -1364,7 +1413,9 @@ async function start() {
   $("lang-open").addEventListener("click", () => openLangPick(false).catch(problem));
   $("lang-pick-close").addEventListener("click", closeLangPick);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && langPick && !langPick.first) closeLangPick(); });
-  $("settings-open").addEventListener("click", () => { state.settings = true; render(); loadBackup(); });
+  $("settings-open").addEventListener("click", () => { state.settings = true; render(); loadCopies(); loadBackup(); });
+  $("set-copies-change").addEventListener("click", () => changeCopies(true));
+  $("set-copies-default").addEventListener("click", () => changeCopies(false));
   $("backup-make").addEventListener("click", makeBackup);
   $("backup-check").addEventListener("click", checkBackup);
   $("backup-restore").addEventListener("click", restoreBackup);
@@ -1372,7 +1423,8 @@ async function start() {
   $("settings-back").addEventListener("click", () => { state.settings = false; render(); });
   $("set-game-change").addEventListener("click", async () => {
     try { renderStatus(await api().choose_game_folder()); await refresh(); } catch (err) { problem(err); }
-    if (state.settings) { renderSettings(); loadBackup(); }  // another game folder: its own backups
+    if (state.settings) { renderSettings(); loadCopies(); loadBackup(); }  // another game folder: its own recommended
+    // place for modded copies, its own backups
   });
   $("set-updates-check").addEventListener("click", async () => {
     state.update = { checking: true };

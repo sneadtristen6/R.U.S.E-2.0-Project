@@ -265,6 +265,8 @@ class Engine:
         self._had_salvos = {(top, path, why) for top, path, _named, why in unitcheck.salvo_problems(self.game)}
         self._had_research = set(unitcheck.research_parent_problems(
             self.game, [n for n, o in self.game.objects.items() if unitcheck.is_unit(o)]).items())
+        self._had_hidden_parent = set(unitcheck.research_hidden_parent_problems(
+            self.game, [n for n, o in self.game.objects.items() if unitcheck.is_unit(o)]).items())
         self._done: list = []  # (owner, path, op) of every property operation, in the order they ran
         self._kinds: dict | None = None  # (class, property) -> the number type the game gives it (_kind_in_class)
 
@@ -887,6 +889,13 @@ class Engine:
             made = self.created.get(name)
             if (made.source if made and made.kind == "clone" else name, why) not in self._had_research:
                 # rule: unit-research-parent
+                found.append((name, uc.UPGRADE, "error", why))
+        # a unit shown where the unit it's researched from is hidden: hiding the parent (a nation's units all hidden)
+        # is as much the mods' doing as a new link, so every unit is asked
+        for name, why in uc.research_hidden_parent_problems(self.game, everyone).items():
+            made = self.created.get(name)
+            if (made.source if made and made.kind == "clone" else name, why) not in self._had_hidden_parent:
+                # rule: unit-research-shown-parent
                 found.append((name, uc.UPGRADE, "error", why))
         for name, prop, level, why in found:
             op = self._blame(lambda o, p, n=name, r=prop: o == n and _root(p) == r) or self.created.get(name) \

@@ -31,6 +31,7 @@ ruse2-core/
     game/<pack>/mods/<mod id>/<path>  a file added to a game pack (§7)
   maps/<MapId>/            map sources (see §8)
   menus.toml               where missions show in their menus (see §8)
+  depots.toml              every supply depot's trucks, on every map or the ones named (see §8)
   scripts/<map>/<part>/    the game's mission scripts it changes, as the Studio saves them (see §9)
   README.md, LICENSE, CHANGELOG.md
 ```
@@ -915,7 +916,7 @@ file = "leveldesign_normal.scenario"   # which of the map's scenarios, as for [[
 item = 41                              # the item's number in that file, as for [[move]]
 kind = "Spawn"                         # Spawn, CircularZone, RectangleZone, Name, LabelVille or LabelMontagne
 camp = 2                               # a spawn: who gets it, -1 neutral or one of the scenario's camps (0 up)
-trucks = 40                            # a supply depot: its trucks, 0 to 1000 (the shipped depots have 15 to 72)
+trucks = 40                            # a supply depot: its trucks, 0 to 2,147,483,647 (the shipped have 15 to 72)
 # radius = 75000.0                     # a circle zone: its radius, in map units
 # width = 120000.0                     # a rectangle zone: its width and height, in map units
 # height = 80000.0
@@ -930,6 +931,30 @@ trucks = 40                            # a supply depot: its trucks, 0 to 1000 (
   value an item hasn't got is refused. A name is one line of up to 200 letters a scenario file keeps in one byte each.
 - `kind` guards as it does for a move. A skirmish scenario's items stay neutral: a camp other than -1 there is
   refused, as it is for a new spawn.
+- A depot's trucks go up to what its 32-bit whole number holds (2,147,483,647); the Studio's old top of 1000 was its
+  own, not the game's. A depot holds about trucks x trucks a convoy x money a truck (the last two are economy values,
+  the Studio's Economy tab; LittleGroove's measure in the game). More than the shipped 72 isn't tried in the game yet.
+
+### Every depot on every map, or on one: `depots.toml` (built: `rusemod.scenario.with_depots`; not tried in the game yet)
+
+A file at the mod's top (beside `mod.toml`; the Studio's Economy tab writes it). Each table gives every supply depot
+of every scenario of a map its trucks: `[all]` for every map, `[maps.<map pack>]` for one, with `trucks` (each
+depot's) or `times` (each depot's own trucks times this; a shipped depot without trucks has none, a new depot without
+`trucks` counts as 25):
+
+```toml
+[all]
+times = 2.0          # every depot on every map: twice its trucks
+
+[maps.M04_Cotentin]
+trucks = 60          # every depot on D-Day: 60 trucks (a map named wins over [all])
+```
+
+- The build writes each depot's trucks as if the mod set them in `items.toml`, before the mod's own changes: a depot
+  the mod gives trucks itself (`items.toml`, or a new depot's `trucks`) keeps them.
+- A later mod's table for a map, or for all maps, replaces an earlier one's.
+- How often trucks leave a depot (`TempsENtreDeuxConvois`) is one economy value the game uses on every map: it can't
+  be set per map.
 - Zones and names are used by the scenario's mission script (§9): a size changed here changes where things happen,
   and a name changed here is lost to a script that still uses the old one.
 - A town's or hill's name on the map is one of the game's texts, in its `ville_multi` table: the label's text names

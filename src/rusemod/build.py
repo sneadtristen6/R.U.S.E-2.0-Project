@@ -137,6 +137,11 @@ def load_mod(path) -> tuple[ModInfo, list]:
             info.menu_order = menu_order_of(path)  # menus.toml: missions' places in the menus
         except MenuOrderError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
+        from .scenario import ScenarioError, read_depots
+        try:
+            info.depots = read_depots(path)  # depots.toml: every depot's trucks, on every map or the ones named
+        except ScenarioError as exc:
+            raise BuildError(f"{mod_id}: {exc}") from None
         from .unitlook import mod_cards, mod_textures
         from .unitmodel import mod_models
         info.textures = mod_textures(path)
@@ -1481,6 +1486,23 @@ def scenario_edits(order: list[str], mods: list, what: str = "scenario") -> dict
     return out
 
 
+def depot_rules(order: list[str], mods: list) -> tuple[dict, list[str]]:
+    """Every mod's depots.toml together ({"all" or a map pack: scenario.DepotRule}), a later mod's rule for a map or
+    for all maps replacing an earlier one's, and the mods that have one, in load order."""
+    by_id = {m.id: m for m, _ in mods}
+    rules: dict = {}
+    ids: list[str] = []
+    for mod_id in order:
+        m = by_id.get(mod_id)
+        if m is None or not getattr(m, "depots", None):
+            continue
+        for k, r in m.depots.items():
+            rules.pop(next((x for x in rules if x.lower() == k.lower()), k), None)
+            rules[k] = r
+        ids.append(mod_id)
+    return rules, ids
+
+
 def draw_new_roads(read_map, path_of, lines: list, shaded=None, cache=None, shipped=None) -> tuple[dict, list[str]]:
     """({member: new bytes}, notes): new roads (map points, in order) written into every road file the map's own roads
     are in: painted into the ground's tiles as the map's own roads are across (rusemod.groundpaint.road_profile: what
@@ -2520,7 +2542,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             who.extend(i for i in ids if i not in who)
         players = scenario_edits(result.order, mods, "players")
         roads_out = {name: ids for name, (what, ids) in take_outs.items() if what.roads}
-        if moves or paints or blocks or new_roads or bridge_spans or players or data_new or roads_out:
+        depots, depot_ids = depot_rules(result.order, mods)
+        if moves or paints or blocks or new_roads or bridge_spans or players or data_new or roads_out or depots:
             from .bridges import BridgeError, apply_spans
             from .cover import CoverError, apply_paints
             from .nav import NavError, closing
@@ -2583,6 +2606,17 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         except (OSError, TypeError, KeyError, ValueError, struct.error, zlib.error):
                             missions_read[key] = []  # no script to read: the warning falls back to the spawns
                     return missions_read[key]
+                if depots:  # depots.toml: every depot's trucks on the maps named or on every map, written as each
+                    # depot's own trucks changed (before the mods' own changes, which win: scenario.with_depots)
+                    from .scenario import ALL_MAPS, depot_rule, map_packs_of, of_map, with_depots
+                    packs = map_packs_of(data_arc) if ALL_MAPS in depots else []
+                    for pack in {p.lower(): p for p in [*packs, *(k for k in depots if k != ALL_MAPS)]}.values():
+                        key = next((k for k in moves if k.lower() == pack.lower()), pack)
+                        rows, ids = moves.get(key, ([], []))
+                        shipped = of_map(data_arc, key)
+                        new_rows = with_depots(rows, depot_rule(depots, key), shipped) if shipped else rows
+                        if new_rows != rows:
+                            moves[key] = (new_rows, ids + [i for i in depot_ids if i not in ids])
                 from .newmap import is_blank
                 for name, (spec, mod_id) in making.items():  # a blank map's HQs: every seat's put by the modder
                     if not is_blank(spec):

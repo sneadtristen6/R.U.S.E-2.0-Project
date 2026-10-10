@@ -139,6 +139,21 @@ class Upgrades(unittest.TestCase):
         self.api.set_upgrade(B, A)  # the game's own parent again: no change left
         self.assertNotIn("patch", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
 
+    def test_a_hidden_unit_is_no_research_parent(self):
+        """A unit the mod hides from every battle date's menu (ShowInMenu all 0) isn't offered to research from: the
+        game's menu looks up a shown upgrade's parent by its button and stops on one it hasn't got (headup/menu.py
+        add_bouton_techno, KeyError; seen in the game 2026-10-10, Italy's units hidden, China's researched from them)."""
+        self.api.new_mod("Hidden")
+        edits = ModEdits(self.home / "mods" / "hidden")
+        edits.set(C, "ShowInMenu", [0, 0, 0, 0, 0])
+        self.assertEqual(self.names(self.api.upgrade(B)["choices"]), [A])
+        edits.set(C, "ShowInMenu", [0, 1, 0, 0, 0])  # shown at one battle date only
+        self.assertEqual(self.names(self.api.upgrade(B)["choices"]), [A, C])  # (B's own dates not said: offered)
+        edits.set(B, "ShowInMenu", [1, 1, 1, 1, 1])  # B shown at all five: not where C is missing
+        self.assertEqual(self.names(self.api.upgrade(B)["choices"]), [A])
+        edits.set(B, "ShowInMenu", [0, 1, 0, 0, 0])  # B shown only where C is: C is offered again
+        self.assertEqual(self.names(self.api.upgrade(B)["choices"]), [A, C])
+
     def test_a_new_unit_in_another_menu_leaves_its_parent(self):
         """A new unit put in a menu its source's research parent isn't in becomes a unit of its own: one researched
         from another nation's unit never lets a match finish loading (2026-10-09: a T-80 from the Soviet IS-2, researched from the KV-1, in the USA's menu hung the loading
@@ -191,6 +206,25 @@ class Upgrades(unittest.TestCase):
         self.api.set_upgrade(y, A)                                                # mended in its Upgrade box
         self.assertFalse(self.api.upgrade(y)["parent_gone"])
         self.assertEqual([p["unit"] for p in self.api.check_mod()["problems"] if p.get("unit")], [C])
+
+    def test_a_shown_unit_researched_from_a_hidden_one_is_in_the_check_bar(self):
+        """Rule unit-research-shown-parent (the owner, 2026-10-10: "don't allow that to happen"): the build refuses a
+        unit shown in its menu at a battle date where the unit it's researched from is hidden, and the check bar says
+        so before Test in game, naming both."""
+        self.api.new_mod("Chains")
+        folder = self.home / "mods" / "chains"
+        edits = ModEdits(folder)
+        edits.set(B, "ShowInMenu", [1, 1, 1, 1, 1])
+        edits.set(A, "ShowInMenu", [1, 1, 0, 0, 0])
+        problems = [p for p in self.api.check_mod()["problems"] if p.get("unit")]
+        self.assertEqual([p["unit"] for p in problems], [B])
+        self.assertIn("is shown in its build menu but researched from", problems[0]["problem"])
+        self.assertIn("the build stops on it", problems[0]["problem"])
+        ModEdits(folder).set(B, "ShowInMenu", [1, 1, 0, 0, 0])    # hidden where its parent is: fine
+        self.assertEqual([p for p in self.api.check_mod()["problems"] if p.get("unit")], [])
+        ModEdits(folder).set(B, "ShowInMenu", [1, 1, 1, 1, 1])
+        self.api.set_upgrade(B, None)                                # a unit of its own: fine
+        self.assertEqual([p for p in self.api.check_mod()["problems"] if p.get("unit")], [])
 
     def test_taking_out_a_parent_refused(self):
         x, y = self.chain()

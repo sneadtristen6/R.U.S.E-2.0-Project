@@ -67,7 +67,7 @@ seats (tried 2026-10-02).
 ## See your units in the game
 
 1. Click **Test in game** (at the top of the Studio). The Studio builds your mod into the modded copy of the game
-   (`RUSE-Instances\Modded game`, next to your game: one for the whole PC, the Launcher's too) and starts R.U.S.E. from it. The message at the bottom
+   (`RUSE-Instances\Modded game` on your game's drive, or the folder you chose in Settings: one for the whole PC, the Launcher's too) and starts R.U.S.E. from it. The message at the bottom
    says what to open, for example **BATTLES > D-Day**.
 2. In the game's main menu, click that button (**BATTLES** for a battle), then pick the map (**D-Day**).
 3. Set up the game as usual and start. Your units appear where you placed them.

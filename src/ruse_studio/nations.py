@@ -165,3 +165,170 @@ class NationCalls:
                 game = {w["lang"]: w["game"] or "" for w in self.value_words(key)["words"]}
                 self.value_words_set(key, game)  # the game's words in every language: the row is taken out
         return self.nations_view()
+
+    # --- a nation's units, all at once (the owner, 2026-10-10: "say someone wanted to take out Italy and put China in,
+    # how are they gonna remove all of Italy's units and then put in Chinese units? ... should we make that more easy
+    # for the average person"): its own units hidden from its build menus in one go, or shown again, and its menus
+    # filled from an era's units of another nation (his pick: one list, every unit ticked with its building picked;
+    # the modder unticks any, then Add). Hiding sets a unit's ShowInMenu (one per battle date) to 0, the value the
+    # game reads for its build menus (MOD_FORMAT §5: hiding is the safer way than deleting; not tried in the game
+    # yet). Its buildings stay: HQ, factories, depots. Missions that spawn its units by script still spawn them ---
+    SHOW_IN_MENU = "ShowInMenu"
+
+    def _nation_own_units(self, ix, n: int) -> list[dict]:
+        """Nation `n`'s game units in a build menu (its buildings left out), as the index lists them."""
+        from .api import KIND_OF
+        return [u for u in self._all_units(ix) if u.get("nation") == n and u.get("factory") is not None
+                and KIND_OF.get(u["class"]) not in (None, "buildings")]
+
+    def nation_units(self, nation: int, lang: str = "base") -> dict:
+        """Nation `nation`'s units for the Nations tab: {"units": [{address, name, kind, factory, hidden}] (its own
+        game units in a build menu, by menu and name; `hidden`: the mod takes it out of every battle date's menu),
+        "hidden": how many, "can": whether a mod is picked, "eras": [{era, nations: the nations it has units of}] of
+        the eras downloaded (the Units tab downloads them), "empty": the build menus (factory numbers) of its own
+        buildings left with nothing to build (its own units there all hidden and none of the mod's new ones put in:
+        the game then shows the building's construction menu when it's picked, seen 2026-10-10 with Italy's
+        artillery and anti-tank bases)}."""
+        from .api import KIND_OF, EditsFileError
+        from .era_units import ERAS
+        n = nations.check(nation)
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        ix = self._open()
+        try:
+            rows = self._nation_own_units(ix, n)
+            names = self._names(ix, [u["address"] for u in rows], lang)
+            every = {u["address"]: u for u in self._all_units(ix)}
+            empty = [f for f in sorted({u["factory"] for u in rows})
+                     if not self._menu_units(edits, every, (n, f), ix)] if edits is not None else []
+        finally:
+            ix.close()
+        out = []
+        for u in rows:
+            mine = edits.get(u["address"], self.SHOW_IN_MENU) if edits is not None else None
+            hidden = isinstance(mine, list) and bool(mine) and not any(mine)
+            out.append({"address": u["address"], "name": names.get(u["address"], u["address"]),
+                        "kind": KIND_OF[u["class"]], "factory": u["factory"], "hidden": hidden})
+        out.sort(key=lambda u: (u["factory"], u["name"].casefold()))
+        _folder, lib = self._era_library()
+        eras = []
+        for era in ERAS:
+            have = sorted({u["nation"] for u in lib["units"] if u["era"] == era})
+            if have:
+                eras.append({"era": era, "nations": have})
+        return {"nation": n, "units": out, "hidden": sum(u["hidden"] for u in out), "can": edits is not None,
+                "eras": eras, "empty": empty}
+
+    def nation_units_hide(self, nation: int, hide: bool = True, lang: str = "base", factory: int | None = None) -> dict:
+        """Take every one of nation `nation`'s own units out of its build menus in the current mod (`hide`), or give
+        them the game's menus back (each unit's ShowInMenu change taken out); with `factory`, only those of that
+        build menu (an empty building's "show its own units here again"). Returns nation_units(), with "unlinked":
+        the names (in `lang`) of the units made buyable from the start because their research parent is hidden
+        now."""
+        from rusemod import schema
+        from .api import ModEdits, _can_edit, _props
+        n = nations.check(nation)
+        if factory is not None and (isinstance(factory, bool) or not isinstance(factory, int)):
+            raise nations.NationError(f"{factory}: a build menu is a number")
+        edits = self._edits()
+        if edits is None:
+            raise nations.NationError("Pick or make a mod first: the change is saved in it.")
+        ix = self._open()
+        try:
+            lists = {u["address"]: _props(ix.show(u["address"])).get(self.SHOW_IN_MENU)
+                     for u in self._nation_own_units(ix, n) if factory is None or u["factory"] == factory}
+        finally:
+            ix.close()
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            for address, p in lists.items():
+                if not p or not p["list"] or not _can_edit(self.SHOW_IN_MENU, p):
+                    continue
+                if hide:
+                    edits.set(address, self.SHOW_IN_MENU, [0] * len(p["numbers"]))
+                else:
+                    edits.reset(address, self.SHOW_IN_MENU)
+        # a unit still shown that is researched from one now hidden crashes the game when its building's menu opens
+        # (headup/menu.py add_bouton_techno looks up the parent's button: KeyError; seen in the game 2026-10-10, the
+        # Chinese units researched from Italy's hidden ones): it becomes buyable from the start, as the Upgrade box's
+        # "none" makes it, and the page says which
+        unlinked = []
+        if hide:
+            edits = ModEdits(edits.folder)
+            hidden = self._hidden_by_mod(edits)
+            ix = self._open()
+            try:
+                links = self._upgrade_links(ix, edits)
+            finally:
+                ix.close()
+            for child, parent in sorted(links.items()):
+                if parent in hidden and child not in hidden:
+                    self.set_upgrade(child, None)
+                    unlinked.append(child)
+        view = self.nation_units(n, lang)
+        if unlinked:
+            ix = self._open()
+            try:
+                names = self._names(ix, unlinked, lang if lang in schema.LANGS else "us", self._new_units())
+            finally:
+                ix.close()
+            view["unlinked"] = [names.get(a, a) for a in unlinked]
+        return view
+
+    def nation_fill_list(self, nation: int, era: str, source: str, lang: str = "base") -> dict:
+        """What filling nation `nation`'s menus from `era`'s units of nation `source` (as the era library names it:
+        "China") would add: {"units": [{key, name, card, kind, factory: the building it goes in (its own kind of
+        building, the same number in every nation's menus; None when this nation has none), added}], "menus":
+        [{factory, units, count}] this nation's build menus (StudioApi.menus)}. Every unit not yet added starts
+        ticked on the page."""
+        from .era_units import kind_of
+        n = nations.check(nation)
+        _folder, lib = self._era_library()
+        record = self._era_record() if self._mod_dir() is not None else {}
+        menus = self.menus(lang)["nations"][n]["factories"]
+        have = {m["factory"] for m in menus}
+        units = [{"key": u["key"], "name": u["name"], "card": u.get("card", ""), "kind": kind_of(u),
+                  "factory": u.get("factory") if u.get("factory") in have else None, "added": u["key"] in record}
+                 for u in lib["units"] if u["era"] == era and u["nation"] == source]
+        units.sort(key=lambda u: (u["factory"] is None, u["factory"] or 0, u["name"].casefold()))
+        return {"units": units, "menus": menus}
+
+    FILL_MOST = 200  # era units one fill adds at most (the biggest era's nation has a few dozen)
+
+    def nation_fill(self, nation: int, picks) -> dict:
+        """Add the era units `picks` ([{"key", "factory"}]) to nation `nation`'s build menus in the current mod, each
+        as the Units tab's Add to my mod does with its suggestions (era_unit_add: model, card, credit, research): a
+        job the page follows. Its lines are "added<TAB>name" or "skipped<TAB>name<TAB>why", one per unit."""
+        from rusemod.webui import Job
+        from .api import StudioError
+        n = nations.check(nation)
+        if self._mod_dir() is None or self._edits() is None:
+            raise nations.NationError("Pick or make a mod first: the units are added to it.")
+        if not isinstance(picks, list) or not 1 <= len(picks) <= self.FILL_MOST:
+            raise nations.NationError(f"Pick 1 to {self.FILL_MOST} units to add.")
+        _folder, lib = self._era_library()
+        names = {u["key"]: u["name"] for u in lib["units"]}
+        have = {m["factory"] for m in self.menus()["nations"][n]["factories"]}
+        todo = []
+        for p in picks:
+            key, factory = (p or {}).get("key"), (p or {}).get("factory")
+            if key not in names:
+                raise nations.NationError(f"{key}: not in the era units library")
+            if isinstance(factory, bool) or not isinstance(factory, int) or factory not in have:
+                # not a game rule: the build menus the game has for this nation
+                raise nations.NationError(f"{names[key]}: pick one of this nation's buildings")
+            todo.append((key, factory))
+        job = Job()
+        self._jobs[job.id] = job
+
+        def work(say):
+            for key, factory in todo:
+                try:
+                    made = self.era_unit_add(key, n, factory)
+                    say(f"added\t{made['name']}")
+                except (StudioError, ValueError, OSError) as exc:  # (one unit that can't be added leaves the rest)
+                    say(f"skipped\t{names[key]}\t{exc}")
+
+        return job.start(work, f"{len(todo)} era unit(s) done.", plain=(StudioError,))

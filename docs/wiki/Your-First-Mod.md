@@ -25,7 +25,7 @@ From now on, everything you change is saved in this mod, never in the game.
 
 ## 4. Test it
 
-1. Click **Test in game** (header). The Studio checks the mod, builds the modded copy (one for the whole PC, `RUSE-Instances\Modded game`) and starts R.U.S.E.
+1. Click **Test in game** (header). The Studio checks the mod, builds the modded copy (one for the whole PC, `RUSE-Instances\Modded game` on the game's drive, or the folder you chose in Settings) and starts R.U.S.E.
 2. In the game's main menu, click **BATTLES** (a free game against the computer), pick any map, play the USA and
    open the tank factory: the Sherman costs $1.
 

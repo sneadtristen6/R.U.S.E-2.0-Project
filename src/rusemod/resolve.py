@@ -41,6 +41,7 @@ class ModInfo:
     new_maps: dict = field(default_factory=dict)             # new map's pack name -> [newmap.NewMap] (§8, map.toml)
     menu_pictures: dict = field(default_factory=dict)        # map pack name -> [menupicture.MenuPictures] (§8)
     menu_order: list = field(default_factory=list)           # [menuorder.Order]: missions' places in the menus (§8)
+    depots: dict = field(default_factory=dict)               # "all" or a map pack -> scenario.DepotRule (depots.toml)
     textures: dict = field(default_factory=dict)             # texture path in ZZ_Win.dat -> (colour PNG, alpha PNG) (§7)
     cards: dict = field(default_factory=dict)                # a new unit's name -> its own card PNG (files/cards, §7)
     models: dict = field(default_factory=dict)               # a new unit's name -> its own model .glb (files/models, §7)

@@ -1374,11 +1374,116 @@ function lookBox(u, brought, startNew) {
 // --- a new unit's own model (api.model_import, model_import_remove; rusemod.modelin, rusemod.unitmodel): a .3ds or
 // .glb from any 3D tool, fitted to the copied unit (its length times Size, its turret on the copy's turret point) and
 // kept in the mod as files/models/<the unit's name>.glb; the build puts it in the game beside the copied model ---
+// A model's size on a slider beside its number box (the owner, 2026-10-10: "make it a slider. So if people want to
+// have like super big planes or make them realistic to how they are in real life compared, like maybe have the slider
+// label those points" ... "even do a tiny"): the importer's sizes, Tiny to Huge, on a log scale (1, the game's size,
+// in the middle), with its points named under it (StudioApi.model_size_marks: tiny, game, real when known, huge);
+// a point clicked takes the size to it. The number box stays the exact value; the slider follows it.
+const SIZE_STEPS = 1000;
+const sizeRound = (s) => Number(Number(s).toPrecision(3));
+function sizeSlider(box, marks) {
+  const w = state.words;
+  const lo = Math.log(marks.tiny), hi = Math.log(marks.huge);
+  const at = (s) => Math.round((Math.log(Math.min(marks.huge, Math.max(marks.tiny, s))) - lo) / (hi - lo) * SIZE_STEPS);
+  const sizeAt = (p) => Math.exp(lo + (p / SIZE_STEPS) * (hi - lo));
+  const range = el("input", { type: "range", min: "0", max: String(SIZE_STEPS), step: "1", className: "size-range",
+    title: w.tip_size_slider });
+  range.setAttribute("aria-label", w.model_size);
+  const follow = () => { const v = Number(box.value); if (Number.isFinite(v) && v > 0) range.value = String(at(v)); };
+  const take = (s) => { box.value = String(sizeRound(s)); follow(); box.dispatchEvent(new Event("input")); };
+  range.addEventListener("input", () => take(sizeAt(Number(range.value))));
+  if (box.sizeFollow) box.removeEventListener("input", box.sizeFollow);  // (a slider made again for the same box)
+  box.sizeFollow = follow;
+  box.addEventListener("input", follow);
+  follow();
+  const points = [["tiny", marks.tiny, w.size_tiny, w.tip_size_tiny],
+    ["game", marks.game, w.size_game, fill(w.tip_size_game, { unit: marks.start || "?" })],
+    ...(marks.real ? [["real", marks.real, w.size_real, w.tip_size_real]] : []),
+    ["huge", marks.huge, w.size_huge, w.tip_size_huge]].sort((a, b) => a[1] - b[1]);
+  let last = -1, low = false;
+  const labels = points.map(([key, s, label, tip]) => {
+    const pct = (at(s) / SIZE_STEPS) * 100;
+    low = last >= 0 && pct - last < 14 ? !low : false;  // two points close together: the next on the line below
+    last = pct;
+    const b = el("button", { type: "button", className: `size-mark size-${key}${low ? " low" : ""}`,
+      textContent: `${label} (${sizeRound(s)})`, title: tip });
+    b.style.left = `${pct}%`;
+    b.addEventListener("click", () => take(s));
+    return b;
+  });
+  return el("div", { className: "size-slider" }, range, el("div", { className: "size-marks" }, ...labels));
+}
+
+// Every plane (or ground unit) of the mod with a model of its own, resized at once (StudioApi.models_resize_all, a
+// job): to the game's size, to real life, or a step smaller or bigger.
+function resizeAllRow(kind, n, changed) {
+  const w = state.words;
+  const note = el("span", { className: "small", role: "status" });
+  const go = async (to, times, buttons) => {
+    buttons.forEach((b) => { b.disabled = true; });
+    let job;
+    try { job = await api().models_resize_all(kind, to, times); } catch (err) { problem(err); buttons.forEach((b) => { b.disabled = false; }); return; }
+    let seen = 0;
+    const done = [], skipped = [];
+    for (;;) {
+      let st;
+      try { st = await api().job(job.job, seen); } catch (err) { problem(err); break; }
+      seen = st.count;
+      for (const line of st.lines) {
+        const [what, unit, more] = line.split("\t");
+        if (what === "resized") done.push(unit); else if (what === "skipped") skipped.push(`${unit}: ${more}`);
+      }
+      note.textContent = fill(w.models_all_progress, { done: done.length + skipped.length, all: n });
+      if (st.state !== "running") break;
+      await new Promise((ok) => setTimeout(ok, 700));
+    }
+    note.textContent = fill(w.models_all_done, { n: done.length })
+      + (skipped.length ? " " + fill(w.models_all_skipped, { list: skipped.join(" · ") }) : "");
+    say(note.textContent, skipped.length ? "" : "ok");
+    buttons.forEach((b) => { b.disabled = false; });
+    if (changed) changed();
+  };
+  const specs = [["game", null, w.size_game, w.tip_models_all_game], ["real", null, w.size_real, w.tip_models_all_real],
+    ["times", 0.8, w.models_all_smaller, w.tip_models_all_smaller], ["times", 1.25, w.models_all_bigger, w.tip_models_all_bigger]];
+  const buttons = specs.map(([, , label, tip]) => el("button", { type: "button", className: "small ghost", textContent: label, title: tip }));
+  buttons.forEach((b, i) => b.addEventListener("click", () => go(specs[i][0], specs[i][1], buttons)));
+  return el("div", { className: "actions resize-all" },
+    el("span", { className: "small", textContent: fill(kind === "air" ? w.models_all_air : w.models_all_ground, { n }) }),
+    ...buttons, note);
+}
+
 function modelBox(address, info, draw, changed) {
   const w = state.words;
   const own = info.own_model;
-  const size = el("input", { type: "number", min: "0.2", max: "5", step: "0.05", value: "1", className: "model-size",
+  const size = el("input", { type: "number", min: "0.05", max: "20", step: "any", value: "1", className: "model-size",
     title: w.tip_model_size });
+  // its size now, the slider's points, Resize (fitted again from its own file) and every plane at once
+  const sizing = el("div", { className: "model-sizing" });
+  const resize = el("button", { type: "button", className: "small", textContent: w.model_resize, title: w.tip_model_resize,
+    disabled: true });
+  resize.addEventListener("click", async () => {
+    const s = Number(size.value);
+    if (!Number.isFinite(s)) return;
+    resize.disabled = true;
+    say(w.model_resizing);
+    try {
+      const r = await api().model_resize(address, s);
+      say(fill(w.model_resized, { size: sizeRound(s) }), "ok");
+      if (changed) changed();
+      draw(r);
+    } catch (err) { problem(err); resize.disabled = false; }
+  });
+  (own ? api().model_sizes(address, state.lang) : api().model_size_marks(address, state.lang).then((marks) => ({ marks })))
+    .then((s) => {
+      if (!s) return;
+      if (s.size) size.value = String(sizeRound(s.size));
+      resize.disabled = !s.resizable;
+      if (own && !s.resizable) resize.title = w.tip_model_resize_gone;
+      sizing.append(sizeSlider(size, s.marks));
+      if (own && s.same_kind > 1) {
+        sizing.append(resizeAllRow(s.kind, s.same_kind, () => api().look(address).then(draw).catch(problem)));
+      }
+    }).catch(() => {});  // (no slider: the number box still takes a size)
   const pick = el("button", { type: "button", textContent: own ? w.model_import_again : w.model_import,
     title: w.tip_model_import });
   pick.addEventListener("click", async () => {
@@ -1406,10 +1511,11 @@ function modelBox(address, info, draw, changed) {
     drop.addEventListener("click", async () => {
       try { draw(await api().model_import_remove(address)); if (changed) changed(); } catch (err) { problem(err); }
     });
-    box.append(el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size), drop));
+    box.append(el("div", { className: "actions" }, el("label", { className: "small" }, w.model_size, " ", size), resize),
+      sizing, el("p", { className: "muted small", textContent: w.model_size_when }), el("div", { className: "actions" }, pick, drop));
   } else {
     box.append(el("p", { className: "muted small", textContent: w.model_how }),
-      el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size)));
+      el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size)), sizing);
   }
   box.pick = pick;
   return box;
@@ -2029,14 +2135,99 @@ async function renderEconomy() {
   try { data = await api().economy(state.lang); } catch (err) { problem(err); return; }
   if (state.view !== "economy") return;  // another tab was picked meanwhile
   const groups = data.groups.filter((g) => g.rows.length);
+  const depotLine = el("p", { className: "muted small", title: w.tip_economy_depot });
+  const depotMaps = el("div", { className: "economy-depots" });  // Depots on the maps (renderEconomyDepots)
   $("economy-groups").replaceChildren(...(data.ready && groups.length ? groups.map((g) => {
     const table = el("table");
-    for (const r of g.rows) table.append(economyRow(r));
-    return el("div", { className: "group" }, el("h2", { textContent: w[`economy_group_${g.id}`] || g.id }), table);
+    for (const r of g.rows) table.append(economyRow(r, g.id === "supply" ? () => showEconomyDepot(depotLine) : null));
+    const group = el("div", { className: "group" }, el("h2", { textContent: w[`economy_group_${g.id}`] || g.id }), table);
+    if (g.id === "supply") group.append(depotLine, depotMaps);
+    return group;
   }) : [el("p", { className: "muted", textContent: w.economy_none })]));
+  showEconomyDepot(depotLine);
+  renderEconomyDepots(depotMaps);
 }
 
-function economyRow(r) {
+// Depots on the maps (StudioApi.economy_depots / economy_depots_set, the mod's depots.toml): every depot's trucks on
+// every map, or on the one map picked (the owner, 2026-10-10: "you would check like one map or all the maps. And then
+// if it was just one map, you would choose the specific map"); the build sets each depot by it, and a depot given its
+// own trucks on the Maps tab keeps them. How often convoys leave is one value for every map (the row above).
+async function renderEconomyDepots(box) {
+  const w = state.words;
+  let data;
+  try { data = await api().economy_depots(state.lang); } catch (err) { box.replaceChildren(); problem(err); return; }
+  const m = data.money || {};
+  const worth = (trucks) => Math.round(trucks * m.per_convoy * m.per_truck).toLocaleString();
+  const ruleText = (r) => r.times !== null && r.times !== undefined ? w.economy_depots_x.replace("{n}", String(r.times))
+    : w.economy_depots_n.replace("{n}", Number(r.trucks).toLocaleString());
+  const save = async (where, trucks, times) => {
+    try {
+      await api().economy_depots_set(where, trucks, times);
+      say(w.saved.replace("{file}", "depots.toml"), "ok");
+      renderEconomyDepots(box);
+    } catch (err) { problem(err); }
+  };
+  // where: all maps, or one map picked from the game's list
+  const all = el("input", { type: "radio", name: "depots-where", checked: true, disabled: !data.can });
+  const one = el("input", { type: "radio", name: "depots-where", disabled: !data.can });
+  const pick = el("select", { className: "small", disabled: true, title: w.tip_economy_depots_where },
+    ...data.maps.map((x) => el("option", { value: x.pack, textContent: x.name })));
+  for (const r of [all, one]) r.addEventListener("change", () => { pick.disabled = !one.checked; preview(); });
+  const where = el("div", { className: "economy-depots-row", title: w.tip_economy_depots_where },
+    el("label", {}, all, " ", w.economy_depots_all), " ",
+    el("label", {}, one, " ", w.economy_depots_one), " ", pick);
+  // how much: times their trucks, or trucks each
+  const number = el("input", { type: "number", min: "0", step: "any", value: "2", className: "short",
+    disabled: !data.can, title: w.tip_economy_depots_amount });
+  const how = el("select", { className: "small", disabled: !data.can, title: w.tip_economy_depots_amount },
+    el("option", { value: "times", textContent: w.scen_depots_times }),
+    el("option", { value: "trucks", textContent: w.scen_depots_each }));
+  const apply = el("button", { type: "button", className: "small", textContent: w.scen_depots_apply,
+    disabled: !data.can, title: w.tip_economy_depots_amount });
+  const said = el("span", { className: "muted small" });
+  function preview() {
+    const n = Number(number.value);
+    const ok = number.value.trim() !== "" && Number.isFinite(n) && n >= 0 && (how.value === "times" || Number.isInteger(n));
+    number.setAttribute("aria-invalid", String(!ok));
+    said.textContent = ok && m.ready ? w.economy_depots_preview.replace("{trucks}", String(m.usual))
+      .replace("{money}", worth(how.value === "times" ? m.usual * n : n)) : "";
+    return ok ? n : null;
+  }
+  number.addEventListener("input", preview);
+  how.addEventListener("change", () => { number.value = how.value === "trucks" ? "50" : "2"; preview(); });
+  apply.addEventListener("click", () => {
+    const n = preview();
+    if (n === null) { number.focus(); return; }
+    const at = one.checked ? pick.value : "all";
+    save(at, how.value === "trucks" ? n : null, how.value === "times" ? n : null);
+  });
+  const amount = el("div", { className: "economy-depots-row", title: w.tip_economy_depots_amount },
+    number, " ", how, " ", apply, " ", said);
+  // the changes made so far, each with a way to take it off
+  const rules = data.rules.length ? el("ul", { className: "economy-depots-rules" }, ...data.rules.map((r) => {
+    const off = el("button", { type: "button", className: "link", textContent: w.economy_depots_take_off,
+      title: w.tip_economy_depots_take_off, disabled: !data.can });
+    off.addEventListener("click", () => save(r.map, null, null));
+    const name = r.map === "all" ? w.economy_depots_all : r.name;
+    return el("li", {}, w.economy_depots_rule.replace("{map}", name).replace("{what}", ruleText(r)), " ", off);
+  })) : el("p", { className: "muted small", textContent: w.economy_depots_none });
+  box.replaceChildren(el("h3", { textContent: w.economy_depots_title }),
+    el("p", { className: "muted small", textContent: data.can ? w.economy_depots_help : w.no_mod }),
+    where, amount, rules, el("p", { className: "muted small", textContent: w.economy_depots_often }));
+  preview();
+}
+
+// Under Supply depots: what a depot of the game's usual trucks holds with these values (StudioApi.depot_money), and
+// where a depot's own trucks are changed (the owner, 2026-10-10: "no way to increase max amt of money in supply depot")
+async function showEconomyDepot(line) {
+  let m;
+  try { m = await api().depot_money(); } catch { line.textContent = ""; return; }
+  line.textContent = m.ready ? state.words.economy_depot_money
+    .replace("{trucks}", String(m.usual))
+    .replace("{money}", Math.round(m.usual * m.per_convoy * m.per_truck).toLocaleString()) : "";
+}
+
+function economyRow(r, saved = null) {
   const w = state.words;
   const th = el("th", { textContent: r.label });
   if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
@@ -2065,6 +2256,7 @@ function economyRow(r) {
         show(game);
         showWas();
         say("");
+        if (saved) saved();
       } catch (err) { problem(err); }
     });
     was.replaceChildren(el("span", { textContent: w.was.replace("{v}", game.join(" · ")) }), undo);
@@ -2081,6 +2273,7 @@ function economyRow(r) {
       mine = sameNumbers(value, game) ? null : value;
       showWas();
       say(w.saved.replace("{file}", res.saved), "ok");
+      if (saved) saved();
     } catch (err) { problem(err); }
   };
   for (const box of boxes) box.addEventListener("change", () => save(box));
@@ -2149,9 +2342,28 @@ function renderAIProfile(data) {
   if (!p) { $("ai-groups").replaceChildren(); return; }
   $("ai-groups").replaceChildren(...p.groups.filter((g) => g.rows.length).map((g) => {
     const table = el("table");
-    for (const r of g.rows) table.append(aiRow(p.id, r));
+    for (const r of g.rows) table.append(aiRow(p.id, r, r.added ? renderAI : null));
     return el("div", { className: "group" }, el("h2", { textContent: w[`ai_group_${g.id}`] || g.id }), table);
-  }), notesBox(`obj:${p.id}`));
+  }), ...aiMissing(p), notesBox(`obj:${p.id}`));
+}
+
+// A difficulty's or profile's own value for one only Default lists (StudioApi.ai_add; the owner, 2026-10-10, "all of
+// them": the AI tab only changed the values a set lists): picked from Default's, it starts as Default's, then it's a
+// row like the others
+function aiMissing(p) {
+  const w = state.words;
+  if (!p.missing || !p.missing.length) return [];
+  const name = p.name || p.index;
+  const pick = el("select", { className: "small", title: w.tip_ai_add, disabled: !state.mod },
+    ...p.missing.map((m) => el("option", { value: m.prop, textContent: `${m.label} (${w.ai_default}: ${m.default})` })));
+  const add = el("button", { type: "button", className: "small", textContent: w.ai_add, title: w.tip_ai_add, disabled: !state.mod });
+  add.addEventListener("click", async () => {
+    try { await api().ai_add(p.id, pick.value, state.lang); } catch (err) { problem(err); return; }
+    say(fillText(w.ai_add_done, { name }), "ok");
+    renderAI();
+  });
+  return [el("div", { className: "group" }, el("h2", { textContent: fillText(w.ai_add_title, { name }), title: w.tip_ai_add }),
+    el("p", { className: "muted small", textContent: w.ai_add_help }), el("div", { className: "actions" }, pick, add))];
 }
 
 // A private Notes box (LittleGroove's): the modder's own words about this unit, object or profile, kept in the mod's
@@ -2245,7 +2457,7 @@ function aiValue(target, r, after = null) {
       const res = await api().ai_edit(target, r.prop, r.list ? numbers : numbers[0]);
       const value = r.list ? res.value : [res.value];
       show(value);
-      mine = sameNumbers(value, game) ? null : value;
+      mine = sameNumbers(value, game) && !r.added ? null : value;  // (a value the mod added stays until taken out)
       showWas();
       showNote(res.same_default);
       say(w.saved.replace("{file}", res.saved), "ok");
@@ -2261,6 +2473,8 @@ function aiValue(target, r, after = null) {
 function aiRow(target, r, after = null) {
   const th = el("th", { textContent: r.label });
   if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
+  // its own value the mod gave it (StudioApi.ai_add): Game's value takes it out again, so the list is drawn again
+  if (r.added) th.append(el("small", { className: "ai-added", textContent: state.words.ai_added, title: state.words.tip_ai_added }));
   return el("tr", {}, th, aiValue(target, r, after).cell);
 }
 
@@ -3302,6 +3516,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     $("set-game-path").textContent = g.message || (g.path ? fill(w.set_game_path, { path: g.path }) : w.set_game_none);
     $("set-game-change").textContent = w.set_game_change;
   } },
+  { id: "copies", async render() { renderCopies(await api().copies_folder()); } },
   { id: "backup", render() { renderBackup(); } },  // loaded each time Settings opens (loadBackup)
   { id: "updates", async render() {
     const w = state.words, u = state.update || {};
@@ -3324,10 +3539,43 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
 // The game folder chosen by hand: Settings' "Choose folder…", and the troubleshooter's fix when R.U.S.E. wasn't found
 async function chooseGame() {
   const g = await api().choose_game_folder();
-  renderSettings();
-  loadBackup();  // another game folder: its own backups
+  renderSettings();  // another game folder: its own recommended place for modded copies (SETTINGS "copies")
+  loadBackup();  // and its own backups
   if (g.message) $("set-game-path").textContent = g.message;
   return g;
+}
+
+// --- where modded copies go (rusemod.play.instances_dir through api.copies_folder): the folder chosen here, else
+// $RUSE_INSTANCES, else the recommended place, RUSE-Instances on the game's drive (the owner, 2026-10-09: "user should
+// be able to choose where files go"). A change only says where the next Test in game builds: the old folder stays
+// until the modder deletes it by hand, and the game's clean backup goes beside the new folder ---
+function renderCopies(v, note, noteKind) {
+  const w = state.words, how = v.how || "";
+  // the folder and why it's that one: chosen here, $RUSE_INSTANCES, the recommended place, or given at the start
+  $("set-copies-path").textContent = !v.path ? w.set_copies_none
+    : how === "fixed" ? fill(w.set_copies_fixed, { path: v.path })
+      : fill(w["doc_copies_" + how] || w.doc_copies_recommended, { path: v.path });
+  $("set-copies-drive").textContent = v.other_drive  // on another drive: a full copy of the game, slower and bigger
+    ? fill(w.doc_copies_other_drive, { path: v.path, drive: v.drive || "", recommended: v.recommended || "" }) : "";
+  $("set-copies-drive").classList.toggle("hidden", !v.other_drive);
+  const fixed = how === "fixed", change = $("set-copies-change"), back = $("set-copies-default");
+  change.textContent = w.set_copies_change;
+  back.textContent = w.set_copies_default;
+  change.disabled = fixed;
+  change.title = fixed ? w.tip_copies_fixed : w.tip_copies_change;  // a locked button says why
+  back.disabled = fixed || how === "recommended";
+  back.title = fixed ? w.tip_copies_fixed : how === "recommended" ? w.tip_copies_default_off : w.tip_copies_default;
+  const line = $("set-copies-note");
+  line.textContent = note || "";
+  line.className = "small" + (note && noteKind ? " " + noteKind : "");
+}
+
+async function changeCopies(choose) {
+  const w = state.words, was = (await api().copies_folder()).path;
+  const v = await (choose ? api().choose_copies_folder() : api().use_recommended_copies());
+  if (v.message) renderCopies(v, v.message, "bad");
+  else renderCopies(v, v.path && v.path !== was ? fill(w.set_copies_changed, { path: v.path }) : "", "good");
+  loadBackup();  // the clean backup goes beside the copies
 }
 
 // --- the clean game backup (rusemod.backup through api.backup_*): made while the game is clean, then a check of the
@@ -3620,6 +3868,8 @@ async function start() {
   $("tab-maps").addEventListener("click", () => showView("maps"));
   $("tab-settings").addEventListener("click", () => showView("settings"));
   $("set-game-change").addEventListener("click", () => chooseGame().catch(problem));
+  $("set-copies-change").addEventListener("click", () => changeCopies(true).catch(problem));
+  $("set-copies-default").addEventListener("click", () => changeCopies(false).catch(problem));
   $("backup-make").addEventListener("click", makeBackup);
   $("backup-check").addEventListener("click", checkBackup);
   $("backup-restore").addEventListener("click", restoreBackup);

@@ -51,6 +51,12 @@ When you take out a unit that others are researched from, **Settings > Research*
 first** (the default), **Refuse**, or **Re-link them** to its own parent. A unit left researched from one that's gone
 says so here and in the check bar, and the build stops on it until you pick another.
 
+A unit shown in its build menu must be researched from a unit that's shown there too: the one you can build comes
+first, the research after it. A unit shown at a battle date where the unit it's researched from is hidden stops the
+game when that build menu opens (seen in the game), so the check bar names it and the build stops on it. Show the
+other unit again, or pick another unit to research it from, or none. **Nations > Hide all** does this for you: a unit
+left researched from a hidden one becomes buyable from the start.
+
 ## Units from other eras
 
 366 units from WWI to today, each another maker's free 3D model, can be added to your mod as new units, at their real

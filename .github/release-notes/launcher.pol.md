@@ -1,6 +1,13 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.4.8.3:** kopie z modami trafiają tam, gdzie wskażesz.
+
+- **Gdzie trafiają kopie z modami**, w Ustawieniach: wybierz folder, w którym budowana jest kopia gry z modami, albo
+  wróć do zalecanego miejsca, `RUSE-Instances` na dysku gry (tam kopia dzieli pliki z grą i jest gotowa w kilka sekund;
+  na innym dysku jest pełną kopią gry, wolniejszą i większą). Czysta kopia zapasowa gry trafia obok. Następne Graj
+  buduje w nowym miejscu; stary folder można usunąć ręcznie. Studio używa tego samego folderu.
+
 **0.4.8.2:** otwiera się w twojej przeglądarce, gdy jego własne okno nie może, i uruchamia mody zrobione w Studiu
 0.9.8.2.
 

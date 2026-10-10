@@ -1,6 +1,14 @@
 **RUSE Launcher 0.4, pour les joueurs.** Il trouve R.U.S.E. via Steam, et **Jouer** construit une copie moddée du jeu
 avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
 
+**0.4.8.3:** les copies avec les mods vont où vous le dites.
+
+- **Où vont les copies avec les mods**, dans les Réglages : choisissez le dossier où la copie du jeu avec les mods est
+  construite, ou revenez à l'emplacement recommandé, `RUSE-Instances` sur le disque du jeu (la copie y partage les
+  fichiers du jeu et est prête en quelques secondes ; sur un autre disque, c'est une copie complète du jeu, plus lente
+  et plus grosse). La sauvegarde propre du jeu va à côté. Le prochain Jouer construit au nouvel endroit ; l'ancien
+  dossier peut être supprimé à la main. Le Studio utilise le même dossier.
+
 **0.4.8.2:** il s'ouvre dans votre navigateur web quand sa propre fenêtre ne le peut pas, et lance les mods faits
 avec le Studio 0.9.8.2.
 

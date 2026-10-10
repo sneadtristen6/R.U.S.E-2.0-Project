@@ -43,7 +43,7 @@ from rusemod.lock import fingerprint_text
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
 from rusemod.patch import INT_RANGES
-from rusemod.play import SHARED, Starter, instances_dir
+from rusemod.play import SHARED, Starter, copies_view, instances_choice, keep_instances_dir
 from rusemod.rndf import DEFAULT_NAMESPACE, RndfError, parse_value
 from rusemod.rndf import parse as rndf_parse
 from rusemod.steam import build_of, data_revisions, find_game
@@ -82,7 +82,8 @@ UPGRADE, UPGRADE_FLAG, RESEARCH = "UpgradeRequire", "IsUpgrade", {"UpgradePrice"
 # say so; the build stops on it); "refuse" keeps the unit; "relink" researches them from the unit it was researched
 # from, or makes them buyable from the start when it had none
 RESEARCH_GONE = ("warn", "refuse", "relink")
-MODEL_SIZES = (0.2, 5.0)  # an imported model's size, times the length of the unit it copies (model_import)
+MODEL_SIZES = (0.05, 20.0)  # an imported model's size, times the length of the unit it copies (model_import; the
+# owner, 2026-10-10, "all of them": it was 0.2 to 5, the Studio's own top, not the game's)
 BLANK_STARTS = ("blank_terrain", "blank_ocean")  # the blank starts offered (rusemod.presets.KINDS); Blank Ocean taken
 # out and back the same day with a warning of its own (the owner, 2026-10-08: "blank oceans stay in with a warning
 # label"; words.toml dup_start_blank_ocean_warn: separate islands crash the game when a land unit is sent across)
@@ -409,9 +410,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._home = Path(home) if home else default_home()
         self._starter = starter or Starter()
         self._last_export = None  # the file Export made this session: what Publish sends to the list
-        self._instances = Path(instances) if instances else None
+        self._instances = Path(instances) if instances else None  # tests: where modded copies go, over Settings
         self._backups = Path(backups) if backups else None  # the clean game backup (rusemod.backup): RUSE-Backup
-        # on the game's drive
+        # beside the modded copies
         self._jobs: dict[str, Job] = {}
         self._units: list | None = None  # every unit and building, read once per index
         self._ammo: list | None = None   # every ammunition, the same
@@ -1159,14 +1160,36 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         get = (lambda p, d: edits.get(address, p) if edits and edits.get(address, p) is not None else d)
         return get("Nationalite", u["nation"]), get("Factory", u["factory"])
 
-    def _menu_units(self, edits: ModEdits | None, units: dict, menu: tuple) -> list[str]:
+    @staticmethod
+    def _hidden_by_mod(edits: ModEdits | None) -> set[str]:
+        """The units the current mod takes out of every battle date's build menu (ShowInMenu all 0: the Nations tab's
+        Hide all, or by hand)."""
+        if edits is None:
+            return set()
+        return {target for (target, path, how), e in edits.edits.items()
+                if path == "ShowInMenu" and how == "" and isinstance(e.value, list) and e.value and not any(e.value)}
+
+    def _menu_units(self, edits: ModEdits | None, units: dict, menu: tuple, ix: Index | None = None) -> list[str]:
         """The units (the game's, then the current mod's new ones) in build menu `menu` ((nation, build menu)) as the
         mod has it: those a unit there may be researched from (upgrade's choices, before its own upgrades are left
-        out)."""
+        out). A unit never shown in the build menus isn't one (the mod hides it, or with `ix` the game's own never
+        shown: ShowInMenu 0 at every battle date): the game's menu finds a shown upgrade's parent by its button and
+        stops on one it hasn't got (headup/menu.py add_bouton_techno, KeyError; seen in the game 2026-10-10, Italy's
+        units hidden and China's researched from them)."""
         new_units = edits.new_units if edits else {}
+        hidden = self._hidden_by_mod(edits)
         pool = [a for a in list(units) + list(new_units) if a in units or self._resolve(edits, a)[0] in units]
-        return [a for a in pool if units[self._resolve(edits, a)[0]]["class"] in KIND_OF
-                and self._menu_of(edits, units, a) == menu]
+        out = [a for a in pool if units[self._resolve(edits, a)[0]]["class"] in KIND_OF
+               and self._menu_of(edits, units, a) == menu and a not in hidden]
+        if ix is not None:
+            def never_shown(a):
+                mine = edits.get(a, "ShowInMenu") if edits else None
+                if isinstance(mine, list):
+                    return bool(mine) and not any(mine)
+                game = (_props(ix.show(self._resolve(edits, a)[0])).get("ShowInMenu") or {}).get("numbers")
+                return bool(game) and not any(game)
+            out = [a for a in out if not never_shown(a)]
+        return out
 
     def upgrade(self, address: str, lang: str = schema.BASE) -> dict:
         """A unit's place in the upgrade chains. `parent`: the unit it's researched from as the current mod has it
@@ -1196,7 +1219,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                         below.add(child)
                         todo.append(child)
             mine = self._menu_of(edits, units, address)
-            choices = [a for a in self._menu_units(edits, units, mine) if a != address and a not in below]
+            choices = [a for a in self._menu_units(edits, units, mine, ix) if a != address and a not in below]
+
+            def shown_at(a):  # the battle dates the build menu shows unit `a` at, as the mod has it (None: not said)
+                own = edits.get(a, "ShowInMenu") if edits else None
+                shows = own if isinstance(own, list) else (
+                    _props(ix.show(self._resolve(edits, a)[0])).get("ShowInMenu") or {}).get("numbers")
+                return [bool(x) for x in shows] if shows else None
+            # a parent missing from the menu at a date this unit is shown at is no choice: there the game's menu
+            # stops on the upgrade (headup/menu.py add_bouton_techno; seen in the game 2026-10-10)
+            need = shown_at(address)
+            if need:
+                choices = [a for a in choices if (lambda at: at is None or all(
+                    at[i] if i < len(at) else False for i, on in enumerate(need) if on))(shown_at(a))]
             children = sorted(c for c, p in links.items() if p == address)
             parent = links.get(address)
             gone = parent is not None and parent not in units and parent not in new_units
@@ -2334,9 +2369,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     s["items"].append(new)
             for n, sp in enumerate(spawns):
                 if sp.file.lower() == s["file"].lower():
-                    s["items"].append({"kind": "Spawn", "x": sp.x, "y": sp.y, "turn": sp.rotation, "name": "",
-                                       "camp": sp.camp, "what": sp.what, "mine": True, "spawn": n,
-                                       "item": len(s["items"])})
+                    new = {"kind": "Spawn", "x": sp.x, "y": sp.y, "turn": sp.rotation, "name": "",
+                           "camp": sp.camp, "what": sp.what, "mine": True, "spawn": n, "item": len(s["items"])}
+                    if sp.class_path == scenario.DEPOT:  # a depot the mod adds: its trucks (the build's 25 unset)
+                        new["trucks"] = scenario.DEPOT_TRUCKS if sp.trucks is None else sp.trucks
+                        new["trucks_set"] = sp.trucks is not None
+                    s["items"].append(new)
             for n, p in enumerate(added):  # new names on the map, named points and zones (places.toml)
                 if p.file.lower() == s["file"].lower():
                     new = {"kind": p.kind, "x": p.x, "y": p.y, "turn": p.rotation or 0.0, "name": p.name,
@@ -2672,7 +2710,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if field in ("camp", "trucks"):
             if not number.is_integer():
                 raise StudioError(f"{field} is a whole number")
-            number = int(number)
+            number = self._trucks(number) if field == "trucks" else int(number)
         if field == "camp" and number != scenario.NEUTRAL and base.get("kind") == "skirmish":
             # rule: skirmish-neutral-spawns
             raise StudioError("A skirmish map's items stay neutral: a skirmish game spawns only neutral items, so the "
@@ -3192,25 +3230,42 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return self.sector_view(pack, file)
 
     def scenario_spawn(self, pack: str, file: str, unit: str, x: float, y: float, camp: int | None = scenario.NEUTRAL,
-                       rotation: float = 0.0) -> dict:
+                       rotation: float = 0.0, trucks: int | None = None) -> dict:
         """Spawn a unit or building (`unit`: its address, as the unit list gives it) when scenario `file` starts, at
         x, y, for side `camp` (-1: neutral, the only side a skirmish game spawns). Returns the map's scenarios as
         the mod leaves them."""
-        return self.scenario_spawn_many(pack, file, unit, [[x, y]], camp, rotation)
+        return self.scenario_spawn_many(pack, file, unit, [[x, y]], camp, rotation, trucks)
 
     SPAWN_MOST = 50  # units one click may add (a formation)
 
+    @staticmethod
+    def _trucks(value) -> int:
+        """A supply depot's trucks as the modder typed them: a whole number from 0 to scenario.TRUCKS_MOST."""
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            raise StudioError(f"trucks: {value!r} isn't a number") from None
+        if isinstance(value, bool) or not number.is_integer() or not 0 <= number <= scenario.TRUCKS_MOST:
+            # not a game rule: the depot keeps its trucks in a 32-bit whole number
+            raise StudioError(f"A depot's trucks are a whole number from 0 to {scenario.TRUCKS_MOST:,}.")
+        return int(number)
+
     def scenario_spawn_many(self, pack: str, file: str, unit: str, points: list, camp: int | None = scenario.NEUTRAL,
-                            rotation: float = 0.0) -> dict:
+                            rotation: float = 0.0, trucks: int | None = None) -> dict:
         """Spawn `unit` at each [x, y] of `points` (a formation, up to SPAWN_MOST) when scenario `file` starts, for
         side `camp` (-1: neutral; a skirmish scenario takes only that), all turned `rotation` radians; saved in one
-        go. Returns the map's scenarios."""
+        go. `trucks`: a supply depot spot's trucks (None: the build's scenario.DEPOT_TRUCKS). Returns the map's
+        scenarios."""
         try:
             where = [(float(x), float(y)) for x, y in points]
         except (TypeError, ValueError):
             raise StudioError("the places to spawn at must be pairs of numbers") from None
         if not 1 <= len(where) <= self.SPAWN_MOST or not all(map(math.isfinite, (v for p in where for v in p))):
             raise StudioError(f"a spawn takes 1 to {self.SPAWN_MOST} places, each two finite numbers")
+        if trucks is not None:
+            if unit != DEPOT_SLAB:
+                raise StudioError("Only a supply depot has trucks.")
+            trucks = self._trucks(trucks)
         camp = scenario.NEUTRAL if camp is None else int(camp)
         if self._base_scenario(pack, file)["kind"] == "skirmish" and camp != scenario.NEUTRAL:
             # rule: skirmish-neutral-spawns
@@ -3233,9 +3288,221 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError(f"{_tail(unit)} has no class name for the game's scripts, so it can't be spawned")
         with self._saving:
             moves, spawns = self._read_scenario_edits(pack)
-            spawns += [scenario.Spawn(file, name, x, y, camp, float(rotation)) for x, y in where]
+            spawns += [scenario.Spawn(file, name, x, y, camp, float(rotation), trucks) for x, y in where]
             self._write_scenario_edits(pack, moves, spawns)
         return self.map_scenarios(pack)
+
+    SPAWN_FIELDS = ("camp", "trucks")  # what the Details panel changes on a spawn the mod adds (it turns with "rotation")
+
+    def scenario_spawn_set(self, pack: str, number: int, field: str, value) -> dict:
+        """Change one value of the current mod's spawn number `number`: its side (`camp`: -1 neutral, or one of the
+        scenario's camps; a skirmish scenario keeps it neutral), a supply depot's `trucks`, or its `rotation`
+        (radians). Returns the map's scenarios."""
+        if field not in (*self.SPAWN_FIELDS, "rotation"):
+            raise StudioError(f"a spawn's {field} can't be changed here")
+        with self._saving:
+            moves, spawns = self._read_scenario_edits(pack)
+            n = int(number)
+            if not 0 <= n < len(spawns):
+                raise StudioError("that spawn isn't in the mod any more")
+            sp = spawns[n]
+            if field == "trucks":
+                if sp.class_path != scenario.DEPOT:
+                    raise StudioError("Only a supply depot has trucks.")
+                new = replace(sp, trucks=self._trucks(value))
+            elif field == "camp":
+                try:
+                    camp = int(value)
+                except (TypeError, ValueError):
+                    raise StudioError(f"camp: {value!r} isn't a whole number") from None
+                if not (camp == scenario.NEUTRAL or 0 <= camp <= 16):
+                    raise StudioError("A side is -1 (neutral) or one of the scenario's camps, from 0 up.")
+                if camp != scenario.NEUTRAL and self._base_scenario(pack, sp.file)["kind"] == "skirmish":
+                    # rule: skirmish-neutral-spawns
+                    raise StudioError("A skirmish map's items stay neutral: a skirmish game spawns only neutral "
+                                      "items, so the game would leave it out.")
+                new = replace(sp, camp=camp)
+            else:
+                try:
+                    turn = float(value)
+                except (TypeError, ValueError):
+                    raise StudioError("the turn must be a number") from None
+                if not math.isfinite(turn):
+                    raise StudioError("the turn must be a number")
+                new = replace(sp, rotation=turn)
+            spawns[n] = new
+            self._write_scenario_edits(pack, moves, spawns)
+        return self.map_scenarios(pack)
+
+    def scenario_depots(self, pack: str, file: str, trucks=None, times=None) -> dict:
+        """Every supply depot of scenario `file` at once, the map's own and the ones the mod adds: given `trucks`
+        each, or `times` the trucks each has now in the game (the mod's own depots: times the build's 25), rounded;
+        neither puts the map's back to the game's and the mod's own to 25. Returns the map's scenarios and how many
+        depots changed."""
+        if trucks is not None and times is not None:
+            raise StudioError("Give the depots a number of trucks, or a times, not both.")
+        if times is not None:
+            try:
+                times = float(times)
+            except (TypeError, ValueError):
+                raise StudioError(f"times: {times!r} isn't a number") from None
+            if not math.isfinite(times) or times < 0:
+                raise StudioError("times is a number, 0 or more")
+        if trucks is not None:
+            trucks = self._trucks(trucks)
+        if self._map_dir() is None:
+            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+        base = self._base_scenario(pack, file)
+
+        def each(game: int) -> int | None:  # a depot's new trucks (None: back to what it had)
+            if trucks is not None:
+                return trucks
+            if times is None:
+                return None
+            return self._trucks(min(round(game * times), scenario.TRUCKS_MOST))
+
+        count = 0
+        with self._saving:
+            changes = self._read_item_changes(pack)
+            by_item = {c.item: c for c in changes if c.file.lower() == file.lower()}
+            kept = [c for c in changes if c.file.lower() != file.lower()]
+            for i, it in enumerate(base["items"]):
+                if it["kind"] != "Spawn" or it.get("what") != DEPOT_SLAB:  # (some other spawns have a ChampInteger)
+                    if i in by_item:
+                        kept.append(by_item[i])
+                    continue
+                game = it.get("trucks")  # (a shipped depot without trucks has none in the game)
+                new = each(game or 0)
+                old = by_item.get(i)
+                values = dict(old.values) if old is not None else {}
+                if new is None or new == (game or 0):
+                    values.pop("trucks", None)
+                else:
+                    values["trucks"] = new
+                count += 1
+                if values:
+                    kept.append(scenario.Change(file, i, it["kind"], values))
+            path = self._items_file(pack)
+            if kept:
+                kept.sort(key=lambda c: (c.file.lower(), c.item))
+                _save_checked(path, scenario.changes_toml(kept, self.ITEMS_HEADER),
+                              lambda data: scenario.parse_changes(data.get("set", []), str(path)))
+            elif path.is_file():
+                path.unlink()
+            moves, spawns = self._read_scenario_edits(pack)
+            changed = False
+            for n, sp in enumerate(spawns):
+                if sp.file.lower() != file.lower() or sp.class_path != scenario.DEPOT:
+                    continue
+                new = each(scenario.DEPOT_TRUCKS)
+                spawns[n] = replace(sp, trucks=None if new is None or new == scenario.DEPOT_TRUCKS else new)
+                changed, count = True, count + 1
+            if changed:
+                self._write_scenario_edits(pack, moves, spawns)
+        out = self.map_scenarios(pack)
+        out["depots"] = count
+        return out
+
+    def depot_money(self, pack: str | None = None) -> dict:
+        """What a supply depot's trucks are worth, for the map view's depots: the money each truck brings and the
+        trucks in a convoy (rusemod.economy), the current mod's values where it changes them, else the game's (its
+        usual modes). A depot holds about trucks x per_convoy x per_truck (LittleGroove's measure in the game: a
+        depot's supply is about 9 times its number with the game's 3 and 3; not measured by us yet). `rule`: with a
+        map `pack`, the current mod's depots.toml rule its depots get (economy_depots), else None."""
+        found, _types = self._economy_copies()
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        normal = _props(found["normal"]) if "normal" in found else {}
+        out = {"ready": bool(normal), "usual": scenario.DEPOT_TRUCKS, "shipped": list(scenario.TRUCKS_SHIPPED),
+               "most": scenario.TRUCKS_MOST}
+        for key, prop in (("per_truck", "QteDeviseParCamion"), ("per_convoy", "NbCamionParConvoi")):
+            mine = edits.get(economy.TARGETS["normal"], prop) if edits is not None else None
+            p = normal.get(prop)
+            out[key] = mine if mine is not None else (p["numbers"][0] if p and not p["list"] else None)
+            out[key + "_mine"] = mine is not None
+        out["ready"] = out["ready"] and out["per_truck"] is not None and out["per_convoy"] is not None
+        rules = self._depot_rules()
+        out["rule"] = self._rule_view(scenario.depot_rule(rules, pack), pack) if pack else None
+        return out
+
+    # --- every depot of every map, or of one map (the unit mod's depots.toml, scenario.DepotRule; the Economy tab's
+    # Supply depots on the maps, the owner, 2026-10-10: "you would check like one map or all the maps. And then if it
+    # was just one map, you would choose the specific map"). The build sets each depot's trucks by it; a depot whose
+    # trucks the map changes set itself keeps them ---
+    DEPOTS_HEADER = ("Every supply depot's trucks, on every map ([all]) or on the maps named ([maps.<map>]): trucks "
+                     "each, or times what each has (docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio's Economy tab, "
+                     "which rewrites this file.")
+
+    def _depot_rules(self) -> dict:
+        folder = self._mod_dir()
+        if folder is None:
+            return {}
+        try:
+            return scenario.read_depots(folder)
+        except scenario.ScenarioError as exc:
+            raise StudioError(f"{folder / scenario.DEPOTS_FILE} has a mistake ({exc}). Fix it by hand, or delete the "
+                              f"file to start again.") from None
+
+    @staticmethod
+    def _rule_view(rule, key: str) -> dict | None:
+        if rule is None:
+            return None
+        return {"map": key, "trucks": rule.trucks, "times": rule.times}
+
+    def economy_depots(self, lang: str = schema.BASE) -> dict:
+        """The Economy tab's Supply depots on the maps: the current mod's rules ({"map": "all" or a map pack, its
+        "name" in `lang`, "trucks" or "times"}, all maps first), the maps one may be given ({"pack", "name"}, the
+        game's order), and what a depot's trucks are worth (depot_money)."""
+        rules = self._depot_rules()
+        try:
+            listed = self.maps()["maps"]
+        except (StudioError, KeyError, ValueError, OSError):  # no game, or one without its map list: no maps to pick
+            listed = []
+
+        def name_of(m: dict) -> str:
+            titles = (m.get("titles") or {}).get(lang) or m.get("names") or [m["pack"]]
+            return str(titles[0] if titles else m["pack"])
+        names = {m["pack"].lower(): name_of(m) for m in listed}
+        shown = [{**self._rule_view(r, k), "name": names.get(k.lower(), k)} for k, r in rules.items()]
+        shown.sort(key=lambda r: (r["map"] != scenario.ALL_MAPS, r["name"].lower()))
+        return {"can": self._mod_dir() is not None, "rules": shown,
+                "maps": [{"pack": m["pack"], "name": name_of(m)} for m in listed], "money": self.depot_money()}
+
+    def economy_depots_set(self, where: str, trucks=None, times=None) -> dict:
+        """Give every depot on every map (`where` "all") or on one map (its pack) `trucks` each, or `times` its own
+        trucks; neither takes that rule out. Saved in the current mod's depots.toml at once; returns economy_depots."""
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        where = str(where or "")
+        if where != scenario.ALL_MAPS and not re.fullmatch(r"[A-Za-z0-9_]+", where):
+            raise StudioError(f"{where!r} isn't a map's pack name")
+        if trucks is not None and times is not None:
+            raise StudioError("Give the depots a number of trucks, or a times, not both.")
+        rule = None
+        if trucks is not None:
+            rule = scenario.DepotRule(trucks=self._trucks(trucks))
+        elif times is not None:
+            try:
+                t = float(times)
+            except (TypeError, ValueError):
+                raise StudioError(f"times: {times!r} isn't a number") from None
+            if isinstance(times, bool) or not math.isfinite(t) or t < 0:
+                raise StudioError("times is a number, 0 or more")
+            rule = scenario.DepotRule(times=t)
+        with self._saving:
+            rules = self._depot_rules()
+            rules.pop(next((k for k in rules if k.lower() == where.lower()), where), None)
+            if rule is not None:
+                rules[where] = rule
+            path = folder / scenario.DEPOTS_FILE
+            if rules:
+                _save_checked(path, scenario.depots_toml(rules, self.DEPOTS_HEADER), scenario.parse_depots)
+            elif path.is_file():
+                path.unlink()
+        return self.economy_depots()
 
     def scenario_move_spawn(self, pack: str, number: int, x: float, y: float) -> dict:
         """Put the current mod's spawn number `number` at x, y."""
@@ -4134,7 +4401,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             return []                  # the file check says what's wrong with it
         links = [(t, str(e.value)) for (t, path, how), e in (edits.edits.items() if edits else ())
                  if path == UPGRADE and how == "" and isinstance(e.value, Link)]
-        if not links:
+        shows = {t for (t, path, how), _e in (edits.edits.items() if edits else ()) if path == "ShowInMenu" and how == ""}
+        if not links and not shows:
             return []
         try:
             ix = self._open()
@@ -4144,13 +4412,41 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             units = {u["address"] for u in self._all_units(ix)}
             lost = [t for t, parent in links if parent not in units and parent not in edits.new_units
                     and (t in units or t in edits.new_units)]
-            names = self._names(ix, lost, "us", edits.new_units)
+            behind = self._shown_behind_hidden(ix, edits, units, {t for t, _p in links} | shows)
+            names = self._names(ix, lost + [a for pair in behind for a in pair], "us", edits.new_units)
         finally:
             ix.close()
         return [{"file": None, "set_aside": False, "unit": t,    # the check bar opens its page
                  "problem": f"{names.get(t, _tail(t))} is researched from a unit that's no longer in the mod, so the "
                             f"build stops on it. Pick another unit to research it from "
-                            f"in its Upgrade and research box, or none."} for t in lost]
+                            f"in its Upgrade and research box, or none."} for t in lost] + [
+            {"file": None, "set_aside": False, "unit": child,
+             # rule: unit-research-shown-parent
+             "problem": f"{names.get(child, _tail(child))} is shown in its build menu but researched from "
+                        f"{names.get(parent, _tail(parent))}, which is hidden there, so the build stops on it (the "
+                        f"game stops when that build menu opens). Show {names.get(parent, _tail(parent))} again, or "
+                        f"pick another unit to research it from in its Upgrade and research box, or none."}
+            for child, parent in behind]
+
+    def _shown_behind_hidden(self, ix: Index, edits: ModEdits, units: set, touched: set) -> list[tuple[str, str]]:
+        """[(unit, the unit it's researched from)] as the current mod has them, where the unit is shown in its build
+        menu at a battle date the other is hidden at (rule unit-research-shown-parent; the build refuses it). The
+        game's own units never are (checked 2026-10-10), so only links the mod made or a unit whose ShowInMenu it
+        changed (`touched`) are looked at."""
+        def shown(a):
+            mine = edits.get(a, "ShowInMenu")
+            if isinstance(mine, list):
+                return mine
+            real = self._resolve(edits, a)[0]
+            return (_props(ix.show(real)).get("ShowInMenu") or {}).get("numbers") if real in units else None
+        out = []
+        for child, parent in sorted(self._upgrade_links(ix, edits).items()):
+            if child not in touched and parent not in touched and child not in edits.new_units:
+                continue
+            mine, theirs = shown(child), shown(parent)
+            if mine and theirs and any(s and i < len(theirs) and theirs[i] == 0 for i, s in enumerate(mine)):
+                out.append((child, parent))
+        return out
 
     def rename_map_folder(self, name: str, to: str) -> dict:
         """Rename the current mod's maps/<name> to maps/<to> (the fix the mod check offers). Refused when maps/<to>
@@ -4300,6 +4596,36 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         save_settings(self._home, values)
         self._game_dir = None
         return self.game_folder()
+
+    # where modded copies go (rusemod.play.instances_choice): the folder chosen here (settings.json, the Launcher's
+    # too), else $RUSE_INSTANCES, else the recommended place, RUSE-Instances on the game's drive
+    def copies_folder(self) -> dict:
+        """Where Test in game builds the modded copy, for Settings (rusemod.play.copies_view): {"path", "how":
+        "chosen" | "env" | "recommended" | "fixed" (given when the Studio started), "recommended", "drive",
+        "other_drive": on another drive than the game, each copy is a full copy of the game, slower and bigger}."""
+        return copies_view(self._backup_game(), self._home, self._instances)
+
+    def choose_copies_folder(self) -> dict:
+        """Ask for the folder modded copies go to (Settings' Choose folder…); kept in settings.json, which the Launcher
+        reads too. The next Test in game builds there; the old folder stays until the modder deletes it by hand.
+        Returns copies_folder() and, when the folder is refused (inside the game), a "message"."""
+        if self._window is None or self._instances:
+            return self.copies_folder()
+        chosen = pick_folder(self._window)
+        if not chosen:
+            return self.copies_folder()
+        try:
+            keep_instances_dir(self._home, chosen, self._backup_game())
+        except ValueError as exc:
+            return {**self.copies_folder(), "message": str(exc)}
+        return self.copies_folder()
+
+    def use_recommended_copies(self) -> dict:
+        """Modded copies go to the recommended place again (RUSE-Instances on the game's drive): the folder chosen in
+        Settings is forgotten. The old folder stays until the modder deletes it by hand. Returns copies_folder()."""
+        if not self._instances:
+            keep_instances_dir(self._home, None)
+        return self.copies_folder()
 
     def edited(self) -> list[str]:
         """The named objects the current mod changes: a part changed for all its users marks every one of them. New
@@ -4502,6 +4828,39 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return out
 
     @staticmethod
+    def _ai_added(edits: ModEdits | None, config: dict, allowed: dict, base: dict) -> dict:
+        """{prop: the mod's value} of the values a difficulty or profile (`config`, as ai.configurations gives it)
+        doesn't list in the game and the mod gives it (ai_add): Default's numbers only."""
+        if edits is None or config["kind"] == "default" or not config["address"]:
+            return {}
+        return {prop: v for prop, v in edits.of(config["address"]).items()
+                if prop in base and prop not in allowed and isinstance(v, (int, float)) and not isinstance(v, bool)}
+
+    def ai_add(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
+        """Give a difficulty or profile (`address`) its own value `prop`, one only Default lists in the game, in the
+        current mod: it starts as Default's (so nothing changes until it's changed) and is then changed on its row
+        like the others (the owner, 2026-10-10: "all of them", the AI tab's "only the values a set lists can be
+        changed"). Written as All values' Add a value writes it (value_prop_add). Not tried in the game yet."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        ix = self._open()
+        try:
+            config = next((c for c in ai.configurations(ix) if c["address"] == address), None)
+            if config is None or config["kind"] == "default":
+                raise StudioError("Only a difficulty or a profile gets its own value here (Default has them all).")
+            allowed = self._ai_allowed("profile", ix.show(address))
+            base = self._ai_base(ix, edits)
+        finally:
+            ix.close()
+        if prop not in base:
+            raise StudioError(f"Default has no {prop}, so there's nothing to start it from.")
+        if prop in allowed or prop in edits.of(address):
+            raise StudioError(f"It has {prop} already: change it on its row.")
+        self.value_prop_add(address, prop, str(base[prop]), lang)
+        return {"prop": prop, "value": base[prop]}
+
+    @staticmethod
     def _ai_row(prop: str, p: dict, types: dict, lang: str, mine) -> dict:
         return {"prop": prop, "label": schema.label(prop, lang), "list": p["list"],
                 "type": types.get(prop + "[]" if p["list"] else prop, ""),
@@ -4555,22 +4914,34 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if not c["address"]:
                 continue
             allowed = self._ai_allowed("profile", objects[c["address"]])
-            others = tuple(sorted(p for p in allowed if p not in ai.PROFILE_PROPS))
+            # a difficulty's or profile's own value for one only Default lists, added by the mod (ai_add): shown in
+            # its group with Default's value as the one it had, "Game's value" taking it out again
+            added = self._ai_added(edits, c, allowed, base)
+            others = tuple(sorted(p for p in (*allowed, *added) if p not in ai.PROFILE_PROPS))
             groups = []
             for group, props in ai.PROFILE_GROUPS + (("other", others),):
                 rows = []
                 for prop in props:
-                    if prop not in allowed:
+                    if prop in added:
+                        row = self._ai_row(prop, {"list": False, "numbers": [base[prop]]}, types[ai.PROFILE], lang,
+                                           added[prop])
+                        row["added"] = True
+                    elif prop in allowed:
+                        row = self._ai_row(prop, allowed[prop], types[ai.PROFILE], lang, mine(c["address"], prop))
+                    else:
                         continue
-                    row = self._ai_row(prop, allowed[prop], types[ai.PROFILE], lang, mine(c["address"], prop))
                     if c["kind"] != "default":
                         row["same_default"] = (row["game"] if row["value"] is None else row["value"]) == base.get(prop, 0)
                     rows.append(row)
                 groups.append({"id": group, "rows": rows})
+            missing = [] if c["kind"] == "default" else [
+                {"prop": prop, "label": schema.label(prop, lang), "default": v}
+                for prop, v in base.items() if prop not in allowed and prop not in added]
+            missing.sort(key=lambda m: m["label"].casefold())
             profiles.append({"id": c["address"], "kind": c["kind"], "index": c["index"],
                              "name": texts.get(c["key"]) if c["kind"] != "default" else None,
                              "hint": texts.get(ai.HINT.format(c["index"])) if c["kind"] == "personality" else None,
-                             "groups": groups})
+                             "groups": groups, "missing": missing})
 
         named = {kind: {c["index"]: texts.get(c["key"]) for c in configs if c["kind"] == kind}
                  for kind in ("difficulty", "personality")}
@@ -4615,6 +4986,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if found is None:
                 raise StudioError(f"{address} isn't one of the AI tab's")
             p = self._ai_allowed(*found).get(prop)
+            added = False
+            if p is None and found[0] == "profile" and prop in edits.of(address):
+                # a value the mod added (ai_add): changed on its row too; it stays until Game's value takes it out
+                config = next((c for c in ai.configurations(ix) if c["address"] == address), None)
+                base = self._ai_base(ix, edits)
+                if config is not None and prop in self._ai_added(edits, config, {}, base):
+                    p, added = {"list": False, "numbers": [base[prop]]}, True
             if p is None:
                 raise StudioError(f"{prop} of {address} can't be changed here")
             values = value if isinstance(value, list) else [value]
@@ -4627,7 +5005,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             new, game = (got, p["numbers"]) if p["list"] else (got[0], p["numbers"][0])
             with self._saving:
                 edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
-                if new == game:
+                if new == game and not added:
                     edits.reset(address, prop)
                 else:
                     edits.set(address, prop, new)
@@ -5975,7 +6353,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         except (TypeError, ValueError):
             raise StudioError("The size is a number: 1 is as long as the unit it copies.") from None
         if not MODEL_SIZES[0] <= size <= MODEL_SIZES[1]:
-            raise StudioError("Give a size from 0.2 to 5 (1 is as long as the unit it copies).")
+            raise StudioError(f"Give a size from {MODEL_SIZES[0]:g} to {MODEL_SIZES[1]:g} (1 is as long as the unit "
+                              f"it copies).")
         found = [m for m in self._look_models(address)[0] if "_dest" not in m.lower()]
         if not found:
             raise StudioError("The unit this one copies has no 3D model to fit a new one to.")
@@ -5995,8 +6374,167 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError(f"{Path(file).name}: {first_error}")
         report["file"] = Path(file).name
         record = target.with_suffix(".json")
-        record.write_text(json.dumps({"from": str(file), "size": size, "report": report}, indent=1), encoding="utf-8")
+        record.write_text(json.dumps({"from": str(file), "size": size, "aircraft": bool(aircraft),
+                                      **({"facing": list(facing)} if facing else {}), "report": report}, indent=1),
+                          encoding="utf-8")
         return {"model": report, **self.look(address)}
+
+    # --- a new unit's model at another size (the owner, 2026-10-10: "the unarmed recon and some of these Chinese
+    # planes ... are a little bit too big" ... "make it a slider. So if people want to have like super big planes or
+    # make them realistic to how they are in real life compared, like maybe have the slider label those points" ...
+    # "even do a tiny"; in the Studio, players use it too): the model fitted again from the file it was made from, and
+    # every new plane (or ground unit) of the mod at once. A size can't change inside the running game: the game reads
+    # a unit's model when it loads, so a new size shows from the next build ---
+    def _own_model_record(self, address: str) -> dict | None:
+        """The record model_import keeps beside a new unit's own model ({"from", "size", "aircraft", "facing",
+        "report"}), or None when it has no model of its own."""
+        target = self._own_model_file(address)
+        if target is None or not target.is_file():
+            return None
+        try:
+            record = json.loads(target.with_suffix(".json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        return record if isinstance(record, dict) else None
+
+    def _unit_kinds(self, addresses) -> dict:
+        """Each unit's kind ("ground", "infantry", "air", "buildings"; None when unknown), a new unit's as the unit it
+        copies."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        ix = self._open()
+        try:
+            classes = {u["address"]: u["class"] for u in self._all_units(ix)}
+        finally:
+            ix.close()
+        return {a: KIND_OF.get(classes.get(self._resolve(edits, a)[0])) for a in addresses}
+
+    def _unit_kind(self, address: str) -> str | None:
+        return self._unit_kinds([address])[address]
+
+    def model_size_marks(self, address: str, lang: str = schema.BASE) -> dict:
+        """The points the size slider names for a new unit's model: {"tiny", "huge": the smallest and biggest sizes
+        the importer takes; "game": 1, as long as the unit it copies (one of the game's own: the size the game draws
+        that kind of unit); "real": its real-life size for an era unit when the library gives it (its width, a
+        plane's span, in the game's units of a metre), else None; "start": the copied unit's name in `lang`}."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        unit = edits.new_unit_of(address) if edits else None
+        start = None
+        if unit is not None:
+            ix = self._open()
+            try:
+                start = self._names(ix, [unit.source], lang).get(unit.source)
+            finally:
+                ix.close()
+        real = None
+        key = next((k for k, a in self._era_record().items() if a == address), None) if unit is not None else None
+        if key is not None:
+            try:
+                folder, lib, entry = self._era_entry(key)
+                info = self._era_size(folder, lib, entry, unit.source)
+            except (StudioError, OSError, ValueError, KeyError):
+                info = {"real": False}
+            if info.get("real"):
+                real = min(MODEL_SIZES[1], max(MODEL_SIZES[0], info["clamped"] if info["clamped"] is not None
+                                                else info["size"]))
+        return {"tiny": MODEL_SIZES[0], "huge": MODEL_SIZES[1], "game": 1.0, "real": real, "start": start}
+
+    def model_resize(self, address: str, size: float) -> dict:
+        """Fit a new unit's own model again at `size` from the file it was made from (no file to pick), the way it
+        faced and whether it's a plane kept. Returns model_import()'s answer."""
+        record = self._own_model_record(address)
+        if record is None:
+            # not a game rule: only a model the Studio fitted has a file to fit again
+            raise StudioError("This unit has no model of its own to resize: import one first.")
+        file = record.get("from")
+        if not file or not Path(file).is_file():
+            raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
+                              f"to change its size.")
+        aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
+        return self.model_import(address, file, size, bool(aircraft), facing=self._pinned_facing(record))
+
+    @staticmethod
+    def _pinned_facing(record: dict) -> list | None:
+        """The way a model faced when it was fitted, as the importer pins it ([axis: 0 = x, 1 = y; sign]): the facing
+        it was given, else the one its report says it found. The report writes the axis as "x" or "y", which the pin
+        doesn't take: passed as it is, the importer guessed again and turned the J-16 round (seen in the game,
+        2026-10-10, after the first Resize)."""
+        given = record.get("facing") or (record.get("report") or {}).get("facing")
+        if not isinstance(given, (list, tuple)) or len(given) != 2:
+            return None
+        axis, sign = {"x": 0, "y": 1}.get(given[0], given[0]) if isinstance(given[0], str) else given[0], given[1]
+        return [axis, sign] if axis in (0, 1) and sign in (1, -1) else None
+
+    RESIZE_TO = ("game", "real", "times")
+
+    def _own_models_of(self, kind: str) -> list[str]:
+        """The current mod's new units with a model of their own, of `kind` ("air": planes; "ground": the rest, the
+        ground units and infantry; "all")."""
+        have = [a for a in sorted(self._new_units()) if self._own_model_record(a) is not None]
+        kinds = self._unit_kinds(have) if have else {}
+        return [a for a in have if kind == "all" or (kind == "air") == (kinds[a] == "air")]
+
+    def model_sizes(self, address: str, lang: str = schema.BASE) -> dict:
+        """The size box of a new unit's own model: {"size": its size now, "resizable": whether the file it was made
+        from is still there (Resize fits it again from it), "kind": "air" or "ground" (the rest), "same_kind": how
+        many of the mod's new units of that kind have a model of their own (for "every plane at once"), "marks":
+        model_size_marks()}; None when it has no model of its own."""
+        record = self._own_model_record(address)
+        if record is None:
+            return None
+        kind = "air" if self._unit_kind(address) == "air" else "ground"
+        file = record.get("from")
+        return {"size": float(record.get("size") or 1.0), "resizable": bool(file) and Path(file).is_file(),
+                "kind": kind, "same_kind": len(self._own_models_of(kind)), "marks": self.model_size_marks(address, lang)}
+
+    def models_resize_all(self, kind: str, to: str, times: float | None = None) -> dict:
+        """Every new unit of the current mod with a model of its own, of `kind` ("air", "ground" or "all"), fitted
+        again: `to` "game" (size 1, as long as the unit it copies), "real" (its real-life size; a unit the library
+        gives none for is skipped) or "times" (its size now times `times`, kept within the importer's sizes). A job
+        the page follows; its lines are "resized<TAB>name<TAB>size" or "skipped<TAB>name<TAB>why"."""
+        from rusemod.webui import Job
+        if kind not in ("air", "ground", "all"):
+            raise StudioError(f"{kind}: resize planes (air), ground units (ground) or all")
+        if to not in self.RESIZE_TO:
+            # not a game rule: the Studio's three ways to resize ("game" is the game's size, size 1)
+            raise StudioError(f"{to}: resize to game, real or times")
+        if to == "times":
+            try:
+                times = float(times)
+            except (TypeError, ValueError):
+                raise StudioError("Times is a number: 0.5 is half the size, 2 twice.") from None
+            if not 0 < times <= MODEL_SIZES[1] / MODEL_SIZES[0]:
+                raise StudioError("Times is a number above 0: 0.5 is half the size, 2 twice.")
+        units = self._own_models_of(kind)
+        names = {a: u.name for a, u in self._new_units().items()}
+        job = Job()
+        self._jobs[job.id] = job
+
+        def work(say):
+            for address in units:
+                name = names.get(address, _tail(address))
+                try:
+                    if to == "game":
+                        size = 1.0
+                    elif to == "real":
+                        size = self.model_size_marks(address)["real"]
+                        if size is None:
+                            say(f"skipped\t{name}\tno real-life size known")
+                            continue
+                    else:
+                        now = float((self._own_model_record(address) or {}).get("size") or 1.0)
+                        size = min(MODEL_SIZES[1], max(MODEL_SIZES[0], now * times))
+                    self.model_resize(address, size)
+                    say(f"resized\t{name}\t{size:g}")
+                except (StudioError, ValueError, OSError) as exc:  # (one that can't be fitted leaves the rest)
+                    say(f"skipped\t{name}\t{exc}")
+
+        return job.start(work, f"{len(units)} model(s) done.", plain=(StudioError,))
 
     def model_import_remove(self, address: str) -> dict:
         """Take a new unit's own model out of the mod: it shows the model of the unit it copies again."""
@@ -6446,9 +6984,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return {"deleted": address, "source": source, "saved": str(edits.file), **research}
 
     def test_in_game(self) -> dict:
-        """Build the current mod into the PC's one modded copy (`RUSE-Instances\\Modded game`, the Launcher's too:
-        rusemod.play.shared_copy) and start the game from it, in the background. Returns {'job': id}; follow it with
-        job(id)."""
+        """Build the current mod into the PC's one modded copy (`Modded game` where Settings says, the Launcher's too:
+        rusemod.play.SHARED, _copies) and start the game from it, in the background. Returns {'job': id}; follow it
+        with job(id)."""
         # the mod and the map being edited, together (one folder when they're the same, as before mods and maps were
         # apart): the units of the one on the ground of the other
         folders = list(dict.fromkeys(f for f in (self._mod_dir(), self._map_dir()) if f is not None))
@@ -6462,7 +7000,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError("The game's files are being restored: wait for it to finish.")
 
         game = self._game()
-        copies = self._copies(game)
+        copies, _how = self._copies(game)
         instance = copies / SHARED if copies is not None else None
         look = self._where_to_look(folder) if game is not None else []
         name = " + ".join(f.name for f in folders)
@@ -6638,9 +7176,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     out.append(f"{mode} > {title} ({e.get('name', s['file'])})")
         return out
 
-    def _copies(self, game: Path | None) -> Path | None:
-        """Where Test in game puts its modded copies; None without the game (no place for them yet)."""
-        return (self._instances or instances_dir(game)) if game is not None else None
+    def _copies(self, game: Path | None) -> tuple[Path | None, str]:
+        """Where Test in game puts its modded copies and why: (the folder, "chosen" in Settings | "env" | "recommended"
+        | "fixed", given when the Studio started); (None, "") without the game (no place for them yet)."""
+        if game is None:
+            return None, ""
+        if self._instances:
+            return self._instances, "fixed"
+        return instances_choice(game, self._home)
 
     def _building(self) -> bool:
         """Whether a Test in game is still being built."""
@@ -6655,7 +7198,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         bug report, the player's own folders left out (rusemod.community), with the Studio's last start-up times
         (rusemod.startlog): {"findings": [...], "report": text}."""
         game = self._game()
-        findings = doctor.checks(game, self._copies(game), steam_running=self._starter.steam_running)
+        copies, how = self._copies(game)
+        findings = doctor.checks(game, copies, steam_running=self._starter.steam_running, how=how)
         report = doctor.report(findings, APP_NAMES[self.UPDATE_APP], self.UPDATE_VERSION,
                                startlog.recent(self.UPDATE_APP, self._home))
         return {"findings": findings, "report": private_paths_out(report)}
@@ -6666,7 +7210,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if action not in self.FIXES:
             raise StudioError(f"There's no fix called {action!r}.")
         game = self._game()
-        copies = self._copies(game)
+        copies, _how = self._copies(game)
         if copies is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no modded copies yet.")

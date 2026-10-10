@@ -214,7 +214,7 @@ LIKES = {M4: {"length": 1000.0, "width": 470.0}, PANZER: {"length": 800.0, "widt
 class EraSize(WithMod):
     """The import size suggested for an era unit: the one that gives it its real width (an aircraft: its wingspan) in
     the game's units against the start unit picked; 1 (as before) when that can't be worked out; clamped to the
-    importer's 0.2 to 5. The library gives the real sizes ("real") and the game's units in a metre ("units_per_metre");
+    importer's 0.05 to 20. The library gives the real sizes ("real") and the game's units in a metre ("units_per_metre");
     the start unit's hull length is the importer's own (find_source: here made up, as the made-up game has no
     models)."""
 
@@ -278,20 +278,20 @@ class EraSize(WithMod):
             self.api.era_unit_add("WWI|USA|Mark VIII Liberty", 0, 10, source=PANZER)    # against the Panzer's hull
             self.assertAlmostEqual(fitted.call_args.args[2], 1.35)
             self.api.era_unit_remove("WWI|USA|Mark VIII Liberty")
-            for bad in (0.1, 6, "big", True, float("nan")):
-                with self.subTest(size=bad), self.assertRaisesRegex(StudioError, "from 0.2 to 5"):
+            for bad in (0.01, 21, "big", True, float("nan")):
+                with self.subTest(size=bad), self.assertRaisesRegex(StudioError, "from 0.05 to 20"):
                     self.api.era_unit_add("WWI|USA|Mark VIII Liberty", 0, 10, size=bad)
         self.assertEqual(self.api.era_units_list("WWI")["units"][0]["added"], None)        # nothing half made
 
     def test_clamped_to_the_importers_sizes(self):
-        self.library({"Mark VIII Liberty": {"width_m": 30.0}}, {"ground": 180.0})
+        self.library({"Mark VIII Liberty": {"width_m": 60.0}}, {"ground": 180.0})
         info = self.api.era_unit_page("WWI|USA|Mark VIII Liberty")
-        self.assertEqual(info["size"], 5.0)
-        self.assertAlmostEqual(info["size_info"]["clamped"], 10.8)          # 30 x 180 x 4 / (2 x 1000)
+        self.assertEqual(info["size"], 20.0)
+        self.assertAlmostEqual(info["size_info"]["clamped"], 21.6)          # 60 x 180 x 4 / (2 x 1000)
         self.assertTrue(info["size_info"]["real"])
         self.library({"Mark VIII Liberty": {"width_m": 0.1}}, {"ground": 180.0})
         info = self.api.era_unit_page("WWI|USA|Mark VIII Liberty")
-        self.assertEqual(info["size"], 0.2)
+        self.assertEqual(info["size"], 0.05)
         self.assertAlmostEqual(info["size_info"]["clamped"], 0.036)
 
     def test_one_when_it_cant_be_worked_out(self):
@@ -394,7 +394,8 @@ class EraResearch(unittest.TestCase):
 
     def test_a_unit_never_shown_isnt_suggested(self):
         """The dearest unit the build menu never shows (ShowInMenu 0 at every battle date, as the game's DEMO, film and
-        empty units) isn't suggested: an era unit researched from it could never be researched. It stays a choice."""
+        empty units) isn't suggested, nor offered: a shown unit researched from one the menu has no button for stops
+        the game (headup/menu.py add_bouton_techno, KeyError; seen in the game 2026-10-10)."""
         from ruse_studio.edits import ModEdits
         self.api.new_mod("Hidden")
         edits = ModEdits(self.home / "mods" / "hidden")
@@ -402,15 +403,16 @@ class EraResearch(unittest.TestCase):
         edits.save()
         patton = self.api.era_unit_page("Cold War|USA|Patton")["research"]
         self.assertEqual((patton["suggested"], patton["why"]), (UB, "dearest"))    # C (40) never shown: B (30)
-        self.assertIn(UC, self.names(patton))
+        self.assertNotIn(UC, self.names(patton))
         # shown at the last battle date only (as the game's atomic units), while the new unit, as its start unit D,
-        # is shown at all five: not suggested either
+        # is shown at all five: not suggested nor offered either (at the first four the menu has no button for it)
         edits = ModEdits(self.home / "mods" / "hidden")
         edits.set(UC, "ShowInMenu", [0, 0, 0, 0, 1])
         edits.set(UD, "ShowInMenu", [1, 1, 1, 1, 1])
         edits.save()
         patton = self.api.era_unit_page("Cold War|USA|Patton")["research"]
         self.assertEqual((patton["suggested"], patton["why"]), (UB, "dearest"))
+        self.assertNotIn(UC, self.names(patton))
 
     def test_added_researched_and_chained(self):
         self.api.new_mod("Research")

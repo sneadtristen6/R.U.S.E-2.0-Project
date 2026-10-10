@@ -335,6 +335,18 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .model-own p { margin: 0; }
 .model-own .actions { flex-wrap: wrap; align-items: center; }
 .model-own input.model-size { width: 5em; }
+/* a model's size slider (app.js sizeSlider): Tiny to Huge on a log scale, its points named under it */
+.size-slider { display: grid; gap: 2px; min-width: 0; }
+.size-slider .size-range { width: 100%; margin: 0; accent-color: var(--accent); }
+.size-marks { position: relative; height: 40px; margin: 0 6px; }
+.size-mark { position: absolute; top: 0; transform: translateX(-50%); padding: 1px 4px; border: 0; border-left: 1px solid var(--line);
+             border-radius: 0; background: none; color: var(--muted); font-size: 11px; white-space: nowrap; cursor: pointer; }
+.size-mark.low { top: 19px; }
+.size-mark.size-tiny { transform: none; }
+.size-mark.size-huge { transform: translateX(-100%); border-left: 0; border-right: 1px solid var(--line); }
+.size-mark:hover, .size-mark:focus-visible { color: var(--accent); }
+.size-mark.size-game, .size-mark.size-real { color: var(--text); }
+.resize-all { flex-wrap: wrap; align-items: center; gap: 6px; }
 /* a new unit just made: its model box lit for a moment, where Import model is */
 .model-own.lit { outline: 2px solid transparent; outline-offset: 5px; border-radius: 2px; animation: lit 3s ease-out; }
 @keyframes lit { from { outline-color: var(--accent); } 60% { outline-color: var(--accent); } to { outline-color: transparent; } }
@@ -455,6 +467,16 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .scen-detail-row > span:first-child { min-width: 7em; }
 .scen-detail-row select { max-width: 100%; }
 .scen-detail-number { width: 6.5em; padding: 2px 6px; background: var(--panel-hi); border: 1px solid var(--line); border-radius: 6px; }
+/* a number box beside a map tool's slider (maps.js typedBeside): values past the slider's ends */
+.typed-number { width: 4.6em; margin-left: 6px; padding: 1px 4px; background: var(--panel-hi); border: 1px solid var(--line);
+                border-radius: 6px; font-size: 12px; }
+/* the Economy tab's Depots on the maps (app.js renderEconomyDepots): all maps or one, then how much */
+.economy-depots { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.economy-depots h3 { margin: 0 0 4px; font-size: 13px; }
+.economy-depots-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0; }
+.economy-depots-row input[type="number"] { width: 7em; }
+.economy-depots-row select { max-width: 100%; }
+.economy-depots-rules { margin: 6px 0; padding-left: 18px; }
 .scen-details .values-words-box { max-width: none; }
 .scen-selection { align-self: stretch; display: flex; flex-direction: column; gap: 6px; padding: 6px 12px 8px;
                   background: var(--hud); border: 1px solid var(--hud-line); border-top: 2px solid #ffd34d;
@@ -786,6 +808,13 @@ tr.edited .flag { border-color: var(--accent); }
 .nation-flags { display: flex; gap: 18px; margin: 6px 0; }
 .nation-flags figure { margin: 0; display: grid; justify-items: center; gap: 4px; }
 .nation-details { margin-top: 10px; padding-top: 6px; border-top: 1px solid var(--line); }
+/* a nation's units all at once (nations.js unitsBlock): the fill list, one row per era unit */
+.nation-units .actions { flex-wrap: wrap; }
+.nation-fill-list { width: 100%; border-collapse: collapse; margin: 6px 0; }
+.nation-fill-list td { padding: 4px 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+.nation-fill-list td:first-child { width: 1.6em; }
+.nation-fill-list select { max-width: 100%; }
+.ai-added { display: block; color: var(--accent); }
 .nation-details h3 { margin: 12px 0 2px; font-size: 14px; }
 .nation-details .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0; }
 .nation-reset { margin-top: 14px; }

@@ -533,7 +533,7 @@ class StudioLook(unittest.TestCase):
             with self.assertRaises(StudioError):
                 self.api.model_import("$/GFX/Everything/Descriptor_Unit_Test", str(model))  # a game unit
             with self.assertRaises(StudioError):
-                self.api.model_import(address, str(model), 9)  # too big
+                self.api.model_import(address, str(model), 21)  # too big (sizes go from 0.05 to 20)
         own = self.mod / "files" / "models" / "Descriptor_Unit_R2_New.glb"
         self.assertEqual((own.read_bytes(), calls), (b"glTF-own", [(self.MODEL, "tank.3ds", 1.36)]))
         self.assertEqual((res["model"]["vertices"], res["model"]["file"]), (10, "tank.3ds"))
@@ -543,6 +543,96 @@ class StudioLook(unittest.TestCase):
         self.assertEqual((self.api.cache_dir / shown[0]["url"][len("cache/"):]).read_bytes(), b"glTF-own")
         self.assertIsNone(self.api.model_import_remove(address)["own_model"])
         self.assertFalse(own.exists() or own.with_suffix(".json").exists())
+
+    def test_own_model_resized(self):
+        """The size slider (the owner, 2026-10-10: the Chinese planes too big; "make it a slider ... super big planes
+        or ... realistic ... label those points" ... "even do a tiny"): Resize fits the model again from the file it
+        was made from, as a plane and facing as it was; every plane of the mod at once goes to the game's size or a
+        step bigger; the points named are Tiny, Game size (1) and Huge (no real size for a hand-made model)."""
+        import time
+        from unittest import mock
+
+        from ruse_studio.api import StudioError
+        from ruse_studio.edits import NewUnit
+        jet = "$/GFX/Everything/Descriptor_Avion_R2_Jet"
+        tank = "$/GFX/Everything/Descriptor_Unit_R2_Tank"
+        made = {a: NewUnit(a, "$/GFX/Everything/Descriptor_Unit_Test", a.rsplit("_", 1)[-1]) for a in (jet, tank)}
+
+        class Edits:
+            new_units = made
+
+            def new_unit_of(self, a):
+                return made.get(a.split(":")[0])
+        self.api._edits = lambda: Edits()
+        self.api._unit_kinds = lambda addresses: {a: "air" if "Avion" in a else "ground" for a in addresses}
+        self.api._era_record = lambda: {}
+        self.api._open = lambda: mock.Mock()
+        self.api._names = lambda ix, addresses, lang, new_units=None: {a: "Sherman" for a in addresses}
+        calls = []
+
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, facing=None):
+            calls.append((Path(file).name, size, aircraft, facing))
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_bytes(b"glTF-own")
+            # the report writes the axis as a letter, as rusemod.modelin.report does
+            axis, sign = facing or (1, -1)
+            return {"vertices": 10, "triangles": 4, "draws": 1, "parts": {"Hull": "hull"}, "missing": [],
+                    "facing": ("x" if axis == 0 else "y", sign)}
+        model = Path(self.dir.name) / "jet.glb"
+        model.write_bytes(b"glTF")
+        with mock.patch("rusemod.unitmodel.import_model", fake_import):
+            with self.assertRaisesRegex(StudioError, "no model of its own"):
+                self.api.model_resize(jet, 2)
+            self.assertIsNone(self.api.model_sizes(jet))
+            self.api.model_import(jet, str(model), 5, True, facing=[0, -1])  # pinned, as an era unit's is
+            self.api.model_import(tank, str(model), 1.5)                      # found by the importer's rules
+            calls.clear()
+            self.api.model_resize(jet, 2.5)
+            self.api.model_resize(tank, 1.2)
+            # the pin kept, and the way the rules found as a pin the importer takes ([1, -1], not ["y", -1]: passed
+            # as the report writes it, the importer guessed again and turned the J-16 round, 2026-10-10)
+            self.assertEqual(calls, [("jet.glb", 2.5, True, [0, -1]), ("jet.glb", 1.2, False, [1, -1])])
+            calls.clear()
+            pinned = self.api._pinned_facing  # a record the first Resize wrote kept the letter: read as the pin too
+            self.assertEqual([pinned({"facing": ["x", 1]}), pinned({"report": {"facing": ["y", -1]}}),
+                              pinned({"facing": ["z", 1]}), pinned({})], [[0, 1], [1, -1], None, None])
+            sizes = self.api.model_sizes(jet)
+            self.assertEqual((sizes["size"], sizes["resizable"], sizes["kind"], sizes["same_kind"]), (2.5, True, "air", 1))
+            marks = sizes["marks"]
+            self.assertEqual((marks["tiny"], marks["game"], marks["huge"], marks["real"], marks["start"]),
+                             (0.05, 1.0, 20.0, None, "Sherman"))
+            calls.clear()
+            job = self.api.models_resize_all("air", "times", 1.25)["job"]
+            for _ in range(500):
+                got = self.api.job(job)
+                if got["state"] != "running":
+                    break
+                time.sleep(0.01)
+            self.assertEqual((got["state"], got["lines"]), ("done", ["resized\tJet\t3.125"]))  # the tank stays
+            self.assertEqual([c[:3] for c in calls], [("jet.glb", 3.125, True)])
+            job = self.api.models_resize_all("all", "real")["job"]
+            for _ in range(500):
+                got = self.api.job(job)
+                if got["state"] != "running":
+                    break
+                time.sleep(0.01)
+            self.assertEqual(sorted(got["lines"]), ["skipped\tJet\tno real-life size known",
+                                                    "skipped\tTank\tno real-life size known"])
+            for kind, to, times in (("boats", "game", None), ("air", "small", None), ("air", "times", 0)):
+                with self.subTest(kind=kind, to=to), self.assertRaises(StudioError):
+                    self.api.models_resize_all(kind, to, times)
+        # an era unit: Real life is its real size, kept within the slider (a KJ-2000's span past Huge sits at Huge)
+        self.api._era_record = lambda: {"Modern|China|J-16": jet}
+        self.api._era_entry = lambda key: (Path(self.dir.name), {}, {"key": key})
+        for info, real in (({"real": True, "size": 3.2, "clamped": None}, 3.2),
+                           ({"real": True, "size": 20.0, "clamped": 31.0}, 20.0), ({"real": False}, None)):
+            self.api._era_size = lambda folder, lib, entry, source, info=info: info
+            self.assertEqual(self.api.model_size_marks(jet)["real"], real)
+        self.assertIsNone(self.api.model_size_marks(tank)["real"])  # not an era unit
+        model.unlink()  # the file it was made from gone: it can't be resized, only imported again
+        self.assertFalse(self.api.model_sizes(jet)["resizable"])
+        with self.assertRaisesRegex(StudioError, "isn't there any more"):
+            self.api.model_resize(jet, 1)
 
     def test_own_model_fitted_past_a_crew_figure(self):
         """A copied unit whose models list a crew figure first (the Kubelwagen's driver: no chassis bone) gets the new

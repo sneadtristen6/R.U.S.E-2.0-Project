@@ -373,6 +373,8 @@
               <select id="scen-unit" size="5" class="place-list hidden"></select>
               <!-- the game's own line for the unit picked, as on its card (maps.js spawnDesc) -->
               <div id="scen-unit-desc" class="muted small unit-desc-line hidden"></div>
+              <!-- a new supply depot spot's trucks, and what it holds (maps.js spawnDesc, StudioApi.depot_money) -->
+              <div id="scen-depot-row" class="scen-detail-row small hidden"></div>
               <div id="scen-camp" class="chips hidden" role="group"></div>
               <!-- a depot spot and a starting point go beside the nearest road (maps.js snapToRoad): off = where clicked -->
               <label id="scen-snap-row" class="small hidden"><input id="scen-snap" type="checkbox"> <span id="scen-snap-label"></span></label>
@@ -574,6 +576,18 @@
         <h2 id="set-game-title"></h2><p id="set-game-path" class="small"></p>
         <div class="actions"><button id="set-game-change" type="button" class="small"></button></div>
       </section>
+      <!-- where modded copies go (rusemod.play.instances_dir, app.js SETTINGS "copies"): the folder chosen here, else
+           the recommended place, RUSE-Instances on the game's drive; kept in settings.json, the Launcher's too -->
+      <section class="setting" id="set-copies">
+        <h2 id="set-copies-title"></h2><p id="set-copies-help" class="muted small"></p>
+        <p id="set-copies-path" class="small"></p>
+        <p id="set-copies-drive" class="muted small"></p>
+        <div class="actions">
+          <button id="set-copies-change" type="button" class="small"></button>
+          <button id="set-copies-default" type="button" class="ghost"></button>
+        </div>
+        <p id="set-copies-note" class="small" role="status"></p>
+      </section>
       <!-- the clean game backup (rusemod.backup, app.js renderBackup): the only way the Studio writes into the game's
            own folder, and only when the modder asks for a restore -->
       <section class="setting" id="set-backup">
@@ -774,11 +788,11 @@
       <span id="me-length" class="muted small"></span>
     </div>
     <div id="me-shape" class="me-shape hidden">
-      <label><span id="me-fadein-label"></span> <input id="me-fadein" type="range" min="0" max="10" step="0.1">
+      <label><span id="me-fadein-label"></span> <input id="me-fadein" type="range" min="0" max="30" step="0.1">
         <span id="me-fadein-value" class="muted small"></span></label>
-      <label><span id="me-fadeout-label"></span> <input id="me-fadeout" type="range" min="0" max="10" step="0.1">
+      <label><span id="me-fadeout-label"></span> <input id="me-fadeout" type="range" min="0" max="30" step="0.1">
         <span id="me-fadeout-value" class="muted small"></span></label>
-      <label><span id="me-volume-label"></span> <input id="me-volume" type="range" min="-20" max="10" step="0.5">
+      <label><span id="me-volume-label"></span> <input id="me-volume" type="range" min="-40" max="20" step="0.5">
         <span id="me-volume-value" class="muted small"></span></label>
     </div>
     <p id="me-note" class="small" role="status"></p>

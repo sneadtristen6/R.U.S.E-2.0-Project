@@ -1,6 +1,13 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.3:** kopie z modami trafiają tam, gdzie wskażesz.
+
+- **Gdzie trafiają kopie z modami**, w Ustawieniach: wybierz folder, w którym budowana jest kopia gry z modami, albo
+  wróć do zalecanego miejsca, `RUSE-Instances` na dysku gry (tam kopia dzieli pliki z grą i jest gotowa w kilka sekund;
+  na innym dysku jest pełną kopią gry, wolniejszą i większą). Czysta kopia zapasowa gry trafia obok. Następne Testuj w
+  grze buduje w nowym miejscu; stary folder można usunąć ręcznie. Launcher używa tego samego folderu.
+
 **0.9.8.2:** przychodzą jednostki z innych epok: ich modele, w prawdziwej wielkości, za badaniem.
 
 - **Jednostki z innych epok:** epoki WWI, WWII+, Zimna wojna i Współczesność w karcie Jednostki mają teraz swoje
