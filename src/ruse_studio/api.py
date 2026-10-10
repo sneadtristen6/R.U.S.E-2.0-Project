@@ -61,6 +61,7 @@ from rusemod.webui import Job, job_view, pick_file, pick_folder, pick_save
 from .edits import REMOVED, EditsFileError, Link, Literal, ModEdits, NewUnit, plain_name
 from .music import MusicCalls
 from .era_units import EraUnitCalls
+from .missionedit import MissionCalls
 from .nations import NationCalls
 from . import __version__
 
@@ -396,7 +397,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls, startlog.StartCalls, MusicCalls,
-                NationCalls, EraUnitCalls):
+                NationCalls, EraUnitCalls, MissionCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
     # What Export writes into every mod's manifest ([made_with]); the mod list and the Launcher show it as the credit
@@ -2370,7 +2371,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             for n, sp in enumerate(spawns):
                 if sp.file.lower() == s["file"].lower():
                     new = {"kind": "Spawn", "x": sp.x, "y": sp.y, "turn": sp.rotation, "name": "",
-                           "camp": sp.camp, "what": sp.what, "mine": True, "spawn": n, "item": len(s["items"])}
+                           "camp": sp.camp, "what": sp.what, "mine": True, "spawn": n, "item": len(s["items"]),
+                           "mission_group": sp.group}
                     if sp.class_path == scenario.DEPOT:  # a depot the mod adds: its trucks (the build's 25 unset)
                         new["trucks"] = scenario.DEPOT_TRUCKS if sp.trucks is None else sp.trucks
                         new["trucks_set"] = sp.trucks is not None
@@ -3292,7 +3294,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             self._write_scenario_edits(pack, moves, spawns)
         return self.map_scenarios(pack)
 
-    SPAWN_FIELDS = ("camp", "trucks")  # what the Details panel changes on a spawn the mod adds (it turns with "rotation")
+    SPAWN_FIELDS = ("camp", "trucks", "group")  # what the Details panel changes on a spawn the mod adds (it turns
+    # with "rotation"); "group": a group of the map's own mission (rusemod.mission) it joins
 
     def scenario_spawn_set(self, pack: str, number: int, field: str, value) -> dict:
         """Change one value of the current mod's spawn number `number`: its side (`camp`: -1 neutral, or one of the
@@ -3310,6 +3313,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 if sp.class_path != scenario.DEPOT:
                     raise StudioError("Only a supply depot has trucks.")
                 new = replace(sp, trucks=self._trucks(value))
+            elif field == "group":
+                g = str(value or "").strip()
+                if g and not scenario._GROUP.match(g):
+                    raise StudioError("A group's name is letters, digits and _ (starting with a letter, up to 40).")
+                new = replace(sp, group=g or None)
             elif field == "camp":
                 try:
                     camp = int(value)

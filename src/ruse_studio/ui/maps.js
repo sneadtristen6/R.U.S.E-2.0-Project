@@ -2301,6 +2301,96 @@ function setScenTool(tool) {
   renderScenTools();
   drawScenario();
   renderDock();
+  if (MISSION_TOOLS.has(scen.tool)) openMissionTray();
+  drawMissionCameras();
+}
+
+// --- a new Operation's or chapter's own mission (mission.js): its trays, and its camera moves on the map ---
+function openMissionTray() {
+  const mvw = window.MissionView;
+  if (!mvw) return;
+  mvw.onPlay = playCamera;
+  mvw.onAddCamera = addCamera;
+  if (!scen.units && !scen.unitsLoading) loadSpawnUnits().then(() => { if (MISSION_TOOLS.has(scen.tool)) mvw.render(); }).catch(() => {});
+  mvw.open({ api: mv.api, words: mv.words, lang: mv.lang, pack: mv.current, units: scen.units || [],
+    nationNames: mv.nationNames || [], box: $("ms-box"), onChange: drawMissionCameras }, scen.tool)
+    .then(() => drawMissionCameras());  // (the camera moves are drawn once the mission is read)
+}
+
+// The camera moves on the map while Camera moves is open: each path as a line through its points (the one picked
+// bright), its points as dots, a line from its first point to the spot it looks at
+function drawMissionCameras() {
+  const gl = mv.gl;
+  if (!gl) return;
+  if (gl.missionCams) {
+    gl.scene.remove(gl.missionCams);
+    gl.missionCams.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    gl.missionCams = null;
+  }
+  const mvw = window.MissionView, draft = mvw && mvw.draft();
+  if (scen.tool !== "cameras" || !draft) { gl.draw(); return; }
+  const { THREE } = gl, group = new THREE.Group(), picked = mvw.camera();
+  const v = ([x, y, z]) => new THREE.Vector3(x * SCALE, z * SCALE, y * SCALE);
+  for (const c of draft.camera || []) {
+    const pts = (c.points || []).map(v), bright = c === picked;
+    if (pts.length >= 2) {
+      const curve = new THREE.CatmullRomCurve3(pts);
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(pts.length * 12)),
+        new THREE.LineBasicMaterial({ color: bright ? 0xffd34d : 0x9fb8c8, transparent: true, opacity: bright ? 1 : 0.6 })));
+    }
+    for (const p of pts) {
+      const dot = new THREE.Mesh(new THREE.SphereGeometry((mv.size || 1000) * 0.004, 10, 8),
+        new THREE.MeshBasicMaterial({ color: bright ? 0xffd34d : 0x9fb8c8 }));
+      dot.position.copy(p);
+      group.add(dot);
+    }
+    if (c.look && pts.length) {
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([pts[0], v(c.look)]),
+        new THREE.LineDashedMaterial({ color: 0xff8a3d, dashSize: (mv.size || 1000) * 0.01, gapSize: (mv.size || 1000) * 0.006 }))
+        .computeLineDistances());
+    }
+  }
+  group.renderOrder = 9;
+  gl.scene.add(group);
+  gl.missionCams = group;
+  gl.draw();
+}
+
+// A new camera move: three points round where the view looks, at the height set, looking at it
+function addCamera() {
+  const gl = mv.gl, mvw = window.MissionView;
+  if (!gl || !mvw) return;
+  const t = gl.controls.target, x = t.x / SCALE, y = t.z / SCALE, ground = t.y / SCALE, r = (mv.size || 1000) / SCALE * 0.08;
+  const h = ground + mvw.heightUnits();
+  mvw.addCamera({ points: [[x - r, y + r, h], [x, y + r * 1.3, h], [x + r, y + r, h]].map((p) => p.map(Math.round)),
+    look: [Math.round(x), Math.round(y), Math.round(ground)] });
+}
+
+// Play a camera move on the map view as the game would fly it: along its points, eased in and out, looking at its
+// spot; the view comes back where it was
+function playCamera(c) {
+  const gl = mv.gl;
+  if (!gl || !c || (c.points || []).length < 2) return;
+  const { THREE } = gl, v = ([x, y, z]) => new THREE.Vector3(x * SCALE, z * SCALE, y * SCALE);
+  const curve = new THREE.CatmullRomCurve3(c.points.map(v)), look = v(c.look || c.points[0]);
+  const keep = { pos: gl.camera.position.clone(), target: gl.controls.target.clone() };
+  const ms = Math.max(1, c.seconds || 15) * 1000, t0 = performance.now();
+  gl.controls.enabled = false;
+  const step = (now) => {
+    const t = Math.min(1, (now - t0) / ms), e = t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+    gl.camera.position.copy(curve.getPoint(e));
+    gl.camera.lookAt(look);
+    gl.renderer.render(gl.scene, gl.camera);
+    if (t < 1) requestAnimationFrame(step);
+    else {
+      gl.camera.position.copy(keep.pos);
+      gl.controls.target.copy(keep.target);
+      gl.controls.enabled = true;
+      gl.controls.update();
+      gl.draw();
+    }
+  };
+  requestAnimationFrame(step);
 }
 
 async function loadSpawnUnits() {
@@ -2833,6 +2923,13 @@ function renderItemDetails(s, it) {
     const gameCamp = it.game && "camp" in it.game ? (it.game.camp === null || it.game.camp === undefined ? 0 : it.game.camp) : null;
     box.append(row(w.scen_item_camp, tip, side,
       gameLine("camp", gameCamp === null ? "" : label(owners.find((o) => o.camp === gameCamp) || { camp: gameCamp, kind: "camp" }), gameCamp)));
+    if (ownSpawn && !missionLocked()) {  // a group of the map's own mission it joins, for its events to order it
+      const group = el("input", { type: "text", className: "small", value: it.mission_group || "", maxLength: 40,
+        placeholder: w.ms_group_hint, disabled: !can, title: w.tip_scen_item_group });
+      group.addEventListener("keydown", (e) => e.stopPropagation());
+      group.addEventListener("change", () => save("group", group.value.trim().replace(/[^A-Za-z0-9_]/g, "_")));
+      box.append(row(w.ms_group, w.tip_scen_item_group, group));
+    }
     if (it.trucks !== undefined || it.what === DEPOT_SLAB) {
       // no top but the file's own (scenario.TRUCKS_MOST): the Studio's old 1000 was its own, not the game's
       const trucks = el("input", { type: "number", min: "0", max: String(TRUCKS_MOST), step: "1", className: "scen-detail-number",
@@ -3629,7 +3726,13 @@ async function scenEdit(call, keepPicked = false) {
 
 function scenPointerDown(ev) {
   const gl = mv.gl, s = ((scen.data || {}).scenarios || [])[scen.pick];
-  if (!scen.tool || ev.button !== 0 || !gl.ground || !mv.edit || !s) return;
+  if (scen.tool === "cameras" && ev.button === 0 && gl.ground && mv.edit) {  // Camera moves: the next point, or the look
+    ev.preventDefault();
+    const p = hitGround(ev);
+    if (p && window.MissionView) window.MissionView.cameraClick(p.x / SCALE, p.z / SCALE, p.y / SCALE);
+    return;
+  }
+  if (!scen.tool || FORM_TOOLS.has(scen.tool) || ev.button !== 0 || !gl.ground || !mv.edit || !s) return;
   ev.preventDefault();
   if (scen.tool === "sectors") { sectorDown(ev, s); return; }  // the Sectors brush: a drag paints
   // Move, pressed on the ground (a press on an item is grabStart's): a box dragged selects every spawn in it (no mod
@@ -3651,7 +3754,7 @@ const GRABBABLE = ["StartingPoint", "Spawn", "LabelVille", "LabelMontagne", "Nam
 // On the Scenario side only: on the Map side the scenario's things are faded and locked.
 function canGrab() {
   return Boolean(mv.gl && mv.edit && scen.group && scen.group.visible && mv.mode === "scenario" && !mv.brush.on
-    && !mv.place.on && !road.on && !bridge.on && (!scen.tool || scen.tool === "move"));
+    && !mv.place.on && !road.on && !bridge.on && (!scen.tool || scen.tool === "move" || FORM_TOOLS.has(scen.tool)));
 }
 
 // What a press at `ev` would grab: {cam: the start} for a camera's grip, {it, objs} for an item (its drawn parts), or null
@@ -4158,6 +4261,7 @@ function takeOff(objs) {
 // --- showing one map ---
 async function show(pack, keepCamera) {
   const w = mv.words, ask = ++mv.ask;
+  if (mv.current !== pack && window.MissionView) window.MissionView.forget();  // another map: its own mission
   mv.current = pack;
   renderList();
   $("map-pick").textContent = w.map_loading;
@@ -4253,6 +4357,7 @@ const DOCK = [
   ["roads", null], ["bridges", null],
   ["building", null], ["prop", null], ["vegetation", null], ["paint", ["paint", "stamp"]], ["erase", ["erase"]],
   ["sectors", null], ["scen_move", null], ["scen_spawn", null], ["scen_start", null], ["scen_mark", null],
+  ["scen_mission", null], ["scen_goals", null], ["scen_events", null], ["scen_cameras", null],
   ["check", null],
 ];
 // The bar's tiles, per side (the owner, 2026-10-09: a Map / Scenario button "swaps the tool panel only"; Map is
@@ -4276,11 +4381,26 @@ const DOCK_GROUPS = {
     ["scen_spawn", ["scen_spawn"], "spawn"],
     ["scen_start", ["scen_start"], "start"],
     ["scen_mark", ["scen_mark"], "mark"],
+    // a new Operation's or chapter's own mission (mission.js): sides and rules, goals and events, camera moves
+    ["scen_mission", ["scen_mission"], "mission"],
+    ["scen_story", ["scen_goals", "scen_events"], "goals"],
+    ["scen_cameras", ["scen_cameras"], "camera"],
     ["check", ["check"], "check"],
   ],
 };
-const SCEN_KINDS = new Set(["sectors", "scen_move", "scen_spawn", "scen_start", "scen_mark"]);  // need a scenario picked
+const MISSION_DOCK_KINDS = new Set(["scen_mission", "scen_goals", "scen_events", "scen_cameras"]);  // need a mission's map
+const SCEN_KINDS = new Set(["sectors", "scen_move", "scen_spawn", "scen_start", "scen_mark", ...MISSION_DOCK_KINDS]);
 const scenToolOf = (kind) => (kind === "sectors" ? "sectors" : kind.slice("scen_".length));
+// the mission's trays are forms: the map turns and grabs as when looking around (Camera moves takes its clicks)
+const FORM_TOOLS = new Set(["mission", "goals", "events"]);
+const MISSION_TOOLS = new Set(["mission", "goals", "events", "cameras"]);
+
+// Why the open map can't have a mission of its own (a word key), or null: a new Operation's or chapter's only
+function missionLocked() {
+  const m = mv.maps.find((x) => x.pack === mv.current);
+  if (!m || !m.copy_of) return "mission_why_copy";
+  return (m.kinds || []).some((k) => k === "operation" || k === "campaign") ? null : "mission_why_battles";
+}
 // "Check this map" open; the last brush of each kind; the last kind open in each group
 const dock = { check: false, last: {}, lastIn: {} };
 
@@ -4328,6 +4448,9 @@ const ICONS = {
   start: "M6 21V3 M6 4h11l-3 4 3 4H6",
   mark: "M12 21s-6-6.5-6-11a6 6 0 0 1 12 0c0 4.5-6 11-6 11z M12 7.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z",
   sectors: "M3 4h18v16H3z M3 11c4 0 5-3 9-3 M12 8v12 M12 14c3 0 5 2 9 2",
+  mission: "M6 3h9l4 4v14H6z M15 3v4h4 M9 11h7 M9 15h7 M9 19h4",
+  goals: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10z M12 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2z",
+  camera: "M3 8h12v10H3z M15 11l6-3v10l-6-3 M6 5h4",
 };
 const BRUSH_ICON = { water: "drop", cover: "cover", block: "movement" };
 for (const f of FORMATIONS) {
@@ -4358,7 +4481,9 @@ function kindName(kind) {
   const w = mv.words;
   return { terrain: w.dock_terrain, water: w.brush_water, cover: w.brush_cover, movement: w.dock_movement, roads: w.dock_roads,
     bridges: w.dock_bridges, check: w.dock_check, erase: w.brush_erase, paint: w.dock_paint, sectors: w.scen_sectors_tool,
-    scen_move: w.scen_move_tool, scen_spawn: w.scen_spawn_tool, scen_start: w.scen_start_tool, scen_mark: w.scen_mark_tool }[kind]
+    scen_move: w.scen_move_tool, scen_spawn: w.scen_spawn_tool, scen_start: w.scen_start_tool, scen_mark: w.scen_mark_tool,
+    scen_mission: w.scen_mission_tool, scen_goals: w.scen_goals_tool, scen_events: w.scen_events_tool,
+    scen_cameras: w.scen_cameras_tool }[kind]
     || w[`scenery_${kind}`] || kind;
 }
 
@@ -4397,7 +4522,7 @@ function openKind(kind) {
     return;
   }
   if (SCEN_KINDS.has(kind)) {
-    if (!pickedScenario()) return;  // its tile is locked and says why
+    if (MISSION_DOCK_KINDS.has(kind) ? missionLocked() : !pickedScenario()) return;  // its tile is locked and says why
     lookAround();
     setScenTool(scenToolOf(kind));
     return;
@@ -4457,11 +4582,13 @@ function renderDock() {
   $("brush-look").setAttribute("aria-pressed", String(!kind));
   for (const tile of $("dock-kinds").children) {
     tile.setAttribute("aria-pressed", String(tile.dataset.group === group));
-    // a scenario's tools need a scenario: locked, saying why, until one is picked
-    const needs = SCEN_KINDS.has(tile.dataset.group);
-    tile.disabled = needs && !s;
-    tile.title = needs && !s ? (tile.dataset.group === "sectors" ? w.tip_scen_sectors_locked : w.tip_scen_locked) || ""
-      : tile.dataset.tip;
+    // a scenario's tools need a scenario, a mission's a new Operation or chapter: locked, saying why
+    const g = tile.dataset.group;
+    const kindsOf = (dockGroups().find(([x]) => x === g) || [null, []])[1];
+    const why = kindsOf.some((k) => MISSION_DOCK_KINDS.has(k)) ? missionLocked() && w[missionLocked()]
+      : SCEN_KINDS.has(g) && !s ? (g === "sectors" ? w.tip_scen_sectors_locked : w.tip_scen_locked) : null;
+    tile.disabled = Boolean(why);
+    tile.title = why || tile.dataset.tip;
   }
   // a group of two kinds: a tab for each, above the open one's tools
   const kinds = group ? dockGroups().find(([g]) => g === group)[1] : [];
@@ -4475,8 +4602,9 @@ function renderDock() {
   $("dock-tray").classList.toggle("hidden", !kind);
   $("tray-brush").classList.toggle("hidden", !(kind && (DOCK.find(([k]) => k === kind) || [])[1]));
   $("tray-place").classList.toggle("hidden", !PLACEABLE.includes(kind));
-  $("tray-scen").classList.toggle("hidden", !(SCEN_KINDS.has(kind) && kind !== "sectors"));
+  $("tray-scen").classList.toggle("hidden", !(SCEN_KINDS.has(kind) && kind !== "sectors" && !MISSION_DOCK_KINDS.has(kind)));
   $("tray-sectors").classList.toggle("hidden", kind !== "sectors");
+  $("tray-mission").classList.toggle("hidden", !MISSION_DOCK_KINDS.has(kind));
   $("tray-roads").classList.toggle("hidden", kind !== "roads");
   $("tray-bridges").classList.toggle("hidden", kind !== "bridges");
   $("tray-check").classList.toggle("hidden", kind !== "check");
@@ -5386,7 +5514,8 @@ function setBrushMode(on) {
 function pointerMode() {
   const gl = mv.gl;
   if (!gl) return;
-  const busy = mv.brush.on || mv.place.on || Boolean(scen.tool) || road.on || bridge.on, M = gl.THREE.MOUSE;
+  const busy = mv.brush.on || mv.place.on || (Boolean(scen.tool) && !FORM_TOOLS.has(scen.tool)) || road.on || bridge.on,
+    M = gl.THREE.MOUSE;
   // the middle button turns the view in every mode (the wheel zooms), so the hand never has to change buttons
   gl.controls.mouseButtons = busy ? { LEFT: null, MIDDLE: M.ROTATE, RIGHT: M.PAN }
                                   : { LEFT: M.ROTATE, MIDDLE: M.ROTATE, RIGHT: M.PAN };
@@ -6760,7 +6889,7 @@ function lookAround() {
   dock.check = false;
   stopRoad();
   stopBridge();
-  if (scen.tool) { scen.tool = null; scen.selected = null; pointerMode(); renderScenTools(); drawScenario(); }
+  if (scen.tool) { scen.tool = null; scen.selected = null; pointerMode(); renderScenTools(); drawScenario(); drawMissionCameras(); }
   cancelRamp();
   mv.place.lineStart = null;
   showPlaceGuide(null);

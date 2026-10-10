@@ -1506,8 +1506,10 @@ def _make_mission(result, clone, found: tuple, mod_id: str, rows: list, game, te
                 classes = {n for n, c in ul.classes.items() if c.registered} | set(result.new_classes)
             except pyscript.ScriptError:
                 classes = None
+        from .scenario import placed_groups
         ctx = M.Context(new, clone.kind, points, zones, rects,
-                        set(MB.camera_paths(cam_raw)) if cam_raw is not None else set(), {}, classes)
+                        set(MB.camera_paths(cam_raw)) if cam_raw is not None else set(),
+                        placed_groups(rows, clone.scenario), classes)
         bad = M.problems(mission, base, ctx)
         for level, message in bad:
             result.findings.append(Finding(level, f"{where}: {message}"))
@@ -1845,8 +1847,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 owner = next((m for m, _ops in mods if m.id == mod_id), None)
                 found = next((v for k, v in getattr(owner, "missions", {}).items() if k.lower() == name.lower()), None)
                 if found is not None:  # its own mission (maps/<map>/mission.toml)
-                    rows = [r for m, _ops in mods for k, rs in m.scenario.items() if k.lower() == name.lower()
-                            for r in rs]
+                    rows = [r for mod_id_ in result.order for m, _ops in mods if m.id == mod_id_  # (load order, as
+                            for k, rs in m.scenario.items() if k.lower() == name.lower() for r in rs]  # applied)
                     if not _make_mission(result, clone, found, mod_id, rows, game, text_arc,
                                          reading(data_new, data_base), say):
                         continue

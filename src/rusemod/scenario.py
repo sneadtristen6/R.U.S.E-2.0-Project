@@ -1303,7 +1303,8 @@ def with_depots(rows: list, rule: DepotRule, shipped: dict[str, "Scenario"]) -> 
 class Spawn:
     """A unit or building spawned when scenario `file` starts: `what` (a class name, Unit_M4_Sherman, or the full
     class path the shipped spawns use), for side `camp` (None: neutral, -1), at x, y, turned `rotation` radians.
-    `trucks`: a depot's trucks (None: DEPOT_TRUCKS)."""
+    `trucks`: a depot's trucks (None: DEPOT_TRUCKS). `group`: the group of a map's own mission it joins (its design
+    item is then named, group_names, and the mission gathers it by that name: TagUnit, proven in T30)."""
     file: str
     what: str
     x: float
@@ -1312,10 +1313,38 @@ class Spawn:
     rotation: float = 0.0
     trucks: int | None = None
     z: float | None = None   # the ground's height there: the build fills it from the map (the shipped ones match it)
+    group: str | None = None
 
     @property
     def class_path(self) -> str:
         return self.what if "." in self.what else SHIPPED_PATHS.get(self.what, CLASS_PATH + self.what)
+
+
+_GROUP = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,39}$")
+
+
+def group_names(spawns, file: str | None = None) -> list:
+    """Each spawn's design item name, or None: a spawn with a group is named MG_<group>_<n>, n counting that group's
+    spawns of its scenario in order (the scenario pass names the items so, and a map's mission gathers them by it)."""
+    seen: dict = {}
+    out = []
+    for s in spawns:
+        if not isinstance(s, Spawn) or not s.group or (file is not None and s.file.lower() != file.lower()):
+            out.append(None)
+            continue
+        key = (s.file.lower(), s.group)
+        seen[key] = seen.get(key, 0) + 1
+        out.append(f"MG_{s.group}_{seen[key]}")
+    return out
+
+
+def placed_groups(spawns, file: str) -> dict:
+    """{group: [its spawns' design item names]} for scenario `file` (a map's mission's Context.placed)."""
+    out: dict = {}
+    for s, name in zip(spawns, group_names(spawns, file)):
+        if name:
+            out.setdefault(s.group, []).append(name)
+    return out
 
 
 def spawn_class_problems(map_pack: str, spawns: list[Spawn], registered, shipped_paths) -> list[str]:
@@ -1364,7 +1393,7 @@ def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
         at = f"{where}: spawn {n}"
         if not isinstance(m, dict):
             raise ScenarioError(f"{at} isn't a table")
-        extra = sorted(set(m) - {"file", "what", "x", "y", "camp", "rotation", "trucks"})
+        extra = sorted(set(m) - {"file", "what", "x", "y", "camp", "rotation", "trucks", "group"})
         if extra:
             raise ScenarioError(f"{at}: unknown key {extra[0]!r}")
         for k in ("file", "what", "x", "y"):
@@ -1392,7 +1421,10 @@ def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
             if Spawn(f, what, x, y).class_path != DEPOT:
                 raise ScenarioError(f"{at}: trucks is only for a supply depot (what = \"DalleBatimentDepot\")")
             _check_trucks(trucks, at)
-        out.append(Spawn(f, what, x, y, camp, rot, trucks))
+        group = m.get("group")
+        if group is not None and (not isinstance(group, str) or not _GROUP.match(group)):
+            raise ScenarioError(f"{at}: group must be a name of letters, digits and _ (starting with a letter, up to 40)")
+        out.append(Spawn(f, what, x, y, camp, rot, trucks, group=group or None))
     return out
 
 
@@ -1406,6 +1438,8 @@ def spawns_toml(spawns: list[Spawn]) -> str:
             lines.append(f"rotation = {s.rotation!r}")
         if s.trucks is not None:
             lines.append(f"trucks = {s.trucks}")
+        if s.group:
+            lines.append(f'group = "{s.group}"')
         lines.append("")
     return "\n".join(lines)
 
@@ -1570,7 +1604,7 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
         s.set_warmup(item, f"{name}_mod{k}")
         return f"{name}_mod{k}"
 
-    for m in moves:
+    for m, spawn_name in zip(moves, group_names(moves)):  # (a grouped spawn's item named for its map's mission)
         member = folder + m.file
         if member.lower() not in files:
             raw = read(member)
@@ -1606,7 +1640,7 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
                 near = min(s.items, key=lambda it: (it.position[0] - m.x) ** 2 + (it.position[1] - m.y) ** 2,
                            default=None)
                 z = near.position[2] if near is not None else 0.0
-            s.add_spawn(m.x, m.y, m.class_path, camp=camp, rotation=m.rotation, z=z, trucks=trucks)
+            s.add_spawn(m.x, m.y, m.class_path, camp=camp, rotation=m.rotation, z=z, trucks=trucks, name=spawn_name)
             continue
         if isinstance(m, Start):
             item = s.add_start(m.x, m.y, m.team, m.place, m.rotation, m.z)

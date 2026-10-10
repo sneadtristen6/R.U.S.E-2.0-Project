@@ -49,6 +49,25 @@ def cluster_folders(raw: bytes, src: str) -> tuple[str, str]:
     return py[0], loc[0]
 
 
+def entry_folder(read_glad, src: str, entry: str | None) -> str:
+    """The script folder of shipped map `src`'s menu entry `entry` (its BATTLES entry when None), as its scenario
+    cluster names it (Anzio: scripting_challenge; its scenario file's name doesn't say)."""
+    from .newmap import _cluster_base, _member, _props, menu_entries
+    from .players import GLOBALS, MAPINFO
+    g_raw, m_raw = read_glad(GLOBALS), read_glad(MAPINFO)
+    if g_raw is None or m_raw is None:
+        raise MissionBuildError("the game's menus aren't in ZZ_GladPatchableWin.dat")
+    m, g = Ndf(m_raw), Ndf(g_raw)
+    found = [f for f in menu_entries(m, g, src) if (f[2] == entry if entry else f[3] == "battles")]
+    if len(found) != 1:
+        raise MissionBuildError(f"{src} has no one entry {entry!r} to read the mission of")
+    base = _cluster_base(m, _props(m, m.objects[found[0][0]]))
+    raw = read_glad(_member(base)) if base else None
+    if raw is None:
+        raise MissionBuildError(f"{entry or src}'s scenario cluster isn't in the game")
+    return cluster_folders(raw, src)[0].rsplit(BS, 1)[1]
+
+
 def cluster_pointed(raw: bytes, src: str, new: str) -> tuple[bytes, str]:
     """The copy's scenario cluster with its script folder and text file at the new mission's; and the copied
     mission's folder name (scripting_challenge...)."""

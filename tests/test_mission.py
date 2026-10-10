@@ -258,6 +258,34 @@ class MissionScript(unittest.TestCase):
         self.assertEqual(M.text_key_name("Test", "G_reach"), M.text_key_name("test", "G_reach"))
 
 
+class PlacedGroups(unittest.TestCase):
+    """A unit placed on the map (scenario.toml) can join a group of the map's mission: the scenario pass names its
+    design item MG_<group>_<n> and the mission gathers it by that name (TagUnit, as T30's fleet: proven)."""
+
+    def test_named_the_same_way_by_both(self):
+        from rusemod import scenario as S
+        rows = S.parse_spawns([
+            {"file": "a.scenario", "what": "Unit_M4_Sherman", "x": 1, "y": 2, "camp": 1, "group": "column"},
+            {"file": "a.scenario", "what": "Unit_M4_Sherman", "x": 3, "y": 4, "camp": 1},
+            {"file": "b.scenario", "what": "Unit_M4_Sherman", "x": 5, "y": 6, "group": "column"},
+            {"file": "a.scenario", "what": "Unit_M10", "x": 7, "y": 8, "camp": 1, "group": "column"}])
+        self.assertEqual(S.group_names(rows), ["MG_column_1", None, "MG_column_1", "MG_column_2"])
+        self.assertEqual(S.placed_groups(rows, "A.scenario"), {"column": ["MG_column_1", "MG_column_2"]})
+        back = S.parse_spawns(tomllib.loads(S.spawns_toml(rows))["spawn"])
+        self.assertEqual([s.group for s in back], ["column", None, "column", "column"])
+        with self.assertRaises(S.ScenarioError):
+            S.parse_spawns([{"file": "a.scenario", "what": "Unit_M10", "x": 1, "y": 1, "group": "no spaces"}])
+
+    def test_the_mission_gathers_them(self):
+        m = M.parse(tomllib.loads(SAMPLE.replace('group = "wave"\nstart = "event"', 'group = "fleet"\nstart = "event"')))
+        c = ctx(placed={"fleet": ["MG_fleet_1", "MG_fleet_2"]})
+        self.assertFalse([p for p in M.problems(m, base(), c) if "fleet" in p[1]])
+        imports, defs, launch = M.script(m, base(), c, name_to_key)
+        text = source(imports, defs, launch)
+        self.assertIn("U_MG_fleet_1 = leveldesignsolo.helper.TagUnit('MG_fleet_1')", text)
+        self.assertIn("VariableUnitGroup(UnitList=[U_MG_fleet_1, U_MG_fleet_2])", text)
+
+
 def camera_file() -> bytes:
     classes = ["TCameraPath", "TCameraPathKey"]
     props = [("PositionKeyVector", 0), ("DirectionKeyVector", 0), ("Name", 0), ("Coord", 1)]

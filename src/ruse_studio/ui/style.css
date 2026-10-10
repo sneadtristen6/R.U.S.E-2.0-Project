@@ -746,6 +746,26 @@ tr.edited .flag { border-color: var(--accent); }
 .map-dock.compact .dock-tile svg, .map-dock.compact .tool-tile svg { width: 30px; height: 30px; }
 .map-dock.compact #tray-tip { display: none; }
 .map-dock.compact .mode-chip { min-width: 0; padding: 2px 6px; }
+/* a new Operation's or chapter's own mission (mission.js): rows of label and controls, a card a goal or an event,
+   each event's steps one to a row; nothing scrolls sideways (rows wrap) */
+.ms-panel { display: flex; flex-direction: column; gap: 6px; }
+.ms-panel > button { align-self: flex-start; }
+.ms-row, .ms-side, .ms-action { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.ms-label { min-width: 120px; color: #c9d8ea; }
+.ms-head { margin-top: 4px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+.ms-card { display: flex; flex-direction: column; gap: 5px; padding: 6px 8px; border: 1px solid #2d527d;
+           background: rgba(6, 16, 31, 0.55); }
+.ms-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.ms-action { padding: 3px 0 3px 8px; border-left: 2px solid #2d527d; }
+.ms-tools { display: inline-flex; align-items: center; gap: 2px; margin-left: auto; }
+.ms-words { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; flex: 1 1 260px; min-width: 0; }
+.ms-langs { display: flex; flex-direction: column; gap: 3px; flex-basis: 100%; }
+.ms-text { flex: 1 1 220px; min-width: 120px; max-width: 520px; }
+.ms-number { width: 90px; }
+.ms-note { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ms-problems { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.ms-panel select.small, .ms-panel input.small { max-width: 100%; }
+.link.danger { color: #ff8a7a; }
 .map-dock.compact .scen-selection .sel-name, .map-dock.compact .scen-selection .muted { display: none; }
 .map-dock.compact .scen-selection .sel-unit { width: 56px; }
 
