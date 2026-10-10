@@ -574,19 +574,28 @@ class StudioLook(unittest.TestCase):
             calls.append((Path(file).name, size, aircraft, facing))
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_bytes(b"glTF-own")
+            # the report writes the axis as a letter, as rusemod.modelin.report does
+            axis, sign = facing or (1, -1)
             return {"vertices": 10, "triangles": 4, "draws": 1, "parts": {"Hull": "hull"}, "missing": [],
-                    "facing": facing or ["x", 1]}
+                    "facing": ("x" if axis == 0 else "y", sign)}
         model = Path(self.dir.name) / "jet.glb"
         model.write_bytes(b"glTF")
         with mock.patch("rusemod.unitmodel.import_model", fake_import):
             with self.assertRaisesRegex(StudioError, "no model of its own"):
                 self.api.model_resize(jet, 2)
             self.assertIsNone(self.api.model_sizes(jet))
-            self.api.model_import(jet, str(model), 5, True, facing=["x", -1])
-            self.api.model_import(tank, str(model), 1.5)
+            self.api.model_import(jet, str(model), 5, True, facing=[0, -1])  # pinned, as an era unit's is
+            self.api.model_import(tank, str(model), 1.5)                      # found by the importer's rules
             calls.clear()
             self.api.model_resize(jet, 2.5)
-            self.assertEqual(calls, [("jet.glb", 2.5, True, ["x", -1])])
+            self.api.model_resize(tank, 1.2)
+            # the pin kept, and the way the rules found as a pin the importer takes ([1, -1], not ["y", -1]: passed
+            # as the report writes it, the importer guessed again and turned the J-16 round, 2026-10-10)
+            self.assertEqual(calls, [("jet.glb", 2.5, True, [0, -1]), ("jet.glb", 1.2, False, [1, -1])])
+            calls.clear()
+            pinned = self.api._pinned_facing  # a record the first Resize wrote kept the letter: read as the pin too
+            self.assertEqual([pinned({"facing": ["x", 1]}), pinned({"report": {"facing": ["y", -1]}}),
+                              pinned({"facing": ["z", 1]}), pinned({})], [[0, 1], [1, -1], None, None])
             sizes = self.api.model_sizes(jet)
             self.assertEqual((sizes["size"], sizes["resizable"], sizes["kind"], sizes["same_kind"]), (2.5, True, "air", 1))
             marks = sizes["marks"]

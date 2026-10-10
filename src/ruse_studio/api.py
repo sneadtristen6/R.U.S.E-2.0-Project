@@ -6081,8 +6081,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to change its size.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
-        facing = record.get("facing") or (record.get("report") or {}).get("facing")
-        return self.model_import(address, file, size, bool(aircraft), facing=list(facing) if facing else None)
+        return self.model_import(address, file, size, bool(aircraft), facing=self._pinned_facing(record))
+
+    @staticmethod
+    def _pinned_facing(record: dict) -> list | None:
+        """The way a model faced when it was fitted, as the importer pins it ([axis: 0 = x, 1 = y; sign]): the facing
+        it was given, else the one its report says it found. The report writes the axis as "x" or "y", which the pin
+        doesn't take: passed as it is, the importer guessed again and turned the J-16 round (seen in the game,
+        2026-10-10, after the first Resize)."""
+        given = record.get("facing") or (record.get("report") or {}).get("facing")
+        if not isinstance(given, (list, tuple)) or len(given) != 2:
+            return None
+        axis, sign = {"x": 0, "y": 1}.get(given[0], given[0]) if isinstance(given[0], str) else given[0], given[1]
+        return [axis, sign] if axis in (0, 1) and sign in (1, -1) else None
 
     RESIZE_TO = ("game", "real", "times")
 
