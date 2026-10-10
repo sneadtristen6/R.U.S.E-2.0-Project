@@ -215,9 +215,12 @@ class NationCalls:
         return {"nation": n, "units": out, "hidden": sum(u["hidden"] for u in out), "can": edits is not None,
                 "eras": eras}
 
-    def nation_units_hide(self, nation: int, hide: bool = True) -> dict:
+    def nation_units_hide(self, nation: int, hide: bool = True, lang: str = "base") -> dict:
         """Take every one of nation `nation`'s own units out of its build menus in the current mod (`hide`), or give
-        them the game's menus back (each unit's ShowInMenu change taken out). Returns nation_units()."""
+        them the game's menus back (each unit's ShowInMenu change taken out). Returns nation_units(), with
+        "unlinked": the names (in `lang`) of the units made buyable from the start because their research parent is
+        hidden now."""
+        from rusemod import schema
         from .api import ModEdits, _can_edit, _props
         n = nations.check(nation)
         edits = self._edits()
@@ -238,7 +241,32 @@ class NationCalls:
                     edits.set(address, self.SHOW_IN_MENU, [0] * len(p["numbers"]))
                 else:
                     edits.reset(address, self.SHOW_IN_MENU)
-        return self.nation_units(n)
+        # a unit still shown that is researched from one now hidden crashes the game when its building's menu opens
+        # (headup/menu.py add_bouton_techno looks up the parent's button: KeyError; seen in the game 2026-10-10, the
+        # Chinese units researched from Italy's hidden ones): it becomes buyable from the start, as the Upgrade box's
+        # "none" makes it, and the page says which
+        unlinked = []
+        if hide:
+            edits = ModEdits(edits.folder)
+            hidden = self._hidden_by_mod(edits)
+            ix = self._open()
+            try:
+                links = self._upgrade_links(ix, edits)
+            finally:
+                ix.close()
+            for child, parent in sorted(links.items()):
+                if parent in hidden and child not in hidden:
+                    self.set_upgrade(child, None)
+                    unlinked.append(child)
+        view = self.nation_units(n, lang)
+        if unlinked:
+            ix = self._open()
+            try:
+                names = self._names(ix, unlinked, lang if lang in schema.LANGS else "us", self._new_units())
+            finally:
+                ix.close()
+            view["unlinked"] = [names.get(a, a) for a in unlinked]
+        return view
 
     def nation_fill_list(self, nation: int, era: str, source: str, lang: str = "base") -> dict:
         """What filling nation `nation`'s menus from `era`'s units of nation `source` (as the era library names it:

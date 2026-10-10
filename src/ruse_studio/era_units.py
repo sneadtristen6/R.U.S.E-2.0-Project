@@ -628,16 +628,17 @@ class EraUnitCalls:
             if UPGRADE not in ix.prop_types(CLASS_OF[kind_of(entry)]):
                 return empty
             units = {u["address"]: u for u in self._all_units(ix)}
-            choices = self._menu_units(edits, units, menu)
+            choices = self._menu_units(edits, units, menu, ix)  # (never-shown units left out: the 2026-10-10 crash)
             names = self._names(ix, choices, told, new_units)
             english = names if told == "us" else self._names(ix, choices, "us", new_units)
             def shown_at(a, props):     # the battle dates the build menu shows unit `a` at (None: not said)
                 shows = edits.get(a, "ShowInMenu") if edits else None
                 shows = (props.get("ShowInMenu") or {}).get("numbers") if shows is None else shows
                 return [bool(x) for x in shows] if isinstance(shows, list) and shows else None
-            # the new unit is shown at its start unit's dates; a parent missing from the menu at one of them isn't
-            # suggested (2026-10-09: the dearest were the game's atomic units, shown at the last date only, and
-            # DEMO, film and empty units, never shown): there it could never be researched. It stays a choice.
+            # the new unit is shown at its start unit's dates; a parent missing from the menu at one of them is no
+            # choice (2026-10-09: the dearest were the game's atomic units, shown at the last date only, and DEMO,
+            # film and empty units, never shown; 2026-10-10, seen in the game: a shown upgrade whose parent has no
+            # button in the menu stops the game, headup/menu.py add_bouton_techno)
             mine_at = shown_at(source, _props(ix.show(self._resolve(edits, source)[0]))) if source else None
             prices, never_shown = {}, set()
             for a in choices:
@@ -653,7 +654,8 @@ class EraUnitCalls:
                     never_shown.add(a)
         finally:
             ix.close()
-        shown = list(names.values())
+        choices = [a for a in choices if a not in never_shown]
+        shown = [names[a] for a in choices if a in names]
         twice = {n for n in shown if shown.count(n) > 1}  # two called the same: told apart as the Upgrade box does
 
         def named(a):

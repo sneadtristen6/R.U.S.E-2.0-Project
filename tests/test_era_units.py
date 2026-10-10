@@ -394,7 +394,8 @@ class EraResearch(unittest.TestCase):
 
     def test_a_unit_never_shown_isnt_suggested(self):
         """The dearest unit the build menu never shows (ShowInMenu 0 at every battle date, as the game's DEMO, film and
-        empty units) isn't suggested: an era unit researched from it could never be researched. It stays a choice."""
+        empty units) isn't suggested, nor offered: a shown unit researched from one the menu has no button for stops
+        the game (headup/menu.py add_bouton_techno, KeyError; seen in the game 2026-10-10)."""
         from ruse_studio.edits import ModEdits
         self.api.new_mod("Hidden")
         edits = ModEdits(self.home / "mods" / "hidden")
@@ -402,15 +403,16 @@ class EraResearch(unittest.TestCase):
         edits.save()
         patton = self.api.era_unit_page("Cold War|USA|Patton")["research"]
         self.assertEqual((patton["suggested"], patton["why"]), (UB, "dearest"))    # C (40) never shown: B (30)
-        self.assertIn(UC, self.names(patton))
+        self.assertNotIn(UC, self.names(patton))
         # shown at the last battle date only (as the game's atomic units), while the new unit, as its start unit D,
-        # is shown at all five: not suggested either
+        # is shown at all five: not suggested nor offered either (at the first four the menu has no button for it)
         edits = ModEdits(self.home / "mods" / "hidden")
         edits.set(UC, "ShowInMenu", [0, 0, 0, 0, 1])
         edits.set(UD, "ShowInMenu", [1, 1, 1, 1, 1])
         edits.save()
         patton = self.api.era_unit_page("Cold War|USA|Patton")["research"]
         self.assertEqual((patton["suggested"], patton["why"]), (UB, "dearest"))
+        self.assertNotIn(UC, self.names(patton))
 
     def test_added_researched_and_chained(self):
         self.api.new_mod("Research")

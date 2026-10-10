@@ -142,8 +142,11 @@
       const show = el("button", { type: "button", className: "small ghost", textContent: w.nations_units_show,
         title: w.tip_nations_units_show, disabled: !data.can || !data.hidden });
       const set = async (on) => {
-        try { await api().nation_units_hide(x.nation, on); } catch (err) { problem(err); return; }
-        say(fill(on ? w.nations_units_hidden : w.nations_units_shown, { nation: name.now }), "ok");
+        let res;
+        try { res = await api().nation_units_hide(x.nation, on, N.lang); } catch (err) { problem(err); return; }
+        // the units researched from one now hidden: made buyable from the start (the game stops otherwise)
+        say(fill(on ? w.nations_units_hidden : w.nations_units_shown, { nation: name.now })
+          + (res && res.unlinked && res.unlinked.length ? " " + fill(w.nations_units_unlinked, { list: res.unlinked.join(", ") }) : ""), "ok");
         draw();
       };
       hide.addEventListener("click", () => set(true));

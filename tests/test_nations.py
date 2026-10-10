@@ -222,6 +222,10 @@ class ShownIndex:
     def show(self, address):
         return {"values": [(f"ShowInMenu[{i}]", 1, None) for i in range(5)]}
 
+    def links(self, prop):
+        # a US tank researched from Italy's: another nation's chain, never one the Italian hide touches
+        return {"$/GFX/Everything/Descriptor_Unit_US_Tank2": "$/GFX/Everything/Descriptor_Unit_US_Tank"}
+
     def close(self):
         pass
 
@@ -270,9 +274,25 @@ class NationUnits(unittest.TestCase):
         self.assertIn("ShowInMenu = [0, 0, 0, 0, 0]", text)
         self.assertNotIn("Italy_HQ", text)
         self.assertNotIn("US_Tank", text)
+        self.assertNotIn("unlinked", view)  # nothing was researched from them
         view = self.api.nation_units_hide(4, False)
         self.assertEqual(view["hidden"], 0)
         self.assertNotIn("ShowInMenu", (self.mod / "src" / "studio.rndf").read_text(encoding="utf-8"))
+
+    def test_a_unit_researched_from_a_hidden_one_is_unlinked(self):
+        """The 2026-10-10 crash: Chinese units researched from Italy's, Italy's then hidden; the game's menu stops on a
+        shown upgrade whose parent has no button. Hide all makes such a unit buyable from the start, and says so."""
+        china = "$/GFX/Everything/Descriptor_Unit_China_Type99"
+        self.api._upgrade_links = lambda ix, edits: {china: "$/GFX/Everything/Descriptor_Unit_Italy_Tank",
+                                                     "$/GFX/Everything/Descriptor_Unit_US_Tank2": "$/GFX/Everything/Descriptor_Unit_US_Tank"}
+        calls = []
+        self.api.set_upgrade = lambda address, parent, lang="base": calls.append((address, parent))
+        view = self.api.nation_units_hide(4, True)
+        self.assertEqual(calls, [(china, None)])
+        self.assertEqual(view["unlinked"], ["Type99"])
+        calls.clear()
+        self.api.nation_units_hide(4, False)  # showing them again unlinks nothing
+        self.assertEqual(calls, [])
 
     def test_filled_from_an_era(self):
         listed = self.api.nation_fill_list(4, "Modern", "China")

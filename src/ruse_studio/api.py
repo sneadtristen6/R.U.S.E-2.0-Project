@@ -1160,14 +1160,36 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         get = (lambda p, d: edits.get(address, p) if edits and edits.get(address, p) is not None else d)
         return get("Nationalite", u["nation"]), get("Factory", u["factory"])
 
-    def _menu_units(self, edits: ModEdits | None, units: dict, menu: tuple) -> list[str]:
+    @staticmethod
+    def _hidden_by_mod(edits: ModEdits | None) -> set[str]:
+        """The units the current mod takes out of every battle date's build menu (ShowInMenu all 0: the Nations tab's
+        Hide all, or by hand)."""
+        if edits is None:
+            return set()
+        return {target for (target, path, how), e in edits.edits.items()
+                if path == "ShowInMenu" and how == "" and isinstance(e.value, list) and e.value and not any(e.value)}
+
+    def _menu_units(self, edits: ModEdits | None, units: dict, menu: tuple, ix: Index | None = None) -> list[str]:
         """The units (the game's, then the current mod's new ones) in build menu `menu` ((nation, build menu)) as the
         mod has it: those a unit there may be researched from (upgrade's choices, before its own upgrades are left
-        out)."""
+        out). A unit never shown in the build menus isn't one (the mod hides it, or with `ix` the game's own never
+        shown: ShowInMenu 0 at every battle date): the game's menu finds a shown upgrade's parent by its button and
+        stops on one it hasn't got (headup/menu.py add_bouton_techno, KeyError; seen in the game 2026-10-10, Italy's
+        units hidden and China's researched from them)."""
         new_units = edits.new_units if edits else {}
+        hidden = self._hidden_by_mod(edits)
         pool = [a for a in list(units) + list(new_units) if a in units or self._resolve(edits, a)[0] in units]
-        return [a for a in pool if units[self._resolve(edits, a)[0]]["class"] in KIND_OF
-                and self._menu_of(edits, units, a) == menu]
+        out = [a for a in pool if units[self._resolve(edits, a)[0]]["class"] in KIND_OF
+               and self._menu_of(edits, units, a) == menu and a not in hidden]
+        if ix is not None:
+            def never_shown(a):
+                mine = edits.get(a, "ShowInMenu") if edits else None
+                if isinstance(mine, list):
+                    return bool(mine) and not any(mine)
+                game = (_props(ix.show(self._resolve(edits, a)[0])).get("ShowInMenu") or {}).get("numbers")
+                return bool(game) and not any(game)
+            out = [a for a in out if not never_shown(a)]
+        return out
 
     def upgrade(self, address: str, lang: str = schema.BASE) -> dict:
         """A unit's place in the upgrade chains. `parent`: the unit it's researched from as the current mod has it
@@ -1197,7 +1219,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                         below.add(child)
                         todo.append(child)
             mine = self._menu_of(edits, units, address)
-            choices = [a for a in self._menu_units(edits, units, mine) if a != address and a not in below]
+            choices = [a for a in self._menu_units(edits, units, mine, ix) if a != address and a not in below]
+
+            def shown_at(a):  # the battle dates the build menu shows unit `a` at, as the mod has it (None: not said)
+                own = edits.get(a, "ShowInMenu") if edits else None
+                shows = own if isinstance(own, list) else (
+                    _props(ix.show(self._resolve(edits, a)[0])).get("ShowInMenu") or {}).get("numbers")
+                return [bool(x) for x in shows] if shows else None
+            # a parent missing from the menu at a date this unit is shown at is no choice: there the game's menu
+            # stops on the upgrade (headup/menu.py add_bouton_techno; seen in the game 2026-10-10)
+            need = shown_at(address)
+            if need:
+                choices = [a for a in choices if (lambda at: at is None or all(
+                    at[i] if i < len(at) else False for i, on in enumerate(need) if on))(shown_at(a))]
             children = sorted(c for c, p in links.items() if p == address)
             parent = links.get(address)
             gone = parent is not None and parent not in units and parent not in new_units
