@@ -93,8 +93,8 @@ RULES: dict[str, Rule] = {
         "A unit shown in its build menu at a battle date where the unit it's researched from is hidden (ShowInMenu "
         "0): the game stops when that build menu opens.",
         "game", "2026-10-10 more-custom test: Italy's units hidden, Chinese era units researched from them; the game "
-                "stopped as soon as Italy's buildings were built (crash dump: headup/menu.py add_bouton_techno, "
-                "KeyError on the hidden parent's button). The owner the same day: \"don't allow that to happen. There "
+                "stopped as soon as Italy's buildings were built, on the hidden parent's research button (the details "
+                "are in the project's private notes). The owner the same day: \"don't allow that to happen. There "
                 "shouldn't be a unit hidden behind a research one shown in the menu\"; with the links taken out, the "
                 "next test ran"),
     "unit-five-dates": Rule(
