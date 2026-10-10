@@ -501,6 +501,73 @@ missions = [                       # each: its map's pack name, a /, its scenari
   builds it, under its own headings, with **Move up** and **Move down** (among the missions of its group from its own
   list, as LittleGroove's Menu Entry step) and **Game's order** to take the mod's order out.
 
+### A new Operation's or chapter's own mission: `maps/<NewName>/mission.toml` (built: `rusemod.mission`)
+
+A new map copied from an Operation or a campaign chapter (`map.toml` `entry`) plays the mission it copies, unless its
+folder has a `mission.toml`: then it plays a mission of its own, made by the build from this file (the Studio's
+Scenario side: **Mission**, **Goals & events**, **Camera moves**). A copy started on Blank Terrain from an Operation
+or a chapter gets one from the start (the copied mission needs the map's own items). BATTLES maps can't have one yet.
+
+```toml
+[mission]
+time_limit = 30             # minutes on the clock (an Operation counts down); 0: no clock
+time_up = "defeat"          # when it runs out: defeat, victory or nothing
+win = "main_goals"          # main_goals (victory once every main goal is done) or events (an event's victory only)
+opening = "Flyby"           # optional: a camera move played as the mission loads (a [[camera]], or the map's own)
+
+[[side]]                    # the copied mission's sides, by number (its scenario's camps): never more or fewer
+number = 1
+nation = "Germany"          # optional: US, Germany, UK, France, Italy, USSR, Japan
+difficulty = "hard"         # optional: easy, normal, hard
+plays = "ai"                # optional, a computer side: script (only what the events say) or ai (the whole map)
+money = 500                 # optional: its money at the start
+
+[[goal]]
+id = "reach"                # a name of its own (goals and events each need one)
+text = { us = "TAKE THE BRIDGE", fr = "PRENEZ LE PONT" }   # or text = "TAKE THE BRIDGE": English everywhere
+main = true                 # true: counts towards the win; false: a bonus goal
+done = "zone"               # zone (a unit of the player's reaches it), destroyed (a group), time (seconds), event
+zone = "zone_bridge"        # a round or square zone of the map (places.toml, or the map's own)
+marker = "point_bridge"     # optional: a named point the goal's label sits on
+start = "start"             # start (in the goals panel at the start) or event (shown by an event's goal step)
+
+[[event]]
+id = "column"
+when = "time"               # start, time (at), zone (zone, side, count), destroyed (group), goal (goal)
+at = 40                     # seconds after the start
+repeat = 0                  # time only: again every this many seconds (at least 5); 0 once
+wait = 0                    # seconds between being set off and the first step
+do = [                      # in turn; a goal shown runs beside the steps after it
+  { do = "message", text = "An enemy column is coming." },
+  { do = "spawn", unit = "Unit_Carro_Armato_M15_42", count = 2, side = 2, at = "point_east", group = "column" },
+  { do = "move", group = "column", to = ["point_way", "point_hill"] },
+  { do = "hold", group = "column", zone = "zone_hill" },
+]
+
+[[camera]]
+name = "Flyby"
+seconds = 15
+points = [[880000, 820000, 60000], [900000, 840000, 50000]]   # map units, z the height above the sea
+look = [889143, 833073, 24000]                                 # the spot it looks at the whole way
+```
+
+- The steps: `message` (text), `spawn` (unit, count, side, at, group), `move` (group, to), `attack` (group, target:
+  a group), `hold` (group, zone), `artillery` (group: its guns, on the map; at), `bombing` and `paradrop` (group:
+  the planes, brought in first; at), `camera` (camera, seconds), `money` (side, amount: its money becomes that),
+  `goal` (show a goal set to start by an event), `complete` (a goal set to be done by an event), `victory`,
+  `defeat`, `wait` (seconds), `ai` (side: the computer plays it over the whole map from then on).
+- The build makes the mission's script from the game's own mission blocks only, the way the game's own missions are
+  made: nothing a mod brings runs. Its texts go into the game's ten languages (a language left out shows the
+  English). Its camera moves go into the copy's own camera file. The mission goes in a menu pack of its own (the
+  game keeps a mission's saved results by its pack and place, so it can't land on a shipped mission's), so a
+  chapter is open from the start.
+- Named points and zones, groups, goals, sides and camera moves are checked before anything is built; what isn't
+  tried in the game yet is said as a warning (the Studio lists the same).
+- Tried in the game: messages, units brought in, an artillery strike, moves and holding a zone, an attack, a bombing
+  run, a paratroop drop, main and bonus goals, a goal on a zone or a group, a group of named units, victory in an
+  Operation and in a chapter (T22, T30, T41). Not yet: the mission's own camera moves, the goals panel at the start,
+  a goal done after a time, repeating events, money given during a mission, a side handed to the computer (T45).
+
 ### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`)
 
 ```
@@ -859,8 +926,12 @@ y = 650000.0
 camp = 0                      # who gets it: -1 neutral (the default), else one of the scenario's own camps (0 up)
 rotation = 0.5                # radians, optional
 trucks = 25                   # a supply depot (what = "DalleBatimentDepot") only: its trucks (default 25)
+group = "column"              # optional: a group of the map's own mission (mission.toml, below) it joins
 ```
 
+- `group` (a name of letters, digits and `_`, starting with a letter): the build names the item `MG_<group>_<n>`
+  (n counting that group's spawns in the scenario, in order) and the map's own mission puts it in that group, so its
+  events can order it and a goal can be to destroy it (a mission's group of named units: tried in the game, T30).
 - The build adds a design item (`TGameDesignItem` + `TGameDesignAddOn_Spawn`) to the scenario's list; moves are
   applied first, so their item numbers stay the shipped ones. It stands at the ground's height there (every shipped
   spawn does), and a depot gets its trucks (`ChampInteger`; the game gives a depot without it none).
