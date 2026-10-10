@@ -762,7 +762,8 @@ class EraUnitCalls:
             size = self._era_size(folder, lib, entry, source)["size"] if has_model else 1.0
         if isinstance(size, bool) or not isinstance(size, (int, float)) or not MODEL_SIZES[0] <= size <= MODEL_SIZES[1]:
             # not a game rule: the sizes the model importer takes (model_import)
-            raise StudioError("Give a size from 0.2 to 5 (1 is as long as the unit it starts from).")
+            raise StudioError(f"Give a size from {MODEL_SIZES[0]:g} to {MODEL_SIZES[1]:g} (1 is as long as the unit "
+                              f"it starts from).")
         research = self._era_research(entry, source, nation, factory, "us")
         if research_from == SUGGESTED:
             research_from = research["suggested"]

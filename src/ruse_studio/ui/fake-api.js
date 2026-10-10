@@ -1202,7 +1202,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"eras_note": "These are all the free (CC0 and CC BY) models we could include. There are plenty more out there, and you can add your own with Import model.", "eras_not_downloaded": "The {era} units aren't on this PC yet: {n} units, {size} to download.", "eras_download": "Download the {era} units", "tip_eras_download": "Downloads this era's units (their models and pictures) from RUSE 2.0's GitHub. Every file is checked before it's used. Once they're here, they update themselves when new ones come out.", "eras_downloading": "Downloading: {done} of {total}…", "eras_unpacking": "Unpacking…", "eras_download_done": "The {era} units are ready.", "eras_updating": "Updating the {era} units: newer ones are out…", "eras_none_yet": "No {era} units are out yet: they come as they're finished.", "eras_no_list": "The list of era units couldn't be loaded ({why}).", "eras_era_ww1": "WWI", "eras_era_ww2": "WWII+", "eras_era_cold": "Cold War", "eras_era_modern": "Modern", "eras_nation_usa": "USA", "eras_nation_germany": "Germany", "eras_nation_uk": "United Kingdom", "eras_nation_france": "France", "eras_nation_italy": "Italy", "eras_nation_ussr": "USSR", "eras_nation_russia": "Russia", "eras_nation_japan": "Japan", "eras_nation_china": "China", "tip_eras_nation": "The nation whose build menu the unit goes in.", "tip_eras_factory": "The build menu (building) the unit goes in.", "eras_model_by": "Model by {author} ({licence}):", "tip_eras_credit": "The model's page, where its maker shared it.", "eras_in_place_of": "in place of {name}", "eras_game_model": "No model yet: it shows the copied unit's model.", "eras_no_fit": "The importer can't fit this kind of unit yet (towed guns): it shows the copied unit's model for now.", "eras_added": "{name} is in your mod.", "eras_removed": "{name} is out of your mod.", "era_vanilla": "Vanilla", "tip_era_chip": "Vanilla: the game's own units. WWI, WWII+, Cold War, Modern: RUSE 2.0's units for that era, each with another maker's free 3D model; add any of them to your mod.", "eras_in_mod_badge": "in your mod", "eras_start_from": "Start from", "tip_eras_start_from": "The game unit whose values it starts with: speed, armour, weapons, how it plays. Any unit of its kind; the first is the suggested one.", "eras_start_help": "It starts with that unit's values. Once it's in your mod, change any of them on its page, like any unit.", "eras_suggested": "Suggested", "eras_start_same": "Same type", "eras_start_other": "Other units", "eras_add": "Add to my mod", "tip_eras_add": "Makes it a new unit of your mod: its model, its maker's credit, the values of the unit it starts from, in the build menu picked.", "tip_eras_name": "Its name in the game, in every language.", "tip_eras_price": "What it costs to build, at every battle date.", "eras_in_mod_as": "It's in your mod: change its values, model and card on its page, like any unit.", "eras_open_page": "Open its page", "tip_eras_open_page": "Its page in your mod, where every value can be changed.", "eras_take_out": "Take it out of my mod", "tip_eras_take_out": "Deletes its unit from your mod, with every change made to it, its model and its credit."});
   // an era unit's size and the unit it's researched from (words.toml eras_size*, eras_research_*, tip_eras_size,
   // tip_eras_research_*)
-  Object.assign(words.us, {"eras_size": "Size", "tip_eras_size": "How big its model is: 1 is as long as the unit it starts from. The suggestion gives it its real size beside the game's own units (its real width; a plane's, its wingspan).", "eras_size_help": "1 = as long as the start unit; the suggestion is its real size.", "eras_size_real_width": "Suggested: its real width, {m} m.", "eras_size_real_span": "Suggested: its real wingspan, {m} m.", "eras_size_clamped": "Its real size would need {raw}, but sizes go from 0.2 to 5: {size} is the nearest.", "eras_size_unknown": "Its real size isn't in the library yet, so 1: as long as the start unit.", "eras_size_unread": "Its real size couldn't be worked out, so 1: as long as the start unit.", "eras_research_from": "Researched from", "tip_eras_research_from": "The unit it's researched from: it can be built only after that research (a unit in the same nation's build menu; your mod's new units too). None: buyable from the start. Change it later in its page's Upgrade and research box.", "eras_research_none": "None: buyable from the start", "eras_research_why_start": "Suggested: the unit it starts from.", "eras_research_why_in_place_of": "Suggested: the unit it stands in for.", "eras_research_why_dearest": "Suggested: the dearest unit of this build menu, so an advanced unit comes after research.", "eras_research_price": "Research price", "tip_eras_research_price": "What its research costs.", "eras_research_time": "Research time", "tip_eras_research_time": "How long its research takes, in the seconds or minutes picked beside it (50 seconds to start, as in the Upgrade and research box; that the game counts seconds isn't timed in the game yet).", "tip_eras_research_locked": "Nothing to research: it's buyable from the start. Pick a unit it's researched from first.", "tip_eras_research_off": "Units of this kind have no research in the game's files."});
+  Object.assign(words.us, {"eras_size": "Size", "tip_eras_size": "How big its model is: 1 is as long as the unit it starts from. The suggestion gives it its real size beside the game's own units (its real width; a plane's, its wingspan).", "eras_size_help": "1 = as long as the start unit; the suggestion is its real size.", "eras_size_real_width": "Suggested: its real width, {m} m.", "eras_size_real_span": "Suggested: its real wingspan, {m} m.", "eras_size_clamped": "Its real size would need {raw}, but sizes go from 0.05 to 20: {size} is the nearest.", "eras_size_unknown": "Its real size isn't in the library yet, so 1: as long as the start unit.", "eras_size_unread": "Its real size couldn't be worked out, so 1: as long as the start unit.", "eras_research_from": "Researched from", "tip_eras_research_from": "The unit it's researched from: it can be built only after that research (a unit in the same nation's build menu; your mod's new units too). None: buyable from the start. Change it later in its page's Upgrade and research box.", "eras_research_none": "None: buyable from the start", "eras_research_why_start": "Suggested: the unit it starts from.", "eras_research_why_in_place_of": "Suggested: the unit it stands in for.", "eras_research_why_dearest": "Suggested: the dearest unit of this build menu, so an advanced unit comes after research.", "eras_research_price": "Research price", "tip_eras_research_price": "What its research costs.", "eras_research_time": "Research time", "tip_eras_research_time": "How long its research takes, in the seconds or minutes picked beside it (50 seconds to start, as in the Upgrade and research box; that the game counts seconds isn't timed in the game yet).", "tip_eras_research_locked": "Nothing to research: it's buyable from the start. Pick a unit it's researched from first.", "tip_eras_research_off": "Units of this kind have no research in the game's files."});
   // research: what taking out a unit others are researched from does, seconds or minutes (words.toml research_*, set_research_*, upgrade_parent_gone, upgrade_gone_option, check_open_unit)
   Object.assign(words.us, {"set_research_title": "Research", "set_research_help": "What happens to the units researched from a unit you take out of your mod, and whether research times are typed in seconds or minutes.", "research_gone_label": "When you take out a unit that others are researched from:", "tip_research_gone": "What the Studio does when you delete a unit of your mod (or take an era unit out) while other units are researched from it.", "research_gone_warn": "Warn me first", "research_gone_refuse": "Refuse", "research_gone_relink": "Re-link them", "tip_research_gone_warn": "The Studio asks first. If you go ahead, the units researched from it are left researched from a unit that's gone: the check bar lists them, and the game can't be tested until each gets another unit, or none, in its Upgrade and research box.", "tip_research_gone_refuse": "The unit stays in your mod while any unit is researched from it: pick another unit for them in their Upgrade and research box first.", "tip_research_gone_relink": "The units researched from it are researched from the unit it was researched from instead, at the same price and time. If it wasn't researched from any, they become buyable from the start.", "research_time_unit": "Research time in", "tip_research_time_unit": "Type research times in seconds or minutes: minutes are turned into whole seconds, the unit the times are kept in (that the game counts them in seconds isn't timed in the game yet).", "research_seconds": "seconds", "research_minutes": "minutes", "research_gone_ask": "Researched from {name}: {names}. If you take it out, they're left researched from a unit that's gone, and the game can't be tested until each gets another unit, or none, in its Upgrade and research box.", "research_gone_anyway": "Take it out anyway", "tip_research_gone_anyway": "Takes it out now. The units researched from it wait for you to pick another unit for them; the check bar lists them.", "research_gone_settings": "Change this in Settings", "tip_research_gone_settings": "Opens Settings, where you choose what taking out such a unit does: warn first, refuse, or re-link them.", "research_relinked": "{name} is now researched from {to}.", "research_relinked_none": "{name} is now buyable from the start.", "research_left": "Researched from a unit that's gone: {names}. Pick another unit for each in its Upgrade and research box (the check bar lists them).", "upgrade_parent_gone": "It's researched from a unit that's no longer in your mod, so the build stops on it. Pick another unit below, or none.", "upgrade_gone_option": "{name} (no longer in your mod)", "check_open_unit": "Open its page", "tip_check_open_unit": "Shows this unit's page, where its Upgrade and research box picks another unit to research it from."});
   // the Music tab (words.toml music_*, tip_tab_music, tip_music_*)
@@ -1641,6 +1641,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ["#1a8a4a", "#d22"], ["#d22", "#ffd700"], ["#fff", "#d00"]];
   const fakeBadge = ([a, b]) => "data:image/svg+xml;base64," + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="13" fill="${a}"/><circle cx="14" cy="14" r="6" fill="${b}"/></svg>`);
   const nationFlags = new Map();
+  const nationHidden = new Set();  // units a nation's Hide all took out of its build menus (StudioApi.nation_units_hide)
+  const fakeJobs = new Map();  // id -> { state, message, lines }: jobs the stand-ins finish at once (nation_fill)
   const newWords = new Map();  // a new label's own text key -> { lang: words } (StudioApi._new_label_text)
   const fakeNotes = new Map();  // mod -> { key: note } (StudioApi.note_set)
   const fakeGameFiles = new Map();  // `${mod}|${pack}|${nested}|${path}` -> "changed" or "added" (StudioApi.files_change)
@@ -2215,6 +2217,41 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         }
         return {};
       },
+      // a nation's units at once (StudioApi.nation_units / nation_units_hide / nation_fill_list / nation_fill)
+      nation_units: async (n, lang = "us") => {
+        const own = units.filter((u) => u.nation === n && u.kind !== "buildings" && u.factory !== undefined && u.factory !== null)
+          .map((u) => ({ address: E + u.id, name: nameOf(u, lang), kind: u.kind, factory: u.factory, hidden: nationHidden.has(E + u.id) }));
+        const eras = [...eraHere].map((era) => ({ era, nations: [...new Set(FAKE_ERA_UNITS.filter((u) => u.era === era).map((u) => u.nation))].sort() }))
+          .filter((e) => e.nations.length);
+        return { nation: n, units: own, hidden: own.filter((u) => u.hidden).length, can: Boolean(current), eras };
+      },
+      nation_units_hide: async (n, hide = true) => {
+        if (!current) throw new Error("Pick or make a mod first: the change is saved in it.");
+        for (const u of units.filter((x) => x.nation === n && x.kind !== "buildings")) {
+          if (hide) nationHidden.add(E + u.id); else nationHidden.delete(E + u.id);
+        }
+        return window.pywebview.api.nation_units(n);
+      },
+      nation_fill_list: async (n, era, source, lang = "us") => {
+        const menus = (await window.pywebview.api.menus(lang)).nations[n].factories;
+        const have = new Set(menus.map((m) => m.factory));
+        return { menus, units: FAKE_ERA_UNITS.filter((u) => u.era === era && u.nation === source).map((u) => ({ key: u.key,
+          name: u.name, card: u.card, kind: u.aircraft ? "air" : "ground", factory: have.has(u.factory) ? u.factory : null,
+          added: eraAdded.has(u.key) })) };
+      },
+      nation_fill: async (n, picks) => {
+        if (!current) throw new Error("Pick or make a mod first: the units are added to it.");
+        const lines = [];
+        for (const p of picks) {
+          const u = FAKE_ERA_UNITS.find((x) => x.key === p.key);
+          try {
+            const made = await window.pywebview.api.era_unit_add(p.key, n, p.factory);
+            lines.push(`added\t${made.name}`);
+          } catch (err) { lines.push(`skipped\t${u ? u.name : p.key}\t${err.message}`); }
+        }
+        fakeJobs.set("fill", { state: "done", message: `${picks.length} era unit(s) done.`, lines });
+        return { job: "fill" };
+      },
       // era units in the Units tab (StudioApi.era_units_list / era_unit_page / era_start_price / era_unit_add /
       // era_unit_remove / era_sections / era_download, ruse_studio.era_units): a small made-up library, nothing in the
       // mod until added; Modern isn't downloaded until its Download is pressed
@@ -2249,8 +2286,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (!current) throw new Error("Pick or make a mod first: an era unit is added to a mod.");
         const u = FAKE_ERA_UNITS.find((x) => x.key === key);
         if (eraAdded.has(key)) throw new Error(`${u.name} is already in this mod`);
-        if (size !== null && size !== undefined && !(size >= 0.2 && size <= 5)) {
-          throw new Error("Give a size from 0.2 to 5 (1 is as long as the unit it starts from).");
+        if (size !== null && size !== undefined && !(size >= 0.05 && size <= 20)) {
+          throw new Error("Give a size from 0.05 to 20 (1 is as long as the unit it starts from).");
         }
         const made = await window.pywebview.api.new_unit(source || u.copies, name || u.name, price, nation, factory);
         eraAdded.set(key, made.address);
@@ -2476,6 +2513,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       export_mod: async () => ({ job: "export" }),
       build_index: async () => ({ job: "index" }),
       job: async (id, since) => backupJobs[id] ? backupJobView(id, since || 0)
+        : fakeJobs.has(id) ? { ...fakeJobs.get(id), lines: fakeJobs.get(id).lines.slice(since || 0), count: fakeJobs.get(id).lines.length }
         : mode === "testfails" && id === "test"  // a test stopped by a leftover copy, as a player's was
         ? { state: "failed", message: "[WinError 5] Access is denied: 'D:\\RUSE-Instances\\studio-sherman-test.old'",
           lines: jobs.test[0].slice(0, 1), count: 1 }

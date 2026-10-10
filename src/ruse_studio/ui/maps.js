@@ -69,6 +69,31 @@ function brushRadius(name) {
   if (PAINT_KINDS.has(name)) return (x1 - x0) * PAINT_SIZE[0] * Math.pow(PAINT_SIZE[1], size - 1);
   return size / 100 * (x1 - x0) * (SIZE_UNIT[name] || 1);
 }
+// A number box beside a tool's slider (the owner, 2026-10-10, "all of them": past the slider's ends, up to what the
+// Studio takes): `get` and `set` are the tool's own value, which the slider shows within its range. A paint brush's
+// size grows on a curve (brushRadius): 20 already covers a whole map, so its box stops there.
+const TYPED = { size: [1, 50], paint: [1, 20], place: [0.05, 50], spacing: [0.5, 1000], area: [5, 5000], gap: [1, 1000] };
+function typedBeside(sliderId, [least, most], get, set, tip) {
+  const slider = $(sliderId);
+  let box = slider.parentElement.querySelector(".typed-number");
+  if (!box) {
+    box = el("input", { type: "number", className: "typed-number", step: "any" });
+    slider.after(box);
+    box.addEventListener("change", () => {
+      const n = Number(box.value);
+      const ok = box.value.trim() !== "" && Number.isFinite(n) && n >= Number(box.min) && n <= Number(box.max);
+      box.setAttribute("aria-invalid", String(!ok));
+      if (ok) box._set(n); else box.value = String(box._get());
+    });
+    slider.addEventListener("input", () => { box.value = slider.value; box.setAttribute("aria-invalid", "false"); });
+  }
+  box._get = get;
+  box._set = set;
+  box.min = String(least);
+  box.max = String(most);
+  box.title = fill(mv.words.tip_typed_number || "", { least, most }) + (tip ? " " + tip : "");
+  if (document.activeElement !== box) box.value = String(get());
+}
 const CRATER_RIM = 0.35;
 const HEIGHT_SHARE = 0.6;  // strength 100% = this share of the map's height range (hill, raise, lower, crater, plateau)
 
@@ -2620,6 +2645,7 @@ function renderScenTools() {
     $("scen-gap").value = spawnGap();
     $("scen-gap-label").textContent = fill(w.place_spacing, { m: spawnGap() });
     $("scen-gap-row").title = w.tip_scen_gap;
+    typedBeside("scen-gap", TYPED.gap, () => spawnGap(), (n) => { scen.gap[scen.kind] = n; renderScenTools(); }, w.tip_scen_gap);
   }
   $("scen-layers").replaceChildren(el("span", { className: "muted small", textContent: w.scen_layers_show || "Show" }),
     ...SCEN_LAYERS.map((k) => chipOf(w["scen_layer_" + k] || k, w.tip_scen_layers, scen.layers[k], () => {
@@ -3180,6 +3206,7 @@ function renderPlace() {
   $("place-turn").title = w.tip_place_turn;
   $("place-size-label").textContent = `${w.brush_size} ${p.size.toFixed(1)}×`;
   $("place-size").title = w.tip_place_size;
+  typedBeside("place-size", TYPED.place, () => p.size, (n) => { p.size = n; renderPlace(); }, w.tip_place_size);
   $("place-solid-row").classList.toggle("hidden", p.group !== "building");  // only buildings stop units
   $("place-solid").checked = p.solid;
   $("place-solid-label").textContent = w.place_solid;
@@ -3199,9 +3226,12 @@ function renderPlace() {
   $("place-spacing").value = spacingOf(p.group);
   $("place-spacing-label").textContent = fill(w.place_spacing, { m: spacingOf(p.group) });
   $("place-spacing").title = w.tip_place_spacing;
+  typedBeside("place-spacing", TYPED.spacing, () => spacingOf(p.group), (n) => { p.spacing[p.group] = n; renderPlace(); },
+    w.tip_place_spacing);
   $("place-area").value = p.area;
   $("place-area-label").textContent = fill(w.place_area_size, { m: p.area });
   $("place-area").title = w.tip_place_area_size;
+  typedBeside("place-area", TYPED.area, () => p.area, (n) => { p.area = n; renderPlace(); }, w.tip_place_area_size);
   if (p.on) $("map-help").textContent = p.how === "area" ? w.place_area_help : p.how === "line" ? w.place_line_help : w.place_help;
 }
 
@@ -4503,6 +4533,8 @@ function renderBrushes() {
   }));
   const set = settingsOf(b.name), erase = erasing(), painting = PAINT_KINDS.has(BRUSHES[b.name][0]);
   $("brush-size").value = set.size;
+  typedBeside("brush-size", painting ? TYPED.paint : TYPED.size, () => settingsOf(b.name).size,
+    (n) => { settingsOf(b.name).size = n; sizeLabel(); }, w.tip_brush_size);
   $("brush-strength").value = set.strength;
   $("brush-strength-row").classList.toggle("hidden",
     ["cover", "town", "block", "open", "forest", "erase"].includes(BRUSHES[b.name][0]));

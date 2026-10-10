@@ -533,7 +533,7 @@ class StudioLook(unittest.TestCase):
             with self.assertRaises(StudioError):
                 self.api.model_import("$/GFX/Everything/Descriptor_Unit_Test", str(model))  # a game unit
             with self.assertRaises(StudioError):
-                self.api.model_import(address, str(model), 9)  # too big
+                self.api.model_import(address, str(model), 21)  # too big (sizes go from 0.05 to 20)
         own = self.mod / "files" / "models" / "Descriptor_Unit_R2_New.glb"
         self.assertEqual((own.read_bytes(), calls), (b"glTF-own", [(self.MODEL, "tank.3ds", 1.36)]))
         self.assertEqual((res["model"]["vertices"], res["model"]["file"]), (10, "tank.3ds"))

@@ -1377,7 +1377,7 @@ function lookBox(u, brought, startNew) {
 function modelBox(address, info, draw, changed) {
   const w = state.words;
   const own = info.own_model;
-  const size = el("input", { type: "number", min: "0.2", max: "5", step: "0.05", value: "1", className: "model-size",
+  const size = el("input", { type: "number", min: "0.05", max: "20", step: "0.05", value: "1", className: "model-size",
     title: w.tip_model_size });
   const pick = el("button", { type: "button", textContent: own ? w.model_import_again : w.model_import,
     title: w.tip_model_import });
@@ -2236,9 +2236,28 @@ function renderAIProfile(data) {
   if (!p) { $("ai-groups").replaceChildren(); return; }
   $("ai-groups").replaceChildren(...p.groups.filter((g) => g.rows.length).map((g) => {
     const table = el("table");
-    for (const r of g.rows) table.append(aiRow(p.id, r));
+    for (const r of g.rows) table.append(aiRow(p.id, r, r.added ? renderAI : null));
     return el("div", { className: "group" }, el("h2", { textContent: w[`ai_group_${g.id}`] || g.id }), table);
-  }), notesBox(`obj:${p.id}`));
+  }), ...aiMissing(p), notesBox(`obj:${p.id}`));
+}
+
+// A difficulty's or profile's own value for one only Default lists (StudioApi.ai_add; the owner, 2026-10-10, "all of
+// them": the AI tab only changed the values a set lists): picked from Default's, it starts as Default's, then it's a
+// row like the others
+function aiMissing(p) {
+  const w = state.words;
+  if (!p.missing || !p.missing.length) return [];
+  const name = p.name || p.index;
+  const pick = el("select", { className: "small", title: w.tip_ai_add, disabled: !state.mod },
+    ...p.missing.map((m) => el("option", { value: m.prop, textContent: `${m.label} (${w.ai_default}: ${m.default})` })));
+  const add = el("button", { type: "button", className: "small", textContent: w.ai_add, title: w.tip_ai_add, disabled: !state.mod });
+  add.addEventListener("click", async () => {
+    try { await api().ai_add(p.id, pick.value, state.lang); } catch (err) { problem(err); return; }
+    say(fillText(w.ai_add_done, { name }), "ok");
+    renderAI();
+  });
+  return [el("div", { className: "group" }, el("h2", { textContent: fillText(w.ai_add_title, { name }), title: w.tip_ai_add }),
+    el("p", { className: "muted small", textContent: w.ai_add_help }), el("div", { className: "actions" }, pick, add))];
 }
 
 // A private Notes box (LittleGroove's): the modder's own words about this unit, object or profile, kept in the mod's
@@ -2332,7 +2351,7 @@ function aiValue(target, r, after = null) {
       const res = await api().ai_edit(target, r.prop, r.list ? numbers : numbers[0]);
       const value = r.list ? res.value : [res.value];
       show(value);
-      mine = sameNumbers(value, game) ? null : value;
+      mine = sameNumbers(value, game) && !r.added ? null : value;  // (a value the mod added stays until taken out)
       showWas();
       showNote(res.same_default);
       say(w.saved.replace("{file}", res.saved), "ok");
@@ -2348,6 +2367,8 @@ function aiValue(target, r, after = null) {
 function aiRow(target, r, after = null) {
   const th = el("th", { textContent: r.label });
   if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
+  // its own value the mod gave it (StudioApi.ai_add): Game's value takes it out again, so the list is drawn again
+  if (r.added) th.append(el("small", { className: "ai-added", textContent: state.words.ai_added, title: state.words.tip_ai_added }));
   return el("tr", {}, th, aiValue(target, r, after).cell);
 }
 

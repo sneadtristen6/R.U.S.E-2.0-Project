@@ -34,7 +34,7 @@ The era's units are filtered like the game's: kind (ground or air), nation (Chin
      one is first; any unit of its kind can be picked.
    - **Price** (every battle date).
    - **Size**: 1 is as long as the start unit. The suggestion is its real size (its real width, a plane's wingspan,
-     at the game's own scale); anything from 0.2 to 5.
+     at the game's own scale); anything from 0.05 to 20.
    - **Build menu**: the nation and the factory it's bought at.
    - **Researched from**: the unit it's researched from, or **None: buyable from the start**, with its **Research
      price** and **Research time** (type the time in seconds or minutes: the picker beside it).

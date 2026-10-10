@@ -6,6 +6,7 @@ import base64
 import sqlite3
 import struct
 import tempfile
+import time
 import unittest
 import zlib
 from pathlib import Path
@@ -213,6 +214,95 @@ class StudioNations(unittest.TestCase):
             self.api.nation_words_set(4, "name", {"us": "China"})
         with self.assertRaises(nations.NationError):
             self.api.nation_flag_set(4, base64.b64encode(png([[(1, 2, 3, 255)] * 4] * 4)).decode())
+
+
+class ShownIndex:
+    """The game index as nation_units reads it: each unit's ShowInMenu, one per battle date, all shown."""
+
+    def show(self, address):
+        return {"values": [(f"ShowInMenu[{i}]", 1, None) for i in range(5)]}
+
+    def close(self):
+        pass
+
+
+class NationUnits(unittest.TestCase):
+    """A nation's units all at once (the owner, 2026-10-10: Italy's units out, China's in): its own units hidden from
+    its build menus in one go and shown again, and its menus filled from an era's units of another nation."""
+
+    UNITS = [{"address": "$/GFX/Everything/Descriptor_Unit_Italy_Tank", "class": "TUniteAuSolDescriptor", "nation": 4, "factory": 10},
+             {"address": "$/GFX/Everything/Descriptor_Avion_Italy_Plane", "class": "TAvionDescriptor", "nation": 4, "factory": 9},
+             {"address": "$/GFX/Everything/Descriptor_Building_Italy_HQ", "class": "TBatimentDescriptor", "nation": 4, "factory": 3},
+             {"address": "$/GFX/Everything/Descriptor_Unit_Italy_Off", "class": "TUniteAuSolDescriptor", "nation": 4, "factory": None},
+             {"address": "$/GFX/Everything/Descriptor_Unit_US_Tank", "class": "TUniteAuSolDescriptor", "nation": 0, "factory": 10}]
+    ERA = [{"key": "Modern|China|ZTZ-99", "era": "Modern", "nation": "China", "name": "ZTZ-99", "card": "Main Battle Tank", "factory": 10},
+           {"key": "Modern|China|J-10", "era": "Modern", "nation": "China", "name": "J-10", "card": "Fighter", "factory": 9},
+           {"key": "Modern|China|Odd", "era": "Modern", "nation": "China", "name": "Odd", "card": "Tank", "factory": 12},
+           {"key": "Modern|USA|M1", "era": "Modern", "nation": "USA", "name": "M1", "card": "Main Battle Tank", "factory": 10}]
+
+    def setUp(self):
+        from ruse_studio.api import StudioApi
+        self.dir = tempfile.TemporaryDirectory()
+        root = Path(self.dir.name)
+        self.mod = root / "mod"
+        (self.mod / "src").mkdir(parents=True)
+        self.api = StudioApi(game_dir=root / "R.U.S.E", home=root / "home")
+        self.api._mod_dir = lambda *a: self.mod
+        self.api._open = ShownIndex
+        self.api._all_units = lambda ix: self.UNITS
+        self.api._names = lambda ix, addresses, lang, new_units=None: {a: a.rsplit("_", 1)[-1] for a in addresses}
+        self.api._era_library = lambda: (root, {"units": self.ERA})
+        self.api._era_record = lambda: {}
+        self.api.menus = lambda lang="base": {"nations": [{"nation": n, "factories": [
+            {"factory": 9, "units": ["Plane"], "count": 1}, {"factory": 10, "units": ["Tank"], "count": 1}]
+            if n == 4 else []} for n in range(7)]}
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_hidden_and_shown_again(self):
+        view = self.api.nation_units(4)
+        self.assertEqual([(u["name"], u["hidden"]) for u in view["units"]], [("Plane", False), ("Tank", False)])
+        self.assertEqual((view["hidden"], view["can"], view["eras"]), (0, True, [{"era": "Modern", "nations": ["China", "USA"]}]))
+        view = self.api.nation_units_hide(4, True)  # its HQ and the unit in no menu stay; the US tank too
+        self.assertEqual([u["hidden"] for u in view["units"]], [True, True])
+        text = (self.mod / "src" / "studio.rndf").read_text(encoding="utf-8")
+        self.assertIn("ShowInMenu = [0, 0, 0, 0, 0]", text)
+        self.assertNotIn("Italy_HQ", text)
+        self.assertNotIn("US_Tank", text)
+        view = self.api.nation_units_hide(4, False)
+        self.assertEqual(view["hidden"], 0)
+        self.assertNotIn("ShowInMenu", (self.mod / "src" / "studio.rndf").read_text(encoding="utf-8"))
+
+    def test_filled_from_an_era(self):
+        listed = self.api.nation_fill_list(4, "Modern", "China")
+        self.assertEqual([(u["name"], u["factory"]) for u in listed["units"]],
+                         [("J-10", 9), ("ZTZ-99", 10), ("Odd", None)])  # Italy has no building 12: picked by hand
+        added = []
+
+        def era_unit_add(key, nation, factory, *rest, **more):
+            if key.endswith("J-10"):
+                raise nations.NationError("J-10: no model")
+            added.append((key, nation, factory))
+            return {"name": key.rsplit("|", 1)[-1], "address": "x"}
+        self.api.era_unit_add = era_unit_add
+        job = self.api.nation_fill(4, [{"key": "Modern|China|ZTZ-99", "factory": 10},
+                                       {"key": "Modern|China|J-10", "factory": 9}])["job"]
+        for _ in range(200):
+            got = self.api.job(job)
+            if got["state"] != "running":
+                break
+            time.sleep(0.01)
+        self.assertEqual(got["state"], "done")
+        self.assertEqual(got["lines"], ["added\tZTZ-99", "skipped\tJ-10\tJ-10: no model"])
+        self.assertEqual(added, [("Modern|China|ZTZ-99", 4, 10)])
+        for picks, why in (([], "Pick 1"), ([{"key": "nope", "factory": 10}], "not in the era units library"),
+                           ([{"key": "Modern|China|Odd", "factory": 12}], "pick one of this nation's buildings")):
+            with self.subTest(picks=picks), self.assertRaisesRegex(nations.NationError, why):
+                self.api.nation_fill(4, picks)
+        self.api._mod_dir = lambda *a: None
+        with self.assertRaises(nations.NationError):
+            self.api.nation_units_hide(4)
 
 
 if __name__ == "__main__":

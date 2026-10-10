@@ -252,7 +252,7 @@
     price.setAttribute("aria-label", w.price);
 
     // its size (only with a model of its own: without one it shows the start unit's model)
-    const size = el("input", { type: "number", min: "0.2", max: "5", step: "any", inputMode: "decimal", required: true,
+    const size = el("input", { type: "number", min: "0.05", max: "20", step: "any", inputMode: "decimal", required: true,
       title: w.tip_eras_size });
     size.setAttribute("aria-label", w.eras_size);
     const sizeNote = el("span");

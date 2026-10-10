@@ -453,6 +453,9 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .scen-detail-row > span:first-child { min-width: 7em; }
 .scen-detail-row select { max-width: 100%; }
 .scen-detail-number { width: 6.5em; padding: 2px 6px; background: var(--panel-hi); border: 1px solid var(--line); border-radius: 6px; }
+/* a number box beside a map tool's slider (maps.js typedBeside): values past the slider's ends */
+.typed-number { width: 4.6em; margin-left: 6px; padding: 1px 4px; background: var(--panel-hi); border: 1px solid var(--line);
+                border-radius: 6px; font-size: 12px; }
 /* the Economy tab's Depots on the maps (app.js renderEconomyDepots): all maps or one, then how much */
 .economy-depots { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
 .economy-depots h3 { margin: 0 0 4px; font-size: 13px; }
@@ -791,6 +794,13 @@ tr.edited .flag { border-color: var(--accent); }
 .nation-flags { display: flex; gap: 18px; margin: 6px 0; }
 .nation-flags figure { margin: 0; display: grid; justify-items: center; gap: 4px; }
 .nation-details { margin-top: 10px; padding-top: 6px; border-top: 1px solid var(--line); }
+/* a nation's units all at once (nations.js unitsBlock): the fill list, one row per era unit */
+.nation-units .actions { flex-wrap: wrap; }
+.nation-fill-list { width: 100%; border-collapse: collapse; margin: 6px 0; }
+.nation-fill-list td { padding: 4px 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+.nation-fill-list td:first-child { width: 1.6em; }
+.nation-fill-list select { max-width: 100%; }
+.ai-added { display: block; color: var(--accent); }
 .nation-details h3 { margin: 12px 0 2px; font-size: 14px; }
 .nation-details .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0; }
 .nation-reset { margin-top: 14px; }

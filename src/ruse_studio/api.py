@@ -82,7 +82,8 @@ UPGRADE, UPGRADE_FLAG, RESEARCH = "UpgradeRequire", "IsUpgrade", {"UpgradePrice"
 # say so; the build stops on it); "refuse" keeps the unit; "relink" researches them from the unit it was researched
 # from, or makes them buyable from the start when it had none
 RESEARCH_GONE = ("warn", "refuse", "relink")
-MODEL_SIZES = (0.2, 5.0)  # an imported model's size, times the length of the unit it copies (model_import)
+MODEL_SIZES = (0.05, 20.0)  # an imported model's size, times the length of the unit it copies (model_import; the
+# owner, 2026-10-10, "all of them": it was 0.2 to 5, the Studio's own top, not the game's)
 BLANK_STARTS = ("blank_terrain", "blank_ocean")  # the blank starts offered (rusemod.presets.KINDS); Blank Ocean taken
 # out and back the same day with a warning of its own (the owner, 2026-10-08: "blank oceans stay in with a warning
 # label"; words.toml dup_start_blank_ocean_warn: separate islands crash the game when a land unit is sent across)
@@ -4418,6 +4419,39 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return out
 
     @staticmethod
+    def _ai_added(edits: ModEdits | None, config: dict, allowed: dict, base: dict) -> dict:
+        """{prop: the mod's value} of the values a difficulty or profile (`config`, as ai.configurations gives it)
+        doesn't list in the game and the mod gives it (ai_add): Default's numbers only."""
+        if edits is None or config["kind"] == "default" or not config["address"]:
+            return {}
+        return {prop: v for prop, v in edits.of(config["address"]).items()
+                if prop in base and prop not in allowed and isinstance(v, (int, float)) and not isinstance(v, bool)}
+
+    def ai_add(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
+        """Give a difficulty or profile (`address`) its own value `prop`, one only Default lists in the game, in the
+        current mod: it starts as Default's (so nothing changes until it's changed) and is then changed on its row
+        like the others (the owner, 2026-10-10: "all of them", the AI tab's "only the values a set lists can be
+        changed"). Written as All values' Add a value writes it (value_prop_add). Not tried in the game yet."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        ix = self._open()
+        try:
+            config = next((c for c in ai.configurations(ix) if c["address"] == address), None)
+            if config is None or config["kind"] == "default":
+                raise StudioError("Only a difficulty or a profile gets its own value here (Default has them all).")
+            allowed = self._ai_allowed("profile", ix.show(address))
+            base = self._ai_base(ix, edits)
+        finally:
+            ix.close()
+        if prop not in base:
+            raise StudioError(f"Default has no {prop}, so there's nothing to start it from.")
+        if prop in allowed or prop in edits.of(address):
+            raise StudioError(f"It has {prop} already: change it on its row.")
+        self.value_prop_add(address, prop, str(base[prop]), lang)
+        return {"prop": prop, "value": base[prop]}
+
+    @staticmethod
     def _ai_row(prop: str, p: dict, types: dict, lang: str, mine) -> dict:
         return {"prop": prop, "label": schema.label(prop, lang), "list": p["list"],
                 "type": types.get(prop + "[]" if p["list"] else prop, ""),
@@ -4471,22 +4505,34 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if not c["address"]:
                 continue
             allowed = self._ai_allowed("profile", objects[c["address"]])
-            others = tuple(sorted(p for p in allowed if p not in ai.PROFILE_PROPS))
+            # a difficulty's or profile's own value for one only Default lists, added by the mod (ai_add): shown in
+            # its group with Default's value as the one it had, "Game's value" taking it out again
+            added = self._ai_added(edits, c, allowed, base)
+            others = tuple(sorted(p for p in (*allowed, *added) if p not in ai.PROFILE_PROPS))
             groups = []
             for group, props in ai.PROFILE_GROUPS + (("other", others),):
                 rows = []
                 for prop in props:
-                    if prop not in allowed:
+                    if prop in added:
+                        row = self._ai_row(prop, {"list": False, "numbers": [base[prop]]}, types[ai.PROFILE], lang,
+                                           added[prop])
+                        row["added"] = True
+                    elif prop in allowed:
+                        row = self._ai_row(prop, allowed[prop], types[ai.PROFILE], lang, mine(c["address"], prop))
+                    else:
                         continue
-                    row = self._ai_row(prop, allowed[prop], types[ai.PROFILE], lang, mine(c["address"], prop))
                     if c["kind"] != "default":
                         row["same_default"] = (row["game"] if row["value"] is None else row["value"]) == base.get(prop, 0)
                     rows.append(row)
                 groups.append({"id": group, "rows": rows})
+            missing = [] if c["kind"] == "default" else [
+                {"prop": prop, "label": schema.label(prop, lang), "default": v}
+                for prop, v in base.items() if prop not in allowed and prop not in added]
+            missing.sort(key=lambda m: m["label"].casefold())
             profiles.append({"id": c["address"], "kind": c["kind"], "index": c["index"],
                              "name": texts.get(c["key"]) if c["kind"] != "default" else None,
                              "hint": texts.get(ai.HINT.format(c["index"])) if c["kind"] == "personality" else None,
-                             "groups": groups})
+                             "groups": groups, "missing": missing})
 
         named = {kind: {c["index"]: texts.get(c["key"]) for c in configs if c["kind"] == kind}
                  for kind in ("difficulty", "personality")}
@@ -4531,6 +4577,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if found is None:
                 raise StudioError(f"{address} isn't one of the AI tab's")
             p = self._ai_allowed(*found).get(prop)
+            added = False
+            if p is None and found[0] == "profile" and prop in edits.of(address):
+                # a value the mod added (ai_add): changed on its row too; it stays until Game's value takes it out
+                config = next((c for c in ai.configurations(ix) if c["address"] == address), None)
+                base = self._ai_base(ix, edits)
+                if config is not None and prop in self._ai_added(edits, config, {}, base):
+                    p, added = {"list": False, "numbers": [base[prop]]}, True
             if p is None:
                 raise StudioError(f"{prop} of {address} can't be changed here")
             values = value if isinstance(value, list) else [value]
@@ -4543,7 +4596,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             new, game = (got, p["numbers"]) if p["list"] else (got[0], p["numbers"][0])
             with self._saving:
                 edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
-                if new == game:
+                if new == game and not added:
                     edits.reset(address, prop)
                 else:
                     edits.set(address, prop, new)
@@ -5891,7 +5944,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         except (TypeError, ValueError):
             raise StudioError("The size is a number: 1 is as long as the unit it copies.") from None
         if not MODEL_SIZES[0] <= size <= MODEL_SIZES[1]:
-            raise StudioError("Give a size from 0.2 to 5 (1 is as long as the unit it copies).")
+            raise StudioError(f"Give a size from {MODEL_SIZES[0]:g} to {MODEL_SIZES[1]:g} (1 is as long as the unit "
+                              f"it copies).")
         found = [m for m in self._look_models(address)[0] if "_dest" not in m.lower()]
         if not found:
             raise StudioError("The unit this one copies has no 3D model to fit a new one to.")
