@@ -2261,9 +2261,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     s["items"].append(new)
             for n, sp in enumerate(spawns):
                 if sp.file.lower() == s["file"].lower():
-                    s["items"].append({"kind": "Spawn", "x": sp.x, "y": sp.y, "turn": sp.rotation, "name": "",
-                                       "camp": sp.camp, "what": sp.what, "mine": True, "spawn": n,
-                                       "item": len(s["items"])})
+                    new = {"kind": "Spawn", "x": sp.x, "y": sp.y, "turn": sp.rotation, "name": "",
+                           "camp": sp.camp, "what": sp.what, "mine": True, "spawn": n, "item": len(s["items"])}
+                    if sp.class_path == scenario.DEPOT:  # a depot the mod adds: its trucks (the build's 25 unset)
+                        new["trucks"] = scenario.DEPOT_TRUCKS if sp.trucks is None else sp.trucks
+                        new["trucks_set"] = sp.trucks is not None
+                    s["items"].append(new)
             for n, p in enumerate(added):  # new names on the map, named points and zones (places.toml)
                 if p.file.lower() == s["file"].lower():
                     new = {"kind": p.kind, "x": p.x, "y": p.y, "turn": p.rotation or 0.0, "name": p.name,
@@ -2599,7 +2602,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if field in ("camp", "trucks"):
             if not number.is_integer():
                 raise StudioError(f"{field} is a whole number")
-            number = int(number)
+            number = self._trucks(number) if field == "trucks" else int(number)
         if field == "camp" and number != scenario.NEUTRAL and base.get("kind") == "skirmish":
             # rule: skirmish-neutral-spawns
             raise StudioError("A skirmish map's items stay neutral: a skirmish game spawns only neutral items, so the "
@@ -2848,25 +2851,42 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return out
 
     def scenario_spawn(self, pack: str, file: str, unit: str, x: float, y: float, camp: int | None = scenario.NEUTRAL,
-                       rotation: float = 0.0) -> dict:
+                       rotation: float = 0.0, trucks: int | None = None) -> dict:
         """Spawn a unit or building (`unit`: its address, as the unit list gives it) when scenario `file` starts, at
         x, y, for side `camp` (-1: neutral, the only side a skirmish game spawns). Returns the map's scenarios as
         the mod leaves them."""
-        return self.scenario_spawn_many(pack, file, unit, [[x, y]], camp, rotation)
+        return self.scenario_spawn_many(pack, file, unit, [[x, y]], camp, rotation, trucks)
 
     SPAWN_MOST = 50  # units one click may add (a formation)
 
+    @staticmethod
+    def _trucks(value) -> int:
+        """A supply depot's trucks as the modder typed them: a whole number from 0 to scenario.TRUCKS_MOST."""
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            raise StudioError(f"trucks: {value!r} isn't a number") from None
+        if isinstance(value, bool) or not number.is_integer() or not 0 <= number <= scenario.TRUCKS_MOST:
+            # not a game rule: the depot keeps its trucks in a 32-bit whole number
+            raise StudioError(f"A depot's trucks are a whole number from 0 to {scenario.TRUCKS_MOST:,}.")
+        return int(number)
+
     def scenario_spawn_many(self, pack: str, file: str, unit: str, points: list, camp: int | None = scenario.NEUTRAL,
-                            rotation: float = 0.0) -> dict:
+                            rotation: float = 0.0, trucks: int | None = None) -> dict:
         """Spawn `unit` at each [x, y] of `points` (a formation, up to SPAWN_MOST) when scenario `file` starts, for
         side `camp` (-1: neutral; a skirmish scenario takes only that), all turned `rotation` radians; saved in one
-        go. Returns the map's scenarios."""
+        go. `trucks`: a supply depot spot's trucks (None: the build's scenario.DEPOT_TRUCKS). Returns the map's
+        scenarios."""
         try:
             where = [(float(x), float(y)) for x, y in points]
         except (TypeError, ValueError):
             raise StudioError("the places to spawn at must be pairs of numbers") from None
         if not 1 <= len(where) <= self.SPAWN_MOST or not all(map(math.isfinite, (v for p in where for v in p))):
             raise StudioError(f"a spawn takes 1 to {self.SPAWN_MOST} places, each two finite numbers")
+        if trucks is not None:
+            if unit != DEPOT_SLAB:
+                raise StudioError("Only a supply depot has trucks.")
+            trucks = self._trucks(trucks)
         camp = scenario.NEUTRAL if camp is None else int(camp)
         if self._base_scenario(pack, file)["kind"] == "skirmish" and camp != scenario.NEUTRAL:
             # rule: skirmish-neutral-spawns
@@ -2889,9 +2909,221 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError(f"{_tail(unit)} has no class name for the game's scripts, so it can't be spawned")
         with self._saving:
             moves, spawns = self._read_scenario_edits(pack)
-            spawns += [scenario.Spawn(file, name, x, y, camp, float(rotation)) for x, y in where]
+            spawns += [scenario.Spawn(file, name, x, y, camp, float(rotation), trucks) for x, y in where]
             self._write_scenario_edits(pack, moves, spawns)
         return self.map_scenarios(pack)
+
+    SPAWN_FIELDS = ("camp", "trucks")  # what the Details panel changes on a spawn the mod adds (it turns with "rotation")
+
+    def scenario_spawn_set(self, pack: str, number: int, field: str, value) -> dict:
+        """Change one value of the current mod's spawn number `number`: its side (`camp`: -1 neutral, or one of the
+        scenario's camps; a skirmish scenario keeps it neutral), a supply depot's `trucks`, or its `rotation`
+        (radians). Returns the map's scenarios."""
+        if field not in (*self.SPAWN_FIELDS, "rotation"):
+            raise StudioError(f"a spawn's {field} can't be changed here")
+        with self._saving:
+            moves, spawns = self._read_scenario_edits(pack)
+            n = int(number)
+            if not 0 <= n < len(spawns):
+                raise StudioError("that spawn isn't in the mod any more")
+            sp = spawns[n]
+            if field == "trucks":
+                if sp.class_path != scenario.DEPOT:
+                    raise StudioError("Only a supply depot has trucks.")
+                new = replace(sp, trucks=self._trucks(value))
+            elif field == "camp":
+                try:
+                    camp = int(value)
+                except (TypeError, ValueError):
+                    raise StudioError(f"camp: {value!r} isn't a whole number") from None
+                if not (camp == scenario.NEUTRAL or 0 <= camp <= 16):
+                    raise StudioError("A side is -1 (neutral) or one of the scenario's camps, from 0 up.")
+                if camp != scenario.NEUTRAL and self._base_scenario(pack, sp.file)["kind"] == "skirmish":
+                    # rule: skirmish-neutral-spawns
+                    raise StudioError("A skirmish map's items stay neutral: a skirmish game spawns only neutral "
+                                      "items, so the game would leave it out.")
+                new = replace(sp, camp=camp)
+            else:
+                try:
+                    turn = float(value)
+                except (TypeError, ValueError):
+                    raise StudioError("the turn must be a number") from None
+                if not math.isfinite(turn):
+                    raise StudioError("the turn must be a number")
+                new = replace(sp, rotation=turn)
+            spawns[n] = new
+            self._write_scenario_edits(pack, moves, spawns)
+        return self.map_scenarios(pack)
+
+    def scenario_depots(self, pack: str, file: str, trucks=None, times=None) -> dict:
+        """Every supply depot of scenario `file` at once, the map's own and the ones the mod adds: given `trucks`
+        each, or `times` the trucks each has now in the game (the mod's own depots: times the build's 25), rounded;
+        neither puts the map's back to the game's and the mod's own to 25. Returns the map's scenarios and how many
+        depots changed."""
+        if trucks is not None and times is not None:
+            raise StudioError("Give the depots a number of trucks, or a times, not both.")
+        if times is not None:
+            try:
+                times = float(times)
+            except (TypeError, ValueError):
+                raise StudioError(f"times: {times!r} isn't a number") from None
+            if not math.isfinite(times) or times < 0:
+                raise StudioError("times is a number, 0 or more")
+        if trucks is not None:
+            trucks = self._trucks(trucks)
+        if self._map_dir() is None:
+            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+        base = self._base_scenario(pack, file)
+
+        def each(game: int) -> int | None:  # a depot's new trucks (None: back to what it had)
+            if trucks is not None:
+                return trucks
+            if times is None:
+                return None
+            return self._trucks(min(round(game * times), scenario.TRUCKS_MOST))
+
+        count = 0
+        with self._saving:
+            changes = self._read_item_changes(pack)
+            by_item = {c.item: c for c in changes if c.file.lower() == file.lower()}
+            kept = [c for c in changes if c.file.lower() != file.lower()]
+            for i, it in enumerate(base["items"]):
+                if it["kind"] != "Spawn" or it.get("what") != DEPOT_SLAB:  # (some other spawns have a ChampInteger)
+                    if i in by_item:
+                        kept.append(by_item[i])
+                    continue
+                game = it.get("trucks")  # (a shipped depot without trucks has none in the game)
+                new = each(game or 0)
+                old = by_item.get(i)
+                values = dict(old.values) if old is not None else {}
+                if new is None or new == (game or 0):
+                    values.pop("trucks", None)
+                else:
+                    values["trucks"] = new
+                count += 1
+                if values:
+                    kept.append(scenario.Change(file, i, it["kind"], values))
+            path = self._items_file(pack)
+            if kept:
+                kept.sort(key=lambda c: (c.file.lower(), c.item))
+                _save_checked(path, scenario.changes_toml(kept, self.ITEMS_HEADER),
+                              lambda data: scenario.parse_changes(data.get("set", []), str(path)))
+            elif path.is_file():
+                path.unlink()
+            moves, spawns = self._read_scenario_edits(pack)
+            changed = False
+            for n, sp in enumerate(spawns):
+                if sp.file.lower() != file.lower() or sp.class_path != scenario.DEPOT:
+                    continue
+                new = each(scenario.DEPOT_TRUCKS)
+                spawns[n] = replace(sp, trucks=None if new is None or new == scenario.DEPOT_TRUCKS else new)
+                changed, count = True, count + 1
+            if changed:
+                self._write_scenario_edits(pack, moves, spawns)
+        out = self.map_scenarios(pack)
+        out["depots"] = count
+        return out
+
+    def depot_money(self, pack: str | None = None) -> dict:
+        """What a supply depot's trucks are worth, for the map view's depots: the money each truck brings and the
+        trucks in a convoy (rusemod.economy), the current mod's values where it changes them, else the game's (its
+        usual modes). A depot holds about trucks x per_convoy x per_truck (LittleGroove's measure in the game: a
+        depot's supply is about 9 times its number with the game's 3 and 3; not measured by us yet). `rule`: with a
+        map `pack`, the current mod's depots.toml rule its depots get (economy_depots), else None."""
+        found, _types = self._economy_copies()
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        normal = _props(found["normal"]) if "normal" in found else {}
+        out = {"ready": bool(normal), "usual": scenario.DEPOT_TRUCKS, "shipped": list(scenario.TRUCKS_SHIPPED),
+               "most": scenario.TRUCKS_MOST}
+        for key, prop in (("per_truck", "QteDeviseParCamion"), ("per_convoy", "NbCamionParConvoi")):
+            mine = edits.get(economy.TARGETS["normal"], prop) if edits is not None else None
+            p = normal.get(prop)
+            out[key] = mine if mine is not None else (p["numbers"][0] if p and not p["list"] else None)
+            out[key + "_mine"] = mine is not None
+        out["ready"] = out["ready"] and out["per_truck"] is not None and out["per_convoy"] is not None
+        rules = self._depot_rules()
+        out["rule"] = self._rule_view(scenario.depot_rule(rules, pack), pack) if pack else None
+        return out
+
+    # --- every depot of every map, or of one map (the unit mod's depots.toml, scenario.DepotRule; the Economy tab's
+    # Supply depots on the maps, the owner, 2026-10-10: "you would check like one map or all the maps. And then if it
+    # was just one map, you would choose the specific map"). The build sets each depot's trucks by it; a depot whose
+    # trucks the map changes set itself keeps them ---
+    DEPOTS_HEADER = ("Every supply depot's trucks, on every map ([all]) or on the maps named ([maps.<map>]): trucks "
+                     "each, or times what each has (docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio's Economy tab, "
+                     "which rewrites this file.")
+
+    def _depot_rules(self) -> dict:
+        folder = self._mod_dir()
+        if folder is None:
+            return {}
+        try:
+            return scenario.read_depots(folder)
+        except scenario.ScenarioError as exc:
+            raise StudioError(f"{folder / scenario.DEPOTS_FILE} has a mistake ({exc}). Fix it by hand, or delete the "
+                              f"file to start again.") from None
+
+    @staticmethod
+    def _rule_view(rule, key: str) -> dict | None:
+        if rule is None:
+            return None
+        return {"map": key, "trucks": rule.trucks, "times": rule.times}
+
+    def economy_depots(self, lang: str = schema.BASE) -> dict:
+        """The Economy tab's Supply depots on the maps: the current mod's rules ({"map": "all" or a map pack, its
+        "name" in `lang`, "trucks" or "times"}, all maps first), the maps one may be given ({"pack", "name"}, the
+        game's order), and what a depot's trucks are worth (depot_money)."""
+        rules = self._depot_rules()
+        try:
+            listed = self.maps()["maps"]
+        except StudioError:
+            listed = []
+
+        def name_of(m: dict) -> str:
+            titles = (m.get("titles") or {}).get(lang) or m.get("names") or [m["pack"]]
+            return str(titles[0] if titles else m["pack"])
+        names = {m["pack"].lower(): name_of(m) for m in listed}
+        shown = [{**self._rule_view(r, k), "name": names.get(k.lower(), k)} for k, r in rules.items()]
+        shown.sort(key=lambda r: (r["map"] != scenario.ALL_MAPS, r["name"].lower()))
+        return {"can": self._mod_dir() is not None, "rules": shown,
+                "maps": [{"pack": m["pack"], "name": name_of(m)} for m in listed], "money": self.depot_money()}
+
+    def economy_depots_set(self, where: str, trucks=None, times=None) -> dict:
+        """Give every depot on every map (`where` "all") or on one map (its pack) `trucks` each, or `times` its own
+        trucks; neither takes that rule out. Saved in the current mod's depots.toml at once; returns economy_depots."""
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        where = str(where or "")
+        if where != scenario.ALL_MAPS and not re.fullmatch(r"[A-Za-z0-9_]+", where):
+            raise StudioError(f"{where!r} isn't a map's pack name")
+        if trucks is not None and times is not None:
+            raise StudioError("Give the depots a number of trucks, or a times, not both.")
+        rule = None
+        if trucks is not None:
+            rule = scenario.DepotRule(trucks=self._trucks(trucks))
+        elif times is not None:
+            try:
+                t = float(times)
+            except (TypeError, ValueError):
+                raise StudioError(f"times: {times!r} isn't a number") from None
+            if isinstance(times, bool) or not math.isfinite(t) or t < 0:
+                raise StudioError("times is a number, 0 or more")
+            rule = scenario.DepotRule(times=t)
+        with self._saving:
+            rules = self._depot_rules()
+            rules.pop(next((k for k in rules if k.lower() == where.lower()), where), None)
+            if rule is not None:
+                rules[where] = rule
+            path = folder / scenario.DEPOTS_FILE
+            if rules:
+                _save_checked(path, scenario.depots_toml(rules, self.DEPOTS_HEADER), scenario.parse_depots)
+            elif path.is_file():
+                path.unlink()
+        return self.economy_depots()
 
     def scenario_move_spawn(self, pack: str, number: int, x: float, y: float) -> dict:
         """Put the current mod's spawn number `number` at x, y."""

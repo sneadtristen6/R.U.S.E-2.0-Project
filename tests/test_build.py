@@ -650,6 +650,64 @@ class SpawnClasses(unittest.TestCase):
                 self.assertIn("Nothing was written.", lines)
 
 
+class DepotsOnTheMaps(unittest.TestCase):
+    """A mod's depots.toml (the Studio's Economy tab, the owner, 2026-10-10: "you would check like one map or all the
+    maps"): every depot's trucks on every map or on the one named, written as each depot's own; a depot the mod
+    gives trucks itself keeps them. Two made-up maps, each with a depot of 25 trucks, a depot without any and a
+    Sherman (test_scenario.detail_scenario). Not tried in the game yet."""
+
+    def setUp(self):
+        from test_scenario import detail_scenario
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.game = root / "steamapps" / "common" / "R.U.S.E"
+        rev = self.game / "Data" / "PC" / "190852"
+        rev.mkdir(parents=True)
+        (self.game / "RUSE.exe").write_bytes(b"MZ")
+        (rev / "ZZ_GladPatchableWin.dat").write_bytes(PACK)
+        (rev / "DataMap_Win.dat").write_bytes(make_edat([
+            ("dir", "test\\map\\blitz\\", [("file", "leveldesign.scenario", detail_scenario())]),
+            ("dir", "test\\map\\other\\", [("file", "leveldesign.scenario", detail_scenario())])]))
+        (root / "steamapps" / "appmanifest_21970.acf").write_text('"AppState" { "buildid" "24687178" }')
+        self.root = root
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def built(self, depots: str, files: dict | None = None) -> dict:
+        """{map: [each design item's trucks, None without]} as the build writes them."""
+        from rusemod.scenario import Scenario
+        folder = write_mod(self.root / "mods", "rich", {})
+        (folder / "depots.toml").write_text(depots, encoding="utf-8")
+        for rel, text in (files or {}).items():
+            (folder / rel).parent.mkdir(parents=True, exist_ok=True)
+            (folder / rel).write_text(text, encoding="utf-8")
+        lines = []
+        result = build_and_write(self.game, [load_mod(folder)], instance=self.root / "copy", say=lines.append)
+        self.assertEqual(result.errors, [], lines)
+        arc = Edat((self.root / "copy" / "Data" / "PC" / "190852" / "DataMap_Win.dat").read_bytes())
+        return {m: [it.values.get("ChampInteger") for it in Scenario.read(bytes(arc.read(arc.find(
+            f"test\\map\\{m}\\leveldesign.scenario")))).items] for m in ("blitz", "other")}
+
+    def test_every_map(self):
+        got = self.built("[all]\ntimes = 2\n", {
+            "maps/Blitz/items.toml": '[[set]]\nfile = "leveldesign.scenario"\nitem = 0\nkind = "Spawn"\ntrucks = 99\n',
+            "maps/Blitz/scenario.toml": '[[spawn]]\nfile = "leveldesign.scenario"\nwhat = "DalleBatimentDepot"\n'
+                                        'x = 1.0\ny = 2.0\n'})
+        # by hand wins (99); none twice is none; the mod's new depot: 25 twice; the other map: 25 twice
+        self.assertEqual(got, {"blitz": [99, None, None, None, None, 50], "other": [50, None, None, None, None]})
+
+    def test_one_map_named_wins_over_every_map(self):
+        got = self.built("[all]\ntimes = 2\n\n[maps.Other]\ntrucks = 7\n")
+        self.assertEqual(got, {"blitz": [50, None, None, None, None], "other": [7, 7, None, None, None]})
+
+    def test_a_file_with_a_mistake_is_refused(self):
+        folder = write_mod(self.root / "mods", "bad", {})
+        (folder / "depots.toml").write_text("[all]\ntimes = -1\n", encoding="utf-8")
+        with self.assertRaisesRegex(BuildError, "times is a number, 0 or more"):
+            load_mod(folder)
+
+
 class ScenarioOnTheGround(unittest.TestCase):
     """Spawned units and moved starting points stand at the ground's height there, as every shipped one does
     (6,380 spawns, none at z 0): read from the map's highdef.tms, on a made-up map with hills."""

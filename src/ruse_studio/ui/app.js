@@ -2029,14 +2029,99 @@ async function renderEconomy() {
   try { data = await api().economy(state.lang); } catch (err) { problem(err); return; }
   if (state.view !== "economy") return;  // another tab was picked meanwhile
   const groups = data.groups.filter((g) => g.rows.length);
+  const depotLine = el("p", { className: "muted small", title: w.tip_economy_depot });
+  const depotMaps = el("div", { className: "economy-depots" });  // Depots on the maps (renderEconomyDepots)
   $("economy-groups").replaceChildren(...(data.ready && groups.length ? groups.map((g) => {
     const table = el("table");
-    for (const r of g.rows) table.append(economyRow(r));
-    return el("div", { className: "group" }, el("h2", { textContent: w[`economy_group_${g.id}`] || g.id }), table);
+    for (const r of g.rows) table.append(economyRow(r, g.id === "supply" ? () => showEconomyDepot(depotLine) : null));
+    const group = el("div", { className: "group" }, el("h2", { textContent: w[`economy_group_${g.id}`] || g.id }), table);
+    if (g.id === "supply") group.append(depotLine, depotMaps);
+    return group;
   }) : [el("p", { className: "muted", textContent: w.economy_none })]));
+  showEconomyDepot(depotLine);
+  renderEconomyDepots(depotMaps);
 }
 
-function economyRow(r) {
+// Depots on the maps (StudioApi.economy_depots / economy_depots_set, the mod's depots.toml): every depot's trucks on
+// every map, or on the one map picked (the owner, 2026-10-10: "you would check like one map or all the maps. And then
+// if it was just one map, you would choose the specific map"); the build sets each depot by it, and a depot given its
+// own trucks on the Maps tab keeps them. How often convoys leave is one value for every map (the row above).
+async function renderEconomyDepots(box) {
+  const w = state.words;
+  let data;
+  try { data = await api().economy_depots(state.lang); } catch (err) { box.replaceChildren(); problem(err); return; }
+  const m = data.money || {};
+  const worth = (trucks) => Math.round(trucks * m.per_convoy * m.per_truck).toLocaleString();
+  const ruleText = (r) => r.times !== null && r.times !== undefined ? w.economy_depots_x.replace("{n}", String(r.times))
+    : w.economy_depots_n.replace("{n}", Number(r.trucks).toLocaleString());
+  const save = async (where, trucks, times) => {
+    try {
+      await api().economy_depots_set(where, trucks, times);
+      say(w.saved.replace("{file}", "depots.toml"), "ok");
+      renderEconomyDepots(box);
+    } catch (err) { problem(err); }
+  };
+  // where: all maps, or one map picked from the game's list
+  const all = el("input", { type: "radio", name: "depots-where", checked: true, disabled: !data.can });
+  const one = el("input", { type: "radio", name: "depots-where", disabled: !data.can });
+  const pick = el("select", { className: "small", disabled: true, title: w.tip_economy_depots_where },
+    ...data.maps.map((x) => el("option", { value: x.pack, textContent: x.name })));
+  for (const r of [all, one]) r.addEventListener("change", () => { pick.disabled = !one.checked; preview(); });
+  const where = el("div", { className: "economy-depots-row", title: w.tip_economy_depots_where },
+    el("label", {}, all, " ", w.economy_depots_all), " ",
+    el("label", {}, one, " ", w.economy_depots_one), " ", pick);
+  // how much: times their trucks, or trucks each
+  const number = el("input", { type: "number", min: "0", step: "any", value: "2", className: "short",
+    disabled: !data.can, title: w.tip_economy_depots_amount });
+  const how = el("select", { className: "small", disabled: !data.can, title: w.tip_economy_depots_amount },
+    el("option", { value: "times", textContent: w.scen_depots_times }),
+    el("option", { value: "trucks", textContent: w.scen_depots_each }));
+  const apply = el("button", { type: "button", className: "small", textContent: w.scen_depots_apply,
+    disabled: !data.can, title: w.tip_economy_depots_amount });
+  const said = el("span", { className: "muted small" });
+  function preview() {
+    const n = Number(number.value);
+    const ok = number.value.trim() !== "" && Number.isFinite(n) && n >= 0 && (how.value === "times" || Number.isInteger(n));
+    number.setAttribute("aria-invalid", String(!ok));
+    said.textContent = ok && m.ready ? w.economy_depots_preview.replace("{trucks}", String(m.usual))
+      .replace("{money}", worth(how.value === "times" ? m.usual * n : n)) : "";
+    return ok ? n : null;
+  }
+  number.addEventListener("input", preview);
+  how.addEventListener("change", () => { number.value = how.value === "trucks" ? "50" : "2"; preview(); });
+  apply.addEventListener("click", () => {
+    const n = preview();
+    if (n === null) { number.focus(); return; }
+    const at = one.checked ? pick.value : "all";
+    save(at, how.value === "trucks" ? n : null, how.value === "times" ? n : null);
+  });
+  const amount = el("div", { className: "economy-depots-row", title: w.tip_economy_depots_amount },
+    number, " ", how, " ", apply, " ", said);
+  // the changes made so far, each with a way to take it off
+  const rules = data.rules.length ? el("ul", { className: "economy-depots-rules" }, ...data.rules.map((r) => {
+    const off = el("button", { type: "button", className: "link", textContent: w.economy_depots_take_off,
+      title: w.tip_economy_depots_take_off, disabled: !data.can });
+    off.addEventListener("click", () => save(r.map, null, null));
+    const name = r.map === "all" ? w.economy_depots_all : r.name;
+    return el("li", {}, w.economy_depots_rule.replace("{map}", name).replace("{what}", ruleText(r)), " ", off);
+  })) : el("p", { className: "muted small", textContent: w.economy_depots_none });
+  box.replaceChildren(el("h3", { textContent: w.economy_depots_title }),
+    el("p", { className: "muted small", textContent: data.can ? w.economy_depots_help : w.no_mod }),
+    where, amount, rules, el("p", { className: "muted small", textContent: w.economy_depots_often }));
+  preview();
+}
+
+// Under Supply depots: what a depot of the game's usual trucks holds with these values (StudioApi.depot_money), and
+// where a depot's own trucks are changed (the owner, 2026-10-10: "no way to increase max amt of money in supply depot")
+async function showEconomyDepot(line) {
+  let m;
+  try { m = await api().depot_money(); } catch { line.textContent = ""; return; }
+  line.textContent = m.ready ? state.words.economy_depot_money
+    .replace("{trucks}", String(m.usual))
+    .replace("{money}", Math.round(m.usual * m.per_convoy * m.per_truck).toLocaleString()) : "";
+}
+
+function economyRow(r, saved = null) {
   const w = state.words;
   const th = el("th", { textContent: r.label });
   if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
@@ -2065,6 +2150,7 @@ function economyRow(r) {
         show(game);
         showWas();
         say("");
+        if (saved) saved();
       } catch (err) { problem(err); }
     });
     was.replaceChildren(el("span", { textContent: w.was.replace("{v}", game.join(" · ")) }), undo);
@@ -2081,6 +2167,7 @@ function economyRow(r) {
       mine = sameNumbers(value, game) ? null : value;
       showWas();
       say(w.saved.replace("{file}", res.saved), "ok");
+      if (saved) saved();
     } catch (err) { problem(err); }
   };
   for (const box of boxes) box.addEventListener("change", () => save(box));

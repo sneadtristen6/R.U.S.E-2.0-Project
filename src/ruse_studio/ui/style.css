@@ -453,6 +453,13 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .scen-detail-row > span:first-child { min-width: 7em; }
 .scen-detail-row select { max-width: 100%; }
 .scen-detail-number { width: 6.5em; padding: 2px 6px; background: var(--panel-hi); border: 1px solid var(--line); border-radius: 6px; }
+/* the Economy tab's Depots on the maps (app.js renderEconomyDepots): all maps or one, then how much */
+.economy-depots { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.economy-depots h3 { margin: 0 0 4px; font-size: 13px; }
+.economy-depots-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0; }
+.economy-depots-row input[type="number"] { width: 7em; }
+.economy-depots-row select { max-width: 100%; }
+.economy-depots-rules { margin: 6px 0; padding-left: 18px; }
 .scen-details .values-words-box { max-width: none; }
 .scen-selection { align-self: stretch; display: flex; flex-direction: column; gap: 6px; padding: 6px 12px 8px;
                   background: var(--hud); border: 1px solid var(--hud-line); border-top: 2px solid #ffd34d;

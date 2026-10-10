@@ -1529,7 +1529,7 @@ const ALLIANCE = [0x3f7fe0, 0xe0503f, 0x49b85a, 0xe0c33f, 0xa35ee0, 0x3fc8d8];
 // item numbers: renderSelection shows them as the game shows a selection); box: a selection box being dragged
 const scen = { data: null, pick: 0, show: true, group: null, tool: null, selected: null, units: null, kind: "ground",
   type: null, camp: "-1", count: 1, formation: "line", gap: {}, team: 1, players: null, sel: new Set(), box: null,
-  unitByAddress: null, unitsLoading: null, markKind: "LabelVille" };
+  unitByAddress: null, unitsLoading: null, markKind: "LabelVille", trucks: 25 };
 // What the Add a name or zone tool adds (StudioApi.scenario_place; LittleGroove's + Placement): a town's or a hill's
 // name on the map, a named point or a round or square zone the mission scripts use
 const MARK_KINDS = ["LabelVille", "LabelMontagne", "Name", "CircularZone", "RectangleZone"];
@@ -1596,7 +1596,7 @@ function spawnLayer(it) {
 }
 // Several at once: how many one click adds, in which shape, how far apart (metres, per kind to start with). The shape
 // faces up the screen (away from the camera), its middle on the click; each unit is turned that way too.
-const SPAWN_MOST = 10;  // the "how many" slider's top
+const SPAWN_MOST = 50;  // the "how many" slider's top: as many as one click may add (StudioApi.SPAWN_MOST; it was 10)
 const FORMATIONS = ["line", "column", "wedge", "box", "circle"];
 const SPAWN_GAP = { infantry: 12, ground: 25, air: 50, buildings: 60 };
 
@@ -2451,6 +2451,61 @@ function spawnDesc() {
   const u = (scen.units || []).find((x) => x.address === pick);
   box.textContent = (u && u.desc) || "";
   box.classList.toggle("hidden", scen.tool !== "spawn" || !box.textContent);
+  renderSpawnTrucks();
+}
+
+// --- A supply depot's money (the owner, 2026-10-10: "no way to increase max amt of money in supply depot"): a depot
+// holds about trucks x trucks a convoy x money a truck (LittleGroove's measure in the game, StudioApi.depot_money,
+// with the unit mod's Economy values); its trucks go up to the file's own top (scenario.TRUCKS_MOST), and past the
+// game's own depots (15 to 72) the Studio says it isn't tried in the game ---
+const TRUCKS_MOST = 2147483647;
+
+// The money values and the unit mod's rule for this map's depots (its Economy tab's Depots on the maps), read again
+// each time (that tab may have changed them meanwhile).
+async function depotMoney() {
+  try { mv.depotMoney = await mv.api.depot_money(mv.current); } catch { mv.depotMoney = null; }
+  return mv.depotMoney;
+}
+
+// Under a depot's trucks: about what it holds, and a word when it has more than the game's depots. `ruled`: the
+// depot's trucks aren't set by hand, so the Economy tab's rule for this map (if any) gives it its trucks.
+function showDepotMoney(box, trucks, ruled = false) {
+  const w = mv.words, m = mv.depotMoney;
+  const parts = [];
+  const rule = ruled && m && m.rule;
+  if (rule && Number.isFinite(trucks)) {
+    const what = rule.times !== null && rule.times !== undefined ? fill(w.economy_depots_x, { n: rule.times })
+      : fill(w.economy_depots_n, { n: Number(rule.trucks).toLocaleString() });
+    trucks = rule.times !== null && rule.times !== undefined ? Math.round(trucks * rule.times) : rule.trucks;
+    parts.push(fill(w.scen_depot_rule, { what, n: trucks.toLocaleString() }));
+  }
+  if (m && m.ready && Number.isFinite(trucks) && trucks >= 0) {
+    parts.push(fill(w.scen_depot_money, { money: Math.round(trucks * m.per_convoy * m.per_truck).toLocaleString(),
+      trucks: Math.round(trucks).toLocaleString(), convoy: m.per_convoy, truck: m.per_truck }));
+  }
+  if (m && Number.isFinite(trucks) && trucks > m.shipped[1]) parts.push(fill(w.scen_depot_untried, { most: m.shipped[1] }));
+  box.textContent = parts.join(" ");
+}
+
+// The Spawn tool with the supply depot spot picked: the new depots' trucks, and what each will hold.
+function renderSpawnTrucks() {
+  const w = mv.words, row = $("scen-depot-row");
+  const on = scen.tool === "spawn" && $("scen-unit").value === DEPOT_SLAB;
+  row.classList.toggle("hidden", !on);
+  if (!on) { row.replaceChildren(); return; }
+  const number = el("input", { type: "number", min: "0", max: String(TRUCKS_MOST), step: "1", className: "scen-detail-number",
+    value: String(scen.trucks), title: w.tip_scen_spawn_trucks });
+  const holds = el("div", { className: "muted" });
+  number.addEventListener("input", () => {
+    const n = Number(number.value);
+    const good = number.value.trim() !== "" && Number.isInteger(n) && n >= 0 && n <= TRUCKS_MOST;
+    number.setAttribute("aria-invalid", String(!good));
+    if (good) { scen.trucks = n; scen.trucksSet = true; }  // (untouched: the build's 25, or the Economy tab's rule)
+    showDepotMoney(holds, n);
+  });
+  row.title = w.tip_scen_spawn_trucks;
+  row.replaceChildren(el("span", { textContent: w.scen_item_trucks }), number, holds);
+  depotMoney().then(() => showDepotMoney(holds, scen.trucks, !scen.trucksSet));
 }
 
 // what a placed or moved item sticks to the road as: "depot", "hq" or null
@@ -2545,7 +2600,7 @@ function renderScenTools() {
           : w.tip_scen_camp + (o.team > 0 ? " " + fill(w.scen_owner_team, { team: o.team }) : "");
         return chipOf(label, tip, scen.camp === id, () => { scen.camp = id; renderScenTools(); });
       }));
-    // a slider, 1 to 10 (a player asked for 3, 5, 7 and 9 too, 2026-10-03: the buttons offered 1, 2, 4, 6, 8, 10)
+    // a slider, 1 to SPAWN_MOST (a player asked for 3, 5, 7 and 9 too, 2026-10-03: the buttons offered 1, 2, 4, 6, 8, 10)
     const countLabel = el("span", { className: "muted small", textContent: fill(w.scen_count_n, { n: scen.count }) });
     const countSlider = el("input", { type: "range", min: "1", max: String(SPAWN_MOST), step: "1",
       value: String(scen.count), title: w.tip_scen_count });
@@ -2651,14 +2706,16 @@ const DETAIL_KINDS = ["Spawn", "CircularZone", "RectangleZone", "LabelVille", "L
 
 function renderItemDetails(s, it) {
   const w = mv.words, box = $("scen-details");
-  // the map's own items, and the names, points and zones the mod adds (its own spawns and starts have none here)
-  const show = Boolean(s && it && !it.gone && DETAIL_KINDS.includes(it.kind) && (!it.mine || it.place !== undefined));
+  // the map's own items, and the spawns, names, points and zones the mod adds (its own starts have none here)
+  const ownSpawn = Boolean(it && it.mine && it.spawn !== undefined);
+  const show = Boolean(s && it && !it.gone && DETAIL_KINDS.includes(it.kind) && (!it.mine || it.place !== undefined || ownSpawn));
   box.classList.toggle("hidden", !show);
   box.replaceChildren();
   if (!show) return;
   const can = Boolean(mv.brush.mod);
-  const save = (field, value) => scenEdit(() => it.mine ? mv.api.scenario_place_set(mv.current, it.place, field, value)
-    : mv.api.scenario_change(mv.current, s.file, it.item, field, value), true);
+  const save = (field, value) => scenEdit(() => ownSpawn ? mv.api.scenario_spawn_set(mv.current, it.spawn, field, value)
+    : it.mine ? mv.api.scenario_place_set(mv.current, it.place, field, value)
+      : mv.api.scenario_change(mv.current, s.file, it.item, field, value), true);
   const gameLine = (field, text, back) => {
     if (!it.game || !(field in it.game)) return null;
     const reset = el("button", { type: "button", className: "link", textContent: w.scen_item_reset,
@@ -2671,7 +2728,8 @@ function renderItemDetails(s, it) {
   box.append(el("div", { className: "scen-details-title", textContent: w.scen_item_title, title: w.tip_scen_item_title }));
   if (it.kind === "Spawn") {
     const skirmish = s.kind === "skirmish";
-    const now = it.camp === null || it.camp === undefined ? 0 : it.camp;
+    // (a map's own spawn without a Camp is the game's camp 0; one the mod adds without a side is neutral)
+    const now = it.camp === null || it.camp === undefined ? (ownSpawn ? -1 : 0) : it.camp;
     const owners = (s.owners || [{ camp: -1, kind: "neutral" }]).slice();
     if (!owners.some((o) => o.camp === now)) owners.push({ camp: now, kind: "camp" });
     const label = (o) => o.kind === "neutral" ? w.scen_side_neutral
@@ -2685,16 +2743,24 @@ function renderItemDetails(s, it) {
     const gameCamp = it.game && "camp" in it.game ? (it.game.camp === null || it.game.camp === undefined ? 0 : it.game.camp) : null;
     box.append(row(w.scen_item_camp, tip, side,
       gameLine("camp", gameCamp === null ? "" : label(owners.find((o) => o.camp === gameCamp) || { camp: gameCamp, kind: "camp" }), gameCamp)));
-    if (it.trucks !== undefined || it.what === "DalleBatimentDepot") {
-      const trucks = el("input", { type: "number", min: "0", max: "1000", step: "1", className: "scen-detail-number",
+    if (it.trucks !== undefined || it.what === DEPOT_SLAB) {
+      // no top but the file's own (scenario.TRUCKS_MOST): the Studio's old 1000 was its own, not the game's
+      const trucks = el("input", { type: "number", min: "0", max: String(TRUCKS_MOST), step: "1", className: "scen-detail-number",
         value: it.trucks === undefined || it.trucks === null ? "" : String(it.trucks), disabled: !can, title: w.tip_scen_item_trucks });
+      const holds = el("div", { className: "muted" });
       trucks.addEventListener("change", () => {
         const n = Number(trucks.value);
-        if (trucks.value.trim() === "" || !Number.isInteger(n) || n < 0 || n > 1000) { trucks.value = it.trucks ?? ""; return; }
+        if (trucks.value.trim() === "" || !Number.isInteger(n) || n < 0 || n > TRUCKS_MOST) { trucks.value = it.trucks ?? ""; return; }
         save("trucks", n);
       });
+      trucks.addEventListener("input", () => showDepotMoney(holds, Number(trucks.value)));
       box.append(row(w.scen_item_trucks, w.tip_scen_item_trucks, trucks,
-        gameLine("trucks", it.game && it.game.trucks !== null && it.game.trucks !== undefined ? String(it.game.trucks) : "", it.game ? it.game.trucks : null)));
+        gameLine("trucks", it.game && it.game.trucks !== null && it.game.trucks !== undefined ? String(it.game.trucks) : "", it.game ? it.game.trucks : null)),
+      holds);
+      // set by hand here (the map's own depot changed, or one the mod adds given trucks): the Economy tab's rule
+      // for this map leaves it be
+      const byHand = ownSpawn ? Boolean(it.trucks_set) : Boolean(it.game && "trucks" in it.game);
+      depotMoney().then(() => showDepotMoney(holds, it.trucks === undefined || it.trucks === null ? 0 : it.trucks, !byHand));
     }
   } else if (it.kind === "CircularZone" || it.kind === "RectangleZone") {
     const fields = it.kind === "CircularZone" ? [["radius", w.scen_item_radius]] : [["width", w.scen_item_width], ["height", w.scen_item_height]];
@@ -2736,8 +2802,9 @@ function renderItemDetails(s, it) {
     box.append(row(it.kind === "LabelVille" ? w.scen_item_town : w.scen_item_hill, w.tip_scen_item_no_key,
       el("span", { className: "muted", textContent: `“${it.text || it.name}”` })));
   }
-  // the name the mission scripts find it by (a unit, a named point, a zone): changing it can break a script
-  if (["Spawn", "Name", "CircularZone", "RectangleZone"].includes(it.kind)) {
+  // the name the mission scripts find it by (a unit, a named point, a zone): changing it can break a script (a spawn
+  // the mod adds has none)
+  if (["Spawn", "Name", "CircularZone", "RectangleZone"].includes(it.kind) && !ownSpawn) {
     const name = el("input", { type: "text", maxLength: 200, className: "scen-detail-text", value: it.name || "",
       placeholder: w.scen_item_no_name, disabled: !can, title: w.tip_scen_item_name });
     name.addEventListener("change", () => {
@@ -2749,13 +2816,13 @@ function renderItemDetails(s, it) {
       gameLine("name", it.game && it.game.name ? it.game.name : w.scen_item_no_name, it.game ? it.game.name || "" : "")));
   }
   // its turn, in degrees: only an item that has one (a label has none); a new point or zone gets one when set
-  if (it.turns || (it.mine && it.place !== undefined && it.kind !== "LabelVille" && it.kind !== "LabelMontagne")) {
+  if (it.turns || ownSpawn || (it.mine && it.place !== undefined && it.kind !== "LabelVille" && it.kind !== "LabelMontagne")) {
     const deg = (r) => Math.round(r * 180 / Math.PI * 10) / 10;
     const turn = el("input", { type: "number", step: "1", className: "scen-detail-number", value: String(deg(it.turn || 0)),
       disabled: !can, title: w.tip_scen_item_turn });
-    const turnTo = (radians) => scenEdit(() => it.mine
-      ? mv.api.scenario_place_set(mv.current, it.place, "rotation", radians)
-      : mv.api.scenario_turn(mv.current, s.file, it.item, radians), true);
+    const turnTo = (radians) => scenEdit(() => ownSpawn ? mv.api.scenario_spawn_set(mv.current, it.spawn, "rotation", radians)
+      : it.mine ? mv.api.scenario_place_set(mv.current, it.place, "rotation", radians)
+        : mv.api.scenario_turn(mv.current, s.file, it.item, radians), true);
     turn.addEventListener("change", () => {
       const d = Number(turn.value);
       if (turn.value.trim() === "" || !Number.isFinite(d)) { turn.value = String(deg(it.turn || 0)); return; }
@@ -2788,6 +2855,33 @@ function renderScenClear(s) {
       title: w.tip_scen_take_out });
     b.addEventListener("click", () => scenEdit(() => mv.api.scenario_remove(mv.current, s.file, items.map((it) => it.item))));
     box.append(b, " ");
+  }
+  // Every supply depot of this scenario at once, the map's and the mod's own (StudioApi.scenario_depots): the same
+  // trucks each, or each one's times a number; more trucks, more money in every depot (the owner, 2026-10-10: "no
+  // way to increase max amt of money in supply depot")
+  const allDepots = s.items.filter((it) => it.kind === "Spawn" && !it.gone && (it.group === "depot" || it.what === DEPOT_SLAB));
+  if (allDepots.length) {
+    const number = el("input", { type: "number", min: "0", step: "any", value: "2", className: "scen-detail-number",
+      title: w.tip_scen_depots });
+    const how = el("select", { className: "small", title: w.tip_scen_depots },
+      el("option", { value: "times", textContent: w.scen_depots_times }),
+      el("option", { value: "trucks", textContent: w.scen_depots_each }));
+    how.addEventListener("change", () => { number.value = how.value === "trucks" ? "50" : "2"; });
+    const apply = el("button", { type: "button", className: "small", textContent: w.scen_depots_apply, title: w.tip_scen_depots });
+    apply.addEventListener("click", () => {
+      const n = Number(number.value);
+      if (number.value.trim() === "" || !Number.isFinite(n) || n < 0 || (how.value === "trucks" && !Number.isInteger(n))) {
+        number.setAttribute("aria-invalid", "true");
+        return;
+      }
+      number.setAttribute("aria-invalid", "false");
+      scenEdit(() => how.value === "trucks" ? mv.api.scenario_depots(mv.current, s.file, n, null)
+        : mv.api.scenario_depots(mv.current, s.file, null, n), true);
+    });
+    const back = el("button", { type: "button", className: "link", textContent: w.scen_depots_back, title: w.tip_scen_depots_back });
+    back.addEventListener("click", () => scenEdit(() => mv.api.scenario_depots(mv.current, s.file, null, null), true));
+    box.append(el("div", { className: "scen-detail-row", title: w.tip_scen_depots },
+      el("span", { textContent: fill(w.scen_depots_label, { n: allDepots.length }) }), number, " ", how, " ", apply, " ", back));
   }
   // Sectors over the whole map: every scenario of the map, each place its sectors leave out to the nearest one
   // (StudioApi.scenario_sectors, rusemod.sectors); drawn as the build will make them
@@ -2988,7 +3082,7 @@ async function scenPlaceAt(s, cx, cy) {
   let points = formationPoints(cx, cy);
   if (snapKind(null, unit) === "depot") points = await Promise.all(points.map(([px, py]) => snapToRoad("depot", px, py)));
   scenEdit(() => mv.api.scenario_spawn_many(mv.current, s.file, unit, points,
-    camp === "" ? null : Number(camp), Math.atan2(fy, fx)));
+    camp === "" ? null : Number(camp), Math.atan2(fy, fx), unit === DEPOT_SLAB && scen.trucksSet ? scen.trucks : null));
 }
 
 // Pointing at a zone, a starting point or a spawn says what it is.

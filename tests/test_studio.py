@@ -1444,6 +1444,81 @@ class ScenarioEdits(WithMod):
         self.assertEqual(Spawn("x.scenario", data["spawn"][-1]["what"], 0.0, 0.0).class_path, DEPOT)
 
 
+class DepotTrucks(WithMod):
+    """A supply depot's money (the owner, 2026-10-10: "theres currently no way to increase max amt of money in supply
+    depot"): its trucks past the Studio's old top of 1000, the depots the mod adds given trucks and changed after,
+    and every depot of a scenario at once."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from test_scenario import detail_scenario  # 0 a depot of 25 trucks, 1 a depot without trucks, 2 a Sherman
+        folder = "test/map/blitz/".replace("/", "\\")
+        (cls.game / "Data" / "PC" / "190852" / "DataMap_Win.dat").write_bytes(
+            make_edat([("dir", folder, [("file", "leveldesign.scenario", detail_scenario())])]))
+
+    def setUp(self):
+        super().setUp()
+        menus = mock.patch("rusemod.scenario.kinds_of", return_value={})
+        menus.start()
+        self.addCleanup(menus.stop)
+        self.mod = Path(self.api.new_mod("Depots")["current"])
+        self.spawns = self.mod / "maps" / "Blitz" / "scenario.toml"
+        self.changes = self.mod / "maps" / "Blitz" / "items.toml"
+
+    def items(self, res):
+        return next(s for s in res["scenarios"] if s["file"] == "leveldesign.scenario")["items"]
+
+    def test_a_map_depot_past_the_old_top(self):
+        it = self.items(self.api.scenario_change("Blitz", "leveldesign.scenario", 0, "trucks", 250_000))[0]
+        self.assertEqual((it["trucks"], it["game"]), (250_000, {"trucks": 25}))
+        self.assertEqual(tomllib.loads(self.changes.read_text(encoding="utf-8"))["set"][0]["trucks"], 250_000)
+        for bad in (-1, 2 ** 31, 2.5):
+            with self.subTest(bad=bad), self.assertRaisesRegex(StudioError, "whole number"):
+                self.api.scenario_change("Blitz", "leveldesign.scenario", 0, "trucks", bad)
+
+    def test_a_depot_the_mod_adds(self):
+        items = self.items(self.api.scenario_spawn_many("Blitz", "leveldesign.scenario", "DalleBatimentDepot",
+                                                        [[1, 2], [3, 4]], None, 0.0, 5000))
+        mine = [it for it in items if it.get("mine")]
+        self.assertEqual([(it["trucks"], it["spawn"]) for it in mine], [(5000, 0), (5000, 1)])
+        self.assertEqual([s["trucks"] for s in tomllib.loads(self.spawns.read_text(encoding="utf-8"))["spawn"]],
+                         [5000, 5000])
+        it = self.items(self.api.scenario_spawn_set("Blitz", 1, "trucks", 90))[-1]
+        self.assertEqual(it["trucks"], 90)
+        it = self.items(self.api.scenario_spawn_set("Blitz", 1, "camp", 1))[-1]
+        self.assertEqual(it["camp"], 1)
+        it = self.items(self.api.scenario_spawn_set("Blitz", 1, "rotation", 1.25))[-1]
+        self.assertEqual(it["turn"], 1.25)
+        self.assertEqual(self.items(self.api.scenario_spawn("Blitz", "leveldesign.scenario", "DalleBatimentDepot",
+                                                            5.0, 6.0))[-1]["trucks"], 25)  # unset: the build's 25
+        with self.assertRaisesRegex(StudioError, "whole number"):
+            self.api.scenario_spawn_set("Blitz", 0, "trucks", -5)
+        with self.assertRaisesRegex(StudioError, "can't be changed here"):
+            self.api.scenario_spawn_set("Blitz", 0, "what", "Unit_X")
+        with self.assertRaisesRegex(StudioError, "isn't in the mod"):
+            self.api.scenario_spawn_set("Blitz", 9, "trucks", 5)
+        with self.assertRaisesRegex(StudioError, "Only a supply depot has trucks"):
+            self.api.scenario_spawn_many("Blitz", "leveldesign.scenario", M4, [[1, 2]], None, 0.0, 40)
+
+    def test_every_depot_at_once(self):
+        self.api.scenario_spawn("Blitz", "leveldesign.scenario", "DalleBatimentDepot", 5.0, 6.0)
+        res = self.api.scenario_depots("Blitz", "leveldesign.scenario", None, 3)
+        items = self.items(res)
+        self.assertEqual(res["depots"], 3)  # the map's two and the mod's one; the Sherman isn't one
+        self.assertEqual([items[0]["trucks"], items[1].get("trucks"), items[-1]["trucks"]], [75, None, 75])
+        self.assertNotIn("trucks", items[2])
+        items = self.items(self.api.scenario_depots("Blitz", "leveldesign.scenario", 400, None))
+        self.assertEqual([items[0]["trucks"], items[1]["trucks"], items[-1]["trucks"]], [400, 400, 400])
+        items = self.items(self.api.scenario_depots("Blitz", "leveldesign.scenario"))  # back to the game's
+        self.assertEqual([items[0]["trucks"], items[1].get("trucks"), items[-1]["trucks"]], [25, None, 25])
+        self.assertFalse(self.changes.exists())
+        self.assertNotIn("trucks", tomllib.loads(self.spawns.read_text(encoding="utf-8"))["spawn"][0])
+        for trucks, times, why in ((5, 2, "not both"), (None, -1, "0 or more"), (-1, None, "whole number")):
+            with self.subTest(trucks=trucks, times=times), self.assertRaisesRegex(StudioError, why):
+                self.api.scenario_depots("Blitz", "leveldesign.scenario", trucks, times)
+
+
 class MapDocks(WithMod):
     """The map editor's Bridges dock (map_bridges, bridge_add) and "Check this map" (map_check), on the made-up game:
     its map's bridge kinds and the check stood in for (the made-up game has no map pack)."""

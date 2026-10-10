@@ -46,12 +46,12 @@ def floats(v) -> list[float]:
 
 PROPS = ["QteDeviseInitiale", "QteDeviseParCamion", "CheckAndCancelWaitingRequest",
          "PaliersTempsToChooseNewCardForAllianceTaille_1", "MaxProductionQueueSize", "UsePopCap",
-         "MaxNbCardsPerZoneByAlliance"]
+         "MaxNbCardsPerZoneByAlliance", "NbCamionParConvoi"]
 
 
 def constants(per_truck: int, card_times) -> bytes:
     """One copy of the constants as the game has it: one named object, a few of its values."""
-    values = [i32(200), i32(per_truck), flag(1), lst(*(f32(t) for t in card_times)), u32(30), flag(0), i32(2)]
+    values = [i32(200), i32(per_truck), flag(1), lst(*(f32(t) for t in card_times)), u32(30), flag(0), i32(2), i32(3)]
     return make_ndf(objects=[(0, list(enumerate(values)))], classes=["TTunableConstante"],
                     props=[(p, 0) for p in PROPS], exports={0: "GFX/Everything/Constantes"}, topo=[0])
 
@@ -76,10 +76,12 @@ class Labels(unittest.TestCase):
             with self.subTest(group=group):
                 self.assertEqual(set(words[f"economy_group_{group}"]), LANGS)
         for key in ("economy_tab", "economy_title", "economy_help", "economy_buildings", "economy_none",
-                    "economy_atomic", "tip_tab_economy", "tip_economy_reset"):
+                    "economy_atomic", "tip_tab_economy", "tip_economy_reset", "economy_depot_money",
+                    "tip_economy_depot"):
             with self.subTest(key=key):
                 self.assertEqual(set(words[key]), LANGS)
         self.assertTrue(all("{v}" in text for text in words["economy_atomic"].values()))
+        self.assertTrue(all("{trucks}" in text and "{money}" in text for text in words["economy_depot_money"].values()))
 
     def test_the_tab_is_on_the_page(self):
         html = (ROOT / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
@@ -178,6 +180,45 @@ class Tab(unittest.TestCase):
         self.assertIsNone(self.rows()["QteDeviseParCamion"]["value"])
         text = (self.home / "mods" / "rich" / "src" / "studio.rndf").read_text(encoding="utf-8")
         self.assertNotIn("patch", text)
+
+    def test_what_a_depot_holds(self):
+        """The Maps tab's depots and the Economy tab's line (the owner, 2026-10-10: "no way to increase max amt of
+        money in supply depot"): a depot holds about its trucks x the trucks in a convoy x the money each truck
+        brings, with the mod's values where it changes them, else the game's."""
+        m = self.api.depot_money()
+        self.assertEqual((m["ready"], m["per_truck"], m["per_convoy"], m["usual"], m["shipped"], m["most"]),
+                         (True, 3, 3, 25, [15, 72], 2 ** 31 - 1))
+        self.api.new_mod("Rich")
+        self.api.economy_edit("QteDeviseParCamion", 10)
+        m = self.api.depot_money()
+        self.assertEqual((m["per_truck"], m["per_truck_mine"], m["per_convoy"], m["per_convoy_mine"]), (10, True, 3, False))
+
+    def test_depots_on_the_maps(self):
+        """The Economy tab's Depots on the maps: every depot on all maps, or on one map picked, kept in the mod's
+        depots.toml (the build sets each depot's trucks by it: test_build.DepotsOnTheMaps)."""
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod"):
+            self.api.economy_depots_set("all", None, 2)
+        self.assertEqual(self.api.economy_depots()["rules"], [])
+        self.api.new_mod("Rich")
+        file = self.home / "mods" / "rich" / "depots.toml"
+        self.api.economy_depots_set("all", None, 2)
+        page = self.api.economy_depots_set("M04_Cotentin", 60)
+        self.assertEqual([(r["map"], r["trucks"], r["times"]) for r in page["rules"]],
+                         [("all", None, 2.0), ("M04_Cotentin", 60, None)])  # all maps first
+        self.assertTrue(page["can"])
+        self.assertEqual(page["money"]["usual"], 25)
+        self.assertIn("[all]\ntimes = 2.0\n\n[maps.M04_Cotentin]\ntrucks = 60\n", file.read_text(encoding="utf-8"))
+        self.assertEqual(self.api.depot_money("m04_cotentin")["rule"], {"map": "m04_cotentin", "trucks": 60, "times": None})
+        self.assertEqual(self.api.depot_money("Blitz")["rule"]["times"], 2.0)  # every other map: all maps'
+        self.api.economy_depots_set("m04_cotentin", 80)  # the same map, any case: replaced
+        self.assertEqual([r["trucks"] for r in self.api.economy_depots()["rules"]], [None, 80])
+        for where, trucks, times, why in (("D Day", 5, None, "pack name"), ("all", 5, 2, "not both"),
+                                          ("all", None, -1, "0 or more"), ("all", 2 ** 31, None, "whole number")):
+            with self.subTest(where=where, trucks=trucks, times=times), self.assertRaisesRegex(StudioError, why):
+                self.api.economy_depots_set(where, trucks, times)
+        self.api.economy_depots_set("all")
+        self.api.economy_depots_set("M04_Cotentin")  # taken off: no rule left, no file
+        self.assertFalse(file.exists())
 
     def test_what_is_refused(self):
         self.api.new_mod("Rich")

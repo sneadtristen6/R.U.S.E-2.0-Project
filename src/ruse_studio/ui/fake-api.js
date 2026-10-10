@@ -795,8 +795,11 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           start: n, item: s.items.length, cam, camera: st.camera || 0 });
       });
       e.spawns.forEach((sp, n) => {
-        if (sp.file === s.file) s.items.push({ kind: "Spawn", x: sp.x, y: sp.y, turn: 0, name: "", camp: sp.camp, what: sp.what,
-          mine: true, spawn: n, item: s.items.length });
+        if (sp.file !== s.file) return;
+        const it = { kind: "Spawn", x: sp.x, y: sp.y, turn: sp.rotation || 0, name: "", camp: sp.camp, what: sp.what,
+          mine: true, spawn: n, item: s.items.length };
+        if (sp.what === "DalleBatimentDepot") Object.assign(it, { trucks: sp.trucks ?? 25, group: "depot", icon: "depot" });
+        s.items.push(it);
       });
     }
     return out;
@@ -1408,6 +1411,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ["decoys", [["ConstructionDelayForFakeBuildingsMin", "Decoy buildings: seconds before building (least)", "int32", 5]]],
   ];
   const economyEdits = new Map();  // prop -> the mod's value (StudioApi.economy_edit)
+  const depotRules = new Map();  // "all" or a map pack, lower case -> its rule (StudioApi.economy_depots_set)
   // the Music tab: [group, [[member, name, seconds, also, maps]]], as StudioApi.music groups the real game's songs
   const MUSIC_DIR = "gen_sound\\ww2\\sons\\atp_music\\";
   const MUSIC = [
@@ -2776,9 +2780,71 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         checkProblems = checkProblems.filter((x) => x !== p);
         return { mod: current, problems: checkProblems, kept: `${current}/${file.replace(".toml", ".broken.toml")}` };
       },
-      scenario_spawn_many: async (pack, file, unit, points, camp = -1, rotation = 0) => {
-        for (const [x, y] of points) scenEdits(pack).spawns.push({ file, what: unit.replace(E, "Unit_"), x, y, camp, rotation });
+      scenario_spawn_many: async (pack, file, unit, points, camp = -1, rotation = 0, trucks = null) => {
+        if (trucks !== null && unit !== "DalleBatimentDepot") throw new Error("Only a supply depot has trucks.");
+        for (const [x, y] of points) {
+          scenEdits(pack).spawns.push({ file, what: unit.replace(E, "Unit_"), x, y, camp, rotation, trucks });
+        }
         return withScenarioEdits(pack);
+      },
+      // a spawn the mod adds: its side, a depot's trucks, its turn (StudioApi.scenario_spawn_set)
+      scenario_spawn_set: async (pack, number, field, value) => {
+        const sp = scenEdits(pack).spawns[number];
+        if (!sp) throw new Error("that spawn isn't in the mod any more");
+        if (field === "trucks" && sp.what !== "DalleBatimentDepot") throw new Error("Only a supply depot has trucks.");
+        if (field === "trucks" && !(Number.isInteger(value) && value >= 0 && value <= 2147483647)) {
+          throw new Error("A depot's trucks are a whole number from 0 to 2,147,483,647.");
+        }
+        sp[field === "rotation" ? "rotation" : field] = Number(value);
+        return withScenarioEdits(pack);
+      },
+      // every depot of a scenario at once (StudioApi.scenario_depots): trucks each, times the game's, or back
+      scenario_depots: async (pack, file, trucks = null, times = null) => {
+        const e = scenEdits(pack), s = baseScenarios().scenarios.find((x) => x.file === file);
+        e.changes = e.changes || [];
+        let count = 0;
+        const each = (game) => trucks !== null ? trucks : times !== null ? Math.round(game * times) : null;
+        (s ? s.items : []).forEach((it, item) => {
+          if (it.kind !== "Spawn" || it.what !== "DalleBatimentDepot") return;
+          let c = e.changes.find((x) => x.file === file && x.item === item);
+          if (!c) { c = { file, item, values: {} }; e.changes.push(c); }
+          const n = each(it.trucks || 0);
+          if (n === null || n === (it.trucks || 0)) delete c.values.trucks; else c.values.trucks = n;
+          count += 1;
+        });
+        e.changes = e.changes.filter((c) => Object.keys(c.values).length);
+        for (const sp of e.spawns) {
+          if (sp.file !== file || sp.what !== "DalleBatimentDepot") continue;
+          const n = each(25);
+          sp.trucks = n === null || n === 25 ? null : n;
+          count += 1;
+        }
+        return { ...withScenarioEdits(pack), depots: count };
+      },
+      // what a depot's trucks are worth (StudioApi.depot_money): the Economy tab's money a truck and trucks a convoy
+      depot_money: async (pack = null) => {
+        const value = (prop, game) => economyEdits.has(prop) ? economyEdits.get(prop) : game;
+        const rule = pack ? (depotRules.get(pack.toLowerCase()) || depotRules.get("all")) : null;
+        return { ready: mode !== "noindex", usual: 25, shipped: [15, 72], most: 2147483647,
+          per_truck: value("QteDeviseParCamion", 3), per_truck_mine: economyEdits.has("QteDeviseParCamion"),
+          per_convoy: value("NbCamionParConvoi", 3), per_convoy_mine: economyEdits.has("NbCamionParConvoi"),
+          rule: rule ? { ...rule } : null };
+      },
+      // the Economy tab's Depots on the maps (StudioApi.economy_depots / economy_depots_set): all maps or one
+      economy_depots: async () => ({ can: Boolean(current),
+        rules: [...depotRules.values()].sort((a, b) => (a.map !== "all") - (b.map !== "all") || a.name.localeCompare(b.name)),
+        maps: fakeMaps.map((m) => ({ pack: m.pack, name: m.names[0] })), money: await window.pywebview.api.depot_money() }),
+      economy_depots_set: async (where, trucks = null, times = null) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (trucks !== null && times !== null) throw new Error("Give the depots a number of trucks, or a times, not both.");
+        const key = String(where).toLowerCase();
+        if (trucks === null && times === null) depotRules.delete(key);
+        else {
+          const m = fakeMaps.find((x) => x.pack.toLowerCase() === key);
+          depotRules.set(key, { map: key === "all" ? "all" : m ? m.pack : where, name: m ? m.names[0] : where,
+            trucks, times });
+        }
+        return window.pywebview.api.economy_depots();
       },
       scenario_move_spawn: async (pack, number, x, y) => {
         Object.assign(scenEdits(pack).spawns[number], { x, y });
