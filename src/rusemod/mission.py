@@ -143,6 +143,7 @@ def _words(v, at: str) -> Words:
         raise MissionError(f"{at}: text needs its English words (text = \"...\", or a table with us = \"...\")")
     extra = sorted(set(v) - set(LANGS))
     if extra:
+        # not a game rule: our list of the game's 10 text languages
         raise MissionError(f"{at}: {extra[0]!r} isn't one of the game's languages ({', '.join(LANGS)})")
     for lang, t in v.items():
         if not isinstance(t, str) or len(t) > _TEXT_MOST:
@@ -603,8 +604,10 @@ def problems(m: Mission, base: Base, ctx: Context) -> list:
         if s.number not in numbers:
             out.append(("error", f"side {s.number} isn't one of the copied mission's sides ({', '.join(map(str, sorted(numbers)))})"))
         elif s.number in player and s.plays not in (None, "player"):
+            # rule: mission-human-sides
             out.append(("error", f"side {s.number} is played by a person in the copied mission: it stays the player's"))
         elif s.number not in player and s.plays == "player":
+            # rule: mission-human-sides
             out.append(("error", f"side {s.number} is the computer's in the copied mission: a mission can't add a "
                                  f"human side (the game wants as many as there are players)"))
     goals = {g.id: g for g in m.goals}
@@ -675,6 +678,7 @@ def problems(m: Mission, base: Base, ctx: Context) -> list:
                 if a.side is None:
                     out.append(("error", f"{aat}: say whose units they are (side)"))
                 if ctx.classes is not None and a.unit not in ctx.classes:
+                    # rule: mission-unit-class
                     out.append(("error", f"{aat}: {a.unit} isn't a unit class the game knows"))
                 why = ctx.unit_problem(a.unit) if callable(ctx.unit_problem) else None
                 if why:

@@ -129,6 +129,15 @@ RULES: dict[str, Rule] = {
         "studied", "partly: a class name the game's unit list doesn't have raises an error while the map loads "
                    "(2026-10-02); our second check (other class paths must be ones shipped spawns use) is stricter than "
                    "the game, which takes any path that exists"),
+    "mission-unit-class": Rule(
+        "A mission's spawn must name a registered class in the game's Python unit list, or its script fails.",
+        "studied", "partly: the script names the class as parametres.Classes.<name>, so a name the unit list doesn't "
+                   "define fails when the script runs (2026-10-10); needing it registered (its base_class line) is "
+                   "stricter and not tried"),
+    "mission-human-sides": Rule(
+        "A mission keeps the copied mission's human sides as they are: it can't add one or give one to the computer.",
+        "studied", "the game's one co-op Operation script raises an error when the connected players aren't as many "
+                   "as its human sides (2026-10-09); not seen in a match"),
     "delete-unit-class": Rule(
         "Deleting a unit the game's Python unit list names makes the game fail to load units.",
         "studied", "every class in the game's unit list looks its unit up by name as the list loads, and a missing "

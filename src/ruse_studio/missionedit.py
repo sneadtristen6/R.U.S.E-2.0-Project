@@ -31,10 +31,12 @@ class MissionCalls:
             return cache[key]
         game = self._game()
         if game is None:
+            # not a game rule: the game or one of its files isn't found
             raise M.MissionError("R.U.S.E. wasn't found, so the mission being copied can't be read.")
         file = presets.copy_scenario(game, spec.copy_of, spec.entry)
         ia_path, glad_path = find_pack(game, "IA_Common.dat"), find_pack(game, "ZZ_GladPatchableWin.dat")
         if ia_path is None or glad_path is None:
+            # not a game rule: the game or one of its files isn't found
             raise M.MissionError("IA_Common.dat or ZZ_GladPatchableWin.dat isn't in the game folder.")
         try:
             with Edat.open(str(glad_path)) as g:
@@ -167,5 +169,6 @@ class MissionCalls:
         finally:
             ix.close()
         if not cls:
+            # not a game rule: what our script writer supports (it names a unit by its class)
             raise M.MissionError("That unit has no class name for the game's scripts, so a mission can't make it.")
         return {"class": cls, "unit": address}
