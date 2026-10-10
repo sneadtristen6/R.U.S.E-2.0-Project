@@ -475,7 +475,7 @@ class Packs(unittest.TestCase):
         self.assertEqual((s.mesh_packs.keys(), s.skeleton_packs.keys()), ({MESHES}, {SKELETONS}))
         self.assertEqual(s.skeleton.names, ["chassis", "tourelle_01"])
         self.assertEqual(s.like, {"length": 200.0, "width": 80.0, "pivot": (-70.0, 5.0), "ground": 2.0,
-                                  "middle": -20.0})
+                                  "middle": -20.0, "propellers": []})
         self.assertEqual(s.body_texture, TEX)
 
     def test_written_beside_the_unit_s_model(self):

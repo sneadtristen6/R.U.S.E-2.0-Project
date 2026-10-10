@@ -38,6 +38,7 @@ SKINNED_2F = ("$/M3D/System/VERTEXTYPE/TVertex__Position_3f__NormalIn01_4ubn__Bl
               "TexPackedAtlas0_4ubn")
 STRIDE = 12 + 4 + 4 + 4 + 8 + 4
 ROOT, TURRET = "chassis", "tourelle_01"
+PROPELLER_TYPE = "helice"   # a material type starting so draws a spinning-propeller disc (helice_1: the game's 43 planes)
 STANDIN_SIDE = 64
 INDEX_16, INDEX_32 = 1, 0   # an index buffer's kind: 1 = 16-bit (every one the game ships), else 32-bit
 
@@ -184,11 +185,14 @@ def find_source(zz, model: str) -> Source:
     mats = spk.materials()
     hull, hull_y, low = [], [], math.inf
     body = None
+    propellers = []
     for part in spk.model(model):
         remap = mats[part.material].get("skinning") or []
         tex = next(iter(mats[part.material].get("textures", {}).values()), "")
         if body is None and "CombinedDSCTexture" in mats[part.material].get("textures", {}):
             body = tex
+        if mats[part.material].get("type", "").startswith(PROPELLER_TYPE):
+            propellers += _discs(part, remap, bones)
         for i in range(len(part.positions) // 3):
             p = part.positions[3 * i:3 * i + 3]
             low = min(low, p[2])
@@ -202,8 +206,26 @@ def find_source(zz, model: str) -> Source:
         raise UnitModelError(f"{model} has no hull on its {ROOT} bone, or no body texture (CombinedDSCTexture)")
     pivot = bones.pivots[bones.names.index(TURRET)] if TURRET in bones.names else ((max(hull) + min(hull)) / 2, 0.0, 0)
     like = {"length": max(hull) - min(hull), "width": max(hull_y) - min(hull_y), "pivot": (pivot[0], pivot[1]),
-            "ground": low, "middle": (max(hull) + min(hull)) / 2}
+            "ground": low, "middle": (max(hull) + min(hull)) / 2, "propellers": propellers}
     return Source(model, meshes, skeletons, bones, like, body)
+
+
+def _discs(part, remap: list, bones: Skeleton) -> list[dict]:
+    """A propeller draw's discs (each a piece of 4 points: all 59 of the game's) as modelin.fit_discs takes them:
+    {"bone": the bone it spins on (helice_hs_1...), "centre": its middle, "radius": half its widest side}."""
+    from .modelin import pieces
+    n = len(part.positions) // 3
+    tris = [tuple(part.indices[k:k + 3]) for k in range(0, len(part.indices) - 2, 3)]
+    out = []
+    for pts in pieces(tris, n):
+        xyz = [part.positions[3 * i:3 * i + 3] for i in pts]
+        box = [(min(p[k] for p in xyz), max(p[k] for p in xyz)) for k in range(3)]
+        local = part.bones[pts[0]][0] if pts[0] < len(part.bones) else 0
+        bone = remap[local] if local < len(remap) else local
+        out.append({"bone": bones.names[bone] if bone < len(bones.names) else "",
+                    "centre": tuple((lo + hi) / 2 for lo, hi in box),
+                    "radius": max(hi - lo for lo, hi in box) / 2})
+    return out
 
 
 # --- the mod's file back ---
@@ -400,43 +422,58 @@ def _retext(nd: Ndf, v: Value, old: str, new: str) -> Value:
 def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[str], box: tuple,
                 bones: Skeleton) -> MeshPack:
     """A copy of pack `raw` holding `new`: the fitted parts as draw calls, each material a copy of `source`'s body
-    material naming its own picture (for MeshPack.add to carry into each pack). `bones`: the copied model's
-    skeleton (its entry is in the skeleton packs)."""
+    material naming its own picture (for MeshPack.add to carry into each pack); a part on a bone `source`'s own
+    propeller discs spin on is a disc too, its material a copy of `source`'s propeller material (MaterialType
+    helice_1: the game draws it as a spinning disc) naming its picture. `bones`: the copied model's skeleton (its
+    entry is in the skeleton packs)."""
     src = MeshPack.read(raw)
     data, mesh, skel = src.items[source]
     first, _count = src.meshes[mesh]
     nd = Ndf(src.materials)
     roots = _material_list(nd)
     spk = Spk(raw)
-    body_number = next(d[1] for d in (src.draws[k] for k in range(first, first + src.meshes[mesh][1]))
-                       if "CombinedDSCTexture" in spk.materials()[d[1]].get("textures", {}))
-    body = nd.objects[roots[body_number]]
-    old = next(t for pi, v in body.props if nd.prop_name(pi) == "Textures" for t in _texts(nd, v)
-               if t.lower().endswith(".png"))
-    skin = next((v for pi, v in body.props if nd.prop_name(pi) == "SkinningRemapping"), None)
-    remap = [struct.unpack_from("<i", x.payload)[0] for x in _subs(skin)] if skin is not None else []
+    mats = spk.materials()
+    own = [src.draws[k][1] for k in range(first, first + src.meshes[mesh][1])]
+    body_number = next(m for m in own if "CombinedDSCTexture" in mats[m].get("textures", {}))
+    disc_number = next((m for m in own if mats[m].get("type", "").startswith(PROPELLER_TYPE)), None)
+    disc_bones = {d["bone"] for p in spk.model(source) if mats[p.material].get("type", "").startswith(PROPELLER_TYPE)
+                  for d in _discs(p, mats[p.material].get("skinning") or [], bones)}
+
+    def material(number: int):
+        """(the material object, the picture its Textures name, its bone numbers' remapping)."""
+        obj = nd.objects[roots[number]]
+        pic = next(t for pi, v in obj.props if nd.prop_name(pi) == "Textures" for t in _texts(nd, v)
+                   if t.lower().endswith(".png"))
+        skin = next((v for pi, v in obj.props if nd.prop_name(pi) == "SkinningRemapping"), None)
+        return obj, pic, [struct.unpack_from("<i", x.payload)[0] for x in _subs(skin)] if skin is not None else []
+
+    looks = {"body": material(body_number)}
+    if disc_number is not None:
+        looks["disc"] = material(disc_number)
     if SKINNED_2F.encode() not in [f.split(b"\0", 1)[0] for f in src.formats]:
         src.formats.append(SKINNED_2F.encode().ljust(256, b"\0"))
     fmt = [f.split(b"\0", 1)[0] for f in src.formats].index(SKINNED_2F.encode())
     material_of: dict = {}
     draws = []
     for part in prep.parts:
-        if part.picture not in material_of:
+        look = "disc" if part.bone in disc_bones and "disc" in looks else "body"
+        base, old, remap = looks[look]
+        if (look, part.picture) not in material_of:
             image = images[part.picture] if part.picture >= 0 else old
-            props = [(pi, _retext(nd, v, old, image) if nd.prop_name(pi) == "Textures" else v) for pi, v in body.props]
-            n = nd.add_object(body.cls, props)
+            props = [(pi, _retext(nd, v, old, image) if nd.prop_name(pi) == "Textures" else v) for pi, v in base.props]
+            n = nd.add_object(base.cls, props)
             roots.append(n)
-            material_of[part.picture] = len(roots) - 1
+            material_of[(look, part.picture)] = len(roots) - 1
         if part.bone not in bones.names:
             raise UnitModelError(f"{source}'s skeleton has no bone {part.bone} (a part of the .glb is named so)")
         bone = bones.names.index(part.bone)
         if bone not in remap:
-            raise UnitModelError(f"the body material of {source} doesn't reach the bone {part.bone}")
+            raise UnitModelError(f"the {look} material of {source} doesn't reach the bone {part.bone}")
         vb = _vertex_buffer(part, remap.index(bone))
         vb.kind = fmt
         src.vbs.append(vb)
         src.ibs.append(_index_buffer(part))
-        draws.append((0, material_of[part.picture], len(src.ibs) - 1, len(src.vbs) - 1, 0xFFFF, 0xCDCD))
+        draws.append((0, material_of[(look, part.picture)], len(src.ibs) - 1, len(src.vbs) - 1, 0xFFFF, 0xCDCD))
     root = nd.objects[nd.topo[0]]
     root.props[0] = (root.props[0][0], Value(0x11, struct.pack("<I", len(roots)) + b"".join(
         Value(0x09, struct.pack("<III", 0xBBBBBBBB, n, nd.objects[n].cls)).encode() for n in roots)))

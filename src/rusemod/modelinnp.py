@@ -338,6 +338,7 @@ def _mesh(m) -> dict | None:
 def _roles(plain, model, data: list) -> list:
     """modelin.roles."""
     out = [plain.named_role(m.name) for m in model.meshes]
+    out = [None if r == plain.PROPELLER and plain.disc_pieces(m) is None else r for m, r in zip(model.meshes, out)]
     turret = [d["points"] for d, r in zip(data, out) if r == plain.TURRET]
     if turret:
         tb = _box(turret)
@@ -462,7 +463,7 @@ def prepare(plain, model, folders: list, like: dict, size: float, side: int):
     parts = _roles(plain, model, data)
     # which way it faces: modelin.facing itself, its rules kept in one place (2026-10-08: they were still changing),
     # on the model's own lists (a .glb read here hands its points as lists too: nothing is built for it)
-    axis, sign = plain.facing(model, parts, like)
+    axis, sign = plain.facing_of(model, parts, like)
     f = [0.0, 0.0, 0.0]
     f[axis] = float(sign)
     r = (f[1], -f[0], 0.0)
