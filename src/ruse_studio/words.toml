@@ -19792,16 +19792,16 @@ jpn = "セクター {n} に穴があります：セクターに穴は作れま�
 sc = "扇区 {n} 中间有洞：扇区不能有洞。请用扇区 {n} 填满这个洞，或把它打通到扇区边缘。"
 
 [sectors_untried]
-us = "Sectors made here show in the game (tried on a blank map and on D-Day). Not tried yet: what the game does on ground in no sector in the middle of the land."
-fr = "Les secteurs faits ici s'affichent en jeu (essayé sur une carte vierge et sur D-Day). Pas encore essayé : ce que fait le jeu sur un terrain sans secteur au milieu des terres."
-ger = "Hier gemachte Sektoren erscheinen im Spiel (ausprobiert auf einer leeren Karte und auf D-Day). Noch nicht ausprobiert: was das Spiel mit Boden ohne Sektor mitten im Land macht."
-ita = "I settori fatti qui compaiono in gioco (provato su una mappa vuota e su D-Day). Non ancora provato: cosa fa il gioco sul terreno senza settore in mezzo alla terraferma."
-spa = "Los sectores hechos aquí aparecen en el juego (probado en un mapa en blanco y en D-Day). Aún sin probar: qué hace el juego con el terreno sin sector en medio de la tierra."
-pol = "Sektory zrobione tutaj pojawiają się w grze (sprawdzone na pustej mapie i na D-Day). Jeszcze nie sprawdzone: co gra robi z ziemią bez sektora w środku lądu."
-ru = "Секторы, сделанные здесь, появляются в игре (проверено на пустой карте и на D-Day). Ещё не проверено: что игра делает с землёй без сектора посреди суши."
-cz = "Sektory udělané zde se ve hře zobrazí (vyzkoušeno na prázdné mapě a na D-Day). Zatím nevyzkoušeno: co hra dělá se zemí bez sektoru uprostřed pevniny."
-jpn = "ここで作ったセクターはゲームに表示されます（空白のマップとD-Dayで試しました）。まだ試していないこと：陸の真ん中のセクターなしの地面でゲームがどうなるか。"
-sc = "在这里做的扇区会在游戏中显示（在空白地图和D-Day上试过）。尚未试过：陆地中间无扇区的地面在游戏中会怎样。"
+us = "Sectors made here show in the game (tried on a blank map and on D-Day). Ground in no sector shows as a gap in the sectors, and a ruse card held over it lights up nothing."
+fr = "Les secteurs faits ici s'affichent en jeu (essayé sur une carte vierge et sur D-Day). Un terrain sans secteur apparaît comme un trou entre les secteurs, et une carte de ruse tenue dessus n'éclaire rien."
+ger = "Hier gemachte Sektoren erscheinen im Spiel (ausprobiert auf einer leeren Karte und auf D-Day). Boden ohne Sektor erscheint als Lücke zwischen den Sektoren, und eine darüber gehaltene Täuschungskarte leuchtet nichts auf."
+ita = "I settori fatti qui compaiono in gioco (provato su una mappa vuota e su D-Day). Il terreno senza settore appare come un vuoto tra i settori, e una carta d'inganno tenuta sopra non illumina nulla."
+spa = "Los sectores hechos aquí aparecen en el juego (probado en un mapa en blanco y en D-Day). El terreno sin sector se ve como un hueco entre los sectores, y una carta de engaño sostenida encima no ilumina nada."
+pol = "Sektory zrobione tutaj pojawiają się w grze (sprawdzone na pustej mapie i na D-Day). Ziemia bez sektora wygląda jak luka między sektorami, a karta podstępu trzymana nad nią niczego nie podświetla."
+ru = "Секторы, сделанные здесь, появляются в игре (проверено на пустой карте и на D-Day). Земля без сектора выглядит как пробел между секторами, и карта уловки над ней ничего не подсвечивает."
+cz = "Sektory udělané zde se ve hře zobrazí (vyzkoušeno na prázdné mapě a na D-Day). Zem bez sektoru se ukáže jako mezera mezi sektory a karta lsti držená nad ní nic nerozsvítí."
+jpn = "ここで作ったセクターはゲームに表示されます（空白のマップとD-Dayで試しました）。セクターなしの地面はセクターの間のすき間として表示され、その上に計略カードを持っていっても何も光りません。"
+sc = "在这里做的扇区会在游戏中显示（在空白地图和D-Day上试过）。无扇区的地面显示为扇区之间的空缺，把计谋卡放在上面不会点亮任何东西。"
 
 [sectors_mode_shapes]
 us = "Shapes"

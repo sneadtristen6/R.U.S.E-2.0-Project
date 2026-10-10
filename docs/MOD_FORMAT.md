@@ -840,9 +840,11 @@ points = [[1200000.0, 900000.0], [1220000.0, 900000.0]]   # where each dab went
   to 0.9.8.2) have `whole_map = true` and keep it.
 - Seen in the game (2026-10-09): 13 painted sectors on a blank map, a new number among them; a sector's shape
   changed on D-Day (a corner moved, a new sector drawn as a box, a ruse card lighting it up on its own); a sector
-  taken out (numbers with a gap: loads, no crash). Not tried in the game yet: the tidying (pieces given to a
-  neighbour, the thin lines), ground in no sector in the middle of the land (what ruse cards do there), and a map
-  with no sectors at all (the build won't make one).
+  taken out (numbers with a gap: loads, no crash; 2026-10-10 with all its ground given to the sectors round it:
+  nothing missing on the map table); ground in no sector in the middle of the land (2026-10-10, six boxes on
+  D-Day): the map table draws each as a square gap in the sectors, and a ruse card held over it lights up nothing.
+  Not tried in the game yet: the tidying (pieces given to a neighbour, the thin lines), and a map with no sectors at
+  all (the build won't make one).
 
 A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
 Operations spawn theirs this way; skirmish maps spawn only their supply depots):
