@@ -12,6 +12,7 @@ from test_build import price, write_mod
 from test_launcher import Base as LauncherBase, wait_for
 from rusemod import doctor
 from rusemod.backup import backups_dir
+from rusemod.community import private_paths_out
 from rusemod.home import save_settings, settings
 from rusemod.play import (INSTANCES_ENV, INSTANCES_SETTING, SHARED, copies_view, instances_choice, instances_dir,
                           keep_instances_dir, other_drive, recommended_instances_dir, shared_copy)
@@ -119,7 +120,8 @@ class WhereCopiesGo(unittest.TestCase):
         self.assertEqual([f["say"] for f in plain if f["key"] == "drive"], ["doc_drive_ok"])
         text = doctor.report(doctor.checks(self.game, copies, lambda: True, lambda: [], how="chosen"), "RUSE Studio",
                              "9.9")
-        self.assertIn(f"[ok] drive: doc_copies_chosen (path={copies}, fs=", text)
+        # the report masks the player's own folders (%LOCALAPPDATA% and so on), the temp folder among them
+        self.assertIn(f"[ok] drive: doc_copies_chosen (path={private_paths_out(str(copies))}, fs=", text)
         self.assertIn(", how=chosen)", text)
         # on another drive than the game: each copy is a full copy of the game, said as its own finding (nothing is
         # written there: the drive doesn't exist on this PC, so the write check fails instead)
@@ -187,7 +189,7 @@ class InTheLauncher(LauncherBase):
         drive = next(f for f in report["findings"] if f["key"] == "drive")
         self.assertEqual((drive["say"], drive["data"]["path"], drive["data"]["how"]),
                          ("doc_copies_chosen", str(chosen), "chosen"))
-        self.assertIn(f"doc_copies_chosen (path={chosen}", report["report"])
+        self.assertIn(f"doc_copies_chosen (path={private_paths_out(str(chosen))}", report["report"])
         # the variable, with nothing chosen
         keep_instances_dir(self.home, None)
         elsewhere = Path(self.tmp.name, "FromEnv")
@@ -239,7 +241,7 @@ class InTheStudio(unittest.TestCase):
         self.assertIn("inside the R.U.S.E. folder", refused["message"])
         self.assertEqual(settings(self.home)[INSTANCES_SETTING], str(chosen))
         report = api.troubleshoot()
-        self.assertIn(f"doc_copies_chosen (path={chosen}", report["report"])
+        self.assertIn(f"doc_copies_chosen (path={private_paths_out(str(chosen))}", report["report"])
         back = api.use_recommended_copies()
         self.assertEqual((back["path"], back["how"]), (recommended, "recommended"))
         self.assertEqual(api._copies(self.game), (Path(recommended), "recommended"))

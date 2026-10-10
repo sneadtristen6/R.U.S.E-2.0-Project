@@ -686,7 +686,7 @@ Twelve hours, six rounds of testing.
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.8.2) &middot; **Studio** for modders, a preview (latest: 0.9.8.2) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.8.3) &middot; **Studio** for modders, a preview (latest: 0.9.8.3) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
