@@ -3079,7 +3079,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         rules = self._depot_rules()
         try:
             listed = self.maps()["maps"]
-        except StudioError:
+        except (StudioError, KeyError, ValueError, OSError):  # no game, or one without its map list: no maps to pick
             listed = []
 
         def name_of(m: dict) -> str:
