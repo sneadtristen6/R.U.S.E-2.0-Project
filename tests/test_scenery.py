@@ -1357,7 +1357,9 @@ class Studio(unittest.TestCase):
         woods = scenery.EraseArea(1.0, 2.0, 3.0)
         opens, uncover = cleared_woods({"M": ([woods, scenery.EraseArea(4.0, 5.0, 6.0, ("prop",))], ["m"])})
         self.assertEqual(opens, {"M": ([Block(1.0, 2.0, 3.0, "all", True)], ["m"])})
-        self.assertEqual(uncover, {"M": ([Paint(1.0, 2.0, 3.0, "cover", True)], ["m"])})
+        # the blocked layer goes too (d81bc8b, T41: direct fire stops at it); the view draws no blocked layer
+        self.assertEqual(uncover, {"M": ([Paint(1.0, 2.0, 3.0, "cover", True), Paint(1.0, 2.0, 3.0, "blocked", True)],
+                                         ["m"])})
 
 
 if __name__ == "__main__":

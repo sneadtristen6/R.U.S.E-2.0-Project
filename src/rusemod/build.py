@@ -436,7 +436,12 @@ def cleared_woods(erasing: dict) -> tuple[dict, dict]:
     point), so the area opens whole; each house's own ground alone opens next to nothing (islands no unit reaches,
     checked in memory on T25's spots). Seen in the game 2026-10-04 (TESTS.md T25): tanks and infantry drive through
     where Blitz's town stood, and infantry there no longer act as in a town. Erasing only props leaves both, and so
-    does a new road's own clearing (keep_ground)."""
+    does a new road's own clearing (keep_ground).
+
+    The blocked layer goes too, under trees and buildings alike: a unit fires its direct weapons only along a line
+    that crosses no blocked cell (artillery doesn't ask), and the maps mark their towns' buildings blocked, so where
+    an erased town stood (and everywhere on Blank Terrain, which erases the whole map) tanks saw the enemy and didn't
+    fire (T41, 2026-10-09; not tried in the game yet)."""
     from .cover import Paint
     from .nav import Block
     opens, uncover = {}, {}
@@ -447,9 +452,10 @@ def cleared_woods(erasing: dict) -> tuple[dict, dict]:
             # a square or a line opens as circles covering it (the movement graphs are circles), and uncovers itself
             opens[name] = ([Block(x, y, r, "all", True) for a in cleared
                             for x, y, r in a.footprint().circles(_block_cell(a.footprint()))], list(ids))
-        if woods:
             uncover[name] = ([Paint(a.x, a.y, a.radius, "cover", True, False, a.shape, a.dx, a.dy, a.x2, a.y2)
-                              for a in woods], list(ids))
+                              for a in woods]
+                             + [Paint(a.x, a.y, a.radius, "blocked", True, False, a.shape, a.dx, a.dy, a.x2, a.y2)
+                                for a in cleared], list(ids))
     return opens, uncover
 
 
@@ -2497,7 +2503,13 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     if k_raw is not None and shipped_ground is not None and sc_shipped is not None:
                         decks = [floors.Deck.of(*b.deck) for b in shipped_bridges(
                             Scenery(sc_shipped), descs, lambda kind: model_length(game, descs, kind))]
-                        data, more = floors.sink_floors(Kdt(k_raw), Ground(Tms(shipped_ground)).height_at, decks)
+                        own_raw = read_shipped(floors.MEMBER)  # the map's own floors: every one along a gone deck
+                        own = ({floors.tri_key(t) for t in floors.triangles(Kdt(own_raw))}  # goes (a mod's new
+                               if own_raw is not None else None)                           # bridges keep theirs)
+                        now_ground = read_done("output\\highdef.tms")  # the ground as built (a reshaped or blank
+                        lay = Ground(Tms(now_ground)).height_at if now_ground is not None else None   # map's own)
+                        data, more = floors.sink_floors(Kdt(k_raw), Ground(Tms(shipped_ground)).height_at, decks,
+                                                        own, lay)
                         if data:
                             done[map_arc.find(floors.MEMBER).path] = data
                         notes += more

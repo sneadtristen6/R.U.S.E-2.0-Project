@@ -799,8 +799,25 @@ class ClearedWoods(unittest.TestCase):
         self.assertEqual(list(opens), ["Map"])
         [b] = opens["Map"][0]
         self.assertEqual((b.x, b.y, b.radius, b.open), (1.0, 2.0, 300.0, True))
-        [p] = uncover["Map"][0]
-        self.assertEqual((p.x, p.y, p.radius, p.layer, p.erase), (1.0, 2.0, 300.0, "cover", True))
+        cover, blocked = uncover["Map"][0]
+        self.assertEqual((cover.x, cover.y, cover.radius, cover.layer, cover.erase), (1.0, 2.0, 300.0, "cover", True))
+        self.assertEqual((blocked.x, blocked.y, blocked.radius, blocked.layer, blocked.erase),
+                         (1.0, 2.0, 300.0, "blocked", True))
+
+    def test_erased_buildings_take_the_blocked_layer_with_them(self):
+        """T41 (2026-10-09): a unit fires its direct weapons only along a line crossing no blocked cell, and the maps
+        mark their towns' buildings blocked; on Blank Terrain tanks saw the enemy where Blitz's towns stood and didn't
+        fire. Erasing buildings alone takes the blocked layer (not the cover: buildings give none to take); erasing
+        props alone, or keeping the ground, takes neither."""
+        from rusemod.build import cleared_woods
+        from rusemod.scenery import EraseArea
+        town = EraseArea(10.0, 20.0, 500.0, what=("building",), shape="square")
+        props = EraseArea(30.0, 40.0, 50.0, what=("prop",))
+        kept = EraseArea(50.0, 60.0, 70.0, what=("building", "vegetation"), keep_ground=True)
+        _opens, uncover = cleared_woods({"Town": ([town, props, kept], ["m"]), "Props": ([props], ["m"])})
+        self.assertEqual(list(uncover), ["Town"])
+        [p] = uncover["Town"][0]
+        self.assertEqual((p.x, p.y, p.radius, p.layer, p.erase, p.shape), (10.0, 20.0, 500.0, "blocked", True, "square"))
 
     def test_a_whole_map_square_opens_in_a_few_thousand_circles(self):
         """Erase the whole map on M04_Cotentin (a square 3.9 million across) went in as 13 million circles of 1,280 and
