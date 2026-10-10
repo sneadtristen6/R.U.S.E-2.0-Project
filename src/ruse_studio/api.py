@@ -82,6 +82,14 @@ UPGRADE, UPGRADE_FLAG, RESEARCH = "UpgradeRequire", "IsUpgrade", {"UpgradePrice"
 # say so; the build stops on it); "refuse" keeps the unit; "relink" researches them from the unit it was researched
 # from, or makes them buyable from the start when it had none
 RESEARCH_GONE = ("warn", "refuse", "relink")
+# a unit's armour, picked as one of the game's levels (armour, set_armour): the level is the armour object's
+# BaseBlindage (the game's data, 2026-10-10: 5-9 are the tanks' shields 1-5 on their cards, 4 transports, 3 infantry,
+# 2 paratroopers coming down, 1 aircraft, 10 construction trucks; the buildings' own has none)
+ARMOUR, ARMOUR_CLASS = "ArmorDescriptor", "TArmorDescriptor"
+ARMOUR_LINK = re.compile(r"@TArmorDescriptor\[BaseBlindage=(\d+)\]")
+ARMOUR_ORDER = ((5, "armour_tank", 1), (6, "armour_tank", 2), (7, "armour_tank", 3), (8, "armour_tank", 4),
+                (9, "armour_tank", 5), (4, "armour_light", 0), (3, "armour_infantry", 0), (1, "armour_aircraft", 0),
+                (2, "armour_para", 0), (10, "armour_trucks", 0))
 MODEL_SIZES = (0.05, 20.0)  # an imported model's size, times the length of the unit it copies (model_import; the
 # owner, 2026-10-10, "all of them": it was 0.2 to 5, the Studio's own top, not the game's)
 BLANK_STARTS = ("blank_terrain", "blank_ocean")  # the blank starts offered (rusemod.presets.KINDS); Blank Ocean taken
@@ -1130,6 +1138,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 "can_copy": bool(o["export"]) and o["class"] in KIND_OF and editable and new is None,
                 "can_copy_ammo": bool(o["export"]) and o["class"] == AMMO and editable and new is None,
                 "has_weapons": o["class"] in KIND_OF,  # the page then asks for weapons(address)
+                # a unit with an armour: the page then asks for armour(address), its level picked there
+                "has_armour": (bool(o["export"]) or top) and ARMOUR in types,
                 # a kind of unit the game has upgrades of: the page then asks for upgrade(address)
                 "can_upgrade": (bool(o["export"]) or top) and UPGRADE in types,
                 "new": {"source": new.source, "source_name": source_name} if top else None,
@@ -1326,7 +1336,102 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """Whether this object's values can be edited from the Studio, and if not, why (a key of the tool's words)."""
         if not o["stable"]:
             return False, "not_stable"
+        if o["class"] == ARMOUR_CLASS:
+            # each armour level carries its own picture (the shield on the card): a number changed inside it fights
+            # as the new level while the card still shows the old one (a player's report, 2026-10-10). A unit's
+            # armour is picked as a level on its own page (armour, set_armour)
+            return False, "armour_on_unit"
         return True, ""
+
+    # --- armour, picked as one of the game's levels (a player's report, 2026-10-10: a new unit made from the
+    # Semovente 105, whose card shows armour 2, had its armour raised to 4 inside its armour part; it fought as 4, but
+    # its card and build menu still showed 2). Each of the game's armour objects (TArmorDescriptor) holds the number
+    # the fights use (BaseBlindage), a name and the picture the card shows (Icon): a unit is pointed at the game's own
+    # object of the level picked, so all three match ---
+    @staticmethod
+    def _armour_levels(ix: Index) -> dict:
+        """{level (BaseBlindage): the game's armour object of that level}; the buildings' own (no BaseBlindage) has
+        none."""
+        out = {}
+        for o in ix.of_class(ARMOUR_CLASS):
+            n = next((num for p, num, _t in o["values"] if p == "BaseBlindage"), None)
+            if n is not None:
+                out.setdefault(int(n), o["address"])
+        return out
+
+    @staticmethod
+    def _armour_of(ix: Index, real: str, levels: dict) -> int | None:
+        """The level the game gives the unit at `real` (0: the buildings' armour), or None when it has no armour."""
+        to = next((what for path, _kind, what in ix.uses(real) if path == ARMOUR), None)
+        if to is None:
+            return None
+        return next((n for n, a in levels.items() if a == to), 0)
+
+    def armour(self, address: str, lang: str = schema.BASE) -> dict:
+        """A unit's Armour box: {"levels": [{"value", "word", "n"}] (the game's levels as the box lists them: the
+        tanks' 1 to 5, the shields on their cards, first; "word" a key of the Studio's words, filled with "n"),
+        "game": the level the game gives it, "value": the mod's (None: the game's), "old": a level written inside its
+        armour part the old way (its card keeps the old picture), else None, "editable"}."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            o = ix.show(real)
+            levels = self._armour_levels(ix)
+            game = self._armour_of(ix, real, levels)
+        finally:
+            ix.close()
+        if game is None:
+            raise StudioError(f"{address} has no armour")
+        keyed = address if new else o["address"]
+        value = None
+        if edits is not None:
+            mine = edits.get(keyed, ARMOUR)
+            m = ARMOUR_LINK.fullmatch(str(mine)) if isinstance(mine, Link) else None
+            value = int(m.group(1)) if m else None
+        old = next((e.value for (t, p, _how), e in (edits.edits.items() if edits else ())
+                    if t == keyed and p == f"{ARMOUR}.BaseBlindage" and isinstance(e.value, (int, float))), None)
+        listed = [{"value": n, "word": word, "n": k} for n, word, k in ARMOUR_ORDER if n in levels]
+        return {"levels": listed, "game": game, "value": value, "old": old,
+                "editable": bool(edits is not None and self._editable(o)[0])}
+
+    def set_armour(self, address: str, value, lang: str = schema.BASE) -> dict:
+        """Give a unit one of the game's armour levels (None: the game's own again), in the current mod: its
+        ArmorDescriptor pointed at the game's armour object of that level (`@TArmorDescriptor[BaseBlindage=n]`,
+        MOD_FORMAT §3). A level written inside its armour part the old way goes with it."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        real, new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            o = ix.show(real)
+            levels = self._armour_levels(ix)
+            game = self._armour_of(ix, real, levels)
+        finally:
+            ix.close()
+        if game is None:
+            raise StudioError(f"{address} has no armour")
+        if value is not None:
+            try:
+                value = int(value)
+            except (TypeError, ValueError):
+                raise StudioError("Pick an armour level from the list.") from None
+            if value not in levels:
+                raise StudioError("Pick an armour level from the list.")
+        keyed = address if new else o["address"]
+        with self._saving:
+            edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
+            for k in [k for k in edits.edits if k[0] == keyed and k[1].startswith(ARMOUR + ".")]:
+                del edits.edits[k]
+            if value is None or value == game:
+                edits.reset(keyed, ARMOUR)
+            else:
+                edits.set(keyed, ARMOUR, Link(f"@{ARMOUR_CLASS}[BaseBlindage={value}]"))
+        return {"saved": str(edits.file), **self.armour(address, lang)}
 
     def _where(self, ix: Index, o: dict, mode: str, via: str, address: str, edits: ModEdits) -> tuple[str, str | None]:
         """Where a change to object `o` (shown at `address`) is written, and how (MOD_FORMAT §10.5). A part several

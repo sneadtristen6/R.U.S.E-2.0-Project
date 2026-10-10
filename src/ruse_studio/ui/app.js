@@ -1502,8 +1502,15 @@ function modelBox(address, info, draw, changed) {
   if (own) {
     box.append(el("p", { className: "small", textContent: fill(w.model_own, { file: own.file || "",
       points: (own.vertices || 0).toLocaleString(), triangles: (own.triangles || 0).toLocaleString() }) }));
-    const turret = Object.entries(own.parts || {}).filter(([, role]) => role !== "hull").map(([name]) => name);
+    const turret = Object.entries(own.parts || {}).filter(([, role]) => role === "turret" || role === "gun").map(([name]) => name);
     if (turret.length) box.append(el("p", { className: "muted small", textContent: fill(w.model_turret, { parts: turret.join(", ") }) }));
+    // its propeller discs (rusemod.modelin.fit_discs): spinning as the game's, or left out and why
+    const props = own.propellers || {};
+    if (props.kept) box.append(el("p", { className: "muted small", textContent: fill(w.model_propellers, { n: props.kept }) }));
+    if (props.left_out) {
+      box.append(el("p", { className: "notice warn", textContent: fill(props.why === "none" ? w.model_propellers_none
+        : w.model_propellers_far, { n: props.left_out }) }));
+    }
     if (own.missing && own.missing.length) {
       box.append(el("p", { className: "notice warn", textContent: fill(w.model_missing, { names: own.missing.join(", ") }) }));
     }
@@ -1716,6 +1723,49 @@ function upgradeGroup(u) {
     el("p", { className: "muted small", textContent: w.upgrade_help }), gone, table, kids);
 }
 
+// A unit's armour, picked as one of the game's levels (StudioApi.armour / set_armour): the level's own picture is the
+// shield on its card and in its build menu, so the card and the fights always match (a player's report, 2026-10-10:
+// armour raised inside the armour part fought as 4 while the card still said 2)
+function armourGroup(u) {
+  const w = state.words;
+  const can = Boolean(state.mod && u.editable);
+  const pick = el("select", { disabled: !can, title: w.tip_armour_pick });
+  const was = el("div", { className: "was" });
+  const old = el("p", { className: "notice warn hidden", textContent: w.armour_old_way });
+  const head = el("tr", {}, el("th", { textContent: w.armour_level }), el("td", {}, pick, was));
+  const label = (levels, value) => {
+    const l = levels.find((x) => x.value === value);
+    return l ? fill(w[l.word], { n: l.n }) : w.armour_building;
+  };
+  const show = (info) => {
+    const current = info.value ?? info.game;
+    const known = info.levels.some((l) => l.value === current);
+    pick.replaceChildren(
+      ...(known ? [] : [el("option", { value: "", disabled: true, selected: true, textContent: label(info.levels, current) })]),
+      ...info.levels.map((l) => el("option", { value: String(l.value), textContent: fill(w[l.word], { n: l.n }),
+        selected: l.value === current })));
+    pick.disabled = !can || !info.editable;
+    old.classList.toggle("hidden", info.old === null || info.old === undefined);
+    const edited = info.value !== null && info.value !== info.game;
+    head.classList.toggle("edited", edited);
+    if (!edited) { was.replaceChildren(); return; }
+    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_armour_undo });
+    undo.addEventListener("click", () => choose(null));
+    was.replaceChildren(el("span", { textContent: w.was.replace("{v}", label(info.levels, info.game)) }), undo);
+  };
+  const choose = async (value) => {
+    try {
+      const res = await api().set_armour(u.address, value, state.lang);
+      show(res);
+      say(w.saved.replace("{file}", res.saved), "ok");
+    } catch (err) { problem(err); }
+  };
+  pick.addEventListener("change", () => choose(pick.value === "" ? null : Number(pick.value)));
+  api().armour(u.address, state.lang).then(show).catch(problem);
+  return el("div", { className: "group" }, el("h2", { textContent: w.armour_title }),
+    el("p", { className: "muted small", textContent: w.armour_help }), old, el("table", {}, head));
+}
+
 async function showUnit(address, via) {
   via = via || "";
   state.eraPage = null;
@@ -1759,6 +1809,7 @@ async function showUnit(address, via) {
     if (u.editable && g.rows.some((r) => r.locked)) group.append(el("p", { className: "muted small", textContent: w.locked }));
     parts.push(group);
   }
+  if (u.has_armour) parts.push(armourGroup(u));
   if (u.has_weapons && u.editable) parts.push(weaponsGroup(u));
   if (u.can_upgrade) parts.push(upgradeGroup(u));
   if (u.named || u.new) parts.push(window.SoundView.voicesGroup(u, w, state.lang));  // what it says (sound.js)
