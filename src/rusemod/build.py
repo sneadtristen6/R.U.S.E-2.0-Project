@@ -2661,6 +2661,22 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             every, who = blocks.setdefault(name, ([], []))    # dried beds opened, new water closed, and placed
             every.extend(walls)                               # buildings last, so units always go around them
             who.extend(i for i in ids if i not in who)
+        from .newmap import is_blank
+        for name, (spec, mod_id) in making.items():  # a blank map: its old towns' and bridges' own movement opened
+            if not is_blank(spec) or name not in result.new_maps:  # whole (T41 run 4: units stuck where the bridges
+                continue                                           # stood; their decks' local maps kept them in)
+            from .cover import member as movement_member
+            from .nav import Block, NavError, owner_circles
+            raw = reading(data_new, data_base)(movement_member(name)) if data_base is not None else None
+            try:
+                owners = owner_circles(raw) if raw is not None else []
+            except (NavError, ValueError, KeyError, IndexError, struct.error):
+                owners = []
+            if owners:
+                every, who = blocks.setdefault(name, ([], []))
+                every.extend(Block(x, y, r, "all", True, True) for x, y, r in owners)
+                who.extend([mod_id] if mod_id not in who else [])
+                say(f"  {name}: blank: {len(owners)} town or bridge circle(s) opened whole (not tried in the game yet)")
         players = scenario_edits(result.order, mods, "players")
         roads_out = {name: ids for name, (what, ids) in take_outs.items() if what.roads}
         depots, depot_ids = depot_rules(result.order, mods)
