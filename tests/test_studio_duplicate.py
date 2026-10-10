@@ -263,9 +263,16 @@ class BlankStart(WithAMapProject):
                              sorted(list(presets.preset_files(kind, self.facts())) + ["map.toml", "menu.png",
                                                                                      "menu-wide.png"]))  # no hill
 
-    def test_only_from_a_battles_map(self):
-        with self.assertRaisesRegex(StudioError, "Battles map"):
+    def test_blank_ocean_only_from_a_battles_map(self):
+        """Blank Ocean starts from a Battles map only (the owner, 2026-10-09: "We don't want ops making ocean maps
+        yet"); Blank Terrain from an Operation or a chapter too, as a mission of its own (rusemod.mission; T41
+        played one)."""
+        with self.assertRaisesRegex(StudioError, "Blank Ocean starts from a Battles map"):
+            self.api.duplicate_map("SuperCrossRoads4", "Anzio Ocean", entry=ANZIO, preset="blank_ocean")
+        try:
             self.api.duplicate_map("SuperCrossRoads4", "Anzio Blank", entry=ANZIO, preset="blank_terrain")
+        except StudioError as exc:  # (this made-up game has no files to start blank from)
+            self.assertNotIn("starts from a Battles map", str(exc))
         with self.assertRaisesRegex(StudioError, "no 'blank_moon'"):
             self.api.duplicate_map("SuperCrossRoads4", "Moon", preset="blank_moon")
 

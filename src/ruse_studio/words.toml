@@ -23815,3 +23815,17 @@ ru = "Группа своей миссии карты, в которую вхо�
 cz = "Skupina vlastní mise mapy, do které jednotka patří, aby jí události velely (přesun, útok, držení...) nebo cílem bylo ji zničit; prázdné: bez skupiny."
 jpn = "このマップ独自のミッションでこのユニットが入るグループ。イベントで命令(移動、攻撃、保持など)したり、全滅を目標にできます。空欄:グループなし。"
 sc = "该单位加入的本地图自有任务的小组,以便事件对其下令(移动、攻击、据守等)或以消灭它为目标;留空:不加入小组。"
+
+# --- the Scenario side's mission trays (mission.js, StudioApi.mission; 2026-10-10) ---
+
+[dup_start_own_mission]
+us = "On an Operation or a campaign chapter, Blank Terrain starts a mission of its own (Scenario side: Mission, Goals & events): the copied mission needs the map's own items. Blank Ocean is for BATTLES maps only."
+fr = "Sur une Opération ou un chapitre de campagne, Terrain vierge démarre une mission propre (côté Scénario : Mission, Objectifs et événements) : la mission copiée a besoin des éléments de la carte. Océan vierge est réservé aux cartes BATAILLES."
+ger = "Bei einer Operation oder einem Kampagnenkapitel startet Leeres Gelände eine eigene Mission (Szenario-Seite: Mission, Ziele & Ereignisse): Die kopierte Mission braucht die eigenen Elemente der Karte. Leerer Ozean nur für SCHLACHTEN-Karten."
+ita = "Su un'Operazione o un capitolo di campagna, Terreno vuoto avvia una missione propria (lato Scenario: Missione, Obiettivi ed eventi): la missione copiata ha bisogno degli elementi della mappa. Oceano vuoto è solo per le mappe BATTAGLIE."
+spa = "En una Operación o un capítulo de campaña, Terreno vacío empieza una misión propia (lado Escenario: Misión, Objetivos y eventos): la misión copiada necesita los elementos del mapa. Océano vacío es solo para mapas de BATALLAS."
+pol = "Na Operacji lub rozdziale kampanii Pusty teren zaczyna własną misję (strona Scenariusz: Misja, Cele i zdarzenia): kopiowana misja potrzebuje elementów mapy. Pusty ocean tylko dla map BITWY."
+ru = "Для Операции или главы кампании «Пустая местность» начинает свою миссию (сторона «Сценарий»: «Миссия», «Цели и события»): копируемой миссии нужны объекты карты. «Пустой океан» только для карт СРАЖЕНИЙ."
+cz = "Na Operaci nebo kapitole kampaně spustí Prázdný terén vlastní misi (strana Scénář: Mise, Cíle a události): kopírovaná mise potřebuje prvky mapy. Prázdný oceán jen pro mapy BITVY."
+jpn = "オペレーションやキャンペーン章では、空の地形は独自のミッションで始まります(シナリオ側:ミッション、目標とイベント)。コピー元のミッションはマップ本来の要素を必要とするためです。空の海はバトルのマップ専用です。"
+sc = "在行动或战役章节上,空白地形会开始一个自己的任务(剧本侧:任务、目标与事件):复制的任务需要地图自带的物件。空白海洋仅用于战斗地图。"

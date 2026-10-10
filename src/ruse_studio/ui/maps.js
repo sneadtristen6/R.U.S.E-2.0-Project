@@ -6494,10 +6494,12 @@ function renderDupKinds() {
 
 function renderDupStarts() {
   const w = mv.words, map = mapName(dupPack()), battles = dup.kind === "battles";
+  const story = dup.kind === "operation" || dup.kind === "campaign";  // Blank Terrain starts its own mission there
   const starts = dup.scratch ? DUP_STARTS.filter((k) => k !== "copy") : DUP_STARTS;  // from scratch: blank only
   $("dup-start").textContent = w.dup_start;
   $("dup-starts").replaceChildren(...starts.map((k) => {
-    const b = el("button", { type: "button", className: "dup-kind", disabled: k !== "copy" && !battles },
+    const open = k === "copy" || battles || (story && k === "blank_terrain");
+    const b = el("button", { type: "button", className: "dup-kind", disabled: !open },
       el("span", { className: "kind-name", textContent: w[`dup_start_${k}`] }),
       el("span", { className: "kind-what", textContent: fill(w[`dup_start_${k}_what`], { map }) }),
       ...(w[`dup_start_${k}_warn`] ? [el("span", { className: "kind-warn", textContent: "⚠ " + w[`dup_start_${k}_warn`] })] : []));
@@ -6506,7 +6508,7 @@ function renderDupStarts() {
     b.addEventListener("click", () => { dup.start = k; renderDupStarts(); dupSuggestName(); });
     return b;
   }));
-  $("dup-start-note").textContent = w.dup_start_battles_only;
+  $("dup-start-note").textContent = story ? w.dup_start_own_mission : w.dup_start_battles_only;
   $("dup-start-note").classList.toggle("hidden", battles || !dup.entries.length);
   $("dup-how-edits").classList.toggle("hidden", dup.start !== "copy");  // a blank start takes none of them along
 }

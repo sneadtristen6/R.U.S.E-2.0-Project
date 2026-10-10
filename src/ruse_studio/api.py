@@ -1492,10 +1492,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             entry = None  # the map's one BATTLES map: map.toml needn't say it
         files: dict = {}
         pictures: dict = {}  # a blank start's own menu pictures (rusemod.presets.preset_pictures): {file: PNG}
+        kind_of = {e["name"]: e["kind"] for e in opts["entries"]}
+        own_mission = preset == "blank_terrain" and kind_of.get(entry) in ("operation", "campaign")
         if preset is not None:
-            if entry is not None and entry not in battles:
-                # not a game rule: a blank copy takes the scenario's own items out, which a mission's script needs
-                raise StudioError("Blank Terrain and Blank Ocean start from a Battles map.")
+            if entry is not None and entry not in battles and not own_mission:
+                # not a game rule: a blank copy takes the scenario's own items out, which the copied mission's script
+                # needs; on an Operation or a campaign chapter, Blank Terrain starts a mission of its own instead
+                # (rusemod.mission: T41 played one on Blank Terrain), and Blank Ocean stays the Battles maps' (the
+                # owner, 2026-10-09: "We don't want ops making ocean maps yet")
+                raise StudioError("Blank Ocean starts from a Battles map; Blank Terrain from a Battles map, an "
+                                  "Operation or a campaign chapter.")
             game = self._game()
             if game is None:
                 # not a game rule: the game or one of its files isn't found
@@ -1549,6 +1555,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     (target / f.name).write_bytes(f.read_bytes())
             _save_checked(target / "map.toml", newmap.map_toml(spec, players.count if players else None, header),
                           lambda data: newmap.parse(data, "map.toml", new))
+            if own_mission:  # Blank Terrain on an Operation or a chapter: its own mission from the start (Scenario side)
+                from rusemod import mission
+                (target / "mission.toml").write_text(mission.to_toml(mission.Mission(), (
+                    f"The mission of {new}, a new {kind_of.get(entry)} started on Blank Terrain: the copied mission "
+                    f"needs the map's own items, so this one is its own (MOD_FORMAT §8, mission.toml), saved by RUSE "
+                    f"Studio.")), encoding="utf-8")
         return {"pack": new, "maps": self.maps()["maps"]}
 
     # --- a map's own pictures in the game's menus (map.toml picture, wide_picture, start_dots; rusemod.menupicture,
