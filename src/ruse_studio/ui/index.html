@@ -326,18 +326,10 @@
               <div id="check-list" class="finding-list"></div>
             </div>
           </div>
-          <!-- editing the picked scenario (maps.js scen.tool): items moved, units and buildings spawned, in the mod -->
-          <div id="tray-scen" class="tray-body hidden">
+          <!-- the Sectors tool, on the Map side (maps.js renderSectorTools, StudioApi.sector_*): a sector to paint,
+               the dab's shape and size, take back, where the scenario starts from, the outlines, and what the build says -->
+          <div id="tray-sectors" class="tray-body hidden">
             <div class="tray-main">
-              <div id="scen-tools" class="tool-tiles" role="group">
-                <button id="scen-move" type="button" class="tool-tile"></button>
-                <button id="scen-spawn" type="button" class="tool-tile"></button>
-                <button id="scen-start" type="button" class="tool-tile"></button>
-                <button id="scen-mark" type="button" class="tool-tile"></button>
-                <button id="scen-sectors" type="button" class="tool-tile"></button>
-              </div>
-              <!-- the Sectors brush (maps.js renderSectorTools, StudioApi.sector_*): a sector to paint, the dab's
-                   shape and size, take back, where the scenario starts from, the outlines, and what the build says -->
               <div id="scen-sectors-box" class="hidden">
                 <!-- Shapes: each sector's corners dragged on the map; Paint: the brush, for touch-ups (maps.js sec.mode) -->
                 <div id="scen-sectors-mode" class="chips" role="group"></div>
@@ -355,6 +347,12 @@
                   <span id="scen-sectors-outlines-label"></span></label>
                 <div id="scen-sectors-note" class="small"></div>
               </div>
+            </div>
+          </div>
+          <!-- editing the picked scenario, on the Scenario side (maps.js scen.tool, picked in the bar below): items
+               moved, units and buildings spawned, names and zones added, in the mod -->
+          <div id="tray-scen" class="tray-body hidden">
+            <div class="tray-main">
               <div id="scen-team" class="chips hidden" role="group"></div>
               <!-- Add a name or zone (maps.js MARK_KINDS): a town's or hill's name, a named point, a round or square zone -->
               <div id="scen-mark-kind" class="chips hidden" role="group"></div>
@@ -394,6 +392,12 @@
           </div>
         </div>
         <div id="dock-bar" class="dock-bar" role="toolbar">
+          <!-- Map or Scenario (maps.js setMode): which tools the bar holds; the other side's things show faded and
+               can't be picked (the owner, 2026-10-09) -->
+          <div id="dock-mode" class="dock-mode" role="radiogroup">
+            <button id="mode-map" type="button" class="mode-chip" role="radio"></button>
+            <button id="mode-scen" type="button" class="mode-chip" role="radio"></button>
+          </div>
           <button id="brush-look" type="button" class="dock-tile"></button>
           <span class="dock-gap"></span>
           <div id="dock-kinds" class="dock-kinds"></div>

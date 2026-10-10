@@ -8,6 +8,7 @@ const $ = (id) => document.getElementById(id);
 const SCALE = 1 / 1000;  // world units to scene units: a standard map is about 1,300 scene units wide
 const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "lowdef", water: true, gl: null, ask: 0,
   stats: null, groundTex: {}, edit: null, size: 0,  // size: the map's longer side in scene units (the keys' speed)
+  mode: "map",  // the tools the bar holds: "map" or "scenario" (setMode); the other side's things are faded and locked
   // brush: the tool picked, its size and strength per brush (slider values), the strokes on this map (as saved),
   // the size of each group of strokes made this session (for Undo; a Forest stroke's: { n, objects: its trees }), the
   // drag being painted, and the mod saved into. The Erase brush's own: its circles on this map (the scenery file's
@@ -617,12 +618,23 @@ function layerObjects(k) {
     case "water": return [mv.gl && mv.gl.water];
     case "cover": return [cover.mesh];
     case "moves": return [moves.mesh, erased.mesh];
-    case "roads": return [roads.line, road.mesh, road.preview];
-    case "scenario": return [scen.group];
-    default: return [mv.scenery.meshes[k], ...((mv.scenery.models || {})[k] || [])];
+    case "roads": return [roads.line, road.mesh, road.preview, bridge.mesh];
+    case "scenario": return scen.group ? scen.group.children.filter((o) => o !== scen.zones) : [];
+    default: return [mv.scenery.meshes[k], ...((mv.scenery.models || {})[k] || []), mv.place.meshes[k]];
   }
 }
 
+// --- Map and Scenario (the owner, 2026-10-09): the bar holds one side's tools, and the other side's things show
+// faded and can't be picked: in Map mode the scenario's units, HQs and spots ("no dragging a unit while painting
+// ground"), "and vice versa. So in the scenario mode, you can't accidentally move a building". The sectors are on the
+// Map side (his sorting, the same day). The ground and the water are the map itself: never faded. ---
+const LOCKED_ALPHA = 0.3;
+const MAP_SIDE = new Set(["cover", "moves", "roads", "building", "prop", "vegetation", "zones"]);
+const locked = (k) => (k === "scenario" ? mv.mode !== "scenario" : MAP_SIDE.has(k) && mv.mode !== "map");
+const shownAlpha = (k) => alpha[k] * (locked(k) ? LOCKED_ALPHA : 1);
+
+// A part's materials at `a` of their own opacity. The game's models cut their leaves and windows out at alphaTest 0.5,
+// which the opacity counts in: the cut-out is scaled too, or a model under half would vanish instead of fading.
 function fade(obj, a) {
   if (!obj) return;
   obj.traverse((o) => {
@@ -631,6 +643,8 @@ function fade(obj, a) {
       if (u.alpha === a) continue;
       if (u.baseOpacity === undefined) Object.assign(u, { baseOpacity: m.opacity, baseTransparent: m.transparent,
         baseDepthWrite: m.depthWrite });
+      if (u.baseAlphaTest === undefined) u.baseAlphaTest = m.alphaTest || 0;
+      if (u.baseAlphaTest) m.alphaTest = u.baseAlphaTest * a;
       m.opacity = u.baseOpacity * a;
       m.transparent = u.baseTransparent || a < 1;
       m.depthWrite = a < 1 ? false : u.baseDepthWrite;
@@ -640,11 +654,11 @@ function fade(obj, a) {
   });
 }
 
-// Before every frame, once a slider has moved (new parts, a redrawn road say, take their layer's value too)
+// Before every frame (new parts, a redrawn road say, take their layer's value too): the slider's value, times the
+// locked side's fade. The scenario's zones (sectors) take the Scenario slider and the Map side's fade.
 function fadeLayers() {
-  if (!LAYERS.some((k) => alpha[k] !== 1) && !mv.faded) return;
-  mv.faded = true;
-  for (const k of LAYERS) for (const o of layerObjects(k)) fade(o, alpha[k]);
+  for (const k of LAYERS) for (const o of layerObjects(k)) fade(o, shownAlpha(k));
+  fade(scen.zones, alpha.scenario * (locked("zones") ? LOCKED_ALPHA : 1));
 }
 
 function renderLayers() {
@@ -1595,6 +1609,7 @@ function keptScenView(view) {
   if (typeof view.stick_roads === "boolean") snapRoads = view.stick_roads;  // the Scenario tray's "Stick to roads"
   if (typeof view.road_snap === "boolean") road.snapOn = view.road_snap;     // the Roads tray's "Snap ends"
   if (typeof view.road_trees === "boolean") road.keepTrees = view.road_trees;  // and its "Keep the trees"
+  if (view.map_mode === "map" || view.map_mode === "scenario") mv.mode = view.map_mode;  // the side the bar was on
 }
 
 // the icons' size now: the slider's, and smaller as the camera pulls back (down to 40 % with the whole map in view)
@@ -1771,6 +1786,7 @@ function renderScenarioPick() {
   pick.disabled = !list.length;
   pick.title = w.tip_scen_pick;
   const s = list[scen.pick];
+  renderDock();  // the scenario tools' tiles: locked while there's no scenario to edit
   // where this setup plays in the game: its menu, its title, and the players it's made for
   $("scen-where").textContent = s && (s.entries || []).length ? fill(w.scen_where, { where: s.entries.map((e) =>
     `${w["scen_kind_" + e.kind] || e.kind} › ${(e.titles || {})[mv.lang] || (e.titles || {}).us || e.name}`
@@ -2171,6 +2187,8 @@ function drawScenario() {
   zones.visible = scen.layers.zones && scen.tool !== "sectors";  // the Sectors brush shows its own cells instead
   scen.zoneFlat = s.zones.map((z, k) => flatZone(z, k));  // for pointing at them (scenarioAt)
   const pillar = size * 0.03, blank = blankMap();
+  // the hover line's last words: "drag to move" on the Scenario side; on the Map side, where to go to change it
+  const dragTip = mv.mode === "scenario" ? mv.words.scen_drag_tip : mv.words.locked_scenario;
   for (const it of s.items) {
     if (blank && it.gone) continue;  // a blank map: what it took out of the map it copies isn't there to put back
     // a blank map's HQs: only those the modder has placed, with their cameras (StudioApi._with_hqs; the owner,
@@ -2191,14 +2209,14 @@ function drawScenario() {
       m.userData.label = (mv.words.scen_start_what ? mv.words.scen_start_what + " · " : "")
         + fill(mv.words.scen_start_place, { n: it.alliance || "?", p: it.place || 1 })
         + (it.name ? ` · ${it.name}` : "") + (it.moved ? ` · ${mv.words.scen_moved}` : "")
-        + (it.mine ? ` · ${mv.words.scen_mine}` : "") + (mv.words.scen_drag_tip ? ` · ${mv.words.scen_drag_tip}` : "");
+        + (it.mine ? ` · ${mv.words.scen_mine}` : "") + (dragTip ? ` · ${dragTip}` : "");
       m.userData.item = it.item;
       group.add(m);
     } else if (it.kind === "Spawn") {  // an icon where a unit or building appears: what it is, its side, its country
       if (!scen.layers[spawnLayer(it)]) continue;
       const m = spawnIcon(it, ICON_BASE, scen.selected === it.item || scen.sel.has(it.item));
       m.position.copy(at(it.x, it.y, 0));
-      m.userData.label = spawnLabel(it) + (mv.words.scen_drag_tip && !it.gone ? ` · ${mv.words.scen_drag_tip}` : "");
+      m.userData.label = spawnLabel(it) + (dragTip && !it.gone ? ` · ${dragTip}` : "");
       if (it.gone) m.material.opacity = GONE_OPACITY;  // taken out by the mod: faded, to put back
       m.userData.item = it.item;
       group.add(m);
@@ -2209,7 +2227,7 @@ function drawScenario() {
       const picked = scen.selected === it.item, colour = picked ? 0xffffff : POINT_COLOUR;
       const label = `${mv.words[MARK_WORD[it.kind]] || it.kind}${it.name ? " · " + it.name : ""}`
         + (it.mine ? ` · ${mv.words.scen_mine}` : "") + (it.gone ? ` · ${mv.words.scen_taken_out}` : "")
-        + (mv.words.scen_drag_tip && !it.gone ? ` · ${mv.words.scen_drag_tip}` : "");
+        + (dragTip && !it.gone ? ` · ${dragTip}` : "");
       let pts = null;
       if (it.kind === "CircularZone" && it.radius) {
         pts = [];
@@ -2268,7 +2286,7 @@ function setScenTool(tool) {
   scen.tool = scen.tool === tool ? null : tool;
   scen.selected = null;
   if (scen.tool) { if (mv.brush.on) setBrushMode(false); if (mv.place.on) setPlaceMode(false); stopRoad(); stopBridge(); }
-  dock.scenario = true;  // the tool dropped again keeps the scenario's tray open
+  if (scen.tool) toMode(scen.tool === "sectors" ? "map" : "scenario");  // the bar shows the side the tool is on
   dock.check = false;
   pointerMode();
   renderScenTools();
@@ -2583,18 +2601,7 @@ function snapKind(item, unit) {
 function renderScenTools() {
   const w = mv.words, s = ((scen.data || {}).scenarios || [])[scen.pick];
   spawnDesc();  // shown only with Add unit
-  iconTile($("scen-move"), "move", w.scen_move_tool).title = w.tip_scen_move;
-  $("scen-move").setAttribute("aria-pressed", String(scen.tool === "move"));
-  iconTile($("scen-spawn"), "spawn", w.scen_spawn_tool).title = w.tip_scen_spawn;
-  $("scen-spawn").setAttribute("aria-pressed", String(scen.tool === "spawn"));
-  iconTile($("scen-start"), "start", w.scen_start_tool).title = w.tip_scen_start;
-  $("scen-start").setAttribute("aria-pressed", String(scen.tool === "start"));
-  iconTile($("scen-mark"), "mark", w.scen_mark_tool).title = w.tip_scen_mark;
-  $("scen-mark").setAttribute("aria-pressed", String(scen.tool === "mark"));
-  $("scen-move").disabled = $("scen-spawn").disabled = $("scen-start").disabled = $("scen-mark").disabled = !s;
-  iconTile($("scen-sectors"), "sectors", w.scen_sectors_tool).title = s ? w.tip_scen_sectors : w.tip_scen_sectors_locked;
-  $("scen-sectors").setAttribute("aria-pressed", String(scen.tool === "sectors"));
-  $("scen-sectors").disabled = !s;
+  // (the tools themselves are tiles in the bar on the Scenario side, and Sectors on the Map side: renderDock)
   // Add a name or zone: what to add (each chip says what it is for), and a town's or hill's words to show
   const markPick = $("scen-mark-kind"), wordsRow = $("scen-mark-words-row");
   markPick.classList.toggle("hidden", scen.tool !== "mark");
@@ -3632,9 +3639,10 @@ function scenPointerDown(ev) {
 // Pressing on empty ground still turns the view. ---
 const GRABBABLE = ["StartingPoint", "Spawn", "LabelVille", "LabelMontagne", "Name", "CircularZone", "RectangleZone"];
 
+// On the Scenario side only: on the Map side the scenario's things are faded and locked.
 function canGrab() {
-  return Boolean(mv.gl && mv.edit && scen.group && scen.group.visible && !mv.brush.on && !mv.place.on && !road.on
-    && !bridge.on && (!scen.tool || scen.tool === "move"));
+  return Boolean(mv.gl && mv.edit && scen.group && scen.group.visible && mv.mode === "scenario" && !mv.brush.on
+    && !mv.place.on && !road.on && !bridge.on && (!scen.tool || scen.tool === "move"));
 }
 
 // What a press at `ev` would grab: {cam: the start} for a camera's grip, {it, objs} for an item (its drawn parts), or null
@@ -3924,7 +3932,7 @@ function spacingOf(group) {
 
 function setPlaceMode(on) {
   mv.place.on = on;
-  if (on) { dock.scenario = false; dock.check = false; stopRoad(); stopBridge(); }
+  if (on) { toMode("map"); dock.check = false; stopRoad(); stopBridge(); }
   if (on && scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); }
   if (!on) { mv.place.lineStart = null; showPlaceGuide(null); }
   if (on && mv.brush.on) setBrushMode(false);
@@ -4227,7 +4235,7 @@ function blankMap(pack = mv.current) {
 
 // --- the dock: the tools by kind along the bottom, as Cities: Skylines does it (a bar of kinds; the kind picked opens
 // its tray above), drawn in the game's own HUD look (style.css). [kind, its brushes]: the three place kinds place the
-// map's own types, the scenario kind edits the picked scenario. ---
+// map's own types; Sectors and the scen_ kinds are the picked scenario's tools (scen.tool). ---
 const DOCK = [
   ["terrain", ["hill", "raise", "lower", "crater", "plateau", "flatten", "level", "smooth", "ramp"]],
   ["water", ["water", "drain"]],
@@ -4235,24 +4243,37 @@ const DOCK = [
   ["movement", ["block", "block_infantry", "block_vehicles", "open", "open_infantry", "open_vehicles"]],
   ["roads", null], ["bridges", null],
   ["building", null], ["prop", null], ["vegetation", null], ["paint", ["paint", "stamp"]], ["erase", ["erase"]],
-  ["scenario", null], ["check", null],
+  ["sectors", null], ["scen_move", null], ["scen_spawn", null], ["scen_start", null], ["scen_mark", null],
+  ["check", null],
 ];
-// The bar's tiles: kinds that go together share one (the owner, 2026-10-01: the bar was too long), its tray showing a
-// tab per kind. [group, its kinds, its icon]. Map Paint holds Paint and Erase (the owner, 2026-10-03: "an editing tab
-// or like a drawing tab and include the erase tool with it").
-const DOCK_GROUPS = [
-  ["ground", ["terrain", "water"], "terrain"],
-  ["zones", ["cover", "movement"], "cover"],
-  ["ways", ["roads", "bridges"], "roads"],
-  ["building", ["building"], "building"],
-  ["nature", ["prop", "vegetation"], "vegetation"],
-  ["paint", ["paint", "erase"], "paint"],
-  ["scenario", ["scenario"], "scenario"],
-  ["check", ["check"], "check"],
-];
-// the scenario kind open (no tool picked yet); "Check this map" open; the last brush of each kind; the last kind
-// open in each group
-const dock = { scenario: false, check: false, last: {}, lastIn: {} };
+// The bar's tiles, per side (the owner, 2026-10-09: a Map / Scenario button "swaps the tool panel only"; Map is
+// "terrain, roads, like making woods, making like cities", Scenario "spawning the units, choosing the sides, the camera
+// angles"): kinds that go together share one (the owner, 2026-10-01: the bar was too long), its tray showing a tab per
+// kind. [group, its kinds, its icon]. Map Paint holds Paint and Erase (the owner, 2026-10-03: "an editing tab or like a
+// drawing tab and include the erase tool with it"). Check is on both sides.
+const DOCK_GROUPS = {
+  map: [
+    ["ground", ["terrain", "water"], "terrain"],
+    ["zones", ["cover", "movement"], "cover"],
+    ["ways", ["roads", "bridges"], "roads"],
+    ["building", ["building"], "building"],
+    ["nature", ["prop", "vegetation"], "vegetation"],
+    ["paint", ["paint", "erase"], "paint"],
+    ["sectors", ["sectors"], "sectors"],
+    ["check", ["check"], "check"],
+  ],
+  scenario: [
+    ["scen_move", ["scen_move"], "move"],
+    ["scen_spawn", ["scen_spawn"], "spawn"],
+    ["scen_start", ["scen_start"], "start"],
+    ["scen_mark", ["scen_mark"], "mark"],
+    ["check", ["check"], "check"],
+  ],
+};
+const SCEN_KINDS = new Set(["sectors", "scen_move", "scen_spawn", "scen_start", "scen_mark"]);  // need a scenario picked
+const scenToolOf = (kind) => (kind === "sectors" ? "sectors" : kind.slice("scen_".length));
+// "Check this map" open; the last brush of each kind; the last kind open in each group
+const dock = { check: false, last: {}, lastIn: {} };
 
 // 24-unit line drawings, one per kind and tool (stroked, see .dock-tile svg)
 const ICONS = {
@@ -4327,18 +4348,30 @@ function brushKind(name) {
 function kindName(kind) {
   const w = mv.words;
   return { terrain: w.dock_terrain, water: w.brush_water, cover: w.brush_cover, movement: w.dock_movement, roads: w.dock_roads,
-    bridges: w.dock_bridges, check: w.dock_check, scenario: w.scen_show, erase: w.brush_erase, paint: w.dock_paint }[kind]
+    bridges: w.dock_bridges, check: w.dock_check, erase: w.brush_erase, paint: w.dock_paint, sectors: w.scen_sectors_tool,
+    scen_move: w.scen_move_tool, scen_spawn: w.scen_spawn_tool, scen_start: w.scen_start_tool, scen_mark: w.scen_mark_tool }[kind]
     || w[`scenery_${kind}`] || kind;
 }
 
-// The kind open: the brush's, the place kind's, or the scenario's; null while just looking around.
+// What a kind does, one sentence (its tile's and its tray's): a scenario tool says its own (tip_scen_*)
+function kindTip(kind) {
+  const w = mv.words;
+  return (SCEN_KINDS.has(kind) ? w[`tip_scen_${scenToolOf(kind)}`] : w[`tip_dock_${kind}`]) || "";
+}
+
+// The scenario picked in the map panel (each has its own units, HQs, names and sectors), or none
+function pickedScenario() {
+  return ((scen.data || {}).scenarios || [])[scen.pick] || null;
+}
+
+// The kind open: the brush's, the place kind's, or the scenario tool's; null while just looking around.
 function dockKind() {
   if (mv.brush.on) return brushKind(mv.brush.name);
   if (road.on) return "roads";
   if (bridge.on) return "bridges";
   if (mv.place.on) return mv.place.group;
   if (dock.check) return "check";
-  return dock.scenario || scen.tool ? "scenario" : null;
+  return scen.tool ? (scen.tool === "sectors" ? "sectors" : "scen_" + scen.tool) : null;
 }
 
 function openKind(kind) {
@@ -4354,10 +4387,10 @@ function openKind(kind) {
     renderDock();
     return;
   }
-  if (kind === "scenario") {
+  if (SCEN_KINDS.has(kind)) {
+    if (!pickedScenario()) return;  // its tile is locked and says why
     lookAround();
-    dock.scenario = true;
-    renderDock();
+    setScenTool(scenToolOf(kind));
     return;
   }
   mv.place.group = kind;
@@ -4367,31 +4400,42 @@ function openKind(kind) {
   setPlaceMode(true);
 }
 
+const dockGroups = () => DOCK_GROUPS[mv.mode];
+
 function groupOf(kind) {
-  return (DOCK_GROUPS.find(([, kinds]) => kinds.includes(kind)) || [null])[0];
+  return (dockGroups().find(([, kinds]) => kinds.includes(kind)) || [null])[0];
 }
 
 function groupName(group) {
-  const [, kinds] = DOCK_GROUPS.find(([g]) => g === group);
+  const [, kinds] = dockGroups().find(([g]) => g === group);
   return kinds.length === 1 ? kindName(kinds[0]) : mv.words[`dock_group_${group}`] || kinds.map(kindName).join(" & ");
 }
 
 // A tile opens its group at the kind last used there; the open group's tile again closes it.
 function openGroup(group) {
-  const [, kinds] = DOCK_GROUPS.find(([g]) => g === group);
+  const [, kinds] = dockGroups().find(([g]) => g === group);
   if (kinds.includes(dockKind())) { lookAround(); return; }
   openKind(dock.lastIn[group] || kinds[0]);
 }
 
-// The bar's tiles, again when the words change.
+// The bar's tiles, again when the words change or the side does.
 function renderDockBar() {
   const w = mv.words;
+  for (const [id, mode, word, tip] of [["mode-map", "map", "mode_map", "tip_mode_map"],
+    ["mode-scen", "scenario", "scen_show", "tip_mode_scenario"]]) {
+    const b = $(id);
+    b.textContent = w[word] || mode;
+    b.title = w[tip] || "";
+    b.setAttribute("aria-checked", String(mv.mode === mode));
+  }
+  $("dock-mode").setAttribute("aria-label", w.mode_label || "");
   iconTile($("brush-look"), "look", w.brush_look).title = w.tip_look;
-  $("dock-kinds").replaceChildren(...DOCK_GROUPS.map(([group, kinds, icon]) => {
-    const tip = kinds.length === 1 ? w[`tip_dock_${kinds[0]}`] : w[`tip_dock_group_${group}`];
+  $("dock-kinds").replaceChildren(...dockGroups().map(([group, kinds, icon]) => {
+    const tip = kinds.length === 1 ? kindTip(kinds[0]) : w[`tip_dock_group_${group}`];
     const tile = iconTile(el("button", { type: "button", className: "dock-tile", title: tip || "" }), icon,
       groupName(group));
     tile.dataset.group = group;
+    tile.dataset.tip = tip || "";
     tile.addEventListener("click", () => openGroup(group));
     return tile;
   }));
@@ -4399,14 +4443,21 @@ function renderDockBar() {
 }
 
 function renderDock() {
-  const w = mv.words, kind = dockKind(), group = groupOf(kind);
+  const w = mv.words, kind = dockKind(), group = groupOf(kind), s = pickedScenario();
   if (group) dock.lastIn[group] = kind;
   $("brush-look").setAttribute("aria-pressed", String(!kind));
-  for (const tile of $("dock-kinds").children) tile.setAttribute("aria-pressed", String(tile.dataset.group === group));
+  for (const tile of $("dock-kinds").children) {
+    tile.setAttribute("aria-pressed", String(tile.dataset.group === group));
+    // a scenario's tools need a scenario: locked, saying why, until one is picked
+    const needs = SCEN_KINDS.has(tile.dataset.group);
+    tile.disabled = needs && !s;
+    tile.title = needs && !s ? (tile.dataset.group === "sectors" ? w.tip_scen_sectors_locked : w.tip_scen_locked) || ""
+      : tile.dataset.tip;
+  }
   // a group of two kinds: a tab for each, above the open one's tools
-  const kinds = group ? DOCK_GROUPS.find(([g]) => g === group)[1] : [];
+  const kinds = group ? dockGroups().find(([g]) => g === group)[1] : [];
   $("tray-tabs").replaceChildren(...(kinds.length > 1 ? kinds.map((k) => {
-    const tab = el("button", { type: "button", className: "tray-tab", textContent: kindName(k), title: w[`tip_dock_${k}`] || "" });
+    const tab = el("button", { type: "button", className: "tray-tab", textContent: kindName(k), title: kindTip(k) });
     tab.setAttribute("role", "tab");
     tab.setAttribute("aria-selected", String(k === kind));
     tab.addEventListener("click", () => { if (k !== dockKind()) openKind(k); });
@@ -4415,12 +4466,38 @@ function renderDock() {
   $("dock-tray").classList.toggle("hidden", !kind);
   $("tray-brush").classList.toggle("hidden", !(kind && (DOCK.find(([k]) => k === kind) || [])[1]));
   $("tray-place").classList.toggle("hidden", !PLACEABLE.includes(kind));
-  $("tray-scen").classList.toggle("hidden", kind !== "scenario");
+  $("tray-scen").classList.toggle("hidden", !(SCEN_KINDS.has(kind) && kind !== "sectors"));
+  $("tray-sectors").classList.toggle("hidden", kind !== "sectors");
   $("tray-roads").classList.toggle("hidden", kind !== "roads");
   $("tray-bridges").classList.toggle("hidden", kind !== "bridges");
   $("tray-check").classList.toggle("hidden", kind !== "check");
   $("tray-title").textContent = kind ? groupName(group) : "";
-  $("tray-tip").textContent = kind ? w[`tip_dock_${kind}`] || "" : "";
+  $("tray-tip").textContent = kind ? kindTip(kind) : "";
+}
+
+// The switch between the two sides: whatever tool was open closes, the bar takes the other side's tools, and the
+// side left behind fades and locks (fadeLayers, canGrab, the hover line). Kept by the Studio (prefs "view").
+function setMode(mode) {
+  if (mv.mode === mode) return;
+  lookAround();
+  toMode(mode);
+}
+
+// The side a tool belongs to, when the tool is opened another way (a key, a button in a list): the bar follows it.
+function toMode(mode) {
+  if (mv.mode === mode) return;
+  mv.mode = mode;
+  if (mode === "map" && (scen.sel.size || scen.selected !== null)) {  // the scenario's selection doesn't stay behind
+    scen.sel.clear();
+    scen.selected = null;
+  }
+  $("scenery-hover").textContent = "";
+  renderDockBar();
+  if (scen.data) drawScenario();  // its hover words: "drag to move" only where it moves
+  renderScenTools();
+  pointerMode();
+  saveView();
+  if (mv.gl) mv.gl.draw();
 }
 
 // --- new roads, Cities: Skylines style (maps/<map>/roads.toml; StudioApi.road_add, rusemod.roadnet). Straight: click
@@ -4682,7 +4759,7 @@ function setRoadMode(on) {
     if (mv.brush.on) setBrushMode(false);
     if (mv.place.on) setPlaceMode(false);
     if (scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); }
-    dock.scenario = false;
+    toMode("map");
     dock.check = false;
     stopBridge();
     road.on = true;
@@ -4907,7 +4984,7 @@ function setBridgeMode(on) {
     if (mv.brush.on) setBrushMode(false);
     if (mv.place.on) setPlaceMode(false);
     if (scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); }
-    dock.scenario = false;
+    toMode("map");
     dock.check = false;
     stopRoad();
     bridge.on = true;
@@ -5287,7 +5364,7 @@ function cancelRamp() {
 
 function setBrushMode(on) {
   mv.brush.on = on;
-  if (on) { dock.scenario = false; dock.check = false; stopRoad(); stopBridge(); }
+  if (on) { toMode("map"); dock.check = false; stopRoad(); stopBridge(); }
   if (on) { mv.place.on = false; if (scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); } }
   if (!on) cancelRamp();
   pointerMode();
@@ -5812,9 +5889,12 @@ function watchPointer() {
     hoverEv = ev;
     if (!hoverFrame) hoverFrame = requestAnimationFrame(() => {
       hoverFrame = 0;
-      const s = scenarioAt(hoverEv);
-      const t = s ? null : sceneryAt(hoverEv);
-      $("scenery-hover").textContent = s || (t ? `${t[0]} · ${t[2] || t[1]}` : "");
+      // the side the bar is on is said first; a locked object of the map says where to go to change it
+      const said = () => {
+        const t = sceneryAt(hoverEv);
+        return t ? `${t[0]} · ${t[2] || t[1]}` + (mv.mode !== "map" && mv.words.locked_map ? ` · ${mv.words.locked_map}` : "") : "";
+      };
+      $("scenery-hover").textContent = mv.mode === "map" ? said() || scenarioAt(hoverEv) : scenarioAt(hoverEv) || said();
     });
   });
   canvas.addEventListener("pointerleave", () => {
@@ -6668,7 +6748,6 @@ function nudge(what, dir) {
 }
 
 function lookAround() {
-  dock.scenario = false;
   dock.check = false;
   stopRoad();
   stopBridge();
@@ -6716,11 +6795,14 @@ function onKey(e) {
     return;
   }
   if (fieldFocused(false)) return;
+  // the Map side's keys pick its tools on the Map side only: on the Scenario side a slip of a finger would turn the
+  // next click into a hill instead of a unit
+  const onMap = mv.mode === "map";
   const digit = /^Digit([0-9])$/.exec(e.code);
-  if (digit) { const b = Object.keys(BRUSHES)[(Number(digit[1]) + 9) % 10]; if (b) pickBrush(b); return; }
+  if (digit) { const b = Object.keys(BRUSHES)[(Number(digit[1]) + 9) % 10]; if (b && onMap) pickBrush(b); return; }
   const action = keys.by[e.code];
-  if (action === "brush") { if (mv.brush.on) lookAround(); else pickBrush(mv.brush.name); }
-  else if (action === "place") setPlaceMode(!mv.place.on);
+  if (action === "brush") { if (mv.brush.on) lookAround(); else if (onMap) pickBrush(mv.brush.name); }
+  else if (action === "place") { if (onMap) setPlaceMode(!mv.place.on); }
   else if (action === "size_down") nudge("size", -1);
   else if (action === "size_up") nudge("size", 1);
   else if (action === "strength_down") nudge("strength", -1);
@@ -6903,12 +6985,9 @@ function wire() {
     drawScenario();
     renderScenTools();
   });
-  $("scen-move").addEventListener("click", () => setScenTool("move"));
-  $("scen-sectors").addEventListener("click", () => setScenTool("sectors"));
   $("scen-gap").addEventListener("input", (e) => { scen.gap[scen.kind] = Number(e.target.value); renderScenTools(); });
-  $("scen-spawn").addEventListener("click", () => setScenTool("spawn"));
-  $("scen-start").addEventListener("click", () => setScenTool("start"));
-  $("scen-mark").addEventListener("click", () => setScenTool("mark"));
+  $("mode-map").addEventListener("click", () => setMode("map"));
+  $("mode-scen").addEventListener("click", () => setMode("scenario"));
   $("scen-size").addEventListener("input", (e) => {  // the icons' size, live
     scen.iconSize = Number(e.target.value) / 100;
     saveScenView();
@@ -7061,7 +7140,7 @@ function foldMaps(folded) {
 function saveView() {
   if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind, maps_folded: Boolean(mv.folded),
     scen_layers: scen.layers, icon_size: scen.iconSize, zone_fill: zoneFill, stick_roads: snapRoads,
-    road_snap: road.snapOn, road_trees: road.keepTrees }).catch(() => {});
+    road_snap: road.snapOn, road_trees: road.keepTrees, map_mode: mv.mode }).catch(() => {});
 }
 
 // app.js opens the view when its tab is picked, and passes the words and the language on every language change.
@@ -7080,7 +7159,8 @@ window.MapView = {
           const view = (await api.prefs()).view || {};
           mv.kind = view.map_kind || mv.kind;
           foldMaps(Boolean(view.maps_folded));
-          keptScenView(view);  // the Scenario tray's kinds shown and icon size
+          keptScenView(view);  // the Scenario tray's kinds shown and icon size, and the side the bar was on
+          renderDockBar();
         } catch { /* kept nothing */ }
         mv.maps = (await api.maps()).maps;
       } catch (err) {
