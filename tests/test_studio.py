@@ -1820,9 +1820,9 @@ class MapAndScenarioSides(unittest.TestCase):
     """The owner, 2026-10-09: on the map screen a Map / Scenario button "swaps the tool panel only", the map staying as
     it is; on each side the other side's things show faded and can't be picked ("no dragging a unit while painting
     ground ... and vice versa. So in the scenario mode, you can't accidentally move a building"); sectors are on the Map
-    side. Looked at in the Studio's page on a copy of D-Day (2026-10-10): each side's tiles, the faded side at 30 % and
-    its models' cut-out scaled with it, no hand over a depot on the Map side, the number keys doing nothing on the
-    Scenario side."""
+    side. Looked at in the Studio's page on a copy of D-Day (2026-10-10): each side's tiles, the locked side a pale ghost
+    (40 % and lit things lifted: at see-through alone the HQs' dark red pillars vanished into the fields) with its models'
+    cut-out scaled with it, no hand over a depot on the Map side, the number keys doing nothing on the Scenario side."""
 
     maps = staticmethod(ZonesOnTheGround.maps)
     function = ZonesOnTheGround.function
@@ -1845,8 +1845,10 @@ class MapAndScenarioSides(unittest.TestCase):
 
     def test_the_other_side_is_faded_and_locked(self):
         self.assertIn('mv.mode === "scenario"', self.function("canGrab("))  # no grabbing the scenario's from Map
-        self.assertIn("fade(o, shownAlpha(k))", self.function("fadeLayers("))
-        self.assertIn("u.baseAlphaTest * a", self.function("fade("))  # a faded model fades, it doesn't vanish
+        self.assertIn("fade(o, shownAlpha(k), locked(k))", self.function("fadeLayers("))
+        fade = self.function("fade(")
+        self.assertIn("u.baseAlphaTest * a", fade)  # a faded model fades, it doesn't vanish
+        self.assertIn("m.emissive.addScalar(GHOST_LIFT)", fade)  # and a dark one stays findable
         keys = self.function("onKey(")
         self.assertIn("if (b && onMap) pickBrush(b)", keys)  # a slip of a finger on the Scenario side paints nothing
         self.assertIn("map_mode: mv.mode", self.function("saveView("))

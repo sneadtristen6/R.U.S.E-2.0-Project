@@ -628,19 +628,22 @@ function layerObjects(k) {
 // faded and can't be picked: in Map mode the scenario's units, HQs and spots ("no dragging a unit while painting
 // ground"), "and vice versa. So in the scenario mode, you can't accidentally move a building". The sectors are on the
 // Map side (his sorting, the same day). The ground and the water are the map itself: never faded. ---
-const LOCKED_ALPHA = 0.3;
+// A locked thing is a pale ghost of itself: see-through, and lit things lifted towards white, because see-through alone
+// lost the HQs' pillars (lit, their dark red is the fields' brown: at 45 % a pillar was 109,68,34 on ground 101,82,34)
+const LOCKED_ALPHA = 0.4, GHOST_LIFT = 0.3;
 const MAP_SIDE = new Set(["cover", "moves", "roads", "building", "prop", "vegetation", "zones"]);
 const locked = (k) => (k === "scenario" ? mv.mode !== "scenario" : MAP_SIDE.has(k) && mv.mode !== "map");
 const shownAlpha = (k) => alpha[k] * (locked(k) ? LOCKED_ALPHA : 1);
 
-// A part's materials at `a` of their own opacity. The game's models cut their leaves and windows out at alphaTest 0.5,
-// which the opacity counts in: the cut-out is scaled too, or a model under half would vanish instead of fading.
-function fade(obj, a) {
+// A part's materials at `a` of their own opacity, a ghost when `ghost`. The game's models cut their leaves and windows
+// out at alphaTest 0.5, which the opacity counts in: the cut-out is scaled too, or a model under half would vanish
+// instead of fading.
+function fade(obj, a, ghost = false) {
   if (!obj) return;
   obj.traverse((o) => {
     for (const m of o.material ? [].concat(o.material) : []) {
       const u = m.userData;
-      if (u.alpha === a) continue;
+      if (u.alpha === a && Boolean(u.ghost) === ghost) continue;
       if (u.baseOpacity === undefined) Object.assign(u, { baseOpacity: m.opacity, baseTransparent: m.transparent,
         baseDepthWrite: m.depthWrite });
       if (u.baseAlphaTest === undefined) u.baseAlphaTest = m.alphaTest || 0;
@@ -648,8 +651,14 @@ function fade(obj, a) {
       m.opacity = u.baseOpacity * a;
       m.transparent = u.baseTransparent || a < 1;
       m.depthWrite = a < 1 ? false : u.baseDepthWrite;
+      if (m.emissive) {  // lit materials only; icons, labels and lines are drawn in their own colours already
+        if (u.baseEmissive === undefined) u.baseEmissive = m.emissive.getHex();
+        m.emissive.setHex(u.baseEmissive);
+        if (ghost) m.emissive.addScalar(GHOST_LIFT);
+      }
       m.needsUpdate = true;
       u.alpha = a;
+      u.ghost = ghost;
     }
   });
 }
@@ -657,8 +666,8 @@ function fade(obj, a) {
 // Before every frame (new parts, a redrawn road say, take their layer's value too): the slider's value, times the
 // locked side's fade. The scenario's zones (sectors) take the Scenario slider and the Map side's fade.
 function fadeLayers() {
-  for (const k of LAYERS) for (const o of layerObjects(k)) fade(o, shownAlpha(k));
-  fade(scen.zones, alpha.scenario * (locked("zones") ? LOCKED_ALPHA : 1));
+  for (const k of LAYERS) for (const o of layerObjects(k)) fade(o, shownAlpha(k), locked(k));
+  fade(scen.zones, alpha.scenario * (locked("zones") ? LOCKED_ALPHA : 1), locked("zones"));
 }
 
 function renderLayers() {
