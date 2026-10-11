@@ -4290,23 +4290,44 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             info = package.info_of(folder)
         except package.PackageError as exc:
             raise StudioError(str(exc)) from None
-        if info.get("rmod"):
-            # not a game rule: the Studio can't read an .rmod's changes as units yet
-            raise StudioError(f"{info['name']} was made the older way (an .rmod file), so the Studio can't show "
-                              f"what's in it yet.")
+        game, index = self._game(), self._path()
+        if info.get("rmod"):  # an .rmod mod: its copy is converted, so the Studio shows what it changes
+            if game is None:
+                # not a game rule: converting reads the game's own unit data
+                raise StudioError("We couldn't find R.U.S.E. Opening a RUSE Mod Manager mod reads the game's unit data.")
+            if index is None or not Path(index).is_file():
+                # not a game rule: the converter finds each changed object in the game index
+                raise StudioError("Build the game index first (Units tab: Build the index), then open this mod again.")
         project, copied = self._project_of(info["id"]), False
         if project is None:
             project, copied = self._edit_copy(folder, info, name), True
+        kept = {}
+        values = 0
+        if copied and info.get("rmod"):
+            from .rmodedit import convert_folder
+            try:
+                converted = convert_folder(project, game, index)
+            except Exception as exc:  # the copy is useless half converted: it goes, and the reason is said
+                shutil.rmtree(project, ignore_errors=True)
+                raise StudioError(f"{info['name']} couldn't be opened in the Studio ({exc}). Please report this.") \
+                    from None
+            values, kept = converted.counts["values"], converted.kept_counts()
         units, maps = self._holds(project)
         if units or not maps:
             self.choose_mod(str(project), "mod")
         if maps:
             self.choose_mod(str(project), "map")
         shown = package.info_of(project)["name"]
-        message = (f"Your copy {shown} is open: everything in {info['name']} is in it, and your changes go into it."
-                   if copied else f"{shown} is open: your changes go into it. Export puts it in the Launcher again.")
+        if not copied:
+            message = f"{shown} is open: your changes go into it. Export puts it in the Launcher again."
+        elif info.get("rmod"):
+            rest = ", ".join(f"{n} {what}" for what, n in kept.items())
+            message = (f"Your copy {shown} is open. {values} of {info['name']}'s changes are in the Studio now, ready "
+                       f"to change." + (f" Kept as they are, and still in the mod: {rest}." if rest else ""))
+        else:
+            message = f"Your copy {shown} is open: everything in {info['name']} is in it, and your changes go into it."
         return {"mod": self.mods("mod"), "map": self.mods("map"), "path": str(project), "copied": copied,
-                "units": units, "maps": maps, "message": message}
+                "units": units, "maps": maps, "values": values, "kept": kept, "message": message}
 
     def _edit_copy(self, folder: Path, info: dict, name: str) -> Path:
         """Copy the installed mod at `folder` into the Studio as a mod of its own named `name` (MOD_FORMAT §3

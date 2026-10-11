@@ -90,8 +90,14 @@ before = []
 this Studio made opens its own project. Anyone else's is first copied into the Studio as a mod of its own: a name the
 modder gives it and an id made from that name, with `[edited_from]` saying what it came from. An edit never carries
 the original's name or id: Export refuses it, and so does the Launcher when the file is added (`rusemod.package.
-edit_problem`), so an update of the original can't wipe the edit and two different mods never share one name. A mod
-made the older way (an `.rmod`, §13) can't be opened this way yet.
+edit_problem`), so an update of the original can't wipe the edit and two different mods never share one name.
+
+A RUSE Mod Manager mod (an `.rmod`, §13) opens the same way, and its copy is converted (`rusemod.rmodconvert`): every
+value change the Studio can show becomes a Studio change in `src/studio.rndf`, and the rest stays in a smaller `.rmod`
+that `[rmod] file` still names: new objects, deletions, whole files, texts, map layers, and values the Studio can't
+spell yet or that pass through a link the mod changes. The build applies a mod's `.rmod` first and its own changes on
+top (§10), so the copy plays as the original did. Checked on five of the listed mods: the converted copy builds the
+same unit data, value for value.
 
 ## 4. Addressing game objects
 

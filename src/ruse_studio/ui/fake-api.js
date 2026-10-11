@@ -31,7 +31,7 @@
       edit_installed: "Edit an installed mod…", edit_title: "Edit an installed mod",
       edit_lead: "The mods installed in the Launcher. Pick one: its units and maps open here. A mod made by someone else becomes a copy of your own with a name of its own, so its updates never touch your changes.",
       edit_none: "No mods are installed in the Launcher yet.", edit_has_units: "units and other changes", edit_has_maps: "maps",
-      edit_by: "by {author}", edit_older: "Made the older way (an .rmod file): the Studio can't show what's in it yet.",
+      edit_by: "by {author}", edit_older: "A RUSE Mod Manager mod (.rmod): in your copy its value changes become Studio changes you can change; its new units, texts and files stay as they are.",
       edit_open: "Edit", tip_edit_open: "Open your own mod here: everything in it shows in the Units and Maps tabs, and your changes go into it.",
       tip_edit_copy: "Make a copy of this mod of your own, with a name of its own, and open it here with everything in it.",
       edit_yours: "Yours", edit_copy_lead: "{name} is {author}'s mod. Your changes go into a copy of your own; give it a name of its own:",
@@ -2090,13 +2090,16 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
                    message: "my-mod is open: your changes go into it. Export puts it in the Launcher again." };
         }
         const key = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
-        if (!key(name)) throw new Error("Give your copy a name of its own: it can't be called R.U.S.E. Field Manual.");
-        if (key(name) === key("R.U.S.E. Field Manual")) throw new Error("R.U.S.E. Field Manual is nickgit's name for the mod. Give your copy a name of its own.");
+        const [original, author] = id === "airfield-capacity" ? ["Airfield Capacity", "LittleGroove"] : ["R.U.S.E. Field Manual", "nickgit"];
+        if (!key(name)) throw new Error(`Give your copy a name of its own: it can't be called ${original}.`);
+        if (key(name) === key(original)) throw new Error(`${original} is ${author}'s name for the mod. Give your copy a name of its own.`);
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-edit";
         if (!mods.some((m) => m.path === home + slug)) mods.push({ path: home + slug, name: slug });
         current = home + slug;
-        return { mod: modsView(), map: mapsView(), path: current, copied: true, units: true, maps: false,
-                 message: `Your copy ${name} is open: everything in R.U.S.E. Field Manual is in it, and your changes go into it.` };
+        const message = id === "airfield-capacity"
+          ? `Your copy ${name} is open. 12 of ${original}'s changes are in the Studio now, ready to change. Kept as they are, and still in the mod: 2 new objects.`
+          : `Your copy ${name} is open: everything in ${original} is in it, and your changes go into it.`;
+        return { mod: modsView(), map: mapsView(), path: current, copied: true, units: true, maps: false, message };
       },
       edited: async () => [...new Set([...edits.keys()].filter((k) => k.startsWith(current + "|")).flatMap((k) => {
         const [, address, , how, via] = k.split("|");

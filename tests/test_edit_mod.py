@@ -114,9 +114,11 @@ class EditInstalled(unittest.TestCase):
         self.assertEqual(res["mod"]["current"], str(self.project))
         self.assertEqual(sorted(p.name for p in (self.home / "mods").iterdir()), ["abrams"])
 
-    def test_the_older_way_can_t_be_opened_yet(self):
-        with self.assertRaisesRegex(StudioError, "older way"):
+    def test_an_rmod_mod_needs_the_game_to_open(self):
+        # converted in its copy against the game's own unit data (test_rmodconvert has a made-up game)
+        with self.assertRaisesRegex(StudioError, "couldn't find R.U.S.E."):
             self.api.edit_installed("airfield-capacity", "Airfield Mine")
+        self.assertFalse((self.home / "mods" / "airfield-mine").exists())
         with self.assertRaisesRegex(StudioError, "isn't installed"):
             self.api.edit_installed("gone", "Gone")
 

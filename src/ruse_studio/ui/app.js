@@ -425,10 +425,11 @@ function editModRow(m) {
     el("strong", { textContent: m.name }),
     el("span", { className: "muted small", textContent: [m.version, m.author ? fillText(w.edit_by, { author: m.author }) : "", what].filter(Boolean).join(" · ") }));
   const row = el("li", { className: "edit-mod-row" }, head);
-  if (m.error || m.older) {
-    row.append(el("span", { className: "muted small", textContent: m.error ? m.error : w.edit_older }));
+  if (m.error) {
+    row.append(el("span", { className: "muted small", textContent: m.error }));
     return row;
   }
+  if (m.older) head.append(el("span", { className: "muted small", textContent: w.edit_older }));  // a RUSE Mod Manager mod: converted in its copy
   if (m.yours) {
     const open = el("button", { type: "button", className: "small primary", textContent: w.edit_open, title: w.tip_edit_open });
     open.addEventListener("click", () => editInstalled(m.id, "", open));
