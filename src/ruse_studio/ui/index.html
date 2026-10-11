@@ -356,11 +356,17 @@
                moved, units and buildings spawned, names and zones added, in the mod -->
           <div id="tray-scen" class="tray-body hidden">
             <div class="tray-main">
+              <!-- Add HQ start: a player's HQ start (where the HQ is built at the start), or an HQ already built -->
+              <div id="scen-hq-mode" class="chips hidden" role="group"></div>
               <div id="scen-team" class="chips hidden" role="group"></div>
               <!-- Add a name or zone (maps.js MARK_KINDS): a town's or hill's name, a named point, a round or square zone -->
               <div id="scen-mark-kind" class="chips hidden" role="group"></div>
               <label id="scen-mark-words-row" class="small hidden"><span id="scen-mark-words-label"></span>
                 <input id="scen-mark-words" type="text" maxlength="200"></label>
+              <!-- a new zone's size before it's placed (its radius, or a square's side), in metres -->
+              <label id="scen-mark-size-row" class="small hidden"><span id="scen-mark-size-label"></span>
+                <input id="scen-mark-size" type="number" min="5" max="20000" step="5" value="190"
+                  class="scen-detail-number"> m</label>
               <div id="scen-kind" class="chips hidden" role="group"></div>
               <div id="scen-group" class="chips hidden" role="group"></div>
               <div id="scen-count" class="chips hidden" role="group"></div>
@@ -370,7 +376,7 @@
               <!-- what the map shows of the scenario, kind by kind, and the icons' size (maps.js SCEN_LAYERS): view only -->
               <div id="scen-layers" class="chips" role="group"></div>
               <label id="scen-size-row" class="brush-slider small"><span id="scen-size-label"></span>
-                <input id="scen-size" type="range" min="40" max="160" step="5" value="100"></label>
+                <input id="scen-size" type="range" min="40" max="400" step="10" value="100"></label>
               <select id="scen-unit" size="5" class="place-list hidden"></select>
               <!-- the game's own line for the unit picked, as on its card (maps.js spawnDesc) -->
               <div id="scen-unit-desc" class="muted small unit-desc-line hidden"></div>

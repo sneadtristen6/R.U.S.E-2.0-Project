@@ -1642,7 +1642,10 @@ function fitIcon(sprite, k = iconScale()) {
 function fitIcons() {
   if (!scen.group) return;
   const k = iconScale();
-  for (const o of scen.group.children) if (o.userData.icon) fitIcon(o, k);
+  for (const o of scen.group.children) {
+    if (o.userData.icon) fitIcon(o, k);
+    else if (o.userData.marker) o.scale.setScalar(scen.iconSize);   // a named point's or a zone's diamond (the owner,
+  }                                                                  // 2026-10-10: the slider didn't size them)
 }
 
 // which switch a spawn goes by
@@ -1695,12 +1698,15 @@ function formationPoints(x, y) {
     [Math.round(x + (a * rx + b * fx) * gap), Math.round(y + (a * ry + b * fy) * gap)]);
 }
 
+// Adding units: Add unit, or Add HQ start's "HQ already built" (an HQ spawned for a side, with Add unit's pickers)
+const spawningNow = () => scen.tool === "spawn" || (scen.tool === "start" && scen.hqMode === "built");
+
 // A ring where each unit will stand, under the pointer, while adding units.
 function showFormation(hit) {
   const gl = mv.gl;
   if (!gl || !gl.ring) return;
   gl.ghosts = gl.ghosts || [];
-  const pts = hit && scen.tool === "spawn" ? formationPoints(hit.x / SCALE, hit.z / SCALE) : [];
+  const pts = hit && spawningNow() ? formationPoints(hit.x / SCALE, hit.z / SCALE) : [];
   const r = spawnGap() * METRE * SCALE * 0.3;
   while (gl.ghosts.length < pts.length) { const g = gl.ring.clone(); gl.scene.add(g); gl.ghosts.push(g); }
   if (!pts.length && !gl.ghosts.some((g) => g.visible)) return;
@@ -2268,7 +2274,10 @@ function drawScenario() {
     if (blank && it.gone) continue;  // a blank map: what it took out of the map it copies isn't there to put back
     // a blank map's HQs: only those the modder has placed, with their cameras (StudioApi._with_hqs; the owner,
     // 2026-10-09: "the HQ shouldn't be there, the camera starting angle shouldn't be there")
-    if (blank && it.kind === "StartingPoint" && (it.unused || !it.placed)) continue;
+    // (only a Battles map's seats are marked placed or not: an Operation's and a chapter's starting points have no
+    // online seating, so they always show; hiding every unmarked one hid them all, the new ones too: the owner,
+    // 2026-10-10, "I'm pressing HQ start but nothing's popping up on the map")
+    if (blank && it.kind === "StartingPoint" && (it.unused || it.placed === false)) continue;
     if (it.kind === "StartingPoint") {  // a tall pillar in the alliance's colour
       const colour = ALLIANCE[((it.alliance || 1) - 1) % ALLIANCE.length];
       if (it.cam && scen.layers.cams) {
@@ -2324,7 +2333,8 @@ function drawScenario() {
       const diamond = new THREE.Mesh(new THREE.OctahedronGeometry(pillar * (it.kind === "Name" ? 0.3 : 0.22)),
         new THREE.MeshLambertMaterial({ color: colour, transparent: true, opacity: it.gone ? GONE_OPACITY : 1 }));
       diamond.position.copy(at(it.x, it.y, pillar * 0.35));
-      diamond.userData = { label, item: it.item };
+      diamond.userData = { label, item: it.item, marker: true };   // sized by the icon slider too (fitIcons)
+      diamond.scale.setScalar(scen.iconSize);
       group.add(diamond);
     } else if ((it.kind === "LabelVille" || it.kind === "LabelMontagne") && (it.text || it.name) && scen.layers.towns) {
       // a new label shows its own words (the map project's new text), in the language the Studio is in
@@ -2701,7 +2711,7 @@ function spawnDesc() {
   const box = $("scen-unit-desc"), pick = $("scen-unit").value;
   const u = (scen.units || []).find((x) => x.address === pick);
   box.textContent = (u && u.desc) || "";
-  box.classList.toggle("hidden", scen.tool !== "spawn" || !box.textContent);
+  box.classList.toggle("hidden", !spawningNow() || !box.textContent);
   renderSpawnTrucks();
 }
 
@@ -2777,6 +2787,12 @@ function renderScenTools() {
   markPick.classList.toggle("hidden", !marking);
   const labelKind = NAME_KINDS.has(scen.markKind);
   wordsRow.classList.toggle("hidden", !marking || !labelKind);
+  // a zone's size, set before it's placed (the owner, 2026-10-10: "you also can't change how big or small the zone
+  // is"); after, the zone stays picked with its own size box (renderItemDetails)
+  const zoneKind = scen.markKind === "CircularZone" || scen.markKind === "RectangleZone";
+  $("scen-mark-size-row").classList.toggle("hidden", !marking || !zoneKind);
+  $("scen-mark-size-label").textContent = scen.markKind === "CircularZone" ? w.scen_item_radius : w.scen_mark_side;
+  $("scen-mark-size-row").title = w.tip_scen_mark_size;
   if (marking) {
     const kinds = MARK_KINDS.filter((k) => NAME_KINDS.has(k) === (scen.tool === "names"));
     markPick.replaceChildren(...kinds.map((k) => chipOf(w[MARK_WORD[k]] || k, w["tip_" + MARK_WORD[k]],
@@ -2785,24 +2801,38 @@ function renderScenTools() {
     $("scen-mark-words").placeholder = w.scen_mark_words_hint;
     wordsRow.title = w.tip_scen_mark_words;
   }
-  const team = $("scen-team");
-  team.classList.toggle("hidden", scen.tool !== "start");
+  // Add HQ start holds both kinds of HQ (the owner, 2026-10-10: "Headquarters should not be considered units ... it
+  // should be under HQ start"): a player's HQ start, or an HQ already built for a side (a spawn, Add unit's pickers
+  // fixed to HQs); Add unit lists no HQ
+  const hqMode = $("scen-hq-mode");
+  hqMode.classList.toggle("hidden", scen.tool !== "start");
   if (scen.tool === "start") {
+    hqMode.replaceChildren(...["start", "built"].map((k) => chipOf(w["scen_hq_mode_" + k], w["tip_scen_hq_mode_" + k],
+      (scen.hqMode || "start") === k, () => { scen.hqMode = k; renderScenTools(); })));
+  }
+  const builtHq = scen.tool === "start" && scen.hqMode === "built";
+  const spawning = scen.tool === "spawn" || builtHq;
+  const team = $("scen-team");
+  team.classList.toggle("hidden", scen.tool !== "start" || builtHq);
+  if (scen.tool === "start" && !builtHq) {
     team.replaceChildren(...[1, 2, 3, 4, 5, 6, 7, 8].map((n) => chipOf(fill(w.scen_team_n, { n }), w.tip_scen_team,
       scen.team === n, () => { scen.team = n; renderScenTools(); })));
   }
   const kindPick = $("scen-kind"), typePick = $("scen-group"), unit = $("scen-unit"), camp = $("scen-camp");
-  for (const box of [kindPick, typePick, unit, camp, $("scen-count"), $("scen-gap-row")]) box.classList.toggle("hidden", scen.tool !== "spawn");
-  $("scen-formation").classList.toggle("hidden", scen.tool !== "spawn" || scen.count === 1);
-  if (scen.tool !== "spawn") showFormation(null);
-  if (scen.tool === "spawn") {
+  for (const box of [unit, camp, $("scen-count"), $("scen-gap-row")]) box.classList.toggle("hidden", !spawning);
+  for (const box of [kindPick, typePick]) box.classList.toggle("hidden", scen.tool !== "spawn");  // (HQs: fixed)
+  $("scen-formation").classList.toggle("hidden", !spawning || scen.count === 1);
+  if (!spawning) showFormation(null);
+  if (spawning) {
     if (!scen.units) { loadSpawnUnits().catch((err) => scenNote((err && err.message) || String(err), "error")); }
     // 1: the kind; 2: what it's for (a building's job, or the factory that builds a unit); 3: the unit, by nation
     const all = scen.units || [];
+    if (builtHq) { scen.kind = "buildings"; scen.type = "hq"; }
+    else if (scen.type === "hq") scen.type = null;
     kindPick.replaceChildren(...SPAWN_KINDS.map((k) => chipOf(w[k] || k, w.tip_scen_kind, scen.kind === k,
       () => { scen.kind = k; scen.type = null; renderScenTools(); })));
     const ofKind = all.filter((u) => u.kind === scen.kind);
-    const types = GROUP_ORDER.filter((g) => ofKind.some((u) => u.group === g));
+    const types = GROUP_ORDER.filter((g) => (builtHq ? g === "hq" : g !== "hq") && ofKind.some((u) => u.group === g));
     if (!types.includes(scen.type)) scen.type = types[0] || null;
     typePick.replaceChildren(...types.map((g) => chipOf(`${w["group_" + g] || g} (${ofKind.filter((u) => u.group === g).length})`,
       w.tip_group, scen.type === g, () => { scen.type = g; renderScenTools(); })));
@@ -2915,9 +2945,13 @@ function renderScenTools() {
     }
     itemTakeOut(s, it, n);
     renderItemDetails(s, it);
-  } else if (scen.tool === "spawn") { scenNote(w.scen_spawn_help); renderItemDetails(null, null); }
+  } else if (spawningNow()) { scenNote(w.scen_spawn_help); renderItemDetails(null, null); }
   else if (scen.tool === "start") { scenNote(w.scen_start_help); renderItemDetails(null, null); }
-  else if (scen.tool === "mark" || scen.tool === "names") { scenNote(w[MARK_WORD[scen.markKind] + "_help"]); renderItemDetails(null, null); }
+  else if (scen.tool === "mark" || scen.tool === "names") {
+    scenNote(w[MARK_WORD[scen.markKind] + "_help"]);
+    const it = s && scen.selected !== null ? s.items[scen.selected] : null;   // the one just placed: its name, size
+    renderItemDetails(s, it && MARK_KINDS.includes(it.kind) ? it : null);
+  }
   else if (scen.tool === "sectors") { scenNote(""); renderItemDetails(null, null); }  // its notes: renderSectorTools
   else {
     scenNote(s && w.scen_drag_help ? w.scen_drag_help : "");
@@ -4011,10 +4045,18 @@ async function scenPlaceAt(s, cx, cy) {
       $("scen-mark-words").focus();
       return;
     }
-    scenEdit(() => mv.api.scenario_place(mv.current, s.file, kind, cx, cy, words));
+    const metres = Number($("scen-mark-size").value);
+    const size = (kind === "CircularZone" || kind === "RectangleZone") && metres > 0 ? metres * METRE : null;
+    const before = new Set(s.items.map((it) => it.item));
+    await scenEdit(() => mv.api.scenario_place(mv.current, s.file, kind, cx, cy, words, size));
+    // the one just placed stays picked: its name and size in the tray, to change at once
+    const now = ((scen.data || {}).scenarios || [])[scen.pick];
+    const made = now && now.items.find((it) => it.kind === kind && it.mine && !before.has(it.item));
+    if (made && kind !== "LabelVille" && kind !== "LabelMontagne") selectSpawn(made, false);
     return;
   }
-  if (scen.tool === "start") {  // a new starting point: the team's next place, beside a road unless the toggle's off
+  // a new starting point: the team's next place, beside a road unless the toggle's off (an HQ already built: below)
+  if (scen.tool === "start" && scen.hqMode !== "built") {
     const [x, y] = await snapToRoad("hq", cx, cy);
     scenEdit(() => mv.api.scenario_add_start(mv.current, s.file, scen.team, x, y)).then(() => loadPlayers(mv.current));
     return;
@@ -6137,7 +6179,7 @@ function watchPointer() {
   }
   let spawnMove = null, spawnFrame = 0;
   canvas.addEventListener("pointermove", (ev) => {
-    if (scen.tool !== "spawn") return;
+    if (!spawningNow()) return;
     spawnMove = ev;
     if (!spawnFrame) spawnFrame = requestAnimationFrame(() => { spawnFrame = 0; showFormation(spawnMove && hitGround(spawnMove)); });
   });

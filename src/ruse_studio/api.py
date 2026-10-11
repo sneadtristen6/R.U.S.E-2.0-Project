@@ -2760,6 +2760,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     PLACES_HEADER = ("The town and hill names, named points and zones this mod adds to this map's scenarios "
                      "(docs/MOD_FORMAT.md §8).\nMade in the RUSE Studio, which rewrites this file.")
     ZONE_SIZE = 50000.0  # a new zone's radius, width and height (world units, about 190 m): LittleGroove's editor's
+    ZONE_SIZE_MOST = 5200000.0   # (20 km: bigger than any map) a size typed in the tray past it is a slip
 
     def _places_file(self, pack: str) -> Path:
         return self._scenario_file(pack).with_name("places.toml")
@@ -2794,11 +2795,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             n += 1
         return f"{stem}_{n}"
 
-    def scenario_place(self, pack: str, file: str, kind: str, x: float, y: float, words: str = "") -> dict:
+    def scenario_place(self, pack: str, file: str, kind: str, x: float, y: float, words: str = "",
+                       size: float | None = None) -> dict:
         """Add a new `kind` (scenario.PLACE_KINDS) to scenario `file` at x, y in the current map project: a town's or a
         hill's name on the map, showing `words` (a new game text of the project's, the same words in every language
         until the words panel changes one), or a named point or a circle or rectangle zone, named point_1, zone_1, ...
-        (the first name the scenario hasn't got), a zone ZONE_SIZE across. Returns the map's scenarios."""
+        (the first name the scenario hasn't got), a zone `size` across (world units; ZONE_SIZE when not given: the
+        Add a spot or zone tray's Size box). Returns the map's scenarios."""
         if self._map_dir() is None:
             raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
         if kind not in scenario.PLACE_KINDS:
@@ -2813,7 +2816,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             elif kind == "Name":
                 place = scenario.Place(file, kind, x, y, name=self._free_name(pack, file, "point"))
             else:
-                size = self.ZONE_SIZE
+                try:
+                    size = self.ZONE_SIZE if size is None else float(size)
+                except (TypeError, ValueError):
+                    raise StudioError("a zone's size is a number") from None
+                if not (math.isfinite(size) and 0 < size <= self.ZONE_SIZE_MOST):
+                    raise StudioError(f"a zone's size is more than 0 and at most {self.ZONE_SIZE_MOST / 260:,.0f} m")
                 place = scenario.Place(file, kind, x, y, name=self._free_name(pack, file, "zone"),
                                        radius=size if kind == "CircularZone" else None,
                                        width=size if kind == "RectangleZone" else None,

@@ -1347,6 +1347,36 @@ class ScenarioEdits(WithMod):
         self.assertEqual((back["name"], "game" in back), ("", False))
         self.assertFalse(self.file.with_name("items.toml").exists())
 
+    def test_a_zone_placed_at_the_trays_size(self):
+        """The owner, 2026-10-10: "you also can't change how big or small the zone is". The Add a spot or zone tray has a
+        Size box: the zone is placed that size (world units), else ZONE_SIZE; a size that isn't a sensible number is
+        refused. The page keeps the new zone picked, its own size box shown (renderScenTools)."""
+        zone = self.items(self.api.scenario_place("Blitz", "leveldesign.scenario", "CircularZone", 7.0, 8.0, "",
+                                                  400 * 260.0))[-1]
+        self.assertEqual(zone["radius"], 104000.0)
+        square = self.items(self.api.scenario_place("Blitz", "leveldesign.scenario", "RectangleZone", 7.0, 8.0, "",
+                                                    52000.0))[-1]
+        self.assertEqual((square["width"], square["height"]), (52000.0, 52000.0))
+        for bad in (0, -5, "big", StudioApi.ZONE_SIZE_MOST * 2):
+            with self.assertRaises(StudioError):
+                self.api.scenario_place("Blitz", "leveldesign.scenario", "CircularZone", 7.0, 8.0, "", bad)
+        maps = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "maps.js").read_text(encoding="utf-8")
+        self.assertIn("mv.api.scenario_place(mv.current, s.file, kind, cx, cy, words, size)", maps)
+        self.assertIn("if (made && kind !== \"LabelVille\" && kind !== \"LabelMontagne\") selectSpawn(made, false);", maps)
+
+    def test_hqs_are_add_hq_starts(self):
+        """The owner, 2026-10-10: on a blank Operation "I'm pressing HQ start but nothing's popping up on the map" (only a
+        Battles map's seats are marked placed or not, so every unmarked starting point was hidden, the new ones too),
+        and "Headquarters should not be considered units ... it should be under HQ start": Add HQ start holds a
+        player's HQ start and an HQ already built (Add unit's pickers fixed to HQs); Add unit lists no HQ."""
+        maps = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "maps.js").read_text(encoding="utf-8")
+        self.assertIn('(it.unused || it.placed === false)) continue;', maps)
+        self.assertNotIn("(it.unused || !it.placed)) continue;", maps)
+        self.assertIn('const spawningNow = () => scen.tool === "spawn" || (scen.tool === "start" && scen.hqMode === "built");',
+                      maps)
+        self.assertIn('(builtHq ? g === "hq" : g !== "hq")', maps)
+        self.assertIn('if (scen.tool === "start" && scen.hqMode !== "built") {', maps)
+
     def test_an_item_turned(self):
         """The Details panel's turn: kept with the item's move (one not moved gets a move where it stands); a later move
         or a camera turn keeps it; the game's turn again, where it stands, takes the move out."""

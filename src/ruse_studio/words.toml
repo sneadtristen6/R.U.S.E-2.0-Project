@@ -5868,6 +5868,54 @@ cz = "Místo, kde se na začátku hry postaví velitelství hráče: vyberte tý
 jpn = "ゲーム開始時にプレイヤーの司令部が建つ場所です。チームを選び（チーム1が第一陣営、チーム2が第二陣営）、マップをクリックします。クリックするたびにそのチームの次のプレイヤーになります。"
 sc = "游戏开始时玩家司令部建造的位置：选择队伍（队伍1是第一方，队伍2是第二方），然后点击地图。每点击一次就是该队伍的下一位玩家。"
 
+[scen_hq_mode_start]
+us = "Player's HQ start"
+fr = "Départ de QG d'un joueur"
+ger = "Start eines Spieler-Hauptquartiers"
+ita = "Partenza del QG di un giocatore"
+spa = "Inicio del cuartel general de un jugador"
+pol = "Start kwatery głównej gracza"
+ru = "Старт штаба игрока"
+cz = "Start velitelství hráče"
+jpn = "プレイヤーの司令部の開始地点"
+sc = "玩家司令部起始点"
+
+[tip_scen_hq_mode_start]
+us = "Where a player's HQ is built when the game starts: pick the team, then click the map."
+fr = "Là où le QG d'un joueur est construit au début de la partie : choisissez l'équipe, puis cliquez sur la carte."
+ger = "Wo das Hauptquartier eines Spielers zu Spielbeginn gebaut wird: Team wählen, dann auf die Karte klicken."
+ita = "Dove viene costruito il quartier generale di un giocatore all'inizio: scegli la squadra, poi clicca sulla mappa."
+spa = "Donde se construye el cuartel general de un jugador al empezar: elige el equipo y haz clic en el mapa."
+pol = "Miejsce, w którym na początku gry powstaje kwatera główna gracza: wybierz drużynę, potem kliknij mapę."
+ru = "Место, где в начале игры строится штаб игрока: выберите команду, затем щёлкните по карте."
+cz = "Místo, kde se na začátku hry postaví velitelství hráče: vyberte tým a klikněte do mapy."
+jpn = "ゲーム開始時にプレイヤーの司令部が建つ場所です。チームを選び、マップをクリックします。"
+sc = "游戏开始时玩家司令部建造的位置：选择队伍，然后点击地图。"
+
+[scen_hq_mode_built]
+us = "HQ already built"
+fr = "QG déjà construit"
+ger = "Bereits gebautes Hauptquartier"
+ita = "Quartier generale già costruito"
+spa = "Cuartel general ya construido"
+pol = "Gotowa kwatera główna"
+ru = "Уже построенный штаб"
+cz = "Už postavené velitelství"
+jpn = "建設済みの司令部"
+sc = "已建好的司令部"
+
+[tip_scen_hq_mode_built]
+us = "An HQ standing on the map from the start, for a side you pick (not a player's start): pick the side and the nation's HQ, then click the map."
+fr = "Un QG présent sur la carte dès le début, pour le camp choisi (pas le départ d'un joueur) : choisissez le camp et le QG de la nation, puis cliquez sur la carte."
+ger = "Ein Hauptquartier, das von Anfang an auf der Karte steht, für eine gewählte Seite (kein Spielerstart): Seite und Hauptquartier der Nation wählen, dann auf die Karte klicken."
+ita = "Un quartier generale presente sulla mappa dall'inizio, per lo schieramento scelto (non la partenza di un giocatore): scegli lo schieramento e il QG della nazione, poi clicca sulla mappa."
+spa = "Un cuartel general en el mapa desde el principio, para el bando que elijas (no el inicio de un jugador): elige el bando y el cuartel general de la nación y haz clic en el mapa."
+pol = "Kwatera główna stojąca na mapie od początku, dla wybranej strony (nie start gracza): wybierz stronę i kwaterę narodu, potem kliknij mapę."
+ru = "Штаб, стоящий на карте с самого начала, для выбранной стороны (не старт игрока): выберите сторону и штаб страны, затем щёлкните по карте."
+cz = "Velitelství stojící na mapě od začátku, pro zvolenou stranu (ne start hráče): vyberte stranu a velitelství národa a klikněte do mapy."
+jpn = "最初からマップに建っている司令部です（プレイヤーの開始地点ではありません）。陣営と国の司令部を選び、マップをクリックします。"
+sc = "从一开始就在地图上的司令部，属于你选的一方（不是玩家起始点）：选择一方和国家的司令部，然后点击地图。"
+
 [tip_scen_names]
 us = "A town's or a hill's name on the map, as the game shows it: pick which, type the name, then click where it goes. A mission can point at the place later."
 fr = "Le nom d'une ville ou d'une colline sur la carte, comme le jeu l'affiche : choisissez lequel, tapez le nom, puis cliquez à l'endroit voulu. Une mission pourra désigner ce lieu ensuite."
@@ -13413,6 +13461,30 @@ ru = "Радиус"
 cz = "Poloměr"
 jpn = "半径"
 sc = "半径"
+
+[scen_mark_side]
+us = "Side"
+fr = "Côté"
+ger = "Seite"
+ita = "Lato"
+spa = "Lado"
+pol = "Bok"
+ru = "Сторона"
+cz = "Strana"
+jpn = "一辺"
+sc = "边长"
+
+[tip_scen_mark_size]
+us = "How big the next zone is, in metres (a round one's radius, a square one's side). Change one after: pick it."
+fr = "La taille de la prochaine zone, en mètres (le rayon d'une ronde, le côté d'une carrée). Pour en changer une ensuite : choisissez-la."
+ger = "Wie groß die nächste Zone ist, in Metern (Radius einer runden, Seite einer eckigen). Später ändern: anwählen."
+ita = "Quanto è grande la prossima zona, in metri (il raggio di una rotonda, il lato di una quadrata). Per cambiarne una dopo: sceglila."
+spa = "El tamaño de la próxima zona, en metros (el radio de una redonda, el lado de una cuadrada). Para cambiar una después: elígela."
+pol = "Wielkość następnej strefy w metrach (promień okrągłej, bok kwadratowej). Aby zmienić później: wybierz ją."
+ru = "Размер следующей зоны в метрах (радиус круглой, сторона квадратной). Изменить потом: выберите её."
+cz = "Velikost příští zóny v metrech (poloměr kulaté, strana čtvercové). Změna později: vyberte ji."
+jpn = "次のゾーンの大きさ（メートル。円は半径、四角は一辺）。あとで変えるには、そのゾーンを選びます。"
+sc = "下一个区域的大小，单位米（圆形为半径，方形为边长）。之后要改：选中它。"
 
 [scen_item_width]
 us = "Width"
