@@ -550,7 +550,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             names = ix.names([u["key"] for u in rows], lang) if lang != schema.BASE else {}
             # the game's own words on each unit's card, English beside the code names: its type ("Light Tank", "Heavy
             # Bomber"), its name and its line ("May field armored units and armored recon."; the owner, 2026-10-03:
-            # "descriptor building vehicular factory lorette ... what the fuck is that")
+            # code names like "descriptor building vehicular factory lorette" mean nothing to a player)
             told = lang if lang in schema.LANGS else "us"
             type_names = {k: html.unescape(t).strip() for k, t in ix.names([u["type_key"] for u in rows], told).items()}
             game_names = names if lang != schema.BASE else ix.names([u["key"] for u in rows], told)

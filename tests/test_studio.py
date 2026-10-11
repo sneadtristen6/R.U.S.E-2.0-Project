@@ -165,7 +165,7 @@ class Studio(unittest.TestCase):
                          ["Descriptor_Unit_M4_Sherman", "Descriptor_Unit_Panzer_IV_G"])  # the type is searched too
 
     def test_names_a_player_knows_and_the_games_own_line(self):
-        # the owner, 2026-10-03: "descriptor building vehicular factory lorette ... what the fuck is that"
+        # the owner, 2026-10-03: code names like "descriptor building vehicular factory lorette" mean nothing to a player
         base = {u["base_name"]: u for u in self.api.units()["units"]}
         sherman = base["Descriptor_Unit_M4_Sherman"]
         self.assertEqual((sherman["name"], sherman["game_name"]), ("Descriptor_Unit_M4_Sherman", "M4 Sherman"))
