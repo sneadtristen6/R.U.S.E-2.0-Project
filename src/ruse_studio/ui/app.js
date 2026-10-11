@@ -1348,31 +1348,71 @@ function cardShot(card) {
   }
 }
 
-function cardRow(u, card) {
+// A picture file of the modder's own as the card: fitted to fill the card's size (cut at the edges, not squashed).
+async function cardFromFile(file, card) {
+  const pic = await createImageBitmap(file);
+  try {
+    const c = el("canvas", { width: card.width, height: card.height }), ctx = c.getContext("2d");
+    const k = Math.max(card.width / pic.width, card.height / pic.height);
+    const wd = pic.width * k, ht = pic.height * k;
+    ctx.drawImage(pic, (card.width - wd) / 2, (card.height - ht) / 2, wd, ht);
+    return c.toDataURL("image/png");
+  } finally { pic.close(); }
+}
+
+// The view as it first comes up (from the front corner, a bit above, the model filling the frame): the picture Take a
+// new picture takes.
+function unitViewHome(gl) {
+  if (!gl.fit) return;
+  const { centre } = gl.fit;
+  gl.controls.autoRotate = false;
+  gl.camera.position.set(centre.x + 0.85, centre.y + 0.42, centre.z + 0.85);
+  gl.fit.moved = false;
+  unitViewFit(gl);
+}
+
+// `stale`: the unit wears the mod's paint but its card is still the game's (the owner, 2026-10-11: "that's where I
+// think it's okay to be like, hey, the picture is still the base game's picture. We can automatically take one or you
+// can choose"): a notice, with Take a new picture and Choose a picture….
+function cardRow(u, card, stale) {
   const w = state.words;
   const thumb = el("img", { className: "card-thumb", src: card.url, alt: w.card_now, title: w.card_now });
   const use = el("button", { type: "button", textContent: w.card_use, title: w.tip_card_use });
   const reset = el("button", { type: "button", className: "ghost", textContent: w.card_reset, title: w.tip_card_reset });
+  const notice = el("div", { className: "notice warn card-stale" });
   const show = (c) => {
     thumb.src = c.url;
     reset.classList.toggle("hidden", !c.own);
+    notice.classList.toggle("hidden", !stale || c.own);
   };
-  show(card);
-  use.addEventListener("click", async () => {
+  const save = async (button, picture) => {
     if (!state.mod) { say(w.no_mod, "error"); return; }
-    use.disabled = true;
+    button.disabled = true;
     try {
-      const r = await api().look_card(u.address, cardShot(card));
+      const r = await api().look_card(u.address, await picture());
       show(r.card);
       say(r.message, "ok");
-    } catch (err) { problem(err); } finally { use.disabled = false; }
-  });
+    } catch (err) { problem(err); } finally { button.disabled = false; }
+  };
+  use.addEventListener("click", () => save(use, () => cardShot(card)));
   reset.addEventListener("click", async () => {
     try { const r = await api().look_card_reset(u.address); show(r.card); say(r.message, "ok"); }
     catch (err) { problem(err); }
   });
-  return el("div", { className: "card-row" }, thumb,
-    el("div", {}, el("p", { className: "muted small", textContent: w.card_note }), el("div", { className: "actions" }, use, reset)));
+  const take = el("button", { type: "button", textContent: w.card_take, title: w.tip_card_take });
+  take.addEventListener("click", () => save(take, () => { unitViewHome(uview.gl); return cardShot(card); }));
+  const file = el("input", { type: "file", accept: "image/png,image/jpeg", className: "hidden" });
+  const choose = el("button", { type: "button", className: "ghost", textContent: w.card_choose, title: w.tip_card_choose });
+  choose.addEventListener("click", () => file.click());
+  file.addEventListener("change", () => {
+    const f = file.files && file.files[0];
+    file.value = "";
+    if (f) save(choose, () => cardFromFile(f, card));
+  });
+  notice.append(el("p", { className: "small", textContent: w.card_stale }), el("div", { className: "actions" }, take, choose, file));
+  show(card);
+  return el("div", { className: "card-row-wrap" }, notice, el("div", { className: "card-row" }, thumb,
+    el("div", {}, el("p", { className: "muted small", textContent: w.card_note }), el("div", { className: "actions" }, use, reset))));
 }
 
 function unitView(u) {
@@ -1449,7 +1489,7 @@ function unitView(u) {
     status.textContent = painted ? w.unit_view_paint : "";
     for (const old of host.querySelectorAll(".hint, .card-frame")) old.remove();  // a reload after Bring back
     host.append(el("div", { className: "hint", textContent: w.unit_view_hint }));
-    const oldRow = box.querySelector(".card-row");
+    const oldRow = box.querySelector(".card-row-wrap");
     if (oldRow) oldRow.remove();
     uview.frame = null;
     if (info.card) {
@@ -1457,7 +1497,7 @@ function unitView(u) {
       host.append(frame);
       uview.frame = { el: frame, aspect: info.card.width / info.card.height };
       placeCardFrame();
-      box.append(cardRow(u, info.card));
+      box.append(cardRow(u, info.card, painted > 0));
     }
     gl.fit = { centre, radius: reach / 2, moved: false };
     unitViewFit(gl);  // after the frame is in: a card's model starts out fitting inside it
@@ -1481,7 +1521,12 @@ function lookBox(u, brought, startNew) {
   const draw = (info) => {
     if (!info.models || !info.models.length) { box.remove(); return; }
     const parts = [];
-    if (!info.blender) {
+    // a squad's look is its uniform: the game's (Default, worn by other squads and the gun and vehicle crews too, so
+    // never repainted here) or its own (Custom: its own copy of its soldiers), which Blender paints (the owner,
+    // 2026-10-11: "have, like, default uniform, and then ... do you want a custom uniform?")
+    if (info.soldiers) parts.push(uniformBox(address, info, draw, brought));
+    const paintable = !info.soldiers || info.own_copy;  // (Blender's buttons come with a custom uniform)
+    if (paintable && !info.blender) {
       const get = el("button", { type: "button", textContent: w.look_get_blender, title: w.tip_look_get_blender });
       get.addEventListener("click", () => api().get_blender().catch(problem));
       const choose = el("button", { type: "button", className: "ghost", textContent: w.look_choose_blender,
@@ -1494,7 +1539,7 @@ function lookBox(u, brought, startNew) {
         } catch (err) { problem(err); }
       });
       parts.push(el("p", { textContent: w.look_no_blender }), el("div", { className: "actions" }, get, choose));
-    } else {
+    } else if (paintable) {
       const open = el("button", { type: "button", textContent: w.look_open, title: w.tip_look_open });
       const back = el("button", { type: "button", textContent: w.look_back, title: w.tip_look_back,
         disabled: !info.opened || !state.mod });
@@ -1519,11 +1564,12 @@ function lookBox(u, brought, startNew) {
       if (!state.mod) parts.push(el("p", { className: "notice", textContent: w.no_mod }));
     }
     if (info.painted && info.painted.length) {
-      parts.push(el("p", { className: "small", textContent: fill(w.look_painted, { n: info.painted.length }) }));
+      parts.push(el("p", { className: paintable ? "small" : "notice warn",
+        textContent: fill(paintable ? w.look_painted : w.uniform_shared_paint, { n: info.painted.length }) }));
     }
-    let model = null;
-    if (info.new_unit && state.mod) parts.push(model = modelBox(address, info, draw, brought));
-    else if (!info.new_unit && u.can_copy && u.editable) parts.push(modelWant(startNew));  // (no mod: no startNew)
+    let model = null;  // (a squad's soldiers aren't swapped for an imported model)
+    if (!info.soldiers && info.new_unit && state.mod) parts.push(model = modelBox(address, info, draw, brought));
+    else if (!info.soldiers && !info.new_unit && u.can_copy && u.editable) parts.push(modelWant(startNew));  // (no mod: no startNew)
     body.className = "new-unit";
     body.replaceChildren(...parts);
     if (model && state.focusModel === address) {  // just made: show where its model goes
@@ -1730,6 +1776,67 @@ function keepInSight(box) {
 }
 
 // a game unit's page: where its own model would go, and the way there (a new unit from it)
+// A squad's uniform (api.model_copy, model_copy_remove: its own copy of its soldiers, the game's squads' too): Default
+// is the game's picture, which other squads and the gun and vehicle crews wear as well (T48: one squad repainted turned
+// every US soldier blue); Custom is this squad's own, and Repaint in Blender paints it.
+function uniformBox(address, info, draw, changed) {
+  const w = state.words;
+  const box = el("div", { className: "model-own uniform" }, el("h3", { textContent: w.uniform_title }));
+  const act = (call, button) => async () => {
+    if (!state.mod) { say(w.no_mod, "error"); return; }
+    button.disabled = true;
+    try {
+      const r = await api()[call](address);
+      say(r.message, "ok");
+      draw(r);
+      if (changed) changed();
+    } catch (err) { problem(err); button.disabled = false; }
+  };
+  if (info.own_copy) {
+    const back = el("button", { type: "button", className: "ghost", textContent: w.uniform_default_again,
+      title: w.tip_uniform_default_again });
+    back.addEventListener("click", act("model_copy_remove", back));
+    box.append(el("p", { className: "small", textContent: w.uniform_has }), el("div", { className: "actions" }, back));
+  } else {
+    const custom = el("button", { type: "button", textContent: w.uniform_custom, title: w.tip_uniform_custom,
+      disabled: !state.mod });
+    custom.addEventListener("click", act("model_copy", custom));
+    box.append(el("p", { className: "muted small", textContent: w.uniform_default }), el("div", { className: "actions" }, custom));
+    if (!state.mod) box.append(el("p", { className: "notice", textContent: w.no_mod }));
+  }
+  return box;
+}
+
+// The truck a squad or a gun rides in on the roads (api.rides_in, rides_in_set; the owner, 2026-10-11: "rangers versus
+// GI, getting a different truck"): the game's trucks of its kind, every nation's, and the mod's copies of a truck,
+// which get a look of their own on their own page (Give it its own copy, then Repaint in Blender).
+function ridesInBox(u) {
+  const w = state.words;
+  const box = el("div", { className: "group rides-in" }, el("h2", { textContent: w.rides_in, title: w.tip_rides_in }));
+  const draw = (info) => {
+    if (!info || !info.choices) { box.remove(); return; }
+    const pick = el("select", { title: w.tip_rides_in, disabled: !state.mod || !u.editable });
+    for (const c of info.choices) {
+      const mark = c.address === info.game ? ` ${w.rides_in_game}` : c.new ? ` ${w.rides_in_mine}` : "";
+      pick.append(el("option", { value: c.address, textContent: `${c.name} (${c.code})${mark}`,
+        selected: c.address === info.now }));
+    }
+    pick.addEventListener("change", async () => {
+      pick.disabled = true;
+      try { const r = await api().rides_in_set(u.address, pick.value, state.lang); say(r.message, "ok"); draw(r); }
+      catch (err) { problem(err); draw(info); }
+    });
+    const open = el("button", { type: "button", className: "ghost small", textContent: w.rides_in_open,
+      title: w.tip_rides_in_open });
+    open.addEventListener("click", () => showUnit(pick.value));
+    box.replaceChildren(box.firstChild, el("p", { className: "muted small", textContent: w.rides_in_how }),
+      el("div", { className: "actions" }, pick, open));
+    if (!state.mod) box.append(el("p", { className: "notice", textContent: w.no_mod }));
+  };
+  api().rides_in(u.address, state.lang).then(draw).catch(() => box.remove());
+  return box;
+}
+
 function modelWant(startNew) {
   const w = state.words;
   const go = el("button", { type: "button", textContent: w.model_want_button, title: w.tip_model_want,
@@ -2030,7 +2137,7 @@ async function showUnit(address, via) {
   if (u.named || u.new) {  // a unit: its model beside its values, with the Blender buttons under it
     const view = unitView(u);
     const side = el("aside", { className: "unit-side" }, view,
-      lookBox(u, () => view.reload(), copyForm && copyForm.openForm));
+      lookBox(u, () => view.reload(), copyForm && copyForm.openForm), ridesInBox(u));
     $("detail").replaceChildren(...parts.slice(0, head),
       el("div", { className: "unit-page" }, el("div", { className: "unit-main" }, ...parts.slice(head)), side));
     return;

@@ -279,12 +279,22 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   `ruse export-model` writes, so it opens in Blender and can be changed there and saved over (keep the node names).
   The source's wreck stays its own. A model there for a unit no mod in the set makes is an error. Seen in the game (the
   M1 Abrams, Studio 0.9.6).
-- **A new unit's own copy of its model:** `files/models/<the new unit's name>.copy.toml` gives a copied unit its own
-  copy of the model its source draws: the same mesh, bones and moving parts, with textures of its own (named in the
-  source texture's group, `TSCCombCS_<unit>_CombinedDSCTexture01`), so painting it changes that unit only. Its paint is
-  in `files/models/<the new unit's name>/`, laid out as `files/replace/` (named for the source's textures). The Studio
-  writes both: *Give it its own copy of the model*, then *Repaint in Blender* on the unit. A unit can't have a copy and
-  an imported `.glb` both; a unit whose model part names no model (infantry) can't have a copy.
+- **A unit's own copy of its models:** `files/models/<the unit's name>.copy.toml` gives a unit its own copy of the
+  models it draws: the same meshes, bones and moving parts, with textures of their own (named in the source texture's
+  group, `TSCCombCS_<unit>_CombinedDSCTexture01`), so painting it changes that unit only. `of = ["<model>", ...]` lists
+  the models (as the packs name them, `ww2\\res3d\\...\\x.ase2ndfbin`); every model part of the unit that names one of
+  them (under its `GfxDescriptor*` links) names the copy instead, and a part it shares with other units is copied into
+  it first, so they keep the game's. One model is copied as `<folder>\<unit>lod0`, several as
+  `<folder>\<unit>_<model>lod0`, sharing the copied textures. A new unit's or one of the game's units'
+  (`Descriptor_Unit_Soldat_US_Lourd.copy.toml`). Its paint is in `files/models/<the unit's name>/`, laid out as
+  `files/replace/` (named for the source's textures). The Studio writes both: *Give it its own copy of the model* (a
+  new vehicle) or *Custom uniform* (a squad: its soldiers, its bazooka man and its token's figure), then *Open in
+  Blender* and *Bring back*. A unit can't have a copy and an imported `.glb` both. A file naming no model (the first
+  ones) copies the model its `GfxDescriptor` draws.
+- **A squad's uniform:** the game's soldiers of a nation wear one picture (the US's: its GIs, Rangers and paratroopers,
+  and the crews of its guns and open vehicles), so a repaint of it in `files/replace/` changes them all. The Studio
+  repaints a squad only as a custom uniform (its own copy, above). Seen in the game (T48: one squad repainted in
+  `files/replace/` turned every US soldier and crew blue).
 - **Units from other eras (Studio 0.9.8.2):** an era unit added to a mod is an ordinary new unit (above): its values,
   its model in `files/models/`, its card, and its research link (`UpgradeRequire`) like any unit's. The mod also keeps
   `era_units.json` (which era units it has: `{era unit key: its new unit's address}`) and `CREDITS-era-units.md` (each

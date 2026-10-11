@@ -73,6 +73,7 @@
       tip_pp_open_folder: "Opens the mod's folder on your PC, to fix the file by hand.",
       tip_pp_details: "Shows the mistake as the game build reports it: handy when asking for help.",
       model_copy: "Give it its own copy of the model", tip_model_copy: "The same model with textures of its own: Repaint in Blender then changes only this unit, not the unit it copies.", model_copy_how: "Now it draws the model of the unit it copies, so a repaint changes both. With its own copy, a repaint changes only this one.", model_copy_has: "This unit has its own copy of the model: Repaint in Blender changes only this unit.", model_copy_remove: "Use the shared model again", tip_model_copy_remove: "Back to the model of the unit it copies. Its paint stays in the mod, for when it gets a copy again.",
+      uniform_title: "Uniform", uniform_default: "Default uniform: the game's own. Other squads and the gun and vehicle crews wear it too, so it isn't repainted here. Pick Custom uniform to give this squad one of its own.", uniform_custom: "Custom uniform", tip_uniform_custom: "Gives this squad a uniform of its own (its own copy of its soldiers), so what you paint after Open in Blender changes only this squad.", uniform_has: "Custom uniform: only this squad wears it. Paint it with Open in Blender, then Bring back.", uniform_default_again: "Back to the default uniform", tip_uniform_default_again: "This squad wears the game's uniform again. Your paint stays in the mod, for when it gets a custom one again.", uniform_shared_paint: "This mod repaints the default uniform itself ({n} picture(s)), so every squad and crew that wears it changes.", card_stale: "Its picture in the build menu still shows the game's paint.", card_take: "Take a new picture", tip_card_take: "Takes a picture of the unit with your paint, from the front corner, as its picture in the build menu.", card_choose: "Choose a picture…", tip_card_choose: "Use a picture file of your own (PNG or JPG). It's fitted to the card's size, cut at the edges if it has to be.", rides_in: "Rides in", tip_rides_in: "The truck this unit turns into on the roads. Pick another nation's, or a copy of a truck you made and repainted.", rides_in_how: "The truck it turns into on the roads. To give a squad a truck of its own look: open a truck, copy it, give the copy its own copy of the model and repaint it, then pick it here.", rides_in_game: "(the game's)", rides_in_mine: "(yours)", rides_in_open: "Open the truck", tip_rides_in_open: "Opens the truck's page: copy it there to give it a look of its own.",
       only_mod: "In this mod", tip_only_mod: "Show only what the mod being edited has: its new units and the ones it changes.",
       export_mod: "Export mod…", version: "Version", author: "Author", description: "Description", export: "Export",
       export_help: "One file to share: the mod folder packed. The version, author and description are kept in the mod.",
@@ -533,9 +534,23 @@
              textures: [pic], painted: fakePainted.has(address) ? [pic] : [], download: "https://www.blender.org/download/",
              blender: mode === "noblender" ? "" : "C:\\Program Files\\Blender Foundation\\Blender 4.5\\blender.exe",
              opened: fakeLooks.has(address), new_unit: mine().some((n) => address === newAddress(n.id)),
-             own_model: fakeModels.get(address) || null, own_copy: fakeModelCopies.has(address) };
+             own_model: fakeModels.get(address) || null, own_copy: fakeModelCopies.has(address),
+             soldiers: fakeSquad(address) };
   }
-  const fakeModelCopies = new Set();  // new units with their own copy of the model (model_copy)
+  // a squad (its look is its uniform: Default or Custom) and the truck it rides in (rides_in): the GI squad and its copies
+  const fakeSquad = (address) => /Soldat/.test(address)
+    || mine().some((n) => address === newAddress(n.id) && /Soldat/.test(n.source));
+  const FAKE_TRUCKS = [["$/GFX/Everything/Descriptor_Unit_TransportSoldier", "TRUCK"],
+    ["$/GFX/Everything/Descriptor_Unit_TransportSoldier_GER", "OPEL BLITZ"],
+    ["$/GFX/Everything/Descriptor_Unit_TransportSoldier_UK", "BEDFORD"]];
+  const fakeRides = new Map();  // squad -> the truck the mod has it ride in
+  function fakeRidesIn(address) {
+    if (!fakeSquad(address)) return {};
+    const game = FAKE_TRUCKS[0][0];
+    return { now: fakeRides.get(address) || game, game, choices: FAKE_TRUCKS.map(([a, name]) =>
+      ({ address: a, name, code: a.split("/").pop(), new: false })) };
+  }
+  const fakeModelCopies = new Set();  // units with their own copy of the model (model_copy): a squad's custom uniform
   const fakeModels = new Map();  // a new unit's own model (model_import): what the report says
   const FAKE_IMPORT = { file: "Tank Abrams.3ds", vertices: 17122, triangles: 13828, draws: 5, missing: [],
                         parts: { Main_Body: "hull", Main_Turre: "turret", Main_Barre: "gun", Minigun: "turret",
@@ -2131,11 +2146,21 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       model_copy: async (address) => {
         if (fakeModels.has(address)) throw new Error("This unit has an imported model: take it out first (Remove the model), then give it a copy.");
         fakeModelCopies.add(address);
-        return { ...fakeLook(address), message: "It has its own copy of the model now: Repaint in Blender changes only this unit." };
+        return { ...fakeLook(address), message: fakeSquad(address) ? "It has a uniform of its own now: Repaint in Blender changes only this squad."
+          : "It has its own copy of the model now: Repaint in Blender changes only this unit." };
       },
       model_copy_remove: async (address) => {
         fakeModelCopies.delete(address);
-        return { ...fakeLook(address), message: "It draws the model it copies again. Its paint is kept in the mod, for when it gets a copy again." };
+        return { ...fakeLook(address), message: fakeSquad(address) ? "It wears the default uniform again. Your paint is kept in the mod, for when it gets a custom one again."
+          : "It draws the model it copies again. Its paint is kept in the mod, for when it gets a copy again." };
+      },
+      rides_in: async (address) => fakeRidesIn(address),
+      rides_in_set: async (address, truck) => {
+        const info = fakeRidesIn(address);
+        const chosen = (info.choices || []).find((c) => c.address === truck);
+        if (!chosen) throw new Error("That isn't one of the trucks it can ride in.");
+        if (truck === info.game) fakeRides.delete(address); else fakeRides.set(address, truck);
+        return { ...fakeRidesIn(address), message: `It rides in ${chosen.name} on the roads now.` };
       },
       // its size on the slider (StudioApi.model_size_marks / model_sizes / model_resize / models_resize_all): a plane
       // (an address with Avion in it) has a real-life size of 3.4, a ground unit 1.3
@@ -2167,6 +2192,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       look_open: async (address) => {
         if (mode === "noblender") throw new Error("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use Choose Blender… to show the Studio where blender.exe is.");
+        if (fakeSquad(address) && !fakeModelCopies.has(address)) throw new Error("Pick Custom uniform first: the default uniform is worn by other squads and by gun and vehicle crews too, so it isn't repainted here.");
         fakeLooks.add(address);
         return { ...fakeLook(address), message: "Opening 1 model(s) in Blender. Paint on the model there, then come back and click Bring back: it saves your paint and puts it in your mod." };
       },

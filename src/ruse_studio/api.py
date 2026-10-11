@@ -76,6 +76,7 @@ FLAG_LISTS = set(WHOLE_LISTS)  # lists edited as a set of flags, any length (a u
 # Upgrades (LittleGroove's "Upgrade chain"): an upgrade names the unit it's researched from and carries the flag; its
 # research price and time (also on units that are researched without being upgrades) start at his 50 and 50
 UPGRADE, UPGRADE_FLAG, RESEARCH = "UpgradeRequire", "IsUpgrade", {"UpgradePrice": 50, "UpgradeTime": 50}
+RIDES = "TransportPourMorphe"  # the truck a squad or a gun turns into on the roads (StudioApi.rides_in)
 # Taking a new unit out of the mod while others are researched from it (the owner, 2026-10-09: "the modder can choose
 # if it warn, refuse, or relinks"; Settings > Research, kept as the preference "research_gone"): "warn" asks first and,
 # when the modder goes ahead, leaves them researched from a unit that isn't there (the check bar and their Upgrade box
@@ -187,6 +188,13 @@ PACKAGE_FILES = ("RUSE mods (*.rusemod)",)  # the "save as" dialog's filter for 
 
 def _tail(address: str) -> str:
     return address.rsplit("/", 1)[-1]
+
+
+def _truck_kind(address: str) -> str:
+    """A truck's kind by its name: "troops" (Descriptor_Unit_TransportSoldier...), "guns" (TransportCanon...) or the
+    rest (TransportHQ)."""
+    tail = _tail(address)
+    return "troops" if "TransportSoldier" in tail else "guns" if "TransportCanon" in tail else "other"
 
 
 def _shifted_cam(cam: dict, dx: float, dy: float) -> dict:
@@ -7055,19 +7063,29 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             except (OSError, ValueError):
                 own_model = {}
         copy = self._own_copy_file(address)
+        # "soldiers": a squad, whose look is its uniform (Default, the game's, or Custom: its own copy)
         return {"models": found, "textures": textures, "painted": painted, "blender": str(blender or ""),
                 "download": DOWNLOAD, "opened": (self._look_folder(address) / LOOK_FILE).is_file(),
-                "new_unit": own is not None, "own_model": own_model, "own_copy": bool(copy and copy.is_file())}
+                "new_unit": own is not None, "own_model": own_model, "own_copy": bool(copy and copy.is_file()),
+                "soldiers": bool(found) and self._soldiers(address)}
 
-    # --- a new unit's own copy of the model it copies (the owner, 2026-10-11: "duplicate that part"; built by
-    # rusemod.unitmodel.write_unit_copy): the same model with textures of its own, so Repaint in Blender changes this
-    # unit only; its paint is kept in files/models/<the unit's name>/ instead of files/replace ---
+    # --- a unit's own copy of the models it draws (the owner, 2026-10-11: "duplicate that part"; built by
+    # rusemod.unitmodel.write_unit_copy): the same models with textures of their own, so Repaint in Blender changes
+    # this unit only; its paint is kept in files/models/<the unit's name>/ instead of files/replace. A squad's is its
+    # uniform: the game's US soldiers, gun crews and vehicle crews all wear one picture, so a repaint of a game squad
+    # turned every one of them blue (T48; the owner: "you don't want the whole fucking game to be colored the same"),
+    # so a squad's uniform is the game's (Default) or its own (Custom: its own copy), a game squad's too ---
     def _own_copy_file(self, address: str) -> Path | None:
-        """A new unit's files/models/<its name>.copy.toml in the current mod, whether made yet or not; None for the
-        game's own units."""
+        """The unit's files/models/<its name>.copy.toml in the current mod, whether made yet or not: a new unit's, or
+        one of the game's units' ($/GFX/Everything/<name>); None without a mod or for anything else."""
+        from rusemod.unitmodel import COPY, MODELS
         own = self._own_model_file(address)
-        from rusemod.unitmodel import COPY
-        return own.with_name(own.stem + COPY) if own is not None else None
+        if own is not None:
+            return own.with_name(own.stem + COPY)
+        mod = self._mod_dir()
+        if mod is None or ":" in address or not address.startswith("$/GFX/Everything/Descriptor_"):
+            return None
+        return mod / MODELS / f"{_tail(address)}{COPY}"
 
     def _paint_root(self, address: str) -> Path | None:
         """Where the unit's paint goes: its copy's folder (files/models/<its name>/) when it has its own copy, else
@@ -7082,53 +7100,118 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return paint_in(root) if root is not None else mod_textures(mod) if mod is not None else {}
 
     def model_copy(self, address: str) -> dict:
-        """Give the new unit at `address` its own copy of the model it copies (files/models/<its name>.copy.toml):
-        built as the same model with textures of its own. Returns look() and a "message"."""
+        """Give the unit at `address` its own copy of the models it draws (files/models/<its name>.copy.toml, `of`
+        listing them): built as the same models with textures of its own. A squad's custom uniform: its soldiers,
+        its bazooka man and its token's figure. A new unit's or one of the game's. Returns look() and a "message"."""
         copy = self._own_copy_file(address)
         if copy is None:
-            # not a game rule: a game unit's model stays the game's (copy the unit first, as for an imported model)
-            raise StudioError("Only a new unit made in this mod can get its own copy of a model: copy the unit first.")
+            if self._mod_dir() is None:
+                raise StudioError("Pick or make a mod first: the copy is saved in it.")
+            # not a game rule: what the build finds by name (a unit, $/GFX/Everything/<name>)
+            raise StudioError("Only a unit can get its own copy of its model.")
         own = self._own_model_file(address)
         if own is not None and own.is_file():
             # not a game rule: one model per unit
             raise StudioError("This unit has an imported model: take it out first (Remove the model), then give it a "
                               "copy.")
-        model = self._copied_model(address)
-        if model is None:
-            # not a game rule: the build copies a model named by the unit's GfxDescriptor.MeshDescriptor
-            raise StudioError("This unit's model can't be copied yet: only units drawn with one model of their own "
-                              "(vehicles, planes, ships) can, not infantry.")
+        models = self._copy_models(address)
+        if not models:
+            # not a game rule: the build copies the models the unit's own model parts name
+            raise StudioError("This unit has no model the Studio can copy.")
+        soldiers = self._soldiers(address)
+        what = "its own uniform" if soldiers else "its own copy of the model it draws"
         copy.parent.mkdir(parents=True, exist_ok=True)
-        copy.write_text(f"# Made by the RUSE Studio: {copy.name[:-len('.copy.toml')]} has its own copy of the model it "
-                        f"copies; its paint is in the folder of its name beside this file.\nof = {json.dumps(model)}\n",
-                        encoding="utf-8")
-        return {**self.look(address), "message": "It has its own copy of the model now: Repaint in Blender changes "
-                                                 "only this unit."}
+        copy.write_text(f"# Made by the RUSE Studio: {copy.name[:-len('.copy.toml')]} has {what}; its paint is in the "
+                        f"folder of its name beside this file.\nof = {json.dumps(models)}\n", encoding="utf-8")
+        return {**self.look(address), "message": "It has a uniform of its own now: Repaint in Blender changes only "
+                                                 "this squad." if soldiers else
+                "It has its own copy of the model now: Repaint in Blender changes only this unit."}
 
     def model_copy_remove(self, address: str) -> dict:
-        """The new unit draws the model it copies again (its .copy.toml goes; its paint stays in the mod, for a copy
-        made again). Returns look() and a "message"."""
+        """The unit draws the game's models again (its .copy.toml goes; its paint stays in the mod, for a copy made
+        again). Returns look() and a "message"."""
         copy = self._own_copy_file(address)
         if copy is not None:
             copy.unlink(missing_ok=True)
-        return {**self.look(address), "message": "It draws the model it copies again. Its paint is kept in the mod, "
-                                                 "for when it gets a copy again."}
+        return {**self.look(address), "message": "It wears the default uniform again. Your paint is kept in the mod, "
+                                                 "for when it gets a custom one again." if self._soldiers(address) else
+                "It draws the model it copies again. Its paint is kept in the mod, for when it gets a copy again."}
 
-    def _copied_model(self, address: str) -> str | None:
-        """The model a new unit's copy would copy: the one its source's GfxDescriptor.MeshDescriptor names (the
-        build's rusemod.build._own_model_part), or None (infantry draw theirs another way)."""
+    def _copy_models(self, address: str) -> list[str]:
+        """The models a unit's own copy copies: every model the unit draws that the mesh packs hold (_look_models: a
+        vehicle's own, a squad's soldiers; not the files of its moves, common\\fusilier_*, which its parts name too),
+        as the packs name them."""
+        return self._look_models(address)[0]
+
+    # --- the truck a squad or a gun rides in on the roads (its TransportPourMorphe: every US squad rides the same
+    # troop truck, every US gun the same gun truck; the owner, 2026-10-11: "rangers versus GI, getting a different
+    # truck"): the game's, another nation's, or a copy of a truck the mod makes (and repaints, its own copy) ---
+    def rides_in(self, address: str, lang: str = schema.BASE) -> dict:
+        """{"now": the truck it rides in (with the mod's change), "game": the game's for it, "choices": [{"address",
+        "name", "code", "new"}]: the game's trucks of its kind (troops or guns, every nation's) and the mod's copies of
+        any of them}; {} for a unit that rides in none."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            game = next((w for p, k, w in ix.uses(real) if p == RIDES and k == "object" and w), None)
+            if game is None:
+                return {}
+            trucks = sorted(set(ix.links(RIDES).values()))
+            kind = _truck_kind(game)
+            mine = {t: u for t, u in (edits.new_units if edits else {}).items() if u.source in trucks}
+            listed = [t for t in trucks if _truck_kind(t) == kind] + sorted(mine)
+            names = self._names(ix, listed, lang, edits.new_units if edits else {})
+        finally:
+            ix.close()
+        now = edits.get(new.target if new else real, RIDES) if edits else None
+        now = str(now) if isinstance(now, Link) else game
+        return {"now": now, "game": game, "choices": [
+            {"address": t, "name": names.get(t) or _tail(t), "code": _tail(t), "new": t in mine} for t in listed]}
+
+    def rides_in_set(self, address: str, truck: str, lang: str = schema.BASE) -> dict:
+        """The unit at `address` rides in `truck` (one of rides_in's choices) in the current mod; the game's truck for
+        it takes the change out. Returns rides_in() and a "message"."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: the change is saved in it.")
+        info = self.rides_in(address, lang)
+        if not info:
+            raise StudioError("This unit doesn't ride in a truck.")
+        chosen = next((c for c in info["choices"] if c["address"] == truck), None)
+        if chosen is None:
+            # not a game rule: the trucks of its kind the game has, and the mod's copies of them
+            raise StudioError(f"{_tail(truck)} isn't one of the trucks it can ride in.")
+        real, new = self._resolve(edits, address)
+        target = new.target if new else real
+        with self._saving:
+            edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
+            if truck == info["game"]:
+                edits.reset(target, RIDES, None)
+            else:
+                edits.set(target, RIDES, Link(truck))
+        return {**self.rides_in(address, lang), "message": f"It rides in {chosen['name']} on the roads now."}
+
+    def _soldiers(self, address: str) -> bool:
+        """Whether the unit is a squad (its models are soldiers: an infantry class, TInfanterieDescriptor)."""
         try:
             edits = self._edits()
         except EditsFileError:
             edits = None
         real, _unit = self._resolve(edits, address)
-        ix = self._open()
         try:
-            gfx = next((w for p, k, w in ix.uses(real) if p == "GfxDescriptor" and k == "object"), None)
-            mesh = next((w for p, k, w in ix.uses(gfx) if p == "MeshDescriptor" and k == "object"), None) if gfx \
-                else None
-            return next((str(w) for p, k, w in ix.uses(mesh) if p == "FileName" and k == "file"
-                         and str(w).lower().endswith(".ase2ndfbin")), None) if mesh else None
+            ix = self._open()
+        except FileNotFoundError:  # (no game index yet: nothing known of it)
+            return False
+        try:
+            try:
+                o = ix.show(real)
+            except KeyError:
+                return False
+            return isinstance(o, dict) and "Infanterie" in str(o.get("class") or "")
         finally:
             ix.close()
 
@@ -7144,6 +7227,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         found, _textures = self._look_models(address)
         if not found:
             raise StudioError("This unit has no 3D model the Studio can open.")
+        self._custom_uniform_first(address)
         folder = self._look_folder(address)
         if folder.exists():
             shutil.rmtree(folder, ignore_errors=True)  # a fresh copy of the game's pictures each time
@@ -7164,6 +7248,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return {**self.look(address), "message": f"Opening {len(found)} model(s) in Blender. Paint on the model "
                 "there, then come back and click Bring back: it saves your paint and puts it in your mod."}
 
+    def _custom_uniform_first(self, address: str) -> None:
+        """StudioError for a squad wearing the default uniform: the game's picture, worn by other squads and by gun
+        and vehicle crews too (T48: one US squad repainted turned every US soldier blue), so it's repainted only as a
+        custom uniform (model_copy)."""
+        if self._mod_dir() is not None and self._paint_root(address) is None and self._soldiers(address):
+            # not a game rule: the owner's choice, 2026-10-11 ("default uniform ... or do you want a custom uniform")
+            raise StudioError("Pick Custom uniform first: the default uniform is worn by other squads and by gun and "
+                              "vehicle crews too, so it isn't repainted here.")
+
     def look_bring_back(self, address: str) -> dict:
         """Copy every picture painted in Blender (since Open in Blender) into the current mod (files/replace), so
         Test in game shows it. The Blender painting it is asked to save first (rusemod.blender.ask_to_save): a
@@ -7178,6 +7271,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         folder = self._look_folder(address)
         if not (folder / unitlook.LOOK_FILE).is_file():
             raise StudioError("Open this unit in Blender first and paint it, then Bring back.")
+        self._custom_uniform_first(address)
         proc = self._blenders.get(str(folder))
         running = proc is not None and proc.poll() is None
         quiet = False

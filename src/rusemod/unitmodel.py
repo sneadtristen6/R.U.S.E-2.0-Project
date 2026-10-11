@@ -571,13 +571,46 @@ COPY = ".copy.toml"  # files/models/<the unit's name>.copy.toml: the unit has it
 
 
 def mod_copies(folder: Path) -> dict:
-    """{a new unit's name: its paint ({the copied model's texture in ZZ_Win.dat: (colour PNG, alpha PNG)}, laid out as
-    files/replace: rusemod.unitlook.paint_in)} from a mod's files/models/<the unit's name>.copy.toml and
-    files/models/<the unit's name>/."""
+    """{a unit's name: (the models it has copies of, as its .copy.toml's `of` lists them ([] if it names none: the
+    build then copies the one its GfxDescriptor draws), its paint ({the copied models' texture in ZZ_Win.dat: (colour
+    PNG, alpha PNG)}, laid out as files/replace: rusemod.unitlook.paint_in))} from a mod's
+    files/models/<the unit's name>.copy.toml and files/models/<the unit's name>/. UnitModelError for a .copy.toml that
+    can't be read."""
+    import tomllib
     root = Path(folder) / MODELS
     if not root.is_dir():
         return {}
-    return {f.name[:-len(COPY)]: paint_in(root / f.name[:-len(COPY)]) for f in sorted(root.glob("*" + COPY))}
+    out: dict = {}
+    for f in sorted(root.glob("*" + COPY)):
+        unit = f.name[:-len(COPY)]
+        try:
+            of = tomllib.loads(f.read_text(encoding="utf-8")).get("of") or []
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
+            raise UnitModelError(f"{MODELS.as_posix()}/{f.name} can't be read: {exc}") from None
+        of = [of] if isinstance(of, str) else of
+        if not isinstance(of, list) or not all(isinstance(m, str) and m.strip() for m in of):
+            raise UnitModelError(f"{MODELS.as_posix()}/{f.name}: `of` names a model or a list of models")
+        out[unit] = (of, paint_in(root / unit))
+    return out
+
+
+def model_key(model: str) -> str:
+    """A model's name as the packs have it: ww2\\res3d\\...\\x.ase2ndfbin (any case, / or \\, a DataDir: in front)."""
+    model = model.replace("/", "\\").lower()
+    return model[len("datadir:\\"):] if model.startswith("datadir:\\") else model
+
+
+def copy_model_name(source_model: str, unit: str, several: bool = False) -> str:
+    """The name of a unit's copy of the game's model `source_model`, beside it, its folder written as the source's
+    is: ...\\<unit>lod0.Ase2ndfbin, or ...\\<unit>_<the source's name>lod0.Ase2ndfbin when the unit has copies of
+    several models (a squad's soldiers, its bazooka man)."""
+    path = source_model.replace("/", "\\")
+    if path.lower().startswith("datadir:\\"):
+        path = path[len("datadir:\\"):]
+    folder, base = path.rsplit("\\", 1)
+    stem = base[:-len(".ase2ndfbin")] if base.lower().endswith(".ase2ndfbin") else base
+    stem = stem[:-len("lod0")] if stem.lower().endswith("lod0") else stem
+    return f"{folder}\\{unit}_{stem}lod0.Ase2ndfbin" if several else f"{folder}\\{unit}lod0.Ase2ndfbin"
 
 
 def copy_name(picture: str, unit: str) -> str:
@@ -620,36 +653,47 @@ def _copied(raw: bytes, source: str, new: str, pictures: dict) -> MeshPack:
     return src
 
 
-def write_unit_copy(zz, source_model: str, unit: str, paint: dict | None = None,
-                    earlier: dict | None = None) -> Written:
-    """The new unit `unit`'s own copy of the game's model `source_model` into ZZ_Win.dat `zz`, beside it: the same
-    mesh, bones and draw calls (its vertex and index buffers shared in each pack), each of its textures copied under
-    a name of the unit's (copy_name) and painted as `paint` says ({the game's texture member: (colour PNG, alpha
-    PNG)}: the Studio's Repaint in Blender on the copy), with their stand-ins. `earlier`: members other build steps
-    already changed (path -> bytes), changed from there."""
+def write_unit_copy(zz, copies, unit: str, paint: dict | None = None, earlier: dict | None = None) -> Written:
+    """The unit `unit`'s own copies of the game's models into ZZ_Win.dat `zz`, each beside its model: `copies`
+    ({the game's model: its copy's name}, or one model's name: copied as ...\\<unit>lod0). Each copy has the same mesh,
+    bones and draw calls (its vertex and index buffers shared in each pack); the models' textures are copied once for
+    the unit under names of its own (copy_name: a squad's soldiers and its bazooka man share theirs, as the game's do)
+    and painted as `paint` says ({the game's texture member: (colour PNG, alpha PNG)}: the Studio's Repaint in Blender
+    on the copy), with their stand-ins. `earlier`: members other build steps already changed (path -> bytes), changed
+    from there."""
+    if isinstance(copies, str):
+        copies = {copies: copy_model_name(copies, unit)}
     earlier = {k.lower(): v for k, v in (earlier or {}).items()}
     paint = {k.lower().replace("/", "\\"): v for k, v in (paint or {}).items()}
-    model, meshes, skeletons = packs_holding(zz, source_model)
-    new = model_name(model, unit)
-    if any(new in MeshPack.read(raw).items for raw in meshes.values()):
-        raise UnitModelError(f"the packs already have a model called {new}")
-    first_raw = next(iter(meshes.values()))
-    pictures = {pic: copy_name(pic, unit) for pic in MeshPack.read(first_raw).textures(model)
-                if zz.entry(texture_member(pic)) is not None}  # (a picture of no texture here stays shared)
+    held = []  # (the game's model, its copy, its mesh packs, its skeleton packs)
+    for source, new in copies.items():
+        model, meshes, skeletons = packs_holding(zz, source)
+        new = model_key(new)
+        if any(new in MeshPack.read(raw).items for raw in meshes.values()):
+            raise UnitModelError(f"the packs already have a model called {new}")
+        held.append((model, new, meshes, skeletons))
+    pictures: dict = {}
+    for model, _new, meshes, _skeletons in held:
+        pictures.update({pic: copy_name(pic, unit) for pic in MeshPack.read(next(iter(meshes.values()))).textures(model)
+                         if zz.entry(texture_member(pic)) is not None})  # (a picture of no texture here stays shared)
     if not pictures:
-        raise UnitModelError(f"{model} has no textures of its own to copy")
-    carrier = _copied(first_raw, model, new, pictures)
+        raise UnitModelError(f"{', '.join(m for m, *_ in held)}: no textures of their own to copy")
     changed: dict = {}
-    for path, raw in meshes.items():
-        pack = MeshPack.read(earlier.get(path.lower(), raw))
-        pack.add(carrier, new)
-        changed[path] = pack.to_bytes()
-    for path, raw in skeletons.items():
-        pack = MeshPack.read(earlier.get(path.lower(), raw))
-        holder = MeshPack.read(raw)
-        holder.items[new] = list(holder.items[model])
-        pack.add(holder, new)
-        changed[path] = pack.to_bytes()
+
+    def current(path: str, raw: bytes) -> bytes:  # a pack as the copies before this one and earlier steps left it
+        return changed.get(path) or earlier.get(path.lower(), raw)
+    for model, new, meshes, skeletons in held:
+        carrier = _copied(next(iter(meshes.values())), model, new, pictures)
+        for path, raw in meshes.items():
+            pack = MeshPack.read(current(path, raw))
+            pack.add(carrier, new)
+            changed[path] = pack.to_bytes()
+        for path, raw in skeletons.items():
+            pack = MeshPack.read(current(path, raw))
+            holder = MeshPack.read(raw)
+            holder.items[new] = list(holder.items[model])
+            pack.add(holder, new)
+            changed[path] = pack.to_bytes()
     added: dict = {}
     standins: dict = {}  # the copy's stand-in -> (the game's, what painting it needs or None)
     for old, picture in pictures.items():
@@ -666,7 +710,7 @@ def write_unit_copy(zz, source_model: str, unit: str, paint: dict | None = None,
     for e in zz.entries:  # every stand-in pack holding a copied texture's stand-in gets the copy's (painted, or shared)
         if not e.path.lower().endswith(".ppk"):
             continue
-        raw = earlier.get(e.path.lower()) or bytes(zz.read(e))
+        raw = changed.get(e.path) or earlier.get(e.path.lower()) or bytes(zz.read(e))
         if raw[:8] != PROXY_MAGIC:
             continue
         pack = ProxyPack.read(raw)
@@ -678,8 +722,10 @@ def write_unit_copy(zz, source_model: str, unit: str, paint: dict | None = None,
             pack.add(ProxyPack([Proxy(standin_key(n), data, p.extra, n.encode("latin-1").ljust(256, b"\0"))], [0]), n)
         if hits:
             changed[e.path] = pack.to_bytes()
-    report = {"model": new, "copy_of": model, "mesh_packs": sorted(meshes), "skeleton_packs": sorted(skeletons),
+    report = {"models": {model: new for model, new, *_ in held}, "model": held[0][1], "copy_of": held[0][0],
+              "mesh_packs": sorted({p for *_, meshes, _s in held for p in meshes}),
+              "skeleton_packs": sorted({p for *_, skeletons in held for p in skeletons}),
               "textures": sorted(added), "painted": sorted(texture_member(p) for o, p in pictures.items()
                                                            if texture_member(o) in paint),
               "standin_packs": sorted(p for p in changed if p.lower().endswith(".ppk"))}
-    return Written(changed, added, new, report)
+    return Written(changed, added, held[0][1], report)
