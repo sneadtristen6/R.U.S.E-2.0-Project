@@ -216,8 +216,8 @@ class MissionScript(unittest.TestCase):
         self.assertLessEqual(instructions_used(data), WRITTEN_OPS)
 
     def test_the_goals_panel_opens_a_second_after_the_goals_start(self):
-        """An Operation's goals panel holds Escape until it's closed, and lists only the goals already going (T41,
-        from the game's code): the panel shows a second after the start goals, never before."""
+        """An Operation's goals panel holds Escape until it's closed, and lists only the goals already going (T41's
+        Escape lock): the panel shows a second after the start goals, never before."""
         names = dict(self.defs)
         self.assertIn("ObjectifsList=[GOAL_G0_reach]", source([], [("P", names["PANEL"])], "P").splitlines()[0])
         main = names["MAIN"]
@@ -228,7 +228,7 @@ class MissionScript(unittest.TestCase):
         self.assertIn("DescriptorPlayEffetAfterWait(Action=PANEL, Duree=1)", self.text)
 
     def test_the_computer_side_block_comes_from_strategic_ia(self):
-        """DescriptorIAAll lives in leveldesignsolo.strategic_ia (the game's catalog; Fortress Europa imports it
+        """DescriptorIAAll lives in leveldesignsolo.strategic_ia (Fortress Europa imports it
         so). T45 named leveldesignsolo.camps and the mission stopped on the script error (2026-10-10)."""
         self.assertIn("import leveldesignsolo.strategic_ia", self.text)
         self.assertIn("leveldesignsolo.strategic_ia.DescriptorIAAll(Camp=SIDE_1)", self.text)
@@ -309,7 +309,7 @@ def camera_file() -> bytes:
 
 class CameraFile(unittest.TestCase):
     def test_a_new_path_is_listed_in_the_topo_table(self):
-        """The game makes only the objects the TOPO table lists (Alpha's 4 paths: [0, 17, 10, 7]); T41's own path,
+        """The game makes only the objects the TOPO table lists; T41's own path,
         left out of it, never played."""
         cam = M.Camera("Flyby", [(0.0, 0.0, 50000.0), (100000.0, 0.0, 40000.0), (100000.0, 100000.0, 30000.0)],
                        (50000.0, 50000.0, 0.0), 12.0)

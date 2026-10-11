@@ -445,10 +445,9 @@ def cleared_woods(erasing: dict) -> tuple[dict, dict]:
     where Blitz's town stood, and infantry there no longer act as in a town. Erasing only props leaves both, and so
     does a new road's own clearing (keep_ground).
 
-    The blocked layer goes too, under trees and buildings alike: a unit fires its direct weapons only along a line
-    that crosses no blocked cell (artillery doesn't ask), and the maps mark their towns' buildings blocked, so where
-    an erased town stood (and everywhere on Blank Terrain, which erases the whole map) tanks saw the enemy and didn't
-    fire (T41, 2026-10-09; not tried in the game yet)."""
+    The blocked layer goes too, under trees and buildings alike: the maps mark their towns' buildings blocked, and
+    where an erased town stood (everywhere on Blank Terrain, which erases the whole map) tanks saw the enemy and
+    didn't fire (seen in T41 run 1, 2026-10-09); with the blocked layer taken out with them, they fired (T41 run 2)."""
     from .cover import Paint
     from .nav import Block
     opens, uncover = {}, {}

@@ -13,8 +13,9 @@ map's own files that take the copied map back to its ground and its starting poi
   build waiting until every one is (rusemod.players.blank_seats; the owner, 2026-10-09: "the HQ shouldn't be there
   ... This isn't D-Day").
 
-Every number comes from the map's own files, so every PC writes the same files. Not seen in the game yet
-(2026-10-05): the owner's blank D-Day ("a blank blue map on the lowest terrain, with nothing on it") is the model."""
+Every number comes from the map's own files, so every PC writes the same files. The owner's blank D-Day ("a blank
+blue map on the lowest terrain, with nothing on it") is the model. Played in the game: both blank maps (2026-10-05),
+Blank Terrain with HQs placed and painted sectors (T42, 2026-10-09) and as an Operation (T41, T46)."""
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -4,14 +4,13 @@ its goals, its events (When -> Do) and its camera moves, as data. The build make
 from the mod), with its texts in the game's ten languages, its camera moves in the map's camera file, and the
 mission in a menu pack of its own (the game keeps a mission's saved results by pack and place).
 
-Every block is written the way the game's own missions write it, and each kind was tried in the game in our test
+Every block is written the way the game's own missions write it, and these were tried in the game in our test
 missions (T22 2026-10-03: a hint, units made, an artillery strike, goals, victory; T30 2026-10-04: an attack order,
-a bombing run, named units in a group, a group-destroyed goal; T41 2026-10-09: a move along spots, holding a zone, a
-paratroop drop, main and bonus goals, a campaign chapter's victory). Not tried yet, and said so where the Studio
-offers them: a camera move of the mod's own (T41's never played: the camera file's TOPO table didn't list it, fixed
-here), the goals panel opened after the goals start (T41's Escape lock: an Operation's goals panel holds Escape
-until it's closed), a side handed to the computer (DescriptorIAAll, Prolution's Fortress Europa uses it), repeating
-events, a goal done after a time, the money given during a mission.
+a bombing run, named units in a group, a group-destroyed goal; T41 2026-10-09: a move along spots, holding a zone,
+main and bonus goals, a campaign chapter's victory; T45 2026-10-10: the mission's own camera move as it opens, the
+goals panel opened after the goals start, money given, a repeating event, a goal done after a time, a side handed
+to the computer). Not tried yet: a paratroop drop (the game's own drop mission, which a community mod's airlift
+runs), a camera move played by an event; the Studio says so where it offers them.
 
 The sides are the copied mission's own, in its order, with the camp numbers its scenario's starting points and spawns
 use: a mission file changes a side's nation, difficulty, money and whether the computer plays it, never how many
@@ -510,10 +509,6 @@ def _value(v, calls: dict, support: dict, depth=0):
     raise MissionError("the copied mission's sides hold something that can't be copied")
 
 
-def _rename(v):
-    """A support call's own names -> their B_ names (support refs are already B_)."""
-    return v
-
 
 def base_of(raw: bytes) -> Base:
     """The copied mission's sides and rules, from its .xyz script."""
@@ -683,15 +678,11 @@ def problems(m: Mission, base: Base, ctx: Context) -> list:
                 why = ctx.unit_problem(a.unit) if callable(ctx.unit_problem) else None
                 if why:
                     out.append(("error", f"{aat}: {why}"))
-            if a.do in ("ai", "money") and a.do == "ai":
-                out.append(("warning", f"{aat}: handing a side to the computer hasn't been tried in our missions yet"))
     for g in m.goals:
         if g.start == "event" and not any(a.do == "goal" and a.goal == g.id for e in m.events for a in e.actions):
             out.append(("warning", f"goal {g.id} shows by an event, but no event shows it"))
         if g.done == "event" and not any(a.do == "complete" and a.goal == g.id for e in m.events for a in e.actions):
             out.append(("warning", f"goal {g.id} is done by an event, but no event completes it"))
-        if g.done == "time":
-            out.append(("warning", f"goal {g.id}: a goal done after a time hasn't been tried in the game yet"))
     return out
 
 
@@ -734,7 +725,6 @@ def _wait(s: float) -> Call:
 def script(m: Mission, base: Base, ctx: Context, keys) -> tuple:
     """(imports, statements, launch name) for the mission; `keys(name) -> int` gives a text's key. The caller has
     checked `problems` for errors."""
-    from .dic import name_to_key  # noqa: F401  (keys come from the caller, which uses it)
     sc = _Script()
     victory = (call("leveldesignsolo.objectif.DescriptorDeclencheVictoire", Chapter=1, DeclencheCredits=False,
                     IdMapSoloForLadder=-1) if ctx.kind == "campaign"
@@ -972,7 +962,7 @@ def script(m: Mission, base: Base, ctx: Context, keys) -> tuple:
     if m.time_limit > 0 and m.time_up != "nothing":
         flows.append(sc.add("TIME_UP", _seq(_wait(m.time_limit * 60), victory if m.time_up == "victory" else defeat)))
     # the goals shown at the start, and the goals panel a second after them (an Operation's panel holds Escape until
-    # it's closed, and lists only the goals already going: T41, from the game's code)
+    # it's closed, and lists only the goals already going: T41's Escape lock)
     first = [goal_units[g.id] for g in m.goals if g.start == "start"]
     panel = sc.add("PANEL", call("leveldesignsolo.objectif.DescriptorObjectifsPanel",
                                  ObjectifsList=[goal_blocks[g.id] for g in m.goals if g.start == "start"]))

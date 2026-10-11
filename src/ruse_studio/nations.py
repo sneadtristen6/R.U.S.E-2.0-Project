@@ -171,8 +171,8 @@ class NationCalls:
     # for the average person"): its own units hidden from its build menus in one go, or shown again, and its menus
     # filled from an era's units of another nation (his pick: one list, every unit ticked with its building picked;
     # the modder unticks any, then Add). Hiding sets a unit's ShowInMenu (one per battle date) to 0, the value the
-    # game reads for its build menus (MOD_FORMAT §5: hiding is the safer way than deleting; not tried in the game
-    # yet). Its buildings stay: HQ, factories, depots. Missions that spawn its units by script still spawn them ---
+    # game reads for its build menus (MOD_FORMAT §5: hiding is the safer way than deleting; tried in the game
+    # 2026-10-10 with Italy's units). Its buildings stay: HQ, factories, depots. Missions that spawn its units by script still spawn them ---
     SHOW_IN_MENU = "ShowInMenu"
 
     def _nation_own_units(self, ix, n: int) -> list[dict]:

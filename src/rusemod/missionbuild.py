@@ -202,7 +202,7 @@ def mapia_pointed(raw: bytes, src: str, new: str) -> bytes:
 
 def own_packs(raw: bytes, moves: list) -> bytes:
     """globals.cpp with each (entry GUID, "campaign" or "operation", new pack GUID) taken out of the pack it was
-    listed in and put in a new pack of its own, listed last by its pack manager (T41's own_packs)."""
+    listed in and put in a new pack of its own, listed last by its pack manager (as T41 did)."""
     nd = Ndf(raw)
     for guid, kind, pack_guid in moves:
         pack_c, mgr_c, list_p, mgr_p = (("TChapterPack", "TChapterPackManager", "ChapterList", "ChapterPackList")

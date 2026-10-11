@@ -83,7 +83,7 @@ class MissionCalls:
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8")) if exists else {}
             m = M.parse(data, f"maps/{name}/mission.toml")
-        except (tomllib.TOMLDecodeError, UnicodeDecodeError, M.MissionError) as exc:
+        except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError, M.MissionError) as exc:
             m = M.Mission()
             problems.append(["error", str(exc)])
         if not m.sides:  # a new mission: every side of the copied mission, as it is
