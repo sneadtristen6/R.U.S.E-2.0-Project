@@ -6628,19 +6628,33 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     @staticmethod
     def _unit_models(ix: Index, address: str) -> list[str]:
         """The model files (.ase2ndfbin, as mesh packs name them) of a unit's graphics: the object its GfxDescriptor
-        names and that object's own parts (not the shared interface pieces they refer to)."""
-        gfx = next((w for p, k, w in ix.uses(address) if p == "GfxDescriptor" and k == "object"), None)
-        files, seen, todo = set(), set(), [gfx] if gfx else []
-        while todo and len(seen) < 2000:
-            a = todo.pop()
-            if a in seen:
-                continue
-            seen.add(a)
-            for _p, kind, what in ix.uses(a):
-                if kind == "file" and str(what).lower().endswith(".ase2ndfbin"):
-                    files.add(str(what).lower().replace("/", "\\"))
-                elif kind == "object" and what and what not in seen and what.startswith(gfx):
-                    todo.append(what)
+        names and that object's own parts (not the shared interface pieces they refer to). A unit whose GfxDescriptor
+        reaches none keeps its models under its other graphics: infantry their soldiers (GfxDescriptorBazooka,
+        GfxDescriptorIconeCadavre: 194 of the game's units; the owner, 2026-10-11: "there's no 3D models for
+        infantry"). Those are walked then, the unit's own parts of them only."""
+        links = [(p, w) for p, k, w in ix.uses(address) if k == "object" and p.startswith("GfxDescriptor") and w]
+
+        def under(roots: list[str], shared_mesh: bool = False) -> set[str]:
+            files = set()
+            for root in roots:
+                seen, todo = set(), [root]
+                while todo and len(seen) < 2000:
+                    a = todo.pop()
+                    if a in seen:
+                        continue
+                    seen.add(a)
+                    for p, kind, what in ix.uses(a):
+                        if kind == "file" and str(what).lower().endswith(".ase2ndfbin"):
+                            files.add(str(what).lower().replace("/", "\\"))
+                        elif kind == "object" and what and what not in seen and (
+                                what.startswith(root) or (shared_mesh and p.endswith("MeshDescriptor"))):
+                            todo.append(what)  # (a soldier's model part another infantry unit has too: its model)
+            return files
+
+        files = under([w for p, w in links if p == "GfxDescriptor"])
+        if not files:  # (a wreck the game reuses for fallen soldiers, the M36 Jackson's, is no soldier)
+            files = {f for f in under([w for p, w in links if p != "GfxDescriptor" and w.startswith(address + ":")],
+                                      True) if "_dest" not in f.rsplit("\\", 1)[-1]}
         return sorted(files)
 
     @staticmethod
