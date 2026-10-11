@@ -1,11 +1,23 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
-**0.9.8.4:** seine Updates lassen sich auf jedem PC herunterladen.
+**0.9.8.4:** eigene Missionen, leere Karten zum Aufbauen und viel mehr zum Anpassen.
 
-- Auf manchen PCs schlugen Downloads von GitHub fehl („certificate verify failed: unable to get local issuer certificate“): Windows hatte das Zertifikat, mit dem GitHub geprüft
-  wird, noch nicht geholt, und das Studio konnte es nicht darum bitten. Jetzt bittet es Windows darum, wie ein
-  Browser, und versucht es noch einmal. Noch nicht auf einem PC mit dem Problem ausprobiert.
+- **Noch fehlerhaft, Nutzung auf eigene Verantwortung:** die Texturen von Map Paint und beide leeren Karten (Leeres Gelände und Leerer Ozean).
+- **Eigene Missionen:** eine neue Operation oder ein neues Kampagnenkapitel bekommt eine eigene Mission auf der Szenario-Seite des Kartenbildschirms: Seiten, Ziele, Ereignisse (Wenn → Dann: Einheiten bringen, bewegen, angreifen, eine Zone halten, Artillerie, Bombardierung, Fallschirmjäger, Meldungen, Geld, Sieg, Niederlage) und Kamerafahrten. Im Spiel gesehen: ihre Kamerafahrt, Ziele (eine Zone, eine zerstörte Gruppe, eine Zeit), sich wiederholende Ereignisse, Geld, eine Seite an den Computer übergeben. Noch nicht getestet: Fallschirmjäger, eine Kamerafahrt, die ein Ereignis startet.
+- **Karte | Szenario** auf dem Kartenbildschirm: die Dinge der anderen Seite erscheinen blass und lassen sich nicht aus Versehen greifen.
+- **Leere Karten:** von der kopierten Karte ist nichts mehr zu sehen, und Sie setzen das HQ jedes Spielers (der Build wartet, bis alle gesetzt sind). Leeres Gelände geht auch für Operationen und Kampagnenkapitel.
+- **Eigene Sektoren:** malen, ihre Ecken ziehen, einen neuen als Rechteck ziehen, Boden ohne Sektor lassen, einen löschen (im Spiel gesehen).
+- **Nachschubdepots:** der Wirtschaft-Reiter gibt jedem Depot auf jeder Karte oder auf einer Karte mehr Lastwagen (mal, oder eine Zahl je Depot); keine Obergrenze von 1.000 Lastwagen mehr.
+- **Nationen-Reiter:** alle Einheiten einer Nation auf einmal ausblenden, wieder zeigen oder ihre Menüs mit den Einheiten einer Epoche füllen.
+- **Installierten Mod bearbeiten:** jeden Mod des Launchers öffnen; der eines anderen wird zu Ihrer eigenen Kopie unter eigenem Namen. RUSE-Mod-Manager-Mods (.rmod) werden umgewandelt, damit ihre Werte geändert werden können.
+- **Die Mod-Prüfung in einfachen Worten**, mit einem Knopf zum Beheben jedes Problems.
+- **Ein eigenes Aussehen für eine Einheit:** eine eigene Kopie ihres Modells zum Neubemalen; Trupps tragen die Standarduniform oder eine eigene; den Lastwagen wählen, in dem ein Trupp oder ein Geschütz fährt. Infanterie erscheint in 3D und öffnet sich in Blender.
+- **Panzerung** wird als eine Stufe des Spiels gewählt, sodass die Karte zeigt, womit die Einheit kämpft; **importierte Flugzeuge** behalten ihre drehenden Propeller und kommen nach vorne gerichtet zurück (beides im Spiel gesehen).
+- **Modellgrößen per Schieberegler** (Winzig, Spielgröße, Echte Größe, Riesig: 0,05 bis 20), jederzeit änderbar, alle Flugzeuge auf einmal.
+- **Mehr zum Ändern:** ein eigener Wert einer KI-Schwierigkeit oder eines KI-Profils für einen, den nur Standard hat; Zahlen über die Schieberegler der Kartenwerkzeuge hinaus; lautere und längere Musikbearbeitungen.
+- **Behoben:** eine Einheit, die im Menü gezeigt, aber von einer ausgeblendeten erforscht wird, stoppte das Spiel: die Prüfung nennt sie und der Build lehnt sie ab. Panzer feuern wieder über gelöschte Städte hinweg, und Einheiten fallen nicht mehr in die Löcher, wo Brücken entfernt wurden (im Spiel gesehen).
+- **Downloads gehen auf jedem PC:** hat Windows das Zertifikat, mit dem GitHub geprüft wird, noch nicht geholt, fragt das Studio Windows danach, wie ein Browser, und versucht es erneut (noch nicht auf einem PC mit dem Problem getestet).
 
 **0.9.8.3:** Kopien mit Mods kommen dorthin, wo du es sagst.
 

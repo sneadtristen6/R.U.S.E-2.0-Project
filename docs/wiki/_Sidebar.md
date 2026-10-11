@@ -17,6 +17,7 @@
 - [[Draw roads|Draw-Roads]]
 - [[Place buildings and trees|Place-Buildings-and-Trees]]
 - [[Edit a scenario|Edit-a-Scenario]]
+- [[Make a mission|Make-a-Mission]]
 - [[Export and share|Export-and-Share]]
 
 **When something goes wrong**

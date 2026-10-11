@@ -48,6 +48,14 @@ again.
 
 It's saved in your mod as `files/models/<the unit's name>.glb`. **Use the copied unit's model** takes it out again.
 
+**Its size later:** the slider under the size box goes from **Tiny** to **Huge** (0.05 to 20), with **Game size** (1)
+and, for an era unit, **Real life** marked; click **Resize** and the model is fitted again from its own file. With
+several new planes (or ground units), one click resizes them all. The game reads a model when it loads, so a new size
+shows from the next build.
+
+**Planes:** a plane opened in Blender from the Studio and brought back keeps its spinning propellers and faces
+forward. Seen in the game.
+
 ## 4. Its card, then test
 
 Turn the 3D view until the new model looks right in the dashed frame and click **Use this view as the card** (see

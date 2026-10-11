@@ -3,6 +3,19 @@
 Step-by-step guides for **RUSE Launcher** and **RUSE Studio**. For what the project is, news and downloads, see the
 [project page](https://github.com/sneadtristen6/R.U.S.E-2.0-Project).
 
+## New here? Start here
+
+- **To play mods:** [[Install and play|Install-and-Play]]. Download **RUSE-Launcher-Setup** from the
+  [launcher releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher), run it, open **RUSE
+  Launcher**, click **Supported mods**, tick a mod and press **Install**, put it in a mod set, then **Play**. Five minutes.
+- **To make mods:** install **RUSE Studio** (the same page, at the end), then [[Your first mod|Your-First-Mod]].
+- **Stuck?** [[When something goes wrong|When-Something-Goes-Wrong]], or ask on the
+  [Discord](https://discord.gg/DbufY4Jfg).
+
+> [!WARNING]
+> **Still buggy, use at your own discretion:** Map Paint's textures, and both blank maps (Blank Terrain and Blank
+> Ocean).
+
 ## Two apps, two jobs
 
 | | **RUSE Launcher** | **RUSE Studio** |
@@ -18,7 +31,7 @@ starts a quick test copy on its own, to check your work as you go.
 
 | I want to... | Guide |
 |---|---|
-| Install the launcher and play a mod | [[Install and play|Install-and-Play]] |
+| Install the launcher and play a mod (step by step) | [[Install and play|Install-and-Play]] |
 | Play a modded game with friends (everyone needs the same mods) | [[Play with friends|Play-With-Friends]] |
 | Play on Linux or Steam Deck (through Proton) | [[Install and play|Install-and-Play]] |
 
@@ -37,8 +50,9 @@ starts a quick test copy on its own, to check your work as you go.
 | Make a town or wood units can hide in; block ground | [[Cover and movement|Cover-and-Movement]] |
 | Draw new roads (supply trucks use them) | [[Draw roads|Draw-Roads]] |
 | Place buildings, props and trees | [[Place buildings and trees|Place-Buildings-and-Trees]] |
-| Move starting points, add units in formation | [[Edit a scenario|Edit-a-Scenario]] |
-| Put my mod out for others | [[Export and share|Export-and-Share]] |
+| Move starting points, add units in formation, paint sectors, place a blank map's HQs, more money in depots | [[Edit a scenario|Edit-a-Scenario]] |
+| Give a new Operation or campaign chapter a mission of its own: goals, events, camera moves | [[Make a mission|Make-a-Mission]] |
+| Put my mod out for others; edit a mod someone else made | [[Export and share|Export-and-Share]] |
 
 ## When something goes wrong
 

@@ -1,11 +1,23 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
-**0.9.8.4:** jego aktualizacje pobierają się na każdym komputerze.
+**0.9.8.4:** własne misje, puste mapy do zabudowania i dużo więcej do dostosowania.
 
-- Na niektórych komputerach pobieranie z GitHuba się nie udawało („certificate verify failed: unable to get local issuer certificate”): Windows nie pobrał jeszcze
-  certyfikatu, którym sprawdzany jest GitHub, a Studio nie mogło go o to poprosić. Teraz prosi o to Windows, tak jak
-  przeglądarka, i próbuje ponownie. Jeszcze nie wypróbowane na komputerze, który miał ten problem.
+- **Wciąż z błędami, używasz na własną odpowiedzialność:** tekstury Map Paint i obie puste mapy (Pusty teren i Pusty ocean).
+- **Własne misje:** nowa Operacja lub nowy rozdział kampanii ma własną misję po stronie Scenariusz ekranu mapy: strony, cele, zdarzenia (Gdy → Zrób: sprowadź jednostki, ruch, atak, utrzymanie strefy, artyleria, bombardowanie, spadochroniarze, komunikaty, pieniądze, zwycięstwo, porażka) i ruchy kamery. Sprawdzone w grze: jej ruch kamery, cele (strefa, zniszczona grupa, czas), powtarzane zdarzenia, pieniądze, strona oddana komputerowi. Jeszcze nie testowane: spadochroniarze, ruch kamery uruchamiany przez zdarzenie.
+- **Mapa | Scenariusz** na ekranie mapy: rzeczy z drugiej strony są przygaszone i nie da się ich chwycić przez przypadek.
+- **Puste mapy:** nic ze skopiowanej mapy już się nie pokazuje, a sztab każdego gracza stawiasz sam (budowanie czeka, aż wszystkie będą postawione). Pusty teren działa też dla Operacji i rozdziałów kampanii.
+- **Własne sektory:** maluj je, przeciągaj ich narożniki, narysuj nowy jako prostokąt, zostaw teren bez sektora, usuń sektor (sprawdzone w grze).
+- **Składy zaopatrzenia:** karta Ekonomia daje każdemu składowi na każdej mapie albo na jednej mapie więcej ciężarówek (razy albo liczba na każdy); koniec z limitem 1000 ciężarówek.
+- **Karta Narody:** ukryj naraz wszystkie jednostki narodu, pokaż je z powrotem albo wypełnij jego menu jednostkami z epoki.
+- **Edytuj zainstalowany mod:** otwórz dowolny mod z Launchera; cudzy staje się twoją kopią pod własną nazwą. Mody RUSE Mod Manager (.rmod) są konwertowane, żeby można było zmieniać ich wartości.
+- **Sprawdzanie moda prostymi słowami**, z przyciskiem naprawy przy każdym problemie.
+- **Własny wygląd jednostki:** jej własna kopia modelu do przemalowania; oddziały noszą domyślny mundur albo własny; wybierz ciężarówkę, którą jedzie oddział lub działo. Piechota pokazuje się w 3D i otwiera się w Blenderze.
+- **Pancerz** wybiera się spośród poziomów gry, więc karta pokazuje to, czym jednostka walczy; **importowane samoloty** zachowują kręcące się śmigła i wracają skierowane do przodu (oba sprawdzone w grze).
+- **Rozmiary modeli na suwaku** (Malutki, Rozmiar gry, Rzeczywisty, Ogromny: od 0,05 do 20), do zmiany w każdej chwili, wszystkie samoloty naraz.
+- **Więcej do zmiany:** własna wartość poziomu trudności lub profilu SI dla takiej, którą ma tylko Domyślny; liczby poza zakresem suwaków narzędzi mapy; głośniejsze i dłuższe edycje muzyki.
+- **Naprawione:** jednostka pokazana w menu, ale badana z ukrytej, zatrzymywała grę: sprawdzanie ją wskazuje, a budowanie ją odrzuca. Czołgi znów strzelają nad usuniętymi miastami, a jednostki nie wpadają już w dziury w miejscach usuniętych mostów (sprawdzone w grze).
+- **Pobieranie działa na każdym komputerze:** gdy Windows nie pobrał jeszcze certyfikatu, którym sprawdzany jest GitHub, Studio prosi o niego Windows, tak jak przeglądarka, i próbuje ponownie (jeszcze nie wypróbowane na komputerze z tym problemem).
 
 **0.9.8.3:** kopie z modami trafiają tam, gdzie wskażesz.
 

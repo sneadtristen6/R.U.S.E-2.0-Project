@@ -37,9 +37,23 @@ The unit's page shows its **3D model**: drag to turn it, scroll to zoom.
 - **Its card in the build menu:** turn and zoom the 3D model until it looks right inside the dashed frame, then
   **Use this view as the card**. **Game's card** takes it back. Seen in the game. On a new unit, the card is its own:
   the unit it copies keeps its picture.
+- **Its own copy of the model:** a unit drawn with the game's model shares its paint with every unit drawn with it.
+  **Give it its own copy of the model** (on its page) makes the same model with textures of its own: then **Open in
+  Blender** paints this unit only. Works for new units and the game's own.
+- **A squad's uniform:** the game's soldiers of a nation all wear one picture (the US's: its GIs, Rangers and
+  paratroopers, and the crews of its guns and vehicles), so the **Default uniform** isn't repainted here. Pick
+  **Custom uniform** to give the squad its own, then paint it in Blender. Seen in the game.
+- **Rides in:** the truck a squad or a gun turns into on the roads: the game's, another nation's, or a copy of a truck
+  you made and repainted. Seen in the game.
 - **A model of its own (new units):** **Import model…** brings in a 3D model from Blender or any 3D tool. See
   [[Import a model|Import-a-Model]]. A game unit keeps its model: its page has **New unit from this one…** to make
   the new unit the model goes on.
+
+## Armour
+
+**Armour** on a unit's page picks one of the game's armour levels (tanks have 1 to 5, the number on the shield). The
+unit fights with it, and its card and build menu show it. Changing a number inside the armour part itself made a unit
+fight with one value while its card showed another, so that part can't be changed directly any more. Seen in the game.
 
 ## Research: what it's an upgrade of
 

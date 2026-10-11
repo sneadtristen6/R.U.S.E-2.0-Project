@@ -2,6 +2,7 @@
 title: "Studio 0.9.8.3 and Launcher 0.4.8.3: choose where modded copies go"
 category: Announcements
 order: 8
+skip: never posted; 0.9.8.4's announcement covers it (the owner, 2026-10-11: "incorporate it all into this update")
 ---
 **RUSE Studio 0.9.8.3** and **RUSE Launcher 0.4.8.3** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.

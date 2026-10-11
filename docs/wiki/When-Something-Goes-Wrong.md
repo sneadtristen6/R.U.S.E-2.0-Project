@@ -21,7 +21,10 @@ game. This is the only place the apps write into your game folder, and only when
 ## A red bar under the Studio's header
 
 That's the **mod check**. The Studio reads every file of your mod the way the game build will, when you pick the mod
-and again before **Test in game**, and names each file that has a mistake.
+and again before **Test in game**. Each problem is said in plain words (what's wrong, on which map, what to do), with
+a button that fixes it where one can: fill in a missing value, take out the one item or setting that's wrong, or set
+the file aside. The file as it was is kept beside it. **Details** shows the build's own words, handy when asking for
+help.
 
 - **Set aside** (next to a broken map file) renames it `<name>.broken.toml` beside the original: nothing is lost, the
   mod works without it, and that map starts clean.

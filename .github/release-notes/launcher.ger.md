@@ -1,12 +1,11 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
-**0.4.8.4:** Mods lassen sich auf jedem PC herunterladen.
+**0.4.8.4:** Mods laden auf jedem PC herunter, und er spielt Mods, die mit Studio 0.9.8.4 gemacht sind.
 
-- Auf manchen PCs ließ sich kein Mod herunterladen („certificate verify failed: unable to get local issuer certificate“): Windows hatte das Zertifikat, mit dem GitHub geprüft
-  wird, noch nicht geholt, und der Launcher konnte es nicht darum bitten. Jetzt bittet er Windows darum, wie ein
-  Browser, und versucht es noch einmal; auch bei den Updates des Launchers. Noch nicht auf einem PC mit dem Problem
-  ausprobiert.
+- **Mods laden auf jedem PC herunter:** auf manchen PCs lud kein Mod herunter („certificate verify failed: unable to get local issuer certificate“). Jetzt fragt der Launcher Windows nach dem Zertifikat, wie ein Browser, und versucht es erneut; auch bei seinen eigenen Updates. Noch nicht auf einem PC mit dem Problem getestet.
+- **Mods aus Studio 0.9.8.4 laufen:** eigene Missionen, leere Karten mit ihren HQs und Sektoren, Depots mit mehr Lastwagen (ein älterer Launcher lehnt Depots über 1.000 Lastwagen ab), Einheiten mit eigenem Aussehen und eigenen Uniformen, Bearbeitungen fremder Mods unter eigenem Namen.
+- **Noch fehlerhaft, Spielen auf eigene Verantwortung:** Karten mit den Texturen von Map Paint und leere Karten (Leeres Gelände, Leerer Ozean).
 
 **0.4.8.3:** Kopien mit Mods kommen dorthin, wo du es sagst.
 

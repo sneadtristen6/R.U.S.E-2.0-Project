@@ -1,11 +1,23 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
-**0.9.8.4:** its updates download on every PC.
+**0.9.8.4:** missions of your own, blank maps you build up, and much more to customise.
 
-- On some PCs downloads from GitHub failed ("certificate verify failed: unable to get local issuer certificate"): Windows hadn't fetched the certificate GitHub is checked
-  against yet, and the Studio couldn't ask it to. Now it asks Windows, as a browser does, and tries again. Not tried
-  yet on a PC that had the problem.
+- **Still buggy, use at your own discretion:** Map Paint's textures, and both blank maps (Blank Terrain and Blank Ocean).
+- **Missions of your own:** a new Operation or campaign chapter gets its own mission on the map screen's Scenario side: sides, goals, events (When → Do: bring in units, move, attack, hold a zone, artillery, bombing, paratroopers, messages, money, victory, defeat) and camera moves. Seen in the game: its camera move, goals (a zone, a group destroyed, a time), repeating events, money, a side handed to the computer. Not tried yet: paratroopers, a camera move set off by an event.
+- **Map | Scenario** on the map screen: the other side's things show faded and can't be grabbed by accident.
+- **Blank maps:** nothing of the copied map shows any more, and you place each player's HQ (the build waits until every one is placed). Blank Terrain works for Operations and campaign chapters too.
+- **Sectors you make:** paint them, drag their corners, draw a new one as a box, leave ground in no sector, delete one (seen in the game).
+- **Supply depots:** the Economy tab gives every depot on every map, or on one map, more trucks (times, or a number each); no more 1,000-truck top.
+- **Nations tab:** hide all of a nation's units at once, show them again, or fill its menus with an era's units.
+- **Edit an installed mod:** open any mod the Launcher has; someone else's becomes a copy of your own under its own name. RUSE Mod Manager mods (.rmod) are converted so their values can be changed.
+- **The mod check in plain words**, with a fix button for each problem.
+- **A unit's own look:** its own copy of its model to repaint; squads wear the default uniform or a custom one; pick the truck a squad or gun rides in. Infantry show in 3D and open in Blender.
+- **Armour** is picked as one of the game's levels, so the card shows what the unit fights with; **imported planes** keep their spinning propellers and come back facing forward (both seen in the game).
+- **Model sizes on a slider** (Tiny, Game size, Real life, Huge: 0.05 to 20), resized any time, every plane at once.
+- **More to change:** an AI difficulty's or profile's own value for one only Default lists; numbers past the map tools' sliders; louder and longer music edits.
+- **Fixed:** a unit shown in a menu but researched from a hidden one stopped the game: the check names it and the build refuses it. Tanks fire across erased towns again, and units no longer fall into the holes where bridges were taken out (seen in the game).
+- **Downloads work on every PC:** when Windows hasn't fetched the certificate GitHub is checked against, the Studio asks Windows for it, as a browser does, and tries again (not tried yet on a PC that had the problem).
 
 **0.9.8.3:** modded copies go where you say.
 

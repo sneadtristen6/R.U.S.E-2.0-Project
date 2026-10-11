@@ -41,6 +41,13 @@ new file with a new version number: a published file never changes.
 The entry's exact format:
 [MOD_FORMAT.md, section 15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/MOD_FORMAT.md#15-the-mod-index-supported-mods).
 
+## Edit an installed mod
+
+In the Studio's mod menu, **Edit an installed mod…** lists every mod the Launcher has (with a search box). Your own
+opens its project. Someone else's becomes a copy of your own with a name of its own (it can't take the original's
+name): your changes go into it, and an update of the original never wipes them. A RUSE Mod Manager mod (`.rmod`) is
+converted in its copy, so its value changes become Studio changes you can change.
+
 ## What a mod can hold
 
 Data only: numbers, texts, maps, models, textures. Programs (`.exe`, `.dll`, scripts that run on a PC) are refused by

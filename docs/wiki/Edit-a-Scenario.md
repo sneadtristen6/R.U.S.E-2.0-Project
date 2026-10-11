@@ -1,6 +1,6 @@
 # Edit a scenario
 
-> **For:** modders · **You need:** RUSE Studio 0.7.2 and a mod · **Takes:** a few minutes
+> **For:** modders · **You need:** RUSE Studio 0.9.8.4 and a mod · **Takes:** a few minutes
 
 A **scenario** is what a map starts with: capture zones, each side's starting point, and units and buildings already
 on the field. One map has several: one for each way the game plays it.
@@ -20,18 +20,20 @@ exactly where: for example **In the game: Battles › D-Day (6 players)**.
 
 ## Pick the scenario
 
-At the top of the map, tick **Scenario** and pick one from the menu. Starting points show as pillars in each side's
-colour, spawns as white diamonds, zones as shaded areas.
+At the start of the map screen's bar, pick **Scenario** (beside **Map**). The map's own things (ground, buildings, trees,
+roads) show faded and can't be grabbed by accident; switch back to **Map** to change them. Then pick the scenario
+from the menu at the top. Starting points show as pillars in each side's colour, spawns as white diamonds, zones
+as shaded areas.
 
 ## Move a starting point or a spawn
 
-1. In the bar, click **Scenario**, then **Move**.
+1. On the **Scenario** side, click **Move**.
 2. Click the pillar or diamond, then click where it goes.
 3. To put it back where the game had it, click it again and choose **Put back**.
 
 ## Add units: one or a whole formation
 
-1. In the bar, click **Scenario**, then **Add unit**.
+1. On the **Scenario** side, click **Add unit**.
 2. Pick the kind (Buildings, Ground, Infantry, Air), then the type, then the unit in the list (grouped by nation).
 3. Pick **Who gets it?** For an Operation or a campaign chapter the list is that scenario's own camps, from its mission:
    **Player** (you: camp 0 in the campaign) and the **Computer**'s camps, each with its country, plus **Neutral**. The
@@ -52,7 +54,7 @@ Each player starts at a **starting point** of their team, one per player: in a 3
 1. Pick the scenario the game plays online (its gold line says **Battles**), then in the bar click **Scenario**.
 2. **Players** (on the right) shows the map's count, the game's marked *(game)*. Pick the new count, 8 at most.
    The line under it names each starting point that's still missing, e.g. *team 1, place 4*.
-3. Click **Add starting point**, pick the **team**, then click open ground where that player starts, away from the
+3. Click **Add HQ start**, pick the **team**, then click open ground where that player starts, away from the
    others. It takes the team's next place, and its camera and intro from a teammate.
 4. When the line says **Every player has a starting point**, **Test in game** and open **BATTLES**: the map is listed
    with its new count, e.g. *(8) Cotentin (4v4)*.
@@ -63,6 +65,41 @@ seats (tried 2026-10-02).
 > [!NOTE]
 > New, not yet checked in the game: tell us in [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)
 > how an 8-player game goes.
+
+## A blank map: place each player's HQ
+
+A map started as **Blank Terrain** or **Blank Ocean** (the Maps tab's **Duplicate map**) has nothing of the copied map
+on it, its HQs neither. **Each player's HQ** (on the Scenario side) lists every HQ the map needs: click **Place**, then
+the ground where it goes. **Test in game** waits until every player has an HQ.
+
+> [!WARNING]
+> Both blank maps are still buggy: use them at your own discretion, and tell us what you find.
+
+## Sectors
+
+**Sectors** (on the Scenario side) changes the scenario's sectors, the zones ruse cards are played on. A blank map
+starts with none: you make them.
+- **Shapes:** drag a corner dot to move a border (the sectors that share it move together). Double-click a border to add
+  a dot; right-click a dot to remove it. **New sector:** drag a box on the ground. **No sector:** drag a box where no
+  sector should be. **Delete sector** gives all its ground to the sectors round it.
+- **Paint:** pick a sector, then drag on the ground to paint it; "No sector" takes ground out of every sector.
+- **Start from no sectors** or **Start from the map's sectors**; **Undo** takes back the last change.
+
+Seen in the game: painted sectors on a blank map, a new sector drawn on D-Day and lit up alone by a ruse card, ground
+in no sector (a gap on the map table that no ruse card lights). The thin lines the Studio cuts so a sector stays one
+piece haven't been tried in the game yet.
+
+## Supply depots on this map
+
+Pick a supply depot to give it more trucks (more trucks, more money in it), or use **Every depot here**: multiply
+every depot's trucks (**times their trucks**) or give them all the same number (**trucks each**), then **Apply**.
+**Back to the game's** undoes it. To change every map at once, use the Economy tab's **Depots on the maps**
+([[Economy, AI and more|Economy-AI-and-More]]). Depots with more than 1,000 trucks need Launcher 0.4.8.4 or newer.
+
+## A mission of its own
+
+A new Operation or campaign chapter can play its own mission, with goals, events and camera moves:
+[[Make a mission|Make-a-Mission]].
 
 ## See your units in the game
 

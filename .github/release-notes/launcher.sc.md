@@ -1,11 +1,11 @@
 **RUSE Launcher 0.4，面向玩家。** 它通过 Steam 找到 R.U.S.E.，**开始游戏** 会用你的模组构建一份修改过的游戏副本并
 启动它。你的 Steam 安装永远不会被改动。
 
-**0.4.8.4:** 模组在每台电脑上都能下载。
+**0.4.8.4:** 任何电脑都能下载模组，并可运行用 Studio 0.9.8.4 制作的模组。
 
-- 在部分电脑上，所有模组都无法下载（“certificate verify failed: unable to get local issuer certificate”）：Windows 还没有获取用来验证 GitHub 的证书，而 Launcher 无法让它
-  去获取。现在 Launcher 会像浏览器一样请 Windows 检查并获取证书，然后重试；Launcher 自身的更新也是如此。尚未在出现过
-  此问题的电脑上试过。
+- **任何电脑都能下载模组：** 在一些电脑上一个模组都下载不了（“certificate verify failed: unable to get local issuer certificate”）。现在 Launcher 会像浏览器那样向 Windows 请求证书，然后重试；它自己的更新也一样。尚未在出现过该问题的电脑上测试。
+- **用 Studio 0.9.8.4 制作的模组可以运行：** 自己的任务、带有指挥部和扇区的空白地图、卡车更多的补给站（旧版 Launcher 会拒绝超过 1,000 辆卡车的补给站）、拥有自己外观和制服的单位、以自己名字保存的他人模组的修改版。
+- **仍有缺陷，请自行斟酌游玩：** 用 Map Paint 纹理制作的地图，以及空白地图（空白地形、空白海洋）。
 
 **0.4.8.3:** 模组版副本放在你指定的位置。
 

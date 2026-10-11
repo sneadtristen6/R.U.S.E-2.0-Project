@@ -1,11 +1,11 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
-**0.4.8.4:** i mod si scaricano su ogni PC.
+**0.4.8.4:** le mod si scaricano su ogni PC, e avvia le mod fatte con Studio 0.9.8.4.
 
-- Su alcuni PC nessun mod si scaricava ("certificate verify failed: unable to get local issuer certificate"): Windows non aveva ancora preso il certificato con cui si verifica
-  GitHub, e il Launcher non poteva chiederglielo. Ora lo chiede a Windows, come fa un browser, e riprova; anche per
-  gli aggiornamenti del Launcher. Non ancora provato su un PC che aveva il problema.
+- **Le mod si scaricano su ogni PC:** su alcuni PC nessuna mod si scaricava ("certificate verify failed: unable to get local issuer certificate"). Ora il Launcher chiede il certificato a Windows, come fa un browser, e riprova; anche per i suoi aggiornamenti. Non ancora provato su un PC che aveva il problema.
+- **Le mod fatte con Studio 0.9.8.4 funzionano:** missioni proprie, mappe vuote con i loro QG e settori, depositi con più camion (un Launcher più vecchio rifiuta i depositi oltre i 1.000 camion), unità con il loro aspetto e le loro uniformi, modifiche delle mod di altri con un nome proprio.
+- **Ancora con bug, giocale a tua discrezione:** le mappe fatte con le texture di Map Paint e le mappe vuote (Terreno vuoto, Oceano vuoto).
 
 **0.4.8.3:** le copie con le mod vanno dove dici tu.
 
