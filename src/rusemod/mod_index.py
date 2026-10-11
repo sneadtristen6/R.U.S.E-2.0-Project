@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import ssl
 import time
 import tomllib
 import urllib.error
@@ -15,6 +16,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import net
 from .resolve import parse_version
 
 REPO = "sneadtristen6/Ruse-Mods"
@@ -205,7 +207,7 @@ def _fetched(stamp: Path) -> str:
 
 
 def _get(url: str, timeout: float, limit: int) -> bytes:
-    with urllib.request.urlopen(urllib.request.Request(url, headers=_HEADERS), timeout=timeout) as r:
+    with net.urlopen(urllib.request.Request(url, headers=_HEADERS), timeout) as r:
         data = r.read(limit + 1)
     if len(data) > limit:
         raise ModIndexError(f"the file is bigger than {limit // 1_000_000} MB, which a mod list never is")
@@ -218,6 +220,10 @@ def plain(exc: BaseException, timeout: float = TIMEOUT) -> str:
         return f"the server answered {exc.code}"
     if isinstance(exc, TimeoutError) or "timed out" in str(exc).lower():
         return f"no answer in {timeout:g} seconds"
+    reason = getattr(exc, "reason", exc)
+    if isinstance(reason, ssl.SSLCertVerificationError):  # Windows was asked too (net.urlopen)
+        return (f"this PC doesn't trust the site's security certificate ({reason.verify_message}): an antivirus that "
+                f"scans secure connections, a school or work network, or a wrong date on the PC can do that")
     if isinstance(exc, urllib.error.URLError):
         return str(exc.reason)
     return str(exc)
@@ -234,7 +240,7 @@ def download(entry: dict, into, timeout: float = TIMEOUT) -> Path:
     digest, got = hashlib.sha256(), 0
     try:
         req = urllib.request.Request(entry["download"], headers=_HEADERS)
-        with urllib.request.urlopen(req, timeout=timeout) as r, part.open("wb") as f:
+        with net.urlopen(req, timeout) as r, part.open("wb") as f:
             while chunk := r.read(65536):
                 got += len(chunk)
                 if got > entry["size"]:

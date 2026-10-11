@@ -47,6 +47,16 @@ and again before **Test in game**, and names each file that has a mistake.
 
 The apps are new to Windows' reputation check. Click **More info**, then **Run anyway**.
 
+## "certificate verify failed: unable to get local issuer certificate"
+
+No mod downloads, or the update doesn't. Windows hadn't fetched the certificate GitHub is checked against yet; since
+Launcher 0.4.8.4 and Studio 0.9.8.4 the apps ask Windows for it and try again. With an older app the update can't
+download either: get the installer from the
+[releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases) in your browser and run it (it installs
+over the old one, as the update does). If a new app still says it: an antivirus that scans secure (HTTPS)
+connections, a school or work network, or a wrong date on the PC can cause it; tell us in
+[Discussions > Help](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions).
+
 ## "[WinError 5] Access is denied" when testing or playing
 
 Windows refused to remove a copy of the game the app made (in `RUSE-Instances`). Also: "An old modded copy at
