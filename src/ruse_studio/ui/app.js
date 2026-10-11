@@ -390,16 +390,32 @@ async function openEditMods() {
   $("edit-mods-title").textContent = w.edit_title;
   $("edit-mods-lead").textContent = w.edit_lead;
   $("edit-mods-close").textContent = w.close;
+  $("edit-mods-search").placeholder = w.edit_search;
+  $("edit-mods-search").title = w.tip_edit_search;
+  $("edit-mods-search").value = "";
   $("edit-mods-list").replaceChildren();
   if (!$("edit-mods").open) $("edit-mods").showModal();
   let res;
   try { res = await api().installed_mods(); } catch (err) { problem(err); return; }
-  const list = res.mods || [];
-  if (!list.length) {
-    $("edit-mods-list").replaceChildren(el("li", { className: "muted small", textContent: w.edit_none }));
+  state.installed = res.mods || [];
+  renderEditMods();
+  $("edit-mods-search").focus();
+}
+
+// the rows that match what's typed in the search box: name, author, id or description, case and accents ignored
+function renderEditMods() {
+  const w = state.words, list = state.installed || [];
+  const fold = (s) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const words = fold($("edit-mods-search").value).split(/\s+/).filter(Boolean);
+  const shown = list.filter((m) => {
+    const text = fold([m.name, m.author, m.id, m.description].join(" "));
+    return words.every((x) => text.includes(x));
+  });
+  if (!shown.length) {
+    $("edit-mods-list").replaceChildren(el("li", { className: "muted small", textContent: list.length ? w.edit_no_match : w.edit_none }));
     return;
   }
-  $("edit-mods-list").replaceChildren(...list.map(editModRow));
+  $("edit-mods-list").replaceChildren(...shown.map(editModRow));
 }
 
 function editModRow(m) {
@@ -4003,6 +4019,7 @@ async function start() {
   $("share-guidelines").addEventListener("click", () => api().open_help("guidelines").catch(problem));
   $("share-close").addEventListener("click", () => $("share").close());
   $("edit-mods-close").addEventListener("click", () => $("edit-mods").close());
+  $("edit-mods-search").addEventListener("input", renderEditMods);
   $("test").addEventListener("click", testInGame);
   $("test-log-close").addEventListener("click", () => $("test-panel").classList.add("hidden"));
   $("test-log-copy").addEventListener("click", copyTestLog);

@@ -36,6 +36,7 @@
       tip_edit_copy: "Make a copy of this mod of your own, with a name of its own, and open it here with everything in it.",
       edit_yours: "Yours", edit_copy_lead: "{name} is {author}'s mod. Your changes go into a copy of your own; give it a name of its own:",
       edit_someone: "someone else", edit_copy_name: "Your copy's name", edit_copy_go: "Make my copy and edit",
+      edit_search: "Search installed mods", tip_edit_search: "Type part of a mod's name, its author or what it does.", edit_no_match: "No installed mod matches that.",
       only_mod: "In this mod", tip_only_mod: "Show only what the mod being edited has: its new units and the ones it changes.",
       export_mod: "Export mod…", version: "Version", author: "Author", description: "Description", export: "Export",
       export_help: "One file to share: the mod folder packed. The version, author and description are kept in the mod.",

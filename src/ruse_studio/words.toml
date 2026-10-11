@@ -20751,3 +20751,41 @@ ru = "Показывать только то, что есть в изменяе�
 cz = "Ukázat jen to, co má upravovaný mód: jeho nové jednotky a ty, které mění."
 jpn = "編集中のMODにあるものだけを表示します：新しいユニットと、変更しているユニット。"
 sc = "只显示正在编辑的模组中的内容：它的新单位和它修改的单位。"
+
+# Edit an installed mod: its search box (the owner, 2026-10-10: "there needs to be a search bar so you can just type in
+# the mod")
+[edit_search]
+us = "Search installed mods"
+fr = "Chercher parmi les mods installés"
+ger = "Installierte Mods durchsuchen"
+ita = "Cerca tra le mod installate"
+spa = "Buscar mods instalados"
+pol = "Szukaj zainstalowanych modów"
+ru = "Поиск установленных модов"
+cz = "Hledat nainstalované módy"
+jpn = "インストール済みのMODを検索"
+sc = "搜索已安装的模组"
+
+[tip_edit_search]
+us = "Type part of a mod's name, its author or what it does."
+fr = "Tapez une partie du nom d'un mod, de son auteur ou de ce qu'il fait."
+ger = "Gib einen Teil vom Namen eines Mods, seinem Autor oder dem, was er tut, ein."
+ita = "Scrivi parte del nome di una mod, del suo autore o di cosa fa."
+spa = "Escribe parte del nombre de un mod, de su autor o de lo que hace."
+pol = "Wpisz część nazwy moda, jego autora lub tego, co robi."
+ru = "Введите часть названия мода, имени автора или того, что он делает."
+cz = "Napište část názvu módu, jeho autora nebo toho, co dělá."
+jpn = "MODの名前、作者、内容の一部を入力してください。"
+sc = "输入模组名称、作者或用途的一部分。"
+
+[edit_no_match]
+us = "No installed mod matches that."
+fr = "Aucun mod installé ne correspond."
+ger = "Kein installierter Mod passt dazu."
+ita = "Nessuna mod installata corrisponde."
+spa = "Ningún mod instalado coincide."
+pol = "Żaden zainstalowany mod nie pasuje."
+ru = "Ни один установленный мод не подходит."
+cz = "Žádný nainstalovaný mód neodpovídá."
+jpn = "一致するインストール済みのMODはありません。"
+sc = "没有匹配的已安装模组。"

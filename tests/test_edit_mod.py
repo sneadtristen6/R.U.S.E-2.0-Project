@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LANGS = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc"}
 KEYS = ("edit_installed", "edit_title", "edit_lead", "edit_none", "edit_has_units", "edit_has_maps", "edit_by",
         "edit_older", "edit_open", "tip_edit_open", "tip_edit_copy", "edit_yours", "edit_copy_lead", "edit_someone",
-        "edit_copy_name", "edit_copy_go", "only_mod", "tip_only_mod")
+        "edit_copy_name", "edit_copy_go", "only_mod", "tip_only_mod", "edit_search", "tip_edit_search", "edit_no_match")
 
 
 def write(path: Path, text: str) -> Path:

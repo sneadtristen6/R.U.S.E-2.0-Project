@@ -600,6 +600,7 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .edit-mod-copy { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .edit-mod-copy input { flex: 1; min-width: 12em; }
 .edit-mod-copy.hidden { display: none; }
+.edit-mods-search { width: 100%; box-sizing: border-box; margin-top: 10px; }
 
 /* Duplicate map (maps.js openDuplicate): what a new map is, how it works, then its name */
 .map-duplicate { align-self: flex-start; margin: 4px 0; }
